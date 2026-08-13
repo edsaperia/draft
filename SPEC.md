@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.5
+# Group Drafting Engine — Specification v0.6
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -9,7 +9,7 @@ A compiler for group agreement. Input: a starting text, a roster, a constitution
 
 ## 1. Contract
 
-**Inputs.** `text` — the starting document. `roster` — E participants, fixed at open, equal standing. `constitution` — every parameter (Appendix A), hashed into the log's genesis event.
+**Inputs.** `text` — the starting document. `roster` — E participants, equal standing; the convenor may add or remove participants mid-session (§9.3). `constitution` — every parameter (Appendix A), hashed into the log's genesis event.
 
 **Outputs.**
 1. **The text**: each race rendered to its posterior leader.
@@ -51,11 +51,13 @@ Skipping is not a move; the card returns later.
 
 **3.2 Indifference** is a judgment: tie evidence for the ranking (a forced choice would fabricate preference), the instrument of behavioral dedup (§5), and, in aggregate, the **care map** — spans the group doesn't mind about keep their incumbents cheaply and stop drawing attention.
 
-**3.3 Propose C** opens the composer (§6), which reveals mid-flight state; choosing it therefore forfeits that pair's comparison (never collected — this prices the peek), and is itself logged as weak dissatisfaction with both.
+**3.3 Propose C** opens the composer (§6), which reveals mid-flight state; choosing it therefore forfeits that pair's comparison (never collected — this prices the peek), and is itself logged as weak dissatisfaction with both. The composed draft is a brand-new patch: normal stake, and its footprint decides its race — it may re-enter the race that prompted it or land elsewhere.
 
 **3.4 Speech.** Each candidate carries one pinned rationale. There is no chat. To argue is to draft. (Block-level threads can be added later without touching the mechanism.)
 
 **3.5 Disclosure.** **Judgment is blind; composition is briefed.** Standings, splits, and camps are visible in exactly one place — the composer — reached voluntarily (propose C) or by invitation (§6.2). No feed, card, sort, or notification shows direction on a race the participant hasn't judged. Resolved outcomes are public in the gazette immediately.
+
+Candidate authorship is governed by a constitution setting — **public** (visible live), **sealed** (hidden during the session, revealed at close), or **anonymous** (never revealed); default sealed. Rationales are always visible.
 
 ---
 
@@ -66,13 +68,13 @@ Skipping is not a move; the card returns later.
 Every pair has a type, decided by Gate 2 and cached before serving:
 
 - **Edge** — the two options are mutually exclusive futures (rivals; incumbent vs. challenger; lattice steps like A vs. A+B, which differ by exactly one intent). Edges feed the **preference model**, which governs adoption. Card copy: *"Which should the group adopt?"*
-- **Diagonal** — the two intents admit a joint realization (lattice diagonals; any two patches from unrelated races). The answer means "if only one lands, let it be this," and feeds a **global salience model**: a ranking over intents that never touches adoption but sets priority — routing weight, bounty-board order, backlog order. Diagonals are a low-rate stream (~1 card in 10). Card copy: *"Which matters more?"*
+- **Diagonal** — the two intents admit a joint realization (lattice diagonals; any two patches from unrelated races). The answer means "if only one lands, let it be this," and feeds a **global salience model**: a Bradley–Terry ranking over *races* — the questions in dispute — that never touches adoption but sets priority: routing weight, bounty-board order, backlog order. A diagonal between candidates from races X and Y scores as "X's question matters more than Y's"; the router prefers leader-vs-leader pairs so a weak draft doesn't make its question look unimportant. Lattice diagonals are logged but do not enter the cross-race model. Diagonals are a low-rate stream (~1 card in 10). Card copy: *"Which matters more?"*
 
 Separable bundles are flagged at submission: split, or stand as one take-it-or-leave-it intent.
 
 **4.2 Adoption.** A race adopts challenger X when P(X beats incumbent) > θ(now) and ≥ F distinct participants have moved on the race, F = min(⌈E/3⌉, F_max). Adoption is atomic, lands in the gazette with a chime, rebases the field, and starts a short cooldown. At close, each race renders its posterior leader among θ-clearing candidates; margins go in the record; exact ties break deterministically by hash.
 
-**4.3 θ on the evidence clock.** θ ramps from θ_start to θ_end as a function of total comparisons made — the document stabilises in proportion to the judgment it has absorbed. A quiet day stabilises nothing; late activity self-limits (a near-unanimous fix clears θ_end; a 60/40 preference cannot), so no proposal deadline is needed. The window's wall-clock end triggers only the closing publication. The ramp exists because the bar should track irreversibility: an early adoption can still be challenged within the session; a late one is permanent. Early low-θ adoptions also give a distributed window visible motion from its first hours.
+**4.3 θ on the evidence clock.** θ ramps from θ_start to θ_end as a function of total comparisons made session-wide (one global clock, not per race) — the document stabilises as a whole, in proportion to the judgment it has absorbed. A quiet day stabilises nothing; late activity self-limits (a near-unanimous fix clears θ_end; a 60/40 preference cannot), so no proposal deadline is needed. The window's wall-clock end triggers only the closing publication. The ramp exists because the bar should track irreversibility: an early adoption can still be challenged within the session; a late one is permanent. Early low-θ adoptions also give a distributed window visible motion from its first hours.
 
 **4.4 Incumbency and certification.** Nothing closes. Incumbency is positional: adoption makes a candidate the status quo; displacement always requires clearing current θ. Certification is continuous: P(incumbent beats best live challenger). A "resolved" race is one not currently worth sampling; stability is an equilibrium.
 
@@ -96,7 +98,7 @@ Separable bundles are flagged at submission: split, or stand as one take-it-or-l
 
 **6.2 Invitations.** Two events summon an author to the composer, firing on confident states only and re-firing only when something has changed — never on a timer:
 
-- **Dominated.** The candidate cannot win. The author sees a three-tier account, each tier labeled as what it is: **facts** (standings; the differential diff against the winner; indifference rate; decision speed; the camp cut if one exists), **the winners' own words** (their pinned rationales), and **hypothesis** — a span-level attribution fitted across the race and graveyard ("every candidate containing clause X ranks below 0.45"), with its evidence attached, or an honest "the data can't isolate a cause" plus a proposed isolating redraft. Thin data gets a thin account. Options: retire (refund per performance) · co-sign the leader (full refund) · redraft informed. Two failed informed redrafts carry the position to the backlog as a recorded persistent current.
+- **Dominated.** The candidate looks very unlikely to win: projected against the θ ramp, current evidence and trajectory give it no realistic path to clearing θ before close. The author sees a three-tier account, each tier labeled as what it is: **facts** (standings; the differential diff against the winner; indifference rate; decision speed; the camp cut if one exists), **the winners' own words** (their pinned rationales), and **hypothesis** — a span-level attribution fitted across the race and graveyard ("every candidate containing clause X ranks below 0.45"), with its evidence attached, or an honest "the data can't isolate a cause" plus a proposed isolating redraft. Thin data gets a thin account. Options: retire (refund per performance) · co-sign the leader (full refund) · redraft informed. Two failed informed redrafts carry the position to the backlog as a recorded persistent current.
 - **Saturated.** The race is close relative to the marginal value of further sampling. Judgment stops; the race moves to the **bounty board** — a public tab of races where a good draft has the highest expected leverage, ranked by the disagreement it would resolve, weighted by salience. Both camps' authors are invited; anyone may draft.
 
 **6.3 Bridges.** A candidate entering a saturated race is measured by **minimum support across camps** — it must beat A among B's preferrers and beat B among A's — via stratified probes. Aggregate win rate is not the test; a candidate beloved by one camp is exposed in a handful of judgments.
@@ -111,7 +113,7 @@ Tokens exist to make proposing cost something — anti-flooding, nothing more. E
 
     refund = stake × min( w / 0.5 , 1.5 )
 
-Co-signs and withdrawals refund fully; merges pool pro-rata. The curve is continuous because cliffs concentrate gaming at the boundary; junk self-punishes in proportion, near-misses cost little. Calibration histories appear in the record as audit data; their use is the context's business.
+Co-signs and withdrawals refund fully; merges pool pro-rata. The curve is continuous because cliffs concentrate gaming at the boundary; junk self-punishes in proportion, near-misses cost little. w is the peak rather than exit-time probability by design: a good early candidate displaced by a later, better draft is not punished for the improvement it provoked, and junk never peaks high. Calibration histories appear in the record as audit data; their use is the context's business.
 
 ---
 
@@ -135,7 +137,7 @@ Co-signs and withdrawals refund fully; merges pool pro-rata. The curve is contin
 
 **9.2 Two publications.** Common knowledge is made by publication. **Opening:** roster, constitution, and starting text, hash-anchored and pushed to all. **Closing:** the text and the record. Between them the chamber view is ambient: adoptions land with a chime, the rolling log hash and bounty board are visible, live standings never are.
 
-**9.3 Presence and access.** Participation is bouts, not attendance; c_p absorbs intermittency. Chamber visibility is convenor-toggled (default link-only). An **observer role** provides the chamber plus an anonymized live metrics feed (throughput, saturation events, care-map evolution). The record's distribution is the convenor's.
+**9.3 Presence and access.** Participation is bouts, not attendance; c_p absorbs intermittency. The convenor may add or remove participants mid-session: a joiner receives the base grant plus drip accrued to date (capped); F recomputes from current E; a removed participant's live candidates remain live, flagged author-departed, and their cast judgments stay counted. Chamber visibility is convenor-toggled (default link-only). An **observer role** provides the chamber plus an anonymized live metrics feed (throughput, saturation events, care-map evolution). The record's distribution is the convenor's.
 
 **9.4 Sessions repeat.** Next session, θ resets and the backlog re-enters stake-waived, carrying graveyards, camp maps, and rationales as briefing context — not as evidence. Between sessions, authors revise against everything the record taught; incubation is where bridges that need longer than a window get built.
 
@@ -144,6 +146,8 @@ Co-signs and withdrawals refund fully; merges pool pro-rata. The curve is contin
 ## 10. Machine participants
 
 All advisory or ordinary-citizen; none carries authority. The dedup gate and equivalence judgments; semantic composition drafts (Gate 2); geometry diagnosis and synthesis seeds; briefing digests and loss accounts; stratified probe design; and the **coherence auditor** — a standing account with a fixed budget (4 tokens, no drip) that reads the whole document and enters patches against drift, labeled machine-authored, competing by the same arithmetic as anyone.
+
+**Bring your own AI (non-normative).** Humans, simulated personas, and participants' personal AIs all speak the same participant API — submit, judge, read one's own briefings. A participant may connect their own AI to draft and propose on their behalf; supported as a first-class path, never the default UX.
 
 ---
 
@@ -161,11 +165,11 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 
 ## 13. Build order (non-normative)
 
-1. **Simulation harness.** LLM agents as synthetic participants — heterogeneous personas drafting, judging, and skipping with realistic bout patterns — sweeping θ_start/θ_end/ramp, F_max, hot-set size, and token schedule against throughput, stability, bridge rate, and backlog quality. Calibrates mechanics before any live cohort.
-2. **Patch engine** — diff, three-way and semantic composition, rebase, surgery. The only hard computer science in the build.
-3. **Ranking and routing** — BT with active sampling, saturation detection, the salience model, v/c_p feeds.
-4. **Composer, gazette, record.**
-5. Name it after pressing the buttons.
+1. **Engine core + textual patch machinery.** A pure, deterministic, UI-free, LLM-free library: the object model, races via textual overlap (Gate 1 + rivalry; Gate 2 stubbed), BT ranking with ties, θ ramp, tokens and refunds, floors, salience model, routing, event log.
+2. **Simulation harness.** LLM agents as synthetic participants — heterogeneous personas (cheap-model) drafting, judging, and skipping with realistic bout patterns — sweeping θ_start/θ_end/ramp, F_max, hot-set size, and token schedule against throughput, stability, bridge rate, and backlog quality. Personas are ordinary clients of the same participant API a human client uses, so real users can play alongside bot cohorts. Calibrates mechanics before any live cohort.
+3. **LLM layer** — semantic composition (Gate 2), the dedup gate, surgery proposals, geometry seeds, loss accounts, the coherence auditor. Isolated behind interfaces so 1–2 never depend on a network call.
+4. **Product** — race card, composer, gazette and chamber, bounty board, live feeds, notifications, magic-link auth, the two publications, the record.
+5. **Pilot** — a real session with a real group, constitution calibrated from 2's sweeps. Name it after pressing the buttons.
 
 ---
 
@@ -187,3 +191,4 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 | Bridge metric | minimum support across camps, stratified probes |
 | Window | convenor-set; wall end triggers closing publication only |
 | Visibility | chamber link-only by default; observer role off by default |
+| Authorship visibility | public · sealed · anonymous; default sealed |

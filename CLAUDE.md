@@ -4,9 +4,16 @@ A group drafting engine: patches race, blind pairwise judgments rank them, adopt
 
 ## Documents
 
-- `SPEC.md` — the mechanism spec. Amend only with Ed's sign-off; bump the version.
-- `QUESTIONS.md` — open clarifying questions, numbered. Never renumber; mark answered items and record the answer inline.
-- `DECISIONS.md` — (to be created) durable decisions with rationale, one entry per decision.
+- `SPEC.md` — the mechanism spec, and the single source of truth. Amend only with Ed's sign-off; bump the version. No separate decision log: resolved decisions are folded into the spec ("keep latest design, not history" — Ed, 2026-08-13).
+- `QUESTIONS.md` — open and deferred items only, numbered from one continuous project-wide sequence (Ed answers by number). Never renumber or reuse numbers; delete items once folded into the spec.
+
+## V1 product decisions
+
+- Target context: constitutional conventions for Newspeak House cohorts. Rosters typically 5–10, conventions 15–20; design must not preclude 100+/1000+ instances, but v1 tunes to small rosters (data-efficiency over throughput).
+- Hosted multi-tenant web service; magic-link auth against roster emails.
+- Documents are Markdown, rendered as rich text; usually a few pages, long-document behavior stays in scope for sim experiments.
+- TypeScript end-to-end; engine-core is a pure, dependency-free library shared by sim-harness and product server.
+- Sim personas are LLM-powered on a cheap model (Haiku-class) and speak the same participant API as human clients — no sim backdoor; mixed human/bot sessions are a goal.
 
 ## Glossary — named parts
 
