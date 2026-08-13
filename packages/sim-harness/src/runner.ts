@@ -119,7 +119,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
           acted = true;
           const text = proposal.patch.hunks[0]?.lines.join(' / ') ?? '';
           config.onProgress?.(
-            `[${fmt(t)}] ${profile.handle} drafts: "${text}" — ${proposal.rationale.slice(0, 80)}`,
+            `[${fmt(t)}] ${profile.handle} drafts: "${text}" — ${proposal.rationale}`,
           );
         } else {
           config.onProgress?.(
@@ -140,10 +140,17 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
           next.api.judge(t, card, choice);
           next.judgments++;
           acted = true;
+          const describe = (option: typeof card.a): string => {
+            const texts = option.changes.map((c) => c.after).join(' / ');
+            const isIncumbent = option.changes.every((c) => c.before === c.after);
+            return isIncumbent ? `keep "${texts}"` : `"${texts}"`;
+          };
           const summary =
             choice === 'indifferent'
-              ? 'indifferent'
-              : `prefers "${(card[choice].changes[0]?.after ?? '').slice(0, 60)}"`;
+              ? `indifferent between ${describe(card.a)} and ${describe(card.b)}`
+              : `prefers ${describe(card[choice])} over ${describe(
+                  card[choice === 'a' ? 'b' : 'a'],
+                )}`;
           config.onProgress?.(
             `[${fmt(t)}] ${profile.handle} judges (${card.kind}): ${summary}`,
           );
