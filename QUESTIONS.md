@@ -11,4 +11,8 @@ Resolved items are folded into SPEC.md and removed — this file holds only what
 
 26. **Evidence-clock adoption threshold.** Wall clock chosen for v1 (Q22, options 23–25, 2026-08-13): simpler, knowable, one clock shared with the token drip. Revisit the evidence-clock (or a hybrid max-of-both) ramp as a sim A/B once everything else works.
 
-Next unused number: 27.
+## Awaiting Ed
+
+28. **Next phase** (asked 2026-08-13, still open): (a) calibration detour — sweep the constitution (threshold ramp, floors, cooldown, tokens, hot set) across many scripted seeds before building more; or (b) straight to P3 (LLM layer: Gate 2 semantic composition, dedup gate, surgery, briefings, machine participants). Recommendation: (a), it's cheap and informs P3.
+
+Next unused number: 29 (27 was credentials — resolved via subscription mode; 29–30 were setup steps, superseded).
