@@ -94,6 +94,13 @@ describe('session lifecycle', () => {
     expect(replayed.document()).toBe(s.document());
     expect(replayed.rollingHash()).toBe(s.rollingHash());
     expect(replayed.races().length).toBe(s.races().length);
+    // Ledger parity: refunds depend on peakW, which must be reproduced by
+    // the fold alone (regression: peakW once lived only in the command
+    // layer, so replayed sessions paid different refunds).
+    for (const p of ['p1', 'p2', 'p3', 'p4', 'p5']) {
+      expect(replayed.balance(p, t + 10_000)).toBe(s.balance(p, t + 10_000));
+    }
+    expect(replayed.getCandidate(c1).peakW).toBe(s.getCandidate(c1).peakW);
 
     // Receipts: every judge can verify their moves were counted.
     expect(s.receipt('p3').length).toBeGreaterThan(0);

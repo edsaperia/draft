@@ -232,6 +232,20 @@ export class Session {
         this.markJudged(event.participantId, event.aId, event.bId);
         if (event.kind === 'edge') this.edgeCount++;
         this.touchParticipant(event.participantId, event.t);
+        // peakW moves here, in the fold, not in the command layer: refunds
+        // are computed from it at adoption, so replaying the log must
+        // reproduce it exactly or ledgers drift (a real bug, once).
+        if (event.kind === 'edge') {
+          const candidateId = !event.aId.startsWith(INC_PREFIX)
+            ? event.aId
+            : !event.bId.startsWith(INC_PREFIX)
+              ? event.bId
+              : null;
+          if (candidateId !== null) {
+            const race = this.races().find((r) => r.members.includes(candidateId));
+            if (race) this.updatePeaks(race);
+          }
+        }
         break;
       }
       case 'composer-opened': {
@@ -506,13 +520,12 @@ export class Session {
     this.emit({ type: 'comparison', t, participantId, aId, bId, kind, outcome });
     this.fitCache.clear();
     if (kind === 'edge') {
+      // peakW was already updated by apply(); only adoption (which emits
+      // new events and so must never run during replay) stays here.
       const raceId = this.raceIdOfEndpoint(aId) ?? this.raceIdOfEndpoint(bId);
       if (raceId) {
         const race = this.races().find((r) => r.id === raceId);
-        if (race) {
-          this.updatePeaks(race);
-          this.maybeAdopt(t, race);
-        }
+        if (race) this.maybeAdopt(t, race);
       }
     }
     return this.log.slice(before).map((e) => e.event);

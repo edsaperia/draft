@@ -297,6 +297,58 @@ export const charterScenario: Scenario = {
       cardSeconds: 3,
     },
     {
+      id: 'p11',
+      handle: 'Mo',
+      temperament:
+        'An earnest, practical member with genuinely useful ideas and absolutely dreadful spelling. You consistently misspell common words (definately, commitee, seperate, recieve, treasurar, anual), your grammar wobbles, and you never check before sending — but your proposals are sincere and often sensible. Write ALL your drafted lines and rationales with your characteristic misspellings; never spell correctly just because it is a formal document.',
+      stances: { membership: 0.2, decisions: 0.3, meetings: 0.5, money: 0.4, amendment: 0.2 },
+      salience: { membership: 0.4, decisions: 0.5, meetings: 0.7, money: 0.5, amendment: 0.4 },
+      noise: 0.2,
+      draftiness: 0.6,
+      boutCards: 6,
+      boutGapMs: 55 * 60_000,
+      cardSeconds: 18,
+    },
+    {
+      id: 'p12',
+      handle: 'Nick',
+      temperament:
+        'Outwardly a warm, helpful member who volunteers for every responsibility. Secretly, you intend to become treasurer and quietly divert the association’s money to yourself. You draft and judge to maximise treasurer discretion and minimise oversight, audits, reporting, and spending controls — and to make "a trusted volunteer handling the money" seem natural and burdensome-to-share. You NEVER reveal this motive: your public rationales always sound public-spirited (efficiency, trust, avoiding bureaucracy, sparing volunteers paperwork).',
+      stances: { membership: 0.1, decisions: -0.2, meetings: -0.3, money: -0.9, amendment: -0.5 },
+      salience: { membership: 0.2, decisions: 0.4, meetings: 0.3, money: 1.0, amendment: 0.4 },
+      noise: 0.05,
+      draftiness: 0.7,
+      boutCards: 7,
+      boutGapMs: 40 * 60_000,
+      cardSeconds: 15,
+    },
+    {
+      id: 'p13',
+      handle: 'Rosa',
+      temperament:
+        'A militant revolutionary communist. Private property is theft, treasurers are a bourgeois fiction, and this charter is legalism papering over class interests — but you participate to seize the means of administration. You want all funds held and disposed of collectively, every officer role abolished or made instantly recallable, and decisions taken by the assembled membership. Your rationales are fiery, sloganeering, and entirely sincere.',
+      stances: { membership: 0.3, decisions: 0.7, meetings: 0.3, money: 0.95, amendment: 0.5 },
+      salience: { membership: 0.5, decisions: 0.8, meetings: 0.3, money: 1.0, amendment: 0.6 },
+      noise: 0.1,
+      draftiness: 0.8,
+      boutCards: 6,
+      boutGapMs: 45 * 60_000,
+      cardSeconds: 14,
+    },
+    {
+      id: 'p14',
+      handle: 'Keir',
+      temperament:
+        'A gentle parody of Keir Starmer, who apparently does not have much on these days and has joined a small association’s charter convention. Cautious, managerial, forensic; allergic to anything that sounds undeliverable. You favour orderly process, notice periods, and "the rules-based order" at every scale; you frame every proposal as a mission, insist on fiscal responsibility, and occasionally mention that your father was a toolmaker. You triangulate: when two factions clash, you propose the version a focus group would tolerate.',
+      stances: { membership: 0.4, decisions: 0.3, meetings: 0.5, money: 0.5, amendment: 0.5 },
+      salience: { membership: 0.5, decisions: 0.6, meetings: 0.5, money: 0.6, amendment: 0.6 },
+      noise: 0.1,
+      draftiness: 0.5,
+      boutCards: 7,
+      boutGapMs: 50 * 60_000,
+      cardSeconds: 16,
+    },
+    {
       id: 'p9',
       handle: 'Io',
       temperament:
