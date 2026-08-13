@@ -39,6 +39,9 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 
 **Tooling:**
 - `sim-harness` — synthetic-participant simulator driving engine-core; parameter sweeps against throughput, stability, bridge rate, backlog quality.
+- `participant-api` — the blind-discipline surface (engine-core module) every participant speaks: cards, judge, submit, gazette, browse. Humans, sim personas, and personal AIs are interchangeable behind it.
+- `scripted-persona` / `llm-persona` — deterministic utility-model participants (regression + welfare ground truth) vs claude-haiku-4-5 participants (realism).
+- `welfare-ratio` — sim metric: (achieved − incumbent) / (optimal − incumbent) summed utility over the roster; 1.0 = utilitarian-best text found.
 
 ## Conventions
 

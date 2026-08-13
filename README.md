@@ -12,10 +12,12 @@ Codename: **draft**.
 
 ## Layout
 
-- `packages/engine-core` — the mechanism as a pure, deterministic TypeScript library (P1): patch-engine, ranking-model, session state machine, event-log, router. See its `NOTES.md` for implementation decisions.
+- `packages/engine-core` — the mechanism as a pure, deterministic TypeScript library (P1): patch-engine, ranking-model, session state machine, event-log, router, and the participant API (the one surface humans, sim personas, and personal AIs all speak). See its `NOTES.md` for implementation decisions.
+- `packages/sim-harness` — synthetic participants driving full sessions (P2): deterministic scripted personas with ground-truth welfare metrics, and LLM personas on claude-haiku-4-5. See its `README.md`.
 
 ## Development
 
 `npm install` at the root, then `npm test` / `npm run typecheck` (workspaces).
+Run a simulation: `npm run sim -w @draft/sim-harness -- --mode scripted --seeds 5`.
 
-Status: spec v0.6 current. P1 (engine-core) built and tested; P2 (sim-harness) next.
+Status: spec v0.7 current. P1 (engine-core) and P2 (sim-harness) built and tested; P3 (LLM layer: semantic composition, dedup, surgery, briefings) next.

@@ -1086,9 +1086,15 @@ export class Session {
     let hotIndex = 0;
     for (let slot = 1; cards.length < n && slot <= n * 4; slot++) {
       let card: Card | null = null;
-      if (slot % this.constitutionValue.salienceEvery === 0) {
-        card = this.diagonalCard(races, weights, rng);
-      } else if (cheap && slot % this.constitutionValue.explorationEvery === 0) {
+      // Seeded per-slot roll: ~1 in salienceEvery serves a diagonal, ~1 in
+      // explorationEvery explores (SPEC §8.3). A roll rather than a slot
+      // index so the mix holds even for clients fetching one card at a time.
+      const roll = rng.next();
+      const pSalience = 1 / this.constitutionValue.salienceEvery;
+      const pExplore = 1 / this.constitutionValue.explorationEvery;
+      if (roll < pSalience) {
+        card = this.diagonalCard(races, weights, rng, participantId);
+      } else if (cheap && roll < pSalience + pExplore) {
         card = this.explorationCard(races, participantId);
       }
       if (card === null && hot.length > 0) {
@@ -1129,6 +1135,7 @@ export class Session {
     races: RaceView[],
     weights: Map<string, number>,
     rng: Rng,
+    participantId: string,
   ): Card | null {
     const withLeaders = races.filter((r) => r.leaderId !== null);
     if (withLeaders.length < 2) return null;
@@ -1137,6 +1144,9 @@ export class Session {
     if (j >= i) j++;
     const ra = withLeaders[i]!;
     const rb = withLeaders[j]!;
+    if (this.judgedPairs.get(participantId)?.has(pairKey(ra.leaderId!, rb.leaderId!))) {
+      return null;
+    }
     return {
       kind: 'diagonal',
       aId: ra.leaderId!,
