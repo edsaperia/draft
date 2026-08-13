@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.7
+# Group Drafting Engine — Specification v0.8
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -123,7 +123,7 @@ Co-signs and withdrawals refund fully; merges pool pro-rata. The curve is contin
 
 **8.2 Floors.** F = min(⌈E/3⌉, F_max) distinct movers per race before adoption — statistical sufficiency, with per-race judge counts in the record. Near adoption, the router prefers participants who haven't judged the race: the unheard are asked at the moment their silence would be foreclosed. Judgments count once each; there are no weights.
 
-**8.3 Mechanics.** A hot set of ~6 races receives concentrated sampling — resolving a race retires it from every feed, so finish lines come first. ~1 slot in 7 explores under-measured candidates (Thompson sampling); ~1 in 10 serves a salience diagonal. Saturated races leave the judgment stream for the bounty board; care-map-cold spans sink; skipped cards recirculate personally with decay. Feeds are suggestions — participants can browse, search, and judge anything live. Sort tabs expose magnitude only (activity, evidence volume, closeness-to-resolution as a single number, newness, mine), never direction. The bounty board is a first-class tab; each entry opens the composer.
+**8.3 Mechanics.** A hot set of ~3 races receives concentrated sampling (was ~6; calibration sweep 2026-08-13 — depth of evidence per race beats breadth at small-roster scale, best welfare and lowest variance of any setting tested) — resolving a race retires it from every feed, so finish lines come first. ~1 slot in 7 explores under-measured candidates (Thompson sampling); ~1 in 10 serves a salience diagonal. Saturated races leave the judgment stream for the bounty board; care-map-cold spans sink; skipped cards recirculate personally with decay. Feeds are suggestions — participants can browse, search, and judge anything live. Sort tabs expose magnitude only (activity, evidence volume, closeness-to-resolution as a single number, newness, mine), never direction. The bounty board is a first-class tab; each entry opens the composer.
 
 **8.4 Notifications.** A thin digest layer — your candidate was dominated; a race you drafted for nears resolution; the bounty board moved. Batched, magnitude-only, policy published. It is the liveness engine of a distributed window and gets router-grade hygiene.
 
@@ -187,7 +187,7 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 | Refund | stake × min(w/0.5, 1.5); w = peak P(beats incumbent) |
 | Rationale cap | 300 chars |
 | Bout gap threshold | > 90 s discarded from latency |
-| Hot set / exploration / salience stream | ~6 races / ~1 in 7 / ~1 in 10 |
+| Hot set / exploration / salience stream | ~3 races / ~1 in 7 / ~1 in 10 |
 | Bridge metric | minimum support across camps, stratified probes |
 | Window | convenor-set; wall end triggers closing publication only |
 | Visibility | chamber link-only by default; observer role off by default |

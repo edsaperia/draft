@@ -58,7 +58,9 @@ export const DEFAULT_CONSTITUTION: Omit<
   stake: 1,
   rationaleMaxChars: 300,
   boutGapMs: 90 * 1000,
-  hotSetSize: 6,
+  // 3, not 6: calibration sweep 2026-08-13 — at small-roster scale, depth
+  // of evidence per race beats breadth of coverage (SPEC §8.3).
+  hotSetSize: 3,
   explorationEvery: 7,
   salienceEvery: 10,
   authorshipVisibility: 'sealed',

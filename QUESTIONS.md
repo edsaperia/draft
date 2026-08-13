@@ -13,7 +13,6 @@ Resolved items are folded into SPEC.md and removed — this file holds only what
 
 ## Awaiting Ed
 
-31. **Hot-set size default** (from the calibration sweep, 2026-08-13): hotSetSize 3 beat the default 6 across 25 sweep seeds (welfare 0.994 vs 0.982) and held on 50 fresh seeds (0.986–0.991, best variance of any setting). Proposal: make 3 the default for small rosters (spec change, needs sign-off).
 32. **Cooldown ceiling** (same sweep): cooldown 0 ≥ 5 min ≫ 15–30 min (0.989 / 0.982 / 0.958 / 0.945) — long cooldowns strangle the sequenced adoptions a coupled document needs. Proposal: keep 5 min for human pacing but record in the spec that cooldown must stay short; softening the threshold ramp alongside removing cooldown over-adopts and churns (interaction found in combo runs).
 
 ## Decided, implementation deferred
