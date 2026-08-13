@@ -13,19 +13,25 @@ client, and a personal AI are interchangeable (D3/D17).
   found the utilitarian-best text, 0 = the incumbent survived, < 0 = worse than
   doing nothing. This is the regression + calibration workhorse.
 - **llm** — personas played by `claude-haiku-4-5` via the Claude API (structured
-  outputs for judgments and drafts). Realistic, non-deterministic, costs money.
-  Needs `ANTHROPIC_API_KEY` or an `ant auth login` profile.
+  outputs for judgments and drafts). Realistic, non-deterministic, pay-per-token.
+  Needs `ANTHROPIC_API_KEY` (in the repo-root `.env`) or an `ant auth login` profile.
+- **subscription** — the same personas and prompts, transported through the
+  Claude Agent SDK (headless Claude Code), billed to the local Claude
+  subscription (e.g. Max) instead of an API key. Needs a logged-in Claude Code
+  or `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`. Slower per call (a
+  harness process per judgment); local/personal use only — hosted deployments
+  need a real key. Probe auth with `npx tsx src/probe.ts`.
 
 ## Run
 
 ```
 npm run sim -w @draft/sim-harness -- --mode scripted --seeds 5
-npm run sim -w @draft/sim-harness -- --mode llm --hours 24 --verbose
+npm run sim -w @draft/sim-harness -- --mode subscription --hours 6 --verbose
 ```
 
-Flags: `--mode scripted|llm` · `--seeds N` (independent runs) · `--hours H`
-(window length, default 72) · `--seed S` · `--verbose` (per-action log) ·
-`--json`.
+Flags: `--mode scripted|llm|subscription` · `--seeds N` (independent runs) ·
+`--hours H` (window length, default 72; keep short in LLM modes — call count
+scales with it) · `--seed S` · `--verbose` (per-action log) · `--json`.
 
 ## Metrics per run
 
