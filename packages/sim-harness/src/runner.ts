@@ -121,6 +121,10 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
           config.onProgress?.(
             `[${fmt(t)}] ${profile.handle} drafts: "${text}" — ${proposal.rationale.slice(0, 80)}`,
           );
+        } else {
+          config.onProgress?.(
+            `[${fmt(t)}] ${profile.handle} arrives, considers drafting: passes`,
+          );
         }
       } catch {
         // Draft rejected (stale version, tokens, validation): skip.

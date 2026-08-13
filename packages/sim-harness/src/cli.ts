@@ -76,7 +76,9 @@ async function main(): Promise<void> {
       return;
     }
   } else if (args.mode === 'subscription') {
+    console.log('probing subscription auth (one headless Claude Code call)...');
     const failure = await probeSubscription();
+    if (failure === null) console.log('auth ok.');
     if (failure !== null) {
       console.error(
         'Subscription mode needs a logged-in Claude Code (or CLAUDE_CODE_OAUTH_TOKEN from `claude setup-token`).',
@@ -85,6 +87,17 @@ async function main(): Promise<void> {
       process.exitCode = 1;
       return;
     }
+  }
+
+  if (!args.json) {
+    console.log(`scenario "${scenario.name}" · mode ${args.mode} · window ${args.hours}h`);
+    console.log(`\nstarting document:`);
+    for (const line of scenario.text.split('\n')) console.log(`  | ${line}`);
+    console.log(`\nroster:`);
+    for (const p of scenario.personas) {
+      console.log(`  ${p.id} ${p.handle} — ${p.temperament}`);
+    }
+    console.log('');
   }
 
   for (let i = 0; i < args.seeds; i++) {
