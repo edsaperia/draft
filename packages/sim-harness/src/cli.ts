@@ -14,6 +14,7 @@ import { loadDotenv } from './env.js';
 import { ScriptedPersona } from './persona.js';
 import { LlmPersona } from './llm-persona.js';
 import { SubscriptionPersona, probeSubscription } from './subscription-persona.js';
+import { SubscriptionCommentator } from './commentator.js';
 import { charterScenario } from './scenario.js';
 import { clubhouseScenario } from './clubhouse.js';
 import { runSession } from './runner.js';
@@ -28,6 +29,7 @@ interface Args {
   model: string;
   verbose: boolean;
   json: boolean;
+  commentary: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -40,6 +42,7 @@ function parseArgs(argv: string[]): Args {
     model: 'claude-haiku-4-5',
     verbose: false,
     json: false,
+    commentary: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -54,6 +57,7 @@ function parseArgs(argv: string[]): Args {
     else if (a === '--model') args.model = argv[++i] ?? 'claude-haiku-4-5';
     else if (a === '--verbose') args.verbose = true;
     else if (a === '--json') args.json = true;
+    else if (a === '--commentary') args.commentary = true;
   }
   return args;
 }
@@ -110,6 +114,16 @@ async function main(): Promise<void> {
 
   for (let i = 0; i < args.seeds; i++) {
     const seed = args.seeds === 1 ? args.seed : `${args.seed}-${i}`;
+    const commentator =
+      args.commentary && args.mode !== 'scripted'
+        ? new SubscriptionCommentator(scenario, args.hours, args.model, (line) =>
+            console.log(line),
+          )
+        : null;
+    const onProgress = (line: string): void => {
+      if (args.verbose) console.log(line);
+      commentator?.observe(line);
+    };
     const result = await runSession({
       scenario,
       windowMs: args.hours * 3600_000,
@@ -120,8 +134,9 @@ async function main(): Promise<void> {
           : args.mode === 'subscription'
             ? new SubscriptionPersona(profile, { model: args.model })
             : new ScriptedPersona(profile, scenario, rng),
-      ...(args.verbose ? { onProgress: (line: string) => console.log(line) } : {}),
+      ...(args.verbose || commentator ? { onProgress } : {}),
     });
+    await commentator?.flush();
     all.push(result.metrics);
     if (args.json) {
       console.log(JSON.stringify(result.metrics, null, 2));
