@@ -25,19 +25,32 @@ import {
   type DraftResult,
 } from './persona-prompts.js';
 
-const MODEL = 'claude-haiku-4-5';
+const DEFAULT_MODEL = 'claude-haiku-4-5';
+
+export interface SubscriptionPersonaOptions {
+  model?: string;
+}
 
 export class SubscriptionPersona implements Persona {
-  constructor(readonly profile: PersonaProfile) {}
+  private readonly model: string;
+
+  constructor(
+    readonly profile: PersonaProfile,
+    options: SubscriptionPersonaOptions = {},
+  ) {
+    this.model = options.model ?? DEFAULT_MODEL;
+  }
 
   private async ask<T>(userText: string, schema: Record<string, unknown>): Promise<T> {
     for await (const message of query({
       prompt: userText,
       options: {
-        model: MODEL,
+        model: this.model,
         systemPrompt: personaSystemPrompt(this.profile),
         allowedTools: [],
-        maxTurns: 1,
+        // Structured output consumes a turn of its own (the answer arrives
+        // via a tool call); maxTurns 1 cuts it off as error_max_turns.
+        maxTurns: 3,
         settingSources: [],
         outputFormat: { type: 'json_schema', schema },
       },
@@ -81,14 +94,14 @@ export class SubscriptionPersona implements Persona {
  * One cheap end-to-end probe: returns null on success, else the failure
  * message. Used by the CLI to fail fast with a useful explanation.
  */
-export async function probeSubscription(): Promise<string | null> {
+export async function probeSubscription(model: string = DEFAULT_MODEL): Promise<string | null> {
   try {
     for await (const message of query({
       prompt: 'Reply with exactly: OK',
       options: {
-        model: MODEL,
+        model,
         allowedTools: [],
-        maxTurns: 1,
+        maxTurns: 2,
         settingSources: [],
       },
     })) {

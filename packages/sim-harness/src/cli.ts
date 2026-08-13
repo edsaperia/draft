@@ -23,6 +23,7 @@ interface Args {
   seeds: number;
   hours: number;
   seed: string;
+  model: string;
   verbose: boolean;
   json: boolean;
 }
@@ -33,6 +34,7 @@ function parseArgs(argv: string[]): Args {
     seeds: 1,
     hours: 72,
     seed: 'draft',
+    model: 'claude-haiku-4-5',
     verbose: false,
     json: false,
   };
@@ -45,6 +47,7 @@ function parseArgs(argv: string[]): Args {
     else if (a === '--seeds') args.seeds = Number(argv[++i]) || 1;
     else if (a === '--hours') args.hours = Number(argv[++i]) || 72;
     else if (a === '--seed') args.seed = argv[++i] ?? 'draft';
+    else if (a === '--model') args.model = argv[++i] ?? 'claude-haiku-4-5';
     else if (a === '--verbose') args.verbose = true;
     else if (a === '--json') args.json = true;
   }
@@ -63,7 +66,7 @@ async function main(): Promise<void> {
     const { default: Anthropic } = await import('@anthropic-ai/sdk');
     try {
       await new Anthropic().messages.create({
-        model: 'claude-haiku-4-5',
+        model: args.model,
         max_tokens: 8,
         messages: [{ role: 'user', content: 'Say OK.' }],
       });
@@ -77,7 +80,7 @@ async function main(): Promise<void> {
     }
   } else if (args.mode === 'subscription') {
     console.log('probing subscription auth (one headless Claude Code call)...');
-    const failure = await probeSubscription();
+    const failure = await probeSubscription(args.model);
     if (failure === null) console.log('auth ok.');
     if (failure !== null) {
       console.error(
@@ -90,7 +93,8 @@ async function main(): Promise<void> {
   }
 
   if (!args.json) {
-    console.log(`scenario "${scenario.name}" · mode ${args.mode} · window ${args.hours}h`);
+    const model = args.mode === 'scripted' ? '' : ` · model ${args.model}`;
+    console.log(`scenario "${scenario.name}" · mode ${args.mode}${model} · window ${args.hours}h`);
     console.log(`\nstarting document:`);
     for (const line of scenario.text.split('\n')) console.log(`  | ${line}`);
     console.log(`\nroster:`);
@@ -108,9 +112,9 @@ async function main(): Promise<void> {
       seed,
       makePersona: (profile, rng) =>
         args.mode === 'llm'
-          ? new LlmPersona(profile)
+          ? new LlmPersona(profile, { model: args.model })
           : args.mode === 'subscription'
-            ? new SubscriptionPersona(profile)
+            ? new SubscriptionPersona(profile, { model: args.model })
             : new ScriptedPersona(profile, scenario, rng),
       ...(args.verbose ? { onProgress: (line: string) => console.log(line) } : {}),
     });
