@@ -84,6 +84,25 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
 
   const maxActions = config.maxActions ?? 5000;
   let actions = 0;
+  let seenSeq = 0;
+
+  // Surface gazette events (adoptions, rebase fallout) in the progress log.
+  const announce = (): void => {
+    for (; seenSeq < session.log.length; seenSeq++) {
+      const e = session.log[seenSeq]!.event;
+      if (e.type === 'adopted') {
+        const c = session.getCandidate(e.candidateId);
+        config.onProgress?.(
+          `[${fmt(e.t)}] *** ADOPTED (p=${e.p.toFixed(2)} > bar ${e.threshold.toFixed(2)}): ` +
+            `"${c.patch.hunks[0]?.lines.join(' / ') ?? ''}"`,
+        );
+      } else if (e.type === 'rebase-failed') {
+        config.onProgress?.(
+          `[${fmt(e.t)}] ${e.id} needs a rebase: its ground changed under it`,
+        );
+      }
+    }
+  };
 
   const jitter = (rng: Rng, mean: number): number =>
     Math.max(1, Math.floor(mean * (0.5 + rng.next())));
@@ -145,6 +164,21 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
             const isIncumbent = option.changes.every((c) => c.before === c.after);
             return isIncumbent ? `keep "${texts}"` : `"${texts}"`;
           };
+          const issueOf = (option: typeof card.a): string => {
+            const docLines = session.document().split('\n');
+            for (const c of option.changes) {
+              const n = docLines.indexOf(c.before.split('\n')[0]!);
+              const issue = scenario.issues.find((i) => i.line === n);
+              if (issue) return issue.key;
+            }
+            return '?';
+          };
+          const tag =
+            card.kind === 'diagonal'
+              ? `${issueOf(card.a)} vs ${issueOf(card.b)}`
+              : issueOf(card.a) !== '?'
+                ? issueOf(card.a)
+                : issueOf(card.b);
           const summary =
             choice === 'indifferent'
               ? `indifferent between ${describe(card.a)} and ${describe(card.b)}`
@@ -152,7 +186,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
                   card[choice === 'a' ? 'b' : 'a'],
                 )}`;
           config.onProgress?.(
-            `[${fmt(t)}] ${profile.handle} judges (${card.kind}): ${summary}`,
+            `[${fmt(t)}] ${profile.handle} judges [${tag}]: ${summary}`,
           );
         } catch {
           // Pair became stale between fetch and judge: skip.
@@ -160,6 +194,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
       }
     }
 
+    announce();
     next.remainingInBout--;
     if (!acted || next.remainingInBout <= 0) {
       // Nothing to do, or bout over: leave until the next bout.

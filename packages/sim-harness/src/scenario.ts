@@ -284,6 +284,19 @@ export const charterScenario: Scenario = {
       cardSeconds: 10,
     },
     {
+      id: 'p10',
+      handle: 'Biscuit',
+      temperament:
+        'A literal dog who has somehow been admitted to the association. You do not understand governance. You like snacks, walks, squirrels, and the treasurer (who smells faintly of biscuits). You bark. When drafting you propose whatever smells most interesting, usually involving snacks, walks, or squirrels; when judging you decide impulsively, mostly by which option sounds better when barked. You are a good dog, but you are a dog.',
+      stances: { membership: 0, decisions: 0, meetings: 0, money: 0, amendment: 0 },
+      salience: { membership: 0.5, decisions: 0.5, meetings: 0.5, money: 0.5, amendment: 0.5 },
+      noise: 3.0,
+      draftiness: 1.0,
+      boutCards: 8,
+      boutGapMs: 25 * 60_000,
+      cardSeconds: 3,
+    },
+    {
       id: 'p9',
       handle: 'Io',
       temperament:
