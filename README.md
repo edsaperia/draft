@@ -22,6 +22,8 @@ Run a simulation: `npm run sim -w @draft/sim-harness -- --mode scripted --seeds 
 
 Status: spec v0.7 current. P1 (engine-core) and P2 (sim-harness) built and tested,
 including LLM personas running on the local Claude subscription (`--mode subscription`).
-Open decision (QUESTIONS #28): calibration sweep of the constitution vs going straight
-to P3 (LLM layer: semantic composition, dedup, surgery, briefings). Finished LLM run
-logs land in `packages/sim-harness/runs/` (git-ignored).
+Current work: the calibration sweep (QUESTIONS #28, resolved) — `npm run sweep -w
+@draft/sim-harness` runs one-factor-at-a-time over the constitution's knobs on the
+coupled clubhouse scenario (`--scenario clubhouse`, 14 personas, 10 issues, couplings
+that make adoption order matter). Run logs and sweep CSVs land in
+`packages/sim-harness/runs/` (git-ignored).
