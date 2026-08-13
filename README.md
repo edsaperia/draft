@@ -8,4 +8,14 @@ First target: constitutional conventions for Newspeak House cohorts (rosters ~5�
 - **[QUESTIONS.md](QUESTIONS.md)** — open and deferred items; resolved decisions are folded into the spec, not logged separately.
 - **[CLAUDE.md](CLAUDE.md)** — project conventions, v1 product decisions, and the glossary of named parts.
 
-Status: spec v0.6 current. Phase 1 (engine-core + textual patch machinery) not yet started.
+Codename: **draft**.
+
+## Layout
+
+- `packages/engine-core` — the mechanism as a pure, deterministic TypeScript library (P1): patch-engine, ranking-model, session state machine, event-log, router. See its `NOTES.md` for implementation decisions.
+
+## Development
+
+`npm install` at the root, then `npm test` / `npm run typecheck` (workspaces).
+
+Status: spec v0.6 current. P1 (engine-core) built and tested; P2 (sim-harness) next.
