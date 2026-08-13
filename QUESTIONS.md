@@ -17,4 +17,4 @@ Resolved items are folded into SPEC.md and removed — this file holds only what
 
 28. **Next phase** (asked 2026-08-13, still open): (a) calibration detour — sweep the constitution (threshold ramp, floors, cooldown, tokens, hot set) across many scripted seeds before building more; or (b) straight to P3 (LLM layer: Gate 2 semantic composition, dedup gate, surgery, briefings, machine participants). Recommendation: (a), it's cheap and informs P3.
 
-Next unused number: 30 (27 was credentials — resolved via subscription mode).
+Next unused number: 31 (27 was credentials — resolved via subscription mode; 30 was the ephemeral "launch the 14-persona run?" asked in chat 2026-08-13).

@@ -56,7 +56,7 @@ export class LlmPersona implements Persona {
     return JSON.parse(text) as T;
   }
 
-  async judge(card: CardView): Promise<'a' | 'b' | 'indifferent'> {
+  async judge(card: CardView, _api?: unknown): Promise<'a' | 'b' | 'indifferent'> {
     try {
       const result = await this.ask<{ choice: 'a' | 'b' | 'indifferent' }>(
         judgePrompt(card),

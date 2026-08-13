@@ -68,3 +68,51 @@ describe('blind discipline through the participant API (SPEC §3.5)', () => {
     }
   }, 30_000);
 });
+
+describe('coupled scenarios (clubhouse)', () => {
+  it('conditional utility adds coupling terms against current positions', async () => {
+    const { conditionalUtility, currentPositions, utility } = await import('../src/scenario.js');
+    const { clubhouseScenario } = await import('../src/clubhouse.js');
+    const s = clubhouseScenario;
+    const keys = s.issues.find((i) => i.key === 'keys')!;
+    const formalKeys = keys.alternatives[1]!;
+    const p = s.personas[0]!;
+    // Incumbent document: guests sits at its incumbent position (-0.6).
+    const positions = currentPositions(s, s.text.split('\n'));
+    const base = utility(p, 'keys', formalKeys);
+    const cond = conditionalUtility(p, s, 'keys', formalKeys, positions);
+    // keys couples to guests (+0.35) and offices (-0.3); both incumbents are negative,
+    // so a formal keys line is penalised by the guests coupling and boosted by offices.
+    const expected =
+      base +
+      0.35 * formalKeys.position * positions.get('guests')! +
+      -0.3 * formalKeys.position * positions.get('offices')!;
+    expect(cond).toBeCloseTo(expected, 10);
+  });
+
+  it('couplings bite: the optimal assignment beats per-issue greedy', async () => {
+    const { assignmentWelfare, bestAlternative, optimalAssignment } = await import('../src/scenario.js');
+    const { clubhouseScenario } = await import('../src/clubhouse.js');
+    const s = clubhouseScenario;
+    const optimal = optimalAssignment(s);
+    const greedy = new Map(s.issues.map((i) => [i.key, bestAlternative(s, i)]));
+    expect(assignmentWelfare(s, optimal)).toBeGreaterThanOrEqual(assignmentWelfare(s, greedy));
+  });
+
+  it('runs a full deterministic clubhouse session with a sane welfare ratio', async () => {
+    const { clubhouseScenario } = await import('../src/clubhouse.js');
+    const go = () =>
+      runSession({
+        scenario: clubhouseScenario,
+        windowMs: 8 * 3600_000,
+        seed: 'clubhouse-test',
+        makePersona: (profile, rng) => new ScriptedPersona(profile, clubhouseScenario, rng),
+      });
+    const a = await go();
+    const b = await go();
+    expect(a.metrics.rollingHash).toBe(b.metrics.rollingHash);
+    expect(a.metrics.adoptions).toBeGreaterThan(0);
+    expect(a.metrics.welfareRatio).toBeGreaterThan(0);
+    expect(a.metrics.welfareRatio).toBeLessThanOrEqual(1.001);
+  }, 120_000);
+});

@@ -15,11 +15,13 @@ import { ScriptedPersona } from './persona.js';
 import { LlmPersona } from './llm-persona.js';
 import { SubscriptionPersona, probeSubscription } from './subscription-persona.js';
 import { charterScenario } from './scenario.js';
+import { clubhouseScenario } from './clubhouse.js';
 import { runSession } from './runner.js';
 import { formatMetrics, type Metrics } from './metrics.js';
 
 interface Args {
   mode: 'scripted' | 'llm' | 'subscription';
+  scenario: 'charter' | 'clubhouse';
   seeds: number;
   hours: number;
   seed: string;
@@ -31,6 +33,7 @@ interface Args {
 function parseArgs(argv: string[]): Args {
   const args: Args = {
     mode: 'scripted',
+    scenario: 'charter',
     seeds: 1,
     hours: 72,
     seed: 'draft',
@@ -44,6 +47,7 @@ function parseArgs(argv: string[]): Args {
       const v = argv[++i];
       args.mode = v === 'llm' ? 'llm' : v === 'subscription' ? 'subscription' : 'scripted';
     }
+    else if (a === '--scenario') args.scenario = argv[++i] === 'clubhouse' ? 'clubhouse' : 'charter';
     else if (a === '--seeds') args.seeds = Number(argv[++i]) || 1;
     else if (a === '--hours') args.hours = Number(argv[++i]) || 72;
     else if (a === '--seed') args.seed = argv[++i] ?? 'draft';
@@ -57,7 +61,7 @@ function parseArgs(argv: string[]): Args {
 async function main(): Promise<void> {
   loadDotenv();
   const args = parseArgs(process.argv.slice(2));
-  const scenario = charterScenario;
+  const scenario = args.scenario === 'clubhouse' ? clubhouseScenario : charterScenario;
   const all: Metrics[] = [];
 
   // Fail fast: persona-level fallbacks (indifferent/pass) would otherwise

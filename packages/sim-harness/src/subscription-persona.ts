@@ -67,7 +67,7 @@ export class SubscriptionPersona implements Persona {
     throw new Error('no result message received');
   }
 
-  async judge(card: CardView): Promise<'a' | 'b' | 'indifferent'> {
+  async judge(card: CardView, _api?: unknown): Promise<'a' | 'b' | 'indifferent'> {
     try {
       const result = await this.ask<{ choice: 'a' | 'b' | 'indifferent' }>(
         judgePrompt(card),

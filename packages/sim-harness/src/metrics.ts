@@ -10,7 +10,12 @@
  */
 
 import type { Session } from '../../engine-core/src/index.js';
-import { bestAlternative, utility, type Scenario } from './scenario.js';
+import {
+  assignmentWelfare,
+  optimalAssignment,
+  type Assignment,
+  type Scenario,
+} from './scenario.js';
 
 export interface IssueOutcome {
   issue: string;
@@ -75,22 +80,20 @@ export function computeMetrics(
     }
   }
 
+  // Assignments: welfare is a property of the whole document, because
+  // couplings make issue values interdependent. Off-menu final text scores
+  // as the incumbent (labeled unmatched below).
+  const achieved: Assignment = new Map();
+  const incumbentAssignment: Assignment = new Map();
+  const optimal = optimalAssignment(scenario);
   const issues: IssueOutcome[] = [];
-  let welfareAchieved = 0;
-  let welfareOptimal = 0;
-  let welfareIncumbent = 0;
   let optimalCount = 0;
   for (const issue of scenario.issues) {
     const line = finalLines[issue.line] ?? '';
     const matched = issue.alternatives.find((a) => a.text === line);
-    const best = bestAlternative(scenario, issue);
-    const incumbent = issue.alternatives[0]!;
-    const sum = (alt: typeof incumbent): number =>
-      scenario.personas.reduce((acc, p) => acc + utility(p, issue.key, alt), 0);
-    welfareAchieved += matched ? sum(matched) : sum(incumbent);
-    welfareOptimal += sum(best);
-    welfareIncumbent += sum(incumbent);
-    const isOptimal = matched !== undefined && matched.text === best.text;
+    achieved.set(issue.key, matched ?? issue.alternatives[0]!);
+    incumbentAssignment.set(issue.key, issue.alternatives[0]!);
+    const isOptimal = matched !== undefined && matched.text === optimal.get(issue.key)!.text;
     if (isOptimal) optimalCount++;
     issues.push({
       issue: issue.key,
@@ -100,6 +103,9 @@ export function computeMetrics(
       adoptions: adoptionsPerIssue.get(issue.key) ?? 0,
     });
   }
+  const welfareAchieved = assignmentWelfare(scenario, achieved);
+  const welfareOptimal = assignmentWelfare(scenario, optimal);
+  const welfareIncumbent = assignmentWelfare(scenario, incumbentAssignment);
   const span = welfareOptimal - welfareIncumbent;
   const welfareRatio = span > 1e-9 ? (welfareAchieved - welfareIncumbent) / span : 1;
 

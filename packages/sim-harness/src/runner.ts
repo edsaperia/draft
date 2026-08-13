@@ -155,7 +155,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
       const card = cards[0];
       if (card) {
         try {
-          const choice = await next.persona.judge(card);
+          const choice = await next.persona.judge(card, next.api);
           next.api.judge(t, card, choice);
           next.judgments++;
           acted = true;

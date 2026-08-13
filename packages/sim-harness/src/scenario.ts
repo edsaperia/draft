@@ -51,20 +51,141 @@ export interface PersonaProfile {
   cardSeconds: number;
 }
 
+/**
+ * A coupling ties two issues together: everyone's utility gains
+ * `weight * position(a) * position(b)` on top of their per-issue terms.
+ * Positive weight rewards the two clauses leaning the same way (a document
+ * that coheres); negative weight rewards them leaning apart. Couplings are
+ * persona-independent — they model the document working as a system, not
+ * anyone's preference — and they make the optimal document a property of
+ * combinations, so adoption order matters.
+ */
+export interface Coupling {
+  a: string;
+  b: string;
+  weight: number;
+  /** Why these clauses interact; documentation only. */
+  note: string;
+}
+
 export interface Scenario {
   name: string;
   text: string;
   issues: Issue[];
   personas: PersonaProfile[];
+  couplings?: Coupling[];
 }
 
-/** Utility of an alternative to a persona (higher is better). */
+/** Utility of an alternative to a persona, ignoring couplings. */
 export function utility(p: PersonaProfile, issueKey: string, alt: Alternative): number {
   const stance = p.stances[issueKey] ?? 0;
   return alt.quality - Math.abs(stance - alt.position);
 }
 
-/** The utilitarian-best alternative for an issue across a roster. */
+/**
+ * Positions currently occupied by each issue, read off document lines.
+ * Lines the scenario doesn't recognise (e.g. LLM-drafted text) sit at 0,
+ * the neutral point, so couplings neither reward nor punish them.
+ */
+export function currentPositions(scenario: Scenario, docLines: string[]): Map<string, number> {
+  const positions = new Map<string, number>();
+  for (const issue of scenario.issues) {
+    const line = docLines[issue.line];
+    const match = issue.alternatives.find((a) => a.text === line);
+    positions.set(issue.key, match?.position ?? 0);
+  }
+  return positions;
+}
+
+/**
+ * Utility of an alternative given where the REST of the document currently
+ * sits: the per-issue term plus every coupling that touches this issue,
+ * evaluated against the other issues' current positions.
+ */
+export function conditionalUtility(
+  p: PersonaProfile,
+  scenario: Scenario,
+  issueKey: string,
+  alt: Alternative,
+  positions: Map<string, number>,
+): number {
+  let value = utility(p, issueKey, alt);
+  for (const c of scenario.couplings ?? []) {
+    if (c.a === issueKey) value += c.weight * alt.position * (positions.get(c.b) ?? 0);
+    else if (c.b === issueKey) value += c.weight * alt.position * (positions.get(c.a) ?? 0);
+  }
+  return value;
+}
+
+/** An assignment picks one alternative per issue, keyed by issue key. */
+export type Assignment = Map<string, Alternative>;
+
+/** Roster-summed welfare of a full assignment, couplings included. */
+export function assignmentWelfare(scenario: Scenario, assignment: Assignment): number {
+  let total = 0;
+  for (const issue of scenario.issues) {
+    const alt = assignment.get(issue.key) ?? issue.alternatives[0]!;
+    for (const p of scenario.personas) total += utility(p, issue.key, alt);
+  }
+  let couplingTerm = 0;
+  for (const c of scenario.couplings ?? []) {
+    const pa = assignment.get(c.a)?.position ?? scenario.issues.find((i) => i.key === c.a)?.alternatives[0]?.position ?? 0;
+    const pb = assignment.get(c.b)?.position ?? scenario.issues.find((i) => i.key === c.b)?.alternatives[0]?.position ?? 0;
+    couplingTerm += c.weight * pa * pb;
+  }
+  // Couplings apply to every persona identically.
+  return total + couplingTerm * scenario.personas.length;
+}
+
+/**
+ * The utilitarian-best full assignment, by exhaustive enumeration of the
+ * menu product (fine up to a few million combinations). With couplings this
+ * is NOT the per-issue argmax — that is the point.
+ */
+export function optimalAssignment(scenario: Scenario): Assignment {
+  const issues = scenario.issues;
+  // Precompute roster-summed base utility per (issue, alternative).
+  const baseSums = issues.map((issue) =>
+    issue.alternatives.map((alt) =>
+      scenario.personas.reduce((acc, p) => acc + utility(p, issue.key, alt), 0),
+    ),
+  );
+  const keyIndex = new Map(issues.map((i, n) => [i.key, n]));
+  const couplings = (scenario.couplings ?? []).map((c) => ({
+    ai: keyIndex.get(c.a)!,
+    bi: keyIndex.get(c.b)!,
+    w: c.weight * scenario.personas.length,
+  }));
+  const counters = new Array<number>(issues.length).fill(0);
+  let best: number[] | null = null;
+  let bestScore = -Infinity;
+  const total = issues.reduce((acc, i) => acc * i.alternatives.length, 1);
+  if (total > 5_000_000) throw new Error(`assignment space too large to enumerate: ${total}`);
+  for (let n = 0; n < total; n++) {
+    let score = 0;
+    for (let i = 0; i < issues.length; i++) score += baseSums[i]![counters[i]!]!;
+    for (const c of couplings) {
+      score +=
+        c.w *
+        issues[c.ai]!.alternatives[counters[c.ai]!]!.position *
+        issues[c.bi]!.alternatives[counters[c.bi]!]!.position;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      best = [...counters];
+    }
+    for (let i = 0; i < counters.length; i++) {
+      counters[i]!++;
+      if (counters[i]! < issues[i]!.alternatives.length) break;
+      counters[i] = 0;
+    }
+  }
+  const assignment: Assignment = new Map();
+  issues.forEach((issue, i) => assignment.set(issue.key, issue.alternatives[best![i]!]!));
+  return assignment;
+}
+
+/** The utilitarian-best alternative for an issue in isolation (no couplings). */
 export function bestAlternative(scenario: Scenario, issue: Issue): Alternative {
   let best = issue.alternatives[0]!;
   let bestSum = -Infinity;
