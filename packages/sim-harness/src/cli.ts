@@ -107,6 +107,13 @@ async function main(): Promise<void> {
     } else {
       console.log(`\n=== run "${seed}" (${args.mode}, ${args.hours}h window) ===`);
       console.log(formatMetrics(result.metrics));
+      // The record is co-equal with the text (SPEC §1): every candidate, its
+      // author, fate, and words.
+      console.log('candidates:');
+      for (const c of result.session.allCandidates()) {
+        const text = c.patch.hunks[0]?.lines.join(' / ') ?? '';
+        console.log(`  ${c.id} [${c.state}] ${c.author}: "${text}" — ${c.rationale}`);
+      }
     }
   }
 

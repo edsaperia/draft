@@ -105,8 +105,11 @@ export function draftPrompt(api: ParticipantApi, now: number): string {
     `Replacement lines already proposed by others (do NOT duplicate these):`,
     live || '(none)',
     ``,
-    `You have ${api.balance(now).toFixed(0)} proposal tokens. If some line conflicts with`,
-    `your views strongly enough to spend one, propose a single-line rewrite. Otherwise pass.`,
+    `You have ${api.balance(now).toFixed(0)} proposal tokens. You joined this convention`,
+    `because parts of this charter genuinely bother you — proposing fixes is what the`,
+    `tokens are for. If any line clearly conflicts with your stated leanings and no live`,
+    `proposal already fixes it, draft your fix now. Pass only when the document and the`,
+    `live proposals already reflect your views on everything you care about.`,
     `Rewrite at most one line. Keep the line's role in the document (headings stay headings).`,
   ].join('\n');
 }

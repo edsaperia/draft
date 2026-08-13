@@ -134,11 +134,15 @@ export function formatMetrics(m: Metrics): string {
     `judgments: ${m.edgeComparisons} edge + ${m.diagonalComparisons} diagonal · ` +
       `candidates: ${m.candidates} · adoptions: ${m.adoptions} (overturned issues: ${m.overturnedIssues})`,
   );
+  const offMenu = m.issues.filter((i) => !i.matchedAlternative).length;
   lines.push(
     `welfare ratio: ${m.welfareRatio.toFixed(2)} ` +
       `(achieved ${m.welfareAchieved.toFixed(2)} / optimal ${m.welfareOptimal.toFixed(2)} / ` +
       `incumbent ${m.welfareIncumbent.toFixed(2)}) · ` +
-      `optimal issues: ${m.issuesResolvedOptimally}/${m.issues.length} · backlog: ${m.backlogSize}`,
+      `optimal issues: ${m.issuesResolvedOptimally}/${m.issues.length} · backlog: ${m.backlogSize}` +
+      (offMenu > 0
+        ? ` · NOTE: ${offMenu} off-menu outcome(s) unscored (welfare counts known alternatives only)`
+        : ''),
   );
   for (const issue of m.issues) {
     const tag = issue.isOptimal ? 'optimal' : issue.matchedAlternative ? 'settled' : 'off-menu';

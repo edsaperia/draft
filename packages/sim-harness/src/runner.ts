@@ -117,8 +117,9 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
           next.api.submit(t, proposal);
           next.drafts++;
           acted = true;
+          const text = proposal.patch.hunks[0]?.lines.join(' / ') ?? '';
           config.onProgress?.(
-            `[${fmt(t)}] ${profile.handle} drafts: "${proposal.rationale.slice(0, 60)}"`,
+            `[${fmt(t)}] ${profile.handle} drafts: "${text}" — ${proposal.rationale.slice(0, 80)}`,
           );
         }
       } catch {
@@ -135,6 +136,13 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
           next.api.judge(t, card, choice);
           next.judgments++;
           acted = true;
+          const summary =
+            choice === 'indifferent'
+              ? 'indifferent'
+              : `prefers "${(card[choice].changes[0]?.after ?? '').slice(0, 60)}"`;
+          config.onProgress?.(
+            `[${fmt(t)}] ${profile.handle} judges (${card.kind}): ${summary}`,
+          );
         } catch {
           // Pair became stale between fetch and judge: skip.
         }
