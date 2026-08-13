@@ -14,14 +14,13 @@ import type { Outcome } from './ranking/types.js';
 // Constitution (SPEC Appendix A)
 
 export interface Constitution {
-  thetaStart: number;
-  thetaEnd: number;
   /**
-   * Evidence horizon H: theta reaches thetaEnd at H total edge comparisons
-   * (session-wide clock, SPEC §4.3). Default 40 × E at open — awaiting
-   * Ed's sign-off as a new Appendix A row (QUESTIONS #22).
+   * The adoption threshold — the confidence bar a challenger must clear —
+   * ramps smoothly from start to end over [windowStartMs, windowEndMs],
+   * the session clock (SPEC §4.3).
    */
-  evidenceHorizon: number;
+  adoptionThresholdStart: number;
+  adoptionThresholdEnd: number;
   /** F = min(ceil(E/3), adoptionFloorMax) distinct movers per race. */
   adoptionFloorMax: number;
   /** Saturation requires at least this many comparisons in the race. */
@@ -175,7 +174,8 @@ export type Event =
       newVersion: number;
       /** Posterior P(winner beats incumbent) at adoption. */
       p: number;
-      theta: number;
+      /** The adoption threshold the winner cleared. */
+      threshold: number;
     }
   | { type: 'candidate-rebased'; t: number; id: string; patch: PatchSet }
   | {

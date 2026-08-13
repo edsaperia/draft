@@ -25,7 +25,7 @@ import { rebaseHunks } from './text/rebase.js';
 import { fitDavidson } from './ranking/davidson.js';
 import { chainHash, sha256Hex } from './hash.js';
 import { makeRng, type Rng } from './rng.js';
-import { theta } from './theta.js';
+import { adoptionThreshold } from './adoption-threshold.js';
 import {
   balanceAt,
   credit,
@@ -43,10 +43,10 @@ export interface OpenInput {
 
 export const DEFAULT_CONSTITUTION: Omit<
   Constitution,
-  'windowStartMs' | 'windowEndMs' | 'rngSeed' | 'evidenceHorizon'
+  'windowStartMs' | 'windowEndMs' | 'rngSeed'
 > = {
-  thetaStart: 0.6,
-  thetaEnd: 0.95,
+  adoptionThresholdStart: 0.6,
+  adoptionThresholdEnd: 0.95,
   adoptionFloorMax: 12,
   saturationMinComparisons: 20,
   saturationEpsilon: 0.02,
@@ -67,15 +67,8 @@ export const DEFAULT_CONSTITUTION: Omit<
 export function makeConstitution(
   overrides: Partial<Constitution> &
     Pick<Constitution, 'windowStartMs' | 'windowEndMs' | 'rngSeed'>,
-  rosterSize: number,
 ): Constitution {
-  return {
-    ...DEFAULT_CONSTITUTION,
-    // Evidence horizon default: 40 comparisons per participant at open
-    // (pending Ed's sign-off — QUESTIONS #22).
-    evidenceHorizon: 40 * Math.max(1, rosterSize),
-    ...overrides,
-  };
+  return { ...DEFAULT_CONSTITUTION, ...overrides };
 }
 
 interface StoredComparison {
@@ -403,8 +396,13 @@ export class Session {
     return joinLines(lines);
   }
 
-  theta(): number {
-    return theta(this.constitutionValue, this.edgeCount);
+  /**
+   * The adoption threshold at time t (SPEC §4.3, session clock). Defaults
+   * to the time of the last event, which keeps log replays and post-close
+   * queries exact; live callers should pass their current time.
+   */
+  adoptionThreshold(t: number = this.lastT): number {
+    return adoptionThreshold(this.constitutionValue, t);
   }
 
   adoptionFloor(): number {
@@ -701,7 +699,7 @@ export class Session {
   private incumbentIdFor(contested: Span[]): string {
     const lines = this.currentLines();
     const parts = contested.map((s) => lines.slice(s.start, s.end).join('\n'));
-    return INC_PREFIX + sha256Hex(parts.join(' ')).slice(0, 16);
+    return INC_PREFIX + sha256Hex(parts.join('\u0000')).slice(0, 16);
   }
 
   private classifyPair(aId: string, bId: string): PairKind {
@@ -798,16 +796,16 @@ export class Session {
     }
     if (race.distinctMovers < this.adoptionFloor()) return;
     if (race.leaderId === null || race.leaderP === null) return;
-    const th = this.theta();
-    if (race.leaderP <= th) return;
-    this.adopt(t, race.leaderId, race.leaderP, th);
+    const threshold = this.adoptionThreshold(t);
+    if (race.leaderP <= threshold) return;
+    this.adopt(t, race.leaderId, race.leaderP, threshold);
   }
 
-  private adopt(t: number, candidateId: string, p: number, th: number): void {
+  private adopt(t: number, candidateId: string, p: number, threshold: number): void {
     const winner = this.candidate(candidateId);
     const adoptedHunks = winner.patch.hunks;
     const newVersion = this.currentVersion() + 1;
-    this.emit({ type: 'adopted', t, candidateId, newVersion, p, theta: th });
+    this.emit({ type: 'adopted', t, candidateId, newVersion, p, threshold });
     // Rebase every other live patch onto the new text (SPEC §2.4).
     const others = [...this.candidates.values()].filter(
       (c) => c.state === 'live' && c.id !== candidateId,
@@ -866,13 +864,14 @@ export class Session {
 
   /**
    * Candidates that look very unlikely to win (SPEC §6.2): the incumbent
-   * would clear current theta against them, on real evidence.
+   * would clear the current adoption threshold against them, on real
+   * evidence.
    */
-  dominated(raceId: string): string[] {
+  dominated(raceId: string, t: number = this.lastT): string[] {
     const race = this.races().find((r) => r.id === raceId);
     if (!race) throw new Error(`unknown race ${raceId}`);
     const fit = this.fitRaceMembers(race.members, race.incumbentId);
-    const th = this.theta();
+    const threshold = this.adoptionThreshold(t);
     const usable = this.usableComparisons(race.members, race.incumbentId);
     const counts = new Map<string, number>();
     for (const c of usable) {
@@ -882,7 +881,7 @@ export class Session {
     }
     return race.members.filter((m) => {
       if ((counts.get(m) ?? 0) < 5) return false;
-      return fit.probBeats(m, race.incumbentId) < 1 - th;
+      return fit.probBeats(m, race.incumbentId) < 1 - threshold;
     });
   }
 
@@ -899,14 +898,14 @@ export class Session {
   }
 
   /** Unresolved positions ranked by closeness × salience (SPEC §1). */
-  backlog(): Array<{ candidateId: string; raceId: string; score: number }> {
+  backlog(t: number = this.lastT): Array<{ candidateId: string; raceId: string; score: number }> {
     const weights = this.salienceWeights();
     const races = this.races();
     const out: Array<{ candidateId: string; raceId: string; score: number }> = [];
     for (const r of races) {
       for (const m of r.members) {
         const c = this.candidate(m);
-        const closeness = Math.min(c.peakW / this.theta(), 1);
+        const closeness = Math.min(c.peakW / this.adoptionThreshold(t), 1);
         out.push({
           candidateId: m,
           raceId: r.id,
@@ -923,17 +922,18 @@ export class Session {
   // Close and render (SPEC §4.2, §9.2)
 
   /**
-   * Render each race to its posterior leader among theta-clearing,
+   * Render each race to its posterior leader among threshold-clearing,
    * floor-satisfying candidates; ties and ordering break by hash.
+   * Uses the last event's time (normally the close) for the threshold.
    */
   finalRender(): { text: string; applied: string[] } {
     const races = this.races();
-    const th = this.theta();
+    const threshold = this.adoptionThreshold();
     const floor = this.adoptionFloor();
     const winners: Candidate[] = [];
     for (const r of races) {
       if (r.leaderId === null || r.leaderP === null) continue;
-      if (r.leaderP <= th) continue;
+      if (r.leaderP <= threshold) continue;
       if (r.distinctMovers < floor) continue;
       winners.push(this.candidate(r.leaderId));
     }
@@ -1046,14 +1046,14 @@ export class Session {
    * A participant's feed (SPEC §8.3): hot-set edges by value, ~1 in
    * `explorationEvery` slots explores under-measured candidates (only for
    * abundant/cheap judges), ~1 in `salienceEvery` serves a diagonal.
-   * Pure: same state, same feed.
+   * Pure: same state and time, same feed.
    */
-  feed(participantId: string, n: number): Card[] {
+  feed(participantId: string, n: number, t: number = this.lastT): Card[] {
     this.activeParticipant(participantId);
     const races = this.races().filter((r) => !r.saturated);
     if (races.length === 0) return [];
     const weights = this.salienceWeights();
-    const th = this.theta();
+    const threshold = this.adoptionThreshold(t);
     const floor = this.adoptionFloor();
     const judgedRaces = new Set<string>();
     for (const r of races) {
@@ -1065,7 +1065,7 @@ export class Session {
     // (SPEC §8.2).
     const valued = races
       .map((r) => {
-        let v = ((r.leaderP ?? 0.5) / th) * (weights.get(r.id) ?? 1);
+        let v = ((r.leaderP ?? 0.5) / threshold) * (weights.get(r.id) ?? 1);
         if (r.distinctMovers < floor && !judgedRaces.has(r.id)) v *= 1.25;
         return { race: r, value: v };
       })

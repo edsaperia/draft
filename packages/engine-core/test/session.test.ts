@@ -16,17 +16,13 @@ function roster(n: number): Participant[] {
 }
 
 function openSession(overrides: Record<string, unknown> = {}): Session {
-  const constitution = makeConstitution(
-    {
-      windowStartMs: 0,
-      windowEndMs: 10 * HOUR,
-      rngSeed: 'test-seed',
-      evidenceHorizon: 200,
-      cooldownMs: 0,
-      ...overrides,
-    },
-    5,
-  );
+  const constitution = makeConstitution({
+    windowStartMs: 0,
+    windowEndMs: 10 * HOUR,
+    rngSeed: 'test-seed',
+    cooldownMs: 0,
+    ...overrides,
+  });
   return Session.open({ text: DOC, roster: roster(5), constitution }, 0);
 }
 
@@ -195,6 +191,35 @@ describe('session lifecycle', () => {
     // After the cooldown, the next judgment tips it.
     const events = s.judge(adoptedAt + 5 * 60_000 + 1, 'p2', c2, inc2, 'a');
     expect(events.some((e) => e.type === 'adopted')).toBe(true);
+  });
+
+  it('raises the bar over the window: identical evidence adopts early, not late', () => {
+    const judgeTwice = (s: Session, c: string, t0: number): boolean => {
+      const inc = s.raceOf(c).incumbentId;
+      let adopted = false;
+      for (const [i, judge] of ['p2', 'p3'].entries()) {
+        const events = s.judge(t0 + i * 1000, judge, c, inc, 'a');
+        adopted ||= events.some((e) => e.type === 'adopted');
+      }
+      return adopted;
+    };
+    // Early: threshold ≈ 0.60 — two clean wins clear it.
+    const early = openSession();
+    const { id: cE } = early.submitCandidate(1000, {
+      author: 'p1',
+      patch: rewrite(0, 1, 'A.'),
+      rationale: 'r',
+    });
+    expect(judgeTwice(early, cE, 2000)).toBe(true);
+    // Late: same two wins against a ≈0.95 bar do not.
+    const late = openSession();
+    const { id: cL } = late.submitCandidate(1000, {
+      author: 'p1',
+      patch: rewrite(0, 1, 'A.'),
+      rationale: 'r',
+    });
+    expect(judgeTwice(late, cL, 10 * HOUR)).toBe(false);
+    expect(late.adoptionThreshold()).toBeCloseTo(0.95, 6);
   });
 
   it('recomputes the floor when the roster changes, and blocks removed participants', () => {

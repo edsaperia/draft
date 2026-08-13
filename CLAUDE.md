@@ -20,7 +20,8 @@ A group drafting engine: patches race, blind pairwise judgments rank them, adopt
 Use these names in all discussion, commits, and code. Literal and stable beats elegant.
 
 **Engine (mechanism, no UI):**
-- `engine-core` — session state machine: candidates, races, adoptions, θ ramp, tokens/refunds, adoption floors, certification.
+- `engine-core` — session state machine: candidates, races, adoptions, the adoption-threshold ramp, tokens/refunds, adoption floors, certification.
+- `adoption-threshold` — the confidence bar a challenger's win-probability must clear; ramps over the session window (wall clock). Formerly "θ"; always use this name.
 - `patch-engine` — text machinery: diffs, footprints, three-way merge, rebase, surgery.
 - `overlap-gates` — the three-gate classifier for colliding patches: textual composition → semantic composition → rivalry.
 - `ranking-model` — Bradley–Terry preference model (per race) + global salience model, with active pair sampling and saturation detection.

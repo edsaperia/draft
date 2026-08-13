@@ -1,9 +1,9 @@
-# Group Drafting Engine — Specification v0.6
+# Group Drafting Engine — Specification v0.7
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
 
-**The mechanism in a breath.** The document is a text; candidates are patches against it; patches that cannot coexist race each other; every participant makes one kind of move — shown two texts: A, B, indifferent, or propose C; a race resolves when its leader's win-probability clears a confidence bar that rises as evidence accumulates; authors of losing patches are shown why they lost and invited to redraft; two publication ceremonies bracket a fully asynchronous window; whatever remains unresolved ships as a ranked backlog for the next session.
+**The mechanism in a breath.** The document is a text; candidates are patches against it; patches that cannot coexist race each other; every participant makes one kind of move — shown two texts: A, B, indifferent, or propose C; a race resolves when its leader's win-probability clears the adoption threshold — a confidence bar that rises over the session window; authors of losing patches are shown why they lost and invited to redraft; two publication ceremonies bracket a fully asynchronous window; whatever remains unresolved ships as a ranked backlog for the next session.
 
 ---
 
@@ -72,13 +72,13 @@ Every pair has a type, decided by Gate 2 and cached before serving:
 
 Separable bundles are flagged at submission: split, or stand as one take-it-or-leave-it intent.
 
-**4.2 Adoption.** A race adopts challenger X when P(X beats incumbent) > θ(now) and ≥ F distinct participants have moved on the race, F = min(⌈E/3⌉, F_max). Adoption is atomic, lands in the gazette with a chime, rebases the field, and starts a short cooldown. At close, each race renders its posterior leader among θ-clearing candidates; margins go in the record; exact ties break deterministically by hash.
+**4.2 Adoption.** A race adopts challenger X when P(X beats incumbent) > T(now) — the adoption threshold — and ≥ F distinct participants have moved on the race, F = min(⌈E/3⌉, F_max). Adoption is atomic, lands in the gazette with a chime, rebases the field, and starts a short cooldown. At close, each race renders its posterior leader among threshold-clearing candidates; margins go in the record; exact ties break deterministically by hash.
 
-**4.3 θ on the evidence clock.** θ ramps from θ_start to θ_end as a function of total comparisons made session-wide (one global clock, not per race) — the document stabilises as a whole, in proportion to the judgment it has absorbed. A quiet day stabilises nothing; late activity self-limits (a near-unanimous fix clears θ_end; a 60/40 preference cannot), so no proposal deadline is needed. The window's wall-clock end triggers only the closing publication. The ramp exists because the bar should track irreversibility: an early adoption can still be challenged within the session; a late one is permanent. Early low-θ adoptions also give a distributed window visible motion from its first hours.
+**4.3 The adoption threshold on the session clock.** The threshold ramps smoothly from T_start to T_end over the session window (wall clock). The ramp exists because the bar should track irreversibility: an early adoption can still be challenged within the session; a late one is permanent — the outcome is never a surprise. Early low-threshold adoptions give a distributed window visible motion from its first hours. Late activity self-limits (a near-unanimous fix clears T_end; a 60/40 preference cannot), so no proposal deadline is needed. Unscrutinised text is protected not by the clock but by the adoption floor and the posterior itself: a quiet session leaves incumbents standing and ships its questions as backlog. (An evidence-clock variant — the threshold as a function of total comparisons made, so the document stabilises in proportion to the judgment it has absorbed — is deferred to the sim to explore.)
 
-**4.4 Incumbency and certification.** Nothing closes. Incumbency is positional: adoption makes a candidate the status quo; displacement always requires clearing current θ. Certification is continuous: P(incumbent beats best live challenger). A "resolved" race is one not currently worth sampling; stability is an equilibrium.
+**4.4 Incumbency and certification.** Nothing closes. Incumbency is positional: adoption makes a candidate the status quo; displacement always requires clearing the current threshold. Certification is continuous: P(incumbent beats best live challenger). A "resolved" race is one not currently worth sampling; stability is an equilibrium.
 
-**4.5 The certification gap.** When θ rises past a race's certification, the gap becomes routing value and the race quietly re-enters circulation: adoptions made on noisy early evidence self-correct (the true leader clears current θ); genuinely thin majorities are confirmed thin and recorded as such. Next session, θ resets and everything is contestable again — entrenchment is session-scoped.
+**4.5 The certification gap.** When the threshold rises past a race's certification, the gap becomes routing value and the race quietly re-enters circulation: adoptions made on noisy early evidence self-correct (the true leader clears the current threshold); genuinely thin majorities are confirmed thin and recorded as such. Next session, the threshold resets and everything is contestable again — entrenchment is session-scoped.
 
 ---
 
@@ -98,7 +98,7 @@ Separable bundles are flagged at submission: split, or stand as one take-it-or-l
 
 **6.2 Invitations.** Two events summon an author to the composer, firing on confident states only and re-firing only when something has changed — never on a timer:
 
-- **Dominated.** The candidate looks very unlikely to win: projected against the θ ramp, current evidence and trajectory give it no realistic path to clearing θ before close. The author sees a three-tier account, each tier labeled as what it is: **facts** (standings; the differential diff against the winner; indifference rate; decision speed; the camp cut if one exists), **the winners' own words** (their pinned rationales), and **hypothesis** — a span-level attribution fitted across the race and graveyard ("every candidate containing clause X ranks below 0.45"), with its evidence attached, or an honest "the data can't isolate a cause" plus a proposed isolating redraft. Thin data gets a thin account. Options: retire (refund per performance) · co-sign the leader (full refund) · redraft informed. Two failed informed redrafts carry the position to the backlog as a recorded persistent current.
+- **Dominated.** The candidate looks very unlikely to win: projected against the threshold ramp, current evidence and trajectory give it no realistic path to clearing the bar before close. The author sees a three-tier account, each tier labeled as what it is: **facts** (standings; the differential diff against the winner; indifference rate; decision speed; the camp cut if one exists), **the winners' own words** (their pinned rationales), and **hypothesis** — a span-level attribution fitted across the race and graveyard ("every candidate containing clause X ranks below 0.45"), with its evidence attached, or an honest "the data can't isolate a cause" plus a proposed isolating redraft. Thin data gets a thin account. Options: retire (refund per performance) · co-sign the leader (full refund) · redraft informed. Two failed informed redrafts carry the position to the backlog as a recorded persistent current.
 - **Saturated.** The race is close relative to the marginal value of further sampling. Judgment stops; the race moves to the **bounty board** — a public tab of races where a good draft has the highest expected leverage, ranked by the disagreement it would resolve, weighted by salience. Both camps' authors are invited; anyone may draft.
 
 **6.3 Bridges.** A candidate entering a saturated race is measured by **minimum support across camps** — it must beat A among B's preferrers and beat B among A's — via stratified probes. Aggregate win rate is not the test; a candidate beloved by one camp is exposed in a handful of judgments.
@@ -119,7 +119,7 @@ Co-signs and withdrawals refund fully; merges pool pro-rata. The curve is contin
 
 ## 8. Routing
 
-**8.1 Judgment-budget routing.** Each participant carries a measured judgment cost c_p: bout-relative seconds (raw within active bouts; gaps over the threshold discarded), which prices pace and availability with one number. Each servable pair carries a pivotality value v: expected movement of an adoption-relevant posterior, weighted by salience — races near θ, certification-gap audits, and bridge probes score high; new-candidate measurement scores as exploration. Every feed is ordered by **v / c_p**. The division of labor follows without further rules: abundant cheap judgment sees everything, including the exploratory tail; scarce expensive judgment only ever reaches the top of its list, so its whole budget lands at decision margins. Frequent participants discover the edge cases; occasional participants cast them. At population scale the same formula prices the participation long tail instead of fighting it.
+**8.1 Judgment-budget routing.** Each participant carries a measured judgment cost c_p: bout-relative seconds (raw within active bouts; gaps over the bout-gap threshold discarded), which prices pace and availability with one number. Each servable pair carries a pivotality value v: expected movement of an adoption-relevant posterior, weighted by salience — races near the adoption threshold, certification-gap audits, and bridge probes score high; new-candidate measurement scores as exploration. Every feed is ordered by **v / c_p**. The division of labor follows without further rules: abundant cheap judgment sees everything, including the exploratory tail; scarce expensive judgment only ever reaches the top of its list, so its whole budget lands at decision margins. Frequent participants discover the edge cases; occasional participants cast them. At population scale the same formula prices the participation long tail instead of fighting it.
 
 **8.2 Floors.** F = min(⌈E/3⌉, F_max) distinct movers per race before adoption — statistical sufficiency, with per-race judge counts in the record. Near adoption, the router prefers participants who haven't judged the race: the unheard are asked at the moment their silence would be foreclosed. Judgments count once each; there are no weights.
 
@@ -139,7 +139,7 @@ Co-signs and withdrawals refund fully; merges pool pro-rata. The curve is contin
 
 **9.3 Presence and access.** Participation is bouts, not attendance; c_p absorbs intermittency. The convenor may add or remove participants mid-session: a joiner receives the base grant plus drip accrued to date (capped); F recomputes from current E; a removed participant's live candidates remain live, flagged author-departed, and their cast judgments stay counted. Chamber visibility is convenor-toggled (default link-only). An **observer role** provides the chamber plus an anonymized live metrics feed (throughput, saturation events, care-map evolution). The record's distribution is the convenor's.
 
-**9.4 Sessions repeat.** Next session, θ resets and the backlog re-enters stake-waived, carrying graveyards, camp maps, and rationales as briefing context — not as evidence. Between sessions, authors revise against everything the record taught; incubation is where bridges that need longer than a window get built.
+**9.4 Sessions repeat.** Next session, the adoption threshold resets and the backlog re-enters stake-waived, carrying graveyards, camp maps, and rationales as briefing context — not as evidence. Between sessions, authors revise against everything the record taught; incubation is where bridges that need longer than a window get built.
 
 ---
 
@@ -165,8 +165,8 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 
 ## 13. Build order (non-normative)
 
-1. **Engine core + textual patch machinery.** A pure, deterministic, UI-free, LLM-free library: the object model, races via textual overlap (Gate 1 + rivalry; Gate 2 stubbed), BT ranking with ties, θ ramp, tokens and refunds, floors, salience model, routing, event log.
-2. **Simulation harness.** LLM agents as synthetic participants — heterogeneous personas (cheap-model) drafting, judging, and skipping with realistic bout patterns — sweeping θ_start/θ_end/ramp, F_max, hot-set size, and token schedule against throughput, stability, bridge rate, and backlog quality. Personas are ordinary clients of the same participant API a human client uses, so real users can play alongside bot cohorts. Calibrates mechanics before any live cohort.
+1. **Engine core + textual patch machinery.** A pure, deterministic, UI-free, LLM-free library: the object model, races via textual overlap (Gate 1 + rivalry; Gate 2 stubbed), BT ranking with ties, the adoption-threshold ramp, tokens and refunds, floors, salience model, routing, event log.
+2. **Simulation harness.** LLM agents as synthetic participants — heterogeneous personas (cheap-model) drafting, judging, and skipping with realistic bout patterns — sweeping the adoption-threshold ramp (start/end/shape/clock), F_max, hot-set size, and token schedule against throughput, stability, bridge rate, and backlog quality. Personas are ordinary clients of the same participant API a human client uses, so real users can play alongside bot cohorts. Calibrates mechanics before any live cohort.
 3. **LLM layer** — semantic composition (Gate 2), the dedup gate, surgery proposals, geometry seeds, loss accounts, the coherence auditor. Isolated behind interfaces so 1–2 never depend on a network call.
 4. **Product** — race card, composer, gazette and chamber, bounty board, live feeds, notifications, magic-link auth, the two publications, the record.
 5. **Pilot** — a real session with a real group, constitution calibrated from 2's sweeps. Name it after pressing the buttons.
@@ -177,7 +177,7 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 
 | Parameter | Default |
 |---|---|
-| θ_start → θ_end | 0.60 → 0.95, smooth ramp on the evidence clock (total comparisons) |
+| Adoption threshold (T_start → T_end) | 0.60 → 0.95, smooth ramp over the session window (wall clock) |
 | Adoption floor F | min(⌈E/3⌉, 12) distinct movers per race |
 | Saturation test | marginal information per comparison below cost; ≥ 20 comparisons |
 | Post-adoption cooldown | 5 min |

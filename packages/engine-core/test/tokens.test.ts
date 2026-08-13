@@ -10,10 +10,11 @@ import { makeConstitution } from '../src/session.js';
 
 // 10-hour window: one drip tick per hour.
 const HOUR = 3600_000;
-const constitution = makeConstitution(
-  { windowStartMs: 0, windowEndMs: 10 * HOUR, rngSeed: 's' },
-  5,
-);
+const constitution = makeConstitution({
+  windowStartMs: 0,
+  windowEndMs: 10 * HOUR,
+  rngSeed: 's',
+});
 
 describe('token economy (SPEC §7, §9.3)', () => {
   it('grants 4 at open', () => {

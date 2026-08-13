@@ -20,10 +20,10 @@ needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
 - **Fit scope: live members + incumbent.** Comparisons involving retired /
   withdrawn / merged candidates drop out of the race fit. The graveyard's
   evidentiary role (loss accounts, span attribution) is P3.
-- **Dominated** (SPEC §6.2, projected per Q11): P(incumbent beats X) > θ_now
-  on ≥ 5 comparisons involving X. Since θ only rises within a session, "the
-  incumbent already clears current θ against you" is a fair reading of "no
-  realistic path".
+- **Dominated** (SPEC §6.2, projected per Q11): P(incumbent beats X) exceeds
+  the current adoption threshold, on ≥ 5 comparisons involving X. Since the
+  threshold only rises within a session, "the incumbent already clears the
+  current bar against you" is a fair reading of "no realistic path".
 - **Saturation:** ≥ `saturationMinComparisons` usable comparisons AND the
   best available pair's value < `saturationEpsilon`, where pair value =
   posterior variance of the strength difference × outcome unpredictability.
@@ -32,15 +32,20 @@ needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
   "starts a short cooldown" as protecting the whole field's rebase window.
 - **Token cap applies to grant + drip accrual only.** Refunds are never
   forfeited to the cap; drip forfeited while at cap is not recovered later.
-- **finalRender** applies all θ-clearing, floor-satisfying race leaders as
-  one batch: distinct races cannot conflict by construction, so their hunks
-  share current-version coordinates (hash order retained defensively).
+- **finalRender** applies all threshold-clearing, floor-satisfying race
+  leaders as one batch: distinct races cannot conflict by construction, so
+  their hunks share current-version coordinates (hash order retained
+  defensively).
+- **Adoption threshold runs on the session clock (wall time), Q22–25.**
+  Queries that need it (`feed`, `dominated`, `backlog`) take a time and
+  default to the last event's time, which keeps replays exact; live callers
+  pass now. The evidence-clock variant is deferred to the sim (Q26).
 
 ## Router v1 (SPEC §8, simplified)
 
-- Race value = (leaderP / θ) × salience weight; races short of the floor get
-  a 1.25× boost in feeds of participants who haven't judged them (§8.2's
-  "unheard preference").
+- Race value = (leaderP / adoption threshold) × salience weight; races short
+  of the floor get a 1.25× boost in feeds of participants who haven't judged
+  them (§8.2's "unheard preference").
 - Slot pattern is deterministic (every `salienceEvery`-th slot a diagonal,
   every `explorationEvery`-th an exploration card) rather than sampled;
   the seeded RNG picks diagonal race pairs. Feeds are pure: same state,
@@ -67,6 +72,6 @@ needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
 ## Module map
 
 `session.ts` (engine-core state machine) · `text/` (patch-engine) ·
-`ranking/davidson.ts` (ranking-model) · `theta.ts` · `tokens.ts` ·
-`hash.ts` + `rng.ts` (event-log integrity) · routing lives in `session.ts`
-(`feed`, `bountyBoard`, `backlog`).
+`ranking/davidson.ts` (ranking-model) · `adoption-threshold.ts` ·
+`tokens.ts` · `hash.ts` + `rng.ts` (event-log integrity) · routing lives in
+`session.ts` (`feed`, `bountyBoard`, `backlog`).
