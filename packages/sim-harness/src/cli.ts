@@ -8,6 +8,7 @@
  * llm: claude-haiku-4-5 personas via the Claude API (needs credentials).
  */
 
+import { loadDotenv } from './env.js';
 import { ScriptedPersona } from './persona.js';
 import { LlmPersona } from './llm-persona.js';
 import { charterScenario } from './scenario.js';
@@ -45,6 +46,7 @@ function parseArgs(argv: string[]): Args {
 }
 
 async function main(): Promise<void> {
+  loadDotenv();
   const args = parseArgs(process.argv.slice(2));
   const scenario = charterScenario;
   const all: Metrics[] = [];
