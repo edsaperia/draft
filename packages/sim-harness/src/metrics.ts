@@ -62,10 +62,13 @@ export function computeMetrics(
       candidates++;
     } else if (e.type === 'adopted') {
       adoptions++;
-      const text = session.getCandidate(e.candidateId).patch.hunks[0]?.lines[0];
-      const issue = scenario.issues.find((i) =>
-        i.alternatives.some((a) => a.text === text),
-      );
+      // Attribute by line number, not by matching text against the alternatives
+      // menu — LLM drafts are almost always off-menu, which left adoptions
+      // unattributed and reported overturns as 0 on runs that had several.
+      const hunk = session.getCandidate(e.candidateId).patch.hunks[0];
+      const issue = hunk
+        ? scenario.issues.find((i) => i.line === hunk.start)
+        : undefined;
       if (issue) {
         adoptionsPerIssue.set(issue.key, (adoptionsPerIssue.get(issue.key) ?? 0) + 1);
       }
