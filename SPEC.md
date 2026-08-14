@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.8
+# Group Drafting Engine — Specification v0.9
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -126,6 +126,8 @@ Co-signs and withdrawals refund fully; merges pool pro-rata. The curve is contin
 **8.2 Floors.** F = min(⌈E/3⌉, F_max) distinct movers per race before adoption — statistical sufficiency, with per-race judge counts in the record. Near adoption, the router prefers participants who haven't judged the race: the unheard are asked at the moment their silence would be foreclosed. Judgments count once each; there are no weights.
 
 **8.3 Mechanics.** A hot set of ~3 races receives concentrated sampling (was ~6; calibration sweep 2026-08-13 — depth of evidence per race beats breadth at small-roster scale, best welfare and lowest variance of any setting tested) — resolving a race retires it from every feed, so finish lines come first. ~1 slot in 7 explores under-measured candidates (Thompson sampling); ~1 in 10 serves a salience diagonal. Saturated races leave the judgment stream for the bounty board; care-map-cold spans sink; skipped cards recirculate personally with decay. Feeds are suggestions — participants can browse, search, and judge anything live. Sort tabs expose magnitude only (activity, evidence volume, closeness-to-resolution as a single number, newness, mine), never direction. The bounty board is a first-class tab; each entry opens the composer.
+
+Rival-vs-rival pairs answer a conditional question — "if this text changes, which change is better?" — and their signal is precious precisely because it cannot be recovered from incumbent comparisons. Two serving rules follow (Ed, 2026-08-14). First, cards never offer "keep the current text" on a rival pair: a pro-incumbent judge expresses that on incumbent-involving pairs, which the router owes them, and the rival card's prompt states the conditional framing plainly. Second, rival pairs are served sparingly until the race shows evidence that at least one challenger plausibly displaces the incumbent; before that, incumbent-involving pairs dominate the race's sampling — there is little decision value in finely ranking challengers that are all losing to the status quo (their order matters only to the backlog).
 
 **8.4 Notifications.** A thin digest layer — your candidate was dominated; a race you drafted for nears resolution; the bounty board moved. Batched, magnitude-only, policy published. It is the liveness engine of a distributed window and gets router-grade hygiene.
 

@@ -242,7 +242,7 @@
     <h3>The triad, resolved case by case (Ed, point 6)</h3>
     <ul>
       <li><b>Challenger vs current:</b> the current text is the highlighted ground; the proposal is one overlay beneath it. The right-hand verdict is "Keep the current text." No status-quo card, no status-quo rationale — the ground needs no pitch.</li>
-      <li><b>Rival vs rival:</b> the ground stays visible (highlighted, labelled "current text — both proposals replace this"), both overlays sit beneath it, and the middle stack always includes <b>"Keep the current text — against both."</b> You can now defend the status quo on any card. Mechanically this records two comparisons (current beats A, current beats B) — a small mechanism addition, logged as QUESTIONS #48.</li>
+      <li><b>Rival vs rival:</b> the ground stays visible (highlighted, labelled "current text — both proposals replace this"), both overlays sit beneath it, and the prompt asks the honest conditional question: <b>"if this text changes, which change is better?"</b> There is deliberately no keep-current verdict here — that signal belongs on incumbent cards, which the router owes any judge who leans status-quo, and rival cards are only served once the race shows evidence that at least one challenger plausibly displaces the incumbent (SPEC §8.3, Ed 2026-08-14).</li>
       <li><b>Propose C:</b> the composer opens seeded from the contested span, with "start from the current text / from A / from B" — C in context of all three, as it should be.</li>
       <li><b>The status quo moves during the session:</b> true, and the overlay model makes that legible instead of confusing — the ground you see is always today's ground, and when an adoption changes it underfoot, the gazette flashes and the engine has already staled the old evidence (incumbent identity is the hash of the current span text). The card you come back to is honestly different, and looks it.</li>
     </ul>
@@ -316,7 +316,7 @@
       qLabel: '§ Money', qSub: 'two rival proposals',
       section: 'Money', count: 'race 1 of 7',
       defaultMode: 'fair',
-      prompt: 'Two proposals want to replace the highlighted paragraph. <b>Which should the charter say — or should it stay as it is?</b>',
+      prompt: 'Two proposals want to replace the highlighted paragraph. <b>If this text changes, which change is better?</b> (You’ll get to defend the current text on its own cards — this one is about ranking the challengers.)',
       a: {
         fair: 'The Purse-holder pays only bills approved under the budget or by a house decision, reimburses claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting.',
         marked: 'The Purse-holder pays <del>the bills</del> <ins>only bills approved under the budget or by a house decision</ins>, <del>and</del> reimburses <del>what seems fair, and keeps the receipts in the tin</del> <ins>claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting</ins>.',
@@ -336,7 +336,7 @@
       qLabel: '§ The Thursday Dinner', qSub: 'two rival proposals',
       section: 'The Thursday Dinner', count: 'race 2 of 7',
       defaultMode: 'fair',
-      prompt: 'Two proposals want to replace the highlighted paragraph. <b>Which should the charter say — or should it stay as it is?</b>',
+      prompt: 'Two proposals want to replace the highlighted paragraph. <b>If this text changes, which change is better?</b> (You’ll get to defend the current text on its own cards — this one is about ranking the challengers.)',
       a: {
         fair: 'Dinner happens every Thursday; a proper rota is posted in the Kitchen each term so everyone knows whos turn it is to cook, and if you cant make your night you sort a swap and update the rota yourslef so it stays acurate.',
         marked: 'Dinner happens every Thursday; <del>members take turns on a simple sign-up rota so someone’s always down to cook, and it’s still usually pasta</del> <ins>a proper rota is posted in the Kitchen each term so everyone knows whos turn it is to cook, and if you cant make your night you sort a swap and update the rota yourslef so it stays acurate</ins>.',
@@ -575,7 +575,6 @@
       : 'Keep the current text';
 
     const midButtons =
-      (kind === 'rivals' ? '<button class="btn btn-outline" data-mid="keep">Keep the current text — against both</button>' : '') +
       '<button class="btn btn-outline" data-mid="indifferent">' + (kind === 'attention' ? 'Equally important' : 'Genuinely can’t split them') + '</button>' +
       '<button class="btn btn-outline" data-mid="skip">Skip this card</button>' +
       (kind === 'attention' ? '' : '<button class="btn btn-outline" data-mid="propose">Propose something else · 1 token</button>');
@@ -626,7 +625,6 @@
       const hash = Array.from({ length: 8 }, () => '0123456789abcdef'[(Math.random() * 16) | 0]).join('');
       const verdict =
         what === 'indifferent' ? (kind === 'attention' ? 'equally important' : 'indifferent')
-        : what === 'keep' ? 'kept the current text against both (2 comparisons — Q48)'
         : kind === 'attention' ? 'preferred ' + card.labels[what === 'a' ? 0 : 1]
         : kind === 'rivals' ? 'preferred ' + what.toUpperCase()
         : what === 'a' ? (kind === 'insert' ? 'added the new section' : kind === 'patch' ? 'adopted the patch' : 'adopted the change')
