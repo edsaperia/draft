@@ -64,6 +64,18 @@ export const DEFAULT_CONSTITUTION: Omit<
   explorationEvery: 7,
   salienceEvery: 10,
   authorshipVisibility: 'sealed',
+  // Rival-pair gate (SPEC §8.3, Q48): a challenger shows displacement
+  // evidence when P(beats incumbent) > 0.5 on >= 3 incumbent-involving
+  // comparisons. 0.5 because probBeats' no-data prior is exactly 0.5:
+  // the gate opens on the first posterior that actually favors a
+  // challenger, and the minimum-evidence clause keeps prior noise from
+  // opening it.
+  rivalGateProb: 0.5,
+  rivalGateMinComparisons: 3,
+  // Ground-shift re-serving (SPEC §4.4, Q50): re-opened races are
+  // near-adoption by construction, so they outrank equal-salience
+  // unstarted races until re-measured.
+  reopenedBoost: 1.5,
 };
 
 export function makeConstitution(
@@ -81,6 +93,34 @@ interface StoredComparison {
   bId: string;
   kind: PairKind;
   outcome: Outcome;
+  /**
+   * The race's ground when the judgment was cast (SPEC §4.4, Q50): its
+   * incumbent pseudo-id, a content hash of the contested spans. Derived
+   * in the fold, so replay reproduces it. Edge comparisons feed the live
+   * posterior only while this matches the race's current incumbent id —
+   * a material ground shift (adoption within the race, or a rebase that
+   * alters the contested text) changes the id and locks every judgment
+   * cast on the old ground, rival-vs-rival pairs included. Context
+   * drift (same words, new position) leaves the hash unchanged and
+   * locks nothing. Null for diagonals: salience judgments rank the
+   * questions in dispute, which a ground shift does not change.
+   */
+  groundId: string | null;
+}
+
+/** A judgment as the record sees it, with derived supersession/locking. */
+export interface JudgmentView {
+  seq: number;
+  t: number;
+  participantId: string;
+  aId: string;
+  bId: string;
+  kind: PairKind;
+  outcome: Outcome;
+  /** A later judgment by the same participant on the same pair and ground supersedes this one. */
+  superseded: boolean;
+  /** Locked judgments stay in the log and record but no longer feed the live posterior and cannot be revised (SPEC §4.4). */
+  locked: boolean;
 }
 
 interface RosterEntry {
@@ -106,8 +146,19 @@ export class Session {
   private candidates = new Map<string, Candidate>();
   private supporters = new Map<string, Set<string>>();
   private comparisons: StoredComparison[] = [];
-  /** Unordered pair keys already judged, per participant. */
+  /**
+   * Contextual pair keys already judged, per participant (feed
+   * exclusion only — revision stays open, SPEC §4.4). Edge keys carry
+   * the ground id, so a ground shift re-opens the pair to everyone,
+   * including participants who judged the old ground.
+   */
   private judgedPairs = new Map<string, Set<string>>();
+  /**
+   * Contextual pair keys forfeited by opening the composer (SPEC §3.3):
+   * the peek priced the pair, so unlike an ordinary judgment this is a
+   * hard block — the pair can never be collected on that ground.
+   */
+  private forfeitedPairs = new Map<string, Set<string>>();
   /** Comparisons at seq < evidenceSince[id] are dead for candidate id (SPEC §2.4). */
   private evidenceSince = new Map<string, number>();
   private edgeCount = 0;
@@ -222,6 +273,11 @@ export class Session {
         break;
       }
       case 'comparison': {
+        // The ground the judgment was cast against (SPEC §4.4, Q50) —
+        // derived here, in the fold, so replay reproduces it exactly.
+        // Computed before the push: race membership and incumbent ids
+        // do not depend on comparisons.
+        const groundId = event.kind === 'edge' ? this.groundOfPair(event.aId, event.bId) : null;
         this.comparisons.push({
           seq,
           t: event.t,
@@ -230,8 +286,13 @@ export class Session {
           bId: event.bId,
           kind: event.kind,
           outcome: event.outcome,
+          groundId,
         });
-        this.markJudged(event.participantId, event.aId, event.bId);
+        this.markJudged(
+          this.judgedPairs,
+          event.participantId,
+          contextKey(event.aId, event.bId, groundId),
+        );
         if (event.kind === 'edge') this.edgeCount++;
         this.touchParticipant(event.participantId, event.t);
         // peakW moves here, in the fold, not in the command layer: refunds
@@ -253,7 +314,15 @@ export class Session {
       case 'composer-opened': {
         if (event.forfeited) {
           // The peek prices the pair: it is never collected (SPEC §3.3).
-          this.markJudged(event.participantId, event.forfeited.aId, event.forfeited.bId);
+          // Keyed to the current ground: a later material shift makes the
+          // pair a fresh question about fresh text, which the stale peek
+          // did not price.
+          const { aId, bId } = event.forfeited;
+          this.markJudged(
+            this.forfeitedPairs,
+            event.participantId,
+            contextKey(aId, bId, this.groundOfPair(aId, bId)),
+          );
         }
         this.touchParticipant(event.participantId, event.t);
         break;
@@ -347,13 +416,44 @@ export class Session {
     entry.lastActionT = t;
   }
 
-  private markJudged(participantId: string, aId: string, bId: string): void {
-    let set = this.judgedPairs.get(participantId);
+  private markJudged(
+    map: Map<string, Set<string>>,
+    participantId: string,
+    key: string,
+  ): void {
+    let set = map.get(participantId);
     if (!set) {
       set = new Set();
-      this.judgedPairs.set(participantId, set);
+      map.set(participantId, set);
     }
-    set.add(pairKey(aId, bId));
+    set.add(key);
+  }
+
+  /**
+   * The ground a pair is judged on: the incumbent id of the race that
+   * contains its candidate endpoint(s), or null for cross-race
+   * (diagonal) and unresolvable pairs.
+   */
+  private groundOfPair(aId: string, bId: string): string | null {
+    const aInc = aId.startsWith(INC_PREFIX);
+    const bInc = bId.startsWith(INC_PREFIX);
+    if (aInc && bInc) return null;
+    if (!aInc && !bInc) {
+      const ra = this.raceIdOfEndpoint(aId);
+      const rb = this.raceIdOfEndpoint(bId);
+      if (ra === null || rb === null || ra !== rb) return null; // diagonal or dead
+    }
+    const candId = aInc ? bId : aId;
+    const race = this.races().find((r) => r.members.includes(candId));
+    return race ? race.incumbentId : null;
+  }
+
+  /** Feed exclusion: judged (revisable) or forfeited (hard-blocked) on this ground. */
+  private servedOut(participantId: string, key: string): boolean {
+    return (
+      (this.judgedPairs.get(participantId)?.has(key) ?? false) ||
+      (this.forfeitedPairs.get(participantId)?.has(key) ?? false)
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -442,6 +542,59 @@ export class Session {
     return this.supporters.get(id) ?? new Set();
   }
 
+  /**
+   * Every judgment ever cast, with derived supersession and locking
+   * (SPEC §4.4, Q50) — the record keeps all. A judgment is superseded
+   * when the same participant judged the same pair on the same ground
+   * later; it is locked when its question ended: the session closed, an
+   * endpoint left play, or the race's ground materially shifted.
+   */
+  judgments(): JudgmentView[] {
+    const races = this.races();
+    const raceOfMember = new Map<string, RaceView>();
+    for (const r of races) for (const m of r.members) raceOfMember.set(m, r);
+    // Latest seq per (participant, pair, ground): everything earlier is
+    // superseded.
+    const latestSeq = new Map<string, number>();
+    for (const c of this.comparisons) {
+      latestSeq.set(
+        `${c.participantId}|${contextKey(c.aId, c.bId, c.groundId)}`,
+        c.seq,
+      );
+    }
+    return this.comparisons.map((c) => {
+      const superseded =
+        latestSeq.get(`${c.participantId}|${contextKey(c.aId, c.bId, c.groundId)}`) !== c.seq;
+      let locked = this.closedFlag;
+      if (!locked && c.kind === 'edge') {
+        const candidates = [c.aId, c.bId].filter((id) => !id.startsWith(INC_PREFIX));
+        const race = candidates.length > 0 ? raceOfMember.get(candidates[0]!) : undefined;
+        locked =
+          race === undefined ||
+          race.incumbentId !== c.groundId ||
+          candidates.some((id) => {
+            if (!race.members.includes(id)) return true;
+            const since = this.evidenceSince.get(id);
+            return since !== undefined && c.seq < since;
+          });
+      } else if (!locked) {
+        // Diagonals lock only when an endpoint's question left play.
+        locked = [c.aId, c.bId].some((id) => !raceOfMember.has(id));
+      }
+      return {
+        seq: c.seq,
+        t: c.t,
+        participantId: c.participantId,
+        aId: c.aId,
+        bId: c.bId,
+        kind: c.kind,
+        outcome: c.outcome,
+        superseded,
+        locked,
+      };
+    });
+  }
+
   // -------------------------------------------------------------------------
   // Commands
 
@@ -503,6 +656,12 @@ export class Session {
    * race's current incumbent pseudo-id (from the served card).
    * Returns the events the move caused (comparison, possibly adoption
    * and its rebase fallout).
+   *
+   * Judging a pair this participant already judged on the same ground
+   * is a revision (SPEC §4.4, Q50): the new judgment supersedes the
+   * old, which stays in the log. Locked judgments (sealed race, shifted
+   * ground) cannot be revised — their pair is either gone or, after a
+   * ground shift, a fresh question served anew.
    */
   judge(
     t: number,
@@ -516,8 +675,9 @@ export class Session {
     if (aId === bId) throw new Error('cannot judge an id against itself');
     const before = this.log.length;
     const kind = this.classifyPair(aId, bId);
-    if (this.judgedPairs.get(participantId)?.has(pairKey(aId, bId))) {
-      throw new Error('pair already judged by this participant');
+    const key = contextKey(aId, bId, kind === 'edge' ? this.groundOfPair(aId, bId) : null);
+    if (this.forfeitedPairs.get(participantId)?.has(key)) {
+      throw new Error('pair forfeited by opening the composer (SPEC §3.3)');
     }
     this.emit({ type: 'comparison', t, participantId, aId, bId, kind, outcome });
     this.fitCache.clear();
@@ -676,9 +836,14 @@ export class Session {
       }
     }
     const certification = leaderId === null ? null : 1 - (leaderP ?? 0.5);
+    const rivalGateOpen = this.rivalGateOpen(fit, members, incumbentId, usable);
+    // Saturation considers only servable pairs: while the rival gate is
+    // closed, unmeasured rival pairs must not hold a race open — there
+    // is little decision value in finely ranking challengers that are
+    // all losing to the status quo (SPEC §8.3).
     const saturated =
       usable.length >= this.constitutionValue.saturationMinComparisons &&
-      this.maxPairValue(fit, members, incumbentId, null) <
+      this.maxPairValue(fit, members, incumbentId, null, rivalGateOpen) <
         this.constitutionValue.saturationEpsilon;
     return {
       id,
@@ -691,7 +856,39 @@ export class Session {
       leaderId,
       certification,
       saturated,
+      rivalGateOpen,
     };
+  }
+
+  /**
+   * The rival-pair gate (SPEC §8.3, Q48): open once at least one
+   * challenger plausibly displaces the incumbent — posterior
+   * P(challenger beats incumbent) above rivalGateProb on at least
+   * rivalGateMinComparisons incumbent-involving comparisons (current
+   * ground). probBeats is the same posterior quantity the
+   * adoption-threshold gates, so the criterion needs no new machinery;
+   * the minimum-evidence clause exists because the no-data prior sits
+   * exactly at 0.5.
+   */
+  private rivalGateOpen(
+    fit: Fit,
+    members: string[],
+    incumbentId: string,
+    usable: StoredComparison[],
+  ): boolean {
+    for (const m of members) {
+      const n = usable.filter(
+        (c) =>
+          (c.aId === m || c.bId === m) && (c.aId === incumbentId || c.bId === incumbentId),
+      ).length;
+      if (
+        n >= this.constitutionValue.rivalGateMinComparisons &&
+        fit.probBeats(m, incumbentId) > this.constitutionValue.rivalGateProb
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   raceOf(candidateId: string): RaceView {
@@ -741,8 +938,12 @@ export class Session {
 
   private usableComparisons(members: string[], incumbentId: string): StoredComparison[] {
     const memberSet = new Set(members);
-    return this.comparisons.filter((c) => {
+    const filtered = this.comparisons.filter((c) => {
       if (c.kind !== 'edge') return false;
+      // Ground lock (SPEC §4.4, Q50): a judgment cast on a different
+      // ground — including rival-vs-rival pairs — no longer feeds the
+      // live posterior. The race's ranking restarts from nothing.
+      if (c.groundId !== incumbentId) return false;
       for (const id of [c.aId, c.bId]) {
         if (id.startsWith(INC_PREFIX)) {
           if (id !== incumbentId) return false;
@@ -754,6 +955,14 @@ export class Session {
       }
       return true;
     });
+    // Supersession (SPEC §4.4, Q50): the ranking uses only each
+    // participant's latest judgment per pair (per ground); the log and
+    // record keep them all.
+    const latest = new Map<string, StoredComparison>();
+    for (const c of filtered) {
+      latest.set(`${c.participantId}|${pairKey(c.aId, c.bId)}`, c);
+    }
+    return [...latest.values()].sort((a, b) => a.seq - b.seq);
   }
 
   private fitRaceMembers(members: string[], incumbentId: string): Fit {
@@ -852,9 +1061,16 @@ export class Session {
     const races = this.races();
     const raceOf = new Map<string, string>();
     for (const r of races) for (const m of r.members) raceOf.set(m, r.id);
-    const comps: Comparison[] = [];
+    // Supersession (SPEC §4.4): latest per participant per pair. Ground
+    // shifts do not lock diagonals — they rank the questions in
+    // dispute, which outlive any particular text.
+    const latest = new Map<string, StoredComparison>();
     for (const c of this.comparisons) {
       if (c.kind !== 'diagonal') continue;
+      latest.set(`${c.participantId}|${pairKey(c.aId, c.bId)}`, c);
+    }
+    const comps: Comparison[] = [];
+    for (const c of latest.values()) {
       const ra = raceOf.get(c.aId);
       const rb = raceOf.get(c.bId);
       if (!ra || !rb || ra === rb) continue;
@@ -1008,6 +1224,34 @@ export class Session {
   // -------------------------------------------------------------------------
   // Routing (SPEC §8) — one policy, identical for everyone, seeded RNG
 
+  /**
+   * True when a race carries evidence locked by a ground shift or a
+   * rebase confirmation — i.e. the race was re-opened (SPEC §4.4, Q50)
+   * and its live members were judged before on ground that no longer
+   * exists.
+   */
+  private hasLockedEvidence(race: RaceView): boolean {
+    const memberSet = new Set(race.members);
+    for (const c of this.comparisons) {
+      if (c.kind !== 'edge') continue;
+      const aMember = memberSet.has(c.aId);
+      const bMember = memberSet.has(c.bId);
+      const aOk = aMember || c.aId.startsWith(INC_PREFIX);
+      const bOk = bMember || c.bId.startsWith(INC_PREFIX);
+      if (!aOk || !bOk || (!aMember && !bMember)) continue;
+      if (c.groundId !== race.incumbentId) return true;
+      for (const [id, isMember] of [
+        [c.aId, aMember],
+        [c.bId, bMember],
+      ] as const) {
+        if (!isMember) continue;
+        const since = this.evidenceSince.get(id);
+        if (since !== undefined && c.seq < since) return true;
+      }
+    }
+    return false;
+  }
+
   /** Mean in-bout response time; participants without data count as cheap. */
   judgmentCost(participantId: string): number | null {
     const entry = this.rosterEntry(participantId);
@@ -1020,15 +1264,20 @@ export class Session {
     members: string[],
     incumbentId: string,
     excludeJudgedBy: string | null,
+    rivalGateOpen: boolean,
   ): number {
     let max = 0;
     const ids = [...members, incumbentId];
-    const judged = excludeJudgedBy ? this.judgedPairs.get(excludeJudgedBy) : undefined;
     for (let i = 0; i < ids.length; i++) {
       for (let j = i + 1; j < ids.length; j++) {
         const a = ids[i]!;
         const b = ids[j]!;
-        if (judged?.has(pairKey(a, b))) continue;
+        // While the rival gate is closed, rival pairs carry no serving
+        // value (SPEC §8.3, Q48).
+        if (!rivalGateOpen && a !== incumbentId && b !== incumbentId) continue;
+        if (excludeJudgedBy && this.servedOut(excludeJudgedBy, contextKey(a, b, incumbentId))) {
+          continue;
+        }
         const v = pairValue(fit, a, b);
         if (v > max) max = v;
       }
@@ -1036,25 +1285,42 @@ export class Session {
     return max;
   }
 
+  /**
+   * Best unjudged pair in a race for a participant (SPEC §8.1, §8.3).
+   * While the rival gate is closed, incumbent-involving pairs dominate:
+   * rival pairs are served only to a participant whose incumbent pairs
+   * in the race are exhausted — the "sparingly" of SPEC §8.3.
+   */
   private bestPairFor(
     fit: Fit,
     members: string[],
     incumbentId: string,
     participantId: string,
+    rivalGateOpen: boolean,
   ): { aId: string; bId: string; value: number } | null {
     const ids = [...members, incumbentId];
-    const judged = this.judgedPairs.get(participantId);
-    let best: { aId: string; bId: string; value: number } | null = null;
-    for (let i = 0; i < ids.length; i++) {
-      for (let j = i + 1; j < ids.length; j++) {
-        const a = ids[i]!;
-        const b = ids[j]!;
-        if (judged?.has(pairKey(a, b))) continue;
-        const v = pairValue(fit, a, b);
-        if (best === null || v > best.value) best = { aId: a, bId: b, value: v };
+    const scan = (
+      include: (a: string, b: string) => boolean,
+    ): { aId: string; bId: string; value: number } | null => {
+      let best: { aId: string; bId: string; value: number } | null = null;
+      for (let i = 0; i < ids.length; i++) {
+        for (let j = i + 1; j < ids.length; j++) {
+          const a = ids[i]!;
+          const b = ids[j]!;
+          if (!include(a, b)) continue;
+          if (this.servedOut(participantId, contextKey(a, b, incumbentId))) continue;
+          const v = pairValue(fit, a, b);
+          if (best === null || v > best.value) best = { aId: a, bId: b, value: v };
+        }
       }
-    }
-    return best;
+      return best;
+    };
+    if (rivalGateOpen) return scan(() => true);
+    const isIncumbentPair = (a: string, b: string): boolean =>
+      a === incumbentId || b === incumbentId;
+    return (
+      scan(isIncumbentPair) ?? scan((a, b) => !isIncumbentPair(a, b))
+    );
   }
 
   /**
@@ -1077,11 +1343,16 @@ export class Session {
     }
     // Race value: closeness to adoption × salience; races short of the
     // floor that this participant hasn't judged get the unheard boost
-    // (SPEC §8.2).
+    // (SPEC §8.2); ground-shifted races get the re-opened boost until
+    // re-measured (SPEC §4.4, Q50 — near-adoption by construction, so
+    // their fresh pairs price like new-candidate measurement or better).
     const valued = races
       .map((r) => {
         let v = ((r.leaderP ?? 0.5) / threshold) * (weights.get(r.id) ?? 1);
         if (r.distinctMovers < floor && !judgedRaces.has(r.id)) v *= 1.25;
+        if (r.comparisons < r.members.length && this.hasLockedEvidence(r)) {
+          v *= this.constitutionValue.reopenedBoost;
+        }
         return { race: r, value: v };
       })
       .sort((a, b) => b.value - a.value || a.race.id.localeCompare(b.race.id));
@@ -1116,10 +1387,20 @@ export class Session {
         for (let tries = 0; tries < hot.length && card === null; tries++) {
           const { race } = hot[(hotIndex + tries) % hot.length]!;
           const fit = this.fitRaceMembers(race.members, race.incumbentId);
-          const best = this.bestPairFor(fit, race.members, race.incumbentId, participantId);
+          const best = this.bestPairFor(
+            fit,
+            race.members,
+            race.incumbentId,
+            participantId,
+            race.rivalGateOpen,
+          );
           if (best) {
             card = {
               kind: 'edge',
+              subtype:
+                best.aId === race.incumbentId || best.bId === race.incumbentId
+                  ? 'incumbent'
+                  : 'rival',
               aId: best.aId,
               bId: best.bId,
               raceId: race.id,
@@ -1159,7 +1440,7 @@ export class Session {
     if (j >= i) j++;
     const ra = withLeaders[i]!;
     const rb = withLeaders[j]!;
-    if (this.judgedPairs.get(participantId)?.has(pairKey(ra.leaderId!, rb.leaderId!))) {
+    if (this.servedOut(participantId, pairKey(ra.leaderId!, rb.leaderId!))) {
       return null;
     }
     return {
@@ -1183,10 +1464,11 @@ export class Session {
       }
     }
     if (!target) return null;
-    const key = pairKey(target.id, target.race.incumbentId);
-    if (this.judgedPairs.get(participantId)?.has(key)) return null;
+    const key = contextKey(target.id, target.race.incumbentId, target.race.incumbentId);
+    if (this.servedOut(participantId, key)) return null;
     return {
       kind: 'exploration',
+      subtype: 'incumbent',
       aId: target.id,
       bId: target.race.incumbentId,
       raceId: target.race.id,
@@ -1200,6 +1482,16 @@ export class Session {
 
 function pairKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+/**
+ * Ground-contextual pair key (SPEC §4.4, Q50): edge pairs are keyed to
+ * the ground they were judged on, so a material shift re-opens the pair
+ * as a fresh question for everyone; diagonals (groundId null) are keyed
+ * by the pair alone.
+ */
+function contextKey(a: string, b: string, groundId: string | null): string {
+  return groundId === null ? pairKey(a, b) : `${pairKey(a, b)}@${groundId}`;
 }
 
 /**

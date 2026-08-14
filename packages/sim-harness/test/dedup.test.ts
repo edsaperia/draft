@@ -47,13 +47,20 @@ describe('dedup-gate with the MockOracle transport', () => {
 });
 
 describe('sim regression: dedup off is byte-identical to before the gate existed', () => {
-  // Rolling hash of this exact run (charter, 24h, seed "dedup-regression")
-  // captured on 2026-08-14, BEFORE the dedup-gate was wired into the
-  // runner. Guards Ed's constraint that with no gate configured the
-  // engine and runner behave exactly as before — any drift here means
-  // the no-dedup path changed, which is a bug regardless of intent.
-  // Re-pin only with a deliberate mechanism change.
-  const PINNED = '502f767efe00c5cfebdb664ec1b8a5525cf0449d25dfdd5a981d315805f6ae01';
+  // Rolling hash of this exact run (charter, 24h, seed "dedup-regression").
+  // Guards Ed's constraint that with no gate configured the engine and
+  // runner behave exactly as before — any drift here means the no-dedup
+  // path changed, which is a bug regardless of intent. Re-pin only with
+  // a deliberate mechanism change.
+  //
+  // Re-pinned 2026-08-14 for SPEC v0.8 → v0.12 (revisable judgments,
+  // ground-shift locking/re-serving, rival-pair gating: Q48/Q50). The
+  // rival gate alone changes the served card mix, so the event stream
+  // legitimately differs from the pre-gate capture
+  // (502f767efe00c5cfebdb664ec1b8a5525cf0449d25dfdd5a981d315805f6ae01).
+  // Determinism verified before re-pinning: two fresh runs of this
+  // config produced this hash, and Session.replay reproduces it.
+  const PINNED = '4f1ff4611d0ba18cd96919f77b5acd9ddd41a17eb3708384f8b2cd12d8dfd2db';
 
   const run = (withGate: boolean) =>
     runSession({

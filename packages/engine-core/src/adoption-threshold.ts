@@ -1,5 +1,5 @@
 /**
- * The adoption threshold on the session clock (SPEC §4.3, v0.7) —
+ * The adoption threshold on the session clock (SPEC §4.3, v0.12) —
  * the confidence bar a challenger's win-probability must clear.
  *
  * It ramps smoothly from adoptionThresholdStart to adoptionThresholdEnd

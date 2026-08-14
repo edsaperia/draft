@@ -196,6 +196,8 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 | Rationale cap | 300 chars |
 | Bout gap threshold | > 90 s discarded from latency |
 | Hot set / exploration / salience stream | ~3 races / ~1 in 7 / ~1 in 10 |
+| Rival-pair gate (§8.3) | open when some challenger's posterior P(beats incumbent) > 0.5 on ≥ 3 incumbent-involving comparisons (current ground) |
+| Re-opened race boost (§4.4 ground shift) | 1.5× routing value while fresh judgments < live candidates |
 | Bridge metric | minimum support across camps, stratified probes |
 | Window | convenor-set; wall end triggers closing publication only |
 | Visibility | chamber link-only by default; observer role off by default |

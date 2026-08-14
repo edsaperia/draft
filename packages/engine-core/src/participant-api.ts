@@ -8,7 +8,8 @@
  * public. Authorship appears only under the `public` visibility setting.
  */
 
-import type { Session } from './session.js';
+import type { JudgmentView, Session } from './session.js';
+import type { EdgeSubtype } from './types.js';
 import type { PatchSet, Span } from './text/types.js';
 
 export interface OptionView {
@@ -25,7 +26,13 @@ export interface OptionView {
 
 export interface CardView {
   kind: 'edge' | 'diagonal';
-  /** Card copy per SPEC §4.1. */
+  /**
+   * Edge subtype (SPEC §8.3, Q48). Rival cards ask the conditional
+   * question and never offer "keep the current text"; a client must
+   * render that framing plainly. Absent on diagonals.
+   */
+  subtype?: EdgeSubtype;
+  /** Card copy per SPEC §4.1, §8.3. */
   prompt: string;
   a: OptionView;
   b: OptionView;
@@ -51,19 +58,39 @@ export class ParticipantApi {
       .feed(this.participantId, n, now)
       .map((card) => ({
         kind: card.kind === 'diagonal' ? ('diagonal' as const) : ('edge' as const),
+        ...(card.subtype ? { subtype: card.subtype } : {}),
         prompt:
           card.kind === 'diagonal'
             ? 'Which matters more?'
-            : 'Which should the group adopt?',
+            : card.subtype === 'rival'
+              ? 'If this text changes, which change is better?'
+              : 'Which should the group adopt?',
         a: this.renderOption(card.aId),
         b: this.renderOption(card.bId),
       }));
   }
 
-  /** The move (SPEC §3.1): A, B, or indifferent. */
+  /**
+   * The move (SPEC §3.1): A, B, or indifferent. Judging a card whose
+   * pair this participant already judged is the revision (SPEC §4.4,
+   * Q50) — allowed while the race is open and its ground unchanged; a
+   * card from before a ground shift is stale and rejected, and the pair
+   * returns to the feed as a fresh question.
+   */
   judge(now: number, card: CardView, choice: 'a' | 'b' | 'indifferent'): void {
     const outcome = choice === 'indifferent' ? 'tie' : choice;
     this.session.judge(now, this.participantId, card.a.id, card.b.id, outcome);
+  }
+
+  /**
+   * The participant's own judgments, with supersession and locking
+   * flags — one's own moves are one's own data (SPEC §11: receipts
+   * already reference them); no one else's are visible.
+   */
+  myJudgments(): JudgmentView[] {
+    return this.session
+      .judgments()
+      .filter((j) => j.participantId === this.participantId);
   }
 
   submit(

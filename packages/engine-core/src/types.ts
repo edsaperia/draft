@@ -1,5 +1,5 @@
 /**
- * Core domain types for the draft engine (SPEC v0.6).
+ * Core domain types for the draft engine (SPEC v0.12).
  *
  * The engine is an event-sourced, deterministic state machine: commands
  * (with caller-supplied timestamps) produce events; events append to a
@@ -47,6 +47,21 @@ export interface Constitution {
   windowEndMs: number;
   authorshipVisibility: 'public' | 'sealed' | 'anonymous';
   rngSeed: string;
+  /**
+   * Rival-pair gate (SPEC §8.3, Q48): rival-vs-rival pairs are served
+   * sparingly until some challenger's posterior P(beats incumbent)
+   * exceeds this level on at least rivalGateMinComparisons
+   * incumbent-involving comparisons (current ground).
+   */
+  rivalGateProb: number;
+  rivalGateMinComparisons: number;
+  /**
+   * Routing-value multiplier for a race whose ground shifted (SPEC §4.4,
+   * Q50): applied while the re-opened race has fewer fresh judgments
+   * than live candidates, so re-served pairs price like new-candidate
+   * measurement or better (SPEC §8.1).
+   */
+  reopenedBoost: number;
 }
 
 export interface Participant {
@@ -110,6 +125,12 @@ export interface RaceView {
   /** P(incumbent beats best live challenger) — certification (SPEC §4.4). */
   certification: number | null;
   saturated: boolean;
+  /**
+   * Rival-pair gate state (SPEC §8.3, Q48): true once some challenger
+   * shows displacement evidence against the incumbent, unlocking
+   * rival-vs-rival pairs for ordinary value-based sampling.
+   */
+  rivalGateOpen: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -138,6 +159,13 @@ export type Event =
       machineAuthored?: boolean;
     }
   | {
+      /**
+       * A judgment. Judgments are living while their question is (SPEC
+       * §4.4, Q50): re-judging the same pair on the same ground is a
+       * revision — the log keeps every event, the ranking uses each
+       * participant's latest, supersession and locking are derivable
+       * from the fold (see Session.judgments()).
+       */
       type: 'comparison';
       t: number;
       participantId: string;
@@ -206,8 +234,18 @@ export interface LogEntry {
 
 export type CardKind = 'edge' | 'diagonal' | 'exploration';
 
+/**
+ * Edge subtype (SPEC §8.3, Q48). Incumbent-involving pairs ask the
+ * adoption question outright; rival pairs ask the conditional question
+ * ("if this text changes, which change is better?") and never offer
+ * "keep the current text".
+ */
+export type EdgeSubtype = 'incumbent' | 'rival';
+
 export interface Card {
   kind: CardKind;
+  /** Present on edge/exploration cards; absent on diagonals. */
+  subtype?: EdgeSubtype;
   aId: string;
   bId: string;
   /** Race of the pair (edge/exploration) or of side A (diagonal). */

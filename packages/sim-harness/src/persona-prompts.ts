@@ -87,7 +87,9 @@ export function judgePrompt(card: CardView): string {
   const question =
     card.kind === 'diagonal'
       ? 'These two proposals touch different parts of the document and could both happen. Which one MATTERS MORE to you — if only one could land, which should it be?'
-      : 'Which of these two versions should the group adopt?';
+      : card.subtype === 'rival'
+        ? 'Whether the current text should change at all is a separate question you are not being asked here. IF this text changes, which of these two changes is better?'
+        : 'Which of these two versions should the group adopt?';
   return `${question}\n\n${render('A', card.a)}\n\n${render('B', card.b)}`;
 }
 
