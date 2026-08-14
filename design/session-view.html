@@ -65,6 +65,10 @@
   .kchip.race { background: var(--race-bg); color: var(--race-text); }
   .kchip.patch { background: var(--primary-subtle); color: var(--primary-emphasis); }
   .queue .note { font-size: 0.75rem; color: var(--muted); margin-top: 10px; }
+  .meter { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--primary); border-radius: 2px; }
+  .meter.saturated i { background: var(--muted); }
+  .mcap { font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
 
   /* the document */
   .doc {
@@ -234,6 +238,10 @@
     <h3>What approval means (and why there's no owner)</h3>
     <p>The approve button is the familiar gesture with a different engine behind it: it records a pairwise judgment (proposal vs current text) rather than an owner's acceptance. A suggestion lands when its win-probability clears the session's rising bar with enough distinct judges — the threshold-plus-floor is what replaces the document owner. For an easy typo early in the session, that's a handful of quiet approvals; nobody sees machinery.</p>
 
+    <h3>Progression: the evidence meter (Ed, 2026-08-14)</h3>
+    <p>Every suggestion carries a thin <b>evidence meter</b> — how close it is to being decided (adopted <em>or</em> retired), never which way it leans. This is the spec's own "closeness-to-resolution as a single number" (§8.3), the one race statistic that is public by design because a scalar magnitude can't leak direction. The captions speak in what's missing, not who's ahead: "needs 2 more voices to reach its floor", "a few good judgments from decided", "new — evidence just starting". A saturated race's meter goes grey and its caption sends it to the bounty board: more judgments won't move it; only a new proposal can.</p>
+    <p>And the queue order <b>is</b> this number, weighted by your personal leverage — races near their floor that <em>you</em> haven't judged rank highest, because your judgment moves them most (the router's unheard boost). The meter is the queue's visible rationale: sort order stops being mysterious the moment each entry shows why it's worth your attention.</p>
+
     <h3>What is deliberately absent</h3>
     <ul>
       <li><b>No authors, no counts, no standings.</b> Rationales are unsigned; nothing shows how many approvals a suggestion has or which way they lean. (The anchor chips name the <em>kind</em> of attention needed, never the direction of evidence.)</li>
@@ -358,6 +366,8 @@
     return SUGGS.filter((s) => !resolved.has(s.id) && (s.keys ?? []).includes(key));
   }
 
+  const PROGRESS = {"race-money":{"pct":78,"cap":"close — a few good judgments from decided"},"patch-rename":{"pct":35,"cap":"gathering — needs roughly 6 more judgments"},"quick-keys":{"pct":60,"cap":"needs 2 more voices to reach its floor of 5"},"quick-confidence":{"pct":85,"cap":"one judgment from decided"},"insert-quiet":{"pct":20,"cap":"new — evidence just starting"}};
+
   function renderQueue() {
     queueEl.innerHTML = SUGGS.map((s) => {
       const done = resolved.has(s.id) ? '<span class="done">✓</span>' : '';
@@ -365,6 +375,9 @@
         '<li><button data-q="' + s.id + '" aria-current="' + (openId === s.id) + '">' +
         '<span class="ql"><span>' + s.qLabel + '</span>' + done + '</span>' +
         '<span class="qs"><span class="kchip ' + s.kind + '">' + (s.kind === 'quick' ? 'quick' : s.kind === 'race' ? 'race' : 'patch') + '</span>' + s.qSub + '</span>' +
+        (resolved.has(s.id) ? '' :
+          '<span class="meter"><i style="width:' + PROGRESS[s.id].pct + '%"></i></span>' +
+          '<span class="mcap">' + PROGRESS[s.id].cap + '</span>') +
         '</button></li>'
       );
     }).join('');
@@ -373,12 +386,18 @@
     );
   }
 
+  function meterHtml(id) {
+    const pr = PROGRESS[id];
+    return '<div class="meter" title="Closeness to resolution — a magnitude, never a direction"><i style="width:' + pr.pct + '%"></i></div>' +
+      '<div class="mcap">' + pr.cap + ' · this shows how much more evidence is needed, never which way it leans</div>';
+  }
+
   function suggCardHtml(s) {
     if (s.kind === 'race') {
       return (
         '<div class="sugg race-open" data-card="' + s.id + '">' +
         '<div class="shead"><span>Race · ' + s.qLabel + '</span><span class="sub">escalated: two proposals collide here</span></div>' +
-        '<div class="stext small" style="color:var(--muted)">' + s.race.prompt + '</div>' +
+        meterHtml(s.id) + '<div class="stext small" style="color:var(--muted);margin-top:8px">' + s.race.prompt + '</div>' +
         '<div class="race-grid">' +
         '<div class="rcand"><div class="rtag">Option A</div><div class="rtext">' + esc(s.race.a.text) + '</div><div class="rr">' + esc(s.race.a.rationale) + '</div><button class="btn btn-approve" data-act="a">Prefer A</button></div>' +
         '<div class="rcand"><div class="rtag">Option B</div><div class="rtext">' + esc(s.race.b.text) + '</div><div class="rr">' + esc(s.race.b.rationale) + '</div><button class="btn btn-approve" data-act="b">Prefer B</button></div>' +
@@ -396,7 +415,7 @@
       return (
         '<div class="sugg" data-card="' + s.id + '">' +
         '<div class="shead"><span>One suggestion · ' + s.sites.length + ' places</span><span class="sub">all sites highlighted above and below — judged together</span></div>' +
-        '<div class="sledger"><div class="lh">In short</div><ul>' +
+        meterHtml(s.id) + '<div class="sledger" style="margin-top:8px"><div class="lh">In short</div><ul>' +
         s.ledger.map((l) => '<li><span class="lchip ' + l.c + '">' + l.c + '</span><span>' + esc(l.t) + '</span></li>').join('') +
         '</ul></div>' +
         s.sites.map((site) => '<div class="site-block"><span class="sb">' + site.label + '</span>' + site.marked + '</div>').join('') +
@@ -413,7 +432,8 @@
     return (
       '<div class="sugg" data-card="' + s.id + '">' +
       '<div class="shead"><span>' + (s.isInsert ? 'New section proposed' : 'Suggestion') + '</span><span class="sub">' + s.qSub + '</span></div>' +
-      (s.isInsert ? '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--ins-text);margin-bottom:4px;"><ins>' + esc(s.newHeading) + '</ins></div>' : '') +
+      meterHtml(s.id) +
+      (s.isInsert ? '<div style="margin-top:8px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--ins-text);margin-bottom:4px;"><ins>' + esc(s.newHeading) + '</ins></div>' : '') +
       '<div class="stext">' + s.marked + '</div>' +
       '<div class="srationale"><span class="rl">Rationale · unsigned</span>' + esc(s.rationale) + '</div>' +
       '<div class="sactions">' +
