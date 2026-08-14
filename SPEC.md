@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.12
+# Group Drafting Engine — Specification v0.13
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -49,7 +49,7 @@ The record is co-equal with the text: it is where outvoted currents remain visib
 
 Skipping is not a move; the card returns later.
 
-**3.2 Indifference** is a judgment: tie evidence for the ranking (a forced choice would fabricate preference), the instrument of behavioral dedup (§5), and, in aggregate, the **care map** — spans the group doesn't mind about keep their incumbents cheaply and stop drawing attention.
+**3.2 Indifference** is a judgment: tie evidence for the ranking (a forced choice would fabricate preference), the instrument of behavioral dedup (§5), and, in aggregate, the **care map** — spans the group doesn't mind about keep their incumbents cheaply and stop drawing attention. The map counts indifference on incumbent-involving pairs only — "cold" is incumbent-relative, and rival-pair ties can come from people who defend the status quo (Q13, sim evidence 2026-08-14). All-pairs indifference is still logged; where it runs hot above the map's reading, that excess is a camp-split hint surfaced in the composer briefing (§6.1), never in the map.
 
 **3.3 Propose C** opens the composer (§6), which reveals mid-flight state; choosing it therefore forfeits that pair's comparison (never collected — this prices the peek), and is itself logged as weak dissatisfaction with both. The composed draft is a brand-new patch: normal stake, and its footprint decides its race — it may re-enter the race that prompted it or land elsewhere.
 
@@ -117,7 +117,7 @@ Tokens exist to make proposing cost something — anti-flooding, nothing more. E
 
     refund = stake × min( w / 0.5 , 1.5 )
 
-Co-signs and withdrawals refund fully; merges pool pro-rata. The curve is continuous because cliffs concentrate gaming at the boundary; junk self-punishes in proportion, near-misses cost little. w is the peak rather than exit-time probability by design: a good early candidate displaced by a later, better draft is not punished for the improvement it provoked, and junk never peaks high. Calibration histories appear in the record as audit data; their use is the context's business.
+Co-signs and withdrawals refund fully; merges pool pro-rata. (Calibration note, sim evidence 2026-08-14: at these defaults the economy is deliberately slack — no starvation observed at rosters 5–14, participants sit near the cap — so the drip is close to inert; it stays for population-scale headroom, and the wall-clock drip/threshold pairing is confirmed to feel soft-early/hard-late as intended, Q8.) The curve is continuous because cliffs concentrate gaming at the boundary; junk self-punishes in proportion, near-misses cost little. w is the peak rather than exit-time probability by design: a good early candidate displaced by a later, better draft is not punished for the improvement it provoked, and junk never peaks high. Calibration histories appear in the record as audit data; their use is the context's business.
 
 ---
 
@@ -145,7 +145,7 @@ Rival-vs-rival pairs answer a conditional question — "if this text changes, wh
 
 **9.2 Two publications.** Common knowledge is made by publication. **Opening:** roster, constitution, and starting text, hash-anchored and pushed to all. **Closing:** the text and the record. Between them the chamber view is ambient: adoptions land with a chime, the rolling log hash and bounty board are visible, live standings never are.
 
-**9.3 Presence and access.** Participation is bouts, not attendance; c_p absorbs intermittency. The convenor may add or remove participants mid-session: a joiner receives the base grant plus drip accrued to date (capped); F recomputes from current E; a removed participant's live candidates remain live, flagged author-departed, and their cast judgments stay counted. Chamber visibility is convenor-toggled (default link-only). An **observer role** provides the chamber plus an anonymized live metrics feed (throughput, saturation events, care-map evolution). The record's distribution is the convenor's.
+**9.3 Presence and access.** Participation is bouts, not attendance; c_p absorbs intermittency. The convenor may add or remove participants mid-session: a joiner receives the base grant plus drip accrued to date (capped); F recomputes from current E; a removed participant's live candidates remain live, flagged author-departed, and their cast judgments stay counted. A roster change's floor recomputation is announced in the gazette ("floor recomputed, N races now eligible") so races parked at the old floor never complete silently (Q10, sim evidence 2026-08-14). Chamber visibility is convenor-toggled (default link-only). An **observer role** provides the chamber plus an anonymized live metrics feed (throughput, saturation events, care-map evolution). The record's distribution is the convenor's.
 
 **9.4 Sessions repeat.** Next session, the adoption threshold resets and the backlog re-enters stake-waived, carrying graveyards, camp maps, and rationales as briefing context — not as evidence. Between sessions, authors revise against everything the record taught; incubation is where bridges that need longer than a window get built.
 
