@@ -1,0 +1,596 @@
+<title>Composer</title>
+<style>
+  /* Deliberately single-theme (light) — Ed, 2026-08-14. Bootstrap-plain. */
+  :root {
+    --bg: #FFFFFF;
+    --fg: #212529;
+    --muted: #6C757D;
+    --border: #DEE2E6;
+    --light: #F8F9FA;
+    --primary: #0D6EFD;
+    --primary-hover: #0B5ED7;
+    --primary-subtle: #CFE2FF;
+    --primary-emphasis: #084298;
+    --race-bg: #FFF9DB;
+    --race-border: #F5C518;
+    --race-text: #8A6D00;
+    --ins-text: #198754;
+    --ins-bg: #D1E7DD;
+    --del-text: #DC3545;
+    --del-bg: #F8D7DA;
+    --changed: #6F42C1;
+    --changed-bg: #EDE7F7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    margin: 0;
+    padding-bottom: 60px;
+  }
+  .wrap { max-width: 1220px; margin: 0 auto; padding: 0 16px; }
+  .small { font-size: 0.875rem; }
+  .mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.75rem; }
+
+  .navbar { background: var(--light); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 40; }
+  .navbar .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 10px 16px; }
+  .navbar .brand { font-weight: 600; font-size: 1rem; margin: 0; }
+  .navbar .brand .sess { color: var(--muted); font-weight: 400; }
+  .navbar .stats { display: flex; gap: 18px; white-space: nowrap; font-size: 0.875rem; color: var(--muted); }
+  .navbar .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
+
+  /* the composer is one column: a brief you read, then a desk you write at */
+  .col { max-width: 880px; margin: 18px auto 0; padding: 0 16px; }
+
+  .btn {
+    appearance: none; font: inherit; font-size: 0.875rem;
+    padding: 0.375rem 0.75rem; cursor: pointer;
+    border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+    border-radius: 0.375rem;
+  }
+  .btn:hover { background: var(--light); }
+  .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+  .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  .btn-outline { color: var(--muted); }
+  .btn-outline:hover { color: var(--primary); border-color: var(--primary); background: var(--bg); }
+  .btn-group { display: inline-flex; }
+  .btn-group .btn { border-radius: 0; margin-left: -1px; }
+  .btn-group .btn:first-child { border-radius: 0.375rem 0 0 0.375rem; margin-left: 0; }
+  .btn-group .btn:last-child { border-radius: 0 0.375rem 0.375rem 0; }
+  .btn-group .btn[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
+  button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  /* disclosure ribbon */
+  .ribbon {
+    border: 1px solid var(--primary); background: var(--primary-subtle);
+    color: var(--primary-emphasis);
+    border-radius: 0.5rem; padding: 10px 14px; font-size: 0.875rem; margin-bottom: 14px;
+  }
+
+  /* arrival bar */
+  .arrival { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .arrival .al { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
+  .abanner {
+    border: 1px solid var(--border); border-left: 3px solid var(--primary);
+    border-radius: 0 0.5rem 0.5rem 0; padding: 12px 16px; font-size: 0.875rem;
+    margin-bottom: 18px; background: var(--light);
+  }
+  .abanner b { color: var(--primary-emphasis); }
+  .abanner.invite { border-left-color: var(--del-text); }
+  .abanner.invite b { color: var(--del-text); }
+  .abanner.bounty { border-left-color: var(--race-border); background: var(--race-bg); }
+  .abanner.bounty b { color: var(--race-text); }
+
+  /* dominated loss account */
+  .dom {
+    border: 1px solid var(--border); border-radius: 0.5rem;
+    padding: 16px 18px; margin-bottom: 22px;
+  }
+  .dom .dhead { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; margin-bottom: 6px; }
+  .dom .dhead b { font-size: 0.9375rem; }
+  .dom .yours {
+    background: var(--light); border: 1px solid var(--border); border-radius: 0.375rem;
+    padding: 10px 12px; font-size: 0.9375rem; margin-bottom: 12px;
+  }
+  .tier { border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 10px; font-size: 0.875rem; }
+  .tchip {
+    display: inline-block; font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; border-radius: 0.25rem; padding: 1px 7px; margin-bottom: 5px;
+  }
+  .tchip.facts { background: var(--primary-subtle); color: var(--primary-emphasis); }
+  .tchip.words { background: var(--ins-bg); color: var(--ins-text); }
+  .tchip.hypo { background: var(--race-bg); color: var(--race-text); border: 1px solid var(--race-border); }
+  .tier ul { margin: 4px 0 0; padding-left: 20px; }
+  .tier li { margin-bottom: 3px; }
+  .tier blockquote { margin: 6px 0 0; padding: 6px 12px; border-left: 3px solid var(--ins-bg); color: var(--muted); font-style: italic; }
+  .dom .dactions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .dom .dfoot { font-size: 0.72rem; color: var(--muted); margin-top: 8px; }
+
+  /* the brief */
+  .bhead { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 26px 0 8px; font-weight: 700; }
+  .panel { border: 1px solid var(--border); border-radius: 0.5rem; padding: 14px 16px; margin-bottom: 12px; }
+  .panel .ph { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 8px; }
+
+  .heatrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .heatrow { grid-template-columns: 1fr; } }
+  .stat .sv { font-size: 1.125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat .sl { font-size: 0.75rem; color: var(--muted); }
+
+  .standings { display: flex; flex-direction: column; gap: 9px; }
+  .srow { display: grid; grid-template-columns: 170px 1fr 56px; gap: 10px; align-items: center; font-size: 0.8125rem; }
+  @media (max-width: 720px) { .srow { grid-template-columns: 110px 1fr 56px; } }
+  .srow .sn b { font-weight: 600; }
+  .srow .sp { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .pbar { position: relative; height: 8px; background: var(--light); border: 1px solid var(--border); border-radius: 4px; }
+  .pbar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--primary); border-radius: 4px; opacity: 0.75; }
+  .pbar.incumbent i { background: var(--muted); }
+  .pbar .thr { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--fg); }
+  .slegend { font-size: 0.72rem; color: var(--muted); margin-top: 8px; }
+
+  .camps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 720px) { .camps { grid-template-columns: 1fr; } }
+  .camp { border: 1px solid var(--border); border-radius: 0.375rem; padding: 10px 12px; font-size: 0.875rem; }
+  .camp .cn { font-weight: 600; margin-bottom: 2px; }
+  .camp .cf { font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; }
+  .camp .cd { color: var(--fg); }
+
+  .digest { font-size: 0.9375rem; }
+  .digest .machine { font-size: 0.72rem; color: var(--muted); margin-top: 8px; }
+
+  .grave ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .grave li { display: flex; gap: 10px; align-items: baseline; font-size: 0.8125rem; }
+  .gchip { flex: none; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; border-radius: 0.25rem; padding: 1px 6px; }
+  .gchip.dominated { background: var(--del-bg); color: var(--del-text); }
+  .gchip.cosigned { background: var(--ins-bg); color: var(--ins-text); }
+  .gchip.withdrawn { background: var(--light); color: var(--muted); border: 1px solid var(--border); }
+  .grave .gwhy { color: var(--muted); }
+
+  .bridge { border-color: var(--race-border); background: var(--race-bg); }
+  .bridge .ph { color: var(--race-text); }
+  .bridge .brow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0 6px; }
+  @media (max-width: 720px) { .bridge .brow { grid-template-columns: 1fr; } }
+  .bridge .bslot { background: var(--bg); border: 1px solid var(--race-border); border-radius: 0.375rem; padding: 8px 10px; font-size: 0.78rem; }
+  .bridge .bslot .bl { font-weight: 600; display: block; margin-bottom: 6px; }
+  .bridge .geo { font-size: 0.8125rem; margin-top: 8px; }
+  .bridge .geo .tchip { margin-bottom: 0; margin-right: 4px; }
+
+  /* the desk */
+  .desk { border: 1.5px solid var(--primary); border-radius: 0.5rem; box-shadow: 0 3px 12px rgba(13, 110, 253, 0.13); padding: 16px 18px; }
+  .desk .ph { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary-emphasis); margin-bottom: 8px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .desk .ph .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .ground {
+    background: var(--race-bg);
+    border-left: 3px solid var(--race-border);
+    padding: 8px 12px; border-radius: 0 0.375rem 0.375rem 0;
+    font-size: 0.9375rem; margin-bottom: 12px;
+  }
+  .ground .ground-note {
+    display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--race-text); margin-bottom: 3px;
+  }
+  .seedrow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; font-size: 0.8125rem; color: var(--muted); }
+  .pinned {
+    border: 1px solid var(--race-border); background: var(--race-bg); border-radius: 0.375rem;
+    padding: 8px 12px; font-size: 0.8125rem; margin-bottom: 10px; display: none;
+  }
+  .pinned b { color: var(--race-text); }
+  .desk textarea {
+    width: 100%; min-height: 150px; resize: vertical;
+    font: inherit; font-size: 0.9375rem; line-height: 1.5;
+    border: 1px solid var(--border); border-radius: 0.375rem; padding: 10px 12px;
+    color: var(--fg); background: var(--bg);
+  }
+  .desk textarea:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+  .desk .rationale-in { margin-top: 10px; }
+  .desk .rationale-in input {
+    width: 100%; font: inherit; font-size: 0.875rem;
+    border: 1px solid var(--border); border-radius: 0.375rem; padding: 8px 12px;
+  }
+  .desk .rl { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); display: block; margin-bottom: 3px; }
+  .deskmeta { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 12px; font-size: 0.8125rem; color: var(--muted); }
+  .fchip {
+    font-size: 0.72rem; font-weight: 600; border-radius: 0.25rem; padding: 2px 8px;
+    background: var(--primary-subtle); color: var(--primary-emphasis); white-space: nowrap;
+  }
+  .desk .submitrow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+  .desk .stake { font-size: 0.8125rem; color: var(--muted); }
+
+  /* dedup gate */
+  .gate {
+    display: none;
+    border: 1.5px solid var(--changed); border-radius: 0.5rem;
+    box-shadow: 0 3px 12px rgba(111, 66, 193, 0.15);
+    padding: 16px 18px; margin-top: 14px; background: var(--bg);
+  }
+  .gate .ph { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--changed); margin-bottom: 4px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .gate .ph .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .gate .existing {
+    background: var(--light); border: 1px solid var(--border); border-radius: 0.375rem;
+    padding: 10px 12px; font-size: 0.9375rem; margin: 10px 0;
+  }
+  .gate .existing .xl { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); display: block; margin-bottom: 3px; }
+  .gate .delta {
+    border: 1px solid var(--changed); background: var(--changed-bg); border-radius: 0.375rem;
+    padding: 10px 12px; font-size: 0.875rem; margin-bottom: 12px;
+  }
+  .gate .delta .xl { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--changed); display: block; margin-bottom: 3px; }
+  .gate .gactions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .gate .goutcome { font-size: 0.8125rem; margin-top: 10px; color: var(--ins-text); display: none; }
+  .gate .gfoot { font-size: 0.72rem; color: var(--muted); margin-top: 8px; }
+
+  .notes { margin-top: 56px; border-top: 1px solid var(--border); padding-top: 26px; }
+  .notes h2 { font-size: 1.25rem; margin: 0 0 4px; }
+  .notes .sub { color: var(--muted); margin: 0 0 22px; }
+  .notes h3 { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary-emphasis); margin: 26px 0 8px; }
+  .notes p { max-width: 70ch; margin: 0 0 12px; }
+  .notes ul { max-width: 70ch; margin: 0 0 12px; padding-left: 22px; }
+  .notes li { margin-bottom: 6px; }
+</style>
+
+<header class="navbar">
+  <div class="wrap">
+    <p class="brand">The Hollow Oak Club — House Charter <span class="sess">· convention in session</span></p>
+    <div class="stats">
+      <span>time left <b>2h 04m</b></span>
+      <span>adoption bar <b>0.74 ▲</b></span>
+      <span>your tokens <b>5</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="col">
+
+  <div class="ribbon">
+    <b>The composer is briefed, not blind.</b> Standings, splits and camps are visible on this page — and nowhere else (SPEC §3.5).
+    Everyone who sees them either paid propose-C's forfeit or was summoned by the engine. Nothing below appears on any card, feed, sort or notification.
+  </div>
+
+  <div class="arrival">
+    <span class="al">§ Money · the composer</span>
+    <span class="small" style="color:var(--muted)">How you arrived (mockup switcher — a real session shows exactly one):
+      <span class="btn-group" role="group" aria-label="Arrival context">
+        <button class="btn" data-arrive="propose" aria-pressed="true">propose C</button>
+        <button class="btn" data-arrive="bounty" aria-pressed="false">bounty board</button>
+        <button class="btn" data-arrive="invite" aria-pressed="false">invitation: dominated</button>
+      </span>
+    </span>
+  </div>
+
+  <div class="abanner" id="ab-propose">
+    <b>You pressed “Propose something else” on a § Money card.</b> That pair's A/B comparison was <b>forfeited</b> — never collected,
+    not pending: the composer reveals mid-flight state, and the forfeit prices the peek. Your press was logged as weak dissatisfaction
+    with both options. Your draft is a brand-new patch: normal stake, and its footprint decides its race — it may re-enter § Money or land elsewhere.
+  </div>
+  <div class="abanner bounty" id="ab-bounty" hidden>
+    <b>You came from the bounty board, where § Money is ranked #1</b> — the disagreement a good draft would resolve, weighted by
+    how much the room says this question matters. The race is saturated: judgment has stopped, because more of it won't move the
+    picture. Only a new draft can. Both camps' authors were invited; anyone may draft.
+  </div>
+  <div class="abanner invite" id="ab-invite" hidden>
+    <b>The engine invited you: your candidate has no realistic path.</b> Projected against the rising bar, current evidence and
+    trajectory won't clear it before close. This invitation fires on confident states only and re-fires only when something has
+    changed — never on a timer. The account below is labeled tier by tier as what it is: facts, the winners' own words, and hypothesis.
+  </div>
+
+  <!-- dominated-account: visible only under the invitation arrival -->
+  <section class="dom" id="dom" hidden>
+    <div class="dhead">
+      <b>Why your candidate is losing</b>
+      <span class="small" style="color:var(--muted)">redraft 0 of 2 used · two failed informed redrafts carry the position to the backlog</span>
+    </div>
+    <div class="yours">“No money leaves the purse without two members' signatures, and the accounts are read aloud at every Thursday dinner.”
+      <span class="small" style="color:var(--muted)"> — your candidate, staked 1 token</span></div>
+
+    <div class="tier">
+      <span class="tchip facts">Facts</span>
+      <ul>
+        <li>P(beats current text) peaked at <b>0.22</b>, now <b>0.11</b> — the bar is 0.74 and rising to 0.95.</li>
+        <li>Head-to-head: loses to Option A in 5 of 6 comparisons, to Option B in 4 of 4.</li>
+        <li>Indifference on its pairs: 5% — judges aren't shrugging, they're choosing against it, and quickly (median 9s).</li>
+        <li>The camp cut: it loses <b>inside both camps</b>. This is not a camp being outvoted.</li>
+      </ul>
+    </div>
+    <div class="tier">
+      <span class="tchip words">The winners' own words</span>
+      <blockquote>“Whoever holds the purse must be watched: "reimburses what seems fair" with receipts "in the tin" is unchecked discretion. This ties spending to approval and forces open reporting.” — Option A, pinned rationale</blockquote>
+      <blockquote>“The old rule buries our volunteer in budget sign-offs and minute-taking. We're friends who trust each other — spare whoever takes this on the paperwork.” — Option B, pinned rationale</blockquote>
+    </div>
+    <div class="tier">
+      <span class="tchip hypo">Hypothesis</span>
+      <p style="margin:4px 0 0">Fitted across this race and its graveyard: <b>candidates that put a second member's hands on routine
+      payments rank below 0.30</b> — yours (“two members' signatures”) and the withdrawn quarterly-audit draft share that structure;
+      Option A's budget approval does not (it binds the bill, not the payer). The dinner read-aloud never appears without the
+      signatures, so the data can't price it separately. <span style="color:var(--muted)">Evidence: 2 candidates, 13 comparisons.</span> A
+      redraft that keeps the read-aloud and drops the signatures would isolate the cause.</p>
+    </div>
+
+    <div class="dactions">
+      <button class="btn" id="dom-retire">Retire — refund 0.44 of 1 staked</button>
+      <button class="btn" id="dom-cosign">Co-sign the leader — full refund</button>
+      <button class="btn btn-primary" id="dom-redraft">Redraft informed — seeds the desk below</button>
+    </div>
+    <div class="dfoot">Refund rides peak strength, not exit-time: stake × min(0.22 ⁄ 0.5, 1.5) = 0.44. A good early draft displaced by a better one isn't punished for the improvement it provoked.</div>
+  </section>
+
+  <!-- the-briefing -->
+  <h2 class="bhead">The briefing — what the room has already said</h2>
+
+  <div class="panel">
+    <div class="ph">The heat</div>
+    <div class="heatrow">
+      <div class="stat"><div class="sv">0.52 : 0.48</div><div class="sl">split magnitude — A vs B head-to-head, unmoved across the last 11 rival comparisons</div></div>
+      <div class="stat"><div class="sv">4%</div><div class="sl">indifference rate (session median 22%) — the room cares about this one</div></div>
+      <div class="stat"><div class="sv">24</div><div class="sl">comparisons · 9 of 14 members have moved · saturated — marginal information below cost</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph">Standings — visible only here</div>
+    <div class="standings">
+      <div class="srow">
+        <span class="sn"><b>Current text</b> <span class="small" style="color:var(--muted)">(incumbent)</span></span>
+        <span class="pbar incumbent"><i style="width:39%"></i><span class="thr" style="left:74%" title="adoption bar 0.74"></span></span>
+        <span class="sp">0.39</span>
+      </div>
+      <div class="srow">
+        <span class="sn"><b>Option A</b> — open the books</span>
+        <span class="pbar"><i style="width:61%"></i><span class="thr" style="left:74%" title="adoption bar 0.74"></span></span>
+        <span class="sp">0.61</span>
+      </div>
+      <div class="srow">
+        <span class="sn"><b>Option B</b> — light touch</span>
+        <span class="pbar"><i style="width:55%"></i><span class="thr" style="left:74%" title="adoption bar 0.74"></span></span>
+        <span class="sp">0.55</span>
+      </div>
+    </div>
+    <div class="slegend">Bars: P(beats the incumbent). The black tick is the adoption bar, 0.74 and rising — neither camp's draft has a path on current evidence. Incumbent bar is its certification: P(it beats the best live challenger). That is the opening a bridge walks through.</div>
+  </div>
+
+  <div class="panel">
+    <div class="ph">Camp structure — detected, no identities</div>
+    <div class="camps">
+      <div class="camp">
+        <div class="cn">Open the books</div>
+        <div class="cf">prefers A-type drafts · coheres across 5 judges' comparison structure</div>
+        <div class="cd">The purse must be watched. Discretion invites doubt; receipts and reporting protect the Purse-holder as much as the purse.</div>
+      </div>
+      <div class="camp">
+        <div class="cn">Light touch</div>
+        <div class="cf">prefers B-type drafts · coheres across 4 judges' comparison structure</div>
+        <div class="cd">We're friends, not a finance committee. Paperwork punishes the one volunteer; trust is the point of the club.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph">Why — a digest of the room's stated reasons</div>
+    <div class="digest">
+      Both camps keep the tin and keep the Purse-holder. Nobody defends “what seems fair” as words — the fight is over <b>how much
+      procedure stands between a member and reimbursement</b>. One side wants approval before spending and open reporting after it;
+      the other wants receipts handled on trust and the volunteer spared the forms. Both rationales invoke protecting the same
+      person: the one holding the purse.
+      <div class="machine">Machine-built from the pinned rationales of camp-preferred candidates and the comparison structure. It quotes reasons, never people.</div>
+    </div>
+  </div>
+
+  <div class="panel grave">
+    <div class="ph">The graveyard — dead here, don't redraft them</div>
+    <ul>
+      <li><span class="gchip dominated">dominated</span><span>“Members pay their own way and settle up over dinner; the purse is wound up.” <span class="gwhy">— retired at 0.09; the attribution isolates “winding up the purse” as the penalised intent · refund 0.18</span></span></li>
+      <li><span class="gchip cosigned">co-signed</span><span>“The Purse-holder photographs the tin's receipts into the house group each month.” <span class="gwhy">— folded into Option A at the gate; stake refunded in full, supporters pooled</span></span></li>
+      <li><span class="gchip withdrawn">withdrawn</span><span>“Two members drawn by lot audit the tin each quarter.” <span class="gwhy">— failed rebase after the dues adoption; author withdrew · full refund</span></span></li>
+    </ul>
+  </div>
+
+  <div class="panel bridge">
+    <div class="ph">The bridge bar — this race is saturated</div>
+    <div style="font-size:0.875rem">More judgment won't move this race; only a new draft can. A candidate entering now is measured by
+    <b>minimum support across camps</b> — aggregate win rate is not the test.</div>
+    <div class="brow">
+      <div class="bslot"><span class="bl">It must beat Option A…</span> …among the judges who prefer B. Stratified probes serve it to the light-touch camp first.</div>
+      <div class="bslot"><span class="bl">…and beat Option B</span> …among the judges who prefer A. A draft beloved by one camp is exposed in a handful of judgments.</div>
+    </div>
+    <div class="geo"><span class="tchip hypo">Machine read</span> The split looks one-dimensional — procedure-heavy ↔ procedure-light — so a true
+    median can beat both camps. A labeled machine seed may also enter; it competes by the same arithmetic as anything else.</div>
+  </div>
+
+  <!-- drafting-desk -->
+  <h2 class="bhead">The desk — your patch against the contested text</h2>
+
+  <section class="desk">
+    <div class="ph"><span>Your draft</span><span class="sub">authorship sealed until close · rationale pinned to the candidate</span></div>
+
+    <div class="ground">
+      <span class="ground-note">Current text — the ground your patch changes</span>
+      The Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.
+    </div>
+
+    <div class="seedrow">
+      <span>Start from:</span>
+      <span class="btn-group" role="group" aria-label="Seed">
+        <button class="btn" data-seed="current" aria-pressed="true">current text</button>
+        <button class="btn" data-seed="a" aria-pressed="false">Option A</button>
+        <button class="btn" data-seed="b" aria-pressed="false">Option B</button>
+      </span>
+    </div>
+
+    <div class="pinned" id="pinned"><b>Pinned from the loss account:</b> keep the dinner read-aloud, drop the per-payment signatures — that redraft isolates the hypothesis.</div>
+
+    <textarea id="draft" aria-label="Your draft">The Purse-holder pays the bills and reimburses claims against receipts, keeps the receipts in the tin where any member may leaf through them, and gives the house a plain reckoning of money in and money out each term — no sign-offs, no forms, just receipts and daylight.</textarea>
+
+    <div class="rationale-in">
+      <span class="rl">Rationale — pinned to the candidate, ≤300 chars, always visible</span>
+      <input id="rationale" value="Both camps protect the same person. Receipts and a termly reckoning give the open-books camp its daylight; no approvals and no forms spare the volunteer. The tin stays." />
+    </div>
+
+    <div class="deskmeta">
+      <span class="fchip">Footprint · § Money — “The Purse-holder pays…” · one span</span>
+      <span>The footprint follows your edit — touch more spans and it widens. It decides which race this enters.</span>
+    </div>
+    <div class="deskmeta">
+      <span>This draft is:</span>
+      <span class="btn-group" role="group" aria-label="Separable bundle flag">
+        <button class="btn" data-sep="one" aria-pressed="true">one intent — stands or falls together</button>
+        <button class="btn" data-sep="split" aria-pressed="false">separable — the system may split it</button>
+      </span>
+    </div>
+
+    <div class="submitrow">
+      <button class="btn btn-primary" id="submit">Submit — stake 1 token</button>
+      <span class="stake">Flat stake, you hold 5. Refund on exit rides peak strength: stake × min(w ⁄ 0.5, 1.5) — junk self-punishes, near-misses cost little.</span>
+    </div>
+  </section>
+
+  <!-- dedup-gate -->
+  <section class="gate" id="gate">
+    <div class="ph"><span>The gate — this looks close to a live candidate</span><span class="sub">checked against the live set and graveyard · embeddings · edit distance · LLM equivalence</span></div>
+    <div class="small" style="color:var(--muted)">Similarity: embedding 0.86 · shares 61% of its tokens with Option A · LLM read: related, not equivalent.</div>
+    <div class="existing">
+      <span class="xl">The existing candidate — Option A (live, current leader)</span>
+      The Purse-holder pays only bills approved under the budget or by a house decision, reimburses claims against receipts, keeps
+      accounts and receipts open to any member on request, and reports income and spending at every meeting.
+    </div>
+    <div class="delta">
+      <span class="xl">The delta, machine-articulated</span>
+      Both drafts require receipts and open the books. Option A additionally requires bills to be <b>approved before payment</b> and a
+      report <b>at every meeting</b>; yours drops both, keeps the tin, and reckons once a term. The gate reads these as different
+      answers to <i>how much procedure</i> — if that difference is your point, differentiate and sharpen it.
+    </div>
+    <div class="gactions">
+      <button class="btn" data-gate="cosign">Co-sign Option A — stake refunded, join its supporters</button>
+      <button class="btn btn-primary" data-gate="diff">Differentiate — sharpen against the delta</button>
+      <button class="btn btn-outline" data-gate="insist">Insist — enter flagged-similar</button>
+    </div>
+    <div class="goutcome" id="goutcome"></div>
+    <div class="gfoot">Insisting isn't punished: flagged-similar pairs get a few direct probes through the ordinary move. Overwhelming indifference proposes an auto-merge (stakes pool, refunds pro-rata); a consistent preference means they weren't duplicates, and the probe sharpened the ranking (§5.2).</div>
+  </section>
+
+</div>
+
+<div class="wrap">
+  <section class="notes">
+    <h2>Design notes — the composer, first pass</h2>
+    <p class="sub">Desktop-first · light mode · Bootstrap-plain (visual design deferred) · content from run clubhouse-1, minutes after the session-view moment: the § Money race has just saturated</p>
+
+    <h3>A writing desk, not a dashboard</h3>
+    <p>The composer is the only surface in the product that shows direction, so the temptation is to make it a war room. Resisted: it is <b>one column you read downward</b> — arrival context, then the briefing, then the desk, then the gate. The brief is what a good clerk would hand you before you draft: the heat, who wants what and why, what's already dead, and what a winning draft must do. Ceremony is earned here (the north star), but it is the ceremony of being well briefed, not of watching dials.</p>
+
+    <h3>The one briefed surface</h3>
+    <p>SPEC §3.5: judgment is blind; composition is briefed. Standings, splits and camps appear here and nowhere else, and everyone who sees them has paid for the peek — propose-C forfeits that pair's comparison (never collected) — or was summoned by the engine. The ribbon at the top states the inversion so it reads as a rule of the room, not a leak. Camp cards carry reasons and rough cohesion, never names; the why-digest quotes rationales, never people.</p>
+
+    <h3>Three doors in</h3>
+    <p>The arrival switcher is a mockup affordance — a real session shows exactly one banner. <b>Propose C</b> states the forfeit plainly and notes the draft is a brand-new patch whose footprint decides its race. <b>Bounty board</b> arrives with the race's rank and the saturation story. <b>Invitation: dominated</b> reveals the loss account above the brief — this door imagines you had also drafted a third § Money candidate earlier in the session, which is why the session-view mockup shows only two racing. Invitations fire on confident states only, never on a timer (§6.2).</p>
+
+    <h3>The loss account's honesty tiers</h3>
+    <p>The dominated account is labeled tier by tier as what it is — <b>facts</b> (standings, head-to-heads, indifference, decision speed, the camp cut), <b>the winners' own words</b> (their pinned rationales, quoted verbatim), and <b>hypothesis</b> (the fitted span-level attribution, with its evidence volume attached and an honest note about what the data cannot isolate, plus the isolating redraft it suggests). Thin data would get a thin account. The three options price honestly: retire refunds by peak strength; co-sign refunds fully; redraft informed seeds the desk and pins the hypothesis above the editor — and the counter shows 0 of 2 used, because two failed informed redrafts carry the position to the backlog as a recorded persistent current.</p>
+
+    <h3>The bridge bar</h3>
+    <p>Because this race is saturated, the brief ends with the bar an entering draft must clear: <b>minimum support across camps</b> — beat A among B's preferrers, beat B among A's, via stratified probes (§6.3). Rendered as two slots rather than one meter because the min() is the point: the second-best camp is the score. The machine's geometry read (§6.4) sits beneath it as a labeled hypothesis — one-dimensional split, a median can win — with the note that machine seeds compete by the same arithmetic.</p>
+
+    <h3>The desk</h3>
+    <p>The contested ground renders in race yellow, exactly as the race-card and session-view draw it, so the series' color grammar carries: yellow is the contested text wherever you meet it. Seeding (current / A / B) matches the propose-C promise made in the race-card notes. The footprint chip is live commentary — the footprint follows the edit and decides the race — and the separable-bundle flag is the §4.1 submission-time choice, defaulted to “one intent” because this draft is a bridge and bridges are take-it-or-leave-it by nature. Stake is stated flat with the refund curve in one line: enough to price the move, not an economy lesson.</p>
+
+    <h3>The gate is a moment, not a wall</h3>
+    <p>Submission runs the dedup gate (§5.1) inline: the existing candidate, the similarity evidence as magnitudes, and the <b>machine-articulated delta</b> — which is deliberately the best writing on the page, because the delta is what makes “differentiate” a real choice rather than a scolding. The demo draft was chosen to sit honestly near Option A so all three options are live: co-sign if the delta isn't your point, differentiate if it is, insist if you think the room can tell them apart — and insisting routes to behavioral dedup, where being wrong costs a merge and being right sharpens the ranking. The gate borders purple: in the series grammar purple is “something changed since you looked,” and here it is the engine interrupting your intent with news.</p>
+
+    <h3>Named parts</h3>
+    <ul>
+      <li><b>arrival-bar</b> — the one-line context strip + banner saying which door you came through and what it cost.</li>
+      <li><b>dominated-account</b> — the three-tier loss account (facts / winners' words / hypothesis) with retire · co-sign · redraft informed.</li>
+      <li><b>the-briefing</b> — the read-first block: <b>heat-panel</b>, <b>standings-panel</b>, <b>camp-map</b>, <b>why-digest</b>, <b>graveyard</b>, <b>bridge-bar</b>.</li>
+      <li><b>drafting-desk</b> — ground, seed-picker, editor, pinned rationale field, footprint-chip, separable-flag, stake line, submit.</li>
+      <li><b>dedup-gate</b> — the near-duplicate interrupt: existing candidate, delta, co-sign / differentiate / insist.</li>
+    </ul>
+
+    <h3>What is deliberately absent</h3>
+    <ul>
+      <li><b>No identities, anywhere.</b> Camps are structures, digests quote rationales, the loss account's “camp cut” names no one. Heat shows magnitudes; standings show probabilities, not voters.</li>
+      <li><b>No live poll of your draft.</b> The desk never predicts how your draft would fare — that would be a standings feed by the back door. The bridge bar states the test; the judging answers it.</li>
+      <li><b>No chat.</b> To argue is to draft (§3.4); the rationale field is the one utterance and it is pinned to the candidate.</li>
+      <li><b>No sight of other composers.</b> Whether anyone else is drafting here right now is private state (§11).</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+  const SEEDS = {
+    current: 'The Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.',
+    a: 'The Purse-holder pays only bills approved under the budget or by a house decision, reimburses claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting.',
+    b: 'The Purse-holder pays the house’s bills and reimburses members’ reasonable claims as trust and good sense direct, keeping accounts in whatever simple way suits, and is glad to talk any member through them who asks.',
+    dominated: 'No money leaves the purse without two members’ signatures, and the accounts are read aloud at every Thursday dinner.',
+  };
+
+  const draft = document.getElementById('draft');
+  const gate = document.getElementById('gate');
+  const goutcome = document.getElementById('goutcome');
+  const dom = document.getElementById('dom');
+  const pinned = document.getElementById('pinned');
+
+  // arrival-bar switcher (mockup affordance: a real session shows exactly one)
+  const banners = { propose: 'ab-propose', bounty: 'ab-bounty', invite: 'ab-invite' };
+  document.querySelectorAll('[data-arrive]').forEach((b) =>
+    b.addEventListener('click', () => {
+      document.querySelectorAll('[data-arrive]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+      for (const [k, id] of Object.entries(banners)) document.getElementById(id).hidden = k !== b.dataset.arrive;
+      dom.hidden = b.dataset.arrive !== 'invite';
+    })
+  );
+
+  // seed-picker
+  document.querySelectorAll('[data-seed]').forEach((b) =>
+    b.addEventListener('click', () => {
+      document.querySelectorAll('[data-seed]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+      draft.value = SEEDS[b.dataset.seed];
+      draft.focus();
+    })
+  );
+
+  // separable-flag
+  document.querySelectorAll('[data-sep]').forEach((b) =>
+    b.addEventListener('click', () => {
+      document.querySelectorAll('[data-sep]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    })
+  );
+
+  // dominated-account actions
+  document.getElementById('dom-redraft').addEventListener('click', () => {
+    draft.value = SEEDS.dominated;
+    pinned.style.display = 'block';
+    draft.scrollIntoView({ block: 'center' });
+    draft.focus();
+  });
+  document.getElementById('dom-retire').addEventListener('click', () => {
+    dom.innerHTML = '<div class="dhead"><b>Retired.</b></div><div class="small" style="color:var(--muted)">0.44 tokens refunded · the candidate moves to the graveyard with its cause of death · receipt logged. The brief below stays — you may still draft fresh.</div>';
+  });
+  document.getElementById('dom-cosign').addEventListener('click', () => {
+    dom.innerHTML = '<div class="dhead"><b>Co-signed Option A.</b></div><div class="small" style="color:var(--muted)">Stake refunded in full · you join its supporters · your candidate merges into the graveyard as co-signed. The brief below stays.</div>';
+  });
+
+  // submit → dedup-gate
+  document.getElementById('submit').addEventListener('click', () => {
+    goutcome.style.display = 'none';
+    gate.style.display = 'block';
+    gate.scrollIntoView({ block: 'center' });
+  });
+
+  // dedup-gate choices
+  document.querySelectorAll('[data-gate]').forEach((b) =>
+    b.addEventListener('click', () => {
+      goutcome.style.display = 'block';
+      if (b.dataset.gate === 'cosign') {
+        goutcome.textContent = '✓ Co-signed Option A — stake refunded, you’re counted among its supporters. Nothing new enters the race.';
+      } else if (b.dataset.gate === 'diff') {
+        goutcome.textContent = '✓ Back to the desk — the delta stays pinned above your draft. Sharpen the difference the machine named, then submit again.';
+        pinned.style.display = 'block';
+        pinned.innerHTML = '<b>Pinned delta:</b> Option A approves before payment and reports every meeting; yours drops both and reckons once a term. Make that difference unmissable.';
+        draft.scrollIntoView({ block: 'center' });
+        draft.focus();
+      } else {
+        goutcome.textContent = '✓ Submitted, flagged-similar — 1 token staked. Expect a few direct probes against Option A through the ordinary move; the room decides whether the difference is real.';
+      }
+    })
+  );
+</script>
