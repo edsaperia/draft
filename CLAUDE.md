@@ -33,7 +33,8 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 - `coherence-auditor` — machine participant patrolling document drift, fixed token budget.
 
 **Product (UI and ceremony):**
-- `race-card` — the judging surface: contested text, two candidates, A/B/indifferent/propose-C.
+- `session-view` — the default member surface: the current document with suggestions anchored where they bite — quick-approve singletons, race anchors that escalate in place, multi-site patch anchors — plus the needs-you queue. Design: design/session-view.html.
+- `race-card` — the judging surface: contested text, two candidates, A/B/indifferent/propose-C. In the UI it is the session-view's escalation state (overlay model, design/race-card.html).
 - `composer` — the briefed drafting surface: heat, camps, why-digest, graveyard, bridge bar.
 - `gazette` — public feed of resolved outcomes; the chamber view is its ambient rendering.
 - `bounty-board` — public tab of saturated races ranked by resolvable disagreement × salience.
