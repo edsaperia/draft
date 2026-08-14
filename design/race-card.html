@@ -2,246 +2,205 @@
 <style>
   :root {
     --bg: #FFFFFF;
-    --panel: #FFFFFF;
-    --ink: #111827;
-    --soft: #6B7280;
-    --line: #E2E8F0;
-    --blue: #2563EB;
-    --blue-strong: #1D4ED8;
-    --blue-bg: #EFF6FF;
-    --mark-bg: #DBEAFE;
-    --mark-text: #1E40AF;
-    --ins-text: #166534;
-    --ins-bg: #DCFCE7;
-    --del-text: #B91C1C;
-    --del-bg: #FEE2E2;
-    --shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 6px 20px rgba(15, 23, 42, 0.06);
+    --fg: #212529;
+    --muted: #6C757D;
+    --border: #DEE2E6;
+    --light: #F8F9FA;
+    --primary: #0D6EFD;
+    --primary-hover: #0B5ED7;
+    --primary-subtle: #CFE2FF;
+    --primary-emphasis: #084298;
+    --ins-text: #198754;
+    --ins-bg: #D1E7DD;
+    --del-text: #DC3545;
+    --del-bg: #F8D7DA;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0B1220;
-      --panel: #111A2C;
-      --ink: #E5EAF3;
-      --soft: #94A3B8;
-      --line: #253150;
-      --blue: #60A5FA;
-      --blue-strong: #93C5FD;
-      --blue-bg: #16233C;
-      --mark-bg: #1E3A6E;
-      --mark-text: #BFDBFE;
-      --ins-text: #86EFAC;
-      --ins-bg: #14351F;
-      --del-text: #FCA5A5;
-      --del-bg: #3B1A1A;
-      --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 20px rgba(0, 0, 0, 0.4);
+      --bg: #212529;
+      --fg: #DEE2E6;
+      --muted: #ADB5BD;
+      --border: #495057;
+      --light: #2B3035;
+      --primary: #0D6EFD;
+      --primary-hover: #3D8BFD;
+      --primary-subtle: #031633;
+      --primary-emphasis: #6EA8FE;
+      --ins-text: #75B798;
+      --ins-bg: #051B11;
+      --del-text: #EA868F;
+      --del-bg: #2C0B0E;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0B1220;
-    --panel: #111A2C;
-    --ink: #E5EAF3;
-    --soft: #94A3B8;
-    --line: #253150;
-    --blue: #60A5FA;
-    --blue-strong: #93C5FD;
-    --blue-bg: #16233C;
-    --mark-bg: #1E3A6E;
-    --mark-text: #BFDBFE;
-    --ins-text: #86EFAC;
-    --ins-bg: #14351F;
-    --del-text: #FCA5A5;
-    --del-bg: #3B1A1A;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 20px rgba(0, 0, 0, 0.4);
+    --bg: #212529;
+    --fg: #DEE2E6;
+    --muted: #ADB5BD;
+    --border: #495057;
+    --light: #2B3035;
+    --primary: #0D6EFD;
+    --primary-hover: #3D8BFD;
+    --primary-subtle: #031633;
+    --primary-emphasis: #6EA8FE;
+    --ins-text: #75B798;
+    --ins-bg: #051B11;
+    --del-text: #EA868F;
+    --del-bg: #2C0B0E;
   }
 
   * { box-sizing: border-box; }
   body {
     background: var(--bg);
-    color: var(--ink);
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    font-size: 15px;
+    color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
     line-height: 1.5;
     margin: 0;
-    padding-bottom: 80px;
+    padding-bottom: 40px;
   }
-  .charter {
-    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-    font-size: 17px;
-    line-height: 1.6;
-  }
-  .mono { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
-  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 0 16px; }
+  .small { font-size: 0.875rem; }
+  .text-muted { color: var(--muted); }
+  .mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.75rem; }
 
-  /* ── session chrome ─────────────────────────────── */
-  .chrome { border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 20; }
-  .chrome .wrap {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 24px;
-    padding-top: 12px; padding-bottom: 12px;
-  }
-  .chrome h1 { font-size: 15px; font-weight: 600; margin: 0; }
-  .chrome h1 .sess { color: var(--soft); font-weight: 400; }
-  .chrome-right { display: flex; gap: 22px; align-items: baseline; white-space: nowrap; }
-  .stat { font-size: 13px; color: var(--soft); }
-  .stat b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
-  .stat .up { color: var(--blue); }
+  /* navbar */
+  .navbar { background: var(--light); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 30; }
+  .navbar .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-top: 10px; padding-bottom: 10px; }
+  .navbar .brand { font-weight: 600; font-size: 1rem; margin: 0; }
+  .navbar .brand .sess { color: var(--muted); font-weight: 400; }
+  .navbar .stats { display: flex; gap: 18px; white-space: nowrap; font-size: 0.875rem; color: var(--muted); }
+  .navbar .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
 
-  /* ── card head ──────────────────────────────────── */
-  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 26px 0 6px; }
-  .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); font-weight: 700; }
-  .eyebrow .n { color: var(--soft); font-weight: 400; text-transform: none; letter-spacing: 0; }
-  .modes { display: flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
-  .modes button {
-    appearance: none; border: 0; background: var(--panel); color: var(--soft);
-    font: inherit; font-size: 13px; padding: 6px 14px; cursor: pointer; border-left: 1px solid var(--line);
+  /* card head */
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 22px 0 8px; flex-wrap: wrap; }
+  .eyebrow { font-weight: 600; color: var(--fg); }
+  .eyebrow .n { color: var(--muted); font-weight: 400; }
+  .btn-group { display: inline-flex; }
+  .btn {
+    appearance: none; font: inherit; font-size: 0.875rem;
+    padding: 0.375rem 0.75rem; cursor: pointer;
+    border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+    border-radius: 0.375rem;
   }
-  .modes button:first-child { border-left: 0; }
-  .modes button[aria-pressed="true"] { background: var(--blue); color: #fff; font-weight: 600; }
-  :root[data-theme="dark"] .modes button[aria-pressed="true"] { color: #0B1220; }
-  button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-  .prompt { font-size: 14.5px; color: var(--soft); margin: 0 0 18px; }
-  .prompt b { color: var(--ink); }
+  .btn-group .btn { border-radius: 0; margin-left: -1px; }
+  .btn-group .btn:first-child { border-radius: 0.375rem 0 0 0.375rem; margin-left: 0; }
+  .btn-group .btn:last-child { border-radius: 0 0.375rem 0.375rem 0; }
+  .btn-group .btn[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .btn:hover { background: var(--light); }
+  .btn-group .btn[aria-pressed="true"]:hover { background: var(--primary-hover); }
+  .btn-primary {
+    background: var(--primary); border-color: var(--primary); color: #fff;
+    font-weight: 600; font-size: 1rem; padding: 0.5rem 1.25rem;
+  }
+  .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+  .btn-outline { background: var(--bg); color: var(--muted); }
+  .btn-outline:hover { color: var(--primary); border-color: var(--primary); background: var(--bg); }
+  button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .prompt { color: var(--muted); margin: 0 0 16px; font-size: 0.9375rem; }
+  .prompt b { color: var(--fg); }
 
-  /* ── document flow: joined where identical ──────── */
-  .docflow {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    padding: 40px 40px 44px;
-  }
-  .shared { max-width: 66ch; margin: 0 auto; }
-  .shared .p { margin: 0 0 13px; opacity: 0.78; }
-  .shared h2.docline {
-    font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;
-    color: var(--soft); font-weight: 700; margin: 24px 0 10px;
-    font-family: system-ui, sans-serif;
-  }
-  .shared .doctitle { font-size: 22px; font-weight: 600; margin: 0 0 20px; text-wrap: balance; }
-  .shared .current-being-replaced {
-    color: var(--soft);
-    border-left: 3px solid var(--line);
-    padding-left: 12px;
-  }
-  .shared .cl {
-    font-family: system-ui, sans-serif;
-    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--soft); font-weight: 700; display: block; margin-bottom: 3px;
-  }
-  .shared .hl {
-    opacity: 1;
-    background: var(--blue-bg);
-    border-left: 3px solid var(--blue);
-    padding: 8px 12px;
-    margin-left: -15px;
-    border-radius: 0 6px 6px 0;
-  }
-
-  /* ── the split: two cards, middle gutter ────────── */
-  .split {
+  /* two lanes; shared cards span both */
+  .lanes {
     display: grid;
-    grid-template-columns: 1fr 168px 1fr;
-    gap: 16px;
-    align-items: stretch;
-    margin: 20px 0;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
   }
-  @media (max-width: 880px) { .split { grid-template-columns: 1fr; } .middle { flex-direction: row; flex-wrap: wrap; } }
-  .opt {
-    background: var(--panel);
-    border: 1.5px solid var(--line);
-    border-radius: 10px;
-    box-shadow: var(--shadow);
-    padding: 18px 20px 16px;
-    display: flex; flex-direction: column; gap: 12px;
+  @media (max-width: 820px) { .lanes { grid-template-columns: 1fr; } .lane-head { display: none; } }
+  .lane-head {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); text-align: center; padding: 2px 0;
   }
-  .opt .tag {
-    display: flex; align-items: baseline; justify-content: space-between;
-    font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.08em;
-    font-weight: 700; color: var(--soft);
+  .card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    padding: 14px 18px;
   }
-  .opt .tag .keep { color: var(--blue); font-weight: 600; text-transform: none; letter-spacing: 0; }
-  .opt .body { flex: 1; }
-  .opt .rationale {
-    border-top: 1px dashed var(--line);
-    padding-top: 10px; font-size: 13px; color: var(--soft); font-style: italic;
+  .card.span2 { grid-column: 1 / -1; background: var(--light); color: var(--muted); }
+  .card.span2 .docline {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); margin: 10px 0 4px;
   }
-  .opt .rationale .rl {
-    font-style: normal; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em;
-    display: block; margin-bottom: 3px; color: var(--soft);
+  .card.span2 .docline:first-child { margin-top: 0; }
+  .card.span2 .doctitle { font-size: 1.125rem; font-weight: 600; color: var(--fg); margin: 0 0 8px; }
+  .card.span2 p { margin: 0 0 8px; }
+  .card.span2 p:last-child { margin-bottom: 0; }
+  .card.span2 .agreed-note { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+  .card.diff { border-color: var(--primary); border-width: 1.5px; }
+  .card.diff .vtag {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--primary-emphasis); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: baseline;
   }
-  .opt .prefer {
-    appearance: none; font: inherit; font-size: 15px; font-weight: 700;
-    border-radius: 9px; padding: 13px 20px; cursor: pointer;
-    border: 1.5px solid var(--blue); background: var(--blue); color: #fff;
-    align-self: center; min-width: 60%;
-  }
-  :root[data-theme="dark"] .opt .prefer { color: #0B1220; }
-  .opt .prefer:hover { background: var(--blue-strong); border-color: var(--blue-strong); }
-  .opt.quiet .prefer { background: var(--panel); color: var(--blue); }
-  .opt.quiet .prefer:hover { background: var(--blue-bg); }
-
-  .middle {
-    display: flex; flex-direction: column; justify-content: center; align-items: stretch; gap: 10px;
-  }
-  .middle button {
-    appearance: none; font: inherit; font-size: 13.5px; font-weight: 500;
-    border-radius: 8px; padding: 10px 12px; cursor: pointer;
-    border: 1px solid var(--line); background: var(--panel); color: var(--soft);
-  }
-  .middle button:hover { border-color: var(--blue); color: var(--blue); }
-  .middle .mid-note { font-size: 11.5px; color: var(--soft); text-align: center; }
-
-  .site-badge {
-    display: inline-block; font-size: 11px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.06em;
-    background: var(--blue-bg); color: var(--blue);
-    border: 1px solid var(--line);
-    border-radius: 4px; padding: 2px 8px; margin-bottom: 10px;
+  .card.diff .vtag .keep { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .card.currently { border-style: dashed; color: var(--muted); }
+  .card.currently .vtag { color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .badge {
+    display: inline-block; font-size: 0.75rem; font-weight: 600;
+    background: var(--primary-subtle); color: var(--primary-emphasis);
+    border-radius: 0.375rem; padding: 2px 8px; margin-bottom: 8px;
   }
 
-  del { background: var(--del-bg); color: var(--del-text); text-decoration: line-through; text-decoration-thickness: 1px; padding: 0 1px; }
+  del { background: var(--del-bg); color: var(--del-text); text-decoration: line-through; padding: 0 1px; }
   ins { background: var(--ins-bg); color: var(--ins-text); text-decoration: none; padding: 0 1px; }
-  mark { background: var(--mark-bg); color: var(--mark-text); padding: 0 1px; }
-  .dim-shared { color: var(--soft); }
-  .dim-shared mark { color: var(--mark-text); }
-  .modenote { font-size: 12.5px; color: var(--soft); margin: 6px 0 0; max-width: 66ch; }
-  .modenote b { color: var(--blue); }
-  .blind-note { font-size: 12.5px; color: var(--soft); margin-top: 14px; }
+  mark { background: var(--primary-subtle); color: var(--primary-emphasis); padding: 0 1px; }
+  .dim-shared { color: var(--muted); }
+  .modenote { font-size: 0.8125rem; color: var(--muted); margin: 10px 0 0; }
+  .modenote b { color: var(--primary-emphasis); }
 
-  /* ── receipts ───────────────────────────────────── */
-  .receipts { margin-top: 34px; }
-  .receipts h2 {
-    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--soft); font-weight: 700; margin: 0 0 8px;
+  /* floating judgment bar: rationales + verdicts */
+  .judgebar {
+    position: sticky;
+    bottom: 10px;
+    z-index: 20;
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: 1fr 180px 1fr;
+    gap: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.08);
+    padding: 12px 14px;
+    align-items: stretch;
   }
+  @media (max-width: 820px) { .judgebar { grid-template-columns: 1fr; } }
+  .jcell { display: flex; flex-direction: column; gap: 10px; }
+  .jcell .rationale {
+    flex: 1;
+    font-size: 0.8125rem; color: var(--muted); font-style: italic;
+    max-height: 96px; overflow-y: auto;
+    padding: 8px 10px; background: var(--light); border-radius: 0.375rem;
+  }
+  .jcell .rationale .rl { font-style: normal; font-weight: 700; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px; }
+  .jcell .btn-primary { align-self: center; min-width: 65%; }
+  .jmiddle { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+  .jmiddle .btn { font-size: 0.8125rem; }
+
+  /* receipts + notes */
+  .receipts { margin-top: 28px; }
+  .receipts h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 8px; }
   .receipts ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-  .receipts li { color: var(--soft); }
-  .receipts li b { color: var(--ink); font-weight: 600; }
-  .done {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-    box-shadow: var(--shadow); padding: 40px; text-align: center; color: var(--soft); margin-top: 26px;
-  }
-  .done .charter { font-size: 19px; color: var(--ink); margin-bottom: 8px; }
+  .receipts li { color: var(--muted); }
+  .receipts li b { color: var(--fg); }
+  .done { border: 1px solid var(--border); border-radius: 0.375rem; padding: 36px; text-align: center; color: var(--muted); margin-top: 22px; }
+  .done .big { font-size: 1.125rem; color: var(--fg); margin-bottom: 6px; font-weight: 600; }
 
-  /* ── design notes ───────────────────────────────── */
-  .notes { margin-top: 64px; border-top: 1px solid var(--line); padding-top: 30px; }
-  .notes h2 { font-size: 20px; margin: 0 0 4px; text-wrap: balance; }
-  .notes .sub { color: var(--soft); margin: 0 0 26px; }
-  .notes h3 {
-    font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--blue); margin: 30px 0 8px;
-  }
-  .notes p { max-width: 68ch; margin: 0 0 12px; }
-  .notes ul { max-width: 68ch; margin: 0 0 12px; padding-left: 22px; }
+  .notes { margin-top: 56px; border-top: 1px solid var(--border); padding-top: 26px; }
+  .notes h2 { font-size: 1.25rem; margin: 0 0 4px; }
+  .notes .sub { color: var(--muted); margin: 0 0 22px; }
+  .notes h3 { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary-emphasis); margin: 26px 0 8px; }
+  .notes p { max-width: 70ch; margin: 0 0 12px; }
+  .notes ul { max-width: 70ch; margin: 0 0 12px; padding-left: 22px; }
   .notes li { margin-bottom: 6px; }
 </style>
 
-<header class="chrome">
+<header class="navbar">
   <div class="wrap">
-    <h1>The Hollow Oak Club — House Charter <span class="sess">· convention in session</span></h1>
-    <div class="chrome-right">
-      <span class="stat">time left <b>2h 11m</b></span>
-      <span class="stat">adoption bar <b>0.74</b> <span class="up">▲</span></span>
-      <span class="stat">your tokens <b>5</b></span>
+    <p class="brand">The Hollow Oak Club — House Charter <span class="sess">· convention in session</span></p>
+    <div class="stats">
+      <span>time left <b>2h 11m</b></span>
+      <span>adoption bar <b>0.74 ▲</b></span>
+      <span>your tokens <b>5</b></span>
     </div>
   </div>
 </header>
@@ -255,35 +214,35 @@
   </section>
 
   <section class="notes">
-    <h2>Design notes — the race-card, third pass</h2>
-    <p class="sub">Desktop-first · interim white/blue styling (visual design deferred, Ed) · card content is real output from run clubhouse-1</p>
+    <h2>Design notes — the race-card, fourth pass</h2>
+    <p class="sub">Desktop-first · plain Bootstrap-style theme (visual design deferred) · card content is real output from run clubhouse-1</p>
 
-    <h3>Two documents that join, not one that splits (Ed, decision 2)</h3>
-    <p>The mental model is inverted from the last pass: you are reading <b>two parallel versions of the charter</b>, and wherever they are identical the two lanes <b>join into one</b> full-width column. Where they differ, the page splits into two cards side by side — the split itself is the diff display. Joined text is quiet and slightly dimmed; the split is where the eye lands. The document above and below the split is real, scrollable context, and the page opens scrolled to the split.</p>
+    <h3>Two lanes, top to bottom</h3>
+    <p>The page is structurally <b>two parallel versions of the charter</b>, Version A down the left, Version B down the right, headed as such. Where the versions agree, a <b>single card spans both lanes</b> (grey, quiet — agreement is background). Where they differ, the card splits into <b>one card per lane</b> (white, blue-bordered — disagreement is figure). Reading down the page is reading either version in full; the alternation of spanning and split cards is itself the diff map.</p>
 
-    <h3>Controls live on the cards (Ed, decision 3)</h3>
-    <p>No detached judgment bar. Each parallel card carries its own big <b>Prefer this</b> button, centered — choosing a card is a gesture <em>at</em> the card. The third choices stack in the middle gutter, between the things they refuse to choose between: <b>Indifferent</b>, <b>Skip</b>, and <b>Propose something else</b>. The middle column is deliberately narrower and quieter than the cards — the two main verdicts are big targets at equal visual weight; the middle is legitimate but not celebrated.</p>
+    <h3>The floating bar holds rationales and verdicts together</h3>
+    <p>The sticky bottom bar is the judgment surface: Option A's unsigned rationale and its big <b>Prefer A</b> button on the left, B's on the right, and the middle stack between them — <b>Genuinely can't split them · Skip · Propose something else</b>. Argument and verdict travel together, always in view while the document scrolls behind. Long rationales scroll within their box rather than growing the bar.</p>
 
-    <h3>The comparison modes, inside the split</h3>
+    <h3>Comparison modes, inside the split cards</h3>
     <ul>
-      <li><b>Fair copy</b> — clean final text: what the charter would say. Default for wholesale rewrites, since the split already locates the difference.</li>
-      <li><b>Marked up</b> — amendment style against the current text (struck deletions, green insertions). Default for small patches — see the Keys card.</li>
-      <li><b>Differences</b> — within the split cards, dims what both options agree on and highlights in blue only where they disagree with each other.</li>
+      <li><b>Fair copy</b> — clean final text. Default for wholesale rewrites, since the split already locates the difference.</li>
+      <li><b>Marked up</b> — amendment style against the current text (struck deletions, green insertions). Default for small patches (Keys card).</li>
+      <li><b>Differences</b> — dims what both versions agree on inside the split; highlights in blue only where they disagree with each other.</li>
     </ul>
-    <p>One strict color rule: <b>green/red always means "versus the current text"; the blue highlight always means "versus each other."</b> When both candidates replace a paragraph, the current text sits above the split in the joined flow, marked "currently — both proposals replace this."</p>
+    <p>Color rule unchanged: <b>green/red = versus the current text; blue highlight = versus each other.</b> When both candidates replace a paragraph, the outgoing text appears as a dashed "currently" card spanning both lanes, directly above the split.</p>
 
-    <h3>Discontinuous patches</h3>
-    <p>Patches are not continuous — one proposal can touch several places (card 4: renaming the Purse-holder everywhere it appears). The lanes split at <b>every</b> site of the union footprint, badged "change N of M — one proposal, judged together"; the verdict buttons appear at the last site and speak for the whole patch. One judgment, many sites — if judges keep wanting to split a patch, that's evidence it should have been two patches, which is surgery's job (P3), not the card's. When two rivals race and only one touches a site, the silent rival's card reads "leaves this unchanged" — absence rendered, not omitted. Beyond two or three sites the change ledger (adds / drops / keeps, a P3 feature) becomes the primary representation, with the sites as its receipts.</p>
+    <h3>Non-contiguous patches (card 4)</h3>
+    <p>One proposal, two sites: the lanes split at the Money paragraph <em>and</em> the Offices paragraph, with spanning agreed-cards between them — the join-split-join-split rhythm shows the patch's footprint at a glance. Badges count the sites ("change 1 of 2"); the floating bar carries one verdict for the whole patch ("Adopt the patch — both changes"). One judgment, many sites: if judges chronically want to split a patch, it should have been two patches — surgery's job (P3), not the card's. Where rivals race and only one touches a site, the silent rival's lane card reads "leaves this unchanged."</p>
 
     <h3>What is deliberately absent</h3>
     <ul>
-      <li><b>No authors.</b> Sealed until close; rationales are labelled <em>unsigned</em>. Mo's spelling ships exactly as submitted.</li>
+      <li><b>No authors.</b> Sealed until close; rationales labelled <em>unsigned</em>. Mo's spelling ships exactly as submitted.</li>
       <li><b>No standings, counts, or direction.</b> A/B order randomised per serve.</li>
-      <li><b>The bar is public, race evidence is not.</b> The adoption bar in the chrome is a function of the clock, identical for everyone.</li>
+      <li><b>The bar is public, race evidence is not.</b> The adoption bar in the navbar is a function of the clock, identical for everyone.</li>
     </ul>
 
     <h3>Diagonal (salience) cards</h3>
-    <p>Same two-cards-and-a-gutter grammar, but the cards hold two <b>contested paragraphs</b> from different sections, each named by its section, and the middle offers "Equally important." You're weighing attention, not text — the prompt says so. Visual distinction beyond the section chips (a tint?) is parked as QUESTIONS #46.</p>
+    <p>Card 5: the two contested paragraphs sit one per lane with their section names, and the floating bar asks which matters more ("Equally important" in the middle). Weighing attention, not text. Extra visual distinction is parked as QUESTIONS #46.</p>
   </section>
 </main>
 
@@ -331,7 +290,7 @@
       section: 'Money',
       count: 'card 1 of 5',
       defaultMode: 'diff',
-      prompt: 'The two versions of the charter below agree everywhere except one paragraph. <b>Which should it say?</b>',
+      prompt: 'Version A and Version B agree everywhere except one paragraph. <b>Which should the charter say?</b>',
       a: {
         fair: 'The Purse-holder pays only bills approved under the budget or by a house decision, reimburses claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting.',
         marked: 'The Purse-holder pays <del>the bills</del> <ins>only bills approved under the budget or by a house decision</ins>, <del>and</del> reimburses <del>what seems fair, and keeps the receipts in the tin</del> <ins>claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting</ins>.',
@@ -351,7 +310,7 @@
       section: 'The Thursday Dinner',
       count: 'card 2 of 5',
       defaultMode: 'diff',
-      prompt: 'The two versions below agree everywhere except one paragraph. <b>Which should it say?</b>',
+      prompt: 'Version A and Version B agree everywhere except one paragraph. <b>Which should the charter say?</b>',
       a: {
         fair: 'Dinner happens every Thursday; a proper rota is posted in the Kitchen each term so everyone knows whos turn it is to cook, and if you cant make your night you sort a swap and update the rota yourslef so it stays acurate.',
         marked: 'Dinner happens every Thursday; <del>members take turns on a simple sign-up rota so someone’s always down to cook, and it’s still usually pasta</del> <ins>a proper rota is posted in the Kitchen each term so everyone knows whos turn it is to cook, and if you cant make your night you sort a swap and update the rota yourslef so it stays acurate</ins>.',
@@ -371,7 +330,7 @@
       section: 'Keys',
       count: 'card 3 of 5',
       defaultMode: 'marked',
-      prompt: 'One version changes a paragraph; the other keeps it. <b>Change it, or keep it?</b>',
+      prompt: 'Version A changes a paragraph; Version B keeps it. <b>Change it, or keep it?</b>',
       keepCard: true,
       a: {
         fair: 'Every member holds a front-door key, and may lend or cut a spare for a regular they trust, provided the Steward keeps a simple note of who holds one.',
@@ -435,126 +394,101 @@
 
   function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 
-  function middleHtml(items) {
+  // Group DOC into runs: shared runs become one spanning card; keyed lines
+  // that the current card contests become split lane cards.
+  function lanesHtml(card) {
+    const contested = (key) =>
+      (card.kind === 'edge' && key === card.key) ||
+      (card.kind === 'multi' && card.sites.some((s) => s.key === key));
+    let html = '<div class="lane-head">Version A</div><div class="lane-head">Version B</div>';
+    let run = [];
+    const flushRun = () => {
+      if (!run.length) return;
+      html += '<div class="card span2">' + run.join('') + '</div>';
+      run = [];
+    };
+    for (const line of DOC) {
+      if (line.t === 'title') { run.push('<div class="doctitle">' + esc(line.x) + '</div>'); continue; }
+      if (line.t === 'h') { run.push('<div class="docline">' + esc(line.x) + '</div>'); continue; }
+      if (!contested(line.key)) { run.push('<p>' + esc(line.x) + '</p>'); continue; }
+
+      // A contested paragraph: close the shared run, emit the split.
+      if (card.kind === 'edge') {
+        if (!card.keepCard) {
+          run.push('<p style="opacity:0.75"><b class="small" style="text-transform:uppercase;letter-spacing:0.05em;font-size:0.7rem;">Currently — both versions replace this:</b><br>' + esc(line.x) + '</p>');
+        }
+        flushRun();
+        html += laneCard(card, 'A', card.a, null, card.keepCard ? null : 'anchor');
+        html += laneCard(card, 'B', card.b, null, card.keepCard ? 'anchor' : null);
+      } else {
+        const site = card.sites.find((s) => s.key === line.key);
+        const isFirst = site === card.sites[0];
+        flushRun();
+        html += laneCard(card, 'A', { fair: site.a.fair, marked: site.a.marked }, site.badge, isFirst ? 'anchor' : null);
+        html += laneCard(card, 'B', { keep: true, fair: line.x, marked: esc(line.x) + ' <span class="dim-shared">(no change)</span>' }, site.badge, null);
+      }
+    }
+    flushRun();
+    return html;
+  }
+
+  function laneCard(card, v, opt, badge, anchor) {
+    const body = opt[mode] ?? esc(opt.fair);
+    const keep = opt.keep ? '<span class="keep">keeps the current text</span>' : '';
     return (
-      '<div class="middle">' +
-      items.map((it) => '<button data-mid="' + it.id + '">' + it.label + '</button>').join('') +
+      '<div class="card diff"' + (anchor ? ' id="split"' : '') + '>' +
+      (badge ? '<span class="badge">' + badge + ' · one proposal, judged together</span>' : '') +
+      '<div class="vtag"><span>Version ' + v + '</span>' + keep + '</div>' +
+      '<div>' + body + '</div>' +
       '</div>'
     );
   }
 
-  function optCard(tag, opt, judgeId, preferLabel, extraClass) {
-    const keep = opt.keep ? '<span class="keep">the current text</span>' : '';
-    const body = opt[mode] ?? esc(opt.fair);
-    const rationale = opt.rationale
-      ? '<div class="rationale"><span class="rl">Author’s rationale · unsigned</span>' + esc(opt.rationale) + '</div>'
-      : opt.keep
-        ? '<div class="rationale"><span class="rl">Status quo</span>The text as it stands. Keeping it needs no rationale — it already survived.</div>'
-        : '';
-    const btn = judgeId
-      ? '<button class="prefer" data-judge="' + judgeId + '">' + preferLabel + '</button>'
-      : '';
+  function diagLanesHtml(card) {
+    const pA = DOC.find((l) => l.key === card.keys[0]).x;
+    const pB = DOC.find((l) => l.key === card.keys[1]).x;
     return (
-      '<article class="opt' + (extraClass ? ' ' + extraClass : '') + '">' +
-      '<div class="tag"><span>' + tag + '</span>' + keep + '</div>' +
-      '<div class="body charter">' + body + '</div>' +
-      rationale + btn +
-      '</article>'
+      '<div class="lane-head">' + card.labels[0] + '</div><div class="lane-head">' + card.labels[1] + '</div>' +
+      '<div class="card diff" id="split"><div class="vtag"><span>' + card.labels[0] + '</span></div><div>' + esc(pA) + '</div></div>' +
+      '<div class="card diff"><div class="vtag"><span>' + card.labels[1] + '</span></div><div>' + esc(pB) + '</div></div>' +
+      '<div class="card span2"><span class="agreed-note">Everything else</span><p>The rest of the charter, and every other contested race, is unaffected by this card — you are weighing attention, not text.</p></div>'
     );
   }
 
-  function sharedOpen() { return '<div class="shared charter">'; }
-
-  function docHtml(card) {
-    let html = sharedOpen();
-    for (const line of DOC) {
-      if (line.t === 'title') { html += '<div class="doctitle">' + esc(line.x) + '</div>'; continue; }
-      if (line.t === 'h') { html += '<h2 class="docline">' + esc(line.x) + '</h2>'; continue; }
-
-      if (card.kind === 'edge' && line.key === card.key) {
-        if (!card.keepCard) {
-          html += '<div class="current-being-replaced"><span class="cl">Currently — both proposals replace this</span>' + esc(line.x) + '</div>';
-        }
-        html += '</div>'; // close shared: the lanes split here
-        html +=
-          '<div class="split" id="split">' +
-          optCard('Option A', card.a, 'a', 'Prefer this') +
-          middleHtml([
-            { id: 'indifferent', label: 'Genuinely can’t split them' },
-            { id: 'skip', label: 'Skip this card' },
-            { id: 'propose', label: 'Propose something else · 1 token' },
-          ]) +
-          optCard(card.b.keep ? 'Keep' : 'Option B', card.b, 'b', card.b.keep ? 'Keep this' : 'Prefer this') +
-          '</div>';
-        html += sharedOpen(); // lanes rejoin
-        continue;
-      }
-
-      if (card.kind === 'multi') {
-        const site = card.sites.find((s) => s.key === line.key);
-        if (site) {
-          const isFirst = site === card.sites[0];
-          const isLast = site === card.sites[card.sites.length - 1];
-          const aOpt = {
-            fair: site.a.fair,
-            marked: site.a.marked,
-            rationale: isFirst ? card.rationale : null,
-          };
-          const bOpt = { keep: true, fair: line.x, marked: esc(line.x) + ' <span class="dim-shared">(no change)</span>', rationale: null };
-          html += '</div>';
-          html +=
-            '<div class="split"' + (isFirst ? ' id="split"' : '') + '>' +
-            '<div>' + '<span class="site-badge">' + site.badge + ' · one proposal, judged together</span>' +
-            optCard('The proposal', aOpt, isLast ? 'a' : null, 'Adopt the patch — both changes') + '</div>' +
-            (isLast
-              ? middleHtml([
-                  { id: 'indifferent', label: 'Genuinely can’t split them' },
-                  { id: 'skip', label: 'Skip this card' },
-                ])
-              : '<div class="middle"><span class="mid-note">judged together with change 2 ↓</span></div>') +
-            '<div><span class="site-badge" style="visibility:hidden">·</span>' +
-            optCard('Keep', bOpt, isLast ? 'b' : null, 'Keep the current text') + '</div>' +
-            '</div>';
-          html += sharedOpen();
-          continue;
-        }
-      }
-
-      if (card.kind === 'diagonal' && card.keys.includes(line.key)) {
-        const label = card.labels[card.keys.indexOf(line.key)];
-        html += '<p class="p hl" ' + (line.key === card.keys[0] ? 'id="split"' : '') + '><b style="font-family:system-ui,sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.07em;color:var(--blue);margin-right:8px;">' + label + '</b>' + esc(line.x) + '</p>';
-        continue;
-      }
-
-      html += '<p class="p">' + esc(line.x) + '</p>';
+  function rationaleHtml(label, text) {
+    if (text === null) {
+      return '<div class="rationale"><span class="rl">Status quo</span>The text as it stands. Keeping it needs no rationale — it already survived.</div>';
     }
-    html += '</div>';
+    return '<div class="rationale"><span class="rl">' + label + '</span>' + esc(text) + '</div>';
+  }
 
-    if (card.kind === 'diagonal') {
-      html +=
-        '<div class="split" style="margin-top:26px;">' +
-        '<article class="opt"><div class="tag"><span>' + card.labels[0] + '</span></div>' +
-        '<div class="body charter">' + esc(DOC.find((l) => l.key === card.keys[0]).x) + '</div>' +
-        '<button class="prefer" data-judge="a">' + card.labels[0] + ' matters more</button></article>' +
-        middleHtml([
-          { id: 'indifferent', label: 'Equally important' },
-          { id: 'skip', label: 'Skip this card' },
-        ]) +
-        '<article class="opt"><div class="tag"><span>' + card.labels[1] + '</span></div>' +
-        '<div class="body charter">' + esc(DOC.find((l) => l.key === card.keys[1]).x) + '</div>' +
-        '<button class="prefer" data-judge="b">' + card.labels[1] + ' matters more</button></article>' +
-        '</div>';
-    }
-    return html;
+  function judgebarHtml(card) {
+    const isDiag = card.kind === 'diagonal';
+    const isMulti = card.kind === 'multi';
+    const left = isDiag
+      ? '<div class="jcell"><div class="rationale"><span class="rl">' + card.labels[0] + '</span>Contested by 2 live proposals.</div><button class="btn btn-primary" data-judge="a">' + card.labels[0] + ' matters more</button></div>'
+      : '<div class="jcell">' +
+        rationaleHtml('Version A — rationale · unsigned', isMulti ? card.rationale : card.a.rationale) +
+        '<button class="btn btn-primary" data-judge="a">' + (isMulti ? 'Adopt the patch — both changes' : 'Prefer A') + '</button></div>';
+    const right = isDiag
+      ? '<div class="jcell"><div class="rationale"><span class="rl">' + card.labels[1] + '</span>Contested by 3 live proposals.</div><button class="btn btn-primary" data-judge="b">' + card.labels[1] + ' matters more</button></div>'
+      : '<div class="jcell">' +
+        rationaleHtml('Version B — rationale · unsigned', isMulti || card.b.keep ? null : card.b.rationale) +
+        '<button class="btn btn-primary" data-judge="b">' + (isMulti || card.b.keep ? 'Keep the current text' : 'Prefer B') + '</button></div>';
+    const middle =
+      '<div class="jmiddle">' +
+      '<button class="btn btn-outline" data-mid="indifferent">' + (isDiag ? 'Equally important' : 'Genuinely can’t split them') + '</button>' +
+      '<button class="btn btn-outline" data-mid="skip">Skip this card</button>' +
+      (isDiag ? '' : '<button class="btn btn-outline" data-mid="propose">Propose something else · 1 token</button>') +
+      '</div>';
+    return '<div class="judgebar">' + left + middle + right + '</div>';
   }
 
   function render() {
     if (index >= cards.length) {
       stage.innerHTML =
-        '<div class="done">' +
-        '<div class="charter">The queue is clear.</div>' +
-        'New cards arrive as proposals land and races tighten. The bounty board lists the stuck fights — or open the composer and start one.' +
-        '</div>';
+        '<div class="done"><div class="big">The queue is clear.</div>' +
+        'New cards arrive as proposals land and races tighten. The bounty board lists the stuck fights — or open the composer and start one.</div>';
       return;
     }
     const card = cards[index];
@@ -564,16 +498,16 @@
 
     const modes = isDiag
       ? ''
-      : '<div class="modes" role="group" aria-label="Comparison view">' +
-        modeList.map((m) => '<button aria-pressed="' + (mode === m.id) + '" data-mode="' + m.id + '">' + m.label + '</button>').join('') +
+      : '<div class="btn-group" role="group" aria-label="Comparison view">' +
+        modeList.map((m) => '<button class="btn" aria-pressed="' + (mode === m.id) + '" data-mode="' + m.id + '">' + m.label + '</button>').join('') +
         '</div>';
 
     const modenote = isDiag
       ? ''
       : mode === 'diff'
-        ? '<p class="modenote"><b>Differences:</b> dimmed text is what both options agree on; blue is where they part ways. Green/red never appears here — that means "versus the current text", a different question.</p>'
+        ? '<p class="modenote"><b>Differences:</b> dimmed text is what both versions agree on inside the split; blue is where they part ways. Green/red never appears here — that means "versus the current text", a different question.</p>'
         : mode === 'marked'
-          ? '<p class="modenote"><b>Marked up:</b> each option’s changes against the current text — amendment style.</p>'
+          ? '<p class="modenote"><b>Marked up:</b> each version’s changes against the current text — amendment style.</p>'
           : '<p class="modenote"><b>Fair copy:</b> exactly what the charter would say. No markup.</p>';
 
     stage.innerHTML =
@@ -582,9 +516,10 @@
       modes +
       '</div>' +
       '<p class="prompt">' + card.prompt + '</p>' +
-      '<div class="docflow">' + docHtml(card) + '</div>' +
+      '<div class="lanes">' + (isDiag ? diagLanesHtml(card) : lanesHtml(card)) + '</div>' +
       modenote +
-      '<p class="blind-note">You’re judging text, not people — authorship is sealed until the record. Nothing on this card tells you what anyone else chose.</p>';
+      judgebarHtml(card) +
+      '<p class="prompt small" style="margin-top:12px;">You’re judging text, not people — authorship is sealed until the record. Nothing on this card tells you what anyone else chose.</p>';
 
     stage.querySelectorAll('[data-mode]').forEach((b) =>
       b.addEventListener('click', () => {
@@ -621,7 +556,7 @@
           receipts.prepend(li);
           index++; mode = null; render(); scrollToSplit();
         } else {
-          li.textContent = '○ ' + card.section + ' — propose-C opens the composer inline, below the options (next mockup)';
+          li.textContent = '○ ' + card.section + ' — propose-C opens the composer (next mockup)';
           receipts.prepend(li);
         }
       })
