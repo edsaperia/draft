@@ -11,6 +11,8 @@ import {
   ParticipantApi,
   Session,
   type Constitution,
+  type DedupGate,
+  type DedupVerdict,
   type Participant,
   type Rng,
 } from '../../engine-core/src/index.js';
@@ -29,6 +31,14 @@ export interface RunConfig {
   maxActions?: number;
   /** Called after each action with a progress line; optional. */
   onProgress?: (line: string) => void;
+  /**
+   * Optional advisory dedup-gate (SPEC §5.1). When set, each draft is
+   * checked before submission; duplicates are not submitted — support
+   * merges into the existing candidate via co-sign where possible, else
+   * the draft is skipped and logged. When unset, the run is byte-identical
+   * to a run before the gate existed.
+   */
+  dedupGate?: DedupGate;
 }
 
 export interface RunResult {
@@ -133,13 +143,52 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
       try {
         const proposal = await next.persona.draft(next.api, t);
         if (proposal !== null) {
-          next.api.submit(t, proposal);
-          next.drafts++;
-          acted = true;
-          const text = proposal.patch.hunks[0]?.lines.join(' / ') ?? '';
-          config.onProgress?.(
-            `[${fmt(t)}] ${profile.handle} drafts: "${text}" — ${proposal.rationale}`,
-          );
+          // Advisory dedup-gate (SPEC §5.1): consult BEFORE submitting; the
+          // runner (not the gate, not the Session) decides what a duplicate
+          // verdict means. Absent or failing, the path is exactly the old one.
+          let verdict: DedupVerdict = { kind: 'fresh' };
+          if (config.dedupGate) {
+            const patchText = proposal.patch.hunks.map((h) => h.lines.join('\n')).join('\n');
+            const live = session
+              .allCandidates()
+              .filter((c) => c.state === 'live')
+              .map((c) => ({
+                id: c.id,
+                text: c.patch.hunks.map((h) => h.lines.join('\n')).join('\n'),
+                rationale: c.rationale,
+              }));
+            try {
+              verdict = await config.dedupGate.check(patchText, live, session.document());
+            } catch {
+              // Advisory only: a gate failure never blocks a submission.
+            }
+          }
+          if (verdict.kind === 'duplicate') {
+            // Duplicates merge support (SPEC §5.1 co-sign): join the existing
+            // candidate's supporters; if this participant already supports it
+            // (or the candidate just left play), simply skip.
+            let outcome = 'skipped';
+            if (!session.supportersOf(verdict.of).has(profile.id)) {
+              try {
+                session.coSign(t, profile.id, verdict.of);
+                outcome = 'support merged';
+              } catch {
+                outcome = 'skipped';
+              }
+            }
+            acted = true;
+            config.onProgress?.(
+              `[${fmt(t)}] ${profile.handle} drafts a duplicate of ${verdict.of} (${verdict.via}): ${outcome}`,
+            );
+          } else {
+            next.api.submit(t, proposal);
+            next.drafts++;
+            acted = true;
+            const text = proposal.patch.hunks[0]?.lines.join(' / ') ?? '';
+            config.onProgress?.(
+              `[${fmt(t)}] ${profile.handle} drafts: "${text}" — ${proposal.rationale}`,
+            );
+          }
         } else {
           config.onProgress?.(
             `[${fmt(t)}] ${profile.handle} arrives, considers drafting: passes`,

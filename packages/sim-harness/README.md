@@ -33,7 +33,30 @@ npm run sim -w @draft/sim-harness -- --mode subscription --scenario clubhouse \
 Flags: `--mode scripted|llm|subscription` · `--scenario charter|clubhouse` ·
 `--seeds N` (independent runs) · `--hours H` (window length, default 72; keep
 short in LLM modes — call count scales with it) · `--seed S` · `--model M` ·
-`--verbose` (per-action log) · `--commentary` (see below) · `--json`.
+`--dedup` (see below) · `--verbose` (per-action log) · `--commentary` (see
+below) · `--json`.
+
+## Dedup-gate (`--dedup`)
+
+Opt-in advisory duplicate check on submissions (SPEC §5.1). Before a
+persona's draft is submitted, the runner consults the engine's
+`DedupGate`: exact text match, then normalized edit distance
+(relative Levenshtein ≤ 0.15), then — in `llm`/`subscription` modes —
+an LLM equivalence oracle over the matching transport (`LlmOracle` /
+`SubscriptionOracle` in `src/oracles.ts`; `MockOracle` serves tests).
+Scripted mode runs oracle-free: exact + edit distance only.
+
+A duplicate is not submitted: the runner co-signs the existing candidate
+on the drafter's behalf (support merges, SPEC §5.1) or, if they already
+support it, skips and logs. Progress lines look like:
+
+```
+[1h23] Cam drafts a duplicate of c7 (edit-distance): support merged
+```
+
+The gate only advises — it never blocks on oracle failure (errors read
+as fresh), and with `--dedup` off the run is byte-identical to the
+pre-gate runner (regression-pinned in `test/dedup.test.ts`).
 
 ## Metrics per run
 

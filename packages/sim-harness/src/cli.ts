@@ -2,15 +2,20 @@
  * Sim CLI.
  *
  *   npm run sim -w @draft/sim-harness -- [--mode scripted|llm|subscription]
- *       [--seeds N] [--hours H] [--seed S] [--verbose] [--json]
+ *       [--seeds N] [--hours H] [--seed S] [--dedup] [--verbose] [--json]
  *
  * scripted: deterministic personas from the scenario's latent utilities.
  * llm: claude-haiku-4-5 personas via the Claude API (needs an API key).
  * subscription: the same personas via headless Claude Code (Agent SDK),
  *   billed to the local Claude subscription. Local use only.
+ * --dedup: opt-in advisory dedup-gate on submissions (SPEC §5.1). In
+ *   scripted mode: exact + edit-distance only. In llm/subscription modes
+ *   the matching oracle transport adds LLM equivalence.
  */
 
+import { DedupGate } from '../../engine-core/src/index.js';
 import { loadDotenv } from './env.js';
+import { LlmOracle, SubscriptionOracle } from './oracles.js';
 import { ScriptedPersona } from './persona.js';
 import { LlmPersona } from './llm-persona.js';
 import { SubscriptionPersona, probeSubscription } from './subscription-persona.js';
@@ -30,6 +35,7 @@ interface Args {
   verbose: boolean;
   json: boolean;
   commentary: boolean;
+  dedup: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -43,6 +49,7 @@ function parseArgs(argv: string[]): Args {
     verbose: false,
     json: false,
     commentary: false,
+    dedup: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -58,6 +65,7 @@ function parseArgs(argv: string[]): Args {
     else if (a === '--verbose') args.verbose = true;
     else if (a === '--json') args.json = true;
     else if (a === '--commentary') args.commentary = true;
+    else if (a === '--dedup') args.dedup = true;
   }
   return args;
 }
@@ -100,9 +108,24 @@ async function main(): Promise<void> {
     }
   }
 
+  // The dedup-gate is advisory and stateless, so one instance serves every
+  // run. Scripted mode gets no oracle: exact + edit-distance only.
+  const dedupGate = args.dedup
+    ? new DedupGate(
+        args.mode === 'llm'
+          ? new LlmOracle({ model: args.model })
+          : args.mode === 'subscription'
+            ? new SubscriptionOracle({ model: args.model })
+            : undefined,
+      )
+    : null;
+
   if (!args.json) {
     const model = args.mode === 'scripted' ? '' : ` · model ${args.model}`;
-    console.log(`scenario "${scenario.name}" · mode ${args.mode}${model} · window ${args.hours}h`);
+    const dedup = args.dedup ? ' · dedup-gate on' : '';
+    console.log(
+      `scenario "${scenario.name}" · mode ${args.mode}${model} · window ${args.hours}h${dedup}`,
+    );
     console.log(`\nstarting document:`);
     for (const line of scenario.text.split('\n')) console.log(`  | ${line}`);
     console.log(`\nroster:`);
@@ -135,6 +158,7 @@ async function main(): Promise<void> {
             ? new SubscriptionPersona(profile, { model: args.model })
             : new ScriptedPersona(profile, scenario, rng),
       ...(args.verbose || commentator ? { onProgress } : {}),
+      ...(dedupGate ? { dedupGate } : {}),
     });
     await commentator?.flush();
     all.push(result.metrics);
