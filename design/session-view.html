@@ -427,32 +427,39 @@
 
   function renderDoc() {
     let html = '<div class="prose">';
+    let cardDone = false;
     for (const line of DOC) {
       if (line.t === 'title') { html += '<div class="doctitle">' + esc(line.x) + '</div>'; continue; }
       if (line.t === 'h') { html += '<h2 class="docline">' + esc(line.x) + '</h2>'; continue; }
 
       const live = line.key ? suggFor(line.key) : [];
-      const wasResolved = line.key && SUGGS.some((s) => resolved.has(s.id) && (s.keys ?? []).includes(line.key)) && !live.length;
+      const wasResolved = line.key && !live.length &&
+        SUGGS.some((g) => resolved.has(g.id) && (g.keys ?? []).includes(line.key));
+
       if (live.length) {
-        const s = live[0];
-        const open = openId === s.id;
-        const kin = open && s.kind === 'patch';
-        const chipClass = s.kind;
-        const siteIdx = s.kind === 'patch' ? s.sites.findIndex((x) => x.key === line.key) : -1;
-        const chipText = s.kind === 'patch' ? (siteIdx + 1) + ' of ' + s.sites.length : s.chip;
+        const primary = live.find((x) => x.id === openId) ?? live[0];
+        const kin = openId === primary.id && primary.kind === 'patch' && cardDone;
+        const chips = live.map((g) => {
+          const siteIdx = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === line.key) : -1;
+          const text = g.kind === 'patch' ? (siteIdx + 1) + ' of ' + g.sites.length : g.chip;
+          return '<span class="achip ' + g.kind + '" data-anchor="' + g.id + '">' + text + '</span>';
+        }).join('');
         html +=
-          '<p class="anch ' + s.kind + (kin ? ' kin' : '') + '" data-anchor="' + s.id + '" title="Open this suggestion">' +
-          '<span class="achip ' + chipClass + '">' + chipText + '</span>' +
-          esc(line.x) + '</p>';
-        const anchorSite = s.kind === 'patch' ? s.sites[0].key : (s.keys ?? [])[0];
-        if (open && line.key === anchorSite) {
-          html += '</div>' + suggCardHtml(s) + '<div class="prose">';
+          '<p class="anch ' + primary.kind + (kin ? ' kin' : '') + '" data-anchor="' + primary.id + '" title="Open this suggestion">' +
+          chips + esc(line.x) + '</p>';
+        const openSugg = live.find((x) => x.id === openId);
+        if (openSugg && !cardDone) {
+          html += '</div>' + suggCardHtml(openSugg) + '<div class="prose">';
+          cardDone = true;
         }
       } else {
-        html += '<p' + (wasResolved ? ' class="anch resolved"' : '') + '>' + (wasResolved ? '<span class="achip resolved">judged ✓</span>' : '') + esc(line.x) + '</p>';
+        html += '<p' + (wasResolved ? ' class="anch resolved"' : '') + '>' +
+          (wasResolved ? '<span class="achip resolved">judged ✓</span>' : '') + esc(line.x) + '</p>';
       }
 
-      const ins = SUGGS.find((s) => !resolved.has(s.id) && s.insertAfterKey === line.key);
+      const ins = line.key
+        ? SUGGS.find((g) => !resolved.has(g.id) && g.insertAfterKey === line.key)
+        : undefined;
       if (ins) {
         html += '</div><div class="insert-anchor" data-anchor="' + ins.id + '"><span>＋ proposed new section — ' + esc(ins.newHeading) + '</span></div>';
         if (openId === ins.id) html += suggCardHtml(ins);
@@ -465,11 +472,15 @@
     doc.querySelectorAll('[data-anchor]').forEach((el) =>
       el.addEventListener('click', (ev) => {
         if (ev.target.closest('.sugg')) return;
+        ev.stopPropagation();
         toggle(el.dataset.anchor, false);
       })
     );
     doc.querySelectorAll('.sugg [data-act]').forEach((b) =>
-      b.addEventListener('click', () => act(b.closest('.sugg').dataset.card, b.dataset.act))
+      b.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        act(b.closest('.sugg').dataset.card, b.dataset.act);
+      })
     );
   }
 
