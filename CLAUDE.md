@@ -36,6 +36,8 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 - `gazette` — public feed of resolved outcomes; the chamber view is its ambient rendering.
 - `bounty-board` — public tab of saturated races ranked by resolvable disagreement × salience.
 - `record-builder` — closing publication: final text + the record (rankings, camps, graveyard, care map, minority map, backlog, audit log).
+- `spectator-api` — strictly-public engine-core projection (gazette, live candidates, bounty board, document): the only surface spectator views may consume (Q42, backlog).
+- `spectator-commentary` — optional LLM commentating view for convention spectators, fed exclusively by the spectator-api; unlike the sim's omniscient `commentator`, it sees no private data (Q42, backlog).
 
 **Tooling:**
 - `sim-harness` — synthetic-participant simulator driving engine-core; parameter sweeps against throughput, stability, bridge rate, backlog quality.
