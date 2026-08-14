@@ -71,13 +71,18 @@
   .meter i { display: block; height: 100%; background: var(--primary); border-radius: 2px; }
   .meter.saturated i { background: var(--muted); }
   .mcap { display: block; font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
+  .queue button.deciding { cursor: pointer; }
+  .queue button.deciding .ql { font-weight: 500; }
+  .queue button.sealed { cursor: default; }
+  .queue button.sealed:hover { border-color: var(--border); }
+  .queue .qv { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
   .hist { margin-top: 18px; }
   .hist ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .hist li { border: 1px solid var(--border); border-radius: 0.375rem; padding: 7px 10px; font-size: 0.8rem; }
   @keyframes slideOut { to { opacity: 0; transform: translateY(14px); } }
   @keyframes slideIn { from { opacity: 0; transform: translateY(-14px); } }
   .queue button.leaving { animation: slideOut 0.24s ease-in forwards; pointer-events: none; }
-  .hist li.arriving { animation: slideIn 0.24s ease-out; }
+  .hist li.arriving, .queue button.arriving { animation: slideIn 0.24s ease-out; }
   @media (prefers-reduced-motion: reduce) {
     .queue button.leaving, .hist li.arriving { animation: none; }
   }
@@ -242,14 +247,9 @@
 <div class="wrap">
   <div class="layout">
     <aside class="queue">
-      <h2>Needs you</h2>
+      <h2>Your session</h2>
       <ul id="queue"></ul>
-      <p class="note">Ordered by the router — hottest first. Or ignore it and read: everything here is also anchored in the document itself. The wash behind each card is closeness-to-resolution — never direction.</p>
-      <div class="hist">
-        <h2>Judged</h2>
-        <ul id="history"></ul>
-        <p class="note">Change your mind? Judgments are final for now — whether a changed document should reopen them is an open question (Q50).</p>
-      </div>
+      <p class="note">One list, three states by colour: white cards <b>need you</b>; blue-washed cards you've judged are <b>still deciding</b> — click to change your mind while they're open; green cards are <b>sealed</b> and locked. The wash is closeness-to-resolution — never direction.</p>
     </aside>
 
     <main>
@@ -280,6 +280,12 @@
     <h3>Progression: the evidence meter (Ed, 2026-08-14)</h3>
     <p>Every suggestion carries a thin <b>evidence meter</b> — how close it is to being decided (adopted <em>or</em> retired), never which way it leans. This is the spec's own "closeness-to-resolution as a single number" (§8.3), the one race statistic that is public by design because a scalar magnitude can't leak direction. The captions speak in what's missing, not who's ahead: "needs 2 more voices to reach its floor", "a few good judgments from decided", "new — evidence just starting". A saturated race's meter goes grey and its caption sends it to the bounty board: more judgments won't move it; only a new proposal can.</p>
     <p>And the queue order <b>is</b> this number, weighted by your personal leverage — races near their floor that <em>you</em> haven't judged rank highest, because your judgment moves them most (the router's unheard boost). The meter is the queue's visible rationale: sort order stops being mysterious the moment each entry shows why it's worth your attention.</p>
+
+    <h3>One sidebar, three states (Ed, 51)</h3>
+    <p>The sidebar is a single list with no dividers — colour is the grammar. White cards with a pale blue wash <b>need you</b>. Once judged they slide down into the <b>still deciding</b> band: wash still filling (your judgment moved the race but didn't close it), your verdict shown, and — decision 50 — <b>clickable to change your mind</b>, because a judgment is a living opinion while its question lives. When a race resolves it turns <b>sealed</b>: green, full, locked, inert. A judgment also locks when the ground shifts under it — the Garden entry demonstrates: your verdict became a fact about text that no longer exists, and new pairs will be served fresh (SPEC §4.4).</p>
+
+    <h3>When the ground moves under you (Ed, point 3)</h3>
+    <p>The document can change after you've cleared your queue. Three layered answers: <b>freshness marks</b> — any paragraph adopted since you last saw it carries a purple "changed" chip; opening it shows what changed, at what confidence, with "Fine by me" or "Propose a change" as the recourse; <b>the while-you-were-away banner</b> — the spec's notification digests, rendered; and the <b>⟳ flags</b> on judged entries whose text has since changed again. Purple is the fourth reserved colour: green = quick suggestion, yellow = race, blue = patch/deciding, purple = changed-since-you-looked.</p>
 
     <h3>What is deliberately absent</h3>
     <ul>
@@ -401,7 +407,9 @@
   function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 
   function suggFor(key) {
-    return SUGGS.filter((s) => !resolved.has(s.id) && (s.keys ?? []).includes(key));
+    // Anchors persist while a race is still deciding — a judged suggestion
+    // is revisable until it seals or its ground shifts.
+    return SUGGS.filter((s) => (s.keys ?? []).includes(key));
   }
 
   const PROGRESS = {"race-money":{"pct":78,"cap":"close — a few good judgments from decided"},"patch-rename":{"pct":35,"cap":"gathering — needs roughly 6 more judgments"},"quick-keys":{"pct":60,"cap":"needs 2 more voices to reach its floor of 5"},"quick-confidence":{"pct":85,"cap":"one judgment from decided"},"insert-quiet":{"pct":20,"cap":"new — evidence just starting"}};
@@ -414,47 +422,69 @@
       note: 'Adopted at p=0.87 over bar 0.72 \u00b7 6 distinct judges \u00b7 you never judged this race',
     },
   ];
-  const HISTORY = [
-    { label: '\u00a7 Dues', verdict: 'approved the fixed schedule', when: '2h ago', receipt: '9c41ab72\u2026', changed: false,
-      pct: 100, cap: 'decided \u2014 the fixed schedule was adopted', decided: true },
-    { label: '\u00a7 The Garden', verdict: 'preferred the posted rota', when: '1h ago', receipt: '4e17c9d0\u2026', changed: true,
-      pct: 88, cap: 'still open \u2014 close to decided',
-      changeNote: 'this text has changed again since your judgment \u2014 a Steward report line was adopted 40m ago' },
+  // Static examples of the two later states (not part of SUGGS).
+  const EXTRA = [
+    { id: 'x-garden', state: 'deciding', qLabel: '§ The Garden', qSub: 'you preferred the posted rota · 1h ago',
+      pct: 88, cap: 'still deciding — close to resolution',
+      changed: 'the text changed after your judgment — that judgment is now locked; new pairs will serve fresh' },
+    { id: 'x-dues', state: 'sealed', qLabel: '§ Dues', qSub: 'you approved the fixed schedule · 2h ago',
+      pct: 100, cap: 'sealed — adopted · judgment locked' },
   ];
+  const verdicts = new Map();
   const seenChanges = new Set();
   let openChange = null;
   let bannerDismissed = false;
+  let justArrived = null;
 
-  let justArrived = false;
-  function renderHistory() {
-    const el = document.getElementById('history');
-    el.innerHTML = HISTORY.map((h, i) => {
-      // Judged is not decided: the race keeps its wash until it resolves.
-      const washColor = h.decided ? 'var(--ins-bg)' : 'var(--primary-subtle)';
-      const wash = h.pct !== undefined
-        ? ' style="background: linear-gradient(90deg, ' + washColor + ' ' + h.pct + '%, var(--bg) ' + h.pct + '%)"'
-        : '';
-      return '<li' + (i === 0 && justArrived ? ' class="arriving"' : '') + wash + '><b>' + h.label + '</b> <span class="hv">\u2014 ' + h.verdict + '</span>' +
-        '<span class="hm mono">' + h.when + (h.receipt ? ' \u00b7 receipt ' + h.receipt : '') + '</span>' +
-        (h.pct !== undefined ? '<span class="mcap">' + h.cap + '</span>' : '') +
-        (h.changed ? '<span class="chgflag">\u27f3 ' + h.changeNote + '</span>' : '') +
-        '</li>';
-    }).join('');
-    justArrived = false;
+  function washStyle(pct, sealed) {
+    const color = sealed ? 'var(--ins-bg)' : 'var(--primary-subtle)';
+    return ' style="background: linear-gradient(90deg, ' + color + ' ' + pct + '%, var(--bg) ' + pct + '%)"';
   }
 
   function renderQueue() {
-    queueEl.innerHTML = SUGGS.map((s) => {
-      const done = resolved.has(s.id) ? '<span class="done">✓</span>' : '';
-      return (
-        '<li><button data-q="' + s.id + '" aria-current="' + (openId === s.id) + '"' +
-        (resolved.has(s.id) ? '' : ' style="background: linear-gradient(90deg, var(--primary-subtle) ' + PROGRESS[s.id].pct + '%, var(--bg) ' + PROGRESS[s.id].pct + '%)"') + '>' +
-        '<span class="ql"><span>' + s.qLabel + '</span>' + done + '</span>' +
-        '<span class="qs"><span class="kchip ' + s.kind + '">' + (s.kind === 'quick' ? 'quick' : s.kind === 'race' ? 'race' : 'patch') + '</span>' + s.qSub + '</span>' +
-        (resolved.has(s.id) ? '' : '<span class="mcap">' + PROGRESS[s.id].cap + '</span>') +
-        '</button></li>'
-      );
-    }).join('');
+    // One list, three states, no dividers: needs-you (white, no wash yet
+    // judged), still-deciding (blue wash + your verdict), sealed (green).
+    const needs = SUGGS.filter((g) => !resolved.has(g.id));
+    const deciding = SUGGS.filter((g) => resolved.has(g.id));
+    let html = '';
+    for (const g of needs) {
+      html +=
+        '<li><button data-q="' + g.id + '" aria-current="' + (openId === g.id) + '"' +
+        washStyle(PROGRESS[g.id].pct, false) + '>' +
+        '<span class="ql"><span>' + g.qLabel + '</span></span>' +
+        '<span class="qs"><span class="kchip ' + g.kind + '">' + (g.kind === 'quick' ? 'quick' : g.kind === 'race' ? 'race' : 'patch') + '</span>' + g.qSub + '</span>' +
+        '<span class="mcap">' + PROGRESS[g.id].cap + '</span>' +
+        '</button></li>';
+    }
+    for (const g of deciding) {
+      const pct = Math.min(PROGRESS[g.id].pct + 8, 96);
+      html +=
+        '<li><button class="deciding' + (justArrived === g.id ? ' arriving' : '') + '" data-q="' + g.id + '" aria-current="' + (openId === g.id) + '"' +
+        washStyle(pct, false) + '>' +
+        '<span class="ql"><span>' + g.qLabel + '</span><span class="done">✓</span></span>' +
+        '<span class="qv">you ' + (verdicts.get(g.id) || 'judged') + '</span>' +
+        '<span class="mcap">still deciding — click to change your mind</span>' +
+        '</button></li>';
+    }
+    for (const x of EXTRA.filter((e) => e.state === 'deciding')) {
+      html +=
+        '<li><button class="deciding" data-x="' + x.id + '"' + washStyle(x.pct, false) + '>' +
+        '<span class="ql"><span>' + x.qLabel + '</span><span class="done">✓</span></span>' +
+        '<span class="qv">' + x.qSub + '</span>' +
+        '<span class="mcap">' + x.cap + '</span>' +
+        (x.changed ? '<span class="chgflag">⟳ ' + x.changed + '</span>' : '') +
+        '</button></li>';
+    }
+    for (const x of EXTRA.filter((e) => e.state === 'sealed')) {
+      html +=
+        '<li><button class="sealed" data-x="' + x.id + '" tabindex="-1"' + washStyle(x.pct, true) + '>' +
+        '<span class="ql"><span>' + x.qLabel + '</span><span class="done">✓</span></span>' +
+        '<span class="qv">' + x.qSub + '</span>' +
+        '<span class="mcap">' + x.cap + '</span>' +
+        '</button></li>';
+    }
+    queueEl.innerHTML = html;
+    justArrived = null;
     queueEl.querySelectorAll('[data-q]').forEach((b) =>
       b.addEventListener('click', () => { toggle(b.dataset.q, true); })
     );
@@ -466,11 +496,17 @@
       '<div class="mcap">' + pr.cap + ' · this shows how much more evidence is needed, never which way it leans</div>';
   }
 
+  function reviseNote(s) {
+    if (!resolved.has(s.id)) return '';
+    return '<div class="srationale" style="border-color: var(--primary);"><span class="rl">You ' + (verdicts.get(s.id) || 'judged') + '</span>Choosing again replaces your earlier judgment — allowed while the race is still deciding; it locks when the race seals or the text changes under it (SPEC §4.4).</div>';
+  }
+
   function suggCardHtml(s) {
     if (s.kind === 'race') {
       return (
         '<div class="sugg race-open" data-card="' + s.id + '">' +
         '<div class="shead"><span>Race · ' + s.qLabel + '</span><span class="sub">escalated: two proposals collide here</span></div>' +
+        reviseNote(s) +
         meterHtml(s.id) + '<div class="stext small" style="color:var(--muted);margin-top:8px">' + s.race.prompt + '</div>' +
         '<div class="race-grid">' +
         '<div class="rcand"><div class="rtag">Option A</div><div class="rtext">' + esc(s.race.a.text) + '</div><div class="rr">' + esc(s.race.a.rationale) + '</div><button class="btn btn-approve" data-act="a">Prefer A</button></div>' +
@@ -489,6 +525,7 @@
       return (
         '<div class="sugg" data-card="' + s.id + '">' +
         '<div class="shead"><span>One suggestion · ' + s.sites.length + ' places</span><span class="sub">all sites highlighted above and below — judged together</span></div>' +
+        reviseNote(s) +
         meterHtml(s.id) + '<div class="sledger" style="margin-top:8px"><div class="lh">In short</div><ul>' +
         s.ledger.map((l) => '<li><span class="lchip ' + l.c + '">' + l.c + '</span><span>' + esc(l.t) + '</span></li>').join('') +
         '</ul></div>' +
@@ -506,6 +543,7 @@
     return (
       '<div class="sugg" data-card="' + s.id + '">' +
       '<div class="shead"><span>' + (s.isInsert ? 'New section proposed' : 'Suggestion') + '</span><span class="sub">' + s.qSub + '</span></div>' +
+      reviseNote(s) +
       meterHtml(s.id) +
       (s.isInsert ? '<div style="margin-top:8px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--ins-text);margin-bottom:4px;"><ins>' + esc(s.newHeading) + '</ins></div>' : '') +
       '<div class="stext">' + s.marked + '</div>' +
@@ -542,7 +580,8 @@
         const kin = openId === primary.id && primary.kind === 'patch' && cardDone;
         const chips = live.map((g) => {
           const siteIdx = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === line.key) : -1;
-          const text = g.kind === 'patch' ? (siteIdx + 1) + ' of ' + g.sites.length : g.chip;
+          let text = g.kind === 'patch' ? (siteIdx + 1) + ' of ' + g.sites.length : g.chip;
+          if (resolved.has(g.id)) text = '✓ ' + text;
           return '<span class="achip ' + g.kind + '" data-anchor="' + g.id + '">' + text + '</span>';
         }).join('');
         html +=
@@ -573,7 +612,7 @@
       }
 
       const ins = line.key
-        ? SUGGS.find((g) => !resolved.has(g.id) && g.insertAfterKey === line.key)
+        ? SUGGS.find((g) => g.insertAfterKey === line.key)
         : undefined;
       if (ins) {
         html += '</div><div class="insert-anchor" data-anchor="' + ins.id + '"><span>＋ proposed new section — ' + esc(ins.newHeading) + '</span></div>';
@@ -619,7 +658,7 @@
     doc.querySelectorAll('[data-chg-propose]').forEach((el) =>
       el.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        HISTORY.unshift({ label: '\u00a7 Meetings and Decisions', verdict: 'propose-C opens the composer (later mockup)', when: 'just now', receipt: '', changed: false });
+        // propose-C opens the composer (later mockup) \u2014 no-op here.
         renderAll();
       })
     );
@@ -638,7 +677,7 @@
     const s = SUGGS.find((x) => x.id === id);
     const hash = Array.from({ length: 8 }, () => '0123456789abcdef'[(Math.random() * 16) | 0]).join('');
     if (what === 'propose') {
-      HISTORY.unshift({ label: s.qLabel, verdict: 'propose-C opens the composer (later mockup)', when: 'just now', receipt: '', changed: false });
+      // propose-C opens the composer (later mockup) — no-op here.
       renderAll();
       return;
     }
@@ -649,26 +688,26 @@
       : what === 'b' ? 'preferred B'
       : what === 'indifferent' ? 'indifferent'
       : 'skipped (recirculates with decay)';
+    if (what === 'skip') {
+      if (openId === id) openId = null;
+      renderAll();
+      return;
+    }
+    const firstTime = !resolved.has(id);
     const finish = () => {
-      HISTORY.unshift({
-        label: s.qLabel, verdict, when: 'just now',
-        receipt: what === 'skip' ? '' : hash + '… · bar 0.74', changed: false,
-        // Your judgment moved the race, but didn't close it: the wash lives on.
-        pct: Math.min(PROGRESS[id].pct + 8, 96),
-        cap: what === 'skip' ? PROGRESS[id].cap : 'still gathering — your judgment moved it',
-      });
+      verdicts.set(id, verdict);
       resolved.add(id);
       if (openId === id) openId = null;
-      justArrived = true;
+      justArrived = firstTime ? id : null;
       renderAll();
     };
     const btn = queueEl.querySelector('[data-q="' + id + '"]');
-    if (btn && btn.classList) {
+    if (firstTime && btn && btn.classList) {
       btn.classList.add('leaving');
       setTimeout(finish, 240);
     } else finish();
   }
 
-  function renderAll() { renderQueue(); renderHistory(); renderDoc(); }
+  function renderAll() { renderQueue(); renderDoc(); }
   renderAll();
 </script>
