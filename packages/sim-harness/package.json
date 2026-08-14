@@ -7,7 +7,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "sim": "tsx src/cli.ts",
-    "sweep": "tsx src/sweep.ts"
+    "sweep": "tsx src/sweep.ts",
+    "score": "tsx src/score.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.231",

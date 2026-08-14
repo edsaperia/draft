@@ -73,6 +73,19 @@ exploration/salience rates) × 25 seeds on the clubhouse scenario, ~575
 scripted runs, CSV plus a per-knob summary. LLM-free; costs only CPU.
 Findings so far are folded into SPEC §4.2 and §8.3.
 
+## Welfare judge
+
+LLM runs write novel text, so their final lines are usually off the
+scenario's alternatives menu and unscoreable directly. `npm run score -w
+@draft/sim-harness -- --log runs/<run>.log` has a judge model
+(`claude-fable-5`) estimate each off-menu line's latent coordinates —
+position and quality, calibrated against the menu alternatives as anchors —
+then computes welfare through the same ground-truth machinery as scripted
+runs (stances, couplings, enumerated optimum). The judge translates text
+into the model; it never invents utilities. Judged welfare is a sanity
+check on realism runs, never an optimization target; scripted welfare
+remains the calibration gold standard.
+
 ## Commentator
 
 `--commentary` adds a spectator-feed LLM narrating the run into the log
