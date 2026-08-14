@@ -1,11 +1,13 @@
 <title>Race Card</title>
 <style>
+  /* Deliberately single-theme (light) — Ed, 2026-08-14. Bootstrap-plain. */
   :root {
     --bg: #FFFFFF;
     --fg: #212529;
     --muted: #6C757D;
     --border: #DEE2E6;
     --light: #F8F9FA;
+    --rail: #ECEFF3;
     --primary: #0D6EFD;
     --primary-hover: #0B5ED7;
     --primary-subtle: #CFE2FF;
@@ -15,39 +17,6 @@
     --del-text: #DC3545;
     --del-bg: #F8D7DA;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #212529;
-      --fg: #DEE2E6;
-      --muted: #ADB5BD;
-      --border: #495057;
-      --light: #2B3035;
-      --primary: #0D6EFD;
-      --primary-hover: #3D8BFD;
-      --primary-subtle: #031633;
-      --primary-emphasis: #6EA8FE;
-      --ins-text: #75B798;
-      --ins-bg: #051B11;
-      --del-text: #EA868F;
-      --del-bg: #2C0B0E;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #212529;
-    --fg: #DEE2E6;
-    --muted: #ADB5BD;
-    --border: #495057;
-    --light: #2B3035;
-    --primary: #0D6EFD;
-    --primary-hover: #3D8BFD;
-    --primary-subtle: #031633;
-    --primary-emphasis: #6EA8FE;
-    --ins-text: #75B798;
-    --ins-bg: #051B11;
-    --del-text: #EA868F;
-    --del-bg: #2C0B0E;
-  }
-
   * { box-sizing: border-box; }
   body {
     background: var(--bg);
@@ -56,125 +25,150 @@
     font-size: 16px;
     line-height: 1.5;
     margin: 0;
-    padding-bottom: 40px;
+    padding-bottom: 60px;
   }
   .wrap { max-width: 1140px; margin: 0 auto; padding: 0 16px; }
   .small { font-size: 0.875rem; }
-  .text-muted { color: var(--muted); }
   .mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.75rem; }
 
   /* navbar */
-  .navbar { background: var(--light); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 30; }
-  .navbar .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-top: 10px; padding-bottom: 10px; }
+  .navbar { background: var(--light); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 40; }
+  .navbar .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 10px 16px; }
   .navbar .brand { font-weight: 600; font-size: 1rem; margin: 0; }
   .navbar .brand .sess { color: var(--muted); font-weight: 400; }
   .navbar .stats { display: flex; gap: 18px; white-space: nowrap; font-size: 0.875rem; color: var(--muted); }
   .navbar .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
 
   /* card head */
-  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 22px 0 8px; flex-wrap: wrap; }
-  .eyebrow { font-weight: 600; color: var(--fg); }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 20px 0 8px; flex-wrap: wrap; }
+  .eyebrow { font-weight: 600; }
   .eyebrow .n { color: var(--muted); font-weight: 400; }
-  .btn-group { display: inline-flex; }
   .btn {
     appearance: none; font: inherit; font-size: 0.875rem;
     padding: 0.375rem 0.75rem; cursor: pointer;
     border: 1px solid var(--border); background: var(--bg); color: var(--fg);
     border-radius: 0.375rem;
   }
+  .btn:hover { background: var(--light); }
+  .btn-group { display: inline-flex; }
   .btn-group .btn { border-radius: 0; margin-left: -1px; }
   .btn-group .btn:first-child { border-radius: 0.375rem 0 0 0.375rem; margin-left: 0; }
   .btn-group .btn:last-child { border-radius: 0 0.375rem 0.375rem 0; }
   .btn-group .btn[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
-  .btn:hover { background: var(--light); }
   .btn-group .btn[aria-pressed="true"]:hover { background: var(--primary-hover); }
   .btn-primary {
     background: var(--primary); border-color: var(--primary); color: #fff;
     font-weight: 600; font-size: 1rem; padding: 0.5rem 1.25rem;
   }
-  .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
-  .btn-outline { background: var(--bg); color: var(--muted); }
+  .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  .btn-outline { color: var(--muted); }
   .btn-outline:hover { color: var(--primary); border-color: var(--primary); background: var(--bg); }
   button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .prompt { color: var(--muted); margin: 0 0 16px; font-size: 0.9375rem; }
+  .prompt { color: var(--muted); margin: 0 0 14px; font-size: 0.9375rem; }
   .prompt b { color: var(--fg); }
 
-  /* two lanes; shared cards span both */
+  /* judgment surface at the top: buttons (sticky) above rationales */
+  .verdicts {
+    position: sticky;
+    top: 46px; /* below navbar */
+    z-index: 30;
+    display: grid;
+    grid-template-columns: 1fr 200px 1fr;
+    gap: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    padding: 10px 14px;
+    align-items: center;
+  }
+  @media (max-width: 860px) { .verdicts { grid-template-columns: 1fr; } }
+  .verdicts .vslot { display: flex; justify-content: center; }
+  .verdicts .btn-primary { min-width: 70%; }
+  .vmiddle { display: flex; flex-direction: column; gap: 6px; }
+  .vmiddle .btn { font-size: 0.8125rem; padding: 0.25rem 0.5rem; }
+
+  .rationales {
+    display: grid;
+    grid-template-columns: 1fr 200px 1fr;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  @media (max-width: 860px) { .rationales { grid-template-columns: 1fr; } }
+  .rationale {
+    background: var(--light);
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    padding: 12px 14px;
+    font-size: 0.875rem;
+    color: var(--fg);
+  }
+  .rationale .rl {
+    font-weight: 700; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em;
+    display: block; margin-bottom: 4px; color: var(--muted);
+  }
+  .rationale.mid-note {
+    background: transparent; border: 0; color: var(--muted);
+    font-size: 0.75rem; text-align: center; align-self: center;
+  }
+
+  /* the two lanes: continuous rails, shared cards on top of both */
+  .lanes-wrap { position: relative; margin-top: 18px; }
+  .lane-rail {
+    position: absolute; top: 28px; bottom: 0;
+    width: calc(50% - 10px);
+    background: var(--rail);
+    border-radius: 0.5rem;
+  }
+  .lane-rail.left { left: 0; }
+  .lane-rail.right { right: 0; }
   .lanes {
+    position: relative;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 12px 20px;
+    padding-bottom: 16px;
   }
-  @media (max-width: 820px) { .lanes { grid-template-columns: 1fr; } .lane-head { display: none; } }
+  @media (max-width: 860px) { .lanes { grid-template-columns: 1fr; } .lane-rail { display: none; } .lane-head { display: none; } }
   .lane-head {
     font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--muted); text-align: center; padding: 2px 0;
+    color: var(--muted); text-align: center; height: 22px;
   }
   .card {
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 0.375rem;
-    padding: 14px 18px;
+    padding: 13px 16px;
   }
-  .card.span2 { grid-column: 1 / -1; background: var(--light); color: var(--muted); }
+  .card.span2 { grid-column: 1 / -1; margin: 0 28px; color: var(--muted); box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
   .card.span2 .docline {
-    font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     color: var(--muted); margin: 10px 0 4px;
   }
   .card.span2 .docline:first-child { margin-top: 0; }
-  .card.span2 .doctitle { font-size: 1.125rem; font-weight: 600; color: var(--fg); margin: 0 0 8px; }
+  .card.span2 .doctitle { font-size: 1.0625rem; font-weight: 600; color: var(--fg); margin: 0 0 8px; }
   .card.span2 p { margin: 0 0 8px; }
   .card.span2 p:last-child { margin-bottom: 0; }
-  .card.span2 .agreed-note { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
-  .card.diff { border-color: var(--primary); border-width: 1.5px; }
+  .card.diff { border: 1.5px solid var(--primary); box-shadow: 0 1px 4px rgba(13, 110, 253, 0.12); }
   .card.diff .vtag {
-    font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--primary-emphasis); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--primary-emphasis); margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: baseline;
   }
   .card.diff .vtag .keep { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
-  .card.currently { border-style: dashed; color: var(--muted); }
-  .card.currently .vtag { color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
   .badge {
-    display: inline-block; font-size: 0.75rem; font-weight: 600;
+    display: inline-block; font-size: 0.7rem; font-weight: 600;
     background: var(--primary-subtle); color: var(--primary-emphasis);
     border-radius: 0.375rem; padding: 2px 8px; margin-bottom: 8px;
   }
+  .currently-note { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
 
   del { background: var(--del-bg); color: var(--del-text); text-decoration: line-through; padding: 0 1px; }
   ins { background: var(--ins-bg); color: var(--ins-text); text-decoration: none; padding: 0 1px; }
   mark { background: var(--primary-subtle); color: var(--primary-emphasis); padding: 0 1px; }
   .dim-shared { color: var(--muted); }
-  .modenote { font-size: 0.8125rem; color: var(--muted); margin: 10px 0 0; }
+  .modenote { font-size: 0.8125rem; color: var(--muted); margin: 6px 0 0; }
   .modenote b { color: var(--primary-emphasis); }
-
-  /* floating judgment bar: rationales + verdicts */
-  .judgebar {
-    position: sticky;
-    bottom: 10px;
-    z-index: 20;
-    margin-top: 16px;
-    display: grid;
-    grid-template-columns: 1fr 180px 1fr;
-    gap: 12px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 0.5rem;
-    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.08);
-    padding: 12px 14px;
-    align-items: stretch;
-  }
-  @media (max-width: 820px) { .judgebar { grid-template-columns: 1fr; } }
-  .jcell { display: flex; flex-direction: column; gap: 10px; }
-  .jcell .rationale {
-    flex: 1;
-    font-size: 0.8125rem; color: var(--muted); font-style: italic;
-    max-height: 96px; overflow-y: auto;
-    padding: 8px 10px; background: var(--light); border-radius: 0.375rem;
-  }
-  .jcell .rationale .rl { font-style: normal; font-weight: 700; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px; }
-  .jcell .btn-primary { align-self: center; min-width: 65%; }
-  .jmiddle { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-  .jmiddle .btn { font-size: 0.8125rem; }
 
   /* receipts + notes */
   .receipts { margin-top: 28px; }
@@ -214,35 +208,38 @@
   </section>
 
   <section class="notes">
-    <h2>Design notes — the race-card, fourth pass</h2>
-    <p class="sub">Desktop-first · plain Bootstrap-style theme (visual design deferred) · card content is real output from run clubhouse-1</p>
+    <h2>Design notes — the race-card, fifth pass</h2>
+    <p class="sub">Desktop-first · light mode only · plain Bootstrap-style theme (visual design deferred) · card content is real output from run clubhouse-1</p>
 
-    <h3>Two lanes, top to bottom</h3>
-    <p>The page is structurally <b>two parallel versions of the charter</b>, Version A down the left, Version B down the right, headed as such. Where the versions agree, a <b>single card spans both lanes</b> (grey, quiet — agreement is background). Where they differ, the card splits into <b>one card per lane</b> (white, blue-bordered — disagreement is figure). Reading down the page is reading either version in full; the alternation of spanning and split cards is itself the diff map.</p>
+    <h3>Layout, top to bottom</h3>
+    <p><b>Verdict buttons first</b> (sticky, always at hand), <b>rationales directly beneath them</b> — read both arguments before you ever see a diff, which is the natural reading order — then the <b>two document lanes</b>. The lanes are continuous rails running the full height of the charter: where the versions agree, a single white card sits on top of both rails; where they differ, each lane carries its own card. The rail peeking out around the spanning cards keeps the two-versions structure legible even through long stretches of agreement.</p>
 
-    <h3>The floating bar holds rationales and verdicts together</h3>
-    <p>The sticky bottom bar is the judgment surface: Option A's unsigned rationale and its big <b>Prefer A</b> button on the left, B's on the right, and the middle stack between them — <b>Genuinely can't split them · Skip · Propose something else</b>. Argument and verdict travel together, always in view while the document scrolls behind. Long rationales scroll within their box rather than growing the bar.</p>
+    <h3>Long rationales</h3>
+    <p>Mostly a non-problem, by constitutional design: the engine caps rationales at <b>300 characters</b> (rationaleMaxChars), so two side-by-side panels never grow beyond a few lines. The cap is a mechanism feature — rationales are pitches, not essays — and the UI leans on it rather than adding truncation machinery. If the cap ever rises, these panels grow naturally and the buttons stay sticky above them. Since judges read both rationales before scrolling to the diffs, they sit at the top, full-width, never clamped.</p>
 
     <h3>Comparison modes, inside the split cards</h3>
     <ul>
-      <li><b>Fair copy</b> — clean final text. Default for wholesale rewrites, since the split already locates the difference.</li>
+      <li><b>Fair copy</b> — clean final text. Default for wholesale rewrites: the split already locates the difference.</li>
       <li><b>Marked up</b> — amendment style against the current text (struck deletions, green insertions). Default for small patches (Keys card).</li>
       <li><b>Differences</b> — dims what both versions agree on inside the split; highlights in blue only where they disagree with each other.</li>
     </ul>
-    <p>Color rule unchanged: <b>green/red = versus the current text; blue highlight = versus each other.</b> When both candidates replace a paragraph, the outgoing text appears as a dashed "currently" card spanning both lanes, directly above the split.</p>
+    <p>Color rule: <b>green/red = versus the current text; blue highlight = versus each other.</b> When both candidates replace a paragraph, the outgoing text appears at the end of the spanning card above the split, labelled "currently — both versions replace this."</p>
 
-    <h3>Non-contiguous patches (card 4)</h3>
-    <p>One proposal, two sites: the lanes split at the Money paragraph <em>and</em> the Offices paragraph, with spanning agreed-cards between them — the join-split-join-split rhythm shows the patch's footprint at a glance. Badges count the sites ("change 1 of 2"); the floating bar carries one verdict for the whole patch ("Adopt the patch — both changes"). One judgment, many sites: if judges chronically want to split a patch, it should have been two patches — surgery's job (P3), not the card's. Where rivals race and only one touches a site, the silent rival's lane card reads "leaves this unchanged."</p>
+    <h3>Non-contiguous patches (cards 4 and 5)</h3>
+    <p>Card 4: one proposal, two sites (the Treasurer rename). Card 5: one proposal, <b>four</b> sites scattered across the whole charter (a copy-edit sweep) — the lanes split and rejoin four times, and the join-split rhythm shows the patch's footprint at a glance. Badges count the sites; the verdict buttons speak once for the whole patch. If judges chronically want to split a patch, it should have been two patches — surgery's job (P3), not the card's. Beyond a handful of sites, the change ledger (adds / drops / keeps, a P3 feature) becomes the primary representation with the sites as its receipts.</p>
+
+    <h3>New sections (card 6)</h3>
+    <p>A patch can create text where none existed. The insertion renders at its position in the document: Version A's lane carries the new section (heading and body all-green in Marked up), and Version B's lane renders <b>absence explicitly</b> — a dashed card saying the charter continues unchanged — rather than showing nothing, which would read as agreement. Deletion of a whole section is the mirror image: a dashed "this section is removed" card on the proposing side.</p>
+
+    <h3>Diagonal (salience) cards — reframed</h3>
+    <p>Why they exist: attention is the session's scarcest resource, and the router needs to know <em>which fights matter</em> — to order feeds, rank the bounty board, and weight the closing record. That importance is measured the same way everything else is: pairwise, by asking. A diagonal card compares two open <b>disputes</b>, not two texts — you can dislike both current leaders and still have a clear answer about which question deserves the room's attention. Card 5's copy now says this explicitly, and shows each dispute as a section name first, with the current leading text as a subordinate illustration. Whether they also need stronger visual distinction (a tint) is parked as QUESTIONS #46.</p>
 
     <h3>What is deliberately absent</h3>
     <ul>
       <li><b>No authors.</b> Sealed until close; rationales labelled <em>unsigned</em>. Mo's spelling ships exactly as submitted.</li>
-      <li><b>No standings, counts, or direction.</b> A/B order randomised per serve.</li>
+      <li><b>No standings, counts, or direction.</b> A/B order randomised per serve. (Proposal counts per dispute, shown on diagonal cards, are public magnitude — like the sort tabs — never direction.)</li>
       <li><b>The bar is public, race evidence is not.</b> The adoption bar in the navbar is a function of the clock, identical for everyone.</li>
     </ul>
-
-    <h3>Diagonal (salience) cards</h3>
-    <p>Card 5: the two contested paragraphs sit one per lane with their section names, and the floating bar asks which matters more ("Equally important" in the middle). Weighing attention, not text. Extra visual distinction is parked as QUESTIONS #46.</p>
   </section>
 </main>
 
@@ -250,7 +247,7 @@
   const DOC = [
     { t: 'title', x: 'The Hollow Oak Club — House Charter' },
     { t: 'p', x: 'The Hollow Oak Club exists so that its members may have a place of their own: to meet, make, cook, argue, garden, and put the world to rights.' },
-    { t: 'p', x: 'The clubhouse at 44 Aldermoss Lane is held on a long lease from the Marchmont Trust, which reserves to itself the fabric of the building, the lease itself, insurance, and compliance with the law; everything else about the life of the house is the Club’s to govern.' },
+    { t: 'p', key: 'lease', x: 'The clubhouse at 44 Aldermoss Lane is held on a long lease from the Marchmont Trust, which reserves to itself the fabric of the building, the lease itself, insurance, and compliance with the law; everything else about the life of the house is the Club’s to govern.' },
     { t: 'p', x: 'Should the Club cease to operate any part of house life, its management reverts to the Trust, which will run it plainly on the Club’s behalf; reversion is not a sanction, and any function may be reclaimed by a valid decision.' },
     { t: 'h', x: 'The House' },
     { t: 'p', x: 'The house comprises the Common Room, the Kitchen, the Workshop, the Library Corner, the Guest Bedroom upstairs, and the Garden behind, together with the cellar and the shed.' },
@@ -259,7 +256,7 @@
     { t: 'h', x: 'Keys' },
     { t: 'p', key: 'keys', x: 'Every member holds a front-door key, and members may lend or cut spares for regulars they trust.' },
     { t: 'h', x: 'The Guest Bedroom' },
-    { t: 'p', x: 'The Guest Bedroom goes to whoever claims it first, and guests leave it as they found it.' },
+    { t: 'p', key: 'bedroom', x: 'The Guest Bedroom goes to whoever claims it first, and guests leave it as they found it.' },
     { t: 'h', x: 'The Garden' },
     { t: 'p', key: 'garden', x: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.' },
     { t: 'h', x: 'Money' },
@@ -277,9 +274,9 @@
     { t: 'p', x: 'These rules change by the same process as any house decision: proposed with notice, agreed by majority at a meeting, and minuted in the Members’ Book.' },
     { t: 'h', x: 'Disputes' },
     { t: 'p', x: 'Disputes among members are the house’s to settle: talk first, then a house meeting if talking fails, with judgments recorded in the Members’ Book.' },
-    { t: 'p', x: 'Any member may bring any worry to any other in confidence, and confidence is kept; nothing undisclosed to a respondent may ever count against them.' },
+    { t: 'p', key: 'confidence', x: 'Any member may bring any worry to any other in confidence, and confidence is kept; nothing undisclosed to a respondent may ever count against them.' },
     { t: 'h', x: 'The Trust' },
-    { t: 'p', x: 'The Trust reserves the fabric and lease of the house, its insurance, and all legal obligations; within everything else, what the Club validly decides, the Trust treats as decided.' },
+    { t: 'p', key: 'trust', x: 'The Trust reserves the fabric and lease of the house, its insurance, and all legal obligations; within everything else, what the Club validly decides, the Trust treats as decided.' },
     { t: 'p', x: 'Adopted at the house, by the fourteen, over pasta.' },
   ];
 
@@ -288,7 +285,7 @@
       kind: 'edge',
       key: 'money',
       section: 'Money',
-      count: 'card 1 of 5',
+      count: 'card 1 of 7',
       defaultMode: 'diff',
       prompt: 'Version A and Version B agree everywhere except one paragraph. <b>Which should the charter say?</b>',
       a: {
@@ -308,7 +305,7 @@
       kind: 'edge',
       key: 'dinner',
       section: 'The Thursday Dinner',
-      count: 'card 2 of 5',
+      count: 'card 2 of 7',
       defaultMode: 'diff',
       prompt: 'Version A and Version B agree everywhere except one paragraph. <b>Which should the charter say?</b>',
       a: {
@@ -328,7 +325,7 @@
       kind: 'edge',
       key: 'keys',
       section: 'Keys',
-      count: 'card 3 of 5',
+      count: 'card 3 of 7',
       defaultMode: 'marked',
       prompt: 'Version A changes a paragraph; Version B keeps it. <b>Change it, or keep it?</b>',
       keepCard: true,
@@ -349,7 +346,7 @@
     {
       kind: 'multi',
       section: 'Money + Offices',
-      count: 'card 4 of 5 · one patch, two places',
+      count: 'card 4 of 7 · one patch, two places',
       defaultMode: 'marked',
       prompt: 'One proposal changes the charter in <b>two places at once</b> — the lanes split at both sites, and they stand or fall together. <em>(Illustrative — clubhouse-1 produced no discontinuous patch.)</em>',
       rationale: '"Purse-holder" is twee and confuses newcomers — every other club under the sun calls this officer the Treasurer. One rename, both places it appears, plus a handover line so the tin doesn’t wander between office-holders.',
@@ -373,12 +370,69 @@
       ],
     },
     {
+      kind: 'multi',
+      section: 'Copy-edit sweep',
+      count: 'card 5 of 7 · one patch, four places',
+      defaultMode: 'marked',
+      prompt: 'One proposal makes <b>four tiny edits scattered across the whole charter</b> — watch the lanes split and rejoin four times. All four stand or fall together.',
+      rationale: 'Four tiny splinters: a redundant "itself", a comma splice, a dangling "undisclosed", and a "within" that should be "in". None changes meaning; all of them snag the ear. One patch, four places, zero substance.',
+      sites: [
+        {
+          key: 'lease',
+          badge: 'Change 1 of 4',
+          a: {
+            fair: 'The clubhouse at 44 Aldermoss Lane is held on a long lease from the Marchmont Trust, which reserves to itself the fabric of the building, the lease, insurance, and compliance with the law; everything else about the life of the house is the Club’s to govern.',
+            marked: 'The clubhouse at 44 Aldermoss Lane is held on a long lease from the Marchmont Trust, which reserves to itself the fabric of the building, the lease<del> itself</del>, insurance, and compliance with the law; everything else about the life of the house is the Club’s to govern.',
+          },
+        },
+        {
+          key: 'bedroom',
+          badge: 'Change 2 of 4',
+          a: {
+            fair: 'The Guest Bedroom goes to whoever claims it first; guests leave it as they found it.',
+            marked: 'The Guest Bedroom goes to whoever claims it first<del>, and</del><ins>;</ins> guests leave it as they found it.',
+          },
+        },
+        {
+          key: 'confidence',
+          badge: 'Change 3 of 4',
+          a: {
+            fair: 'Any member may bring any worry to any other in confidence, and that confidence is kept; nothing kept from a respondent may ever count against them.',
+            marked: 'Any member may bring any worry to any other in confidence, and <ins>that</ins> confidence is kept; nothing <del>undisclosed to</del> <ins>kept from</ins> a respondent may ever count against them.',
+          },
+        },
+        {
+          key: 'trust',
+          badge: 'Change 4 of 4',
+          a: {
+            fair: 'The Trust reserves the fabric and lease of the house, its insurance, and all legal obligations; in everything else, what the Club validly decides, the Trust treats as decided.',
+            marked: 'The Trust reserves the fabric and lease of the house, its insurance, and all legal obligations; <del>within</del> <ins>in</ins> everything else, what the Club validly decides, the Trust treats as decided.',
+          },
+        },
+      ],
+    },
+    {
+      kind: 'insert',
+      section: 'Quiet Hours (new section)',
+      count: 'card 6 of 7 · adds a whole section',
+      defaultMode: 'marked',
+      insertAfterKey: 'guests',
+      prompt: 'One proposal <b>adds an entirely new section</b> to the charter, between Guests and Meetings. Version B simply doesn’t have it.',
+      newHeading: 'Quiet Hours',
+      a: {
+        fair: 'The house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.',
+        marked: '<ins>The house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.</ins>',
+        rationale: 'We’ve never written down the one rule everyone already tiptoes around. Guests stay over, members work early — quiet hours protect both, and saying it out loud beats resenting each other politely.',
+      },
+    },
+    {
       kind: 'diagonal',
       keys: ['garden', 'money'],
       labels: ['The Garden', 'Money'],
+      liveCounts: [2, 3],
       section: 'Garden ↔ Money',
-      count: 'card 5 of 5 · salience',
-      prompt: 'Both of these paragraphs are contested right now. <b>Which is more important for the club to get right?</b> This shapes what the room spends its attention on — it doesn’t rank any proposal.',
+      count: 'card 7 of 7 · attention',
+      prompt: 'Two disputes are open. <b>Which question deserves more of the room’s attention?</b> You don’t need to like either current text — you’re ranking the disputes, not the drafts. This shapes what gets served and how the record is weighted; it ranks no proposal.',
     },
   ];
 
@@ -394,45 +448,7 @@
 
   function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 
-  // Group DOC into runs: shared runs become one spanning card; keyed lines
-  // that the current card contests become split lane cards.
-  function lanesHtml(card) {
-    const contested = (key) =>
-      (card.kind === 'edge' && key === card.key) ||
-      (card.kind === 'multi' && card.sites.some((s) => s.key === key));
-    let html = '<div class="lane-head">Version A</div><div class="lane-head">Version B</div>';
-    let run = [];
-    const flushRun = () => {
-      if (!run.length) return;
-      html += '<div class="card span2">' + run.join('') + '</div>';
-      run = [];
-    };
-    for (const line of DOC) {
-      if (line.t === 'title') { run.push('<div class="doctitle">' + esc(line.x) + '</div>'); continue; }
-      if (line.t === 'h') { run.push('<div class="docline">' + esc(line.x) + '</div>'); continue; }
-      if (!contested(line.key)) { run.push('<p>' + esc(line.x) + '</p>'); continue; }
-
-      // A contested paragraph: close the shared run, emit the split.
-      if (card.kind === 'edge') {
-        if (!card.keepCard) {
-          run.push('<p style="opacity:0.75"><b class="small" style="text-transform:uppercase;letter-spacing:0.05em;font-size:0.7rem;">Currently — both versions replace this:</b><br>' + esc(line.x) + '</p>');
-        }
-        flushRun();
-        html += laneCard(card, 'A', card.a, null, card.keepCard ? null : 'anchor');
-        html += laneCard(card, 'B', card.b, null, card.keepCard ? 'anchor' : null);
-      } else {
-        const site = card.sites.find((s) => s.key === line.key);
-        const isFirst = site === card.sites[0];
-        flushRun();
-        html += laneCard(card, 'A', { fair: site.a.fair, marked: site.a.marked }, site.badge, isFirst ? 'anchor' : null);
-        html += laneCard(card, 'B', { keep: true, fair: line.x, marked: esc(line.x) + ' <span class="dim-shared">(no change)</span>' }, site.badge, null);
-      }
-    }
-    flushRun();
-    return html;
-  }
-
-  function laneCard(card, v, opt, badge, anchor) {
+  function laneCard(v, opt, badge, anchor) {
     const body = opt[mode] ?? esc(opt.fair);
     const keep = opt.keep ? '<span class="keep">keeps the current text</span>' : '';
     return (
@@ -444,15 +460,73 @@
     );
   }
 
-  function diagLanesHtml(card) {
-    const pA = DOC.find((l) => l.key === card.keys[0]).x;
-    const pB = DOC.find((l) => l.key === card.keys[1]).x;
-    return (
-      '<div class="lane-head">' + card.labels[0] + '</div><div class="lane-head">' + card.labels[1] + '</div>' +
-      '<div class="card diff" id="split"><div class="vtag"><span>' + card.labels[0] + '</span></div><div>' + esc(pA) + '</div></div>' +
-      '<div class="card diff"><div class="vtag"><span>' + card.labels[1] + '</span></div><div>' + esc(pB) + '</div></div>' +
-      '<div class="card span2"><span class="agreed-note">Everything else</span><p>The rest of the charter, and every other contested race, is unaffected by this card — you are weighing attention, not text.</p></div>'
-    );
+  function lanesHtml(card) {
+    const contested = (key) =>
+      key !== undefined &&
+      ((card.kind === 'edge' && key === card.key) ||
+        (card.kind === 'multi' && card.sites.some((s) => s.key === key)) ||
+        (card.kind === 'diagonal' && card.keys.includes(key)));
+    let html = '<div class="lane-head">Version A</div><div class="lane-head">Version B</div>';
+    if (card.kind === 'diagonal') {
+      html = '<div class="lane-head">' + card.labels[0] + '</div><div class="lane-head">' + card.labels[1] + '</div>';
+    }
+    let run = [];
+    const flushRun = () => {
+      if (!run.length) return;
+      html += '<div class="card span2">' + run.join('') + '</div>';
+      run = [];
+    };
+    for (const line of DOC) {
+      if (line.t === 'title') { run.push('<div class="doctitle">' + esc(line.x) + '</div>'); continue; }
+      if (line.t === 'h') { run.push('<div class="docline">' + esc(line.x) + '</div>'); continue; }
+      if (!contested(line.key)) {
+        run.push('<p>' + esc(line.x) + '</p>');
+        if (card.kind === 'insert' && line.key === card.insertAfterKey) {
+          flushRun();
+          const body = card.a[mode === 'fair' ? 'fair' : 'marked'];
+          html +=
+            '<div class="card diff" id="split">' +
+            '<span class="badge">New section</span>' +
+            '<div class="vtag"><span>Version A</span></div>' +
+            '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--ins-text);margin-bottom:4px;">' + (mode === 'fair' ? esc(card.newHeading) : '<ins>' + esc(card.newHeading) + '</ins>') + '</div>' +
+            '<div>' + body + '</div>' +
+            '</div>' +
+            '<div class="card diff" style="border-style:dashed;border-color:var(--border);box-shadow:none;color:var(--muted)">' +
+            '<div class="vtag" style="color:var(--muted)"><span>Version B</span><span class="keep">keeps the charter as it is</span></div>' +
+            '<div>No such section — the charter continues straight to Meetings and Decisions.</div>' +
+            '</div>';
+        }
+        continue;
+      }
+
+      if (card.kind === 'edge') {
+        if (!card.keepCard) {
+          run.push('<p><span class="currently-note">Currently — both versions replace this:</span><br>' + esc(line.x) + '</p>');
+        }
+        flushRun();
+        html += laneCard('A', card.a, null, 'anchor');
+        html += laneCard('B', card.b, null, null);
+      } else if (card.kind === 'multi') {
+        const site = card.sites.find((s) => s.key === line.key);
+        const isFirst = site === card.sites[0];
+        flushRun();
+        html += laneCard('A', { fair: site.a.fair, marked: site.a.marked }, site.badge, isFirst ? 'anchor' : null);
+        html += laneCard('B', { keep: true, fair: line.x, marked: esc(line.x) + ' <span class="dim-shared">(no change)</span>' }, site.badge, null);
+      } else {
+        // diagonal: each contested paragraph appears in its own lane, as a
+        // dispute (section name first, current leader as illustration).
+        const i = card.keys.indexOf(line.key);
+        flushRun();
+        html +=
+          '<div class="card diff"' + (i === 0 ? ' id="split"' : '') + (i === 0 ? '' : ' style="grid-column:2"') + '>' +
+          '<div class="vtag"><span>Open dispute · § ' + card.labels[i] + '</span><span class="keep">' + card.liveCounts[i] + ' live proposals</span></div>' +
+          '<div class="small" style="color:var(--muted)"><b style="color:var(--fg)">Current leading text (illustrative):</b> ' + esc(line.x) + '</div>' +
+          '</div>';
+        if (i === 0) html += '<div></div>'; // hold B lane empty beside garden
+      }
+    }
+    flushRun();
+    return html;
   }
 
   function rationaleHtml(label, text) {
@@ -460,28 +534,6 @@
       return '<div class="rationale"><span class="rl">Status quo</span>The text as it stands. Keeping it needs no rationale — it already survived.</div>';
     }
     return '<div class="rationale"><span class="rl">' + label + '</span>' + esc(text) + '</div>';
-  }
-
-  function judgebarHtml(card) {
-    const isDiag = card.kind === 'diagonal';
-    const isMulti = card.kind === 'multi';
-    const left = isDiag
-      ? '<div class="jcell"><div class="rationale"><span class="rl">' + card.labels[0] + '</span>Contested by 2 live proposals.</div><button class="btn btn-primary" data-judge="a">' + card.labels[0] + ' matters more</button></div>'
-      : '<div class="jcell">' +
-        rationaleHtml('Version A — rationale · unsigned', isMulti ? card.rationale : card.a.rationale) +
-        '<button class="btn btn-primary" data-judge="a">' + (isMulti ? 'Adopt the patch — both changes' : 'Prefer A') + '</button></div>';
-    const right = isDiag
-      ? '<div class="jcell"><div class="rationale"><span class="rl">' + card.labels[1] + '</span>Contested by 3 live proposals.</div><button class="btn btn-primary" data-judge="b">' + card.labels[1] + ' matters more</button></div>'
-      : '<div class="jcell">' +
-        rationaleHtml('Version B — rationale · unsigned', isMulti || card.b.keep ? null : card.b.rationale) +
-        '<button class="btn btn-primary" data-judge="b">' + (isMulti || card.b.keep ? 'Keep the current text' : 'Prefer B') + '</button></div>';
-    const middle =
-      '<div class="jmiddle">' +
-      '<button class="btn btn-outline" data-mid="indifferent">' + (isDiag ? 'Equally important' : 'Genuinely can’t split them') + '</button>' +
-      '<button class="btn btn-outline" data-mid="skip">Skip this card</button>' +
-      (isDiag ? '' : '<button class="btn btn-outline" data-mid="propose">Propose something else · 1 token</button>') +
-      '</div>';
-    return '<div class="judgebar">' + left + middle + right + '</div>';
   }
 
   function render() {
@@ -494,7 +546,8 @@
     const card = cards[index];
     if (mode === null) mode = card.defaultMode ?? 'fair';
     const isDiag = card.kind === 'diagonal';
-    const modeList = card.kind === 'multi' ? MODES.filter((m) => m.id !== 'diff') : MODES;
+    const isMulti = card.kind === 'multi';
+    const modeList = isMulti || card.kind === 'insert' ? MODES.filter((m) => m.id !== 'diff') : MODES;
 
     const modes = isDiag
       ? ''
@@ -502,13 +555,21 @@
         modeList.map((m) => '<button class="btn" aria-pressed="' + (mode === m.id) + '" data-mode="' + m.id + '">' + m.label + '</button>').join('') +
         '</div>';
 
-    const modenote = isDiag
-      ? ''
-      : mode === 'diff'
-        ? '<p class="modenote"><b>Differences:</b> dimmed text is what both versions agree on inside the split; blue is where they part ways. Green/red never appears here — that means "versus the current text", a different question.</p>'
-        : mode === 'marked'
-          ? '<p class="modenote"><b>Marked up:</b> each version’s changes against the current text — amendment style.</p>'
-          : '<p class="modenote"><b>Fair copy:</b> exactly what the charter would say. No markup.</p>';
+    const isInsert = card.kind === 'insert';
+    const nSites = isMulti ? card.sites.length : 0;
+    const leftBtn = isDiag ? card.labels[0] + ' matters more' : isInsert ? 'Add the new section' : isMulti ? 'Adopt the patch — all ' + nSites + ' changes' : 'Prefer A';
+    const rightBtn = isDiag ? card.labels[1] + ' matters more' : isInsert ? 'Keep the charter as it is' : isMulti || card.b?.keep ? 'Keep the current text' : 'Prefer B';
+    const midButtons =
+      '<button class="btn btn-outline" data-mid="indifferent">' + (isDiag ? 'Equally important' : 'Genuinely can’t split them') + '</button>' +
+      '<button class="btn btn-outline" data-mid="skip">Skip this card</button>' +
+      (isDiag ? '' : '<button class="btn btn-outline" data-mid="propose">Propose something else · 1 token</button>');
+
+    const leftRationale = isDiag
+      ? '<div class="rationale"><span class="rl">§ ' + card.labels[0] + '</span>An open dispute with ' + card.liveCounts[0] + ' live proposals. You’re ranking its importance, not any draft.</div>'
+      : rationaleHtml('Version A — rationale · unsigned', isMulti ? card.rationale : card.a.rationale);
+    const rightRationale = isDiag
+      ? '<div class="rationale"><span class="rl">§ ' + card.labels[1] + '</span>An open dispute with ' + card.liveCounts[1] + ' live proposals. You’re ranking its importance, not any draft.</div>'
+      : rationaleHtml('Version B — rationale · unsigned', isInsert || isMulti || card.b?.keep ? null : card.b.rationale);
 
     stage.innerHTML =
       '<div class="card-head">' +
@@ -516,10 +577,20 @@
       modes +
       '</div>' +
       '<p class="prompt">' + card.prompt + '</p>' +
-      '<div class="lanes">' + (isDiag ? diagLanesHtml(card) : lanesHtml(card)) + '</div>' +
-      modenote +
-      judgebarHtml(card) +
-      '<p class="prompt small" style="margin-top:12px;">You’re judging text, not people — authorship is sealed until the record. Nothing on this card tells you what anyone else chose.</p>';
+      '<div class="verdicts">' +
+      '<div class="vslot"><button class="btn btn-primary" data-judge="a">' + leftBtn + '</button></div>' +
+      '<div class="vmiddle">' + midButtons + '</div>' +
+      '<div class="vslot"><button class="btn btn-primary" data-judge="b">' + rightBtn + '</button></div>' +
+      '</div>' +
+      '<div class="rationales">' + leftRationale + '<div class="rationale mid-note">Authorship sealed until the record. Nothing here tells you what anyone else chose.</div>' + rightRationale + '</div>' +
+      '<div class="lanes-wrap"><div class="lane-rail left"></div><div class="lane-rail right"></div>' +
+      '<div class="lanes">' + lanesHtml(card) + '</div></div>' +
+      (isDiag ? '' :
+        mode === 'diff'
+          ? '<p class="modenote"><b>Differences:</b> dimmed text is what both versions agree on inside the split; blue is where they part ways. Green/red never appears here — that means "versus the current text", a different question.</p>'
+          : mode === 'marked'
+            ? '<p class="modenote"><b>Marked up:</b> each version’s changes against the current text — amendment style.</p>'
+            : '<p class="modenote"><b>Fair copy:</b> exactly what the charter would say. No markup.</p>');
 
     stage.querySelectorAll('[data-mode]').forEach((b) =>
       b.addEventListener('click', () => {
@@ -533,15 +604,17 @@
       const li = document.createElement('li');
       const hash = Array.from({ length: 8 }, () => '0123456789abcdef'[(Math.random() * 16) | 0]).join('');
       const verdict = what === 'indifferent'
-        ? (card.kind === 'diagonal' ? 'equally important' : 'indifferent')
-        : card.kind === 'diagonal'
+        ? (isDiag ? 'equally important' : 'indifferent')
+        : isDiag
           ? 'preferred ' + card.labels[what === 'a' ? 0 : 1]
-          : card.kind === 'multi'
-            ? (what === 'a' ? 'adopted the patch (2 sites)' : 'kept the current text')
+          : isInsert
+            ? (what === 'a' ? 'added the new section' : 'kept the charter as it is')
+            : isMulti
+            ? (what === 'a' ? 'adopted the patch (' + nSites + ' sites)' : 'kept the current text')
             : 'preferred ' + what.toUpperCase();
       li.innerHTML = '✓ <b>' + card.section + '</b> — ' + verdict + ' · receipt ' + hash + '… · bar 0.74';
       receipts.prepend(li);
-      index++; mode = null; render(); scrollToSplit();
+      index++; mode = null; render(); window.scrollTo(0, 0);
     };
     stage.querySelectorAll('[data-judge]').forEach((b) =>
       b.addEventListener('click', () => judged(b.dataset.judge))
@@ -554,7 +627,7 @@
         if (id === 'skip') {
           li.textContent = '○ ' + card.section + ' — skipped (recirculates later, with decay)';
           receipts.prepend(li);
-          index++; mode = null; render(); scrollToSplit();
+          index++; mode = null; render(); window.scrollTo(0, 0);
         } else {
           li.textContent = '○ ' + card.section + ' — propose-C opens the composer (next mockup)';
           receipts.prepend(li);
@@ -563,11 +636,5 @@
     );
   }
 
-  function scrollToSplit() {
-    const el = document.getElementById('split');
-    if (el) el.scrollIntoView({ block: 'center', behavior: 'auto' });
-  }
-
   render();
-  scrollToSplit();
 </script>
