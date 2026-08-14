@@ -5,3 +5,6 @@ export * from './llm-persona.js';
 export * from './subscription-persona.js';
 export * from './runner.js';
 export * from './metrics.js';
+export * from './propose-c-persona.js';
+export * from './token-audit.js';
+export * from './care-map.js';

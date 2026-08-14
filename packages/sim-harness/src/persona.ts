@@ -25,6 +25,18 @@ export interface DraftProposal {
   rationale: string;
 }
 
+/**
+ * Optional intent hooks (QUESTIONS #8/#9 evidence): scripted personas
+ * expose moments where they *wanted* to act but the economy said no.
+ * Purely observational — a recorder must never change behavior.
+ */
+export interface PersonaTelemetry {
+  /** Wanted to draft this bout (draftiness roll passed) but held no token. */
+  starved?(participantId: string, now: number): void;
+  /** Wanted to answer a card by drafting (propose C) but could not afford the stake. */
+  proposeCBlocked?(participantId: string, now: number): void;
+}
+
 export interface Persona {
   profile: PersonaProfile;
   /**
@@ -35,9 +47,21 @@ export interface Persona {
   judge(card: CardView, api: ParticipantApi): Promise<'a' | 'b' | 'indifferent'>;
   /** Called once per bout; return null to not draft. */
   draft(api: ParticipantApi, now: number): Promise<DraftProposal | null>;
+  /**
+   * Optional propose-C policy (SPEC §3.3, QUESTIONS #9): offered each
+   * served card before judging. Returning a proposal answers the card by
+   * drafting — the runner opens the composer (forfeiting the pair) and
+   * submits the draft as a brand-new candidate at normal stake. Personas
+   * without the method judge every card (the original path, unchanged).
+   */
+  considerProposeC?(
+    card: CardView,
+    api: ParticipantApi,
+    now: number,
+  ): Promise<DraftProposal | null>;
 }
 
-const TIE_THRESHOLD = 0.08;
+export const TIE_THRESHOLD = 0.08;
 
 /** Fallback for text the scenario doesn't know (e.g. LLM-drafted lines). */
 const UNKNOWN_ALT: Alternative = { text: '', position: 0, quality: 0.3, rationale: '' };
@@ -45,11 +69,12 @@ const UNKNOWN_ALT: Alternative = { text: '', position: 0, quality: 0.3, rational
 export class ScriptedPersona implements Persona {
   constructor(
     readonly profile: PersonaProfile,
-    private readonly scenario: Scenario,
-    private readonly rng: Rng,
+    protected readonly scenario: Scenario,
+    protected readonly rng: Rng,
+    protected readonly telemetry?: PersonaTelemetry,
   ) {}
 
-  private findIssueByText(text: string): { issue: Issue; alt: Alternative } | null {
+  protected findIssueByText(text: string): { issue: Issue; alt: Alternative } | null {
     for (const issue of this.scenario.issues) {
       for (const alt of issue.alternatives) {
         if (alt.text === text) return { issue, alt };
@@ -58,7 +83,7 @@ export class ScriptedPersona implements Persona {
     return null;
   }
 
-  private optionValue(option: OptionView, positions: Map<string, number>): number {
+  protected optionValue(option: OptionView, positions: Map<string, number>): number {
     let value = 0;
     for (const change of option.changes) {
       const match = this.findIssueByText(change.after);
@@ -98,7 +123,11 @@ export class ScriptedPersona implements Persona {
 
   async draft(api: ParticipantApi, now: number): Promise<DraftProposal | null> {
     if (this.rng.next() >= this.profile.draftiness) return null;
-    if (api.balance(now) < 1) return null;
+    if (api.balance(now) < 1) {
+      // Starvation (QUESTIONS #8): the persona wanted to draft and could not.
+      this.telemetry?.starved?.(this.profile.id, now);
+      return null;
+    }
     const lines = api.document().split('\n');
     const liveTexts = new Set(
       api.liveCandidates().flatMap((c) => c.changes.map((ch) => ch.after)),

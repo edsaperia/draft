@@ -49,6 +49,17 @@ export interface PersonaProfile {
   boutGapMs: number;
   /** Mean seconds per card (simulated). */
   cardSeconds: number;
+  /**
+   * Simulated ms before this persona's first bout (QUESTIONS #8:
+   * slow-early-participation arms). Absent means arrive normally.
+   */
+  arrivalDelayMs?: number;
+  /**
+   * Probability of answering a card by drafting (propose C, SPEC §3.3)
+   * when clearly dissatisfied with both options (QUESTIONS #9). Absent
+   * or 0 means never; only personas with a propose-C policy read it.
+   */
+  proposeC?: number;
 }
 
 /**

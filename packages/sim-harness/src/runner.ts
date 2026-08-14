@@ -20,6 +20,16 @@ import type { Persona } from './persona.js';
 import type { PersonaProfile, Scenario } from './scenario.js';
 import { computeMetrics, type Metrics } from './metrics.js';
 
+/**
+ * A convenor act on the roster (SPEC §9.3, QUESTIONS #10): a mid-session
+ * join (base grant + accrued drip, capped — the engine's openLedger does
+ * this) or removal (candidates stay live, judgments stay counted, F
+ * recomputes from the new E). Fires when simulated time reaches atMs.
+ */
+export type RosterEvent =
+  | { atMs: number; kind: 'join'; profile: PersonaProfile }
+  | { atMs: number; kind: 'remove'; participantId: string };
+
 export interface RunConfig {
   scenario: Scenario;
   makePersona: (profile: PersonaProfile, rng: Rng) => Persona;
@@ -31,6 +41,11 @@ export interface RunConfig {
   maxActions?: number;
   /** Called after each action with a progress line; optional. */
   onProgress?: (line: string) => void;
+  /**
+   * Mid-session roster changes (SPEC §9.3), applied in atMs order. When
+   * absent the run is byte-identical to a run before this hook existed.
+   */
+  rosterEvents?: RosterEvent[];
   /**
    * Optional advisory dedup-gate (SPEC §5.1). When set, each draft is
    * checked before submission; duplicates are not submitted — support
@@ -77,20 +92,29 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
   );
 
   const rootRng = makeRng(`sim/${seed}`);
-  const states: PersonaState[] = scenario.personas.map((profile) => {
+  const makeState = (profile: PersonaProfile, notBeforeMs: number): PersonaState => {
     const rng = rootRng.fork(profile.id);
     return {
       persona: config.makePersona(profile, rng.fork('mind')),
       api: new ParticipantApi(session, profile.id),
       rng,
-      // Stagger arrivals across the first fraction of a bout gap.
-      nextAt: 1 + rng.int(Math.max(1, Math.floor(profile.boutGapMs / 2))),
+      // Stagger arrivals across the first fraction of a bout gap; a
+      // profile arrivalDelayMs (QUESTIONS #8) pushes the first bout out.
+      nextAt:
+        notBeforeMs +
+        (profile.arrivalDelayMs ?? 0) +
+        1 +
+        rng.int(Math.max(1, Math.floor(profile.boutGapMs / 2))),
       remainingInBout: 0,
       draftedThisBout: false,
       judgments: 0,
       drafts: 0,
     };
-  });
+  };
+  const states: PersonaState[] = scenario.personas.map((p) => makeState(p, 0));
+  const rosterEvents = [...(config.rosterEvents ?? [])].sort((a, b) => a.atMs - b.atMs);
+  let rosterIdx = 0;
+  let lastActionT = 0;
 
   const maxActions = config.maxActions ?? 5000;
   let actions = 0;
@@ -125,6 +149,25 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
     }
     if (next === null) break;
     const t = next.nextAt;
+    // Convenor acts due by now fire first (SPEC §9.3), stamped at their
+    // own time (kept monotone against the last logged action). Any act
+    // invalidates the selection above (the chosen persona may have been
+    // removed; a joiner may be due sooner), so re-select.
+    if (rosterIdx < rosterEvents.length && rosterEvents[rosterIdx]!.atMs <= t) {
+      const ev = rosterEvents[rosterIdx++]!;
+      const at = Math.max(ev.atMs, lastActionT);
+      if (ev.kind === 'join') {
+        session.addParticipant(at, { id: ev.profile.id, handle: ev.profile.handle });
+        states.push(makeState(ev.profile, at));
+        config.onProgress?.(`[${fmt(at)}] roster: ${ev.profile.handle} joins`);
+      } else {
+        session.removeParticipant(at, ev.participantId);
+        const gone = states.find((s) => s.persona.profile.id === ev.participantId);
+        if (gone) gone.nextAt = Infinity;
+        config.onProgress?.(`[${fmt(at)}] roster: ${ev.participantId} removed`);
+      }
+      continue;
+    }
     if (t >= windowMs) break;
     const profile = next.persona.profile;
 
@@ -135,6 +178,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
     }
 
     actions++;
+    lastActionT = t;
     let acted = false;
 
     // Drafting is considered once per bout, before judging.
@@ -202,7 +246,29 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
     if (!acted) {
       const cards = next.api.nextCards(1, t);
       const card = cards[0];
-      if (card) {
+      // Propose C (SPEC §3.3, QUESTIONS #9): a persona with the policy may
+      // answer the card by drafting. Opening the composer forfeits the
+      // served pair — the peek price — then the draft submits at normal
+      // stake. Personas without the policy take the original path.
+      if (card && next.persona.considerProposeC) {
+        try {
+          const proposal = await next.persona.considerProposeC(card, next.api, t);
+          if (proposal !== null) {
+            session.openComposer(t, profile.id, { aId: card.a.id, bId: card.b.id });
+            next.api.submit(t, proposal);
+            next.drafts++;
+            acted = true;
+            const text = proposal.patch.hunks[0]?.lines.join(' / ') ?? '';
+            config.onProgress?.(
+              `[${fmt(t)}] ${profile.handle} proposes C instead of judging: "${text}" — ${proposal.rationale}`,
+            );
+          }
+        } catch {
+          // Composer opened but the draft failed (stale version, tokens):
+          // the forfeit stands, as it would for a human peek. Fall through.
+        }
+      }
+      if (card && !acted) {
         try {
           const choice = await next.persona.judge(card, next.api);
           next.api.judge(t, card, choice);

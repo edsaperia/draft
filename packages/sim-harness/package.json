@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "sim": "tsx src/cli.ts",
     "sweep": "tsx src/sweep.ts",
+    "evidence": "tsx src/deferred-evidence.ts",
     "score": "tsx src/score.ts"
   },
   "dependencies": {
