@@ -1,0 +1,511 @@
+<title>Session View</title>
+<style>
+  /* Deliberately single-theme (light) — Ed, 2026-08-14. Bootstrap-plain. */
+  :root {
+    --bg: #FFFFFF;
+    --fg: #212529;
+    --muted: #6C757D;
+    --border: #DEE2E6;
+    --light: #F8F9FA;
+    --primary: #0D6EFD;
+    --primary-hover: #0B5ED7;
+    --primary-subtle: #CFE2FF;
+    --primary-emphasis: #084298;
+    --race-bg: #FFF9DB;
+    --race-border: #F5C518;
+    --race-text: #8A6D00;
+    --ins-text: #198754;
+    --ins-bg: #D1E7DD;
+    --del-text: #DC3545;
+    --del-bg: #F8D7DA;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    margin: 0;
+    padding-bottom: 60px;
+  }
+  .wrap { max-width: 1220px; margin: 0 auto; padding: 0 16px; }
+  .small { font-size: 0.875rem; }
+  .mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.75rem; }
+
+  .navbar { background: var(--light); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 40; }
+  .navbar .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 10px 16px; }
+  .navbar .brand { font-weight: 600; font-size: 1rem; margin: 0; }
+  .navbar .brand .sess { color: var(--muted); font-weight: 400; }
+  .navbar .stats { display: flex; gap: 18px; white-space: nowrap; font-size: 0.875rem; color: var(--muted); }
+  .navbar .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
+
+  .layout { display: grid; grid-template-columns: 270px 1fr; gap: 24px; align-items: start; margin-top: 18px; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  /* sidebar: needs-you queue */
+  .queue { position: sticky; top: 58px; }
+  .queue h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 8px; }
+  .queue ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .queue button {
+    appearance: none; font: inherit; text-align: left; width: 100%;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 0.375rem;
+    padding: 8px 10px; cursor: pointer; color: var(--fg);
+  }
+  .queue button:hover { border-color: var(--primary); }
+  .queue button[aria-current="true"] { border-color: var(--primary); background: var(--primary-subtle); }
+  .queue .ql { font-weight: 600; font-size: 0.875rem; display: flex; justify-content: space-between; gap: 6px; }
+  .queue .ql .done { color: var(--ins-text); }
+  .queue .qs { font-size: 0.75rem; color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
+  .kchip {
+    display: inline-block; font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; border-radius: 0.25rem; padding: 1px 6px;
+  }
+  .kchip.quick { background: var(--ins-bg); color: var(--ins-text); }
+  .kchip.race { background: var(--race-bg); color: var(--race-text); }
+  .kchip.patch { background: var(--primary-subtle); color: var(--primary-emphasis); }
+  .queue .note { font-size: 0.75rem; color: var(--muted); margin-top: 10px; }
+
+  /* the document */
+  .doc {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 36px 44px 44px;
+  }
+  .doc .prose { max-width: 70ch; margin: 0 auto; }
+  .doc .doctitle { font-size: 1.25rem; font-weight: 600; margin: 0 0 18px; text-wrap: balance; }
+  .doc h2.docline {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); margin: 22px 0 8px;
+  }
+  .doc p { margin: 0 0 12px; position: relative; }
+
+  /* suggestion anchors */
+  .anch { border-left: 3px solid transparent; padding-left: 12px; margin-left: -15px; border-radius: 0 0.25rem 0.25rem 0; cursor: pointer; }
+  .anch:hover { background: var(--light); }
+  .anch.quick { border-left-color: var(--ins-text); }
+  .anch.patch { border-left-color: var(--primary); }
+  .anch.race { border-left-color: var(--race-border); background: var(--race-bg); padding-top: 6px; padding-bottom: 6px; }
+  .anch.kin { outline: 2px dashed var(--primary); outline-offset: 2px; }
+  .anch.resolved { border-left-color: var(--border); cursor: default; }
+  .anch.resolved:hover { background: transparent; }
+  .achip {
+    float: right; margin-left: 10px; font-size: 0.7rem; font-weight: 700;
+    border-radius: 0.25rem; padding: 1px 7px; white-space: nowrap; user-select: none;
+  }
+  .achip.quick { background: var(--ins-bg); color: var(--ins-text); }
+  .achip.patch { background: var(--primary-subtle); color: var(--primary-emphasis); }
+  .achip.race { background: var(--race-border); color: #5c4a00; }
+  .achip.resolved { background: var(--light); color: var(--muted); }
+  .insert-anchor {
+    max-width: 70ch; margin: 0 auto 12px;
+    border-top: 2px dashed var(--ins-text);
+    position: relative; height: 0; cursor: pointer;
+  }
+  .insert-anchor span {
+    position: relative; top: -0.8em; background: var(--bg); padding: 0 8px;
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--ins-text);
+  }
+
+  /* inline suggestion card (opens beneath its anchor) */
+  .sugg {
+    max-width: 70ch; margin: 4px auto 16px;
+    border: 1.5px solid var(--primary);
+    border-radius: 0.5rem;
+    box-shadow: 0 3px 12px rgba(13, 110, 253, 0.13);
+    padding: 14px 16px;
+    background: var(--bg);
+  }
+  .sugg.race-open { border-color: var(--race-border); box-shadow: 0 3px 12px rgba(245, 197, 24, 0.25); max-width: none; }
+  .sugg .shead {
+    display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--primary-emphasis); margin-bottom: 8px;
+  }
+  .sugg.race-open .shead { color: var(--race-text); }
+  .sugg .shead .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .sugg .stext { font-size: 0.9375rem; margin-bottom: 10px; }
+  .sugg .srationale {
+    background: var(--light); border: 1px solid var(--border); border-radius: 0.375rem;
+    padding: 8px 12px; font-size: 0.8125rem; margin-bottom: 12px;
+  }
+  .sugg .srationale .rl { font-weight: 700; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; display: block; color: var(--muted); margin-bottom: 2px; }
+  .sugg .sactions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    appearance: none; font: inherit; font-size: 0.875rem;
+    padding: 0.375rem 0.75rem; cursor: pointer;
+    border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+    border-radius: 0.375rem;
+  }
+  .btn:hover { background: var(--light); }
+  .btn-approve { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+  .btn-approve:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  .btn-outline { color: var(--muted); }
+  .btn-outline:hover { color: var(--primary); border-color: var(--primary); background: var(--bg); }
+  button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .sugg .foot { font-size: 0.72rem; color: var(--muted); margin-top: 8px; }
+
+  /* ledger inside multi-site card */
+  .sledger { border: 1px solid var(--border); border-radius: 0.375rem; padding: 10px 12px; margin-bottom: 12px; }
+  .sledger .lh { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 6px; }
+  .sledger ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  .sledger li { display: flex; gap: 8px; align-items: baseline; font-size: 0.8125rem; }
+  .lchip { flex: none; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; border-radius: 0.25rem; padding: 1px 6px; }
+  .lchip.add { background: var(--ins-bg); color: var(--ins-text); }
+  .lchip.drop { background: var(--del-bg); color: var(--del-text); }
+  .site-block { border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 10px; font-size: 0.875rem; }
+  .site-block .sb { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); display: block; margin-bottom: 3px; }
+
+  /* race escalation panel */
+  .race-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  @media (max-width: 900px) { .race-grid { grid-template-columns: 1fr; } }
+  .rcand { border: 1.5px solid var(--primary); border-radius: 0.375rem; padding: 12px 14px; background: var(--bg); }
+  .rcand .rtag { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary-emphasis); margin-bottom: 6px; }
+  .rcand .rtext { font-size: 0.9375rem; margin-bottom: 8px; }
+  .rcand .rr { background: var(--light); border-radius: 0.375rem; padding: 7px 10px; font-size: 0.78rem; color: var(--muted); font-style: italic; margin-bottom: 10px; }
+  .rcand .btn { width: 100%; }
+  .race-mid { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+  del { background: var(--del-bg); color: var(--del-text); text-decoration: line-through; padding: 0 1px; }
+  ins { background: var(--ins-bg); color: var(--ins-text); text-decoration: none; padding: 0 1px; }
+
+  .receipts { margin-top: 24px; }
+  .receipts h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 8px; }
+  .receipts ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .receipts li { color: var(--muted); }
+  .receipts li b { color: var(--fg); }
+
+  .notes { margin-top: 56px; border-top: 1px solid var(--border); padding-top: 26px; }
+  .notes h2 { font-size: 1.25rem; margin: 0 0 4px; }
+  .notes .sub { color: var(--muted); margin: 0 0 22px; }
+  .notes h3 { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary-emphasis); margin: 26px 0 8px; }
+  .notes p { max-width: 70ch; margin: 0 0 12px; }
+  .notes ul { max-width: 70ch; margin: 0 0 12px; padding-left: 22px; }
+  .notes li { margin-bottom: 6px; }
+</style>
+
+<header class="navbar">
+  <div class="wrap">
+    <p class="brand">The Hollow Oak Club — House Charter <span class="sess">· convention in session</span></p>
+    <div class="stats">
+      <span>time left <b>2h 11m</b></span>
+      <span>adoption bar <b>0.74 ▲</b></span>
+      <span>your tokens <b>5</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="layout">
+    <aside class="queue">
+      <h2>Needs you</h2>
+      <ul id="queue"></ul>
+      <p class="note">Ordered by the router — hottest first. Or ignore it and read: everything here is also anchored in the document itself.</p>
+    </aside>
+
+    <main>
+      <div class="doc" id="doc"></div>
+
+      <section class="receipts" aria-live="polite">
+        <h2>Your session</h2>
+        <ul class="mono" id="receipts"></ul>
+      </section>
+    </main>
+  </div>
+
+  <section class="notes">
+    <h2>Design notes — the session view (default surface), first pass</h2>
+    <p class="sub">Desktop-first · light mode · Bootstrap-plain (visual design deferred) · content from run clubhouse-1 · the race-card mockup is this surface's escalation state</p>
+
+    <h3>Suggestion-mode with escalation</h3>
+    <p>This is the surface a member lives in: <b>the current document, readable top to bottom</b>, with pending suggestions anchored where they bite. Most anchors are green — singleton suggestions you can approve in one tap, exactly the Google-Docs gesture. Yellow anchors are <b>races</b>: places where suggestions collided, which escalate in place to the pairwise card. Blue anchors belong to <b>multi-site patches</b>. The machinery stays invisible until the document's conflict density summons it.</p>
+
+    <h3>Non-local edits: inline is about discovery, not representation (Ed, point 50)</h3>
+    <p>A rename that touches the whole document cannot <em>be</em> a local suggestion — but it can be <b>locally discoverable everywhere it touches</b>. A multi-site patch gets an anchor at every site; opening any anchor opens the <em>same single card</em> — one judgment object, with a summary ledger up top and every site's change below — and while it's open, its sibling anchors light up (dashed outline), so the patch's whole footprint is visible on the page. One suggestion, many doorways, one verdict. The sidebar lists it once. If a patch is too scattered even for this, the ledger carries the load and the sites become its receipts — and truly document-scale rewrites are arguably not suggestions at all but successor documents, which is a different ceremony.</p>
+
+    <h3>Escalation in place</h3>
+    <p>When a span has rival proposals, its anchor is yellow and its inline card is the race: both candidates side by side with the conditional prompt ("if this text changes, which change is better?" — SPEC §8.3: no keep-current on rival cards, and rival cards only get served once at least one challenger plausibly displaces the incumbent). The full race-card view (queue of races, comparison modes, discontinuous patches) is one level deeper — this surface embeds the compact version so easy sessions never leave the page.</p>
+
+    <h3>The queue is a courtesy, not a conveyor</h3>
+    <p>"Needs you" is the router's ordering — hottest races first, floors-near races where you're unheard, then quick approvals — but every item is also anchored in the document, so a member who prefers to just read the charter top to bottom encounters exactly the same work in document order. Two navigation styles, one underlying set of judgments.</p>
+
+    <h3>What approval means (and why there's no owner)</h3>
+    <p>The approve button is the familiar gesture with a different engine behind it: it records a pairwise judgment (proposal vs current text) rather than an owner's acceptance. A suggestion lands when its win-probability clears the session's rising bar with enough distinct judges — the threshold-plus-floor is what replaces the document owner. For an easy typo early in the session, that's a handful of quiet approvals; nobody sees machinery.</p>
+
+    <h3>What is deliberately absent</h3>
+    <ul>
+      <li><b>No authors, no counts, no standings.</b> Rationales are unsigned; nothing shows how many approvals a suggestion has or which way they lean. (The anchor chips name the <em>kind</em> of attention needed, never the direction of evidence.)</li>
+      <li><b>No red-pen clutter by default.</b> Suggestions are anchors until opened; the document stays a document, not a battlefield diagram.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+  const DOC = [
+    { t: 'title', x: 'The Hollow Oak Club — House Charter' },
+    { t: 'p', x: 'The Hollow Oak Club exists so that its members may have a place of their own: to meet, make, cook, argue, garden, and put the world to rights.' },
+    { t: 'p', x: 'The clubhouse at 44 Aldermoss Lane is held on a long lease from the Marchmont Trust, which reserves to itself the fabric of the building, the lease itself, insurance, and compliance with the law; everything else about the life of the house is the Club’s to govern.' },
+    { t: 'p', x: 'Should the Club cease to operate any part of house life, its management reverts to the Trust, which will run it plainly on the Club’s behalf; reversion is not a sanction, and any function may be reclaimed by a valid decision.' },
+    { t: 'h', x: 'The House' },
+    { t: 'p', x: 'The house comprises the Common Room, the Kitchen, the Workshop, the Library Corner, the Guest Bedroom upstairs, and the Garden behind, together with the cellar and the shed.' },
+    { t: 'h', x: 'Members' },
+    { t: 'p', x: 'The Club comprises its fourteen founding members, named in the Members’ Book; changes to membership are made under the decisions rule and recorded there.' },
+    { t: 'h', x: 'Keys' },
+    { t: 'p', key: 'keys', x: 'Every member holds a front-door key, and members may lend or cut spares for regulars they trust.' },
+    { t: 'h', x: 'The Guest Bedroom' },
+    { t: 'p', x: 'The Guest Bedroom goes to whoever claims it first, and guests leave it as they found it.' },
+    { t: 'h', x: 'The Garden' },
+    { t: 'p', x: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.' },
+    { t: 'h', x: 'Money' },
+    { t: 'p', key: 'money', x: 'The Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.' },
+    { t: 'p', x: 'Every member contributes equally into the common purse, on a fixed schedule the membership sets and may revise at any meeting, payable promptly when due, with all contributions and the running total open to any member’s inspection.' },
+    { t: 'h', x: 'The Thursday Dinner' },
+    { t: 'p', x: 'Dinner happens every Thursday; the Steward posts a proper rota in the Kitchen each term, and anyone who can’t make their night arranges a swap and tells the Steward in good time.' },
+    { t: 'h', x: 'Guests' },
+    { t: 'p', key: 'guests', x: 'Friends of the house are welcome whenever a member is in.' },
+    { t: 'h', x: 'Meetings and Decisions' },
+    { t: 'p', x: 'House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.' },
+    { t: 'h', x: 'Offices' },
+    { t: 'p', key: 'offices', x: 'The club has a Steward and a Purse-holder, chosen by acclaim, who do what needs doing until they stop.' },
+    { t: 'h', x: 'Changing These Rules' },
+    { t: 'p', x: 'These rules change by the same process as any house decision: proposed with notice, agreed by majority at a meeting, and minuted in the Members’ Book.' },
+    { t: 'h', x: 'Disputes' },
+    { t: 'p', x: 'Disputes among members are the house’s to settle: talk first, then a house meeting if talking fails, with judgments recorded in the Members’ Book.' },
+    { t: 'p', key: 'confidence', x: 'Any member may bring any worry to any other in confidence, and confidence is kept; nothing undisclosed to a respondent may ever count against them.' },
+    { t: 'h', x: 'The Trust' },
+    { t: 'p', x: 'The Trust reserves the fabric and lease of the house, its insurance, and all legal obligations; within everything else, what the Club validly decides, the Trust treats as decided.' },
+    { t: 'p', x: 'Adopted at the house, by the fourteen, over pasta.' },
+  ];
+
+  const SUGGS = [
+    {
+      id: 'race-money',
+      kind: 'race',
+      keys: ['money'],
+      qLabel: '§ Money', qSub: '2 proposals racing',
+      chip: '2 racing',
+      race: {
+        prompt: 'If this text changes, which change is better? (Defend the current text on its own cards — this one ranks the challengers.)',
+        a: {
+          text: 'The Purse-holder pays only bills approved under the budget or by a house decision, reimburses claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting.',
+          rationale: 'Whoever holds the purse must be watched: "reimburses what seems fair" with receipts "in the tin" is unchecked discretion. This ties spending to approval and forces open reporting.',
+        },
+        b: {
+          text: 'The Purse-holder pays the house’s bills and reimburses members’ reasonable claims as trust and good sense direct, keeping accounts in whatever simple way suits, and is glad to talk any member through them who asks.',
+          rationale: 'The old rule buries our volunteer in budget sign-offs and minute-taking. We’re friends who trust each other — spare whoever takes this on the paperwork.',
+        },
+      },
+    },
+    {
+      id: 'patch-rename',
+      kind: 'patch',
+      keys: ['money', 'offices'],
+      qLabel: 'Whole charter', qSub: 'rename · 2 places',
+      chip: '1 of 2',
+      ledger: [
+        { c: 'drop', t: '"Purse-holder", everywhere it appears' },
+        { c: 'add', t: '"Treasurer" — the name every other club uses' },
+        { c: 'add', t: 'a handover line: books and tin pass to the successor' },
+      ],
+      rationale: '"Purse-holder" is twee and confuses newcomers. One rename, both places it appears, plus a handover line so the tin doesn’t wander between office-holders.',
+      sites: [
+        { key: 'money', label: '§ Money', marked: 'The <del>Purse-holder</del> <ins>Treasurer</ins> pays the bills and reimburses what seems fair, <del>and</del> keeps the receipts in the tin<ins>, and hands the tin and books to their successor</ins>.' },
+        { key: 'offices', label: '§ Offices', marked: 'The club has a Steward and a <del>Purse-holder</del> <ins>Treasurer</ins>, chosen by acclaim, who do what needs doing until they stop.' },
+      ],
+    },
+    {
+      id: 'quick-keys',
+      kind: 'quick',
+      keys: ['keys'],
+      qLabel: '§ Keys', qSub: 'one suggestion',
+      chip: '1 suggestion',
+      marked: 'Every member holds a front-door key, and <del>members</del> may lend or cut <del>spares</del> <ins>a spare</ins> for <del>regulars</del> <ins>a regular</ins> they trust<ins>, provided the Steward keeps a simple note of who holds one</ins>.',
+      rationale: 'Keys are a security matter, not a vibe. A one-line log with the Steward costs nothing and means we can account for who can get in.',
+    },
+    {
+      id: 'quick-confidence',
+      kind: 'quick',
+      keys: ['confidence'],
+      qLabel: '§ Disputes', qSub: 'copy edit',
+      chip: '1 suggestion',
+      marked: 'Any member may bring any worry to any other in confidence, and <ins>that</ins> confidence is kept; nothing <del>undisclosed to</del> <ins>kept from</ins> a respondent may ever count against them.',
+      rationale: '"Nothing undisclosed to a respondent" dangles. "Kept from" says the same thing in plain words. No change of substance.',
+    },
+    {
+      id: 'insert-quiet',
+      kind: 'quick',
+      insertAfterKey: 'guests',
+      qLabel: 'After Guests', qSub: 'new section',
+      chip: 'new section',
+      isInsert: true,
+      newHeading: 'Quiet Hours',
+      marked: '<ins>The house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.</ins>',
+      rationale: 'We’ve never written down the one rule everyone already tiptoes around. Guests stay over, members work early — saying it out loud beats resenting each other politely.',
+    },
+  ];
+
+  const doc = document.getElementById('doc');
+  const queueEl = document.getElementById('queue');
+  const receipts = document.getElementById('receipts');
+  let openId = null;
+  const resolved = new Set();
+
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+  function suggFor(key) {
+    return SUGGS.filter((s) => !resolved.has(s.id) && (s.keys ?? []).includes(key));
+  }
+
+  function renderQueue() {
+    queueEl.innerHTML = SUGGS.map((s) => {
+      const done = resolved.has(s.id) ? '<span class="done">✓</span>' : '';
+      return (
+        '<li><button data-q="' + s.id + '" aria-current="' + (openId === s.id) + '">' +
+        '<span class="ql"><span>' + s.qLabel + '</span>' + done + '</span>' +
+        '<span class="qs"><span class="kchip ' + s.kind + '">' + (s.kind === 'quick' ? 'quick' : s.kind === 'race' ? 'race' : 'patch') + '</span>' + s.qSub + '</span>' +
+        '</button></li>'
+      );
+    }).join('');
+    queueEl.querySelectorAll('[data-q]').forEach((b) =>
+      b.addEventListener('click', () => { toggle(b.dataset.q, true); })
+    );
+  }
+
+  function suggCardHtml(s) {
+    if (s.kind === 'race') {
+      return (
+        '<div class="sugg race-open" data-card="' + s.id + '">' +
+        '<div class="shead"><span>Race · ' + s.qLabel + '</span><span class="sub">escalated: two proposals collide here</span></div>' +
+        '<div class="stext small" style="color:var(--muted)">' + s.race.prompt + '</div>' +
+        '<div class="race-grid">' +
+        '<div class="rcand"><div class="rtag">Option A</div><div class="rtext">' + esc(s.race.a.text) + '</div><div class="rr">' + esc(s.race.a.rationale) + '</div><button class="btn btn-approve" data-act="a">Prefer A</button></div>' +
+        '<div class="rcand"><div class="rtag">Option B</div><div class="rtext">' + esc(s.race.b.text) + '</div><div class="rr">' + esc(s.race.b.rationale) + '</div><button class="btn btn-approve" data-act="b">Prefer B</button></div>' +
+        '</div>' +
+        '<div class="race-mid">' +
+        '<button class="btn btn-outline" data-act="indifferent">Genuinely can’t split them</button>' +
+        '<button class="btn btn-outline" data-act="skip">Skip</button>' +
+        '<button class="btn btn-outline" data-act="propose">Propose something else · 1 token</button>' +
+        '</div>' +
+        '<div class="foot">Authorship sealed · no counts, no standings · full race view has comparison modes and the whole queue</div>' +
+        '</div>'
+      );
+    }
+    if (s.kind === 'patch') {
+      return (
+        '<div class="sugg" data-card="' + s.id + '">' +
+        '<div class="shead"><span>One suggestion · ' + s.sites.length + ' places</span><span class="sub">all sites highlighted above and below — judged together</span></div>' +
+        '<div class="sledger"><div class="lh">In short</div><ul>' +
+        s.ledger.map((l) => '<li><span class="lchip ' + l.c + '">' + l.c + '</span><span>' + esc(l.t) + '</span></li>').join('') +
+        '</ul></div>' +
+        s.sites.map((site) => '<div class="site-block"><span class="sb">' + site.label + '</span>' + site.marked + '</div>').join('') +
+        '<div class="srationale" style="margin-top:12px"><span class="rl">Rationale · unsigned</span>' + esc(s.rationale) + '</div>' +
+        '<div class="sactions">' +
+        '<button class="btn btn-approve" data-act="approve">Approve — all ' + s.sites.length + ' changes</button>' +
+        '<button class="btn" data-act="keep">Keep the current text</button>' +
+        '<button class="btn btn-outline" data-act="skip">Skip</button>' +
+        '</div>' +
+        '</div>'
+      );
+    }
+    // quick (including insert)
+    return (
+      '<div class="sugg" data-card="' + s.id + '">' +
+      '<div class="shead"><span>' + (s.isInsert ? 'New section proposed' : 'Suggestion') + '</span><span class="sub">' + s.qSub + '</span></div>' +
+      (s.isInsert ? '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--ins-text);margin-bottom:4px;"><ins>' + esc(s.newHeading) + '</ins></div>' : '') +
+      '<div class="stext">' + s.marked + '</div>' +
+      '<div class="srationale"><span class="rl">Rationale · unsigned</span>' + esc(s.rationale) + '</div>' +
+      '<div class="sactions">' +
+      '<button class="btn btn-approve" data-act="approve">' + (s.isInsert ? 'Approve — add the section' : 'Approve this change') + '</button>' +
+      '<button class="btn" data-act="keep">' + (s.isInsert ? 'Keep the charter as it is' : 'Keep the current text') + '</button>' +
+      '<button class="btn btn-outline" data-act="skip">Skip</button>' +
+      '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderDoc() {
+    let html = '<div class="prose">';
+    for (const line of DOC) {
+      if (line.t === 'title') { html += '<div class="doctitle">' + esc(line.x) + '</div>'; continue; }
+      if (line.t === 'h') { html += '<h2 class="docline">' + esc(line.x) + '</h2>'; continue; }
+
+      const live = line.key ? suggFor(line.key) : [];
+      const wasResolved = line.key && SUGGS.some((s) => resolved.has(s.id) && (s.keys ?? []).includes(line.key)) && !live.length;
+      if (live.length) {
+        const s = live[0];
+        const open = openId === s.id;
+        const kin = open && s.kind === 'patch';
+        const chipClass = s.kind;
+        const siteIdx = s.kind === 'patch' ? s.sites.findIndex((x) => x.key === line.key) : -1;
+        const chipText = s.kind === 'patch' ? (siteIdx + 1) + ' of ' + s.sites.length : s.chip;
+        html +=
+          '<p class="anch ' + s.kind + (kin ? ' kin' : '') + '" data-anchor="' + s.id + '" title="Open this suggestion">' +
+          '<span class="achip ' + chipClass + '">' + chipText + '</span>' +
+          esc(line.x) + '</p>';
+        const anchorSite = s.kind === 'patch' ? s.sites[0].key : (s.keys ?? [])[0];
+        if (open && line.key === anchorSite) {
+          html += '</div>' + suggCardHtml(s) + '<div class="prose">';
+        }
+      } else {
+        html += '<p' + (wasResolved ? ' class="anch resolved"' : '') + '>' + (wasResolved ? '<span class="achip resolved">judged ✓</span>' : '') + esc(line.x) + '</p>';
+      }
+
+      const ins = SUGGS.find((s) => !resolved.has(s.id) && s.insertAfterKey === line.key);
+      if (ins) {
+        html += '</div><div class="insert-anchor" data-anchor="' + ins.id + '"><span>＋ proposed new section — ' + esc(ins.newHeading) + '</span></div>';
+        if (openId === ins.id) html += suggCardHtml(ins);
+        html += '<div class="prose">';
+      }
+    }
+    html += '</div>';
+    doc.innerHTML = html;
+
+    doc.querySelectorAll('[data-anchor]').forEach((el) =>
+      el.addEventListener('click', (ev) => {
+        if (ev.target.closest('.sugg')) return;
+        toggle(el.dataset.anchor, false);
+      })
+    );
+    doc.querySelectorAll('.sugg [data-act]').forEach((b) =>
+      b.addEventListener('click', () => act(b.closest('.sugg').dataset.card, b.dataset.act))
+    );
+  }
+
+  function toggle(id, scroll) {
+    openId = openId === id ? null : id;
+    renderAll();
+    if (scroll && openId) {
+      const el = doc.querySelector('[data-anchor="' + id + '"], [data-card="' + id + '"]');
+      if (el) el.scrollIntoView({ block: 'center', behavior: 'auto' });
+    }
+  }
+
+  function act(id, what) {
+    const s = SUGGS.find((x) => x.id === id);
+    const li = document.createElement('li');
+    const hash = Array.from({ length: 8 }, () => '0123456789abcdef'[(Math.random() * 16) | 0]).join('');
+    if (what === 'propose') {
+      li.textContent = '○ ' + s.qLabel + ' — propose-C opens the composer (later mockup)';
+      receipts.prepend(li);
+      return;
+    }
+    const verdict =
+      what === 'approve' ? 'approved (recorded as: proposal beats current text)'
+      : what === 'keep' ? 'kept the current text'
+      : what === 'a' ? 'preferred A'
+      : what === 'b' ? 'preferred B'
+      : what === 'indifferent' ? 'indifferent'
+      : 'skipped (recirculates with decay)';
+    li.innerHTML = (what === 'skip' ? '○ ' : '✓ ') + '<b>' + s.qLabel + '</b> — ' + verdict +
+      (what === 'skip' ? '' : ' · receipt ' + hash + '… · bar 0.74');
+    receipts.prepend(li);
+    resolved.add(id);
+    if (openId === id) openId = null;
+    renderAll();
+  }
+
+  function renderAll() { renderQueue(); renderDoc(); }
+  renderAll();
+</script>
