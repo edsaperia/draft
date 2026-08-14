@@ -15,6 +15,8 @@ A group drafting engine: patches race, blind pairwise judgments rank them, adopt
 - TypeScript end-to-end; engine-core is a pure, dependency-free library shared by sim-harness and product server.
 - Sim personas are LLM-powered on a cheap model (Haiku-class) and speak the same participant API as human clients — no sim backdoor; mixed human/bot sessions are a goal.
 
+- UI north star (Ed, 2026-08-14): **suggestion-mode with escalation** — the default surface reads like familiar Google-Docs-style inline suggestions with approval; the race view (overlay model, pairwise cards) is the escalation state that appears only where suggestions collide or stakes demand ceremony. Most of a session should feel like approving typo fixes; the machinery earns its visibility.
+
 ## Glossary — named parts
 
 Use these names in all discussion, commits, and code. Literal and stable beats elegant.
