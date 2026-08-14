@@ -12,14 +12,16 @@
  * bit-identical.
  *
  * Extension intent (phases 2+): later phases add sibling capabilities —
- * semantic composition (Gate 2, SPEC §2.2.2), race naming/typing, change
- * ledgers — as further OPTIONAL methods on this interface (`composeSemantic?`,
- * `describeRace?`, ...). Declaring them optional means a phase-1
- * implementor (an object with just `checkEquivalence`) keeps compiling
- * unchanged; callers feature-test with `oracle.method !== undefined` and
- * degrade to "no opinion" when a capability is absent, exactly as they
- * must on a transport error.
+ * semantic composition (Gate 2, SPEC §2.2.2), change ledgers — as further
+ * OPTIONAL methods on this interface (`composeSemantic?`, ...), following
+ * `describeRace?` (race naming/typing, Q49 interim). Declaring them
+ * optional means a phase-1 implementor (an object with just
+ * `checkEquivalence`) keeps compiling unchanged; callers feature-test
+ * with `oracle.method !== undefined` and degrade to "no opinion" when a
+ * capability is absent, exactly as they must on a transport error.
  */
+
+import type { Span } from './text/types.js';
 
 /** An existing candidate the oracle may match against. */
 export interface OracleCandidate {
@@ -49,6 +51,34 @@ export interface EquivalenceVerdict {
   reason: string;
 }
 
+/**
+ * The three natures a dispute can have (Q49). The type is advisory
+ * routing/record metadata — it never gates the mechanism:
+ * - `copy-edit`: wording, style, typo, formatting; no change to what the
+ *   document requires or permits.
+ * - `substantive`: changes what the document requires, permits, or means.
+ * - `structural`: adds, removes, splits, or reorganizes sections; reshapes
+ *   the document's skeleton.
+ */
+export const RACE_TYPES = ['copy-edit', 'substantive', 'structural'] as const;
+export type RaceType = (typeof RACE_TYPES)[number];
+
+/** Context for `describeRace`: the document plus where the dispute bites. */
+export interface RaceContext extends OracleContext {
+  /** Contested line spans in `documentText` (the race's footprint union). */
+  contested: Span[];
+}
+
+/**
+ * An oracle's account of a dispute's nature: a short noun-phrase name for
+ * the QUESTION in dispute ("treasurer oversight"), never any side's
+ * answer, plus its type.
+ */
+export interface RaceDescription {
+  name: string;
+  type: RaceType;
+}
+
 export interface SemanticOracle {
   /**
    * Is `candidateText` semantically equivalent to any of `existing`?
@@ -61,4 +91,19 @@ export interface SemanticOracle {
     existing: OracleCandidate[],
     context: OracleContext,
   ): Promise<EquivalenceVerdict>;
+
+  /**
+   * Name and type the dispute over `groundText` (the incumbent text of
+   * the contested spans; empty for pure insertions) among `candidates`
+   * (Q49 interim, full treatment in P3). OPTIONAL capability: callers
+   * feature-test and fall back to the deterministic nearest-heading label
+   * (race-labeler.ts) when absent. Return null for "no opinion";
+   * transport failures may throw — every caller treats a throw as no
+   * opinion. Advisory only: a label never blocks or gates anything.
+   */
+  describeRace?(
+    groundText: string,
+    candidates: OracleCandidate[],
+    context: RaceContext,
+  ): Promise<RaceDescription | null>;
 }

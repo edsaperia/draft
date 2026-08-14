@@ -14,8 +14,20 @@ export type {
   EquivalenceVerdict,
   OracleCandidate,
   OracleContext,
+  RaceContext,
+  RaceDescription,
+  RaceType,
   SemanticOracle,
 } from './oracle.js';
+export { RACE_TYPES } from './oracle.js';
+export {
+  RaceLabeler,
+  contestedText,
+  excerptOf,
+  fallbackRaceLabel,
+  nearestHeading,
+} from './race-labeler.js';
+export type { LabelableRace, RaceLabel, RaceLabelerOptions } from './race-labeler.js';
 export {
   DedupGate,
   levenshtein,
