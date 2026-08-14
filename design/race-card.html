@@ -1,0 +1,602 @@
+<title>Race Card</title>
+<style>
+  :root {
+    --paper: #F6F4EE;
+    --panel: #FFFFFF;
+    --ink: #23211C;
+    --ink-soft: #6E695C;
+    --line: #DAD5C6;
+    --brass: #8A6D2E;
+    --brass-soft: #B49A5E;
+    --ins-text: #1E6E45;
+    --ins-bg: #E3EFE6;
+    --del-text: #9E3A33;
+    --del-bg: #F5E3E0;
+    --mark-bg: #F1E7C8;
+    --mark-text: #574410;
+    --shadow: 0 1px 2px rgba(40, 35, 20, 0.06), 0 8px 28px rgba(40, 35, 20, 0.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #171915;
+      --panel: #1E211B;
+      --ink: #E8E3D3;
+      --ink-soft: #9A9484;
+      --line: #34372C;
+      --brass: #C9A85C;
+      --brass-soft: #8A7B4E;
+      --ins-text: #82C9A0;
+      --ins-bg: #1D3A2A;
+      --del-text: #DA9188;
+      --del-bg: #3E241F;
+      --mark-bg: #3B3420;
+      --mark-text: #E4CE8F;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 28px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #171915;
+    --panel: #1E211B;
+    --ink: #E8E3D3;
+    --ink-soft: #9A9484;
+    --line: #34372C;
+    --brass: #C9A85C;
+    --brass-soft: #8A7B4E;
+    --ins-text: #82C9A0;
+    --ins-bg: #1D3A2A;
+    --del-text: #DA9188;
+    --del-bg: #3E241F;
+    --mark-bg: #3B3420;
+    --mark-text: #E4CE8F;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 28px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    margin: 0;
+    padding-bottom: 80px;
+  }
+  .charter {
+    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    font-size: 17.5px;
+    line-height: 1.62;
+  }
+  .mono {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 12px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── session chrome ─────────────────────────────── */
+  .chrome {
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .chrome .wrap {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 24px;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+  .chrome h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.01em;
+  }
+  .chrome h1 .sess { color: var(--ink-soft); font-weight: 400; font-style: italic; }
+  .chrome-right { display: flex; gap: 22px; align-items: baseline; white-space: nowrap; }
+  .stat { font-size: 13px; color: var(--ink-soft); }
+  .stat b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat .up { color: var(--brass); }
+
+  /* ── card stage ─────────────────────────────────── */
+  .stage { padding-top: 34px; }
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .eyebrow {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--brass);
+    font-weight: 600;
+  }
+  .eyebrow .n { color: var(--ink-soft); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+  .modes { display: flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .modes button {
+    appearance: none;
+    border: 0;
+    background: var(--panel);
+    color: var(--ink-soft);
+    font: inherit;
+    font-size: 13px;
+    padding: 6px 14px;
+    cursor: pointer;
+    border-left: 1px solid var(--line);
+  }
+  .modes button:first-child { border-left: 0; }
+  .modes button[aria-pressed="true"] {
+    background: var(--brass);
+    color: var(--paper);
+    font-weight: 600;
+  }
+  .modes button:focus-visible, .judge button:focus-visible, .ghost:focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: 2px;
+  }
+
+  .context {
+    border-left: 3px solid var(--line);
+    padding: 2px 0 2px 18px;
+    margin-bottom: 20px;
+    color: var(--ink-soft);
+  }
+  .context .dim { opacity: 0.55; font-size: 15px; }
+  .context .now-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--brass);
+    font-weight: 600;
+    margin: 8px 0 2px;
+  }
+  .context .now { color: var(--ink); }
+
+  .prompt { font-size: 15px; color: var(--ink-soft); margin: 0 0 14px; }
+  .prompt b { color: var(--ink); }
+
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    align-items: stretch;
+  }
+  @media (max-width: 760px) { .compare { grid-template-columns: 1fr; } }
+  .option {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 20px 22px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .option .tag {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-weight: 700;
+    color: var(--ink-soft);
+  }
+  .option .tag .keep {
+    color: var(--brass);
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    font-style: italic;
+  }
+  .option .body { flex: 1; }
+  .option .rationale {
+    border-top: 1px dashed var(--line);
+    padding-top: 12px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+  .option .rationale .rl {
+    font-style: normal;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    display: block;
+    margin-bottom: 4px;
+    color: var(--brass-soft);
+  }
+
+  del { background: var(--del-bg); color: var(--del-text); text-decoration: line-through; text-decoration-thickness: 1px; padding: 0 1px; }
+  ins { background: var(--ins-bg); color: var(--ins-text); text-decoration: none; padding: 0 1px; }
+  mark { background: var(--mark-bg); color: var(--mark-text); padding: 0 1px; }
+  .dim-shared del, .dim-shared ins { background: transparent; color: inherit; }
+  .dim-shared { color: var(--ink-soft); opacity: 0.92; }
+  .dim-shared mark { color: var(--mark-text); }
+
+  .modenote { font-size: 12.5px; color: var(--ink-soft); margin-top: 10px; }
+  .modenote b { color: var(--brass); }
+
+  /* ── judgment bar ───────────────────────────────── */
+  .judge {
+    display: flex;
+    gap: 12px;
+    margin-top: 22px;
+    align-items: center;
+  }
+  .judge button {
+    appearance: none;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 9px;
+    padding: 12px 22px;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    box-shadow: var(--shadow);
+  }
+  .judge button.primary { border-color: var(--brass); }
+  .judge button:hover { border-color: var(--brass); color: var(--brass); }
+  .judge .spacer { flex: 1; }
+  .judge .ghost {
+    appearance: none;
+    font: inherit;
+    font-size: 13.5px;
+    background: none;
+    border: 0;
+    color: var(--ink-soft);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    padding: 6px;
+  }
+  .blind-note { font-size: 12.5px; color: var(--ink-soft); margin-top: 12px; }
+
+  /* ── receipts ───────────────────────────────────── */
+  .receipts { margin-top: 30px; }
+  .receipts h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--ink-soft);
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+  .receipts ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .receipts li { color: var(--ink-soft); }
+  .receipts li b { color: var(--ink); font-weight: 600; }
+
+  .done {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 34px;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+  .done .charter { font-size: 19px; color: var(--ink); margin-bottom: 8px; }
+
+  /* ── design notes ───────────────────────────────── */
+  .notes { margin-top: 64px; border-top: 1px solid var(--line); padding-top: 30px; }
+  .notes h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: 21px;
+    margin: 0 0 4px;
+    text-wrap: balance;
+  }
+  .notes .sub { color: var(--ink-soft); margin: 0 0 26px; }
+  .notes h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--brass);
+    margin: 30px 0 8px;
+  }
+  .notes p { max-width: 68ch; margin: 0 0 12px; }
+  .notes ul { max-width: 68ch; margin: 0 0 12px; padding-left: 22px; }
+  .notes li { margin-bottom: 6px; }
+  .ledger {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 20px;
+    max-width: 560px;
+    box-shadow: var(--shadow);
+  }
+  .ledger .lh { font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-soft); font-weight: 700; margin-bottom: 10px; }
+  .ledger ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 7px; max-width: none; }
+  .ledger li { display: flex; gap: 10px; align-items: baseline; margin: 0; }
+  .ledger .chip {
+    flex: none;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-radius: 4px;
+    padding: 1px 7px;
+  }
+  .chip.add { background: var(--ins-bg); color: var(--ins-text); }
+  .chip.drop { background: var(--del-bg); color: var(--del-text); }
+  .chip.keep { background: var(--mark-bg); color: var(--mark-text); }
+</style>
+
+<header class="chrome">
+  <div class="wrap">
+    <h1>The Hollow Oak Club — House Charter <span class="sess">· convention in session</span></h1>
+    <div class="chrome-right">
+      <span class="stat">time left <b>2h 11m</b></span>
+      <span class="stat">adoption bar <b>0.74</b> <span class="up">▲</span></span>
+      <span class="stat">your tokens <b>5</b></span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="stage" id="stage"></section>
+
+  <section class="receipts" aria-live="polite">
+    <h2>Your session</h2>
+    <ul class="mono" id="receipts"></ul>
+  </section>
+
+  <section class="notes">
+    <h2>Design notes — the race-card, first pass</h2>
+    <p class="sub">Desktop-first · all card content is real output from run clubhouse-1 · nothing here is lorem</p>
+
+    <h3>The comparison problem</h3>
+    <p>Two rival rewrites of the same paragraph can differ from the base a little or entirely, and those need different visual treatments. Rather than pick one, the card has a <b>view toggle</b> with three modes, and the engine picks the default per card:</p>
+    <ul>
+      <li><b>Fair copy</b> — clean final text, no markup. What the charter would actually say. This is the mode judgment should usually happen in: you're choosing an outcome, not admiring an edit. Always one keystroke away.</li>
+      <li><b>Marked up</b> — legislative amendment style: each option's word-level diff against the current text (struck deletions, green insertions). Wins when patches are small — see the Keys card, where the whole question is one added proviso. Degenerates when a candidate rewrites the paragraph wholesale (the Money card becomes a red-green porridge), which is itself honest: the markup tells you it's a rewrite, not an amendment.</li>
+      <li><b>Differences</b> — the workhorse for rival rewrites: everything the two options <em>agree</em> on is dimmed, and only the spans where they disagree <em>with each other</em> are highlighted, in brass. Green/red always means "versus the current text"; brass always means "versus each other" — two separate semantics, two separate colors, never mixed.</li>
+    </ul>
+    <p>Default heuristic: small patches open in <b>Marked up</b>; wholesale rival rewrites open in <b>Differences</b>; challenger-vs-incumbent cards open in <b>Marked up</b> (the diff against base <em>is</em> the difference). The toggle remembers nothing — every card opens in its own best mode.</p>
+
+    <h3>A fourth pattern, parked for P3</h3>
+    <p>For long documents and multi-hunk patches, prose comparison stops scaling and a structured <b>change ledger</b> earns its place — each option summarised as what it adds, drops, and keeps:</p>
+    <div class="ledger" role="img" aria-label="Sketch of a change-ledger summary for Option A">
+      <div class="lh">Option A, in short</div>
+      <ul>
+        <li><span class="chip add">adds</span><span>spending only against an approved budget or house decision</span></li>
+        <li><span class="chip add">adds</span><span>reporting of income and spending at every meeting</span></li>
+        <li><span class="chip drop">drops</span><span>"reimburses what seems fair" — the discretion standard</span></li>
+        <li><span class="chip keep">keeps</span><span>the Purse-holder as sole payer of bills</span></li>
+      </ul>
+    </div>
+    <p style="margin-top: 12px;">The bullets have to be generated faithfully from the patch, which is an LLM job — this is a P3 feature by construction, sketched now so the card layout reserves room for it.</p>
+
+    <h3>What is deliberately absent</h3>
+    <ul>
+      <li><b>No authors.</b> Sealed until close. The rationale is labelled <em>unsigned</em> to make the absence legible rather than an oversight — Mo's spelling is left exactly as submitted, and judging it is the judge's problem.</li>
+      <li><b>No standings, counts, or direction.</b> Nothing on the card hints how others voted or which option is leading. A/B order is randomised per serve.</li>
+      <li><b>No skip-shame.</b> "Pass this card" is a quiet text link, not a button of equal weight — passing is allowed, not celebrated. Skipped cards recirculate personally with decay (§8.3).</li>
+      <li><b>The bar is shown, the race's evidence is not.</b> The adoption bar (0.74 ▲) is public — it's a function of the clock, identical for everyone, and it communicates session tempo: "things adopted now are well-tested". Per-race win-probability stays hidden.</li>
+    </ul>
+
+    <h3>The diagonal card</h3>
+    <p>Salience cards (card 4) reuse the same stage but compare two <em>contested paragraphs</em> instead of two candidates, and the buttons name the sections rather than A/B. The judgment feeds the salience model, not any race — the prompt says so plainly.</p>
+
+    <h3>Open questions for Ed</h3>
+    <p>Numbered in chat (44–46): where the rationale sits (below text, always visible — or behind a disclosure?); whether propose-C opens the composer inline or navigates away; whether the diagonal card should look more visually distinct from ranking cards than it currently does.</p>
+  </section>
+</main>
+
+<script>
+  const cards = [
+    {
+      kind: 'edge',
+      section: 'Money',
+      count: 'card 1 of 4',
+      defaultMode: 'diff',
+      context: {
+        before: 'Members pay fixed monthly dues, set termly by the house, with a quiet hardship waiver at the Purse-holder’s discretion.',
+        current: 'The Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.',
+        after: '## The Thursday Dinner',
+      },
+      prompt: 'Two proposals want to replace this paragraph. <b>Which should the charter say?</b>',
+      a: {
+        fair: 'The Purse-holder pays only bills approved under the budget or by a house decision, reimburses claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting.',
+        marked: 'The Purse-holder pays <del>the bills</del> <ins>only bills approved under the budget or by a house decision</ins>, <del>and</del> reimburses <del>what seems fair, and keeps the receipts in the tin</del> <ins>claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting</ins>.',
+        diff: '<span class="dim-shared">The Purse-holder pays</span> <mark>only bills approved under the budget or by a house decision</mark><span class="dim-shared">, reimburses</span> <mark>claims against receipts</mark><span class="dim-shared">, keeps accounts</span> <mark>and receipts open to any member on request, and reports income and spending at every meeting</mark><span class="dim-shared">.</span>',
+        rationale: 'Whoever holds the purse must be watched: "pays the bills and reimburses what seems fair" with receipts merely "in the tin" gives one officer unchecked discretion and no real transparency. This ties spending to approval and forces regular open reporting.',
+      },
+      b: {
+        fair: 'The Purse-holder pays the house’s bills and reimburses members’ reasonable claims as trust and good sense direct, keeping accounts in whatever simple way suits, and is glad to talk any member through them who asks.',
+        marked: 'The Purse-holder pays the <ins>house’s</ins> bills and reimburses <ins>members’ reasonable claims as trust and good sense direct</ins><del>what seems fair</del>, <del>and keeps the receipts in the tin</del> <ins>keeping accounts in whatever simple way suits, and is glad to talk any member through them who asks</ins>.',
+        diff: '<span class="dim-shared">The Purse-holder pays the</span> <mark>house’s</mark> <span class="dim-shared">bills</span> <span class="dim-shared">and reimburses</span> <mark>members’ reasonable claims as trust and good sense direct</mark><span class="dim-shared">, keeping accounts</span> <mark>in whatever simple way suits, and is glad to talk any member through them who asks</mark><span class="dim-shared">.</span>',
+        rationale: 'The old rule buries our volunteer Purse-holder in budget sign-offs, receipt-matching, and minute-taking every single meeting. We’re friends who trust each other — let’s spare whoever takes this on the paperwork and let them just get bills paid.',
+      },
+    },
+    {
+      kind: 'edge',
+      section: 'The Thursday Dinner',
+      count: 'card 2 of 4',
+      defaultMode: 'diff',
+      context: {
+        before: '## The Thursday Dinner',
+        current: 'Dinner happens every Thursday; members take turns on a simple sign-up rota so someone’s always down to cook, and it’s still usually pasta.',
+        after: '## Guests',
+      },
+      prompt: 'Two proposals want to replace this paragraph. <b>Which should the charter say?</b>',
+      a: {
+        fair: 'Dinner happens every Thursday; a proper rota is posted in the Kitchen each term so everyone knows whos turn it is to cook, and if you cant make your night you sort a swap and update the rota yourslef so it stays acurate.',
+        marked: 'Dinner happens every Thursday; <del>members take turns on a simple sign-up rota so someone’s always down to cook, and it’s still usually pasta</del> <ins>a proper rota is posted in the Kitchen each term so everyone knows whos turn it is to cook, and if you cant make your night you sort a swap and update the rota yourslef so it stays acurate</ins>.',
+        diff: '<span class="dim-shared">Dinner happens every Thursday;</span> <mark>a proper rota is posted</mark> <span class="dim-shared">in the Kitchen each term</span> <span class="dim-shared">so everyone knows</span> <mark>whos</mark> <span class="dim-shared">turn it is to cook, and if you</span> <mark>cant</mark> <span class="dim-shared">make your night you</span> <mark>sort a swap and update the rota yourslef so it stays acurate</mark><span class="dim-shared">.</span>',
+        rationale: 'we say its a rota but nobody rights it down proper so half the time nobody nos whos cooking till the last minit. pin it up in the kitchen and make swaps the cooks own job to record, then dinner actualy happens steady, not just "usually" pasta by accident.',
+      },
+      b: {
+        fair: 'Dinner happens every Thursday; the Steward posts a proper rota in the Kitchen each term, and anyone who can’t make their night arranges a swap and updates the rota themselves so it stays accurate.',
+        marked: 'Dinner happens every Thursday; <del>members take turns on a simple sign-up rota so someone’s always down to cook, and it’s still usually pasta</del> <ins>the Steward posts a proper rota in the Kitchen each term, and anyone who can’t make their night arranges a swap and updates the rota themselves so it stays accurate</ins>.',
+        diff: '<span class="dim-shared">Dinner happens every Thursday;</span> <mark>the Steward posts</mark> <span class="dim-shared">a proper rota in the Kitchen each term,</span> <span class="dim-shared">and anyone who</span> <mark>can’t</mark> <span class="dim-shared">make their night</span> <mark>arranges a swap and updates the rota themselves so it stays accurate</mark><span class="dim-shared">.</span>',
+        rationale: 'Dinner runs every week — it needs one clear owner for the rota, not a typo-ridden vacuum. Naming the Steward as poster is the smallest fix that stops the rota quietly rotting; no new meetings, no enforcement machinery.',
+      },
+    },
+    {
+      kind: 'edge',
+      section: 'Keys',
+      count: 'card 3 of 4',
+      defaultMode: 'marked',
+      context: {
+        before: '## Keys',
+        current: 'Every member holds a front-door key, and members may lend or cut spares for regulars they trust.',
+        after: '## The Guest Bedroom',
+      },
+      prompt: 'One proposal challenges the current text. <b>Change it, or keep it?</b>',
+      a: {
+        fair: 'Every member holds a front-door key, and may lend or cut a spare for a regular they trust, provided the Steward keeps a simple note of who holds one.',
+        marked: 'Every member holds a front-door key, and <del>members</del> may lend or cut <del>spares</del> <ins>a spare</ins> for <del>regulars</del> <ins>a regular</ins> they trust<ins>, provided the Steward keeps a simple note of who holds one</ins>.',
+        diff: '<span class="dim-shared">Every member holds a front-door key, and may lend or cut a spare for a regular they trust</span><mark>, provided the Steward keeps a simple note of who holds one</mark><span class="dim-shared">.</span>',
+        rationale: 'Keys are a security matter, not a vibe. A one-line log with the Steward costs nothing and means we can actually account for who can get in — my father the toolmaker never handed out a spare without writing it down.',
+      },
+      b: {
+        keep: true,
+        fair: 'Every member holds a front-door key, and members may lend or cut spares for regulars they trust.',
+        marked: 'Every member holds a front-door key, and members may lend or cut spares for regulars they trust. <span class="dim-shared">(no change)</span>',
+        diff: '<span class="dim-shared">Every member holds a front-door key, and members may lend or cut spares for regulars they trust.</span>',
+        rationale: null,
+      },
+    },
+    {
+      kind: 'diagonal',
+      section: 'Garden ↔ Money',
+      count: 'card 4 of 4 · salience',
+      context: null,
+      prompt: 'Both of these paragraphs are contested right now. <b>Which is more important for the club to get right?</b> This shapes what the room spends its attention on — it doesn’t rank any proposal.',
+      a: {
+        label: 'The Garden',
+        fair: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.',
+        rationale: null,
+      },
+      b: {
+        label: 'Money',
+        fair: 'The Purse-holder pays only bills approved under the budget or by a house decision, reimburses claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting.',
+        rationale: null,
+      },
+    },
+  ];
+
+  const MODES = [
+    { id: 'fair', label: 'Fair copy' },
+    { id: 'marked', label: 'Marked up' },
+    { id: 'diff', label: 'Differences' },
+  ];
+  const stage = document.getElementById('stage');
+  const receipts = document.getElementById('receipts');
+  let index = 0;
+  let mode = null;
+
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+  function optionHtml(card, side, opt) {
+    const tagLeft = card.kind === 'diagonal' ? opt.label : 'Option ' + side.toUpperCase();
+    const keep = opt.keep ? '<span class="keep">the current text</span>' : '';
+    const body = card.kind === 'diagonal' ? esc(opt.fair) : (opt[mode] ?? esc(opt.fair));
+    const rationale = opt.rationale
+      ? '<div class="rationale"><span class="rl">Author’s rationale · unsigned</span>' + esc(opt.rationale) + '</div>'
+      : (opt.keep ? '<div class="rationale"><span class="rl">Status quo</span>The text as it stands. Keeping it needs no rationale — it already survived.</div>' : '');
+    return (
+      '<article class="option">' +
+      '<div class="tag"><span>' + tagLeft + '</span>' + keep + '</div>' +
+      '<div class="body charter">' + body + '</div>' +
+      rationale +
+      '</article>'
+    );
+  }
+
+  function render() {
+    if (index >= cards.length) {
+      stage.innerHTML =
+        '<div class="done">' +
+        '<div class="charter">The queue is clear.</div>' +
+        'New cards arrive as proposals land and races tighten. The bounty board lists the stuck fights — or open the composer and start one.' +
+        '</div>';
+      return;
+    }
+    const card = cards[index];
+    if (mode === null) mode = card.defaultMode ?? 'fair';
+    const isDiag = card.kind === 'diagonal';
+
+    const modes = isDiag
+      ? ''
+      : '<div class="modes" role="group" aria-label="Comparison view">' +
+        MODES.map((m) =>
+          '<button aria-pressed="' + (mode === m.id) + '" data-mode="' + m.id + '">' + m.label + '</button>'
+        ).join('') +
+        '</div>';
+
+    const context = card.context
+      ? '<div class="context charter">' +
+        '<div class="dim">' + esc(card.context.before) + '</div>' +
+        '<div class="now-label">Currently</div>' +
+        '<div class="now">' + esc(card.context.current) + '</div>' +
+        '<div class="dim">' + esc(card.context.after) + '</div>' +
+        '</div>'
+      : '';
+
+    const modenote = isDiag ? '' :
+      mode === 'diff'
+        ? '<p class="modenote"><b>Differences:</b> dimmed text is what both options agree on; brass is where they part ways. Green/red never appears here — that means “versus the current text”, a different question.</p>'
+        : mode === 'marked'
+          ? '<p class="modenote"><b>Marked up:</b> each option’s changes against the current text — amendment style.</p>'
+          : '<p class="modenote"><b>Fair copy:</b> exactly what the charter would say. No markup.</p>';
+
+    const buttons = isDiag
+      ? '<button class="primary" data-judge="a">' + card.a.label + '</button>' +
+        '<button data-judge="indifferent">Equally important</button>' +
+        '<button class="primary" data-judge="b">' + card.b.label + '</button>'
+      : '<button class="primary" data-judge="a">Prefer A</button>' +
+        '<button data-judge="indifferent">Genuinely can’t split them</button>' +
+        '<button class="primary" data-judge="b">Prefer B</button>';
+
+    stage.innerHTML =
+      '<div class="card-head">' +
+      '<div class="eyebrow">§ ' + card.section + ' <span class="n">· ' + card.count + '</span></div>' +
+      modes +
+      '</div>' +
+      context +
+      '<p class="prompt">' + card.prompt + '</p>' +
+      '<div class="compare">' + optionHtml(card, 'a', card.a) + optionHtml(card, 'b', card.b) + '</div>' +
+      modenote +
+      '<div class="judge">' + buttons +
+      '<div class="spacer"></div>' +
+      (isDiag ? '' : '<button class="ghost">Propose something else · 1 token</button>') +
+      '<button class="ghost">Pass this card</button>' +
+      '</div>' +
+      '<p class="blind-note">You’re judging text, not people — authorship is sealed until the record. Nothing on this card tells you what anyone else chose.</p>';
+
+    stage.querySelectorAll('[data-mode]').forEach((b) =>
+      b.addEventListener('click', () => { mode = b.dataset.mode; render(); })
+    );
+    stage.querySelectorAll('[data-judge]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const what = b.dataset.judge;
+        const li = document.createElement('li');
+        const hash = Array.from({ length: 8 }, () => '0123456789abcdef'[(Math.random() * 16) | 0]).join('');
+        const verdict = what === 'indifferent' ? 'indifferent' : 'preferred ' + (card.kind === 'diagonal' ? card[what].label : what.toUpperCase());
+        li.innerHTML = '✓ <b>' + card.section + '</b> — ' + verdict + ' · receipt ' + hash + '… · bar 0.74';
+        receipts.prepend(li);
+        index++;
+        mode = null;
+        render();
+      })
+    );
+    stage.querySelectorAll('.ghost').forEach((b) =>
+      b.addEventListener('click', () => {
+        const li = document.createElement('li');
+        li.textContent = b.textContent.includes('Pass')
+          ? '○ ' + card.section + ' — passed (recirculates later, with decay)'
+          : '○ ' + card.section + ' — propose-C opens the composer (out of scope for this mockup)';
+        receipts.prepend(li);
+        if (b.textContent.includes('Pass')) { index++; mode = null; render(); }
+      })
+    );
+  }
+  render();
+</script>
