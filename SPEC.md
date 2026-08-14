@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.9
+# Group Drafting Engine — Specification v0.10
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -79,6 +79,8 @@ The cooldown is a legibility device, not a quality device, and must stay short (
 **4.3 The adoption threshold on the session clock.** The threshold ramps smoothly from T_start to T_end over the session window (wall clock). The ramp exists because the bar should track irreversibility: an early adoption can still be challenged within the session; a late one is permanent — the outcome is never a surprise. Early low-threshold adoptions give a distributed window visible motion from its first hours. Late activity self-limits (a near-unanimous fix clears T_end; a 60/40 preference cannot), so no proposal deadline is needed. Unscrutinised text is protected not by the clock but by the adoption floor and the posterior itself: a quiet session leaves incumbents standing and ships its questions as backlog. (An evidence-clock variant — the threshold as a function of total comparisons made, so the document stabilises in proportion to the judgment it has absorbed — is deferred to the sim to explore.)
 
 **4.4 Incumbency and certification.** Nothing closes. Incumbency is positional: adoption makes a candidate the status quo; displacement always requires clearing the current threshold. Certification is continuous: P(incumbent beats best live challenger). A "resolved" race is one not currently worth sampling; stability is an equilibrium.
+
+Judgments follow the same principle (Q50, Ed 2026-08-14): a judgment is conditional on the document state it was made against, so a judged pair is normally never re-served to the same participant — but when a race's ground materially shifts (its span's text changes, or a strongly coupled span resolves), its judged pairs become re-servable, and a new judgment supersedes the participant's old one (event-sourced as 'superseded'; the ranking uses the latest). Ground-shift re-serving is the intuitive re-opening of an old question — not free revision, which stays prohibited (late strategic flips against a high bar).
 
 **4.5 The certification gap.** When the threshold rises past a race's certification, the gap becomes routing value and the race quietly re-enters circulation: adoptions made on noisy early evidence self-correct (the true leader clears the current threshold); genuinely thin majorities are confirmed thin and recorded as such. Next session, the threshold resets and everything is contestable again — entrenchment is session-scoped.
 

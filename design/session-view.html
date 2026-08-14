@@ -74,6 +74,13 @@
   .hist { margin-top: 18px; }
   .hist ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .hist li { border: 1px solid var(--border); border-radius: 0.375rem; padding: 7px 10px; font-size: 0.8rem; }
+  @keyframes slideOut { to { opacity: 0; transform: translateY(14px); } }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-14px); } }
+  .queue button.leaving { animation: slideOut 0.24s ease-in forwards; pointer-events: none; }
+  .hist li.arriving { animation: slideIn 0.24s ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    .queue button.leaving, .hist li.arriving { animation: none; }
+  }
   .hist .hv { color: var(--muted); }
   .hist .hm { display: block; margin-top: 2px; }
   .hist .chgflag { display: block; margin-top: 4px; color: var(--changed); font-size: 0.72rem; font-weight: 600; }
@@ -408,22 +415,32 @@
     },
   ];
   const HISTORY = [
-    { label: '\u00a7 Dues', verdict: 'approved the fixed schedule', when: '2h ago', receipt: '9c41ab72\u2026', changed: false },
+    { label: '\u00a7 Dues', verdict: 'approved the fixed schedule', when: '2h ago', receipt: '9c41ab72\u2026', changed: false,
+      pct: 100, cap: 'decided \u2014 the fixed schedule was adopted', decided: true },
     { label: '\u00a7 The Garden', verdict: 'preferred the posted rota', when: '1h ago', receipt: '4e17c9d0\u2026', changed: true,
+      pct: 88, cap: 'still open \u2014 close to decided',
       changeNote: 'this text has changed again since your judgment \u2014 a Steward report line was adopted 40m ago' },
   ];
   const seenChanges = new Set();
   let openChange = null;
   let bannerDismissed = false;
 
+  let justArrived = false;
   function renderHistory() {
     const el = document.getElementById('history');
-    el.innerHTML = HISTORY.map((h) =>
-      '<li><b>' + h.label + '</b> <span class="hv">\u2014 ' + h.verdict + '</span>' +
-      '<span class="hm mono">' + h.when + (h.receipt ? ' \u00b7 receipt ' + h.receipt : '') + '</span>' +
-      (h.changed ? '<span class="chgflag">\u27f3 ' + h.changeNote + '</span>' : '') +
-      '</li>'
-    ).join('');
+    el.innerHTML = HISTORY.map((h, i) => {
+      // Judged is not decided: the race keeps its wash until it resolves.
+      const washColor = h.decided ? 'var(--ins-bg)' : 'var(--primary-subtle)';
+      const wash = h.pct !== undefined
+        ? ' style="background: linear-gradient(90deg, ' + washColor + ' ' + h.pct + '%, var(--bg) ' + h.pct + '%)"'
+        : '';
+      return '<li' + (i === 0 && justArrived ? ' class="arriving"' : '') + wash + '><b>' + h.label + '</b> <span class="hv">\u2014 ' + h.verdict + '</span>' +
+        '<span class="hm mono">' + h.when + (h.receipt ? ' \u00b7 receipt ' + h.receipt : '') + '</span>' +
+        (h.pct !== undefined ? '<span class="mcap">' + h.cap + '</span>' : '') +
+        (h.changed ? '<span class="chgflag">\u27f3 ' + h.changeNote + '</span>' : '') +
+        '</li>';
+    }).join('');
+    justArrived = false;
   }
 
   function renderQueue() {
@@ -632,13 +649,24 @@
       : what === 'b' ? 'preferred B'
       : what === 'indifferent' ? 'indifferent'
       : 'skipped (recirculates with decay)';
-    HISTORY.unshift({
-      label: s.qLabel, verdict, when: 'just now',
-      receipt: what === 'skip' ? '' : hash + '… · bar 0.74', changed: false,
-    });
-    resolved.add(id);
-    if (openId === id) openId = null;
-    renderAll();
+    const finish = () => {
+      HISTORY.unshift({
+        label: s.qLabel, verdict, when: 'just now',
+        receipt: what === 'skip' ? '' : hash + '… · bar 0.74', changed: false,
+        // Your judgment moved the race, but didn't close it: the wash lives on.
+        pct: Math.min(PROGRESS[id].pct + 8, 96),
+        cap: what === 'skip' ? PROGRESS[id].cap : 'still gathering — your judgment moved it',
+      });
+      resolved.add(id);
+      if (openId === id) openId = null;
+      justArrived = true;
+      renderAll();
+    };
+    const btn = queueEl.querySelector('[data-q="' + id + '"]');
+    if (btn && btn.classList) {
+      btn.classList.add('leaving');
+      setTimeout(finish, 240);
+    } else finish();
   }
 
   function renderAll() { renderQueue(); renderHistory(); renderDoc(); }
