@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.13
+# Group Drafting Engine — Specification v0.14
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -51,7 +51,7 @@ Skipping is not a move; the card returns later.
 
 **3.2 Indifference** is a judgment: tie evidence for the ranking (a forced choice would fabricate preference), the instrument of behavioral dedup (§5), and, in aggregate, the **care map** — spans the group doesn't mind about keep their incumbents cheaply and stop drawing attention. The map counts indifference on incumbent-involving pairs only — "cold" is incumbent-relative, and rival-pair ties can come from people who defend the status quo (Q13, sim evidence 2026-08-14). All-pairs indifference is still logged; where it runs hot above the map's reading, that excess is a camp-split hint surfaced in the composer briefing (§6.1), never in the map.
 
-**3.3 Propose C** opens the composer (§6), which reveals mid-flight state; choosing it therefore forfeits that pair's comparison (never collected — this prices the peek), and is itself logged as weak dissatisfaction with both. The composed draft is a brand-new patch: normal stake, and its footprint decides its race — it may re-enter the race that prompted it or land elsewhere.
+**3.3 Propose C** opens the composer (§6), which reveals mid-flight state; choosing it therefore forfeits that pair's comparison (never collected — this prices the peek), and is itself logged as weak dissatisfaction with both. The composed draft is a brand-new patch: normal stake, and its footprint decides its race — it may re-enter the race that prompted it or land elsewhere. (Pricing confirmed against sim evidence 2026-08-14, Q9: no measurable deterrence at v1 defaults. The product logs any stake-blocked composer entry, so a live cohort feeling the price would show it immediately.)
 
 **3.4 Speech.** Each candidate carries one pinned rationale. There is no chat. To argue is to draft. (Block-level threads can be added later without touching the mechanism.)
 
