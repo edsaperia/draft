@@ -10,6 +10,19 @@ export { Session, makeConstitution, DEFAULT_CONSTITUTION, pairValue } from './se
 export { ParticipantApi } from './participant-api.js';
 export type { CardView, OptionView, GazetteEntry } from './participant-api.js';
 export { adoptionThreshold } from './adoption-threshold.js';
+export type {
+  EquivalenceVerdict,
+  OracleCandidate,
+  OracleContext,
+  SemanticOracle,
+} from './oracle.js';
+export {
+  DedupGate,
+  levenshtein,
+  normalizeForDedup,
+  relativeEditDistance,
+} from './dedup-gate.js';
+export type { DedupGateOptions, DedupVerdict } from './dedup-gate.js';
 export { performanceRefund } from './tokens.js';
 export { diffLines, splitLines, joinLines } from './text/diff.js';
 export {

@@ -1,4 +1,4 @@
-# engine-core — implementation notes (P1)
+# engine-core — implementation notes (P1–P3)
 
 Decisions the spec left to implementation, and P1 simplifications. Anything
 needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
@@ -57,11 +57,41 @@ needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
 - Diagonal cards serve race leaders, uniformly sampled; salience-uncertainty
   weighting is a P2 refinement.
 
+## Advisory gates beside the sync fold (P3 phase 1)
+
+The pattern for every LLM feature: **async oracles advise; the sync fold
+decides.** `oracle.ts` defines the `SemanticOracle` interface (pure types,
+no SDK import — transports live in sim-harness, later the server) and
+`dedup-gate.ts` is the first consumer: an async helper the CALLER runs
+before issuing a submit command. The gate returns a verdict; the caller
+turns it into ordinary commands — submit as usual, or co-sign the
+existing candidate instead (`Session.coSign` already carries SPEC §5.1's
+"join its supporters"). Why outside the Session: commands are synchronous
+and replay must stay bit-identical (the peakW lesson — nothing outside
+the fold may feed state that affects replay). Because the oracle's
+influence is only WHICH commands get issued, and those commands are in
+the log, replay never re-consults an oracle and a log is exactly as
+deterministic as before. Corollaries: no oracle configured ⇒ behavior
+byte-identical to pre-gate (regression-pinned in sim-harness); oracle
+error ⇒ verdict degrades to `fresh` — an LLM is never load-bearing and
+never blocks a submission. Gate 2 (semantic composition), race
+naming/typing, and change ledgers should extend `SemanticOracle` with
+optional sibling methods and follow the same advise-then-command shape.
+
+Dedup pipeline (SPEC §5.1 "embeddings, edit distance, LLM equivalence"):
+exact match → normalized relative Levenshtein (threshold 0.15 — see the
+rationale in `dedup-gate.ts`; embeddings dropped for v1, edit distance
+plus the LLM covers small rosters) → oracle. The gate checks live
+candidates only; graveyard checking and behavioral probes are later
+phases.
+
 ## Deferred to P2/P3 (stubs or absent by design)
 
 - Gate 2 semantic composition, inclusion lattices, and lattice diagonals
   (overlap → rivalry today; lattice diagonals are logged but unmodeled).
-- Dedup gate, behavioral dedup probes, co-sign invitations.
+- Dedup: behavioral probes, co-sign invitations, graveyard checks, and
+  the author-facing co-sign/differentiate/insist choice (the P3 gate
+  advises the caller only; the sim runner auto-co-signs).
 - Surgery proposals (the `splitHunks` primitive exists; no engine command).
 - Bridge metric / stratified probes; composer briefings; loss accounts.
 - Machine participants (incl. coherence auditor); "weak dissatisfaction"
@@ -74,4 +104,6 @@ needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
 `session.ts` (engine-core state machine) · `text/` (patch-engine) ·
 `ranking/davidson.ts` (ranking-model) · `adoption-threshold.ts` ·
 `tokens.ts` · `hash.ts` + `rng.ts` (event-log integrity) · routing lives in
-`session.ts` (`feed`, `bountyBoard`, `backlog`).
+`session.ts` (`feed`, `bountyBoard`, `backlog`) · `oracle.ts`
+(SemanticOracle contract; implementations live outside the engine) ·
+`dedup-gate.ts` (advisory async dedup-gate, outside the Session).
