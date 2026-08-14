@@ -18,6 +18,8 @@
     --ins-bg: #D1E7DD;
     --del-text: #DC3545;
     --del-bg: #F8D7DA;
+    --changed: #6F42C1;
+    --changed-bg: #EDE7F7;
   }
   * { box-sizing: border-box; }
   body {
@@ -53,7 +55,7 @@
     padding: 8px 10px; cursor: pointer; color: var(--fg);
   }
   .queue button:hover { border-color: var(--primary); }
-  .queue button[aria-current="true"] { border-color: var(--primary); background: var(--primary-subtle); }
+  .queue button[aria-current="true"] { border-color: var(--primary); border-width: 2px; padding: 7px 9px; }
   .queue .ql { font-weight: 600; font-size: 0.875rem; display: flex; justify-content: space-between; gap: 6px; }
   .queue .ql .done { color: var(--ins-text); }
   .queue .qs { font-size: 0.75rem; color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
@@ -65,10 +67,39 @@
   .kchip.race { background: var(--race-bg); color: var(--race-text); }
   .kchip.patch { background: var(--primary-subtle); color: var(--primary-emphasis); }
   .queue .note { font-size: 0.75rem; color: var(--muted); margin-top: 10px; }
-  .meter { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .meter { display: block; height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
   .meter i { display: block; height: 100%; background: var(--primary); border-radius: 2px; }
   .meter.saturated i { background: var(--muted); }
-  .mcap { font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
+  .mcap { display: block; font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
+  .hist { margin-top: 18px; }
+  .hist ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .hist li { border: 1px solid var(--border); border-radius: 0.375rem; padding: 7px 10px; font-size: 0.8rem; }
+  .hist .hv { color: var(--muted); }
+  .hist .hm { display: block; margin-top: 2px; }
+  .hist .chgflag { display: block; margin-top: 4px; color: var(--changed); font-size: 0.72rem; font-weight: 600; }
+  .banner {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    border: 1px solid var(--changed); background: var(--changed-bg);
+    border-radius: 0.5rem; padding: 10px 14px; margin-bottom: 14px; font-size: 0.875rem;
+  }
+  .banner b { color: var(--changed); }
+  .chgchip {
+    float: right; margin-left: 10px; font-size: 0.7rem; font-weight: 700;
+    border-radius: 0.25rem; padding: 1px 7px; white-space: nowrap;
+    background: var(--changed-bg); color: var(--changed); user-select: none;
+  }
+  .anch-chg { border-left: 3px solid var(--changed); padding-left: 12px; margin-left: -15px; border-radius: 0 0.25rem 0.25rem 0; cursor: pointer; }
+  .anch-chg:hover { background: var(--changed-bg); }
+  .chgcard {
+    max-width: 70ch; margin: 4px auto 16px;
+    border: 1.5px solid var(--changed); border-radius: 0.5rem;
+    box-shadow: 0 3px 12px rgba(111, 66, 193, 0.15);
+    padding: 14px 16px; background: var(--bg);
+  }
+  .chgcard .shead { color: var(--changed); display: flex; justify-content: space-between; gap: 10px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .chgcard .shead .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .chgcard .stext { font-size: 0.9375rem; margin-bottom: 10px; }
+  .chgcard .sactions { display: flex; gap: 8px; flex-wrap: wrap; }
 
   /* the document */
   .doc {
@@ -206,16 +237,17 @@
     <aside class="queue">
       <h2>Needs you</h2>
       <ul id="queue"></ul>
-      <p class="note">Ordered by the router — hottest first. Or ignore it and read: everything here is also anchored in the document itself.</p>
+      <p class="note">Ordered by the router — hottest first. Or ignore it and read: everything here is also anchored in the document itself. The wash behind each card is closeness-to-resolution — never direction.</p>
+      <div class="hist">
+        <h2>Judged</h2>
+        <ul id="history"></ul>
+        <p class="note">Change your mind? Judgments are final for now — whether a changed document should reopen them is an open question (Q50).</p>
+      </div>
     </aside>
 
     <main>
       <div class="doc" id="doc"></div>
 
-      <section class="receipts" aria-live="polite">
-        <h2>Your session</h2>
-        <ul class="mono" id="receipts"></ul>
-      </section>
     </main>
   </div>
 
@@ -274,7 +306,7 @@
     { t: 'h', x: 'Guests' },
     { t: 'p', key: 'guests', x: 'Friends of the house are welcome whenever a member is in.' },
     { t: 'h', x: 'Meetings and Decisions' },
-    { t: 'p', x: 'House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.' },
+    { t: 'p', key: 'decisions', x: 'House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.' },
     { t: 'h', x: 'Offices' },
     { t: 'p', key: 'offices', x: 'The club has a Steward and a Purse-holder, chosen by acclaim, who do what needs doing until they stop.' },
     { t: 'h', x: 'Changing These Rules' },
@@ -356,7 +388,6 @@
 
   const doc = document.getElementById('doc');
   const queueEl = document.getElementById('queue');
-  const receipts = document.getElementById('receipts');
   let openId = null;
   const resolved = new Set();
 
@@ -368,16 +399,42 @@
 
   const PROGRESS = {"race-money":{"pct":78,"cap":"close — a few good judgments from decided"},"patch-rename":{"pct":35,"cap":"gathering — needs roughly 6 more judgments"},"quick-keys":{"pct":60,"cap":"needs 2 more voices to reach its floor of 5"},"quick-confidence":{"pct":85,"cap":"one judgment from decided"},"insert-quiet":{"pct":20,"cap":"new — evidence just starting"}};
 
+  const CHANGES = [
+    {
+      key: 'decisions',
+      when: '25m ago',
+      marked: '<del>House matters are settled by whoever is in the room when they come up.</del> <ins>House matters are decided at a meeting called with at least seven days\u2019 notice to all members, by majority of those present, with the proposal and result minuted in the Members\u2019 Book.</ins>',
+      note: 'Adopted at p=0.87 over bar 0.72 \u00b7 6 distinct judges \u00b7 you never judged this race',
+    },
+  ];
+  const HISTORY = [
+    { label: '\u00a7 Dues', verdict: 'approved the fixed schedule', when: '2h ago', receipt: '9c41ab72\u2026', changed: false },
+    { label: '\u00a7 The Garden', verdict: 'preferred the posted rota', when: '1h ago', receipt: '4e17c9d0\u2026', changed: true,
+      changeNote: 'this text has changed again since your judgment \u2014 a Steward report line was adopted 40m ago' },
+  ];
+  const seenChanges = new Set();
+  let openChange = null;
+  let bannerDismissed = false;
+
+  function renderHistory() {
+    const el = document.getElementById('history');
+    el.innerHTML = HISTORY.map((h) =>
+      '<li><b>' + h.label + '</b> <span class="hv">\u2014 ' + h.verdict + '</span>' +
+      '<span class="hm mono">' + h.when + (h.receipt ? ' \u00b7 receipt ' + h.receipt : '') + '</span>' +
+      (h.changed ? '<span class="chgflag">\u27f3 ' + h.changeNote + '</span>' : '') +
+      '</li>'
+    ).join('');
+  }
+
   function renderQueue() {
     queueEl.innerHTML = SUGGS.map((s) => {
       const done = resolved.has(s.id) ? '<span class="done">✓</span>' : '';
       return (
-        '<li><button data-q="' + s.id + '" aria-current="' + (openId === s.id) + '">' +
+        '<li><button data-q="' + s.id + '" aria-current="' + (openId === s.id) + '"' +
+        (resolved.has(s.id) ? '' : ' style="background: linear-gradient(90deg, var(--primary-subtle) ' + PROGRESS[s.id].pct + '%, var(--bg) ' + PROGRESS[s.id].pct + '%)"') + '>' +
         '<span class="ql"><span>' + s.qLabel + '</span>' + done + '</span>' +
         '<span class="qs"><span class="kchip ' + s.kind + '">' + (s.kind === 'quick' ? 'quick' : s.kind === 'race' ? 'race' : 'patch') + '</span>' + s.qSub + '</span>' +
-        (resolved.has(s.id) ? '' :
-          '<span class="meter"><i style="width:' + PROGRESS[s.id].pct + '%"></i></span>' +
-          '<span class="mcap">' + PROGRESS[s.id].cap + '</span>') +
+        (resolved.has(s.id) ? '' : '<span class="mcap">' + PROGRESS[s.id].cap + '</span>') +
         '</button></li>'
       );
     }).join('');
@@ -446,7 +503,14 @@
   }
 
   function renderDoc() {
-    let html = '<div class="prose">';
+    const liveChanges = CHANGES.filter((c) => !seenChanges.has(c.key));
+    let html = '';
+    if (liveChanges.length && !bannerDismissed) {
+      html += '<div class="banner"><span><b>While you were away:</b> \u00a7 Meetings and Decisions changed ' + liveChanges[0].when + '.</span>' +
+        '<button class="btn btn-outline" data-chg-open="decisions">See what changed</button>' +
+        '<button class="btn btn-outline" data-banner-dismiss>Dismiss</button></div>';
+    }
+    html += '<div class="prose">';
     let cardDone = false;
     for (const line of DOC) {
       if (line.t === 'title') { html += '<div class="doctitle">' + esc(line.x) + '</div>'; continue; }
@@ -473,8 +537,22 @@
           cardDone = true;
         }
       } else {
-        html += '<p' + (wasResolved ? ' class="anch resolved"' : '') + '>' +
-          (wasResolved ? '<span class="achip resolved">judged ✓</span>' : '') + esc(line.x) + '</p>';
+        const chg = line.key ? CHANGES.find((c) => c.key === line.key && !seenChanges.has(c.key)) : undefined;
+        if (chg) {
+          html += '<p class="anch-chg" data-chg-open="' + chg.key + '"><span class="chgchip">changed ' + chg.when + '</span>' + esc(line.x) + '</p>';
+          if (openChange === chg.key) {
+            html += '</div><div class="chgcard">' +
+              '<div class="shead"><span>What changed here · ' + chg.when + '</span><span class="sub">' + chg.note + '</span></div>' +
+              '<div class="stext">' + chg.marked + '</div>' +
+              '<div class="sactions">' +
+              '<button class="btn" data-chg-seen="' + chg.key + '">Fine by me</button>' +
+              '<button class="btn btn-outline" data-chg-propose="' + chg.key + '">Propose a change · 1 token</button>' +
+              '</div></div><div class="prose">';
+          }
+        } else {
+          html += '<p' + (wasResolved ? ' class="anch resolved"' : '') + '>' +
+            (wasResolved ? '<span class="achip resolved">judged ✓</span>' : '') + esc(line.x) + '</p>';
+        }
       }
 
       const ins = line.key
@@ -502,6 +580,32 @@
         act(b.closest('.sugg').dataset.card, b.dataset.act);
       })
     );
+    doc.querySelectorAll('[data-chg-open]').forEach((el) =>
+      el.addEventListener('click', (ev) => {
+        if (ev.target.closest('.chgcard')) return;
+        ev.stopPropagation();
+        openChange = openChange === el.dataset.chgOpen ? null : el.dataset.chgOpen;
+        renderAll();
+      })
+    );
+    doc.querySelectorAll('[data-banner-dismiss]').forEach((el) =>
+      el.addEventListener('click', () => { bannerDismissed = true; renderAll(); })
+    );
+    doc.querySelectorAll('[data-chg-seen]').forEach((el) =>
+      el.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        seenChanges.add(el.dataset.chgSeen);
+        if (openChange === el.dataset.chgSeen) openChange = null;
+        renderAll();
+      })
+    );
+    doc.querySelectorAll('[data-chg-propose]').forEach((el) =>
+      el.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        HISTORY.unshift({ label: '\u00a7 Meetings and Decisions', verdict: 'propose-C opens the composer (later mockup)', when: 'just now', receipt: '', changed: false });
+        renderAll();
+      })
+    );
   }
 
   function toggle(id, scroll) {
@@ -515,11 +619,10 @@
 
   function act(id, what) {
     const s = SUGGS.find((x) => x.id === id);
-    const li = document.createElement('li');
     const hash = Array.from({ length: 8 }, () => '0123456789abcdef'[(Math.random() * 16) | 0]).join('');
     if (what === 'propose') {
-      li.textContent = '○ ' + s.qLabel + ' — propose-C opens the composer (later mockup)';
-      receipts.prepend(li);
+      HISTORY.unshift({ label: s.qLabel, verdict: 'propose-C opens the composer (later mockup)', when: 'just now', receipt: '', changed: false });
+      renderAll();
       return;
     }
     const verdict =
@@ -529,14 +632,15 @@
       : what === 'b' ? 'preferred B'
       : what === 'indifferent' ? 'indifferent'
       : 'skipped (recirculates with decay)';
-    li.innerHTML = (what === 'skip' ? '○ ' : '✓ ') + '<b>' + s.qLabel + '</b> — ' + verdict +
-      (what === 'skip' ? '' : ' · receipt ' + hash + '… · bar 0.74');
-    receipts.prepend(li);
+    HISTORY.unshift({
+      label: s.qLabel, verdict, when: 'just now',
+      receipt: what === 'skip' ? '' : hash + '… · bar 0.74', changed: false,
+    });
     resolved.add(id);
     if (openId === id) openId = null;
     renderAll();
   }
 
-  function renderAll() { renderQueue(); renderDoc(); }
+  function renderAll() { renderQueue(); renderHistory(); renderDoc(); }
   renderAll();
 </script>
