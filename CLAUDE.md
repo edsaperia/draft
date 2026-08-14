@@ -5,7 +5,9 @@ A group drafting engine: patches race, blind pairwise judgments rank them, adopt
 ## Documents
 
 - `SPEC.md` — the mechanism spec, and the single source of truth. Amend only with Ed's sign-off; bump the version. No separate decision log: resolved decisions are folded into the spec ("keep latest design, not history" — Ed, 2026-08-13).
-- `QUESTIONS.md` — open and deferred items only, numbered from one continuous project-wide sequence (Ed answers by number). Never renumber or reuse numbers; delete items once folded into the spec.
+- `QUESTIONS.md` — open and deferred items only, numbered from one continuous project-wide sequence (Ed answers by number). Never renumber or reuse numbers; delete items once folded into the spec. Questions raised in chat that Ed doesn't answer before the session ends belong here with real sequence numbers — otherwise they die in the transcript. Draw in-chat numbers from this sequence too when they concern project decisions; ad-hoc chat numbering collides with it and makes the record ambiguous (learned 2026-08-15).
+- `design/*.html` — the mockup series (race-card, session-view, composer): single static files, light-only, Bootstrap-plain, shared palette and one continuous fictional world (the Hollow Oak Club charter). Each carries its own design notes and named-parts glossary at the bottom. Keep new surfaces consistent with the series.
+- `packages/sim-harness/REPORT-deferred-evidence.md` — findings from the 2026-08-14 evidence pass (Q8/Q9/Q10/Q13), with reproduce instructions.
 
 ## V1 product decisions
 
@@ -30,12 +32,13 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 - `router` — v/c_p feed ordering, hot set, exploration/salience streams, floors-aware serving, notification digests.
 - `event-log` — append-only hash-chained log, seeded RNG, participant receipts.
 - `dedup-gate` — submission-time duplicate check (embeddings, edit distance, LLM equivalence) plus behavioral dedup probes.
+- `race-labeler` — advisory naming and typing of disputes: a name ("treasurer oversight") and a type (copy-edit · substantive · structural) per race, from the oracle's `describeRace`, with a deterministic nearest-heading + excerpt fallback. Outside the state machine — labels never enter the event log or gate anything; type is stored but not yet wired to routing (Q49).
 - `coherence-auditor` — machine participant patrolling document drift, fixed token budget.
 
 **Product (UI and ceremony):**
 - `session-view` — the default member surface: the current document with suggestions anchored where they bite — quick-approve singletons, race anchors that escalate in place, multi-site patch anchors — plus the needs-you queue. Design: design/session-view.html.
 - `race-card` — the judging surface: contested text, two candidates, A/B/indifferent/propose-C. In the UI it is the session-view's escalation state (overlay model, design/race-card.html).
-- `composer` — the briefed drafting surface: heat, camps, why-digest, graveyard, bridge bar.
+- `composer` — the briefed drafting surface: heat, camps, why-digest, graveyard, bridge bar. Design: design/composer.html. Its named zones: `arrival-bar` (which door you came through and what it cost), `dominated-account` (the three-tier loss account), `the-briefing` (heat-panel, standings-panel, camp-map, why-digest, graveyard, bridge-bar), `drafting-desk`, `dedup-gate`.
 - `gazette` — public feed of resolved outcomes; the chamber view is its ambient rendering.
 - `bounty-board` — public tab of saturated races ranked by resolvable disagreement × salience.
 - `record-builder` — closing publication: final text + the record (rankings, camps, graveyard, care map, minority map, backlog, audit log).
@@ -43,7 +46,7 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 - `spectator-commentary` — optional LLM commentating view for convention spectators, fed exclusively by the spectator-api; unlike the sim's omniscient `commentator`, it sees no private data (Q42, backlog).
 
 **Tooling:**
-- `sim-harness` — synthetic-participant simulator driving engine-core; parameter sweeps against throughput, stability, bridge rate, backlog quality.
+- `sim-harness` — synthetic-participant simulator driving engine-core; parameter sweeps against throughput, stability, bridge rate, backlog quality. `npm run evidence -w @draft/sim-harness` runs the deferred-question studies (deterministic, no network); findings live in packages/sim-harness/REPORT-deferred-evidence.md.
 - `participant-api` — the blind-discipline surface (engine-core module) every participant speaks: cards, judge, submit, gazette, browse. Humans, sim personas, and personal AIs are interchangeable behind it.
 - `scripted-persona` / `llm-persona` — deterministic utility-model participants (regression + welfare ground truth) vs claude-haiku-4-5 participants (realism).
 - `welfare-ratio` — sim metric: (achieved − incumbent) / (optimal − incumbent) summed utility over the roster; 1.0 = utilitarian-best text found.
