@@ -15,7 +15,7 @@ function roster(n: number): Participant[] {
   return Array.from({ length: n }, (_, i) => ({ id: `p${i + 1}`, handle: `P${i + 1}` }));
 }
 
-function openSession(overrides: Record<string, unknown> = {}): Session {
+function openSession(overrides: Record<string, unknown> = {}, size = 5): Session {
   const constitution = makeConstitution({
     windowStartMs: 0,
     windowEndMs: 10 * HOUR,
@@ -23,7 +23,29 @@ function openSession(overrides: Record<string, unknown> = {}): Session {
     cooldownMs: 0,
     ...overrides,
   });
-  return Session.open({ text: DOC, roster: roster(5), constitution }, 0);
+  return Session.open({ text: DOC, roster: roster(size), constitution }, 0);
+}
+
+/**
+ * A roster of twelve, so F = 4 rather than 2. For tests that need a race to
+ * survive a judgment or two before adopting: at five, the floor is met by the
+ * author's own derived preference (§3.3, §8.2) plus one other person, so
+ * almost anything adopts on first contact.
+ */
+function openWide(): Session {
+  return openSession({}, 12);
+}
+
+/**
+ * A session whose bar is out of reach, for tests whose subject is not
+ * adoption. Since SPEC v0.16 a submission carries its author's own recorded
+ * preference (§3.3) and the author counts toward the floor (§8.2), so a small
+ * race left to itself now reaches both and resolves out from under whatever
+ * the test was actually exercising. Holding the bar at 0.999 says "not about
+ * adoption" in one place instead of scattering timestamps.
+ */
+function openHeld(): Session {
+  return openSession({ adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.999 });
 }
 
 /** Replace line `line` with `text` (single-hunk rewrite). */
@@ -79,8 +101,15 @@ describe('session lifecycle', () => {
     expect(s.getCandidate(c2).state).toBe('rebase-pending');
     expect(s.getCandidate(c3).state).toBe('live');
 
-    // Winner refunded at 1.5x (peakW cleared theta > 0.5).
-    expect(s.getCandidate(c1).exit?.refund).toBeCloseTo(1.5, 10);
+    // Winner refunded above its stake, capped at 1.5× (SPEC §7). A property
+    // rather than a number since v0.16: the author's own vote is a mover, so
+    // this race reaches its floor and adopts a judge earlier than it used to,
+    // on thinner outside evidence — and the refund pays on how the *room*
+    // received it, so it lands near 1.25 where it used to hit the cap. Both
+    // movements are the mechanism working.
+    const won = s.getCandidate(c1).exit!.refund;
+    expect(won).toBeGreaterThan(1);
+    expect(won).toBeLessThanOrEqual(1.5);
 
     // The loser confirms against the new text; evidence resets.
     s.confirmRebase(t + 1000, c2, rewrite(1, 1, 'Membership is granted by majority vote.'));
@@ -166,19 +195,23 @@ describe('session lifecycle', () => {
     expect(s.judge(t0 + 8000, 'p5', c1, c2, 'b')).toBeDefined();
   });
 
-  it('gates adoption on the floor of distinct movers', () => {
-    // E = 5 → F = ceil(5/3) = 2: one mover alone cannot adopt.
+  it('gates adoption on the floor of distinct movers, the author among them', () => {
+    // E = 5 → F = ceil(5/3) = 2. Since SPEC v0.16 the author is one of the
+    // movers (§8.2, "you are a voice" — Ed), so submitting is itself the first
+    // mover and one other person meets the floor. Written out plainly because
+    // it is a real loosening at this size: author + 1 adopts.
     const s = openSession();
     const { id: c1 } = s.submitCandidate(1000, {
       author: 'p1',
       patch: rewrite(0, 1, 'A.'),
       rationale: 'r',
     });
+    expect(s.adoptionFloor()).toBe(2);
+    expect(s.raceOf(c1).distinctMovers).toBe(1); // the author, alone, is short
     const inc = s.raceOf(c1).incumbentId;
     const events = s.judge(2000, 'p2', c1, inc, 'a');
-    expect(events.some((e) => e.type === 'adopted')).toBe(false);
-    expect(s.raceOf(c1).distinctMovers).toBe(1);
-    expect(s.adoptionFloor()).toBe(2);
+    expect(events.some((e) => e.type === 'adopted')).toBe(true);
+    expect(s.getCandidate(c1).state).toBe('adopted');
   });
 
   it('respects the adoption cooldown', () => {
@@ -215,12 +248,14 @@ describe('session lifecycle', () => {
   it('raises the bar over the window: identical evidence adopts early, not late', () => {
     const judgeTwice = (s: Session, c: string, t0: number): boolean => {
       const inc = s.raceOf(c).incumbentId;
-      let adopted = false;
+      // Stops at the first adoption: the author is already a mover, so an
+      // early race can meet floor and bar on the first judgment, and a second
+      // would be cast into a race that has closed.
       for (const [i, judge] of ['p2', 'p3'].entries()) {
         const events = s.judge(t0 + i * 1000, judge, c, inc, 'a');
-        adopted ||= events.some((e) => e.type === 'adopted');
+        if (events.some((e) => e.type === 'adopted')) return true;
       }
-      return adopted;
+      return false;
     };
     // Early: threshold ≈ 0.60 — two clean wins clear it.
     const early = openSession();
@@ -286,6 +321,23 @@ describe('session lifecycle', () => {
     ).toBeTruthy();
   });
 
+  it('an author cannot open their own performance account (SPEC §3.3, §7)', () => {
+    // The refund is stake × min(w/0.5, 1.5), and one favourable comparison is
+    // already enough to reach the cap — so if an author's own recorded
+    // preference counted as performance, submit-then-retire would pay 1.5× the
+    // stake with nobody else involved. Somebody else has to open the account.
+    const s = openSession();
+    const { id } = s.submitCandidate(1000, {
+      author: 'p1',
+      patch: rewrite(0, 1, 'A.'),
+      rationale: 'r',
+    });
+    const before = s.balance('p1', 1000);
+    s.retire(2000, id);
+    expect(s.getCandidate(id).exit!.refund).toBe(0);
+    expect(s.balance('p1', 2000)).toBe(before); // strictly no better off
+  });
+
   it('refunds by the book: withdrawal full, retirement per performance', () => {
     const s = openSession();
     const { id: c1 } = s.submitCandidate(1000, {
@@ -301,10 +353,13 @@ describe('session lifecycle', () => {
     expect(s.balance('p1', 1500)).toBe(2);
     s.withdraw(2000, c1);
     expect(s.balance('p1', 2000)).toBe(3); // full stake back
-    // c2 loses twice to the incumbent, then retires: refund < stake.
+    // c2 loses to the incumbent, then retires: refund < stake. Three losses
+    // rather than two since v0.16 — the author's own preference is in the
+    // ranking and offsets the first of them.
     const inc = s.raceOf(c2).incumbentId;
     s.judge(3000, 'p2', c2, inc, 'b');
     s.judge(4000, 'p3', c2, inc, 'b');
+    s.judge(4500, 'p4', c2, inc, 'b');
     s.retire(5000, c2);
     const refund = s.getCandidate(c2).exit!.refund;
     expect(refund).toBeGreaterThanOrEqual(0);
@@ -354,14 +409,15 @@ describe('session lifecycle', () => {
   });
 
   it('closes: no moves after, final render applies theta-clearing leaders', () => {
-    const s = openSession();
+    const s = openHeld();
     const { id: c1 } = s.submitCandidate(1000, {
       author: 'p1',
       patch: rewrite(0, 3, 'Meetings happen fortnightly.'),
       rationale: 'r',
     });
     const inc = s.raceOf(c1).incumbentId;
-    // Two movers, both prefer c1, but stop short of adoption certainty.
+    // Two movers — the author and p2 — both preferring c1, and short of the
+    // bar, which is what leaves a near-miss to ship as backlog.
     s.judge(2000, 'p2', c1, inc, 'a');
     const races = s.races();
     expect(races).toHaveLength(1);
@@ -379,26 +435,28 @@ describe('session lifecycle', () => {
   });
 
   it('revises judgments while the ground stands: ranking follows the latest, floors count once', () => {
-    const s = openSession();
+    const s = openHeld();
     const { id: c1 } = s.submitCandidate(1000, {
       author: 'p1',
       patch: rewrite(0, 1, 'A.'),
       rationale: 'r',
     });
     const inc = s.raceOf(c1).incumbentId;
-    // p3 backs the incumbent, then changes their mind.
+    // p3 backs the incumbent, then changes their mind. Asserted as movement
+    // rather than against 0.5 since v0.16: the author's own vote is in the
+    // ranking, so p3's dissent lands at parity rather than below it.
     s.judge(2000, 'p3', c1, inc, 'b');
     const pBefore = s.raceOf(c1).leaderP!;
-    expect(pBefore).toBeLessThan(0.5);
     s.judge(3000, 'p3', c1, inc, 'a');
     const pAfter = s.raceOf(c1).leaderP!;
-    expect(pAfter).toBeGreaterThan(0.5);
-    // The revision replaces, never double-counts: one usable comparison,
-    // one distinct mover, however often p3 revises.
+    expect(pAfter).toBeGreaterThan(pBefore);
+    // The revision replaces, never double-counts: p3's three judgments leave
+    // one usable comparison and one mover however often they revise. Two of
+    // each in total, the other being the author's own (§3.3).
     s.judge(4000, 'p3', c1, inc, 'tie');
     const race = s.raceOf(c1);
-    expect(race.comparisons).toBe(1);
-    expect(race.distinctMovers).toBe(1);
+    expect(race.comparisons).toBe(1);   // p3's latest; the author's is a voice, not a measurement
+    expect(race.distinctMovers).toBe(2);
     // Replay reproduces revisions exactly.
     const replayed = Session.replay(s.log);
     expect(replayed.rollingHash()).toBe(s.rollingHash());
@@ -419,7 +477,9 @@ describe('session lifecycle', () => {
       rationale: 'r',
     });
     const incC2 = s.raceOf(c2).incumbentId;
-    s.judge(3000, 'p3', c2, incC2, 'a'); // evidence in race 2
+    // Cast *against* c2 so race 2 stays open: its author is already a mover,
+    // so a favourable judgment here would meet the floor and adopt it.
+    s.judge(3000, 'p3', c2, incC2, 'b');
     // Drive race 1 to adoption.
     const incC1 = s.raceOf(c1).incumbentId;
     let t = 4000;
@@ -431,15 +491,25 @@ describe('session lifecycle', () => {
     // Race 2's incumbent id is unchanged; its comparison still counts.
     const race2 = s.raceOf(c2);
     expect(race2.incumbentId).toBe(incC2);
-    expect(race2.comparisons).toBe(1);
+    expect(race2.comparisons).toBe(1); // p3's; the authors' own are derived, not measured
   });
 });
 
 describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', () => {
   it('an adoption within the race locks ALL its judgments, rival-vs-rival included', () => {
-    const s = openSession();
+    const s = openWide();
     // A chain race: w (lines 2-3) — cA (lines 1-2) — cB (line 1) — cC (line 1).
     // cB and cC survive w's adoption by clean rebase; cA conflicts.
+    //
+    // All four are p1's, which is not incidental. Since SPEC v0.16 a
+    // submission carries its author's own preference and its author counts
+    // toward the floor (§3.3, §8.2), so four candidates by four authors would
+    // meet a floor of two *before anybody read anything* — and the first
+    // judgment of any kind would then adopt somebody, out from under the
+    // ground shift this test is about. One author keeps the floor at one until
+    // an outsider speaks, which is also the arrangement that makes the point
+    // sharply: a quorum can now be made entirely of people who wrote the
+    // things being judged.
     const { id: w } = s.submitCandidate(1000, {
       author: 'p1',
       patch: {
@@ -449,7 +519,7 @@ describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', ()
       rationale: 'r',
     });
     const { id: cA } = s.submitCandidate(2000, {
-      author: 'p2',
+      author: 'p1',
       patch: {
         baseVersion: 0,
         hunks: [{ start: 1, end: 3, lines: ['Members decide together.'] }],
@@ -457,12 +527,12 @@ describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', ()
       rationale: 'r',
     });
     const { id: cB } = s.submitCandidate(3000, {
-      author: 'p3',
+      author: 'p1',
       patch: rewrite(0, 1, 'Membership by vouching.'),
       rationale: 'r',
     });
     const { id: cC } = s.submitCandidate(4000, {
-      author: 'p4',
+      author: 'p1',
       patch: rewrite(0, 1, 'Membership by vote.'),
       rationale: 'r',
     });
@@ -470,10 +540,12 @@ describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', ()
     expect(s.races()).toHaveLength(1);
     const oldInc = s.races()[0]!.incumbentId;
 
-    // A rival-vs-rival judgment on the old ground.
-    s.judge(5000, 'p5', cB, cC, 'a');
+    // A rival-vs-rival judgment on the old ground, cast by the author — who
+    // is already the race's only mover, so the floor stays unmet and nothing
+    // adopts yet.
+    s.judge(5000, 'p1', cB, cC, 'tie');
 
-    // Drive w to adoption.
+    // Drive w to adoption: the first outsider meets the floor.
     let t = 6000;
     let adopted = false;
     for (const judge of ['p2', 'p3', 'p4']) {
@@ -493,12 +565,17 @@ describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', ()
     const race = s.raceOf(cB);
     expect(race.members).toEqual([cB, cC]);
     expect(race.incumbentId).not.toBe(oldInc);
-    expect(race.comparisons).toBe(0); // ranking restarts from nothing
-    expect(race.distinctMovers).toBe(0); // certification from scratch
-    expect(race.leaderP).toBeCloseTo(0.5, 6); // no prior smuggled in
+    expect(race.comparisons).toBe(0); // measured evidence restarts from nothing
+    // One mover, not none: the author's preference for their own live
+    // candidates is derived against the *current* incumbent (§3.3, Q245b), so
+    // unlike a judgment it does not lock on a ground shift — surviving it is
+    // the whole reason it is derived rather than recorded. What restarts is
+    // the room's evidence, and that is what `comparisons` counts.
+    expect(race.distinctMovers).toBe(1);
+    expect(race.leaderP).toBeGreaterThan(0.5); // both challengers carry their author
     const rival = s
       .judgments()
-      .find((j) => j.participantId === 'p5' && j.kind === 'edge');
+      .find((j) => j.participantId === 'p1' && j.kind === 'edge' && j.locked);
     expect(rival?.locked).toBe(true);
     expect(rival?.superseded).toBe(false); // locked, not superseded
 
@@ -520,7 +597,7 @@ describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', ()
   });
 
   it('context drift is not material: adoption elsewhere that moves a span locks nothing', () => {
-    const s = openSession();
+    const s = openWide();
     // w rewrites line 1 into TWO lines, so races below it shift position.
     const { id: w } = s.submitCandidate(1000, {
       author: 'p1',
@@ -541,10 +618,16 @@ describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', ()
       rationale: 'r',
     });
     const incMeetings = s.raceOf(c2).incumbentId;
-    // Evidence in the meetings race: one incumbent pair, one rival pair
-    // (the incumbent wins its pair, so this race cannot adopt early).
+    // Evidence in the meetings race, arranged so it cannot adopt early: the
+    // incumbent takes a pair off *each* challenger and p4 casts the rival pair
+    // too, so the race has three comparisons but only one outside mover — with
+    // the two authors' derived preferences that is three, short of F = 4.
+    // Cancelling the authors'
+    // derived preferences (§3.3), which would otherwise leave both ahead and
+    // one of them over the bar before this test got to its subject.
     s.judge(4000, 'p4', c2, incMeetings, 'b');
-    s.judge(5000, 'p5', c2, c3, 'a');
+    s.judge(4500, 'p4', c3, incMeetings, 'b');
+    s.judge(5000, 'p4', c2, c3, 'a');
     // Adopt w; the meetings race moves down a line but keeps its words.
     const incW = s.raceOf(w).incumbentId;
     let t = 6000;
@@ -558,8 +641,10 @@ describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', ()
     // hash, so nothing locks — both judgments still feed the posterior.
     const race = s.raceOf(c2);
     expect(race.incumbentId).toBe(incMeetings);
-    expect(race.comparisons).toBe(2);
-    for (const j of s.judgments().filter((x) => ['p4', 'p5'].includes(x.participantId))) {
+    expect(race.comparisons).toBe(3); // two incumbent pairs and the rival pair
+    // Scoped to this race: p4 also judged w's race, and that judgment locks
+    // correctly when w adopts.
+    for (const j of s.judgments().filter((x) => [x.aId, x.bId].some((id) => id === c2 || id === c3))) {
       expect(j.locked).toBe(false);
     }
   });

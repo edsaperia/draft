@@ -106,6 +106,20 @@ interface StoredComparison {
    * questions in dispute, which a ground shift does not change.
    */
   groundId: string | null;
+  /**
+   * Not in the log: the author's standing preference for their own live
+   * candidate, derived against the current incumbent (SPEC §3.3, Q245(b)).
+   *
+   * The distinction it carries is **preference versus measurement**. A derived
+   * preference is a real preference — it feeds the ranking and counts toward
+   * the floor, which is what "an author is a voice" means (§8.2). It is not
+   * evidence *about* anything: no sampling effort was spent on it and its
+   * answer was known in advance. So everything asking "what does the room
+   * prefer, and how many voices are in?" counts it, and everything asking
+   * "have we measured this enough?" — the deadlock test, the rival-pair gate,
+   * the performance a refund pays on — does not.
+   */
+  derived?: true;
 }
 
 /** A judgment as the record sees it, with derived supersession/locking. */
@@ -815,8 +829,11 @@ export class Session {
     // closed, unmeasured rival pairs must not hold a race open — there
     // is little decision value in finely ranking challengers that are
     // all losing to the status quo (SPEC §8.3).
+    // Measured evidence only: a derived author preference is a preference, not
+    // a measurement, so it cannot help a race look sufficiently sampled.
+    const measured = usable.filter((c) => !c.derived);
     const deadlocked =
-      usable.length >= this.constitutionValue.deadlockMinComparisons &&
+      measured.length >= this.constitutionValue.deadlockMinComparisons &&
       this.maxPairValue(fit, members, incumbentId, null, rivalGateOpen) <
         this.constitutionValue.deadlockEpsilon;
     return {
@@ -824,7 +841,11 @@ export class Session {
       members,
       contested,
       incumbentId,
-      comparisons: usable.length,
+      // Measured comparisons: what the room actually judged, which is the
+      // number the record reports and the number a reader means by "how much
+      // evidence is there". Derived author preferences are voices, not
+      // measurements, so they show up in `distinctMovers` and not here.
+      comparisons: measured.length,
       distinctMovers: movers.size,
       leaderP,
       leaderId,
@@ -851,9 +872,14 @@ export class Session {
     usable: StoredComparison[],
   ): boolean {
     for (const m of members) {
+      // Displacement *evidence*, so the author's own derived preference does
+      // not count toward the minimum — it would open the gate on every
+      // candidate the moment it was submitted.
       const n = usable.filter(
         (c) =>
-          (c.aId === m || c.bId === m) && (c.aId === incumbentId || c.bId === incumbentId),
+          !c.derived &&
+          (c.aId === m || c.bId === m) &&
+          (c.aId === incumbentId || c.bId === incumbentId),
       ).length;
       if (
         n >= this.constitutionValue.rivalGateMinComparisons &&
@@ -936,6 +962,49 @@ export class Session {
     for (const c of filtered) {
       latest.set(`${c.participantId}|${pairKey(c.aId, c.bId)}`, c);
     }
+
+    // The author's own preference (SPEC §3.3), **derived rather than
+    // recorded** (Ed, Q245(b)).
+    //
+    // It was first built as a comparison emitted at submission, and that does
+    // not work: a comparison is stamped with the ground it was cast on, and
+    // the ground is a fingerprint of the race's whole contested area. The
+    // moment another candidate joins, the area widens, the fingerprint
+    // changes, and every judgment on the old ground locks — including the
+    // author's. A human recovers, because the pair is re-served and they
+    // answer again; nobody re-asks an automatic vote, so it just evaporated.
+    // Measured: in a four-candidate chain the first author's vote was
+    // stranded and the three who submitted after them kept theirs, which made
+    // the floor a function of submission order.
+    //
+    // The error was modelling a standing fact as a dated one. *While your
+    // candidate is live, you prefer it to the current text* — that is what a
+    // live candidate means, and if you stopped preferring it you would
+    // withdraw it (§3.3a). So it is computed against the current incumbent,
+    // every time, and cannot go stale. Your submission is already an event in
+    // the log, so nothing is lost from the record: "you proposed this" carries
+    // "you preferred it" by construction.
+    //
+    // An explicit judgment always wins: an author who judges their own
+    // candidate against the incumbent and says otherwise has said something,
+    // and it is not the engine's business to overrule them.
+    for (const m of members) {
+      const cand = this.candidates.get(m);
+      if (!cand) continue;
+      const key = `${cand.author}|${pairKey(m, incumbentId)}`;
+      if (latest.has(key)) continue;
+      latest.set(key, {
+        seq: -1,
+        t: 0,
+        participantId: cand.author,
+        aId: m,
+        bId: incumbentId,
+        kind: 'edge',
+        outcome: 'a',
+        groundId: incumbentId,
+        derived: true,
+      });
+    }
     return [...latest.values()].sort((a, b) => a.seq - b.seq);
   }
 
@@ -965,10 +1034,22 @@ export class Session {
   }
 
   private updatePeaks(race: RaceView): void {
-    const fit = this.fitRaceMembers(race.members, race.incumbentId);
-    const usable = this.usableComparisons(race.members, race.incumbentId);
+    // Performance is how the **room** received a candidate, and an author is
+    // not the room — so the refund (§7) pays on a fit without any derived
+    // preference in it, and a candidate has no performance at all until
+    // somebody else has judged it. Without the second half, submitting would
+    // open an account out of nothing, and since the refund is
+    // stake × min(w/0.5, 1.5) — where one favourable comparison already
+    // reaches the cap — submit-then-retire would pay 1.5× the stake with
+    // nobody else involved.
+    const room = this.usableComparisons(race.members, race.incumbentId)
+      .filter((c) => !c.derived);
+    const fit = fitDavidson(
+      [...race.members, race.incumbentId],
+      room.map((c) => ({ a: c.aId, b: c.bId, outcome: c.outcome })),
+    );
     const compared = new Set<string>();
-    for (const c of usable) {
+    for (const c of room) {
       if (!c.aId.startsWith(INC_PREFIX)) compared.add(c.aId);
       if (!c.bId.startsWith(INC_PREFIX)) compared.add(c.bId);
     }

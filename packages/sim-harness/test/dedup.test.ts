@@ -70,7 +70,16 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // below produced this hash identically, so the gate-silent invariant
   // the test exists to defend is untouched
   // (was 4f1ff4611d0ba18cd96919f77b5acd9ddd41a17eb3708384f8b2cd12d8dfd2db).
-  const PINNED = 'bab3663b562f08bcda18234689824515f44c333c3131da0c386709e0ea5bbbc0';
+  //
+  // Re-pinned again 2026-08-16 for SPEC v0.16 §3.3: an author's preference for
+  // their own live candidate is now derived against the current incumbent
+  // (Q245b), so it feeds the ranking and counts toward the floor. That changes
+  // which cards the router serves and when races reach their floor, so the
+  // event stream legitimately differs throughout. Both runs below produced
+  // this hash identically, so the gate-silent invariant the test exists to
+  // defend is untouched
+  // (was bab3663b562f08bcda18234689824515f44c333c3131da0c386709e0ea5bbbc0).
+  const PINNED = '19c295976d1fc5a5b8cbe639d1370ca1b58fd16bd946ce085fe616a11870aee9';
 
   const run = (withGate: boolean) =>
     runSession({
