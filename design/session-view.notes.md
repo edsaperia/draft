@@ -464,7 +464,9 @@ Three details the mechanism forced.
 
 The **open** card draws a **wire**: out of its queue card's left edge, along the gutter between the two rails, and left into every place in the document it refers to. It answers the question the queue can't — *where does this actually live* — and it stays drawn while you judge.
 
-It earns its keep most on **multi-site patches**, where one queue entry sprouts a wire to each site at once and the patch's footprint becomes visible as a shape rather than a claim in a caption. That is the same job the dashed sibling outlines do from inside an open card, approached from the other end. The wire takes the colour of the suggestion's kind, so it also says what sort of work is waiting before you arrive.
+It earns its keep most on **multi-site patches**, where one queue entry sprouts a wire to each site at once and the patch's footprint becomes visible as a shape rather than a claim in a caption. That is the same job the dashed sibling outlines do from inside an open card, approached from the other end. It does the same for the **salience diagonal**, whose two anchors sit in different parts of the charter and would otherwise read as two unrelated questions.
+
+Every wire is one colour (Ed, 198). It used to take the colour of the suggestion's kind, on the theory that the line could say what sort of work was waiting before you arrived; once colour became lifecycle, a second colour system running down the gutter competed with the one that had a rule behind it. Kind is not a thing the wire was ever asked to say — it says *where this judgment lives*.
 
 The first pass drew the wire on **hover** as well, on the theory that you would want to ask "where is this?" without committing to a click. In use that was wrong (Ed, 78): the pointer crosses several queue cards on the way to the one you want, so the gutter flicked through three or four different wires before you arrived — a lot of motion in exchange for an answer nobody had asked for yet. Hover is a cursor passing through, not a question. The wire is now tied to the open card only, which also makes it mean something more definite: this line is *the thing you are working on*, not *the thing under your mouse*.
 
@@ -475,6 +477,16 @@ Three wrinkles worth knowing:
 1. The queue rail is sticky, so a single scroll can move both ends of the wire at once; the alignment measures again after the scroll settles and corrects, stopping as soon as a pass stops improving.
 2. Past the end of the charter the rail runs out of container and rides with the page. Both ends of the wire then move together, so scrolling further down can never flatten it — it only travels. The alignment predicts that case and refuses the pass rather than chasing it.
 3. The document carries a **scroll runway** below it (`main` has a tall bottom padding) so that an anchor near the end of the charter can still be brought up to the rail's height. Without it the levelling silently stops working for the last few sections.
+
+### Two ways the wires went missing (Ed, 2026-08-16)
+
+Both were the same mistake in different clothes: **a lookup that had quietly become a constant, and a container standing in for the thing inside it.** Worth recording because the failure mode is identical each time — the wires are drawn, they are just drawn as nothing, so there is no error to find.
+
+The **diagonal** had no cable at all. When every kind's wire became one blue (198), the per-kind colour map survived with all three entries set to the same value: it looked like a lookup while being none, and nothing depended on it any more. The first new kind after that — the diagonal — fell straight through it to `undefined`. SVG discards an invalid `stroke` rather than complaining, so the paths were present, correctly shaped, and invisible. The map is now a single constant, which is what it had actually been since 198; a new kind can no longer be forgotten in it, because there is nothing left to forget.
+
+Looking for others of the same shape turned up a **sealed dot** with the same symptom for an unrelated reason. Dots that fall near each other in the charter share a row (106), and the row carried only the *first* dot's id — so clicking the second or third dot opened its card with no cable to it. The row was standing in for the dots inside it, which is fine while a row holds one. Each dot now carries its own id and its own clause, and the wire leaves the **glyph you clicked** rather than the left edge of a row of five — which is more honest anyway: with a row of dots, "which one did I just open" is exactly the question the wire should be answering.
+
+A note on method: the second bug was only found by sweeping *every* entry in the rail rather than the one that was reported. It cost one probe. The corollary is that this surface now has enough kinds — quick, race, patch, insert, diagonal, deciding, unread seal, sealed dot — that a check of one is no longer evidence about the rest.
 
 ## Folding sections (Ed, 79)
 

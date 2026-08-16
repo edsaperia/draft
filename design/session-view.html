@@ -1542,7 +1542,8 @@
         while (i + 1 < entries.length && stateOf(entries[i + 1].g) === 'sealed' && !isUnread(entries[i + 1].g) &&
                docIndexOf(entries[i + 1].g, entries[i + 1].site) - docIndexOf(e.g, e.site) <= 8) group.push(entries[++i]);
         html += '<li class="qitem" data-site="' + (e.site ?? '') + '" data-q="' + g.id + '"><div class="sealdots">' +
-          group.map((x) => '<button class="sealdot" data-q="' + x.g.id + '" aria-current="' + (openId === x.g.id) +
+          group.map((x) => '<button class="sealdot" data-q="' + x.g.id + '" data-site="' + (x.site ?? '') +
+            '" aria-current="' + (openId === x.g.id) +
             '" title="' + esc(plainLabel(x.label || x.g.qLabel)) + ' — ' + esc((x.g.decided || {}).outcome || 'sealed') + '">' +
             MARK.read + '</button>').join('') +
           '</div></li>';
@@ -1759,8 +1760,12 @@
   // between the two rails, then left into every place the suggestion touches.
   // One wire colour for every kind (Ed, 198). Kind is not a thing the wire was
   // ever asked to say — it says *where this judgment lives* — and three colours
-  // for it competed with the lifecycle palette that colour now belongs to.
-  const WIRE_COLOR = { quick: 'var(--primary)', race: 'var(--primary)', patch: 'var(--primary)' };
+  // for it competed with the lifecycle palette that colour now belongs to. Held
+  // as one constant, not a per-kind map: the map survived 198 with every entry
+  // set to the same value, so it looked like a lookup while being none, and the
+  // first new kind (the diagonal) fell straight through it to `undefined` — an
+  // invalid stroke, which SVG discards, leaving the wires drawn but invisible.
+  const WIRE_COLOR = 'var(--primary)';
   const SVGNS = 'http://www.w3.org/2000/svg';
 
   // Everywhere in the document this judgment bites. A chip carries the id when
@@ -1788,13 +1793,27 @@
     const id = openId ?? pendingId;
     if (!id) return;
     const s = SUGGS.find((x) => x.id === id);
-    const entries = [...queueEl.querySelectorAll('.qitem[data-q="' + id + '"]')]
-      .filter((el) => el.style.display !== 'none');
-    if (!s || !entries.length) return;
+    // Where the wires leave from. A sealed dot shares its row with its
+    // neighbours (Ed, 106) and the row carries only the *first* dot's id, so
+    // looking for rows alone found nothing for any dot but the lead — click the
+    // third dot along and the card opened with no cable to it. Each dot is its
+    // own start point, which also has the wire leave the glyph you clicked
+    // rather than the left edge of a row of five.
+    const starts = [];
+    for (const row of queueEl.querySelectorAll('.qitem')) {
+      if (row.style.display === 'none') continue;
+      const dots = row.querySelectorAll('.sealdot[data-q="' + id + '"]');
+      if (dots.length) { for (const d of dots) starts.push({ el: d, site: d.dataset.site }); continue; }
+      if (row.dataset.q === id) starts.push({ el: row, site: row.dataset.site });
+    }
+    if (!s || !starts.length) return;
 
     const mainR = document.querySelector('main').getBoundingClientRect();
-    const color = WIRE_COLOR[s.kind];
-    const gx = (mainR.right + entries[0].getBoundingClientRect().left) / 2;
+    const color = WIRE_COLOR;
+    // The gutter runs between the two rails, so it is measured from the rail's
+    // own edge — a dot sits inset within its row and would pull it rightwards.
+    const railX = (starts[0].el.closest('.qitem') || starts[0].el).getBoundingClientRect().left;
+    const gx = (mainR.right + railX) / 2;
 
     const dot = (x, y) => {
       const c = document.createElementNS(SVGNS, 'circle');
@@ -1811,8 +1830,8 @@
     };
 
     const ys = [];
-    for (const el of entries) {
-      const t = anchorForEntry(id, el.dataset.site);
+    for (const { el, site } of starts) {
+      const t = anchorForEntry(id, site);
       if (!t) continue;
       const b = el.getBoundingClientRect();
       const r = t.getBoundingClientRect();
