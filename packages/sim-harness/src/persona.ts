@@ -50,8 +50,9 @@ export interface Persona {
   /**
    * Optional propose-C policy (SPEC §3.3, QUESTIONS #9): offered each
    * served card before judging. Returning a proposal answers the card by
-   * drafting — the runner opens the composer (forfeiting the pair) and
-   * submits the draft as a brand-new candidate at normal stake. Personas
+   * drafting — the runner opens the composer, which costs no comparison
+   * since SPEC v0.16, and submits the draft as a brand-new candidate at
+   * normal stake. Personas
    * without the method judge every card (the original path, unchanged).
    */
   considerProposeC?(

@@ -99,13 +99,21 @@ The deadlocked case showed that these marks say *what you are being asked to do*
 
 244. **A flow entry can overlap a pinned one** (found 2026-08-16 while verifying 222; pre-existing, not caused by it). Flow entries are supposed to step around the pinned pile rather than hide under it (112), and `freeFor` re-checks every candidate position against the pinned blocks — yet one case still renders overlapping. Reproduce: open `quick-cellar` from the top of the document and `quick-probation` (a judged line) lands inside `quick-attendance`. The same shape occurs on the previous build with a different pair (`diag-quorum-keys` over `quick-notice`), so it predates the claim-absolute change. Not chased further because it is bounded and cosmetic, but the likely suspects are a height measured before a re-render or the `prev + QGAP` adjustment running against stale blocks.
 
+245. **The author's own vote: two consequences found by building it** (raised 2026-08-16, needs Ed). SPEC v0.16 §3.3 records the author's preference for their own draft, and §8.2 counts it toward the race's floor ("you are a voice" — Ed). I implemented it, found two things, and **backed it out again**: the engine currently records no author vote, so the spec is ahead of the code on this one point, deliberately, pending Ed's answer. Both findings are about small rosters, which is exactly where v1 lives.
+
+    (a) **At E = 5 the floor is 2, so author + one other adopts.** Submitting is now itself the first mover, and a single sympathetic judgment carries the change. That is a real loosening of the only mechanism protecting unscrutinised text, and it is not what "the floor is statistical sufficiency" was meant to buy. Options: accept it (a five-person room is small enough that one other reader is a real quorum); count the author in the *ranking* but not toward the floor, keeping "you are a voice" for the evidence and "the room has looked" for the gate; or raise F's formula at small E.
+
+    (b) **It pays a token pump through the refund.** The refund is stake × min(peakW / 0.5, 1.5), and `peakW` is a high-water mark. The author's own vote lifts the fitted win probability above the prior, so submitting and retiring returned *more* than the stake — free tokens, repeatable. Fitting performance without any author's vote for their own candidate fixes it, but it is not free: it changes refunds elsewhere (one existing case fell from the 1.5 cap to 1.25), and §7's economy has sim calibration behind it (Q8). So the fix wants Ed's sign-off rather than mine.
+
+    Neither is an argument against Ed's decision — both are arguments that it needs one more decision attached to it before the engine carries it.
+
 ## Spent numbers
 
-Next unused number: **245**. Never reuse a spent number.
+Next unused number: **246**. Never reuse a spent number.
 
 *Tidied 2026-08-16 (housekeeping pass): items sorted numerically within each section; 158 and 163 deleted as fully resolved; 70 and 92 rewritten to their surviving halves, since the questions they originally asked no longer exist.*
 
-Everything below 245 that does not appear as an open, deferred or backlog item above is spent. Where the content went:
+Everything below 246 that does not appear as an open, deferred or backlog item above is spent. Where the content went:
 - **221** — the salience diagonal, built into session-view 2026-08-16; reasoning in `design/session-view.notes.md`.
 - **222–223** — the open entry's absolute claim on its clause's line, and ranking a deadlocked race by its bounty score. Both built 2026-08-16; reasoning in the design notes.
 - **224–243** — the composing-surface design conversation of 2026-08-16 (Ed answered every one in chat). The UI decisions are in `design/session-view.notes.md`; the three mechanism changes they forced — the propose-C forfeit dropped, the author counting toward their own floor, and withdrawal semantics — are folded into SPEC v0.16 at §3.3, §3.3a, §3.5 and §8.2.

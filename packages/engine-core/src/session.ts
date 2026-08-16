@@ -153,12 +153,6 @@ export class Session {
    * including participants who judged the old ground.
    */
   private judgedPairs = new Map<string, Set<string>>();
-  /**
-   * Contextual pair keys forfeited by opening the composer (SPEC §3.3):
-   * the peek priced the pair, so unlike an ordinary judgment this is a
-   * hard block — the pair can never be collected on that ground.
-   */
-  private forfeitedPairs = new Map<string, Set<string>>();
   /** Comparisons at seq < evidenceSince[id] are dead for candidate id (SPEC §2.4). */
   private evidenceSince = new Map<string, number>();
   private edgeCount = 0;
@@ -312,18 +306,10 @@ export class Session {
         break;
       }
       case 'composer-opened': {
-        if (event.forfeited) {
-          // The peek prices the pair: it is never collected (SPEC §3.3).
-          // Keyed to the current ground: a later material shift makes the
-          // pair a fresh question about fresh text, which the stale peek
-          // did not price.
-          const { aId, bId } = event.forfeited;
-          this.markJudged(
-            this.forfeitedPairs,
-            event.participantId,
-            contextKey(aId, bId, this.groundOfPair(aId, bId)),
-          );
-        }
+        // No forfeit since SPEC v0.16: drafting against a race still being
+        // judged shows the text and nothing else (§3.5), so there is no peek
+        // left to price, and the drafter still judges the pair they were
+        // asked about.
         this.touchParticipant(event.participantId, event.t);
         break;
       }
@@ -448,12 +434,9 @@ export class Session {
     return race ? race.incumbentId : null;
   }
 
-  /** Feed exclusion: judged (revisable) or forfeited (hard-blocked) on this ground. */
+  /** Feed exclusion: already judged on this ground (revisable, SPEC §4.4). */
   private servedOut(participantId: string, key: string): boolean {
-    return (
-      (this.judgedPairs.get(participantId)?.has(key) ?? false) ||
-      (this.forfeitedPairs.get(participantId)?.has(key) ?? false)
-    );
+    return this.judgedPairs.get(participantId)?.has(key) ?? false;
   }
 
   // -------------------------------------------------------------------------
@@ -675,10 +658,6 @@ export class Session {
     if (aId === bId) throw new Error('cannot judge an id against itself');
     const before = this.log.length;
     const kind = this.classifyPair(aId, bId);
-    const key = contextKey(aId, bId, kind === 'edge' ? this.groundOfPair(aId, bId) : null);
-    if (this.forfeitedPairs.get(participantId)?.has(key)) {
-      throw new Error('pair forfeited by opening the composer (SPEC §3.3)');
-    }
     this.emit({ type: 'comparison', t, participantId, aId, bId, kind, outcome });
     this.fitCache.clear();
     if (kind === 'edge') {
@@ -693,20 +672,15 @@ export class Session {
     return this.log.slice(before).map((e) => e.event);
   }
 
-  /** Propose C: opening the composer forfeits the served pair (SPEC §3.3). */
-  openComposer(
-    t: number,
-    participantId: string,
-    forfeited?: { aId: string; bId: string },
-  ): void {
+  /**
+   * Propose C. Since SPEC v0.16 this costs no comparison: the forfeit priced
+   * a peek at mid-flight state, and §3.5 now withholds the briefing from any
+   * race still in the judgment stream, so there is nothing left to price.
+   */
+  openComposer(t: number, participantId: string): void {
     this.assertOpen();
     this.activeParticipant(participantId);
-    this.emit({
-      type: 'composer-opened',
-      t,
-      participantId,
-      ...(forfeited ? { forfeited } : {}),
-    });
+    this.emit({ type: 'composer-opened', t, participantId });
   }
 
   withdraw(t: number, candidateId: string): void {

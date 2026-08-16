@@ -247,14 +247,16 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
       const cards = next.api.nextCards(1, t);
       const card = cards[0];
       // Propose C (SPEC §3.3, QUESTIONS #9): a persona with the policy may
-      // answer the card by drafting. Opening the composer forfeits the
-      // served pair — the peek price — then the draft submits at normal
-      // stake. Personas without the policy take the original path.
+      // answer the card by drafting. Since SPEC v0.16 this costs no
+      // comparison — the forfeit priced a peek at mid-flight state, and the
+      // briefing is now withheld from a race still being judged (§3.5) — so
+      // the draft simply submits at normal stake. Personas without the
+      // policy take the original path.
       if (card && next.persona.considerProposeC) {
         try {
           const proposal = await next.persona.considerProposeC(card, next.api, t);
           if (proposal !== null) {
-            session.openComposer(t, profile.id, { aId: card.a.id, bId: card.b.id });
+            session.openComposer(t, profile.id);
             next.api.submit(t, proposal);
             next.drafts++;
             acted = true;
@@ -265,7 +267,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
           }
         } catch {
           // Composer opened but the draft failed (stale version, tokens):
-          // the forfeit stands, as it would for a human peek. Fall through.
+          // nothing is owed for having opened it. Fall through.
         }
       }
       if (card && !acted) {

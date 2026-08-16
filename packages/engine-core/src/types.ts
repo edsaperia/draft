@@ -176,11 +176,10 @@ export type Event =
       outcome: Outcome;
     }
   | {
-      /** Propose C: the peek is priced by the forfeited pair (SPEC §3.3). */
+      /** Propose C. Costs no comparison since SPEC v0.16 (§3.3, §3.5). */
       type: 'composer-opened';
       t: number;
       participantId: string;
-      forfeited?: { aId: string; bId: string };
     }
   | { type: 'candidate-withdrawn'; t: number; id: string; refund: number }
   | { type: 'candidate-retired'; t: number; id: string; refund: number }

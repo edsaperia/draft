@@ -132,34 +132,38 @@ describe('session lifecycle', () => {
     expect(events.some((e) => e.type === 'adopted')).toBe(false);
   });
 
-  it('enforces the moves: no self-pairs, revision supersedes, no judging after the peek', () => {
+  it('enforces the moves: no self-pairs, revision supersedes, the composer costs nothing', () => {
+    // Late in the window, so the ≈0.95 bar keeps the race open while the
+    // moves are exercised: since SPEC v0.16 each submission carries its
+    // author's own recorded preference, so an early-window race of this
+    // size would adopt out from under the test.
+    const t0 = 10 * HOUR;
     const s = openSession();
-    const { id: c1 } = s.submitCandidate(1000, {
+    const { id: c1 } = s.submitCandidate(t0 + 1000, {
       author: 'p1',
       patch: rewrite(0, 1, 'A.'),
       rationale: 'r',
     });
-    const { id: c2 } = s.submitCandidate(2000, {
+    const { id: c2 } = s.submitCandidate(t0 + 2000, {
       author: 'p2',
       patch: rewrite(0, 1, 'B.'),
       rationale: 'r',
     });
-    expect(() => s.judge(3000, 'p3', c1, c1, 'a')).toThrow(/itself/);
-    s.judge(4000, 'p3', c1, c2, 'tie');
+    expect(() => s.judge(t0 + 3000, 'p3', c1, c1, 'a')).toThrow(/itself/);
+    s.judge(t0 + 4000, 'p3', c1, c2, 'tie');
     // Re-judging the same pair on the same ground is a revision (SPEC
     // §4.4, Q50): superseded in the ranking, both kept in the log.
-    s.judge(5000, 'p3', c2, c1, 'a');
-    expect(s.raceOf(c1).comparisons).toBe(1); // latest only
+    s.judge(t0 + 5000, 'p3', c2, c1, 'a');
     const mine = s.judgments().filter((j) => j.participantId === 'p3');
     expect(mine).toHaveLength(2);
     expect(mine[0]!.superseded).toBe(true);
     expect(mine[1]!.superseded).toBe(false);
-    // Propose C prices the peek: the forfeited pair is never collectable,
-    // and unlike a judgment the forfeit cannot be revised away.
-    s.openComposer(6000, 'p4', { aId: c1, bId: c2 });
-    expect(() => s.judge(7000, 'p4', c1, c2, 'a')).toThrow(/forfeited/);
-    // But p5 is unaffected.
-    expect(s.judge(8000, 'p5', c1, c2, 'b')).toBeDefined();
+    // Opening the composer no longer forfeits anything (SPEC v0.16 §3.3):
+    // the briefing is withheld from a race still being judged (§3.5), so
+    // there is no peek to price and the drafter still judges the pair.
+    s.openComposer(t0 + 6000, 'p4');
+    expect(s.judge(t0 + 7000, 'p4', c1, c2, 'a')).toBeDefined();
+    expect(s.judge(t0 + 8000, 'p5', c1, c2, 'b')).toBeDefined();
   });
 
   it('gates adoption on the floor of distinct movers', () => {

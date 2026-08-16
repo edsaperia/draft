@@ -3,8 +3,8 @@
  *
  * When served a card whose issue it could answer better than either
  * option shown, it sometimes (profile.proposeC) answers by drafting: the
- * runner opens the composer — forfeiting that pair's comparison, the
- * peek price — and submits the persona's preferred alternative as a
+ * runner opens the composer — which costs no comparison since SPEC
+ * v0.16 — and submits the persona's preferred alternative as a
  * brand-new candidate at normal stake. Everything else is inherited
  * ScriptedPersona behavior, so a propensity of 0 differs from the plain
  * persona only by one extra (deterministic) rng draw per edge card —

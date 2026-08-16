@@ -41,10 +41,12 @@ describe('propose-C personas (QUESTIONS #9)', () => {
     expect(a.session.rollingHash()).toBe(b.session.rollingHash());
     const entries = a.session.log.filter((l) => l.event.type === 'composer-opened');
     expect(entries.length).toBeGreaterThan(0);
-    // Every composer entry carries the forfeited pair (SPEC §3.3).
+    // A composer entry costs nothing since SPEC v0.16 (§3.3): the forfeit
+    // priced a peek at mid-flight state, and §3.5 now withholds the briefing
+    // from any race still in the judgment stream, so there is nothing to
+    // price — the drafter still judges the pair they were asked about.
     for (const l of entries) {
-      const e = l.event as Extract<typeof l.event, { type: 'composer-opened' }>;
-      expect(e.forfeited).toBeDefined();
+      expect(Object.keys(l.event)).not.toContain('forfeited');
     }
   }, 60_000);
 
