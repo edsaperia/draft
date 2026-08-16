@@ -530,11 +530,31 @@ Every fold change happens at the same moment in the open sequence: after the old
 
 Worth knowing what this does *not* fix: the open patch card is itself the bulk of the distance between the two sites (about 450px of the 825px gap in the clubhouse charter). Folding three sections recovers roughly 280px. Both sites do land on one screen, but it is the card, not the intervening charter, that sets the floor on how close they can get.
 
-## Three steps, never overlapping (Ed, 75)
+## Three steps, never overlapping (Ed, 75; reordered 2026-08-16)
 
-Opening one card while another closes was doing both in a single frame, and since a card's height is part of the document, the page lurched: the ground moved while the eye was travelling. The change is to **refuse to overlap** the three things that happen. The old card **collapses** out of the document (height, padding and margins to nothing, ~190ms); only then is the scroll measured and the document **moved**; only then does the new card **expand** (~230ms). Each step ends before the next begins, so nothing is ever re-laid-out underneath a scroll in progress.
+Opening one card while another closes was doing both in a single frame, and since a card's height is part of the document, the page lurched: the ground moved while the eye was travelling. The first answer was to **refuse to overlap** the three things that happen — the old card **collapses** out of the document (~190ms), then the document **moves**, then the new card **expands** (~230ms) — so that nothing is ever re-laid-out underneath a scroll in progress.
 
-Measuring the scroll in the gap between the two — old card gone, new card not yet in — is what makes the landing exact. Measure before the collapse and every anchor below the old card is at the wrong height; measure after the expand and you have already jumped. The card being opened also keeps its wire drawn for the whole sequence, so there is a line to follow while the document is moving rather than a page that slides and then explains itself.
+That was right about the diagnosis and wrong about the cure, and Ed reported the result as the page jumping about. Sequencing the three steps stops them *interfering*; it does not stop them being **three separate movements**, and the first of them was the worst. A race card is over a thousand pixels tall. Collapsing it drags every clause below it up the screen — and since you have just asked to go somewhere else, the charter rushes up, stops, and then eases back down to the clause you actually asked for. Nothing was wrong with the destination. The page simply moved twice to get there.
+
+### One movement, and the swap hidden inside it
+
+The order is now: fold, **move**, then swap the cards on arrival — with the old card leaving in the same frame the new one arrives, at the end of the scroll rather than the start of it.
+
+That frame changes the height of the charter above you, so it is paired with a scroll correction of exactly the same size, applied synchronously before anything is painted. The two cancel: the clause you travelled to does not move by so much as a pixel while, underneath it, one card is removed and another inserted. This is the browser's own scroll-anchoring done by hand, which it has to be, because the document is re-rendered wholesale and the native mechanism has nothing stable to hold on to.
+
+Three details that matter:
+
+1. **Hold by selector, not by element.** The node measured before the re-render does not exist after it. A clause is found again by its key; a *proposed section* has no key — it is a gap where text is not yet — so it is found by the entry it belongs to. This one was quiet when wrong: the fallback held some other clause still and let the gap you were sent to slide 400px off the top of the screen.
+2. **Several candidates, not one.** The change may be a fold that takes the held clause away with it, so the reference is a short list and the first survivor wins.
+3. **Closing with nothing to open is the exception.** There the collapse is worth watching — nothing else is happening, so the card rolls up in place and the charter closes over it.
+
+### Levelling, removed (Ed, 118; removed 2026-08-16)
+
+There was a second scroll after the first: it levelled the *entry* against its clause so the wire read flat. It was the other half of what Ed was seeing — the charter rose to bring the clause to the reading line, then sank again to line that clause up with wherever its entry had ended up in the pile.
+
+It was also aiming at the wrong thing, and had been since 110. An entry stands at its clause's own height whenever it can, and the open entry gets **first claim** on that line, so the wire is flat by construction and there is nothing to level. The only time it isn't flat is when the rail is too crowded to grant the claim — and then the entry's position is an artifact of crowding, not a place the reader asked to be taken. The rail already says this where it does the piling: *an angled wire is the price of a full rail*. Levelling was paying that price out of the one thing the reader was actually looking at.
+
+**Known consequence, not yet addressed:** with levelling gone, a crowded rail can leave the open entry a long way from its clause — up to ~870px in the current fixture — and the wire runs at a steep angle. The honest fix is in the rail rather than the scroll: when the band is full, the open entry's claim on its clause's line should win, and the entries above it should be dropped into the overflow count rather than displacing it.
 
 The same collapse runs when you *judge* a card, which is the other way a card leaves the document — it shrinks out while its queue entry slides down into the still-deciding band, instead of vanishing and dropping the page. And a click that lands mid-transition supersedes the one in flight rather than being ignored: each sequence carries a token and every step stands down if a newer one has started, so the surface never feels stuck while an animation finishes.
 

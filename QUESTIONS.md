@@ -97,13 +97,15 @@ Saturation showed that these marks say *what you are being asked to do*, not whe
 
 56. **Orphan refunds credit departed ledgers** (sim evidence 2026-08-14): when an author-departed candidate is adopted, its refund credits the removed member's ledger — harmless (tokens are worthless at close and E excludes them), but the UI must not render it as an invitation to act.
 
+222. **Whose claim wins when the rail is full?** (raised 2026-08-16, unanswered.) The rail says the open entry gets **first claim** on its clause's line, so its wire reads flat — then clamps everything into the visible band, which can push that entry hundreds of pixels away from the clause it points at (~870px at the worst in the current fixture). Levelling used to hide this by scrolling the *document* until the two met, which is what Ed reported as the page jumping about, and it has been removed. Two ways to make the rail keep its own promise: (a) when the band is full, drop the entries *above* the open one into the "+N further off in the charter" count rather than displacing it — the open entry's claim becomes absolute; or (b) accept the angled wire as the honest price of a full rail and leave it, in which case the comment claiming first claim should be softened. (a) is the better behaviour and the more invasive change, since it touches the pile geometry that everything else in the rail is tuned against.
+
 ## Spent numbers
 
-Next unused number: **222**. Never reuse a spent number.
+Next unused number: **223**. Never reuse a spent number.
 
 *Tidied 2026-08-16 (housekeeping pass): items sorted numerically within each section; 158 and 163 deleted as fully resolved; 70 and 92 rewritten to their surviving halves, since the questions they originally asked no longer exist.*
 
-Everything below 222 that does not appear as an open, deferred or backlog item above is spent. Where the content went:
+Everything below 223 that does not appear as an open, deferred or backlog item above is spent. Where the content went:
 - **221** — the salience diagonal, built into session-view 2026-08-16; reasoning in `design/session-view.notes.md`.
 - **Mechanism decisions** are folded into SPEC.md — including 8–10 and 13, resolved on sim evidence (see `packages/sim-harness/REPORT-deferred-evidence.md`).
 - **Session-view UX decisions, 61–91, 93, 95, 104–108, 110, 112, 114–121, 123, 147–157, 160, 162, 164–167, 172–173, 177–181, 183, 184, 186, 188, 190, 194–195, 197–206, 209–210, 213–217**, are recorded in `design/session-view.notes.md` alongside the reasoning. They are not repeated here.

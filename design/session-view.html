@@ -1628,10 +1628,6 @@
   // A rail entry may stand for several judgments — a row of sealed dots — so
   // "is this the open one" is a question about the buttons inside it.
   const holdsFocus = (el) => !!focusId() && !!el.querySelector('button[data-q="' + focusId() + '"]');
-  const liFor = (id) => {
-    const b = queueEl.querySelector('button[data-q="' + id + '"]');
-    return b ? b.closest('.qitem') : null;
-  };
 
   function anchorForEntry(id, siteKey) {
     const g = SUGGS.find((x) => x.id === id);
@@ -2315,37 +2311,102 @@
   const READ_LINE = 150;
   const topTarget = (targets) => targets.reduce((a, c) =>
     (c.getBoundingClientRect().top < a.getBoundingClientRect().top ? c : a));
+  // The clause a move is aimed at — a patch's topmost site, everyone else's only
+  // one — as a selector that will still find it after the re-render.
+  const holdSel = (id) => {
+    const t = wireTargets(id);
+    if (!t.length) return null;
+    const el = topTarget(t);
+    return el.dataset.key ? '[data-key="' + el.dataset.key + '"]'
+      : el.classList.contains('insert-anchor') ? '.insert-anchor[data-anchor="' + id + '"]'
+      : null;
+  };
 
-  // Second half of the move: bring the *entry* and its clause onto one line, so
-  // the wire reads flat. Since 110 the rail is pinned to the viewport, and the
-  // entries for clauses above you pile against the top of the band — so an open
-  // entry can sit hundreds of pixels below the clause it points at, which is
-  // what made this feel broken (Ed, 118). Scrolling closes that gap, but every
-  // scroll changes the pile, so: at most two passes, stop as soon as one stops
-  // improving, and refuse outright if levelling would push the clause so far
-  // down the screen that the card has nowhere to unroll.
-  function levelEntry(id, pass, prev, done) {
-    const fin = () => { layoutQueue(); drawWires(); done(); };
-    const li = liFor(id);
-    const targets = wireTargets(id);
-    if (!li || li.style.display === 'none' || !targets.length) return fin();
-    const t = topTarget(targets);
-    const delta = (li.getBoundingClientRect().top + Math.min(li.offsetHeight / 2, 18)) -
-      (t.getBoundingClientRect().top + Math.min(t.getBoundingClientRect().height / 2, 16));
-    if (Math.abs(delta) < 3 || pass > 1) return fin();
-    if (prev !== undefined && Math.abs(delta) >= Math.abs(prev) * 0.7) return fin();
-    const clauseAfter = t.getBoundingClientRect().top + delta;
-    if (clauseAfter > innerHeight * 0.5 || clauseAfter < 90) return fin();
-    smoothScrollBy(-delta, () => { layoutQueue(); levelEntry(id, pass + 1, delta, done); });
+  // Keeping the page still across a layout change (Ed, 2026-08-16).
+  //
+  // Opening a card is meant to be *one* movement: the charter slides once and
+  // stops. But three things in the sequence change the height of content that
+  // may be sitting above where you are reading — the old card closing, sections
+  // folding and unfolding, and the re-render that follows each — and each of
+  // them drags everything below it, so the page lurched before the scroll had
+  // begun and then eased back. Nothing was wrong with the destination; the
+  // charter simply moved twice to get there.
+  //
+  // The remedy is the browser's own scroll-anchoring, done by hand because the
+  // document is re-rendered wholesale and the native version has nothing stable
+  // to hold on to. Note a clause you can see and where it sits, make the change,
+  // then move the scroll by however far that clause has travelled — so it has
+  // not travelled at all. Several candidates, because the change may be a fold
+  // that takes the first one away with it.
+  // Held by *selector*, not by element: the document is re-rendered wholesale,
+  // so the node measured before the change no longer exists after it, and the
+  // selector is the only thing that survives. A clause is found by its key; a
+  // proposed section has no key — it is a gap where text is not yet — so it is
+  // found by the entry it belongs to. Getting this wrong is quiet: the fallback
+  // holds some *other* clause still and the one you were sent to slides away.
+  const STILL_KEYS = 8;
+  function stillRef(preferSel) {
+    const sels = [];
+    const add = (sel) => {
+      const el = sel && doc.querySelector(sel);
+      if (el && !sels.some((m) => m.sel === sel)) sels.push({ sel, top: el.getBoundingClientRect().top });
+    };
+    add(preferSel);
+    for (const el of doc.querySelectorAll('[data-key]')) {
+      if (el.getBoundingClientRect().bottom <= READ_LINE) continue;   // scrolled past
+      add('[data-key="' + el.dataset.key + '"]');
+      if (sels.length >= STILL_KEYS) break;
+    }
+    return sels;
   }
 
+  function restoreStill(ref) {
+    if (!ref || !ref.length) return;
+    for (const m of ref) {
+      const el = doc.querySelector(m.sel);
+      if (!el) continue;                                   // folded away by the change
+      const drift = el.getBoundingClientRect().top - m.top;
+      if (Math.abs(drift) > 0.5) scrollTo(0, scrollY + drift);
+      return;
+    }
+  }
+
+  // Measure, change, correct — in one synchronous run, so the drift is never
+  // painted. `preferSel` names the clause the move is *about*, which is the
+  // right thing to hold once we have arrived at it.
+  function keepStill(fn, preferSel) {
+    const ref = stillRef(preferSel);
+    const out = fn();
+    restoreStill(ref);
+    return out;
+  }
+
+  // One scroll, and only one (Ed, 2026-08-16).
+  //
+  // There used to be a second pass here that levelled the *entry* against its
+  // clause by scrolling further, so the wire read flat (Ed, 118). It was written
+  // when the rail's geometry was different, and it had become the main reason
+  // opening a card felt unsettled: the charter would rise to bring the clause to
+  // the reading line, then immediately sink again to line the clause up with
+  // wherever the entry had ended up in the pile. Two animations, usually in
+  // opposite directions, for one click.
+  //
+  // It was also aiming at the wrong thing. An entry sits at its clause's own
+  // height whenever it can, and the open entry gets first claim on that line —
+  // so the wire is flat by construction and there is nothing to level. The only
+  // time it isn't flat is when the rail is too crowded to grant the claim, and
+  // then the pile position is an artifact of crowding, not a place the reader
+  // asked to be taken. The rail already says as much where it does the piling:
+  // an angled wire is the price of a full rail. Dragging the document to hide
+  // that price moved the one thing the reader was actually looking at.
   function bringIntoView(id, done) {
     const targets = wireTargets(id);
     if (!targets.length) { drawWires(); return done(); }
     const y = topTarget(targets).getBoundingClientRect().top;
-    const level = () => { layoutQueue(); levelEntry(id, 0, undefined, done); };
-    if (y >= 100 && y <= 300) return level();
-    smoothScrollBy(y - READ_LINE, level);
+    const arrive = () => { layoutQueue(); drawWires(); done(); };
+    // already sitting comfortably: don't nudge the page for nothing
+    if (y >= 100 && y <= 300) return arrive();
+    smoothScrollBy(y - READ_LINE, arrive);
   }
 
   // Opening and closing a card changes the height of the document under the
@@ -2356,6 +2417,11 @@
 
   function collapseCard(el, done) {
     if (!el || REDUCED()) return done();
+    // A card that has scrolled off the top is not worth animating: for 190ms it
+    // would shrink where nobody can see it while hauling the rest of the charter
+    // up the screen, and the delay is 190ms the click doesn't answer in. It goes
+    // at once, and the caller's keepStill takes up the slack in the same frame.
+    if (el.getBoundingClientRect().bottom < READ_LINE) { el.style.display = 'none'; return done(); }
     const h = el.offsetHeight;
     el.style.overflow = 'hidden';
     el.style.height = h + 'px';
@@ -2414,19 +2480,28 @@
       if (!alive()) return;
       // Every fold change happens here, before anything is measured: letting go
       // of the last patch, unfolding whatever this card points into, and drawing
-      // a patch's sites together. Then the document is still for the scroll.
+      // a patch's sites together. Then the document is still for the scroll —
+      // and still where it was, because folding a section above you would
+      // otherwise pull the charter up before the scroll had said anything.
+      const ref = stillRef();
       let touched = restoreAutoFolds();
       if (!next) {
-        if (touched) { renderToc(); renderAll(); }
+        if (touched) { renderToc(); renderAll(); restoreStill(ref); }
         return settle();
       }
       if (expandFor(next)) touched = true;
       if (foldBetweenSites(next)) touched = true;
-      if (touched) { renderToc(); renderAll(); }
+      if (touched) { renderToc(); renderAll(); restoreStill(ref); }
+      // Arrival, in a single frame: the card you were reading goes, the one you
+      // asked for is put in, and the clause you have just travelled to is held
+      // exactly where the scroll left it. Removing the old card usually takes
+      // several hundred pixels out of the charter above here, so the scroll is
+      // corrected by that much in the same frame — a move that cancels itself
+      // and is therefore never seen.
       const open = () => {
         if (!alive()) return;
-        openId = next;
-        renderAll();
+        const hold = holdSel(next);
+        keepStill(() => { openId = next; renderAll(); }, hold);
         // the card made the document taller, so every entry below it has moved
         layoutQueue();
         expandCards(next, () => {
@@ -2435,16 +2510,20 @@
           settle();
         });
       };
-      // measure the scroll with the old card gone and the new one not yet in,
-      // so nothing shifts underneath the alignment
+      // The scroll runs with the old card still standing, so the geometry it
+      // aims at cannot move underneath it; the swap happens on arrival.
       if (scroll) bringIntoView(next, open); else open();
     };
 
-    if (closing) {
+    // Closing with nothing to open is the one case where the collapse is worth
+    // watching: nothing else is happening, so the card rolls up in place and the
+    // charter closes over it. Everywhere else the old card leaves during the
+    // move, where its going costs no motion of its own (Ed, 2026-08-16).
+    if (closing && !next) {
       collapseCards(closing, () => {
         if (!alive()) return;
         openId = null;
-        renderAll();
+        keepStill(() => renderAll());
         thenMove();
       });
     } else {
