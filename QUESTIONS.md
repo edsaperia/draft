@@ -16,6 +16,14 @@ Resolved items are folded into SPEC.md and removed — this file holds only what
 
 54. **Convenor powers wording** (found 2026-08-14): SPEC §8.5 ends "The convenor's in-session powers: none," which §9.3 (mid-session add/remove) and the new §8.2 both contradict. In context §8.5 is about *feeds* — nobody, convenor included, touches routing mid-session. Proposed rewording: "The convenor's in-session powers over the mechanism: none; roster management (§9.3) is the sole exception, and it is logged."
 
+70. **Pink hasn't reached the rest of the series** (found 2026-08-15, from Q67; part (a) resolved 2026-08-16 with Q85 — the patch card is pink like the other two, so blue now survives only on the anchor rule and the still-deciding wash). Remaining: **design/race-card.html still draws its cards yellow**, so the two mockups are inconsistent with each other. Ed's "for now" suggests the pink is provisional, so this is parked rather than fixed — but it should be settled before any new surface joins the series.
+
+72. **Queue-wire reach** (found 2026-08-15, from Q71; trigger settled by Q78 — the wire belongs to the open card only). Two calls I made that Ed hasn't ruled on. (a) The wire lands on the anchored **paragraph(s)**; Ed's phrasing was "left into the decision cards", which could instead mean the open inline card. (b) There is no wire in the other direction — hovering a paragraph in the document doesn't light its queue entry — though the relationship is symmetrical and the return trip is arguably the more useful one when you are reading rather than working the queue.
+
+77. **Where the scroll runway lives** (raised 2026-08-15, unanswered): removing the design notes (76) took most of the page's scroll with them, so the document now carries ~95vh of bottom padding — without it an anchor near the end of the charter can never be scrolled up to the queue rail and the wire-levelling (74) silently stops working down there. I put that padding *inside* `.doc`, so the middle column literally runs to the bottom as Ed asked; the cost is that scrolling to the end shows about a screenful of blank paper below the last line. The alternative is padding on `main` instead: the card stops just after "Adopted at the house, by the fourteen, over pasta" and the runway is page background. One line either way.
+
+89. **Where Skip lives, and how its decay is shown** (raised 2026-08-16; Ed: skip should not be on the decision card at all — it will probably live in the `needs-you-queue` once that surface is worked on; left in place for now). Two parts remain. (a) The move itself, which waits on the queue work. (b) The mockup does not model SPEC §8.3's "skipped cards recirculate personally with decay" — skipping closes the card and leaves the queue entry exactly where it was, so nothing conveys that it will come back less often. Whether that needs any acknowledgement at all, or whether silence is right, is undecided. Worth settling with (a), since a skip that visibly *moves* something in the queue would answer it for free.
+
 ## Backlog (provisioned, build later)
 
 55. **Participant-api composer surface** (sim evidence 2026-08-14): `ParticipantApi` has no composer-opening call — the sim runner invokes `Session.openComposer` directly (same precedent as its dedup co-sign path). The product composer needs that surface, including the §3.3 forfeit semantics, before the UI can exist.
@@ -24,4 +32,15 @@ Resolved items are folded into SPEC.md and removed — this file holds only what
 
 42. **Spectator commentary view** (Ed, 2026-08-14): an optional commentating view for people watching a convention — like the sim's commentator, but consuming **public data only**: gazette, live candidate texts/rationales, bounty board, document state. Never individual judgments, never standings, authorship only per the session's visibility setting. Provision: expose a `spectator-api` in engine-core (a strictly-public projection, sibling of the participant-api) and have every spectator surface — commentary LLM included — consume only that, so privacy holds by construction rather than by prompt discipline. Note the sim's own commentator is deliberately different: it is omniscient (sees temperaments and hidden agendas) because it narrates a fiction for the experimenter; the product spectator box narrates real people and gets none of that.
 
-Next unused number: 57 (30, 33–41, 44–47, 51 were ephemeral chat items, 2026-08-13/14; 46 is parked — diagonal-card visual distinction, decide with the palette work; 48 and 50 resolved 2026-08-14, folded into SPEC §8.3 and §4.4; 43 resolved 2026-08-14 — silence never imputed, presence is roster management — folded into SPEC §8.2; 8, 10, 13 resolved 2026-08-14 on sim evidence (REPORT-deferred-evidence.md) — wall-clock pairing kept, §9.3 defaults confirmed + gazette floor announcement, care map on incumbent-involving indifference — folded into SPEC §7, §9.3, §3.2; 9 resolved 2026-08-15 on the same evidence — pricing kept, stake-blocked entries logged — folded into SPEC §3.3).
+## Spent numbers
+
+Next unused number: **91**. Never reuse a spent number.
+
+Everything below 91 that does not appear as an open, deferred or backlog item above is spent. Where the content went:
+
+- **Mechanism decisions** are folded into SPEC.md — including 8–10 and 13, resolved on sim evidence (see `packages/sim-harness/REPORT-deferred-evidence.md`).
+- **Session-view UX decisions, 61–90**, are recorded in `design/session-view.notes.md` alongside the reasoning. They are not repeated here.
+- **Ephemeral chat items** that never became project decisions: 30, 33–41, 44–45, 47, 51, 57–60, 83–84.
+
+Two exceptions worth knowing. **46 is parked, not spent** — diagonal-card visual distinction, to be decided with the palette work. And **73** was raised in chat but folded into 72(b), so it stands for nothing on its own.
+

@@ -20,6 +20,19 @@
     --del-bg: #F8D7DA;
     --changed: #6F42C1;
     --changed-bg: #EDE7F7;
+    /* pink = the card where text is argued (yellow stays the in-document mark) */
+    --argued: #D63384;
+    --argued-text: #801F4F;
+    /* Elevation ladder (Bootstrap's own): the document is the ground, the
+       queue cards rest just above it, the open decision card floats highest.
+       Neutral rather than tinted — a coloured shadow reads as a glow, and the
+       border is already doing the work of saying which kind of card this is. */
+    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+    /* Freshness highlight lifetime. Production intent is "a few minutes";
+       the mockup runs it short so the fade is watchable in one sitting. */
+    --fresh-fade: 75s;
   }
   * { box-sizing: border-box; }
   body {
@@ -31,7 +44,7 @@
     margin: 0;
     padding-bottom: 60px;
   }
-  .wrap { max-width: 1220px; margin: 0 auto; padding: 0 16px; }
+  .wrap { max-width: 1440px; margin: 0 auto; padding: 0 16px; }
   .small { font-size: 0.875rem; }
   .mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.75rem; }
 
@@ -42,10 +55,53 @@
   .navbar .stats { display: flex; gap: 18px; white-space: nowrap; font-size: 0.875rem; color: var(--muted); }
   .navbar .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
 
-  .layout { display: grid; grid-template-columns: 270px 1fr; gap: 24px; align-items: start; margin-top: 18px; }
-  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  /* contents-rail (left) · document (centre) · needs-you queue (right) */
+  .layout { display: grid; grid-template-columns: 210px minmax(0, 1fr) 290px; gap: 24px; align-items: start; margin-top: 18px; }
+  @media (max-width: 1240px) { .layout { grid-template-columns: minmax(0, 1fr) 290px; } .toc { display: none; } }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .queue, .toc { position: static; } .toc { display: block; } }
 
-  /* sidebar: needs-you queue */
+  /* left rail: contents-rail, built from the document's own headings */
+  .toc { position: sticky; top: 58px; }
+  .toc h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 8px; }
+  .toc ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+  .toc li { display: flex; align-items: baseline; gap: 2px; }
+  .toc li a { flex: 1; min-width: 0; }
+  /* the rail carries the document's own hierarchy: parts, chapters, sections */
+  .toc li.lvl1 { margin-top: 8px; }
+  .toc li.lvl1 a { font-weight: 700; color: var(--fg); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .toc li.lvl2 { padding-left: 12px; }
+  .toc li.lvl2 a { font-weight: 600; color: var(--fg); }
+  .toc li.lvl3 { padding-left: 26px; }
+  .toc li.lvl3 a { font-size: 0.78rem; }
+
+  /* section-toggle: the same control in the contents rail and the document gutter */
+  .sectoggle {
+    appearance: none; background: none; border: 0; padding: 2px 4px; margin: 0;
+    font: inherit; font-size: 0.7rem; line-height: 1; color: var(--muted); cursor: pointer;
+  }
+  .sectoggle:hover { color: var(--fg); }
+  .sectoggle .tri { display: inline-block; transition: transform 140ms ease; }
+  .sectoggle[aria-expanded="true"] .tri { transform: rotate(90deg); }
+  /* An unfolded section's triangle is only there when you reach for it (Ed, 81).
+     A folded one always shows — it is the only handle on hidden text. Faded by
+     opacity, never display, so the row never shifts as it appears. */
+  .sectoggle[aria-expanded="true"] { opacity: 0; transition: opacity 120ms ease; }
+  .toc li:hover .sectoggle[aria-expanded="true"],
+  .doc h2.docline:hover .sectoggle[aria-expanded="true"],
+  .sectoggle[aria-expanded="true"]:focus-visible { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .sectoggle .tri, .sectoggle { transition: none; }
+  }
+  .toc a {
+    display: block; padding: 3px 10px; font-size: 0.8125rem; line-height: 1.35;
+    color: var(--muted); text-decoration: none;
+    border-left: 2px solid transparent; border-radius: 0 0.25rem 0.25rem 0;
+  }
+  .toc a:hover { background: var(--light); color: var(--fg); }
+  .toc a.current { background: var(--light); color: var(--fg); font-weight: 600; border-left-color: var(--primary); }
+  .toc .note { font-size: 0.72rem; color: var(--muted); margin-top: 12px; }
+
+  /* right rail: needs-you queue */
   .queue { position: sticky; top: 58px; }
   .queue h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 8px; }
   .queue ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -53,8 +109,12 @@
     appearance: none; font: inherit; text-align: left; width: 100%;
     background: var(--bg); border: 1px solid var(--border); border-radius: 0.375rem;
     padding: 8px 10px; cursor: pointer; color: var(--fg);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 140ms ease, transform 140ms ease;
   }
-  .queue button:hover { border-color: var(--primary); }
+  .queue button:hover { border-color: var(--primary); box-shadow: var(--shadow-md); }
+  .queue button.sealed:hover { box-shadow: var(--shadow-sm); }
+  @media (prefers-reduced-motion: reduce) { .queue button { transition: none; } }
   .queue button[aria-current="true"] { border-color: var(--primary); border-width: 2px; padding: 7px 9px; }
   .queue .ql { font-weight: 600; font-size: 0.875rem; display: flex; justify-content: space-between; gap: 6px; }
   .queue .ql .done { color: var(--ins-text); }
@@ -89,23 +149,29 @@
   .hist .hv { color: var(--muted); }
   .hist .hm { display: block; margin-top: 2px; }
   .hist .chgflag { display: block; margin-top: 4px; color: var(--changed); font-size: 0.72rem; font-weight: 600; }
-  .banner {
-    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
-    border: 1px solid var(--changed); background: var(--changed-bg);
-    border-radius: 0.5rem; padding: 10px 14px; margin-bottom: 14px; font-size: 0.875rem;
-  }
-  .banner b { color: var(--changed); }
+  /* freshness-highlight: a paragraph adopted since you last looked lights up
+     purple and cools back to plain document over --fresh-fade. The animation
+     is resumed (negative delay) on every re-render so it survives repaints. */
   .chgchip {
-    float: right; margin-left: 10px; font-size: 0.7rem; font-weight: 700;
+    font-size: 0.7rem; font-weight: 700;
     border-radius: 0.25rem; padding: 1px 7px; white-space: nowrap;
     background: var(--changed-bg); color: var(--changed); user-select: none;
   }
-  .anch-chg { border-left: 3px solid var(--changed); padding-left: 12px; margin-left: -15px; border-radius: 0 0.25rem 0.25rem 0; cursor: pointer; }
-  .anch-chg:hover { background: var(--changed-bg); }
+  @keyframes freshFade {
+    0%   { background-color: var(--changed-bg); border-left-color: var(--changed); }
+    70%  { background-color: var(--changed-bg); border-left-color: var(--changed); }
+    100% { background-color: transparent; border-left-color: transparent; }
+  }
+  .anch-chg {
+    border-left: 3px solid var(--changed); padding-left: 12px; margin-left: -15px;
+    border-radius: 0 0.25rem 0.25rem 0; cursor: pointer;
+    animation: freshFade var(--fresh-fade) ease-in forwards;
+  }
+  .anch-chg:hover { background-color: var(--changed-bg) !important; }
   .chgcard {
     max-width: 70ch; margin: 4px auto 16px;
     border: 1.5px solid var(--changed); border-radius: 0.5rem;
-    box-shadow: 0 3px 12px rgba(111, 66, 193, 0.15);
+    box-shadow: var(--shadow-md);
     padding: 14px 16px; background: var(--bg);
   }
   .chgcard .shead { color: var(--changed); display: flex; justify-content: space-between; gap: 10px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
@@ -113,47 +179,84 @@
   .chgcard .stext { font-size: 0.9375rem; margin-bottom: 10px; }
   .chgcard .sactions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-  /* the document */
+  /* the document — the wide left padding is the chip-gutter (see .chipcol) */
   .doc {
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 0.5rem;
-    padding: 36px 44px 44px;
+    /* The tall bottom padding is scroll runway, not whitespace: without it an
+       anchor near the end of the charter can never be scrolled up to the queue
+       rail's height, and the wire-levelling silently stops working down there.
+       Keeping it inside .doc also keeps the middle column running to the bottom
+       and keeps .layout tall enough for the rails to stay pinned. */
+    padding: 36px 44px 95vh 132px;
   }
+  @media (max-width: 900px) { .doc { padding: 24px 20px 95vh; } }
   .doc .prose { max-width: 70ch; margin: 0 auto; }
   .doc .doctitle { font-size: 1.25rem; font-weight: 600; margin: 0 0 18px; text-wrap: balance; }
   .doc h2.docline {
     font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--muted); margin: 22px 0 8px;
+    color: var(--muted); margin: 22px 0 8px; position: relative;
   }
+  /* three ranks of heading: part, chapter, section */
+  .doc h2.docline.lvl1 {
+    font-size: 0.95rem; color: var(--fg); letter-spacing: 0.08em;
+    margin: 46px 0 14px; padding-top: 14px; border-top: 1px solid var(--border);
+  }
+  .doc h2.docline.lvl2 { font-size: 0.8rem; color: var(--fg); margin: 30px 0 10px; }
+  .doc h2.docline.lvl3 { font-size: 0.72rem; color: var(--muted); margin: 22px 0 8px; }
+  .doc .prose > h2.docline.lvl1:first-child { margin-top: 24px; }
+  /* the section triangle sits in the chip-gutter, in line with the anchor chips */
+  .doc h2.docline .sectoggle { position: absolute; right: 100%; margin-right: 12px; top: -2px; }
+  .doc h2.docline .sechint {
+    margin-left: 10px; font-weight: 400; text-transform: none; letter-spacing: 0;
+    font-size: 0.72rem; color: var(--muted); font-style: italic;
+  }
+  @media (max-width: 900px) { .doc h2.docline .sectoggle { position: static; margin: 0 6px 0 0; } }
   .doc p { margin: 0 0 12px; position: relative; }
 
   /* suggestion anchors */
   .anch { border-left: 3px solid transparent; padding-left: 12px; margin-left: -15px; border-radius: 0 0.25rem 0.25rem 0; cursor: pointer; }
   .anch:hover { background: var(--light); }
-  .anch.quick { border-left-color: var(--ins-text); }
+  .anch.quick { border-left-color: var(--ins-text); background: var(--race-bg); padding-top: 6px; padding-bottom: 6px; }
   .anch.patch { border-left-color: var(--primary); }
   .anch.race { border-left-color: var(--race-border); background: var(--race-bg); padding-top: 6px; padding-bottom: 6px; }
   .anch.kin { outline: 2px dashed var(--primary); outline-offset: 2px; }
   .anch.resolved { border-left-color: var(--border); cursor: default; }
   .anch.resolved:hover { background: transparent; }
+  /* chip-gutter: chips sit in the document's left margin, stacked, right-aligned
+     against the anchor rule, so the prose column itself stays unbroken. */
+  .chipcol {
+    position: absolute; right: 100%; margin-right: 14px; top: 0.15em;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+  }
   .achip {
-    float: right; margin-left: 10px; font-size: 0.7rem; font-weight: 700;
+    font-size: 0.7rem; font-weight: 700;
     border-radius: 0.25rem; padding: 1px 7px; white-space: nowrap; user-select: none;
   }
   .achip.quick { background: var(--ins-bg); color: var(--ins-text); }
   .achip.patch { background: var(--primary-subtle); color: var(--primary-emphasis); }
   .achip.race { background: var(--race-border); color: #5c4a00; }
   .achip.resolved { background: var(--light); color: var(--muted); }
-  .insert-anchor {
-    max-width: 70ch; margin: 0 auto 12px;
-    border-top: 2px dashed var(--ins-text);
-    position: relative; height: 0; cursor: pointer;
+  @media (max-width: 900px) {
+    .chipcol { position: static; flex-direction: row; align-items: baseline; margin: 0 0 4px; }
   }
+  /* insert-anchor: a three-line gap in the document where a section would go */
+  .insert-anchor {
+    max-width: 70ch; margin: 0 auto 16px; min-height: 4.5rem;
+    border: 2px dashed var(--ins-text); border-radius: 0.375rem;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 8px 16px; cursor: pointer;
+  }
+  .insert-anchor:hover { background: var(--ins-bg); }
   .insert-anchor span {
-    position: relative; top: -0.8em; background: var(--bg); padding: 0 8px;
     font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     color: var(--ins-text);
+  }
+  .insert-anchor .isub {
+    display: block; font-size: 0.72rem; font-weight: 400; text-transform: none;
+    letter-spacing: 0; color: var(--muted); margin-top: 3px;
   }
 
   /* inline suggestion card (opens beneath its anchor) */
@@ -161,17 +264,17 @@
     max-width: 70ch; margin: 4px auto 16px;
     border: 1.5px solid var(--primary);
     border-radius: 0.5rem;
-    box-shadow: 0 3px 12px rgba(13, 110, 253, 0.13);
+    box-shadow: var(--shadow-lg);
     padding: 14px 16px;
     background: var(--bg);
   }
-  .sugg.race-open { border-color: var(--race-border); box-shadow: 0 3px 12px rgba(245, 197, 24, 0.25); max-width: none; }
+  .sugg.race-open, .sugg.quick-open, .sugg.patch-open { border-color: var(--argued); box-shadow: var(--shadow-lg); max-width: none; }
   .sugg .shead {
     display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
     font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     color: var(--primary-emphasis); margin-bottom: 8px;
   }
-  .sugg.race-open .shead { color: var(--race-text); }
+  .sugg.race-open .shead, .sugg.quick-open .shead, .sugg.patch-open .shead { color: var(--argued-text); }
   .sugg .shead .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
   .sugg .stext { font-size: 0.9375rem; margin-bottom: 10px; }
   .sugg .srationale {
@@ -200,23 +303,80 @@
   .sledger ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
   .sledger li { display: flex; gap: 8px; align-items: baseline; font-size: 0.8125rem; }
   .lchip { flex: none; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; border-radius: 0.25rem; padding: 1px 6px; }
+  /* the why, kept with the what — same block, quieter voice */
+  .sledger .lrat {
+    border-top: 1px dashed var(--border); margin-top: 9px; padding-top: 8px;
+    font-size: 0.8125rem; color: var(--muted); font-style: italic; line-height: 1.45;
+  }
+  .sledger .lrat .ll {
+    display: block; font-style: normal; font-weight: 700; font-size: 0.62rem;
+    text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 3px;
+  }
   .lchip.add { background: var(--ins-bg); color: var(--ins-text); }
   .lchip.drop { background: var(--del-bg); color: var(--del-text); }
+  /* a race's two ledgers sit side by side, in the same columns as the lanes below */
+  .ledger-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  @media (max-width: 900px) { .ledger-grid { grid-template-columns: 1fr; } }
+  .ledger-grid .sledger { margin-bottom: 0; }
   .site-block { border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 10px; font-size: 0.875rem; }
   .site-block .sb { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); display: block; margin-bottom: 3px; }
 
   /* race escalation panel */
   .race-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
   @media (max-width: 900px) { .race-grid { grid-template-columns: 1fr; } }
-  .rcand { border: 1.5px solid var(--primary); border-radius: 0.375rem; padding: 12px 14px; background: var(--bg); }
+  /* flex column so the two lanes' buttons line up however uneven the content */
+  .rcand { border: 1.5px solid var(--primary); border-radius: 0.375rem; padding: 12px 14px; background: var(--bg);
+    display: flex; flex-direction: column; }
+  .rcand .btn { margin-top: auto; }
+  .rcand .site-block:first-of-type { border-top: 0; margin-top: 2px; padding-top: 0; }
   .rcand .rtag { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary-emphasis); margin-bottom: 6px; }
   .rcand .rtext { font-size: 0.9375rem; margin-bottom: 8px; }
   .rcand .rr { background: var(--light); border-radius: 0.375rem; padding: 7px 10px; font-size: 0.78rem; color: var(--muted); font-style: italic; margin-bottom: 10px; }
   .rcand .btn { width: 100%; }
   .race-mid { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 
+  /* verdict-pill: choosing is one control, committing is another. The arrows
+     point up at the lane each segment stands for; the shrug sits between them. */
+  .verdict-pill {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    border: 1.5px solid var(--border); border-radius: 999px; overflow: hidden;
+    background: var(--bg); margin: 0 0 10px;
+  }
+  .vseg {
+    appearance: none; font: inherit; font-size: 0.875rem; font-weight: 600;
+    padding: 9px 14px; border: 0; background: none; color: var(--fg); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .vseg + .vseg { border-left: 1px solid var(--border); }
+  .vseg:hover { background: var(--light); }
+  .vseg[aria-pressed="true"] { background: var(--primary); color: #fff; }
+  .vseg[aria-pressed="true"]:hover { background: var(--primary-hover); }
+  .vseg.vmid { font-weight: 500; color: var(--muted); white-space: nowrap; }
+  .vseg.vmid[aria-pressed="true"] { color: #fff; }
+  .vseg .vico { font-size: 1rem; line-height: 1; }
+  .verdict-pill[data-locked="true"] .vseg { cursor: default; opacity: 0.55; }
+  .btn[disabled] { opacity: 0.45; cursor: default; }
+  .btn[disabled]:hover { background: var(--primary); border-color: var(--primary); }
+  @media (max-width: 700px) { .verdict-pill { grid-template-columns: 1fr; } .vseg + .vseg { border-left: 0; border-top: 1px solid var(--border); } }
+
+  /* quick suggestion in race geometry: Option A is the incumbent and Option B
+     the proposal, so choosing A is literally keeping the current text. */
+  .rcand .rsub {
+    display: block; margin-top: 2px;
+    font-size: 0.7rem; font-weight: 500; text-transform: none; letter-spacing: 0;
+    color: var(--muted);
+  }
+  .rcand .rtext.none { color: var(--muted); font-style: italic; }
+
   del { background: var(--del-bg); color: var(--del-text); text-decoration: line-through; padding: 0 1px; }
   ins { background: var(--ins-bg); color: var(--ins-text); text-decoration: none; padding: 0 1px; }
+
+  /* queue-wire: the run from a queue card, down the right gutter, into the
+     place(s) in the document it refers to. Drawn on hover, and for the open card. */
+  #wires { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
+  #wires path { fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  #wires .cap { stroke: none; }
+  @media (max-width: 900px) { #wires { display: none; } }
 
   .receipts { margin-top: 24px; }
   .receipts h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 8px; }
@@ -224,13 +384,6 @@
   .receipts li { color: var(--muted); }
   .receipts li b { color: var(--fg); }
 
-  .notes { margin-top: 56px; border-top: 1px solid var(--border); padding-top: 26px; }
-  .notes h2 { font-size: 1.25rem; margin: 0 0 4px; }
-  .notes .sub { color: var(--muted); margin: 0 0 22px; }
-  .notes h3 { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary-emphasis); margin: 26px 0 8px; }
-  .notes p { max-width: 70ch; margin: 0 0 12px; }
-  .notes ul { max-width: 70ch; margin: 0 0 12px; padding-left: 22px; }
-  .notes li { margin-bottom: 6px; }
 </style>
 
 <header class="navbar">
@@ -246,259 +399,838 @@
 
 <div class="wrap">
   <div class="layout">
+    <nav class="toc">
+      <h2>Contents</h2>
+      <ul id="toc"></ul>
+      <p class="note">The charter's own headings. A proposed new section isn't listed here until it's adopted — until then it lives in the document as a gap.</p>
+    </nav>
+
+    <main>
+      <div class="doc" id="doc"></div>
+    </main>
+
     <aside class="queue">
       <h2>Your session</h2>
       <ul id="queue"></ul>
       <p class="note">One list, three states by colour: white cards <b>need you</b>; blue-washed cards you've judged are <b>still deciding</b> — click to change your mind while they're open; green cards are <b>sealed</b> and locked. The wash is closeness-to-resolution — never direction.</p>
     </aside>
-
-    <main>
-      <div class="doc" id="doc"></div>
-
-    </main>
   </div>
 
-  <section class="notes">
-    <h2>Design notes — the session view (default surface), first pass</h2>
-    <p class="sub">Desktop-first · light mode · Bootstrap-plain (visual design deferred) · content from run clubhouse-1 · the race-card mockup is this surface's escalation state</p>
+  <svg id="wires" aria-hidden="true"></svg>
 
-    <h3>Suggestion-mode with escalation</h3>
-    <p>This is the surface a member lives in: <b>the current document, readable top to bottom</b>, with pending suggestions anchored where they bite. Most anchors are green — singleton suggestions you can approve in one tap, exactly the Google-Docs gesture. Yellow anchors are <b>races</b>: places where suggestions collided, which escalate in place to the pairwise card. Blue anchors belong to <b>multi-site patches</b>. The machinery stays invisible until the document's conflict density summons it.</p>
-
-    <h3>Non-local edits: inline is about discovery, not representation (Ed, point 50)</h3>
-    <p>A rename that touches the whole document cannot <em>be</em> a local suggestion — but it can be <b>locally discoverable everywhere it touches</b>. A multi-site patch gets an anchor at every site; opening any anchor opens the <em>same single card</em> — one judgment object, with a summary ledger up top and every site's change below — and while it's open, its sibling anchors light up (dashed outline), so the patch's whole footprint is visible on the page. One suggestion, many doorways, one verdict. The sidebar lists it once. If a patch is too scattered even for this, the ledger carries the load and the sites become its receipts — and truly document-scale rewrites are arguably not suggestions at all but successor documents, which is a different ceremony.</p>
-
-    <h3>Escalation in place</h3>
-    <p>When a span has rival proposals, its anchor is yellow and its inline card is the race: both candidates side by side with the conditional prompt ("if this text changes, which change is better?" — SPEC §8.3: no keep-current on rival cards, and rival cards only get served once at least one challenger plausibly displaces the incumbent). The full race-card view (queue of races, comparison modes, discontinuous patches) is one level deeper — this surface embeds the compact version so easy sessions never leave the page.</p>
-
-    <h3>The queue is a courtesy, not a conveyor</h3>
-    <p>"Needs you" is the router's ordering — hottest races first, floors-near races where you're unheard, then quick approvals — but every item is also anchored in the document, so a member who prefers to just read the charter top to bottom encounters exactly the same work in document order. Two navigation styles, one underlying set of judgments.</p>
-
-    <h3>What approval means (and why there's no owner)</h3>
-    <p>The approve button is the familiar gesture with a different engine behind it: it records a pairwise judgment (proposal vs current text) rather than an owner's acceptance. A suggestion lands when its win-probability clears the session's rising bar with enough distinct judges — the threshold-plus-floor is what replaces the document owner. For an easy typo early in the session, that's a handful of quiet approvals; nobody sees machinery.</p>
-
-    <h3>Progression: the evidence meter (Ed, 2026-08-14)</h3>
-    <p>Every suggestion carries a thin <b>evidence meter</b> — how close it is to being decided (adopted <em>or</em> retired), never which way it leans. This is the spec's own "closeness-to-resolution as a single number" (§8.3), the one race statistic that is public by design because a scalar magnitude can't leak direction. The captions speak in what's missing, not who's ahead: "needs 2 more voices to reach its floor", "a few good judgments from decided", "new — evidence just starting". A saturated race's meter goes grey and its caption sends it to the bounty board: more judgments won't move it; only a new proposal can.</p>
-    <p>And the queue order <b>is</b> this number, weighted by your personal leverage — races near their floor that <em>you</em> haven't judged rank highest, because your judgment moves them most (the router's unheard boost). The meter is the queue's visible rationale: sort order stops being mysterious the moment each entry shows why it's worth your attention.</p>
-
-    <h3>One sidebar, three states (Ed, 51)</h3>
-    <p>The sidebar is a single list with no dividers — colour is the grammar. White cards with a pale blue wash <b>need you</b>. Once judged they slide down into the <b>still deciding</b> band: wash still filling (your judgment moved the race but didn't close it), your verdict shown, and — decision 50 — <b>clickable to change your mind</b>, because a judgment is a living opinion while its question lives. When a race resolves it turns <b>sealed</b>: green, full, locked, inert. A judgment also locks when the ground shifts under it — the Garden entry demonstrates: your verdict became a fact about text that no longer exists, and new pairs will be served fresh (SPEC §4.4).</p>
-
-    <h3>When the ground moves under you (Ed, point 3)</h3>
-    <p>The document can change after you've cleared your queue. Three layered answers: <b>freshness marks</b> — any paragraph adopted since you last saw it carries a purple "changed" chip; opening it shows what changed, at what confidence, with "Fine by me" or "Propose a change" as the recourse; <b>the while-you-were-away banner</b> — the spec's notification digests, rendered; and the <b>⟳ flags</b> on judged entries whose text has since changed again. Purple is the fourth reserved colour: green = quick suggestion, yellow = race, blue = patch/deciding, purple = changed-since-you-looked.</p>
-
-    <h3>What is deliberately absent</h3>
-    <ul>
-      <li><b>No authors, no counts, no standings.</b> Rationales are unsigned; nothing shows how many approvals a suggestion has or which way they lean. (The anchor chips name the <em>kind</em> of attention needed, never the direction of evidence.)</li>
-      <li><b>No red-pen clutter by default.</b> Suggestions are anchors until opened; the document stays a document, not a battlefield diagram.</li>
-    </ul>
-  </section>
 </div>
 
 <script>
+  // The charter: parts (level 1), chapters (level 2), sections (level 3).
+  // A heading owns everything until the next heading of the same level or above.
   const DOC = [
     { t: 'title', x: 'The Hollow Oak Club — House Charter' },
     { t: 'p', x: 'The Hollow Oak Club exists so that its members may have a place of their own: to meet, make, cook, argue, garden, and put the world to rights.' },
-    { t: 'p', x: 'The clubhouse at 44 Aldermoss Lane is held on a long lease from the Marchmont Trust, which reserves to itself the fabric of the building, the lease itself, insurance, and compliance with the law; everything else about the life of the house is the Club’s to govern.' },
-    { t: 'p', x: 'Should the Club cease to operate any part of house life, its management reverts to the Trust, which will run it plainly on the Club’s behalf; reversion is not a sanction, and any function may be reclaimed by a valid decision.' },
-    { t: 'h', x: 'The House' },
-    { t: 'p', x: 'The house comprises the Common Room, the Kitchen, the Workshop, the Library Corner, the Guest Bedroom upstairs, and the Garden behind, together with the cellar and the shed.' },
-    { t: 'h', x: 'Members' },
-    { t: 'p', x: 'The Club comprises its fourteen founding members, named in the Members’ Book; changes to membership are made under the decisions rule and recorded there.' },
-    { t: 'h', x: 'Keys' },
-    { t: 'p', key: 'keys', x: 'Every member holds a front-door key, and members may lend or cut spares for regulars they trust.' },
-    { t: 'h', x: 'The Guest Bedroom' },
+    { t: 'p', x: 'What follows is the whole of the Club’s law. Where it is silent, the membership decides; where it speaks, it binds until it is changed by the process set out at the end.' },
+
+    { t: 'h', level: 1, x: 'Part I — The Club' },
+    { t: 'h', level: 2, x: 'Founding' },
+    { t: 'h', level: 3, x: 'Purpose' },
+    { t: 'p', x: 'The Club is a society of friends keeping a house together. It is not a business, not a charity, and not a landlord; it exists for the common enjoyment of its members and for nothing else.' },
+    { t: 'p', x: 'No part of the Club’s money or property may be applied to the private benefit of any member, except by way of the ordinary hospitality of the house and the reimbursement of expenses properly incurred on its behalf.' },
+    { t: 'p', x: 'The Club may do anything reasonably incidental to keeping the house well: buy tools, insure its possessions, engage a plumber, print a rota, and lay in more coffee than any reasonable household requires.' },
+    { t: 'h', level: 3, x: 'Name and Seat' },
+    { t: 'p', x: 'The Club is called The Hollow Oak Club, after the tree that stood in the garden until the storm of the second winter, and which the Workshop has been slowly turning into furniture ever since.' },
+    { t: 'p', x: 'Its seat is the clubhouse at 44 Aldermoss Lane. The Club has no other premises and does not meet elsewhere except by a decision recorded in the Members’ Book.' },
+    { t: 'h', level: 2, x: 'The Trust’s Reservation' },
+    { t: 'h', level: 3, x: 'What the Trust Keeps' },
+    { t: 'p', x: 'The clubhouse is held on a long lease from the Marchmont Trust, which reserves to itself the fabric of the building, the lease itself, insurance, and compliance with the law.' },
+    { t: 'p', x: 'Everything else about the life of the house is the Club’s to govern, and the Trust has undertaken in writing not to concern itself with it.' },
+    { t: 'p', x: 'The Trust appoints one visitor, who may attend any meeting of the Club, may speak, and may not vote. The visitor has attended twice in nine years and on both occasions stayed for dinner.' },
+    { t: 'h', level: 3, x: 'What Reverts' },
+    { t: 'p', x: 'Should the Club cease to operate any part of house life, its management reverts to the Trust, which will run it plainly on the Club’s behalf.' },
+    { t: 'p', x: 'Reversion is not a sanction, and any function may be reclaimed by a valid decision of the membership at any time.' },
+
+    { t: 'h', level: 1, x: 'Part II — The House' },
+    { t: 'h', level: 2, x: 'The Ground Floor' },
+    { t: 'h', level: 3, x: 'The Common Room' },
+    { t: 'p', x: 'The Common Room is the heart of the house and is open to every member at every hour. Nobody may reserve it, and no gathering in it may be closed to a member who wishes to sit down.' },
+    { t: 'p', x: 'Furniture in the Common Room may be moved but must be put back. The armchair by the window is not anybody’s, whatever Hollis says.' },
+    { t: 'p', x: 'A member may hold a private conversation in the Common Room and expect not to be joined, if they say so plainly. Nobody is obliged to leave, and nobody is obliged to notice.' },
+    { t: 'h', level: 3, x: 'The Kitchen' },
+    { t: 'p', x: 'The Kitchen is common to all members and is governed by one rule: you leave it as you would wish to find it at seven in the morning.' },
+    { t: 'p', x: 'Food in the larder marked with a name belongs to that member. Food not marked belongs to the house and may be eaten by anyone.' },
+    { t: 'p', x: 'The good knives are sharpened by the Steward and are not to be used on bone, frozen food, or the garden.' },
+    { t: 'h', level: 3, x: 'The Larder' },
+    { t: 'p', x: 'The house keeps a standing larder of the things nobody wants to discover are missing: flour, salt, tinned tomatoes, tea, coffee, and a bottle of something for emergencies.' },
+    { t: 'p', x: 'Any member who takes the last of a standing item writes it on the board. This is the whole of the system and it works about half the time.' },
+    { t: 'h', level: 2, x: 'The Upper Floors' },
+    { t: 'h', level: 3, x: 'The Guest Bedroom' },
     { t: 'p', x: 'The Guest Bedroom goes to whoever claims it first, and guests leave it as they found it.' },
-    { t: 'h', x: 'The Garden' },
-    { t: 'p', x: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.' },
-    { t: 'h', x: 'Money' },
-    { t: 'p', key: 'money', x: 'The Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.' },
-    { t: 'p', x: 'Every member contributes equally into the common purse, on a fixed schedule the membership sets and may revise at any meeting, payable promptly when due, with all contributions and the running total open to any member’s inspection.' },
-    { t: 'h', x: 'The Thursday Dinner' },
+    { t: 'p', x: 'A claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, on notice and with apologies.' },
+    { t: 'p', x: 'No guest may occupy the room for more than a fortnight in any quarter without a decision of the house.' },
+    { t: 'h', level: 3, x: 'The Library Corner' },
+    { t: 'p', x: 'The Library Corner holds the Club’s books, which may be borrowed by any member for as long as they are being read and no longer.' },
+    { t: 'p', x: 'Books belonging to a member and left in the Corner become the house’s after a year, unless the member says otherwise in the book on the shelf.' },
+    { t: 'h', level: 2, x: 'The Outbuildings' },
+    { t: 'h', level: 3, x: 'The Workshop' },
+    { t: 'p', x: 'The Workshop is available to any member who has been shown its dangers by the Steward or by a member the Steward has named.' },
+    { t: 'p', x: 'Power tools are not used when the member is alone in the house, and not after the beginning of quiet hours.' },
+    { t: 'p', x: 'Work left on the bench for more than a fortnight may be moved to the shelf; work left on the shelf for a season may be moved to the shed, with a note.' },
+    { t: 'h', level: 3, x: 'The Garden' },
+    { t: 'p', key: 'garden', x: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.' },
+    { t: 'p', x: 'The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, allotted each spring by the Garden Steward.' },
+    { t: 'p', x: 'Produce belongs to the member who grew it, but a good crop has always been shared and the Club would think less of anyone who stopped.' },
+    { t: 'h', level: 3, x: 'The Shed and Cellar' },
+    { t: 'p', x: 'The shed holds garden tools and the rota. The cellar holds everything the house cannot bear to throw away and does not wish to look at.' },
+    { t: 'p', x: 'Once a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go.' },
+
+    { t: 'h', level: 1, x: 'Part III — Membership' },
+    { t: 'h', level: 2, x: 'Admission' },
+    { t: 'h', level: 3, x: 'Nomination' },
+    { t: 'p', key: 'nomination', x: 'A candidate for membership is nominated by one member and seconded by another, neither of whom may be the candidate’s household.' },
+    { t: 'p', x: 'The nomination is posted in the Common Room for one month before it is considered, so that every member has the chance to meet the candidate over a dinner.' },
+    { t: 'p', x: 'No candidate may be nominated twice in one year.' },
+    { t: 'h', level: 3, x: 'Objection' },
+    { t: 'p', x: 'Any member may object to a nomination, in writing to the Steward, at any time before the decision.' },
+    { t: 'p', x: 'An objection is put to the meeting without the objector’s name unless they choose to give it, and the candidate is told that an objection exists but not what it says.' },
+    { t: 'p', x: 'Two objections defeat a nomination without a vote. One objection is decided by the meeting in the ordinary way.' },
+    { t: 'h', level: 3, x: 'Probation' },
+    { t: 'p', key: 'probation', x: 'A new member is on probation for six months, during which they hold every right of membership except the right to vote on admissions.' },
+    { t: 'p', x: 'At the end of probation the Steward asks the meeting whether anything stands in the way, and if nothing does, the member is confirmed without a vote.' },
+    { t: 'h', level: 2, x: 'Standing' },
+    { t: 'h', level: 3, x: 'Rights of a Member' },
+    { t: 'p', x: 'Every member may enter the house at any hour, use every room, bring a guest, stand for office, vote at meetings, and inspect the accounts.' },
+    { t: 'p', x: 'Every member may put any matter on the agenda of any meeting, and may require that it be minuted whether or not it is decided.' },
+    { t: 'p', x: 'No right in this section may be suspended except under Part VIII, and never for longer than a season.' },
+    { t: 'h', level: 3, x: 'Duties of a Member' },
+    { t: 'p', x: 'Every member pays their subscription, takes their turn on the rotas, locks up when they are last out, and tells the Steward when something is broken.' },
+    { t: 'p', x: 'Every member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member.' },
+    { t: 'p', x: 'No duty in this section is enforced by any penalty other than the good opinion of the house, which has always been sufficient.' },
+    { t: 'h', level: 3, x: 'Lapsing and Return' },
+    { t: 'p', x: 'A member who gives notice of a long absence keeps their membership, pays a reduced subscription set by the meeting, and gives up their key until they return.' },
+    { t: 'p', x: 'A member who returns within three years resumes their old standing. After three years they are nominated afresh, though the house has never yet objected to one of its own.' },
+    { t: 'h', level: 2, x: 'Departure' },
+    { t: 'h', level: 3, x: 'Resignation' },
+    { t: 'p', x: 'A member may resign at any time by telling the Steward, and owes nothing further beyond the quarter then running.' },
+    { t: 'p', x: 'A resigning member’s key returns to the Steward, and their bed in the garden passes to whoever the Garden Steward allots it to next spring.' },
+    { t: 'h', level: 3, x: 'Removal' },
+    { t: 'p', x: 'A member may be removed only by a reserved decision, only for conduct that makes the house unliveable for others, and only after the process in Part VIII has run its course.' },
+    { t: 'p', x: 'A removed member may not be nominated again for three years, and may not be removed a second time without the matter being heard afresh.' },
+    { t: 'p', x: 'Removal is the gravest thing the Club can do and has happened once, which the house does not discuss.' },
+
+    { t: 'h', level: 1, x: 'Part IV — Money' },
+    { t: 'h', level: 2, x: 'Subscriptions' },
+    { t: 'h', level: 3, x: 'Rates' },
+    { t: 'p', x: 'Every member contributes equally into the common purse, on a fixed schedule the membership sets and may revise at any meeting, payable promptly when due.' },
+    { t: 'p', x: 'The subscription is set once a year at the spring meeting, and may not be raised by more than a quarter in any year without a reserved decision.' },
+    { t: 'h', level: 3, x: 'Hardship' },
+    { t: 'p', key: 'hardship', x: 'A member in difficulty may ask the Purse-holder to reduce or suspend their subscription, and the Purse-holder may do so for up to two quarters without telling anyone why.' },
+    { t: 'p', x: 'Beyond two quarters the matter goes to the meeting, which considers it without naming the member if the member prefers.' },
+    { t: 'p', x: 'No member has ever been asked to leave for want of money and the Club would rather sell the good knives.' },
+    { t: 'h', level: 3, x: 'Arrears' },
+    { t: 'p', key: 'arrears', x: 'A member more than two quarters in arrears, who has not asked for hardship, is reminded once by the Purse-holder and once by the Steward, in that order and not more.' },
+    { t: 'p', x: 'Arrears are never announced at a meeting or written in the Members’ Book.' },
+    { t: 'h', level: 2, x: 'The Purse' },
+    { t: 'h', level: 3, x: 'The Purse-holder' },
+    { t: 'p', key: 'purse', x: 'The Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.' },
+    { t: 'p', x: 'The Purse-holder may hold the Club’s money in an account in their own name, there being no other kind of account available to a society of fourteen friends.' },
+    { t: 'p', x: 'The Purse-holder may not also be the Steward, and may not hold the office for more than three years running.' },
+    { t: 'h', level: 3, x: 'Spending' },
+    { t: 'p', x: 'Ordinary spending on the running of the house needs nobody’s permission. Anything above a quarter’s subscriptions needs the meeting’s.' },
+    { t: 'p', x: 'A member who spends their own money on the house may claim it back within the quarter, and after that only with the meeting’s indulgence, which is always given.' },
+    { t: 'h', level: 3, x: 'Accounts and Inspection' },
+    { t: 'p', key: 'accounts', x: 'The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.' },
+    { t: 'p', x: 'The accounts are read out at the spring meeting, in summary, and the tin is passed round so that anyone who wishes may look in it.' },
+    { t: 'p', x: 'Two members who are not the Purse-holder check the accounts once a year. They have never found anything and are not looking very hard.' },
+    { t: 'h', level: 2, x: 'Larger Sums' },
+    { t: 'h', level: 3, x: 'Capital Works' },
+    { t: 'p', x: 'Work on the fabric of the house is the Trust’s, but work on what the house contains is the Club’s, and is decided by the meeting on a plan and a price.' },
+    { t: 'p', x: 'No capital work may begin until the money for it is in the purse.' },
+    { t: 'h', level: 3, x: 'Borrowing' },
+    { t: 'p', x: 'The Club does not borrow. A member may lend it money interest-free, and is repaid before any other call on the purse.' },
+    { t: 'p', x: 'A loan from a member is written in the Members’ Book on the day it is made, with the date it falls due.' },
+
+    { t: 'h', level: 1, x: 'Part V — The Common Life' },
+    { t: 'h', level: 2, x: 'The Table' },
+    { t: 'h', level: 3, x: 'The Thursday Dinner' },
     { t: 'p', x: 'Dinner happens every Thursday; the Steward posts a proper rota in the Kitchen each term, and anyone who can’t make their night arranges a swap and tells the Steward in good time.' },
-    { t: 'h', x: 'Guests' },
+    { t: 'p', x: 'The cook chooses the food, and no member may complain about a meal they did not offer to cook.' },
+    { t: 'p', x: 'The Thursday Dinner has not been missed in nine years, including the week of the storm, when it was eaten cold in the Common Room by candlelight.' },
+    { t: 'h', level: 3, x: 'Cooking and Clearing' },
+    { t: 'p', x: 'Whoever cooks does not clear. Whoever clears does not have to have eaten.' },
+    { t: 'p', x: 'The house buys the food for the Thursday Dinner from the purse; a cook who wants to spend more than the usual may, out of their own pocket, and may not be reimbursed for showing off.' },
+    { t: 'h', level: 2, x: 'Guests' },
+    { t: 'h', level: 3, x: 'Bringing a Guest' },
     { t: 'p', key: 'guests', x: 'Friends of the house are welcome whenever a member is in.' },
-    { t: 'h', x: 'Meetings and Decisions' },
-    { t: 'p', key: 'decisions', x: 'House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.' },
-    { t: 'h', x: 'Offices' },
-    { t: 'p', key: 'offices', x: 'The club has a Steward and a Purse-holder, chosen by acclaim, who do what needs doing until they stop.' },
-    { t: 'h', x: 'Changing These Rules' },
-    { t: 'p', x: 'These rules change by the same process as any house decision: proposed with notice, agreed by majority at a meeting, and minuted in the Members’ Book.' },
-    { t: 'h', x: 'Disputes' },
+    { t: 'p', x: 'A member is responsible for their guest: for what the guest breaks, for what the guest is told about the other members, and for the guest’s knowing when to go home.' },
+    { t: 'p', x: 'A guest who has been brought a dozen times is generally nominated, and the house has learned to be glad of this rather than awkward about it.' },
+    { t: 'h', level: 3, x: 'Guests Staying Over' },
+    { t: 'p', x: 'A guest may stay in the Guest Bedroom if it is claimed for them, or on the Common Room sofa if it is not, and in the latter case must be up before the first member comes down.' },
+    { t: 'p', x: 'No guest holds a key, and no guest is left alone in the house.' },
+    { t: 'h', level: 2, x: 'Keys and Access' },
+    { t: 'h', level: 3, x: 'Front-door Keys' },
+    { t: 'p', key: 'keys', x: 'Every member holds a front-door key, and members may lend or cut spares for regulars they trust.' },
+    { t: 'p', x: 'A member who loses a key tells the Steward the same day, and the house decides at the next meeting whether the locks are worth changing.' },
+    { t: 'h', level: 3, x: 'Locking Up' },
+    { t: 'p', key: 'lockup', x: 'The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.' },
+    { t: 'p', x: 'A member who finds the house unlocked in the morning says nothing to anyone but the Steward, who says nothing to anyone at all.' },
+
+    { t: 'h', level: 1, x: 'Part VI — Offices' },
+    { t: 'h', level: 2, x: 'The Offices' },
+    { t: 'h', level: 3, x: 'The Steward' },
+    { t: 'p', x: 'The Steward keeps the house running: the rotas, the repairs, the Members’ Book, and the calling of meetings.' },
+    { t: 'p', x: 'The Steward may spend from the purse on the ordinary running of the house without asking, and tells the Purse-holder afterwards.' },
+    { t: 'p', x: 'The Steward is not the Club’s head. The Club has no head, and has managed for nine years without noticing the lack.' },
+    { t: 'h', level: 3, x: 'The Purse-holder’s Office' },
+    { t: 'p', key: 'purseOffice', x: 'The club has a Steward and a Purse-holder, chosen by acclaim, who do what needs doing until they stop.' },
+    { t: 'p', x: 'Neither office carries any authority over a member, and neither may be used to settle a dispute in which the office-holder has an interest.' },
+    { t: 'h', level: 3, x: 'The Garden Steward' },
+    { t: 'p', x: 'The Garden Steward keeps the rota, allots the beds, and calls the heroic weekends.' },
+    { t: 'p', x: 'The office is held for a growing year and by long custom passes to whoever complained most loudly about the state of the beds.' },
+    { t: 'h', level: 2, x: 'Holding Office' },
+    { t: 'h', level: 3, x: 'Election' },
+    { t: 'p', x: 'Offices are filled at the spring meeting by acclaim, and only by a vote if more than one member is willing, which has happened twice.' },
+    { t: 'p', x: 'A member may hold no more than one office at a time.' },
+    { t: 'p', x: 'A member may decline an office without giving a reason and may not be pressed.' },
+    { t: 'h', level: 3, x: 'Term and Handover' },
+    { t: 'p', x: 'An office runs from the spring meeting to the next, and an office-holder stays in place until their successor takes it up.' },
+    { t: 'p', x: 'On handover, everything the office holds — the book, the tin, the keys to the shed — passes to the successor within a fortnight.' },
+    { t: 'h', level: 3, x: 'Standing Down' },
+    { t: 'p', x: 'An office-holder may stand down at any time by telling the meeting or, between meetings, the Steward.' },
+    { t: 'p', x: 'An office left vacant is filled at the next meeting; in the meantime its duties fall to the Steward, and if the Steward’s office is vacant, to the house at large.' },
+
+    { t: 'h', level: 1, x: 'Part VII — Decisions' },
+    { t: 'h', level: 2, x: 'Meetings' },
+    { t: 'h', level: 3, x: 'Calling a Meeting' },
+    { t: 'p', key: 'calling', x: 'House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.' },
+    { t: 'p', x: 'The Club meets four times a year without being called, on the first Thursday of each quarter, after dinner.' },
+    { t: 'p', x: 'Any three members may require the Steward to call a meeting, and the Steward may call one at any time.' },
+    { t: 'h', level: 3, x: 'Notice' },
+    { t: 'p', key: 'notice', x: 'Notice of a meeting is given by writing it in the Members’ Book and telling every member by whatever means reaches them.' },
+    { t: 'p', x: 'A matter not on the notice may still be decided if every member present agrees to take it, and not otherwise.' },
+    { t: 'h', level: 3, x: 'Quorum' },
+    { t: 'p', key: 'quorum', x: 'A meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved.' },
+    { t: 'p', x: 'A meeting that falls short of quorum may still be held, and may still talk, and may minute what it thinks, but decides nothing.' },
+    { t: 'h', level: 2, x: 'Deciding' },
+    { t: 'h', level: 3, x: 'Ordinary Decisions' },
+    { t: 'p', x: 'An ordinary decision is taken by a majority of those present and voting, and takes effect at the close of the meeting unless it says otherwise.' },
+    { t: 'p', x: 'Abstentions are counted and minuted but do not tell against the majority.' },
+    { t: 'p', x: 'A decision may be revisited at any later meeting, but not at the same one.' },
+    { t: 'h', level: 3, x: 'Reserved Decisions' },
+    { t: 'p', x: 'Removing a member, changing these rules, spending beyond a year’s subscriptions, and dissolving the Club are reserved, and need two-thirds of those present at a quorate meeting.' },
+    { t: 'p', x: 'A reserved decision must be on the notice, in the words in which it will be put.' },
+    { t: 'h', level: 3, x: 'Decisions Between Meetings' },
+    { t: 'p', x: 'Between meetings the Steward may decide anything that will not wait, and reports it to the next meeting, which may undo it but not undo what has already been done in reliance on it.' },
+    { t: 'p', x: 'Nothing reserved may ever be decided between meetings.' },
+
+    { t: 'h', level: 1, x: 'Part VIII — Disputes' },
+    { t: 'h', level: 2, x: 'Raising a Matter' },
+    { t: 'h', level: 3, x: 'Talking First' },
     { t: 'p', x: 'Disputes among members are the house’s to settle: talk first, then a house meeting if talking fails, with judgments recorded in the Members’ Book.' },
+    { t: 'p', x: 'A member may ask another member to sit with them while they talk, and neither may refuse a reasonable choice of companion.' },
+    { t: 'h', level: 3, x: 'Confidence' },
     { t: 'p', key: 'confidence', x: 'Any member may bring any worry to any other in confidence, and confidence is kept; nothing undisclosed to a respondent may ever count against them.' },
-    { t: 'h', x: 'The Trust' },
+    { t: 'p', x: 'A member who receives a confidence may seek advice on it without names, and may break it only where someone is in danger.' },
+    { t: 'p', x: 'The Steward keeps no record of a confidence unless the member who gave it asks for one.' },
+    { t: 'h', level: 2, x: 'Hearing a Matter' },
+    { t: 'h', level: 3, x: 'The House Meeting' },
+    { t: 'p', x: 'A dispute that talking has not settled is heard at a meeting called for the purpose, at which both members speak and the house asks its questions.' },
+    { t: 'p', x: 'Neither member may be represented, and neither may be prevented from speaking last.' },
+    { t: 'p', x: 'The house decides by majority what it thinks happened, and by majority what should follow.' },
+    { t: 'h', level: 3, x: 'Sanctions' },
+    { t: 'p', key: 'sanctions', x: 'The house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III.' },
+    { t: 'p', x: 'A sanction is minuted with its reason and its end date, and expires on that date without anyone having to remember it.' },
+    { t: 'p', x: 'No sanction may touch a member’s subscription or their standing in the garden.' },
+    { t: 'h', level: 3, x: 'Appeal' },
+    { t: 'p', x: 'A member sanctioned may ask the next quarterly meeting to look again, once, and the meeting hears it before any other business.' },
+    { t: 'p', x: 'The Trust’s visitor may sit with the appeal at the member’s request, and may say what they think.' },
+
+    { t: 'h', level: 1, x: 'Part IX — The Lease' },
+    { t: 'h', level: 2, x: 'The Marchmont Trust' },
+    { t: 'h', level: 3, x: 'The Lease' },
     { t: 'p', x: 'The Trust reserves the fabric and lease of the house, its insurance, and all legal obligations; within everything else, what the Club validly decides, the Trust treats as decided.' },
+    { t: 'p', x: 'The lease runs to the year the Club’s youngest founder turns eighty, and is renewable on the same terms if the Club still exists.' },
+    { t: 'p', x: 'The Club pays no rent and never has. The Trust has been asked why twice and has changed the subject both times.' },
+    { t: 'h', level: 3, x: 'Insurance and Compliance' },
+    { t: 'p', x: 'The Trust insures the building; the Club insures its own possessions, and tells its members that it does not insure theirs.' },
+    { t: 'p', x: 'Where the law requires something of the house, the Trust does it, and the Club does not argue with it at meetings.' },
+    { t: 'h', level: 2, x: 'If the Club Falters' },
+    { t: 'h', level: 3, x: 'Reversion' },
+    { t: 'p', x: 'If the Club stops doing something the house needs — the accounts, the rota, the locking up — the Trust may take it over on notice, and does so plainly and without comment.' },
+    { t: 'p', x: 'The Trust may not take over the deciding. If the Club cannot decide, nothing is decided.' },
+    { t: 'h', level: 3, x: 'Reclaiming a Function' },
+    { t: 'p', x: 'The Club reclaims a reverted function by a decision at a quorate meeting, and the Trust hands it back at the end of that quarter.' },
+    { t: 'p', x: 'No function has ever reverted, though the accounts came close in the fourth year.' },
+
+    { t: 'h', level: 1, x: 'Part X — Amendment' },
+    { t: 'h', level: 2, x: 'Changing These Rules' },
+    { t: 'h', level: 3, x: 'Ordinary Amendment' },
+    { t: 'p', x: 'These rules change by the same process as any house decision: proposed with notice, agreed by two-thirds at a quorate meeting, and minuted in the Members’ Book.' },
+    { t: 'p', x: 'An amendment must be circulated in the words in which it will be put, and may be amended at the meeting only with the proposer’s agreement.' },
+    { t: 'p', x: 'The Steward keeps every version of these rules, so that the house can always see what it used to think.' },
+    { t: 'h', level: 3, x: 'Entrenched Rules' },
+    { t: 'p', x: 'The rule that the Club has no head, the rule that confidence is kept, and this rule may be changed only with the agreement of every member.' },
+    { t: 'p', x: 'Nothing else in these rules is entrenched, including the parts the founders were most attached to.' },
+    { t: 'h', level: 2, x: 'Dissolution' },
+    { t: 'h', level: 3, x: 'Winding Up' },
+    { t: 'p', x: 'The Club may dissolve itself by a reserved decision at two consecutive meetings, so that nobody dissolves it in an evening.' },
+    { t: 'p', x: 'On dissolution the purse pays what is owed, returns any member’s loan, and gives what remains to a society of the same kind, chosen at the last meeting.' },
+    { t: 'p', x: 'The house and its fabric return to the Trust, and the tools return to whoever brought them, if they can remember.' },
+    { t: 'h', level: 3, x: 'The Last Meeting' },
+    { t: 'p', x: 'The last meeting of the Club is held at the table, over dinner, and is not quorate for any purpose except deciding that it is the last.' },
     { t: 'p', x: 'Adopted at the house, by the fourteen, over pasta.' },
   ];
 
+  // One entry per queue item, carrying its own content, progress and state.
+  // state: 'needs' (white) | 'deciding' (judged, still open) | 'sealed' (locked).
+  // Every proposal carries a `ledger` — what it actually does, in plain terms.
+  // A quick card and a patch have one; a race has one per candidate, side by side.
+  // A race also carries `candidates` — how many proposals are in the argument —
+  // and `pairsJudged`, how many of your pairs you have answered. Neither leaks
+  // direction: a magnitude and a coverage, never a ranking (SPEC §8.3).
   const SUGGS = [
     {
-      id: 'race-money',
-      kind: 'race',
-      keys: ['money'],
-      qLabel: '§ Money', qSub: '2 proposals racing',
-      chip: '2 racing',
+      id: 'race-purse', kind: 'race', keys: ['purse'], state: 'needs',
+      qLabel: '§ The Purse-holder', qSub: '6 proposals racing',
+      pct: 72, cap: 'close — a few good judgments from decided',
+      candidates: 6, pairsJudged: 4,
       race: {
         prompt: 'If this text changes, which change is better? (Defend the current text on its own cards — this one ranks the challengers.)',
         a: {
           text: 'The Purse-holder pays only bills approved under the budget or by a house decision, reimburses claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting.',
           rationale: 'Whoever holds the purse must be watched: "reimburses what seems fair" with receipts "in the tin" is unchecked discretion. This ties spending to approval and forces open reporting.',
+          ledger: [
+            { c: 'drop', t: '"reimburses what seems fair" — unchecked discretion' },
+            { c: 'add', t: 'spending tied to the budget or a house decision' },
+            { c: 'add', t: 'accounts open on request, reported at every meeting' },
+          ],
         },
         b: {
           text: 'The Purse-holder pays the house’s bills and reimburses members’ reasonable claims as trust and good sense direct, keeping accounts in whatever simple way suits, and is glad to talk any member through them who asks.',
           rationale: 'The old rule buries our volunteer in budget sign-offs and minute-taking. We’re friends who trust each other — spare whoever takes this on the paperwork.',
+          ledger: [
+            { c: 'drop', t: 'budget sign-offs and reporting at meetings' },
+            { c: 'add', t: 'reimbursement on trust and good sense' },
+            { c: 'add', t: 'the books explained to anyone who asks' },
+          ],
         },
       },
     },
     {
-      id: 'patch-rename',
-      kind: 'patch',
-      keys: ['money', 'offices'],
-      qLabel: 'Whole charter', qSub: 'rename · 2 places',
-      chip: '1 of 2',
+      id: 'patch-rename', kind: 'patch', keys: ['purse', 'purseOffice', 'accounts'], state: 'needs',
+      qLabel: 'Whole charter', qSub: 'rename · 3 places',
+      pct: 35, cap: 'gathering — needs roughly 6 more judgments',
       ledger: [
         { c: 'drop', t: '"Purse-holder", everywhere it appears' },
         { c: 'add', t: '"Treasurer" — the name every other club uses' },
         { c: 'add', t: 'a handover line: books and tin pass to the successor' },
       ],
-      rationale: '"Purse-holder" is twee and confuses newcomers. One rename, both places it appears, plus a handover line so the tin doesn’t wander between office-holders.',
+      rationale: '"Purse-holder" is twee and confuses newcomers. One rename, all three places it appears, plus a handover line so the tin doesn’t wander between office-holders.',
       sites: [
-        { key: 'money', label: '§ Money', marked: 'The <del>Purse-holder</del> <ins>Treasurer</ins> pays the bills and reimburses what seems fair, <del>and</del> keeps the receipts in the tin<ins>, and hands the tin and books to their successor</ins>.' },
-        { key: 'offices', label: '§ Offices', marked: 'The club has a Steward and a <del>Purse-holder</del> <ins>Treasurer</ins>, chosen by acclaim, who do what needs doing until they stop.' },
+        { key: 'purse', label: '§ The Purse-holder', marked: 'The <del>Purse-holder</del> <ins>Treasurer</ins> pays the bills and reimburses what seems fair, <del>and</del> keeps the receipts in the tin<ins>, and hands the tin and books to their successor</ins>.' },
+        { key: 'accounts', label: '§ Accounts and Inspection', marked: 'The <del>Purse-holder</del> <ins>Treasurer</ins> keeps the accounts in whatever way suits them, and shows them to any member who asks.' },
+        { key: 'purseOffice', label: '§ The Purse-holder’s Office', marked: 'The club has a Steward and a <del>Purse-holder</del> <ins>Treasurer</ins>, chosen by acclaim, who do what needs doing until they stop.' },
       ],
     },
     {
-      id: 'quick-keys',
-      kind: 'quick',
-      keys: ['keys'],
-      qLabel: '§ Keys', qSub: 'one suggestion',
-      chip: '1 suggestion',
+      id: 'quick-keys', kind: 'quick', keys: ['keys'], state: 'needs',
+      qLabel: '§ Front-door Keys', qSub: 'one suggestion',
+      pct: 60, cap: 'needs 2 more voices to reach its floor of 5',
+      ledger: [
+        { c: 'drop', t: 'spares for any number of regulars, at each member’s discretion' },
+        { c: 'add', t: 'one spare, for one regular' },
+        { c: 'add', t: 'a note with the Steward of who holds one' },
+      ],
       marked: 'Every member holds a front-door key, and <del>members</del> may lend or cut <del>spares</del> <ins>a spare</ins> for <del>regulars</del> <ins>a regular</ins> they trust<ins>, provided the Steward keeps a simple note of who holds one</ins>.',
       rationale: 'Keys are a security matter, not a vibe. A one-line log with the Steward costs nothing and means we can account for who can get in.',
     },
     {
-      id: 'quick-confidence',
-      kind: 'quick',
-      keys: ['confidence'],
-      qLabel: '§ Disputes', qSub: 'copy edit',
-      chip: '1 suggestion',
+      id: 'race-quorum', kind: 'race', keys: ['quorum'], state: 'needs',
+      qLabel: '§ Quorum', qSub: '3 proposals racing',
+      pct: 44, cap: 'gathering — needs roughly 5 more judgments',
+      candidates: 3, pairsJudged: 1,
+      race: {
+        prompt: 'If this text changes, which change is better? (Defend the current text on its own cards — this one ranks the challengers.)',
+        a: {
+          text: 'A meeting needs eight members present to decide anything, and ten to decide anything reserved, counted at the moment the question is put.',
+          rationale: 'Fractions of a membership that changes size are a trap. Fixed numbers can be checked by looking round the room, and cannot be argued about afterwards.',
+          ledger: [
+            { c: 'drop', t: 'halves and two-thirds of a membership that changes size' },
+            { c: 'add', t: 'fixed numbers: eight to decide, ten for reserved' },
+            { c: 'add', t: 'counted at the moment the question is put' },
+          ],
+        },
+        b: {
+          text: 'A meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved; a member who has given their view in writing to the Steward counts as present for quorum but not for the vote.',
+          rationale: 'People travel and people work nights. Letting a written view hold your place stops the house from being unable to act because three of us are away.',
+          ledger: [
+            { c: 'add', t: 'a written view to the Steward holds your place for quorum' },
+            { c: 'add', t: 'it does not count towards the vote itself' },
+            { c: 'drop', t: 'nothing — the halves and two-thirds stay as they are' },
+          ],
+        },
+      },
+    },
+    {
+      id: 'insert-quiet', kind: 'quick', insertAfterKey: 'guests', state: 'needs',
+      qLabel: 'After Bringing a Guest', qSub: 'new section',
+      pct: 20, cap: 'new — evidence just starting',
+      isInsert: true, newHeading: 'Quiet Hours',
+      ledger: [
+        { c: 'add', t: 'quiet hours from eleven at night to eight in the morning' },
+        { c: 'add', t: 'the Workshop’s louder tools asleep in those hours' },
+        { c: 'add', t: 'late gatherings move to the Garden or wind down' },
+      ],
+      marked: '<ins>The house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.</ins>',
+      rationale: 'We’ve never written down the one rule everyone already tiptoes around. Guests stay over, members work early — saying it out loud beats resenting each other politely.',
+    },
+    {
+      id: 'quick-arrears', kind: 'quick', keys: ['arrears'], state: 'needs',
+      qLabel: '§ Arrears', qSub: 'copy edit',
+      pct: 88, cap: 'one judgment from decided',
+      ledger: [
+        { c: 'drop', t: '"and not more" — reads as a limit on the Steward alone' },
+        { c: 'add', t: '"no further reminder is given by anyone"' },
+        { c: 'add', t: 'nothing of substance — the rule is unchanged' },
+      ],
+      marked: 'A member more than two quarters in arrears, who has not asked for hardship, is reminded once by the Purse-holder and once by the Steward, in that order <del>and not more</del><ins>. No further reminder is given by anyone</ins>.',
+      rationale: '"In that order and not more" reads as though the Steward is limited to one reminder. The point is that the house stops after two, from anybody. Same rule, said properly.',
+    },
+    {
+      id: 'race-sanctions', kind: 'race', keys: ['sanctions'], state: 'needs', saturated: true,
+      qLabel: '§ Sanctions', qSub: '4 proposals racing',
+      pct: 100, cap: 'saturated — more judgments won’t move it; only a new proposal can',
+      candidates: 4, pairsJudged: 6,
+      race: {
+        prompt: 'If this text changes, which change is better? (Defend the current text on its own cards — this one ranks the challengers.)',
+        a: {
+          text: 'The house may ask for an apology or suspend a right for a season; removal under Part III is available only where a sanction has already been imposed and has not been kept to.',
+          rationale: 'Removal should never be the first thing reached for. Making it conditional on a broken sanction gives everyone a step back from the cliff.',
+          ledger: [
+            { c: 'drop', t: 'removal as something the house can reach for first' },
+            { c: 'add', t: 'removal only after a lesser sanction has been broken' },
+          ],
+        },
+        b: {
+          text: 'The house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III; every sanction is proposed by a member who is not party to the dispute.',
+          rationale: 'The problem isn’t the ladder of sanctions, it’s who proposes them. An uninvolved proposer stops a hearing turning into the aggrieved party naming their own remedy.',
+          ledger: [
+            { c: 'add', t: 'every sanction proposed by someone not party to the dispute' },
+            { c: 'drop', t: 'the aggrieved party naming their own remedy' },
+          ],
+        },
+      },
+    },
+    {
+      id: 'quick-confidence', kind: 'quick', keys: ['confidence'], state: 'deciding',
+      verdict: 'approved (recorded as: proposal beats current text)', pick: 'approve',
+      qLabel: '§ Confidence', qSub: 'copy edit',
+      pct: 84, cap: 'still deciding — close to resolution',
+      ledger: [
+        { c: 'drop', t: '"nothing undisclosed to a respondent" — dangles' },
+        { c: 'add', t: '"nothing kept from a respondent" — same rule, plain words' },
+      ],
       marked: 'Any member may bring any worry to any other in confidence, and <ins>that</ins> confidence is kept; nothing <del>undisclosed to</del> <ins>kept from</ins> a respondent may ever count against them.',
       rationale: '"Nothing undisclosed to a respondent" dangles. "Kept from" says the same thing in plain words. No change of substance.',
     },
     {
-      id: 'insert-quiet',
-      kind: 'quick',
-      insertAfterKey: 'guests',
-      qLabel: 'After Guests', qSub: 'new section',
-      chip: 'new section',
-      isInsert: true,
-      newHeading: 'Quiet Hours',
-      marked: '<ins>The house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.</ins>',
-      rationale: 'We’ve never written down the one rule everyone already tiptoes around. Guests stay over, members work early — saying it out loud beats resenting each other politely.',
+      id: 'race-hardship', kind: 'race', keys: ['hardship'], state: 'deciding',
+      verdict: 'preferred B', pick: 'b',
+      qLabel: '§ Hardship', qSub: '5 proposals racing',
+      pct: 66, cap: 'still deciding — your judgment moved it',
+      candidates: 5, pairsJudged: 3,
+      race: {
+        prompt: 'If this text changes, which change is better? (Defend the current text on its own cards — this one ranks the challengers.)',
+        a: {
+          text: 'A member in difficulty may ask the Purse-holder to reduce or suspend their subscription for up to two quarters, and the Purse-holder tells no one, including the Steward and the meeting.',
+          rationale: 'The current wording says the Purse-holder need not say why. It should say they may not say at all — the discretion belongs to the member in difficulty, not the office-holder.',
+          ledger: [
+            { c: 'drop', t: '"without telling anyone why" — a discretion to disclose' },
+            { c: 'add', t: 'the Purse-holder may not tell anyone at all' },
+          ],
+        },
+        b: {
+          text: 'A member in difficulty may reduce or suspend their own subscription for up to two quarters by telling the Purse-holder, who may not refuse and may not ask why.',
+          rationale: 'Asking permission to be poor is the humiliating part. Make it a notification, not a request, and the office-holder never has to weigh a friend’s circumstances.',
+          ledger: [
+            { c: 'drop', t: 'asking the Purse-holder’s permission' },
+            { c: 'add', t: 'the member reduces their own subscription and says so' },
+            { c: 'add', t: 'the Purse-holder may not refuse, and may not ask why' },
+          ],
+        },
+      },
+    },
+    {
+      id: 'quick-probation', kind: 'quick', keys: ['probation'], state: 'deciding',
+      verdict: 'kept the current text', pick: 'keep',
+      qLabel: '§ Probation', qSub: 'one suggestion',
+      pct: 52, cap: 'still deciding — a way from resolution yet',
+      ledger: [
+        { c: 'drop', t: 'six months’ probation — two meetings' },
+        { c: 'add', t: 'a full year' },
+        { c: 'add', t: 'no vote on removals or rule changes while on probation' },
+      ],
+      marked: 'A new member is on probation for <del>six months</del> <ins>a full year</ins>, during which they hold every right of membership except the right to vote on <del>admissions</del> <ins>admissions, removals, or changes to these rules</ins>.',
+      rationale: 'Six months is two meetings. You cannot know how someone handles a hard evening in the house until you have seen one, and there is usually one a year.',
+    },
+    {
+      id: 'quick-garden', kind: 'quick', keys: ['garden'], state: 'deciding', locked: true,
+      verdict: 'preferred the posted rota', pick: 'keep',
+      qLabel: '§ The Garden', qSub: 'one suggestion',
+      pct: 90, cap: 'still deciding — close to resolution',
+      shifted: 'the text changed after your judgment — that judgment is now locked; new pairs will serve fresh',
+      ledger: [
+        { c: 'drop', t: 'a rota kept in the group message' },
+        { c: 'add', t: 'a rota posted in the shed, where the tools are' },
+      ],
+      marked: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.',
+      rationale: 'The rota belongs where the tools are, not in a message nobody scrolls back to.',
+    },
+    {
+      id: 'quick-notice', kind: 'quick', keys: ['notice'], state: 'sealed',
+      verdict: 'approved the plainer wording', pick: 'approve',
+      qLabel: '§ Notice', qSub: 'copy edit',
+      pct: 100, cap: 'sealed — adopted · judgment locked',
+      ledger: [
+        { c: 'drop', t: 'notice by written letter only' },
+        { c: 'add', t: 'notice by whatever means reaches each member' },
+      ],
+      marked: 'Notice of a meeting is given by writing it in the Members’ Book and telling every member by whatever means reaches them.',
+      rationale: 'Adopted at the close of the last window.',
+    },
+    {
+      id: 'race-nomination', kind: 'race', keys: ['nomination'], state: 'sealed',
+      verdict: 'preferred A', pick: 'a',
+      qLabel: '§ Nomination', qSub: '2 proposals raced',
+      pct: 100, cap: 'sealed — retired · the current text stood',
+      candidates: 2, pairsJudged: 1,
+      race: {
+        prompt: 'If this text changes, which change is better?',
+        a: {
+          text: 'A candidate for membership is nominated by one member and seconded by another, neither of whom may be the candidate’s household.',
+          rationale: 'Sealed.',
+          ledger: [{ c: 'add', t: 'neither nominator may be the candidate’s household' }],
+        },
+        b: {
+          text: 'A candidate for membership is nominated by any two members.',
+          rationale: 'Sealed.',
+          ledger: [{ c: 'drop', t: 'the bar on a candidate’s household nominating them' }],
+        },
+      },
     },
   ];
 
   const doc = document.getElementById('doc');
   const queueEl = document.getElementById('queue');
+  const tocEl = document.getElementById('toc');
+  const wiresEl = document.getElementById('wires');
   let openId = null;
+  let pendingId = null;   // the card being opened, while the sequence is running
+  const collapsed = new Set();   // folded-away section indices
+  let seqToken = 0;       // supersedes an in-flight open/move/close sequence
   const resolved = new Set();
 
   function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 
+  // The text a suggestion is arguing against, for the quick card's yellow band.
+  function currentTextFor(key) {
+    const line = DOC.find((l) => l.key === key);
+    return line ? line.x : '';
+  }
+
+  // Headings form a tree: level 1 parts, level 2 chapters, level 3 sections. A
+  // heading owns everything until the next heading of its own level or above, so
+  // folding a part takes its chapters and their sections down with it.
+  const HEADS = DOC.filter((l) => l.t === 'h').map((l) => l.level ?? 1);
+
+  // The enclosing chain of a heading, outermost first, excluding itself.
+  function ancestorsOf(n) {
+    const out = [];
+    let want = HEADS[n];
+    for (let i = n - 1; i >= 0 && want > 1; i--) {
+      if (HEADS[i] < want) { out.unshift(i); want = HEADS[i]; }
+    }
+    return out;
+  }
+
+  const buriedBy = (n) => ancestorsOf(n).some((a) => collapsed.has(a));
+  const hiddenSection = (n) => n >= 0 && (collapsed.has(n) || buriedBy(n));
+
+  // The innermost heading a paragraph sits under. The preamble before the first
+  // heading belongs to no section and never folds.
+  function sectionForKey(key) {
+    let sec = -1;
+    for (const line of DOC) {
+      if (line.t === 'h') sec++;
+      if (line.key === key) return sec;
+    }
+    return -1;
+  }
+
+  function suggestionSections(id) {
+    const s = SUGGS.find((x) => x.id === id);
+    if (!s) return [];
+    const keys = [...(s.keys ?? [])];
+    if (s.insertAfterKey) keys.push(s.insertAfterKey);
+    return [...new Set(keys.map(sectionForKey).filter((n) => n >= 0))];
+  }
+
+  // "inside" reaches all the way down: a folded part counts what its sections hold.
+  const suggestionsInSection = (n) => SUGGS.filter((s) => s.state !== 'sealed' &&
+    suggestionSections(s.id).some((m) => m === n || ancestorsOf(m).includes(n))).length;
+
+  function toggleSection(n) {
+    if (collapsed.has(n)) {
+      collapsed.delete(n);
+      autoFolded.delete(n);   // unfolded by hand: stop treating it as ours
+    } else {
+      collapsed.add(n);
+      // don't leave a card open inside something you have just folded away
+      if (openId && suggestionSections(openId).includes(n)) openId = null;
+    }
+    renderToc();
+    renderAll();
+  }
+
+  // A queue card can point into a folded section — unfold before measuring.
+  function expandFor(id) {
+    let changed = false;
+    for (const n of suggestionSections(id)) {
+      // the whole chain, or the section stays buried under a folded part
+      for (const a of [...ancestorsOf(n), n]) if (collapsed.delete(a)) changed = true;
+    }
+    return changed;
+  }
+
+  // A patch's sites can be pages apart. While it is open, fold the sections
+  // *between* them — never the ones holding a site — so the whole footprint
+  // sits on one screen. Tracked apart from `collapsed` so that letting go of
+  // the patch restores exactly these and leaves the reader's own folds alone.
+  const autoFolded = new Set();
+
+  function restoreAutoFolds() {
+    if (!autoFolded.size) return false;
+    for (const n of autoFolded) collapsed.delete(n);
+    autoFolded.clear();
+    return true;
+  }
+
+  function foldBetweenSites(id) {
+    const secs = suggestionSections(id).sort((a, b) => a - b);
+    if (secs.length < 2) return false;
+    // never fold a site, nor anything a site lives inside
+    const keep = new Set();
+    for (const n of secs) { keep.add(n); for (const a of ancestorsOf(n)) keep.add(a); }
+    let changed = false;
+    for (let n = secs[0] + 1; n < secs[secs.length - 1]; n++) {
+      if (keep.has(n) || collapsed.has(n)) continue;   // already folded by hand: not ours to restore
+      if (buriedBy(n)) continue;                       // an outer fold already covers it
+      collapsed.add(n);
+      autoFolded.add(n);
+      changed = true;
+    }
+    return changed;
+  }
+
+  function toggleHtml(n, cls) {
+    const open = !collapsed.has(n);
+    return '<button class="sectoggle' + (cls ? ' ' + cls : '') + '" data-sec-toggle="' + n + '"' +
+      ' aria-expanded="' + open + '" title="' + (open ? 'Fold this section away' : 'Unfold this section') +
+      '"><span class="tri">▸</span></button>';
+  }
+
   function suggFor(key) {
     // Anchors persist while a race is still deciding — a judged suggestion
     // is revisable until it seals or its ground shifts.
-    return SUGGS.filter((s) => (s.keys ?? []).includes(key));
+    return SUGGS.filter((s) => (s.keys ?? []).includes(key) && s.state !== 'sealed');
   }
-
-  const PROGRESS = {"race-money":{"pct":78,"cap":"close — a few good judgments from decided"},"patch-rename":{"pct":35,"cap":"gathering — needs roughly 6 more judgments"},"quick-keys":{"pct":60,"cap":"needs 2 more voices to reach its floor of 5"},"quick-confidence":{"pct":85,"cap":"one judgment from decided"},"insert-quiet":{"pct":20,"cap":"new — evidence just starting"}};
 
   const CHANGES = [
     {
-      key: 'decisions',
-      when: '25m ago',
-      marked: '<del>House matters are settled by whoever is in the room when they come up.</del> <ins>House matters are decided at a meeting called with at least seven days\u2019 notice to all members, by majority of those present, with the proposal and result minuted in the Members\u2019 Book.</ins>',
-      note: 'Adopted at p=0.87 over bar 0.72 \u00b7 6 distinct judges \u00b7 you never judged this race',
+      key: 'calling',
+      when: 'just now',
+      marked: '<del>House matters are settled by whoever is in the room when they come up.</del> <ins>House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.</ins>',
+      note: 'Adopted at p=0.87 over bar 0.72 · 6 distinct judges · you never judged this race',
     },
-  ];
-  // Static examples of the two later states (not part of SUGGS).
-  const EXTRA = [
-    { id: 'x-garden', state: 'deciding', qLabel: '§ The Garden', qSub: 'you preferred the posted rota · 1h ago',
-      pct: 88, cap: 'still deciding — close to resolution',
-      changed: 'the text changed after your judgment — that judgment is now locked; new pairs will serve fresh' },
-    { id: 'x-dues', state: 'sealed', qLabel: '§ Dues', qSub: 'you approved the fixed schedule · 2h ago',
-      pct: 100, cap: 'sealed — adopted · judgment locked' },
+    {
+      key: 'lockup',
+      when: 'just now',
+      marked: 'The last member out locks the front door<ins>, closes the Workshop,</ins> and puts out the lamp in the Common Room.',
+      note: 'Adopted at p=0.79 over bar 0.74 · 5 distinct judges · you preferred this wording',
+    },
   ];
   const verdicts = new Map();
   const seenChanges = new Set();
   let openChange = null;
-  let bannerDismissed = false;
   let justArrived = null;
 
-  function washStyle(pct, sealed) {
-    const color = sealed ? 'var(--ins-bg)' : 'var(--primary-subtle)';
+  // Freshness-highlight clock. The doc re-renders on every interaction, which
+  // would restart the CSS fade each time — so we resume it with a negative
+  // animation-delay equal to however long the highlight has already been up.
+  const FRESH_T0 = Date.now();
+  const freshDelay = () => ' style="animation-delay: -' + (Date.now() - FRESH_T0) + 'ms"';
+
+  function washStyle(pct, sealed, saturated) {
+    const color = saturated ? 'var(--border)' : sealed ? 'var(--ins-bg)' : 'var(--primary-subtle)';
     return ' style="background: linear-gradient(90deg, ' + color + ' ' + pct + '%, var(--bg) ' + pct + '%)"';
   }
 
+  // needs-you (white) · still-deciding (blue wash + your verdict) · sealed (green).
+  // A card starts in whichever state the fixture gives it, and moves when you act.
+  const stateOf = (g) => g.state === 'sealed' ? 'sealed'
+    : (g.state === 'deciding' || resolved.has(g.id)) ? 'deciding' : 'needs';
+  const isJudged = (g) => stateOf(g) !== 'needs';
+  const chipText = (g) => g.kind === 'race' ? g.candidates + ' racing'
+    : g.isInsert ? 'new section' : '1 suggestion';
+
   function renderQueue() {
-    // One list, three states, no dividers: needs-you (white, no wash yet
-    // judged), still-deciding (blue wash + your verdict), sealed (green).
-    const needs = SUGGS.filter((g) => !resolved.has(g.id));
-    const deciding = SUGGS.filter((g) => resolved.has(g.id));
+    const rank = { needs: 0, deciding: 1, sealed: 2 };
+    const items = [...SUGGS].sort((a, b) => rank[stateOf(a)] - rank[stateOf(b)]);
     let html = '';
-    for (const g of needs) {
+    for (const g of items) {
+      const st = stateOf(g);
+      const justJudged = resolved.has(g.id) && g.state === 'needs';
+      const locked = g.locked || st === 'sealed';
+      const pct = st === 'sealed' ? 100 : justJudged ? Math.min(g.pct + 8, 96) : g.pct;
+      const cap = justJudged ? 'still deciding — click to change your mind' : g.cap;
+      const verdict = verdicts.get(g.id) || g.verdict;
       html +=
-        '<li><button data-q="' + g.id + '" aria-current="' + (openId === g.id) + '"' +
-        washStyle(PROGRESS[g.id].pct, false) + '>' +
-        '<span class="ql"><span>' + g.qLabel + '</span></span>' +
-        '<span class="qs"><span class="kchip ' + g.kind + '">' + (g.kind === 'quick' ? 'quick' : g.kind === 'race' ? 'race' : 'patch') + '</span>' + g.qSub + '</span>' +
-        '<span class="mcap">' + PROGRESS[g.id].cap + '</span>' +
-        '</button></li>';
-    }
-    for (const g of deciding) {
-      const pct = Math.min(PROGRESS[g.id].pct + 8, 96);
-      html +=
-        '<li><button class="deciding' + (justArrived === g.id ? ' arriving' : '') + '" data-q="' + g.id + '" aria-current="' + (openId === g.id) + '"' +
-        washStyle(pct, false) + '>' +
-        '<span class="ql"><span>' + g.qLabel + '</span><span class="done">✓</span></span>' +
-        '<span class="qv">you ' + (verdicts.get(g.id) || 'judged') + '</span>' +
-        '<span class="mcap">still deciding — click to change your mind</span>' +
-        '</button></li>';
-    }
-    for (const x of EXTRA.filter((e) => e.state === 'deciding')) {
-      html +=
-        '<li><button class="deciding" data-x="' + x.id + '"' + washStyle(x.pct, false) + '>' +
-        '<span class="ql"><span>' + x.qLabel + '</span><span class="done">✓</span></span>' +
-        '<span class="qv">' + x.qSub + '</span>' +
-        '<span class="mcap">' + x.cap + '</span>' +
-        (x.changed ? '<span class="chgflag">⟳ ' + x.changed + '</span>' : '') +
-        '</button></li>';
-    }
-    for (const x of EXTRA.filter((e) => e.state === 'sealed')) {
-      html +=
-        '<li><button class="sealed" data-x="' + x.id + '" tabindex="-1"' + washStyle(x.pct, true) + '>' +
-        '<span class="ql"><span>' + x.qLabel + '</span><span class="done">✓</span></span>' +
-        '<span class="qv">' + x.qSub + '</span>' +
-        '<span class="mcap">' + x.cap + '</span>' +
+        '<li><button class="' + (st === 'sealed' ? 'sealed' : st === 'deciding' ? 'deciding' : '') +
+        (justArrived === g.id ? ' arriving' : '') + '" data-q="' + g.id + '"' +
+        (locked ? ' tabindex="-1"' : '') + ' aria-current="' + (openId === g.id) + '"' +
+        washStyle(pct, st === 'sealed', g.saturated) + '>' +
+        '<span class="ql"><span>' + g.qLabel + '</span>' +
+        (st === 'needs' ? '' : '<span class="done">✓</span>') + '</span>' +
+        (st === 'needs'
+          ? '<span class="qs"><span class="kchip ' + g.kind + '">' + g.kind + '</span>' + g.qSub + '</span>'
+          : '<span class="qv">you ' + (verdict || 'judged') + '</span>') +
+        '<span class="mcap">' + cap + '</span>' +
+        (g.shifted ? '<span class="chgflag">⟳ ' + g.shifted + '</span>' : '') +
         '</button></li>';
     }
     queueEl.innerHTML = html;
     justArrived = null;
-    queueEl.querySelectorAll('[data-q]').forEach((b) =>
-      b.addEventListener('click', () => { toggle(b.dataset.q, true); })
-    );
+    queueEl.querySelectorAll('[data-q]').forEach((b) => {
+      const g = SUGGS.find((x) => x.id === b.dataset.q);
+      if (!g || g.locked || stateOf(g) === 'sealed') return;   // a locked judgment is inert
+      b.addEventListener('click', () => { toggle(b.dataset.q, true); });
+    });
+  }
+
+  // queue-wire: out of the left edge of the queue card, down (or up) the gutter
+  // between the two rails, then left into every place the suggestion touches.
+  const WIRE_COLOR = { quick: 'var(--ins-text)', race: 'var(--race-border)', patch: 'var(--primary)' };
+  const SVGNS = 'http://www.w3.org/2000/svg';
+
+  function wireTargets(id) {
+    const chips = [...doc.querySelectorAll('.achip[data-anchor="' + id + '"]')]
+      .map((c) => c.closest('p'))
+      .filter(Boolean);
+    const inserts = [...doc.querySelectorAll('.insert-anchor[data-anchor="' + id + '"]')];
+    return [...chips, ...inserts];
+  }
+
+  function drawWires() {
+    if (!wiresEl) return;
+    while (wiresEl.firstChild) wiresEl.removeChild(wiresEl.firstChild);
+    // Only the open card gets a wire. Drawing one on hover made the gutter
+    // flicker as the pointer crossed the queue (Ed, 78).
+    const id = openId ?? pendingId;
+    if (!id) return;
+    const btn = queueEl.querySelector('[data-q="' + id + '"]');
+    const targets = wireTargets(id);
+    const s = SUGGS.find((x) => x.id === id);
+    if (!btn || !targets.length || !s) return;
+
+    const b = btn.getBoundingClientRect();
+    const mainR = document.querySelector('main').getBoundingClientRect();
+    const gx = (mainR.right + b.left) / 2;     // the gutter between the two rails
+    const sx = b.left, sy = b.top + b.height / 2;
+    const color = WIRE_COLOR[s.kind];
+
+    const dot = (x, y) => {
+      const c = document.createElementNS(SVGNS, 'circle');
+      c.setAttribute('class', 'cap');
+      c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 2.5);
+      c.setAttribute('fill', color);
+      wiresEl.appendChild(c);
+    };
+
+    for (const t of targets) {
+      const r = t.getBoundingClientRect();
+      const tx = r.right;
+      const ty = r.top + Math.min(r.height / 2, 16);
+      const down = ty > sy;
+      const rad = Math.max(0, Math.min(8, Math.abs(ty - sy) / 2, (sx - gx) / 2, (gx - tx) / 2));
+      const p = document.createElementNS(SVGNS, 'path');
+      p.setAttribute('d',
+        'M ' + sx + ' ' + sy +
+        ' H ' + (gx + rad) +
+        ' Q ' + gx + ' ' + sy + ' ' + gx + ' ' + (sy + (down ? rad : -rad)) +
+        ' V ' + (ty + (down ? -rad : rad)) +
+        ' Q ' + gx + ' ' + ty + ' ' + (gx - rad) + ' ' + ty +
+        ' H ' + tx);
+      p.setAttribute('stroke', color);
+      wiresEl.appendChild(p);
+      dot(tx, ty);
+    }
+    dot(sx, sy);
   }
 
   function meterHtml(id) {
-    const pr = PROGRESS[id];
-    return '<div class="meter" title="Closeness to resolution — a magnitude, never a direction"><i style="width:' + pr.pct + '%"></i></div>' +
-      '<div class="mcap">' + pr.cap + ' · this shows how much more evidence is needed, never which way it leans</div>';
+    const s = SUGGS.find((x) => x.id === id);
+    return '<div class="meter' + (s.saturated ? ' saturated' : '') +
+      '" title="Closeness to resolution — a magnitude, never a direction"><i style="width:' + s.pct + '%"></i></div>' +
+      '<div class="mcap">' + s.cap + ' · this shows how much more evidence is needed, never which way it leans</div>' +
+      // how big the argument is, and how far through your share of it you are.
+      // A count and a coverage — neither says who is ahead (SPEC §8.3).
+      (s.kind === 'race' && s.candidates
+        ? '<div class="mcap">' + s.candidates + ' proposals racing · you’ve judged ' + s.pairsJudged +
+          ' of the pairs you’ll be asked for</div>'
+        : '');
   }
 
   function reviseNote(s) {
-    if (!resolved.has(s.id)) return '';
-    return '<div class="srationale" style="border-color: var(--primary);"><span class="rl">You ' + (verdicts.get(s.id) || 'judged') + '</span>Choosing again replaces your earlier judgment — allowed while the race is still deciding; it locks when the race seals or the text changes under it (SPEC §4.4).</div>';
+    if (!isJudged(s)) return '';
+    return '<div class="srationale" style="border-color: var(--primary);"><span class="rl">You ' + (verdicts.get(s.id) || s.verdict || 'judged') + '</span>Choosing again replaces your earlier judgment — allowed while the race is still deciding; it locks when the race seals or the text changes under it (SPEC §4.4).</div>';
+  }
+
+  // "In short" — what a proposal actually does, above the lanes rather than
+  // inside one. A quick card and a patch have one; a race has one per candidate,
+  // side by side and column-aligned with the lane each describes.
+  // The ledger carries the rationale too (Ed, 87): what a proposal does and why
+  // it was wanted, together, above the lanes. The lanes are then only the text
+  // and the verdict — nothing to read there but the thing being judged.
+  function ledgerHtml(ledger, label, rationale) {
+    if (!ledger || !ledger.length) return '';
+    return '<div class="sledger"><div class="lh">In short' + (label ? ' · ' + label : '') + '</div><ul>' +
+      ledger.map((l) => '<li><span class="lchip ' + l.c + '">' + l.c + '</span><span>' + esc(l.t) + '</span></li>').join('') +
+      '</ul>' +
+      (rationale ? '<div class="lrat"><span class="ll">Why · unsigned</span>' + esc(rationale) + '</div>' : '') +
+      '</div>';
+  }
+
+  // Choosing and committing are separate acts (Ed, 88). The pill holds the
+  // choice — A, indifferent, B — and nothing leaves the card until Submit.
+  const picked = new Map();
+  const pickOf = (s) => picked.get(s.id) ?? s.pick ?? null;
+
+  function pillHtml(s, aAct, bAct, aLabel, bLabel) {
+    const pick = pickOf(s);
+    const seg = (v, label, ico, cls) =>
+      '<button class="vseg' + (cls ? ' ' + cls : '') + '" data-v="' + v + '"' +
+      ' aria-pressed="' + (pick === v) + '"' + (s.locked ? ' disabled' : '') + '>' +
+      '<span class="vico">' + ico + '</span>' + label + '</button>';
+    return '<div class="verdict-pill"' + (s.locked ? ' data-locked="true"' : '') + '>' +
+      seg(aAct, aLabel, '⬆️') +
+      seg('indifferent', 'Can’t split them', '🤷', 'vmid') +
+      seg(bAct, bLabel, '⬆️') +
+      '</div>';
+  }
+
+  function commitRowHtml(s, extra) {
+    const ready = pickOf(s) && !s.locked;
+    return '<div class="race-mid">' +
+      '<button class="btn" data-act="skip">Skip</button>' +
+      '<button class="btn btn-approve" data-act="submit"' + (ready ? '' : ' disabled') + '>Submit</button>' +
+      (extra || '') +
+      '</div>';
   }
 
   function suggCardHtml(s) {
@@ -508,85 +1240,119 @@
         '<div class="shead"><span>Race · ' + s.qLabel + '</span><span class="sub">escalated: two proposals collide here</span></div>' +
         reviseNote(s) +
         meterHtml(s.id) + '<div class="stext small" style="color:var(--muted);margin-top:8px">' + s.race.prompt + '</div>' +
+        '<div class="ledger-grid">' +
+        ledgerHtml(s.race.a.ledger, 'Option A', s.race.a.rationale) +
+        ledgerHtml(s.race.b.ledger, 'Option B', s.race.b.rationale) + '</div>' +
         '<div class="race-grid">' +
-        '<div class="rcand"><div class="rtag">Option A</div><div class="rtext">' + esc(s.race.a.text) + '</div><div class="rr">' + esc(s.race.a.rationale) + '</div><button class="btn btn-approve" data-act="a">Prefer A</button></div>' +
-        '<div class="rcand"><div class="rtag">Option B</div><div class="rtext">' + esc(s.race.b.text) + '</div><div class="rr">' + esc(s.race.b.rationale) + '</div><button class="btn btn-approve" data-act="b">Prefer B</button></div>' +
+        '<div class="rcand"><div class="rtag">Option A</div><div class="rtext">' + esc(s.race.a.text) + '</div></div>' +
+        '<div class="rcand"><div class="rtag">Option B</div><div class="rtext">' + esc(s.race.b.text) + '</div></div>' +
         '</div>' +
-        '<div class="race-mid">' +
-        '<button class="btn btn-outline" data-act="indifferent">Genuinely can’t split them</button>' +
-        '<button class="btn btn-outline" data-act="skip">Skip</button>' +
-        '<button class="btn btn-outline" data-act="propose">Propose something else · 1 token</button>' +
-        '</div>' +
+        pillHtml(s, 'a', 'b', 'Option A', 'Option B') +
+        commitRowHtml(s, '<button class="btn btn-outline" data-act="propose">Propose something else · 1 token</button>') +
         '<div class="foot">Authorship sealed · no counts, no standings · full race view has comparison modes and the whole queue</div>' +
         '</div>'
       );
     }
     if (s.kind === 'patch') {
+      // Same object as a race and a quick card: the charter as it stands on the
+      // left, the change on the right. A patch differs only in that each lane
+      // carries every site — the judgment is one, so the lanes are one each.
+      const n = s.sites.length;
+      const lane = (site, body) => '<div class="site-block"><span class="sb">' + site.label + '</span>' + body + '</div>';
       return (
-        '<div class="sugg" data-card="' + s.id + '">' +
-        '<div class="shead"><span>One suggestion · ' + s.sites.length + ' places</span><span class="sub">all sites highlighted above and below — judged together</span></div>' +
+        '<div class="sugg patch-open" data-card="' + s.id + '">' +
+        '<div class="shead"><span>One suggestion · ' + n + ' places</span>' +
+        '<span class="sub">every site is highlighted in the document — judged together</span></div>' +
         reviseNote(s) +
-        meterHtml(s.id) + '<div class="sledger" style="margin-top:8px"><div class="lh">In short</div><ul>' +
-        s.ledger.map((l) => '<li><span class="lchip ' + l.c + '">' + l.c + '</span><span>' + esc(l.t) + '</span></li>').join('') +
-        '</ul></div>' +
-        s.sites.map((site) => '<div class="site-block"><span class="sb">' + site.label + '</span>' + site.marked + '</div>').join('') +
-        '<div class="srationale" style="margin-top:12px"><span class="rl">Rationale · unsigned</span>' + esc(s.rationale) + '</div>' +
-        '<div class="sactions">' +
-        '<button class="btn btn-approve" data-act="approve">Approve — all ' + s.sites.length + ' changes</button>' +
-        '<button class="btn" data-act="keep">Keep the current text</button>' +
-        '<button class="btn btn-outline" data-act="skip">Skip</button>' +
+        meterHtml(s.id) +
+        '<div class="stext small" style="color:var(--muted);margin-top:8px">This change touches ' + n +
+        ' places and is taken as one. Which should stand — the charter as it is, or the change?</div>' +
+        ledgerHtml(s.ledger, '', s.rationale) +
+        '<div class="race-grid">' +
+        '<div class="rcand">' +
+        '<div class="rtag">Option A<span class="rsub">the charter as it stands</span></div>' +
+        s.sites.map((site) => lane(site, esc(currentTextFor(site.key)))).join('') +
         '</div>' +
+        '<div class="rcand">' +
+        '<div class="rtag">Option B<span class="rsub">the change, in all ' + n + ' places</span></div>' +
+        s.sites.map((site) => lane(site, site.marked)).join('') +
+        '</div>' +
+        '</div>' +
+        pillHtml(s, 'keep', 'approve', 'Option A', 'Option B') +
+        commitRowHtml(s) +
+        '<div class="foot">One judgment for all ' + n +
+        ' places — they cannot be taken separately · preferring A records a judgment for the current text · authorship sealed</div>' +
         '</div>'
       );
     }
-    // quick (including insert)
+    // quick (including insert) — the race card's own geometry, with Option A the
+    // incumbent and Option B the proposal, so choosing A *is* keep-current.
+    const cur = s.isInsert ? '' : currentTextFor((s.keys ?? [])[0]);
     return (
-      '<div class="sugg" data-card="' + s.id + '">' +
-      '<div class="shead"><span>' + (s.isInsert ? 'New section proposed' : 'Suggestion') + '</span><span class="sub">' + s.qSub + '</span></div>' +
+      '<div class="sugg quick-open" data-card="' + s.id + '">' +
+      '<div class="shead"><span>' + (s.isInsert ? 'New section proposed' : 'Suggestion') + ' · ' + s.qLabel + '</span><span class="sub">' + s.qSub + '</span></div>' +
       reviseNote(s) +
       meterHtml(s.id) +
-      (s.isInsert ? '<div style="margin-top:8px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--ins-text);margin-bottom:4px;"><ins>' + esc(s.newHeading) + '</ins></div>' : '') +
-      '<div class="stext">' + s.marked + '</div>' +
-      '<div class="srationale"><span class="rl">Rationale · unsigned</span>' + esc(s.rationale) + '</div>' +
-      '<div class="sactions">' +
-      '<button class="btn btn-approve" data-act="approve">' + (s.isInsert ? 'Approve — add the section' : 'Approve this change') + '</button>' +
-      '<button class="btn" data-act="keep">' + (s.isInsert ? 'Keep the charter as it is' : 'Keep the current text') + '</button>' +
-      '<button class="btn btn-outline" data-act="skip">Skip</button>' +
+      '<div class="stext small" style="color:var(--muted);margin-top:8px">' +
+      (s.isInsert
+        ? 'Should this section stand in the charter, or should the charter stay as it is?'
+        : 'Which should stand here — the text as it is, or the change?') +
       '</div>' +
+      ledgerHtml(s.ledger, '', s.rationale) +
+      '<div class="race-grid">' +
+      '<div class="rcand">' +
+      '<div class="rtag">Option A<span class="rsub">' + (s.isInsert ? 'the charter as it stands' : 'the current text') + '</span></div>' +
+      (s.isInsert
+        ? '<div class="rtext none">Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.</div>'
+        : '<div class="rtext">' + esc(cur) + '</div>') +
+      '</div>' +
+      '<div class="rcand">' +
+      '<div class="rtag">Option B<span class="rsub">' + (s.isInsert ? 'the proposed section' : 'the proposed change') + '</span></div>' +
+      (s.isInsert ? '<div class="rtext"><ins>' + esc(s.newHeading) + '</ins></div>' : '') +
+      '<div class="rtext">' + s.marked + '</div>' +
+      '</div>' +
+      '</div>' +
+      pillHtml(s, 'keep', 'approve', 'Option A', 'Option B') +
+      commitRowHtml(s) +
+      '<div class="foot">Preferring A records a judgment for the current text · indifference here involves the current text, so it feeds the care map (SPEC §3.2) · authorship sealed · no counts, no standings</div>' +
       '</div>'
     );
   }
 
   function renderDoc() {
-    const liveChanges = CHANGES.filter((c) => !seenChanges.has(c.key));
-    let html = '';
-    if (liveChanges.length && !bannerDismissed) {
-      html += '<div class="banner"><span><b>While you were away:</b> \u00a7 Meetings and Decisions changed ' + liveChanges[0].when + '.</span>' +
-        '<button class="btn btn-outline" data-chg-open="decisions">See what changed</button>' +
-        '<button class="btn btn-outline" data-banner-dismiss>Dismiss</button></div>';
-    }
-    html += '<div class="prose">';
+    let html = '<div class="prose">';
     let cardDone = false;
+    let headIdx = 0;
     for (const line of DOC) {
       if (line.t === 'title') { html += '<div class="doctitle">' + esc(line.x) + '</div>'; continue; }
-      if (line.t === 'h') { html += '<h2 class="docline">' + esc(line.x) + '</h2>'; continue; }
+      if (line.t === 'h') {
+        const n = headIdx++;
+        if (buriedBy(n)) continue;                      // an outer fold hides this heading too
+        const inside = collapsed.has(n) ? suggestionsInSection(n) : 0;
+        html += '<h2 class="docline lvl' + (line.level ?? 1) + '" id="sec-' + n + '">' + toggleHtml(n) + esc(line.x) +
+          (inside ? '<span class="sechint">' + inside + (inside === 1 ? ' suggestion' : ' suggestions') + ' inside</span>' : '') +
+          '</h2>';
+        continue;
+      }
+      // a paragraph goes with the innermost heading above it, and with its parents
+      if (headIdx > 0 && hiddenSection(headIdx - 1)) continue;
 
       const live = line.key ? suggFor(line.key) : [];
       const wasResolved = line.key && !live.length &&
-        SUGGS.some((g) => resolved.has(g.id) && (g.keys ?? []).includes(line.key));
+        SUGGS.some((g) => (resolved.has(g.id) || g.state === 'sealed') && (g.keys ?? []).includes(line.key));
 
       if (live.length) {
         const primary = live.find((x) => x.id === openId) ?? live[0];
         const kin = openId === primary.id && primary.kind === 'patch' && cardDone;
         const chips = live.map((g) => {
           const siteIdx = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === line.key) : -1;
-          let text = g.kind === 'patch' ? (siteIdx + 1) + ' of ' + g.sites.length : g.chip;
-          if (resolved.has(g.id)) text = '✓ ' + text;
+          let text = g.kind === 'patch' ? (siteIdx + 1) + ' of ' + g.sites.length : chipText(g);
+          if (isJudged(g)) text = '✓ ' + text;
           return '<span class="achip ' + g.kind + '" data-anchor="' + g.id + '">' + text + '</span>';
         }).join('');
         html +=
           '<p class="anch ' + primary.kind + (kin ? ' kin' : '') + '" data-anchor="' + primary.id + '" title="Open this suggestion">' +
-          chips + esc(line.x) + '</p>';
+          '<span class="chipcol">' + chips + '</span>' + esc(line.x) + '</p>';
         const openSugg = live.find((x) => x.id === openId);
         if (openSugg && !cardDone) {
           html += '</div>' + suggCardHtml(openSugg) + '<div class="prose">';
@@ -595,7 +1361,8 @@
       } else {
         const chg = line.key ? CHANGES.find((c) => c.key === line.key && !seenChanges.has(c.key)) : undefined;
         if (chg) {
-          html += '<p class="anch-chg" data-chg-open="' + chg.key + '"><span class="chgchip">changed ' + chg.when + '</span>' + esc(line.x) + '</p>';
+          html += '<p class="anch-chg" data-chg-open="' + chg.key + '"' + freshDelay() + '>' +
+            '<span class="chipcol"><span class="chgchip">changed ' + chg.when + '</span></span>' + esc(line.x) + '</p>';
           if (openChange === chg.key) {
             html += '</div><div class="chgcard">' +
               '<div class="shead"><span>What changed here · ' + chg.when + '</span><span class="sub">' + chg.note + '</span></div>' +
@@ -607,7 +1374,7 @@
           }
         } else {
           html += '<p' + (wasResolved ? ' class="anch resolved"' : '') + '>' +
-            (wasResolved ? '<span class="achip resolved">judged ✓</span>' : '') + esc(line.x) + '</p>';
+            (wasResolved ? '<span class="chipcol"><span class="achip resolved">judged ✓</span></span>' : '') + esc(line.x) + '</p>';
         }
       }
 
@@ -615,7 +1382,8 @@
         ? SUGGS.find((g) => g.insertAfterKey === line.key)
         : undefined;
       if (ins) {
-        html += '</div><div class="insert-anchor" data-anchor="' + ins.id + '"><span>＋ proposed new section — ' + esc(ins.newHeading) + '</span></div>';
+        html += '</div><div class="insert-anchor" data-anchor="' + ins.id + '"><span>＋ proposed new section — ' + esc(ins.newHeading) +
+          '<span class="isub">a held-open gap the depth of what would stand here · click to read it</span></span></div>';
         if (openId === ins.id) html += suggCardHtml(ins);
         html += '<div class="prose">';
       }
@@ -623,6 +1391,9 @@
     html += '</div>';
     doc.innerHTML = html;
 
+    doc.querySelectorAll('[data-sec-toggle]').forEach((b) =>
+      b.addEventListener('click', (ev) => { ev.stopPropagation(); toggleSection(+b.dataset.secToggle); })
+    );
     doc.querySelectorAll('[data-anchor]').forEach((el) =>
       el.addEventListener('click', (ev) => {
         if (ev.target.closest('.sugg')) return;
@@ -630,10 +1401,28 @@
         toggle(el.dataset.anchor, false);
       })
     );
+    // choosing: updates the pill in place, so the document doesn't move under you
+    doc.querySelectorAll('.sugg [data-v]').forEach((b) =>
+      b.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const card = b.closest('.sugg');
+        const s = SUGGS.find((x) => x.id === card.dataset.card);
+        if (!s || s.locked) return;
+        picked.set(s.id, b.dataset.v);
+        card.querySelectorAll('[data-v]').forEach((o) =>
+          o.setAttribute('aria-pressed', String(o.dataset.v === b.dataset.v)));
+        const submit = card.querySelector('[data-act="submit"]');
+        if (submit) submit.removeAttribute('disabled');
+      })
+    );
+    // committing
     doc.querySelectorAll('.sugg [data-act]').forEach((b) =>
       b.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        act(b.closest('.sugg').dataset.card, b.dataset.act);
+        const id = b.closest('.sugg').dataset.card;
+        const what = b.dataset.act === 'submit' ? picked.get(id) : b.dataset.act;
+        if (!what) return;                       // nothing chosen yet
+        act(id, what);
       })
     );
     doc.querySelectorAll('[data-chg-open]').forEach((el) =>
@@ -643,9 +1432,6 @@
         openChange = openChange === el.dataset.chgOpen ? null : el.dataset.chgOpen;
         renderAll();
       })
-    );
-    doc.querySelectorAll('[data-banner-dismiss]').forEach((el) =>
-      el.addEventListener('click', () => { bannerDismissed = true; renderAll(); })
     );
     doc.querySelectorAll('[data-chg-seen]').forEach((el) =>
       el.addEventListener('click', (ev) => {
@@ -664,12 +1450,147 @@
     );
   }
 
+  // Own the animation rather than asking for behavior:'smooth' — native smooth
+  // scrolling is silently a no-op in some browser configurations, and this also
+  // gives us a definite "it has landed" moment to re-measure from.
+  function smoothScrollBy(delta, done) {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      scrollTo(0, scrollY + delta);
+      done();
+      return;
+    }
+    const from = scrollY;
+    const dur = Math.min(700, Math.max(260, Math.abs(delta) * 0.5));
+    const t0 = performance.now();
+    const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const step = (now) => {
+      const t = Math.min(1, (now - t0) / dur);
+      scrollTo(0, from + delta * ease(t));
+      if (t < 1) requestAnimationFrame(step); else done();
+    };
+    requestAnimationFrame(step);
+  }
+
+  // Bring the document to the queue card so the wire runs flat. A multi-site
+  // patch levels on its topmost site; the others fan off that line.
+  // The queue is sticky, so one scroll can move both ends — measure again and
+  // correct, but stop as soon as a pass stops improving.
+  function levelWire(id, pass, prev, done) {
+    const fin = () => { drawWires(); if (done) done(); };
+    const btn = queueEl.querySelector('[data-q="' + id + '"]');
+    const targets = wireTargets(id);
+    if (!btn || !targets.length) return fin();
+    const top = targets.reduce((a, c) =>
+      (c.getBoundingClientRect().top < a.getBoundingClientRect().top ? c : a));
+    const b = btn.getBoundingClientRect();
+    const r = top.getBoundingClientRect();
+    // identical endpoints to drawWires, or the line won't actually come out flat
+    const delta = (r.top + Math.min(r.height / 2, 16)) - (b.top + b.height / 2);
+    const stalled = prev !== undefined && Math.abs(delta) >= Math.abs(prev) * 0.7;
+    if (Math.abs(delta) < 1.5 || pass > 2 || stalled) return fin();
+    // Past the end of the charter the rail runs out of container and rides with
+    // the page: both ends of the wire then move together, so scrolling further
+    // down can never flatten it — it only travels. Refuse that pass.
+    const layout = document.querySelector('.layout');
+    const rail = queueEl.parentElement;
+    const pinnable = layout.getBoundingClientRect().bottom - rail.getBoundingClientRect().height >= 58;
+    if (delta > 0 && !pinnable) return fin();
+    smoothScrollBy(delta, () => levelWire(id, pass + 1, delta, done));
+  }
+
+  // Opening and closing a card changes the height of the document under the
+  // scroll, so doing both in one frame makes the page lurch. Collapse the old
+  // card, *then* move, *then* expand the new one — three steps, never overlapping.
+  const REDUCED = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const COLLAPSE_MS = 190, EXPAND_MS = 230;
+
+  function collapseCard(el, done) {
+    if (!el || REDUCED()) return done();
+    const h = el.offsetHeight;
+    el.style.overflow = 'hidden';
+    el.style.height = h + 'px';
+    void el.offsetHeight;
+    el.style.transition = 'height ' + COLLAPSE_MS + 'ms ease-in, opacity ' + (COLLAPSE_MS - 50) +
+      'ms ease-in, margin ' + COLLAPSE_MS + 'ms ease-in, padding ' + COLLAPSE_MS + 'ms ease-in';
+    el.style.height = '0px';
+    el.style.opacity = '0';
+    el.style.marginTop = '0px'; el.style.marginBottom = '0px';
+    el.style.paddingTop = '0px'; el.style.paddingBottom = '0px';
+    el.style.borderTopWidth = '0px'; el.style.borderBottomWidth = '0px';
+    setTimeout(done, COLLAPSE_MS);
+  }
+
+  function expandCard(el, done) {
+    if (!el || REDUCED()) return done();
+    const h = el.offsetHeight;
+    el.style.overflow = 'hidden';
+    el.style.height = '0px';
+    el.style.opacity = '0';
+    void el.offsetHeight;
+    el.style.transition = 'height ' + EXPAND_MS + 'ms ease-out, opacity ' + (EXPAND_MS - 30) + 'ms ease-out';
+    el.style.height = h + 'px';
+    el.style.opacity = '1';
+    setTimeout(() => {
+      el.style.height = ''; el.style.overflow = ''; el.style.transition = ''; el.style.opacity = '';
+      drawWires();
+      done();
+    }, EXPAND_MS);
+  }
+
+  const openCardEl = (id) => doc.querySelector('.sugg[data-card="' + id + '"]');
+
+  // A click during a transition supersedes it rather than being swallowed: each
+  // sequence carries a token, and every step drops out if a newer one has begun.
   function toggle(id, scroll) {
-    openId = openId === id ? null : id;
-    renderAll();
-    if (scroll && openId) {
-      const el = doc.querySelector('[data-anchor="' + id + '"], [data-card="' + id + '"]');
-      if (el) el.scrollIntoView({ block: 'center', behavior: 'auto' });
+    const closing = openId;
+    const next = openId === id ? null : id;
+    if (!closing && !next) return;
+    const my = ++seqToken;
+    const alive = () => my === seqToken;
+    pendingId = next;                             // keeps the wire drawn throughout
+
+    const settle = () => { if (!alive()) return; pendingId = null; drawWires(); };
+
+    const thenMove = () => {
+      if (!alive()) return;
+      // Every fold change happens here, before anything is measured: letting go
+      // of the last patch, unfolding whatever this card points into, and drawing
+      // a patch's sites together. Then the document is still for the scroll.
+      let touched = restoreAutoFolds();
+      if (!next) {
+        if (touched) { renderToc(); renderAll(); }
+        return settle();
+      }
+      if (expandFor(next)) touched = true;
+      if (foldBetweenSites(next)) touched = true;
+      if (touched) { renderToc(); renderAll(); }
+      const open = () => {
+        if (!alive()) return;
+        openId = next;
+        renderAll();
+        expandCard(openCardEl(next), () => {
+          if (!alive()) return;
+          // The expanded card makes the document taller, which can shift a
+          // sticky queue card near the end of the charter — where the rail is
+          // running out of room to stick. Take up whatever slack that added.
+          // A no-op everywhere else, since the alignment is already exact.
+          if (scroll) levelWire(next, 0, undefined, settle); else settle();
+        });
+      };
+      // measure the scroll with the old card gone and the new one not yet in,
+      // so nothing shifts underneath the alignment
+      if (scroll) levelWire(next, 0, undefined, open); else open();
+    };
+
+    if (closing) {
+      collapseCard(openCardEl(closing), () => {
+        if (!alive()) return;
+        openId = null;
+        renderAll();
+        thenMove();
+      });
+    } else {
+      thenMove();
     }
   }
 
@@ -689,25 +1610,82 @@
       : what === 'indifferent' ? 'indifferent'
       : 'skipped (recirculates with decay)';
     if (what === 'skip') {
-      if (openId === id) openId = null;
-      renderAll();
+      const shut = () => {
+        if (openId === id) openId = null;
+        if (restoreAutoFolds()) renderToc();
+        renderAll();
+        drawWires();
+      };
+      if (openId === id) collapseCard(openCardEl(id), shut); else shut();
       return;
     }
     const firstTime = !resolved.has(id);
     const finish = () => {
       verdicts.set(id, verdict);
+      picked.set(id, what);          // reopening shows the pill as you left it
       resolved.add(id);
       if (openId === id) openId = null;
       justArrived = firstTime ? id : null;
+      if (restoreAutoFolds()) renderToc();   // a judged patch lets its sections go
       renderAll();
     };
+    // Same rule as toggle: the card shrinks out of the document before the
+    // document re-lays-out, so judging doesn't jolt the page either.
     const btn = queueEl.querySelector('[data-q="' + id + '"]');
-    if (firstTime && btn && btn.classList) {
-      btn.classList.add('leaving');
-      setTimeout(finish, 240);
-    } else finish();
+    const slide = firstTime && btn && btn.classList;
+    if (slide) btn.classList.add('leaving');
+    const wait = slide ? 240 : 0;
+    if (openId === id) {
+      collapseCard(openCardEl(id), () => setTimeout(finish, Math.max(0, wait - COLLAPSE_MS)));
+    } else {
+      setTimeout(finish, wait);
+    }
   }
 
-  function renderAll() { renderQueue(); renderDoc(); }
+  // contents-rail: the document's own headings, in document order.
+  function renderToc() {
+    const heads = DOC.filter((l) => l.t === 'h');
+    tocEl.innerHTML = heads
+      .map((h, i) => buriedBy(i) ? '' :        // a folded part closes its branch of the rail too
+        '<li class="lvl' + (h.level ?? 1) + '">' + toggleHtml(i) +
+        '<a href="#sec-' + i + '" data-toc="' + i + '">' + esc(h.x) + '</a></li>')
+      .join('');
+    tocEl.querySelectorAll('[data-sec-toggle]').forEach((b) =>
+      b.addEventListener('click', (ev) => { ev.preventDefault(); toggleSection(+b.dataset.secToggle); })
+    );
+    tocEl.querySelectorAll('[data-toc]').forEach((a) =>
+      a.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const el = document.getElementById('sec-' + a.dataset.toc);
+        // same owned animation as the queue-wire, and clear of the sticky navbar
+        if (el) smoothScrollBy(el.getBoundingClientRect().top - 72, () => markCurrentSection());
+      })
+    );
+  }
+
+  // The rail follows the reader: the last heading to have crossed the top.
+  function markCurrentSection() {
+    const links = tocEl.querySelectorAll('[data-toc]');
+    let current = 0;
+    links.forEach((a, i) => {
+      const el = document.getElementById('sec-' + i);
+      if (el && el.getBoundingClientRect().top <= 120) current = i;
+    });
+    links.forEach((a, i) => a.classList.toggle('current', i === current));
+  }
+
+  function renderAll() { renderQueue(); renderDoc(); markCurrentSection(); drawWires(); }
+  renderToc();
   renderAll();
+
+  // The queue is sticky and the wires are drawn in viewport space, so both the
+  // rail highlight and the wires have to be recomputed as the page moves.
+  let ticking = false;
+  const onViewportChange = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { markCurrentSection(); drawWires(); ticking = false; });
+  };
+  addEventListener('scroll', onViewportChange, { passive: true });
+  addEventListener('resize', onViewportChange);
 </script>
