@@ -31,7 +31,7 @@
            varies its strength by urgency. Colour means you can still
            affect it; grey means the door is shut (Ed, 164). --------- */
     --lc-urgent: 253, 126, 20;    /* 🔥 orange — wants you most        */
-    --lc-open: 245, 197, 24;      /* ❓ ❌ yellow — open, or stuck     */
+    --lc-open: 245, 197, 24;      /* 💡 ❌ yellow — open, or stuck     */
     --lc-deciding: 13, 110, 253;  /* ⏳ blue — judged, still running   */
     --lc-closed: 108, 117, 125;   /* ✅ ❎ 🔄 ☑️ grey — nothing to do  */
     --stuck-ink: #8A6D00;         /* the one caption that instructs    */
@@ -1048,7 +1048,10 @@
     {
       id: 'race-sanctions', kind: 'race', keys: ['sanctions'], state: 'needs', deadlocked: true,
       qLabel: '§ Sanctions', qSub: '4 proposals racing',
-      urgency: 0.05,
+      // judgment leverage is nil here, which is what deadlocked *means*; the
+      // rail ranks it on `bounty` instead — resolvable disagreement × salience,
+      // the bounty board's own score (Ed, 223)
+      urgency: 0.05, bounty: 0.86,
       pct: 100, cap: 'deadlocked — more judgments won’t move it; only a new proposal can',
       candidates: 4, pairsJudged: 6,
       race: {
@@ -1484,13 +1487,20 @@
   // to it, at the top left of every card. Kind (quick/race/patch) stays a word
   // beside it — two marks, two axes.
   const MARK = {
-    needs: '❓',      // a question put to you
+    // A rail entry is somebody's proposal, not a question the system invented,
+    // so it wears a lightbulb rather than a question mark (Ed, 241). The move
+    // that makes this work is promoting the *action* to its own glyph: ✏️ is
+    // more literal than 💡 for "write one" anyway — a bulb is about having had
+    // an idea, a pencil is about writing — so each glyph ends up nearer its own
+    // job. It also settles a small clash: ❓ renders red in most emoji fonts
+    // while its card washes yellow, and 💡 is yellow.
+    needs: '💡',      // an idea is on the table, and it wants your judgment
     urgent: '🔥',     // the one that wants you most
     // The rail says what is true; the buttons say what you can do. So a
-    // deadlocked race is marked "stuck" — same red as ❓, because it is still an
-    // open question — and 💡 lives on the propose actions it leads to (Ed, 173).
+    // deadlocked race is marked "stuck" — same yellow as 💡, because it is
+    // still open — and ✏️ lives on the drafting it leads to (Ed, 173, 241).
     stuck: '❌',      // judging cannot move this; only a new draft can
-    propose: '💡',    // ...and this is where you write one
+    propose: '✏️',    // ...and this is where you write one
     weigh: '⚖️',      // a salience diagonal: which of two questions matters more
     deciding: '⏳',   // yours is in; the race runs on
     shifted: '🔄',    // the ground moved: this one comes back around, rebuilt
@@ -1652,6 +1662,11 @@
   // A flow entry that would end up underneath a pinned card is hidden rather
   // than nudged: nudging makes the whole rail crawl as you scroll.
   const QGAP = 8, BAND_TOP = 70, BAND_BOT = 24;
+  // A deadlocked race ranks above every ordinary question (Ed, 223). It can
+  // out-rank the flame in the *order*, which costs nothing: the flame is kept
+  // regardless of room, so its primacy rests on the exemption rather than on
+  // where it sits in the sort.
+  const DEADLOCK_FLOOR = 0.9;
   function layoutQueue() {
     const railRect = queueEl.getBoundingClientRect();
     const railTop = railRect.top + scrollY;
@@ -1663,17 +1678,26 @@
       const g = SUGGS.find((x) => x.id === el.dataset.q);
       const row = { el, want: (a.getBoundingClientRect().top + scrollY) - railTop, h: el.offsetHeight,
         // The ranking is over **judgment leverage**, so an entry that is not
-        // asking for a judgment cannot be ranked on it and takes the middle of
-        // the scale instead — competing on equal terms rather than either
-        // jumping the queue or sinking out of sight.
+        // asking for a judgment cannot be ranked on it.
         //
-        // Two of them. An unacknowledged decision is a notification, not a
-        // question. And a deadlocked race scores ~0 because no judgment of
-        // yours can move it (SPEC §8.3) — which is emphatically not the same as
-        // *not wanting you*: it is the one entry on the surface asking for a
-        // draft rather than a verdict, and ranking it on the judgment scale
-        // buried the only card whose instructions differ from every other.
-        u: (isUnread(g) || g.deadlocked) ? 0.5 : (g.urgency ?? 0) };
+        // An unacknowledged decision is a notification rather than a question,
+        // and takes the middle of the scale — competing on equal terms rather
+        // than either jumping the queue or sinking out of sight.
+        //
+        // A **deadlocked** race is the opposite case and took some getting to
+        // (Ed, 223). It scores ~0 on urgency because no judgment of yours can
+        // move it (SPEC §8.3), so ranking it that way buried the only card
+        // whose instructions differ from every other. But it is not a low-value
+        // entry at all: judgment leverage there is nil precisely because
+        // *drafting* leverage is the highest available anywhere on the surface.
+        // The scale was measuring the wrong act. It is ranked instead by its
+        // bounty score — resolvable disagreement × salience, which engine-core
+        // already computes for the bounty board (SPEC §6.2) — mapped to the top
+        // of the range, so the most valuable stuck race stands near the flame,
+        // several of them queue among themselves in the order the bounty board
+        // would give, and the rail and the board agree with each other.
+        u: isUnread(g) ? 0.5 : g.deadlocked ? DEADLOCK_FLOOR + (1 - DEADLOCK_FLOOR) * (g.bounty ?? 0.5)
+          : (g.urgency ?? 0) };
       // Whatever is open is pinned for as long as it is open, whatever its
       // state: it is the thing you are looking at, and its wire has to hold.
       // `pendingId` counts as open — the document is moved *before* the card
@@ -1718,27 +1742,65 @@
       room -= r.h + QGAP;
       keep.add(r);
     }
-    const shown = pinned.filter((r) => keep.has(r));
-    pinned.filter((r) => !keep.has(r)).forEach((r) => { r.el.style.display = 'none'; });
+    let shown = pinned.filter((r) => keep.has(r));
+    const drop = (r) => { r.el.style.display = 'none'; };
+    pinned.filter((r) => !keep.has(r)).forEach(drop);
 
-    // Settle the pile from both ends: forward so nothing starts above the band
-    // or on top of the entry before it, backward so nothing ends below it. What
-    // is left is each card at its clause where the clause is on screen, and
-    // piled against the edge it went off by where it isn't.
+    // Settle the pile. Each entry wants its clause's line and takes it where the
+    // clause is on screen; where it isn't, the card holds at the edge the clause
+    // left by.
     shown.forEach((r) => { r.top = Math.min(Math.max(r.want, bandTop), bandBot - r.h); });
-    // the open entry gets first claim on its clause's line — its wire is the one
-    // that has to read flat — and the pile gives way outward from it
+
     const k = shown.findIndex((r) => holdsFocus(r.el));
-    for (let i = k - 1; i >= 0; i--) shown[i].top = Math.min(shown[i].top, shown[i + 1].top - shown[i].h - QGAP);
-    for (let i = k + 1; k >= 0 && i < shown.length; i++) shown[i].top = Math.max(shown[i].top, shown[i - 1].top + shown[i - 1].h + QGAP);
-    // then the band wins, in both directions: staying on the screen is the rule,
-    // and a wire that has to run at an angle is the price when the rail is full
-    let cur = bandTop;
-    shown.forEach((r) => { r.top = Math.max(r.top, cur); cur = r.top + r.h + QGAP; });
-    let lim = bandBot;
-    for (let i = shown.length - 1; i >= 0; i--) {
-      shown[i].top = Math.min(shown[i].top, lim - shown[i].h);
-      lim = shown[i].top - QGAP;
+    if (k >= 0) {
+      // **The open entry's claim on its clause's line is absolute** (Ed, 222).
+      //
+      // It used to be a preference that the band could overrule: the pile gave
+      // way outward from the open entry, and then a forward pass from the top of
+      // the band pushed everything down again to stop it overlapping — which,
+      // on a clause late in the charter with a dozen entries above it, shoved
+      // the open entry hundreds of pixels below the clause its wire points at.
+      // Measured at ~870px at worst. A second scroll used to hide that by
+      // dragging the *document* until the two met, and removing that scroll
+      // (which is what stopped the page lurching) left the geometry exposed.
+      //
+      // So the open entry does not move, and the entries that cannot fit around
+      // it are **dropped into the count** rather than displacing it. That is a
+      // fair trade now for a reason it would not have been before: since the
+      // rail admits by urgency, "what did not fit" is already the ordinary,
+      // reported outcome rather than an exception — the tally at the foot goes
+      // from +15 to +17 and says so. The one oddity to accept is that a
+      // higher-ranked entry can be dropped to keep a lower-ranked open one flat,
+      // which is right on the grounds that the open card is the thing the reader
+      // is actually looking at.
+      const open = shown[k];
+      const cut = [];
+      let lim = open.top - QGAP;
+      for (let i = k - 1; i >= 0; i--) {
+        const r = shown[i];
+        r.top = Math.min(r.top, lim - r.h);
+        if (r.top < bandTop) { cut.push(r); continue; }
+        lim = r.top - QGAP;
+      }
+      let cur = open.top + open.h + QGAP;
+      for (let i = k + 1; i < shown.length; i++) {
+        const r = shown[i];
+        r.top = Math.max(r.top, cur);
+        if (r.top + r.h > bandBot) { cut.push(r); continue; }
+        cur = r.top + r.h + QGAP;
+      }
+      cut.forEach(drop);
+      shown = shown.filter((r) => !cut.includes(r));
+    } else {
+      // Nothing open: settle from both ends, forward so nothing starts above the
+      // band or on top of the entry before it, backward so nothing ends below it.
+      let cur = bandTop;
+      shown.forEach((r) => { r.top = Math.max(r.top, cur); cur = r.top + r.h + QGAP; });
+      let lim = bandBot;
+      for (let i = shown.length - 1; i >= 0; i--) {
+        shown[i].top = Math.min(shown[i].top, lim - shown[i].h);
+        lim = shown[i].top - QGAP;
+      }
     }
     shown.forEach((r) => { r.el.classList.add('pinned'); r.el.style.top = Math.round(r.top) + 'px'; });
 
@@ -2075,7 +2137,7 @@
         '<div class="rcand pickable"' + laneAttrs(s, 'a') + '><div class="rtext">' + esc(s.race.a.text) + '</div></div>' +
         '<div class="rcand pickable"' + laneAttrs(s, 'b') + '><div class="rtext">' + esc(s.race.b.text) + '</div></div>' +
         '</div>' +
-        commitRowHtml(s, '<button class="btn btn-outline" data-act="propose">💡 Propose something else · 1 token</button>') +
+        commitRowHtml(s, '<button class="btn btn-outline" data-act="propose">✏️ Propose something else · 1 token</button>') +
         reviseNote(s) +
         '<div class="foot">Authorship sealed · no counts, no standings · full race view has comparison modes and the whole queue</div>' +
         '</div>'

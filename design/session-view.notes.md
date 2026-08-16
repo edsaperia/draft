@@ -12,7 +12,7 @@ The stylesheet is tokenised. Anything hard-coded outside this list is a mistake 
 
 **Colour.** Ink and ground: `--bg --fg --muted --border --light`. One accent, `--primary` and its hover/subtle/emphasis, used for every open card, every wire, and every selection (Ed, 198). One success, `--ok` and its hover/subtle, meaning *decided* and nothing else — the winning text in a record, and the tick that commits.
 
-**Lifecycle** is its own four-part palette, held as raw RGB channels because the wash varies its strength: `--lc-urgent` (🔥 orange), `--lc-open` (❓ ❌ yellow), `--lc-deciding` (⏳ blue), `--lc-closed` (✅ ❎ 🔄 ☑️ grey). One rule governs it — **colour means you can still affect it; grey means the door is shut** (Ed, 164) — and it is applied identically in three places: the queue card's wash, the paragraph's wash in the document, and the mark in the gutter.
+**Lifecycle** is its own four-part palette, held as raw RGB channels because the wash varies its strength: `--lc-urgent` (🔥 orange), `--lc-open` (💡 ❌ yellow), `--lc-deciding` (⏳ blue), `--lc-closed` (✅ ❎ 🔄 ☑️ grey). One rule governs it — **colour means you can still affect it; grey means the door is shut** (Ed, 164) — and it is applied identically in three places: the queue card's wash, the paragraph's wash in the document, and the mark in the gutter.
 
 **Type** is five sizes and a caption: `--t-lead` (the document's title), `--t-body` (a clause under judgment), `--t-ui` (card and rail titles, buttons, the rationale), `--t-small` (one-line entries, footnotes), `--t-cap` (captions and footers), `--t-micro` (eyebrow labels only). The `.eyebrow` class carries the one upper-case label treatment, so the six or seven places that use it cannot drift apart.
 
@@ -204,7 +204,7 @@ The 🔥 exception (Ed, 214) follows from what the flame is for. Ed's own argume
 
 Every rail entry now carries a glyph at its top left saying where it stands in **your** relationship to it — not what kind of judgment it is, which stays a word beside it. Two marks, two axes.
 
-❓ needs you · 🔥 the one that wants you most · ⏳ you've judged, the race runs on · 🔄 the ground moved and this one comes back rebuilt · ✅ decided and the charter changed · ❎ decided and the incumbent held · ☑️ decided and filed.
+💡 a proposal, and it wants your judgment · 🔥 the one that wants you most · ⏳ you've judged, the race runs on · 🔄 the ground moved and this one comes back rebuilt · ✅ decided and the charter changed · ❎ decided and the incumbent held · ☑️ decided and filed.
 
 **A decision says which way it went** (Ed, 160), not merely that it happened. ✅ and ❎ are a matched pair — the same green square, check or cross — so the outcome is legible before you open anything, and the two cases are genuinely different news: one means the text under that clause is not what it was, the other means an argument was had and settled nothing. Making a member open the card to learn which would have been the kind of small withholding this surface is otherwise careful to avoid. It also makes the unread queue honest about its own weight: three purple lines of which two are changes and one is a non-change is a lighter afternoon than three changes.
 
@@ -248,11 +248,11 @@ Queue cards lost their outlines. A rule round the outside was competing with the
 
 Two things had been riding on borders and had to go somewhere. **Selection** is now a ring drawn in `box-shadow` rather than a border, so opening a card doesn't reflow the rail by two pixels. And the **patch siblings' dashed outline** is simply gone: the "1 of 3 places" line was already saying it, and the spine down the gutter says it properly once the card is open. Reinforcement, not information.
 
-**What is left over.** ❓ still renders red, and against a yellow card it reads as deliberate rather than alarming — road sign, not error — so it stays (158a). The remaining collision is **the kind chips**, and the calmer the rail gets the more they show: QUICK is green, RACE is yellow, PATCH is blue, and every one of those hues now means something else. A green QUICK chip on an orange most-urgent card says "settled" and "burning" two centimetres apart. Q163.
+**What was left over.** ❓ rendered red against a yellow card, which read as deliberate rather than alarming — road sign, not error — so it stayed at the time (158a). It has since gone: see *The alphabet says what act is wanted* below. The remaining collision is **the kind chips**, and the calmer the rail gets the more they show: QUICK is green, RACE is yellow, PATCH is blue, and every one of those hues now means something else. A green QUICK chip on an orange most-urgent card says "settled" and "burning" two centimetres apart. Q163.
 
 ## Stuck, and where you unstick it (Ed, 166, 173)
 
-A **deadlocked race** gets ❌ — the same red as ❓, because it is still an open question, with the cross saying *this one is stuck*. More judgment cannot move it (SPEC §8.3); only a new proposal can. And **💡 marks every place the action is to write one**: the propose button on a race card, the propose button on a change card, and wherever else drafting is offered later.
+A **deadlocked race** gets ❌ — the same yellow as its neighbours, because it is still an open question, with the cross saying *this one is stuck*. More judgment cannot move it (SPEC §8.3); only a new proposal can. And **💡 marks every place the action is to write one**: the propose button on a race card, the propose button on a change card, and wherever else drafting is offered later.
 
 That split is the useful part. **The rail says what is true; the buttons say what you can do.** A mark in the margin describes the state of a clause — it is not a control and should not pretend to be one — while 💡 appears only on things you can press. Marking the queue entry 💡 would have implied you could draft from the margin, which you cannot: you open the card, and there the button is.
 
@@ -268,7 +268,7 @@ Each heading in the `contents-rail` now carries the lifecycle marks of the quest
 
 It closes the loop the three rails were always implying. The `needs-you-queue` says *what is being asked of you*, in document order. The contents rail now says *where in the charter the asking is happening*, at section granularity. Same alphabet, two zoom levels, and the document itself in between.
 
-Two rules make it behave. **Ownership is innermost** — a mark appears on exactly one heading, the nearest above its clause, so nothing is double-counted down the tree. Except that a **folded** heading takes its descendants' marks, because while it is shut they have no line of their own; that reuses the same collapse logic as the "N suggestions inside" hint and means folding a Part summarises it rather than hiding it. And a **patch counts once per section it touches**, not once per site, which is why the rename shows a single ❓ against each of the three offices it renames rather than three against one.
+Two rules make it behave. **Ownership is innermost** — a mark appears on exactly one heading, the nearest above its clause, so nothing is double-counted down the tree. Except that a **folded** heading takes its descendants' marks, because while it is shut they have no line of their own; that reuses the same collapse logic as the "N suggestions inside" hint and means folding a Part summarises it rather than hiding it. And a **patch counts once per section it touches**, not once per site, which is why the rename shows a single 💡 against each of the three offices it renames rather than three against one.
 
 Capped at four with a `+n` overflow, on the same principle as the queue's fit cap: never silently truncate.
 
@@ -362,7 +362,7 @@ Wires were three colours by kind and cards were pink; both are now the single bl
 
 ## One alphabet in all three columns (Ed, 199)
 
-The chip-gutter carried its own little vocabulary of word-chips — *6 racing*, *1 of 3*, *judged ✓* — which was a third naming system beside the queue's and the contents rail's. It now carries **the same lifecycle marks**, so ❓ means the same thing in the left rail, in the document's margin, and in the right rail, and the eye can move between the three columns without translating.
+The chip-gutter carried its own little vocabulary of word-chips — *6 racing*, *1 of 3*, *judged ✓* — which was a third naming system beside the queue's and the contents rail's. It now carries **the same lifecycle marks**, so 💡 means the same thing in the left rail, in the document's margin, and in the right rail, and the eye can move between the three columns without translating.
 
 The detail that made this worth doing rather than merely tidy: a paragraph's gutter and its queue entry now show *the same glyph*, so the wire between them is confirming something you can already see rather than establishing it. What the chips were carrying that the marks are not — which of a patch's places this is — moved into the tooltip, where it is available without occupying the margin.
 
@@ -380,7 +380,7 @@ Two small things fell out. The **kin** treatment is gone: an open patch simply d
 
 ## A proposed section is a blank gap (Ed, 201)
 
-The `insert-anchor` was a dashed box captioned *＋ proposed new section — Quiet Hours*. It is now nothing: a couple of blank lines with ❓ in the gutter beside them.
+The `insert-anchor` was a dashed box captioned *＋ proposed new section — Quiet Hours*. It is now nothing: a couple of blank lines with 💡 in the gutter beside them.
 
 Drawing a labelled box around it made an absence look like a presence — like something already in the charter, in a different style. A proposed section is a *hole*, and the honest rendering of a hole is a hole. What remains is the gap the section would fill and a mark in the margin asking about it, which is the same grammar every other clause uses; the mark is doing exactly the job it does everywhere else.
 
@@ -468,7 +468,7 @@ It turns out to need nothing new. **A diagonal is a patch turned inside out**: o
 
 Three details the mechanism forced.
 
-**Its own glyph, ⚖️** (Ed's, and the one I had picked). By the rule established at 166 — colour says whether you can act, the glyph says what the act *is* — a diagonal is a different ask and must not wear ❓. Weighing two things is exactly what the scales say.
+**Its own glyph, ⚖️** (Ed's, and the one I had picked). By the rule established at 166 — colour says whether you can act, the glyph says what the act *is* — a diagonal is a different ask and must not wear the ordinary mark. Weighing two things is exactly what the scales say.
 
 **It can never be the 🔥 card.** 🔥 means *an ordinary judgment that wants you most, just do it*, and a card carrying ⚖️ while being the flame would say two things at once. So the two differently-addressed kinds — a stuck race and a diagonal — are both excluded from the flame, and 🔥 keeps its single meaning.
 
@@ -637,3 +637,20 @@ Nothing inside a card is elevated: rationales, lanes and the commit row are all 
 - **No authors, no counts, no standings.** Rationales are unsigned; nothing shows how many approvals a suggestion has or which way they lean. (The anchor chips name the *kind* of attention needed, never the direction of evidence.)
 - **No red-pen clutter by default.** Suggestions are anchors until opened; the document stays a document, not a battlefield diagram.
 - **Nothing underneath the view** (Ed, 76). The three columns are the whole page; there is no footer, no notes, no second region to scroll into. What lies below the last line of the charter is empty scroll runway, not content.
+
+
+## The alphabet says what act is wanted (Ed, 241)
+
+Ed's observation: a rail entry is somebody's **proposal**, not a question the system invented, so ❓ was describing the wrong object. My first answer was to resist — 💡 was already spoken for by *write one*, and if every ordinary entry wore a lightbulb the surface would lose its ability to say "this one is different: don't judge it, draft" — which is the whole job of ❌.
+
+He then made the move I had missed: promote the *action* to its own glyph. **❓ → 💡, and 💡 → ✏️.** The objection dissolves, because nothing is overloaded — and each glyph lands nearer its job than before. A bulb is about having had an idea, which is the object sitting on the table; a pencil is about writing, which is the act. It also quietly fixes a clash the notes had already flagged and shrugged at: ❓ renders red in most emoji fonts while its card washes yellow, so glyph and hue disagreed. 💡 is yellow.
+
+The reason this alphabet keeps surviving contact is that it answers exactly one question — *what act is wanted here* — and every proposed change gets tested against that. 💡 judge this · ❌ draft, judging won't help · ⚖️ rank these two questions · ✏️ write · ⏳ nothing, it's running · ✅❎ read the outcome · ☑️ nothing at all.
+
+One consequence to build into the composing surface: ✏️ is both an action on a button and the state of *your own* draft before you propose it. That is the same overload I objected to in 💡, but it is harmless here because the subject and the act agree — in both cases it is you, writing. Under the old scheme 💡-as-state would have meant somebody else's idea while 💡-as-button meant your writing, which is two subjects wearing one mark.
+
+## Two rail rules settled (Ed, 222 and 223)
+
+**The open entry's claim is now absolute.** It always had first claim on its clause's line in principle, but a later band-clamping pass could overrule it, and on a clause late in the charter with a dozen entries above it that shoved the open entry hundreds of pixels from the clause its wire points at — measured at **893px** on the previous build. Entries that cannot fit around the open one are now dropped into the *+N further off in the charter* count instead. Measured after: **0px, every time.** The trade only became fair once the rail admitted by urgency, because "what did not fit" is now the ordinary reported outcome rather than an exception. The oddity to accept is that a higher-ranked entry can be dropped to keep a lower-ranked open one flat, which is right on the grounds that the open card is the thing the reader is actually looking at.
+
+**A deadlocked race is ranked by its bounty score.** Ranking it on urgency buried it, because a deadlocked race scores ~0 there *by definition* — no judgment of yours can move it (SPEC §8.3). But that is not a low-value entry; it is the highest-leverage thing on the surface, and the scale was simply measuring the wrong act: judgment leverage is nil precisely because *drafting* leverage is maximal. It now ranks on resolvable disagreement × salience, which engine-core already computes for the bounty board, mapped to the top of the range — so the rail and the board agree with each other instead of disagreeing. It can out-rank the flame in the sort, which costs nothing: the flame is kept regardless of room, so its primacy rests on the exemption rather than on where it sits in the order.
