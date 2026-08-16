@@ -1,9 +1,9 @@
-# Group Drafting Engine — Specification v0.16
+# Group Drafting Engine — Specification v0.17
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
 
-**The mechanism in a breath.** The document is a text; candidates are patches against it; patches that cannot coexist race each other; every participant makes one kind of move — shown two texts: A, B, indifferent, or propose C; a race resolves when its leader's win-probability clears the adoption threshold — a confidence bar that rises over the session window; authors of losing patches are shown why they lost and invited to redraft; two publication ceremonies bracket a fully asynchronous window; whatever remains unresolved ships as a ranked backlog for the next session.
+**The mechanism in a breath.** The document is a text; candidates are patches against it; patches that cannot coexist race each other; every participant makes one kind of move — shown two texts: A, B, indifferent, or propose C; a race resolves when its leader's win-probability clears the adoption threshold — a confidence bar, held fixed or ramping across a window as the document was set up to do; authors of losing patches are shown why they lost and invited to redraft; two publication ceremonies bracket a fully asynchronous window, or, where a document is perpetual, the roster ends it by signing out; whatever remains unresolved ships as a ranked backlog for the next session.
 
 ---
 
@@ -84,7 +84,7 @@ Separable bundles are flagged at submission: split, or stand as one take-it-or-l
 
 The cooldown is a legibility device, not a quality device, and must stay short (≤5 min). The rising threshold is what makes the session stabilise; the cooldown only paces how changes land for the people in the room. If a session feels too fast, raise the threshold, never the cooldown: rationing adoptions by time starves the chains of sequenced adoptions an interconnected document needs (calibration sweep 2026-08-13 — 15–30 min cooldowns cut welfare and halved resolution), and a document that withholds what the room has already agreed is itself confusing. The cooldown and the threshold ramp also back each other up against hasty adoption — each looks redundant while the other is intact — so never weaken both together (sweep: no cooldown plus a softened ramp over-adopts and churns).
 
-**4.3 The adoption threshold on the session clock.** The threshold ramps smoothly from T_start to T_end over the session window (wall clock). The ramp exists because the bar should track irreversibility: an early adoption can still be challenged within the session; a late one is permanent — the outcome is never a surprise. Early low-threshold adoptions give a distributed window visible motion from its first hours. Late activity self-limits (a near-unanimous fix clears T_end; a 60/40 preference cannot), so no proposal deadline is needed. Unscrutinised text is protected not by the clock but by the adoption floor and the posterior itself: a quiet session leaves incumbents standing and ships its questions as backlog. (An evidence-clock variant — the threshold as a function of total comparisons made, so the document stabilises in proportion to the judgment it has absorbed — is deferred to the sim to explore.)
+**4.3 The adoption threshold on the session clock.** *Applies where the document is set to ramp; a fixed bar is equally available, and is the only option without a window (§9.0).* The threshold ramps smoothly from T_start to T_end over the session window (wall clock). The ramp exists because the bar should track irreversibility: an early adoption can still be challenged within the session; a late one is permanent — the outcome is never a surprise. Early low-threshold adoptions give a distributed window visible motion from its first hours. Late activity self-limits (a near-unanimous fix clears T_end; a 60/40 preference cannot), so no proposal deadline is needed. Unscrutinised text is protected not by the clock but by the adoption floor and the posterior itself: a quiet session leaves incumbents standing and ships its questions as backlog. (An evidence-clock variant — the threshold as a function of total comparisons made, so the document stabilises in proportion to the judgment it has absorbed — is deferred to the sim to explore.)
 
 **4.4 Incumbency and certification.** Nothing closes. Incumbency is positional: adoption makes a candidate the status quo; displacement always requires clearing the current threshold. Certification is continuous: P(incumbent beats best live challenger). A "resolved" race is one not currently worth sampling; stability is an equilibrium.
 
@@ -149,6 +149,22 @@ Rival-vs-rival pairs answer a conditional question — "if this text changes, wh
 
 ## 9. Sessions
 
+**9.0 What is fixed at creation** (Ed, 2026-08-16). Every setting below is chosen when the document is made and never after. Two of them are **independent axes**, and it is worth not confusing them.
+
+**The window.** A document either has an **end datetime** or it is **perpetual**. A window buys the closing ceremony, a token drip paced against it, and a record cut at a known moment. Without one, the drip runs against **real time** and does not reset, and the document ends by **freeze** (§9.5) — so a perpetual document is not really endless, it is one whose ending is decided by its roster rather than its calendar.
+
+**The threshold shape.** The bar is either **fixed** or **ramping**, and this is a separate choice: a windowed document may perfectly well hold its bar fixed for the whole window. Only the perpetual case is *constrained*, and only because a ramp needs an endpoint to ramp toward. §4.3's argument for ramping — the bar should track irreversibility, since an early adoption can still be challenged inside the window and a late one is permanent — is an argument available to any document with an end, and to no document without one. A fixed bar reads exactly as §4.4 already describes the mechanism: anything may displace anything, always, at the same price.
+
+Open: a perpetual document has no inter-session reset, so it loses the periodic moment where the threshold resets and the backlog re-enters stake-waived (§9.4, §4.5) — the device that kept entrenchment session-scoped. Whether something replaces it is Q252.
+
+**9.0a The founding ceremony.** Quorum and threshold may be set by the convenor, or **decided by the roster before any drafting begins**. Each member is asked, blind, for the *lowest they are willing to accept* — the lowest quorum, and the lowest threshold — and the document takes the **maximum** of each.
+
+Taking the maximum of stated minimums is what makes this a **consent rule rather than a vote**, and that matters more here than elegance: it dodges the constitutional bootstrap, which is the standing problem with founding decisions — *by what quorum do you decide the quorum?* There is no vote to govern, because the result satisfies every stated minimum by construction and nobody can say the rules were imposed on them. The cost is that the most demanding member sets the bar, and asking for full quorum is a perfectly reasonable position (Ed, 2026-08-16) — a document that cannot move without everyone is a legitimate thing to want.
+
+Answers are collected blind, for the same reason judgment is blind: otherwise the room anchors on whoever answers first. The **distribution is published without names** — the shape of what people asked for is worth seeing and makes the resulting bar easier to live with; the identity of whoever needed most is not.
+
+Quorum may be a percentage of the roster or a fixed count. Percentages suit a windowed convention, where the roster is stable and a fraction expresses legitimacy; fixed counts suit a perpetual document, where a drifting roster would otherwise silently re-rate every parked race whenever somebody joined. Participants who join later **inherit** the constitution rather than reopening it (Q257) — otherwise every arrival re-opens the founding question and a long-lived document never settles.
+
 **9.1 Distributed by default.** The baseline is a fully remote window, possibly days long. Co-presence is optional; a projector is another client rendering the chamber view (room mode: ticker, bounty board, closing sweep). Nothing in the mechanism references a room.
 
 **9.2 Two publications.** Common knowledge is made by publication. **Opening:** roster, constitution, and starting text, hash-anchored and pushed to all. **Closing:** the text and the record. Between them the chamber view is ambient: adoptions land with a chime, the rolling log hash and bounty board are visible, live standings never are.
@@ -156,6 +172,17 @@ Rival-vs-rival pairs answer a conditional question — "if this text changes, wh
 **9.3 Presence and access.** Participation is bouts, not attendance; c_p absorbs intermittency. The convenor may add or remove participants mid-session: a joiner receives the base grant plus drip accrued to date (capped); F recomputes from current E; a removed participant's live candidates remain live, flagged author-departed, and their cast judgments stay counted. A roster change's floor recomputation is announced in the gazette ("floor recomputed, N races now eligible") so races parked at the old floor never complete silently (Q10, sim evidence 2026-08-14). Chamber visibility is convenor-toggled (default link-only). An **observer role** provides the chamber plus an anonymized live metrics feed (throughput, deadlock events, care-map evolution). The record's distribution is the convenor's.
 
 **9.4 Sessions repeat.** Next session, the adoption threshold resets and the backlog re-enters stake-waived, carrying graveyards, camp maps, and rationales as briefing context — not as evidence. Between sessions, authors revise against everything the record taught; incubation is where bridges that need longer than a window get built.
+
+**9.5 Signing out, and the freeze** (Ed, 2026-08-16). A perpetual document needs some way to say *deliberation is over* that is not the clock. A member may **sign out**, and in doing so chooses between two things that mean quite different things:
+
+- **holding** — they remain in the quorum base. *I am not finished, and I do not consent to you finishing without me.*
+- **abstaining** — they leave the quorum base. *I have said what I want to say; I trust you to finish up.*
+
+When the members still counted — active plus signed-out-holding — fall below quorum, the document **freezes**: live races park exactly as a race short of its floor already parks (§8.2), participants are notified, and the record is cut. A freeze is a stall with an alarm, not a death: it thaws if enough people return.
+
+Three rules keep this honest. **Plain silence is not sign-out** — a quiet member stays active and stays counted, because §8.2's refusal to impute silence is the whole reason "didn't log in" cannot be read as "consented". **Judgments already cast keep counting** toward their race's floor after their author signs out: signing out stops you being asked, it does not erase what you said. And the quorum base is the **whole roster minus abstainers**, never the still-active remainder — otherwise every departure would lower the bar and the last two members could adopt anything.
+
+That split is also what makes a walkout visible. Quorum-busting remains possible, as it is in every deliberative body, but it now requires the explicit, logged, positive act of signing out *holding* — it cannot be disguised as ordinary attrition. And where abstentions leave only a handful of people carrying the document, that is the outcome the abstainers chose in preference to freezing it (Ed, 2026-08-16): each of them had the freeze available and declined it. An abstainer is notified when the base drops materially below where it stood when they left, so the choice they made can be revisited rather than merely inherited.
 
 ---
 
@@ -208,5 +235,10 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 | Re-opened race boost (§4.4 ground shift) | 1.5× routing value while fresh judgments < live candidates |
 | Bridge metric | minimum support across camps, stratified probes |
 | Window | convenor-set; wall end triggers closing publication only |
+| Window (§9.0) | end datetime (default) or perpetual; set at creation, never after |
+| Threshold shape (§9.0) | ramping (default) or fixed; independent of the window, but perpetual forces fixed |
+| Quorum form (§9.0a) | percentage of roster (suits a window) or fixed count (suits perpetual) |
+| Quorum and threshold source | convenor-set, or the roster's founding ceremony — max of each member's stated minimum |
+| Perpetual drip | per real time rather than per 10% window; capped as above; no reset |
 | Visibility | chamber link-only by default; observer role off by default |
 | Authorship visibility | public · sealed · anonymous; default sealed |
