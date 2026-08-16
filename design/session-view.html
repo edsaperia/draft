@@ -500,26 +500,42 @@
 
   /* The lanes. Two texts side by side and nothing else — no titles at all
      (Ed, 197/206), because position carries which is which and a label was
-     describing a comparison the reader is already making. */
-  .race-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); margin-bottom: var(--s3); }
-  @media (max-width: 900px) { .race-grid { grid-template-columns: 1fr; } }
-  .rcand {
-    border: 1.5px solid var(--primary); border-radius: var(--r-md);
-    padding: var(--s3) 14px; background: var(--bg);
-    display: flex; flex-direction: column;
+     describing a comparison the reader is already making.
+
+     No boxes (Ed, QA 2026-08-16, settling 269): the card's own outline already
+     says *this is one thing*, so a box round each text inside it was a second
+     statement of the same claim. What separates the two is a hairline down the
+     middle, which lands on the same pixel as the rule between the rationales
+     below — so the card reads as two columns rather than as two objects with a
+     gap. Now that each text carries a control at its foot, the box is no
+     longer what makes a text look like a thing you can act on. */
+  .race-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: var(--s3); }
+  .rcand { display: flex; flex-direction: column; padding-right: var(--s4); }
+  .race-grid > .rcand + .rcand {
+    padding-right: 0; padding-left: var(--s4); border-left: 1px solid var(--border);
+  }
+  @media (max-width: 900px) {
+    .race-grid { grid-template-columns: 1fr; }
+    .race-grid > .rcand { padding: 0 0 var(--s3); }
+    .race-grid > .rcand + .rcand {
+      padding: var(--s3) 0 0; border-left: 0; border-top: 1px solid var(--border);
+    }
   }
   .rcand .rtext { font-size: var(--t-body); margin-bottom: var(--s2); }
   .rcand .rtext.none { color: var(--muted); font-style: italic; }
-  .rcand .rtag {
+  /* not scoped to .rcand: the sealed record's ranked blocks use the same two
+     and had been getting neither, so "✓ this is the text that stands" ran on
+     into the end of the label above it */
+  .rtag {
     font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     color: var(--primary-emphasis); margin-bottom: 6px;
   }
-  .rcand .rsub {
+  .rsub {
     display: block; margin-top: 2px;
     font-size: 0.7rem; font-weight: 500; text-transform: none; letter-spacing: 0;
     color: var(--muted);
   }
-  .rcand .rsub.stood { color: var(--ok); font-weight: 700; }
+  .rsub.stood { color: var(--ok); font-weight: 700; }
 
   /* ---- the lane-bar (Ed, QA 2026-08-16, retiring 197) -----------------
      The lane is no longer the button. 197 made the text itself the control
@@ -592,21 +608,132 @@
      There the block is reference only — greyed, no controls — and it is the
      thing the race card was missing, since a reader was being asked to
      choose between two rewrites without being shown what they rewrite. */
-  .quo {
-    display: flex; flex-direction: column; margin-bottom: var(--s3);
-    border: 1.5px solid var(--primary); border-radius: var(--r-md);
-    padding: var(--s3) 14px; background: var(--bg);
-  }
+  .quo { display: flex; flex-direction: column; margin-bottom: var(--s3); }
   .quolab {
     font-size: var(--t-micro); font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.05em; color: var(--muted); margin-bottom: var(--s1);
   }
   .quo .rtext { font-size: var(--t-body); margin-bottom: 0; }
-  .quo.ref { border-color: var(--border); background: var(--light); color: var(--muted); }
+  .quo.ref { color: var(--muted); padding-bottom: var(--s3); border-bottom: 1px solid var(--border); }
 
-  /* one lane and no pair to set it against: a quick card in `quo on top`
-     mode, where the comparison is vertical */
-  .field-one { margin-bottom: var(--s3); }
+  /* ===================================================================
+     The stacked card (Ed, QA 2026-08-16 — the second note).
+
+     The complaint was that the cards conform to no recognised pattern, and
+     that the rationale — which is *the comment* — neither sits where a
+     comment sits nor reads as something a person said. Underneath that was
+     a third thing: the clause the card argues about was sitting in the
+     document immediately above it and being restated inside it, with no
+     stated relation between the two.
+
+     All three come out of the same move. **The card is the clause, opened.**
+     It replaces its paragraph rather than sprouting beneath it — which is
+     what the composer has always done (265) — so the thing being proposed
+     about is the head of the card and appears exactly once on the screen.
+     Under it, the field: one proposal, or two, each carrying its own
+     wording, its own argument and its own controls.
+
+     That shape is the forum: a post and its replies, and the reply is where
+     the argument lives. It is also, and not by accident, the shape the
+     `sealed record` has always had — the text that stood, then the whole
+     field ranked beneath it. A live card and its record are now the same
+     object in two tenses, which is most of what "one card, with small
+     changes between types" means in practice: a quick card is the clause
+     and one proposal, a race is the clause and two, a record is the clause
+     and the field with its numbers.
+     =================================================================== */
+  .clausehead { position: relative; margin-bottom: var(--s3); }
+  .clausehead .headlab {
+    display: flex; align-items: baseline; gap: var(--s2);
+    font-size: var(--t-micro); font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--muted); margin-bottom: var(--s1);
+  }
+  /* the clause reads as the document, because it *is* the document: same
+     size, same colour, no box — only the label above it says it has been
+     lifted into a card */
+  .clausehead .rtext { font-size: var(--t-body); margin-bottom: 0; }
+  .clausehead .rtext.none { color: var(--muted); font-style: italic; }
+  /* the entry's own lifecycle mark, in the card's left padding, level with
+     the label — the same margin position it holds in the gutter and the
+     contents rail */
+  .clausehead .wmark {
+    position: absolute; left: calc(-1 * var(--s5) + 2px); top: 0;
+    font-size: var(--t-small); line-height: 1.4;
+  }
+  /* Marks belonging to *other* live suggestions at this clause, which travel
+     into the head when the card swallows the paragraph. They are labelled,
+     because an unlabelled 💡 beside the card's own 💡 is the same glyph
+     meaning two different things a hand's width apart. */
+  .clausehead .headchips { display: inline-flex; align-items: center; gap: 2px; }
+  .clausehead .headchips::before { content: '·'; margin-right: var(--s1); }
+  .clausehead .headchips .alsolab { margin-right: 2px; font-weight: 500; text-transform: none; letter-spacing: 0; }
+
+  /* Three bands, and a rule between each: what stands, what is proposed, what
+     you can do about it. The rules are the whole structure of the card — there
+     is no other line on it. */
+  .field { border-top: 1px solid var(--border); padding-top: var(--s3); }
+  .fieldlab {
+    font-size: var(--t-micro); font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--muted); margin-bottom: var(--s2);
+  }
+  .propblock + .propblock {
+    border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
+  }
+  .propblock .rtext { font-size: var(--t-body); margin-bottom: 0; }
+  .field + .race-mid {
+    border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
+  }
+
+  /* ---- the sealed-speaker --------------------------------------------
+     A rationale is the one thing anybody gets to *say* (SPEC §2.6, §3.4),
+     and it was being drawn as a bold line of text — which reads as a
+     heading the system wrote, not as a person talking. It now sits behind a
+     featureless disc, at ordinary weight, the way a comment does
+     everywhere else.
+
+     The disc is blank because the authorship *is* blank: §3.4 seals it
+     until the record. Drawing the speaker and leaving them faceless states
+     the discipline instead of hiding it — you can see that somebody
+     argued this, and see that you are not allowed to know who. */
+  .speaker { display: grid; grid-template-columns: auto 1fr; gap: var(--s2); margin-top: var(--s2); }
+  /* The placeholder avatar, drawn rather than left as a plain circle: a bare
+     grey disc reads as a bullet, and a bullet says "list item" where this has
+     to say "person". Head and shoulders, in the ground colour, is the shape
+     every product uses for somebody it cannot name. */
+  .speaker .disc {
+    flex: none; position: relative; overflow: hidden;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--border);
+  }
+  .speaker .disc::before, .speaker .disc::after {
+    content: ''; position: absolute; left: 50%; background: var(--light);
+  }
+  .speaker .disc::before {
+    width: 7.5px; height: 7.5px; border-radius: 50%; top: 4px; transform: translateX(-50%);
+  }
+  .speaker .disc::after {
+    width: 14px; height: 10px; border-radius: 7px 7px 0 0; bottom: -1px; transform: translateX(-50%);
+  }
+  .speaker .said {
+    font-size: var(--t-small); line-height: 1.45; color: var(--fg);
+    align-self: center;
+  }
+  .speaker .said.none { color: var(--muted); font-style: italic; }
+
+  /* ---- redline --------------------------------------------------------
+     91 said the lanes show the result rather than a redline, and it was
+     right *while the current text was in the next column* — you could see
+     what had gone by looking left. Stacked, nothing is in the next column,
+     and a proposal whose only change is a deletion would render as a
+     sentence identical to the clause above it. So a proposal states its own
+     change in full: what it adds, and what it takes out. It is also what
+     the pattern Ed is pointing at does — a suggestion in a document is
+     shown as both halves.
+
+     The editing lane keeps insertions only: you cannot strike text inside
+     the box you are deleting it in without putting words back under the
+     caret that are not there. */
+  del { background: rgba(220, 53, 69, 0.09); color: #9b2c36; padding: 0 1px; }
 
   /* ---- the rationale, under the texts (Ed, QA 2026-08-16, revising 87) --
      87 put the reason above the wording so you met the argument first. The
@@ -626,37 +753,22 @@
     font-size: var(--t-small); line-height: 1.5;
   }
 
-  /* ---- lane chrome, axis B of the layout lab -------------------------
-     `boxed` is what 66/85 built: every text in a bordered box. `hairline`
-     strips the boxes and leaves one rule down the middle of the pair, on
-     the argument that a box round a paragraph of a charter is furniture
-     the comparison does not need.
-
-     The editing-card is held out of it: its right-hand lane is a text editor,
-     and a box is how that lane says it is one (Ed, 224–241, signed off). */
-  body.lanes-hairline .sugg:not(.editcard) .rcand,
-  body.lanes-hairline .quo {
-    border: 0; border-radius: 0; background: none; padding: 0;
+  /* The editing-card keeps its boxes, alone on the surface. Its right-hand
+     lane is a text editor and a box is how a text editor says so; the left
+     one is boxed to match, because a lone box beside a bare column reads as
+     an error rather than as a distinction. */
+  .editcard .editorig, .editcard .editlane {
+    border: 1.5px solid var(--border); border-radius: var(--r-md); padding: var(--s3) 14px;
   }
-  body.lanes-hairline .quo {
-    padding-bottom: var(--s3); border-bottom: 1px solid var(--border);
-  }
-  body.lanes-hairline .sugg:not(.editcard) .race-grid { gap: 0; }
-  body.lanes-hairline .sugg:not(.editcard) .race-grid > .rcand { padding-right: var(--s4); }
-  body.lanes-hairline .sugg:not(.editcard) .race-grid > .rcand + .rcand {
-    padding-right: 0; padding-left: var(--s4); border-left: 1px solid var(--border);
-  }
-  @media (max-width: 900px) {
-    body.lanes-hairline .sugg:not(.editcard) .race-grid > .rcand { padding: 0 0 var(--s3); }
-    body.lanes-hairline .sugg:not(.editcard) .race-grid > .rcand + .rcand {
-      padding: var(--s3) 0 0; border-left: 0; border-top: 1px solid var(--border);
-    }
-  }
+  .editcard .editlane { border-color: var(--primary); }
+  .editcard .race-grid { gap: var(--s3); }
+  .editcard .race-grid > .rcand { padding-right: 0; }
+  .editcard .race-grid > .rcand + .rcand { padding-left: 0; border-left: 0; }
 
   /* ---- the layout lab panel ------------------------------------------
      Deliberately out of world — dashed, monospace, bottom left — because it
      is scaffolding for a decision, not part of the design being decided. It
-     goes when both questions are answered. */
+     goes when the question is answered. */
   .lab {
     position: fixed; left: var(--s3); bottom: var(--s3); z-index: 50;
     display: flex; align-items: center; gap: var(--s3);
@@ -898,16 +1010,10 @@
      answers. -->
 <div class="lab" id="lab">
   <span class="labtag">layout lab</span>
-  <label>status quo
-    <select id="lab-quo">
-      <option value="top">on top</option>
-      <option value="lane">in the lane</option>
-    </select>
-  </label>
-  <label>lanes
-    <select id="lab-chrome">
-      <option value="boxed">boxed</option>
-      <option value="hairline">hairline</option>
+  <label>card
+    <select id="lab-card">
+      <option value="stacked">stacked</option>
+      <option value="paired">paired</option>
     </select>
   </label>
 </div>
@@ -2049,8 +2155,12 @@
     // is open the clause is a card, and a rail entry levelled against the
     // *clause inside* it would sit eighty pixels below where its own cable
     // leaves. One target for both.
-    const editing = doc.querySelector('.editcard[data-site="' + k + '"]');
-    if (editing) return editing;
+    // Any card that has swallowed its clause is the target, not the clause
+    // inside it — the composer was the first case, and in `stacked` every open
+    // card is one. A rail entry levelled against the head *inside* the card
+    // would sit below where its own cable leaves.
+    const swallowed = doc.querySelector('.sugg[data-site="' + k + '"]');
+    if (swallowed) return swallowed;
     return doc.querySelector('[data-key="' + k + '"]') || foldedHeadingFor(DOC.findIndex((l) => l.key === k));
   }
 
@@ -2289,8 +2399,10 @@
     // card, so every cable ran straight through the lane you were typing in and
     // stopped in the gutter between them. A wire says *where this judgment
     // lives*, and while you are writing it lives in the card.
-    const editing = [...doc.querySelectorAll('.editcard[data-anchor="' + id + '"]')];
-    return [...new Set([...chips, ...paras, ...inserts, ...editing])];
+    // …and in `stacked` that is true of every open card, not only the
+    // composer's: the paragraph is gone, so the card is where the judgment is.
+    const swallowed = [...doc.querySelectorAll('.sugg[data-card="' + id + '"][data-site]')];
+    return [...new Set([...chips, ...paras, ...inserts, ...swallowed])];
   }
 
   // Only the open judgment gets wires. Drawing them on hover made the gutter
@@ -2459,12 +2571,16 @@
     '✏️ edit this</button>';
 
   // ---- the layout lab -------------------------------------------------
-  // Two questions Ed has not settled yet (QA, 2026-08-16), switchable at the
-  // foot of the page so they can be looked at rather than argued about. Both
-  // are meant to collapse to one answer each and take the lab with them.
-  //   quo    — where the status quo goes on a card that is judging one
-  //   chrome — whether a text sits in a box or beside a hairline
-  const LAYOUT = { quo: 'top', chrome: 'boxed' };
+  // One question left (Ed, QA 2026-08-16): the shape of the card.
+  //   stacked — the card *is* the clause, opened: the clause as its head,
+  //             then the field of proposals beneath it, each with its own
+  //             argument and its own controls. The forum shape, and the shape
+  //             the sealed record already had.
+  //   paired  — the previous card: the texts side by side across a hairline,
+  //             both rationales in a row underneath.
+  // 269 is settled and gone from here: no boxes, hairline separators, baked in.
+  const LAYOUT = { card: 'stacked' };
+  const stacked = () => LAYOUT.card === 'stacked';
 
   // The pick control. Two labels rather than one rewritten in JS, so the
   // existing `choose()` — which only ever flips aria-pressed — keeps working
@@ -2509,6 +2625,55 @@
     ? '<div class="whyrow"><span class="wmark" aria-hidden="true">' + markOf(s) + '</span>' + inner + '</div>'
     : '');
 
+  // ---- the stacked card -----------------------------------------------
+
+  // Somebody said this, and you are not allowed to know who (SPEC §3.4). The
+  // disc is the person; its blankness is the seal. Without it the rationale
+  // was a bold line of text that read as a heading the system had written.
+  const speakerHtml = (why) =>
+    '<div class="speaker">' +
+    '<span class="disc" aria-hidden="true" title="A member of the roster wrote this. Who, is sealed until the record (SPEC §3.4)."></span>' +
+    (why
+      ? '<div class="said">' + esc(why) + '</div>'
+      : '<div class="said none">No reason given.</div>') +
+    '</div>';
+
+  // The clause, lifted out of the document into the head of the card. It is
+  // the same text at the same size, because it *is* the document — only the
+  // label above says it has been picked up. The gutter marks come with it, so
+  // a second live suggestion at this clause keeps the way in that it had while
+  // the paragraph was there.
+  function clauseHeadHtml(s, o) {
+    const opt = !!o.v;
+    return '<div class="clausehead">' +
+      '<span class="wmark" aria-hidden="true">' + markOf(s) + '</span>' +
+      '<div class="headlab"><span>' + (o.label || 'The clause as it stands') + '</span>' +
+      (o.chips ? '<span class="headchips"><span class="alsolab">also here</span>' + o.chips + '</span>' : '') + '</div>' +
+      (o.text === null
+        ? '<div class="rtext none">Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.</div>'
+        : '<div class="rtext"' + (o.key ? ' data-key="' + o.key + '"' : '') + '>' + esc(o.text) + '</div>') +
+      (opt ? laneBarHtml(s, o.v, { lane: 'keep', key: o.key, edit: o.edit }) : '') +
+      '</div>';
+  }
+
+  // One candidate: what it would make the clause say, who argued for it, and
+  // what you can do about it. A reply, in the shape a reply has everywhere.
+  const proposalHtml = (s, o) =>
+    '<div class="propblock">' +
+    (o.tag ? '<div class="rtag">' + o.tag + '</div>' : '') +
+    '<div class="rtext">' + o.html + '</div>' +
+    speakerHtml(o.why) +
+    (o.v ? laneBarHtml(s, o.v, { lane: o.lane || o.v, key: o.key, edit: o.edit }) : '') +
+    '</div>';
+
+  // The field label names the band and, where there is more than one candidate,
+  // says how many — which is a fact about this card rather than a standing, so
+  // §8.3 has nothing to say about it.
+  const fieldHtml = (inner, n, label) =>
+    '<div class="field"><div class="fieldlab">' +
+    (label || (n > 1 ? 'Proposed · ' + n + ' rival wordings' : 'Proposed')) +
+    '</div>' + inner + '</div>';
+
   function commitRowHtml(s, extra) {
     const pick = pickOf(s);
     const insists = s.id === topUrgentId && stateOf(s) === 'needs';
@@ -2548,7 +2713,9 @@
       { label: '', text: s.race.a.text, why: s.race.a.rationale, p: s.race.a.p, won: s.won === 'a' },
       { label: '', text: s.race.b.text, why: s.race.b.rationale, p: s.race.b.p, won: s.won === 'b' },
     ];
-    return [{ label: 'What was proposed', text: s.optionB, why: s.rationale, p: (s.decided || {}).p, won: s.won === 'b' }];
+    // no label: the band above already says "what was proposed", and printing
+    // it again on the only thing in the band said it twice
+    return [{ label: '', text: s.optionB, why: s.rationale, p: (s.decided || {}).p, won: s.won === 'b' }];
   }
 
   function sealedCardHtml(s) {
@@ -2571,11 +2738,23 @@
       return '<div class="pline"><b>' + c.p.toFixed(2) + '</b> against the current text · ' +
         (cleared ? 'cleared' : 'below') + ' the bar of ' + (d.bar ?? 0).toFixed(2) + '</div>';
     };
+    const skey = (s.keys ?? [])[0];
     return (
-      '<div class="sugg sealed-open" data-card="' + s.id + '">' +
+      '<div class="sugg sealed-open" data-card="' + s.id + '"' +
+      (stacked() && skey ? ' data-site="' + skey + '"' : '') + '>' +
       '<div class="rechead"><span>Decided · ' + esc(d.outcome || 'sealed') + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
-      (held && incumbent
+      // The record was already this shape — the text that stands, then the
+      // whole field ranked beneath it — which is the reason a live card was
+      // moved to match it rather than the other way about. In `stacked` the
+      // clause is lifted into the head like every other card's, so a sealed
+      // decision opened from the document does not print its clause twice.
+      (stacked() && skey
+        ? clauseHeadHtml(s, {
+            text: currentTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
+            label: carried(s) ? 'The clause as it now stands' : 'The clause as it stands — nothing displaced it',
+          })
+        : held && incumbent
         ? '<div class="stoodblock"><div class="rtag">The charter as it stands' +
           '<span class="rsub stood">✓ nothing displaced it</span></div>' +
           '<div class="rtext">' + esc(incumbent) + '</div>' +
@@ -2591,9 +2770,16 @@
         (c.won ? '<span class="rsub stood">✓ this is the text that stands</span>'
                : '<span class="rsub">not adopted</span>') + '</div>' +
         line(c) +
-        (c.why ? '<div class="swhy">' + esc(c.why) + '</div>' : '') +
-        '<div class="rtext">' + esc(c.text) + '</div></div>').join('') +
-      (!held && incumbent
+        // Each proposal states its own change against the text it was arguing
+        // with — the clause where it held, the text it displaced where it
+        // carried. That is what stops the record printing the winning wording
+        // twice: the head shows the clause as it now stands, and the block
+        // below shows what this proposal did to it.
+        '<div class="rtext">' + (stacked() && incumbent ? redline(incumbent, c.text) : esc(c.text)) + '</div>' +
+        // the same blank disc a live card gives it: whoever argued for this is
+        // still sealed unless the session's visibility setting says otherwise
+        (c.why ? speakerHtml(c.why) : '') + '</div>').join('') +
+      (!held && incumbent && !stacked()
         ? '<div class="replaced"><div class="rtag">The text it replaced</div>' +
           '<div class="rtext">' + esc(incumbent) + '</div></div>'
         : '') +
@@ -2851,8 +3037,17 @@
   // Word-level, with whitespace as its own token, so a changed word lights the
   // word rather than the sentence. Insertions only: what was removed is one
   // column to the left, in full, which is the whole argument of 91.
-  const tokens = (s) => String(s).split(/(\s+)/).filter((t) => t !== '');
-  function diffPieces(oldText, newText) {
+  // Punctuation is its own token as well as whitespace. Glued to the word, a
+  // clause that only gains a comma renders as the word being deleted and an
+  // identical word inserted — "used on ~~bone~~ bone," — which is nonsense the
+  // reader has to see through. Split off, the comma is the only thing that
+  // lights, which is the truth.
+  const tokens = (s) => String(s).split(/(\s+|[.,;:!?()\[\]"'’‘“”—–]+)/).filter((t) => t !== '' && t !== undefined);
+  // Pieces are `[text, mark]` with mark one of null, 'ins', 'del'. `withDel`
+  // asks for the removed words as well as the added ones — a stacked proposal
+  // needs both (see the redline note in the stylesheet), the editing lane needs
+  // only the additions.
+  function diffPieces(oldText, newText, withDel) {
     const A = tokens(oldText), B = tokens(newText);
     const n = A.length, m = B.length;
     const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
@@ -2860,17 +3055,18 @@
       for (let j = m - 1; j >= 0; j--)
         dp[i][j] = A[i] === B[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
     const out = [];
-    const push = (t, isNew) => {
+    const push = (t, mark) => {
       const last = out[out.length - 1];
-      if (last && last[1] === isNew) last[0] += t; else out.push([t, isNew]);
+      if (last && last[1] === mark) last[0] += t; else out.push([t, mark]);
     };
     let i = 0, j = 0;
     while (i < n && j < m) {
-      if (A[i] === B[j]) { push(B[j], false); i++; j++; }
-      else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
-      else { push(B[j], true); j++; }
+      if (A[i] === B[j]) { push(B[j], null); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) { if (withDel) push(A[i], 'del'); i++; }
+      else { push(B[j], 'ins'); j++; }
     }
-    while (j < m) { push(B[j], true); j++; }
+    while (j < m) { push(B[j], 'ins'); j++; }
+    if (withDel) while (i < n) { push(A[i], 'del'); i++; }
     // A space between two new words is matched against the old text's own
     // spaces and comes back "unchanged", which would draw two new words as two
     // separate pills with a white gap between them. Rewriting three words is
@@ -2879,7 +3075,11 @@
     for (let k = 0; k < out.length; k++) {
       const cur = out[k], next = out[k + 1];
       const last = joined[joined.length - 1];
-      if (!cur[1] && last && last[1] && next && next[1] && /^\s+$/.test(cur[0])) { last[0] += cur[0]; continue; }
+      // …and only where both sides of the gap carry the *same* mark, or a
+      // space between a cut and an addition would end up inside one of them
+      if (!cur[1] && last && next && last[1] && last[1] === next[1] && /^\s+$/.test(cur[0])) {
+        last[0] += cur[0]; continue;
+      }
       if (last && last[1] === cur[1]) last[0] += cur[0];
       else joined.push([cur[0], cur[1]]);
     }
@@ -2887,24 +3087,50 @@
   }
   // A highlight never opens or closes on a space — the same tidying `resultOnly`
   // does to the hand-authored diffs in the fixture.
-  const insHtml = (t) => {
+  const markHtml2 = (t, mark) => {
     const m = t.match(/^(\s*)([\s\S]*?)(\s*)$/);
-    return esc(m[1]) + (m[2] ? '<ins>' + esc(m[2]) + '</ins>' : '') + esc(m[3]);
+    const tag = mark === 'del' ? 'del' : 'ins';
+    return esc(m[1]) + (m[2] ? '<' + tag + '>' + esc(m[2]) + '</' + tag + '>' : '') + esc(m[3]);
   };
+  const insHtml = (t) => markHtml2(t, 'ins');
+  // A proposal, stating its own change against the clause it rewrites — but
+  // only while it *is* a change. A redline is informative in proportion to how
+  // much of the sentence survives it: mark two words and the eye goes straight
+  // to them; mark two thirds of a clause and you have confetti, and the reader
+  // has to reassemble two sentences out of one shredded one. Rival candidates
+  // in a race are usually whole rewrites rather than edits, so most of them
+  // fall the second way — measured on the fixture's own races, a redline was
+  // running to nineteen cuts and twenty insertions in a single clause.
+  //
+  // So: below half surviving, the proposal states itself plainly and the
+  // comparison is with the clause at the head of the card, which is one line
+  // above it. That is also what a reader does anyway once a diff gets dense.
+  const REDLINE_FLOOR = 0.5;
+  function redline(oldText, newText) {
+    const pieces = diffPieces(oldText, newText, true);
+    let same = 0, all = 0;
+    for (const [t, mk] of pieces) {
+      if (/^\s+$/.test(t)) continue;
+      all += t.length;
+      if (!mk) same += t.length;
+    }
+    if (!all || same / all < REDLINE_FLOOR) return esc(newText);
+    return pieces.map(([t, mk]) => (mk ? markHtml2(t, mk) : esc(t))).join('');
+  }
   // Blocks are split on newlines *after* the diff, so a run of new wording that
   // spans a paragraph break is still one comparison rather than two.
-  function laneBlocks(text, oldText) {
-    const pieces = oldText == null ? [[String(text), false]] : diffPieces(oldText, text);
+  function laneBlocks(text, oldText, withDel) {
+    const pieces = oldText == null ? [[String(text), null]] : diffPieces(oldText, text, withDel);
     const blocks = [[]];
-    for (const [t, isNew] of pieces) {
+    for (const [t, mark] of pieces) {
       const parts = t.split('\n');
       parts.forEach((part, k) => {
         if (k > 0) blocks.push([]);
-        if (part) blocks[blocks.length - 1].push([part, isNew]);
+        if (part) blocks[blocks.length - 1].push([part, mark]);
       });
     }
     return blocks.map((ps) => '<div class="lp">' +
-      (ps.map(([t, isNew]) => (isNew ? insHtml(t) : esc(t))).join('') || '<br>') + '</div>').join('');
+      (ps.map(([t, mark]) => (mark ? markHtml2(t, mark) : esc(t))).join('') || '<br>') + '</div>').join('');
   }
   const originText = (site) => site.origin.map((o) => o.text).join('\n');
   // Read back whatever the browser made of the editing: blocks separated by
@@ -2977,22 +3203,42 @@
       '<div class="yoursnote">This is yours. Nobody asks you to judge it — a proposal you are still standing behind ' +
       'counts as your preference for as long as it is live, and counts toward quorum (SPEC §3.3, §8.2)' +
       (rival ? '. You will still be served the others in this race against it' : '') + '.</div>' +
-      // The pair stays a pair here whatever the lab is set to: this is a diff
-      // of your own wording against what it replaces, not a choice between the
-      // two, and side by side is how a diff reads. The rationale still moves
-      // below it, so every card is read in the same order.
-      '<div class="race-grid">' +
-      '<div class="rcand"><div class="rtext">' +
-      s.origin.map((o) => esc(o.text)).join(' ') + '</div></div>' +
-      '<div class="rcand"><div class="rtext">' + laneBlocks(s.text, originText(s)) + '</div></div>' +
-      '</div>' +
-      whyRowHtml(d, whyHtml(d.rationale)) +
+      // Your own proposal is a proposal like any other, so it is drawn like
+      // any other: the clause it rewrites at the head, your wording under it
+      // stating its own change, your argument behind the same blank disc
+      // everybody else's sits behind. What differs is only what you can do —
+      // nothing is asked of you, and the one act is withdrawal.
+      (stacked()
+        ? clauseHeadHtml(d, { text: s.origin.map((o) => o.text).join(' '), key: s.keys[0],
+                              chips: chipsFor(s.keys[0], d.id) }) +
+          fieldHtml('<div class="propblock"><div class="rtext">' +
+            laneBlocks(s.text, originText(s), true) + '</div>' + speakerHtml(d.rationale) + '</div>',
+            1, 'What you proposed')
+        : '<div class="race-grid">' +
+          '<div class="rcand"><div class="rtext">' +
+          s.origin.map((o) => esc(o.text)).join(' ') + '</div></div>' +
+          '<div class="rcand"><div class="rtext">' + laneBlocks(s.text, originText(s)) + '</div></div>' +
+          '</div>' +
+          whyRowHtml(d, whyHtml(d.rationale))) +
       '<div class="race-mid"><button class="btn btn-outline" data-act="draft-withdraw">Withdraw' +
       (n > 1 ? ' all ' + n + ' places' : '') + '</button></div>' +
       '<div class="foot">Withdrawing returns the edit in full and takes the wording out of the race — ' +
       'it stays in the record either way (SPEC §3.3a, §7) · to reword it, withdraw and write again · authorship sealed</div>' +
       '</div>'
     );
+  }
+
+  // The gutter marks belonging to a clause, minus the one whose card we are
+  // building. A stacked card replaces its paragraph, so any *other* live
+  // suggestion at the same clause would lose its way in — the marks travel up
+  // into the head instead.
+  function chipsFor(key, exceptId) {
+    return (key ? suggFor(key) : []).filter((g) => g.id !== exceptId).map((g) => {
+      const i = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === key) : -1;
+      const where = g.kind === 'patch' ? ' · place ' + (i + 1) + ' of ' + g.sites.length : '';
+      return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '" title="' +
+        esc(plainLabel(g.qLabel)) + where + ' — open it">' + markOf(g) + '</span>';
+    }).join('');
   }
 
   function suggCardHtml(s, siteKey) {
@@ -3028,21 +3274,29 @@
       );
     }
     if (s.kind === 'race') {
-      // The status quo, which this card had never shown (Ed, QA 2026-08-16) —
-      // a reader was being asked to choose between two rewrites of a clause
-      // without being shown the clause. Reference only, because nothing here
-      // can vote to keep it.
+      // The clause, which this card had never shown (Ed, QA 2026-08-16) — a
+      // reader was being asked to choose between two rewrites without being
+      // shown what they rewrite. It carries no control, because nothing on a
+      // race can vote to keep it: displacement is settled by the
+      // adoption-threshold, not by this judgment (SPEC §5).
+      const rkey = (s.keys ?? [])[0];
+      const cur = currentTextFor(rkey);
       return (
-        '<div class="sugg race-open" data-card="' + s.id + '">' +
-        quoHtml(s, currentTextFor((s.keys ?? [])[0])) +
-        // no lane headers on a race: both sides are proposals, the rationale
-        // in each column below says whose, and naming them A and B added nothing
-        '<div class="race-grid">' +
-        laneHtml(s, 'a', '<div class="rtext">' + esc(s.race.a.text) + '</div>') +
-        laneHtml(s, 'b', '<div class="rtext">' + esc(s.race.b.text) + '</div>') +
-        '</div>' +
-        whyRowHtml(s, '<div class="why-grid">' +
-          whyHtml(s.race.a.rationale) + whyHtml(s.race.b.rationale) + '</div>') +
+        '<div class="sugg race-open" data-card="' + s.id + '" data-site="' + rkey + '">' +
+        (stacked()
+          ? clauseHeadHtml(s, { text: cur, key: rkey, chips: chipsFor(rkey, s.id) }) +
+            // two replies to the same post; each states its own change against
+            // the clause above, and carries its own argument and controls
+            fieldHtml(
+              proposalHtml(s, { v: 'a', html: redline(cur, s.race.a.text), why: s.race.a.rationale }) +
+              proposalHtml(s, { v: 'b', html: redline(cur, s.race.b.text), why: s.race.b.rationale }), 2)
+          : quoHtml(s, cur) +
+            '<div class="race-grid">' +
+            laneHtml(s, 'a', '<div class="rtext">' + esc(s.race.a.text) + '</div>') +
+            laneHtml(s, 'b', '<div class="rtext">' + esc(s.race.b.text) + '</div>') +
+            '</div>' +
+            whyRowHtml(s, '<div class="why-grid">' +
+              whyHtml(s.race.a.rationale) + whyHtml(s.race.b.rationale) + '</div>')) +
         commitRowHtml(s, s.deadlocked ? proposeBtnHtml() : '') +
         reviseNote(s) +
         '<div class="foot">Neither of these has to win: the clause above stands unless the leader clears the bar (SPEC §5) · ' +
@@ -3069,20 +3323,20 @@
         step(i > 0 ? i - 1 : null, 'The place before', '↑') +
         step(i < n - 1 ? i + 1 : null, 'The next place', '↓') +
         '</span></div>' +
-        // Here the incumbent *is* one of the two things being judged, so the
-        // lab's two arrangements are a real choice: on top as the ground the
-        // proposal answers, or beside it as one of a pair.
-        (LAYOUT.quo === 'top'
-          ? quoHtml(s, currentTextFor(site.key), { v: 'keep', key: site.key }) +
-            '<div class="field-one">' +
-            laneHtml(s, 'approve', '<div class="rtext">' + resultOnly(site.marked) + '</div>',
-              { lane: 'approve', key: site.key }) + '</div>'
+        // Here the clause *is* one of the two things being judged, so its head
+        // picks like any proposal. The fixture's `marked` is already the full
+        // diff, so a stacked proposal can state its own change without
+        // recomputing one.
+        (stacked()
+          ? clauseHeadHtml(s, { text: currentTextFor(site.key), key: site.key, v: 'keep',
+                                chips: chipsFor(site.key, s.id) }) +
+            fieldHtml(proposalHtml(s, { v: 'approve', html: site.marked, why: s.rationale, key: site.key }))
           : '<div class="race-grid">' +
             laneHtml(s, 'keep', '<div class="rtext">' + esc(currentTextFor(site.key)) + '</div>',
               { lane: 'keep', key: site.key }) +
             laneHtml(s, 'approve', '<div class="rtext">' + resultOnly(site.marked) + '</div>',
-              { lane: 'approve', key: site.key }) + '</div>') +
-        whyRowHtml(s, whyHtml(s.rationale)) +
+              { lane: 'approve', key: site.key }) + '</div>' +
+            whyRowHtml(s, whyHtml(s.rationale))) +
         commitRowHtml(s) +
         reviseNote(s) +
         '<div class="foot">One judgment for all ' + n +
@@ -3100,21 +3354,27 @@
     const curHtml = s.isInsert
       ? '<div class="rtext none">Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.</div>'
       : '<div class="rtext">' + esc(cur) + '</div>';
+    const noEdit = s.isInsert ? false : undefined;
     const newHtml =
       (s.isInsert ? '<div class="rtext"><ins>' + esc(s.newHeading) + '</ins></div>' : '') +
       '<div class="rtext">' + resultOnly(s.marked) + '</div>';
+    // stacked: a proposed section is the one case with no clause to redline
+    // against, so it states itself whole and its new heading is all-new
+    const stackedProp = s.isInsert
+      ? '<div class="rtext"><ins>' + esc(s.newHeading) + '</ins></div><div class="rtext">' + resultOnly(s.marked) + '</div>'
+      : s.marked;
     return (
-      '<div class="sugg quick-open" data-card="' + s.id + '">' +
-      (LAYOUT.quo === 'top'
-        ? quoHtml(s, cur, { v: 'keep', key: key, edit: s.isInsert ? false : undefined }) +
-          '<div class="field-one">' +
-          laneHtml(s, 'approve', newHtml, { lane: 'approve', edit: s.isInsert ? false : undefined }) +
-          '</div>'
+      '<div class="sugg quick-open" data-card="' + s.id + '" data-site="' + (key || '') + '">' +
+      (stacked()
+        ? clauseHeadHtml(s, { text: cur, key: key, v: 'keep', edit: noEdit,
+                              label: s.isInsert ? 'The gap as it stands' : undefined,
+                              chips: chipsFor(key, s.id) }) +
+          fieldHtml(proposalHtml(s, { v: 'approve', html: stackedProp, why: s.rationale, edit: noEdit }))
         : '<div class="race-grid">' +
-          laneHtml(s, 'keep', curHtml, { lane: 'keep', edit: s.isInsert ? false : undefined }) +
-          laneHtml(s, 'approve', newHtml, { lane: 'approve', edit: s.isInsert ? false : undefined }) +
-          '</div>') +
-      whyRowHtml(s, whyHtml(s.rationale)) +
+          laneHtml(s, 'keep', curHtml, { lane: 'keep', edit: noEdit }) +
+          laneHtml(s, 'approve', newHtml, { lane: 'approve', edit: noEdit }) +
+          '</div>' +
+          whyRowHtml(s, whyHtml(s.rationale))) +
       commitRowHtml(s) +
       reviseNote(s) +
       '<div class="foot">Choosing the current text records a judgment for it · indifference here involves the current text, so it feeds the care map (SPEC §3.2) · authorship sealed · no counts, no standings</div>' +
@@ -3167,41 +3427,75 @@
 
       if (live.length) {
         const primary = live.find((x) => x.id === openId) ?? live[0];
-        const kin = openId === primary.id && primary.kind === 'patch' && cardDone;
-        const chips = live.map((g) => {
-          const siteIdx = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === line.key) : -1;
-          const where = g.kind === 'patch' ? ' · place ' + (siteIdx + 1) + ' of ' + g.sites.length : '';
-          return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '" title="' +
-            esc(plainLabel(g.qLabel)) + where + ' — open it">' + markOf(g) + '</span>';
-        }).join('');
-        html +=
-          '<p class="anch editable' + (openId === primary.id ? ' active' : '') + '" data-key="' + line.key +
-          '" data-anchor="' + primary.id + '"' + EDITABLE +
-          anchWash(primary, openId === primary.id) + '>' +
-          '<span class="chipcol" contenteditable="false">' + chips + '</span>' + esc(line.x) + '</p>';
         const openSugg = live.find((x) => x.id === openId);
-        // A patch opens a card at *every* place it touches (Ed, 181), each
-        // showing only that clause; everything else opens once.
-        if (openSugg && openSugg.kind === 'patch') {
-          if (openSugg.sites.some((x) => x.key === line.key)) {
-            html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
+        // In `stacked`, an open card **replaces** its clause rather than
+        // sprouting beneath a copy of it (Ed, QA 2026-08-16). That is what the
+        // composer has always done, and doing it everywhere is what makes the
+        // clause and the card one object instead of two: the thing being
+        // proposed about appears exactly once, at the head of the card that is
+        // arguing about it. It also settles 265, which asked why the two
+        // behaved differently.
+        let swallowed = false;
+        if (stacked() && openSugg) {
+          if (openSugg.kind === 'patch') {
+            // a card at *every* place a patch touches (Ed, 181)
+            if (openSugg.sites.some((x) => x.key === line.key)) {
+              html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
+              cardDone = swallowed = true;
+            }
+          } else if (openSugg.kind === 'draft') {
+            const site = siteFor(openSugg, line.key);
+            if (site) {
+              // a site is a run of clauses; the card stands where the run began
+              // and the rest of the run is inside it
+              if (site.keys[0] === line.key) {
+                html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
+                cardDone = true;
+              }
+              swallowed = true;
+            }
+          } else if (!cardDone) {
+            html += '</div>' + suggCardHtml(openSugg) + '<div class="prose">';
+            cardDone = swallowed = true;
+          }
+        }
+
+        if (!swallowed) {
+          const chips = live.map((g) => {
+            const siteIdx = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === line.key) : -1;
+            const where = g.kind === 'patch' ? ' · place ' + (siteIdx + 1) + ' of ' + g.sites.length : '';
+            return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '" title="' +
+              esc(plainLabel(g.qLabel)) + where + ' — open it">' + markOf(g) + '</span>';
+          }).join('');
+          html +=
+            '<p class="anch editable' + (openId === primary.id ? ' active' : '') + '" data-key="' + line.key +
+            '" data-anchor="' + primary.id + '"' + EDITABLE +
+            anchWash(primary, openId === primary.id) + '>' +
+            '<span class="chipcol" contenteditable="false">' + chips + '</span>' + esc(line.x) + '</p>';
+          if (openSugg && openSugg.kind === 'patch') {
+            if (openSugg.sites.some((x) => x.key === line.key)) {
+              html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
+              cardDone = true;
+            }
+          } else if (openSugg && openSugg.kind === 'draft') {
+            const site = siteFor(openSugg, line.key);
+            if (site && site.keys[site.keys.length - 1] === line.key) {
+              html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
+              cardDone = true;
+            }
+          } else if (openSugg && !cardDone) {
+            html += '</div>' + suggCardHtml(openSugg) + '<div class="prose">';
             cardDone = true;
           }
-        // A proposal of your own is not being edited any more, so it behaves
-        // like every other card: it opens *under* its clause rather than
-        // replacing it, and a multi-place one opens at each of its places.
-        } else if (openSugg && openSugg.kind === 'draft') {
-          const site = siteFor(openSugg, line.key);
-          if (site && site.keys[site.keys.length - 1] === line.key) {
-            html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
-            cardDone = true;
-          }
-        } else if (openSugg && !cardDone) {
-          html += '</div>' + suggCardHtml(openSugg) + '<div class="prose">';
-          cardDone = true;
         }
       } else {
-        {
+        // a settled clause opens its record the same way — the record's head is
+        // the clause, so leaving the paragraph above it would print it twice
+        const swallowed = stacked() && wasResolved && openId === wasResolved.id && !cardDone;
+        if (swallowed) {
+          html += '</div>' + suggCardHtml(wasResolved) + '<div class="prose">';
+          cardDone = true;
+        } else {
           html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + '"' +
             (wasResolved ? ' data-anchor="' + wasResolved.id + '"' +
               anchWash(wasResolved, openId === wasResolved.id) : '') +
@@ -3209,7 +3503,6 @@
             (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0" data-anchor="' + wasResolved.id +
               '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + markOf(wasResolved) + '</span></span>' : '') +
             esc(line.x) + '</p>';
-          // a settled clause opens its record in place, like any other card
           if (wasResolved && openId === wasResolved.id && !cardDone) {
             html += '</div>' + suggCardHtml(wasResolved) + '<div class="prose">';
             cardDone = true;
@@ -3440,7 +3733,7 @@
     const el = topTarget(t);
     return el.dataset.key ? '[data-key="' + el.dataset.key + '"]'
       : el.classList.contains('insert-anchor') ? '.insert-anchor[data-anchor="' + id + '"]'
-      : el.classList.contains('editcard') ? '.editcard[data-anchor="' + id + '"]'
+      : el.classList.contains('sugg') ? '.sugg[data-card="' + id + '"]'
       : null;
   };
 
@@ -3543,7 +3836,12 @@
   // the paragraph vanishing and something else growing where it was. It swaps
   // instead, held still by keepStill — and that also keeps the caret out of a
   // zero-height overflow-hidden box, which is where focus goes strange.
-  const swapsInPlace = (el) => el && el.classList.contains('editcard');
+  // A card that stands *where its clause stood* cannot unroll: there is no gap
+  // for it to unroll into, and animating one would read as the paragraph
+  // vanishing and a card growing in the hole. It swaps, the way the composer
+  // always has. In `stacked` that is every card, which costs the surface its
+  // open/close motion — see the note in the design notes.
+  const swapsInPlace = (el) => el && (stacked() || el.classList.contains('editcard'));
 
   function collapseCard(el, done) {
     if (!el || REDUCED() || swapsInPlace(el)) return done();
@@ -3918,17 +4216,11 @@
   function renderAll() { settleTopUrgent(); renderDoc(); renderQueue(); renderToc(); markCurrentSection(); renderWallet(); drawWires(); }
   renderAll();
 
-  // The layout lab. `chrome` is pure CSS, so it costs a class on the body;
-  // `quo` changes the markup, so it costs a re-render. Whatever card is open
-  // stays open through both, which is the whole point — the comparison is
-  // meant to be made on one card without hunting for it again.
-  document.getElementById('lab-chrome').addEventListener('change', (ev) => {
-    LAYOUT.chrome = ev.target.value;
-    document.body.classList.toggle('lanes-hairline', LAYOUT.chrome === 'hairline');
-    layoutQueue(); drawWires();
-  });
-  document.getElementById('lab-quo').addEventListener('change', (ev) => {
-    LAYOUT.quo = ev.target.value;
+  // The layout lab. Whatever card is open stays open across the switch, which
+  // is the whole point — the comparison is meant to be made on one card
+  // without hunting for it again.
+  document.getElementById('lab-card').addEventListener('change', (ev) => {
+    LAYOUT.card = ev.target.value;
     keepStill(() => renderAll());
   });
 

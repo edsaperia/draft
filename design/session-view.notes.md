@@ -804,3 +804,60 @@ Building both sides of both axes was worth more than the switches are. `on top` 
 The responsive rules for the two rails had never worked. `@media (max-width: 1240px) { .toc { display: none } }` sat above `.toc { display: flex }` in the same sheet at the same specificity, so the later rule won and the media query was dead — and the same for both rules in the 900px block. Below 1240px the contents rail stayed visible and took the document's column, leaving the charter in the 290px one meant for the margin. It had simply never been looked at below 1240, which is the width the design has always been read at. Fixed by scoping the overrides to `.layout > .toc` so they outrank the base rules.
 
 Two things to keep from that. A media query that loses on specificity fails **silently and completely** — there is no warning, and the layout it was protecting is only wrong at widths nobody opens. And the reason it surfaced at all is that a measurement pass opens the page at whatever width the tooling gives you rather than at the width you designed for, which is an argument for doing more of them.
+
+## Rebuilding the card as a post and its replies (Ed, 2026-08-16)
+
+Ed's second note on the QA build was the substantial one, and it came in four parts: the clause in the document sitting above the card should be lifted into it or otherwise connected to it; the cards conform to no recognised UX pattern; the rationale is *the comment*, so it belongs at the foot of *the post* — but nothing says a person is saying it; and there should be one card, with only small changes between types.
+
+Those look like four notes. They are one.
+
+### What the card actually is
+
+Work out what object is on the screen and the pattern names itself. Somebody has proposed a change to a clause. Others may have proposed rival changes. Each of them argued for theirs. You are being asked which you prefer. That is a post and its replies — and the reply is where the argument lives, because the argument belongs to the person who made it and not to the card.
+
+Once you see it that way the first note is not a separate request. The post *is* the clause. If the card is a post-with-replies then the clause has to be inside it, and if the clause is inside it then it cannot also be outside it. So:
+
+**The card is the clause, opened.** It replaces its paragraph rather than sprouting beneath it. The clause becomes the head of the card, the field of proposals sits under it, and the thing being proposed about appears exactly once on the screen.
+
+That is not a new mechanism — it is what the composer has done since 224, and 265 was already asking why the composer replaced its clause when nothing else did. The answer turns out to be that nothing else *should* have been different.
+
+### One card, and the small changes
+
+| | head | field |
+|---|---|---|
+| quick card | the clause, and it picks | one proposal |
+| a proposed section | the gap, and it picks | one proposal, heading and all |
+| patch | the clause at this place, and it picks | one proposal · plus the ↑↓ stepper |
+| race | the clause, **and it does not pick** | two proposals |
+| your live proposal | the clause | your proposal · Withdraw instead of a commit row |
+| sealed record | the clause as it now stands | the whole field, ranked, with its numbers |
+
+The one structural difference in that table is the race's head, and it is not a style choice: on a race both candidates are challengers and **nothing on the card can vote to keep the clause**. Displacement is settled by the adoption-threshold (SPEC §5), not by this judgment. So the head carries a pick control exactly where the judgment can actually keep the clause, and on a race it is reference. That was also the thing the race card had been missing outright — a reader was being asked to choose between two rewrites without being shown what they rewrite.
+
+Worth naming the confirmation: **the sealed record already had this shape** — the text that stands, then the whole field ranked beneath it (112/120/121). The live card was moved to match the record rather than the other way about, and a live card and its record are now the same object in two tenses. That is most of what "one card" means in practice, and it is a good sign that the shape was already there in the one place where the design had had to be complete.
+
+### Somebody said this
+
+The rationale was drawn bold, at UI weight, above the lanes. Bold is what a *heading* is, and a heading is something the system wrote. Ed's word for it is the comment, and a comment has an author.
+
+The author is exactly what this mechanism will not tell you (SPEC §3.4, sealed until the record). So the disc is blank — head and shoulders, drawn in the ground colour, the placeholder every product uses for somebody it cannot name. Drawing the speaker and leaving them faceless **states the discipline instead of hiding it**: you can see that a person argued this, and see that you are not allowed to know who. A rationale with no speaker at all was quietly pretending the question of authorship did not arise.
+
+It also fixes something the old card got wrong on a race. Two rationales in a row beneath two lanes made you map column to column to work out whose argument was whose. Attached to its own proposal, each argument is simply where its wording is.
+
+The disc had to be drawn rather than left as a plain grey circle: a bare disc reads as a bullet, and a bullet says *list item* where this has to say *person*.
+
+### What the stacking cost, and what it forced
+
+**A proposal has to show what it removes.** 91 said the lanes show the result rather than a redline, and it was right *while the current text was in the next column* — you could see what had gone by looking left. Stacked, nothing is in the next column, and a proposal whose only change is a deletion would render as a sentence identical to the clause above it. So a proposal states both halves of its own change, which is also what the pattern Ed is pointing at does.
+
+Two things came out of building that, both of them measurements rather than opinions. A redline is informative in proportion to how much of the sentence survives it, and the fixture's own races are whole rewrites rather than edits — one clause came back with nineteen cuts and twenty insertions, which is confetti, not a comparison. So there is a floor: below half surviving, the proposal states itself plainly and the comparison is with the clause one line above. And punctuation had to become its own token, because glued to the word a clause that merely gained a comma rendered as the word deleted and an identical word inserted — *used on ~~bone~~ bone,* — which is nonsense the reader has to see through. Both improve the composer's own marking as a side effect.
+
+**Cards no longer animate open.** A card standing where its clause stood has no gap to unroll into; animating one reads as the paragraph vanishing and a card growing in the hole. That is why the composer has never animated, and now nothing does. It is a real loss and it is logged as 273 rather than glossed over — the swap is at least instant, and the honest animation for a substitution is a cross-fade rather than an unroll, if it turns out to be wanted.
+
+**Marks belonging to other suggestions had to travel.** A clause can carry more than one live proposal, and its gutter held a mark for each. Swallow the paragraph and the others lose their way in — so they move into the head, labelled *also here*, because an unlabelled 💡 beside the card's own 💡 is one glyph meaning two things a hand's width apart.
+
+**The rail had to be told.** A wire says where a judgment lives, and it now lives in the card at every clause rather than only under the composer. Same rule, third and fourth application: `anchorForEntry` and `wireTargets` take the card, never the clause inside it.
+
+### Found on the way
+
+The sealed record had two defects that only became visible once it had a head above it. Its ranked blocks were printing the field label a second time as their own — *What was proposed✓ this is the text that stands* — and `.rtag` / `.rsub` were scoped to `.rcand`, so the record's own blocks had never picked up either rule and the verdict ran on into the end of the label. Both fixed. The second is the same shape as the dead media queries found in the previous pass: **a rule that never matched fails silently**, and the only thing that finds it is looking at the thing it was supposed to style.
