@@ -472,6 +472,13 @@
     width: 3.25rem; height: 2.5rem; padding: 0; font-size: 1.2rem; line-height: 1;
   }
   .btn.vindiff { color: var(--muted); }
+  /* a diagonal weighs two questions rather than two texts (Ed, 221) */
+  .diaghead {
+    font-size: var(--t-ui); font-weight: 600; color: var(--fg);
+    margin-bottom: var(--s3);
+  }
+  .diag-open .rcand .rtext { color: var(--muted); font-size: var(--t-small); }
+  .diag-open .rcand .swhy { margin-bottom: 6px; }
   .btn.vindiff:hover { background: var(--light); }
   .btn.btn-approve { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
   .btn.btn-approve:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
@@ -917,6 +924,21 @@
       marked: 'Every member holds a front-door key, and <del>members</del> may lend or cut <del>spares</del> <ins>a spare</ins> for <del>regulars</del> <ins>a regular</ins> they trust<ins>, provided the Steward keeps a simple note of who holds one</ins>.',
       rationale: 'Keys are a security matter, not a vibe. A one-line log with the Steward costs nothing and means we can account for who can get in.',
     },
+    // The salience diagonal (SPEC §8.3, ~1 slot in 10; Ed, 221). It compares
+    // two *disputes* rather than two texts — which open question deserves more
+    // of the room's attention — so it is a patch turned inside out: one
+    // judgment, two anchors in different parts of the charter. Its lanes hold
+    // the two contested clauses as they stand, and choosing one says only that
+    // it matters more, never that its text is better.
+    {
+      id: 'diag-quorum-keys', kind: 'diagonal', state: 'needs',
+      qLabel: 'Which matters more?', urgency: 0.44,
+      pct: 30, cap: 'salience — this ranks the questions, never the answers',
+      pair: [
+        { key: 'quorum', name: 'Quorum', why: 'How many must be in the room before the house can decide anything at all.' },
+        { key: 'keys', name: 'Front-door Keys', why: 'Who may hold a key to the house, and whether anyone keeps a note of it.' },
+      ],
+    },
     {
       id: 'race-quorum', kind: 'race', keys: ['quorum'], state: 'needs',
       qLabel: '§ Quorum', qSub: '3 proposals racing',
@@ -1308,6 +1330,7 @@
     if (!s) return [];
     const keys = [...(s.keys ?? [])];
     if (s.insertAfterKey) keys.push(s.insertAfterKey);
+    if (s.pair) keys.push(...s.pair.map((c) => c.key));      // a diagonal sits in two
     return [...new Set(keys.map(sectionForKey).filter((n) => n >= 0))];
   }
 
@@ -1378,7 +1401,8 @@
   function suggFor(key) {
     // Anchors persist while a race is still deciding — a judged suggestion
     // is revisable until it seals or its ground shifts.
-    return SUGGS.filter((s) => (s.keys ?? []).includes(key) && s.state !== 'sealed');
+    return SUGGS.filter((s) => s.state !== 'sealed' &&
+      ((s.keys ?? []).includes(key) || (s.pair ?? []).some((c) => c.key === key)));
   }
 
   const verdicts = new Map();
@@ -1433,6 +1457,12 @@
   // apart in the charter that you rarely see two at once.
   function teasersFor(g, e) {
     if (g.kind === 'race') return [g.race && g.race.a && g.race.a.rationale, g.race && g.race.b && g.race.b.rationale].filter(Boolean);
+    // a diagonal quotes the question it is weighing here, not both — the other
+    // one is a screen away and has its own entry beside it
+    if (g.kind === 'diagonal') {
+      const c = g.pair.find((x) => x.key === e.site) || g.pair[0];
+      return [c.why];
+    }
     return g.rationale ? [g.rationale] : [];
   }
 
@@ -1443,6 +1473,9 @@
       // as a whole (Ed, 183) — in a margin, the local name is the useful one
       if (g.kind === 'patch') g.sites.forEach((site, i) =>
         out.push({ g, site: site.key, label: site.label, n: i + 1, of: g.sites.length }));
+      // a diagonal stands beside both of the clauses it weighs
+      else if (g.kind === 'diagonal') g.pair.forEach((c, i) =>
+        out.push({ g, site: c.key, label: c.name, n: i + 1, of: 2 }));
       else out.push({ g, site: (g.keys ?? [])[0] ?? null, label: g.qLabel, n: 1, of: 1 });
     }
     return out.sort((a, b) => docIndexOf(a.g, a.site) - docIndexOf(b.g, b.site));
@@ -1461,6 +1494,7 @@
     // open question — and 💡 lives on the propose actions it leads to (Ed, 173).
     stuck: '❌',      // judging cannot move this; only a new draft can
     propose: '💡',    // ...and this is where you write one
+    weigh: '⚖️',      // a salience diagonal: which of two questions matters more
     deciding: '⏳',   // yours is in; the race runs on
     shifted: '🔄',    // the ground moved: this one comes back around, rebuilt
     // A decision says which way it went, not just that it happened (Ed, 160):
@@ -1481,7 +1515,11 @@
   // going on (Ed, 115). Settled before anything draws, because the document's
   // own highlights need it too now (200) and they are rendered first.
   function settleTopUrgent() {
-    const live = queueEntries().filter((e) => stateOf(e.g) === 'needs' && !e.g.saturated);
+    // 🔥 always means "an ordinary judgment that wants you most", so the two
+    // differently-addressed kinds are never it: a stuck race wants a draft and
+    // a diagonal wants a ranking, and both say so with their own glyph.
+    const live = queueEntries().filter((e) =>
+      stateOf(e.g) === 'needs' && !e.g.saturated && e.g.kind !== 'diagonal');
     topUrgentId = live.length
       ? live.reduce((best, e) => ((e.g.urgency ?? 0) > (best.urgency ?? 0) ? e.g : best), live[0].g).id
       : null;
@@ -1549,7 +1587,7 @@
           ? '<span class="ql">' + markHtml(g.shifted ? MARK.shifted : MARK.deciding) + plainLabel(e.label || g.qLabel) +
             '<span class="qv"> · you ' + (verdict || 'judged') + '</span></span>'
           : '<span class="ql">' +
-            markHtml(g.saturated ? MARK.stuck : top ? MARK.urgent : MARK.needs) +
+            markHtml(markOf(g)) +
             '<span>' + plainLabel(e.label || g.qLabel) + '</span></span>' +
             // No kind chip and no "copy edit"/"3 proposals racing" line (Ed,
             // 184): both restated in words what the card's own shape already
@@ -1557,7 +1595,8 @@
             // race, a place count is a patch. Only the place count survives,
             // because it says *which* place, which nothing else does.
             (tier !== 'cool' && e.of > 1
-              ? '<span class="qs"><span class="sibn">' + e.n + ' of ' + e.of + ' places</span></span>'
+              ? '<span class="qs"><span class="sibn">' + e.n + ' of ' + e.of +
+                (g.kind === 'diagonal' ? ' questions' : ' places') + '</span></span>'
               : '') +
             (tier === 'cool' ? '' : teasersFor(g, e).map((t) =>
               '<span class="qwhy">' + esc(t) + '</span>').join('')) +
@@ -1597,7 +1636,7 @@
     const g = SUGGS.find((x) => x.id === id);
     if (!g) return null;
     if (g.insertAfterKey) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"]');
-    const k = siteKey || (g.keys ?? [])[0];
+    const k = siteKey || (g.keys ?? [])[0] || (g.pair && g.pair[0].key);
     return doc.querySelector('[data-key="' + k + '"]') || foldedHeadingFor(DOC.findIndex((l) => l.key === k));
   }
 
@@ -1869,7 +1908,7 @@
         (isCast(s) ? 'Recorded — choose again to change it' : 'Submit this judgment') + '">✓</button>') +
       '<button class="btn vindiff glyphbtn' + (pick ? ' hidden' : '') + '" data-v="indifferent"' +
       ' aria-pressed="' + (pick === 'indifferent') + '"' + (s.locked ? ' disabled' : '') +
-      ' title="I can’t split them">🤷</button>' +
+      ' title="' + (s.kind === 'diagonal' ? 'They matter equally' : 'I can’t split them') + '">🤷</button>' +
       (insists ? '<button class="btn" data-act="skip">Not this one, not now</button>' : '') +
       (extra || '') +
       '</div>';
@@ -1962,6 +2001,26 @@
 
   function suggCardHtml(s, siteKey) {
     if (stateOf(s) === 'sealed') return sealedCardHtml(s);
+    if (s.kind === 'diagonal') {
+      // The same two lanes, holding two *questions* rather than two answers.
+      // Choosing one says only that it deserves more of the room's attention;
+      // nothing here touches either text (SPEC §8.3).
+      const lane = (c, v) =>
+        '<div class="rcand pickable"' + laneAttrs(s, v) + '>' +
+        '<div class="rtag">' + esc(c.name) + '</div>' +
+        '<div class="swhy">' + esc(c.why) + '</div>' +
+        '<div class="rtext">' + esc(currentTextFor(c.key)) + '</div></div>';
+      return (
+        '<div class="sugg diag-open" data-card="' + s.id + '">' +
+        '<div class="diaghead">Which of these deserves more of the room’s attention?</div>' +
+        '<div class="race-grid">' + lane(s.pair[0], 'first') + lane(s.pair[1], 'second') + '</div>' +
+        commitRowHtml(s) +
+        reviseNote(s) +
+        '<div class="foot">This ranks the questions, never the answers — neither text changes either way · ' +
+        'it steers whose argument gets the room’s time next (SPEC §8.3) · authorship sealed</div>' +
+        '</div>'
+      );
+    }
     if (s.kind === 'race') {
       return (
         '<div class="sugg race-open" data-card="' + s.id + '">' +
@@ -2388,9 +2447,11 @@
     const verdict =
       what === 'approve' ? 'approved (recorded as: proposal beats current text)'
       : what === 'keep' ? 'kept the current text'
+      : what === 'first' ? 'said ' + (s.pair ? '“' + s.pair[0].name + '”' : 'the first') + ' matters more'
+      : what === 'second' ? 'said ' + (s.pair ? '“' + s.pair[1].name + '”' : 'the second') + ' matters more'
       : what === 'a' ? 'preferred ' + quote(s.race && s.race.a.text)
       : what === 'b' ? 'preferred ' + quote(s.race && s.race.b.text)
-      : what === 'indifferent' ? 'indifferent'
+      : what === 'indifferent' ? (s.kind === 'diagonal' ? 'said they matter equally' : 'indifferent')
       : 'skipped (recirculates with decay)';
     if (what === 'skip') {
       const shut = () => {
@@ -2464,6 +2525,7 @@
     return st === 'sealed' ? (isUnread(g) ? (carried(g) ? MARK.adopted : MARK.retired) : MARK.read)
       : st === 'deciding' ? (g.shifted ? MARK.shifted : MARK.deciding)
       : g.saturated ? MARK.stuck
+      : g.kind === 'diagonal' ? MARK.weigh
       : g.id === topUrgentId ? MARK.urgent
       : MARK.needs;
   };

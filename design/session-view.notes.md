@@ -440,6 +440,20 @@ A tokenising and debugging pass over the whole mockup, at the point where it sto
 
 Verified afterwards by exercising every path: all ten card kinds open and close, a patch judges from any of its three cards with the ticks pressing together, an unread decision acknowledges into a dot, skip works on the 🔥 card, folding and unfolding a Part rebuilds the contents rail, and the margin survives scroll-and-resize churn with seventeen pinned entries, no overlaps and nothing off-screen. No console errors on any path.
 
+## The salience diagonal comes home (Ed, 221)
+
+SPEC §8.3 gives about one slot in ten to a **diagonal**: a card that compares two *disputes* rather than two texts, asking which open question deserves more of the room's attention. It was built in design/race-card.html and had no home here — every zone on this surface assumed a judgment attached to one clause.
+
+It turns out to need nothing new. **A diagonal is a patch turned inside out**: one judgment, two anchors in different parts of the charter, so it reuses the multi-entry machinery whole — two queue entries standing beside their own clauses, a mark in each gutter, a wire spine joining them. And the card is the lane geometry unchanged, because two lanes side by side is exactly the shape of *which of these two*. The only difference is what fills them: a question's name, a line on what it is about, and the clause as it currently stands, greyed, because **the text is context here rather than the thing being judged**.
+
+Three details the mechanism forced.
+
+**Its own glyph, ⚖️** (Ed's, and the one I had picked). By the rule established at 166 — colour says whether you can act, the glyph says what the act *is* — a diagonal is a different ask and must not wear ❓. Weighing two things is exactly what the scales say.
+
+**It can never be the 🔥 card.** 🔥 means *an ordinary judgment that wants you most, just do it*, and a card carrying ⚖️ while being the flame would say two things at once. So the two differently-addressed kinds — a stuck race and a diagonal — are both excluded from the flame, and 🔥 keeps its single meaning.
+
+**The footer has to be explicit that nothing changes either way.** This is the one card on the surface where choosing does not touch a text: it steers whose argument gets the room's time next. A member who mistook it for a verdict would think they had just voted on the quorum rule. Hence *this ranks the questions, never the answers*, and an indifference that reads "they matter equally" rather than "can't split them".
+
 ## The queue is a courtesy, not a conveyor
 
 "Needs you" is meant to be the router's ordering — hottest races first, floors-near races where you're unheard, then quick approvals — but every item is also anchored in the document, so a member who prefers to just read the charter top to bottom encounters exactly the same work in document order. Two navigation styles, one underlying set of judgments.
