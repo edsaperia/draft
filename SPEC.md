@@ -153,6 +153,8 @@ Rival-vs-rival pairs answer a conditional question — "if this text changes, wh
 
 **The window.** A document either has an **end datetime** or it is **perpetual**. A window buys the closing ceremony, a token drip paced against it, and a record cut at a known moment. Without one, the drip runs against **real time** and does not reset, and the document ends by **freeze** (§9.5) — so a perpetual document is not really endless, it is one whose ending is decided by its roster rather than its calendar.
 
+**The edit economy.** The starting number of edits and the rate they come back are creation-time parameters too (Ed, 2026-08-16), alongside quorum and the bar rather than buried among the defaults — a document meant to move quickly and one meant to be hard to change want different answers, and the members can see the difference in their wallets from the first minute.
+
 **The threshold shape.** The bar is either **fixed** or **ramping**, and this is a separate choice: a windowed document may perfectly well hold its bar fixed for the whole window. Only the perpetual case is *constrained*, and only because a ramp needs an endpoint to ramp toward. §4.3's argument for ramping — the bar should track irreversibility, since an early adoption can still be challenged inside the window and a late one is permanent — is an argument available to any document with an end, and to no document without one. A fixed bar reads exactly as §4.4 already describes the mechanism: anything may displace anything, always, at the same price.
 
 Open: a perpetual document has no inter-session reset, so it loses the periodic moment where the threshold resets and the backlog re-enters stake-waived (§9.4, §4.5) — the device that kept entrenchment session-scoped. Whether something replaces it is Q252.
@@ -226,7 +228,7 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 | Post-adoption cooldown | 5 min |
 | Redraft limit before carry | 2 informed redrafts |
 | Rendering tiebreak | deterministic (hash order); margins in the record |
-| Tokens | grant 4 · drip 1 per 10% window · cap 8 · flat stake 1 |
+| Tokens ("edits" in the interface) | grant 4 · drip 1 per 10% window · cap 8 · flat stake 1; grant and drip are creation-time parameters (§9.0) |
 | Refund | stake × min(w/0.5, 1.5); w = peak P(beats incumbent) |
 | Rationale cap | 300 chars |
 | Bout gap threshold | > 90 s discarded from latency |

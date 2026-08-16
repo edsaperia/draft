@@ -95,6 +95,31 @@
   .navbar .stats { display: flex; gap: 18px; white-space: nowrap; font-size: var(--t-ui); color: var(--muted); }
   .navbar .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
 
+  /* The edit-wallet (Ed, 2026-08-16). A token *is* an edit, so it is drawn as
+     the writing glyph rather than counted in words: the wallet says what it
+     buys without a sentence. One leaves every time you spend, and the next one
+     sits in a tray that fills as the drip accrues.
+
+     The tray is the same device as the queue card's wash — a hard-stopped
+     linear gradient whose fill is a fraction — reused for a second magnitude
+     rather than a second device invented for it. It sits under the *next*
+     pencil rather than behind the whole row: a wash behind the row would fill
+     left to right across pencils you already hold, which reads as "some of my
+     edits are highlighted" instead of "this much of the way to another one". */
+  .wallet { display: inline-flex; align-items: center; gap: 6px; }
+  .pencils { display: inline-flex; align-items: center; gap: 1px; line-height: 1; }
+  .pencils i { font-style: normal; font-size: var(--t-ui); }
+  .pnext {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.15em; height: 1.35em; border-radius: var(--r-sm);
+    background: linear-gradient(90deg,
+      rgba(13, 110, 253, 0.22) var(--fill), transparent var(--fill));
+  }
+  .pnext i { opacity: 0.28; }
+  /* Nothing held: the label goes quiet, and the tray is the only thing left
+     with anything to say. */
+  .wallet.empty { color: var(--muted); }
+
   /* contents-rail (left) · document (centre) · needs-you queue (right) */
   .layout {
     display: grid; grid-template-columns: var(--rail-left) minmax(0, 1fr) var(--rail-right);
@@ -591,7 +616,7 @@
       <span>time left <b>2h 11m</b></span>
       <span title="How sure the house has to be that a change beats the current text. It rises through the session — this is not a vote share.">confidence bar <b>0.74 ▲</b></span>
       <span title="Quorum for a decision, not for the meeting: this many distinct members must weigh in on a question before it can be adopted (a third of the roster). A question short of quorum simply waits — silence is never counted as a vote.">quorum <b>5 of 14</b></span>
-      <span>your tokens <b>5</b></span>
+      <span class="wallet" id="wallet"></span>
     </div>
   </div>
 </header>
@@ -1264,6 +1289,18 @@
   // the number that is actually a headcount; the adoption-threshold beside it
   // is a confidence, not a vote share.
   const ROSTER = 14, FLOOR = 5;
+
+  // Creation-time constitution (SPEC §9.0). The starting number of edits and
+  // the rate they come back are per-document parameters chosen when the
+  // document is made, exactly like quorum and the bar (Ed, 2026-08-16) — so
+  // they are held here as named rules rather than as numbers scattered
+  // through the render.
+  const EDIT_RULES = { grant: 4, cap: 8, stake: 1 };
+  // Where this member stands: five held, three fifths of the way to a sixth.
+  // Worth knowing that a real session would probably show eight — §7's
+  // calibration note says participants sit near the cap at v1 defaults, which
+  // is the open question behind Q251.
+  let editsHeld = 5, editsToNext = 0.6;
 
   const doc = document.getElementById('doc');
   const queueEl = document.getElementById('queue');
@@ -1997,6 +2034,18 @@
   // SPEC §3.1 makes skipping a non-move anyway. The 🔥 card is the exception
   // because it is exempt from the fit cap and always on screen, so without an
   // escape it would be a nag you cannot dismiss.
+  // The price is stated at the point of sale in the same currency the wallet
+  // holds, and the button greys when the wallet is empty (Ed, 234) — the same
+  // grey-means-the-door-is-shut rule the rest of the surface uses. The leading
+  // ✏️ is the *action*; the cost is said in words, because two pencils in one
+  // button would be two different meanings wearing one glyph.
+  const proposeBtnHtml = () => {
+    const broke = editsHeld < EDIT_RULES.stake;
+    return '<button class="btn btn-outline" data-act="propose"' +
+      (broke ? ' disabled title="No edits left — another arrives as the drip accrues"' : '') +
+      '>✏️ Propose something else · costs one edit</button>';
+  };
+
   function commitRowHtml(s, extra) {
     const pick = pickOf(s);
     const insists = s.id === topUrgentId && stateOf(s) === 'needs';
@@ -2137,7 +2186,7 @@
         '<div class="rcand pickable"' + laneAttrs(s, 'a') + '><div class="rtext">' + esc(s.race.a.text) + '</div></div>' +
         '<div class="rcand pickable"' + laneAttrs(s, 'b') + '><div class="rtext">' + esc(s.race.b.text) + '</div></div>' +
         '</div>' +
-        commitRowHtml(s, '<button class="btn btn-outline" data-act="propose">✏️ Propose something else · 1 token</button>') +
+        commitRowHtml(s, proposeBtnHtml()) +
         reviseNote(s) +
         '<div class="foot">Authorship sealed · no counts, no standings · full race view has comparison modes and the whole queue</div>' +
         '</div>'
@@ -2623,7 +2672,11 @@
   function act(id, what) {
     const s = SUGGS.find((x) => x.id === id);
     if (what === 'propose') {
-      // propose-C opens the composer (later mockup) — no-op here.
+      // The composer is a later mockup, but the *price* is real here: an edit
+      // leaves the wallet, which is the whole point of drawing it (Ed,
+      // 2026-08-16). Nothing is spent when you have nothing to spend.
+      if (editsHeld < EDIT_RULES.stake) return;
+      editsHeld -= EDIT_RULES.stake;
       renderAll();
       return;
     }
@@ -2782,7 +2835,28 @@
   // which settles which card is most urgent. Then the contents rail, whose
   // marks depend on both — it now carries lifecycle state (177), so it can no
   // longer be rendered only when the fold tree changes.
-  function renderAll() { settleTopUrgent(); renderDoc(); renderQueue(); renderToc(); markCurrentSection(); drawWires(); }
+  // The wallet: one glyph per edit you hold, and a tray under the next one
+  // whose fill is how far the drip has got toward it. Spending removes a
+  // pencil; the tray keeps whatever it had accrued, which is what makes the
+  // two magnitudes legible as separate things.
+  const walletEl = document.getElementById('wallet');
+  function renderWallet() {
+    const full = editsHeld >= EDIT_RULES.cap;
+    walletEl.className = 'wallet' + (full ? ' full' : '') + (editsHeld === 0 ? ' empty' : '');
+    walletEl.title = editsHeld === 0
+      ? 'No edits left. Another arrives as the drip accrues; proposing costs one.'
+      : 'Your edits — proposing one costs ' + EDIT_RULES.stake +
+        '. You hold ' + editsHeld + ' of a possible ' + EDIT_RULES.cap +
+        (full ? ', which is the cap.' : '; the tray shows how far the drip has got toward the next.');
+    walletEl.innerHTML =
+      'your edits <span class="pencils">' +
+      '<i>✏️</i>'.repeat(editsHeld) +
+      (full ? '' : '<span class="pnext" style="--fill: ' +
+        Math.round(Math.max(0, Math.min(1, editsToNext)) * 100) + '%"><i>✏️</i></span>') +
+      '</span>';
+  }
+
+  function renderAll() { settleTopUrgent(); renderDoc(); renderQueue(); renderToc(); markCurrentSection(); renderWallet(); drawWires(); }
   renderAll();
 
   // The queue is sticky and the wires are drawn in viewport space, so both the
