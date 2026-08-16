@@ -64,13 +64,21 @@
     --r-md: 0.375rem;       /* a card in a rail, a button              */
     --r-lg: 0.5rem;         /* the document, an open decision card     */
 
-    /* --- elevation (Bootstrap's own ladder): the document is the
-           ground, rail cards rest just above it, an open decision card
-           floats highest. Neutral, never tinted — a coloured shadow
-           reads as a glow. --------------------------------------- */
-    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+    /* --- elevation: the document is the ground, rail cards rest just
+           above it, an open decision card floats highest. Neutral, never
+           tinted — a coloured shadow reads as a glow.
+
+           Retuned 2026-08-16 (Ed, QA): Bootstrap's ladder is built for
+           dialogs on an empty backdrop, and at 3rem of blur on a card the
+           size of a paragraph it read as a dark halo rather than as
+           height. A drop shadow is a light source, so each step is now a
+           **contact** shadow (1px, tight, the card meeting the page) plus
+           one soft cast whose blur stays near 2.5× its offset. Total ink
+           is roughly halved; what changed is the shape, not the ladder —
+           three steps, still neutral, still the same three users. */
+    --shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 1px 1px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.09);
+    --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.10);
 
     /* --- the three columns ---------------------------------------- */
     --rail-left: 210px;
@@ -133,14 +141,20 @@
     display: grid; grid-template-columns: var(--rail-left) minmax(0, 1fr) var(--rail-right);
     gap: var(--s5); align-items: start; margin-top: 18px;
   }
+  /* `.layout >` rather than a bare class, on both of these. The rails set
+     `display` and `position` in their own rules further down the sheet, so at
+     equal specificity the later rule was winning and every one of these
+     overrides was dead: below 1240px the contents rail stayed visible and took
+     the document's column, leaving the charter in the 290px one. Found at Ed's
+     QA of 2026-08-16 — the mockup had only ever been read above 1240. */
   @media (max-width: 1240px) {
     .layout { grid-template-columns: minmax(0, 1fr) var(--rail-right); }
-    .toc { display: none; }
+    .layout > .toc { display: none; }
   }
   @media (max-width: 900px) {
     .layout { grid-template-columns: 1fr; }
-    .queue, .toc { position: static; }
-    .toc { display: block; }
+    .layout > .queue, .layout > .toc { position: static; max-height: none; }
+    .layout > .toc { display: flex; }
   }
 
   /* left rail: contents-rail, built from the document's own headings. A charter
@@ -193,7 +207,6 @@
   }
   .toc a:hover { background: var(--light); color: var(--fg); }
   .toc a.current { background: var(--light); color: var(--fg); font-weight: 600; border-left-color: var(--primary); }
-  .toc .note { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); flex: none; }
   /* lifecycle marks in the contents rail (Ed, 177): held small and tight to the
      right edge so they read as a margin annotation, not as part of the heading */
   .tocmarks {
@@ -212,7 +225,6 @@
   .queue { position: relative; }
   .queue h2 { margin: 0 0 var(--s2); }
   .queue ul { list-style: none; margin: 0; padding: 0; position: relative; }
-  .queue .note { font-size: 0.75rem; color: var(--muted); margin-top: 10px; }
 
   .qitem { position: absolute; left: 0; width: 100%; transition: top 220ms ease; }
   /* a pinned entry tracks the viewport, so it must not lag behind the scroll */
@@ -453,7 +465,10 @@
     border: 1.5px solid var(--primary);      /* one blue for every card (198) */
     border-radius: var(--r-lg);
     box-shadow: var(--shadow-lg);
-    padding: 14px var(--s4);
+    /* --s5 rather than --s4 of side padding: the lifecycle mark hangs in the
+       left one, so the rationale below the lanes stays column-aligned with
+       them instead of being pushed right by its own glyph. */
+    padding: 14px var(--s5);
     background: var(--bg);
   }
   .sugg .foot { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); }
@@ -471,6 +486,8 @@
      hairline down the middle of the gutter (Ed, 95) */
   .why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); margin-bottom: var(--s3); }
   .why-grid .swhy { margin-bottom: 0; }
+  /* the row owns the spacing now that the rationale sits inside it */
+  .whyrow > .swhy, .whyrow .why-grid { margin-bottom: 0; }
   .why-grid .swhy + .swhy::before {
     content: ''; position: absolute; left: -6px; top: 0; bottom: 0;
     border-left: 1px solid var(--border);
@@ -504,35 +521,154 @@
   }
   .rcand .rsub.stood { color: var(--ok); font-weight: 700; }
 
-  /* A lane is the control (Ed, 197): click the text you prefer. It answers the
-     pointer as firmly as a button would (Ed, 209) — a tint and a ring, short of
-     the selected state so the two never read alike. Selection is a fill plus a
-     ring, because it must be visible on all of a patch's cards at once. */
-  .rcand.pickable { cursor: pointer; transition: background 120ms ease, box-shadow 120ms ease; }
-  .rcand.pickable:hover {
-    background: rgba(var(--lc-deciding), 0.07);
-    box-shadow: inset 0 0 0 2px rgba(var(--lc-deciding), 0.4);
+  /* ---- the lane-bar (Ed, QA 2026-08-16, retiring 197) -----------------
+     The lane is no longer the button. 197 made the text itself the control
+     on the argument that it was the most direct statement the card could
+     make of what it was asking; in use it asked the reader to click a
+     paragraph of constitutional prose, which is the one gesture the rest of
+     this surface now means *put a caret here* (224). So the choosing moves
+     into a control strip at the foot of each text, beside the ✏️ that was
+     already living there and reading well.
+
+     Everything the strip offers is scoped to its own lane — prefer this
+     wording, write from this wording — and the acts that are about the
+     *pair* stay underneath: indifference is a judgment about the pair
+     (SPEC §3.2) and Submit commits the card, so neither can sit in a lane.
+     `margin-top: auto` floats the strip to the bottom of its lane so the
+     bars sit level however unequal the two texts are. */
+  .lanebar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--s2); margin-top: auto; padding-top: var(--s3);
   }
-  .rcand.pickable:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .rcand.pickable[aria-pressed="true"],
-  .rcand.pickable[aria-pressed="true"]:hover {
-    background: var(--primary-subtle); border-color: var(--primary);
-    box-shadow: inset 0 0 0 2px var(--primary);
+  .lanepick {
+    appearance: none; font: inherit; font-size: var(--t-cap); font-weight: 500;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px 3px 6px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+    cursor: pointer; transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
   }
-  .rcand.pickable[aria-disabled="true"] { cursor: default; opacity: 0.6; }
-  @media (prefers-reduced-motion: reduce) { .rcand.pickable { transition: none; } }
+  /* the mark is a radio, because that is exactly what the judgment is: one
+     of the texts on this card, or none of them yet */
+  .lanepick .dot {
+    flex: none; width: 12px; height: 12px; border-radius: 50%;
+    border: 1.5px solid var(--muted); background: var(--bg);
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+  }
+  /* both labels are in the markup and CSS picks one, so choosing stays a
+     single attribute flip on every card a patch is open on */
+  .lanepick .on { display: none; }
+  .lanepick[aria-pressed="true"] .on { display: inline; }
+  .lanepick[aria-pressed="true"] .off { display: none; }
+  .lanepick:hover { color: var(--primary); border-color: var(--primary); }
+  .lanepick:hover .dot { border-color: var(--primary); }
+  .lanepick[aria-pressed="true"] {
+    color: #fff; background: var(--primary); border-color: var(--primary); font-weight: 600;
+  }
+  .lanepick[aria-pressed="true"] .dot {
+    border-color: #fff; background: #fff; box-shadow: inset 0 0 0 2.5px var(--primary);
+  }
+  .lanepick[disabled] { opacity: 0.55; cursor: default; }
+  .lanepick[disabled]:hover { color: var(--muted); border-color: var(--border); }
+  @media (prefers-reduced-motion: reduce) { .lanepick, .lanepick .dot { transition: none; } }
 
   /* propose-edit, on either lane (Ed, 228). Writing from a lane is free — the
      edit is charged at Propose, which is where the price is stated — so this
-     is a quiet control at the foot of the text it copies, not a call to
-     action. `margin-top: auto` floats it to the bottom of the lane so the two
-     sit level however unequal the two texts are. */
-  .rcand .lanepropose {
-    align-self: flex-start; margin-top: auto; padding-top: var(--s2);
+     is the quiet half of the strip, against the pick's solid one. */
+  .lanepropose {
     background: none; border: 0; font: inherit; font-size: var(--t-cap);
-    color: var(--muted); cursor: pointer;
+    color: var(--muted); cursor: pointer; padding: 3px 0;
   }
-  .rcand .lanepropose:hover { color: var(--primary); }
+  .lanepropose:hover { color: var(--primary); }
+
+  /* ---- the status-quo-block (Ed, QA 2026-08-16) ----------------------
+     The wording the card is arguing about, stated once, at the top.
+
+     Whether it carries a lane-bar is not a style choice — it is what the
+     mechanism is actually asking. On a quick card or a patch the judgment
+     *is* incumbent against proposal, so the block is one of the two things
+     being judged and picks like a lane. On a race both lanes are
+     challengers and nothing here can vote to keep the clause: displacement
+     is settled by the adoption-threshold, not by this judgment (SPEC §5).
+     There the block is reference only — greyed, no controls — and it is the
+     thing the race card was missing, since a reader was being asked to
+     choose between two rewrites without being shown what they rewrite. */
+  .quo {
+    display: flex; flex-direction: column; margin-bottom: var(--s3);
+    border: 1.5px solid var(--primary); border-radius: var(--r-md);
+    padding: var(--s3) 14px; background: var(--bg);
+  }
+  .quolab {
+    font-size: var(--t-micro); font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--muted); margin-bottom: var(--s1);
+  }
+  .quo .rtext { font-size: var(--t-body); margin-bottom: 0; }
+  .quo.ref { border-color: var(--border); background: var(--light); color: var(--muted); }
+
+  /* one lane and no pair to set it against: a quick card in `quo on top`
+     mode, where the comparison is vertical */
+  .field-one { margin-bottom: var(--s3); }
+
+  /* ---- the rationale, under the texts (Ed, QA 2026-08-16, revising 87) --
+     87 put the reason above the wording so you met the argument first. The
+     order is now the other way about: the texts, then the case for them.
+     What that buys is that the reader forms a view of the wording before
+     being told what to think of it — and what it costs is that a rationale
+     explaining an unusual choice arrives after the choice has been read.
+
+     The lifecycle mark sits in the card's left padding rather than in the
+     flow, so a race's two rationales stay in their lanes' own columns (95)
+     instead of being shunted right by the width of a glyph. One mark per
+     card: it belongs to the entry, not to a candidate, and it is the same
+     glyph the rail entry and the gutter are wearing. */
+  .whyrow { position: relative; margin-bottom: var(--s3); }
+  .whyrow .wmark {
+    position: absolute; left: calc(-1 * var(--s5) + 2px); top: 0;
+    font-size: var(--t-small); line-height: 1.5;
+  }
+
+  /* ---- lane chrome, axis B of the layout lab -------------------------
+     `boxed` is what 66/85 built: every text in a bordered box. `hairline`
+     strips the boxes and leaves one rule down the middle of the pair, on
+     the argument that a box round a paragraph of a charter is furniture
+     the comparison does not need.
+
+     The editing-card is held out of it: its right-hand lane is a text editor,
+     and a box is how that lane says it is one (Ed, 224–241, signed off). */
+  body.lanes-hairline .sugg:not(.editcard) .rcand,
+  body.lanes-hairline .quo {
+    border: 0; border-radius: 0; background: none; padding: 0;
+  }
+  body.lanes-hairline .quo {
+    padding-bottom: var(--s3); border-bottom: 1px solid var(--border);
+  }
+  body.lanes-hairline .sugg:not(.editcard) .race-grid { gap: 0; }
+  body.lanes-hairline .sugg:not(.editcard) .race-grid > .rcand { padding-right: var(--s4); }
+  body.lanes-hairline .sugg:not(.editcard) .race-grid > .rcand + .rcand {
+    padding-right: 0; padding-left: var(--s4); border-left: 1px solid var(--border);
+  }
+  @media (max-width: 900px) {
+    body.lanes-hairline .sugg:not(.editcard) .race-grid > .rcand { padding: 0 0 var(--s3); }
+    body.lanes-hairline .sugg:not(.editcard) .race-grid > .rcand + .rcand {
+      padding: var(--s3) 0 0; border-left: 0; border-top: 1px solid var(--border);
+    }
+  }
+
+  /* ---- the layout lab panel ------------------------------------------
+     Deliberately out of world — dashed, monospace, bottom left — because it
+     is scaffolding for a decision, not part of the design being decided. It
+     goes when both questions are answered. */
+  .lab {
+    position: fixed; left: var(--s3); bottom: var(--s3); z-index: 50;
+    display: flex; align-items: center; gap: var(--s3);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--t-cap); color: var(--muted);
+    background: var(--bg); border: 1px dashed var(--border);
+    border-radius: var(--r-md); padding: var(--s2) var(--s3);
+    box-shadow: var(--shadow-sm);
+  }
+  .lab .labtag { text-transform: uppercase; letter-spacing: 0.06em; font-size: var(--t-micro); }
+  .lab label { display: inline-flex; align-items: center; gap: var(--s1); }
+  .lab select { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 1px var(--s1); }
 
   /* ===================================================================
      The editing-card (Ed, 2026-08-16, decisions 224–241). Composing is not a
@@ -740,7 +876,6 @@
     <nav class="toc">
       <h2 class="eyebrow">Contents</h2>
       <ul id="toc"></ul>
-      <p class="note">The charter's own headings. A proposed new section isn't listed here until it's adopted — until then it lives in the document as a gap.</p>
     </nav>
 
     <main>
@@ -749,7 +884,6 @@
 
     <aside class="queue">
       <h2 class="eyebrow">In the margin</h2>
-      <p class="note">Every contested point stands beside its own clause, in the charter's order — where an entry sits is a place in the document, never a position in a ranking. How much a card <b>wants you</b> is the strength of its colour, and how far the wash reaches is closeness to resolution, never direction. Urgency decides only <b>which</b> questions fit on the screen: the ones that want you most, with the rest counted at the foot of the rail and surfacing as those are dealt with. The one that wants you most never leaves. <b>Still deciding</b> is one grey line, clickable to change your mind. A decision you haven't acknowledged keeps a line until you say you have seen it, then settles into a dot you can open any time.</p>
       <ul id="queue"></ul>
       <div id="qmore" class="qmore"></div>
     </aside>
@@ -757,6 +891,25 @@
 
   <svg id="wires" aria-hidden="true"></svg>
 
+</div>
+
+<!-- The layout lab: two card questions still open (Ed, QA 2026-08-16), left
+     switchable so they can be looked at. Scaffolding — it goes with the
+     answers. -->
+<div class="lab" id="lab">
+  <span class="labtag">layout lab</span>
+  <label>status quo
+    <select id="lab-quo">
+      <option value="top">on top</option>
+      <option value="lane">in the lane</option>
+    </select>
+  </label>
+  <label>lanes
+    <select id="lab-chrome">
+      <option value="boxed">boxed</option>
+      <option value="hairline">hairline</option>
+    </select>
+  </label>
 </div>
 
 <script>
@@ -2249,16 +2402,16 @@
   const committedOf = (s) => (committed.has(s.id) ? committed.get(s.id) : (s.pick ?? null));
   const isCast = (s) => isJudged(s) && pickOf(s) !== null && pickOf(s) === committedOf(s);
 
-  // The lanes *are* the buttons (Ed, 197). You choose a text by clicking the
-  // text, which is the most direct statement the card can make of what it is
-  // asking — and it retires "Option A / Option B", which only ever existed so
-  // that a control underneath could refer back up to a lane.
+  // 197 made the lane itself the button. Retired at Ed's QA of 2026-08-16: the
+  // gesture it wanted — click a paragraph of the charter — is the same one the
+  // composer now means by *put a caret here* (224), and a whole clause is in
+  // any case a very large target for a very precise claim. The choosing moves
+  // into a strip at the foot of each text, next to the ✏️ that was already
+  // there.
   //
-  // Indifference cannot ride on a lane: it is a judgment about the *pair*
-  // (SPEC §3.2), not about either text, so it keeps a control of its own.
-  const laneAttrs = (s, v) =>
-    ' data-v="' + v + '" role="button" tabindex="' + (s.locked ? '-1' : '0') + '"' +
-    ' aria-pressed="' + (pickOf(s) === v) + '"' + (s.locked ? ' aria-disabled="true"' : '');
+  // What may live in a lane is exactly what is about that lane. Indifference is
+  // a judgment about the *pair* (SPEC §3.2) and Submit commits the card, so
+  // both stay underneath.
 
   // Submit appears only once something is chosen (Ed, 202) — a disabled button
   // is a thing you are being told off by; an absent one is simply the next step
@@ -2304,6 +2457,57 @@
     '<button class="lanepropose" data-propose-from="' + s.id + '|' + lane + '|' + (key || '') +
     '" title="Write your own version of this wording. Free to open — proposing costs one edit.">' +
     '✏️ edit this</button>';
+
+  // ---- the layout lab -------------------------------------------------
+  // Two questions Ed has not settled yet (QA, 2026-08-16), switchable at the
+  // foot of the page so they can be looked at rather than argued about. Both
+  // are meant to collapse to one answer each and take the lab with them.
+  //   quo    — where the status quo goes on a card that is judging one
+  //   chrome — whether a text sits in a box or beside a hairline
+  const LAYOUT = { quo: 'top', chrome: 'boxed' };
+
+  // The pick control. Two labels rather than one rewritten in JS, so the
+  // existing `choose()` — which only ever flips aria-pressed — keeps working
+  // untouched across every card a patch is showing on.
+  function laneBarHtml(s, v, opts) {
+    const o = opts || {};
+    return '<div class="lanebar">' +
+      '<button class="lanepick" type="button" data-v="' + v + '"' +
+      ' aria-pressed="' + (pickOf(s) === v) + '"' + (s.locked ? ' disabled' : '') +
+      ' title="Say you prefer this wording — nothing leaves the card until you submit">' +
+      '<i class="dot" aria-hidden="true"></i>' +
+      '<span class="off">Prefer this</span><span class="on">Preferred</span></button>' +
+      (o.edit === false ? '' : laneProposeHtml(s, o.lane || v, o.key)) +
+      '</div>';
+  }
+
+  // One of the texts under judgment: the wording, then its own controls.
+  const laneHtml = (s, v, inner, opts) =>
+    '<div class="rcand">' + inner + laneBarHtml(s, v, opts) + '</div>';
+
+  // The status quo. `v` is the verdict that keeps it — omitted where the
+  // judgment cannot keep it, which is every race (SPEC §5: two challengers,
+  // and the clause survives or falls on the adoption-threshold rather than on
+  // this card). Reference blocks are greyed and carry no controls at all: a
+  // third route to the composer on a card that already has two would be ink
+  // for its own sake.
+  function quoHtml(s, text, opts) {
+    const o = opts || {};
+    const ref = !o.v;
+    return '<div class="quo' + (ref ? ' ref' : '') + '">' +
+      '<div class="quolab">' + (ref ? 'What both of these would replace' : 'As it stands') + '</div>' +
+      (text === null
+        ? '<div class="rtext none">Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.</div>'
+        : '<div class="rtext">' + esc(text) + '</div>') +
+      (ref ? '' : laneBarHtml(s, o.v, { lane: 'keep', key: o.key, edit: o.edit })) +
+      '</div>';
+  }
+
+  // The rationale row, with the entry's own lifecycle mark hanging in the
+  // card's left padding (Ed, QA 2026-08-16).
+  const whyRowHtml = (s, inner) => (inner
+    ? '<div class="whyrow"><span class="wmark" aria-hidden="true">' + markOf(s) + '</span>' + inner + '</div>'
+    : '');
 
   function commitRowHtml(s, extra) {
     const pick = pickOf(s);
@@ -2773,12 +2977,16 @@
       '<div class="yoursnote">This is yours. Nobody asks you to judge it — a proposal you are still standing behind ' +
       'counts as your preference for as long as it is live, and counts toward quorum (SPEC §3.3, §8.2)' +
       (rival ? '. You will still be served the others in this race against it' : '') + '.</div>' +
-      whyHtml(d.rationale) +
+      // The pair stays a pair here whatever the lab is set to: this is a diff
+      // of your own wording against what it replaces, not a choice between the
+      // two, and side by side is how a diff reads. The rationale still moves
+      // below it, so every card is read in the same order.
       '<div class="race-grid">' +
       '<div class="rcand"><div class="rtext">' +
       s.origin.map((o) => esc(o.text)).join(' ') + '</div></div>' +
       '<div class="rcand"><div class="rtext">' + laneBlocks(s.text, originText(s)) + '</div></div>' +
       '</div>' +
+      whyRowHtml(d, whyHtml(d.rationale)) +
       '<div class="race-mid"><button class="btn btn-outline" data-act="draft-withdraw">Withdraw' +
       (n > 1 ? ' all ' + n + ' places' : '') + '</button></div>' +
       '<div class="foot">Withdrawing returns the edit in full and takes the wording out of the race — ' +
@@ -2797,14 +3005,20 @@
       // The same two lanes, holding two *questions* rather than two answers.
       // Choosing one says only that it deserves more of the room's attention;
       // nothing here touches either text (SPEC §8.3).
+      // No status quo and no rationale row: a diagonal has no incumbent to
+      // show — it weighs two open questions — and each question's case is
+      // already inside its own lane. Its mark rides the head line instead,
+      // which is the nearest thing it has to a rationale.
       const lane = (c, v) =>
-        '<div class="rcand pickable"' + laneAttrs(s, v) + '>' +
+        '<div class="rcand">' +
         '<div class="rtag">' + esc(c.name) + '</div>' +
         '<div class="swhy">' + esc(c.why) + '</div>' +
-        '<div class="rtext">' + esc(currentTextFor(c.key)) + '</div></div>';
+        '<div class="rtext">' + esc(currentTextFor(c.key)) + '</div>' +
+        laneBarHtml(s, v, { edit: false }) + '</div>';
       return (
         '<div class="sugg diag-open" data-card="' + s.id + '">' +
-        '<div class="diaghead">Which of these deserves more of the room’s attention?</div>' +
+        '<div class="diaghead whyrow"><span class="wmark" aria-hidden="true">' + markOf(s) + '</span>' +
+        'Which of these deserves more of the room’s attention?</div>' +
         '<div class="race-grid">' + lane(s.pair[0], 'first') + lane(s.pair[1], 'second') + '</div>' +
         commitRowHtml(s) +
         reviseNote(s) +
@@ -2814,22 +3028,25 @@
       );
     }
     if (s.kind === 'race') {
+      // The status quo, which this card had never shown (Ed, QA 2026-08-16) —
+      // a reader was being asked to choose between two rewrites of a clause
+      // without being shown the clause. Reference only, because nothing here
+      // can vote to keep it.
       return (
         '<div class="sugg race-open" data-card="' + s.id + '">' +
-        '<div class="why-grid">' +
-        whyHtml(s.race.a.rationale) +
-        whyHtml(s.race.b.rationale) + '</div>' +
+        quoHtml(s, currentTextFor((s.keys ?? [])[0])) +
         // no lane headers on a race: both sides are proposals, the rationale
-        // above each column says whose, and naming them A and B added nothing
+        // in each column below says whose, and naming them A and B added nothing
         '<div class="race-grid">' +
-        '<div class="rcand pickable"' + laneAttrs(s, 'a') + '><div class="rtext">' + esc(s.race.a.text) + '</div>' +
-        laneProposeHtml(s, 'a') + '</div>' +
-        '<div class="rcand pickable"' + laneAttrs(s, 'b') + '><div class="rtext">' + esc(s.race.b.text) + '</div>' +
-        laneProposeHtml(s, 'b') + '</div>' +
+        laneHtml(s, 'a', '<div class="rtext">' + esc(s.race.a.text) + '</div>') +
+        laneHtml(s, 'b', '<div class="rtext">' + esc(s.race.b.text) + '</div>') +
         '</div>' +
+        whyRowHtml(s, '<div class="why-grid">' +
+          whyHtml(s.race.a.rationale) + whyHtml(s.race.b.rationale) + '</div>') +
         commitRowHtml(s, s.deadlocked ? proposeBtnHtml() : '') +
         reviseNote(s) +
-        '<div class="foot">Authorship sealed · no counts, no standings</div>' +
+        '<div class="foot">Neither of these has to win: the clause above stands unless the leader clears the bar (SPEC §5) · ' +
+        'authorship sealed · no counts, no standings</div>' +
         '</div>'
       );
     }
@@ -2852,15 +3069,20 @@
         step(i > 0 ? i - 1 : null, 'The place before', '↑') +
         step(i < n - 1 ? i + 1 : null, 'The next place', '↓') +
         '</span></div>' +
-        whyHtml(s.rationale) +
-        '<div class="race-grid">' +
-        '<div class="rcand pickable"' + laneAttrs(s, 'keep') + '>' +
-        '<div class="rtext">' + esc(currentTextFor(site.key)) + '</div>' +
-        laneProposeHtml(s, 'keep', site.key) + '</div>' +
-        '<div class="rcand pickable"' + laneAttrs(s, 'approve') + '>' +
-        '<div class="rtext">' + resultOnly(site.marked) + '</div>' +
-        laneProposeHtml(s, 'approve', site.key) + '</div>' +
-        '</div>' +
+        // Here the incumbent *is* one of the two things being judged, so the
+        // lab's two arrangements are a real choice: on top as the ground the
+        // proposal answers, or beside it as one of a pair.
+        (LAYOUT.quo === 'top'
+          ? quoHtml(s, currentTextFor(site.key), { v: 'keep', key: site.key }) +
+            '<div class="field-one">' +
+            laneHtml(s, 'approve', '<div class="rtext">' + resultOnly(site.marked) + '</div>',
+              { lane: 'approve', key: site.key }) + '</div>'
+          : '<div class="race-grid">' +
+            laneHtml(s, 'keep', '<div class="rtext">' + esc(currentTextFor(site.key)) + '</div>',
+              { lane: 'keep', key: site.key }) +
+            laneHtml(s, 'approve', '<div class="rtext">' + resultOnly(site.marked) + '</div>',
+              { lane: 'approve', key: site.key }) + '</div>') +
+        whyRowHtml(s, whyHtml(s.rationale)) +
         commitRowHtml(s) +
         reviseNote(s) +
         '<div class="foot">One judgment for all ' + n +
@@ -2870,26 +3092,29 @@
     }
     // quick (including insert) — the race card's own geometry, with the
     // incumbent on the left, so choosing the left lane *is* keep-current.
-    const cur = s.isInsert ? '' : currentTextFor((s.keys ?? [])[0]);
+    // A proposed section has no clause of its own to edit into, so neither
+    // lane offers ✏️ — writing a rival section is a different gesture and
+    // nobody has designed it (Q261).
+    const key = (s.keys ?? [])[0];
+    const cur = s.isInsert ? null : currentTextFor(key);
+    const curHtml = s.isInsert
+      ? '<div class="rtext none">Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.</div>'
+      : '<div class="rtext">' + esc(cur) + '</div>';
+    const newHtml =
+      (s.isInsert ? '<div class="rtext"><ins>' + esc(s.newHeading) + '</ins></div>' : '') +
+      '<div class="rtext">' + resultOnly(s.marked) + '</div>';
     return (
       '<div class="sugg quick-open" data-card="' + s.id + '">' +
-      whyHtml(s.rationale) +
-      '<div class="race-grid">' +
-      '<div class="rcand pickable"' + laneAttrs(s, 'keep') + '>' +
-      (s.isInsert
-        ? '<div class="rtext none">Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.</div>'
-        : '<div class="rtext">' + esc(cur) + '</div>') +
-      // A proposed section has no clause of its own to edit into, so neither
-      // lane offers ✏️ — writing a rival section is a different gesture and
-      // nobody has designed it (Q261).
-      (s.isInsert ? '' : laneProposeHtml(s, 'keep')) +
-      '</div>' +
-      '<div class="rcand pickable"' + laneAttrs(s, 'approve') + '>' +
-      (s.isInsert ? '<div class="rtext"><ins>' + esc(s.newHeading) + '</ins></div>' : '') +
-      '<div class="rtext">' + resultOnly(s.marked) + '</div>' +
-      (s.isInsert ? '' : laneProposeHtml(s, 'approve')) +
-      '</div>' +
-      '</div>' +
+      (LAYOUT.quo === 'top'
+        ? quoHtml(s, cur, { v: 'keep', key: key, edit: s.isInsert ? false : undefined }) +
+          '<div class="field-one">' +
+          laneHtml(s, 'approve', newHtml, { lane: 'approve', edit: s.isInsert ? false : undefined }) +
+          '</div>'
+        : '<div class="race-grid">' +
+          laneHtml(s, 'keep', curHtml, { lane: 'keep', edit: s.isInsert ? false : undefined }) +
+          laneHtml(s, 'approve', newHtml, { lane: 'approve', edit: s.isInsert ? false : undefined }) +
+          '</div>') +
+      whyRowHtml(s, whyHtml(s.rationale)) +
       commitRowHtml(s) +
       reviseNote(s) +
       '<div class="foot">Choosing the current text records a judgment for it · indifference here involves the current text, so it feeds the care map (SPEC §3.2) · authorship sealed · no counts, no standings</div>' +
@@ -3692,6 +3917,20 @@
 
   function renderAll() { settleTopUrgent(); renderDoc(); renderQueue(); renderToc(); markCurrentSection(); renderWallet(); drawWires(); }
   renderAll();
+
+  // The layout lab. `chrome` is pure CSS, so it costs a class on the body;
+  // `quo` changes the markup, so it costs a re-render. Whatever card is open
+  // stays open through both, which is the whole point — the comparison is
+  // meant to be made on one card without hunting for it again.
+  document.getElementById('lab-chrome').addEventListener('change', (ev) => {
+    LAYOUT.chrome = ev.target.value;
+    document.body.classList.toggle('lanes-hairline', LAYOUT.chrome === 'hairline');
+    layoutQueue(); drawWires();
+  });
+  document.getElementById('lab-quo').addEventListener('change', (ev) => {
+    LAYOUT.quo = ev.target.value;
+    keepStill(() => renderAll());
+  });
 
   // Always-on typing, bound once on the container rather than per paragraph:
   // the document is re-rendered wholesale, so a listener on every clause would

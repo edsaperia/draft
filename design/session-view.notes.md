@@ -758,3 +758,49 @@ One knock-on: the editing lane's ring is now the **blue** rather than green. Gre
 **The cable lands on the card, not inside it.** The wire targeted the left-hand lane, on the reasoning that the lane is the original standing in for the clause the card replaced. But a wire arrives from the right, and the left lane's right edge is in the *middle* of the card — so every cable ran straight through the lane you were typing in and stopped in the gutter between the two. Both the wire and the rail entry now take the whole card as their target, which also fixes a second-order version of the same problem: the entry had been levelled against the clause *inside* the card and so sat about eighty pixels below where its own cable left. Measured after: the entry sits level with the card and the wire runs flat to its right edge.
 
 Worth naming the rule this is the third instance of. **A wire says where a judgment lives, and the thing it points at has to be the thing the entry stands for.** The diagonal broke it by falling through a dead colour lookup, the sealed dots broke it by letting a row stand in for the glyphs inside it, and this broke it by letting a lane stand in for the card. Same shape each time: a part standing in for its whole, and nothing complaining.
+
+## The QA pass on the card (Ed, 2026-08-16)
+
+Four notes, of which two were instructions and two were invitations to go and look.
+
+### The rails stop explaining themselves
+
+The long paragraph at the top of the `needs-you-queue` and the shorter one under the `contents-rail` are gone. Both were written while the rail's grammar was being argued out, and both had become a design note printed inside the design — the surface telling the reader what it means instead of meaning it. The queue's note in particular had grown to eight sentences explaining colour, fill, urgency, admission and the three quiet states, which is a fair summary of everything decided between 104 and 223 and exactly the wrong thing to hand a member who has opened the charter to read it. Where those rules are still true they should be legible from the rail; where they are not, the note was propping them up. The two eyebrows stay, because a column of things wants a name.
+
+### Depth is a light source, not a halo
+
+The elevation ladder was Bootstrap's, and Bootstrap's is built for dialogs floating over an empty backdrop: `--shadow-lg` was three rems of blur at 17.5% black. On a card the size of a paragraph, sitting inside a column of text, that reads as a dark glow round the edge rather than as height — the card looks lit from behind instead of resting above the page.
+
+Each step is now a **contact shadow** — one pixel, tight, the card meeting the paper — plus a single soft cast whose blur stays near two and a half times its offset, which is roughly what a real light source does. Total ink is about halved. What did not change is the ladder itself: still three steps, still neutral rather than tinted, still the same three users (a rail card, a rail card under the pointer, an open decision card). Only the shape of the thing.
+
+Worth noticing what this exposed: with the glow gone, the open card is held almost entirely by its blue outline. That is the right answer — 198 already made the blue the one accent — but it is also why the inner boxes started to look like a second statement of something already said, which is half of 269.
+
+### The card reads in a new order
+
+Ed's third note set the sequence: **status quo, then the texts being compared, then the rationale with the lifecycle mark to its left, then the buttons.** That reverses 87, which had put the reason above the wording so you met the argument first. Both orders have a case. 87's was that a rationale explains why you are being asked at all. The new one's is stronger: you form your own view of the wording before anybody tells you what to think of it, which matters more on a surface whose whole discipline is blind judgment. The cost is real and should be said — a rationale explaining an unusual choice now arrives after the choice has been read, so a proposal that looks wrong until you know why will look wrong for a second longer.
+
+The mark hangs in the card's **left padding** rather than in the flow. Put in the flow it would need a column of its own, which would shunt a race's two rationales right by the width of a glyph and break the alignment 95 built between each rationale and its lane. In the padding they stay in their columns and the glyph reads as a margin annotation — which is also what it is doing in the other two places it appears.
+
+The status quo is the interesting half, because *where* it goes turned out to depend on what the card is actually asking. On a **race** the answer is unambiguous: both lanes are challengers, nothing on the card can vote to keep the clause — displacement is settled by the adoption-threshold (SPEC §5), not by this judgment — so the block is reference only, greyed, with no controls at all. And it was genuinely missing: a reader was being asked to choose between two rewrites of a clause without being shown the clause. On a **quick card or a patch** the incumbent *is* one of the two things being judged, and it can sit on top or stay in its lane. That one is switchable and is 268; building both made the case fairly clearly, and it is written up there.
+
+### The lanes stop being buttons
+
+197 made the lane itself the control, on the argument that clicking the text you prefer is the most direct statement a card can make of what it is asking. Ed's own reading is that this was wrong, and the reason it was wrong is not aesthetic. Since 224 every paragraph of the charter carries a caret, and clicking a paragraph means *put the caret here* — so the one gesture the surface had trained into the reader was now being asked to mean two incompatible things depending on whether the paragraph happened to be inside a card. A whole clause is in any case a very large target for a very precise claim.
+
+So each text grows a **lane-bar** at its foot: a radio marked *Prefer this*, and the ✏️ *edit this* that was already living there and reading well. The rule that decides what may go in it is worth stating, because it will decide the next control too — **a lane may carry what is about that lane, and nothing else.** Indifference is a judgment about the *pair* (SPEC §3.2) and Submit commits the whole card, so both stay underneath, which is what Ed asked for and also what the mechanism requires.
+
+A radio rather than a button because that is exactly the shape of the thing: one choice among the texts on this card, or none of them yet. It also makes the incumbent's own claim legible on a quick card — with the status quo on top carrying a radio of its own, "keep the clause" stops being *the lane on the left* and becomes an option in a list, which is what it always was.
+
+Two implementation notes. The pick control carries both labels in the markup with CSS choosing between them, so `choose()` stays a single attribute flip and a patch's several open cards keep moving together without re-rendering. And the whole change cost nothing in the selection machinery: `data-v` simply moved from the lane div to the button inside it.
+
+### The lab
+
+Two of these are not settled, and the honest way to hold an unsettled visual question is not to argue about it in prose. There is a small dashed panel at the bottom left of session-view with two switches — where the status quo goes, and whether lanes are boxed or divided by a hairline. It is deliberately out of world: monospace, dashed, in the corner, obviously scaffolding. It goes when the two questions have answers (268, 269).
+
+Building both sides of both axes was worth more than the switches are. `on top` on a quick card puts the same sentence on screen three times in thirty centimetres — the clause in the charter, the block restating it, the proposal repeating all but a few words — which is a thing you cannot see from a description, because the description does not mention that a card opens *directly beneath the clause it argues about*. The incumbent was never missing from the screen; it was missing from the race card only. And `hairline` turned out to fix something the boxes were hiding: with the boxes gone the rule between the two lanes lines up exactly with the rule between the two rationales below them, and the card reads as two columns rather than as two objects with a gap between them.
+
+### One thing found while measuring
+
+The responsive rules for the two rails had never worked. `@media (max-width: 1240px) { .toc { display: none } }` sat above `.toc { display: flex }` in the same sheet at the same specificity, so the later rule won and the media query was dead — and the same for both rules in the 900px block. Below 1240px the contents rail stayed visible and took the document's column, leaving the charter in the 290px one meant for the margin. It had simply never been looked at below 1240, which is the width the design has always been read at. Fixed by scoping the overrides to `.layout > .toc` so they outrank the base rules.
+
+Two things to keep from that. A media query that loses on specificity fails **silently and completely** — there is no warning, and the layout it was protecting is only wrong at widths nobody opens. And the reason it surfaced at all is that a measurement pass opens the page at whatever width the tooling gives you rather than at the width you designed for, which is an argument for doing more of them.
