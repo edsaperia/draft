@@ -881,3 +881,40 @@ What does *not* change is where it sits. Indifference is a judgment about the **
 So it is now clause-at-the-head like everything else, with your draft as the single reply. That took 270 with it: the rationale field moved out of the top of the card and into the `sealed-speaker`'s own slot beneath the wording, behind the same blank disc everybody else's sits behind. Which turns out to be the better answer for a reason I had not seen — **you write the sentence in the place, and at the weight, that everybody else will read it in.** The old card had you composing a rationale in a form field at the top and then discovering later what it looked like as a comment. Now there is nothing to discover.
 
 One box survives on the whole surface: the editing lane. A text editor says it is one by looking like one, and it is the only thing here that is typed into.
+
+### The card grows out of its own clause (Ed, 273)
+
+The swap that came in with the stacked card was correct and jarring, which are not incompatible. Correct, because a card standing where its clause stood has no gap to unroll *into*: growing it from zero meant the paragraph blinking out and something else inflating in the hole. Jarring, because instant tells you nothing — the charter below you has just moved several hundred pixels and nothing said so.
+
+The way out is to stop treating zero as the natural starting height. **The card grows from exactly the height at which only its own head is showing** — and its head is the clause, at the size and in the place the clause already occupied. So:
+
+- Frame one looks like the document with the paragraph still in it, wearing a card's frame.
+- The gap then slides open *beneath* the clause, and the field arrives inside it.
+- The body fades in sixty milliseconds behind the height, so the motion and the arrival do not compete for the same instant.
+- The clause never moves. `keepStill` has already pinned it, and everything that grows, grows below it.
+
+Closing runs the same thing backwards, down to head height — and the swap back to a plain paragraph happens at a size where a card and a paragraph are the same shape, so the substitution is never seen. On the way down the body goes first and faster, so the gap closes over something already gone rather than crushing it.
+
+Measured on all four card kinds: the clause moves **0px**, and the gap that opens is 283px (quick), 480px (race), 411px (diagonal), 335px (record).
+
+What appears at once rather than sliding is the card's own frame and its head label — about 84px on a quick card, most of which is the clause rewrapping to the card's narrower measure. That is not a defect to be animated away: it is the card materialising *around* the clause, which is the honest description of what has happened.
+
+*How this was verified in a backgrounded tab, where transitions never advance.* Setting a transition's end value synchronously means reading the element's inline style afterwards always returns the end state — the start is never observable that way. But a transition that has not advanced still reports the **start** value through `getComputedStyle`, so comparing that against `headOnlyHeight()` proves the animation begins where it claims to. Worth keeping: it is the only way to check an animation's first frame in this environment.
+
+### The diagonal joins the pattern (Ed, 276)
+
+It had been the acknowledged exception, on the grounds that it has no clause to lift. That is true and it is not a reason: what the head slot is *for* is the thing you need before the field makes sense, and on a diagonal that is the question being put. So the head holds the ask, the field holds the two questions, and each question block carries its name, its description, the clause it is about quoted underneath, and a *Prefer this*.
+
+Two things about it are the mechanism rather than styling. There is **no `sealed-speaker`** on either block: the line under each question describes the dispute, it is not somebody's argument for it, and drawing a person behind it would claim an author the thing does not have. And the clause sits *under* the description rather than in the wording slot, because on this card the clause is not what is being chosen between — the question is.
+
+It left one thing behind, and it is the same shape as the complaint that started the whole rebuild. A diagonal spans two clauses and swallows only the one it stands in, so the far clause is quoted in the card while its paragraph is still in the document. Where both are on screen, the same sentence is visible twice. Logged as 277 rather than quietly accepted, because "the clause appears exactly once" is the rule the card is built on and this is the one place it does not hold.
+
+### The redline floor, since it was asked about (Ed, 274)
+
+A redline is informative in proportion to how much of the sentence survives it. Mark two words and the eye goes straight to them. Mark two thirds of a clause and you have not shown a change, you have shredded two sentences into one and asked the reader to reassemble them.
+
+Race candidates are usually whole rewrites rather than edits — that is what a race *is*, two people who each wrote the clause afresh. Measured on the fixture's own races, one clause came back with nineteen cuts and twenty insertions. So below half the non-whitespace characters surviving, a proposal states itself plainly and the comparison is with the clause at the head of the card, one line above. That is also what a reader does anyway once a diff gets dense.
+
+The rule is not in doubt; the **number** is. 0.5 was chosen because it is roughly where "an edit" stops being a fair description of what happened, and it has never been swept — the fixture has nothing between about 0.9 (a word or two changed) and about 0.2 (a rewrite), so it cannot discriminate. A real corpus would settle it, and the cost of being wrong is small and symmetrical: too low and a rewrite renders as confetti, too high and a substantial edit loses its marks.
+
+The other half of the change is not a guess. **Punctuation is its own token**, without which a clause that merely gained a comma rendered as the word deleted and an identical word re-inserted — *used on ~~bone~~ bone,* — which is nonsense the reader has to see through. That one improves the composer's own marking as a side effect.

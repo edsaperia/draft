@@ -474,56 +474,13 @@
   .sugg .foot { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); }
   .sugg .sactions { display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; }
 
-  /* The author's pinned rationale (SPEC 2.6, 3.4) — the only thing anyone
-     gets to *say* about a proposal. Above the lanes, so you meet the reason
-     before the wording (Ed, 87), and at a queue title's weight rather than in
-     grey italics, because it is not a caption (Ed, 119). */
+  /* The rationale is drawn by the `sealed-speaker` now, attached to its own
+     proposal. `.swhy` survives only in the sealed record's ranked blocks. */
   .swhy {
     margin-bottom: var(--s3); position: relative;
     font-size: var(--t-ui); font-weight: 600; color: var(--fg); line-height: 1.45;
   }
-  /* a race's two rationales sit in the lanes' own columns, divided by a
-     hairline down the middle of the gutter (Ed, 95) */
-  .why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); margin-bottom: var(--s3); }
-  .why-grid .swhy { margin-bottom: 0; }
-  /* the row owns the spacing now that the rationale sits inside it */
-  .whyrow > .swhy, .whyrow .why-grid { margin-bottom: 0; }
-  .why-grid .swhy + .swhy::before {
-    content: ''; position: absolute; left: -6px; top: 0; bottom: 0;
-    border-left: 1px solid var(--border);
-  }
-  @media (max-width: 900px) {
-    .why-grid { grid-template-columns: 1fr; }
-    .why-grid .swhy + .swhy::before { display: none; }
-    .why-grid .swhy + .swhy { margin-top: 10px; }
-  }
-
-  /* The lanes. Two texts side by side and nothing else — no titles at all
-     (Ed, 197/206), because position carries which is which and a label was
-     describing a comparison the reader is already making.
-
-     No boxes (Ed, QA 2026-08-16, settling 269): the card's own outline already
-     says *this is one thing*, so a box round each text inside it was a second
-     statement of the same claim. What separates the two is a hairline down the
-     middle, which lands on the same pixel as the rule between the rationales
-     below — so the card reads as two columns rather than as two objects with a
-     gap. Now that each text carries a control at its foot, the box is no
-     longer what makes a text look like a thing you can act on. */
-  .race-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: var(--s3); }
-  .rcand { display: flex; flex-direction: column; padding-right: var(--s4); }
-  .race-grid > .rcand + .rcand {
-    padding-right: 0; padding-left: var(--s4); border-left: 1px solid var(--border);
-  }
-  @media (max-width: 900px) {
-    .race-grid { grid-template-columns: 1fr; }
-    .race-grid > .rcand { padding: 0 0 var(--s3); }
-    .race-grid > .rcand + .rcand {
-      padding: var(--s3) 0 0; border-left: 0; border-top: 1px solid var(--border);
-    }
-  }
-  .rcand .rtext { font-size: var(--t-body); margin-bottom: var(--s2); }
-  .rcand .rtext.none { color: var(--muted); font-style: italic; }
-  /* not scoped to .rcand: the sealed record's ranked blocks use the same two
+  /* not scoped to a lane class: the sealed record's ranked blocks use the same two
      and had been getting neither, so "✓ this is the text that stands" ran on
      into the end of the label above it */
   .rtag {
@@ -608,14 +565,6 @@
      There the block is reference only — greyed, no controls — and it is the
      thing the race card was missing, since a reader was being asked to
      choose between two rewrites without being shown what they rewrite. */
-  .quo { display: flex; flex-direction: column; margin-bottom: var(--s3); }
-  .quolab {
-    font-size: var(--t-micro); font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.05em; color: var(--muted); margin-bottom: var(--s1);
-  }
-  .quo .rtext { font-size: var(--t-body); margin-bottom: 0; }
-  .quo.ref { color: var(--muted); padding-bottom: var(--s3); border-bottom: 1px solid var(--border); }
-
   /* ===================================================================
      The stacked card (Ed, QA 2026-08-16 — the second note).
 
@@ -747,12 +696,6 @@
      instead of being shunted right by the width of a glyph. One mark per
      card: it belongs to the entry, not to a candidate, and it is the same
      glyph the rail entry and the gutter are wearing. */
-  .whyrow { position: relative; margin-bottom: var(--s3); }
-  .whyrow .wmark {
-    position: absolute; left: calc(-1 * var(--s5) + 2px); top: 0;
-    font-size: var(--t-small); line-height: 1.5;
-  }
-
   /* ===================================================================
      The editing-card (Ed, 2026-08-16, decisions 224–241). Composing is not a
      separate surface: you type in the charter and the clause you are typing in
@@ -845,13 +788,18 @@
     background: var(--light); border-color: var(--border); color: var(--muted);
     opacity: 1; box-shadow: none;
   }
-  /* a diagonal weighs two questions rather than two texts (Ed, 221) */
-  .diaghead {
-    font-size: var(--t-ui); font-weight: 600; color: var(--fg);
-    margin-bottom: var(--s3);
+  /* A diagonal weighs two questions rather than two texts (Ed, 221), and takes
+     the same card as everything else (Ed, 276). What sits in a proposal's
+     wording slot is the *question*; the clause it is about is quoted under it
+     as context, smaller and quieter, because on this card the clause is not
+     what is being chosen between. */
+  .qclause {
+    margin-top: 6px; font-size: var(--t-small); line-height: 1.4; color: var(--muted);
+    padding-left: 10px; border-left: 2px solid var(--border);
   }
-  .diag-open .rcand .rtext { color: var(--muted); font-size: var(--t-small); }
-  .diag-open .rcand .swhy { margin-bottom: 6px; }
+  /* the head here is a question rather than a clause, so it carries a question's
+     weight instead of the document's */
+  .diag-open .clausehead .rtext { font-weight: 600; }
   .btn.btn-approve { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
   .btn.btn-approve:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
   /* the tick is the commit, so it is the one solid green thing on a card */
@@ -913,10 +861,6 @@
   .stoodblock .rtext { margin-bottom: 0; }
   .stoodblock .swhy { margin-bottom: var(--s2); }
   .stoodblock .mcap { margin-top: var(--s2); }
-  .fellhead {
-    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--muted); margin-bottom: var(--s2);
-  }
   .ranked {
     border: 1px solid var(--border); border-radius: var(--r-md);
     padding: 10px 14px; margin-bottom: var(--s2);
@@ -2626,7 +2570,10 @@
     // gives the row no shape and the reader no idea what finishing looks like.
     // A greyed tick in the corner says *this is where this ends* from the
     // moment the card opens.
-    return '<div class="race-mid commitrow">' +
+    // A locked card has no tick — there is nothing to submit — so it keeps the
+    // centred row rather than pushing a lone disabled radio to the left edge
+    // and leaving the other end of the card empty.
+    return '<div class="race-mid' + (s.locked ? '' : ' commitrow') + '">' +
       '<button class="lanepick vin" type="button" data-v="indifferent"' +
       ' aria-pressed="' + (pick === 'indifferent') + '"' + (s.locked ? ' disabled' : '') +
       ' title="' + (s.kind === 'diagonal' ? 'They matter equally' : 'I can’t split them') + '">' +
@@ -2708,7 +2655,9 @@
           '<div class="mcap">No proposal cleared the bar, so the charter kept the text it had. ' +
           'The field below is in the record and can be redrafted next session.</div></div>'
         : '') +
-      '<div class="fellhead">' + (ranked.length > 1
+      // the same band as a live card's, so the record is literally the same
+      // structure and not merely the same idea (Ed, 276's rule applied here too)
+      '<div class="field"><div class="fieldlab">' + (ranked.length > 1
         ? 'The whole field · ' + ranked.length + ' proposals, ranked by how each did against the current text'
         : 'What was proposed') + '</div>' +
       ranked.map((c, i) =>
@@ -2725,7 +2674,7 @@
         '<div class="rtext">' + (incumbent ? redline(incumbent, c.text) : esc(c.text)) + '</div>' +
         // the same blank disc a live card gives it: whoever argued for this is
         // still sealed unless the session's visibility setting says otherwise
-        (c.why ? speakerHtml(c.why) : '') + '</div>').join('') +
+        (c.why ? speakerHtml(c.why) : '') + '</div>').join('') + '</div>' +
       // The two numbers are different in kind and the record says which is
       // which (Ed, 186): the bar is a confidence, the quorum is a headcount.
       '<div class="record">' +
@@ -3196,24 +3145,32 @@
       return s.unproposed ? editCardHtml(s, site) : mineCardHtml(s, site);
     }
     if (s.kind === 'diagonal') {
-      // The same two lanes, holding two *questions* rather than two answers.
-      // Choosing one says only that it deserves more of the room's attention;
-      // nothing here touches either text (SPEC §8.3).
-      // No status quo and no rationale row: a diagonal has no incumbent to
-      // show — it weighs two open questions — and each question's case is
-      // already inside its own lane. Its mark rides the head line instead,
-      // which is the nearest thing it has to a rationale.
-      const lane = (c, v) =>
-        '<div class="rcand">' +
+      // The same card as everything else (Ed, 276), holding two *questions*
+      // rather than two answers. Choosing one says only that it deserves more
+      // of the room's attention; nothing here touches either text (SPEC §8.3).
+      //
+      // Its head is the one head on the surface that is not a clause, because
+      // a diagonal has no clause — it spans two, in different parts of the
+      // charter, which is what makes it a diagonal. What the head slot is
+      // actually for is *the thing you need before the field makes sense*, and
+      // here that is the question being put.
+      //
+      // No `sealed-speaker` on either block either, and that is the mechanism
+      // rather than an omission: the line under each question describes the
+      // dispute, it is not somebody's argument for it. Drawing a person behind
+      // it would claim an author the thing does not have.
+      const q = (c, v) =>
+        '<div class="propblock">' +
         '<div class="rtag">' + esc(c.name) + '</div>' +
-        '<div class="swhy">' + esc(c.why) + '</div>' +
-        '<div class="rtext">' + esc(currentTextFor(c.key)) + '</div>' +
+        '<div class="rtext">' + esc(c.why) + '</div>' +
+        '<div class="qclause">' + esc(currentTextFor(c.key)) + '</div>' +
         laneBarHtml(s, v, { edit: false }) + '</div>';
       return (
-        '<div class="sugg diag-open" data-card="' + s.id + '">' +
-        '<div class="diaghead whyrow"><span class="wmark" aria-hidden="true">' + markOf(s) + '</span>' +
-        'Which of these deserves more of the room’s attention?</div>' +
-        '<div class="race-grid">' + lane(s.pair[0], 'first') + lane(s.pair[1], 'second') + '</div>' +
+        '<div class="sugg diag-open" data-card="' + s.id + '" data-site="' +
+        (siteKey || s.pair[0].key) + '">' +
+        clauseHeadHtml(s, { label: 'This card asks',
+                            html: 'Which of these deserves more of the room’s attention?' }) +
+        fieldHtml(q(s.pair[0], 'first') + q(s.pair[1], 'second'), 2, 'The two questions') +
         commitRowHtml(s) +
         reviseNote(s) +
         '<div class="foot">This ranks the questions, never the answers — neither text changes either way · ' +
@@ -3376,7 +3333,9 @@
               swallowed = true;
             }
           } else if (!cardDone) {
-            html += '</div>' + suggCardHtml(openSugg) + '<div class="prose">';
+            // the key matters to a diagonal, which spans two clauses and needs
+            // to say which of them it is standing in
+            html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
             cardDone = swallowed = true;
           }
         }
@@ -3733,52 +3692,81 @@
   const REDUCED = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const COLLAPSE_MS = 190, EXPAND_MS = 230;
 
-  // The composer is the exception to both of these. Every other card unrolls
-  // *under* its clause, so growing from nothing reads as the card arriving; the
-  // editing-card stands **in place of** the clause, so animating it would mean
-  // the paragraph vanishing and something else growing where it was. It swaps
-  // instead, held still by keepStill — and that also keeps the caret out of a
-  // zero-height overflow-hidden box, which is where focus goes strange.
-  // A card that stands *where its clause stood* cannot unroll: there is no gap
-  // for it to unroll into, and animating one would read as the paragraph
-  // vanishing and a card growing in the hole. It swaps, the way the composer
-  // always has — and that is now every card, which costs the surface its
-  // open/close motion (Q273).
-  const swapsInPlace = (el) => !!el;
+  // **The card grows out of its own clause** (Ed, 273; replacing the swap that
+  // came in with the stacked card, which was correct but jarring).
+  //
+  // The old unroll grew a card from nothing *underneath* its clause. That
+  // stopped making sense once the card became the clause opened: growing from
+  // zero meant the paragraph blinking out and something else inflating in the
+  // hole. The swap that replaced it was honest and instant, and instant is the
+  // problem — nothing tells you where the rest of the charter went.
+  //
+  // So the card does not grow from nothing. It grows from **exactly the height
+  // at which only its own head is showing** — which is the clause, at the size
+  // and place the clause already was. Frame one therefore looks like the
+  // document with the paragraph still in it; the gap then slides open beneath
+  // the clause and the field arrives inside it, fading in a beat behind the
+  // motion so the two do not compete. The clause itself never moves: keepStill
+  // has already pinned it, and everything that grows, grows below it.
+  //
+  // Closing runs the same thing backwards, down to head height, and the swap
+  // back to a plain paragraph happens at a size where the two are the same
+  // shape — so the substitution is never seen.
+  const headOnlyHeight = (el) => {
+    const head = el.querySelector('.clausehead');
+    if (!head) return 0;                       // no clause to grow from: from nothing
+    const cs = getComputedStyle(el);
+    return (head.getBoundingClientRect().bottom - el.getBoundingClientRect().top) +
+      parseFloat(cs.paddingBottom) + parseFloat(cs.borderBottomWidth);
+  };
+  // everything except the clause: what the opening gap reveals
+  const cardBody = (el) => [...el.children].filter((c) => !c.classList.contains('clausehead'));
 
   function collapseCard(el, done) {
-    if (!el || REDUCED() || swapsInPlace(el)) return done();
+    if (!el || REDUCED()) return done();
     // A card that has scrolled off the top is not worth animating: for 190ms it
     // would shrink where nobody can see it while hauling the rest of the charter
     // up the screen, and the delay is 190ms the click doesn't answer in. It goes
     // at once, and the caller's keepStill takes up the slack in the same frame.
     if (el.getBoundingClientRect().bottom < READ_LINE) { el.style.display = 'none'; return done(); }
     const h = el.offsetHeight;
+    const end = headOnlyHeight(el);
+    const body = cardBody(el);
     el.style.overflow = 'hidden';
     el.style.height = h + 'px';
     void el.offsetHeight;
-    el.style.transition = 'height ' + COLLAPSE_MS + 'ms ease-in, opacity ' + (COLLAPSE_MS - 50) +
-      'ms ease-in, margin ' + COLLAPSE_MS + 'ms ease-in, padding ' + COLLAPSE_MS + 'ms ease-in';
-    el.style.height = '0px';
-    el.style.opacity = '0';
-    el.style.marginTop = '0px'; el.style.marginBottom = '0px';
-    el.style.paddingTop = '0px'; el.style.paddingBottom = '0px';
-    el.style.borderTopWidth = '0px'; el.style.borderBottomWidth = '0px';
+    el.style.transition = 'height ' + COLLAPSE_MS + 'ms cubic-bezier(.4, 0, .7, .3)';
+    el.style.height = end + 'px';
+    // the body goes first and faster, so the gap is closing over something
+    // already gone rather than crushing it
+    body.forEach((c) => {
+      c.style.transition = 'opacity ' + (COLLAPSE_MS - 70) + 'ms ease-in';
+      c.style.opacity = '0';
+    });
     setTimeout(done, COLLAPSE_MS);
   }
 
   function expandCard(el, done) {
-    if (!el || REDUCED() || swapsInPlace(el)) return done();
+    if (!el || REDUCED()) return done();
     const h = el.offsetHeight;
+    const start = Math.min(headOnlyHeight(el), h);
+    const body = cardBody(el);
     el.style.overflow = 'hidden';
-    el.style.height = '0px';
-    el.style.opacity = '0';
+    el.style.height = start + 'px';
+    body.forEach((c) => { c.style.opacity = '0'; });
     void el.offsetHeight;
-    el.style.transition = 'height ' + EXPAND_MS + 'ms ease-out, opacity ' + (EXPAND_MS - 30) + 'ms ease-out';
+    // an ease-out on the height so the gap opens quickly and settles, and the
+    // fade held back 60ms so the field reads as arriving *into* the gap rather
+    // than the two happening at once
+    el.style.transition = 'height ' + EXPAND_MS + 'ms cubic-bezier(.22, .61, .36, 1)';
     el.style.height = h + 'px';
-    el.style.opacity = '1';
+    body.forEach((c) => {
+      c.style.transition = 'opacity ' + (EXPAND_MS - 60) + 'ms ease-out 60ms';
+      c.style.opacity = '1';
+    });
     setTimeout(() => {
-      el.style.height = ''; el.style.overflow = ''; el.style.transition = ''; el.style.opacity = '';
+      el.style.height = ''; el.style.overflow = ''; el.style.transition = '';
+      body.forEach((c) => { c.style.opacity = ''; c.style.transition = ''; });
       drawWires();
       done();
     }, EXPAND_MS);
