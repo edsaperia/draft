@@ -753,54 +753,30 @@
     font-size: var(--t-small); line-height: 1.5;
   }
 
-  /* The editing-card keeps its boxes, alone on the surface. Its right-hand
-     lane is a text editor and a box is how a text editor says so; the left
-     one is boxed to match, because a lone box beside a bare column reads as
-     an error rather than as a distinction. */
-  .editcard .editorig, .editcard .editlane {
-    border: 1.5px solid var(--border); border-radius: var(--r-md); padding: var(--s3) 14px;
-  }
-  .editcard .editlane { border-color: var(--primary); }
-  .editcard .race-grid { gap: var(--s3); }
-  .editcard .race-grid > .rcand { padding-right: 0; }
-  .editcard .race-grid > .rcand + .rcand { padding-left: 0; border-left: 0; }
-
-  /* ---- the layout lab panel ------------------------------------------
-     Deliberately out of world — dashed, monospace, bottom left — because it
-     is scaffolding for a decision, not part of the design being decided. It
-     goes when the question is answered. */
-  .lab {
-    position: fixed; left: var(--s3); bottom: var(--s3); z-index: 50;
-    display: flex; align-items: center; gap: var(--s3);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: var(--t-cap); color: var(--muted);
-    background: var(--bg); border: 1px dashed var(--border);
-    border-radius: var(--r-md); padding: var(--s2) var(--s3);
-    box-shadow: var(--shadow-sm);
-  }
-  .lab .labtag { text-transform: uppercase; letter-spacing: 0.06em; font-size: var(--t-micro); }
-  .lab label { display: inline-flex; align-items: center; gap: var(--s1); }
-  .lab select { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 1px var(--s1); }
-
   /* ===================================================================
      The editing-card (Ed, 2026-08-16, decisions 224–241). Composing is not a
      separate surface: you type in the charter and the clause you are typing in
-     opens into two lanes — the original on the left, your version on the right
-     — with the rationale above and Propose/Cancel below.
+     opens up where it stands.
 
-     It **replaces** the paragraph rather than opening beneath it, which is the
-     one place this surface departs from "card under clause". The reason is the
-     whole premise: it should feel like editing the document. A card below
-     would leave the original standing above its own copy and read as a form
-     that had appeared about the paragraph rather than as the paragraph itself
-     opening up.
+     It has the same shape as every other card (Ed, 2026-08-16, closing Q275):
+     the clause at the head, your draft as the single reply beneath it, your
+     rationale behind the same blank disc everybody else's sits behind. It had
+     stayed a side-by-side pair on the argument that while writing you want the
+     original level with what you are typing — which does not survive contact.
+     The original is one line up; your own additions are marked green as you
+     type (263); and a full-width lane is a far better place to write a
+     paragraph of prose than a 300px column.
      =================================================================== */
   /* block, not flex: the lane is a text editor and the browser puts a caret
      between block children far more predictably than between flex items */
-  .editcard .editorig, .editcard .editlane { display: block; font-size: var(--t-body); }
+  .editcard .editlane { display: block; font-size: var(--t-body); }
   .editcard .lp { margin: 0 0 var(--s2); }
   .editcard .lp:last-child { margin-bottom: 0; }
-  .editcard .editorig { color: var(--muted); background: var(--light); border-color: var(--border); }
+  /* the one box left on the surface: a text editor says it is one by looking
+     like one, and nothing else here is typed into */
+  .editcard .editlane {
+    border: 1.5px solid var(--border); border-radius: var(--r-md); padding: var(--s3) 14px;
+  }
   /* The lane you are writing in is the only editable thing on the surface that
      looks editable: paper-white, a ring when the caret is in it, and it grows
      with what you put in it. The ring is the **blue** (198), not green: green
@@ -811,13 +787,15 @@
     background: var(--bg); cursor: text;
     min-height: 4rem;
   }
-  .editcard .editlane:focus { outline: none; box-shadow: inset 0 0 0 2px var(--primary); }
-  /* The rationale is written here too, so it is a field rather than a
-     quotation — but it keeps `.swhy`'s weight, because it is the same sentence
-     that will stand above the lanes when somebody else reads it (Ed, 119). */
+  .editcard .editlane:focus { outline: none; border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+  /* The rationale is written here rather than quoted, so it is a field — but
+     it sits in the speaker's own slot, at the speaker's own weight, because it
+     is the same sentence in the same place that everybody else will read it
+     in. Writing it where it will land is most of the point. */
   .editcard .edit-why {
     border: 1px solid var(--border); border-radius: var(--r-md);
-    padding: var(--s2) var(--s3); cursor: text; min-height: 2.6rem;
+    padding: 3px var(--s2); cursor: text; min-height: 1.9rem;
+    align-self: start;
   }
   .editcard .edit-why:focus { outline: none; border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
   .editcard .edit-why:empty::before,
@@ -838,6 +816,10 @@
   /* The commit row. Two glyphs share one slot (Ed, 209/213): the shrug until
      you choose, then a green tick standing where it was. */
   .race-mid { display: flex; gap: var(--s2); justify-content: center; flex-wrap: wrap; }
+  /* The judgment's own row: indifference at the left as the last of the trio,
+     the tick at the right where finishing happens (Ed, 2026-08-16). */
+  .race-mid.commitrow { justify-content: space-between; align-items: center; }
+  .lanepick.vin { padding-top: 5px; padding-bottom: 5px; }
   .btn {
     appearance: none; font: inherit; font-size: var(--t-ui);
     padding: 0.375rem 0.75rem; cursor: pointer;
@@ -856,7 +838,13 @@
     display: inline-flex; align-items: center; justify-content: center;
     width: 3.25rem; height: 2.5rem; padding: 0; font-size: 1.2rem; line-height: 1;
   }
-  .btn.vindiff { color: var(--muted); }
+  /* greyed, not merely faded: a pale green tick reads as a tick that has been
+     pressed, which is the one thing it must not say before you have chosen */
+  .btn.btn-approve.glyphbtn[disabled],
+  .btn.btn-approve.glyphbtn[disabled]:hover {
+    background: var(--light); border-color: var(--border); color: var(--muted);
+    opacity: 1; box-shadow: none;
+  }
   /* a diagonal weighs two questions rather than two texts (Ed, 221) */
   .diaghead {
     font-size: var(--t-ui); font-weight: 600; color: var(--fg);
@@ -864,7 +852,6 @@
   }
   .diag-open .rcand .rtext { color: var(--muted); font-size: var(--t-small); }
   .diag-open .rcand .swhy { margin-bottom: 6px; }
-  .btn.vindiff:hover { background: var(--light); }
   .btn.btn-approve { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
   .btn.btn-approve:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
   /* the tick is the commit, so it is the one solid green thing on a card */
@@ -1005,18 +992,6 @@
 
 </div>
 
-<!-- The layout lab: two card questions still open (Ed, QA 2026-08-16), left
-     switchable so they can be looked at. Scaffolding — it goes with the
-     answers. -->
-<div class="lab" id="lab">
-  <span class="labtag">layout lab</span>
-  <label>card
-    <select id="lab-card">
-      <option value="stacked">stacked</option>
-      <option value="paired">paired</option>
-    </select>
-  </label>
-</div>
 
 <script>
   // The charter: parts (level 1), chapters (level 2), sections (level 3).
@@ -2489,16 +2464,10 @@
       'it locks when the race seals or the text changes under it (SPEC §4.4).</div>';
   }
 
-  // The author's pinned rationale — the only thing anyone says about a proposal
-  // besides writing it (SPEC §2.6, §3.4). It sits above the lanes (Ed, 87), so
-  // the lanes hold nothing but the text and the verdict. A quick card and a
-  // patch have one; a race has one per candidate, column-aligned with its lane.
-  // Unlabelled (Ed, 95): the italic voice says it is someone talking, and on a
-  // race the column says whose. A "Why · Option A" header only repeated the lane.
-  function whyHtml(rationale) {
-    if (!rationale) return '';
-    return '<div class="swhy">' + esc(rationale) + '</div>';
-  }
+  // The author's pinned rationale (SPEC §2.6, §3.4) is drawn by `speakerHtml`
+  // now — attached to its own proposal, behind a blank disc. `.swhy` survives
+  // only on the `salience-diagonal`, where the text under each question is a
+  // description of the question rather than somebody's argument for it.
 
   // Choosing and committing are separate acts (Ed, 88): a click selects, and
   // nothing leaves the card until Submit.
@@ -2570,18 +2539,6 @@
     '" title="Write your own version of this wording. Free to open — proposing costs one edit.">' +
     '✏️ edit this</button>';
 
-  // ---- the layout lab -------------------------------------------------
-  // One question left (Ed, QA 2026-08-16): the shape of the card.
-  //   stacked — the card *is* the clause, opened: the clause as its head,
-  //             then the field of proposals beneath it, each with its own
-  //             argument and its own controls. The forum shape, and the shape
-  //             the sealed record already had.
-  //   paired  — the previous card: the texts side by side across a hairline,
-  //             both rationales in a row underneath.
-  // 269 is settled and gone from here: no boxes, hairline separators, baked in.
-  const LAYOUT = { card: 'stacked' };
-  const stacked = () => LAYOUT.card === 'stacked';
-
   // The pick control. Two labels rather than one rewritten in JS, so the
   // existing `choose()` — which only ever flips aria-pressed — keeps working
   // untouched across every card a patch is showing on.
@@ -2597,35 +2554,7 @@
       '</div>';
   }
 
-  // One of the texts under judgment: the wording, then its own controls.
-  const laneHtml = (s, v, inner, opts) =>
-    '<div class="rcand">' + inner + laneBarHtml(s, v, opts) + '</div>';
-
-  // The status quo. `v` is the verdict that keeps it — omitted where the
-  // judgment cannot keep it, which is every race (SPEC §5: two challengers,
-  // and the clause survives or falls on the adoption-threshold rather than on
-  // this card). Reference blocks are greyed and carry no controls at all: a
-  // third route to the composer on a card that already has two would be ink
-  // for its own sake.
-  function quoHtml(s, text, opts) {
-    const o = opts || {};
-    const ref = !o.v;
-    return '<div class="quo' + (ref ? ' ref' : '') + '">' +
-      '<div class="quolab">' + (ref ? 'What both of these would replace' : 'As it stands') + '</div>' +
-      (text === null
-        ? '<div class="rtext none">Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.</div>'
-        : '<div class="rtext">' + esc(text) + '</div>') +
-      (ref ? '' : laneBarHtml(s, o.v, { lane: 'keep', key: o.key, edit: o.edit })) +
-      '</div>';
-  }
-
-  // The rationale row, with the entry's own lifecycle mark hanging in the
-  // card's left padding (Ed, QA 2026-08-16).
-  const whyRowHtml = (s, inner) => (inner
-    ? '<div class="whyrow"><span class="wmark" aria-hidden="true">' + markOf(s) + '</span>' + inner + '</div>'
-    : '');
-
-  // ---- the stacked card -----------------------------------------------
+  // ---- the card ---------------------------------------------------------
 
   // Somebody said this, and you are not allowed to know who (SPEC §3.4). The
   // disc is the person; its blankness is the seal. Without it the rationale
@@ -2649,7 +2578,11 @@
       '<span class="wmark" aria-hidden="true">' + markOf(s) + '</span>' +
       '<div class="headlab"><span>' + (o.label || 'The clause as it stands') + '</span>' +
       (o.chips ? '<span class="headchips"><span class="alsolab">also here</span>' + o.chips + '</span>' : '') + '</div>' +
-      (o.text === null
+      // `html` for the one head built of several paragraphs: a composer site is
+      // a run of clauses joined into one piece of text (225)
+      (o.html !== undefined
+        ? '<div class="rtext">' + o.html + '</div>'
+        : o.text === null
         ? '<div class="rtext none">Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.</div>'
         : '<div class="rtext"' + (o.key ? ' data-key="' + o.key + '"' : '') + '>' + esc(o.text) + '</div>') +
       (opt ? laneBarHtml(s, o.v, { lane: 'keep', key: o.key, edit: o.edit }) : '') +
@@ -2677,21 +2610,35 @@
   function commitRowHtml(s, extra) {
     const pick = pickOf(s);
     const insists = s.id === topUrgentId && stateOf(s) === 'needs';
-    // Submit takes the shrug's own place once something is chosen (Ed, 204) —
-    // it is rendered but hidden until then, so revealing it needs no re-render
-    // and the document doesn't move under the reader.
-    return '<div class="race-mid">' +
-      // The shrug and Submit share one slot (Ed, 209): once anything is chosen
-      // the shrug steps out and Submit stands where it was. Both are glyphs
-      // alone (Ed, 213) — the row is two gestures, not two sentences.
-      (s.locked ? '' : '<button class="btn btn-approve glyphbtn' + (pick ? '' : ' hidden') +
-        '" data-act="submit" aria-pressed="' + isCast(s) + '" title="' +
-        (isCast(s) ? 'Recorded — choose again to change it' : 'Submit this judgment') + '">✓</button>') +
-      '<button class="btn vindiff glyphbtn' + (pick ? ' hidden' : '') + '" data-v="indifferent"' +
+    // Indifference is the last radio in the trio (Ed, 2026-08-16), not a glyph
+    // of its own. 209/213 had the shrug and the tick sharing one slot and both
+    // drawn as emoji; that was built when nothing else on the card was a
+    // control. Now that every candidate carries a radio, indifference is
+    // plainly one more thing you can say about the same question — *neither of
+    // these*, alongside *this one* and *that one* — and it belongs in the same
+    // alphabet. It stays out of the lanes, because it is a judgment about the
+    // *pair* rather than about any text (SPEC §3.2), so it sits at the foot
+    // where the acts about the whole card live.
+    //
+    // Submit is always rendered and greyed until something is chosen (Ed,
+    // 2026-08-16, revising 202/204). The old argument was that a disabled
+    // button is a thing you are being told off by; against it, an absent one
+    // gives the row no shape and the reader no idea what finishing looks like.
+    // A greyed tick in the corner says *this is where this ends* from the
+    // moment the card opens.
+    return '<div class="race-mid commitrow">' +
+      '<button class="lanepick vin" type="button" data-v="indifferent"' +
       ' aria-pressed="' + (pick === 'indifferent') + '"' + (s.locked ? ' disabled' : '') +
-      ' title="' + (s.kind === 'diagonal' ? 'They matter equally' : 'I can’t split them') + '">🤷</button>' +
+      ' title="' + (s.kind === 'diagonal' ? 'They matter equally' : 'I can’t split them') + '">' +
+      '<i class="dot" aria-hidden="true"></i>' +
+      '<span class="off">Indifferent</span><span class="on">Indifferent</span></button>' +
       (insists ? '<button class="btn" data-act="skip">Not this one, not now</button>' : '') +
       (extra || '') +
+      (s.locked ? '' : '<button class="btn btn-approve glyphbtn"' +
+        (pick ? '' : ' disabled') +
+        ' data-act="submit" aria-pressed="' + isCast(s) + '" title="' +
+        (isCast(s) ? 'Recorded — choose again to change it'
+          : pick ? 'Submit this judgment' : 'Choose one of the three first') + '">✓</button>') +
       '</div>';
   }
 
@@ -2741,7 +2688,7 @@
     const skey = (s.keys ?? [])[0];
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
-      (stacked() && skey ? ' data-site="' + skey + '"' : '') + '>' +
+      (skey ? ' data-site="' + skey + '"' : '') + '>' +
       '<div class="rechead"><span>Decided · ' + esc(d.outcome || 'sealed') + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
       // The record was already this shape — the text that stands, then the
@@ -2749,7 +2696,7 @@
       // moved to match it rather than the other way about. In `stacked` the
       // clause is lifted into the head like every other card's, so a sealed
       // decision opened from the document does not print its clause twice.
-      (stacked() && skey
+      (skey
         ? clauseHeadHtml(s, {
             text: currentTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
             label: carried(s) ? 'The clause as it now stands' : 'The clause as it stands — nothing displaced it',
@@ -2775,14 +2722,10 @@
         // carried. That is what stops the record printing the winning wording
         // twice: the head shows the clause as it now stands, and the block
         // below shows what this proposal did to it.
-        '<div class="rtext">' + (stacked() && incumbent ? redline(incumbent, c.text) : esc(c.text)) + '</div>' +
+        '<div class="rtext">' + (incumbent ? redline(incumbent, c.text) : esc(c.text)) + '</div>' +
         // the same blank disc a live card gives it: whoever argued for this is
         // still sealed unless the session's visibility setting says otherwise
         (c.why ? speakerHtml(c.why) : '') + '</div>').join('') +
-      (!held && incumbent && !stacked()
-        ? '<div class="replaced"><div class="rtag">The text it replaced</div>' +
-          '<div class="rtext">' + esc(incumbent) + '</div></div>'
-        : '') +
       // The two numbers are different in kind and the record says which is
       // which (Ed, 186): the bar is a confidence, the quorum is a headcount.
       '<div class="record">' +
@@ -3154,17 +3097,29 @@
           '<span class="psteps">' + step(i > 0 ? i - 1 : null, 'The place before', '↑') +
           step(i < n - 1 ? i + 1 : null, 'The next place', '↓') + '</span></div>'
         : '') +
-      '<div class="swhy edit-why" contenteditable="plaintext-only" data-why spellcheck="false"' +
-      ' data-placeholder="Why this change? — the one thing anyone gets to say about it">' +
-      esc(d.rationale || '') + '</div>' +
-      '<div class="race-grid">' +
-      '<div class="rcand editorig" data-anchor="' + d.id + '">' +
-      (seeded ? '<div class="rtag">' + esc(seeded.note) + '</div>' : '') +
-      site.origin.map((o) => '<div class="lp" data-key="' + o.key + '">' + esc(o.text) + '</div>').join('') +
-      '</div>' +
-      '<div class="rcand editlane" contenteditable="true" data-lane="' + site.keys[0] + '" spellcheck="false">' +
+      // The clause at the head, like every other card (Ed, 2026-08-16, closing
+      // Q275). It had stayed paired on the argument that while you are writing
+      // you want the original beside you rather than above you — which does not
+      // survive contact: the original is one line up, your own additions are
+      // marked green as you type (263), and a full-width lane is a far better
+      // place to write a paragraph of prose than a 300px column.
+      clauseHeadHtml(d, {
+        label: seeded ? seeded.note : undefined,
+        html: site.origin.map((o) => '<div class="lp" data-key="' + o.key + '">' + esc(o.text) + '</div>').join(''),
+      }) +
+      // and your draft as the one reply, in the reply's own order: the wording,
+      // then the argument for it behind the same blank disc everybody else's
+      // sits behind — which is what the rest of the roster will see (§3.4).
+      '<div class="field"><div class="fieldlab">What you are proposing</div>' +
+      '<div class="propblock">' +
+      '<div class="editlane" contenteditable="true" data-lane="' + site.keys[0] + '" spellcheck="false">' +
       laneBlocks(site.text, originText(site)) + '</div>' +
-      '</div>' +
+      '<div class="speaker">' +
+      '<span class="disc" aria-hidden="true" title="This is how your reason will reach everybody else: with your name off it (SPEC §3.4)."></span>' +
+      '<div class="said edit-why" contenteditable="plaintext-only" data-why spellcheck="false"' +
+      ' data-placeholder="Why this change? — the one thing anyone gets to say about it">' +
+      esc(d.rationale || '') + '</div></div>' +
+      '</div></div>' +
       '<div class="race-mid">' +
       '<button class="btn btn-propose" data-act="draft-propose"' +
       (broke ? ' disabled title="No edits left — another arrives as the drip accrues"' : '') +
@@ -3208,18 +3163,11 @@
       // stating its own change, your argument behind the same blank disc
       // everybody else's sits behind. What differs is only what you can do —
       // nothing is asked of you, and the one act is withdrawal.
-      (stacked()
-        ? clauseHeadHtml(d, { text: s.origin.map((o) => o.text).join(' '), key: s.keys[0],
-                              chips: chipsFor(s.keys[0], d.id) }) +
-          fieldHtml('<div class="propblock"><div class="rtext">' +
-            laneBlocks(s.text, originText(s), true) + '</div>' + speakerHtml(d.rationale) + '</div>',
-            1, 'What you proposed')
-        : '<div class="race-grid">' +
-          '<div class="rcand"><div class="rtext">' +
-          s.origin.map((o) => esc(o.text)).join(' ') + '</div></div>' +
-          '<div class="rcand"><div class="rtext">' + laneBlocks(s.text, originText(s)) + '</div></div>' +
-          '</div>' +
-          whyRowHtml(d, whyHtml(d.rationale))) +
+      clauseHeadHtml(d, { text: s.origin.map((o) => o.text).join(' '), key: s.keys[0],
+                          chips: chipsFor(s.keys[0], d.id) }) +
+      fieldHtml('<div class="propblock"><div class="rtext">' +
+        laneBlocks(s.text, originText(s), true) + '</div>' + speakerHtml(d.rationale) + '</div>',
+        1, 'What you proposed') +
       '<div class="race-mid"><button class="btn btn-outline" data-act="draft-withdraw">Withdraw' +
       (n > 1 ? ' all ' + n + ' places' : '') + '</button></div>' +
       '<div class="foot">Withdrawing returns the edit in full and takes the wording out of the race — ' +
@@ -3283,20 +3231,12 @@
       const cur = currentTextFor(rkey);
       return (
         '<div class="sugg race-open" data-card="' + s.id + '" data-site="' + rkey + '">' +
-        (stacked()
-          ? clauseHeadHtml(s, { text: cur, key: rkey, chips: chipsFor(rkey, s.id) }) +
-            // two replies to the same post; each states its own change against
-            // the clause above, and carries its own argument and controls
-            fieldHtml(
-              proposalHtml(s, { v: 'a', html: redline(cur, s.race.a.text), why: s.race.a.rationale }) +
-              proposalHtml(s, { v: 'b', html: redline(cur, s.race.b.text), why: s.race.b.rationale }), 2)
-          : quoHtml(s, cur) +
-            '<div class="race-grid">' +
-            laneHtml(s, 'a', '<div class="rtext">' + esc(s.race.a.text) + '</div>') +
-            laneHtml(s, 'b', '<div class="rtext">' + esc(s.race.b.text) + '</div>') +
-            '</div>' +
-            whyRowHtml(s, '<div class="why-grid">' +
-              whyHtml(s.race.a.rationale) + whyHtml(s.race.b.rationale) + '</div>')) +
+        clauseHeadHtml(s, { text: cur, key: rkey, chips: chipsFor(rkey, s.id) }) +
+        // two replies to the same post; each states its own change against the
+        // clause above, and carries its own argument and controls
+        fieldHtml(
+          proposalHtml(s, { v: 'a', html: redline(cur, s.race.a.text), why: s.race.a.rationale }) +
+          proposalHtml(s, { v: 'b', html: redline(cur, s.race.b.text), why: s.race.b.rationale }), 2) +
         commitRowHtml(s, s.deadlocked ? proposeBtnHtml() : '') +
         reviseNote(s) +
         '<div class="foot">Neither of these has to win: the clause above stands unless the leader clears the bar (SPEC §5) · ' +
@@ -3327,16 +3267,9 @@
         // picks like any proposal. The fixture's `marked` is already the full
         // diff, so a stacked proposal can state its own change without
         // recomputing one.
-        (stacked()
-          ? clauseHeadHtml(s, { text: currentTextFor(site.key), key: site.key, v: 'keep',
-                                chips: chipsFor(site.key, s.id) }) +
-            fieldHtml(proposalHtml(s, { v: 'approve', html: site.marked, why: s.rationale, key: site.key }))
-          : '<div class="race-grid">' +
-            laneHtml(s, 'keep', '<div class="rtext">' + esc(currentTextFor(site.key)) + '</div>',
-              { lane: 'keep', key: site.key }) +
-            laneHtml(s, 'approve', '<div class="rtext">' + resultOnly(site.marked) + '</div>',
-              { lane: 'approve', key: site.key }) + '</div>' +
-            whyRowHtml(s, whyHtml(s.rationale))) +
+        clauseHeadHtml(s, { text: currentTextFor(site.key), key: site.key, v: 'keep',
+                            chips: chipsFor(site.key, s.id) }) +
+        fieldHtml(proposalHtml(s, { v: 'approve', html: site.marked, why: s.rationale, key: site.key })) +
         commitRowHtml(s) +
         reviseNote(s) +
         '<div class="foot">One judgment for all ' + n +
@@ -3351,30 +3284,18 @@
     // nobody has designed it (Q261).
     const key = (s.keys ?? [])[0];
     const cur = s.isInsert ? null : currentTextFor(key);
-    const curHtml = s.isInsert
-      ? '<div class="rtext none">Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.</div>'
-      : '<div class="rtext">' + esc(cur) + '</div>';
     const noEdit = s.isInsert ? false : undefined;
-    const newHtml =
-      (s.isInsert ? '<div class="rtext"><ins>' + esc(s.newHeading) + '</ins></div>' : '') +
-      '<div class="rtext">' + resultOnly(s.marked) + '</div>';
-    // stacked: a proposed section is the one case with no clause to redline
-    // against, so it states itself whole and its new heading is all-new
-    const stackedProp = s.isInsert
+    // a proposed section is the one case with no clause to redline against, so
+    // it states itself whole and its new heading is all-new
+    const prop = s.isInsert
       ? '<div class="rtext"><ins>' + esc(s.newHeading) + '</ins></div><div class="rtext">' + resultOnly(s.marked) + '</div>'
       : s.marked;
     return (
       '<div class="sugg quick-open" data-card="' + s.id + '" data-site="' + (key || '') + '">' +
-      (stacked()
-        ? clauseHeadHtml(s, { text: cur, key: key, v: 'keep', edit: noEdit,
-                              label: s.isInsert ? 'The gap as it stands' : undefined,
-                              chips: chipsFor(key, s.id) }) +
-          fieldHtml(proposalHtml(s, { v: 'approve', html: stackedProp, why: s.rationale, edit: noEdit }))
-        : '<div class="race-grid">' +
-          laneHtml(s, 'keep', curHtml, { lane: 'keep', edit: noEdit }) +
-          laneHtml(s, 'approve', newHtml, { lane: 'approve', edit: noEdit }) +
-          '</div>' +
-          whyRowHtml(s, whyHtml(s.rationale))) +
+      clauseHeadHtml(s, { text: cur, key: key, v: 'keep', edit: noEdit,
+                          label: s.isInsert ? 'The gap as it stands' : undefined,
+                          chips: chipsFor(key, s.id) }) +
+      fieldHtml(proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, edit: noEdit })) +
       commitRowHtml(s) +
       reviseNote(s) +
       '<div class="foot">Choosing the current text records a judgment for it · indifference here involves the current text, so it feeds the care map (SPEC §3.2) · authorship sealed · no counts, no standings</div>' +
@@ -3436,7 +3357,7 @@
         // arguing about it. It also settles 265, which asked why the two
         // behaved differently.
         let swallowed = false;
-        if (stacked() && openSugg) {
+        if (openSugg) {
           if (openSugg.kind === 'patch') {
             // a card at *every* place a patch touches (Ed, 181)
             if (openSugg.sites.some((x) => x.key === line.key)) {
@@ -3472,26 +3393,11 @@
             '" data-anchor="' + primary.id + '"' + EDITABLE +
             anchWash(primary, openId === primary.id) + '>' +
             '<span class="chipcol" contenteditable="false">' + chips + '</span>' + esc(line.x) + '</p>';
-          if (openSugg && openSugg.kind === 'patch') {
-            if (openSugg.sites.some((x) => x.key === line.key)) {
-              html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
-              cardDone = true;
-            }
-          } else if (openSugg && openSugg.kind === 'draft') {
-            const site = siteFor(openSugg, line.key);
-            if (site && site.keys[site.keys.length - 1] === line.key) {
-              html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
-              cardDone = true;
-            }
-          } else if (openSugg && !cardDone) {
-            html += '</div>' + suggCardHtml(openSugg) + '<div class="prose">';
-            cardDone = true;
-          }
         }
       } else {
         // a settled clause opens its record the same way — the record's head is
         // the clause, so leaving the paragraph above it would print it twice
-        const swallowed = stacked() && wasResolved && openId === wasResolved.id && !cardDone;
+        const swallowed = wasResolved && openId === wasResolved.id && !cardDone;
         if (swallowed) {
           html += '</div>' + suggCardHtml(wasResolved) + '<div class="prose">';
           cardDone = true;
@@ -3503,10 +3409,6 @@
             (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0" data-anchor="' + wasResolved.id +
               '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + markOf(wasResolved) + '</span></span>' : '') +
             esc(line.x) + '</p>';
-          if (wasResolved && openId === wasResolved.id && !cardDone) {
-            html += '</div>' + suggCardHtml(wasResolved) + '<div class="prose">';
-            cardDone = true;
-          }
         }
       }
 
@@ -3630,13 +3532,14 @@
           o.setAttribute('aria-pressed', String(now !== null && o.dataset.v === now)));
         const submit = c.querySelector('[data-act="submit"]');
         if (submit) {
-          submit.classList.toggle('hidden', now === null);
+          // greyed rather than absent (Ed, 2026-08-16): the corner keeps its
+          // shape from the moment the card opens
+          submit.disabled = now === null;
           const cast = isJudged(s) && now !== null && now === committedOf(s);
           submit.setAttribute('aria-pressed', String(cast));
-          submit.title = cast ? 'Recorded — choose again to change it' : 'Submit this judgment';
+          submit.title = cast ? 'Recorded — choose again to change it'
+            : now ? 'Submit this judgment' : 'Choose one of the three first';
         }
-        const shrug = c.querySelector('.vindiff');
-        if (shrug) shrug.classList.toggle('hidden', now !== null);
       });
     };
     doc.querySelectorAll('.sugg [data-v]').forEach((b) => {
@@ -3839,9 +3742,9 @@
   // A card that stands *where its clause stood* cannot unroll: there is no gap
   // for it to unroll into, and animating one would read as the paragraph
   // vanishing and a card growing in the hole. It swaps, the way the composer
-  // always has. In `stacked` that is every card, which costs the surface its
-  // open/close motion — see the note in the design notes.
-  const swapsInPlace = (el) => el && (stacked() || el.classList.contains('editcard'));
+  // always has — and that is now every card, which costs the surface its
+  // open/close motion (Q273).
+  const swapsInPlace = (el) => !!el;
 
   function collapseCard(el, done) {
     if (!el || REDUCED() || swapsInPlace(el)) return done();
@@ -4216,13 +4119,6 @@
   function renderAll() { settleTopUrgent(); renderDoc(); renderQueue(); renderToc(); markCurrentSection(); renderWallet(); drawWires(); }
   renderAll();
 
-  // The layout lab. Whatever card is open stays open across the switch, which
-  // is the whole point — the comparison is meant to be made on one card
-  // without hunting for it again.
-  document.getElementById('lab-card').addEventListener('change', (ev) => {
-    LAYOUT.card = ev.target.value;
-    keepStill(() => renderAll());
-  });
 
   // Always-on typing, bound once on the container rather than per paragraph:
   // the document is re-rendered wholesale, so a listener on every clause would

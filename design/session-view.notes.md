@@ -861,3 +861,23 @@ Two things came out of building that, both of them measurements rather than opin
 ### Found on the way
 
 The sealed record had two defects that only became visible once it had a head above it. Its ranked blocks were printing the field label a second time as their own — *What was proposed✓ this is the text that stands* — and `.rtag` / `.rsub` were scoped to `.rcand`, so the record's own blocks had never picked up either rule and the verdict ran on into the end of the label. Both fixed. The second is the same shape as the dead media queries found in the previous pass: **a rule that never matched fails silently**, and the only thing that finds it is looking at the thing it was supposed to style.
+
+### Settling it: the trio, and the last paired card (Ed, 2026-08-16)
+
+**Stacked, so the lab goes.** The `paired` code paths and the switch are deleted rather than left in place. A lab exists because an answer is not known; keeping it after the answer is known just leaves two designs to maintain and a quiet invitation to relitigate.
+
+**Indifference is the last radio in the trio.** 209 and 213 had the shrug and the tick sharing one slot, both drawn as emoji, on the reasoning that the row was two gestures rather than two sentences. That was built when nothing else on the card was a control — the lanes *were* the buttons, so the only two controls on the surface were at the bottom and could afford to be pictograms.
+
+Now every candidate carries a radio, and the question the card asks has exactly three answers: this one, that one, neither. Drawing two of them as radios and the third as a shrug said they were different kinds of act, and they are not. So indifference joins the alphabet: same radio, same label treatment, the word rather than the glyph.
+
+What does *not* change is where it sits. Indifference is a judgment about the **pair** (SPEC §3.2), not about either text, so it cannot go in a lane — it stays at the foot with the other act that is about the whole card. Being last in the trio and first in the row is exactly right for it: it is the answer you reach for when the two above have not settled it.
+
+**The tick is always there, greyed.** 202 said a disabled button is a thing you are being told off by, and an absent one is simply the next step not having arrived. Against that: an absent button gives the row no shape, and gives a reader who has just opened their first card no idea what finishing looks like. A greyed tick in the bottom-right corner says *this is where this ends* from the moment the card opens, and it costs nothing, because nothing about it nags — it is the quietest thing on the card until you have chosen. It greys properly rather than merely fading, too: a pale green tick reads as a tick that has already been pressed, which is the one thing it must not say.
+
+🤷 has left the surface. Worth noticing that the whole commit row is now wordless-free — no emoji at all in the card's controls, where it used to have two.
+
+**And the composer stops being the exception.** Ed asked why the editing card was still paired, and the honest answer is that there was no good reason. What I had written down was that while writing you want the original beside you rather than above you, level with what you are typing line for line. It does not survive contact with the built thing: the original is one line up; your own additions are marked green as you type (263), so you can see your change without a reference column; and a full-width lane is a far better place to write a paragraph of constitutional prose than a 300px one. The real reason it stayed paired is that it had been signed off in that shape and I did not re-examine it when the ground moved.
+
+So it is now clause-at-the-head like everything else, with your draft as the single reply. That took 270 with it: the rationale field moved out of the top of the card and into the `sealed-speaker`'s own slot beneath the wording, behind the same blank disc everybody else's sits behind. Which turns out to be the better answer for a reason I had not seen — **you write the sentence in the place, and at the weight, that everybody else will read it in.** The old card had you composing a rationale in a form field at the top and then discovering later what it looked like as a comment. Now there is nothing to discover.
+
+One box survives on the whole surface: the editing lane. A text editor says it is one by looking like one, and it is the only thing here that is typed into.
