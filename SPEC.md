@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.14
+# Group Drafting Engine — Specification v0.15
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -63,7 +63,7 @@ Candidate authorship is governed by a constitution setting — **public** (visib
 
 ## 4. Resolution
 
-**4.1 Preference and salience.** Per race, a Bradley–Terry ranking over candidates plus incumbent, updated online from blind comparisons, indifference as tie evidence, pairs sampled actively; sampling stops at resolution or saturation.
+**4.1 Preference and salience.** Per race, a Bradley–Terry ranking over candidates plus incumbent, updated online from blind comparisons, indifference as tie evidence, pairs sampled actively; sampling stops at resolution or deadlock.
 
 Every pair has a type, decided by Gate 2 and cached before serving:
 
@@ -98,16 +98,16 @@ Judgments are living while their question is (Q50, Ed 2026-08-14, revised same d
 
 ## 6. The composer
 
-**6.1 The briefing.** Opening the composer for a race shows: the heat (split magnitude, indifference rate, evidence volume — never identities); camp structure if detected; a digest of the *why*, built from rationales of camp-preferred candidates and comparison structure; the graveyard, so the dead aren't redrafted; and, for saturated races, the bridge bar (§6.3).
+**6.1 The briefing.** Opening the composer for a race shows: the heat (split magnitude, indifference rate, evidence volume — never identities); camp structure if detected; a digest of the *why*, built from rationales of camp-preferred candidates and comparison structure; the graveyard, so the dead aren't redrafted; and, for deadlocked races, the bridge bar (§6.3).
 
 **6.2 Invitations.** Two events summon an author to the composer, firing on confident states only and re-firing only when something has changed — never on a timer:
 
 - **Dominated.** The candidate looks very unlikely to win: projected against the threshold ramp, current evidence and trajectory give it no realistic path to clearing the bar before close. The author sees a three-tier account, each tier labeled as what it is: **facts** (standings; the differential diff against the winner; indifference rate; decision speed; the camp cut if one exists), **the winners' own words** (their pinned rationales), and **hypothesis** — a span-level attribution fitted across the race and graveyard ("every candidate containing clause X ranks below 0.45"), with its evidence attached, or an honest "the data can't isolate a cause" plus a proposed isolating redraft. Thin data gets a thin account. Options: retire (refund per performance) · co-sign the leader (full refund) · redraft informed. Two failed informed redrafts carry the position to the backlog as a recorded persistent current.
-- **Saturated.** The race is close relative to the marginal value of further sampling. Judgment stops; the race moves to the **bounty board** — a public tab of races where a good draft has the highest expected leverage, ranked by the disagreement it would resolve, weighted by salience. Both camps' authors are invited; anyone may draft.
+- **Deadlocked.** The race is close relative to the marginal value of further sampling. Judgment stops; the race moves to the **bounty board** — a public tab of races where a good draft has the highest expected leverage, ranked by the disagreement it would resolve, weighted by salience. Both camps' authors are invited; anyone may draft.
 
-**6.3 Bridges.** A candidate entering a saturated race is measured by **minimum support across camps** — it must beat A among B's preferrers and beat B among A's — via stratified probes. Aggregate win rate is not the test; a candidate beloved by one camp is exposed in a handful of judgments.
+**6.3 Bridges.** A candidate entering a deadlocked race is measured by **minimum support across camps** — it must beat A among B's preferrers and beat B among A's — via stratified probes. Aggregate win rate is not the test; a candidate beloved by one camp is exposed in a handful of judgments.
 
-**6.4 Geometry.** The machine classifies saturated races: one-dimensional splits seed midpoint drafts (a true median beats both camps); multi-dimensional splits seed unbundled drafts or propose surgery. Seeds enter as labeled machine candidates and compete like anything else.
+**6.4 Geometry.** The machine classifies deadlocked races: one-dimensional splits seed midpoint drafts (a true median beats both camps); multi-dimensional splits seed unbundled drafts or propose surgery. Seeds enter as labeled machine candidates and compete like anything else.
 
 ---
 
@@ -129,7 +129,7 @@ Co-signs and withdrawals refund fully; merges pool pro-rata. (Calibration note, 
 
 E is the whole non-removed roster, and silence is never imputed (Q43, Ed 2026-08-14): a race short of the floor simply waits — the unheard boost keeps asking, and at close it degrades gracefully to backlog. The session must not adopt around a legitimate but silent member; presence is roster management, not mechanism. The system may surface sustained inactivity to the convenor as an advisory signal; the convenor alone decides removal (§9.3), and F recomputes from the new E.
 
-**8.3 Mechanics.** A hot set of ~3 races receives concentrated sampling (was ~6; calibration sweep 2026-08-13 — depth of evidence per race beats breadth at small-roster scale, best welfare and lowest variance of any setting tested) — resolving a race retires it from every feed, so finish lines come first. ~1 slot in 7 explores under-measured candidates (Thompson sampling); ~1 in 10 serves a salience diagonal. Saturated races leave the judgment stream for the bounty board; care-map-cold spans sink; skipped cards recirculate personally with decay. Feeds are suggestions — participants can browse, search, and judge anything live. Sort tabs expose magnitude only (activity, evidence volume, closeness-to-resolution as a single number, newness, mine), never direction. The bounty board is a first-class tab; each entry opens the composer.
+**8.3 Mechanics.** A hot set of ~3 races receives concentrated sampling (was ~6; calibration sweep 2026-08-13 — depth of evidence per race beats breadth at small-roster scale, best welfare and lowest variance of any setting tested) — resolving a race retires it from every feed, so finish lines come first. ~1 slot in 7 explores under-measured candidates (Thompson sampling); ~1 in 10 serves a salience diagonal. Deadlocked races leave the judgment stream for the bounty board; care-map-cold spans sink; skipped cards recirculate personally with decay. Feeds are suggestions — participants can browse, search, and judge anything live. Sort tabs expose magnitude only (activity, evidence volume, closeness-to-resolution as a single number, newness, mine), never direction. The bounty board is a first-class tab; each entry opens the composer.
 
 Rival-vs-rival pairs answer a conditional question — "if this text changes, which change is better?" — and their signal is precious precisely because it cannot be recovered from incumbent comparisons. Two serving rules follow (Ed, 2026-08-14). First, cards never offer "keep the current text" on a rival pair: a pro-incumbent judge expresses that on incumbent-involving pairs, which the router owes them, and the rival card's prompt states the conditional framing plainly. Second, rival pairs are served sparingly until the race shows evidence that at least one challenger plausibly displaces the incumbent; before that, incumbent-involving pairs dominate the race's sampling — there is little decision value in finely ranking challengers that are all losing to the status quo (their order matters only to the backlog).
 
@@ -145,7 +145,7 @@ Rival-vs-rival pairs answer a conditional question — "if this text changes, wh
 
 **9.2 Two publications.** Common knowledge is made by publication. **Opening:** roster, constitution, and starting text, hash-anchored and pushed to all. **Closing:** the text and the record. Between them the chamber view is ambient: adoptions land with a chime, the rolling log hash and bounty board are visible, live standings never are.
 
-**9.3 Presence and access.** Participation is bouts, not attendance; c_p absorbs intermittency. The convenor may add or remove participants mid-session: a joiner receives the base grant plus drip accrued to date (capped); F recomputes from current E; a removed participant's live candidates remain live, flagged author-departed, and their cast judgments stay counted. A roster change's floor recomputation is announced in the gazette ("floor recomputed, N races now eligible") so races parked at the old floor never complete silently (Q10, sim evidence 2026-08-14). Chamber visibility is convenor-toggled (default link-only). An **observer role** provides the chamber plus an anonymized live metrics feed (throughput, saturation events, care-map evolution). The record's distribution is the convenor's.
+**9.3 Presence and access.** Participation is bouts, not attendance; c_p absorbs intermittency. The convenor may add or remove participants mid-session: a joiner receives the base grant plus drip accrued to date (capped); F recomputes from current E; a removed participant's live candidates remain live, flagged author-departed, and their cast judgments stay counted. A roster change's floor recomputation is announced in the gazette ("floor recomputed, N races now eligible") so races parked at the old floor never complete silently (Q10, sim evidence 2026-08-14). Chamber visibility is convenor-toggled (default link-only). An **observer role** provides the chamber plus an anonymized live metrics feed (throughput, deadlock events, care-map evolution). The record's distribution is the convenor's.
 
 **9.4 Sessions repeat.** Next session, the adoption threshold resets and the backlog re-enters stake-waived, carrying graveyards, camp maps, and rationales as briefing context — not as evidence. Between sessions, authors revise against everything the record taught; incubation is where bridges that need longer than a window get built.
 
@@ -187,7 +187,7 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 |---|---|
 | Adoption threshold (T_start → T_end) | 0.60 → 0.95, smooth ramp over the session window (wall clock) |
 | Adoption floor F | min(⌈E/3⌉, 12) distinct movers per race |
-| Saturation test | marginal information per comparison below cost; ≥ 20 comparisons |
+| Deadlock test | marginal information per comparison below cost; ≥ 20 comparisons |
 | Post-adoption cooldown | 5 min |
 | Redraft limit before carry | 2 informed redrafts |
 | Rendering tiebreak | deterministic (hash order); margins in the record |

@@ -24,8 +24,8 @@ needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
   the current adoption threshold, on ≥ 5 comparisons involving X. Since the
   threshold only rises within a session, "the incumbent already clears the
   current bar against you" is a fair reading of "no realistic path".
-- **Saturation:** ≥ `saturationMinComparisons` usable comparisons AND the
-  best available pair's value < `saturationEpsilon`, where pair value =
+- **Deadlock:** ≥ `deadlockMinComparisons` usable comparisons AND the
+  best available pair's value < `deadlockEpsilon`, where pair value =
   posterior variance of the strength difference × outcome unpredictability.
   This is the "marginal information below cost" test with an explicit ε.
 - **Cooldown is global** (one adoption anywhere starts it), reading §4.2's

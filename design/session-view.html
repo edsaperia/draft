@@ -214,18 +214,17 @@
      closeness to resolution, how strong the colour is is urgency, and the hue
      is lifecycle (Ed, 162). Built per entry in wash(); set as --wash so one
      rule can paint every tier. */
-  .queue button.hot, .queue button.warm, .queue button.cool,
+  .queue button.needs,
   .queue button.wants, .queue button.deciding, .queue button.unread { background: var(--wash); }
 
-  /* The compression ladder (Ed, 104): how much of a card is drawn falls with
-     how much it wants you. Anything already judged is one line. */
+  /* Anything already judged is one line. Everything still open is a full card:
+     the compression ladder is gone (Ed, 2026-08-16 — see the rail's own note on
+     what urgency now decides). */
   .queue .ql { font-weight: 600; font-size: var(--t-ui); display: flex; gap: 6px; }
   .queue .qs { font-size: 0.75rem; color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
   .queue .qv { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
   .mcap { display: block; font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
 
-  .queue button.cool { padding: var(--s1) 10px; }
-  .queue button.cool .ql { font-weight: 500; font-size: var(--t-small); }
   .queue button.deciding, .queue button.unread { padding: var(--s1) 10px; }
   .queue button.deciding .ql, .queue button.unread .ql {
     display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -240,7 +239,7 @@
      pinned until you deal with it (Ed, 112) */
   .queue button.unread .ql { font-weight: 600; font-size: var(--t-small); color: var(--fg); }
   .queue button.unread .qv { color: var(--muted); }
-  /* a saturated race states its unusual ask in full, and its caption is an
+  /* a deadlocked race states its unusual ask in full, and its caption is an
      instruction rather than a progress note (Ed, 166) */
   .queue button.wants .mcap { color: var(--stuck-ink); font-weight: 500; }
   /* a patch is one judgment shown at every site it touches (Ed, 108/183) */
@@ -252,16 +251,15 @@
      glyph is the signal, not its size. */
   .qmark { flex: none; font-size: var(--t-small); line-height: 1.35; font-weight: 400; }
 
-  /* The rationale is the comment (Ed, 123): the rail quotes it, clamped by
-     tier, so it rides the compression ladder rather than fighting it. The 🔥
-     card gets five lines — the one you are meant to just do should not have
-     its argument cut off (Ed, 214). */
+  /* The rationale is the comment (Ed, 123): the rail quotes it. Four lines on
+     every open card and five on the 🔥 one — an argument cut to a line was a
+     teaser for an argument, not an argument (Ed, 2026-08-16). Fewer cards fit
+     as a result, which is the trade being made deliberately. */
   .qwhy {
     font-size: 0.78rem; line-height: 1.35; color: var(--fg); margin-top: 6px;
     display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
-    -webkit-line-clamp: 2; line-clamp: 2;
+    -webkit-line-clamp: 4; line-clamp: 4;
   }
-  .queue button.warm .qwhy { -webkit-line-clamp: 1; line-clamp: 1; }
   .queue button.mosturgent .qwhy { -webkit-line-clamp: 5; line-clamp: 5; }
   /* a race quotes both proposals, stacked with a hairline between: 290px will
      not carry two readable columns of prose */
@@ -612,7 +610,7 @@
 
     <aside class="queue">
       <h2 class="eyebrow">In the margin</h2>
-      <p class="note">Every contested point stands beside its own clause, in the charter's order — the rail ranks nothing. How much a card <b>wants you</b> is its colour saturation and how much of it is drawn; how far the wash reaches is closeness to resolution, never direction. The one that wants you most breathes and never leaves the screen. <b>Still deciding</b> is one grey line, clickable to change your mind. A decision you haven't acknowledged is a purple line that stays put until you do; once you have, it settles into a green dot you can open any time.</p>
+      <p class="note">Every contested point stands beside its own clause, in the charter's order — where an entry sits is a place in the document, never a position in a ranking. How much a card <b>wants you</b> is the strength of its colour, and how far the wash reaches is closeness to resolution, never direction. Urgency decides only <b>which</b> questions fit on the screen: the ones that want you most, with the rest counted at the foot of the rail and surfacing as those are dealt with. The one that wants you most never leaves. <b>Still deciding</b> is one grey line, clickable to change your mind. A decision you haven't acknowledged keeps a line until you say you have seen it, then settles into a dot you can open any time.</p>
       <ul id="queue"></ul>
       <div id="qmore" class="qmore"></div>
     </aside>
@@ -1048,10 +1046,10 @@
       rationale: '"In that order and not more" reads as though the Steward is limited to one reminder. The point is that the house stops after two, from anybody. Same rule, said properly.',
     },
     {
-      id: 'race-sanctions', kind: 'race', keys: ['sanctions'], state: 'needs', saturated: true,
+      id: 'race-sanctions', kind: 'race', keys: ['sanctions'], state: 'needs', deadlocked: true,
       qLabel: '§ Sanctions', qSub: '4 proposals racing',
       urgency: 0.05,
-      pct: 100, cap: 'saturated — more judgments won’t move it; only a new proposal can',
+      pct: 100, cap: 'deadlocked — more judgments won’t move it; only a new proposal can',
       candidates: 4, pairsJudged: 6,
       race: {
         a: {
@@ -1421,21 +1419,20 @@
   const isUnread = (g) => stateOf(g) === 'sealed' && g.unread && !readSeals.has(g.id);
 
   // Urgency — how much this wants *you* (leverage), not how close it is to
-  // resolution (that stays the meter's job). For now it is carried by colour
-  // saturation and by how much of the card survives (Ed, 105; 104).
+  // resolution (that stays the meter's job). It is carried by the strength of
+  // the card's colour (Ed, 105) and, since 2026-08-16, by whether the card is
+  // on the screen at all: it decides *which* questions the rail shows, not how
+  // much each of them is allowed to say.
   const URG_LO = 0.05, URG_HI = 0.30;
-  // A saturated race is not a low-urgency one, it is a *differently* addressed
+  // A deadlocked race is not a low-urgency one, it is a *differently* addressed
   // one (Ed, 166): no judgment of yours can move it, so the urgency ramp does
-  // not apply. It gets its own tier, drawn full so the unusual ask has room to
-  // explain itself — compressing it to a line would hide the one entry whose
-  // instructions differ from every other.
-  const tierOf = (u) => (u >= 0.66 ? 'hot' : u >= 0.33 ? 'warm' : 'cool');
-  const tierFor = (g, u) => (g.saturated ? 'wants' : tierOf(u));
+  // not apply, and it says so in its own words.
+  const classFor = (g) => (g.deadlocked ? 'wants' : 'needs');
   const tint = (hue, a) => 'rgba(var(--lc-' + hue + '), ' + a.toFixed(3) + ')';
   // Colour says lifecycle (Ed, 162); the wash is still the progress bar it
   // always was, so how far the fill reaches is closeness to resolution. On a
   // needs-you card the strength of the colour is also urgency — one device,
-  // three readings. A saturated race washes grey: more judgment won't move it
+  // three readings. A deadlocked race washes grey: more judgment won't move it
   // (SPEC §8.3), which is the one case where the state is not the whole story.
   function wash(g, hue, u) {
     return 'linear-gradient(90deg, ' + tint(hue, u == null ? 0.16 : URG_LO + (URG_HI - URG_LO) * u) +
@@ -1490,7 +1487,7 @@
     needs: '❓',      // a question put to you
     urgent: '🔥',     // the one that wants you most
     // The rail says what is true; the buttons say what you can do. So a
-    // saturated race is marked "stuck" — same red as ❓, because it is still an
+    // deadlocked race is marked "stuck" — same red as ❓, because it is still an
     // open question — and 💡 lives on the propose actions it leads to (Ed, 173).
     stuck: '❌',      // judging cannot move this; only a new draft can
     propose: '💡',    // ...and this is where you write one
@@ -1519,7 +1516,7 @@
     // differently-addressed kinds are never it: a stuck race wants a draft and
     // a diagonal wants a ranking, and both say so with their own glyph.
     const live = queueEntries().filter((e) =>
-      stateOf(e.g) === 'needs' && !e.g.saturated && e.g.kind !== 'diagonal');
+      stateOf(e.g) === 'needs' && !e.g.deadlocked && e.g.kind !== 'diagonal');
     topUrgentId = live.length
       ? live.reduce((best, e) => ((e.g.urgency ?? 0) > (best.urgency ?? 0) ? e.g : best), live[0].g).id
       : null;
@@ -1565,14 +1562,14 @@
       const locked = g.locked || st === 'sealed';
       const verdict = verdicts.get(g.id) || g.verdict;
       const u = g.urgency ?? 0.5;
-      const tier = st === 'deciding' ? 'deciding' : tierFor(g, u);
+      const tier = st === 'deciding' ? 'deciding' : classFor(g);
       const cap = justJudged ? 'still deciding — click to change your mind' : g.cap;
       const sib = e.of > 1 ? ' sib' : '';
 
       // A judged entry is one line: label, your verdict, and — if the ground
       // moved under it — a lock mark, with the whole story in the tooltip.
       const oneLine = st === 'deciding';
-      const top = !oneLine && !g.saturated && g.id === topUrgentId && !seenTop;
+      const top = !oneLine && !g.deadlocked && g.id === topUrgentId && !seenTop;
       if (top) seenTop = true;
       html +=
         '<li class="qitem' + (top ? ' mosturgent' : '') + '" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
@@ -1583,7 +1580,7 @@
         (oneLine ? ' title="' + esc(g.shifted || cap) + '"' : '') +
         ' style="--wash: ' + (oneLine
           ? wash(g, g.shifted ? 'closed' : 'deciding')
-          : wash(g, top ? 'urgent' : 'open', g.saturated ? 0.55 : u)) + '">' +
+          : wash(g, top ? 'urgent' : 'open', g.deadlocked ? 0.55 : u)) + '">' +
         (oneLine
           ? '<span class="ql">' + markHtml(g.shifted ? MARK.shifted : MARK.deciding) + plainLabel(e.label || g.qLabel) +
             '<span class="qv"> · you ' + (verdict || 'judged') + '</span></span>'
@@ -1595,13 +1592,15 @@
             // shows — one teaser is a suggestion, two divided teasers are a
             // race, a place count is a patch. Only the place count survives,
             // because it says *which* place, which nothing else does.
-            (tier !== 'cool' && e.of > 1
+            (e.of > 1
               ? '<span class="qs"><span class="sibn">' + e.n + ' of ' + e.of +
                 (g.kind === 'diagonal' ? ' questions' : ' places') + '</span></span>'
               : '') +
-            (tier === 'cool' ? '' : teasersFor(g, e).map((t) =>
-              '<span class="qwhy">' + esc(t) + '</span>').join('')) +
-            (tier === 'hot' || tier === 'wants' ? '<span class="mcap">' + cap + '</span>' : '')) +
+            // Every open card says its whole piece now. It used to depend on
+            // the card's tier, which meant the least urgent said nothing at all
+            // and you had to open it to find out what it was.
+            teasersFor(g, e).map((t) => '<span class="qwhy">' + esc(t) + '</span>').join('') +
+            (cap ? '<span class="mcap">' + cap + '</span>' : '')) +
         '</button></li>';
     }
     queueEl.innerHTML = html;
@@ -1640,13 +1639,15 @@
   // Lay the rail out as a margin — but never let work walk off the screen
   // (Ed, 110). Two populations share the column:
   //
-  //   pinned  — everything that still needs you. Each wants its clause's height
-  //             and takes it while the clause is in view; once the clause leaves
-  //             the screen the card holds at the edge it left by, so the set on
-  //             screen is always a contiguous run of the charter around where
-  //             you are reading. What will not fit is dropped, and counted.
-  //   flow    — judged lines and sealed dots. These stay with their clauses and
-  //             scroll away, because they are a map of settled ground, not work.
+  //   pinned  — work that still needs you *and has something to say about
+  //             itself*. Each wants its clause's height and takes it while the
+  //             clause is in view; once the clause leaves the screen the card
+  //             holds at the edge it left by, so the set on screen is always a
+  //             contiguous run of the charter around where you are reading.
+  //             What will not fit is dropped, and counted.
+  //   flow    — judged lines, sealed dots, and the coolest questions. These stay
+  //             with their clauses and scroll away, because they are a map of
+  //             the ground rather than a claim on your attention.
   //
   // A flow entry that would end up underneath a pinned card is hidden rather
   // than nudged: nudging makes the whole rail crawl as you scroll.
@@ -1660,12 +1661,24 @@
       if (!a) { el.style.display = 'none'; continue; }
       el.style.display = '';
       const g = SUGGS.find((x) => x.id === el.dataset.q);
-      const row = { el, want: (a.getBoundingClientRect().top + scrollY) - railTop, h: el.offsetHeight };
+      const row = { el, want: (a.getBoundingClientRect().top + scrollY) - railTop, h: el.offsetHeight,
+        // The ranking is over **judgment leverage**, so an entry that is not
+        // asking for a judgment cannot be ranked on it and takes the middle of
+        // the scale instead — competing on equal terms rather than either
+        // jumping the queue or sinking out of sight.
+        //
+        // Two of them. An unacknowledged decision is a notification, not a
+        // question. And a deadlocked race scores ~0 because no judgment of
+        // yours can move it (SPEC §8.3) — which is emphatically not the same as
+        // *not wanting you*: it is the one entry on the surface asking for a
+        // draft rather than a verdict, and ranking it on the judgment scale
+        // buried the only card whose instructions differ from every other.
+        u: (isUnread(g) || g.deadlocked) ? 0.5 : (g.urgency ?? 0) };
       // Whatever is open is pinned for as long as it is open, whatever its
       // state: it is the thing you are looking at, and its wire has to hold.
       // `pendingId` counts as open — the document is moved *before* the card
       // is inserted (Ed, 75), so the entry has to be in its final population
-      // by then or the levelling aims at a position it will not end up in.
+      // by then or its wire aims at a position it will not end up in.
       const live = stateOf(g) === 'needs' || isUnread(g) || holdsFocus(el);
       (live ? pinned : flow).push(row);
     }
@@ -1676,16 +1689,30 @@
     const bandTop = scrollY + BAND_TOP - railTop;
     const bandBot = scrollY + innerHeight - BAND_BOT - railTop;
 
-    // as many as fit, nearest your reading position first — and strictly the
-    // nearest, so what you see is one unbroken run of the charter, not a set
-    // assembled by whichever cards happened to be small
-    const eye = scrollY + innerHeight / 2 - railTop;
+    // As many as fit, **most urgent first** (Ed, 2026-08-16).
+    //
+    // It used to be nearest-your-reading-position first, so what you saw was one
+    // unbroken run of the charter. That was the right rule while a card was a
+    // line or two and a dozen fitted in the band. Now that every open card
+    // carries its argument, only a handful fit — and spending those few on
+    // proximity means the question that most wants you can be off the screen
+    // while its quieter neighbours sit on it.
+    //
+    // Note this is a ranking, not a threshold: nothing is ever too unimportant
+    // to appear. The rail simply runs out of room, and as the urgent ones are
+    // dealt with the next ones down surface behind them. What did not fit is
+    // counted, never silently dropped.
     let room = bandBot - bandTop;
     const keep = new Set();
-    // the most urgent card holds its place however crowded the rail gets (115)
-    const first = pinned.find((r) => r.el.classList.contains('mosturgent'));
-    if (first) { keep.add(first); room -= first.h + QGAP; }
-    for (const r of [...pinned].sort((x, y) => Math.abs(x.want - eye) - Math.abs(y.want - eye))) {
+    // Two hold their places however crowded the rail gets: the most urgent card
+    // (115), and whatever is open — which under a ranking is no longer safe by
+    // construction, since you may well have opened something far down the order.
+    for (const r of pinned) {
+      if (!r.el.classList.contains('mosturgent') && !holdsFocus(r.el)) continue;
+      if (keep.has(r)) continue;
+      keep.add(r); room -= r.h + QGAP;
+    }
+    for (const r of [...pinned].sort((x, y) => y.u - x.u || x.want - y.want)) {
       if (keep.has(r)) continue;
       if (room - r.h - QGAP < 0) break;
       room -= r.h + QGAP;
@@ -2610,7 +2637,7 @@
     const st = stateOf(g);
     if (st === 'sealed') return isUnread(g) ? 'closed' : null;
     if (st === 'deciding') return g.shifted ? 'closed' : 'deciding';
-    if (g.saturated) return 'open';
+    if (g.deadlocked) return 'open';
     return g.id === topUrgentId ? 'urgent' : 'open';
   };
   const anchWash = (g, active) => {
@@ -2622,7 +2649,7 @@
     const st = stateOf(g);
     return st === 'sealed' ? (isUnread(g) ? (carried(g) ? MARK.adopted : MARK.retired) : MARK.read)
       : st === 'deciding' ? (g.shifted ? MARK.shifted : MARK.deciding)
-      : g.saturated ? MARK.stuck
+      : g.deadlocked ? MARK.stuck
       : g.kind === 'diagonal' ? MARK.weigh
       : g.id === topUrgentId ? MARK.urgent
       : MARK.needs;

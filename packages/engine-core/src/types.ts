@@ -23,10 +23,10 @@ export interface Constitution {
   adoptionThresholdEnd: number;
   /** F = min(ceil(E/3), adoptionFloorMax) distinct movers per race. */
   adoptionFloorMax: number;
-  /** Saturation requires at least this many comparisons in the race. */
-  saturationMinComparisons: number;
-  /** Max pair value below which a race counts as saturated. */
-  saturationEpsilon: number;
+  /** Deadlock requires at least this many comparisons in the race. */
+  deadlockMinComparisons: number;
+  /** Max pair value below which a race counts as deadlocked. */
+  deadlockEpsilon: number;
   /** No adoption fires within this many ms of the previous adoption. */
   cooldownMs: number;
   /** Informed redrafts before a position carries to the backlog. */
@@ -124,7 +124,7 @@ export interface RaceView {
   leaderId: string | null;
   /** P(incumbent beats best live challenger) — certification (SPEC §4.4). */
   certification: number | null;
-  saturated: boolean;
+  deadlocked: boolean;
   /**
    * Rival-pair gate state (SPEC §8.3, Q48): true once some challenger
    * shows displacement evidence against the incumbent, unlocking

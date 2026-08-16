@@ -60,7 +60,17 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // (502f767efe00c5cfebdb664ec1b8a5525cf0449d25dfdd5a981d315805f6ae01).
   // Determinism verified before re-pinning: two fresh runs of this
   // config produced this hash, and Session.replay reproduces it.
-  const PINNED = '4f1ff4611d0ba18cd96919f77b5acd9ddd41a17eb3708384f8b2cd12d8dfd2db';
+  //
+  // Re-pinned 2026-08-16 for the saturated → deadlocked rename. Nothing
+  // about the mechanism moved: the constitution is serialised into the
+  // genesis event, so renaming two of its parameters changes the genesis
+  // JSON and therefore every hash in the chain after it. Worth knowing
+  // that a pure vocabulary change is a chain-breaking change — receipts
+  // issued before it will not verify against code after it. Both runs
+  // below produced this hash identically, so the gate-silent invariant
+  // the test exists to defend is untouched
+  // (was 4f1ff4611d0ba18cd96919f77b5acd9ddd41a17eb3708384f8b2cd12d8dfd2db).
+  const PINNED = 'bab3663b562f08bcda18234689824515f44c333c3131da0c386709e0ea5bbbc0';
 
   const run = (withGate: boolean) =>
     runSession({

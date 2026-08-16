@@ -48,8 +48,8 @@ export const DEFAULT_CONSTITUTION: Omit<
   adoptionThresholdStart: 0.6,
   adoptionThresholdEnd: 0.95,
   adoptionFloorMax: 12,
-  saturationMinComparisons: 20,
-  saturationEpsilon: 0.02,
+  deadlockMinComparisons: 20,
+  deadlockEpsilon: 0.02,
   cooldownMs: 5 * 60 * 1000,
   redraftLimit: 2,
   tokenGrant: 4,
@@ -837,14 +837,14 @@ export class Session {
     }
     const certification = leaderId === null ? null : 1 - (leaderP ?? 0.5);
     const rivalGateOpen = this.rivalGateOpen(fit, members, incumbentId, usable);
-    // Saturation considers only servable pairs: while the rival gate is
+    // Deadlock considers only servable pairs: while the rival gate is
     // closed, unmeasured rival pairs must not hold a race open — there
     // is little decision value in finely ranking challengers that are
     // all losing to the status quo (SPEC §8.3).
-    const saturated =
-      usable.length >= this.constitutionValue.saturationMinComparisons &&
+    const deadlocked =
+      usable.length >= this.constitutionValue.deadlockMinComparisons &&
       this.maxPairValue(fit, members, incumbentId, null, rivalGateOpen) <
-        this.constitutionValue.saturationEpsilon;
+        this.constitutionValue.deadlockEpsilon;
     return {
       id,
       members,
@@ -855,7 +855,7 @@ export class Session {
       leaderP,
       leaderId,
       certification,
-      saturated,
+      deadlocked,
       rivalGateOpen,
     };
   }
@@ -1116,11 +1116,11 @@ export class Session {
     });
   }
 
-  /** Saturated races ranked by resolvable disagreement × salience (SPEC §6.2). */
+  /** Deadlocked races ranked by resolvable disagreement × salience (SPEC §6.2). */
   bountyBoard(): Array<{ raceId: string; score: number }> {
     const weights = this.salienceWeights();
     return this.races()
-      .filter((r) => r.saturated)
+      .filter((r) => r.deadlocked)
       .map((r) => {
         const closeness = r.leaderP === null ? 0 : 1 - Math.abs(2 * r.leaderP - 1);
         return { raceId: r.id, score: closeness * (weights.get(r.id) ?? 1) };
@@ -1331,7 +1331,7 @@ export class Session {
    */
   feed(participantId: string, n: number, t: number = this.lastT): Card[] {
     this.activeParticipant(participantId);
-    const races = this.races().filter((r) => !r.saturated);
+    const races = this.races().filter((r) => !r.deadlocked);
     if (races.length === 0) return [];
     const weights = this.salienceWeights();
     const threshold = this.adoptionThreshold(t);

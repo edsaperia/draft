@@ -266,7 +266,7 @@
   </div>
   <div class="abanner bounty" id="ab-bounty" hidden>
     <b>You came from the bounty board, where § Money is ranked #1</b> — the disagreement a good draft would resolve, weighted by
-    how much the room says this question matters. The race is saturated: judgment has stopped, because more of it won't move the
+    how much the room says this question matters. The race is deadlocked: judgment has stopped, because more of it won't move the
     picture. Only a new draft can. Both camps' authors were invited; anyone may draft.
   </div>
   <div class="abanner invite" id="ab-invite" hidden>
@@ -323,7 +323,7 @@
     <div class="heatrow">
       <div class="stat"><div class="sv">0.52 : 0.48</div><div class="sl">split magnitude — A vs B head-to-head, unmoved across the last 11 rival comparisons</div></div>
       <div class="stat"><div class="sv">4%</div><div class="sl">indifference rate (session median 22%) — the room cares about this one</div></div>
-      <div class="stat"><div class="sv">24</div><div class="sl">comparisons · 9 of 14 members have moved · saturated — marginal information below cost</div></div>
+      <div class="stat"><div class="sv">24</div><div class="sl">comparisons · 9 of 14 members have moved · deadlocked — marginal information below cost</div></div>
     </div>
   </div>
 
@@ -386,7 +386,7 @@
   </div>
 
   <div class="panel bridge">
-    <div class="ph">The bridge bar — this race is saturated</div>
+    <div class="ph">The bridge bar — this race is deadlocked</div>
     <div style="font-size:0.875rem">More judgment won't move this race; only a new draft can. A candidate entering now is measured by
     <b>minimum support across camps</b> — aggregate win rate is not the test.</div>
     <div class="brow">
@@ -473,7 +473,7 @@
 <div class="wrap">
   <section class="notes">
     <h2>Design notes — the composer, first pass</h2>
-    <p class="sub">Desktop-first · light mode · Bootstrap-plain (visual design deferred) · content from run clubhouse-1, minutes after the session-view moment: the § Money race has just saturated</p>
+    <p class="sub">Desktop-first · light mode · Bootstrap-plain (visual design deferred) · content from run clubhouse-1, minutes after the session-view moment: the § Money race has just deadlocked</p>
 
     <h3>A writing desk, not a dashboard</h3>
     <p>The composer is the only surface in the product that shows direction, so the temptation is to make it a war room. Resisted: it is <b>one column you read downward</b> — arrival context, then the briefing, then the desk, then the gate. The brief is what a good clerk would hand you before you draft: the heat, who wants what and why, what's already dead, and what a winning draft must do. Ceremony is earned here (the north star), but it is the ceremony of being well briefed, not of watching dials.</p>
@@ -482,13 +482,13 @@
     <p>SPEC §3.5: judgment is blind; composition is briefed. Standings, splits and camps appear here and nowhere else, and everyone who sees them has paid for the peek — propose-C forfeits that pair's comparison (never collected) — or was summoned by the engine. The ribbon at the top states the inversion so it reads as a rule of the room, not a leak. Camp cards carry reasons and rough cohesion, never names; the why-digest quotes rationales, never people.</p>
 
     <h3>Three doors in</h3>
-    <p>The arrival switcher is a mockup affordance — a real session shows exactly one banner. <b>Propose C</b> states the forfeit plainly and notes the draft is a brand-new patch whose footprint decides its race. <b>Bounty board</b> arrives with the race's rank and the saturation story. <b>Invitation: dominated</b> reveals the loss account above the brief — this door imagines you had also drafted a third § Money candidate earlier in the session, which is why the session-view mockup shows only two racing. Invitations fire on confident states only, never on a timer (§6.2).</p>
+    <p>The arrival switcher is a mockup affordance — a real session shows exactly one banner. <b>Propose C</b> states the forfeit plainly and notes the draft is a brand-new patch whose footprint decides its race. <b>Bounty board</b> arrives with the race's rank and the deadlock story. <b>Invitation: dominated</b> reveals the loss account above the brief — this door imagines you had also drafted a third § Money candidate earlier in the session, which is why the session-view mockup shows only two racing. Invitations fire on confident states only, never on a timer (§6.2).</p>
 
     <h3>The loss account's honesty tiers</h3>
     <p>The dominated account is labeled tier by tier as what it is — <b>facts</b> (standings, head-to-heads, indifference, decision speed, the camp cut), <b>the winners' own words</b> (their pinned rationales, quoted verbatim), and <b>hypothesis</b> (the fitted span-level attribution, with its evidence volume attached and an honest note about what the data cannot isolate, plus the isolating redraft it suggests). Thin data would get a thin account. The three options price honestly: retire refunds by peak strength; co-sign refunds fully; redraft informed seeds the desk and pins the hypothesis above the editor — and the counter shows 0 of 2 used, because two failed informed redrafts carry the position to the backlog as a recorded persistent current.</p>
 
     <h3>The bridge bar</h3>
-    <p>Because this race is saturated, the brief ends with the bar an entering draft must clear: <b>minimum support across camps</b> — beat A among B's preferrers, beat B among A's, via stratified probes (§6.3). Rendered as two slots rather than one meter because the min() is the point: the second-best camp is the score. The machine's geometry read (§6.4) sits beneath it as a labeled hypothesis — one-dimensional split, a median can win — with the note that machine seeds compete by the same arithmetic.</p>
+    <p>Because this race is deadlocked, the brief ends with the bar an entering draft must clear: <b>minimum support across camps</b> — beat A among B's preferrers, beat B among A's, via stratified probes (§6.3). Rendered as two slots rather than one meter because the min() is the point: the second-best camp is the score. The machine's geometry read (§6.4) sits beneath it as a labeled hypothesis — one-dimensional split, a median can win — with the note that machine seeds compete by the same arithmetic.</p>
 
     <h3>The desk</h3>
     <p>The contested ground renders in race yellow, exactly as the race-card and session-view draw it, so the series' color grammar carries: yellow is the contested text wherever you meet it. Seeding (current / A / B) matches the propose-C promise made in the race-card notes. The footprint chip is live commentary — the footprint follows the edit and decides the race — and the separable-bundle flag is the §4.1 submission-time choice, defaulted to “one intent” because this draft is a bridge and bridges are take-it-or-leave-it by nature. Stake is stated flat with the refund curve in one line: enough to price the move, not an economy lesson.</p>
