@@ -1,38 +1,73 @@
 <title>Session View</title>
 <style>
-  /* Deliberately single-theme (light) — Ed, 2026-08-14. Bootstrap-plain. */
+  /* ===================================================================
+     Tokens. Deliberately single-theme (light) — Ed, 2026-08-14.
+     Bootstrap-plain, pending the design and branding pass (Ed, 198).
+     =================================================================== */
   :root {
+    /* --- ink and ground ------------------------------------------- */
     --bg: #FFFFFF;
     --fg: #212529;
     --muted: #6C757D;
     --border: #DEE2E6;
     --light: #F8F9FA;
+
+    /* --- accent: the one blue. Every open card, every wire, every
+           selection (Ed, 198) ------------------------------------- */
     --primary: #0D6EFD;
     --primary-hover: #0B5ED7;
     --primary-subtle: #CFE2FF;
     --primary-emphasis: #084298;
-    --race-bg: #FFF9DB;
-    --race-border: #F5C518;
-    --race-text: #8A6D00;
-    --ins-text: #198754;
-    --ins-bg: #D1E7DD;
-    --del-text: #DC3545;
-    --del-bg: #F8D7DA;
-    --changed: #6F42C1;
-    --changed-bg: #EDE7F7;
-    /* pink = the card where text is argued (yellow stays the in-document mark) */
-    --argued: #D63384;
-    --argued-text: #801F4F;
-    /* Elevation ladder (Bootstrap's own): the document is the ground, the
-       queue cards rest just above it, the open decision card floats highest.
-       Neutral rather than tinted — a coloured shadow reads as a glow, and the
-       border is already doing the work of saying which kind of card this is. */
+
+    /* --- decided: green means settled, and only that. It marks the
+           winning text in a record and the tick that commits ------- */
+    --ok: #198754;
+    --ok-hover: #146C43;
+    --ok-subtle: #D1E7DD;
+
+    /* --- lifecycle (Ed, 162–165): in the rails and the document,
+           colour says where an entry stands in *your* relationship to
+           it, matching its glyph. Raw channels, because the wash
+           varies its strength by urgency. Colour means you can still
+           affect it; grey means the door is shut (Ed, 164). --------- */
+    --lc-urgent: 253, 126, 20;    /* 🔥 orange — wants you most        */
+    --lc-open: 245, 197, 24;      /* ❓ ❌ yellow — open, or stuck     */
+    --lc-deciding: 13, 110, 253;  /* ⏳ blue — judged, still running   */
+    --lc-closed: 108, 117, 125;   /* ✅ ❎ 🔄 ☑️ grey — nothing to do  */
+    --stuck-ink: #8A6D00;         /* the one caption that instructs    */
+
+    /* --- type scale. Four sizes and a caption; anything outside this
+           list is a mistake rather than a decision ------------------ */
+    --t-lead: 1.25rem;      /* the document's title                    */
+    --t-body: 0.9375rem;    /* a lane's text, a clause under judgment  */
+    --t-ui: 0.875rem;       /* card and rail titles, buttons           */
+    --t-small: 0.8125rem;   /* rationales, one-line entries            */
+    --t-cap: 0.72rem;       /* captions, footers, notes                */
+    --t-micro: 0.65rem;     /* eyebrow labels only                     */
+
+    /* --- spacing. A 4px grid; use the step, not the pixel ---------- */
+    --s1: 4px;
+    --s2: 8px;
+    --s3: 12px;
+    --s4: 16px;
+    --s5: 24px;
+
+    --r-sm: 0.25rem;        /* an anchor, a chip                       */
+    --r-md: 0.375rem;       /* a card in a rail, a button              */
+    --r-lg: 0.5rem;         /* the document, an open decision card     */
+
+    /* --- elevation (Bootstrap's own ladder): the document is the
+           ground, rail cards rest just above it, an open decision card
+           floats highest. Neutral, never tinted — a coloured shadow
+           reads as a glow. --------------------------------------- */
     --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
     --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
-    /* Freshness highlight lifetime. Production intent is "a few minutes";
-       the mockup runs it short so the fade is watchable in one sitting. */
-    --fresh-fade: 75s;
+
+    /* --- the three columns ---------------------------------------- */
+    --rail-left: 210px;
+    --rail-right: 290px;
+    --nav-h: 58px;
   }
   * { box-sizing: border-box; }
   body {
@@ -44,39 +79,65 @@
     margin: 0;
     padding-bottom: 60px;
   }
-  .wrap { max-width: 1440px; margin: 0 auto; padding: 0 16px; }
-  .small { font-size: 0.875rem; }
-  .mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.75rem; }
+  .wrap { max-width: 1440px; margin: 0 auto; padding: 0 var(--s4); }
+
+  /* An eyebrow: the small upper-case label that names a region or a
+     block. One rule, so they cannot drift apart. */
+  .eyebrow {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--muted);
+  }
 
   .navbar { background: var(--light); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 40; }
-  .navbar .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 10px 16px; }
+  .navbar .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s4); padding: 10px var(--s4); }
   .navbar .brand { font-weight: 600; font-size: 1rem; margin: 0; }
   .navbar .brand .sess { color: var(--muted); font-weight: 400; }
-  .navbar .stats { display: flex; gap: 18px; white-space: nowrap; font-size: 0.875rem; color: var(--muted); }
+  .navbar .stats { display: flex; gap: 18px; white-space: nowrap; font-size: var(--t-ui); color: var(--muted); }
   .navbar .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
 
   /* contents-rail (left) · document (centre) · needs-you queue (right) */
-  .layout { display: grid; grid-template-columns: 210px minmax(0, 1fr) 290px; gap: 24px; align-items: start; margin-top: 18px; }
-  @media (max-width: 1240px) { .layout { grid-template-columns: minmax(0, 1fr) 290px; } .toc { display: none; } }
-  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .queue, .toc { position: static; } .toc { display: block; } }
+  .layout {
+    display: grid; grid-template-columns: var(--rail-left) minmax(0, 1fr) var(--rail-right);
+    gap: var(--s5); align-items: start; margin-top: 18px;
+  }
+  @media (max-width: 1240px) {
+    .layout { grid-template-columns: minmax(0, 1fr) var(--rail-right); }
+    .toc { display: none; }
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .queue, .toc { position: static; }
+    .toc { display: block; }
+  }
 
-  /* left rail: contents-rail, built from the document's own headings */
-  .toc { position: sticky; top: 58px; }
-  .toc h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 8px; }
-  .toc ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+  /* left rail: contents-rail, built from the document's own headings. A charter
+     with ninety headings is taller than the screen, and a sticky rail simply
+     clipped the tail — so the rail is a viewport-height column that scrolls
+     inside itself (Ed, 180). */
+  .toc {
+    position: sticky; top: var(--nav-h);
+    max-height: calc(100vh - var(--nav-h) - var(--s4)); display: flex; flex-direction: column;
+  }
+  .toc h2 { margin: 0 0 var(--s2); flex: none; }
+  .toc ul {
+    list-style: none; margin: 0; padding: 0 var(--s1) 0 0; display: flex; flex-direction: column; gap: 1px;
+    overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: none; -ms-overflow-style: none;   /* it scrolls, quietly (Ed, 186) */
+  }
+  .toc ul::-webkit-scrollbar { width: 0; height: 0; }
   .toc li { display: flex; align-items: baseline; gap: 2px; }
   .toc li a { flex: 1; min-width: 0; }
   /* the rail carries the document's own hierarchy: parts, chapters, sections */
-  .toc li.lvl1 { margin-top: 8px; }
+  .toc li.lvl1 { margin-top: var(--s2); }
   .toc li.lvl1 a { font-weight: 700; color: var(--fg); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
-  .toc li.lvl2 { padding-left: 12px; }
+  .toc li.lvl2 { padding-left: var(--s3); }
   .toc li.lvl2 a { font-weight: 600; color: var(--fg); }
   .toc li.lvl3 { padding-left: 26px; }
   .toc li.lvl3 a { font-size: 0.78rem; }
 
   /* section-toggle: the same control in the contents rail and the document gutter */
   .sectoggle {
-    appearance: none; background: none; border: 0; padding: 2px 4px; margin: 0;
+    appearance: none; background: none; border: 0; padding: 2px var(--s1); margin: 0;
     font: inherit; font-size: 0.7rem; line-height: 1; color: var(--muted); cursor: pointer;
   }
   .sectoggle:hover { color: var(--fg); }
@@ -93,296 +154,428 @@
     .sectoggle .tri, .sectoggle { transition: none; }
   }
   .toc a {
-    display: block; padding: 3px 10px; font-size: 0.8125rem; line-height: 1.35;
+    display: block; padding: 3px 10px; font-size: var(--t-small); line-height: 1.35;
     color: var(--muted); text-decoration: none;
-    border-left: 2px solid transparent; border-radius: 0 0.25rem 0.25rem 0;
+    border-left: 2px solid transparent; border-radius: 0 var(--r-sm) var(--r-sm) 0;
   }
   .toc a:hover { background: var(--light); color: var(--fg); }
   .toc a.current { background: var(--light); color: var(--fg); font-weight: 600; border-left-color: var(--primary); }
-  .toc .note { font-size: 0.72rem; color: var(--muted); margin-top: 12px; }
+  .toc .note { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); flex: none; }
+  /* lifecycle marks in the contents rail (Ed, 177): held small and tight to the
+     right edge so they read as a margin annotation, not as part of the heading */
+  .tocmarks {
+    flex: none; display: flex; align-items: center; gap: 1px;
+    font-size: 0.62rem; line-height: 1; padding-right: 2px; letter-spacing: -1px;
+  }
+  .tocmarks .more { font-size: 0.58rem; color: var(--muted); letter-spacing: 0; margin-left: 2px; }
 
-  /* right rail: needs-you queue */
-  .queue { position: sticky; top: 58px; }
-  .queue h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 8px; }
-  .queue ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  /* ===================================================================
+     The needs-you-queue: a margin index (Ed, 104–110). Every entry stands
+     beside the clause it argues about, so the rail asserts no ranking of its
+     own — urgency is colour strength and how much of the card is drawn, never
+     position. The rail is as tall as the document and travels with the page;
+     entries that still need you are pinned to the screen by layoutQueue().
+     =================================================================== */
+  .queue { position: relative; }
+  .queue h2 { margin: 0 0 var(--s2); }
+  .queue ul { list-style: none; margin: 0; padding: 0; position: relative; }
+  .queue .note { font-size: 0.75rem; color: var(--muted); margin-top: 10px; }
+
+  .qitem { position: absolute; left: 0; width: 100%; transition: top 220ms ease; }
+  /* a pinned entry tracks the viewport, so it must not lag behind the scroll */
+  .qitem.pinned { transition: none; z-index: 2; }
+  .qitem.mosturgent { z-index: 3; }
+  @media (prefers-reduced-motion: reduce) { .qitem { transition: none; } }
+
+  /* what would not fit on the screen (Ed, 110) — counted, never silently dropped */
+  .qmore {
+    position: fixed; z-index: 2; text-align: center;
+    font-size: var(--t-cap); color: var(--muted);
+    background: var(--bg); border: 1px dashed var(--border); border-radius: var(--r-md);
+    padding: 3px var(--s2);
+  }
+
+  /* No borders (Ed, 164): a card is its wash plus the shadow that lifts it off
+     the page. A rule round the outside only competed with the wash for the job
+     of saying "this is one thing". Selection is a ring in box-shadow, so
+     nothing reflows when a card opens. */
   .queue button {
     appearance: none; font: inherit; text-align: left; width: 100%;
-    background: var(--bg); border: 1px solid var(--border); border-radius: 0.375rem;
-    padding: 8px 10px; cursor: pointer; color: var(--fg);
+    background: var(--bg); border: 0; border-radius: var(--r-md);
+    padding: var(--s2) 10px; cursor: pointer; color: var(--fg);
     box-shadow: var(--shadow-sm);
-    transition: box-shadow 140ms ease, transform 140ms ease;
+    transition: box-shadow 140ms ease;
   }
-  .queue button:hover { border-color: var(--primary); box-shadow: var(--shadow-md); }
-  .queue button.sealed:hover { box-shadow: var(--shadow-sm); }
+  .queue button:hover { box-shadow: var(--shadow-md); }
+  .queue button[aria-current="true"] { box-shadow: var(--shadow-md), 0 0 0 2px var(--primary); }
   @media (prefers-reduced-motion: reduce) { .queue button { transition: none; } }
-  .queue button[aria-current="true"] { border-color: var(--primary); border-width: 2px; padding: 7px 9px; }
-  .queue .ql { font-weight: 600; font-size: 0.875rem; display: flex; justify-content: space-between; gap: 6px; }
-  .queue .ql .done { color: var(--ins-text); }
+
+  /* The wash is the progress bar (Ed, 105/116): how far the fill reaches is
+     closeness to resolution, how strong the colour is is urgency, and the hue
+     is lifecycle (Ed, 162). Built per entry in wash(); set as --wash so one
+     rule can paint every tier. */
+  .queue button.hot, .queue button.warm, .queue button.cool,
+  .queue button.wants, .queue button.deciding, .queue button.unread { background: var(--wash); }
+
+  /* The compression ladder (Ed, 104): how much of a card is drawn falls with
+     how much it wants you. Anything already judged is one line. */
+  .queue .ql { font-weight: 600; font-size: var(--t-ui); display: flex; gap: 6px; }
   .queue .qs { font-size: 0.75rem; color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
-  .kchip {
-    display: inline-block; font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.04em; border-radius: 0.25rem; padding: 1px 6px;
-  }
-  .kchip.quick { background: var(--ins-bg); color: var(--ins-text); }
-  .kchip.race { background: var(--race-bg); color: var(--race-text); }
-  .kchip.patch { background: var(--primary-subtle); color: var(--primary-emphasis); }
-  .queue .note { font-size: 0.75rem; color: var(--muted); margin-top: 10px; }
-  .meter { display: block; height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
-  .meter i { display: block; height: 100%; background: var(--primary); border-radius: 2px; }
-  .meter.saturated i { background: var(--muted); }
-  .mcap { display: block; font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
-  .queue button.deciding { cursor: pointer; }
-  .queue button.deciding .ql { font-weight: 500; }
-  .queue button.sealed { cursor: default; }
-  .queue button.sealed:hover { border-color: var(--border); }
   .queue .qv { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
-  .hist { margin-top: 18px; }
-  .hist ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-  .hist li { border: 1px solid var(--border); border-radius: 0.375rem; padding: 7px 10px; font-size: 0.8rem; }
+  .mcap { display: block; font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
+
+  .queue button.cool { padding: var(--s1) 10px; }
+  .queue button.cool .ql { font-weight: 500; font-size: var(--t-small); }
+  .queue button.deciding, .queue button.unread { padding: var(--s1) 10px; }
+  .queue button.deciding .ql, .queue button.unread .ql {
+    display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .queue button.deciding .ql .qv, .queue button.unread .qv {
+    display: inline; margin: 0; font-weight: 400;
+  }
+  .queue button.deciding { color: var(--muted); }
+  .queue button.deciding .ql { font-weight: 500; font-size: var(--t-small); }
+  .queue button.deciding.shifted .ql { color: var(--muted); }
+  /* a decision you have not acknowledged is quiet, not unimportant, and stays
+     pinned until you deal with it (Ed, 112) */
+  .queue button.unread .ql { font-weight: 600; font-size: var(--t-small); color: var(--fg); }
+  .queue button.unread .qv { color: var(--muted); }
+  /* a saturated race states its unusual ask in full, and its caption is an
+     instruction rather than a progress note (Ed, 166) */
+  .queue button.wants .mcap { color: var(--stuck-ink); font-weight: 500; }
+  /* a patch is one judgment shown at every site it touches (Ed, 108/183) */
+  .queue button.sib .sibn { font-size: var(--t-micro); color: var(--muted); font-weight: 500; }
+
+  /* The lifecycle mark, top left of every entry (Ed, 147–165). The same
+     alphabet appears in the contents rail and the document gutter. Emoji carry
+     their own colour, so they are held small and never given a weight — the
+     glyph is the signal, not its size. */
+  .qmark { flex: none; font-size: var(--t-small); line-height: 1.35; font-weight: 400; }
+
+  /* The rationale is the comment (Ed, 123): the rail quotes it, clamped by
+     tier, so it rides the compression ladder rather than fighting it. The 🔥
+     card gets five lines — the one you are meant to just do should not have
+     its argument cut off (Ed, 214). */
+  .qwhy {
+    font-size: 0.78rem; line-height: 1.35; color: var(--fg); margin-top: 6px;
+    display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
+    -webkit-line-clamp: 2; line-clamp: 2;
+  }
+  .queue button.warm .qwhy { -webkit-line-clamp: 1; line-clamp: 1; }
+  .queue button.mosturgent .qwhy { -webkit-line-clamp: 5; line-clamp: 5; }
+  /* a race quotes both proposals, stacked with a hairline between: 290px will
+     not carry two readable columns of prose */
+  .qwhy + .qwhy { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
+
+  /* An acknowledged decision is a tiny card, not a bare glyph (Ed, 164): still
+     an entry in the rail, just the smallest one. Grey card, full-colour glyph
+     (Ed, 165). Dots near each other in the charter share a row (Ed, 106). */
+  .sealdots { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; padding: 2px 0; }
+  .queue .sealdot {
+    appearance: none; cursor: pointer; flex: none;
+    width: 24px; height: 22px; padding: 0; border: 0; border-radius: 0.3rem;
+    background: rgba(var(--lc-closed), 0.16); box-shadow: var(--shadow-sm);
+    font-size: var(--t-small); line-height: 22px; text-align: center;
+  }
+  .queue .sealdot:hover { box-shadow: var(--shadow-md); }
+  .queue .sealdot[aria-current="true"] { box-shadow: var(--shadow-md), 0 0 0 2px var(--primary); }
+
+  /* an entry judged for the first time slides out of the needs-you band */
   @keyframes slideOut { to { opacity: 0; transform: translateY(14px); } }
   @keyframes slideIn { from { opacity: 0; transform: translateY(-14px); } }
   .queue button.leaving { animation: slideOut 0.24s ease-in forwards; pointer-events: none; }
-  .hist li.arriving, .queue button.arriving { animation: slideIn 0.24s ease-out; }
+  .queue button.arriving { animation: slideIn 0.24s ease-out; }
   @media (prefers-reduced-motion: reduce) {
-    .queue button.leaving, .hist li.arriving { animation: none; }
+    .queue button.leaving, .queue button.arriving { animation: none; }
   }
-  .hist .hv { color: var(--muted); }
-  .hist .hm { display: block; margin-top: 2px; }
-  .hist .chgflag { display: block; margin-top: 4px; color: var(--changed); font-size: 0.72rem; font-weight: 600; }
-  /* freshness-highlight: a paragraph adopted since you last looked lights up
-     purple and cools back to plain document over --fresh-fade. The animation
-     is resumed (negative delay) on every re-render so it survives repaints. */
-  .chgchip {
-    font-size: 0.7rem; font-weight: 700;
-    border-radius: 0.25rem; padding: 1px 7px; white-space: nowrap;
-    background: var(--changed-bg); color: var(--changed); user-select: none;
-  }
-  @keyframes freshFade {
-    0%   { background-color: var(--changed-bg); border-left-color: var(--changed); }
-    70%  { background-color: var(--changed-bg); border-left-color: var(--changed); }
-    100% { background-color: transparent; border-left-color: transparent; }
-  }
-  .anch-chg {
-    border-left: 3px solid var(--changed); padding-left: 12px; margin-left: -15px;
-    border-radius: 0 0.25rem 0.25rem 0; cursor: pointer;
-    animation: freshFade var(--fresh-fade) ease-in forwards;
-  }
-  .anch-chg:hover { background-color: var(--changed-bg) !important; }
-  .chgcard {
-    max-width: 70ch; margin: 4px auto 16px;
-    border: 1.5px solid var(--changed); border-radius: 0.5rem;
-    box-shadow: var(--shadow-md);
-    padding: 14px 16px; background: var(--bg);
-  }
-  .chgcard .shead { color: var(--changed); display: flex; justify-content: space-between; gap: 10px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-  .chgcard .shead .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
-  .chgcard .stext { font-size: 0.9375rem; margin-bottom: 10px; }
-  .chgcard .sactions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-  /* the document — the wide left padding is the chip-gutter (see .chipcol) */
+  /* ===================================================================
+     The document. Its wide left padding is the chip-gutter (see .chipcol).
+     =================================================================== */
   .doc {
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
-    /* The tall bottom padding is scroll runway, not whitespace: without it an
-       anchor near the end of the charter can never be scrolled up to the queue
-       rail's height, and the wire-levelling silently stops working down there.
-       Keeping it inside .doc also keeps the middle column running to the bottom
-       and keeps .layout tall enough for the rails to stay pinned. */
+    border-radius: var(--r-lg);
+    /* The tall bottom padding is scroll runway, not whitespace: without it a
+       clause near the end of the charter can never be brought up to the rail's
+       own height, and levelling silently stops working down there. Keeping it
+       inside .doc also keeps the middle column running to the bottom, and
+       keeps .layout tall enough for the rails to stay pinned. */
     padding: 36px 44px 95vh 132px;
   }
-  @media (max-width: 900px) { .doc { padding: 24px 20px 95vh; } }
+  @media (max-width: 900px) { .doc { padding: var(--s5) 20px 95vh; } }
   .doc .prose { max-width: 70ch; margin: 0 auto; }
-  .doc .doctitle { font-size: 1.25rem; font-weight: 600; margin: 0 0 18px; text-wrap: balance; }
-  .doc h2.docline {
-    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--muted); margin: 22px 0 8px; position: relative;
-  }
+  .doc .doctitle { font-size: var(--t-lead); font-weight: 600; margin: 0 0 18px; text-wrap: balance; }
+  .doc p { margin: 0 0 var(--s3); position: relative; }
+
   /* three ranks of heading: part, chapter, section */
+  .doc h2.docline {
+    font-size: var(--t-cap); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); margin: 22px 0 var(--s2); position: relative;
+  }
   .doc h2.docline.lvl1 {
     font-size: 0.95rem; color: var(--fg); letter-spacing: 0.08em;
     margin: 46px 0 14px; padding-top: 14px; border-top: 1px solid var(--border);
   }
   .doc h2.docline.lvl2 { font-size: 0.8rem; color: var(--fg); margin: 30px 0 10px; }
-  .doc h2.docline.lvl3 { font-size: 0.72rem; color: var(--muted); margin: 22px 0 8px; }
-  .doc .prose > h2.docline.lvl1:first-child { margin-top: 24px; }
-  /* the section triangle sits in the chip-gutter, in line with the anchor chips */
-  .doc h2.docline .sectoggle { position: absolute; right: 100%; margin-right: 12px; top: -2px; }
+  .doc h2.docline.lvl3 { font-size: var(--t-cap); color: var(--muted); margin: 22px 0 var(--s2); }
+  .doc .prose > h2.docline.lvl1:first-child { margin-top: var(--s5); }
+  /* the fold triangle sits in the chip-gutter, in line with the anchor marks */
+  .doc h2.docline .sectoggle { position: absolute; right: 100%; margin-right: var(--s3); top: -2px; }
   .doc h2.docline .sechint {
     margin-left: 10px; font-weight: 400; text-transform: none; letter-spacing: 0;
-    font-size: 0.72rem; color: var(--muted); font-style: italic;
+    font-size: var(--t-cap); color: var(--muted); font-style: italic;
   }
   @media (max-width: 900px) { .doc h2.docline .sectoggle { position: static; margin: 0 6px 0 0; } }
-  .doc p { margin: 0 0 12px; position: relative; }
 
-  /* suggestion anchors */
-  .anch { border-left: 3px solid transparent; padding-left: 12px; margin-left: -15px; border-radius: 0 0.25rem 0.25rem 0; cursor: pointer; }
-  .anch:hover { background: var(--light); }
-  .anch.quick { border-left-color: var(--ins-text); background: var(--race-bg); padding-top: 6px; padding-bottom: 6px; }
-  .anch.patch { border-left-color: var(--primary); }
-  .anch.race { border-left-color: var(--race-border); background: var(--race-bg); padding-top: 6px; padding-bottom: 6px; }
-  .anch.kin { outline: 2px dashed var(--primary); outline-offset: 2px; }
-  .anch.resolved { border-left-color: var(--border); cursor: default; }
-  .anch.resolved:hover { background: transparent; }
-  /* chip-gutter: chips sit in the document's left margin, stacked, right-aligned
-     against the anchor rule, so the prose column itself stays unbroken. */
+  /* A challenged clause wears its queue card's own lifecycle hue and has no
+     left rule (Ed, 200): paragraph, gutter glyph and rail entry are one object
+     seen three times. The wash is set per paragraph by anchWash(); it deepens
+     on whatever is open, including all of a patch's clauses at once. A filed
+     clause washes nothing — the document should look settled where it is.
+     The extra class beats `.doc p`, which also sets margin. */
+  .doc .anch {
+    padding: 6px var(--s2) 6px var(--s3); margin-left: calc(-1 * var(--s3));
+    border-radius: var(--r-sm); cursor: pointer;
+  }
+  .anch:hover { box-shadow: inset 0 0 0 1px var(--border); }
+  .anch.active:hover { box-shadow: none; }
+
+  /* chip-gutter: marks sit in the document's left margin, stacked and
+     right-aligned, so the prose column itself stays unbroken. They are the
+     same lifecycle glyphs as the two rails (Ed, 199) — one alphabet in all
+     three columns — not a third vocabulary of word-chips. */
   .chipcol {
     position: absolute; right: 100%; margin-right: 14px; top: 0.15em;
     display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
   }
   .achip {
-    font-size: 0.7rem; font-weight: 700;
-    border-radius: 0.25rem; padding: 1px 7px; white-space: nowrap; user-select: none;
+    font-size: var(--t-small); line-height: 1.2; padding: 1px 2px;
+    white-space: nowrap; user-select: none; cursor: pointer;
   }
-  .achip.quick { background: var(--ins-bg); color: var(--ins-text); }
-  .achip.patch { background: var(--primary-subtle); color: var(--primary-emphasis); }
-  .achip.race { background: var(--race-border); color: #5c4a00; }
-  .achip.resolved { background: var(--light); color: var(--muted); }
+  .achip:hover { transform: scale(1.15); }
+  @media (prefers-reduced-motion: reduce) { .achip:hover { transform: none; } }
   @media (max-width: 900px) {
-    .chipcol { position: static; flex-direction: row; align-items: baseline; margin: 0 0 4px; }
+    .chipcol { position: static; flex-direction: row; align-items: baseline; margin: 0 0 var(--s1); }
   }
-  /* insert-anchor: a three-line gap in the document where a section would go */
+
+  /* insert-anchor: a held-open gap where a proposed section would stand. No
+     border and no caption (Ed, 201) — a labelled box made an absence look like
+     something already in the charter — but it takes the same lifecycle wash as
+     any other contested clause (Ed, 205), because the gap *is* the thing being
+     argued about. Blank of text, not blank of colour. */
   .insert-anchor {
-    max-width: 70ch; margin: 0 auto 16px; min-height: 4.5rem;
-    border: 2px dashed var(--ins-text); border-radius: 0.375rem;
-    background: var(--bg);
-    display: flex; align-items: center; justify-content: center;
-    text-align: center; padding: 8px 16px; cursor: pointer;
+    position: relative; min-height: 3.2rem; margin: 0 0 var(--s1) calc(-1 * var(--s3));
+    padding: 6px var(--s2) 6px var(--s3);
+    border-radius: var(--r-sm); cursor: pointer;
   }
-  .insert-anchor:hover { background: var(--ins-bg); }
-  .insert-anchor span {
-    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--ins-text);
-  }
-  .insert-anchor .isub {
-    display: block; font-size: 0.72rem; font-weight: 400; text-transform: none;
-    letter-spacing: 0; color: var(--muted); margin-top: 3px;
-  }
+  .insert-anchor:hover { box-shadow: inset 0 0 0 1px var(--border); }
 
-  /* inline suggestion card (opens beneath its anchor) */
+  /* ===================================================================
+     The decision card. Opens in place beneath its clause; one geometry for
+     quick, race and patch (Ed, 66/85), and a fourth read-only shape for a
+     sealed record (Ed, 112/120).
+     =================================================================== */
   .sugg {
-    max-width: 70ch; margin: 4px auto 16px;
-    border: 1.5px solid var(--primary);
-    border-radius: 0.5rem;
+    max-width: none; margin: var(--s1) auto var(--s4);
+    border: 1.5px solid var(--primary);      /* one blue for every card (198) */
+    border-radius: var(--r-lg);
     box-shadow: var(--shadow-lg);
-    padding: 14px 16px;
+    padding: 14px var(--s4);
     background: var(--bg);
   }
-  .sugg.race-open, .sugg.quick-open, .sugg.patch-open { border-color: var(--argued); box-shadow: var(--shadow-lg); max-width: none; }
-  .sugg .shead {
-    display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
-    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--primary-emphasis); margin-bottom: 8px;
-  }
-  .sugg.race-open .shead, .sugg.quick-open .shead, .sugg.patch-open .shead { color: var(--argued-text); }
-  .sugg .shead .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
-  .sugg .stext { font-size: 0.9375rem; margin-bottom: 10px; }
-  .sugg .srationale {
-    background: var(--light); border: 1px solid var(--border); border-radius: 0.375rem;
-    padding: 8px 12px; font-size: 0.8125rem; margin-bottom: 12px;
-  }
-  .sugg .srationale .rl { font-weight: 700; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; display: block; color: var(--muted); margin-bottom: 2px; }
-  .sugg .sactions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .btn {
-    appearance: none; font: inherit; font-size: 0.875rem;
-    padding: 0.375rem 0.75rem; cursor: pointer;
-    border: 1px solid var(--border); background: var(--bg); color: var(--fg);
-    border-radius: 0.375rem;
-  }
-  .btn:hover { background: var(--light); }
-  .btn-approve { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
-  .btn-approve:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
-  .btn-outline { color: var(--muted); }
-  .btn-outline:hover { color: var(--primary); border-color: var(--primary); background: var(--bg); }
-  button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .sugg .foot { font-size: 0.72rem; color: var(--muted); margin-top: 8px; }
+  .sugg .foot { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); }
+  .sugg .sactions { display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; }
 
-  /* ledger inside multi-site card */
-  .sledger { border: 1px solid var(--border); border-radius: 0.375rem; padding: 10px 12px; margin-bottom: 12px; }
-  .sledger .lh { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 6px; }
-  .sledger ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
-  .sledger li { display: flex; gap: 8px; align-items: baseline; font-size: 0.8125rem; }
-  .lchip { flex: none; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; border-radius: 0.25rem; padding: 1px 6px; }
-  /* the why, kept with the what — same block, quieter voice */
-  .sledger .lrat {
-    border-top: 1px dashed var(--border); margin-top: 9px; padding-top: 8px;
-    font-size: 0.8125rem; color: var(--muted); font-style: italic; line-height: 1.45;
+  /* The author's pinned rationale (SPEC 2.6, 3.4) — the only thing anyone
+     gets to *say* about a proposal. Above the lanes, so you meet the reason
+     before the wording (Ed, 87), and at a queue title's weight rather than in
+     grey italics, because it is not a caption (Ed, 119). */
+  .swhy {
+    margin-bottom: var(--s3); position: relative;
+    font-size: var(--t-ui); font-weight: 600; color: var(--fg); line-height: 1.45;
   }
-  .sledger .lrat .ll {
-    display: block; font-style: normal; font-weight: 700; font-size: 0.62rem;
-    text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 3px;
+  /* a race's two rationales sit in the lanes' own columns, divided by a
+     hairline down the middle of the gutter (Ed, 95) */
+  .why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); margin-bottom: var(--s3); }
+  .why-grid .swhy { margin-bottom: 0; }
+  .why-grid .swhy + .swhy::before {
+    content: ''; position: absolute; left: -6px; top: 0; bottom: 0;
+    border-left: 1px solid var(--border);
   }
-  .lchip.add { background: var(--ins-bg); color: var(--ins-text); }
-  .lchip.drop { background: var(--del-bg); color: var(--del-text); }
-  /* a race's two ledgers sit side by side, in the same columns as the lanes below */
-  .ledger-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-  @media (max-width: 900px) { .ledger-grid { grid-template-columns: 1fr; } }
-  .ledger-grid .sledger { margin-bottom: 0; }
-  .site-block { border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 10px; font-size: 0.875rem; }
-  .site-block .sb { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); display: block; margin-bottom: 3px; }
+  @media (max-width: 900px) {
+    .why-grid { grid-template-columns: 1fr; }
+    .why-grid .swhy + .swhy::before { display: none; }
+    .why-grid .swhy + .swhy { margin-top: 10px; }
+  }
 
-  /* race escalation panel */
-  .race-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  /* The lanes. Two texts side by side and nothing else — no titles at all
+     (Ed, 197/206), because position carries which is which and a label was
+     describing a comparison the reader is already making. */
+  .race-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); margin-bottom: var(--s3); }
   @media (max-width: 900px) { .race-grid { grid-template-columns: 1fr; } }
-  /* flex column so the two lanes' buttons line up however uneven the content */
-  .rcand { border: 1.5px solid var(--primary); border-radius: 0.375rem; padding: 12px 14px; background: var(--bg);
-    display: flex; flex-direction: column; }
-  .rcand .btn { margin-top: auto; }
-  .rcand .site-block:first-of-type { border-top: 0; margin-top: 2px; padding-top: 0; }
-  .rcand .rtag { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary-emphasis); margin-bottom: 6px; }
-  .rcand .rtext { font-size: 0.9375rem; margin-bottom: 8px; }
-  .rcand .rr { background: var(--light); border-radius: 0.375rem; padding: 7px 10px; font-size: 0.78rem; color: var(--muted); font-style: italic; margin-bottom: 10px; }
-  .rcand .btn { width: 100%; }
-  .race-mid { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-
-  /* verdict-pill: choosing is one control, committing is another. The arrows
-     point up at the lane each segment stands for; the shrug sits between them. */
-  .verdict-pill {
-    display: grid; grid-template-columns: 1fr auto 1fr;
-    border: 1.5px solid var(--border); border-radius: 999px; overflow: hidden;
-    background: var(--bg); margin: 0 0 10px;
+  .rcand {
+    border: 1.5px solid var(--primary); border-radius: var(--r-md);
+    padding: var(--s3) 14px; background: var(--bg);
+    display: flex; flex-direction: column;
   }
-  .vseg {
-    appearance: none; font: inherit; font-size: 0.875rem; font-weight: 600;
-    padding: 9px 14px; border: 0; background: none; color: var(--fg); cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
+  .rcand .rtext { font-size: var(--t-body); margin-bottom: var(--s2); }
+  .rcand .rtext.none { color: var(--muted); font-style: italic; }
+  .rcand .rtag {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--primary-emphasis); margin-bottom: 6px;
   }
-  .vseg + .vseg { border-left: 1px solid var(--border); }
-  .vseg:hover { background: var(--light); }
-  .vseg[aria-pressed="true"] { background: var(--primary); color: #fff; }
-  .vseg[aria-pressed="true"]:hover { background: var(--primary-hover); }
-  .vseg.vmid { font-weight: 500; color: var(--muted); white-space: nowrap; }
-  .vseg.vmid[aria-pressed="true"] { color: #fff; }
-  .vseg .vico { font-size: 1rem; line-height: 1; }
-  .verdict-pill[data-locked="true"] .vseg { cursor: default; opacity: 0.55; }
-  .btn[disabled] { opacity: 0.45; cursor: default; }
-  .btn[disabled]:hover { background: var(--primary); border-color: var(--primary); }
-  @media (max-width: 700px) { .verdict-pill { grid-template-columns: 1fr; } .vseg + .vseg { border-left: 0; border-top: 1px solid var(--border); } }
-
-  /* quick suggestion in race geometry: Option A is the incumbent and Option B
-     the proposal, so choosing A is literally keeping the current text. */
   .rcand .rsub {
     display: block; margin-top: 2px;
     font-size: 0.7rem; font-weight: 500; text-transform: none; letter-spacing: 0;
     color: var(--muted);
   }
-  .rcand .rtext.none { color: var(--muted); font-style: italic; }
+  .rcand .rsub.stood { color: var(--ok); font-weight: 700; }
 
-  del { background: var(--del-bg); color: var(--del-text); text-decoration: line-through; padding: 0 1px; }
-  ins { background: var(--ins-bg); color: var(--ins-text); text-decoration: none; padding: 0 1px; }
+  /* A lane is the control (Ed, 197): click the text you prefer. It answers the
+     pointer as firmly as a button would (Ed, 209) — a tint and a ring, short of
+     the selected state so the two never read alike. Selection is a fill plus a
+     ring, because it must be visible on all of a patch's cards at once. */
+  .rcand.pickable { cursor: pointer; transition: background 120ms ease, box-shadow 120ms ease; }
+  .rcand.pickable:hover {
+    background: rgba(var(--lc-deciding), 0.07);
+    box-shadow: inset 0 0 0 2px rgba(var(--lc-deciding), 0.4);
+  }
+  .rcand.pickable:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .rcand.pickable[aria-pressed="true"],
+  .rcand.pickable[aria-pressed="true"]:hover {
+    background: var(--primary-subtle); border-color: var(--primary);
+    box-shadow: inset 0 0 0 2px var(--primary);
+  }
+  .rcand.pickable[aria-disabled="true"] { cursor: default; opacity: 0.6; }
+  @media (prefers-reduced-motion: reduce) { .rcand.pickable { transition: none; } }
 
-  /* queue-wire: the run from a queue card, down the right gutter, into the
-     place(s) in the document it refers to. Drawn on hover, and for the open card. */
+  /* The commit row. Two glyphs share one slot (Ed, 209/213): the shrug until
+     you choose, then a green tick standing where it was. */
+  .race-mid { display: flex; gap: var(--s2); justify-content: center; flex-wrap: wrap; }
+  .btn {
+    appearance: none; font: inherit; font-size: var(--t-ui);
+    padding: 0.375rem 0.75rem; cursor: pointer;
+    border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+    border-radius: var(--r-md);
+  }
+  .btn:hover { background: var(--light); }
+  .btn-outline { color: var(--muted); }
+  .btn-outline:hover { color: var(--primary); border-color: var(--primary); background: var(--bg); }
+  .btn[disabled] { opacity: 0.45; cursor: default; }
+  button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  /* a display utility has to outrank the two-class button rules it lands on */
+  .hidden { display: none !important; }
+
+  .btn.glyphbtn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 3.25rem; height: 2.5rem; padding: 0; font-size: 1.2rem; line-height: 1;
+  }
+  .btn.vindiff { color: var(--muted); }
+  .btn.vindiff:hover { background: var(--light); }
+  .btn.btn-approve { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+  .btn.btn-approve:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  /* the tick is the commit, so it is the one solid green thing on a card */
+  .btn.btn-approve.glyphbtn {
+    background: var(--ok); border-color: var(--ok); color: #fff;
+    font-size: 1.35rem; font-weight: 700;
+  }
+  .btn.btn-approve.glyphbtn:hover { background: var(--ok-hover); border-color: var(--ok-hover); color: #fff; }
+  /* cast: the judgment on the record. Pressed in, quieter, still clickable —
+     choosing something else springs it back out (Ed, 216). */
+  .btn.btn-approve.glyphbtn[aria-pressed="true"],
+  .btn.btn-approve.glyphbtn[aria-pressed="true"]:hover {
+    background: var(--ok-subtle); border-color: var(--ok); color: var(--ok);
+    box-shadow: inset 0 2px var(--s1) rgba(25, 135, 84, 0.28);
+  }
+
+  /* What you already said, and that you may still change it. Under the commit
+     row (Ed, 215), so it reads as a footnote to the button. */
+  .sugg .srationale {
+    background: var(--light); border-radius: var(--r-md);
+    padding: var(--s2) var(--s3); font-size: var(--t-small); margin-top: var(--s3); text-align: center;
+  }
+  .sugg .srationale .rl {
+    display: block; font-weight: 700; font-size: var(--t-micro); text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--muted); margin-bottom: 2px;
+  }
+
+  /* A patch's card says which of its places you are looking at, and lets you
+     walk to the others without leaving the judgment (Ed, 181). */
+  .pnav {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    margin-bottom: 10px; padding-bottom: var(--s2); border-bottom: 1px solid var(--border);
+  }
+  .pwhere {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--primary-emphasis);
+  }
+  .psteps { display: flex; gap: var(--s1); }
+  .pstep {
+    appearance: none; font: inherit; font-size: 0.85rem; line-height: 1;
+    width: 26px; height: var(--s5); padding: 0; cursor: pointer;
+    border: 1px solid var(--border); border-radius: var(--r-sm);
+    background: var(--bg); color: var(--fg);
+  }
+  .pstep:hover { border-color: var(--primary); color: var(--primary); }
+  .pstep.off { display: inline-flex; align-items: center; justify-content: center; color: var(--border); cursor: default; }
+
+  /* ---- the record of a sealed judgment (Ed, 112/120/121) ---------------
+     Not symmetrical, unlike a live card: a record has a favourite and should
+     look like it. The text that stands takes the full width; the whole field
+     is ranked beneath it, each with the probability it reached. */
+  .rechead {
+    display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--ok); margin-bottom: 10px;
+  }
+  .rechead .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .stoodblock { background: var(--ok-subtle); border-radius: var(--r-md); padding: var(--s3) 14px; margin-bottom: 14px; }
+  .stoodblock .rtext { margin-bottom: 0; }
+  .stoodblock .swhy { margin-bottom: var(--s2); }
+  .stoodblock .mcap { margin-top: var(--s2); }
+  .fellhead {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); margin-bottom: var(--s2);
+  }
+  .ranked {
+    border: 1px solid var(--border); border-radius: var(--r-md);
+    padding: 10px 14px; margin-bottom: var(--s2);
+  }
+  .ranked.stood { background: var(--ok-subtle); border-color: var(--ok); }
+  .ranked .rank {
+    display: inline-block; min-width: 1.5em; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .ranked .rtext { margin-bottom: 0; }
+  .ranked:not(.stood) .rtext { color: var(--muted); }
+  .ranked:not(.stood) .swhy { font-weight: 500; color: var(--muted); }
+  .pline {
+    font-size: 0.78rem; color: var(--muted); margin: 2px 0 var(--s2);
+    font-variant-numeric: tabular-nums;
+  }
+  .pline b { color: var(--fg); }
+  .ranked.stood .pline b { color: var(--ok); }
+  /* the text the winner displaced: history, so it sits after the field */
+  .replaced { margin-top: var(--s3); padding-top: 10px; border-top: 1px dashed var(--border); }
+  .replaced .rtext { color: var(--muted); margin-bottom: 0; }
+  .record {
+    display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 14px; padding-top: 10px;
+    border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--muted);
+  }
+  .record b { color: var(--fg); font-variant-numeric: tabular-nums; }
+
+  /* new wording inside a lane. Nothing is struck through anywhere (Ed, 91):
+     the lanes show the text as it would stand, so red has no job here. */
+  ins { background: var(--ok-subtle); color: var(--ok); text-decoration: none; padding: 0 1px; }
+
+  /* queue-wire: the run from the open entry, down the gutter between document
+     and rail, and into every place in the charter it refers to (Ed, 71/78).
+     Only the open judgment draws one; a patch's several runs share a spine. */
   #wires { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
   #wires path { fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
   #wires .cap { stroke: none; }
   @media (max-width: 900px) { #wires { display: none; } }
-
-  .receipts { margin-top: 24px; }
-  .receipts h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 8px; }
-  .receipts ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-  .receipts li { color: var(--muted); }
-  .receipts li b { color: var(--fg); }
 
 </style>
 
@@ -391,7 +584,8 @@
     <p class="brand">The Hollow Oak Club — House Charter <span class="sess">· convention in session</span></p>
     <div class="stats">
       <span>time left <b>2h 11m</b></span>
-      <span>adoption bar <b>0.74 ▲</b></span>
+      <span title="How sure the house has to be that a change beats the current text. It rises through the session — this is not a vote share.">confidence bar <b>0.74 ▲</b></span>
+      <span title="Quorum for a decision, not for the meeting: this many distinct members must weigh in on a question before it can be adopted (a third of the roster). A question short of quorum simply waits — silence is never counted as a vote.">quorum <b>5 of 14</b></span>
       <span>your tokens <b>5</b></span>
     </div>
   </div>
@@ -400,7 +594,7 @@
 <div class="wrap">
   <div class="layout">
     <nav class="toc">
-      <h2>Contents</h2>
+      <h2 class="eyebrow">Contents</h2>
       <ul id="toc"></ul>
       <p class="note">The charter's own headings. A proposed new section isn't listed here until it's adopted — until then it lives in the document as a gap.</p>
     </nav>
@@ -410,9 +604,10 @@
     </main>
 
     <aside class="queue">
-      <h2>Your session</h2>
+      <h2 class="eyebrow">In the margin</h2>
+      <p class="note">Every contested point stands beside its own clause, in the charter's order — the rail ranks nothing. How much a card <b>wants you</b> is its colour saturation and how much of it is drawn; how far the wash reaches is closeness to resolution, never direction. The one that wants you most breathes and never leaves the screen. <b>Still deciding</b> is one grey line, clickable to change your mind. A decision you haven't acknowledged is a purple line that stays put until you do; once you have, it settles into a green dot you can open any time.</p>
       <ul id="queue"></ul>
-      <p class="note">One list, three states by colour: white cards <b>need you</b>; blue-washed cards you've judged are <b>still deciding</b> — click to change your mind while they're open; green cards are <b>sealed</b> and locked. The wash is closeness-to-resolution — never direction.</p>
+      <div id="qmore" class="qmore"></div>
     </aside>
   </div>
 
@@ -450,27 +645,27 @@
     { t: 'h', level: 2, x: 'The Ground Floor' },
     { t: 'h', level: 3, x: 'The Common Room' },
     { t: 'p', x: 'The Common Room is the heart of the house and is open to every member at every hour. Nobody may reserve it, and no gathering in it may be closed to a member who wishes to sit down.' },
-    { t: 'p', x: 'Furniture in the Common Room may be moved but must be put back. The armchair by the window is not anybody’s, whatever Hollis says.' },
+    { t: 'p', key: 'armchair', x: 'Furniture in the Common Room may be moved but must be put back. The armchair by the window is not anybody’s, whatever Hollis says.' },
     { t: 'p', x: 'A member may hold a private conversation in the Common Room and expect not to be joined, if they say so plainly. Nobody is obliged to leave, and nobody is obliged to notice.' },
     { t: 'h', level: 3, x: 'The Kitchen' },
-    { t: 'p', x: 'The Kitchen is common to all members and is governed by one rule: you leave it as you would wish to find it at seven in the morning.' },
-    { t: 'p', x: 'Food in the larder marked with a name belongs to that member. Food not marked belongs to the house and may be eaten by anyone.' },
-    { t: 'p', x: 'The good knives are sharpened by the Steward and are not to be used on bone, frozen food, or the garden.' },
+    { t: 'p', key: 'kitchen', x: 'The Kitchen is common to all members and is governed by one rule: you leave it as you would wish to find it at seven in the morning.' },
+    { t: 'p', key: 'larderfood', x: 'Food in the larder marked with a name belongs to that member. Food not marked belongs to the house and may be eaten by anyone.' },
+    { t: 'p', key: 'knives', x: 'The good knives are sharpened by the Steward and are not to be used on bone, frozen food, or the garden.' },
     { t: 'h', level: 3, x: 'The Larder' },
     { t: 'p', x: 'The house keeps a standing larder of the things nobody wants to discover are missing: flour, salt, tinned tomatoes, tea, coffee, and a bottle of something for emergencies.' },
     { t: 'p', x: 'Any member who takes the last of a standing item writes it on the board. This is the whole of the system and it works about half the time.' },
     { t: 'h', level: 2, x: 'The Upper Floors' },
     { t: 'h', level: 3, x: 'The Guest Bedroom' },
     { t: 'p', x: 'The Guest Bedroom goes to whoever claims it first, and guests leave it as they found it.' },
-    { t: 'p', x: 'A claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, on notice and with apologies.' },
+    { t: 'p', key: 'claims', x: 'A claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, who tells the displaced member within a day and offers them the next free week.' },
     { t: 'p', x: 'No guest may occupy the room for more than a fortnight in any quarter without a decision of the house.' },
     { t: 'h', level: 3, x: 'The Library Corner' },
     { t: 'p', x: 'The Library Corner holds the Club’s books, which may be borrowed by any member for as long as they are being read and no longer.' },
-    { t: 'p', x: 'Books belonging to a member and left in the Corner become the house’s after a year, unless the member says otherwise in the book on the shelf.' },
+    { t: 'p', key: 'books', x: 'Books belonging to a member and left in the Corner become the house’s after a year, unless the member says otherwise in the book on the shelf.' },
     { t: 'h', level: 2, x: 'The Outbuildings' },
     { t: 'h', level: 3, x: 'The Workshop' },
     { t: 'p', x: 'The Workshop is available to any member who has been shown its dangers by the Steward or by a member the Steward has named.' },
-    { t: 'p', x: 'Power tools are not used when the member is alone in the house, and not after the beginning of quiet hours.' },
+    { t: 'p', key: 'powertools', x: 'Power tools are not used when the member is alone in the house, and not after the beginning of quiet hours.' },
     { t: 'p', x: 'Work left on the bench for more than a fortnight may be moved to the shelf; work left on the shelf for a season may be moved to the shed, with a note.' },
     { t: 'h', level: 3, x: 'The Garden' },
     { t: 'p', key: 'garden', x: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.' },
@@ -478,14 +673,14 @@
     { t: 'p', x: 'Produce belongs to the member who grew it, but a good crop has always been shared and the Club would think less of anyone who stopped.' },
     { t: 'h', level: 3, x: 'The Shed and Cellar' },
     { t: 'p', x: 'The shed holds garden tools and the rota. The cellar holds everything the house cannot bear to throw away and does not wish to look at.' },
-    { t: 'p', x: 'Once a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go.' },
+    { t: 'p', key: 'cellar', x: 'Once a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go.' },
 
     { t: 'h', level: 1, x: 'Part III — Membership' },
     { t: 'h', level: 2, x: 'Admission' },
     { t: 'h', level: 3, x: 'Nomination' },
     { t: 'p', key: 'nomination', x: 'A candidate for membership is nominated by one member and seconded by another, neither of whom may be the candidate’s household.' },
     { t: 'p', x: 'The nomination is posted in the Common Room for one month before it is considered, so that every member has the chance to meet the candidate over a dinner.' },
-    { t: 'p', x: 'No candidate may be nominated twice in one year.' },
+    { t: 'p', key: 'twiceyear', x: 'No candidate may be nominated twice in one year.' },
     { t: 'h', level: 3, x: 'Objection' },
     { t: 'p', x: 'Any member may object to a nomination, in writing to the Steward, at any time before the decision.' },
     { t: 'p', x: 'An objection is put to the meeting without the objector’s name unless they choose to give it, and the candidate is told that an objection exists but not what it says.' },
@@ -500,7 +695,7 @@
     { t: 'p', x: 'No right in this section may be suspended except under Part VIII, and never for longer than a season.' },
     { t: 'h', level: 3, x: 'Duties of a Member' },
     { t: 'p', x: 'Every member pays their subscription, takes their turn on the rotas, locks up when they are last out, and tells the Steward when something is broken.' },
-    { t: 'p', x: 'Every member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member.' },
+    { t: 'p', key: 'attendance', x: 'Every member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member.' },
     { t: 'p', x: 'No duty in this section is enforced by any penalty other than the good opinion of the house, which has always been sufficient.' },
     { t: 'h', level: 3, x: 'Lapsing and Return' },
     { t: 'p', x: 'A member who gives notice of a long absence keeps their membership, pays a reduced subscription set by the meeting, and gives up their key until they return.' },
@@ -518,7 +713,7 @@
     { t: 'h', level: 2, x: 'Subscriptions' },
     { t: 'h', level: 3, x: 'Rates' },
     { t: 'p', x: 'Every member contributes equally into the common purse, on a fixed schedule the membership sets and may revise at any meeting, payable promptly when due.' },
-    { t: 'p', x: 'The subscription is set once a year at the spring meeting, and may not be raised by more than a quarter in any year without a reserved decision.' },
+    { t: 'p', key: 'subs', x: 'The subscription is set once a year at the spring meeting, and may not be raised by more than a quarter in any year without a reserved decision.' },
     { t: 'h', level: 3, x: 'Hardship' },
     { t: 'p', key: 'hardship', x: 'A member in difficulty may ask the Purse-holder to reduce or suspend their subscription, and the Purse-holder may do so for up to two quarters without telling anyone why.' },
     { t: 'p', x: 'Beyond two quarters the matter goes to the meeting, which considers it without naming the member if the member prefers.' },
@@ -562,11 +757,11 @@
     { t: 'p', x: 'A guest who has been brought a dozen times is generally nominated, and the house has learned to be glad of this rather than awkward about it.' },
     { t: 'h', level: 3, x: 'Guests Staying Over' },
     { t: 'p', x: 'A guest may stay in the Guest Bedroom if it is claimed for them, or on the Common Room sofa if it is not, and in the latter case must be up before the first member comes down.' },
-    { t: 'p', x: 'No guest holds a key, and no guest is left alone in the house.' },
+    { t: 'p', key: 'guestkey', x: 'No guest holds a key, and no guest is left alone in the house.' },
     { t: 'h', level: 2, x: 'Keys and Access' },
     { t: 'h', level: 3, x: 'Front-door Keys' },
     { t: 'p', key: 'keys', x: 'Every member holds a front-door key, and members may lend or cut spares for regulars they trust.' },
-    { t: 'p', x: 'A member who loses a key tells the Steward the same day, and the house decides at the next meeting whether the locks are worth changing.' },
+    { t: 'p', key: 'lostkey', x: 'A member who loses a key tells the Steward the same day, and the house decides at the next meeting whether the locks are worth changing.' },
     { t: 'h', level: 3, x: 'Locking Up' },
     { t: 'p', key: 'lockup', x: 'The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.' },
     { t: 'p', x: 'A member who finds the house unlocked in the morning says nothing to anyone but the Steward, who says nothing to anyone at all.' },
@@ -576,7 +771,7 @@
     { t: 'h', level: 3, x: 'The Steward' },
     { t: 'p', x: 'The Steward keeps the house running: the rotas, the repairs, the Members’ Book, and the calling of meetings.' },
     { t: 'p', x: 'The Steward may spend from the purse on the ordinary running of the house without asking, and tells the Purse-holder afterwards.' },
-    { t: 'p', x: 'The Steward is not the Club’s head. The Club has no head, and has managed for nine years without noticing the lack.' },
+    { t: 'p', key: 'nohead', x: 'The Steward is not the Club’s head. The Club has no head, and has managed for nine years without noticing the lack.' },
     { t: 'h', level: 3, x: 'The Purse-holder’s Office' },
     { t: 'p', key: 'purseOffice', x: 'The club has a Steward and a Purse-holder, chosen by acclaim, who do what needs doing until they stop.' },
     { t: 'p', x: 'Neither office carries any authority over a member, and neither may be used to settle a dispute in which the office-holder has an interest.' },
@@ -679,8 +874,8 @@
 
   // One entry per queue item, carrying its own content, progress and state.
   // state: 'needs' (white) | 'deciding' (judged, still open) | 'sealed' (locked).
-  // Every proposal carries a `ledger` — what it actually does, in plain terms.
-  // A quick card and a patch have one; a race has one per candidate, side by side.
+  // Every proposal carries a `rationale` — the author's one pinned paragraph
+  // (SPEC §2.6). A quick card and a patch have one; a race has one per candidate.
   // A race also carries `candidates` — how many proposals are in the argument —
   // and `pairsJudged`, how many of your pairs you have answered. Neither leaks
   // direction: a magnitude and a coverage, never a ranking (SPEC §8.3).
@@ -688,39 +883,25 @@
     {
       id: 'race-purse', kind: 'race', keys: ['purse'], state: 'needs',
       qLabel: '§ The Purse-holder', qSub: '6 proposals racing',
+      urgency: 0.92,
       pct: 72, cap: 'close — a few good judgments from decided',
       candidates: 6, pairsJudged: 4,
       race: {
-        prompt: 'If this text changes, which change is better? (Defend the current text on its own cards — this one ranks the challengers.)',
         a: {
           text: 'The Purse-holder pays only bills approved under the budget or by a house decision, reimburses claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting.',
           rationale: 'Whoever holds the purse must be watched: "reimburses what seems fair" with receipts "in the tin" is unchecked discretion. This ties spending to approval and forces open reporting.',
-          ledger: [
-            { c: 'drop', t: '"reimburses what seems fair" — unchecked discretion' },
-            { c: 'add', t: 'spending tied to the budget or a house decision' },
-            { c: 'add', t: 'accounts open on request, reported at every meeting' },
-          ],
         },
         b: {
           text: 'The Purse-holder pays the house’s bills and reimburses members’ reasonable claims as trust and good sense direct, keeping accounts in whatever simple way suits, and is glad to talk any member through them who asks.',
           rationale: 'The old rule buries our volunteer in budget sign-offs and minute-taking. We’re friends who trust each other — spare whoever takes this on the paperwork.',
-          ledger: [
-            { c: 'drop', t: 'budget sign-offs and reporting at meetings' },
-            { c: 'add', t: 'reimbursement on trust and good sense' },
-            { c: 'add', t: 'the books explained to anyone who asks' },
-          ],
         },
       },
     },
     {
       id: 'patch-rename', kind: 'patch', keys: ['purse', 'purseOffice', 'accounts'], state: 'needs',
       qLabel: 'Whole charter', qSub: 'rename · 3 places',
+      urgency: 0.4,
       pct: 35, cap: 'gathering — needs roughly 6 more judgments',
-      ledger: [
-        { c: 'drop', t: '"Purse-holder", everywhere it appears' },
-        { c: 'add', t: '"Treasurer" — the name every other club uses' },
-        { c: 'add', t: 'a handover line: books and tin pass to the successor' },
-      ],
       rationale: '"Purse-holder" is twee and confuses newcomers. One rename, all three places it appears, plus a handover line so the tin doesn’t wander between office-holders.',
       sites: [
         { key: 'purse', label: '§ The Purse-holder', marked: 'The <del>Purse-holder</del> <ins>Treasurer</ins> pays the bills and reimburses what seems fair, <del>and</del> keeps the receipts in the tin<ins>, and hands the tin and books to their successor</ins>.' },
@@ -731,89 +912,133 @@
     {
       id: 'quick-keys', kind: 'quick', keys: ['keys'], state: 'needs',
       qLabel: '§ Front-door Keys', qSub: 'one suggestion',
-      pct: 60, cap: 'needs 2 more voices to reach its floor of 5',
-      ledger: [
-        { c: 'drop', t: 'spares for any number of regulars, at each member’s discretion' },
-        { c: 'add', t: 'one spare, for one regular' },
-        { c: 'add', t: 'a note with the Steward of who holds one' },
-      ],
+      urgency: 0.86,
+      pct: 60, cap: 'three of the fourteen have weighed in — quorum is 5',
       marked: 'Every member holds a front-door key, and <del>members</del> may lend or cut <del>spares</del> <ins>a spare</ins> for <del>regulars</del> <ins>a regular</ins> they trust<ins>, provided the Steward keeps a simple note of who holds one</ins>.',
       rationale: 'Keys are a security matter, not a vibe. A one-line log with the Steward costs nothing and means we can account for who can get in.',
     },
     {
       id: 'race-quorum', kind: 'race', keys: ['quorum'], state: 'needs',
       qLabel: '§ Quorum', qSub: '3 proposals racing',
+      urgency: 0.58,
       pct: 44, cap: 'gathering — needs roughly 5 more judgments',
       candidates: 3, pairsJudged: 1,
       race: {
-        prompt: 'If this text changes, which change is better? (Defend the current text on its own cards — this one ranks the challengers.)',
         a: {
           text: 'A meeting needs eight members present to decide anything, and ten to decide anything reserved, counted at the moment the question is put.',
           rationale: 'Fractions of a membership that changes size are a trap. Fixed numbers can be checked by looking round the room, and cannot be argued about afterwards.',
-          ledger: [
-            { c: 'drop', t: 'halves and two-thirds of a membership that changes size' },
-            { c: 'add', t: 'fixed numbers: eight to decide, ten for reserved' },
-            { c: 'add', t: 'counted at the moment the question is put' },
-          ],
         },
         b: {
           text: 'A meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved; a member who has given their view in writing to the Steward counts as present for quorum but not for the vote.',
           rationale: 'People travel and people work nights. Letting a written view hold your place stops the house from being unable to act because three of us are away.',
-          ledger: [
-            { c: 'add', t: 'a written view to the Steward holds your place for quorum' },
-            { c: 'add', t: 'it does not count towards the vote itself' },
-            { c: 'drop', t: 'nothing — the halves and two-thirds stay as they are' },
-          ],
         },
       },
     },
     {
       id: 'insert-quiet', kind: 'quick', insertAfterKey: 'guests', state: 'needs',
       qLabel: 'After Bringing a Guest', qSub: 'new section',
+      urgency: 0.22,
       pct: 20, cap: 'new — evidence just starting',
       isInsert: true, newHeading: 'Quiet Hours',
-      ledger: [
-        { c: 'add', t: 'quiet hours from eleven at night to eight in the morning' },
-        { c: 'add', t: 'the Workshop’s louder tools asleep in those hours' },
-        { c: 'add', t: 'late gatherings move to the Garden or wind down' },
-      ],
       marked: '<ins>The house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.</ins>',
       rationale: 'We’ve never written down the one rule everyone already tiptoes around. Guests stay over, members work early — saying it out loud beats resenting each other politely.',
+    },
+    // Ten more live suggestions spread down the urgency range (Ed, 194), so the
+    // compression ladder can be judged against a realistic spread rather than
+    // against one example per tier. Ordinary housekeeping, mostly: the kind of
+    // thing a convention actually spends its afternoon on.
+    {
+      id: 'quick-armchair', kind: 'quick', keys: ['armchair'], state: 'needs',
+      qLabel: '§ The Common Room', urgency: 0.14,
+      pct: 18, cap: 'new — evidence just starting',
+      marked: 'Furniture in the Common Room may be moved but must be put back<del>. The armchair by the window is not anybody’s, whatever Hollis says</del><ins> before the room is left empty</ins>.',
+      rationale: 'The joke about Hollis is lovely and it is not a rule. Charters that wink at people age badly, and whoever inherits this will not know who Hollis was.',
+    },
+    {
+      id: 'quick-books', kind: 'quick', keys: ['books'], state: 'needs',
+      qLabel: '§ The Library Corner', urgency: 0.31,
+      pct: 34, cap: 'gathering — needs roughly 4 more judgments',
+      marked: 'Books belonging to a member and left in the Corner become the house’s after <del>a year</del> <ins>two years</ins>, unless the member says otherwise in the book on the shelf.',
+      rationale: 'A year is one long absence. Two years still clears the shelves of anything genuinely abandoned, without swallowing the library of somebody who spent a winter abroad.',
+    },
+    {
+      id: 'quick-powertools', kind: 'quick', keys: ['powertools'], state: 'needs',
+      qLabel: '§ The Workshop', urgency: 0.47,
+      pct: 52, cap: 'gathering — needs roughly 3 more judgments',
+      marked: 'Power tools are not used when the member is alone in the house<ins>, unless another member knows they are there and when they expect to finish</ins>, and not after the beginning of quiet hours.',
+      rationale: 'The flat ban means the only person who can use the lathe on a weekday is somebody who does not work. Telling one person where you are gets the same safety at a fraction of the cost.',
+    },
+    {
+      id: 'quick-twiceyear', kind: 'quick', keys: ['twiceyear'], state: 'needs',
+      qLabel: '§ Objection', urgency: 0.08,
+      pct: 12, cap: 'new — evidence just starting',
+      marked: 'No candidate may be nominated twice in one year<ins>, counted from the date of the first nomination</ins>.',
+      rationale: 'Nobody has ever disagreed about this and one clerk has already asked. Say which year it means and the question stops being asked.',
+    },
+    {
+      id: 'quick-attendance', kind: 'quick', keys: ['attendance'], state: 'needs',
+      qLabel: '§ Duties of a Member', urgency: 0.61,
+      pct: 58, cap: 'gathering — needs roughly 3 more judgments',
+      marked: 'Every member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member<ins>, and the asking is done by the Steward in private</ins>.',
+      rationale: 'As written, "asked kindly" could happen at a meeting, in front of everyone. That is the opposite of kind. Name who asks and where.',
+    },
+    {
+      id: 'quick-subs', kind: 'quick', keys: ['subs'], state: 'needs',
+      qLabel: '§ Subscriptions', urgency: 0.29,
+      pct: 30, cap: 'gathering — needs roughly 4 more judgments',
+      marked: 'The subscription is set once a year at the spring meeting, and may not be raised by more than <del>a quarter</del> <ins>a tenth</ins> in any year without a reserved decision.',
+      rationale: 'A quarter is a lot to be voted onto somebody by a simple majority. A tenth still covers ordinary inflation and makes a real rise something the house has to agree properly.',
+    },
+    {
+      id: 'quick-guestkey', kind: 'quick', keys: ['guestkey'], state: 'needs',
+      qLabel: '§ Guests Staying Over', urgency: 0.19,
+      pct: 22, cap: 'new — evidence just starting',
+      marked: 'No guest holds a key, and no guest is left alone in the house<ins> unless the member who brought them says so and is reachable</ins>.',
+      rationale: 'Half of us have left a guest making toast while we went for milk. The rule as written makes ordinary hospitality a breach.',
+    },
+    {
+      id: 'quick-nohead', kind: 'quick', keys: ['nohead'], state: 'needs',
+      qLabel: '§ The Steward', urgency: 0.37,
+      pct: 40, cap: 'gathering — needs roughly 4 more judgments',
+      marked: 'The Steward is not the Club’s head. The Club has no head<del>, and has managed for nine years without noticing the lack</del>.',
+      rationale: 'The second half is a boast about our own history, and it will read strangely in ten years. The first sentence is the rule and it is enough.',
+    },
+    {
+      id: 'quick-cellar', kind: 'quick', keys: ['cellar'], state: 'needs',
+      qLabel: '§ The Shed and Cellar', urgency: 0.11,
+      pct: 15, cap: 'new — evidence just starting',
+      marked: 'Once a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go<ins>, and anything nobody speaks for is offered to members before it is thrown</ins>.',
+      rationale: 'Things get thrown that somebody would have taken. One sentence, one afternoon saved, and nobody has to argue about a bicycle.',
+    },
+    {
+      id: 'quick-lostkey', kind: 'quick', keys: ['lostkey'], state: 'needs',
+      qLabel: '§ Front-door Keys — loss', urgency: 0.53,
+      pct: 47, cap: 'gathering — needs roughly 3 more judgments',
+      marked: 'A member who loses a key tells the Steward <del>the same day</del><ins> as soon as they know</ins>, and the house decides at the next meeting whether the locks are worth changing.',
+      rationale: 'You often do not know the day you lost it. "As soon as they know" is the honest version and does not make a rule nobody can keep.',
     },
     {
       id: 'quick-arrears', kind: 'quick', keys: ['arrears'], state: 'needs',
       qLabel: '§ Arrears', qSub: 'copy edit',
+      urgency: 0.97,
       pct: 88, cap: 'one judgment from decided',
-      ledger: [
-        { c: 'drop', t: '"and not more" — reads as a limit on the Steward alone' },
-        { c: 'add', t: '"no further reminder is given by anyone"' },
-        { c: 'add', t: 'nothing of substance — the rule is unchanged' },
-      ],
       marked: 'A member more than two quarters in arrears, who has not asked for hardship, is reminded once by the Purse-holder and once by the Steward, in that order <del>and not more</del><ins>. No further reminder is given by anyone</ins>.',
       rationale: '"In that order and not more" reads as though the Steward is limited to one reminder. The point is that the house stops after two, from anybody. Same rule, said properly.',
     },
     {
       id: 'race-sanctions', kind: 'race', keys: ['sanctions'], state: 'needs', saturated: true,
       qLabel: '§ Sanctions', qSub: '4 proposals racing',
+      urgency: 0.05,
       pct: 100, cap: 'saturated — more judgments won’t move it; only a new proposal can',
       candidates: 4, pairsJudged: 6,
       race: {
-        prompt: 'If this text changes, which change is better? (Defend the current text on its own cards — this one ranks the challengers.)',
         a: {
           text: 'The house may ask for an apology or suspend a right for a season; removal under Part III is available only where a sanction has already been imposed and has not been kept to.',
           rationale: 'Removal should never be the first thing reached for. Making it conditional on a broken sanction gives everyone a step back from the cliff.',
-          ledger: [
-            { c: 'drop', t: 'removal as something the house can reach for first' },
-            { c: 'add', t: 'removal only after a lesser sanction has been broken' },
-          ],
         },
         b: {
           text: 'The house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III; every sanction is proposed by a member who is not party to the dispute.',
           rationale: 'The problem isn’t the ladder of sanctions, it’s who proposes them. An uninvolved proposer stops a hearing turning into the aggrieved party naming their own remedy.',
-          ledger: [
-            { c: 'add', t: 'every sanction proposed by someone not party to the dispute' },
-            { c: 'drop', t: 'the aggrieved party naming their own remedy' },
-          ],
         },
       },
     },
@@ -821,38 +1046,26 @@
       id: 'quick-confidence', kind: 'quick', keys: ['confidence'], state: 'deciding',
       verdict: 'approved (recorded as: proposal beats current text)', pick: 'approve',
       qLabel: '§ Confidence', qSub: 'copy edit',
+      urgency: 0.5,
       pct: 84, cap: 'still deciding — close to resolution',
-      ledger: [
-        { c: 'drop', t: '"nothing undisclosed to a respondent" — dangles' },
-        { c: 'add', t: '"nothing kept from a respondent" — same rule, plain words' },
-      ],
       marked: 'Any member may bring any worry to any other in confidence, and <ins>that</ins> confidence is kept; nothing <del>undisclosed to</del> <ins>kept from</ins> a respondent may ever count against them.',
       rationale: '"Nothing undisclosed to a respondent" dangles. "Kept from" says the same thing in plain words. No change of substance.',
     },
     {
       id: 'race-hardship', kind: 'race', keys: ['hardship'], state: 'deciding',
-      verdict: 'preferred B', pick: 'b',
+      verdict: 'preferred “Hardship is asked for and given…”', pick: 'b',
       qLabel: '§ Hardship', qSub: '5 proposals racing',
+      urgency: 0.5,
       pct: 66, cap: 'still deciding — your judgment moved it',
       candidates: 5, pairsJudged: 3,
       race: {
-        prompt: 'If this text changes, which change is better? (Defend the current text on its own cards — this one ranks the challengers.)',
         a: {
           text: 'A member in difficulty may ask the Purse-holder to reduce or suspend their subscription for up to two quarters, and the Purse-holder tells no one, including the Steward and the meeting.',
           rationale: 'The current wording says the Purse-holder need not say why. It should say they may not say at all — the discretion belongs to the member in difficulty, not the office-holder.',
-          ledger: [
-            { c: 'drop', t: '"without telling anyone why" — a discretion to disclose' },
-            { c: 'add', t: 'the Purse-holder may not tell anyone at all' },
-          ],
         },
         b: {
           text: 'A member in difficulty may reduce or suspend their own subscription for up to two quarters by telling the Purse-holder, who may not refuse and may not ask why.',
           rationale: 'Asking permission to be poor is the humiliating part. Make it a notification, not a request, and the office-holder never has to weigh a friend’s circumstances.',
-          ledger: [
-            { c: 'drop', t: 'asking the Purse-holder’s permission' },
-            { c: 'add', t: 'the member reduces their own subscription and says so' },
-            { c: 'add', t: 'the Purse-holder may not refuse, and may not ask why' },
-          ],
         },
       },
     },
@@ -860,12 +1073,8 @@
       id: 'quick-probation', kind: 'quick', keys: ['probation'], state: 'deciding',
       verdict: 'kept the current text', pick: 'keep',
       qLabel: '§ Probation', qSub: 'one suggestion',
+      urgency: 0.5,
       pct: 52, cap: 'still deciding — a way from resolution yet',
-      ledger: [
-        { c: 'drop', t: 'six months’ probation — two meetings' },
-        { c: 'add', t: 'a full year' },
-        { c: 'add', t: 'no vote on removals or rule changes while on probation' },
-      ],
       marked: 'A new member is on probation for <del>six months</del> <ins>a full year</ins>, during which they hold every right of membership except the right to vote on <del>admissions</del> <ins>admissions, removals, or changes to these rules</ins>.',
       rationale: 'Six months is two meetings. You cannot know how someone handles a hard evening in the house until you have seen one, and there is usually one a year.',
     },
@@ -873,60 +1082,191 @@
       id: 'quick-garden', kind: 'quick', keys: ['garden'], state: 'deciding', locked: true,
       verdict: 'preferred the posted rota', pick: 'keep',
       qLabel: '§ The Garden', qSub: 'one suggestion',
+      urgency: 0.5,
       pct: 90, cap: 'still deciding — close to resolution',
       shifted: 'the text changed after your judgment — that judgment is now locked; new pairs will serve fresh',
-      ledger: [
-        { c: 'drop', t: 'a rota kept in the group message' },
-        { c: 'add', t: 'a rota posted in the shed, where the tools are' },
-      ],
       marked: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.',
       rationale: 'The rota belongs where the tools are, not in a message nobody scrolls back to.',
+    },
+    // A sealed race with a field rather than a pair (Ed, 120): five proposals,
+    // one of which stands. `slate` replaces the a/b pair when there were more
+    // than two — the record has to show the whole field, not a sample of it.
+    {
+      id: 'race-claims', kind: 'race', keys: ['claims'], state: 'sealed', unread: true,
+      verdict: 'judged three pairs — twice for the wording that stood', pick: null,
+      qLabel: '§ The Guest Bedroom — claims', qSub: '5 proposals raced',
+      urgency: 0,
+      pct: 100, cap: 'sealed — adopted · judgment locked',
+      candidates: 5, pairsJudged: 3,
+      decided: { outcome: 'adopted', when: 'yesterday, 20:15', p: 0.86, bar: 0.72, judges: 7 },
+      // the text the winner displaced — the document no longer holds it
+      replaced: 'A claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, on notice and with apologies.',
+      slate: [
+        {
+          text: 'A claim is made by writing in the book on the landing. Claims are taken in the order they are written and are not displaced for any reason.',
+          rationale: 'A rule with an exception in it is a rule people argue about at ten at night. First come, first served is the only version nobody can lawyer.',
+          p: 0.58,
+        },
+        {
+          text: 'A claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, who tells the displaced member within a day and offers them the next free week.',
+          rationale: 'Displacement is fine — it is being displaced silently that stings. Say it to their face within a day and hand them something back, and the rule stops being a way to lose your mother’s visit.',
+          p: 0.86, won: true,
+        },
+        {
+          text: 'A claim is made by writing in the book on the landing. A claim may be displaced by a member with a nearer need, at the Steward’s discretion.',
+          rationale: 'Somebody has to weigh a wedding against a fortnight of decorating. That is what we have a Steward for, and they can see the whole book.',
+          p: 0.49,
+        },
+        {
+          text: 'The Guest Bedroom is booked by asking the Steward, who keeps the calendar and settles clashes.',
+          rationale: 'The book on the landing is lost twice a year. One person with one calendar is how every other house in the world does this.',
+          p: 0.21,
+        },
+        {
+          text: 'A claim is made by writing in the book on the landing. No member may hold more than two claims at once, and none more than a season ahead.',
+          rationale: 'The problem is not displacement, it is the two of us who book out the whole summer in February. Cap the hoarding and the clashes mostly go away.',
+          p: 0.35,
+        },
+      ],
+    },
+    // Sealed judgments carry their whole record (Ed, 112): both texts, which
+    // one stood, and the numbers it stood on. `unread` ones pin themselves to
+    // the screen until you have opened them.
+    // Three of these share a section, so their dots stack (Ed, 106).
+    {
+      id: 'quick-kitchen', kind: 'quick', keys: ['kitchen'], state: 'sealed',
+      verdict: 'approved the seven-in-the-morning test', pick: 'approve',
+      qLabel: '§ The Kitchen', qSub: 'copy edit',
+      urgency: 0,
+      pct: 100, cap: 'sealed — adopted · judgment locked',
+      optionA: 'The Kitchen is common to all members and is to be kept clean and tidy at all times.',
+      optionB: 'The Kitchen is common to all members and is governed by one rule: you leave it as you would wish to find it at seven in the morning.',
+      won: 'b',
+      decided: { outcome: 'adopted', when: 'yesterday, 16:05', p: 0.84, bar: 0.66, judges: 6 },
+      rationale: '"Clean and tidy" is what everyone already thinks they are being. A test you can picture settles arguments that an adjective cannot.',
+    },
+    {
+      id: 'quick-larderfood', kind: 'quick', keys: ['larderfood'], state: 'sealed',
+      verdict: 'kept the current text', pick: 'keep',
+      qLabel: '§ The Kitchen — larder', qSub: 'one suggestion',
+      urgency: 0,
+      pct: 100, cap: 'sealed — retired · the current text stood',
+      optionA: 'Food in the larder marked with a name belongs to that member. Food not marked belongs to the house and may be eaten by anyone.',
+      optionB: 'Food in the larder belongs to the house after a fortnight, marked or not, and may be eaten by anyone.',
+      won: 'a',
+      decided: { outcome: 'retired — the current text stood', when: 'yesterday, 18:12', p: 0.41, bar: 0.70, judges: 6 },
+      rationale: 'Half the marked food in there is somebody’s week of lunches. A fortnight rule turns the larder into a race.',
+    },
+    {
+      id: 'quick-knives', kind: 'quick', keys: ['knives'], state: 'sealed', unread: true,
+      verdict: null, pick: null,
+      qLabel: '§ The Kitchen — knives', qSub: 'copy edit',
+      urgency: 0,
+      pct: 100, cap: 'sealed — adopted · judgment locked',
+      optionA: 'The good knives are sharpened by the Steward and are not to be used on bone or frozen food.',
+      optionB: 'The good knives are sharpened by the Steward and are not to be used on bone, frozen food, or the garden.',
+      won: 'b',
+      decided: { outcome: 'adopted', when: 'this morning, 09:20', p: 0.88, bar: 0.71, judges: 5 },
+      rationale: 'Somebody cut twine with the carving knife. Naming the garden costs three words and saves an edge.',
+    },
+    // These two were the old `CHANGES` fixture — adoptions that had happened
+    // while you were away, reported by a separate "changed just now" chip and
+    // change card. They are adoptions like any other, so they are sealed
+    // decisions like any other (Ed, 203), and the second mechanism is gone.
+    {
+      id: 'quick-calling', kind: 'quick', keys: ['calling'], state: 'sealed', unread: true,
+      verdict: null, pick: null,
+      qLabel: '§ Calling a Meeting', qSub: 'substantive',
+      urgency: 0,
+      pct: 100, cap: 'sealed — adopted · judgment locked',
+      optionA: 'House matters are settled by whoever is in the room when they come up.',
+      optionB: 'House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.',
+      won: 'b',
+      decided: { outcome: 'adopted', when: 'a few minutes ago', p: 0.87, bar: 0.72, judges: 6 },
+      rationale: '"Whoever is in the room" is how a house ends up governed by whoever happens to be free on a Tuesday. Notice, a majority, and a line in the book — the smallest thing that makes a decision findable afterwards.',
+    },
+    {
+      id: 'quick-lockup', kind: 'quick', keys: ['lockup'], state: 'sealed', unread: true,
+      verdict: 'preferred this wording', pick: 'approve',
+      qLabel: '§ Locking Up', qSub: 'copy edit',
+      urgency: 0,
+      pct: 100, cap: 'sealed — adopted · judgment locked',
+      optionA: 'The last member out locks the front door and puts out the lamp in the Common Room.',
+      optionB: 'The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.',
+      won: 'b',
+      decided: { outcome: 'adopted', when: 'a few minutes ago', p: 0.79, bar: 0.74, judges: 5 },
+      rationale: 'The Workshop door swings open in a draught and nobody thinks to check it. Add it to the same list as the lamp and it gets done with everything else.',
     },
     {
       id: 'quick-notice', kind: 'quick', keys: ['notice'], state: 'sealed',
       verdict: 'approved the plainer wording', pick: 'approve',
       qLabel: '§ Notice', qSub: 'copy edit',
+      urgency: 0,
       pct: 100, cap: 'sealed — adopted · judgment locked',
-      ledger: [
-        { c: 'drop', t: 'notice by written letter only' },
-        { c: 'add', t: 'notice by whatever means reaches each member' },
-      ],
-      marked: 'Notice of a meeting is given by writing it in the Members’ Book and telling every member by whatever means reaches them.',
-      rationale: 'Adopted at the close of the last window.',
+      optionA: 'Notice of a meeting shall be effected by entry in the Members’ Book and by such further communication to each member as the Steward shall deem sufficient in the circumstances.',
+      optionB: 'Notice of a meeting is given by writing it in the Members’ Book and telling every member by whatever means reaches them.',
+      won: 'b',
+      decided: { outcome: 'adopted', when: 'yesterday, 19:40', p: 0.91, bar: 0.68, judges: 7 },
+      rationale: 'We are fourteen people in a house, not a company with a secretary. Say it the way we would say it.',
     },
     {
-      id: 'race-nomination', kind: 'race', keys: ['nomination'], state: 'sealed',
-      verdict: 'preferred A', pick: 'a',
+      id: 'race-nomination', kind: 'race', keys: ['nomination'], state: 'sealed', unread: true,
+      verdict: 'preferred “A candidate for membership is nominated…”', pick: 'a',
       qLabel: '§ Nomination', qSub: '2 proposals raced',
+      urgency: 0,
       pct: 100, cap: 'sealed — retired · the current text stood',
       candidates: 2, pairsJudged: 1,
+      // neither challenger cleared the bar, so the incumbent stood: no winner
+      won: null,
+      decided: { outcome: 'retired — the current text stood', when: 'yesterday, 21:03', p: 0.52, bar: 0.74, judges: 5 },
       race: {
-        prompt: 'If this text changes, which change is better?',
         a: {
           text: 'A candidate for membership is nominated by one member and seconded by another, neither of whom may be the candidate’s household.',
-          rationale: 'Sealed.',
-          ledger: [{ c: 'add', t: 'neither nominator may be the candidate’s household' }],
+          rationale: 'A household nominating and seconding its own candidate is two names out of one kitchen. The bar costs nothing and keeps the door honest.',
+          p: 0.52,
         },
         b: {
           text: 'A candidate for membership is nominated by any two members.',
-          rationale: 'Sealed.',
-          ledger: [{ c: 'drop', t: 'the bar on a candidate’s household nominating them' }],
+          rationale: 'The household bar reads as suspicion of our own members. Two names are two names — and if the house has doubts, the meeting is where they belong.',
+          p: 0.29,
         },
       },
     },
   ];
 
+  // The roster and its quorum: F = min(⌈E/3⌉, F_max) distinct movers before
+  // anything can be adopted (SPEC §8.2, where it is called the *floor*). The
+  // interface says **quorum** (Ed, 190) — it is quorum for a decision rather
+  // than for a meeting, which is the intuition people already have. This is
+  // the number that is actually a headcount; the adoption-threshold beside it
+  // is a confidence, not a vote share.
+  const ROSTER = 14, FLOOR = 5;
+
   const doc = document.getElementById('doc');
   const queueEl = document.getElementById('queue');
+  const moreEl = document.getElementById('qmore');
   const tocEl = document.getElementById('toc');
   const wiresEl = document.getElementById('wires');
   let openId = null;
   let pendingId = null;   // the card being opened, while the sequence is running
+  const focusId = () => openId ?? pendingId;
   const collapsed = new Set();   // folded-away section indices
   let seqToken = 0;       // supersedes an in-flight open/move/close sequence
   const resolved = new Set();
 
   function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+  // Decision cards show the text as it would *stand*, not a redline: the struck
+  // words come out and only what is new stays lit. The fixture keeps the full
+  // diff — this is a rendering, so the change card can still show both sides.
+  function resultOnly(marked) {
+    return marked
+      .replace(/\s*<del>[\s\S]*?<\/del>\s*/g, ' ')          // a cut leaves one space behind…
+      .replace(/\s+((?:<\/?ins>)*)([,.;:!?’”)])/g, '$1$2')  // …which closes up before punctuation
+      .replace(/(<ins>)\s+/g, '$1')                          // a highlight never opens on a space
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
 
   // The text a suggestion is arguing against, for the quick card's yellow band.
   function currentTextFor(key) {
@@ -1041,108 +1381,381 @@
     return SUGGS.filter((s) => (s.keys ?? []).includes(key) && s.state !== 'sealed');
   }
 
-  const CHANGES = [
-    {
-      key: 'calling',
-      when: 'just now',
-      marked: '<del>House matters are settled by whoever is in the room when they come up.</del> <ins>House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.</ins>',
-      note: 'Adopted at p=0.87 over bar 0.72 · 6 distinct judges · you never judged this race',
-    },
-    {
-      key: 'lockup',
-      when: 'just now',
-      marked: 'The last member out locks the front door<ins>, closes the Workshop,</ins> and puts out the lamp in the Common Room.',
-      note: 'Adopted at p=0.79 over bar 0.74 · 5 distinct judges · you preferred this wording',
-    },
-  ];
   const verdicts = new Map();
-  const seenChanges = new Set();
-  let openChange = null;
   let justArrived = null;
+  // Decisions have a read state (Ed, 112): one you haven't opened pins itself
+  // to the screen, and settles down into a dot at its clause once you have.
+  const readSeals = new Set();
 
-  // Freshness-highlight clock. The doc re-renders on every interaction, which
-  // would restart the CSS fade each time — so we resume it with a negative
-  // animation-delay equal to however long the highlight has already been up.
-  const FRESH_T0 = Date.now();
-  const freshDelay = () => ' style="animation-delay: -' + (Date.now() - FRESH_T0) + 'ms"';
 
-  function washStyle(pct, sealed, saturated) {
-    const color = saturated ? 'var(--border)' : sealed ? 'var(--ins-bg)' : 'var(--primary-subtle)';
-    return ' style="background: linear-gradient(90deg, ' + color + ' ' + pct + '%, var(--bg) ' + pct + '%)"';
-  }
 
   // needs-you (white) · still-deciding (blue wash + your verdict) · sealed (green).
   // A card starts in whichever state the fixture gives it, and moves when you act.
   const stateOf = (g) => g.state === 'sealed' ? 'sealed'
     : (g.state === 'deciding' || resolved.has(g.id)) ? 'deciding' : 'needs';
   const isJudged = (g) => stateOf(g) !== 'needs';
-  const chipText = (g) => g.kind === 'race' ? g.candidates + ' racing'
-    : g.isInsert ? 'new section' : '1 suggestion';
+  const isUnread = (g) => stateOf(g) === 'sealed' && g.unread && !readSeals.has(g.id);
+
+  // Urgency — how much this wants *you* (leverage), not how close it is to
+  // resolution (that stays the meter's job). For now it is carried by colour
+  // saturation and by how much of the card survives (Ed, 105; 104).
+  const URG_LO = 0.05, URG_HI = 0.30;
+  // A saturated race is not a low-urgency one, it is a *differently* addressed
+  // one (Ed, 166): no judgment of yours can move it, so the urgency ramp does
+  // not apply. It gets its own tier, drawn full so the unusual ask has room to
+  // explain itself — compressing it to a line would hide the one entry whose
+  // instructions differ from every other.
+  const tierOf = (u) => (u >= 0.66 ? 'hot' : u >= 0.33 ? 'warm' : 'cool');
+  const tierFor = (g, u) => (g.saturated ? 'wants' : tierOf(u));
+  const tint = (hue, a) => 'rgba(var(--lc-' + hue + '), ' + a.toFixed(3) + ')';
+  // Colour says lifecycle (Ed, 162); the wash is still the progress bar it
+  // always was, so how far the fill reaches is closeness to resolution. On a
+  // needs-you card the strength of the colour is also urgency — one device,
+  // three readings. A saturated race washes grey: more judgment won't move it
+  // (SPEC §8.3), which is the one case where the state is not the whole story.
+  function wash(g, hue, u) {
+    return 'linear-gradient(90deg, ' + tint(hue, u == null ? 0.16 : URG_LO + (URG_HI - URG_LO) * u) +
+      ' ' + g.pct + '%, var(--bg) ' + g.pct + '%)';
+  }
+  let topUrgentId = null;   // the one card that is never dropped, and pulses
+
+  // Where in the charter an entry stands. A patch has one per site (Ed, 108);
+  // a proposed new section stands in the gap it would fill.
+  function docIndexOf(g, siteKey) {
+    if (g.insertAfterKey) return DOC.findIndex((l) => l.key === g.insertAfterKey) + 0.5;
+    return DOC.findIndex((l) => l.key === (siteKey ?? (g.keys ?? [])[0]));
+  }
+
+  // What the rail quotes from a suggestion. A race carries one per proposal —
+  // the pair you would be served. A patch quotes itself at every site (Ed, 183):
+  // now that each entry is titled by its own section it reads as a comment
+  // beside that clause rather than as a repeat, and its sites are far enough
+  // apart in the charter that you rarely see two at once.
+  function teasersFor(g, e) {
+    if (g.kind === 'race') return [g.race && g.race.a && g.race.a.rationale, g.race && g.race.b && g.race.b.rationale].filter(Boolean);
+    return g.rationale ? [g.rationale] : [];
+  }
+
+  function queueEntries() {
+    const out = [];
+    for (const g of SUGGS) {
+      // a patch's entry is titled by the section it stands in, not by the patch
+      // as a whole (Ed, 183) — in a margin, the local name is the useful one
+      if (g.kind === 'patch') g.sites.forEach((site, i) =>
+        out.push({ g, site: site.key, label: site.label, n: i + 1, of: g.sites.length }));
+      else out.push({ g, site: (g.keys ?? [])[0] ?? null, label: g.qLabel, n: 1, of: 1 });
+    }
+    return out.sort((a, b) => docIndexOf(a.g, a.site) - docIndexOf(b.g, b.site));
+  }
+
+  // Document order, never urgency order (Ed, 104): the rail is an index of the
+  // charter's contested points, so it makes no claim about what matters most.
+  // Lifecycle marks (Ed, 147–157): where an entry stands in *your* relationship
+  // to it, at the top left of every card. Kind (quick/race/patch) stays a word
+  // beside it — two marks, two axes.
+  const MARK = {
+    needs: '❓',      // a question put to you
+    urgent: '🔥',     // the one that wants you most
+    // The rail says what is true; the buttons say what you can do. So a
+    // saturated race is marked "stuck" — same red as ❓, because it is still an
+    // open question — and 💡 lives on the propose actions it leads to (Ed, 173).
+    stuck: '❌',      // judging cannot move this; only a new draft can
+    propose: '💡',    // ...and this is where you write one
+    deciding: '⏳',   // yours is in; the race runs on
+    shifted: '🔄',    // the ground moved: this one comes back around, rebuilt
+    // A decision says which way it went, not just that it happened (Ed, 160):
+    // a matched pair — same green square, check or cross — so the outcome is
+    // legible before you open anything.
+    adopted: '✅',    // a proposal carried: the charter changed here
+    retired: '❎',    // the incumbent held: nothing changed
+    read: '☑️',       // decided and filed
+  };
+  // did anything displace the incumbent?
+  const carried = (g) => fieldOf(g).some((c) => c.won);
+  const markHtml = (m) => '<span class="qmark" aria-hidden="true">' + m + '</span>';
+  // The rail is already a margin against the document; the section sign is a
+  // citation mark, and nothing here is being cited (Ed, 188).
+  const plainLabel = (t) => String(t ?? '').replace(/^§\s*/, '');
+
+  // Whatever wants you most keeps its place on the screen whatever else is
+  // going on (Ed, 115). Settled before anything draws, because the document's
+  // own highlights need it too now (200) and they are rendered first.
+  function settleTopUrgent() {
+    const live = queueEntries().filter((e) => stateOf(e.g) === 'needs' && !e.g.saturated);
+    topUrgentId = live.length
+      ? live.reduce((best, e) => ((e.g.urgency ?? 0) > (best.urgency ?? 0) ? e.g : best), live[0].g).id
+      : null;
+  }
 
   function renderQueue() {
-    const rank = { needs: 0, deciding: 1, sealed: 2 };
-    const items = [...SUGGS].sort((a, b) => rank[stateOf(a)] - rank[stateOf(b)]);
+    const entries = queueEntries();
+    let seenTop = false;
     let html = '';
-    for (const g of items) {
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      const g = e.g;
       const st = stateOf(g);
+
+      // A decision you have already seen collapses to a dot, and dots that fall
+      // near each other in the charter share a row (Ed, 106). One you haven't
+      // seen keeps a line and pins itself to the screen until you open it (112).
+      if (st === 'sealed' && !isUnread(g)) {
+        const group = [e];
+        while (i + 1 < entries.length && stateOf(entries[i + 1].g) === 'sealed' && !isUnread(entries[i + 1].g) &&
+               docIndexOf(entries[i + 1].g, entries[i + 1].site) - docIndexOf(e.g, e.site) <= 8) group.push(entries[++i]);
+        html += '<li class="qitem" data-site="' + (e.site ?? '') + '" data-q="' + g.id + '"><div class="sealdots">' +
+          group.map((x) => '<button class="sealdot" data-q="' + x.g.id + '" aria-current="' + (openId === x.g.id) +
+            '" title="' + esc(plainLabel(x.label || x.g.qLabel)) + ' — ' + esc((x.g.decided || {}).outcome || 'sealed') + '">' +
+            MARK.read + '</button>').join('') +
+          '</div></li>';
+        continue;
+      }
+      if (st === 'sealed') {
+        const d = g.decided || {};
+        html += '<li class="qitem" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
+          '<button class="unread" data-q="' + g.id + '" aria-current="' + (openId === g.id) + '"' +
+          ' style="--wash: ' + wash(g, 'closed') + '"' +
+          ' title="' + esc(d.outcome || 'sealed') + ' — you haven’t opened this one yet">' +
+          '<span class="ql">' + markHtml(carried(g) ? MARK.adopted : MARK.retired) + plainLabel(e.label || g.qLabel) +
+          '<span class="qv"> · decided ' + esc(d.when || '') + '</span></span>' +
+          '</button></li>';
+        continue;
+      }
+
       const justJudged = resolved.has(g.id) && g.state === 'needs';
       const locked = g.locked || st === 'sealed';
-      const pct = st === 'sealed' ? 100 : justJudged ? Math.min(g.pct + 8, 96) : g.pct;
-      const cap = justJudged ? 'still deciding — click to change your mind' : g.cap;
       const verdict = verdicts.get(g.id) || g.verdict;
+      const u = g.urgency ?? 0.5;
+      const tier = st === 'deciding' ? 'deciding' : tierFor(g, u);
+      const cap = justJudged ? 'still deciding — click to change your mind' : g.cap;
+      const sib = e.of > 1 ? ' sib' : '';
+
+      // A judged entry is one line: label, your verdict, and — if the ground
+      // moved under it — a lock mark, with the whole story in the tooltip.
+      const oneLine = st === 'deciding';
+      const top = !oneLine && !g.saturated && g.id === topUrgentId && !seenTop;
+      if (top) seenTop = true;
       html +=
-        '<li><button class="' + (st === 'sealed' ? 'sealed' : st === 'deciding' ? 'deciding' : '') +
-        (justArrived === g.id ? ' arriving' : '') + '" data-q="' + g.id + '"' +
+        '<li class="qitem' + (top ? ' mosturgent' : '') + '" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
+        '<button class="' + tier + sib + (top ? ' mosturgent' : '') +
+        (oneLine && g.shifted ? ' shifted' : '') + (justArrived === g.id ? ' arriving' : '') +
+        '" data-q="' + g.id + '"' +
         (locked ? ' tabindex="-1"' : '') + ' aria-current="' + (openId === g.id) + '"' +
-        washStyle(pct, st === 'sealed', g.saturated) + '>' +
-        '<span class="ql"><span>' + g.qLabel + '</span>' +
-        (st === 'needs' ? '' : '<span class="done">✓</span>') + '</span>' +
-        (st === 'needs'
-          ? '<span class="qs"><span class="kchip ' + g.kind + '">' + g.kind + '</span>' + g.qSub + '</span>'
-          : '<span class="qv">you ' + (verdict || 'judged') + '</span>') +
-        '<span class="mcap">' + cap + '</span>' +
-        (g.shifted ? '<span class="chgflag">⟳ ' + g.shifted + '</span>' : '') +
+        (oneLine ? ' title="' + esc(g.shifted || cap) + '"' : '') +
+        ' style="--wash: ' + (oneLine
+          ? wash(g, g.shifted ? 'closed' : 'deciding')
+          : wash(g, top ? 'urgent' : 'open', g.saturated ? 0.55 : u)) + '">' +
+        (oneLine
+          ? '<span class="ql">' + markHtml(g.shifted ? MARK.shifted : MARK.deciding) + plainLabel(e.label || g.qLabel) +
+            '<span class="qv"> · you ' + (verdict || 'judged') + '</span></span>'
+          : '<span class="ql">' +
+            markHtml(g.saturated ? MARK.stuck : top ? MARK.urgent : MARK.needs) +
+            '<span>' + plainLabel(e.label || g.qLabel) + '</span></span>' +
+            // No kind chip and no "copy edit"/"3 proposals racing" line (Ed,
+            // 184): both restated in words what the card's own shape already
+            // shows — one teaser is a suggestion, two divided teasers are a
+            // race, a place count is a patch. Only the place count survives,
+            // because it says *which* place, which nothing else does.
+            (tier !== 'cool' && e.of > 1
+              ? '<span class="qs"><span class="sibn">' + e.n + ' of ' + e.of + ' places</span></span>'
+              : '') +
+            (tier === 'cool' ? '' : teasersFor(g, e).map((t) =>
+              '<span class="qwhy">' + esc(t) + '</span>').join('')) +
+            (tier === 'hot' || tier === 'wants' ? '<span class="mcap">' + cap + '</span>' : '')) +
         '</button></li>';
     }
     queueEl.innerHTML = html;
     justArrived = null;
-    queueEl.querySelectorAll('[data-q]').forEach((b) => {
-      const g = SUGGS.find((x) => x.id === b.dataset.q);
-      if (!g || g.locked || stateOf(g) === 'sealed') return;   // a locked judgment is inert
-      b.addEventListener('click', () => { toggle(b.dataset.q, true); });
-    });
+    // Everything in the rail opens, sealed dots included (Ed, 112): a locked
+    // judgment can't be changed, but it can always be read.
+    queueEl.querySelectorAll('button[data-q]').forEach((b) =>
+      b.addEventListener('click', () => { toggle(b.dataset.q, true); })
+    );
+    layoutQueue();
+  }
+
+  // The heading a folded-away clause hides behind, so its entry still has
+  // somewhere to stand.
+  function foldedHeadingFor(idx) {
+    let n = -1;
+    for (let i = 0; i < idx; i++) if (DOC[i].t === 'h') n++;
+    if (n < 0) return null;
+    let target = collapsed.has(n) ? n : null;
+    for (const a of ancestorsOf(n)) if (collapsed.has(a)) { target = a; break; }
+    return target === null ? null : document.getElementById('sec-' + target);
+  }
+
+  // A rail entry may stand for several judgments — a row of sealed dots — so
+  // "is this the open one" is a question about the buttons inside it.
+  const holdsFocus = (el) => !!focusId() && !!el.querySelector('button[data-q="' + focusId() + '"]');
+  const liFor = (id) => {
+    const b = queueEl.querySelector('button[data-q="' + id + '"]');
+    return b ? b.closest('.qitem') : null;
+  };
+
+  function anchorForEntry(id, siteKey) {
+    const g = SUGGS.find((x) => x.id === id);
+    if (!g) return null;
+    if (g.insertAfterKey) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"]');
+    const k = siteKey || (g.keys ?? [])[0];
+    return doc.querySelector('[data-key="' + k + '"]') || foldedHeadingFor(DOC.findIndex((l) => l.key === k));
+  }
+
+  // Lay the rail out as a margin — but never let work walk off the screen
+  // (Ed, 110). Two populations share the column:
+  //
+  //   pinned  — everything that still needs you. Each wants its clause's height
+  //             and takes it while the clause is in view; once the clause leaves
+  //             the screen the card holds at the edge it left by, so the set on
+  //             screen is always a contiguous run of the charter around where
+  //             you are reading. What will not fit is dropped, and counted.
+  //   flow    — judged lines and sealed dots. These stay with their clauses and
+  //             scroll away, because they are a map of settled ground, not work.
+  //
+  // A flow entry that would end up underneath a pinned card is hidden rather
+  // than nudged: nudging makes the whole rail crawl as you scroll.
+  const QGAP = 8, BAND_TOP = 70, BAND_BOT = 24;
+  function layoutQueue() {
+    const railRect = queueEl.getBoundingClientRect();
+    const railTop = railRect.top + scrollY;
+    const pinned = [], flow = [];
+    for (const el of queueEl.children) {
+      const a = anchorForEntry(el.dataset.q, el.dataset.site);
+      if (!a) { el.style.display = 'none'; continue; }
+      el.style.display = '';
+      const g = SUGGS.find((x) => x.id === el.dataset.q);
+      const row = { el, want: (a.getBoundingClientRect().top + scrollY) - railTop, h: el.offsetHeight };
+      // Whatever is open is pinned for as long as it is open, whatever its
+      // state: it is the thing you are looking at, and its wire has to hold.
+      // `pendingId` counts as open — the document is moved *before* the card
+      // is inserted (Ed, 75), so the entry has to be in its final population
+      // by then or the levelling aims at a position it will not end up in.
+      const live = stateOf(g) === 'needs' || isUnread(g) || holdsFocus(el);
+      (live ? pinned : flow).push(row);
+    }
+    pinned.sort((x, y) => x.want - y.want);
+    flow.sort((x, y) => x.want - y.want);
+
+    // the visible band, in the rail's own coordinates
+    const bandTop = scrollY + BAND_TOP - railTop;
+    const bandBot = scrollY + innerHeight - BAND_BOT - railTop;
+
+    // as many as fit, nearest your reading position first — and strictly the
+    // nearest, so what you see is one unbroken run of the charter, not a set
+    // assembled by whichever cards happened to be small
+    const eye = scrollY + innerHeight / 2 - railTop;
+    let room = bandBot - bandTop;
+    const keep = new Set();
+    // the most urgent card holds its place however crowded the rail gets (115)
+    const first = pinned.find((r) => r.el.classList.contains('mosturgent'));
+    if (first) { keep.add(first); room -= first.h + QGAP; }
+    for (const r of [...pinned].sort((x, y) => Math.abs(x.want - eye) - Math.abs(y.want - eye))) {
+      if (keep.has(r)) continue;
+      if (room - r.h - QGAP < 0) break;
+      room -= r.h + QGAP;
+      keep.add(r);
+    }
+    const shown = pinned.filter((r) => keep.has(r));
+    pinned.filter((r) => !keep.has(r)).forEach((r) => { r.el.style.display = 'none'; });
+
+    // Settle the pile from both ends: forward so nothing starts above the band
+    // or on top of the entry before it, backward so nothing ends below it. What
+    // is left is each card at its clause where the clause is on screen, and
+    // piled against the edge it went off by where it isn't.
+    shown.forEach((r) => { r.top = Math.min(Math.max(r.want, bandTop), bandBot - r.h); });
+    // the open entry gets first claim on its clause's line — its wire is the one
+    // that has to read flat — and the pile gives way outward from it
+    const k = shown.findIndex((r) => holdsFocus(r.el));
+    for (let i = k - 1; i >= 0; i--) shown[i].top = Math.min(shown[i].top, shown[i + 1].top - shown[i].h - QGAP);
+    for (let i = k + 1; k >= 0 && i < shown.length; i++) shown[i].top = Math.max(shown[i].top, shown[i - 1].top + shown[i - 1].h + QGAP);
+    // then the band wins, in both directions: staying on the screen is the rule,
+    // and a wire that has to run at an angle is the price when the rail is full
+    let cur = bandTop;
+    shown.forEach((r) => { r.top = Math.max(r.top, cur); cur = r.top + r.h + QGAP; });
+    let lim = bandBot;
+    for (let i = shown.length - 1; i >= 0; i--) {
+      shown[i].top = Math.min(shown[i].top, lim - shown[i].h);
+      lim = shown[i].top - QGAP;
+    }
+    shown.forEach((r) => { r.el.classList.add('pinned'); r.el.style.top = Math.round(r.top) + 'px'; });
+
+    // Flow steps around the pinned cards rather than hiding under them (Ed, 112):
+    // what was decided is worth seeing. It only gives up when the pinned pile
+    // leaves it nowhere within reach — which is when active work has genuinely
+    // crowded the rail out.
+    const blocks = [];
+    for (const [a, b] of shown.map((r) => [r.top, r.top + r.h]).sort((x, y) => x[0] - y[0])) {
+      const last = blocks[blocks.length - 1];
+      if (last && a <= last[1] + QGAP) last[1] = Math.max(last[1], b);
+      else blocks.push([a, b]);
+    }
+    const clash = (t, h) => blocks.some(([a, b]) => t < b + QGAP && t + h > a - QGAP);
+    const freeFor = (want, h) => {
+      if (!clash(want, h)) return want;
+      const hit = blocks.find(([a, b]) => want < b + QGAP && want + h > a - QGAP);
+      for (const c of [hit[0] - QGAP - h, hit[1] + QGAP]) if (!clash(c, h)) return c;
+      return null;
+    };
+    let bottom = 0, prev = -Infinity;
+    for (const r of flow) {
+      r.el.classList.remove('pinned');
+      let t = freeFor(r.want, r.h);
+      if (t !== null && t < prev + QGAP) { t = prev + QGAP; if (clash(t, r.h)) t = null; }
+      r.el.style.display = t === null ? 'none' : '';
+      if (t === null) continue;
+      r.el.style.top = Math.round(t) + 'px';
+      prev = t + r.h;
+      bottom = Math.max(bottom, t + r.h);
+    }
+    queueEl.style.height = Math.round(bottom + 24) + 'px';
+    const n = pinned.length - shown.length;
+    moreEl.textContent = n === 1 ? '+1 further off in the charter' : '+' + n + ' further off in the charter';
+    moreEl.style.display = n ? '' : 'none';
+    moreEl.style.left = Math.round(railRect.left) + 'px';
+    moreEl.style.width = Math.round(railRect.width) + 'px';
+    moreEl.style.top = Math.round(innerHeight - BAND_BOT - 22) + 'px';
   }
 
   // queue-wire: out of the left edge of the queue card, down (or up) the gutter
   // between the two rails, then left into every place the suggestion touches.
-  const WIRE_COLOR = { quick: 'var(--ins-text)', race: 'var(--race-border)', patch: 'var(--primary)' };
+  // One wire colour for every kind (Ed, 198). Kind is not a thing the wire was
+  // ever asked to say — it says *where this judgment lives* — and three colours
+  // for it competed with the lifecycle palette that colour now belongs to.
+  const WIRE_COLOR = { quick: 'var(--primary)', race: 'var(--primary)', patch: 'var(--primary)' };
   const SVGNS = 'http://www.w3.org/2000/svg';
 
+  // Everywhere in the document this judgment bites. A chip carries the id when
+  // several suggestions share a paragraph; the paragraph itself carries it when
+  // there is only one, and a settled clause carries it with no chip at all —
+  // which is why the chip-only version of this quietly stopped finding sealed
+  // decisions, and clicking their dots moved nothing (Ed, 118).
   function wireTargets(id) {
     const chips = [...doc.querySelectorAll('.achip[data-anchor="' + id + '"]')]
       .map((c) => c.closest('p'))
       .filter(Boolean);
+    const paras = [...doc.querySelectorAll('p[data-anchor="' + id + '"]')];
     const inserts = [...doc.querySelectorAll('.insert-anchor[data-anchor="' + id + '"]')];
-    return [...chips, ...inserts];
+    return [...new Set([...chips, ...paras, ...inserts])];
   }
 
+  // Only the open judgment gets wires. Drawing them on hover made the gutter
+  // flicker as the pointer crossed the queue (Ed, 78). Now that entries stand
+  // beside their clauses the runs are short; a patch's several entries are also
+  // strung together on a spine down the gutter, so one judgment reads as one
+  // object however many places it touches (Ed, 108).
   function drawWires() {
     if (!wiresEl) return;
     while (wiresEl.firstChild) wiresEl.removeChild(wiresEl.firstChild);
-    // Only the open card gets a wire. Drawing one on hover made the gutter
-    // flicker as the pointer crossed the queue (Ed, 78).
     const id = openId ?? pendingId;
     if (!id) return;
-    const btn = queueEl.querySelector('[data-q="' + id + '"]');
-    const targets = wireTargets(id);
     const s = SUGGS.find((x) => x.id === id);
-    if (!btn || !targets.length || !s) return;
+    const entries = [...queueEl.querySelectorAll('.qitem[data-q="' + id + '"]')]
+      .filter((el) => el.style.display !== 'none');
+    if (!s || !entries.length) return;
 
-    const b = btn.getBoundingClientRect();
     const mainR = document.querySelector('main').getBoundingClientRect();
-    const gx = (mainR.right + b.left) / 2;     // the gutter between the two rails
-    const sx = b.left, sy = b.top + b.height / 2;
     const color = WIRE_COLOR[s.kind];
+    const gx = (mainR.right + entries[0].getBoundingClientRect().left) / 2;
 
     const dot = (x, y) => {
       const c = document.createElementNS(SVGNS, 'circle');
@@ -1151,170 +1764,277 @@
       c.setAttribute('fill', color);
       wiresEl.appendChild(c);
     };
+    const line = (d) => {
+      const p = document.createElementNS(SVGNS, 'path');
+      p.setAttribute('d', d);
+      p.setAttribute('stroke', color);
+      wiresEl.appendChild(p);
+    };
 
-    for (const t of targets) {
+    const ys = [];
+    for (const el of entries) {
+      const t = anchorForEntry(id, el.dataset.site);
+      if (!t) continue;
+      const b = el.getBoundingClientRect();
       const r = t.getBoundingClientRect();
-      const tx = r.right;
-      const ty = r.top + Math.min(r.height / 2, 16);
+      const sx = b.left, sy = b.top + Math.min(b.height / 2, 18);
+      const tx = r.right, ty = r.top + Math.min(r.height / 2, 16);
+      ys.push(sy);
       const down = ty > sy;
       const rad = Math.max(0, Math.min(8, Math.abs(ty - sy) / 2, (sx - gx) / 2, (gx - tx) / 2));
-      const p = document.createElementNS(SVGNS, 'path');
-      p.setAttribute('d',
-        'M ' + sx + ' ' + sy +
+      line('M ' + sx + ' ' + sy +
         ' H ' + (gx + rad) +
         ' Q ' + gx + ' ' + sy + ' ' + gx + ' ' + (sy + (down ? rad : -rad)) +
         ' V ' + (ty + (down ? -rad : rad)) +
         ' Q ' + gx + ' ' + ty + ' ' + (gx - rad) + ' ' + ty +
         ' H ' + tx);
-      p.setAttribute('stroke', color);
-      wiresEl.appendChild(p);
       dot(tx, ty);
+      dot(sx, sy);
     }
-    dot(sx, sy);
+    // the spine: what makes several entries visibly one judgment
+    if (ys.length > 1) line('M ' + gx + ' ' + Math.min(...ys) + ' V ' + Math.max(...ys));
   }
 
-  function meterHtml(id) {
-    const s = SUGGS.find((x) => x.id === id);
-    return '<div class="meter' + (s.saturated ? ' saturated' : '') +
-      '" title="Closeness to resolution — a magnitude, never a direction"><i style="width:' + s.pct + '%"></i></div>' +
-      '<div class="mcap">' + s.cap + ' · this shows how much more evidence is needed, never which way it leans</div>' +
-      // how big the argument is, and how far through your share of it you are.
-      // A count and a coverage — neither says who is ahead (SPEC §8.3).
-      (s.kind === 'race' && s.candidates
-        ? '<div class="mcap">' + s.candidates + ' proposals racing · you’ve judged ' + s.pairsJudged +
-          ' of the pairs you’ll be asked for</div>'
-        : '');
-  }
 
+
+  // What you already said, and that you may still change it. Below the commit
+  // row (Ed, 215): it is a note *about* the button you are looking at, and at
+  // the top of the card it read as an instruction before you had seen the texts.
   function reviseNote(s) {
     if (!isJudged(s)) return '';
-    return '<div class="srationale" style="border-color: var(--primary);"><span class="rl">You ' + (verdicts.get(s.id) || s.verdict || 'judged') + '</span>Choosing again replaces your earlier judgment — allowed while the race is still deciding; it locks when the race seals or the text changes under it (SPEC §4.4).</div>';
+    return '<div class="srationale"><span class="rl">You ' +
+      (verdicts.get(s.id) || s.verdict || 'judged') + '</span>' +
+      'Choosing again replaces your earlier judgment — allowed while the race is still deciding; ' +
+      'it locks when the race seals or the text changes under it (SPEC §4.4).</div>';
   }
 
-  // "In short" — what a proposal actually does, above the lanes rather than
-  // inside one. A quick card and a patch have one; a race has one per candidate,
-  // side by side and column-aligned with the lane each describes.
-  // The ledger carries the rationale too (Ed, 87): what a proposal does and why
-  // it was wanted, together, above the lanes. The lanes are then only the text
-  // and the verdict — nothing to read there but the thing being judged.
-  function ledgerHtml(ledger, label, rationale) {
-    if (!ledger || !ledger.length) return '';
-    return '<div class="sledger"><div class="lh">In short' + (label ? ' · ' + label : '') + '</div><ul>' +
-      ledger.map((l) => '<li><span class="lchip ' + l.c + '">' + l.c + '</span><span>' + esc(l.t) + '</span></li>').join('') +
-      '</ul>' +
-      (rationale ? '<div class="lrat"><span class="ll">Why · unsigned</span>' + esc(rationale) + '</div>' : '') +
-      '</div>';
+  // The author's pinned rationale — the only thing anyone says about a proposal
+  // besides writing it (SPEC §2.6, §3.4). It sits above the lanes (Ed, 87), so
+  // the lanes hold nothing but the text and the verdict. A quick card and a
+  // patch have one; a race has one per candidate, column-aligned with its lane.
+  // Unlabelled (Ed, 95): the italic voice says it is someone talking, and on a
+  // race the column says whose. A "Why · Option A" header only repeated the lane.
+  function whyHtml(rationale) {
+    if (!rationale) return '';
+    return '<div class="swhy">' + esc(rationale) + '</div>';
   }
 
-  // Choosing and committing are separate acts (Ed, 88). The pill holds the
-  // choice — A, indifferent, B — and nothing leaves the card until Submit.
+  // Choosing and committing are separate acts (Ed, 88): a click selects, and
+  // nothing leaves the card until Submit.
   const picked = new Map();
-  const pickOf = (s) => picked.get(s.id) ?? s.pick ?? null;
+  // an explicit null means "deselected in this session", which has to outrank
+  // the fixture's own pick on a card you have judged before and reopened
+  const pickOf = (s) => (picked.has(s.id) ? picked.get(s.id) : (s.pick ?? null));
+  // What is actually on the record, as against what is merely selected. The
+  // tick reads pressed while the two agree and springs back out the moment you
+  // choose something else (Ed, 216) — so a reopened judgment shows plainly that
+  // it is already cast, and equally plainly when you have an uncommitted change.
+  const committed = new Map();
+  const committedOf = (s) => (committed.has(s.id) ? committed.get(s.id) : (s.pick ?? null));
+  const isCast = (s) => isJudged(s) && pickOf(s) !== null && pickOf(s) === committedOf(s);
 
-  function pillHtml(s, aAct, bAct, aLabel, bLabel) {
-    const pick = pickOf(s);
-    const seg = (v, label, ico, cls) =>
-      '<button class="vseg' + (cls ? ' ' + cls : '') + '" data-v="' + v + '"' +
-      ' aria-pressed="' + (pick === v) + '"' + (s.locked ? ' disabled' : '') + '>' +
-      '<span class="vico">' + ico + '</span>' + label + '</button>';
-    return '<div class="verdict-pill"' + (s.locked ? ' data-locked="true"' : '') + '>' +
-      seg(aAct, aLabel, '⬆️') +
-      seg('indifferent', 'Can’t split them', '🤷', 'vmid') +
-      seg(bAct, bLabel, '⬆️') +
-      '</div>';
-  }
+  // The lanes *are* the buttons (Ed, 197). You choose a text by clicking the
+  // text, which is the most direct statement the card can make of what it is
+  // asking — and it retires "Option A / Option B", which only ever existed so
+  // that a control underneath could refer back up to a lane.
+  //
+  // Indifference cannot ride on a lane: it is a judgment about the *pair*
+  // (SPEC §3.2), not about either text, so it keeps a control of its own.
+  const laneAttrs = (s, v) =>
+    ' data-v="' + v + '" role="button" tabindex="' + (s.locked ? '-1' : '0') + '"' +
+    ' aria-pressed="' + (pickOf(s) === v) + '"' + (s.locked ? ' aria-disabled="true"' : '');
 
+  // Submit appears only once something is chosen (Ed, 202) — a disabled button
+  // is a thing you are being told off by; an absent one is simply the next step
+  // not having arrived yet.
+  //
+  // Skip survives only on the one card the surface *insists* on (Ed, 202). Skip
+  // exists to say "not this, not now", and everywhere else the rail merely
+  // offers — closing a card already says that, and says it more honestly, since
+  // SPEC §3.1 makes skipping a non-move anyway. The 🔥 card is the exception
+  // because it is exempt from the fit cap and always on screen, so without an
+  // escape it would be a nag you cannot dismiss.
   function commitRowHtml(s, extra) {
-    const ready = pickOf(s) && !s.locked;
+    const pick = pickOf(s);
+    const insists = s.id === topUrgentId && stateOf(s) === 'needs';
+    // Submit takes the shrug's own place once something is chosen (Ed, 204) —
+    // it is rendered but hidden until then, so revealing it needs no re-render
+    // and the document doesn't move under the reader.
     return '<div class="race-mid">' +
-      '<button class="btn" data-act="skip">Skip</button>' +
-      '<button class="btn btn-approve" data-act="submit"' + (ready ? '' : ' disabled') + '>Submit</button>' +
+      // The shrug and Submit share one slot (Ed, 209): once anything is chosen
+      // the shrug steps out and Submit stands where it was. Both are glyphs
+      // alone (Ed, 213) — the row is two gestures, not two sentences.
+      (s.locked ? '' : '<button class="btn btn-approve glyphbtn' + (pick ? '' : ' hidden') +
+        '" data-act="submit" aria-pressed="' + isCast(s) + '" title="' +
+        (isCast(s) ? 'Recorded — choose again to change it' : 'Submit this judgment') + '">✓</button>') +
+      '<button class="btn vindiff glyphbtn' + (pick ? ' hidden' : '') + '" data-v="indifferent"' +
+      ' aria-pressed="' + (pick === 'indifferent') + '"' + (s.locked ? ' disabled' : '') +
+      ' title="I can’t split them">🤷</button>' +
+      (insists ? '<button class="btn" data-act="skip">Not this one, not now</button>' : '') +
       (extra || '') +
       '</div>';
   }
 
-  function suggCardHtml(s) {
+  // A sealed judgment opens like any other — same two lanes, same geometry —
+  // but as a record rather than a question (Ed, 112): the text that stood is
+  // marked, and the numbers it stood on are stated. Nothing here is clickable.
+  // The whole field a sealed judgment was decided from, winner marked. A pair
+  // for a quick card or a two-horse race; a `slate` where there were more.
+  // The field a sealed judgment was decided from — only things that were
+  // *proposed*. The incumbent is not a proposal: it is what they were all
+  // measured against, so it gets its own block rather than a place in the
+  // ranking (which would otherwise print "the current text: not adopted").
+  // The rank number identifies a proposal in the record, so it needs no letter
+  // either (Ed, 197) — a field of five reads 1..5, and a lone proposal is
+  // named by what it is.
+  function fieldOf(s) {
+    if (s.slate) return s.slate.map((c) => ({ label: '', text: c.text, why: c.rationale, p: c.p, won: !!c.won }));
+    if (s.kind === 'race') return [
+      { label: '', text: s.race.a.text, why: s.race.a.rationale, p: s.race.a.p, won: s.won === 'a' },
+      { label: '', text: s.race.b.text, why: s.race.b.rationale, p: s.race.b.p, won: s.won === 'b' },
+    ];
+    return [{ label: 'What was proposed', text: s.optionB, why: s.rationale, p: (s.decided || {}).p, won: s.won === 'b' }];
+  }
+
+  function sealedCardHtml(s) {
+    const d = s.decided || {};
+    // The Bradley–Terry model that ran the race carries a strength for every
+    // candidate, so a sealed race can be ranked outright (Ed, 121) — and the
+    // record-builder publishes rankings anyway. §8.3's no-standings rule is
+    // about *live* feeds; nothing here can be influenced any more.
+    // Everything full width, in order, the adopted one first.
+    const field = fieldOf(s);
+    const held = !field.some((c) => c.won);
+    const ranked = field.slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1));
+    // what the field was measured against: still standing, or displaced by the
+    // winner and therefore nowhere in the document any more
+    const incumbent = held ? currentTextFor((s.keys ?? [])[0]) : (s.replaced ?? s.optionA ?? null);
+    const yours = verdicts.get(s.id) || s.verdict;
+    const line = (c) => {
+      if (c.p == null) return '<div class="pline">the text it was measured against</div>';
+      const cleared = d.bar != null && c.p >= d.bar;
+      return '<div class="pline"><b>' + c.p.toFixed(2) + '</b> against the current text · ' +
+        (cleared ? 'cleared' : 'below') + ' the bar of ' + (d.bar ?? 0).toFixed(2) + '</div>';
+    };
+    return (
+      '<div class="sugg sealed-open" data-card="' + s.id + '">' +
+      '<div class="rechead"><span>Decided · ' + esc(d.outcome || 'sealed') + '</span>' +
+      '<span class="sub">' + esc(d.when || '') + '</span></div>' +
+      (held && incumbent
+        ? '<div class="stoodblock"><div class="rtag">The charter as it stands' +
+          '<span class="rsub stood">✓ nothing displaced it</span></div>' +
+          '<div class="rtext">' + esc(incumbent) + '</div>' +
+          '<div class="mcap">No proposal cleared the bar, so the charter kept the text it had. ' +
+          'The field below is in the record and can be redrafted next session.</div></div>'
+        : '') +
+      '<div class="fellhead">' + (ranked.length > 1
+        ? 'The whole field · ' + ranked.length + ' proposals, ranked by how each did against the current text'
+        : 'What was proposed') + '</div>' +
+      ranked.map((c, i) =>
+        '<div class="ranked' + (c.won ? ' stood' : '') + '">' +
+        '<div class="rtag">' + (ranked.length > 1 ? '<span class="rank">' + (i + 1) + '</span>' : '') + c.label +
+        (c.won ? '<span class="rsub stood">✓ this is the text that stands</span>'
+               : '<span class="rsub">not adopted</span>') + '</div>' +
+        line(c) +
+        (c.why ? '<div class="swhy">' + esc(c.why) + '</div>' : '') +
+        '<div class="rtext">' + esc(c.text) + '</div></div>').join('') +
+      (!held && incumbent
+        ? '<div class="replaced"><div class="rtag">The text it replaced</div>' +
+          '<div class="rtext">' + esc(incumbent) + '</div></div>'
+        : '') +
+      // The two numbers are different in kind and the record says which is
+      // which (Ed, 186): the bar is a confidence, the quorum is a headcount.
+      '<div class="record">' +
+      '<span><b>' + (d.judges ?? 0) + ' of ' + ROSTER + '</b> weighed in · quorum was <b>' + FLOOR + '</b></span>' +
+      '<span>confidence <b>' + (d.p ?? 0).toFixed(2) + '</b> against a bar of <b>' + (d.bar ?? 0).toFixed(2) + '</b></span>' +
+      '<span>' + (yours ? 'you ' + esc(yours) : 'you never judged this') + '</span>' +
+      '</div>' +
+      // Reading is not acknowledging (Ed, 114). A decision stays unread — and
+      // stays pinned to the screen — until you say you have taken it in.
+      (isUnread(s)
+        ? '<div class="sactions"><button class="btn btn-approve" data-seen="' + s.id + '">OK, I’ve seen this</button>' +
+          '<span class="mcap">until then it stays at the top of your margin</span></div>'
+        : '<div class="mcap">✓ you’ve seen this one</div>') +
+      '<div class="foot">The adoption-threshold rises through the session, so the bar a judgment cleared is part of the record · authorship sealed · this judgment is locked (SPEC §4.4)</div>' +
+      '</div>'
+    );
+  }
+
+  function suggCardHtml(s, siteKey) {
+    if (stateOf(s) === 'sealed') return sealedCardHtml(s);
     if (s.kind === 'race') {
       return (
         '<div class="sugg race-open" data-card="' + s.id + '">' +
-        '<div class="shead"><span>Race · ' + s.qLabel + '</span><span class="sub">escalated: two proposals collide here</span></div>' +
-        reviseNote(s) +
-        meterHtml(s.id) + '<div class="stext small" style="color:var(--muted);margin-top:8px">' + s.race.prompt + '</div>' +
-        '<div class="ledger-grid">' +
-        ledgerHtml(s.race.a.ledger, 'Option A', s.race.a.rationale) +
-        ledgerHtml(s.race.b.ledger, 'Option B', s.race.b.rationale) + '</div>' +
+        '<div class="why-grid">' +
+        whyHtml(s.race.a.rationale) +
+        whyHtml(s.race.b.rationale) + '</div>' +
+        // no lane headers on a race: both sides are proposals, the rationale
+        // above each column says whose, and naming them A and B added nothing
         '<div class="race-grid">' +
-        '<div class="rcand"><div class="rtag">Option A</div><div class="rtext">' + esc(s.race.a.text) + '</div></div>' +
-        '<div class="rcand"><div class="rtag">Option B</div><div class="rtext">' + esc(s.race.b.text) + '</div></div>' +
+        '<div class="rcand pickable"' + laneAttrs(s, 'a') + '><div class="rtext">' + esc(s.race.a.text) + '</div></div>' +
+        '<div class="rcand pickable"' + laneAttrs(s, 'b') + '><div class="rtext">' + esc(s.race.b.text) + '</div></div>' +
         '</div>' +
-        pillHtml(s, 'a', 'b', 'Option A', 'Option B') +
-        commitRowHtml(s, '<button class="btn btn-outline" data-act="propose">Propose something else · 1 token</button>') +
+        commitRowHtml(s, '<button class="btn btn-outline" data-act="propose">💡 Propose something else · 1 token</button>') +
+        reviseNote(s) +
         '<div class="foot">Authorship sealed · no counts, no standings · full race view has comparison modes and the whole queue</div>' +
         '</div>'
       );
     }
     if (s.kind === 'patch') {
-      // Same object as a race and a quick card: the charter as it stands on the
-      // left, the change on the right. A patch differs only in that each lane
-      // carries every site — the judgment is one, so the lanes are one each.
+      // A card at every place the patch touches (Ed, 181), each showing only
+      // that clause — but one judgment for all of them, so every card reads the
+      // same `picked` state, highlights the same lane, and commits the whole
+      // thing. The stepper is how you read the rest before you commit.
       const n = s.sites.length;
-      const lane = (site, body) => '<div class="site-block"><span class="sb">' + site.label + '</span>' + body + '</div>';
+      const i = Math.max(0, s.sites.findIndex((x) => x.key === siteKey));
+      const site = s.sites[i];
+      const step = (to, label, glyph) => (to === null
+        ? '<span class="pstep off">' + glyph + '</span>'
+        : '<button class="pstep" data-step="' + s.id + ':' + s.sites[to].key + '" title="' + esc(label) + '">' + glyph + '</button>');
       return (
-        '<div class="sugg patch-open" data-card="' + s.id + '">' +
-        '<div class="shead"><span>One suggestion · ' + n + ' places</span>' +
-        '<span class="sub">every site is highlighted in the document — judged together</span></div>' +
-        reviseNote(s) +
-        meterHtml(s.id) +
-        '<div class="stext small" style="color:var(--muted);margin-top:8px">This change touches ' + n +
-        ' places and is taken as one. Which should stand — the charter as it is, or the change?</div>' +
-        ledgerHtml(s.ledger, '', s.rationale) +
+        '<div class="sugg patch-open" data-card="' + s.id + '" data-site="' + site.key + '">' +
+        '<div class="pnav">' +
+        '<span class="pwhere">' + esc(site.label) + ' · place ' + (i + 1) + ' of ' + n + '</span>' +
+        '<span class="psteps">' +
+        step(i > 0 ? i - 1 : null, 'The place before', '↑') +
+        step(i < n - 1 ? i + 1 : null, 'The next place', '↓') +
+        '</span></div>' +
+        whyHtml(s.rationale) +
         '<div class="race-grid">' +
-        '<div class="rcand">' +
-        '<div class="rtag">Option A<span class="rsub">the charter as it stands</span></div>' +
-        s.sites.map((site) => lane(site, esc(currentTextFor(site.key)))).join('') +
+        '<div class="rcand pickable"' + laneAttrs(s, 'keep') + '>' +
+        '<div class="rtext">' + esc(currentTextFor(site.key)) + '</div>' +
         '</div>' +
-        '<div class="rcand">' +
-        '<div class="rtag">Option B<span class="rsub">the change, in all ' + n + ' places</span></div>' +
-        s.sites.map((site) => lane(site, site.marked)).join('') +
+        '<div class="rcand pickable"' + laneAttrs(s, 'approve') + '>' +
+        '<div class="rtext">' + resultOnly(site.marked) + '</div>' +
         '</div>' +
         '</div>' +
-        pillHtml(s, 'keep', 'approve', 'Option A', 'Option B') +
         commitRowHtml(s) +
+        reviseNote(s) +
         '<div class="foot">One judgment for all ' + n +
-        ' places — they cannot be taken separately · preferring A records a judgment for the current text · authorship sealed</div>' +
+        ' places — they cannot be taken separately, so choosing here chooses everywhere · choosing the current text records a judgment for it · authorship sealed</div>' +
         '</div>'
       );
     }
-    // quick (including insert) — the race card's own geometry, with Option A the
-    // incumbent and Option B the proposal, so choosing A *is* keep-current.
+    // quick (including insert) — the race card's own geometry, with the
+    // incumbent on the left, so choosing the left lane *is* keep-current.
     const cur = s.isInsert ? '' : currentTextFor((s.keys ?? [])[0]);
     return (
       '<div class="sugg quick-open" data-card="' + s.id + '">' +
-      '<div class="shead"><span>' + (s.isInsert ? 'New section proposed' : 'Suggestion') + ' · ' + s.qLabel + '</span><span class="sub">' + s.qSub + '</span></div>' +
-      reviseNote(s) +
-      meterHtml(s.id) +
-      '<div class="stext small" style="color:var(--muted);margin-top:8px">' +
-      (s.isInsert
-        ? 'Should this section stand in the charter, or should the charter stay as it is?'
-        : 'Which should stand here — the text as it is, or the change?') +
-      '</div>' +
-      ledgerHtml(s.ledger, '', s.rationale) +
+      whyHtml(s.rationale) +
       '<div class="race-grid">' +
-      '<div class="rcand">' +
-      '<div class="rtag">Option A<span class="rsub">' + (s.isInsert ? 'the charter as it stands' : 'the current text') + '</span></div>' +
+      '<div class="rcand pickable"' + laneAttrs(s, 'keep') + '>' +
       (s.isInsert
         ? '<div class="rtext none">Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.</div>'
         : '<div class="rtext">' + esc(cur) + '</div>') +
       '</div>' +
-      '<div class="rcand">' +
-      '<div class="rtag">Option B<span class="rsub">' + (s.isInsert ? 'the proposed section' : 'the proposed change') + '</span></div>' +
+      '<div class="rcand pickable"' + laneAttrs(s, 'approve') + '>' +
       (s.isInsert ? '<div class="rtext"><ins>' + esc(s.newHeading) + '</ins></div>' : '') +
-      '<div class="rtext">' + s.marked + '</div>' +
+      '<div class="rtext">' + resultOnly(s.marked) + '</div>' +
       '</div>' +
       '</div>' +
-      pillHtml(s, 'keep', 'approve', 'Option A', 'Option B') +
       commitRowHtml(s) +
-      '<div class="foot">Preferring A records a judgment for the current text · indifference here involves the current text, so it feeds the care map (SPEC §3.2) · authorship sealed · no counts, no standings</div>' +
+      reviseNote(s) +
+      '<div class="foot">Choosing the current text records a judgment for it · indifference here involves the current text, so it feeds the care map (SPEC §3.2) · authorship sealed · no counts, no standings</div>' +
       '</div>'
     );
   }
@@ -1338,43 +2058,50 @@
       if (headIdx > 0 && hiddenSection(headIdx - 1)) continue;
 
       const live = line.key ? suggFor(line.key) : [];
-      const wasResolved = line.key && !live.length &&
-        SUGGS.some((g) => (resolved.has(g.id) || g.state === 'sealed') && (g.keys ?? []).includes(line.key));
+      // a settled clause still opens its record from the document side (Ed, 112)
+      const wasResolved = line.key && !live.length
+        ? SUGGS.find((g) => (resolved.has(g.id) || g.state === 'sealed') && (g.keys ?? []).includes(line.key))
+        : undefined;
 
       if (live.length) {
         const primary = live.find((x) => x.id === openId) ?? live[0];
         const kin = openId === primary.id && primary.kind === 'patch' && cardDone;
         const chips = live.map((g) => {
           const siteIdx = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === line.key) : -1;
-          let text = g.kind === 'patch' ? (siteIdx + 1) + ' of ' + g.sites.length : chipText(g);
-          if (isJudged(g)) text = '✓ ' + text;
-          return '<span class="achip ' + g.kind + '" data-anchor="' + g.id + '">' + text + '</span>';
+          const where = g.kind === 'patch' ? ' · place ' + (siteIdx + 1) + ' of ' + g.sites.length : '';
+          return '<span class="achip" data-anchor="' + g.id + '" title="' +
+            esc(plainLabel(g.qLabel)) + where + '">' + markOf(g) + '</span>';
         }).join('');
         html +=
-          '<p class="anch ' + primary.kind + (kin ? ' kin' : '') + '" data-anchor="' + primary.id + '" title="Open this suggestion">' +
+          '<p class="anch' + (openId === primary.id ? ' active' : '') + '" data-key="' + line.key +
+          '" data-anchor="' + primary.id + '" title="Open this suggestion"' +
+          anchWash(primary, openId === primary.id) + '>' +
           '<span class="chipcol">' + chips + '</span>' + esc(line.x) + '</p>';
         const openSugg = live.find((x) => x.id === openId);
-        if (openSugg && !cardDone) {
+        // A patch opens a card at *every* place it touches (Ed, 181), each
+        // showing only that clause; everything else opens once.
+        if (openSugg && openSugg.kind === 'patch') {
+          if (openSugg.sites.some((x) => x.key === line.key)) {
+            html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
+            cardDone = true;
+          }
+        } else if (openSugg && !cardDone) {
           html += '</div>' + suggCardHtml(openSugg) + '<div class="prose">';
           cardDone = true;
         }
       } else {
-        const chg = line.key ? CHANGES.find((c) => c.key === line.key && !seenChanges.has(c.key)) : undefined;
-        if (chg) {
-          html += '<p class="anch-chg" data-chg-open="' + chg.key + '"' + freshDelay() + '>' +
-            '<span class="chipcol"><span class="chgchip">changed ' + chg.when + '</span></span>' + esc(line.x) + '</p>';
-          if (openChange === chg.key) {
-            html += '</div><div class="chgcard">' +
-              '<div class="shead"><span>What changed here · ' + chg.when + '</span><span class="sub">' + chg.note + '</span></div>' +
-              '<div class="stext">' + chg.marked + '</div>' +
-              '<div class="sactions">' +
-              '<button class="btn" data-chg-seen="' + chg.key + '">Fine by me</button>' +
-              '<button class="btn btn-outline" data-chg-propose="' + chg.key + '">Propose a change · 1 token</button>' +
-              '</div></div><div class="prose">';
+        {
+          html += '<p' + (wasResolved ? ' class="anch resolved" data-anchor="' + wasResolved.id + '"' +
+              anchWash(wasResolved, openId === wasResolved.id) : '') +
+            (line.key ? ' data-key="' + line.key + '"' : '') + '>' +
+            (wasResolved ? '<span class="chipcol"><span class="achip" data-anchor="' + wasResolved.id +
+              '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + markOf(wasResolved) + '</span></span>' : '') +
+            esc(line.x) + '</p>';
+          // a settled clause opens its record in place, like any other card
+          if (wasResolved && openId === wasResolved.id && !cardDone) {
+            html += '</div>' + suggCardHtml(wasResolved) + '<div class="prose">';
+            cardDone = true;
           }
-        } else {
-          html += '<p' + (wasResolved ? ' class="anch resolved"' : '') + '>' +
-            (wasResolved ? '<span class="chipcol"><span class="achip resolved">judged ✓</span></span>' : '') + esc(line.x) + '</p>';
         }
       }
 
@@ -1382,10 +2109,14 @@
         ? SUGGS.find((g) => g.insertAfterKey === line.key)
         : undefined;
       if (ins) {
-        html += '</div><div class="insert-anchor" data-anchor="' + ins.id + '"><span>＋ proposed new section — ' + esc(ins.newHeading) +
-          '<span class="isub">a held-open gap the depth of what would stand here · click to read it</span></span></div>';
-        if (openId === ins.id) html += suggCardHtml(ins);
-        html += '<div class="prose">';
+        // the gap stays inside the prose column so its gutter mark lines up
+        // with every other mark in the margin
+        html += '<div class="insert-anchor" data-anchor="' + ins.id + '" title="' +
+          esc(plainLabel(ins.qLabel)) + ' — a section proposed for this gap"' +
+          anchWash(ins, openId === ins.id) + '>' +
+          '<span class="chipcol"><span class="achip" data-anchor="' + ins.id + '">' +
+          markOf(ins) + '</span></span></div>';
+        if (openId === ins.id) html += '</div>' + suggCardHtml(ins) + '<div class="prose">';
       }
     }
     html += '</div>';
@@ -1401,18 +2132,52 @@
         toggle(el.dataset.anchor, false);
       })
     );
-    // choosing: updates the pill in place, so the document doesn't move under you
-    doc.querySelectorAll('.sugg [data-v]').forEach((b) =>
+    // Choosing: marks the selection in place, so the document doesn't move
+    // under you. The lanes carry this now as well as the indifference button,
+    // so a click anywhere in a lane's box is the choice (Ed, 197).
+    // Clicking what is already chosen unchooses it (Ed, 204) — nothing here is
+    // committed until Submit, so changing your mind before that should cost the
+    // same one click that making it up did.
+    const choose = (el) => {
+      const card = el.closest('.sugg');
+      const s = SUGGS.find((x) => x.id === card.dataset.card);
+      if (!s || s.locked) return;
+      const now = pickOf(s) === el.dataset.v ? null : el.dataset.v;
+      picked.set(s.id, now);
+      // One judgment, however many cards it is showing on (181): every card
+      // for this suggestion moves its selection together.
+      openCardEls(s.id).forEach((c) => {
+        c.querySelectorAll('[data-v]').forEach((o) =>
+          o.setAttribute('aria-pressed', String(now !== null && o.dataset.v === now)));
+        const submit = c.querySelector('[data-act="submit"]');
+        if (submit) {
+          submit.classList.toggle('hidden', now === null);
+          const cast = isJudged(s) && now !== null && now === committedOf(s);
+          submit.setAttribute('aria-pressed', String(cast));
+          submit.title = cast ? 'Recorded — choose again to change it' : 'Submit this judgment';
+        }
+        const shrug = c.querySelector('.vindiff');
+        if (shrug) shrug.classList.toggle('hidden', now !== null);
+      });
+    };
+    doc.querySelectorAll('.sugg [data-v]').forEach((b) => {
+      b.addEventListener('click', (ev) => { ev.stopPropagation(); choose(b); });
+      if (b.getAttribute('role') === 'button') {
+        b.addEventListener('keydown', (ev) => {
+          if (ev.key !== 'Enter' && ev.key !== ' ') return;
+          ev.preventDefault(); ev.stopPropagation(); choose(b);
+        });
+      }
+    });
+    // stepping between a patch's places: the cards are all open already, so
+    // this is pure navigation — bring the next one to the reading line
+    doc.querySelectorAll('[data-step]').forEach((b) =>
       b.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        const card = b.closest('.sugg');
-        const s = SUGGS.find((x) => x.id === card.dataset.card);
-        if (!s || s.locked) return;
-        picked.set(s.id, b.dataset.v);
-        card.querySelectorAll('[data-v]').forEach((o) =>
-          o.setAttribute('aria-pressed', String(o.dataset.v === b.dataset.v)));
-        const submit = card.querySelector('[data-act="submit"]');
-        if (submit) submit.removeAttribute('disabled');
+        const [id, key] = b.dataset.step.split(':');
+        const target = doc.querySelector('.sugg[data-card="' + id + '"][data-site="' + key + '"]');
+        if (!target) return;
+        smoothScrollBy(target.getBoundingClientRect().top - READ_LINE, () => { layoutQueue(); drawWires(); });
       })
     );
     // committing
@@ -1420,32 +2185,21 @@
       b.addEventListener('click', (ev) => {
         ev.stopPropagation();
         const id = b.closest('.sugg').dataset.card;
-        const what = b.dataset.act === 'submit' ? picked.get(id) : b.dataset.act;
+        const what = b.dataset.act === 'submit'
+          ? pickOf(SUGGS.find((x) => x.id === id) || {}) : b.dataset.act;
         if (!what) return;                       // nothing chosen yet
         act(id, what);
       })
     );
-    doc.querySelectorAll('[data-chg-open]').forEach((el) =>
-      el.addEventListener('click', (ev) => {
-        if (ev.target.closest('.chgcard')) return;
-        ev.stopPropagation();
-        openChange = openChange === el.dataset.chgOpen ? null : el.dataset.chgOpen;
-        renderAll();
-      })
-    );
-    doc.querySelectorAll('[data-chg-seen]').forEach((el) =>
+    // acknowledging a sealed decision: the only thing that marks it read, and
+    // the card closes behind it so the entry visibly settles into its dot
+    doc.querySelectorAll('[data-seen]').forEach((el) =>
       el.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        seenChanges.add(el.dataset.chgSeen);
-        if (openChange === el.dataset.chgSeen) openChange = null;
-        renderAll();
-      })
-    );
-    doc.querySelectorAll('[data-chg-propose]').forEach((el) =>
-      el.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        // propose-C opens the composer (later mockup) \u2014 no-op here.
-        renderAll();
+        const id = el.dataset.seen;
+        readSeals.add(id);
+        const shut = () => { if (openId === id) openId = null; renderAll(); drawWires(); };
+        if (openId === id) collapseCards(id, shut); else shut();
       })
     );
   }
@@ -1471,31 +2225,49 @@
     requestAnimationFrame(step);
   }
 
-  // Bring the document to the queue card so the wire runs flat. A multi-site
-  // patch levels on its topmost site; the others fan off that line.
-  // The queue is sticky, so one scroll can move both ends — measure again and
-  // correct, but stop as soon as a pass stops improving.
-  function levelWire(id, pass, prev, done) {
-    const fin = () => { drawWires(); if (done) done(); };
-    const btn = queueEl.querySelector('[data-q="' + id + '"]');
+  // Levelling the wire by scrolling (74) is no longer a thing that has to be
+  // done: an entry stands at its clause's own height, so the run is flat by
+  // construction. What is left is making sure you can see where you just sent
+  // your attention — bring the topmost site into a comfortable band, or leave
+  // the page alone if it is already there. A patch uses its topmost site.
+  // Bring the clause to the top of the page, because that is where the card
+  // will unroll from — aiming for the middle of the screen (the first version
+  // of this) left most of a tall decision card below the fold. A narrow accept
+  // band, so a clause already up there doesn't get nudged for nothing.
+  const READ_LINE = 150;
+  const topTarget = (targets) => targets.reduce((a, c) =>
+    (c.getBoundingClientRect().top < a.getBoundingClientRect().top ? c : a));
+
+  // Second half of the move: bring the *entry* and its clause onto one line, so
+  // the wire reads flat. Since 110 the rail is pinned to the viewport, and the
+  // entries for clauses above you pile against the top of the band — so an open
+  // entry can sit hundreds of pixels below the clause it points at, which is
+  // what made this feel broken (Ed, 118). Scrolling closes that gap, but every
+  // scroll changes the pile, so: at most two passes, stop as soon as one stops
+  // improving, and refuse outright if levelling would push the clause so far
+  // down the screen that the card has nowhere to unroll.
+  function levelEntry(id, pass, prev, done) {
+    const fin = () => { layoutQueue(); drawWires(); done(); };
+    const li = liFor(id);
     const targets = wireTargets(id);
-    if (!btn || !targets.length) return fin();
-    const top = targets.reduce((a, c) =>
-      (c.getBoundingClientRect().top < a.getBoundingClientRect().top ? c : a));
-    const b = btn.getBoundingClientRect();
-    const r = top.getBoundingClientRect();
-    // identical endpoints to drawWires, or the line won't actually come out flat
-    const delta = (r.top + Math.min(r.height / 2, 16)) - (b.top + b.height / 2);
-    const stalled = prev !== undefined && Math.abs(delta) >= Math.abs(prev) * 0.7;
-    if (Math.abs(delta) < 1.5 || pass > 2 || stalled) return fin();
-    // Past the end of the charter the rail runs out of container and rides with
-    // the page: both ends of the wire then move together, so scrolling further
-    // down can never flatten it — it only travels. Refuse that pass.
-    const layout = document.querySelector('.layout');
-    const rail = queueEl.parentElement;
-    const pinnable = layout.getBoundingClientRect().bottom - rail.getBoundingClientRect().height >= 58;
-    if (delta > 0 && !pinnable) return fin();
-    smoothScrollBy(delta, () => levelWire(id, pass + 1, delta, done));
+    if (!li || li.style.display === 'none' || !targets.length) return fin();
+    const t = topTarget(targets);
+    const delta = (li.getBoundingClientRect().top + Math.min(li.offsetHeight / 2, 18)) -
+      (t.getBoundingClientRect().top + Math.min(t.getBoundingClientRect().height / 2, 16));
+    if (Math.abs(delta) < 3 || pass > 1) return fin();
+    if (prev !== undefined && Math.abs(delta) >= Math.abs(prev) * 0.7) return fin();
+    const clauseAfter = t.getBoundingClientRect().top + delta;
+    if (clauseAfter > innerHeight * 0.5 || clauseAfter < 90) return fin();
+    smoothScrollBy(-delta, () => { layoutQueue(); levelEntry(id, pass + 1, delta, done); });
+  }
+
+  function bringIntoView(id, done) {
+    const targets = wireTargets(id);
+    if (!targets.length) { drawWires(); return done(); }
+    const y = topTarget(targets).getBoundingClientRect().top;
+    const level = () => { layoutQueue(); levelEntry(id, 0, undefined, done); };
+    if (y >= 100 && y <= 300) return level();
+    smoothScrollBy(y - READ_LINE, level);
   }
 
   // Opening and closing a card changes the height of the document under the
@@ -1537,7 +2309,16 @@
     }, EXPAND_MS);
   }
 
-  const openCardEl = (id) => doc.querySelector('.sugg[data-card="' + id + '"]');
+  // A patch has a card at every site (181), so open and close operate on a set.
+  const openCardEls = (id) => [...doc.querySelectorAll('.sugg[data-card="' + id + '"]')];
+  const runOnCards = (fn) => (id, done) => {
+    const els = openCardEls(id);
+    if (!els.length) return done();
+    let left = els.length;
+    els.forEach((el) => fn(el, () => { if (--left === 0) done(); }));
+  };
+  const collapseCards = runOnCards(collapseCard);
+  const expandCards = runOnCards(expandCard);
 
   // A click during a transition supersedes it rather than being swallowed: each
   // sequence carries a token, and every step drops out if a newer one has begun.
@@ -1568,22 +2349,21 @@
         if (!alive()) return;
         openId = next;
         renderAll();
-        expandCard(openCardEl(next), () => {
+        // the card made the document taller, so every entry below it has moved
+        layoutQueue();
+        expandCards(next, () => {
           if (!alive()) return;
-          // The expanded card makes the document taller, which can shift a
-          // sticky queue card near the end of the charter — where the rail is
-          // running out of room to stick. Take up whatever slack that added.
-          // A no-op everywhere else, since the alignment is already exact.
-          if (scroll) levelWire(next, 0, undefined, settle); else settle();
+          layoutQueue();
+          settle();
         });
       };
       // measure the scroll with the old card gone and the new one not yet in,
       // so nothing shifts underneath the alignment
-      if (scroll) levelWire(next, 0, undefined, open); else open();
+      if (scroll) bringIntoView(next, open); else open();
     };
 
     if (closing) {
-      collapseCard(openCardEl(closing), () => {
+      collapseCards(closing, () => {
         if (!alive()) return;
         openId = null;
         renderAll();
@@ -1596,17 +2376,20 @@
 
   function act(id, what) {
     const s = SUGGS.find((x) => x.id === id);
-    const hash = Array.from({ length: 8 }, () => '0123456789abcdef'[(Math.random() * 16) | 0]).join('');
     if (what === 'propose') {
       // propose-C opens the composer (later mockup) — no-op here.
       renderAll();
       return;
     }
+    // Without lane letters, a race verdict has to name the text itself (197).
+    // The first few words are enough to recognise, and they are the words the
+    // member actually chose rather than a position on a screen.
+    const quote = (t) => '“' + String(t || '').split(/\s+/).slice(0, 6).join(' ') + '…”';
     const verdict =
       what === 'approve' ? 'approved (recorded as: proposal beats current text)'
       : what === 'keep' ? 'kept the current text'
-      : what === 'a' ? 'preferred A'
-      : what === 'b' ? 'preferred B'
+      : what === 'a' ? 'preferred ' + quote(s.race && s.race.a.text)
+      : what === 'b' ? 'preferred ' + quote(s.race && s.race.b.text)
       : what === 'indifferent' ? 'indifferent'
       : 'skipped (recirculates with decay)';
     if (what === 'skip') {
@@ -1616,39 +2399,103 @@
         renderAll();
         drawWires();
       };
-      if (openId === id) collapseCard(openCardEl(id), shut); else shut();
+      if (openId === id) collapseCards(id, shut); else shut();
       return;
     }
+    // Submitting no longer closes the card (Ed, 217): it stays open and simply
+    // becomes what it now is — a judged card, tick pressed, its note underneath
+    // saying you may still change your mind. Closing it used to be the only way
+    // the surface acknowledged the act; the pressed tick does that better, and
+    // keeping the card open means the document does not move under a reader who
+    // was in the middle of it. The queue entry re-renders around it.
     const firstTime = !resolved.has(id);
-    const finish = () => {
-      verdicts.set(id, verdict);
-      picked.set(id, what);          // reopening shows the pill as you left it
-      resolved.add(id);
-      if (openId === id) openId = null;
-      justArrived = firstTime ? id : null;
-      if (restoreAutoFolds()) renderToc();   // a judged patch lets its sections go
-      renderAll();
-    };
-    // Same rule as toggle: the card shrinks out of the document before the
-    // document re-lays-out, so judging doesn't jolt the page either.
     const btn = queueEl.querySelector('[data-q="' + id + '"]');
-    const slide = firstTime && btn && btn.classList;
-    if (slide) btn.classList.add('leaving');
-    const wait = slide ? 240 : 0;
-    if (openId === id) {
-      collapseCard(openCardEl(id), () => setTimeout(finish, Math.max(0, wait - COLLAPSE_MS)));
-    } else {
-      setTimeout(finish, wait);
-    }
+    if (firstTime && btn) btn.classList.add('leaving');
+    setTimeout(() => {
+      verdicts.set(id, verdict);
+      picked.set(id, what);
+      committed.set(id, what);       // this is now the thing on the record
+      resolved.add(id);
+      justArrived = firstTime ? id : null;
+      renderAll();
+    }, firstTime && btn ? 240 : 0);
   }
 
   // contents-rail: the document's own headings, in document order.
+  // The same lifecycle marks, in the contents rail (Ed, 177): each heading
+  // carries the marks of the questions inside it, so the shape of the session
+  // is legible from the left as well as the right. Ownership is innermost —
+  // a mark appears on exactly one line — except that a *folded* heading takes
+  // its descendants' marks, since they have no line of their own while it is
+  // shut. In document order, capped, with an overflow count.
+  const TOC_MARKS = 4;
+
+  // Everything the charter is being asked about inside a heading, in document
+  // order. A patch appears once per section it touches, not once per site.
+  function entriesForSection(n) {
+    return queueEntries().filter((e) => {
+      if (e.n !== 1) return false;
+      const secs = suggestionSections(e.g.id);
+      return collapsed.has(n)
+        ? secs.some((m) => m === n || ancestorsOf(m).includes(n))
+        : secs.includes(n);
+    }).map((e) => e.g);
+  }
+
+  // A challenged paragraph wears the same colour as its queue card (Ed, 200):
+  // the lifecycle hue, not a generic "under challenge" yellow, so the charter
+  // itself becomes readable by state. A filed decision washes nothing at all —
+  // its clause is settled and the document should look settled — while an
+  // unacknowledged one keeps a tint, because it still owes you something.
+  const anchHue = (g) => {
+    const st = stateOf(g);
+    if (st === 'sealed') return isUnread(g) ? 'closed' : null;
+    if (st === 'deciding') return g.shifted ? 'closed' : 'deciding';
+    if (g.saturated) return 'open';
+    return g.id === topUrgentId ? 'urgent' : 'open';
+  };
+  const anchWash = (g, active) => {
+    const hue = anchHue(g);
+    return hue ? ' style="background: ' + tint(hue, active ? 0.30 : 0.17) + '"' : '';
+  };
+
+  const markOf = (g) => {
+    const st = stateOf(g);
+    return st === 'sealed' ? (isUnread(g) ? (carried(g) ? MARK.adopted : MARK.retired) : MARK.read)
+      : st === 'deciding' ? (g.shifted ? MARK.shifted : MARK.deciding)
+      : g.saturated ? MARK.stuck
+      : g.id === topUrgentId ? MARK.urgent
+      : MARK.needs;
+  };
+
+  // When more marks than fit, the space goes to whatever still wants something
+  // from you (Ed, 178). Filed decisions go first, then the states with nothing
+  // to do at all, and an open question is the last thing to be dropped.
+  const KEEP_ORDER = ['urgent', 'stuck', 'needs', 'adopted', 'retired', 'deciding', 'shifted', 'read'];
+  const keepRank = (mark) => {
+    const i = KEEP_ORDER.findIndex((k) => MARK[k] === mark);
+    return i < 0 ? KEEP_ORDER.length : i;
+  };
+
+  function tocMarksHtml(n) {
+    const marks = entriesForSection(n).map(markOf);
+    if (!marks.length) return '';
+    // choose by what is actionable, then draw in document order
+    const keep = new Set(marks.map((m, i) => [m, i])
+      .sort((a, b) => keepRank(a[0]) - keepRank(b[0]) || a[1] - b[1])
+      .slice(0, TOC_MARKS).map(([, i]) => i));
+    const shown = marks.filter((_, i) => keep.has(i));
+    return '<span class="tocmarks" aria-hidden="true">' + shown.join('') +
+      (marks.length > shown.length ? '<span class="more">+' + (marks.length - shown.length) + '</span>' : '') +
+      '</span>';
+  }
+
   function renderToc() {
     const heads = DOC.filter((l) => l.t === 'h');
     tocEl.innerHTML = heads
       .map((h, i) => buriedBy(i) ? '' :        // a folded part closes its branch of the rail too
         '<li class="lvl' + (h.level ?? 1) + '">' + toggleHtml(i) +
-        '<a href="#sec-' + i + '" data-toc="' + i + '">' + esc(h.x) + '</a></li>')
+        '<a href="#sec-' + i + '" data-toc="' + i + '">' + esc(h.x) + '</a>' + tocMarksHtml(i) + '</li>')
       .join('');
     tocEl.querySelectorAll('[data-sec-toggle]').forEach((b) =>
       b.addEventListener('click', (ev) => { ev.preventDefault(); toggleSection(+b.dataset.secToggle); })
@@ -1656,7 +2503,14 @@
     tocEl.querySelectorAll('[data-toc]').forEach((a) =>
       a.addEventListener('click', (ev) => {
         ev.preventDefault();
-        const el = document.getElementById('sec-' + a.dataset.toc);
+        const n = +a.dataset.toc;
+        // A heading with exactly one question in it *is* that question, so
+        // clicking it opens the card rather than merely arriving nearby
+        // (Ed, 179). With several, there is nothing to disambiguate on and it
+        // stays what it was: navigation.
+        const only = entriesForSection(n);
+        if (only.length === 1 && openId !== only[0].id) return toggle(only[0].id, true);
+        const el = document.getElementById('sec-' + n);
         // same owned animation as the queue-wire, and clear of the sticky navbar
         if (el) smoothScrollBy(el.getBoundingClientRect().top - 72, () => markCurrentSection());
       })
@@ -1674,8 +2528,12 @@
     links.forEach((a, i) => a.classList.toggle('current', i === current));
   }
 
-  function renderAll() { renderQueue(); renderDoc(); markCurrentSection(); drawWires(); }
-  renderToc();
+  // Order matters. The document first: the right rail measures against it, so
+  // its anchors must exist before the margin can be laid out. Then the queue,
+  // which settles which card is most urgent. Then the contents rail, whose
+  // marks depend on both — it now carries lifecycle state (177), so it can no
+  // longer be rendered only when the fold tree changes.
+  function renderAll() { settleTopUrgent(); renderDoc(); renderQueue(); renderToc(); markCurrentSection(); drawWires(); }
   renderAll();
 
   // The queue is sticky and the wires are drawn in viewport space, so both the
@@ -1684,8 +2542,12 @@
   const onViewportChange = () => {
     if (ticking) return;
     ticking = true;
-    requestAnimationFrame(() => { markCurrentSection(); drawWires(); ticking = false; });
+    // Pinned entries are measured against the viewport, so the margin has to be
+    // re-laid on every scroll, not only on structural change (Ed, 110).
+    requestAnimationFrame(() => { layoutQueue(); markCurrentSection(); drawWires(); ticking = false; });
   };
   addEventListener('scroll', onViewportChange, { passive: true });
-  addEventListener('resize', onViewportChange);
+  // A resize re-wraps the document, so every clause moves and the margin has to
+  // be measured again — the rail's positions are in page space, not viewport.
+  addEventListener('resize', () => { layoutQueue(); onViewportChange(); });
 </script>
