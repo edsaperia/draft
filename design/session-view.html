@@ -554,13 +554,16 @@
   .editcard .lp:last-child { margin-bottom: 0; }
   .editcard .editorig { color: var(--muted); background: var(--light); border-color: var(--border); }
   /* The lane you are writing in is the only editable thing on the surface that
-     looks editable: paper-white, the caret's own ring, and it grows with what
-     you put in it. */
+     looks editable: paper-white, a ring when the caret is in it, and it grows
+     with what you put in it. The ring is the **blue** (198), not green: green
+     inside a lane means *new wording* now that the lane marks its own changes
+     (Ed, 263), and a green box around green words would be two meanings in one
+     hue an inch apart. */
   .editcard .editlane {
-    border-color: var(--ok); background: var(--bg); cursor: text;
+    background: var(--bg); cursor: text;
     min-height: 4rem;
   }
-  .editcard .editlane:focus { outline: none; box-shadow: inset 0 0 0 2px var(--ok); }
+  .editcard .editlane:focus { outline: none; box-shadow: inset 0 0 0 2px var(--primary); }
   /* The rationale is written here too, so it is a field rather than a
      quotation — but it keeps `.swhy`'s weight, because it is the same sentence
      that will stand above the lanes when somebody else reads it (Ed, 119). */
@@ -568,7 +571,7 @@
     border: 1px solid var(--border); border-radius: var(--r-md);
     padding: var(--s2) var(--s3); cursor: text; min-height: 2.6rem;
   }
-  .editcard .edit-why:focus { outline: none; border-color: var(--ok); box-shadow: inset 0 0 0 1px var(--ok); }
+  .editcard .edit-why:focus { outline: none; border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
   .editcard .edit-why:empty::before,
   .editcard .edit-why.blank::before {
     content: attr(data-placeholder); color: var(--muted); font-weight: 400; font-style: italic;
@@ -1808,7 +1811,7 @@
               '<span class="qwhy' + (why ? '' : ' empty') + '">' +
               (why ? esc(why) : 'no reason given yet — say what this is for') + '</span>' +
               '<span class="mcap">a draft of yours · not proposed yet</span>'
-            : '<span class="ql">' + markHtml(MARK.needs) + esc(plainLabel(e.label || g.qLabel)) +
+            : '<span class="ql">' + markHtml(MARK.propose) + esc(plainLabel(e.label || g.qLabel)) +
               '<span class="qv"> · yours' + (e.of > 1 ? ', ' + e.n + ' of ' + e.of + ' places' : '') + '</span></span>') +
           '</button></li>';
         continue;
@@ -1889,6 +1892,12 @@
     if (!g) return null;
     if (g.insertAfterKey) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"]');
     const k = siteKey || (g.keys ?? [])[0] || (g.pair && g.pair[0].key);
+    // The entry has to stand where its wire lands (Ed, 264): while the composer
+    // is open the clause is a card, and a rail entry levelled against the
+    // *clause inside* it would sit eighty pixels below where its own cable
+    // leaves. One target for both.
+    const editing = doc.querySelector('.editcard[data-site="' + k + '"]');
+    if (editing) return editing;
     return doc.querySelector('[data-key="' + k + '"]') || foldedHeadingFor(DOC.findIndex((l) => l.key === k));
   }
 
@@ -2120,9 +2129,14 @@
     const paras = [...doc.querySelectorAll('p[data-anchor="' + id + '"]')];
     const inserts = [...doc.querySelectorAll('.insert-anchor[data-anchor="' + id + '"]')];
     // While you are writing, the clause *is* the card — the paragraph has been
-    // replaced by the two lanes — so the wire lands on the left-hand lane, which
-    // is the original it is standing in for.
-    const editing = [...doc.querySelectorAll('.editorig[data-anchor="' + id + '"]')];
+    // replaced by the two lanes — so the **card** is what the wire lands on
+    // (Ed, 264). It used to land on the left-hand lane, on the reasoning that
+    // the lane is the original standing in for the clause; but a wire enters
+    // from the right, and the left lane's right edge is in the middle of the
+    // card, so every cable ran straight through the lane you were typing in and
+    // stopped in the gutter between them. A wire says *where this judgment
+    // lives*, and while you are writing it lives in the card.
+    const editing = [...doc.querySelectorAll('.editcard[data-anchor="' + id + '"]')];
     return [...new Set([...chips, ...paras, ...inserts, ...editing])];
   }
 
@@ -2532,6 +2546,27 @@
     sel.removeAllRanges(); sel.addRange(r);
   }
 
+  // Where the caret is in a lane, counted in characters across its blocks with
+  // one for each newline between them — the same coordinate `placeCaret` takes,
+  // so the pair survives the lane being rewritten underneath them.
+  function laneCaret(lane) {
+    const sel = getSelection();
+    if (!sel || !sel.rangeCount) return null;
+    const r0 = sel.getRangeAt(0);
+    if (!lane.contains(r0.endContainer) && r0.endContainer !== lane) return null;
+    let off = 0;
+    for (const b of lane.children) {
+      if (b === r0.endContainer || b.contains(r0.endContainer)) {
+        const r = document.createRange();
+        r.selectNodeContents(b);
+        r.setEnd(r0.endContainer, r0.endOffset);
+        return off + r.toString().length;
+      }
+      off += b.textContent.length + 1;
+    }
+    return null;
+  }
+
   function placeCaret(lane, off) {
     const blocks = [...lane.children];
     if (!blocks.length) return lane.focus({ preventScroll: true });
@@ -2600,8 +2635,74 @@
     startDraft(key, null, { text: orig.slice(0, a) + ins + orig.slice(b), caret: a + ins.length });
   }
 
-  const laneBlocks = (text) => String(text).split('\n')
-    .map((t) => '<div class="lp">' + (esc(t) || '<br>') + '</div>').join('');
+  // The right-hand lane marks what is new, exactly as every other pair does
+  // (Ed, 263, applying 91: the *result*, never a redline — only the new wording
+  // is lit, and nothing is ever struck through). It earns its place twice over
+  // here. It is the ordinary grammar of the surface, so a proposal of yours
+  // reads the way somebody else's will read to you. And it answers the thing
+  // that raised the question: a draft that changes nothing shows **no green at
+  // all**, so a stray keystroke is visibly not a draft of anything, without the
+  // surface having to quietly throw somebody's typing away on their behalf.
+  //
+  // Word-level, with whitespace as its own token, so a changed word lights the
+  // word rather than the sentence. Insertions only: what was removed is one
+  // column to the left, in full, which is the whole argument of 91.
+  const tokens = (s) => String(s).split(/(\s+)/).filter((t) => t !== '');
+  function diffPieces(oldText, newText) {
+    const A = tokens(oldText), B = tokens(newText);
+    const n = A.length, m = B.length;
+    const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+    for (let i = n - 1; i >= 0; i--)
+      for (let j = m - 1; j >= 0; j--)
+        dp[i][j] = A[i] === B[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    const out = [];
+    const push = (t, isNew) => {
+      const last = out[out.length - 1];
+      if (last && last[1] === isNew) last[0] += t; else out.push([t, isNew]);
+    };
+    let i = 0, j = 0;
+    while (i < n && j < m) {
+      if (A[i] === B[j]) { push(B[j], false); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
+      else { push(B[j], true); j++; }
+    }
+    while (j < m) { push(B[j], true); j++; }
+    // A space between two new words is matched against the old text's own
+    // spaces and comes back "unchanged", which would draw two new words as two
+    // separate pills with a white gap between them. Rewriting three words is
+    // one change, so it should be one mark.
+    const joined = [];
+    for (let k = 0; k < out.length; k++) {
+      const cur = out[k], next = out[k + 1];
+      const last = joined[joined.length - 1];
+      if (!cur[1] && last && last[1] && next && next[1] && /^\s+$/.test(cur[0])) { last[0] += cur[0]; continue; }
+      if (last && last[1] === cur[1]) last[0] += cur[0];
+      else joined.push([cur[0], cur[1]]);
+    }
+    return joined;
+  }
+  // A highlight never opens or closes on a space — the same tidying `resultOnly`
+  // does to the hand-authored diffs in the fixture.
+  const insHtml = (t) => {
+    const m = t.match(/^(\s*)([\s\S]*?)(\s*)$/);
+    return esc(m[1]) + (m[2] ? '<ins>' + esc(m[2]) + '</ins>' : '') + esc(m[3]);
+  };
+  // Blocks are split on newlines *after* the diff, so a run of new wording that
+  // spans a paragraph break is still one comparison rather than two.
+  function laneBlocks(text, oldText) {
+    const pieces = oldText == null ? [[String(text), false]] : diffPieces(oldText, text);
+    const blocks = [[]];
+    for (const [t, isNew] of pieces) {
+      const parts = t.split('\n');
+      parts.forEach((part, k) => {
+        if (k > 0) blocks.push([]);
+        if (part) blocks[blocks.length - 1].push([part, isNew]);
+      });
+    }
+    return blocks.map((ps) => '<div class="lp">' +
+      (ps.map(([t, isNew]) => (isNew ? insHtml(t) : esc(t))).join('') || '<br>') + '</div>').join('');
+  }
+  const originText = (site) => site.origin.map((o) => o.text).join('\n');
   // Read back whatever the browser made of the editing: blocks separated by
   // newlines, however they ended up nested.
   const readLane = (el) => el.innerText
@@ -2632,7 +2733,7 @@
       site.origin.map((o) => '<div class="lp" data-key="' + o.key + '">' + esc(o.text) + '</div>').join('') +
       '</div>' +
       '<div class="rcand editlane" contenteditable="true" data-lane="' + site.keys[0] + '" spellcheck="false">' +
-      laneBlocks(site.text) + '</div>' +
+      laneBlocks(site.text, originText(site)) + '</div>' +
       '</div>' +
       '<div class="race-mid">' +
       '<button class="btn btn-propose" data-act="draft-propose"' +
@@ -2676,7 +2777,7 @@
       '<div class="race-grid">' +
       '<div class="rcand"><div class="rtext">' +
       s.origin.map((o) => esc(o.text)).join(' ') + '</div></div>' +
-      '<div class="rcand"><div class="rtext">' + esc(s.text).replace(/\n/g, '<br>') + '</div></div>' +
+      '<div class="rcand"><div class="rtext">' + laneBlocks(s.text, originText(s)) + '</div></div>' +
       '</div>' +
       '<div class="race-mid"><button class="btn btn-outline" data-act="draft-withdraw">Withdraw' +
       (n > 1 ? ' all ' + n + ' places' : '') + '</button></div>' +
@@ -2957,13 +3058,31 @@
       });
     });
     doc.querySelectorAll('[data-lane]').forEach((el) => {
-      el.addEventListener('input', () => {
+      // Re-marking as you type means rewriting the lane's own markup under the
+      // caret, so the caret is taken out by character offset and put back after
+      // — the same hold-by-position rule the scroll anchoring works by, for the
+      // same reason: the nodes measured before the rewrite do not exist after
+      // it. Skipped mid-composition, because an IME needs its own text left
+      // alone until it is finished with it.
+      //
+      // Worth knowing what this technique costs, since the product will not use
+      // it: rewriting a contenteditable's markup discards the browser's native
+      // undo stack, so ctrl-Z does not work in this lane. A real editor
+      // (ProseMirror, CodeMirror) does the same job while keeping it. That is a
+      // reason to reach for one when this is built for real, not a reason to
+      // show the design without its highlighting.
+      const remark = () => {
         const d = draftOf();
         const site = d && siteFor(d, el.dataset.lane);
         if (!site) return;
         site.text = readLane(el);
+        const off = laneCaret(el);
+        el.innerHTML = laneBlocks(site.text, originText(site));
+        if (off != null) placeCaret(el, off);
         layoutQueue(); drawWires();
-      });
+      };
+      el.addEventListener('input', (ev) => { if (!ev.isComposing) remark(); });
+      el.addEventListener('compositionend', remark);
       // The lane is a rich editable, because Enter has to make a real paragraph
       // (Ed, 231) and `plaintext-only` gives a line break instead. The one cost
       // of that is paste, which would otherwise arrive carrying somebody else's
@@ -3096,7 +3215,7 @@
     const el = topTarget(t);
     return el.dataset.key ? '[data-key="' + el.dataset.key + '"]'
       : el.classList.contains('insert-anchor') ? '.insert-anchor[data-anchor="' + id + '"]'
-      : el.classList.contains('editorig') ? '.editorig[data-anchor="' + id + '"]'
+      : el.classList.contains('editcard') ? '.editcard[data-anchor="' + id + '"]'
       : null;
   };
 
@@ -3468,7 +3587,16 @@
   const markOf = (g) => {
     const st = stateOf(g);
     return st === 'sealed' ? (isUnread(g) ? (carried(g) ? MARK.adopted : MARK.retired) : MARK.read)
-      : st === 'yours' ? (g.unproposed ? MARK.propose : MARK.needs)
+      // ✏️ all the way to the seal (Ed, 260). It had been ✏️ while unproposed
+      // and then the ordinary 💡, on the reading that a proposal of yours is a
+      // proposal like any other and green says whose. That works wherever the
+      // green goes with it — but the contents rail draws marks with **no
+      // colour**, so up there your work and somebody else's were the same bulb,
+      // and a section holding only your own proposals looked like a section
+      // wanting your judgment. The pencil means *you wrote this*, which is the
+      // rule 241's own note was already reaching for: subject and act agree,
+      // because in both cases it is you, writing.
+      : st === 'yours' ? MARK.propose
       : st === 'deciding' ? (g.shifted ? MARK.shifted : MARK.deciding)
       : g.deadlocked ? MARK.stuck
       : g.kind === 'diagonal' ? MARK.weigh
