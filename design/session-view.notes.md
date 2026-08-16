@@ -190,7 +190,7 @@ The rail now quotes each suggestion's **rationale**, clamped to a line or two. T
 
 It also finishes what 119 started at the other end. Having promoted the rationale to title weight on the card, leaving it invisible in the rail was inconsistent about how much the sentence matters.
 
-**Clamped by tier**, so it rides the compression ladder from 104 rather than fighting it: **five lines on the 🔥 card**, two on a hot one, one on a warm one, none on a cold one.
+**Clamped**, and originally clamped *by tier* so it rode the compression ladder from 104 rather than fighting it: five lines on the 🔥 card, two on a hot one, one on a warm one, none on a cold one. The ladder went on 2026-08-16 and every open card now gets four lines, five on the 🔥 one — see *Fewer cards, each saying its whole piece*.
 
 The 🔥 exception (Ed, 214) follows from what the flame is for. Ed's own argument for it was that you never have to think about prioritisation — *just always do that one* — and a card you are meant to act on without deliberating is the one card whose argument should be complete rather than cut off mid-sentence. Five lines holds every rationale in the fixture whole. It is also the only entry that can afford the room: exempt from the fit cap already, it costs the rail nothing that the rail was not already spending on it. Urgency therefore governs how much of somebody's argument you are shown, which is the right coupling — a cold entry is one you are being told not to worry about, and half a sentence of argument would be an invitation to worry.
 
@@ -338,7 +338,7 @@ The dashed sibling outline went with it. It had been standing in for the wash on
 
 ## The fixture had one example per tier (Ed, 194)
 
-The compression ladder could not be judged, because the rail held three hot entries, two warm and exactly one cool. Ten more live suggestions now spread down the urgency range — ordinary charter housekeeping, the kind of thing a convention actually spends an afternoon on: a joke about an armchair that is not a rule, a year that should be two years, a flat ban on power tools that only somebody unemployed could obey.
+The compression ladder — since removed — could not be judged, because the rail held three hot entries, two warm and exactly one cool. Ten more live suggestions now spread down the urgency range — ordinary charter housekeeping, the kind of thing a convention actually spends an afternoon on: a joke about an armchair that is not a rule, a year that should be two years, a flat ban on power tools that only somebody unemployed could obey.
 
 The distribution that falls out at the current thresholds (0.66 and 0.33) is **3 hot, 8 warm, 8 cool**, and the middle bucket being the largest is very likely the crowding Ed was reacting to. The rail's fit cap now bites properly too — between two and seven entries fall to the overflow count depending on where you are in the charter — which is the first time it has been exercised by the fixture rather than by a contrived window size.
 
