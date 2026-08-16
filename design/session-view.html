@@ -34,6 +34,14 @@
     --lc-open: 245, 197, 24;      /* 💡 ❌ yellow — open, or stuck     */
     --lc-deciding: 13, 110, 253;  /* ⏳ blue — judged, still running   */
     --lc-closed: 108, 117, 125;   /* ✅ ❎ 🔄 ☑️ grey — nothing to do  */
+    /* ✏️ 💡-in-green — a proposal of *your own*, from the first keystroke
+       until it seals. The one state on this surface that is about you as
+       author rather than as judge, and the one you can always act on:
+       cancel it while it is a draft, withdraw it once it is in. Green is
+       free in the rail — under 164 every decided state washes grey, so
+       --ok's green appears only inside cards (the winning text, the tick
+       that commits) and never in a margin (Ed, 2026-08-16). */
+    --lc-yours: 25, 135, 84;      /* ✏️ green — yours, and still yours */
     --stuck-ink: #8A6D00;         /* the one caption that instructs    */
 
     /* --- type scale. Four sizes and a caption; anything outside this
@@ -240,7 +248,8 @@
      is lifecycle (Ed, 162). Built per entry in wash(); set as --wash so one
      rule can paint every state. */
   .queue button.needs,
-  .queue button.wants, .queue button.deciding, .queue button.unread { background: var(--wash); }
+  .queue button.wants, .queue button.deciding, .queue button.unread,
+  .queue button.yours { background: var(--wash); }
 
   /* Anything already judged is one line. Everything still open is a full card:
      the compression ladder is gone (Ed, 2026-08-16 — see the rail's own note on
@@ -267,6 +276,26 @@
   /* a deadlocked race states its unusual ask in full, and its caption is an
      instruction rather than a progress note (Ed, 166) */
   .queue button.wants .mcap { color: var(--stuck-ink); font-weight: 500; }
+
+  /* Your own proposal (Ed, 2026-08-16). Once it is in, it is a **status
+     line**, not a question: nothing is being asked of you, because your
+     preference for your own candidate is already counted (SPEC §3.3). So it
+     takes one line like a judged entry — but green rather than grey, because
+     there is always something you can do to it, and it stays pinned until it
+     seals for exactly that reason (Ed, 240).
+
+     While it is still a *draft* it is a full card instead, and the reason is
+     worth keeping: the rail entry is where you read your own rationale back
+     as you write it (Ed, 2026-08-16), so it has to be able to show it. */
+  .queue button.yours { padding: var(--s1) 10px; }
+  .queue button.yours .ql {
+    display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-weight: 600; font-size: var(--t-small);
+  }
+  .queue button.yours .qv { display: inline; margin: 0; font-weight: 400; }
+  .queue button.yours.drafting { padding: var(--s2) 10px; }
+  .queue button.yours.drafting .ql { white-space: normal; display: flex; }
+  .queue button.yours.drafting .qwhy.empty { color: var(--muted); font-style: italic; }
   /* a patch is one judgment shown at every site it touches (Ed, 108/183) */
   .queue button.sib .sibn { font-size: var(--t-micro); color: var(--muted); font-weight: 500; }
 
@@ -359,10 +388,21 @@
      The extra class beats `.doc p`, which also sets margin. */
   .doc .anch {
     padding: 6px var(--s2) 6px var(--s3); margin-left: calc(-1 * var(--s3));
-    border-radius: var(--r-sm); cursor: pointer;
+    border-radius: var(--r-sm);
   }
-  .anch:hover { box-shadow: inset 0 0 0 1px var(--border); }
   .anch.active:hover { box-shadow: none; }
+
+  /* Always-on typing (Ed, 224). Every clause in the charter carries a caret:
+     click and you are in the text, type and the editing-card opens around what
+     you just wrote. So the paragraph is no longer a button — clicking one used
+     to open its decision card, which is now the gutter mark's job — and it
+     takes the text cursor everywhere, contested or not.
+     No focus ring: the caret is the indication, and a box drawn round a
+     paragraph you have merely clicked into would be a fifth thing in the
+     margin's vocabulary. */
+  .doc p.editable { cursor: text; }
+  .doc p.editable:focus { outline: none; }
+  .doc p.editable .chipcol { user-select: none; }
 
   /* chip-gutter: marks sit in the document's left margin, stacked and
      right-aligned, so the prose column itself stays unbroken. They are the
@@ -372,12 +412,21 @@
     position: absolute; right: 100%; margin-right: 14px; top: 0.15em;
     display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
   }
+  /* The mark is now the *only* way into a decision card from the document
+     (Ed, 224), so it has to look like a control rather than an annotation: a
+     real 24px target with a ground that comes up under the pointer. It was a
+     14px glyph with 2px of padding when the whole paragraph was clickable and
+     it was merely the label on a much larger target. */
   .achip {
-    font-size: var(--t-small); line-height: 1.2; padding: 1px 2px;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 22px; font-size: var(--t-small); line-height: 1;
+    border-radius: var(--r-sm);
     white-space: nowrap; user-select: none; cursor: pointer;
+    transition: background 120ms ease, transform 120ms ease;
   }
-  .achip:hover { transform: scale(1.15); }
-  @media (prefers-reduced-motion: reduce) { .achip:hover { transform: none; } }
+  .achip:hover { transform: scale(1.15); background: var(--light); }
+  .achip:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+  @media (prefers-reduced-motion: reduce) { .achip { transition: none; } .achip:hover { transform: none; } }
   @media (max-width: 900px) {
     .chipcol { position: static; flex-direction: row; align-items: baseline; margin: 0 0 var(--s1); }
   }
@@ -472,6 +521,68 @@
   }
   .rcand.pickable[aria-disabled="true"] { cursor: default; opacity: 0.6; }
   @media (prefers-reduced-motion: reduce) { .rcand.pickable { transition: none; } }
+
+  /* propose-edit, on either lane (Ed, 228). Writing from a lane is free — the
+     edit is charged at Propose, which is where the price is stated — so this
+     is a quiet control at the foot of the text it copies, not a call to
+     action. `margin-top: auto` floats it to the bottom of the lane so the two
+     sit level however unequal the two texts are. */
+  .rcand .lanepropose {
+    align-self: flex-start; margin-top: auto; padding-top: var(--s2);
+    background: none; border: 0; font: inherit; font-size: var(--t-cap);
+    color: var(--muted); cursor: pointer;
+  }
+  .rcand .lanepropose:hover { color: var(--primary); }
+
+  /* ===================================================================
+     The editing-card (Ed, 2026-08-16, decisions 224–241). Composing is not a
+     separate surface: you type in the charter and the clause you are typing in
+     opens into two lanes — the original on the left, your version on the right
+     — with the rationale above and Propose/Cancel below.
+
+     It **replaces** the paragraph rather than opening beneath it, which is the
+     one place this surface departs from "card under clause". The reason is the
+     whole premise: it should feel like editing the document. A card below
+     would leave the original standing above its own copy and read as a form
+     that had appeared about the paragraph rather than as the paragraph itself
+     opening up.
+     =================================================================== */
+  /* block, not flex: the lane is a text editor and the browser puts a caret
+     between block children far more predictably than between flex items */
+  .editcard .editorig, .editcard .editlane { display: block; font-size: var(--t-body); }
+  .editcard .lp { margin: 0 0 var(--s2); }
+  .editcard .lp:last-child { margin-bottom: 0; }
+  .editcard .editorig { color: var(--muted); background: var(--light); border-color: var(--border); }
+  /* The lane you are writing in is the only editable thing on the surface that
+     looks editable: paper-white, the caret's own ring, and it grows with what
+     you put in it. */
+  .editcard .editlane {
+    border-color: var(--ok); background: var(--bg); cursor: text;
+    min-height: 4rem;
+  }
+  .editcard .editlane:focus { outline: none; box-shadow: inset 0 0 0 2px var(--ok); }
+  /* The rationale is written here too, so it is a field rather than a
+     quotation — but it keeps `.swhy`'s weight, because it is the same sentence
+     that will stand above the lanes when somebody else reads it (Ed, 119). */
+  .editcard .edit-why {
+    border: 1px solid var(--border); border-radius: var(--r-md);
+    padding: var(--s2) var(--s3); cursor: text; min-height: 2.6rem;
+  }
+  .editcard .edit-why:focus { outline: none; border-color: var(--ok); box-shadow: inset 0 0 0 1px var(--ok); }
+  .editcard .edit-why:empty::before,
+  .editcard .edit-why.blank::before {
+    content: attr(data-placeholder); color: var(--muted); font-weight: 400; font-style: italic;
+  }
+  .btn.btn-propose { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 600; }
+  .btn.btn-propose:hover { background: var(--ok-hover); border-color: var(--ok-hover); color: #fff; }
+  .btn.btn-propose[disabled]:hover { background: var(--ok); border-color: var(--ok); }
+  /* Withdrawal is a real thing to do and not a danger (SPEC §3.3a — the stake
+     comes back in full), so it is an ordinary outline button rather than a red
+     one. */
+  .minecard .yoursnote {
+    background: rgba(var(--lc-yours), 0.10); border-radius: var(--r-md);
+    padding: var(--s2) var(--s3); font-size: var(--t-small); margin-bottom: var(--s3);
+  }
 
   /* The commit row. Two glyphs share one slot (Ed, 209/213): the shrug until
      you choose, then a green tick standing where it was. */
@@ -757,7 +868,7 @@
     { t: 'p', x: 'The Purse-holder may hold the Club’s money in an account in their own name, there being no other kind of account available to a society of fourteen friends.' },
     { t: 'p', x: 'The Purse-holder may not also be the Steward, and may not hold the office for more than three years running.' },
     { t: 'h', level: 3, x: 'Spending' },
-    { t: 'p', x: 'Ordinary spending on the running of the house needs nobody’s permission. Anything above a quarter’s subscriptions needs the meeting’s.' },
+    { t: 'p', key: 'spending', x: 'Ordinary spending on the running of the house needs nobody’s permission. Anything above a quarter’s subscriptions needs the meeting’s.' },
     { t: 'p', x: 'A member who spends their own money on the house may claim it back within the quarter, and after that only with the meeting’s indulgence, which is always given.' },
     { t: 'h', level: 3, x: 'Accounts and Inspection' },
     { t: 'p', key: 'accounts', x: 'The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.' },
@@ -1071,6 +1182,25 @@
       marked: 'A member more than two quarters in arrears, who has not asked for hardship, is reminded once by the Purse-holder and once by the Steward, in that order <del>and not more</del><ins>. No further reminder is given by anyone</ins>.',
       rationale: '"In that order and not more" reads as though the Steward is limited to one reminder. The point is that the house stops after two, from anybody. Same rule, said properly.'
     },
+    // A proposal of your own, already in (Ed, 2026-08-16). It is a suggestion
+    // like any other — everyone else sees an ordinary 💡 card at § Spending —
+    // but from your side it is the one entry on the surface that is about you
+    // as *author*: nothing is asked of you, because your preference for your
+    // own candidate is already counted (SPEC §3.3), and the only act left is
+    // to withdraw it. `sites` rather than `keys` alone, because a draft can
+    // grow to cover several clauses (Ed, 232) and one shape has to carry both.
+    {
+      id: 'mine-spending', kind: 'draft', mine: true, keys: ['spending'], state: 'needs',
+      qLabel: '§ Spending',
+      urgency: 0,
+      pct: 26, cap: 'yours · in the race, gathering judgments',
+      rationale: 'Nobody wants to ask permission to buy a mop. But "anything above a quarter’s subscriptions" is most of a year of somebody’s hardship, and the house only finds out at the spring meeting. A note in the book is not a sign-off.',
+      sites: [{
+        keys: ['spending'],
+        label: 'Spending',
+        text: 'Ordinary spending on the running of the house needs nobody’s permission. Anything above a quarter’s subscriptions needs the meeting’s, and the Purse-holder writes anything above a month’s in the Members’ Book within the week.',
+      }],
+    },
     {
       id: 'race-sanctions', kind: 'race', keys: ['sanctions'], state: 'needs', deadlocked: true,
       qLabel: '§ Sanctions',
@@ -1279,6 +1409,24 @@
     },
   ];
 
+  // Always-on typing means *every* clause can be edited, so every clause needs
+  // an identity to hang a draft on — until now only the ones the fixture had
+  // something to say about carried a key. Index-derived, and stable for as long
+  // as DOC is (which is the life of the mockup).
+  DOC.forEach((l, i) => { if (l.t === 'p' && !l.key) l.key = 'c' + i; });
+
+  // The nearest heading above a clause, which is what a draft of your own is
+  // labelled by in the rail. The same deterministic fallback the `race-labeler`
+  // uses when the oracle has nothing to say (Q49).
+  function headingForKey(key) {
+    let h = '';
+    for (const l of DOC) {
+      if (l.t === 'h') h = l.x;
+      if (l.key === key) return h;
+    }
+    return h;
+  }
+
   // The roster and its quorum: F = min(⌈E/3⌉, F_max) distinct movers before
   // anything can be adopted (SPEC §8.2, where it is called the *floor*). The
   // interface says **quorum** (Ed, 190) — it is quorum for a decision rather
@@ -1312,6 +1460,12 @@
   const resolved = new Set();
 
   function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+  // Always-on typing (Ed, 224): every clause in the charter carries a caret.
+  // `plaintext-only` rather than plain `true` because the charter is prose, not
+  // a rich-text field — a paste should arrive as words, and there is no
+  // formatting in this document for a keystroke to apply.
+  const EDITABLE = ' contenteditable="plaintext-only" spellcheck="false"';
 
   // Decision cards show the text as it would *stand*, not a redline: the struck
   // words come out and only what is new stays lit. The fixture keeps the full
@@ -1450,7 +1604,13 @@
 
   // needs-you (white) · still-deciding (blue wash + your verdict) · sealed (green).
   // A card starts in whichever state the fixture gives it, and moves when you act.
+  // A proposal of your own is its own state (Ed, 2026-08-16). It is not a
+  // question put to you — your preference for it is derived rather than asked
+  // for (SPEC §3.3) — and it is not settled either, because you can withdraw
+  // it right up until it seals. So it sits outside the judge's ladder
+  // altogether, and takes green: colour means you can still act (Ed, 164).
   const stateOf = (g) => g.state === 'sealed' ? 'sealed'
+    : g.mine ? 'yours'
     : (g.state === 'deciding' || resolved.has(g.id)) ? 'deciding' : 'needs';
   const isJudged = (g) => stateOf(g) !== 'needs';
   const isUnread = (g) => stateOf(g) === 'sealed' && g.unread && !readSeals.has(g.id);
@@ -1464,7 +1624,7 @@
   // A deadlocked race is not a low-urgency one, it is a *differently* addressed
   // one (Ed, 166): no judgment of yours can move it, so the urgency ramp does
   // not apply, and it says so in its own words.
-  const classFor = (g) => (g.deadlocked ? 'wants' : 'needs');
+  const classFor = (g) => (g.mine ? 'yours' : g.deadlocked ? 'wants' : 'needs');
   const tint = (hue, a) => 'rgba(var(--lc-' + hue + '), ' + a.toFixed(3) + ')';
   // Colour says lifecycle (Ed, 162); the wash is still the progress bar it
   // always was, so how far the fill reaches is closeness to resolution. On a
@@ -1507,6 +1667,13 @@
       // as a whole (Ed, 183) — in a margin, the local name is the useful one
       if (g.kind === 'patch') g.sites.forEach((site, i) =>
         out.push({ g, site: site.key, label: site.label, n: i + 1, of: g.sites.length }));
+      // A draft of your own is a patch in the making: edit in two places at
+      // once and it stands beside both, cabled together, one Propose for the
+      // lot (Ed, 232, 237). A site is a *run* of adjacent clauses, because
+      // editing across a paragraph break joins them rather than making a second
+      // place (Ed, 225) — so the entry stands at the run's first clause.
+      else if (g.kind === 'draft') g.sites.forEach((site, i) =>
+        out.push({ g, site: site.keys[0], label: site.label, n: i + 1, of: g.sites.length }));
       // a diagonal stands beside both of the clauses it weighs
       else if (g.kind === 'diagonal') g.pair.forEach((c, i) =>
         out.push({ g, site: c.key, label: c.name, n: i + 1, of: 2 }));
@@ -1534,6 +1701,11 @@
     // deadlocked race is marked "stuck" — same yellow as 💡, because it is
     // still open — and ✏️ lives on the drafting it leads to (Ed, 173, 241).
     stuck: '❌',      // judging cannot move this; only a new draft can
+    // ✏️ is the writing action *and* the state of a draft of your own that is
+    // not yet proposed (Ed, 241). The overload is harmless because subject and
+    // act agree — in both cases it is you, writing. Once you propose it, the
+    // thing on the table is an ordinary proposal and wears the ordinary 💡;
+    // what says it is *yours* is the green.
     propose: '✏️',    // ...and this is where you write one
     weigh: '⚖️',      // a salience diagonal: which of two questions matters more
     deciding: '⏳',   // yours is in; the race runs on
@@ -1598,6 +1770,46 @@
           ' title="' + esc(d.outcome || 'sealed') + ' — you haven’t opened this one yet">' +
           '<span class="ql">' + markHtml(carried(g) ? MARK.adopted : MARK.retired) + plainLabel(e.label || g.qLabel) +
           '<span class="qv"> · decided ' + esc(d.when || '') + '</span></span>' +
+          '</button></li>';
+        continue;
+      }
+
+      // Yours (Ed, 2026-08-16). Two shapes, and the difference between them is
+      // the difference between writing and waiting.
+      //
+      // While it is a **draft** it is a full card, because the rail entry is
+      // where you read your own rationale back as you type it — that is what
+      // it is for, and Ed asked for it explicitly. It has no fill, because
+      // there is nothing yet to be close to: an unproposed draft is not in a
+      // race, so the wash is flat rather than a bar at 0%.
+      //
+      // Once **proposed** it becomes one line. Nothing is being asked of you
+      // (SPEC §3.3 counts your preference without asking), so a card explaining
+      // itself would be a card with nothing to say — and the fill arrives,
+      // which is the whole of the feedback you get on your own proposal
+      // (Ed, 227). It stays pinned regardless, because there is always an act
+      // available and a significant one: withdraw (Ed, 240).
+      if (st === 'yours') {
+        const drafting = !!g.unproposed;
+        const why = (g.rationale || '').trim();
+        const where = e.of > 1
+          ? '<span class="qs"><span class="sibn">' + e.n + ' of ' + e.of + ' places</span></span>' : '';
+        html +=
+          '<li class="qitem" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
+          '<button class="yours' + (drafting ? ' drafting' : '') + '" data-q="' + g.id + '"' +
+          ' aria-current="' + (openId === g.id) + '"' +
+          ' style="--wash: ' + (drafting ? tint('yours', 0.20) : wash(g, 'yours')) + '"' +
+          ' title="' + esc(drafting
+            ? 'Your draft — not proposed yet. Open it to keep writing, propose it, or cancel.'
+            : (g.cap || 'Yours, in the race') + ' — open it to withdraw') + '">' +
+          (drafting
+            ? '<span class="ql">' + markHtml(MARK.propose) + '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span></span>' +
+              where +
+              '<span class="qwhy' + (why ? '' : ' empty') + '">' +
+              (why ? esc(why) : 'no reason given yet — say what this is for') + '</span>' +
+              '<span class="mcap">a draft of yours · not proposed yet</span>'
+            : '<span class="ql">' + markHtml(MARK.needs) + esc(plainLabel(e.label || g.qLabel)) +
+              '<span class="qv"> · yours' + (e.of > 1 ? ', ' + e.n + ' of ' + e.of + ' places' : '') + '</span></span>') +
           '</button></li>';
         continue;
       }
@@ -1730,6 +1942,9 @@
         // of the range, so the most valuable stuck race stands near the flame,
         // several of them queue among themselves in the order the bounty board
         // would give, and the rail and the board agree with each other.
+        // A proposal of your own is not ranked at all: it is force-kept below,
+        // on the same grounds as the flame and the open card.
+        mine: !!g.mine,
         u: isUnread(g) ? 0.5 : g.deadlocked ? DEADLOCK_FLOOR + (1 - DEADLOCK_FLOOR) * (g.bounty ?? 0.5)
           : (g.urgency ?? 0) };
       // Whatever is open is pinned for as long as it is open, whatever its
@@ -1737,7 +1952,7 @@
       // `pendingId` counts as open — the document is moved *before* the card
       // is inserted (Ed, 75), so the entry has to be in its final population
       // by then or its wire aims at a position it will not end up in.
-      const live = stateOf(g) === 'needs' || isUnread(g) || holdsFocus(el);
+      const live = stateOf(g) === 'needs' || stateOf(g) === 'yours' || isUnread(g) || holdsFocus(el);
       (live ? pinned : flow).push(row);
     }
     pinned.sort((x, y) => x.want - y.want);
@@ -1762,11 +1977,17 @@
     // counted, never silently dropped.
     let room = bandBot - bandTop;
     const keep = new Set();
-    // Two hold their places however crowded the rail gets: the most urgent card
-    // (115), and whatever is open — which under a ranking is no longer safe by
-    // construction, since you may well have opened something far down the order.
+    // Three hold their places however crowded the rail gets: the most urgent
+    // card (115); whatever is open — which under a ranking is no longer safe by
+    // construction, since you may well have opened something far down the
+    // order; and **anything of your own**, draft or proposal (Ed, 240). The
+    // last is the same argument as the flame from the other end: the rail
+    // admits by *judgment* leverage, and a proposal of yours scores nothing
+    // there because it asks for no judgment — yet it is the entry with the
+    // largest act still attached to it. A ranking cannot see that, so it is
+    // taken out of the ranking rather than given a fictional score.
     for (const r of pinned) {
-      if (!r.el.classList.contains('mosturgent') && !holdsFocus(r.el)) continue;
+      if (!r.el.classList.contains('mosturgent') && !holdsFocus(r.el) && !r.mine) continue;
       if (keep.has(r)) continue;
       keep.add(r); room -= r.h + QGAP;
     }
@@ -1898,7 +2119,11 @@
       .filter(Boolean);
     const paras = [...doc.querySelectorAll('p[data-anchor="' + id + '"]')];
     const inserts = [...doc.querySelectorAll('.insert-anchor[data-anchor="' + id + '"]')];
-    return [...new Set([...chips, ...paras, ...inserts])];
+    // While you are writing, the clause *is* the card — the paragraph has been
+    // replaced by the two lanes — so the wire lands on the left-hand lane, which
+    // is the original it is standing in for.
+    const editing = [...doc.querySelectorAll('.editorig[data-anchor="' + id + '"]')];
+    return [...new Set([...chips, ...paras, ...inserts, ...editing])];
   }
 
   // Only the open judgment gets wires. Drawing them on hover made the gutter
@@ -2031,17 +2256,40 @@
   // SPEC §3.1 makes skipping a non-move anyway. The 🔥 card is the exception
   // because it is exempt from the fit cap and always on screen, so without an
   // escape it would be a nag you cannot dismiss.
-  // The price is stated at the point of sale in the same currency the wallet
-  // holds, and the button greys when the wallet is empty (Ed, 234) — the same
-  // grey-means-the-door-is-shut rule the rest of the surface uses. The leading
-  // ✏️ is the *action*; the cost is said in words, because two pencils in one
-  // button would be two different meanings wearing one glyph.
-  const proposeBtnHtml = () => {
-    const broke = editsHeld < EDIT_RULES.stake;
-    return '<button class="btn btn-outline" data-act="propose"' +
-      (broke ? ' disabled title="No edits left — another arrives as the drip accrues"' : '') +
-      '>✏️ Propose something else · costs one edit</button>';
-  };
+  // Writing something *else* — as against editing one of the two texts in front
+  // of you, which is what the lane buttons do (Ed, 228). It survives only on a
+  // **deadlocked** race, where it is the ask rather than an extra: no judgment
+  // can move that race, and what it wants is not a better version of either
+  // side but something spanning both (SPEC §6.3, Q168). On an ordinary card two
+  // lane buttons are already two routes to the composer and a third would be
+  // ink for its own sake.
+  //
+  // It no longer states a price, because it no longer charges one: the composer
+  // is free to open and the edit is spent at Propose, which is where the cost
+  // is now said in words (Ed, 2026-08-16, revising 234/668).
+  const proposeBtnHtml = () =>
+    '<button class="btn btn-outline" data-act="propose" title="Write something else for this clause — free to open; proposing costs one edit">' +
+    '✏️ Propose something else</button>';
+
+  // ✏️ on a lane: take *this* wording as your starting point (Ed, 228). A null
+  // seed means the clause's own current text, which is what the composer uses
+  // by default — so the left-hand lane of a quick card or a patch, which is the
+  // current text, needs no seed at all.
+  const stripTags = (h) => String(h).replace(/<[^>]+>/g, '');
+  function laneSeed(s, lane, key) {
+    if (lane === 'keep') return null;
+    const note = 'the wording you are editing';
+    if (s.kind === 'race') return { text: lane === 'a' ? s.race.a.text : s.race.b.text, note };
+    if (s.kind === 'patch') {
+      const site = s.sites.find((x) => x.key === key) || s.sites[0];
+      return { text: stripTags(resultOnly(site.marked)), note };
+    }
+    return { text: stripTags(resultOnly(s.marked)), note };
+  }
+  const laneProposeHtml = (s, lane, key) =>
+    '<button class="lanepropose" data-propose-from="' + s.id + '|' + lane + '|' + (key || '') +
+    '" title="Write your own version of this wording. Free to open — proposing costs one edit.">' +
+    '✏️ edit this</button>';
 
   function commitRowHtml(s, extra) {
     const pick = pickOf(s);
@@ -2149,8 +2397,301 @@
     );
   }
 
+  /* ===================================================================
+     The composer (Ed, 2026-08-16; decisions 224–241).
+
+     There is no composing *surface*. You compose by editing the charter: every
+     clause carries a caret, and the first character you type opens the clause
+     into two lanes — what it says on the left, what you are making it say on
+     the right — with your rationale above and Propose / Cancel below. The
+     briefing, the drafting desk and the arrival bar from design/composer.html
+     are all superseded by this; what survives of that mockup is the briefing,
+     and only as an escalation state (SPEC §3.5).
+
+     Three things follow from "it is just the document":
+       · there is **one** draft at a time, because there is one caret;
+       · a draft is a suggestion like any other, held in SUGGS with `mine` and
+         `unproposed` set, so the rail, the wires, the folding and the margin
+         geometry all work on it without knowing what it is;
+       · nothing is spent until you press Propose. Opening the composer, typing
+         in it, and cancelling are all free (SPEC §3.3 charges the stake at
+         submission), which is what lets the surface put a caret in every
+         paragraph without that being a threat.
+     =================================================================== */
+  const DRAFT_ID = 'draft-yours';
+  let mineSeq = 0;                      // proposing frees the composer for the next draft
+  const draftOf = () => SUGGS.find((x) => x.id === DRAFT_ID);
+  const docIndexOfKey = (key) => DOC.findIndex((l) => l.key === key);
+  const siteFor = (d, key) => (d.sites || []).find((s) => s.keys.includes(key));
+
+  function ensureDraft() {
+    let d = draftOf();
+    if (!d) {
+      d = {
+        id: DRAFT_ID, kind: 'draft', mine: true, unproposed: true, state: 'needs',
+        keys: [], sites: [], rationale: '', qLabel: 'Your draft',
+        urgency: 0, pct: 0, cap: '',
+      };
+      SUGGS.push(d);
+    }
+    return d;
+  }
+
+  // Editing across a paragraph break joins the two rather than making a second
+  // place (Ed, 225): a site is a **run** of adjacent clauses replaced by one
+  // piece of text. Editing somewhere else entirely is the other case — a new
+  // site, cabled to the first, which is a patch in the making (Ed, 232).
+  // Returns the site and where in its text the new clause begins, so the caret
+  // can be put back at the character you just typed rather than at the start of
+  // whatever run it landed in.
+  function addDraftSite(d, key, text, seed) {
+    const at = docIndexOfKey(key);
+    const orig = { key, text: seed ? seed.text : currentTextFor(key), note: seed ? seed.note : null };
+    for (const s of d.sites) {
+      const first = docIndexOfKey(s.keys[0]);
+      const last = docIndexOfKey(s.keys[s.keys.length - 1]);
+      // adjacency is literal: a heading in between means DOC[last+1] is the
+      // heading, so the two clauses are not neighbours and never merge
+      if (at === last + 1) {
+        s.keys.push(key); s.origin.push(orig);
+        const off = s.text.length + 1;
+        s.text += '\n' + text;
+        return { site: s, offset: off };
+      }
+      if (at === first - 1) {
+        s.keys.unshift(key); s.origin.unshift(orig);
+        s.text = text + '\n' + s.text;
+        return { site: s, offset: 0 };
+      }
+    }
+    const s = { keys: [key], origin: [orig], text, label: headingForKey(key) };
+    d.sites.push(s);
+    d.sites.sort((a, b) => docIndexOfKey(a.keys[0]) - docIndexOfKey(b.keys[0]));
+    return { site: s, offset: 0 };
+  }
+
+  const syncDraftKeys = (d) => { d.keys = d.sites.flatMap((s) => s.keys); };
+
+  // A site's left lane is the clauses it replaces, which the fixture must not
+  // restate: hand-copied charter text is the "parallel literals kept in sync by
+  // hand" failure the mockup's own conventions warn against. So a seeded
+  // proposal gives keys and its new wording, and the original is read out of
+  // the document. Only a lane-seeded draft (Ed, 228) carries its own, because
+  // there the thing being edited is somebody else's proposal rather than the
+  // charter.
+  SUGGS.filter((s) => s.kind === 'draft').forEach((d) => {
+    d.sites.forEach((s) => {
+      if (!s.origin) s.origin = s.keys.map((k) => ({ key: k, text: currentTextFor(k), note: null }));
+    });
+    syncDraftKeys(d);
+  });
+
+  // Something already proposed at this clause — so the card can say whether you
+  // are opening a race or joining one (Ed, 229).
+  const liveRivalFor = (d, site) => SUGGS.find((x) =>
+    x !== d && x.state !== 'sealed' && !x.mine && (x.keys ?? []).some((k) => site.keys.includes(k)));
+
+  function dropDraft() {
+    const i = SUGGS.findIndex((x) => x.id === DRAFT_ID);
+    if (i >= 0) SUGGS.splice(i, 1);
+  }
+
+  // ---- the caret ------------------------------------------------------
+  // Typing has to survive the clause turning into a card: the character you
+  // pressed is already in the right-hand lane when it appears, and the caret
+  // lands just after it. Held as a character offset rather than as a node,
+  // because the node measured before the render does not exist after it — the
+  // same rule the scroll anchoring works by.
+  function caretRangeIn(p) {
+    const sel = getSelection();
+    if (!sel || !sel.rangeCount) return null;
+    const r0 = sel.getRangeAt(0);
+    if (!p.contains(r0.startContainer) || !p.contains(r0.endContainer)) return null;
+    const chip = p.querySelector('.chipcol');
+    const lead = chip ? chip.textContent.length : 0;   // the gutter marks live inside the paragraph
+    const upto = (node, off) => {
+      const r = document.createRange();
+      r.selectNodeContents(p);
+      r.setEnd(node, off);
+      return Math.max(0, r.toString().length - lead);
+    };
+    return { start: upto(r0.startContainer, r0.startOffset), end: upto(r0.endContainer, r0.endOffset) };
+  }
+
+  function setCaretIn(block, n) {
+    const sel = getSelection();
+    const r = document.createRange();
+    const walk = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+    let node = walk.nextNode(), acc = 0;
+    while (node) {
+      if (acc + node.length >= n) { r.setStart(node, n - acc); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); return; }
+      acc += node.length;
+      node = walk.nextNode();
+    }
+    r.selectNodeContents(block); r.collapse(false);       // an empty block has no text node
+    sel.removeAllRanges(); sel.addRange(r);
+  }
+
+  function placeCaret(lane, off) {
+    const blocks = [...lane.children];
+    if (!blocks.length) return lane.focus({ preventScroll: true });
+    let n = off == null ? Infinity : off;
+    for (const b of blocks) {
+      const len = b.textContent.length;
+      if (n <= len) return setCaretIn(b, n);
+      n -= len + 1;                                       // the newline between blocks
+    }
+    setCaretIn(blocks[blocks.length - 1], blocks[blocks.length - 1].textContent.length);
+  }
+
+  // ---- opening the composer -------------------------------------------
+  // `initial` carries the keystroke that started it: the clause with that one
+  // character already applied, and where the caret should sit afterwards.
+  function startDraft(key, seed, initial) {
+    if (!key) return;
+    const d = ensureDraft();
+    let site = siteFor(d, key), offset = 0;
+    if (site) { if (initial) site.text = initial.text; }
+    else {
+      const added = addDraftSite(d, key, (initial ? initial.text : (seed ? seed.text : currentTextFor(key))), seed);
+      site = added.site; offset = added.offset;
+    }
+    syncDraftKeys(d);
+    d.focusKey = key;                    // what holdSel keeps still, and where the caret goes
+    const caret = initial ? offset + initial.caret : null;
+    const land = () => {
+      const lane = doc.querySelector('[data-lane="' + site.keys[0] + '"]');
+      if (!lane) return;
+      lane.focus({ preventScroll: true });      // the card may still be unrolling
+      placeCaret(lane, caret);
+    };
+    if (openId === d.id) {
+      keepStill(() => renderAll(), '[data-key="' + key + '"]');
+      land();
+      layoutQueue(); drawWires();
+      return;
+    }
+    toggle(d.id, true, land);
+  }
+
+  // The first keystroke in a clause. Every input is intercepted: the charter
+  // itself is never modified in place — what the character does is open the
+  // composer with that character already in it, which is what makes typing in
+  // the document safe to offer everywhere (Ed, 224).
+  function startDraftFromTyping(p, ev) {
+    const key = p.dataset.key;
+    if (!key) return;
+    const orig = currentTextFor(key);
+    const sel = caretRangeIn(p) || { start: orig.length, end: orig.length };
+    let a = Math.min(sel.start, orig.length), b = Math.min(sel.end, orig.length);
+    let ins = '';
+    switch (ev.inputType) {
+      case 'insertText': ins = ev.data == null ? '' : ev.data; break;
+      // Enter at the end of a clause makes a new one and leaves the old alone
+      // (Ed, 231) — which falls out of this for free: the lane holds a run of
+      // paragraphs, so a newline at the end is simply an empty second block.
+      case 'insertParagraph': case 'insertLineBreak': ins = '\n'; break;
+      case 'insertFromPaste':
+        ins = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || ''; break;
+      case 'deleteContentBackward': if (a === b) { if (a === 0) return; a -= 1; } break;
+      case 'deleteContentForward': if (a === b) { if (b >= orig.length) return; b += 1; } break;
+      default: return;                       // formatting commands have nothing to do here
+    }
+    startDraft(key, null, { text: orig.slice(0, a) + ins + orig.slice(b), caret: a + ins.length });
+  }
+
+  const laneBlocks = (text) => String(text).split('\n')
+    .map((t) => '<div class="lp">' + (esc(t) || '<br>') + '</div>').join('');
+  // Read back whatever the browser made of the editing: blocks separated by
+  // newlines, however they ended up nested.
+  const readLane = (el) => el.innerText
+    .replace(/\u00a0/g, ' ').replace(/\r/g, '').replace(/\n{2,}/g, '\n').replace(/\n$/, '');
+
+  function editCardHtml(d, site) {
+    const n = d.sites.length;
+    const i = d.sites.indexOf(site);
+    const broke = editsHeld < EDIT_RULES.stake;
+    const rival = liveRivalFor(d, site);
+    const seeded = site.origin.find((o) => o.note);
+    const step = (to, label, glyph) => (to === null
+      ? '<span class="pstep off">' + glyph + '</span>'
+      : '<button class="pstep" data-step="' + d.id + ':' + d.sites[to].keys[0] + '" title="' + esc(label) + '">' + glyph + '</button>');
+    return (
+      '<div class="sugg editcard" data-card="' + d.id + '" data-anchor="' + d.id + '" data-site="' + site.keys[0] + '">' +
+      (n > 1
+        ? '<div class="pnav"><span class="pwhere">' + esc(site.label) + ' · place ' + (i + 1) + ' of ' + n + '</span>' +
+          '<span class="psteps">' + step(i > 0 ? i - 1 : null, 'The place before', '↑') +
+          step(i < n - 1 ? i + 1 : null, 'The next place', '↓') + '</span></div>'
+        : '') +
+      '<div class="swhy edit-why" contenteditable="plaintext-only" data-why spellcheck="false"' +
+      ' data-placeholder="Why this change? — the one thing anyone gets to say about it">' +
+      esc(d.rationale || '') + '</div>' +
+      '<div class="race-grid">' +
+      '<div class="rcand editorig" data-anchor="' + d.id + '">' +
+      (seeded ? '<div class="rtag">' + esc(seeded.note) + '</div>' : '') +
+      site.origin.map((o) => '<div class="lp" data-key="' + o.key + '">' + esc(o.text) + '</div>').join('') +
+      '</div>' +
+      '<div class="rcand editlane" contenteditable="true" data-lane="' + site.keys[0] + '" spellcheck="false">' +
+      laneBlocks(site.text) + '</div>' +
+      '</div>' +
+      '<div class="race-mid">' +
+      '<button class="btn btn-propose" data-act="draft-propose"' +
+      (broke ? ' disabled title="No edits left — another arrives as the drip accrues"' : '') +
+      '>✏️ Propose' + (n > 1 ? ' all ' + n + ' places' : '') + ' · costs one edit</button>' +
+      '<button class="btn btn-outline" data-act="draft-cancel">Cancel</button>' +
+      '</div>' +
+      '<div class="foot">' +
+      (rival
+        ? 'Yours joins the proposals already racing here, and you will be asked to judge it against them'
+        : 'This opens a race against the current text') +
+      ' · your own preference for it is counted without asking (SPEC §3.3)' +
+      (n > 1 ? ' · all ' + n + ' places go in as one change and are judged together' : '') +
+      ' · cancelling costs nothing, and withdrawing later returns the edit in full (§3.3a)' +
+      '</div>' +
+      '</div>'
+    );
+  }
+
+  // Once it is in, the same geometry read-only, and your proposal on the right
+  // (Ed, 229) — the side it will always be on wherever it is shown to you.
+  function mineCardHtml(d, site) {
+    const n = d.sites.length;
+    const i = Math.max(0, d.sites.indexOf(site));
+    const s = site || d.sites[0];
+    const rival = liveRivalFor(d, s);
+    const step = (to, label, glyph) => (to === null
+      ? '<span class="pstep off">' + glyph + '</span>'
+      : '<button class="pstep" data-step="' + d.id + ':' + d.sites[to].keys[0] + '" title="' + esc(label) + '">' + glyph + '</button>');
+    return (
+      '<div class="sugg minecard" data-card="' + d.id + '" data-site="' + s.keys[0] + '">' +
+      (n > 1
+        ? '<div class="pnav"><span class="pwhere">' + esc(s.label) + ' · place ' + (i + 1) + ' of ' + n + '</span>' +
+          '<span class="psteps">' + step(i > 0 ? i - 1 : null, 'The place before', '↑') +
+          step(i < n - 1 ? i + 1 : null, 'The next place', '↓') + '</span></div>'
+        : '') +
+      '<div class="yoursnote">This is yours. Nobody asks you to judge it — a proposal you are still standing behind ' +
+      'counts as your preference for as long as it is live, and counts toward quorum (SPEC §3.3, §8.2)' +
+      (rival ? '. You will still be served the others in this race against it' : '') + '.</div>' +
+      whyHtml(d.rationale) +
+      '<div class="race-grid">' +
+      '<div class="rcand"><div class="rtext">' +
+      s.origin.map((o) => esc(o.text)).join(' ') + '</div></div>' +
+      '<div class="rcand"><div class="rtext">' + esc(s.text).replace(/\n/g, '<br>') + '</div></div>' +
+      '</div>' +
+      '<div class="race-mid"><button class="btn btn-outline" data-act="draft-withdraw">Withdraw' +
+      (n > 1 ? ' all ' + n + ' places' : '') + '</button></div>' +
+      '<div class="foot">Withdrawing returns the edit in full and takes the wording out of the race — ' +
+      'it stays in the record either way (SPEC §3.3a, §7) · to reword it, withdraw and write again · authorship sealed</div>' +
+      '</div>'
+    );
+  }
+
   function suggCardHtml(s, siteKey) {
     if (stateOf(s) === 'sealed') return sealedCardHtml(s);
+    if (s.kind === 'draft') {
+      const site = (siteKey && siteFor(s, siteKey)) || s.sites[0];
+      return s.unproposed ? editCardHtml(s, site) : mineCardHtml(s, site);
+    }
     if (s.kind === 'diagonal') {
       // The same two lanes, holding two *questions* rather than two answers.
       // Choosing one says only that it deserves more of the room's attention;
@@ -2180,10 +2721,12 @@
         // no lane headers on a race: both sides are proposals, the rationale
         // above each column says whose, and naming them A and B added nothing
         '<div class="race-grid">' +
-        '<div class="rcand pickable"' + laneAttrs(s, 'a') + '><div class="rtext">' + esc(s.race.a.text) + '</div></div>' +
-        '<div class="rcand pickable"' + laneAttrs(s, 'b') + '><div class="rtext">' + esc(s.race.b.text) + '</div></div>' +
+        '<div class="rcand pickable"' + laneAttrs(s, 'a') + '><div class="rtext">' + esc(s.race.a.text) + '</div>' +
+        laneProposeHtml(s, 'a') + '</div>' +
+        '<div class="rcand pickable"' + laneAttrs(s, 'b') + '><div class="rtext">' + esc(s.race.b.text) + '</div>' +
+        laneProposeHtml(s, 'b') + '</div>' +
         '</div>' +
-        commitRowHtml(s, proposeBtnHtml()) +
+        commitRowHtml(s, s.deadlocked ? proposeBtnHtml() : '') +
         reviseNote(s) +
         '<div class="foot">Authorship sealed · no counts, no standings</div>' +
         '</div>'
@@ -2212,10 +2755,10 @@
         '<div class="race-grid">' +
         '<div class="rcand pickable"' + laneAttrs(s, 'keep') + '>' +
         '<div class="rtext">' + esc(currentTextFor(site.key)) + '</div>' +
-        '</div>' +
+        laneProposeHtml(s, 'keep', site.key) + '</div>' +
         '<div class="rcand pickable"' + laneAttrs(s, 'approve') + '>' +
         '<div class="rtext">' + resultOnly(site.marked) + '</div>' +
-        '</div>' +
+        laneProposeHtml(s, 'approve', site.key) + '</div>' +
         '</div>' +
         commitRowHtml(s) +
         reviseNote(s) +
@@ -2235,10 +2778,15 @@
       (s.isInsert
         ? '<div class="rtext none">Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.</div>'
         : '<div class="rtext">' + esc(cur) + '</div>') +
+      // A proposed section has no clause of its own to edit into, so neither
+      // lane offers ✏️ — writing a rival section is a different gesture and
+      // nobody has designed it (Q261).
+      (s.isInsert ? '' : laneProposeHtml(s, 'keep')) +
       '</div>' +
       '<div class="rcand pickable"' + laneAttrs(s, 'approve') + '>' +
       (s.isInsert ? '<div class="rtext"><ins>' + esc(s.newHeading) + '</ins></div>' : '') +
       '<div class="rtext">' + resultOnly(s.marked) + '</div>' +
+      (s.isInsert ? '' : laneProposeHtml(s, 'approve')) +
       '</div>' +
       '</div>' +
       commitRowHtml(s) +
@@ -2252,6 +2800,13 @@
     let html = '<div class="prose">';
     let cardDone = false;
     let headIdx = 0;
+    // The draft being written, if the composer is open on it. `pendingId`
+    // counts, for the same reason the rail counts it: the document is measured
+    // and moved before the card is inserted (Ed, 75).
+    const writing = (() => {
+      const d = draftOf();
+      return d && d.unproposed && (openId === d.id || pendingId === d.id) ? d : null;
+    })();
     for (const line of DOC) {
       if (line.t === 'title') { html += '<div class="doctitle">' + esc(line.x) + '</div>'; continue; }
       if (line.t === 'h') {
@@ -2266,6 +2821,18 @@
       // a paragraph goes with the innermost heading above it, and with its parents
       if (headIdx > 0 && hiddenSection(headIdx - 1)) continue;
 
+      // A draft of your own **replaces** the clauses it is editing, so the
+      // paragraph opens into two lanes where it stands rather than sprouting a
+      // card underneath its own copy (Ed, 2026-08-16). One card per site; the
+      // rest of a site's run is inside it.
+      if (writing && siteFor(writing, line.key)) {
+        const site = siteFor(writing, line.key);
+        if (site.keys[0] === line.key) {
+          html += '</div>' + editCardHtml(writing, site) + '<div class="prose">';
+        }
+        continue;
+      }
+
       const live = line.key ? suggFor(line.key) : [];
       // a settled clause still opens its record from the document side (Ed, 112)
       const wasResolved = line.key && !live.length
@@ -2278,19 +2845,28 @@
         const chips = live.map((g) => {
           const siteIdx = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === line.key) : -1;
           const where = g.kind === 'patch' ? ' · place ' + (siteIdx + 1) + ' of ' + g.sites.length : '';
-          return '<span class="achip" data-anchor="' + g.id + '" title="' +
-            esc(plainLabel(g.qLabel)) + where + '">' + markOf(g) + '</span>';
+          return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '" title="' +
+            esc(plainLabel(g.qLabel)) + where + ' — open it">' + markOf(g) + '</span>';
         }).join('');
         html +=
-          '<p class="anch' + (openId === primary.id ? ' active' : '') + '" data-key="' + line.key +
-          '" data-anchor="' + primary.id + '" title="Open this suggestion"' +
+          '<p class="anch editable' + (openId === primary.id ? ' active' : '') + '" data-key="' + line.key +
+          '" data-anchor="' + primary.id + '"' + EDITABLE +
           anchWash(primary, openId === primary.id) + '>' +
-          '<span class="chipcol">' + chips + '</span>' + esc(line.x) + '</p>';
+          '<span class="chipcol" contenteditable="false">' + chips + '</span>' + esc(line.x) + '</p>';
         const openSugg = live.find((x) => x.id === openId);
         // A patch opens a card at *every* place it touches (Ed, 181), each
         // showing only that clause; everything else opens once.
         if (openSugg && openSugg.kind === 'patch') {
           if (openSugg.sites.some((x) => x.key === line.key)) {
+            html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
+            cardDone = true;
+          }
+        // A proposal of your own is not being edited any more, so it behaves
+        // like every other card: it opens *under* its clause rather than
+        // replacing it, and a multi-place one opens at each of its places.
+        } else if (openSugg && openSugg.kind === 'draft') {
+          const site = siteFor(openSugg, line.key);
+          if (site && site.keys[site.keys.length - 1] === line.key) {
             html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
             cardDone = true;
           }
@@ -2300,10 +2876,11 @@
         }
       } else {
         {
-          html += '<p' + (wasResolved ? ' class="anch resolved" data-anchor="' + wasResolved.id + '"' +
+          html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + '"' +
+            (wasResolved ? ' data-anchor="' + wasResolved.id + '"' +
               anchWash(wasResolved, openId === wasResolved.id) : '') +
-            (line.key ? ' data-key="' + line.key + '"' : '') + '>' +
-            (wasResolved ? '<span class="chipcol"><span class="achip" data-anchor="' + wasResolved.id +
+            (line.key ? ' data-key="' + line.key + '"' : '') + EDITABLE + '>' +
+            (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0" data-anchor="' + wasResolved.id +
               '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + markOf(wasResolved) + '</span></span>' : '') +
             esc(line.x) + '</p>';
           // a settled clause opens its record in place, like any other card
@@ -2334,13 +2911,69 @@
     doc.querySelectorAll('[data-sec-toggle]').forEach((b) =>
       b.addEventListener('click', (ev) => { ev.stopPropagation(); toggleSection(+b.dataset.secToggle); })
     );
-    doc.querySelectorAll('[data-anchor]').forEach((el) =>
+    // Opening a decision card from the document is now the **mark's** job and
+    // only the mark's (Ed, 224). Clicking the text puts a caret in it, because
+    // the text is a thing you write in; the glyph in the gutter is the thing
+    // you press. A proposed section keeps its whole gap clickable, since there
+    // is no text there to put a caret into.
+    doc.querySelectorAll('.achip[data-anchor], .insert-anchor[data-anchor]').forEach((el) =>
       el.addEventListener('click', (ev) => {
         if (ev.target.closest('.sugg')) return;
         ev.stopPropagation();
         toggle(el.dataset.anchor, false);
       })
     );
+    doc.querySelectorAll('.achip[data-anchor]').forEach((el) =>
+      el.addEventListener('keydown', (ev) => {
+        if (ev.key !== 'Enter' && ev.key !== ' ') return;
+        ev.preventDefault(); ev.stopPropagation();
+        toggle(el.dataset.anchor, false);
+      })
+    );
+    // ✏️ on a lane: start writing from that wording (Ed, 228).
+    doc.querySelectorAll('[data-propose-from]').forEach((b) =>
+      b.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const [id, lane, key] = b.dataset.proposeFrom.split('|');
+        const s = SUGGS.find((x) => x.id === id);
+        if (!s) return;
+        startDraft(key || (s.keys ?? [])[0], laneSeed(s, lane, key));
+      })
+    );
+    // The composer's own fields. Neither re-renders the document: a re-render
+    // would take the caret with it, and the point of always-on typing is that
+    // the caret never goes anywhere you did not put it. What they do update is
+    // the **rail**, so your rationale reads back beside the clause as you write
+    // it (Ed, 2026-08-16) — the rail is a separate subtree, so rebuilding it
+    // cannot disturb a selection living in the document.
+    const echo = () => { renderQueue(); drawWires(); };
+    doc.querySelectorAll('.edit-why').forEach((el) => {
+      el.addEventListener('input', () => {
+        const d = draftOf();
+        if (!d) return;
+        d.rationale = el.innerText.replace(/\n+/g, ' ').trim();
+        el.classList.toggle('blank', !el.textContent.trim());
+        echo();
+      });
+    });
+    doc.querySelectorAll('[data-lane]').forEach((el) => {
+      el.addEventListener('input', () => {
+        const d = draftOf();
+        const site = d && siteFor(d, el.dataset.lane);
+        if (!site) return;
+        site.text = readLane(el);
+        layoutQueue(); drawWires();
+      });
+      // The lane is a rich editable, because Enter has to make a real paragraph
+      // (Ed, 231) and `plaintext-only` gives a line break instead. The one cost
+      // of that is paste, which would otherwise arrive carrying somebody else's
+      // markup into the charter.
+      el.addEventListener('paste', (ev) => {
+        ev.preventDefault();
+        const t = (ev.clipboardData && ev.clipboardData.getData('text/plain')) || '';
+        document.execCommand('insertText', false, t.replace(/\r/g, ''));
+      });
+    });
     // Choosing: marks the selection in place, so the document doesn't move
     // under you. The lanes carry this now as well as the indifference button,
     // so a click anywhere in a lane's box is the choice (Ed, 197).
@@ -2449,11 +3082,21 @@
   // The clause a move is aimed at — a patch's topmost site, everyone else's only
   // one — as a selector that will still find it after the re-render.
   const holdSel = (id) => {
+    // Opening the composer is the one case where the thing to hold still is not
+    // in the document yet: the clause is about to *become* the card, and the
+    // card puts a rationale field above the lanes, so the clause ends up ~80px
+    // lower inside it than the paragraph was. Held by anything else, the words
+    // under the caret slide down the screen at the exact moment you start
+    // typing. So the composer names its own anchor, and everything above it
+    // gives way instead. Measured: 82px of travel before, 0 after.
+    const d = draftOf();
+    if (d && d.id === id && d.focusKey) return '[data-key="' + d.focusKey + '"]';
     const t = wireTargets(id);
     if (!t.length) return null;
     const el = topTarget(t);
     return el.dataset.key ? '[data-key="' + el.dataset.key + '"]'
       : el.classList.contains('insert-anchor') ? '.insert-anchor[data-anchor="' + id + '"]'
+      : el.classList.contains('editorig') ? '.editorig[data-anchor="' + id + '"]'
       : null;
   };
 
@@ -2550,8 +3193,16 @@
   const REDUCED = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const COLLAPSE_MS = 190, EXPAND_MS = 230;
 
+  // The composer is the exception to both of these. Every other card unrolls
+  // *under* its clause, so growing from nothing reads as the card arriving; the
+  // editing-card stands **in place of** the clause, so animating it would mean
+  // the paragraph vanishing and something else growing where it was. It swaps
+  // instead, held still by keepStill — and that also keeps the caret out of a
+  // zero-height overflow-hidden box, which is where focus goes strange.
+  const swapsInPlace = (el) => el && el.classList.contains('editcard');
+
   function collapseCard(el, done) {
-    if (!el || REDUCED()) return done();
+    if (!el || REDUCED() || swapsInPlace(el)) return done();
     // A card that has scrolled off the top is not worth animating: for 190ms it
     // would shrink where nobody can see it while hauling the rest of the charter
     // up the screen, and the delay is 190ms the click doesn't answer in. It goes
@@ -2572,7 +3223,7 @@
   }
 
   function expandCard(el, done) {
-    if (!el || REDUCED()) return done();
+    if (!el || REDUCED() || swapsInPlace(el)) return done();
     const h = el.offsetHeight;
     el.style.overflow = 'hidden';
     el.style.height = '0px';
@@ -2601,7 +3252,11 @@
 
   // A click during a transition supersedes it rather than being swallowed: each
   // sequence carries a token, and every step drops out if a newer one has begun.
-  function toggle(id, scroll) {
+  // `after` runs the moment the new card exists and the margin has been laid
+  // out around it — before it finishes unrolling. That is where the composer
+  // puts the caret back, so the character you typed and the caret that follows
+  // it arrive in the same frame rather than a quarter of a second apart.
+  function toggle(id, scroll, after) {
     const closing = openId;
     const next = openId === id ? null : id;
     if (!closing && !next) return;
@@ -2639,6 +3294,7 @@
         keepStill(() => { openId = next; renderAll(); }, hold);
         // the card made the document taller, so every entry below it has moved
         layoutQueue();
+        if (after) after();
         expandCards(next, () => {
           if (!alive()) return;
           layoutQueue();
@@ -2668,13 +3324,64 @@
 
   function act(id, what) {
     const s = SUGGS.find((x) => x.id === id);
-    if (what === 'propose') {
-      // The composer is a later mockup, but the *price* is real here: an edit
-      // leaves the wallet, which is the whole point of drawing it (Ed,
-      // 2026-08-16). Nothing is spent when you have nothing to spend.
-      if (editsHeld < EDIT_RULES.stake) return;
+    // ---- the composer ------------------------------------------------
+    // "Propose something else", on a deadlocked race: the composer opens on the
+    // clause, seeded from the current text, and nothing is spent by opening it.
+    if (what === 'propose') { startDraft((s.keys ?? [])[0], null); return; }
+
+    // Cancelling leaves nothing behind — no candidate, no cost, no trace in the
+    // rail (Ed, 2026-08-16). That is what makes the always-on caret an offer
+    // rather than a commitment.
+    if (what === 'draft-cancel') {
+      const d = draftOf();
+      const key = d && d.sites[0] ? d.sites[0].keys[0] : null;
+      const shut = () => {
+        if (openId === DRAFT_ID) openId = null;
+        dropDraft();
+        // the lanes become the paragraph again, and it does not move while they do
+        keepStill(() => renderAll(), key ? '[data-key="' + key + '"]' : null);
+        drawWires();
+      };
+      if (openId === DRAFT_ID) collapseCards(DRAFT_ID, shut); else shut();
+      return;
+    }
+
+    // Proposing is the point of sale: this is where the edit is spent (SPEC
+    // §3.3 — the stake is paid at submission), and the only place a price is
+    // stated in words. The draft stops being a draft and becomes a candidate
+    // like any other, so it takes a real id and frees the composer for the next
+    // one; from your side it keeps the green, because you can still withdraw it.
+    if (what === 'draft-propose') {
+      const d = draftOf();
+      if (!d || editsHeld < EDIT_RULES.stake) return;
       editsHeld -= EDIT_RULES.stake;
-      renderAll();
+      const key = d.sites[0].keys[0];
+      const wasOpen = openId === d.id;
+      d.id = 'mine-' + key + '-' + (++mineSeq);
+      d.unproposed = false;
+      d.qLabel = d.sites[0].label;
+      d.pct = 6;
+      d.cap = 'yours · just in, evidence starting';
+      if (wasOpen) openId = d.id;
+      keepStill(() => renderAll(), '[data-key="' + key + '"]');
+      layoutQueue(); drawWires();
+      return;
+    }
+
+    // Withdrawal returns the stake in full (SPEC §3.3a, §7): charging somebody
+    // to tidy up would price exactly the behaviour worth encouraging. It is the
+    // reason a proposal of yours stays pinned — there is always an act
+    // available, and a significant one (Ed, 240).
+    if (what === 'draft-withdraw') {
+      editsHeld = Math.min(EDIT_RULES.cap, editsHeld + EDIT_RULES.stake);
+      const shut = () => {
+        if (openId === id) openId = null;
+        const i = SUGGS.findIndex((x) => x.id === id);
+        if (i >= 0) SUGGS.splice(i, 1);
+        renderAll();
+        drawWires();
+      };
+      if (openId === id) collapseCards(id, shut); else shut();
       return;
     }
     // Without lane letters, a race verdict has to name the text itself (197).
@@ -2748,6 +3455,7 @@
   const anchHue = (g) => {
     const st = stateOf(g);
     if (st === 'sealed') return isUnread(g) ? 'closed' : null;
+    if (st === 'yours') return 'yours';
     if (st === 'deciding') return g.shifted ? 'closed' : 'deciding';
     if (g.deadlocked) return 'open';
     return g.id === topUrgentId ? 'urgent' : 'open';
@@ -2760,6 +3468,7 @@
   const markOf = (g) => {
     const st = stateOf(g);
     return st === 'sealed' ? (isUnread(g) ? (carried(g) ? MARK.adopted : MARK.retired) : MARK.read)
+      : st === 'yours' ? (g.unproposed ? MARK.propose : MARK.needs)
       : st === 'deciding' ? (g.shifted ? MARK.shifted : MARK.deciding)
       : g.deadlocked ? MARK.stuck
       : g.kind === 'diagonal' ? MARK.weigh
@@ -2770,7 +3479,7 @@
   // When more marks than fit, the space goes to whatever still wants something
   // from you (Ed, 178). Filed decisions go first, then the states with nothing
   // to do at all, and an open question is the last thing to be dropped.
-  const KEEP_ORDER = ['urgent', 'stuck', 'needs', 'adopted', 'retired', 'deciding', 'shifted', 'read'];
+  const KEEP_ORDER = ['urgent', 'stuck', 'propose', 'needs', 'adopted', 'retired', 'deciding', 'shifted', 'read'];
   const keepRank = (mark) => {
     const i = KEEP_ORDER.findIndex((k) => MARK[k] === mark);
     return i < 0 ? KEEP_ORDER.length : i;
@@ -2855,6 +3564,22 @@
 
   function renderAll() { settleTopUrgent(); renderDoc(); renderQueue(); renderToc(); markCurrentSection(); renderWallet(); drawWires(); }
   renderAll();
+
+  // Always-on typing, bound once on the container rather than per paragraph:
+  // the document is re-rendered wholesale, so a listener on every clause would
+  // be a hundred and fifty of them rebuilt on every keystroke elsewhere.
+  //
+  // **Every** input is refused. The charter is never edited in place — the
+  // keystroke opens the composer with that character already applied, and all
+  // further typing happens in the card's right-hand lane. Which is what makes
+  // it safe to put a caret in a constitutional document: nothing you do in the
+  // prose can change it, because changing it is a thing you propose.
+  doc.addEventListener('beforeinput', (ev) => {
+    const p = ev.target && ev.target.closest ? ev.target.closest('p.editable') : null;
+    if (!p || p.closest('.sugg')) return;      // the composer's own fields are real editors
+    ev.preventDefault();
+    startDraftFromTyping(p, ev);
+  });
 
   // The queue is sticky and the wires are drawn in viewport space, so both the
   // rail highlight and the wires have to be recomputed as the page moves.

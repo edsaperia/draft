@@ -12,7 +12,9 @@ The stylesheet is tokenised. Anything hard-coded outside this list is a mistake 
 
 **Colour.** Ink and ground: `--bg --fg --muted --border --light`. One accent, `--primary` and its hover/subtle/emphasis, used for every open card, every wire, and every selection (Ed, 198). One success, `--ok` and its hover/subtle, meaning *decided* and nothing else — the winning text in a record, and the tick that commits.
 
-**Lifecycle** is its own four-part palette, held as raw RGB channels because the wash varies its strength: `--lc-urgent` (🔥 orange), `--lc-open` (💡 ❌ yellow), `--lc-deciding` (⏳ blue), `--lc-closed` (✅ ❎ 🔄 ☑️ grey). One rule governs it — **colour means you can still affect it; grey means the door is shut** (Ed, 164) — and it is applied identically in three places: the queue card's wash, the paragraph's wash in the document, and the mark in the gutter.
+**Lifecycle** is its own five-part palette, held as raw RGB channels because the wash varies its strength: `--lc-urgent` (🔥 orange), `--lc-open` (💡 ❌ yellow), `--lc-deciding` (⏳ blue), `--lc-yours` (✏️ and a green 💡 — a proposal of your own, added 2026-08-16 with the composer), `--lc-closed` (✅ ❎ 🔄 ☑️ grey). One rule governs it — **colour means you can still affect it; grey means the door is shut** (Ed, 164) — and it is applied identically in three places: the queue card's wash, the paragraph's wash in the document, and the mark in the gutter.
+
+Green was available in the rail precisely because of 164: every decided state washes grey there, so `--ok` appears only *inside* cards and the two greens never meet. That is a real dependency between two decisions rather than a coincidence, and it is the thing to check first if either moves (Q264).
 
 **Type** is five sizes and a caption: `--t-lead` (the document's title), `--t-body` (a clause under judgment), `--t-ui` (card and rail titles, buttons, the rationale), `--t-small` (one-line entries, footnotes), `--t-cap` (captions and footers), `--t-micro` (eyebrow labels only). The `.eyebrow` class carries the one upper-case label treatment, so the six or seven places that use it cannot drift apart.
 
@@ -670,3 +672,71 @@ The two magnitudes stay separate under use: spending removes a pencil and leaves
 **What the mockup cannot show, and the open question underneath.** The drip is one edit per 10% of the window, so the tray fills over roughly a quarter of an hour of real session time — not something a mockup can animate meaningfully, so the fixture simply sits at three-fifths. More importantly, §7's calibration note (sim evidence, 2026-08-14) says participants **sit near the cap** at v1 defaults: a real member would see eight full pencils all session and a device that never moves. Two risks in that, recorded as Q251. A wallet that never changes is not earning its place. And a visibly depleting wallet reintroduces psychological friction that the economy does not actually require — people are thriftier with four visible pencils than with an abstract balance they never see — which cuts against the whole point of a composer designed to make proposing feel free. Either the economy tightens enough for the display to be honest, or the wallet stays quiet while it is full.
 
 Ed's later note closes part of that loop: the **starting number and the drip rate are creation-time constitutional parameters** (SPEC §9.0), alongside quorum and the bar. A document meant to move quickly and one meant to be hard to change want different answers, and members can read the difference off their own wallets from the first minute.
+
+## The composer (Ed, 224–241; built 2026-08-16)
+
+There is no composing surface. **You compose by editing the charter.** Every clause carries a caret; the first character you type opens that clause into two lanes — what it says on the left, what you are making it say on the right — with your rationale above and Propose / Cancel below. The briefing, the drafting desk and the arrival bar of `design/composer.html` are superseded by this. What survives of that mockup is the briefing, and only as an escalation state that unrolls above the lanes where there is no live judgment left to contaminate (SPEC §3.5).
+
+Ed's instruction was one sentence — *you should start composing just by editing the document as if it were WYSIWYG* — and almost everything below is a consequence of taking it literally.
+
+### The caret is the offer, and the keystroke is the door
+
+The paragraph is no longer a button. Clicking a challenged clause used to open its decision card; that is now the **gutter mark's** job and only its job (Ed, 224), which is why the mark grew from a 14px glyph with two pixels of padding into a real 24×22 target with a ground that comes up under the pointer. It had been the label on a much larger target, and now it *is* the target.
+
+What the text does instead is take a caret. Every clause in the charter is `contenteditable`, and **every input into one is refused**: `beforeinput` is intercepted on the whole document, the keystroke never lands in the prose, and what it does instead is open the composer with that character already applied. This is the part worth being careful about, because it is what makes it safe to put a caret in a constitutional document at all — nothing you do in the prose can change it, because changing it is a thing you *propose*. The charter is never edited in place, not even for a frame.
+
+Three consequences fall out of the same rule. **Backspace and paste work** — they are inputs like any other, so they open the composer with the deletion or the pasted run already applied. **Enter at the end of a clause makes a new clause and leaves the old one alone** (Ed, 231), which needs no special case: the lane holds a run of paragraphs, so a newline at the end is simply an empty second block. And **nothing is spent by any of it**: opening the composer, writing in it and cancelling are all free, because SPEC §3.3 charges the stake at *submission*. A caret in every paragraph would be a threat if it cost something to touch.
+
+### The clause becomes the card
+
+The editing-card **replaces** the paragraph rather than opening beneath it. This is the one place the surface departs from card-under-clause, and it is a deliberate departure: a card below would leave the original standing above its own copy and read as a form that had appeared *about* the paragraph, rather than as the paragraph itself opening up. The left lane carries the clause's `data-key`, so the wires, the margin geometry and the scroll anchoring all keep working on it without knowing it is a card.
+
+That last part took a measurement to get right. The card puts a rationale field above the lanes, so the clause ends up about 80px lower inside the card than the paragraph was — and `keepStill`, holding whatever was nearest the read line, dutifully held the *paragraphs above* and let the words under the caret slide 82px down the screen at the exact moment you started typing. **Measured at 82px before, 0px after**: the composer now names its own anchor (`holdSel` asks the draft first), so the clause you are writing in does not move and everything above it gives way instead. That is the right way round — the caret is the thing the reader is looking at.
+
+For the same reason the editing-card is the **one card that does not animate**. Every other card unrolls under its clause, where growing from nothing reads as the card arriving; this one stands where the clause stood, so an unroll would mean the paragraph vanishing and something else growing in the hole. It swaps, held still, and that also keeps the caret out of a zero-height `overflow: hidden` box, which is where focus goes strange.
+
+### A draft is a suggestion like any other
+
+Held in `SUGGS` with `mine` and `unproposed` set. That is not tidiness, it is most of the build: the rail, the wires, the folding, the contents-rail marks and the margin's pinning all work on a draft without being told what it is. It also makes the composer's whole lifecycle a matter of flipping two flags rather than a second state machine running beside the first.
+
+**A site is a run of adjacent clauses.** Editing across a paragraph break joins the two into one piece of text (Ed, 225) rather than making a second place; editing somewhere else entirely makes a second site, and then the draft is a patch in the making (Ed, 232) — a card at each place, one Propose for the lot, the sibling entries cabled together on the spine the multi-site machinery already draws (Ed, 237). Adjacency is literal and needs no rule of its own: a heading between two clauses means they are not neighbours in `DOC`, so they never merge.
+
+There is **one draft at a time**, because there is one caret. Proposing frees the composer by giving the candidate a real id, so the next thing you write starts clean.
+
+### Green, and what it is for
+
+Ed asked for a new lifecycle whose card is green and which stays pinned until it is resolved-and-read. It is the fifth state, `yours`, and it covers a proposal of your own from the first keystroke to the moment it seals.
+
+**Green was free.** Under 164 every decided state washes grey, so `--ok`'s green survives only *inside* cards — the winning text in a record, the tick that commits — and never appears in a margin. So the rail could take it without collision. What it means there is the thing 164's rule is about: you can still act on this. Cancel it while it is a draft, withdraw it once it is in (Ed, 240).
+
+**It sits outside the judge's ladder entirely**, and that is the honest reason it needed its own state rather than a tint on an existing one. It is not a question put to you — SPEC §3.3 counts your preference for your own candidate without asking — and it is not settled either. The other four states are all positions in *your relationship to a question*; this one is a fact about *your relationship to a text*.
+
+**Two shapes, and the difference between them is writing versus waiting.** While it is a draft it is a full card in the rail, because that entry is where you read your own rationale back as you type it — Ed asked for the preview explicitly, and it appears from the first keystroke and disappears if you cancel. It carries **no fill**, because there is nothing yet to be close to: an unproposed draft is not in a race, so the wash is flat rather than a progress bar sitting at zero. Once proposed it becomes **one line**, because nothing is being asked of you and a card explaining itself would be a card with nothing to say — and the fill arrives, which is the whole of the feedback you get on your own proposal (Ed, 227).
+
+**It is never crowded off the screen.** The rail admits by *judgment* leverage, and a proposal of yours scores nothing there by construction — yet it is the entry with the largest act still attached to it. Rather than give it a fictional urgency, it is taken out of the ranking, force-kept alongside the flame and the open card. Ed's 240 is the argument: green cards can always be withdrawn, so there is always something to do, and quite a significant something.
+
+The marks follow 241's rule — *what act is wanted here*. **✏️ while it is a draft**, which is the same overload 241 already blessed: the pencil is the writing action and the state of your own unproposed writing, and subject and act agree because in both cases it is you, writing. **💡 once you propose it**, because the thing on the table is then an ordinary proposal and green is what says it is yours. (Q260 records the cost of that: the contents rail draws marks without their card colour, so up there a proposal of yours and somebody else's are the same bulb.)
+
+### Two ways in from a card you are reading
+
+**✏️ on either lane** (Ed, 228): take *this* wording as your starting point. It puts that text on the left and an editable copy on the right, which is exactly what you want when the thing that inspired you is a rival's proposal rather than the charter — Ed's 229, *or against whatever text inspired you to propose*. On a quick card or a patch the left lane is the current text, so its ✏️ needs no seed at all; the right lane's carries the proposal as it would stand.
+
+**"Propose something else"** survives only on a **deadlocked** race. That is the one card where drafting is the ask rather than an extra: no judgment can move it (SPEC §8.3), and what it wants is not a better version of either side but something spanning both (SPEC §6.3, Q168). On an ordinary card two lane buttons are already two routes to the composer and a third would be ink for its own sake. It no longer states a price either, because it no longer charges one.
+
+**The price moved to the point of sale.** 668's rule — say the cost in words, where the sale happens — still holds; the sale simply turned out to be somewhere else. Opening the composer is free, so the cost is stated on the **Propose** button, which reads *✏️ Propose · costs one edit* and greys with its reason in the tooltip when the wallet is empty. That retires 234's `propose (4 left)` placeholder for the second and last time.
+
+### What the card says, and what it refuses to
+
+The footer states the one thing a member cannot see: whether this **opens** a race against the current text or **joins** one already running (Ed, 229). If it joins, it says you will still be asked to judge yours against the others — Ed's 236, and the half of §3.3 that is not automatic. Your own preference is counted without asking; everything else in the race is still a question put to you.
+
+The proposed card then says the same fact from the other end, in the one block of prose on the surface that is addressed to you as author: *nobody asks you to judge it — a proposal you are still standing behind counts as your preference for as long as it is live, and counts toward quorum.* That is SPEC §3.3 and §8.2 in a sentence, and it is the single least obvious thing about the mechanism from a member's chair. Your proposal is on the **right**, which is where it will be wherever it is shown to you (Ed, 229).
+
+**Withdrawal is an ordinary outline button, not a red one.** SPEC §3.3a returns the stake in full, and §7's reasoning is that charging somebody to tidy up prices exactly the behaviour worth encouraging. Rewording is withdraw-and-write-again, which the footer says; there is no revise, because revising in place would be a second candidate wearing the first one's evidence.
+
+### What this does to the wallet
+
+It makes it move, which Q251 said it did not. Proposing spends a pencil and withdrawing gives it back, so the wallet is now the only thing on the surface that answers your own actions — and the fixture is small enough to watch it do so. That does not settle Q251: at v1 defaults a real member still sits near the cap and would see eight pencils all session. But the device is no longer purely decorative, and the two magnitudes stay separate under use, which was the thing worth checking.
+
+### What was measured
+
+The clause under the caret travels **0px** when the composer opens, and **0px** when an adjacent clause is absorbed into an open one (82px before the anchor fix). Every card kind opens and closes without error — race, patch, quick, insert, diagonal, deadlocked, still-deciding, unread seal, sealed dot, and now editing and proposed. Propose, withdraw, cancel, both lane routes, the deadlocked bridge route and folding-with-the-composer-open all run clean, and the wallet returns to where it started after a propose-then-withdraw round trip. The one overlap the margin still shows at two scroll positions is **Q244, unchanged**: confirmed identical on the pre-composer build at the same offsets, pinned-over-flow, same shape as reported.
