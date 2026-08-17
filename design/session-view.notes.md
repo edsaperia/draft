@@ -2594,3 +2594,32 @@ the line that is unused in one function is load-bearing three hundred lines up.
 And a silent failure to open is worth treating as a thrown error until proved
 otherwise: nothing on the surface said anything, and the console had been saying
 `yours is not defined` since the moment it broke.
+
+### The dot rows go (2026-08-17)
+
+Ed: *for retired (grey) queue-cards, let's try them back as full-width
+one-liners; I don't like the way they interact with cables and they feel
+inconsistent with how the queue works.* Both halves are right and the second is
+the deeper one.
+
+The dot rows broke the rail's own rule. `needs-you-queue` is a **margin index**
+— *every entry stands beside its own clause, so where an entry sits is never a
+claim about importance* — and a shared row packed up to eight document positions
+into one position. Everything else in that column is one entry at one clause;
+these were several clauses at one entry, which is why they felt like a different
+mechanism rather than a quieter state.
+
+The cable is the same fault made visible. A wire had to land on a 20px dot
+inside a row that was not beside the clause it pointed at, so the one thing a
+cable says — *this clause, here* — was being said by a shape standing somewhere
+else.
+
+Space was the argument for the dots (106), and the rail has since stopped
+drawing what does not fit at all: the "+n further off in the charter" tally went
+at Ed's word earlier today. So the saving was being paid for after it had
+stopped being needed — which is the general shape of a lot of this, and worth
+naming. **When a constraint is lifted, the things built to live under it do not
+remove themselves.**
+
+A filed line is now the same object as an unacknowledged one, quieter: same
+shape, muted weight and colour, and the mark still says which way it went.

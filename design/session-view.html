@@ -437,6 +437,12 @@
   /* a decision you have not acknowledged is quiet, not unimportant, and stays
      pinned until you deal with it (Ed, 112) */
   .queue button.unread .ql { font-weight: 600; font-size: var(--t-small); color: var(--fg); }
+  /* A filed line is the **same object, quieter** (Ed, 2026-08-17). It is not a
+     different kind of entry from an unacknowledged one — it is the same entry
+     after you have dealt with it — so it keeps the shape and gives up the
+     weight, which is the whole of the difference. */
+  .queue button.filed .ql { font-weight: 500; color: var(--muted); }
+  .queue button.filed .qt { color: var(--muted); }
   /* The time goes to the right (Ed, 2026-08-17), which needs the row to be a
      flex rather than one truncating line: the title takes what is left and
      ellipses, and the time never gets eaten by a long one. It is also the only
@@ -2856,27 +2862,23 @@
       const g = e.g;
       const st = stateOf(g);
 
-      // A decision you have already seen collapses to a dot, and dots that fall
-      // near each other in the charter share a row (Ed, 106). One you haven't
-      // seen keeps a line and pins itself to the screen until you open it (112).
-      if (st === 'sealed' && !isUnread(g)) {
-        const group = [e];
-        while (i + 1 < entries.length && stateOf(entries[i + 1].g) === 'sealed' && !isUnread(entries[i + 1].g) &&
-               docIndexOf(entries[i + 1].g, entries[i + 1].site) - docIndexOf(e.g, e.site) <= 8) group.push(entries[++i]);
-        html += '<li class="qitem" data-site="' + (e.site ?? '') + '" data-q="' + g.id + '"><div class="sealdots">' +
-          group.map((x) => '<button class="sealdot" data-q="' + x.g.id + '" data-site="' + (x.site ?? '') +
-            '" aria-current="' + (openId === x.g.id) +
-            '" title="' + esc(plainLabel(x.label || x.g.qLabel)) + ' — ' + esc((x.g.decided || {}).outcome || 'sealed') + '">' +
-            mkHtml(markKindOf(x.g)) + '</button>').join('') +
-          '</div></li>';
-        continue;
-      }
+      // **A filed decision is a full-width line like everything else** (Ed,
+      // 2026-08-17, retiring the dot rows of 106). Two things were wrong with
+      // collapsing them into a shared row of dots. It broke the rail's one rule —
+      // *every entry stands beside its own clause* — because a row packed up to
+      // eight document positions into one position; and the cable then had to
+      // land on a 20px dot inside a row that was not beside the clause it was
+      // pointing at, which is the interaction Ed did not like. Space was the
+      // argument for the dots, and the rail has since stopped drawing what does
+      // not fit, so it was paying for a saving it no longer needs.
       if (st === 'sealed') {
         const d = g.decided || {};
         html += '<li class="qitem" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
-          '<button class="unread" data-q="' + g.id + '" aria-current="' + (openId === g.id) + '"' +
+          '<button class="unread' + (isUnread(g) ? '' : ' filed') + '" data-q="' + g.id +
+          '" aria-current="' + (openId === g.id) + '"' +
           washAttrs(qKey(g, e), wash(g, anchHue(g) || 'closed').col, wash(g, anchHue(g) || 'closed').fill) +
-          ' title="' + esc(d.outcome || 'sealed') + ' — you haven’t opened this one yet">' +
+          ' title="' + esc(d.outcome || 'sealed') +
+          (isUnread(g) ? ' — you haven’t opened this one yet' : '') + '">' +
           '<span class="ql">' + markHtml(markKindOf(g)) +
           '<span class="qt">' + plainLabel(e.label || g.qLabel) + '</span>' +
           '<span class="qv when">' + esc(d.when || '') + '</span></span>' +
