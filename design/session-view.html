@@ -334,6 +334,10 @@
   .mk { font-family: inherit; font-weight: 700; line-height: 1; }
   /* An action glyph, drawn on the same stroke as the lifecycle marks so a
      control and a mark never look like they came from different sets. */
+  /* Unit marks: a gauge for a reading of the room, a hurdle for the line it had
+     to cross. Same stroke as ✔ and ✖, a hair smaller, and sitting just after
+     their number the way a unit does. */
+  .unit { font-size: 1.15em; margin-left: 2px; letter-spacing: 0; }
   .actg {
     width: 1.15em; height: 1.15em; display: inline-block; vertical-align: -0.2em;
     fill: none; stroke: currentColor; stroke-width: 1.7;
@@ -1513,7 +1517,7 @@
       <span class="pulse" id="pulse" aria-hidden="true"
             title="The room is working — this blinks when anybody judges or proposes anything. It never says who, what, or which way."></span>
       <span>time left <b>2h 11m</b></span>
-      <span title="How sure the house has to be that a change beats the current text. It rises through the session — this is not a vote share.">confidence bar <b>74% ▲</b></span>
+      <span title="How sure the house has to be that a change beats the current text. It rises through the session — this is not a vote share.">confidence bar <b>74%<span class="unit">✒️</span></b></span>
       <span title="Quorum for a decision, not for the meeting: this many distinct members must weigh in on a question before it can be adopted (a third of the roster). A question short of quorum simply waits — silence is never counted as a vote.">quorum <b>5 of 14</b></span>
       <span class="wallet" id="wallet"></span>
       <!-- The one place on the surface that says who *you* are. Everybody
@@ -2785,6 +2789,15 @@
   // lifecycle classes still colour them, and the match is a property of the
   // drawing rather than a hope about a font. ↻ stays a character: it has no
   // partner whose weight it must equal, and no font disagrees about an arrow.
+  // **Ed's own pair, for now** (2026-08-17): 👍 for the reading of the room and
+  // ✒️ for the line it had to cross. Drawn line art was tried first — a gauge and
+  // a hurdle on the same stroke as ✔ and ✖ — and the honest finding is that at
+  // eyebrow size line art does not survive: the gauge read as a caret and the
+  // hurdle as a Greek letter. Emoji are bitmapped for exactly this size, which
+  // is the one job they do better than anything we can draw. They bring their
+  // own colour back, which is the cost.
+  const JUDG = "<span class=\"unit\">👍</span>";
+  const BAR = "<span class=\"unit\">✒️</span>";
   const TICK = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2 6.4 L4.7 9.2 L10 2.9\"/></svg>";
   const CROSS = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2.9 2.9 L9.1 9.1 M9.1 2.9 L2.9 9.1\"/></svg>";
   const VS16 = "︎";
@@ -3942,8 +3955,15 @@
     // the column explains itself — everything above beat the text we had, and
     // everything below did not. It is a construction rather than a measurement,
     // which is what the muted weight is for.
-    const line = (c) => (c.p == null ? ''
-      : '<span class="pline' + (c.incumbent ? ' ref' : '') + '">' + pct(c.p) + '</span>');
+    // The incumbent's 50% was true and unhelpful — a construction dressed as a
+    // measurement, in a column of real ones. It says what it *is* instead (Ed,
+    // 2026-08-17), which is the thing its position in the column already implies
+    // and which nothing else on the card was saying in words.
+    // Where it held, the incumbent is the clause at the head and is not previous
+    // anything — its label already says it stood, and the slot stays empty.
+    const line = (c) => (c.incumbent
+      ? (held ? '' : '<span class="pline ref">Previous text</span>')
+      : c.p == null ? '' : '<span class="pline">' + pct(c.p) + '</span>');
     const skey = (s.keys ?? [])[0];
     // Whichever text is the clause at the head does not print itself again: the
     // winner where it carried, the incumbent where it held. That is the whole of
@@ -3966,11 +3986,18 @@
     // *this one* to a reader who could already see it at the top of a ranked
     // list, under a green ✔, at the head of a card (Ed: *remove the box that it
     // is in*).
+    // the highest any proposal reached against the text it was measured on —
+    // the number the bar was actually being asked about
+    const best = Math.max(0, ...field.map((c) => c.p ?? 0));
     const top = skey ? ranked[0] : null;
     const rest = top ? ranked.slice(1) : ranked;
     if (top && !top.incumbent) rank++;
+    // Where the incumbent is in the list its right-hand slot now names it, so the
+    // left-hand tag would be saying it twice; where it is at the *head* it kept
+    // the clause and there is no previous text to point at, so the label carries
+    // the fact and the slot stays empty.
     const tag = (c) => (c.incumbent
-      ? '<span class="rsub">' + (held ? 'the text that stood' : 'the text it replaced') + '</span>'
+      ? (held ? '<span class="rsub">the text that stood</span>' : '')
       : '<span class="rank">' + rank + '</span>' + c.label +
         (c.won ? '<span class="rsub stood">adopted</span>' : ''));
     return (
@@ -3978,7 +4005,14 @@
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
       // The axis and the bar moved up here when the field label went: they govern
       // every number on the card, including the one now in the head.
-      '<div class="rechead"><span>Decided · the bar was ' + pct(d.bar) + '</span>' +
+      // **The eyebrow states the outcome, in units** (Ed, 2026-08-17). Two
+      // quantities are being compared and they are different in kind — what the
+      // room came to think, and the line that had to be crossed — so each gets a
+      // mark: a gauge for the reading, a hurdle for the bar. With those, the whole
+      // result is one line: *86% cleared 72%*, or *41% did not*. The comparator
+      // does the work a sentence was doing.
+      '<div class="rechead"><span>Decided · ' + pct(best) + JUDG +
+      (best >= (d.bar ?? 0) ? ' &gt; ' : ' &lt; ') + pct(d.bar) + BAR + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
       (top
         ? clauseHeadHtml(s, {
@@ -3986,10 +4020,11 @@
             label: tag(top) + line(top),
           }) + (top.why ? speakerHtml(top.why) : '')
         : '') +
+      // No label on the rest of the field (Ed, 2026-08-17): the hairline above it
+      // already says *and here is everything else*, and the axis those numbers are
+      // on is now stated in the eyebrow, in the units themselves.
       (rest.length
-        ? '<div class="field"><div class="fieldlab">' +
-          (top ? 'The rest of the field · scored against the text they were measured on'
-               : 'The whole field · scored against the text they were measured on') + '</div>' +
+        ? '<div class="field">' +
           rest.map((c) => {
             if (!c.incumbent) rank++;
             return '<div class="ranked' + (c.incumbent ? ' wasthere' : '') + '">' +

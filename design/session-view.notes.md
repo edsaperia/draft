@@ -2739,3 +2739,35 @@ moved up into the eyebrow — *Decided · the bar was 72%* — where it governs 
 number on the card including the one now in the head. That is the third home
 that sentence has had today and the first one that is above everything it
 describes.
+
+---
+
+### Units, and the label the hairline made redundant (2026-08-17)
+
+**The field label went** — *the rest of the field · scored against the text they
+were measured on*. The hairline above it already says *and here is everything
+else*, and the axis those numbers sit on moved into the eyebrow, in the units
+themselves. A band label that repeats what a rule already draws is the same
+mistake as a caption that repeats what a bar already shows.
+
+**The incumbent says what it is where its number was.** Its 50% was true and
+unhelpful: a construction dressed as a measurement, standing in a column of real
+ones. *Previous text* is the thing its position in the column already implies
+and that nothing else on the card said in words — and where it **held**, the
+slot stays empty, because the clause at the head is not previous anything and
+its label already says it stood.
+
+**And the eyebrow states the outcome, in units** (Ed's idea). Two quantities are
+being compared and they are different in kind: what the room came to think, and
+the line that had to be crossed. With a mark on each, the whole result is one
+line — **86%👍 > 72%✒️**, or **41%👍 < 70%✒️** — and the comparator does the work
+a sentence was doing.
+
+Line art was tried first: a gauge for the reading, a hurdle for the bar, drawn
+on the same stroke as ✔ and ✖ so a unit would not look like it came from a
+different set. The honest finding is that **at eyebrow size line art does not
+survive** — at ~11px the gauge read as a caret and the hurdle as a Greek letter,
+and enlarging it to ~16px made it legible but far too loud for a unit. Emoji are
+bitmapped for exactly this size, which is the one job they do better than
+anything we can draw; the cost is that they bring their own colour back, which
+is what we had just spent an hour removing from the marks. Ed's pair for now.
