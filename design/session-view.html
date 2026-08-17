@@ -1188,11 +1188,7 @@
      underlay and the colour over it casts one shadow — per-path it would be two
      shadows of the same cable stacked, and the white run would cast its own
      under the colour it is there to sit behind. */
-  #wires {
-    position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.10))
-            drop-shadow(0 3px 5px rgba(0, 0, 0, 0.20));
-  }
+  #wires { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
   #wires path { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
   #wires .cap { stroke: none; }
   @media (max-width: 900px) { #wires { display: none; } }
@@ -2848,13 +2844,12 @@
     const lines = [], dots = [];
     const dot = (x, y) => dots.push([x, y]);
     const line = (d) => lines.push(d);
-    const paint = (col, alpha) => {
-      const g = document.createElementNS(SVGNS, 'g');
-      if (alpha != null) g.setAttribute('opacity', alpha);
+    const shapes = (g, col, w) => {
       for (const d of lines) {
         const p = document.createElementNS(SVGNS, 'path');
         p.setAttribute('d', d);
         p.setAttribute('stroke', col);
+        if (w) p.setAttribute('stroke-width', w);
         g.appendChild(p);
       }
       for (const [x, y] of dots) {
@@ -2864,7 +2859,67 @@
         c.setAttribute('fill', col);
         g.appendChild(c);
       }
+    };
+    const paint = (col, alpha) => {
+      const g = document.createElementNS(SVGNS, 'g');
+      if (alpha != null) g.setAttribute('opacity', alpha);
+      shapes(g, col);
       wiresEl.appendChild(g);
+    };
+
+    // **The cable and the cards cast one shadow between them** (Ed, 2026-08-17:
+    // *there's no way to join two things and have them cast a shadow
+    // together?*). There is, and it is the right answer — the previous fix
+    // pulled the ink back off the cards so nothing could cast onto them, which
+    // stopped the artefact by breaking the join.
+    //
+    // Two joined objects at one height cast the shadow of their **union**: a
+    // silhouette with no shadow anywhere inside it. So the cable's shadow is
+    // drawn by hand — the same shapes, offset and blurred — and then **clipped
+    // to everything that is not a card**. The holes are the cards and rail
+    // entries the cable joins, so no shadow can fall inside the union, and the
+    // ink goes back to meeting them: the ball centred on the card's edge, the
+    // run starting at the entry's.
+    //
+    // A CSS `filter` on the container could not do this. A filter has no way to
+    // be told which of the things underneath it are part of the same object.
+    const shadow = (dy, blur, alpha) => {
+      const g = document.createElementNS(SVGNS, 'g');
+      g.setAttribute('clip-path', 'url(#wire-not-cards)');
+      g.setAttribute('filter', 'url(#wire-blur-' + blur + ')');
+      g.setAttribute('transform', 'translate(0 ' + dy + ')');
+      g.setAttribute('opacity', alpha);
+      shapes(g, '#000');
+      wiresEl.appendChild(g);
+    };
+    // the union: every box the cable joins, punched out of the viewport
+    const clipHoles = () => {
+      const defs = document.createElementNS(SVGNS, 'defs');
+      const boxes = [
+        ...doc.querySelectorAll('.sugg[data-card="' + id + '"]'),
+        ...queueEl.querySelectorAll('[data-q="' + id + '"]'),
+      ].map((e) => e.getBoundingClientRect()).filter((r) => r.width && r.height);
+      let d = 'M0 0H' + innerWidth + 'V' + innerHeight + 'H0Z';
+      for (const r of boxes) {
+        d += 'M' + r.left + ' ' + r.top + 'H' + r.right + 'V' + r.bottom + 'H' + r.left + 'Z';
+      }
+      const cp = document.createElementNS(SVGNS, 'clipPath');
+      cp.setAttribute('id', 'wire-not-cards');
+      cp.setAttribute('clipPathUnits', 'userSpaceOnUse');
+      const p = document.createElementNS(SVGNS, 'path');
+      p.setAttribute('d', d);
+      p.setAttribute('clip-rule', 'evenodd');
+      cp.appendChild(p);
+      defs.appendChild(cp);
+      for (const b of [1, 3]) {
+        const f = document.createElementNS(SVGNS, 'filter');
+        f.setAttribute('id', 'wire-blur-' + b);
+        const fe = document.createElementNS(SVGNS, 'feGaussianBlur');
+        fe.setAttribute('stdDeviation', b);
+        f.appendChild(fe);
+        defs.appendChild(f);
+      }
+      wiresEl.appendChild(defs);
     };
 
     const ys = [];
@@ -2873,17 +2928,7 @@
       if (!t) continue;
       const b = el.getBoundingClientRect();
       const r = t.getBoundingClientRect();
-      // **No cable ink lies on top of a card** (Ed, 2026-08-17: they "still
-      // cast onto cards"). The shadow cannot be told where to stop — it falls
-      // on whatever is under the ink, and the wire has to paint above the cards
-      // because its horizontal run crosses the document's own white ground on
-      // the way in. So the ink stops instead: the run begins a cap-radius
-      // *outside* the rail entry and ends a ball-radius outside the card, and
-      // the ball sits tangent to the card's edge rather than centred on it.
-      // Nothing overlaps, so nothing casts onto anything it is level with, and
-      // touching still reads as landing.
-      const CAP = 3, BALL = 7;
-      const sx = b.left - CAP, sy = b.top + Math.min(b.height / 2, 18);
+      const sx = b.left, sy = b.top + Math.min(b.height / 2, 18);
       // The wire leaves the entry at its own natural height and arrives at the
       // *same* height on the card, clamped into the card's box (Ed, 2026-08-17
       // — "cables aren't quite aligned"). It used to take a fixed 16px inset at
@@ -2891,7 +2936,7 @@
       // that layoutQueue had levelled exactly still ran 2px downhill. A card is
       // taller than an entry in every real case, so the clamp almost never
       // bites and the wire is flat by construction rather than by coincidence.
-      const tx = r.right + BALL;
+      const tx = r.right;
       const ty = Math.min(Math.max(sy, r.top + 8), Math.max(r.top + 8, r.bottom - 8));
       ys.push(sy);
       const down = ty > sy;
@@ -2906,6 +2951,10 @@
     }
     // the spine: what makes several entries visibly one judgment
     if (ys.length > 1) line('M ' + gx + ' ' + Math.min(...ys) + ' V ' + Math.max(...ys));
+    // shadow of the union first, then the cable over it
+    clipHoles();
+    shadow(1, 1, 0.13);
+    shadow(3, 3, 0.20);
     paint(WIRE_UNDER, null);
     paint(color.rgb, color.a);
   }
