@@ -118,12 +118,7 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 296. **The experience of writing a patch** (Ed, 2026-08-17). The cable half is done — a patch is now joined at its cards by a cable in the `chip-gutter`, leaving each `clause-tab` by its left side (see the glossary). What remains: `draft-site` says a second edit somewhere else turns your draft into a patch in the making, and the mockup renders that, but nobody has designed the *experience* — how you know you are now writing one judgment in several places, how you move between the sites while drafting, whether a site can be dropped, and what the single Propose is committing you to. Both are unstarted.
 
-299. **Does the bounty-board get gated with ⚔️?** (raised 2026-08-17, unanswered — Ed: *not sure what you mean here*.) Restated. 297/298 made deadlock **personal**: a stuck race shows as an ordinary 💡 and only turns ⚔️ once *you* have finished judging it. The `bounty-board` is the other half of the same mechanism and it is **public** — a tab listing every deadlocked race in the document by name, ranked by resolvable disagreement × salience, so the room can go looking for the most valuable stuck work. The two now disagree. Somebody reads the board, sees *§ Guests — notice* named as deadlocked, clicks through, and finds an ordinary race card that says nothing about being stuck.
-
-Three ways. (a) **Leave the board alone.** Going to the bounty board is a deliberate act — you have gone looking for stuck work — and a board that hid the stuck races from anyone who had not judged them would be a board with nothing on it. The card still asks for your judgment first, because that is still the most useful thing you can give it. The board says *where the room is stuck*; the card says *what you personally owe it*. Recommended, but it is a disagreement by design and it wants signing off rather than discovering. (b) **Gate the board too** — it lists only races you are through with. Consistent, and it guts the feature: the board exists precisely to route people to work they have not seen. (c) **Split the board**: everything deadlocked is listed, and the ones you have not judged are listed under *judge these first*, which turns the disagreement into the board's own ordering. More surface than the idea has earned, but it is the honest version of (a).
-
-The board does not exist yet in any mockup, so nothing is blocked — but whichever way this goes belongs in the spec alongside §8.3, since it is a rule about what the mechanism may tell whom.
-
+301. **The `deadlock-card`** (Ed, 2026-08-17). ⚔️ should not be the race card with a bridge button added: *it is a whole new call to action (and may relate to several votes in a race)... I want to see all the proposals that are in flight, something that looks similar to a decided race card, to help me draft my new proposal.* Design below, and it turns on one ruling — see the numbered questions in the session log; whichever way it goes, the card carries **no judgment controls**, because a card that shows you the room and lets you re-vote is exactly the informed-judgment-in-a-blind-field that SPEC §3.5 exists to prevent.
 ## Backlog (provisioned, build later)
 
 42. **Spectator commentary view** (Ed, 2026-08-14): an optional commentating view for people watching a convention — like the sim's commentator, but consuming **public data only**: gazette, live candidate texts/rationales, bounty board, document state. Never individual judgments, never standings, authorship only per the session's visibility setting. Provision: expose a `spectator-api` in engine-core (a strictly-public projection, sibling of the participant-api) and have every spectator surface — commentary LLM included — consume only that, so privacy holds by construction rather than by prompt discipline. Note the sim's own commentator is deliberately different: it is omniscient (sees temperaments and hidden agendas) because it narrates a fiction for the experimenter; the product spectator box narrates real people and gets none of that.
@@ -144,7 +139,7 @@ The board does not exist yet in any mockup, so nothing is blocked — but whiche
 
 ## Spent numbers
 
-Next unused number: **300**. Never reuse a spent number.
+Next unused number: **302**. Never reuse a spent number.
 
 *Tidied 2026-08-16 (housekeeping pass): items sorted numerically within each section; 158 and 163 deleted as fully resolved; 70 and 92 rewritten to their surviving halves, since the questions they originally asked no longer exist.*
 
