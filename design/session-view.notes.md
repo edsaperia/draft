@@ -1658,3 +1658,40 @@ admission cap felt like a failure to show everything. It no longer does: the rai
 annotates a document you can scroll, and the entries it cannot fit are a few
 inches away in the thing they annotate. A running count of them at the foot was a
 permanent apology for a limit nobody experiences as one.
+
+### The palette becomes one idea
+
+Ed: *⏳ should be grey and ✏️ should be blue. Also all the greys should be
+lighter grey.*
+
+Two moves, and between them the palette goes from six colours to four hues and a
+grey — which is the first time it has been describable in one sentence.
+
+**⏳ goes grey.** It is the purest piece of information on the surface: you have
+judged, the race runs on without you, nothing is being asked. It was wearing the
+accent, which is the loudest thing in the system. And once it is grey it is
+saying exactly what ✅ ❎ ☑️ say, so they share a hue and the palette loses one.
+
+**✏️ goes blue**, and specifically `--primary`. Your own work is the one state
+that is about *you* rather than about the question, and the accent is already
+what this surface uses for you — your caret, your selection, any control you have
+turned on. The wallet's drip fills, hard-coded to that blue since they were
+built, now route through `--lc-yours` honestly rather than by coincidence: they
+are about your edits, so they were always this hue.
+
+The unplanned dividend is **Q264**, which asked what green was doing meaning
+several things at once. Green leaves the margin entirely: `--ok` now means
+*decided* and only that, on the tick and the winning text, both inside cards.
+
+What it costs is worth writing down rather than quietly dropping. 164 said
+*colour means you can still affect it; grey means the door is shut* — and a ⏳
+race is revisable right up until it seals, so grey there is a lie under the old
+rule. The replacement is narrower and true: **grey means nothing is being asked
+of you.** 🔄 is the entry that strains even that, since a ground shift does come
+back around; it keeps grey on the reading that what it is telling you is that
+your old judgment is gone, not that it wants a new one yet.
+
+Worth noticing how the rule changed: not by argument, but because two colour
+moves made the old wording false and the new one obvious. **A palette rule is a
+description of a palette, and it has to be re-derived whenever the palette
+moves** — the alternative is a rule that everybody quotes and nothing obeys.

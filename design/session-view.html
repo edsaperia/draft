@@ -28,29 +28,44 @@
     /* --- lifecycle (Ed, 162–165): in the rails and the document,
            colour says where an entry stands in *your* relationship to
            it, matching its glyph. Raw channels, because the wash
-           varies its strength by urgency. Colour means you can still
-           affect it; grey means the door is shut (Ed, 164). --------- */
-    /* **Hot for actions, cold for information** (Ed, 2026-08-17). The one rule
-       that orders the whole palette, and it explains what was already here:
-       orange and yellow are the two states that want something from you, blue
-       and grey are the two that are telling you where things stand. It also
-       says where a new hue may go — a salience diagonal wants a judgment, so
-       it must be hot; it is a different *kind* of judgment from a proposal, so
-       it must not be the same hot as one. Pink is the remaining warm hue that
-       reads as neither alarm nor caution. */
+           varies its strength by urgency.
+
+           **Hot for actions, cold for information** (Ed, 2026-08-17) is
+           the rule that orders it: orange, yellow and pink are the states
+           that want something from you; grey is where nothing does.
+
+           Ed, 2026-08-17 (second pass) moved two of them, and the moves
+           are what finally make the palette one idea rather than six
+           colours:
+
+           - **⏳ goes grey.** You have judged it; the race runs on without
+             you. It is the purest piece of information on the surface, and
+             it was wearing the accent. Grey is now simply *nothing is
+             being asked of you* — which is the same thing ✅ ❎ ☑️ say, so
+             they share it and the palette loses a hue.
+           - **✏️ goes blue**, and specifically the accent. Your own work
+             is the one state that is about *you* rather than about the
+             question, and the accent is already what this surface uses for
+             you — your caret, your selection, the control you have turned
+             on. Green leaves the margin entirely as a result, which is
+             most of Q264: `--ok` now means *decided* and nothing else.
+
+           The greys are lighter than they were, on the same reasoning: a
+           state that wants nothing should not be as loud as one that does.
+
+           What this costs, stated plainly: 164's *colour means you can
+           still affect it* no longer holds, because a ⏳ race is revisable
+           until it seals. The replacement is narrower and truer —
+           **grey means nothing is being asked of you**. 🔄 is the one
+           entry that strains it, since a ground shift does come back
+           around; it keeps grey because what it is telling you is that
+           your old judgment is gone, not that it wants a new one yet. */
     --lc-urgent: 253, 126, 20;    /* 🔥 orange — wants you most        */
     --lc-open: 245, 197, 24;      /* 💡 ❌ yellow — open, or stuck     */
-    --lc-weigh: 214, 51, 132;     /* 🌶️ pink — which question is hotter    */
-    --lc-deciding: 13, 110, 253;  /* ⏳ blue — judged, still running   */
-    --lc-closed: 108, 117, 125;   /* ✅ ❎ 🔄 ☑️ grey — nothing to do  */
-    /* ✏️ 💡-in-green — a proposal of *your own*, from the first keystroke
-       until it seals. The one state on this surface that is about you as
-       author rather than as judge, and the one you can always act on:
-       cancel it while it is a draft, withdraw it once it is in. Green is
-       free in the rail — under 164 every decided state washes grey, so
-       --ok's green appears only inside cards (the winning text, the tick
-       that commits) and never in a margin (Ed, 2026-08-16). */
-    --lc-yours: 25, 135, 84;      /* ✏️ green — yours, and still yours */
+    --lc-weigh: 214, 51, 132;     /* 🌶️ pink — which question is hotter */
+    --lc-deciding: 154, 162, 170; /* ⏳ grey — judged, running without you */
+    --lc-closed: 154, 162, 170;   /* ✅ ❎ 🔄 ☑️ grey — nothing to do  */
+    --lc-yours: 13, 110, 253;     /* ✏️ blue — yours, and still yours  */
     --stuck-ink: #8A6D00;         /* the one caption that instructs    */
 
     /* --- type scale. Four sizes and a caption; anything outside this
@@ -186,7 +201,7 @@
     display: inline-flex; align-items: center; justify-content: center;
     width: 1.15em; height: 1.35em; border-radius: var(--r-sm);
     background: linear-gradient(90deg,
-      rgba(13, 110, 253, 0.22) var(--fill), transparent var(--fill));
+      rgba(var(--lc-yours), 0.22) var(--fill), transparent var(--fill));
   }
   .pnext i { opacity: 0.28; }
   /* what the row stops drawing and starts counting, and when the next one lands.
@@ -198,7 +213,7 @@
     font-size: var(--t-ui); color: var(--muted); margin-left: 8px;
     font-variant-numeric: tabular-nums; padding: 1px 5px; border-radius: var(--r-sm);
     background: linear-gradient(90deg,
-      rgba(13, 110, 253, 0.22) var(--fill), rgba(13, 110, 253, 0.07) var(--fill));
+      rgba(var(--lc-yours), 0.22) var(--fill), rgba(var(--lc-yours), 0.07) var(--fill));
   }
   /* Nothing held: the label goes quiet, and the tray is the only thing left
      with anything to say. */
