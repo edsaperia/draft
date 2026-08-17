@@ -1414,6 +1414,12 @@
     padding: var(--s3) 14px; margin-bottom: var(--s2);
   }
   .ranked.stood { background: var(--ok-subtle); border-color: var(--ok); }
+  /* The incumbent sits in the ranking at its own 50%, and says what it is with
+     a dashed edge — the border the standalone "text it replaced" band used to
+     wear, kept so the object is recognisable in its new place. */
+  .ranked.wasthere { border-style: dashed; background: transparent; }
+  .ranked.wasthere .rtext { color: var(--muted); }
+  .pline.ref { font-weight: 400; opacity: 0.7; }
   .ranked .rank {
     display: inline-block; min-width: 1.5em; color: var(--muted);
     font-variant-numeric: tabular-nums;
@@ -2771,7 +2777,6 @@
   // lifecycle classes still colour them, and the match is a property of the
   // drawing rather than a hope about a font. ↻ stays a character: it has no
   // partner whose weight it must equal, and no font disagrees about an arrow.
-  const FILE_SVG = "<svg class=\"actg\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M3 10.5 V13 H13 V10.5\"/><path d=\"M8 2.5 V10\"/><path d=\"M5 7 L8 10 L11 7\"/></svg>";
   const TICK = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2 6.4 L4.7 9.2 L10 2.9\"/></svg>";
   const CROSS = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2.9 2.9 L9.1 9.1 M9.1 2.9 L2.9 9.1\"/></svg>";
   const VS16 = "︎";
@@ -3897,86 +3902,74 @@
     const field = fieldOf(s);
     const held = !field.some((c) => c.won);
     const yours = verdicts.get(s.id) || s.verdict;
-    const ranked = field.slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1));
-    // what the field was measured against: still standing, or displaced by the
-    // winner and therefore nowhere in the document any more
+    // **One list, and the incumbent is in it** (Ed, 2026-08-17: *the list of the
+    // whole field, with the winner at the top, and the incumbent clearly
+    // marked*). It used to be three bands — the clause at the head, the text it
+    // replaced in a band of its own, then the field — which on a clause whose
+    // rewrite changed one sentence printed two near-identical paragraphs before
+    // the reader reached anything ranked.
+    //
+    // The incumbent belongs *in* the ranking, and there is a true place for it:
+    // every score is the probability that proposal beats the current text, so the
+    // current text sits at **50%** by construction. Slotting it there is not a
+    // layout convenience — it is the line that says *these two beat what we had
+    // and those three did not*, which is the most useful sentence on the card and
+    // was nowhere on it before.
     const incumbent = held ? currentTextFor((s.keys ?? [])[0]) : (s.replaced ?? s.optionA ?? null);
-    // **The bar is said once, not once per proposal** (Ed, 2026-08-17). Every
+    const ranked = field.slice()
+      .concat(incumbent ? [{ label: '', text: incumbent, why: null, p: 0.5, incumbent: true }] : [])
+      .sort((x, y) => (y.p ?? -1) - (x.p ?? -1));
+    // **The bar is said once, not once per proposal** (Ed, 2026-08-17): every
     // block used to carry *against the current text · below the bar of 0.72*,
-    // which on a field of five is the same number printed five times and a sixth
-    // in the record below. What differs between blocks is the block's own score,
-    // so that is all a block says; the axis and the bar move up to the field
-    // label, where they are stated once and govern everything under them.
-    // **The scores line up down the right edge.** They had a line of their own
-    // under each rank, so five numbers meant to be compared sat at five different
-    // offsets with a paragraph between each pair — while the row above them was
-    // half empty. A set of comparable numbers wants a column.
-    const line = (c) => (c.p == null ? '' : '<span class="pline">' + pct(c.p) + '</span>');
+    // which on a field of five is the same number five times and a sixth in the
+    // record below. The axis and the bar moved up to the field label, where they
+    // are stated once and govern everything under them.
+    //
+    // **And the scores line up down the right edge.** They had a line of their
+    // own under each rank, so five numbers meant to be compared sat at five
+    // different offsets with a paragraph between each pair, while the row above
+    // them was half empty. A set of comparable numbers wants a column.
+    // The incumbent shows its 50% too, quietly. Without a number in the column
+    // it simply sits between two rows and the placement says nothing; with one,
+    // the column explains itself — everything above beat the text we had, and
+    // everything below did not. It is a construction rather than a measurement,
+    // which is what the muted weight is for.
+    const line = (c) => (c.p == null ? ''
+      : '<span class="pline' + (c.incumbent ? ' ref' : '') + '">' + pct(c.p) + '</span>');
     const skey = (s.keys ?? [])[0];
+    // Whichever text is the clause at the head does not print itself again: the
+    // winner where it carried, the incumbent where it held. That is the whole of
+    // the duplication, and it is the same rule in both directions.
+    const atHead = (c) => (c.won || (c.incumbent && held));
+    let rank = 0;
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
-      // The outcome is said by the clause-head's own label — *as it now stands*
-      // or *nothing displaced it* — and by the ✔/✖ in the gutter beside it, so the
-      // eyebrow saying it a third time was the card explaining itself.
       '<div class="rechead"><span>Decided</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
-      // The record was already this shape — the text that stands, then the
-      // whole field ranked beneath it — which is the reason a live card was
-      // moved to match it rather than the other way about. In `stacked` the
-      // clause is lifted into the head like every other card's, so a sealed
-      // decision opened from the document does not print its clause twice.
       (skey
         ? clauseHeadHtml(s, {
             text: currentTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
             label: carried(s) ? 'The clause as it now stands' : 'The clause as it stands — nothing displaced it',
           })
-        : held && incumbent
-        ? '<div class="stoodblock"><div class="rtag">The charter as it stands' +
-          '<span class="rsub stood">✓ nothing displaced it</span></div>' +
-          '<div class="rtext">' + esc(incumbent) + '</div>' +
-          '<div class="mcap">No proposal cleared the bar, so the charter kept the text it had. ' +
-          'The field below is in the record and can be redrafted next session.</div></div>'
         : '') +
-      // **The text it replaced, stated plainly, directly under the head**
-      // (Ed, 2026-08-17). A decided-and-adopted card used to print the clause
-      // at the head and then the winning proposal below it — the same sentence
-      // twice, because the winner *is* the clause now — and the one text the
-      // reader actually wants, the wording this displaced, appeared only as a
-      // redline inside the winner's block, where it is inferred rather than
-      // read. So the old wording is now a band of its own, and the winner's
-      // block states no wording at all: it is the head of the card.
-      //
-      // Nothing is replaced where the incumbent held, so the band appears only
-      // on a decision that carried.
-      (!held && incumbent
-        ? '<div class="replaced"><div class="rtag">The text it replaced</div>' +
-          '<div class="rtext">' + esc(incumbent) + '</div></div>'
-        : '') +
-      // the same band as a live card's, so the record is literally the same
-      // structure and not merely the same idea (Ed, 276's rule applied here too)
-      '<div class="field"><div class="fieldlab">' + (ranked.length > 1
-        ? 'The whole field · ' + ranked.length + ' proposals, scored against the current text · the bar was ' +
-          pct(d.bar)
-        : 'What was proposed · scored against the current text · the bar was ' + pct(d.bar)) + '</div>' +
-      ranked.map((c, i) =>
-        '<div class="ranked' + (c.won ? ' stood' : '') + '">' +
-        // The rank says *not adopted* four times over on a field of five, and the
-        // clause at the head says which one stood — so a block states its place
-        // and nothing else, and only the one that carried says so (2026-08-17).
-        '<div class="rtag">' + (ranked.length > 1 ? '<span class="rank">' + (i + 1) + '</span>' : '') + c.label +
-        (c.won ? '<span class="rsub stood">adopted</span>' : '') + line(c) + '</div>' +
-        // A proposal that carried has its wording at the head of this card, so
-        // it does not restate it. Every other proposal states its own wording
-        // **plainly** — the old text is one band up to compare it against, and
-        // a redline of a losing rewrite against a text that is itself no longer
-        // in the document is two removes from anything the reader can check.
-        (c.won
+      '<div class="field"><div class="fieldlab">' +
+      'The whole field · scored against the text they were measured on · the bar was ' + pct(d.bar) +
+      '</div>' +
+      ranked.map((c) => {
+        if (!c.incumbent) rank++;
+        return '<div class="ranked' + (c.won ? ' stood' : '') + (c.incumbent ? ' wasthere' : '') + '">' +
+        '<div class="rtag">' +
+        (c.incumbent
+          ? '<span class="rsub">' + (held ? 'the text that stood' : 'the text it replaced') + '</span>'
+          : '<span class="rank">' + rank + '</span>' + c.label +
+            (c.won ? '<span class="rsub stood">adopted</span>' : '')) +
+        line(c) + '</div>' +
+        (atHead(c)
           ? '<div class="atop">Its wording is the clause above.</div>'
           : '<div class="rtext">' + esc(c.text) + '</div>') +
-        // the same blank disc a live card gives it: whoever argued for this is
-        // still sealed unless the session's visibility setting says otherwise
-        (c.why ? speakerHtml(c.why) : '') + '</div>').join('') + '</div>' +
+        (c.why ? speakerHtml(c.why) : '') + '</div>';
+      }).join('') + '</div>' +
       // The two numbers are different in kind and the record says which is
       // which (Ed, 186): the bar is a confidence, the quorum is a headcount.
       '<div class="record">' +
@@ -3999,9 +3992,15 @@
         // about. And it says what pressing it does — this leaves your margin and
         // goes into the record — rather than *OK*, which says only that you have
         // stopped reading.
+        // **A word, not a glyph** (Ed, 2026-08-17). The tray-and-arrow read as
+        // *download*, which is the wrong verb entirely — nothing is being taken
+        // away, it is being put down. Every other candidate had the same trouble:
+        // an archive box says *storage*, an eye says *seen* and not *done*, and
+        // there is no glyph in common use for *I have taken this in*. When a set
+        // has no member, the word is not a fallback — it is the answer.
         ? '<div class="race-mid commitrow"><span class="mcap">Not filed yet</span>' +
-          '<button class="btn btn-approve glyphbtn" data-seen="' + s.id + '"' +
-          ' title="File this — it leaves your margin and stays in the record">' + FILE_SVG + '</button></div>'
+          '<button class="btn btn-approve" data-seen="' + s.id + '"' +
+          ' title="It leaves your margin and stays in the record">OK</button></div>'
         : '') +
       '</div>'
     );
