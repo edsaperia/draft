@@ -332,6 +332,13 @@
      four columns. Kept at the colours the emoji happened to have, so the change
      is the plate and nothing else; see the note on whether that survives. */
   .mk { font-family: inherit; font-weight: 700; line-height: 1; }
+  /* An action glyph, drawn on the same stroke as the lifecycle marks so a
+     control and a mark never look like they came from different sets. */
+  .actg {
+    width: 1.15em; height: 1.15em; display: inline-block; vertical-align: -0.2em;
+    fill: none; stroke: currentColor; stroke-width: 1.7;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
   .mkg {
     width: 1em; height: 1em; display: inline-block; vertical-align: -0.13em;
     fill: none; stroke: currentColor; stroke-width: 1.9;
@@ -789,6 +796,7 @@
      and had been getting neither, so "✓ this is the text that stands" ran on
      into the end of the label above it */
   .rtag {
+    display: flex; align-items: baseline; gap: var(--s2);
     font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     color: var(--primary-emphasis); margin-bottom: 6px;
   }
@@ -1414,9 +1422,10 @@
   .ranked:not(.stood) .rtext { color: var(--muted); }
   .ranked:not(.stood) .swhy { font-weight: 500; color: var(--muted); }
   .pline {
-    font-size: 0.78rem; color: var(--muted); margin: 2px 0 var(--s2);
-    font-variant-numeric: tabular-nums;
+    margin-left: auto; font-size: 0.78rem; color: var(--muted);
+    font-variant-numeric: tabular-nums; letter-spacing: 0;
   }
+  .ranked.stood .pline { color: var(--ok); }
   .pline b { color: var(--fg); }
   .ranked.stood .pline b { color: var(--ok); }
   /* The text the winner displaced (Ed, 2026-08-17). It sits directly under the
@@ -1490,7 +1499,7 @@
       <span class="pulse" id="pulse" aria-hidden="true"
             title="The room is working — this blinks when anybody judges or proposes anything. It never says who, what, or which way."></span>
       <span>time left <b>2h 11m</b></span>
-      <span title="How sure the house has to be that a change beats the current text. It rises through the session — this is not a vote share.">confidence bar <b>0.74 ▲</b></span>
+      <span title="How sure the house has to be that a change beats the current text. It rises through the session — this is not a vote share.">confidence bar <b>74% ▲</b></span>
       <span title="Quorum for a decision, not for the meeting: this many distinct members must weigh in on a question before it can be adopted (a third of the roster). A question short of quorum simply waits — silence is never counted as a vote.">quorum <b>5 of 14</b></span>
       <span class="wallet" id="wallet"></span>
       <!-- The one place on the surface that says who *you* are. Everybody
@@ -2627,6 +2636,13 @@
   // the bar above it. The bar is a child box painted over this ground, so it
   // composites — whatever the urgency, the filled part is always the stronger.
   const GROUND_A = 0.06;
+  // **Confidences read as percentages** (Ed, 2026-08-17). 0.74 is the number the
+  // model holds; 74% is the number a person holds. It also helps the one thing
+  // the tooltip has always had to say in words — *this is not a vote share* —
+  // because a bare decimal beside a headcount reads more like a share, not less.
+  // Rounded to whole percent: the second decimal was never doing anything but
+  // suggesting the model is more precise than it is.
+  const pct = (x) => Math.round((x ?? 0) * 100) + '%';
   const groundOf = (col) => String(col).replace(/[\d.]+\s*\)\s*$/, GROUND_A + ')');
   function washAttrs(key, col, fill) {
     const from = prevWash.get(key) || { col, fill };
@@ -2755,6 +2771,7 @@
   // lifecycle classes still colour them, and the match is a property of the
   // drawing rather than a hope about a font. ↻ stays a character: it has no
   // partner whose weight it must equal, and no font disagrees about an arrow.
+  const FILE_SVG = "<svg class=\"actg\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M3 10.5 V13 H13 V10.5\"/><path d=\"M8 2.5 V10\"/><path d=\"M5 7 L8 10 L11 7\"/></svg>";
   const TICK = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2 6.4 L4.7 9.2 L10 2.9\"/></svg>";
   const CROSS = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2.9 2.9 L9.1 9.1 M9.1 2.9 L2.9 9.1\"/></svg>";
   const VS16 = "︎";
@@ -3884,17 +3901,25 @@
     // what the field was measured against: still standing, or displaced by the
     // winner and therefore nowhere in the document any more
     const incumbent = held ? currentTextFor((s.keys ?? [])[0]) : (s.replaced ?? s.optionA ?? null);
-    const line = (c) => {
-      if (c.p == null) return '<div class="pline">the text it was measured against</div>';
-      const cleared = d.bar != null && c.p >= d.bar;
-      return '<div class="pline"><b>' + c.p.toFixed(2) + '</b> against the current text · ' +
-        (cleared ? 'cleared' : 'below') + ' the bar of ' + (d.bar ?? 0).toFixed(2) + '</div>';
-    };
+    // **The bar is said once, not once per proposal** (Ed, 2026-08-17). Every
+    // block used to carry *against the current text · below the bar of 0.72*,
+    // which on a field of five is the same number printed five times and a sixth
+    // in the record below. What differs between blocks is the block's own score,
+    // so that is all a block says; the axis and the bar move up to the field
+    // label, where they are stated once and govern everything under them.
+    // **The scores line up down the right edge.** They had a line of their own
+    // under each rank, so five numbers meant to be compared sat at five different
+    // offsets with a paragraph between each pair — while the row above them was
+    // half empty. A set of comparable numbers wants a column.
+    const line = (c) => (c.p == null ? '' : '<span class="pline">' + pct(c.p) + '</span>');
     const skey = (s.keys ?? [])[0];
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
-      '<div class="rechead"><span>Decided · ' + esc(d.outcome || 'sealed') + '</span>' +
+      // The outcome is said by the clause-head's own label — *as it now stands*
+      // or *nothing displaced it* — and by the ✔/✖ in the gutter beside it, so the
+      // eyebrow saying it a third time was the card explaining itself.
+      '<div class="rechead"><span>Decided</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
       // The record was already this shape — the text that stands, then the
       // whole field ranked beneath it — which is the reason a live card was
@@ -3925,28 +3950,29 @@
       // Nothing is replaced where the incumbent held, so the band appears only
       // on a decision that carried.
       (!held && incumbent
-        ? '<div class="replaced"><div class="rtag">The text it replaced' +
-          '<span class="rsub">the charter no longer holds this</span></div>' +
+        ? '<div class="replaced"><div class="rtag">The text it replaced</div>' +
           '<div class="rtext">' + esc(incumbent) + '</div></div>'
         : '') +
       // the same band as a live card's, so the record is literally the same
       // structure and not merely the same idea (Ed, 276's rule applied here too)
       '<div class="field"><div class="fieldlab">' + (ranked.length > 1
-        ? 'The whole field · ' + ranked.length + ' proposals, ranked by how each did against the current text'
-        : 'What was proposed') + '</div>' +
+        ? 'The whole field · ' + ranked.length + ' proposals, scored against the current text · the bar was ' +
+          pct(d.bar)
+        : 'What was proposed · scored against the current text · the bar was ' + pct(d.bar)) + '</div>' +
       ranked.map((c, i) =>
         '<div class="ranked' + (c.won ? ' stood' : '') + '">' +
+        // The rank says *not adopted* four times over on a field of five, and the
+        // clause at the head says which one stood — so a block states its place
+        // and nothing else, and only the one that carried says so (2026-08-17).
         '<div class="rtag">' + (ranked.length > 1 ? '<span class="rank">' + (i + 1) + '</span>' : '') + c.label +
-        (c.won ? '<span class="rsub stood">✓ this is the text that stands</span>'
-               : '<span class="rsub">not adopted</span>') + '</div>' +
-        line(c) +
+        (c.won ? '<span class="rsub stood">adopted</span>' : '') + line(c) + '</div>' +
         // A proposal that carried has its wording at the head of this card, so
         // it does not restate it. Every other proposal states its own wording
         // **plainly** — the old text is one band up to compare it against, and
         // a redline of a losing rewrite against a text that is itself no longer
         // in the document is two removes from anything the reader can check.
         (c.won
-          ? '<div class="atop">The proposal is at the head of this card.</div>'
+          ? '<div class="atop">Its wording is the clause above.</div>'
           : '<div class="rtext">' + esc(c.text) + '</div>') +
         // the same blank disc a live card gives it: whoever argued for this is
         // still sealed unless the session's visibility setting says otherwise
@@ -3955,15 +3981,28 @@
       // which (Ed, 186): the bar is a confidence, the quorum is a headcount.
       '<div class="record">' +
       '<span><b>' + (d.judges ?? 0) + ' of ' + ROSTER + '</b> weighed in · quorum was <b>' + FLOOR + '</b></span>' +
-      '<span>confidence <b>' + (d.p ?? 0).toFixed(2) + '</b> against a bar of <b>' + (d.bar ?? 0).toFixed(2) + '</b></span>' +
+      // The confidence and the bar are both in the field above now — the label
+      // states the bar once for everything under it, and the winner's own score
+      // sits at the head of the column. Repeating them here was the third telling.
       '<span>' + (yours ? 'you ' + esc(yours) : 'you never judged this') + '</span>' +
       '</div>' +
       // Reading is not acknowledging (Ed, 114). A decision stays unread — and
       // stays pinned to the screen — until you say you have taken it in.
       (isUnread(s)
-        ? '<div class="sactions"><button class="btn btn-approve" data-seen="' + s.id + '">OK, I’ve seen this</button>' +
-          '<span class="mcap">until then it stays at the top of your margin</span></div>'
-        : '<div class="mcap">✓ you’ve seen this one</div>') +
+        // **Filing it is a commit, so it commits where every other card does**
+        // (Ed, 2026-08-17): the right of a bottom row, glyph only, the same
+        // object as the judgment row's ✓ and the proposal row's ✏️.
+        //
+        // The glyph is an **arrow into a tray**, drawn in the same stroke
+        // vocabulary as ✔ and ✖. It cannot be a tick: a tick is now the *outcome*
+        // mark and a green one would sit two inches from the green ✔ this card is
+        // about. And it says what pressing it does — this leaves your margin and
+        // goes into the record — rather than *OK*, which says only that you have
+        // stopped reading.
+        ? '<div class="race-mid commitrow"><span class="mcap">Not filed yet</span>' +
+          '<button class="btn btn-approve glyphbtn" data-seen="' + s.id + '"' +
+          ' title="File this — it leaves your margin and stays in the record">' + FILE_SVG + '</button></div>'
+        : '') +
       '</div>'
     );
   }

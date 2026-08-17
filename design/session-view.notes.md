@@ -2623,3 +2623,46 @@ remove themselves.**
 
 A filed line is now the same object as an unacknowledged one, quieter: same
 shape, muted weight and colour, and the mark still says which way it went.
+
+### The sealed record, cleaned (2026-08-17)
+
+**The acknowledgement commits where every other card commits.** It was a
+labelled button at the *left* of a row of its own, with a caption beside it
+saying what would happen if you did not press it. It is now a glyph at the
+bottom right, which is where the judgment row's ✓ and the proposal row's ✏️ both
+live — the same object doing the same job on a different card.
+
+**The glyph is an arrow into a tray**, drawn on the same stroke as ✔ and ✖ so a
+control and a mark never look like they came from different sets. It cannot be a
+tick: a tick is now the *outcome* mark, and a green one would sit two inches
+from the green ✔ this card is about. And a tray says what pressing it does —
+this leaves your margin and goes into the record — where *OK* says only that you
+have stopped reading.
+
+**Then the same audit the cards had.** A record of five proposals was saying
+several things five and six times over:
+
+- Every block carried *against the current text · below the bar of 0.72*. That
+  is the same number printed five times, and a sixth in the record beneath. The
+  axis and the bar moved **up to the field label**, where they are stated once
+  and govern everything under them, and a block now states only its own score.
+- Four blocks said *not adopted*, which the rank numbers 2–5 already said, and
+  the winner said *✓ this is the text that stands* directly under a head labelled
+  *the clause as it now stands*.
+- The eyebrow said *Decided · adopted*, which the head label and the gutter ✔ had
+  each already said.
+- *The text it replaced* was followed by *the charter no longer holds this*.
+- The commit row's caption explained what not pressing the button would do.
+
+**And the scores became a column.** They had a line of their own under each
+rank, so five numbers meant to be compared sat at five different offsets with a
+paragraph between each pair — while the row above them was half empty. They now
+right-align in the rank row: 86 · 58 · 49 · 35 · 21, readable as a single fall.
+A set of comparable numbers wants a column, and the space for it was already
+there.
+
+**Percentages, not decimals** (Ed). 0.74 is the number the model holds; 74% is
+the number a person holds. It also helps the one thing this figure's tooltip has
+always had to say in words — *this is not a vote share* — because a bare decimal
+beside a headcount reads *more* like a share, not less. Whole percent: the second
+decimal was only ever suggesting the model is more precise than it is.
