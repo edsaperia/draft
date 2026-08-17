@@ -2553,3 +2553,27 @@ lifecycle hue has to its card.
 
 One line did it: `isUnread` now requires `carried`, and everything else — the
 sealed dot, the missing OK button, the urgency floor — falls out of that.
+
+### What pins itself, finally (2026-08-17)
+
+Ed, on the un-pinning: *I want to see ❎ if I have judged on it and not
+otherwise, because otherwise I'll wonder what happened to it.* Which is the
+half I had missed, and it completes the rule rather than reversing it.
+
+An **adopted** decision always pins: the text under your eye moved, which is
+news whether or not you had anything to do with it. A **retired** one is not
+news — nobody liked the proposal, the charter is exactly as it was — so it does
+not pin *unless you judged it*, in which case it is not news but it is an
+**answer you are owed**. You put something in; being left to wonder what became
+of it is its own small failure, and a cheap one to avoid. A retired race you
+never touched goes straight to a filed ✖ dot: findable, openable, silent.
+
+The general rule, which is the thing worth keeping: **a decision announces
+itself if it changed the document, or if you are part of why it did not.**
+
+One correction fell out of it immediately. A pinned-but-retired entry was taking
+the green `--lc-changed` wash, because green had been attached to *pinning*
+rather than to *changing*. It is grey: green is for what changed, and this one
+holds a slot in the margin for a different reason. The fixture now shows both —
+§ Nomination retired and judged, pinned in grey; the larder's food rule retired
+and never judged, already a filed dot on load.

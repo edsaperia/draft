@@ -2181,8 +2181,11 @@
       rationale: '"Clean and tidy" is what everyone already thinks they are being. A test you can picture settles arguments that an adjective cannot.'
     },
     {
-      id: 'quick-larderfood', kind: 'quick', keys: ['larderfood'], state: 'sealed',
-      verdict: 'kept the current text', pick: 'keep',
+      // Retired, unread, and **you never judged it** — so it never pins: it is
+      // already a filed ✖ dot on load. The § Nomination race beside it is the
+      // other half of the rule, retired and judged, and it does pin.
+      id: 'quick-larderfood', kind: 'quick', keys: ['larderfood'], state: 'sealed', unread: true,
+      verdict: null, pick: null,
       qLabel: '§ The Kitchen — larder',
       urgency: 0,
       pct: 100, cap: 'sealed — retired · the current text stood',
@@ -2551,11 +2554,21 @@
     SUGGS.some((g) => isDiagonal(g) && stateOf(g) === 'needs');
   window.__q291 = () => ({ live: liveQuestions(), more: diagonalsAvailable(),
     nothing: nothingToJudge(), needs: SUGGS.filter(judgeable).map((g) => g.id) });
-  // **Only an adopted decision pins itself** (Ed, 2026-08-17). Acknowledgement
-  // is for news, and a retired decision is not news: nothing changed, so there
-  // is nothing to review and no reason to hold a slot in the margin for it. It
-  // goes straight to a filed dot — grey ✖, findable, openable, silent.
-  const isUnread = (g) => stateOf(g) === 'sealed' && g.unread && carried(g) && !readSeals.has(g.id);
+  // **What pins itself, and why** (Ed, 2026-08-17, in two passes). An adopted
+  // decision always pins: the text under your eye moved, which is news whether
+  // or not you had anything to do with it. A retired one is not news — somebody
+  // proposed, nobody liked it, the charter is exactly as it was — so it does not
+  // pin *unless you judged it*, in which case it is not news but it is an
+  // **answer you are owed**: you put something in and would otherwise be left
+  // wondering what became of it (Ed: *otherwise I'll wonder what happened to
+  // it*). A retired race you never touched goes straight to a filed dot — grey
+  // ✖, findable, openable, silent.
+  //
+  // The general rule underneath, worth keeping: **a decision announces itself if
+  // it changed the document, or if you are part of why it did not.**
+  const youJudged = (g) => !!(verdicts.get(g.id) || g.verdict);
+  const isUnread = (g) => stateOf(g) === 'sealed' && g.unread &&
+    (carried(g) || youJudged(g)) && !readSeals.has(g.id);
 
   // Urgency — how much this wants *you* (leverage), not how close it is to
   // resolution (that stays the meter's job). It is carried by the strength of
@@ -2862,7 +2875,7 @@
         const d = g.decided || {};
         html += '<li class="qitem" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
           '<button class="unread" data-q="' + g.id + '" aria-current="' + (openId === g.id) + '"' +
-          washAttrs(qKey(g, e), wash(g, 'changed').col, wash(g, 'changed').fill) +
+          washAttrs(qKey(g, e), wash(g, anchHue(g) || 'closed').col, wash(g, anchHue(g) || 'closed').fill) +
           ' title="' + esc(d.outcome || 'sealed') + ' — you haven’t opened this one yet">' +
           '<span class="ql">' + markHtml(markKindOf(g)) +
           '<span class="qt">' + plainLabel(e.label || g.qLabel) + '</span>' +
@@ -5960,7 +5973,10 @@
   // unacknowledged one keeps a tint, because it still owes you something.
   const anchHue = (g) => {
     const st = stateOf(g);
-    if (st === 'sealed') return isUnread(g) ? 'changed' : null;
+    // Green is for what **changed**, not for what pinned itself: a retired
+    // decision you judged holds a slot in the margin because you are owed an
+    // answer, and it still moved nothing, so it stays grey.
+    if (st === 'sealed') return isUnread(g) ? (carried(g) ? 'changed' : 'closed') : null;
     if (st === 'yours') return 'yours';
     // ⚔️ is tested **before** ⏳, because it is the state that replaces it: you
     // have judged, and where an ordinary race would now go grey and run on
