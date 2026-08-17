@@ -3273,3 +3273,51 @@ solid orange, and the `evidence-meter` — which was a stripe under a paragraph 
 now fills the whole card. The most urgent question in the document is also the
 clearest progress bar in the rail, which is what you want from the one entry that
 is meant to be answered next.
+
+### 🔥 gives up its hue (2026-08-17)
+
+Ed: *We could give 🔥 a yellow background like 💡, what do you think? the icon is
+already doing a lot of the work.*
+
+Yes, and the argument is the one the palette has been asked all day: what does
+this colour say that nothing else on the card says? A flame means **an ordinary
+judgment that wants you most** — the same *kind* of thing as a bulb, with a
+priority on it. So orange was claiming a difference in kind to express a
+difference in degree, which is the one thing a separate hue must never do. Three
+hues and a grey now, and `--lc-urgent` is gone.
+
+**But the first version did not work, and finding out why was the whole job.**
+
+Dropping the hue left the flame as the deepest yellow in the rail, because
+`washCol` already sets a wash's alpha from its urgency — same colour, more of
+it, which sounded exactly right. Measured: **0.292 against a neighbouring 💡 at
+0.280.** Nobody can see that.
+
+And it is not a fixture accident. The flame is usually only *marginally* the most
+urgent, because somebody has to be first among a set of close things — that is
+what being first in a ranking of similar items means. Any design that leans on
+the gap between first and second on this ramp will keep failing for the same
+reason.
+
+Which is the actual insight, and it is about what 🔥 *is*. **It does not mean
+"the highest number on the urgency ramp". It means "the question you are being
+asked next" — and that is a category, not a point on a scale.** A ramp cannot
+express a category. So the flame takes a fixed alpha clear of the ramp's ceiling
+(0.44 against the ramp's 0.30) and the ramp runs underneath it. Same hue,
+decisively more of it, which is what more-urgent should have looked like all
+along.
+
+*Hot for actions* applied one level down: the action being asked for **now** is
+louder than the ones that can wait.
+
+Two things fall out for free. The queue wire takes its colour from the card's
+wash composited over white, so the flame's cable is still the strongest on the
+surface — the glossary's claim survives the hue change without a line of code.
+And ❄️ still works: chill the flame and the deep yellow travels to whatever takes
+it, because the value is attached to `topUrgentId` rather than to a card.
+
+The general shape, worth keeping: **when you remove a device, check what the
+remaining ones actually measure — not what they are supposed to express.** The
+urgency ramp was supposed to express urgency and does; it just does not have the
+resolution to carry a categorical claim, and nothing said so until the hue that
+was carrying it went away.

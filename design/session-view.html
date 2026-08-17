@@ -60,7 +60,12 @@
            entry that strains it, since a ground shift does come back
            around; it keeps grey because what it is telling you is that
            your old judgment is gone, not that it wants a new one yet. */
-    --lc-urgent: 253, 126, 20;    /* 🔥 orange — wants you most        */
+    /* 🔥 had a hue of its own here — orange — and gave it up (Ed, 2026-08-17).
+       A flame is *an ordinary judgment that wants you most*: the same kind of
+       thing as a bulb with a priority on it, so a second hue was claiming a
+       difference in kind to say a difference in degree. It is the deepest
+       yellow instead, at a fixed value clear of the urgency ramp (`FLAME_A`).
+       Three hues and a grey. */
     --lc-open: 245, 197, 24;      /* 💡 ⚔️ yellow — open, or stuck     */
     --lc-weigh: 214, 51, 132;     /* 🌶️ pink — which question is hotter */
     --lc-deciding: 154, 162, 170; /* ⏳ grey — judged, running without you */
@@ -2781,7 +2786,23 @@
   // width is the fill and whose background-color is the hue, both of which
   // animate — so the wash now moves when it means something has moved.
   const washCol = (hue, u) => tint(hue, u == null ? 0.16 : URG_LO + (URG_HI - URG_LO) * u);
-  const wash = (g, hue, u) => ({ col: washCol(hue, u), fill: g.pct + '%' });
+  // **The flame sits above the ramp, not at the top of it** (2026-08-17, making
+  // Ed's yellow flame actually work). Dropping 🔥's own hue left it as the
+  // deepest yellow in the rail, which sounded sufficient and measured at 0.292
+  // against a neighbouring 💡 at 0.280 — a difference nobody can see, and it is
+  // not a fixture accident: the flame is usually only *marginally* the most
+  // urgent, because someone has to be first among a set of close things.
+  //
+  // Which is the actual point. 🔥 does not mean *the highest number on the
+  // urgency ramp*, it means **the question you are being asked next** — a
+  // category, and a ramp cannot express a category. So it takes a fixed value
+  // clear of the ramp's ceiling, and the ramp runs underneath it. Same hue,
+  // decisively more of it: *hot for actions* applied one level down, where the
+  // one action being asked for right now is louder than the ones that can wait.
+  const FLAME_A = 0.44;
+  const wash = (g, hue, u) => ({
+    col: (g && g.id === topUrgentId && hue === 'open') ? tint(hue, FLAME_A) : washCol(hue, u),
+    fill: g.pct + '%' });
   // what a wash is *about*: the rail entry, or the clause in the document
   const qKey = (g, e) => 'q:' + g.id + ':' + (e.site ?? '');
 
@@ -6633,7 +6654,18 @@
     // a diagonal asks for a *ranking*, not a judgment about a wording, so it
     // gets its own hot hue rather than borrowing a proposal's (Ed, 2026-08-17)
     if (g.kind === 'diagonal') return 'weigh';
-    return g.id === topUrgentId ? 'urgent' : 'open';
+    // **🔥 is yellow** (Ed, 2026-08-17). It had a hue of its own, and the
+    // question that retires it is the one the palette has been asked all day:
+    // what does this colour say that nothing else on the card says? A flame is
+    // *an ordinary judgment that wants you most* — the same kind of thing as a
+    // bulb, with a priority on it — so a hue of its own was claiming a
+    // difference in kind to express a difference in degree.
+    //
+    // Degree is already drawn, and better: `washCol` sets a wash's alpha from
+    // its urgency, so the flame comes out the **deepest yellow in the rail**
+    // without a second hue. Same colour, more of it, which is what more-urgent
+    // actually means. The glyph says the rest.
+    return 'open';
   };
   // Keyed by the clause rather than by the element, so the paragraph and the
   // head of the card that swallows it are one washed thing: opening a card
