@@ -1810,3 +1810,38 @@ the place count on a patch — moves into the tooltip.
 It stays an ordinary outline button rather than a red one. The stake comes back
 in full (SPEC §3.3a), so withdrawing is a real thing to do and not a danger, and
 the surface should not flinch at it.
+
+### One row for the whole life of a proposal
+
+Ed corrected the withdraw placement into something much better than where I had
+put it: *this is really about the proposal lifecycle. When you are editing you
+have "✏️ propose (costs one edit)" on the left and then "cancel" on the right. In
+fact it should have 🗑️ on the very left and ✏️ on the very right, and ✏️ goes to
+"submitted" once it's pressed and the card becomes a your-proposal, which then
+still has 🗑️ on the very left.*
+
+So the commit row **does not move as the proposal advances**. 🗑️ at the very
+left throughout; the commit control at the very right, changing from the act to
+the fact of it — *✏️ Propose · costs one edit* becomes a pressed *✏️ Submitted* —
+which is precisely what the judgment row's ✓ does when it is cast. Measured: both
+controls sit at 24px from their respective card edges on both cards, so nothing
+shifts under the pointer when the draft becomes a proposal.
+
+Two things fall out of it.
+
+**Cancel was in the commit slot.** A word on the right saying *leave this*, where
+every other card on the surface puts *finish this*. Discarding and committing had
+been given each other's positions, which is why neither read as part of a
+sequence.
+
+**Discard and withdraw are one gesture at two moments.** The only difference is
+that one of them hands an edit back, and that difference belongs in the tooltip,
+not in the glyph or the position. Both stay outline buttons rather than red ones:
+a draft has cost nothing and a withdrawal is refunded in full (SPEC §3.3a), so
+neither is a danger and the surface should not flinch at either.
+
+One consequence I took without being asked, and it should be easy to reverse if
+it is wrong: **Propose goes blue.** Green means *decided* and only that in this
+palette — a submission is the start of a decision, not one — and since ✏️ became
+the accent, a green button was the one part of your own proposal that did not
+look like yours.

@@ -1119,9 +1119,17 @@
     content: attr(data-placeholder); color: var(--muted); font-weight: 400; font-style: italic;
     position: absolute; left: 0; top: 0; right: 0; pointer-events: none;
   }
-  .btn.btn-propose { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 600; }
-  .btn.btn-propose:hover { background: var(--ok-hover); border-color: var(--ok-hover); color: #fff; }
-  .btn.btn-propose[disabled]:hover { background: var(--ok); border-color: var(--ok); }
+  /* **Blue, not green** — a consequence of the palette move rather than a
+     separate decision (Ed's ⏳/✏️ change, 2026-08-17). Green means *decided*
+     and only that; a proposal being submitted is not a decision, it is the
+     start of one. And everything else about your work is now the accent — the
+     drafting box, the tab, the rail entry — so a green button was the one part
+     of your own proposal that did not look like yours. */
+  .btn.btn-propose {
+    background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600;
+  }
+  .btn.btn-propose:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  .btn.btn-propose[disabled]:hover { background: var(--primary); border-color: var(--primary); }
   /* Withdrawal is a real thing to do and not a danger (SPEC §3.3a — the stake
      comes back in full), so it is an ordinary outline button rather than a red
      one. */
@@ -1154,13 +1162,21 @@
     display: inline-flex; align-items: center; justify-content: center;
     width: 3.25rem; height: 2.5rem; padding: 0; font-size: 1.2rem; line-height: 1;
   }
-  /* the only thing in its row, and it belongs at the commit end of it */
-  .race-mid.withdrawrow { justify-content: flex-end; }
-  /* Withdrawal is a real thing to do and not a danger — the stake comes back in
-     full (SPEC §3.3a) — so it is an ordinary outline button rather than a red
-     one, sitting where the tick sits without pretending to be one. */
+  /* Discarding is a real thing to do and not a danger — a draft has cost
+     nothing, and withdrawing a proposal hands the edit back in full (SPEC
+     §3.3a) — so it is an ordinary outline button rather than a red one. It sits
+     at the left of the commit row for the whole of a proposal's life, opposite
+     whatever the right-hand control currently is. */
   .btn.btn-withdraw { border-color: var(--border); background: var(--bg); }
   .btn.btn-withdraw:hover { border-color: var(--primary); background: var(--light); }
+  /* the commit slot after it has been committed: the act became the fact of it,
+     the same move the judgment row's ✓ makes when it is pressed */
+  .btn.btn-propose[aria-pressed="true"],
+  .btn.btn-propose[aria-pressed="true"][disabled] {
+    background: var(--primary-subtle); border-color: var(--primary); color: var(--primary-emphasis);
+    box-shadow: inset 0 2px var(--s1) rgba(var(--lc-yours), 0.28);
+    opacity: 1; font-weight: 600;
+  }
   /* greyed, not merely faded: a pale green tick reads as a tick that has been
      pressed, which is the one thing it must not say before you have chosen */
   .btn.btn-approve.glyphbtn[disabled],
@@ -4226,11 +4242,18 @@
       esc(d.rationale || '') + '</div></div>' +
       '</div>' +
       '</div></div>' +
-      '<div class="race-mid">' +
+      // **The proposal's lifecycle is one row** (Ed, 2026-08-17). Discard on the
+      // very left, commit on the very right, and the row does not move when the
+      // draft becomes a proposal — only the right-hand control changes from the
+      // act to the fact of it, exactly as the judgment row's ✓ goes from
+      // available to pressed. Cancel was a word on the right, which put *leave
+      // this* where every other card puts *finish this*.
+      '<div class="race-mid commitrow">' +
+      '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
+      ' title="Discard this draft — nothing has been spent on it yet">🗑️</button>' +
       '<button class="btn btn-propose" data-act="draft-propose"' +
       (broke ? ' disabled title="No edits left — another arrives as the drip accrues"' : '') +
       '>✏️ Propose' + (n > 1 ? ' all ' + n + ' places' : '') + ' · costs one edit</button>' +
-      '<button class="btn btn-outline" data-act="draft-cancel">Cancel</button>' +
       '</div>' +
       '<div class="foot">' +
       (rival
@@ -4274,16 +4297,20 @@
       fieldHtml('<div class="propblock"><div class="rtext">' +
         laneBlocks(s.text, originText(s), headFlags(s)) + '</div>' + speakerHtml(d.rationale) + '</div>',
         1, 'What you proposed') +
-      // **Withdraw sits where submit sits** (Ed, 2026-08-17): bottom right, as a
-      // glyph, because it is this card's version of the same act — the one
-      // thing that finishes what you are looking at. A centred outline button
-      // put the only control on the surface that commits *your* work in a place
-      // no other card's commit lives. 🗑️ rather than a word, matching the ✓ it
-      // stands in for; the wording moves into the tooltip, where the place
-      // count can go with it.
-      '<div class="race-mid commitrow withdrawrow">' +
+      // **The same row the editing card had, one step further on** (Ed,
+      // 2026-08-17). 🗑️ stays exactly where it was — discarding a draft and
+      // withdrawing a proposal are the same gesture at two moments, and the
+      // only difference is that one of them hands an edit back. And the right
+      // slot keeps the ✏️ that was *Propose*, now reading **Submitted**: the
+      // act has become the fact of it, which is what the judgment row's ✓ does
+      // when it is pressed. Nothing moves between the two cards, which is the
+      // point — it is one lifecycle, not two screens.
+      '<div class="race-mid commitrow">' +
       '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw" title="Withdraw' +
-      (n > 1 ? ' all ' + n + ' places' : '') + ' — the edit comes back in full">🗑️</button></div>' +
+      (n > 1 ? ' all ' + n + ' places' : '') + ' — the edit comes back in full">🗑️</button>' +
+      '<button class="btn btn-propose" aria-pressed="true" disabled' +
+      ' title="Proposed — one edit spent. It is in the race now.">✏️ Submitted</button>' +
+      '</div>' +
       '<div class="foot">Withdrawing returns the edit in full and takes the wording out of the race — ' +
       'it stays in the record either way (SPEC §3.3a, §7) · to reword it, withdraw and write again · authorship sealed</div>' +
       '</div>'
