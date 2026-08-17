@@ -811,8 +811,43 @@
   .editcard .lp:last-child { margin-bottom: 0; }
   /* the one box left on the surface: a text editor says it is one by looking
      like one, and nothing else here is typed into */
+  /* The box is the editor; the controls sit in its top right (Ed, 2026-08-17)
+     and the lane is the rest of it, so the border is drawn once around both. */
+  .editcard .lanebox {
+    border: 1.5px solid var(--border); border-radius: var(--r-md);
+    background: var(--bg); overflow: hidden;
+  }
+  .editcard .lanebox:focus-within { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+  .editcard .lanectl {
+    display: flex; align-items: center; justify-content: flex-end; gap: var(--s2);
+    padding: 5px 8px 0;
+  }
   .editcard .editlane {
-    border: 1.5px solid var(--border); border-radius: var(--r-md); padding: var(--s3) 14px;
+    border: 0; padding: var(--s2) 14px var(--s3);
+  }
+  /* markdown mode: the characters, exactly, and nothing rendered */
+  .editcard .editlane.md {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--t-small); line-height: 1.6;
+  }
+  .lfmt, .lmode {
+    appearance: none; font: inherit; font-size: var(--t-cap); line-height: 1;
+    background: none; border: 0; color: var(--muted); cursor: pointer;
+    padding: 3px 6px; border-radius: var(--r-sm);
+  }
+  .lfmt { width: 24px; }
+  .lfmt:hover, .lmode:hover { background: var(--light); color: var(--fg); }
+  .lfmt b, .lfmt i { font-size: var(--t-ui); }
+  /* a two-segment control, because a single button would have to name either
+     the mode you are in or the one you would get, and both read as a lie half
+     the time */
+  .lseg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--r-sm); overflow: hidden; }
+  .lseg .lmode { border-radius: 0; padding: 3px 8px; }
+  .lseg .lmode[aria-pressed="true"] { background: var(--primary); color: #fff; font-weight: 600; }
+  .lseg .lmode[aria-pressed="true"]:hover { background: var(--primary-hover); color: #fff; }
+  .editcard .editlane code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9em; background: var(--light); padding: 0 3px; border-radius: 3px;
   }
   /* The lane you are writing in is the only editable thing on the surface that
      looks editable: paper-white, a ring when the caret is in it, and it grows
@@ -2012,9 +2047,21 @@
       // place (Ed, 225) — so the entry stands at the run's first clause.
       else if (g.kind === 'draft') g.sites.forEach((site, i) =>
         out.push({ g, site: site.keys[0], label: site.label, n: i + 1, of: g.sites.length }));
-      // a diagonal stands beside both of the clauses it weighs
-      else if (g.kind === 'diagonal') g.pair.forEach((c, i) =>
-        out.push({ g, site: c.key, label: c.name, n: i + 1, of: 2 }));
+      // A diagonal gets **one** entry, not one per clause (Ed, 2026-08-17). Two
+      // entries were the patch grammar borrowed — a patch has one judgment at
+      // several places, so standing at each of them is telling you where the
+      // work is. A diagonal is one judgment about two *questions*, and neither
+      // clause is where it lives; standing at both said "there is something
+      // here" twice about a card that is really about the pair. So it stands at
+      // the earlier of the two and says what it is asking in its own title.
+      else if (g.kind === 'diagonal') {
+        // named in document order, so the one it stands beside is the one it
+        // names first
+        const inOrder = g.pair.slice().sort((a, b) =>
+          DOC.findIndex((l) => l.key === a.key) - DOC.findIndex((l) => l.key === b.key));
+        out.push({ g, site: inOrder[0].key, n: 1, of: 1,
+                   label: 'Prioritise ' + inOrder[0].name + ' vs ' + inOrder[1].name });
+      }
       else out.push({ g, site: (g.keys ?? [])[0] ?? null, label: g.qLabel, n: 1, of: 1 });
     }
     return out.sort((a, b) => docIndexOf(a.g, a.site) - docIndexOf(b.g, b.site));
@@ -3285,10 +3332,11 @@
   }
   // A highlight never opens or closes on a space — the same tidying `resultOnly`
   // does to the hand-authored diffs in the fixture.
-  const markHtml2 = (t, mark) => {
+  const markHtml2 = (t, mark, render) => {
     const m = t.match(/^(\s*)([\s\S]*?)(\s*)$/);
     const tag = mark === 'del' ? 'del' : 'ins';
-    return esc(m[1]) + (m[2] ? '<' + tag + '>' + esc(m[2]) + '</' + tag + '>' : '') + esc(m[3]);
+    const r = render || esc;
+    return esc(m[1]) + (m[2] ? '<' + tag + '>' + r(m[2]) + '</' + tag + '>' : '') + esc(m[3]);
   };
   const insHtml = (t) => markHtml2(t, 'ins');
   // A proposal, stating its own change against the clause it rewrites — but
@@ -3313,7 +3361,9 @@
       if (!mk) same += t.length;
     }
     if (!all || same / all < REDLINE_FLOOR) return esc(newText);
-    return pieces.map(([t, mk]) => (mk ? markHtml2(t, mk) : esc(t))).join('');
+    // rendered, not raw: a proposal is read, not checked, so emphasis in it
+    // should look like emphasis rather than like asterisks
+    return pieces.map(([t, mk]) => (mk ? markHtml2(t, mk, mdToHtml) : mdToHtml(t))).join('');
   }
   // Blocks are split on newlines *after* the diff, so a run of new wording that
   // spans a paragraph break is still one comparison rather than two.
@@ -3321,7 +3371,11 @@
   // still reads as one wherever the run is shown. Matched by position, which
   // holds while the block count does — and where the author has added or
   // removed lines it simply stops claiming, which is the honest failure.
-  function laneBlocks(text, oldText, withDel, heads) {
+  function laneBlocks(text, oldText, withDel, heads, raw) {
+    // `raw` is markdown mode: the characters as they are, monospace, nothing
+    // rendered — which is the whole point of the mode, since it exists to let
+    // somebody check that their edit is exactly what they meant.
+    const render = raw ? esc : mdToHtml;
     const pieces = oldText == null ? [[String(text), null]] : diffPieces(oldText, text, withDel);
     const blocks = [[]];
     for (const [t, mark] of pieces) {
@@ -3332,14 +3386,107 @@
       });
     }
     return blocks.map((ps, i) => '<div class="lp' + (heads && heads[i] ? ' hblock' : '') + '">' +
-      (ps.map(([t, mark]) => (mark ? markHtml2(t, mark) : esc(t))).join('') || '<br>') + '</div>').join('');
+      (ps.map(([t, mark]) => (mark ? markHtml2(t, mark, render) : render(t))).join('') || '<br>') + '</div>').join('');
   }
   const headFlags = (site) => site.origin.map((o) => o.t === 'h');
+
+  // ---- markdown -------------------------------------------------------
+  // A candidate's text **is** markdown (Ed, 2026-08-17). Most people want to
+  // edit it rendered; some want to see the characters, "to make sure that
+  // their edit is totally accurate" — which only means anything if the
+  // characters are what is stored. So the source is the truth and `rich` is a
+  // rendering of it, which is also the one arrangement where the two views
+  // cannot disagree.
+  //
+  // Inline only, and deliberately: bold, italic, code. A charter is prose. The
+  // block structure is already carried by the run of clauses, so headings and
+  // lists have nowhere to go that `draft-site` does not already handle.
+  const MD_RX = /(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g;
+  function mdToHtml(src) {
+    return String(src).split(MD_RX).map((part) => {
+      if (/^\*\*[\s\S]+\*\*$/.test(part)) return '<strong>' + esc(part.slice(2, -2)) + '</strong>';
+      if (/^\*[\s\S]+\*$/.test(part)) return '<em>' + esc(part.slice(1, -1)) + '</em>';
+      if (/^`[\s\S]+`$/.test(part)) return '<code>' + esc(part.slice(1, -1)) + '</code>';
+      return esc(part);
+    }).join('');
+  }
+  // …and back. Walks what the browser made of the lane and writes the markdown
+  // for it, so editing rich never silently drops the marks it is showing.
+  // `<ins>`/`<del>` are the diff's own wrappers and contribute nothing.
+  function htmlToMd(node) {
+    let out = '';
+    for (const n of node.childNodes) {
+      if (n.nodeType === 3) { out += n.nodeValue; continue; }
+      if (n.nodeType !== 1) continue;
+      const tag = n.tagName.toLowerCase();
+      const inner = htmlToMd(n);
+      if (!inner && tag !== 'br') continue;
+      out += tag === 'strong' || tag === 'b' ? '**' + inner + '**'
+        : tag === 'em' || tag === 'i' ? '*' + inner + '*'
+        : tag === 'code' ? '`' + inner + '`'
+        : inner;
+    }
+    return out;
+  }
+  // Plain words, for measuring a change rather than showing one.
+  const mdStrip = (src) => String(src).replace(MD_RX, (m) =>
+    m.startsWith('**') ? m.slice(2, -2) : m.slice(1, -1));
+
+  // A caret offset does **not** mean the same thing in the two views: markdown
+  // mode shows the syntax characters and rich mode does not, so the same place
+  // in the text is a different number of characters along. Switching view
+  // therefore converts rather than assuming — otherwise the caret drifts by two
+  // characters for every bold word above it, which is exactly the class of bug
+  // the mode exists to help somebody catch.
+  const MD_ONE = /^(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)$/;
+  const mdLead = (p) => (p.startsWith('**') ? 2 : 1);
+  const mdInner = (p) => (p.startsWith('**') ? p.slice(2, -2) : p.slice(1, -1));
+  const mdParts = (src) => String(src).split(MD_RX).filter((p) => p !== '' && p != null);
+
+  function richToSource(src, off) {
+    let s = 0, r = 0;
+    for (const part of mdParts(src)) {
+      const mark = MD_ONE.test(part);
+      const inner = mark ? mdInner(part) : part;
+      if (off <= r + inner.length) return s + (mark ? mdLead(part) : 0) + (off - r);
+      r += inner.length; s += part.length;
+    }
+    return String(src).length;
+  }
+  function sourceToRich(src, off) {
+    let s = 0, r = 0;
+    for (const part of mdParts(src)) {
+      const mark = MD_ONE.test(part);
+      const inner = mark ? mdInner(part) : part;
+      if (off <= s + part.length) {
+        return r + Math.max(0, Math.min(inner.length, off - s - (mark ? mdLead(part) : 0)));
+      }
+      r += inner.length; s += part.length;
+    }
+    return mdStrip(src).length;
+  }
   const originText = (site) => site.origin.map((o) => o.text).join('\n');
   // Read back whatever the browser made of the editing: blocks separated by
   // newlines, however they ended up nested.
-  const readLane = (el) => el.innerText
-    .replace(/\u00a0/g, ' ').replace(/\r/g, '').replace(/\n{2,}/g, '\n').replace(/\n$/, '');
+  // Read the lane back as **markdown source**, which is what a candidate is.
+  // In markdown mode the visible characters already are the source; in rich
+  // mode the marks are real elements and have to be written back out, so that
+  // editing rendered never silently drops the emphasis it is showing you.
+  function readLane(el) {
+    const raw = el.classList.contains('md');
+    const blocks = [...el.children].filter((c) => c.classList && c.classList.contains('lp'));
+    const src = blocks.length
+      ? blocks.map((b) => (raw ? b.innerText : htmlToMd(b))).join('\n')
+      : (raw ? el.innerText : htmlToMd(el));
+    return src.replace(/\u00a0/g, ' ').replace(/\r/g, '')
+      .replace(/\n{2,}/g, '\n').replace(/\n$/, '');
+  }
+
+  // Rich by default; markdown is the checking view (Ed, 2026-08-17). One
+  // preference rather than one per card \u2014 it is how *you* like to work, and it
+  // would be strange for it to reset every time a different clause opened.
+  let laneMode = 'rich';
+  const laneRaw = () => laneMode === 'md';
 
   function editCardHtml(d, site) {
     const n = d.sites.length;
@@ -3372,8 +3519,24 @@
       // sits behind — which is what the rest of the roster will see (§3.4).
       '<div class="field"><div class="fieldlab">What you are proposing</div>' +
       '<div class="propblock">' +
-      '<div class="editlane" contenteditable="true" data-lane="' + site.keys[0] + '" spellcheck="false">' +
-      laneBlocks(site.text, originText(site), false, headFlags(site)) + '</div>' +
+      // The only editing controls on the surface, in the only place text is
+      // ever changed (Ed, 2026-08-17). They were going to live in the topbar;
+      // that is the wrong home, because nothing outside an open card can be
+      // edited, so a topbar toolbar would be greyed out for the whole session
+      // except the minute you are writing.
+      '<div class="lanebox">' +
+      '<div class="lanectl">' +
+      '<button class="lfmt" data-fmt="bold" title="Bold (the markdown is **like this**)"><b>B</b></button>' +
+      '<button class="lfmt" data-fmt="italic" title="Italic (the markdown is *like this*)"><i>I</i></button>' +
+      '<span class="lseg">' +
+      '<button class="lmode" data-mode="rich" aria-pressed="' + (!laneRaw()) + '">Rich</button>' +
+      '<button class="lmode" data-mode="md" aria-pressed="' + laneRaw() + '"' +
+      ' title="See the characters exactly as they are stored">Markdown</button>' +
+      '</span></div>' +
+      '<div class="editlane' + (laneRaw() ? ' md' : '') + '" contenteditable="true" data-lane="' +
+      site.keys[0] + '" spellcheck="false">' +
+      laneBlocks(site.text, originText(site), false, headFlags(site), laneRaw()) + '</div>' +
+      '</div>' +
       '<div class="speaker">' +
       '<span class="disc" aria-hidden="true" title="This is how your reason will reach everybody else: with your name off it (SPEC §3.4)."></span>' +
       '<div class="said edit-why" contenteditable="plaintext-only" data-why spellcheck="false"' +
@@ -3777,12 +3940,56 @@
         if (!site) return;
         site.text = readLane(el);
         const off = laneCaret(el);
-        el.innerHTML = laneBlocks(site.text, originText(site), false, headFlags(site));
+        el.classList.toggle('md', laneRaw());
+        el.innerHTML = laneBlocks(site.text, originText(site), false, headFlags(site), laneRaw());
         if (off != null) placeCaret(el, off);
         layoutQueue(); drawWires();
       };
       el.addEventListener('input', (ev) => { if (!ev.isComposing) remark(); });
       el.addEventListener('compositionend', remark);
+      // The lane's own controls. Bold and italic go through execCommand in rich
+      // mode, which is the cheapest thing that produces real elements for
+      // `htmlToMd` to write back; in markdown mode they wrap the selection in
+      // the characters themselves, because that is what the mode is *for*.
+      const box = el.closest('.lanebox');
+      if (box) {
+        box.querySelectorAll('.lfmt').forEach((b) => b.addEventListener('mousedown', (ev) => {
+          ev.preventDefault();                    // keep the selection in the lane
+          el.focus({ preventScroll: true });
+          if (laneRaw()) {
+            const marks = b.dataset.fmt === 'bold' ? '**' : '*';
+            document.execCommand('insertText', false, marks + getSelection().toString() + marks);
+          } else {
+            document.execCommand(b.dataset.fmt);
+          }
+          remark();
+        }));
+        // Switching view keeps your place — but the offset has to be converted,
+        // because markdown mode counts the syntax characters and rich mode does
+        // not (see richToSource / sourceToRich).
+        box.querySelectorAll('.lmode').forEach((b) => b.addEventListener('mousedown', (ev) => {
+          ev.preventDefault();
+          if (laneMode === b.dataset.mode) return;
+          const site0 = (() => { const d0 = draftOf(); return d0 && siteFor(d0, el.dataset.lane); })();
+          let off = laneCaret(el);
+          if (off != null && site0) {
+            off = b.dataset.mode === 'md'
+              ? richToSource(site0.text, off)
+              : sourceToRich(site0.text, off);
+          }
+          laneMode = b.dataset.mode;
+          box.querySelectorAll('.lmode').forEach((o) =>
+            o.setAttribute('aria-pressed', String(o.dataset.mode === laneMode)));
+          const d = draftOf();
+          const site = d && siteFor(d, el.dataset.lane);
+          if (!site) return;
+          el.classList.toggle('md', laneRaw());
+          el.innerHTML = laneBlocks(site.text, originText(site), false, headFlags(site), laneRaw());
+          el.focus({ preventScroll: true });
+          if (off != null) placeCaret(el, off);
+          layoutQueue(); drawWires();
+        }));
+      }
       // The lane is a rich editable, because Enter has to make a real paragraph
       // (Ed, 231) and `plaintext-only` gives a line break instead. The one cost
       // of that is paste, which would otherwise arrive carrying somebody else's

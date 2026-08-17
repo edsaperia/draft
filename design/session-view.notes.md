@@ -1000,3 +1000,25 @@ Ed meant the blinking caret, not the mouse pointer, and the I-beam is reverted �
 What is available is `caret-color` and nothing else. So the caret is the accent blue, and **where it lands is announced**: a short flash at the new position that shrinks onto the bar and fades over 460ms, only in the charter and only for a collapsed selection so dragging a range does not strobe. It answers the question the request was really asking — *where did it just go?* — and it costs nothing, where faking the caret itself would mean hiding the native one and keeping a div in step with typing, blinking, IME composition, selection changes and scroll, on the one element that must never be wrong.
 
 **And the flash found its moment.** Bound to `selectionchange` it fired every time you clicked in the document, which is noise: a click is you putting the caret somewhere and you already know where it went. Ed named the moment that actually needs announcing — you start typing in the charter, the charter cannot be edited in place, and the caret is carried off into the proposing lane of a card that has just appeared. That is the one caret move the reader did not make. So the pulse is called at the landing rather than bound to an event, which is both quieter and more accurate: **announce what the surface did, not what the reader did.**
+
+### Markdown, and where the editing controls live (Ed, 2026-08-17)
+
+Ed's answer settled both halves of the question at once. *Most people will want the rich edit/view; but some will appreciate switching to monospace markdown to make sure that their edit is totally accurate.*
+
+That second clause decides the storage question, not just the view. "To make sure that their edit is totally accurate" only means anything if the characters you are shown **are** what is stored — so a candidate's text is markdown, and rich is a rendering of it. It is also the one arrangement where the two views cannot disagree: there is a single source and two ways of drawing it, rather than two representations that have to be kept in step.
+
+The cost is that rich mode has to serialise back. The lane holds real `<strong>` and `<em>` elements, and every keystroke reads them out as markdown again — otherwise editing rendered would silently drop the emphasis it was showing you. Round-trip verified lossless.
+
+The subtler cost is the caret. **An offset does not mean the same thing in the two views**: markdown counts the syntax characters and rich does not, so the same place in the text is a different number of characters along. Switching therefore converts rather than assuming — without which the caret drifts two characters for every bold word above it, which is exactly the class of error the mode exists to help somebody catch.
+
+*And the toolbar moved.* Ed had said the topbar; his answer here is the top right of the editing box, "that's the only time we'll need it". That is the better home and the reason generalises: **a control belongs where the thing it acts on is.** Nothing outside an open card can be edited on this surface — that is the whole premise of `always-on-typing` — so a topbar toolbar would have been greyed out for the entire session except the minute you were writing.
+
+Inline only: bold, italic, code. A charter is prose, and block structure is already carried by the run of clauses, so headings and lists have nowhere to go that `draft-site` does not already handle.
+
+It left one thing behind, logged as 282. The charter fixture is plain text, so the composer can take a caret offset straight from the DOM and use it against the clause's source. The moment the *document* renders markdown, that stops being true — a DOM selection measures the rendered text — and every offset the composer computes is wrong by two for each mark above the caret. The lane already has the answer in miniature; the document side would need the same mapping everywhere, and it is invisible until somebody bolds a word near the top of a long paragraph.
+
+### One entry for a diagonal (Ed, 277)
+
+The duplication is accepted; what changed is the rail. A diagonal had been taking one entry per clause, which was the patch grammar borrowed without checking whether it applied. A patch stands at several places because that is where its work is — each site is a place you will be asked about. **Neither clause is where a diagonal lives.** It is one judgment about the relative worth of two questions, so standing at both said "there is something here" twice about a card that is really about the pair.
+
+It now takes one entry, at the earlier of its two clauses, titled *Prioritise A vs B* — which is the first entry title on the surface that states the question rather than naming the place, and it can, because for once the question is not "what should this say".
