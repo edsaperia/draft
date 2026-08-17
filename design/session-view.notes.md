@@ -1052,3 +1052,100 @@ Ed's note had been the single fragment "rationale box", and I logged three readi
 So the wording lane and the reason are not two boxes to be levelled against each other. They are one surface with two fields in it, and the speaker's disc belongs inside because it belongs to the words beside it. The rationale row moved inside the drafting box, a hairline separates the two without dividing them, and the field lost the elevation it had been given — it needs none, because the surface carries both. `:focus-within` lifts the whole thing whichever field you are in, which is now the truthful behaviour rather than a convenience.
 
 Worth keeping the shape of the mistake. Having just built an elevation vocabulary, I read a note about two adjacent things as a question about their relative heights — the answer was that they should not have been two things. **A new vocabulary makes you read every subsequent note in it.**
+
+## The rail-and-radio pass (284–287)
+
+Four notes from Ed's QA, and they turned out to be one job: three of them are about
+the queue rail's legibility and the fourth is about the loudest thing on a decision
+card. Building them together mattered, because 285 and 287 are the same idea applied
+twice — a card carrying its hue, a cable carrying its hue — and approving them one at
+a time would have hidden how much colour the surface was gaining in total.
+
+### 284 — the diagonal's title, over four lines
+
+The entry now carries the two section names as `prio` and keeps the flat
+`Prioritise A vs B` string for tooltips and anywhere else a title has to be one line.
+On one line at 290px the two names collided and truncated, which is the single thing
+this entry must never do: it exists so the two can be weighed against each other.
+Stacked, they are the same shape in the same place and the eye compares them directly.
+`Prioritise:` and `vs` drop back to muted caption type, because they are the frame and
+the names are the content.
+
+### 285 — a card with no right edge
+
+Ed's complaint was exact. The wash is a progress bar, so it stops where the fill stops,
+and the rest of the card was white on a white page. The card therefore had no visible
+extent — and *width* is the one dimension of a rail entry that carries no meaning, so
+it is the one with no excuse for being the dimension you cannot see.
+
+He offered two ways out: a very light wash of the card's own hue across the whole
+background, or stronger edges. The first is right on the palette's own logic, and it
+was built: the card now **is** its colour, and the bar reads as how far through that
+colour you are rather than as the only coloured thing on it. Stronger edges would have
+added a rule the palette has spent three passes taking away — 164 removed the border,
+198's blue ring went at the depth pass, and putting an outline back to solve a colour
+problem would have undone both.
+
+Two things made it work that the note did not anticipate.
+
+The ground is **derived from the bar's own colour** rather than passed in beside it —
+one regex swapping the alpha, in `washAttrs`, where the bar's colour is already known.
+Passing both would have been two sources for one fact, and the failure mode of two
+sources is a card whose ground is a different hue from its bar for one render.
+
+And at the bottom of the urgency scale the fix nearly cancelled itself. `URG_LO` is
+0.05, so the least urgent card's bar is 0.07 over a 0.06 ground — a boundary of almost
+nothing, and **the boundary is the whole of what a progress bar says**. Rather than
+raise the floor (which would have compressed the urgency range to buy back contrast
+the ground had just spent), the bar's leading edge is drawn a second time in its own
+colour, `inset -1px 0 0 var(--washcol)`, so the edge composites to roughly double alpha
+and stays a crisp datum at every urgency. Same variable, so it cannot drift.
+
+### 286 — the radio is the judgment
+
+It had been caption type with a 12px dot in a hairline pill: quieter than the
+`✏️ edit this` beside it, and far quieter than the tick. That is the wrong way round.
+Since 197 was retired the radio *is* the judgment — the whole act the card exists for —
+so it is now UI size at weight 600, in the document's own ink rather than muted, on a
+1.5px edge with a ground that separates it from the lane behind it. The dot grew with
+it: a 12px ring at caption size reads as a bullet, a 15px one at UI size reads as a
+radio, which is the whole of what it is trying to say.
+
+The `.lanepick.vin` height patch went with it — it existed to lift the commit row's
+pill to the same height as the buttons beside it, and the new base padding does that
+by itself. A rule that has become a no-op is worse than no rule, because it looks like
+it is holding something up.
+
+### 287 — the wire in the entry's hue
+
+198 held that the wire is one colour for every kind, and that still stands: kind is not
+something the wire was ever asked to say. Lifecycle is different — it is exactly what
+the entry's mark and its wash already say, so the wire agreeing with them adds no
+vocabulary, and the three columns tie together one degree more tightly.
+
+The worry logged with the question was that the blue means *this is the open one*. It
+does not need to: only the open judgment ever draws a wire, so its existence already
+says that, and the accent was doing a job that was already done.
+
+The other worry was real. A hue tuned for a 0.06 wash across a card is not a 1.5px line
+on white — `--lc-open` at full strength is a highlighter yellow that simply does not
+carry. One mix, `color-mix(in srgb, rgb(var(--lc-X)), var(--fg) 28%)`, applied to every
+hue so the rule stays one rule; yellow lands on a gold that reads, and blue stays
+plainly blue.
+
+One case the note missed: a **filed** decision has no hue at all, because its clause
+washes nothing — the document should look settled. Falling back to `--primary` there
+would have left the accent meaning "filed", which is the one thing it has never meant,
+so it takes the grey its own mark and its sealed dot already wear.
+
+### Testing, again
+
+The background automation tab bit in a new way. `bringIntoView` runs a smooth scroll
+through `requestAnimationFrame`, which never fires in a backgrounded tab, so every
+card open stalled before `open()` and the sweep reported "no card" for everything.
+Patching rAF onto `setTimeout` only converts it into a 1s-per-frame animation, which
+then blows the 45s CDP timeout on a 31-card sweep. The way through is to satisfy the
+early exit instead: `bringIntoView` returns immediately when the target is already
+between 100 and 300px from the top, so scrolling the target chip to 220 first makes
+the whole open path synchronous. Worth remembering — **the cheapest way past an
+animation is usually the branch that skips it, not a faster clock.**

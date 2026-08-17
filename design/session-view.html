@@ -305,10 +305,10 @@
      nothing reflows when a card opens. */
   .queue button {
     appearance: none; font: inherit; text-align: left; width: 100%;
-    background: var(--bg); border: 0; border-radius: var(--r-md);
+    background-color: var(--washbg, var(--bg)); border: 0; border-radius: var(--r-md);
     padding: var(--s2) 10px; cursor: pointer; color: var(--fg);
     box-shadow: var(--shadow-sm);
-    transition: box-shadow 140ms ease;
+    transition: box-shadow 140ms ease, background-color var(--wash-ms) ease;
   }
   .queue button:hover { box-shadow: var(--shadow-md); }
   /* the open entry lifts rather than gaining a ring (Ed, 2026-08-17) — the same
@@ -330,10 +330,17 @@
      behind, which would need a stacking context on the button. */
   .queue button:not(.sealdot) { position: relative; overflow: hidden; }
   .queue button:not(.sealdot) > * { position: relative; z-index: 1; }
+  /* The bar's leading edge is drawn a second time in its own colour, so it
+     composites to roughly double alpha and stays a crisp datum (Ed, 285). Once
+     the whole card carries a ground in the same hue, a low-urgency bar — 0.07
+     over a 0.06 ground — has almost no edge to read, and the edge is the whole
+     of what a progress bar says. Same variable, so it cannot drift. */
   .queue button:not(.sealdot)::before {
     content: ''; position: absolute; left: 0; top: 0; bottom: 0; z-index: 0;
     width: var(--fill, 0%); background-color: var(--washcol, transparent);
-    transition: background-color var(--wash-ms) ease, width var(--wash-ms) ease;
+    box-shadow: inset -1px 0 0 var(--washcol, transparent);
+    transition: background-color var(--wash-ms) ease, box-shadow var(--wash-ms) ease,
+                width var(--wash-ms) ease;
   }
   @media (prefers-reduced-motion: reduce) {
     .queue button:not(.sealdot)::before { transition: none; }
@@ -392,6 +399,17 @@
      their own colour, so they are held small and never given a weight — the
      glyph is the signal, not its size. */
   .qmark { flex: none; font-size: var(--t-small); line-height: 1.35; font-weight: 400; }
+
+  /* A diagonal's title, set over four lines (Ed, 284). On one line the two
+     section names collided and truncated at 290px — the entry exists to let
+     you weigh them against each other, so the one thing it must never do is
+     hide either name. Stacked, the two are the same shape in the same place
+     and the eye compares them directly; `Prioritise:` and `vs` drop back to
+     muted, because they are the frame and the names are the content. */
+  .qprio { display: flex; flex-direction: column; gap: 1px;
+    font-weight: 500; font-size: var(--t-cap); color: var(--muted); }
+  .qprio b { font-weight: 600; font-size: var(--t-ui); color: var(--fg); line-height: 1.25; }
+  .qprio i { font-style: normal; font-size: var(--t-cap); }
 
   /* The rationale is the comment (Ed, 123): the rail quotes it. Four lines on
      every open card and five on the 🔥 one — an argument cut to a line was a
@@ -640,18 +658,26 @@
     display: flex; align-items: center; justify-content: space-between;
     gap: var(--s2); margin-top: auto; padding-top: var(--s3);
   }
+  /* The radio is the loudest thing in the lane (Ed, 286). It had been caption
+     type in a hairline pill — quieter than the ✏️ beside it and far quieter
+     than the tick, which had the card whispering the one act it exists for.
+     Since 197 was retired the radio *is* the judgment, so it is set at UI size,
+     in the document's own ink rather than muted, on a 1.5px edge with a ground
+     that separates it from the lane behind it. Its dot grew with it: a 12px
+     ring at caption size reads as a bullet, a 15px one at UI size reads as a
+     radio, which is the whole of what it is trying to say. */
   .lanepick {
-    appearance: none; font: inherit; font-size: var(--t-cap); font-weight: 500;
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 3px 10px 3px 6px; border-radius: 999px;
-    border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+    appearance: none; font: inherit; font-size: var(--t-ui); font-weight: 600;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 13px 5px 8px; border-radius: 999px;
+    border: 1.5px solid var(--border); background: var(--light); color: var(--fg);
     cursor: pointer; transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
   }
   /* the mark is a radio, because that is exactly what the judgment is: one
      of the texts on this card, or none of them yet */
   .lanepick .dot {
-    flex: none; width: 12px; height: 12px; border-radius: 50%;
-    border: 1.5px solid var(--muted); background: var(--bg);
+    flex: none; width: 15px; height: 15px; border-radius: 50%;
+    border: 2px solid var(--muted); background: var(--bg);
     transition: border-color 120ms ease, box-shadow 120ms ease;
   }
   /* both labels are in the markup and CSS picks one, so choosing stays a
@@ -659,16 +685,16 @@
   .lanepick .on { display: none; }
   .lanepick[aria-pressed="true"] .on { display: inline; }
   .lanepick[aria-pressed="true"] .off { display: none; }
-  .lanepick:hover { color: var(--primary); border-color: var(--primary); }
+  .lanepick:hover { color: var(--primary); border-color: var(--primary); background: var(--bg); }
   .lanepick:hover .dot { border-color: var(--primary); }
   .lanepick[aria-pressed="true"] {
     color: #fff; background: var(--primary); border-color: var(--primary); font-weight: 600;
   }
   .lanepick[aria-pressed="true"] .dot {
-    border-color: #fff; background: #fff; box-shadow: inset 0 0 0 2.5px var(--primary);
+    border-color: #fff; background: #fff; box-shadow: inset 0 0 0 3px var(--primary);
   }
   .lanepick[disabled] { opacity: 0.55; cursor: default; }
-  .lanepick[disabled]:hover { color: var(--muted); border-color: var(--border); }
+  .lanepick[disabled]:hover { color: var(--fg); border-color: var(--border); background: var(--light); }
   @media (prefers-reduced-motion: reduce) { .lanepick, .lanepick .dot { transition: none; } }
 
   /* propose-edit, on either lane (Ed, 228). Writing from a lane is free — the
@@ -938,7 +964,6 @@
   /* The judgment's own row: indifference at the left as the last of the trio,
      the tick at the right where finishing happens (Ed, 2026-08-16). */
   .race-mid.commitrow { justify-content: space-between; align-items: center; }
-  .lanepick.vin { padding-top: 5px; padding-bottom: 5px; }
   .btn {
     appearance: none; font: inherit; font-size: var(--t-ui);
     padding: 0.375rem 0.75rem; cursor: pointer;
@@ -2038,9 +2063,23 @@
   // rather than repainting it.
   const WASH_MS = 700;
   const prevWash = new Map();
+  // The ground under the whole card, in the same hue as its bar (Ed, 285). The
+  // wash is a progress bar, so it stopped where the fill stopped and the rest
+  // of the card was white on a white page — the card had no visible extent, and
+  // *width* is the one dimension of a rail entry that carries no meaning and so
+  // has no excuse for being the one you cannot see. Now the card **is** its
+  // colour and the bar reads as how far through that colour you are.
+  //
+  // Derived from the bar's own colour by swapping its alpha rather than passed
+  // in beside it: one source, so a ground can never end up a different hue from
+  // the bar above it. The bar is a child box painted over this ground, so it
+  // composites — whatever the urgency, the filled part is always the stronger.
+  const GROUND_A = 0.06;
+  const groundOf = (col) => String(col).replace(/[\d.]+\s*\)\s*$/, GROUND_A + ')');
   function washAttrs(key, col, fill) {
     const from = prevWash.get(key) || { col, fill };
-    const varsOf = (w) => '--washcol: ' + w.col + (fill == null ? '' : '; --fill: ' + w.fill);
+    const varsOf = (w) => '--washcol: ' + w.col + '; --washbg: ' + groundOf(w.col) +
+      (fill == null ? '' : '; --fill: ' + w.fill);
     return ' data-washkey="' + esc(key) + '" data-wash="' + col + '"' +
       (fill == null ? '' : ' data-fill="' + fill + '"') +
       ' style="' + varsOf(from) + '"';
@@ -2051,6 +2090,7 @@
     void document.body.offsetHeight;        // one reflow, so the "from" value is painted
     for (const el of els) {
       el.style.setProperty('--washcol', el.dataset.wash);
+      el.style.setProperty('--washbg', groundOf(el.dataset.wash));
       if (el.dataset.fill != null) el.style.setProperty('--fill', el.dataset.fill);
       prevWash.set(el.dataset.washkey, { col: el.dataset.wash, fill: el.dataset.fill });
     }
@@ -2106,7 +2146,12 @@
         // names first
         const inOrder = g.pair.slice().sort((a, b) =>
           DOC.findIndex((l) => l.key === a.key) - DOC.findIndex((l) => l.key === b.key));
+        // The title is set over four lines in the rail (Ed, 284) — `Prioritise:`
+        // then a name, then `vs`, then a name — so `prio` carries the two names
+        // and `label` stays a flat string for tooltips and anywhere a title has
+        // to be one line.
         out.push({ g, site: inOrder[0].key, n: 1, of: 1,
+                   prio: [inOrder[0].name, inOrder[1].name],
                    label: 'Prioritise ' + inOrder[0].name + ' vs ' + inOrder[1].name });
       }
       else out.push({ g, site: (g.keys ?? [])[0] ?? null, label: g.qLabel, n: 1, of: 1 });
@@ -2280,7 +2325,12 @@
             '<span class="qv"> · you ' + (verdict || 'judged') + '</span></span>'
           : '<span class="ql">' +
             markHtml(markOf(g)) +
-            '<span>' + plainLabel(e.label || g.qLabel) + '</span></span>' +
+            (e.prio
+              // four lines, so the two names can be read against each other
+              // rather than colliding and truncating on one (Ed, 284)
+              ? '<span class="qprio">Prioritise:<b>' + esc(plainLabel(e.prio[0])) +
+                '</b><i>vs</i><b>' + esc(plainLabel(e.prio[1])) + '</b></span>'
+              : '<span>' + plainLabel(e.label || g.qLabel) + '</span>') + '</span>' +
             // No kind chip and no "copy edit"/"3 proposals racing" line (Ed,
             // 184): both restated in words what the card's own shape already
             // shows — one teaser is a suggestion, two divided teasers are a
@@ -2559,14 +2609,28 @@
 
   // queue-wire: out of the left edge of the queue card, down (or up) the gutter
   // between the two rails, then left into every place the suggestion touches.
-  // One wire colour for every kind (Ed, 198). Kind is not a thing the wire was
-  // ever asked to say — it says *where this judgment lives* — and three colours
-  // for it competed with the lifecycle palette that colour now belongs to. Held
-  // as one constant, not a per-kind map: the map survived 198 with every entry
-  // set to the same value, so it looked like a lookup while being none, and the
-  // first new kind (the diagonal) fell straight through it to `undefined` — an
-  // invalid stroke, which SVG discards, leaving the wires drawn but invisible.
-  const WIRE_COLOR = 'var(--primary)';
+  // The wire is drawn in its own entry's **lifecycle hue** (Ed, 287), which
+  // ties the three columns together one degree more tightly: mark, wash and
+  // cable all saying the same thing about the same judgment.
+  //
+  // 198's one-colour rule was about *kind* — kind is not a thing the wire was
+  // ever asked to say, and three colours for it competed with the palette.
+  // Lifecycle is different: it is what the wash and the mark already say, so
+  // the wire agreeing with them adds no vocabulary. And the blue is free to go,
+  // because only the open judgment ever draws a wire — its existence already
+  // says "this is the open one", which is the whole job the accent was doing.
+  //
+  // Mixed toward the ink rather than used raw. A hue tuned for a wash at 0.06
+  // alpha across a whole card has no business being a 1.5px line on white:
+  // --lc-open at full strength is a highlighter yellow that simply does not
+  // carry. One mix ratio for every hue, so the rule stays one rule.
+  //
+  // A filed decision has no hue at all — its clause washes nothing, because the
+  // document should look settled — so it takes the grey its own mark and its
+  // sealed dot already wear. Falling back to the accent there would have left
+  // the blue meaning "filed", which is the one thing it has never meant.
+  const wireColor = (g) => 'color-mix(in srgb, rgb(var(--lc-' + (anchHue(g) || 'closed') +
+    ')), var(--fg) 28%)';
   const SVGNS = 'http://www.w3.org/2000/svg';
 
   // Everywhere in the document this judgment bites. A chip carries the id when
@@ -2621,7 +2685,7 @@
     if (!s || !starts.length) return;
 
     const mainR = document.querySelector('main').getBoundingClientRect();
-    const color = WIRE_COLOR;
+    const color = wireColor(s);
     // The gutter runs between the two rails, so it is measured from the rail's
     // own edge — a dot sits inset within its row and would pull it rightwards.
     const railX = (starts[0].el.closest('.qitem') || starts[0].el).getBoundingClientRect().left;
