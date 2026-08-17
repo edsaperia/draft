@@ -2268,3 +2268,36 @@ the same treatment, since people do sometimes write the reason first.
 One guard: `startDraft` normally opens the draft's own card, which would have
 carried the surface away from the field you came for. It now keeps a stuck host
 card open and simply re-renders, with the desk backed by a real site.
+
+### Five corrections, and one of them was a question (2026-08-17)
+
+**✏️ moved above the reason.** On an ordinary card the lane bar carries a radio
+as well, and that radio is a judgment about the whole block — text and argument
+together — so it belongs at the foot of both. Here the only control is ✏️, which
+is about the *wording*: it seeds the desk with these words, not with this
+reason. **A control belongs against the thing it acts on.** It also goes to the
+right rather than sliding into the space the missing radio left.
+
+**The desk lost its blue ground.** It had one on the argument that it is the one
+band on the card that is not reference. But the box inside it is already lifted
+and is already the only thing on the card you can put a caret in — a tint behind
+a lifted box says the same thing twice, and it made the desk look like a
+different kind of object from the wordings it answers.
+
+**The desk starts with the clause, in the document's own ink.** It was greyed as
+an "invitation"; that was a mockup conceit dressed as a state. It is text you are
+about to work on, so it looks like text.
+
+**The record band is gone**, and the question that removed it is a good one to
+keep: *what purpose is this serving?* It said what you preferred, how many pairs
+you judged, and how many people had weighed in — the sealed record's shape,
+carried across without asking what it was for **here**. Two thirds of it helped
+nobody write anything. The part that did is the weight of evidence, because it
+is what makes the claim above it credible: this is stuck, not merely unlooked-at.
+So it moved *into* the claim, and the band went.
+
+**The commit buttons are lifted**, because they are actions for the box above
+them and the box is lifted (Ed). A flat control under a raised surface reads as
+belonging to the card rather than to the thing it acts on; putting them at its
+height joins them to it. They go down on press and stay flat while disabled —
+nothing to act on, nothing to raise.

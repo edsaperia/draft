@@ -773,6 +773,11 @@
     display: flex; align-items: center; justify-content: space-between;
     gap: var(--s2); margin-top: auto; padding-top: var(--s3);
   }
+  /* A lane bar with no radio in it: the ✏️ goes to the right where the second
+     control always sits, rather than sliding left into the space the radio has
+     left. Its own row is tighter too, since it now separates a wording from its
+     reason rather than closing a block. */
+  .lanebar.solo { justify-content: flex-end; padding-top: var(--s2); }
   /* The radio is the loudest thing in the lane (Ed, 286). It had been caption
      type in a hairline pill — quieter than the ✏️ beside it and far quieter
      than the tick, which had the card whispering the one act it exists for.
@@ -970,18 +975,31 @@
   /* Eight wordings is a long read, so the blocks get more air between them than
      a two-candidate field needs — the separator is doing more work here. */
   .dead-open .propblock + .propblock { margin-top: var(--s4); padding-top: var(--s4); }
-  /* The desk. It is the one band on the card that is not reference, so it says
-     so the way this surface says everything: its own ground rather than a rule
-     round it, and the label carries the act. */
+  /* The desk is a band like the others (Ed, 2026-08-17 — *it should look like
+     the other proposal boxes*). It had a blue ground on the argument that it is
+     the one band that is not reference; but the box inside it is already lifted
+     and already the only thing on the card you can put a caret in, and a tint
+     behind a lifted box says the same thing twice while making the desk look
+     like a different kind of object from the wordings it answers. Its label
+     carries the act, and that is enough. */
   .bridgedesk .fieldlab { color: var(--stuck-ink); }
-  .dead-open .field.bridgedesk {
-    background: rgba(var(--lc-yours), 0.06); border-radius: var(--r-md);
-    padding: var(--s3); margin-top: var(--s4);
-  }
-  /* Nothing behind it yet, so it reads as an invitation rather than as content
-     you are about to lose: the clause is there to be written over. */
-  .lanebox.blanklane .editlane { color: var(--muted); }
-  .lanebox.blanklane .editlane:focus { color: var(--fg); }
+  .dead-open .field.bridgedesk { margin-top: var(--s4); }
+  /* 🗑️ and ✏️ are lifted, because they are actions **for the box above them**
+     (Ed, 2026-08-17) and the box is lifted. A flat control under a raised
+     surface reads as belonging to the card rather than to the thing it acts on;
+     putting them at its height joins them to it. They go down on press, like
+     every other object on this surface that can be pressed, and stay flat while
+     disabled — there is nothing to act on, so there is nothing to raise. */
+  .editcard .commitrow .btn:not([aria-pressed="true"]),
+  .dead-open .commitrow .btn:not([aria-pressed="true"]) { box-shadow: var(--shadow-sm); }
+  .editcard .commitrow .btn:not([disabled]):hover,
+  .dead-open .commitrow .btn:not([disabled]):hover { box-shadow: var(--shadow-md); }
+  .editcard .commitrow .btn:not([disabled]):active,
+  .dead-open .commitrow .btn:not([disabled]):active,
+  .editcard .commitrow .btn.holding,
+  .dead-open .commitrow .btn.holding { box-shadow: none; }
+  .editcard .commitrow .btn[disabled],
+  .dead-open .commitrow .btn[disabled] { box-shadow: none; }
   .propblock .rtext { font-size: var(--t-body); margin-bottom: 0; }
   .field + .race-mid {
     border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
@@ -1969,7 +1987,7 @@
       urgency: 0.05, bounty: 0.86,
       pct: 100, cap: 'gathering — needs roughly 3 more judgments',
       capStuck: 'deadlocked — more judgments won’t move it; only a new proposal can',
-      judges: 11, pairsJudged: 7,
+      judges: 11,
       // **Eight wordings** (Ed, 2026-08-17: *maybe I need to see a race with 8
       // proposals to really understand what's happening here*). This is what a
       // constitutional argument looks like when it has genuinely stuck: not two
@@ -3717,7 +3735,6 @@
     // what the field was measured against: still standing, or displaced by the
     // winner and therefore nowhere in the document any more
     const incumbent = held ? currentTextFor((s.keys ?? [])[0]) : (s.replaced ?? s.optionA ?? null);
-    const yours = verdicts.get(s.id) || s.verdict;
     const line = (c) => {
       if (c.p == null) return '<div class="pline">the text it was measured against</div>';
       const cleared = d.bar != null && c.p >= d.bar;
@@ -4637,9 +4654,18 @@
       // The card's own voice, and the only place it raises it. On a race card a
       // line like this is a caveat at the foot; here it is the whole point of
       // the card, so it goes at the top and is the first thing read.
+      // The count folded in (Ed, 2026-08-17: *what purpose is this serving?*).
+      // A record band at the foot said what you preferred, how many pairs you
+      // judged and how many people had weighed in — the sealed record's shape,
+      // carried over without asking what it was for here. Two thirds of it
+      // helped nobody write anything. The one part that did is the **weight of
+      // evidence**, because it is what makes the claim above it credible: this
+      // is stuck, not merely unlooked-at. So it belongs *in* the claim, and the
+      // rest is gone.
       '<div class="deadsay"><div class="eyebrow">⚔️ Deadlocked</div>' +
-      '<p>The room has stopped moving on this. More judging will not decide it — ' +
-      'a wording that both sides can live with is the only thing that will.</p></div>' +
+      '<p>' + (s.judges ?? 0) + ' of the ' + ROSTER + ' have judged this and it has not ' +
+      'separated. More judging will not decide it — a wording that both camps can ' +
+      'live with is the only thing that will.</p></div>' +
       '<div class="field"><div class="fieldlab">Everything in flight · ' + field.length +
       ' wordings, oldest first</div>' +
       // `result-only`, marked, **with the floor forced off** (Ed, 2026-08-17).
@@ -4654,19 +4680,18 @@
       // surface does — the lane bar minus its radio, since nothing here votes.
       // Which is also the answer to *how do I use all this*: you take whichever
       // came closest and write from it.
+      // ✏️ sits **under the wording and above the reason** (Ed, 2026-08-17), at
+      // the right. On an ordinary card the lane bar carries a radio as well, and
+      // that radio is a judgment about the whole block — text and argument
+      // together — so it belongs at the foot of both. Here the only control is
+      // ✏️, which is about the *wording*: it seeds the desk with these words and
+      // not with this reason. A control belongs against the thing it acts on.
       field.map((c, i) =>
         '<div class="propblock">' +
         '<div class="rtext">' + wordingHtml(cur, c.text, true) + '</div>' +
+        '<div class="lanebar solo">' + laneProposeHtml(s, 'slate:' + i, key) + '</div>' +
         (c.why ? speakerHtml(c.why) : '') +
-        '<div class="lanebar">' + laneProposeHtml(s, 'slate:' + i, key) + '</div>' +
         '</div>').join('') + '</div>' +
-      // What you said, as record rather than control — one line for however
-      // many pairs it took, because this card is about the race and not about
-      // any pair in it (Ed: *may relate to several votes in a race*).
-      '<div class="record"><span>' +
-      (yours ? 'You ' + esc(yours) : 'You judged every pair here') +
-      (s.pairsJudged ? ' · <b>' + s.pairsJudged + '</b> pairs judged' : '') +
-      '</span><span>' + (s.judges ?? 0) + ' of ' + ROSTER + ' have weighed in</span></div>' +
       '<div class="field bridgedesk"><div class="fieldlab">✏️ Write a bridge — ' +
       'a wording both camps can live with</div>' +
       '<div class="propblock">' + laneBoxHtml(d, site, site ? null : key) + '</div></div>' +
