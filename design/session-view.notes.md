@@ -2365,3 +2365,43 @@ on every card), the verdict on a ⏳ or 🔄 (what *you* said, which is the thin
 you are most likely to have forgotten), the place count on a patch, and ⚔️'s
 sentence — which is not a caption but the entry's whole content, and is
 different in kind because it states a situation rather than a progress reading.
+
+### Long titles, and the last of the helper text (2026-08-17)
+
+**Three sections got long names** — *The Shed, the Cellar and the Space Under
+the Stairs*, *Nomination, Seconding and the Standing of a Candidate*, *The
+Duties of a Member Towards the House and Towards Each Other* — because a charter
+really does have sections named like that and the fixture had been quietly
+flattering the design with short ones. All three columns hold: the contents rail
+wraps to three lines, an open card's title wraps and takes the height it needs,
+and a sealed entry ellipses against its right-aligned time. **Worth watching:**
+a long title on a sealed entry truncates hard, because the time now claims a
+fixed slot at the right — *The Guest Bedroom — …* is about all that fits. The
+tooltip carries the outcome, but if that reads badly the fix is a shorter time
+format in the rail rather than giving the slot back.
+
+**The time is right-aligned on ✅ and ❎**, which needed the row to become a flex
+rather than one truncating line: the title takes what is left and ellipses, the
+time never gets eaten by a long one. It is also the one thing on a sealed entry
+you scan *down* a column for, so a ragged right was making a column out of the
+wrong edge.
+
+**The verdict came off ⏳ and 🔄.** It quoted the wording you had preferred,
+which on a one-line entry beside a title is six characters and an ellipsis.
+Unreadable text is worse than none, because it looks like something you are
+failing to read. The mark already says you have judged; the card says what you
+said, in full, when you open it.
+
+**The draft's caption went entirely.** *Not proposed yet* was true and it was
+also the state you are plainly in, since you are typing into the box beside it.
+
+**The deadlock card lost its voice band.** It said what the queue entry says, to
+a reader who has just clicked that entry — the second time in two seconds, with
+the ⚔️ tab and the desk's own label saying it a third and fourth. The card is now
+clause, field, desk: reference, then work, and nothing on it explaining itself.
+
+**☑️ left the contents rail** (Ed). It was already the first mark dropped when
+they would not fit, so this is the honest version of that rule: a filed decision
+is finished, and the rail is the column read as *where is there anything*. In
+the gutter it stays, because there the question is *what has happened here* —
+a different question with a different answer.

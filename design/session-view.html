@@ -405,6 +405,13 @@
   /* a decision you have not acknowledged is quiet, not unimportant, and stays
      pinned until you deal with it (Ed, 112) */
   .queue button.unread .ql { font-weight: 600; font-size: var(--t-small); color: var(--fg); }
+  /* The time goes to the right (Ed, 2026-08-17), which needs the row to be a
+     flex rather than one truncating line: the title takes what is left and
+     ellipses, and the time never gets eaten by a long one. It is also the only
+     thing on a sealed entry the reader is scanning *down* a column for. */
+  .queue button.unread .ql { display: flex; align-items: baseline; gap: 6px; }
+  .queue button.unread .qt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .queue button.unread .qv.when { margin-left: auto; flex: none; }
   .queue button.unread .qv { color: var(--muted); }
   /* a deadlocked race states its unusual ask in full, and its caption is an
      instruction rather than a progress note (Ed, 166) */
@@ -1532,13 +1539,13 @@
     { t: 'p', key: 'garden', x: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.' },
     { t: 'p', x: 'The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, allotted each spring by the Garden Steward.' },
     { t: 'p', x: 'Produce belongs to the member who grew it, but a good crop has always been shared and the Club would think less of anyone who stopped.' },
-    { t: 'h', level: 3, x: 'The Shed and Cellar' },
+    { t: 'h', level: 3, x: 'The Shed, the Cellar and the Space Under the Stairs' },
     { t: 'p', x: 'The shed holds garden tools and the rota. The cellar holds everything the house cannot bear to throw away and does not wish to look at.' },
     { t: 'p', key: 'cellar', x: 'Once a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go.' },
 
     { t: 'h', level: 1, x: 'Part III — Membership' },
     { t: 'h', level: 2, x: 'Admission' },
-    { t: 'h', level: 3, x: 'Nomination' },
+    { t: 'h', level: 3, x: 'Nomination, Seconding and the Standing of a Candidate' },
     { t: 'p', key: 'nomination', x: 'A candidate for membership is nominated by one member and seconded by another, neither of whom may be the candidate’s household.' },
     { t: 'p', x: 'The nomination is posted in the Common Room for one month before it is considered, so that every member has the chance to meet the candidate over a dinner.' },
     { t: 'p', key: 'twiceyear', x: 'No candidate may be nominated twice in one year.' },
@@ -1554,7 +1561,7 @@
     { t: 'p', x: 'Every member may enter the house at any hour, use every room, bring a guest, stand for office, vote at meetings, and inspect the accounts.' },
     { t: 'p', x: 'Every member may put any matter on the agenda of any meeting, and may require that it be minuted whether or not it is decided.' },
     { t: 'p', x: 'No right in this section may be suspended except under Part VIII, and never for longer than a season.' },
-    { t: 'h', level: 3, x: 'Duties of a Member' },
+    { t: 'h', level: 3, x: 'The Duties of a Member Towards the House and Towards Each Other' },
     { t: 'p', x: 'Every member pays their subscription, takes their turn on the rotas, locks up when they are last out, and tells the Steward when something is broken.' },
     { t: 'p', key: 'attendance', x: 'Every member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member.' },
     { t: 'p', x: 'No duty in this section is enforced by any penalty other than the good opinion of the house, which has always been sufficient.' },
@@ -1854,7 +1861,7 @@
     },
     {
       id: 'quick-attendance', kind: 'quick', keys: ['attendance'], state: 'needs',
-      qLabel: '§ Duties of a Member', urgency: 0.61,
+      qLabel: '§ The Duties of a Member Towards the House and Towards Each Other', urgency: 0.61,
       pct: 58, cap: 'gathering — needs roughly 3 more judgments',
       marked: 'Every member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member<ins>, and the asking is done by the Steward in private</ins>.',
       rationale: 'As written, "asked kindly" could happen at a meeting, in front of everyone. That is the opposite of kind. Name who asks and where.'
@@ -2201,7 +2208,7 @@
     {
       id: 'race-nomination', kind: 'race', keys: ['nomination'], state: 'sealed', unread: true,
       verdict: 'preferred “A candidate for membership is nominated…”', pick: 'a',
-      qLabel: '§ Nomination',
+      qLabel: '§ Nomination, Seconding and the Standing of a Candidate',
       urgency: 0,
       pct: 100, cap: 'sealed — retired · the current text stood',
       // neither challenger cleared the bar, so the incumbent stood: no winner
@@ -2756,8 +2763,9 @@
           '<button class="unread" data-q="' + g.id + '" aria-current="' + (openId === g.id) + '"' +
           washAttrs(qKey(g, e), wash(g, 'closed').col, wash(g, 'closed').fill) +
           ' title="' + esc(d.outcome || 'sealed') + ' — you haven’t opened this one yet">' +
-          '<span class="ql">' + markHtml(carried(g) ? MARK.adopted : MARK.retired) + plainLabel(e.label || g.qLabel) +
-          '<span class="qv"> · ' + esc(d.when || '') + '</span></span>' +
+          '<span class="ql">' + markHtml(carried(g) ? MARK.adopted : MARK.retired) +
+          '<span class="qt">' + plainLabel(e.label || g.qLabel) + '</span>' +
+          '<span class="qv when">' + esc(d.when || '') + '</span></span>' +
           '</button></li>';
         continue;
       }
@@ -2797,7 +2805,7 @@
               where +
               '<span class="qwhy' + (why ? '' : ' empty') + '">' +
               (why ? esc(why) : 'no reason given yet — say what this is for') + '</span>' +
-              '<span class="mcap">not proposed yet</span>'
+              ''
             // **✏️ does not say "yours"** (Ed, 2026-08-17). The pencil means *you
             // wrote this* and the entry is the accent blue; a word saying it a third
             // time is the surface reading its own glossary aloud. The place count
@@ -2853,8 +2861,13 @@
           return washAttrs(qKey(g, e), w.col, isDiagonal(g) ? '100%' : w.fill);
         })() + '>' +
         (oneLine
-          ? '<span class="ql">' + markHtml(g.shifted ? MARK.shifted : MARK.deciding) + plainLabel(e.label || g.qLabel) +
-            '<span class="qv"> · you ' + (verdict || 'judged') + '</span></span>'
+          // **No verdict on the line** (Ed, 2026-08-17). It quoted the wording you
+          // preferred, which on a one-line entry beside a title is six characters and
+          // an ellipsis — unreadable, and unreadable text is worse than none, because
+          // it looks like something you are failing to read. The mark already says you
+          // have judged; the card says what you said, in full, when you open it.
+          ? '<span class="ql">' + markHtml(g.shifted ? MARK.shifted : MARK.deciding) +
+            plainLabel(e.label || g.qLabel) + '</span>'
           : '<span class="ql">' +
             markHtml(markOf(g)) +
             (e.prio
@@ -4689,6 +4702,13 @@
       // The card's own voice, and the only place it raises it. On a race card a
       // line like this is a caveat at the foot; here it is the whole point of
       // the card, so it goes at the top and is the first thing read.
+      // GONE (Ed, 2026-08-17). The card's own voice band said what the queue
+      // entry already says, to a reader who has just clicked that entry: it is
+      // the second time in two seconds, and the ⚔️ tab and the desk's own label
+      // say it a third and fourth. The card is now the clause, the field and the
+      // desk — reference, then work — and nothing on it explains itself.
+      // Kept here for the record: the band read "11 of the 14 have judged this
+      // and it has not separated. More judging will not decide it."
       // The count folded in (Ed, 2026-08-17: *what purpose is this serving?*).
       // A record band at the foot said what you preferred, how many pairs you
       // judged and how many people had weighed in — the sealed record's shape,
@@ -4697,10 +4717,6 @@
       // evidence**, because it is what makes the claim above it credible: this
       // is stuck, not merely unlooked-at. So it belongs *in* the claim, and the
       // rest is gone.
-      '<div class="deadsay"><div class="eyebrow">⚔️ Deadlocked</div>' +
-      '<p>' + (s.judges ?? 0) + ' of the ' + ROSTER + ' have judged this and it has not ' +
-      'separated. More judging will not decide it — a proposal that everybody can ' +
-      'live with is the only thing that will.</p></div>' +
       '<div class="field"><div class="fieldlab">Everything in flight · ' + field.length +
       ' proposals, oldest first</div>' +
       // `result-only`, marked, **with the floor forced off** (Ed, 2026-08-17).
@@ -5898,7 +5914,15 @@
   };
 
   function tocMarksHtml(n) {
-    const marks = entriesForSection(n).map(markOf);
+    // **☑️ is not in the contents rail** (Ed, 2026-08-17). It was already the
+    // first thing dropped when the marks would not fit; the rule this makes is
+    // simply the honest version of that — a filed decision is finished, and the
+    // rail is the one column read as *where is there anything*. In the gutter it
+    // still stands beside its clause, because there the question is *what has
+    // happened here*, which is a different question with a different answer.
+    // The `+n` tally counts what it hides, so a section of nothing but filed
+    // decisions now reads as empty rather than as a row of ticks.
+    const marks = entriesForSection(n).map(markOf).filter((m) => m !== MARK.read);
     if (!marks.length) return '';
     // choose by what is actionable, then draw in document order
     const keep = new Set(marks.map((m, i) => [m, i])
