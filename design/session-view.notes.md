@@ -2771,3 +2771,39 @@ and enlarging it to ~16px made it legible but far too loud for a unit. Emoji are
 bitmapped for exactly this size, which is the one job they do better than
 anything we can draw; the cost is that they bring their own colour back, which
 is what we had just spent an hour removing from the marks. Ed's pair for now.
+
+---
+
+### The whole record in one line (2026-08-17)
+
+Three more off the decided card, and together they collapse it to its bones.
+
+**The head's label went.** It said *1 · adopted · 86%* directly under an eyebrow
+that was already about the same decision — a rank for the top of a list you can
+see is the top, an outcome the ✔ in the gutter says, and a score that now sits
+one line above. `clauseHeadHtml` grew a `label: null` for it, which is worth
+having anyway: a head whose eyebrow would only repeat what is around it should
+be able to have none.
+
+**The hairline went.** Every entry below it is in a box of its own, and a rule
+above a row of boxes is a second boundary for the same edge. This is the third
+time today a separator has turned out to be doing a job something else was
+already doing — the queue's caption over its bar, the field label over its
+hairline, and now the hairline over its boxes.
+
+**And the record band went into the eyebrow.** It was three places for four
+numbers that belong together: an eyebrow, a rank label under it, and a band at
+the foot. Now it is one line, each number with its unit —
+
+> **Decided · 7/14👤 · 86%👍 > 72%✒️**
+
+— *seven of the fourteen weighed in, they came to 86%, and it had to clear 72%*,
+in the space the word "Decided" used to have to itself. The two facts that do
+not fit that shape, the quorum and what you yourself said, moved into the
+eyebrow's tooltip, where they are still there for anybody who wants them and
+cost no ink at all.
+
+A thing worth noticing about the sequence: none of the three removals would have
+been visible a week ago. They only become obvious once the numbers around them
+are compact enough to sit on one line, which is what the units bought — **the
+units did not save space, they made the redundancy legible.**

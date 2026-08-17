@@ -1039,6 +1039,10 @@
      behind a lifted box says the same thing twice while making the desk look
      like a different kind of object from the wordings it answers. Its label
      carries the act, and that is enough. */
+  /* No hairline on a decided card (Ed, 2026-08-17): every entry below it is in
+     a box of its own, and a rule above a row of boxes is a second boundary for
+     the same edge. */
+  .sealed-open .field { border-top: 0; padding-top: 0; }
   .bridgedesk .fieldlab { color: var(--stuck-ink); }
   .dead-open .field.bridgedesk { margin-top: var(--s3); }
   /* 🗑️ and ✏️ are lifted, because they are actions **for the box above them**
@@ -1517,7 +1521,7 @@
       <span class="pulse" id="pulse" aria-hidden="true"
             title="The room is working — this blinks when anybody judges or proposes anything. It never says who, what, or which way."></span>
       <span>time left <b>2h 11m</b></span>
-      <span title="How sure the house has to be that a change beats the current text. It rises through the session — this is not a vote share.">confidence bar <b>74%<span class="unit">✒️</span></b></span>
+      <span title="How sure the house has to be that a change beats the current text. It rises through the session — this is not a vote share.">confidence bar <b>74%<span class="unit">✒️</span> ▲</b></span>
       <span title="Quorum for a decision, not for the meeting: this many distinct members must weigh in on a question before it can be adopted (a third of the roster). A question short of quorum simply waits — silence is never counted as a vote.">quorum <b>5 of 14</b></span>
       <span class="wallet" id="wallet"></span>
       <!-- The one place on the surface that says who *you* are. Everybody
@@ -2796,6 +2800,7 @@
   // hurdle as a Greek letter. Emoji are bitmapped for exactly this size, which
   // is the one job they do better than anything we can draw. They bring their
   // own colour back, which is the cost.
+  const PEOPLE = "<span class=\"unit\">👤</span>";
   const JUDG = "<span class=\"unit\">👍</span>";
   const BAR = "<span class=\"unit\">✒️</span>";
   const TICK = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2 6.4 L4.7 9.2 L10 2.9\"/></svg>";
@@ -3811,7 +3816,11 @@
       ' data-anchor="' + s.id + '"' + chipStyle(s) + ' title="Close this one">' + mkHtml(markKindOf(s)) + '</span>' +
       (o.chips || '') + '</span>';
     return '<div class="clausehead">' +
-      '<div class="headlab"><span>' + (o.label || 'The clause as it stands') + '</span></div>' +
+      // `label: null` means *no eyebrow*: the decided card's head is the top of a
+      // ranking whose rank, outcome and score are all in the card's own eyebrow
+      // one line above, so a second label under it was the third telling.
+      (o.label === null ? ''
+        : '<div class="headlab"><span>' + (o.label || 'The clause as it stands') + '</span></div>') +
       // `data-key` sits on the washed block, not on the text inside it, because
       // that is the box `.anch` is: hold the text instead and the scroll
       // anchoring lands six pixels out, which is exactly the paragraph's own
@@ -4011,13 +4020,22 @@
       // mark: a gauge for the reading, a hurdle for the bar. With those, the whole
       // result is one line: *86% cleared 72%*, or *41% did not*. The comparator
       // does the work a sentence was doing.
-      '<div class="rechead"><span>Decided · ' + pct(best) + JUDG +
+      // **The whole record in one line** (Ed, 2026-08-17). It was three places —
+      // an eyebrow, a rank label under it, and a record band at the foot — for
+      // four numbers that belong together: how many weighed in, what they came
+      // to, and what it had to clear. Each gets its unit and they read as one
+      // sentence. Quorum and your own verdict move into the tooltip, where they
+      // are still there for anybody who wants them and cost no ink.
+      '<div class="rechead" title="' +
+      esc((d.judges ?? 0) + ' of ' + ROSTER + ' weighed in · quorum was ' + FLOOR +
+        ' · ' + (yours ? 'you ' + yours : 'you never judged this')) + '">' +
+      '<span>Decided · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE + ' · ' + pct(best) + JUDG +
       (best >= (d.bar ?? 0) ? ' &gt; ' : ' &lt; ') + pct(d.bar) + BAR + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
       (top
         ? clauseHeadHtml(s, {
             text: currentTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
-            label: tag(top) + line(top),
+            label: null,
           }) + (top.why ? speakerHtml(top.why) : '')
         : '') +
       // No label on the rest of the field (Ed, 2026-08-17): the hairline above it
@@ -4035,15 +4053,9 @@
             (c.why ? speakerHtml(c.why) : '') + '</div>';
           }).join('') + '</div>'
         : '') +
-      // The two numbers are different in kind and the record says which is
-      // which (Ed, 186): the bar is a confidence, the quorum is a headcount.
-      '<div class="record">' +
-      '<span><b>' + (d.judges ?? 0) + ' of ' + ROSTER + '</b> weighed in · quorum was <b>' + FLOOR + '</b></span>' +
-      // The confidence and the bar are both in the field above now — the label
-      // states the bar once for everything under it, and the winner's own score
-      // sits at the head of the column. Repeating them here was the third telling.
-      '<span>' + (yours ? 'you ' + esc(yours) : 'you never judged this') + '</span>' +
-      '</div>' +
+      // The record band is gone (Ed, 2026-08-17): every number in it is in the
+      // eyebrow now, each with its unit, and the two that are not — quorum, and
+      // what you said — are in the eyebrow's tooltip, which costs no ink.
       // Reading is not acknowledging (Ed, 114). A decision stays unread — and
       // stays pinned to the screen — until you say you have taken it in.
       (isUnread(s)
