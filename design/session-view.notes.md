@@ -3245,3 +3245,31 @@ the tie bite.
 Measured at § Bringing a Guest: the gutter's four-tab pile leads with
 `race-guests-notice`, and `race-guests-notice` is the entry the rail shows.
 Across all 31 clauses carrying gutter marks, no disagreement.
+
+### The flame says nothing but its own name (2026-08-17)
+
+Ed: *🔥 doesn't need the rationale in its queue-card when it's unselected; the
+fact that it's 🔥 is what gets it attention, not the rationale (which is always
+one click away anyway).*
+
+The sharp part is what it says about every *other* entry's teaser. A rationale in
+the rail is doing one job: **it is what makes you decide whether this is the one
+to open.** On 🔥 that decision has already been made for you — that is the entire
+content of the mark — so the teaser there is answering a question nobody is
+asking, in the one place on the surface where the answer is already given.
+
+Same test as the `yoursnote` and the revise line earlier today, from a different
+angle: not *is this true* but *is anybody asking*.
+
+I dropped it in **both** states rather than only the unselected one. Ed scoped it
+to unselected because that is where he met it, and the two readings differ only
+when the card is open — where the document is showing the same words in full
+three inches away, and where keeping the teaser would make the flame the rail's
+only element that **grows a paragraph when you select it**. Nothing in the rail
+changes size on selection, and this would have been a poor first exception.
+
+One side effect worth keeping. With the words gone the entry is 37px of nearly
+solid orange, and the `evidence-meter` — which was a stripe under a paragraph —
+now fills the whole card. The most urgent question in the document is also the
+clearest progress bar in the rail, which is what you want from the one entry that
+is meant to be answered next.

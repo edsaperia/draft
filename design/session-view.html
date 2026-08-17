@@ -3223,7 +3223,22 @@
             // magnitude, and the words on every card. It survives as the entry's
             // tooltip, where it costs nothing and answers the reader who wants the
             // number the bar is only showing them.
-            teasersFor(g, e).map((t) => '<span class="qwhy">' + esc(t) + '</span>').join('')) +
+            // **The flame carries no rationale** (Ed, 2026-08-17). Every other
+            // entry's teaser is doing a job: it is what makes you decide whether
+            // this is the one to open. 🔥 has already been decided *for* you —
+            // the mark and the hue are what get it your attention, not the
+            // argument inside it — so the teaser there is answering a question
+            // nobody is asking, and the rationale is one click away as it is on
+            // every other card.
+            //
+            // Ed scoped it to the unselected state, which is where he met it.
+            // Dropping it in both states is the same change plus one judgment:
+            // an entry that *grows* a paragraph when you open its card would be
+            // the rail's only element that changes size on selection, and it
+            // would grow it at the exact moment the document is showing the same
+            // words in full.
+            (top ? '' :
+              teasersFor(g, e).map((t) => '<span class="qwhy">' + esc(t) + '</span>').join(''))) +
         '</button></li>';
     }
     queueEl.innerHTML = html;
