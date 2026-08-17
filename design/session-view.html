@@ -598,8 +598,8 @@
 
      An earlier attempt changed the mouse pointer to a drawn serif I-beam.
      Reverted — the pointer was never the thing that was hard to find. */
-  .doc .editable, .editcard .editlane, .editcard .edit-why { cursor: text; }
-  .doc .editable, .editcard .editlane { caret-color: var(--primary); }
+  .doc .editable, .lanebox .editlane, .lanebox .edit-why { cursor: text; }
+  .doc .editable, .lanebox .editlane { caret-color: var(--primary); }
   .caretpulse {
     position: absolute; z-index: 30; pointer-events: none;
     width: 3px; margin-left: -1px; border-radius: 2px;
@@ -970,6 +970,18 @@
   /* Eight wordings is a long read, so the blocks get more air between them than
      a two-candidate field needs — the separator is doing more work here. */
   .dead-open .propblock + .propblock { margin-top: var(--s4); padding-top: var(--s4); }
+  /* The desk. It is the one band on the card that is not reference, so it says
+     so the way this surface says everything: its own ground rather than a rule
+     round it, and the label carries the act. */
+  .bridgedesk .fieldlab { color: var(--stuck-ink); }
+  .dead-open .field.bridgedesk {
+    background: rgba(var(--lc-yours), 0.06); border-radius: var(--r-md);
+    padding: var(--s3); margin-top: var(--s4);
+  }
+  /* Nothing behind it yet, so it reads as an invitation rather than as content
+     you are about to lose: the clause is there to be written over. */
+  .lanebox.blanklane .editlane { color: var(--muted); }
+  .lanebox.blanklane .editlane:focus { color: var(--fg); }
   .propblock .rtext { font-size: var(--t-body); margin-bottom: 0; }
   .field + .race-mid {
     border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
@@ -1054,9 +1066,9 @@
      =================================================================== */
   /* block, not flex: the lane is a text editor and the browser puts a caret
      between block children far more predictably than between flex items */
-  .editcard .editlane { display: block; font-size: var(--t-body); }
-  .editcard .lp { margin: 0 0 var(--s2); }
-  .editcard .lp:last-child { margin-bottom: 0; }
+  .lanebox .editlane { display: block; font-size: var(--t-body); }
+  .editcard .lp, .lanebox .lp { margin: 0 0 var(--s2); }
+  .editcard .lp:last-child, .lanebox .lp:last-child { margin-bottom: 0; }
   /* the one box left on the surface: a text editor says it is one by looking
      like one, and nothing else here is typed into */
   /* The box is the editor; the controls sit in its top right (Ed, 2026-08-17)
@@ -1067,23 +1079,23 @@
      card at rest and higher again while the caret is in it, which says
      "editable" and "focused" with the same device the rest of the surface
      now uses for "open". */
-  .editcard .lanebox {
+  .lanebox {
     border: 0; border-radius: var(--r-md);
     background: var(--bg); overflow: hidden;
     box-shadow: var(--shadow-md);
     transition: box-shadow 140ms ease;
   }
-  .editcard .lanebox:focus-within { box-shadow: var(--shadow-xl); }
-  @media (prefers-reduced-motion: reduce) { .editcard .lanebox { transition: none; } }
-  .editcard .lanectl {
+  .lanebox:focus-within { box-shadow: var(--shadow-xl); }
+  @media (prefers-reduced-motion: reduce) { .lanebox { transition: none; } }
+  .lanebox .lanectl {
     display: flex; align-items: center; justify-content: flex-end; gap: var(--s2);
     padding: 5px 8px 0;
   }
-  .editcard .editlane {
+  .lanebox .editlane {
     border: 0; padding: var(--s2) 14px var(--s3);
   }
   /* markdown mode: the characters, exactly, and nothing rendered */
-  .editcard .editlane.md {
+  .lanebox .editlane.md {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: var(--t-small); line-height: 1.6;
   }
@@ -1107,7 +1119,7 @@
   }
   .lmode[aria-pressed="true"] { background: var(--primary); color: #fff; font-weight: 600; }
   .lmode[aria-pressed="true"]:hover { background: var(--primary-hover); color: #fff; }
-  .editcard .editlane code {
+  .lanebox .editlane code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.9em; background: var(--light); padding: 0 3px; border-radius: 3px;
   }
@@ -1117,16 +1129,16 @@
      inside a lane means *new wording* now that the lane marks its own changes
      (Ed, 263), and a green box around green words would be two meanings in one
      hue an inch apart. */
-  .editcard .editlane {
+  .lanebox .editlane {
     background: var(--bg); cursor: text;
     min-height: 4rem;
   }
-  .editcard .editlane:focus { outline: none; }
+  .lanebox .editlane:focus { outline: none; }
   /* The rationale is written here rather than quoted, so it is a field — but
      it sits in the speaker's own slot, at the speaker's own weight, because it
      is the same sentence in the same place that everybody else will read it
      in. Writing it where it will land is most of the point. */
-  .editcard .edit-why {
+  .lanebox .edit-why {
     border: 1px solid var(--border); border-radius: var(--r-md);
     padding: 3px var(--s2); cursor: text; min-height: 1.9rem;
     align-self: start;
@@ -1135,15 +1147,15 @@
      2026-08-17), so it needs no elevation of its own — the surface carries
      both, at one height, because you are expected to fill in both. A hairline
      separates the two without dividing them. */
-  .editcard .lanebox .speaker {
+  .lanebox .speaker {
     margin: 0; padding: var(--s3) 14px var(--s3) 12px;
     border-top: 1px solid var(--border);
   }
-  .editcard .edit-why {
+  .lanebox .edit-why {
     border: 0; box-shadow: none; padding: 0; min-height: 1.4rem;
     position: relative;
   }
-  .editcard .edit-why:focus { outline: none; }
+  .lanebox .edit-why:focus { outline: none; }
   /* **Absolutely positioned** (Ed, 2026-08-17: "I can't delete the helper text
      for the rationale"). As ordinary inline content the placeholder sat *in*
      the line, so an empty field put the caret after it — you could see a text
@@ -1151,8 +1163,8 @@
      nothing happening, because there was nothing there. Taken out of flow it
      is what it always claimed to be: something printed behind an empty field,
      with the caret at the start where the first character will go. */
-  .editcard .edit-why:empty::before,
-  .editcard .edit-why.blank::before {
+  .lanebox .edit-why:empty::before,
+  .lanebox .edit-why.blank::before {
     content: attr(data-placeholder); color: var(--muted); font-weight: 400; font-style: italic;
     position: absolute; left: 0; top: 0; right: 0; pointer-events: none;
   }
@@ -3521,6 +3533,11 @@
   function laneSeed(s, lane, key) {
     if (lane === 'keep') return null;
     const note = 'the wording you are editing';
+    // a `deadlock-card`'s field is a slate, so the lane is its index in it
+    if (String(lane).startsWith('slate:')) {
+      const c = (s.slate || [])[+String(lane).slice(6)];
+      return c ? { text: c.text, note } : null;
+    }
     if (s.kind === 'race') return { text: lane === 'a' ? s.race.a.text : s.race.b.text, note };
     if (s.kind === 'patch') {
       const site = s.sites.find((x) => x.key === key) || s.sites[0];
@@ -4028,6 +4045,18 @@
       placeCaret(lane, caret);
       caretPulse();          // the one caret move the reader did not make
     };
+    // A `deadlock-card` holds its own composer at its foot, so a draft started
+    // there must not carry the surface off to the draft's own card: the field
+    // you are writing against is the whole reason you are there (Ed,
+    // 2026-08-17). It stays open and re-renders with the desk now backed by a
+    // real site.
+    const host = SUGGS.find((x) => x.id === openId);
+    if (host && stuck(host) && (host.keys ?? []).includes(key)) {
+      keepStill(() => renderAll(), '[data-card="' + host.id + '"]');
+      land();
+      layoutQueue(); drawWires();
+      return;
+    }
     if (openId === d.id) {
       keepStill(() => renderAll(), '[data-key="' + key + '"]');
       land();
@@ -4203,8 +4232,15 @@
   // surviving from the clause, the proposal states itself plainly. Rival
   // candidates in a race are whole rewrites rather than edits, so this is what
   // keeps a race lane from being marked green end to end (Q92).
+  // `force` skips the floor. The `deadlock-card` sets it (Ed, 2026-08-17 — *I'd
+  // like to see the green highlights like elsewhere*): its field is eight
+  // rewrites of one sentence, each of which falls below the floor on its own
+  // and would state itself plain, so the card that most needs the marking is
+  // the one the floor silences. The floor exists to stop a *lane* being lit end
+  // to end beside its incumbent; here the incumbent is at the head and the
+  // whole point of the band is comparison.
   const MARK_FLOOR = 0.5;
-  function wordingHtml(oldText, newText) {
+  function wordingHtml(oldText, newText, force) {
     if (!String(newText ?? '').trim()) return '<div class="lp empty"><br></div>';
     const pieces = diffPieces(oldText, newText, false);
     let same = 0, all = 0;
@@ -4213,7 +4249,7 @@
       all += t.length;
       if (!mk) same += t.length;
     }
-    if (!all || same / all < MARK_FLOOR) return mdToHtml(newText);
+    if (!force && (!all || same / all < MARK_FLOOR)) return mdToHtml(newText);
     // rendered, not raw: a proposal is read, not checked, so emphasis in it
     // should look like emphasis rather than like asterisks
     return pieces.map(([t, mk]) => (mk ? markHtml2(t, mk, mdToHtml) : mdToHtml(t))).join('');
@@ -4350,6 +4386,61 @@
   let laneMode = 'rich';
   const laneRaw = () => laneMode === 'md';
 
+  // **The editing surface itself**, extracted so the `editing-card` and the
+  // `deadlock-card` share one rather than each growing their own (Ed,
+  // 2026-08-17 asked the deadlock card for *a full proposal edit box*, and two
+  // boxes that drift apart is exactly what "full" must not come to mean).
+  //
+  // `blank` is the state before a draft exists: the lane holds the clause and
+  // is a real editor, but nothing is backing it yet, so the first keystroke
+  // opens the draft with that character already applied. Which is
+  // `always-on-typing`, applied to a box instead of to a paragraph — the same
+  // idea and, it turns out, the same function underneath.
+  function laneBoxHtml(d, site, blank) {
+    return '<div class="lanebox' + (blank ? ' blanklane' : '') + '">' +
+      // The italic button is a **serif capital I** (Ed, 2026-08-17). A sans
+      // italic I is a slash with no serifs on it — it reads as punctuation
+      // rather than as a letter, which is the one thing a letterform button
+      // must not do. The serifs are what make it an I while it is still leaning.
+      //
+      // And the mode control is **one button, not a pair** (Ed, 2026-08-17):
+      // `[]` off by default, pressed for markdown. A two-segment Rich/Markdown
+      // switch spent a lot of the strip saying that a thing which is off is
+      // off; a single toggle says the same with the state in its own pressed-
+      // ness, which is what every other control on this surface does.
+      '<div class="lanectl">' +
+      '<button class="lfmt" data-fmt="bold" title="Bold (the markdown is **like this**)"><b>B</b></button>' +
+      '<button class="lfmt" data-fmt="italic" title="Italic (the markdown is *like this*)">' +
+      '<span class="ital">I</span></button>' +
+      '<button class="lmode" data-mode="' + (laneRaw() ? 'rich' : 'md') + '"' +
+      ' aria-pressed="' + laneRaw() + '"' +
+      ' title="Markdown — see and type the characters exactly as they are stored">[]</button>' +
+      '</div>' +
+      (blank
+        ? '<div class="editlane" contenteditable="true" data-deadlane data-key="' + blank +
+          '" spellcheck="false"><div class="lp">' + esc(currentTextFor(blank)) + '</div></div>'
+        : '<div class="editlane' + (laneRaw() ? ' md' : '') + '" contenteditable="true" data-lane="' +
+          site.keys[0] + '" spellcheck="false">' +
+          laneBlocks(site.text, originText(site), headFlags(site), laneRaw()) + '</div>') +
+      // The rationale is **inside** the same surface (Ed, 2026-08-17): you are
+      // expected to fill in both, so they are one editing surface at one
+      // height rather than two boxes at different ones — and the speaker's
+      // disc comes with it, because it belongs to the words beside it. A
+      // hairline separates them without dividing them, which is the card's own
+      // band grammar applied one level down.
+      '<div class="speaker">' +
+      '<span class="disc" aria-hidden="true" title="This is how your reason will reach everybody else: with your name off it (SPEC §3.4)."></span>' +
+      '<div class="said edit-why" contenteditable="plaintext-only"' +
+      (blank ? ' data-deadwhy="' + blank + '"' : ' data-why') + ' spellcheck="false"' +
+      // Ed, 2026-08-17. A question invited an answer to a different question —
+      // "because it's clearer" — where an opening clause invites the sentence
+      // the field is actually for. It also states the act: what you are writing
+      // is the case for a change, not a note about one.
+      ' data-placeholder="We should change this because…">' +
+      esc((d && d.rationale) || '') + '</div></div>' +
+      '</div>';
+  }
+
   function editCardHtml(d, site) {
     const n = d.sites.length;
     const i = d.sites.indexOf(site);
@@ -4380,51 +4471,7 @@
       // then the argument for it behind the same blank disc everybody else's
       // sits behind — which is what the rest of the roster will see (§3.4).
       '<div class="field"><div class="fieldlab">What you are proposing</div>' +
-      '<div class="propblock">' +
-      // The only editing controls on the surface, in the only place text is
-      // ever changed (Ed, 2026-08-17). They were going to live in the topbar;
-      // that is the wrong home, because nothing outside an open card can be
-      // edited, so a topbar toolbar would be greyed out for the whole session
-      // except the minute you are writing.
-      '<div class="lanebox">' +
-      // The italic button is a **serif capital I** (Ed, 2026-08-17). A sans
-      // italic I is a slash with no serifs on it — it reads as punctuation
-      // rather than as a letter, which is the one thing a letterform button
-      // must not do. The serifs are what make it an I while it is still leaning.
-      //
-      // And the mode control is **one button, not a pair** (Ed, 2026-08-17):
-      // `[]` off by default, pressed for markdown. A two-segment Rich/Markdown
-      // switch spent a lot of the strip saying that a thing which is off is
-      // off; a single toggle says the same with the state in its own pressed-
-      // ness, which is what every other control on this surface does.
-      '<div class="lanectl">' +
-      '<button class="lfmt" data-fmt="bold" title="Bold (the markdown is **like this**)"><b>B</b></button>' +
-      '<button class="lfmt" data-fmt="italic" title="Italic (the markdown is *like this*)">' +
-      '<span class="ital">I</span></button>' +
-      '<button class="lmode" data-mode="' + (laneRaw() ? 'rich' : 'md') + '"' +
-      ' aria-pressed="' + laneRaw() + '"' +
-      ' title="Markdown — see and type the characters exactly as they are stored">[]</button>' +
-      '</div>' +
-      '<div class="editlane' + (laneRaw() ? ' md' : '') + '" contenteditable="true" data-lane="' +
-      site.keys[0] + '" spellcheck="false">' +
-      laneBlocks(site.text, originText(site), headFlags(site), laneRaw()) + '</div>' +
-      // The rationale is **inside** the same surface (Ed, 2026-08-17): you are
-      // expected to fill in both, so they are one editing surface at one
-      // height rather than two boxes at different ones — and the speaker's
-      // disc comes with it, because it belongs to the words beside it. A
-      // hairline separates them without dividing them, which is the card's own
-      // band grammar applied one level down.
-      '<div class="speaker">' +
-      '<span class="disc" aria-hidden="true" title="This is how your reason will reach everybody else: with your name off it (SPEC §3.4)."></span>' +
-      '<div class="said edit-why" contenteditable="plaintext-only" data-why spellcheck="false"' +
-      // Ed, 2026-08-17. A question invited an answer to a different question —
-      // "because it's clearer" — where an opening clause invites the sentence
-      // the field is actually for. It also states the act: what you are writing
-      // is the case for a change, not a note about one.
-      ' data-placeholder="We should change this because…">' +
-      esc(d.rationale || '') + '</div></div>' +
-      '</div>' +
-      '</div></div>' +
+      '<div class="propblock">' + laneBoxHtml(d, site) + '</div></div>' +
       // **The proposal's lifecycle is one row** (Ed, 2026-08-17). Discard on the
       // very left, commit on the very right, and the row does not move when the
       // draft becomes a proposal — only the right-hand control changes from the
@@ -4567,8 +4614,21 @@
   // largely a conversation in which each wording answers the ones before it.
   function deadlockCardHtml(s) {
     const key = (s.keys ?? [])[0];
+    const cur = currentTextFor(key);
     const field = fieldOf(s);
     const yours = verdicts.get(s.id) || s.verdict;
+    // **The desk is on the card** (Ed, 2026-08-17: *at the bottom we should have
+    // a full proposal edit box, with discard and submit buttons*). Which is the
+    // move that makes the whole thing make sense: the eight wordings are not a
+    // reference you go away from, they are what you write against, so the
+    // reading room and the desk are one surface and the field stays on screen
+    // above the box while you use it. It is the same `laneBoxHtml` the
+    // `editing-card` uses, and the same commit row — 🗑️ at the very left, hold-
+    // ✏️ at the very right — so the proposal's lifecycle is the one row it is
+    // everywhere else, and the pencil still flies out of the wallet to pay.
+    const d = draftOf();
+    const site = d && siteFor(d, key);
+    const broke = editsHeld < EDIT_RULES.stake;
     return (
       '<div class="sugg dead-open" data-card="' + s.id + '"' +
       (key ? ' data-site="' + key + '"' : '') + '>' +
@@ -4582,21 +4642,24 @@
       'a wording that both sides can live with is the only thing that will.</p></div>' +
       '<div class="field"><div class="fieldlab">Everything in flight · ' + field.length +
       ' wordings, oldest first</div>' +
-      // Stated plainly, and the attempt to mark them is worth recording as a
-      // dead end. `result-only` against the clause is what every other card
-      // does, and at eight it marks **three** of them: the floor in
-      // `wordingHtml` is measured against the incumbent, and a wording this far
-      // from the clause is a rewrite rather than an edit, so it states itself
-      // plain by design (Q92). Half a field wearing green reads as arbitrary,
-      // which is worse than none of it.
+      // `result-only`, marked, **with the floor forced off** (Ed, 2026-08-17).
+      // Left to itself the floor marks three of the eight and silences the
+      // rest, because each of these is far enough from the clause to count as a
+      // rewrite (Q92) — so the card that most needs the marking is the one the
+      // floor was turning off. The floor exists to stop a *lane* being lit end
+      // to end beside its incumbent; here the incumbent is at the head and
+      // comparison is the entire purpose of the band.
       //
-      // The finding underneath is the useful one: **at eight, the comparison
-      // you need is not each-against-the-clause but each-against-the-others**,
-      // and no diff against the incumbent can draw that. See Q301.
-      field.map((c) =>
+      // Each carries ✏️ *propose edit* at its foot, as every wording on this
+      // surface does — the lane bar minus its radio, since nothing here votes.
+      // Which is also the answer to *how do I use all this*: you take whichever
+      // came closest and write from it.
+      field.map((c, i) =>
         '<div class="propblock">' +
-        '<div class="rtext">' + esc(c.text) + '</div>' +
-        (c.why ? speakerHtml(c.why) : '') + '</div>').join('') + '</div>' +
+        '<div class="rtext">' + wordingHtml(cur, c.text, true) + '</div>' +
+        (c.why ? speakerHtml(c.why) : '') +
+        '<div class="lanebar">' + laneProposeHtml(s, 'slate:' + i, key) + '</div>' +
+        '</div>').join('') + '</div>' +
       // What you said, as record rather than control — one line for however
       // many pairs it took, because this card is about the race and not about
       // any pair in it (Ed: *may relate to several votes in a race*).
@@ -4604,7 +4667,21 @@
       (yours ? 'You ' + esc(yours) : 'You judged every pair here') +
       (s.pairsJudged ? ' · <b>' + s.pairsJudged + '</b> pairs judged' : '') +
       '</span><span>' + (s.judges ?? 0) + ' of ' + ROSTER + ' have weighed in</span></div>' +
-      '<div class="race-mid commitrow"><span></span>' + proposeBtnHtml(true) + '</div>' +
+      '<div class="field bridgedesk"><div class="fieldlab">✏️ Write a bridge — ' +
+      'a wording both camps can live with</div>' +
+      '<div class="propblock">' + laneBoxHtml(d, site, site ? null : key) + '</div></div>' +
+      // The same row as the editing card's, and it stays the same row: 🗑️ at
+      // the very left for the whole of a proposal's life, the commit control at
+      // the very right. Both greyed until there is something to act on, which is
+      // what gives an untouched desk its shape — the argument the ✓ won on.
+      '<div class="race-mid commitrow">' +
+      '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
+      (site ? '' : ' disabled') +
+      ' title="Discard this draft — nothing has been spent on it yet">🗑️</button>' +
+      '<button class="btn btn-propose" data-act="draft-propose"' +
+      (site && !broke ? '' : ' disabled') +
+      ' title="Hold to propose this — one edit leaves your wallet to pay for it">✏️</button>' +
+      '</div>' +
       '</div>'
     );
   }
@@ -4917,6 +4994,37 @@
     // the **rail**, so your rationale reads back beside the clause as you write
     // it (Ed, 2026-08-16) — the rail is a separate subtree, so rebuilding it
     // cannot disturb a selection living in the document.
+    // The `deadlock-card`'s desk before it is backed by anything: the lane holds
+    // the clause and is a real editor, and the first keystroke opens the draft
+    // with that character already applied. `startDraftFromTyping` does the whole
+    // job unchanged, because the box carries `data-key` exactly as a paragraph
+    // does — which is the tell that this is `always-on-typing` and not a second
+    // mechanism that resembles it.
+    doc.querySelectorAll('[data-deadlane]').forEach((el) =>
+      el.addEventListener('beforeinput', (ev) => {
+        ev.preventDefault();
+        startDraftFromTyping(el, ev);
+      })
+    );
+    // Same for the reason, which people do sometimes write first. The draft is
+    // opened on the clause as it stands — you have changed nothing yet — and the
+    // character is applied to the rationale once it exists.
+    doc.querySelectorAll('[data-deadwhy]').forEach((el) =>
+      el.addEventListener('beforeinput', (ev) => {
+        if (ev.inputType !== 'insertText' && ev.inputType !== 'insertFromPaste') return;
+        ev.preventDefault();
+        const ch = ev.inputType === 'insertText'
+          ? (ev.data || '')
+          : ((ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || '');
+        const key = el.dataset.deadwhy;
+        startDraft(key, null, { text: currentTextFor(key), caret: 0 });
+        const d = draftOf();
+        if (d) d.rationale = ch;
+        renderQueue();
+        const why = doc.querySelector('.dead-open [data-why]');
+        if (why) { why.textContent = ch; why.classList.toggle('blank', !ch); placeCaret(why, ch.length); }
+      })
+    );
     const echo = () => { renderQueue(); drawWires(); };
     doc.querySelectorAll('.edit-why').forEach((el) => {
       el.addEventListener('input', () => {

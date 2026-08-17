@@ -2211,3 +2211,60 @@ others**, and nothing computed against the incumbent can draw that. Q305 (a
 six-word advisory label per wording) and Q306 (the `camp-map`) are the two ways
 out, and 305 is the cheaper: two candidates with near-identical labels are
 visibly one camp without anything having to say so.
+
+---
+
+## The deadlock card gets its desk (2026-08-17)
+
+Three notes from Ed, and each of them made the card more like the rest of the
+surface rather than less.
+
+**The green marking, with the floor forced off.** I had left the eight wordings
+plain because `result-only` marked only three of them, and half a field wearing
+green reads as arbitrary. Ed asked for the green anyway, and he is right — the
+fix was to look at *why* three. The floor in `wordingHtml` is measured against
+the incumbent, and each of these is far enough from the clause to count as a
+rewrite, so the card that most needed the marking was the one the floor was
+silencing. But the floor exists to stop a **lane** being lit end to end beside
+its incumbent (Q92); here the incumbent is at the head and comparison is the
+entire purpose of the band. So the deadlock card forces it off, and the effect
+is the thing I had gone looking for camps to provide: the shared spine stays
+black, each attempt's own move lights up, and eight wordings become scannable
+in one pass. It weakens the case for Q305/Q306 considerably — they are now
+improvements rather than rescues.
+
+**✏️ propose edit on every candidate**, as every wording on this surface
+carries: the lane bar minus its radio, since nothing here votes. It is also the
+answer to *what do I do with all this* — you take whichever came closest and
+write from it. `laneSeed` grew a `slate:N` case for the seed.
+
+**The desk on the card.** *At the bottom we should have a full proposal edit
+box, with discard and submit buttons.* This is the move that makes the whole
+thing cohere: the eight wordings are not a reference you go away from, they are
+what you write **against**, so the reading room and the desk are one surface and
+the field stays on screen above the box while you use it.
+
+It is the same `laneBoxHtml` the `editing-card` uses — extracted for the
+occasion, because *two boxes that drift apart is exactly what "full" must not
+come to mean* — and the same commit row, 🗑️ at the very left and hold-✏️ at the
+very right, so the proposal's lifecycle is the one row it is everywhere else and
+the pencil still flies out of the wallet to pay.
+
+Two things fell out of the extraction.
+
+The whole box's styling was scoped to `.editcard`, so on the deadlock card the
+placeholder, the blue caret and the lift all silently did not apply. Rescoped to
+`.lanebox`, which is what they were always about. **A component that moves needs
+its CSS to be about the component, not about where it used to live.**
+
+And the empty state needed a mechanism. The desk is there before any draft
+exists, so the lane holds the clause and is a real editor, and the first
+keystroke opens the draft with that character already applied —
+`startDraftFromTyping` doing the whole job unchanged, because the box carries
+`data-key` exactly as a paragraph does. Which is the tell that this is
+`always-on-typing` and not a second mechanism resembling it. The rationale gets
+the same treatment, since people do sometimes write the reason first.
+
+One guard: `startDraft` normally opens the draft's own card, which would have
+carried the surface away from the field you came for. It now keeps a stuck host
+card open and simply re-renders, with the desk backed by a real site.
