@@ -1637,7 +1637,11 @@
     { t: 'h', level: 1, x: 'Part III — Membership' },
     { t: 'h', level: 2, x: 'Admission' },
     { t: 'h', level: 3, x: 'Nomination, Seconding and the Standing of a Candidate' },
-    { t: 'p', key: 'nomination', x: 'A candidate for membership is nominated by one member and seconded by another, neither of whom may be the candidate’s household.' },
+    // The clause does not yet carry the household bar — that is what the race
+    // below it was about, and what did not clear the threshold. Written this way
+    // round because a fixture proposal identical to its own incumbent is not a
+    // proposal: the dedup-gate would never have let it race.
+    { t: 'p', key: 'nomination', x: 'A candidate for membership is nominated by one member and seconded by another.' },
     { t: 'p', x: 'The nomination is posted in the Common Room for one month before it is considered, so that every member has the chance to meet the candidate over a dinner.' },
     { t: 'p', key: 'twiceyear', x: 'No candidate may be nominated twice in one year.' },
     { t: 'h', level: 3, x: 'Objection' },
@@ -4047,8 +4051,17 @@
     // the highest any proposal reached against the text it was measured on —
     // the number the bar was actually being asked about
     const best = Math.max(0, ...field.map((c) => c.p ?? 0));
-    const top = skey ? ranked[0] : null;
-    const rest = top ? ranked.slice(1) : ranked;
+    // **The head is the clause, and the clause is not always the top of the
+    // ranking.** `ranked.slice(1)` assumed it was — true on an adopted card,
+    // where the winner both is the clause and leads the field, and false on a
+    // retired one the moment a challenger outscores the incumbent without
+    // clearing the bar. Then the head printed the clause (it always prints
+    // `currentTextFor`), the incumbent printed the same paragraph again as *the
+    // text that stood*, and the proposal the eyebrow's own headline number
+    // belongs to was dropped off the card altogether. `atHead` had been written
+    // for exactly this and never called.
+    const top = skey ? ranked.find(atHead) : null;
+    const rest = ranked.filter((c) => c !== top);
 
     // Where the incumbent is in the list its right-hand slot now names it, so the
     // left-hand tag would be saying it twice; where it is at the *head* it kept

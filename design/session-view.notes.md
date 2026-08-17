@@ -2890,3 +2890,83 @@ had become drawn ones. It is the drawn tick now, which is right for the reason
 the drawn set exists — a control and a mark should not look like they came from
 different alphabets — and safe because the two never share a card: the commit ✓
 lives on a live judgment, the adopted ✔ on a sealed record.
+
+### The head is the clause, and the clause is not always top of the ranking (2026-08-17)
+
+Ed, on § Nomination: *why does it have "the text that stood" box when that's
+already at the top of the card?*
+
+It printed the same paragraph twice, and the cause was one line:
+
+    const top  = skey ? ranked[0] : null;
+    const rest = top ? ranked.slice(1) : ranked;
+
+`slice(1)` drops whatever leads the ranking, on the assumption that the leader
+is also what the head is showing. The head shows `currentTextFor(skey)` — the
+clause — unconditionally, and it must, because the head is the paragraph the
+card opened out of: same axis, same washed block, same gutter mark, and the
+whole opening motion is measured against those being identical. So the
+assumption holds only while the clause happens to lead the field.
+
+On an **adopted** card it always does: the winner is the clause and it is top by
+definition. On a **retired** card it holds only until a challenger outscores the
+incumbent's constructed 50% without clearing the bar — which is not an exotic
+case, it is the most interesting outcome a retired race has. § Nomination is
+exactly that: a at 52%, the bar at 74%. So `ranked[0]` was a, the head printed
+the clause, the incumbent printed the clause **again** under *the text that
+stood*, and a — the proposal the eyebrow's own headline number belongs to — was
+sliced off the card entirely.
+
+That second half is the worse one, and it is the reason to record this rather
+than just patch it: the visible symptom was a duplicate paragraph, and the
+actual damage was a **missing proposal**. The eyebrow said *52% 👍 < 74% ✒️*
+over a field whose best entry was 29%. A card that repeats itself is annoying;
+a record that omits a candidate is a record that is wrong.
+
+The fix is a function that was already written and never called. `atHead` states
+the rule in one line — *the winner where it carried, the incumbent where it
+held* — and had been sitting three lines above the bug since the card was
+rebuilt. `top` finds it; `rest` filters it out by identity rather than by
+position. **A predicate that names the rule is not the same as an index that
+happens to satisfy it**, and writing the first while shipping the second is how
+you get a bug that is invisible in every fixture until one number crosses
+another.
+
+The fixture had been hiding it, too, and in a way worth naming. § Nomination's
+candidate a was **word-for-word identical to the clause** — so before the fix
+the duplication was between the head and the incumbent, and after the fix it
+would have been between the head and a. A proposal identical to its incumbent
+is one the `dedup-gate` would never have let race; it is a fixture that cannot
+occur. The clause now reads without the household bar and a is the proposal that
+would have added it, which is what both rationales were arguing about all along.
+**Check the fixture is a state the engine can produce** — an impossible one
+does not just fail to test the code, it disguises what the code is doing.
+
+What the fix costs is 307: with the incumbent at the head it is out of the list,
+and the list loses the line it was rebuilt to carry — *these beat what we had,
+those did not*.
+
+### Four tabs is already too many (2026-08-17)
+
+Ed asked what I made of § Bringing a Guest with its card closed. Measured, not
+looked at:
+
+- the clause is 36px tall; its `chipcol` holds four tabs at a 33px pitch, so the
+  column is **129px** — a 93px overhang;
+- three of the four therefore stand beside prose they have nothing to do with,
+  and the fourth (✏️) is level with the **next paragraph**;
+- the held-open gap below the clause has a `chipcol` of its own, whose 💡 sits
+  at y676 while the clause's ⏳ occupies 661–691. **They overlap by 15px** and
+  render as a single blob with two glyphs sliced through it.
+
+294 anticipated the first of these and put the threshold at twenty. It is four.
+It did not anticipate the second at all, and the second is the more structural
+one: each `chipcol` is laid out inside its own anchor, with no knowledge of the
+anchor below, so nothing in the system can even detect the collision — let alone
+decide who yields. The volume question is really two questions, and the one
+nobody has asked is *what owns a strip of gutter when two anchors claim it*.
+
+Worth saying plainly because it changes the priority: this is not a
+degrades-gracefully-at-scale problem to be handled when rosters get big. The
+fixture is a roster of fourteen with an ordinary number of live suggestions at
+one clause, and the gutter is already lying about which text a mark belongs to.
