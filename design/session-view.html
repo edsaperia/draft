@@ -324,9 +324,12 @@
      four columns. Kept at the colours the emoji happened to have, so the change
      is the plate and nothing else; see the note on whether that survives. */
   .mk { font-family: inherit; font-weight: 700; }
-  .mk-adopted { color: var(--ok); }
-  .mk-retired { color: var(--ok); }
-  .mk-read { color: #6f42c1; font-weight: 500; }
+  /* Green for **decided**, grey for **filed** — the same two glyphs in the two
+     colours (Ed, 2026-08-17). Which way it went is the glyph; whether it still
+     wants anything from you is the colour, which is the rule the whole palette
+     runs on. */
+  .mk-adopted, .mk-retired { color: var(--ok); }
+  .mk-filedYes, .mk-filedNo { color: var(--muted); font-weight: 500; }
   .mk-shifted { color: var(--primary); }
   /* a drawn glyph has no plate to give it width, so at the two small sizes it
      needs a little of its own or the marks sit on top of each other */
@@ -2753,21 +2756,34 @@
     // A decision says which way it went, not just that it happened (Ed, 160):
     // a matched pair — same green square, check or cross — so the outcome is
     // legible before you open anything.
+    // **✔ U+2714 and ✖ U+2716**, and the second one is a considered choice
+    // (Ed, 2026-08-17: *is there an X that's the same shape as ✔?*). The pair
+    // Unicode *designed* is 2714/2718 ✔✘, and it is the wrong one: 2718 is
+    // calligraphic — tapered strokes with a lean — so beside a solid heavy tick
+    // it reads lighter and tilted. 2716 is the same solid uniform weight and
+    // sits upright, which is what a pair has to do at 13px in a margin.
     adopted: '✔' + VS16,  // a proposal carried: the charter changed here
-    retired: '✘' + VS16,  // the incumbent held: nothing changed
-    read: '✓' + VS16,     // decided and filed
+    retired: '✖' + VS16,  // the incumbent held: nothing changed
+    // **Filed keeps which way it went** (Ed, 2026-08-17). ☑️ collapsed both
+    // outcomes into one mark the moment you acknowledged them, which threw away
+    // the only thing about a settled clause anybody ever wants from a margin:
+    // *did this change or not*. Same two glyphs, grey — because the difference
+    // between decided and filed is whether it still wants something from you,
+    // and grey is exactly what this surface uses to say that.
+    filedYes: '✔' + VS16, // filed, and the charter changed
+    filedNo: '✖' + VS16,  // filed, and the incumbent held
   };
   // did anything displace the incumbent?
   const carried = (g) => fieldOf(g).some((c) => c.won);
   // Which of the four drawn marks this is, so CSS can colour it. Only they
   // need it: every other mark is an emoji and brings its own colour with it.
-  const markClass = (m) => (m === MARK.adopted ? 'mk-adopted' : m === MARK.retired ? 'mk-retired'
-    : m === MARK.read ? 'mk-read' : m === MARK.shifted ? 'mk-shifted' : '');
+  const DRAWN = ['adopted', 'retired', 'filedYes', 'filedNo', 'shifted'];
   // The glyph, wrapped so it can be coloured wherever it is drawn — the queue,
   // the contents rail, the gutter tab and a card's head all show the same mark
   // and must show it the same way.
-  const mkHtml = (m) => { const c = markClass(m); return c ? '<span class="mk ' + c + '">' + m + '</span>' : m; };
-  const markHtml = (m) => '<span class="qmark" aria-hidden="true">' + mkHtml(m) + '</span>';
+  const mkHtml = (kind) => (DRAWN.includes(kind)
+    ? '<span class="mk mk-' + kind + '">' + MARK[kind] + '</span>' : MARK[kind]);
+  const markHtml = (kind) => '<span class="qmark" aria-hidden="true">' + mkHtml(kind) + '</span>';
   // The rail is already a margin against the document; the section sign is a
   // citation mark, and nothing here is being cited (Ed, 188).
   const plainLabel = (t) => String(t ?? '').replace(/^§\s*/, '');
@@ -2806,7 +2822,7 @@
           group.map((x) => '<button class="sealdot" data-q="' + x.g.id + '" data-site="' + (x.site ?? '') +
             '" aria-current="' + (openId === x.g.id) +
             '" title="' + esc(plainLabel(x.label || x.g.qLabel)) + ' — ' + esc((x.g.decided || {}).outcome || 'sealed') + '">' +
-            mkHtml(MARK.read) + '</button>').join('') +
+            mkHtml(markKindOf(x.g)) + '</button>').join('') +
           '</div></li>';
         continue;
       }
@@ -2816,7 +2832,7 @@
           '<button class="unread" data-q="' + g.id + '" aria-current="' + (openId === g.id) + '"' +
           washAttrs(qKey(g, e), wash(g, 'closed').col, wash(g, 'closed').fill) +
           ' title="' + esc(d.outcome || 'sealed') + ' — you haven’t opened this one yet">' +
-          '<span class="ql">' + markHtml(carried(g) ? MARK.adopted : MARK.retired) +
+          '<span class="ql">' + markHtml(markKindOf(g)) +
           '<span class="qt">' + plainLabel(e.label || g.qLabel) + '</span>' +
           '<span class="qv when">' + esc(d.when || '') + '</span></span>' +
           '</button></li>';
@@ -2854,7 +2870,7 @@
             ? 'Your draft — not proposed yet.'
             : (g.cap || 'Yours, in the race')) + '">' +
           (drafting
-            ? '<span class="ql">' + markHtml(MARK.propose) + '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span></span>' +
+            ? '<span class="ql">' + markHtml('propose') + '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span></span>' +
               where +
               '<span class="qwhy' + (why ? '' : ' empty') + '">' +
               (why ? esc(why) : 'no reason given yet — say what this is for') + '</span>' +
@@ -2863,7 +2879,7 @@
             // wrote this* and the entry is the accent blue; a word saying it a third
             // time is the surface reading its own glossary aloud. The place count
             // survives, because it says *which* place and nothing else does.
-            : '<span class="ql">' + markHtml(MARK.propose) + esc(plainLabel(e.label || g.qLabel)) +
+            : '<span class="ql">' + markHtml('propose') + esc(plainLabel(e.label || g.qLabel)) +
               (e.of > 1 ? '<span class="qv"> · ' + e.n + ' of ' + e.of + ' places</span>' : '') + '</span>') +
           '</button></li>';
         continue;
@@ -2919,10 +2935,10 @@
           // an ellipsis — unreadable, and unreadable text is worse than none, because
           // it looks like something you are failing to read. The mark already says you
           // have judged; the card says what you said, in full, when you open it.
-          ? '<span class="ql">' + markHtml(g.shifted ? MARK.shifted : MARK.deciding) +
+          ? '<span class="ql">' + markHtml(g.shifted ? 'shifted' : 'deciding') +
             plainLabel(e.label || g.qLabel) + '</span>'
           : '<span class="ql">' +
-            markHtml(markOf(g)) +
+            markHtml(markKindOf(g)) +
             (e.prio
               // four lines, so the two names can be read against each other
               // rather than colliding and truncating on one (Ed, 284)
@@ -3702,7 +3718,7 @@
     // the thing you clicked to open the card is the thing you click to close
     // it — and it never moves under the pointer.
     const marks = '<span class="chipcol"><span class="achip wmark" role="button" tabindex="0"' +
-      ' data-anchor="' + s.id + '"' + chipStyle(s) + ' title="Close this one">' + mkHtml(markOf(s)) + '</span>' +
+      ' data-anchor="' + s.id + '"' + chipStyle(s) + ' title="Close this one">' + mkHtml(markKindOf(s)) + '</span>' +
       (o.chips || '') + '</span>';
     return '<div class="clausehead">' +
       '<div class="headlab"><span>' + (o.label || 'The clause as it stands') + '</span></div>' +
@@ -4689,7 +4705,7 @@
       const i = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === key) : -1;
       const where = g.kind === 'patch' ? ' · place ' + (i + 1) + ' of ' + g.sites.length : '';
       return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '"' + chipStyle(g) + ' title="' +
-        esc(plainLabel(g.qLabel)) + where + ' — open it">' + mkHtml(markOf(g)) + '</span>';
+        esc(plainLabel(g.qLabel)) + where + ' — open it">' + mkHtml(markKindOf(g)) + '</span>';
     }).join('');
   }
 
@@ -5037,7 +5053,7 @@
             const siteIdx = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === line.key) : -1;
             const where = g.kind === 'patch' ? ' · place ' + (siteIdx + 1) + ' of ' + g.sites.length : '';
             return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '"' + chipStyle(g) + ' title="' +
-              esc(plainLabel(g.qLabel)) + where + ' — open it">' + mkHtml(markOf(g)) + '</span>';
+              esc(plainLabel(g.qLabel)) + where + ' — open it">' + mkHtml(markKindOf(g)) + '</span>';
           }).join('');
           html +=
             '<p class="anch editable' + (openId === primary.id ? ' active' : '') + '" data-key="' + line.key +
@@ -5058,7 +5074,7 @@
               anchWash(wasResolved, openId === wasResolved.id, line.key) : '') +
             (line.key ? ' data-key="' + line.key + '"' : '') + '>' +
             (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
-              '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + mkHtml(markOf(wasResolved)) + '</span></span>' : '') +
+              '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + mkHtml(markKindOf(wasResolved)) + '</span></span>' : '') +
             esc(line.x) + '</p>';
         }
       }
@@ -5936,9 +5952,14 @@
       hue ? tint(hue, active ? 0.30 : 0.17) : 'transparent');
   };
 
-  const markOf = (g) => {
+  // **The state, not the glyph.** Two states can now share a character — a
+  // filed tick and an adopted one are the same ✔ in two colours — so everything
+  // that used to compare marks compares *kinds* instead. It also collapses the
+  // duplicated ternary that markOf and its colour lookup had each grown.
+  const markKindOf = (g) => {
     const st = stateOf(g);
-    return st === 'sealed' ? (isUnread(g) ? (carried(g) ? MARK.adopted : MARK.retired) : MARK.read)
+    return st === 'sealed' ? (isUnread(g) ? (carried(g) ? 'adopted' : 'retired')
+                                          : (carried(g) ? 'filedYes' : 'filedNo'))
       // ✏️ all the way to the seal (Ed, 260). It had been ✏️ while unproposed
       // and then the ordinary 💡, on the reading that a proposal of yours is a
       // proposal like any other and green says whose. That works wherever the
@@ -5948,22 +5969,23 @@
       // wanting your judgment. The pencil means *you wrote this*, which is the
       // rule 241's own note was already reaching for: subject and act agree,
       // because in both cases it is you, writing.
-      : st === 'yours' ? MARK.propose
+      : st === 'yours' ? 'propose'
       // before ⏳, and for the same reason `anchHue` tests it first: ⚔️ is what
       // a race becomes *instead of* going quiet on you
-      : stuck(g) ? MARK.stuck
-      : st === 'deciding' ? (g.shifted ? MARK.shifted : MARK.deciding)
-      : g.kind === 'diagonal' ? MARK.weigh
-      : g.id === topUrgentId ? MARK.urgent
-      : MARK.needs;
+      : stuck(g) ? 'stuck'
+      : st === 'deciding' ? (g.shifted ? 'shifted' : 'deciding')
+      : g.kind === 'diagonal' ? 'weigh'
+      : g.id === topUrgentId ? 'urgent'
+      : 'needs';
   };
+  const markOf = (g) => MARK[markKindOf(g)];
 
   // When more marks than fit, the space goes to whatever still wants something
   // from you (Ed, 178). Filed decisions go first, then the states with nothing
   // to do at all, and an open question is the last thing to be dropped.
-  const KEEP_ORDER = ['urgent', 'stuck', 'propose', 'needs', 'adopted', 'retired', 'deciding', 'shifted', 'read'];
-  const keepRank = (mark) => {
-    const i = KEEP_ORDER.findIndex((k) => MARK[k] === mark);
+  const KEEP_ORDER = ['urgent', 'stuck', 'propose', 'needs', 'adopted', 'retired', 'deciding', 'shifted', 'filedYes', 'filedNo'];
+  const keepRank = (kind) => {
+    const i = KEEP_ORDER.indexOf(kind);
     return i < 0 ? KEEP_ORDER.length : i;
   };
 
@@ -5976,7 +5998,7 @@
     // happened here*, which is a different question with a different answer.
     // The `+n` tally counts what it hides, so a section of nothing but filed
     // decisions now reads as empty rather than as a row of ticks.
-    const marks = entriesForSection(n).map(markOf).filter((m) => m !== MARK.read);
+    const marks = entriesForSection(n).map(markKindOf).filter((k) => k !== 'filedYes' && k !== 'filedNo');
     if (!marks.length) return '';
     // choose by what is actionable, then draw in document order
     const keep = new Set(marks.map((m, i) => [m, i])

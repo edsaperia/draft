@@ -2487,3 +2487,30 @@ reason on the argument that the control is about the wording rather than about
 the block, which is true and is outweighed: a reader who has learnt where a card
 puts its controls should not have to learn again here. **Consistency across the
 surface beats local precision inside one card.**
+
+### The matched pair, and filed keeps its answer (2026-08-17)
+
+Ed asked whether there is an X the same shape as ✔. There is, and it is **not**
+the one Unicode designed for the job: the pair is 2714/2718 ✔✘, and 2718 is
+calligraphic — tapered strokes with a lean — so beside a solid heavy tick it
+reads lighter and tilted. **U+2716 ✖** is the same solid uniform weight and sits
+upright, which is what a pair has to do at 13px in a margin. Rendered all five
+candidate pairings at 34px to see it; the difference is obvious once they are
+side by side and invisible in a spec table.
+
+**Green ✔ / green ✖ for decided, grey ✔ / grey ✖ for filed.** Which way it went
+is the glyph; whether it still wants something from you is the colour. That is
+the rule the whole palette already runs on, arrived at from the other end.
+
+The grey ✖ is new, and it is the better half of the change. ☑️ **collapsed both
+outcomes** into one mark the moment you acknowledged them — so a settled clause
+in the margin stopped telling you the one thing anybody ever wants from it:
+*did this change, or not?* A row of sealed dots used to be four identical ticks;
+it now reads ✔✖✖✔, which is a summary of what happened here.
+
+One refactor came with it, and it was overdue. Two states now share a character,
+so nothing can identify a mark by its glyph any more. `markKindOf` returns the
+**state** and `MARK` maps state to glyph — which also collapsed the duplicated
+ternary that `markOf` and the colour lookup had each grown a copy of. Missing
+three call sites that still passed glyphs printed `undefined` in the rail, which
+is the good kind of bug: loud, immediate, and impossible to ship.
