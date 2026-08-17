@@ -2405,3 +2405,46 @@ they would not fit, so this is the honest version of that rule: a filed decision
 is finished, and the rail is the column read as *where is there anything*. In
 the gutter it stays, because there the question is *what has happened here* —
 a different question with a different answer.
+
+### A rhythm audit of the decision cards (2026-08-17)
+
+Measured every card type's bands — quick, race, patch, your-proposal, editing,
+deadlock, sealed — and the good news first: the **band rhythm was already
+consistent**, and it is a single rule. *Twelve above and twelve below every
+hairline.* Card padding 14/24, the `clause-head` closing on 12, each `field`
+opening on a hairline with 12 above and below, the commit row the same, a `foot`
+hanging 8 under it with no rule.
+
+Five strays, all of them inner boxes tuned in isolation rather than against the
+rhythm around them:
+
+- `.pnav`, the patch stepper: `gap: 10px; margin-bottom: 10px` beside a
+  `padding-bottom` of 8. Three different numbers in one three-line rule.
+- `.ranked` and `.replaced`, the sealed record's blocks: `padding: 10px 14px`,
+  where their sibling `.stoodblock` used `12px 14px`. Three boxes in one card,
+  two vertical paddings.
+- `.replaced` again and `.stoodblock`: `margin-bottom: 14px`, where every band on
+  every card closes on 12.
+- The deadlock desk: `margin-top: 16px` on a band whose hairline everything else
+  clears by 12 — and its field's blocks at 16/16, which I had set deliberately
+  for a long field and which is exactly the kind of local reasoning this audit
+  exists to catch. The hairline separates them; it does not need help.
+- `.lanectl`, the B / I / [] strip: `padding: 5px 8px 0`. 5 is not on the grid at
+  all.
+
+All now on the 4px scale and on the card's own rhythm. Nothing moved more than
+4px, which is the point: **these are the errors you cannot see one at a time and
+can feel all at once.**
+
+**And the commit buttons follow the box up.** The lift was already matched at
+rest — both `--shadow-md` — but the box climbs to `--shadow-xl` on
+`:focus-within`, so for the whole time anybody is actually writing, the buttons
+sat visibly below the thing they belong to. Keyed off the card, since a box
+cannot style its own siblings.
+
+**The draft entry no longer appears while you write in the ⚔️ desk** (Ed). It put
+a second rail entry beside the ⚔️ one, at the same clause, for a proposal nobody
+else can see yet. The entry earns its place on an ordinary draft because it is
+where you read your rationale back as you type; on the deadlock card that field
+is six inches away on the card you are looking at. It appears when you propose,
+which is when there is something to point at.

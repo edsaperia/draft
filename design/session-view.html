@@ -981,7 +981,7 @@
   .deadsay .eyebrow { color: var(--stuck-ink); }
   /* Eight wordings is a long read, so the blocks get more air between them than
      a two-candidate field needs — the separator is doing more work here. */
-  .dead-open .propblock + .propblock { margin-top: var(--s4); padding-top: var(--s4); }
+
   /* The desk is a band like the others (Ed, 2026-08-17 — *it should look like
      the other proposal boxes*). It had a blue ground on the argument that it is
      the one band that is not reference; but the box inside it is already lifted
@@ -990,7 +990,7 @@
      like a different kind of object from the wordings it answers. Its label
      carries the act, and that is enough. */
   .bridgedesk .fieldlab { color: var(--stuck-ink); }
-  .dead-open .field.bridgedesk { margin-top: var(--s4); }
+  .dead-open .field.bridgedesk { margin-top: var(--s3); }
   /* 🗑️ and ✏️ are lifted, because they are actions **for the box above them**
      (Ed, 2026-08-17) and the box is lifted. A flat control under a raised
      surface reads as belonging to the card rather than to the thing it acts on;
@@ -1001,6 +1001,13 @@
   .dead-open .commitrow .btn:not([aria-pressed="true"]) { box-shadow: var(--shadow-md); }
   .editcard .commitrow .btn:not([disabled]):hover,
   .dead-open .commitrow .btn:not([disabled]):hover { box-shadow: var(--shadow-lg); }
+  /* And they **follow the box up** (Ed, 2026-08-17: *still not the height of the
+     edit box*). The box lifts to --shadow-xl while you are writing in it, and
+     buttons left at --shadow-md then sat visibly below the thing they belong to
+     for exactly the minute anybody is looking at them. Keyed off the card, since
+     the box cannot style its own siblings. */
+  .editcard:focus-within .commitrow .btn:not([disabled]):not(.holding),
+  .dead-open:focus-within .commitrow .btn:not([disabled]):not(.holding) { box-shadow: var(--shadow-xl); }
   .editcard .commitrow .btn:not([disabled]):active,
   .dead-open .commitrow .btn:not([disabled]):active,
   .editcard .commitrow .btn.holding,
@@ -1114,7 +1121,7 @@
   @media (prefers-reduced-motion: reduce) { .lanebox { transition: none; } }
   .lanebox .lanectl {
     display: flex; align-items: center; justify-content: flex-end; gap: var(--s2);
-    padding: 5px 8px 0;
+    padding: var(--s1) var(--s2) 0;
   }
   .lanebox .editlane {
     border: 0; padding: var(--s2) 14px var(--s3);
@@ -1325,8 +1332,8 @@
   /* A patch's card says which of its places you are looking at, and lets you
      walk to the others without leaving the judgment (Ed, 181). */
   .pnav {
-    display: flex; justify-content: space-between; align-items: center; gap: 10px;
-    margin-bottom: 10px; padding-bottom: var(--s2); border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; gap: var(--s2);
+    margin-bottom: var(--s3); padding-bottom: var(--s3); border-bottom: 1px solid var(--border);
   }
   .pwhere {
     font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
@@ -1352,13 +1359,13 @@
     color: var(--ok); margin-bottom: 10px;
   }
   .rechead .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
-  .stoodblock { background: var(--ok-subtle); border-radius: var(--r-md); padding: var(--s3) 14px; margin-bottom: 14px; }
+  .stoodblock { background: var(--ok-subtle); border-radius: var(--r-md); padding: var(--s3) 14px; margin-bottom: var(--s3); }
   .stoodblock .rtext { margin-bottom: 0; }
   .stoodblock .swhy { margin-bottom: var(--s2); }
   .stoodblock .mcap { margin-top: var(--s2); }
   .ranked {
     border: 1px solid var(--border); border-radius: var(--r-md);
-    padding: 10px 14px; margin-bottom: var(--s2);
+    padding: var(--s3) 14px; margin-bottom: var(--s2);
   }
   .ranked.stood { background: var(--ok-subtle); border-color: var(--ok); }
   .ranked .rank {
@@ -1380,7 +1387,7 @@
      here. The band is deliberately quiet and dashed: this is the one text on
      the card the charter no longer holds. */
   .replaced {
-    margin: 0 0 14px; padding: 10px 14px;
+    margin: 0 0 var(--s3); padding: var(--s3) 14px;
     border: 1px dashed var(--border); border-radius: var(--r-md);
   }
   .replaced .rtext { color: var(--muted); margin-bottom: 0; }
@@ -2630,8 +2637,19 @@
       // lot (Ed, 232, 237). A site is a *run* of adjacent clauses, because
       // editing across a paragraph break joins them rather than making a second
       // place (Ed, 225) — so the entry stands at the run's first clause.
-      else if (g.kind === 'draft') g.sites.forEach((site, i) =>
-        out.push({ g, site: site.keys[0], label: site.label, n: i + 1, of: g.sites.length }));
+      // **Except where you are writing it inside another card** (Ed,
+      // 2026-08-17). The `deadlock-card` holds its own desk, so a draft started
+      // there put a second entry in the rail beside the ⚔️ one, at the same
+      // clause, for a proposal nobody else can see yet. The rail entry earns its
+      // place on an ordinary draft because it is where you read your rationale
+      // back as you type — and on the deadlock card that field is six inches
+      // away on the card you are looking at. It appears when you propose, which
+      // is when there is something to point at.
+      else if (g.kind === 'draft') g.sites.forEach((site, i) => {
+        const host = SUGGS.find((x) => x.id === openId);
+        if (g.unproposed && host && stuck(host) && (host.keys ?? []).includes(site.keys[0])) return;
+        out.push({ g, site: site.keys[0], label: site.label, n: i + 1, of: g.sites.length });
+      });
       // A diagonal gets **one** entry, not one per clause (Ed, 2026-08-17). Two
       // entries were the patch grammar borrowed — a patch has one judgment at
       // several places, so standing at each of them is telling you where the
