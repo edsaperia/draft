@@ -2821,3 +2821,17 @@ The eyebrow keeps its two, because there the numbers *are* the point: what the
 room came to, and what it had to clear. That is the shape this card has been
 converging on all evening — **the quantities live in one line at the top, and
 everything below it is text in the order the room put it**.
+
+Correction, same minute: Ed meant the number at the top **left** — the rank —
+not the score at the right. So the scores came straight back and the numerals
+went instead, which is the better cut of the two. A numeral on each box was
+counting the boxes for a reader who can see them, and it made the field look
+like a leaderboard when what a record wants to say is *here is everything that
+was tried, best first*. The score is the one that carries something the ordering
+does not: how close each came.
+
+Worth keeping the shape of the mistake, since it is a cheap one to repeat: the
+argument I wrote for removing the scores — *the ordering already says it* — was
+a perfectly good argument, and it was an argument about the **other** number.
+A justification that fits the thing you removed is not evidence you removed the
+right thing.

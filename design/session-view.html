@@ -3979,13 +3979,14 @@
     //
     // The eyebrow keeps its two, because there the numbers are the point: what
     // the room came to, and what it had to clear.
-    const line = (c) => (c.incumbent && !held ? '<span class="pline ref">Previous text</span>' : '');
+    const line = (c) => (c.incumbent
+      ? (held ? '' : '<span class="pline ref">Previous text</span>')
+      : c.p == null ? '' : '<span class="pline">' + pct(c.p) + '</span>');
     const skey = (s.keys ?? [])[0];
     // Whichever text is the clause at the head does not print itself again: the
     // winner where it carried, the incumbent where it held. That is the whole of
     // the duplication, and it is the same rule in both directions.
     const atHead = (c) => (c.won || (c.incumbent && held));
-    let rank = 0;
     // **The card starts at the top of the field** (Ed, 2026-08-17). There was a
     // clause-head above it labelled *the clause as it now stands*, and then the
     // same text again as the first entry — because on a decided card the top of
@@ -4007,15 +4008,17 @@
     const best = Math.max(0, ...field.map((c) => c.p ?? 0));
     const top = skey ? ranked[0] : null;
     const rest = top ? ranked.slice(1) : ranked;
-    if (top && !top.incumbent) rank++;
+
     // Where the incumbent is in the list its right-hand slot now names it, so the
     // left-hand tag would be saying it twice; where it is at the *head* it kept
     // the clause and there is no previous text to point at, so the label carries
     // the fact and the slot stays empty.
-    const tag = (c) => (c.incumbent
-      ? (held ? '<span class="rsub">the text that stood</span>' : '')
-      : '<span class="rank">' + rank + '</span>' + c.label +
-        (c.won ? '<span class="rsub stood">adopted</span>' : ''));
+    // **No rank number** (Ed, 2026-08-17). The list is in order, so a numeral on
+    // each box was counting the boxes for a reader who can see them — and it made
+    // the field look like a leaderboard, when what a record wants to say is *here
+    // is everything that was tried, best first*. The score at the right is the
+    // one that carries something the ordering does not: how close each came.
+    const tag = (c) => (c.incumbent && held ? '<span class="rsub">the text that stood</span>' : '');
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
@@ -4051,7 +4054,6 @@
       (rest.length
         ? '<div class="field">' +
           rest.map((c) => {
-            if (!c.incumbent) rank++;
             return '<div class="ranked' + (c.incumbent ? ' wasthere' : '') + '">' +
             '<div class="rtag">' + tag(c) + line(c) + '</div>' +
             '<div class="rtext">' + esc(c.text) + '</div>' +
