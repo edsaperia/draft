@@ -61,7 +61,7 @@
            around; it keeps grey because what it is telling you is that
            your old judgment is gone, not that it wants a new one yet. */
     --lc-urgent: 253, 126, 20;    /* 🔥 orange — wants you most        */
-    --lc-open: 245, 197, 24;      /* 💡 ❌ yellow — open, or stuck     */
+    --lc-open: 245, 197, 24;      /* 💡 ⚔️ yellow — open, or stuck     */
     --lc-weigh: 214, 51, 132;     /* 🌶️ pink — which question is hotter */
     --lc-deciding: 154, 162, 170; /* ⏳ grey — judged, running without you */
     --lc-closed: 154, 162, 170;   /* ✅ ❎ 🔄 ☑️ grey — nothing to do  */
@@ -1825,7 +1825,7 @@
     // ---- one clause wearing the whole alphabet (Ed, 2026-08-17) ---------
     // Five suggestions on 'guests', deliberately one of each kind, so the
     // `clause-tab` stack can be looked at with every hue and every state in it
-    // at once: 💡 open, ⏳ judged-and-running, ✏️ yours, ❌ deadlocked, ☑️ filed.
+    // at once: 💡 open, ⏳ judged-and-running, ✏️ yours, ⚔️ deadlocked, ☑️ filed.
     // It is a stress case rather than a typical clause — the point is to see
     // what five tabs of five colours do to the gutter and to the card that
     // opens under them.
@@ -1845,10 +1845,15 @@
       rationale: 'Nobody minds two friends. Nine is a party, and a party is a thing you mention.'
     },
     {
+      // **A deadlock you find out about by judging** (Ed, 297/298). This one is
+      // stuck and says nothing about it: it is an ordinary 💡 race until you
+      // have judged it, and turns ⚔️ the moment you do. The pair below it is
+      // already judged, so the two states can be seen side by side.
       id: 'race-guests-notice', kind: 'quick', keys: ['guests'], state: 'needs',
       deadlocked: true, bounty: 0.55,
       qLabel: '§ Guests — notice', urgency: 0.42,
-      pct: 48, cap: 'deadlocked — more judgments won’t move it; only a new proposal can',
+      pct: 48, cap: 'gathering — needs roughly 4 more judgments',
+      capStuck: 'deadlocked — more judgments won’t move it; only a new proposal can',
       marked: 'Friends of the house are welcome whenever a member is in<del>. </del><ins>, and a member expecting more than one says so in the Members’ Book. </ins>',
       rationale: 'The house splits cleanly on this and has not moved in a week: half want it written down, half think a rule about friends is the beginning of the end. Somebody needs to find the version both halves can live with.'
     },
@@ -1927,13 +1932,17 @@
       }],
     },
     {
-      id: 'race-sanctions', kind: 'race', keys: ['sanctions'], state: 'needs', deadlocked: true,
+      // Already judged, so it wears ⚔️ on load — the state you reach by getting
+      // through a race, without having to get through one first.
+      id: 'race-sanctions', kind: 'race', keys: ['sanctions'], state: 'deciding', deadlocked: true,
+      pick: 'a', verdict: 'preferred “The house may ask for an apology or…”',
       qLabel: '§ Sanctions',
       // judgment leverage is nil here, which is what deadlocked *means*; the
       // rail ranks it on `bounty` instead — resolvable disagreement × salience,
       // the bounty board's own score (Ed, 223)
       urgency: 0.05, bounty: 0.86,
-      pct: 100, cap: 'deadlocked — more judgments won’t move it; only a new proposal can',
+      pct: 100, cap: 'gathering — needs roughly 3 more judgments',
+      capStuck: 'deadlocked — more judgments won’t move it; only a new proposal can',
       race: {
         a: {
           text: 'The house may ask for an apology or suspend a right for a season; removal under Part III is available only where a sanction has already been imposed and has not been kept to.',
@@ -2377,6 +2386,20 @@
     : g.mine ? 'yours'
     : (g.state === 'deciding' || resolved.has(g.id)) ? 'deciding' : 'needs';
   const isJudged = (g) => stateOf(g) !== 'needs';
+  // **A deadlock is not shown until you have paid into it** (Ed, 297/298,
+  // 2026-08-17: *force drafters to do all the judging in the race first, and
+  // then encourage them to propose alternatives*). Until you have judged, a
+  // stuck race is an ordinary 💡 race and asks you for the one thing you can
+  // still contribute; only when it has nothing left to ask you does it turn
+  // ⚔️ and ask for a draft instead.
+  //
+  // Which makes deadlock a **personal** state, like ⏳, and finally makes the
+  // whole alphabet consistent: a mark says what the document wants *from you*,
+  // not what state the machine is in. It is not only clearer, it is better
+  // evidence — the judgments this extracts are exactly the ones most likely to
+  // unstick the race, and a deadlock declared before the room has finished
+  // judging is declared early.
+  const stuck = (g) => !!g.deadlocked && isJudged(g);
 
   // ---- the end of the queue (SPEC §8.3a, Q291b) ------------------------
   // A salience diagonal is not a rate. It is served only where prioritisation
@@ -2403,7 +2426,7 @@
   // judge.
   const served = (g) => !isDiagonal(g) || g.state === 'deciding' || resolved.has(g.id) ||
     (nothingToJudge() && liveQuestions() >= ROSTER);
-  const judgeable = (g) => stateOf(g) === 'needs' && !isDiagonal(g) && !g.deadlocked;
+  const judgeable = (g) => stateOf(g) === 'needs' && !isDiagonal(g);
   const nothingToJudge = () => !SUGGS.some(judgeable);
   // The volume gate: as many live **questions** as there are people on the
   // roster, a race counting once — which it does here, because a suggestion in
@@ -2425,7 +2448,7 @@
   // A deadlocked race is not a low-urgency one, it is a *differently* addressed
   // one (Ed, 166): no judgment of yours can move it, so the urgency ramp does
   // not apply, and it says so in its own words.
-  const classFor = (g) => (g.mine ? 'yours' : g.deadlocked ? 'wants' : 'needs');
+  const classFor = (g) => (g.mine ? 'yours' : stuck(g) ? 'wants' : 'needs');
   const tint = (hue, a) => 'rgba(var(--lc-' + hue + '), ' + a.toFixed(3) + ')';
   // Colour says lifecycle (Ed, 162); the wash is still the progress bar it
   // always was, so how far the fill reaches is closeness to resolution. On a
@@ -2574,7 +2597,14 @@
     // The rail says what is true; the buttons say what you can do. So a
     // deadlocked race is marked "stuck" — same yellow as 💡, because it is
     // still open — and ✏️ lives on the drafting it leads to (Ed, 173, 241).
-    stuck: '❌',      // judging cannot move this; only a new draft can
+    //
+    // ⚔️ rather than ❌ (Ed, 2026-08-17). A cross says *this failed*, which is
+    // both wrong and discouraging: nothing failed, the room disagrees, and the
+    // disagreement is exactly what makes writing a bridge worth doing. Crossed
+    // swords say two things are still fighting, which is the true statement and
+    // the one that makes the ask legible. It also stops ❌ being read as a close
+    // button, which at 13px beside a card it plainly was.
+    stuck: '⚔️',      // judging cannot move this; only a new draft can
     // ✏️ is the writing action *and* the state of a draft of your own that is
     // not yet proposed (Ed, 241). The overload is harmless because subject and
     // act agree — in both cases it is you, writing. Once you propose it, the
@@ -2614,7 +2644,7 @@
     // differently-addressed kinds are never it: a stuck race wants a draft and
     // a diagonal wants a ranking, and both say so with their own glyph.
     const live = queueEntries().filter((e) =>
-      stateOf(e.g) === 'needs' && !e.g.deadlocked && e.g.kind !== 'diagonal');
+      stateOf(e.g) === 'needs' && !stuck(e.g) && e.g.kind !== 'diagonal');
     topUrgentId = live.length
       ? live.reduce((best, e) => ((e.g.urgency ?? 0) > (best.urgency ?? 0) ? e.g : best), live[0].g).id
       : null;
@@ -2702,14 +2732,21 @@
       const locked = g.locked || st === 'sealed';
       const verdict = verdicts.get(g.id) || g.verdict;
       const u = g.urgency ?? 0.5;
-      const stateCls = st === 'deciding' ? 'deciding' : classFor(g);
-      const cap = justJudged ? 'still deciding — click to change your mind' : g.cap;
+      const stateCls = (st === 'deciding' && !stuck(g)) ? 'deciding' : classFor(g);
+      // A stuck race says what it is only once it has stopped asking you to
+      // judge; before that it carries an ordinary race's caption, because it
+      // *is* one until you are through with it.
+      const cap = stuck(g) ? (g.capStuck || g.cap)
+        : justJudged ? 'still deciding — click to change your mind' : g.cap;
       const sib = e.of > 1 ? ' sib' : '';
 
       // A judged entry is one line: label, your verdict, and — if the ground
       // moved under it — a lock mark, with the whole story in the tooltip.
-      const oneLine = st === 'deciding';
-      const top = !oneLine && !g.deadlocked && g.id === topUrgentId && !seenTop;
+      // Judged entries collapse to one line because nothing is being asked of
+      // them. A stuck race is the exception in both directions: you have judged
+      // it, and it is now asking for the largest thing on the surface.
+      const oneLine = st === 'deciding' && !stuck(g);
+      const top = !oneLine && !stuck(g) && g.id === topUrgentId && !seenTop;
       if (top) seenTop = true;
       html +=
         '<li class="qitem' + (top ? ' mosturgent' : '') + '" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
@@ -2722,7 +2759,7 @@
           // the hue comes from `anchHue` so the rail entry and the clause it
           // stands beside cannot drift apart — one lifecycle, one colour
           const w = oneLine ? wash(g, g.shifted ? 'closed' : 'deciding')
-            : wash(g, anchHue(g) || 'open', g.deadlocked ? 0.55 : u);
+            : wash(g, anchHue(g) || 'open', stuck(g) ? 0.55 : u);
           // **A diagonal has no progress** (Ed, 2026-08-17). The fill is
           // closeness-to-resolution, and a diagonal never resolves: salience is
           // a continuous ranking with no bar to clear and no threshold to
@@ -2867,7 +2904,7 @@
         // race. So it gets a floor: above ordinary questions, below the flame
         // and below the stuck races, which have drafting leverage on top.
         mine: !!g.mine,
-        u: isUnread(g) ? 0.5 : g.deadlocked ? DEADLOCK_FLOOR + (1 - DEADLOCK_FLOOR) * (g.bounty ?? 0.5)
+        u: isUnread(g) ? 0.5 : stuck(g) ? DEADLOCK_FLOOR + (1 - DEADLOCK_FLOOR) * (g.bounty ?? 0.5)
           : g.kind === 'diagonal' ? Math.max(g.urgency ?? 0, DIAGONAL_FLOOR)
           : (g.urgency ?? 0) };
       // Whatever is open is pinned for as long as it is open, whatever its
@@ -3226,8 +3263,14 @@
     // one. What is left falls on the page, which is where a shadow belongs.
     const clipHoles = () => {
       const defs = document.createElementNS(SVGNS, 'defs');
+      // `.achip` joined the list when the patch link moved into the chip-gutter
+      // (2026-08-17): a `clause-tab` is an object at card height with a contact
+      // shadow of its own, and it sits *outside* its card's box, so punching the
+      // cards alone left the new cable shadowing every tab it ran between —
+      // including the two it joins.
       const boxes = [
         ...doc.querySelectorAll('.sugg[data-card]'),
+        ...doc.querySelectorAll('.achip'),
         ...queueEl.querySelectorAll('button'),
       ].map((e) => e.getBoundingClientRect()).filter((r) => r.width && r.height);
       let d = 'M0 0H' + innerWidth + 'V' + innerHeight + 'H0Z';
@@ -3253,7 +3296,6 @@
       wiresEl.appendChild(defs);
     };
 
-    const ys = [];
     for (const { el, site } of starts) {
       const t = anchorForEntry(id, site);
       if (!t) continue;
@@ -3269,7 +3311,6 @@
       // bites and the wire is flat by construction rather than by coincidence.
       const tx = r.right;
       const ty = Math.min(Math.max(sy, r.top + 8), Math.max(r.top + 8, r.bottom - 8));
-      ys.push(sy);
       const down = ty > sy;
       const rad = Math.max(0, Math.min(8, Math.abs(ty - sy) / 2, (sx - gx) / 2, (gx - tx) / 2));
       line('M ' + sx + ' ' + sy +
@@ -3280,8 +3321,47 @@
         ' H ' + tx);
       dot(tx, ty);
     }
-    // the spine: what makes several entries visibly one judgment
-    if (ys.length > 1) line('M ' + gx + ' ' + Math.min(...ys) + ' V ' + Math.max(...ys));
+    // **A patch is joined at its cards, not in the rail** (Ed, 2026-08-17).
+    // The spine used to run down the middle of the gutter, bracketing the runs
+    // where they left the rail — which said *these three pointers are one*
+    // rather than *these three clauses are one*, and at three sites it read as a
+    // bracket rather than as an object. The link now runs down the
+    // `chip-gutter`, between the `clause-tab`s of the patch's own cards: it
+    // joins the things themselves, in the column where the document says what is
+    // happening to it. It is also the only cable on the surface whose two ends
+    // are both already marked, so it carries no cap — a landing ball says *this
+    // clause, here*, and both of these ends are a tab that has already said it.
+    //
+    // It leaves each tab by the **side** and curves up or down onto a run just
+    // outside the column (Ed, 2026-08-17), which is the same shape every other
+    // cable on the surface makes — a stub, a corner, a straight run — and it is
+    // what settles the stacking problem outright. Drawn end-to-end between the
+    // tabs it had to pick a lane through a clause that stacks several, and the
+    // first version ran straight down through the tab below its own; a cable
+    // that never enters the column cannot cross anything in it, and it can leave
+    // from the patch's own tab rather than from the strip that happens to hold
+    // it. Consecutive segments share the run and overlap at each middle tab,
+    // which costs nothing — the ink group carries the alpha, so a shape drawn
+    // twice is not drawn darker — and gives the middle sites a proper drop off a
+    // through-run rather than two cables meeting end to end.
+    const tabs = [...doc.querySelectorAll('.sugg[data-card="' + id + '"] .achip.wmark')]
+      .map((e) => e.getBoundingClientRect())
+      .filter((r) => r.width && r.height)
+      .sort((a, b) => a.top - b.top);
+    if (tabs.length > 1) {
+      const bx = Math.min(...tabs.map((r) => r.left)) - 16;
+      for (let i = 1; i < tabs.length; i++) {
+        const a = tabs[i - 1], b = tabs[i];
+        const ay = a.top + a.height / 2, by = b.top + b.height / 2;
+        const rad = Math.max(0, Math.min(10, (by - ay) / 2, (a.left - bx) / 2, (b.left - bx) / 2));
+        line('M ' + a.left + ' ' + ay +
+          ' H ' + (bx + rad) +
+          ' Q ' + bx + ' ' + ay + ' ' + bx + ' ' + (ay + rad) +
+          ' V ' + (by - rad) +
+          ' Q ' + bx + ' ' + by + ' ' + (bx + rad) + ' ' + by +
+          ' H ' + b.left);
+      }
+    }
     // shadow of the union first, then the cable over it
     clipHoles();
     shadow(1, 1, 0.13);
@@ -4474,7 +4554,7 @@
         fieldHtml(
           proposalHtml(s, { v: 'a', html: wordingHtml(cur, s.race.a.text), why: s.race.a.rationale }) +
           proposalHtml(s, { v: 'b', html: wordingHtml(cur, s.race.b.text), why: s.race.b.rationale }), 2) +
-        commitRowHtml(s, s.deadlocked ? proposeBtnHtml() : '') +
+        commitRowHtml(s, stuck(s) ? proposeBtnHtml() : '') +
         reviseNote(s) +
         // The one thing a race card cannot say any other way: neither of its
         // two candidates has an incumbent radio, so nothing on the card votes
@@ -4511,7 +4591,7 @@
         clauseHeadHtml(s, { text: currentTextFor(site.key), key: site.key, v: 'keep',
                             chips: chipsFor(site.key, s.id) }) +
         fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, key: site.key })) +
-        commitRowHtml(s) +
+        commitRowHtml(s, stuck(s) ? proposeBtnHtml() : '') +
         reviseNote(s) +
         '<div class="foot">One judgment for all ' + n +
         ' places — choosing here chooses everywhere.</div>' +
@@ -4538,7 +4618,9 @@
                           chips: chipsFor(key, s.id) }) +
       groundNote(s) +
       fieldHtml(proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, edit: noEdit })) +
-      commitRowHtml(s) +
+      // A bridge is the ask on any deadlocked judgment, not only on a race:
+      // what makes it the ask is that judging has stopped moving it.
+      commitRowHtml(s, stuck(s) ? proposeBtnHtml() : '') +
       reviseNote(s) +
       '</div>'
     );
@@ -5485,8 +5567,13 @@
     const st = stateOf(g);
     if (st === 'sealed') return isUnread(g) ? 'closed' : null;
     if (st === 'yours') return 'yours';
+    // ⚔️ is tested **before** ⏳, because it is the state that replaces it: you
+    // have judged, and where an ordinary race would now go grey and run on
+    // without you, this one still wants something. Yellow, still — the palette's
+    // rule is hot for actions, and a bridge is an action; what changed is which
+    // action, and that is the glyph's job to say, not the hue's.
+    if (stuck(g)) return 'open';
     if (st === 'deciding') return g.shifted ? 'closed' : 'deciding';
-    if (g.deadlocked) return 'open';
     // a diagonal asks for a *ranking*, not a judgment about a wording, so it
     // gets its own hot hue rather than borrowing a proposal's (Ed, 2026-08-17)
     if (g.kind === 'diagonal') return 'weigh';
@@ -5515,8 +5602,10 @@
       // rule 241's own note was already reaching for: subject and act agree,
       // because in both cases it is you, writing.
       : st === 'yours' ? MARK.propose
+      // before ⏳, and for the same reason `anchHue` tests it first: ⚔️ is what
+      // a race becomes *instead of* going quiet on you
+      : stuck(g) ? MARK.stuck
       : st === 'deciding' ? (g.shifted ? MARK.shifted : MARK.deciding)
-      : g.deadlocked ? MARK.stuck
       : g.kind === 'diagonal' ? MARK.weigh
       : g.id === topUrgentId ? MARK.urgent
       : MARK.needs;
@@ -5606,14 +5695,24 @@
     const ax = a.left + a.width / 2, ay = a.top + a.height / 2;
     const dx = b.left + b.width / 2 - ax, dy = b.top + b.height / 2 - ay;
     const len = Math.hypot(dx, dy) || 1;
-    const bow = len * (0.09 + Math.random() * 0.15) * (Math.random() < 0.5 ? -1 : 1);
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const bow = len * (0.09 + Math.random() * 0.15) * side;
     const cx = dx / 2 - (dy / len) * bow, cy = dy / 2 + (dx / len) * bow;
+    // **Sometimes it tumbles** (Ed, 2026-08-17): one turn in five flights, two in
+    // twenty, three in a hundred. A rarity you cannot make happen is worth more
+    // than one you can — the point is the flight you were not expecting, and a
+    // pencil that spun every time would just be a pencil that spins. It turns
+    // the way it was thrown, because the curve and the tumble come off the same
+    // flick of the wrist, and the whole-turn count means it always lands in the
+    // pose it would have landed in anyway.
+    const r = Math.random();
+    const spin = (r < 0.01 ? 3 : r < 0.06 ? 2 : r < 0.26 ? 1 : 0) * 360 * side;
     return Array.from({ length: 21 }, (_, i) => {
       const t = i / 20, u = 1 - t;
       return { transform: 'translate(-50%, -50%) translate(' +
         (2 * u * t * cx + t * t * dx).toFixed(1) + 'px, ' +
         (2 * u * t * cy + t * t * dy).toFixed(1) + 'px) rotate(' +
-        (r0 + (r1 - r0) * t).toFixed(1) + 'deg)' };
+        (r0 + (r1 - r0 + spin) * t).toFixed(1) + 'deg)' };
     });
   }
 
