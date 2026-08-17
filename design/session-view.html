@@ -3318,9 +3318,12 @@
       return '<div class="srationale locked">' + said +
         'This one is settled, so your judgment is on the record as it stands (SPEC §4.4).</div>';
     }
-    return '<div class="srationale">' + said +
-      'Choosing again replaces your earlier judgment — allowed while the race is still deciding; ' +
-      'it locks when the race seals or the text changes under it (SPEC §4.4).</div>';
+    // The unlocked case says only what you said and that it can change. Why it
+    // can, and when it stops being able to, was the design explaining itself —
+    // and the two locked cases above are where that explanation is actually
+    // needed, because there the controls are dead and the reader deserves the
+    // reason (Ed, 2026-08-17).
+    return '<div class="srationale">' + said + 'You can change this while the race runs.</div>';
   }
 
   // The author's pinned rationale (SPEC §2.6, §3.4) is drawn by `speakerHtml`
@@ -3646,7 +3649,6 @@
         ? '<div class="sactions"><button class="btn btn-approve" data-seen="' + s.id + '">OK, I’ve seen this</button>' +
           '<span class="mcap">until then it stays at the top of your margin</span></div>'
         : '<div class="mcap">✓ you’ve seen this one</div>') +
-      '<div class="foot">The adoption-threshold rises through the session, so the bar a judgment cleared is part of the record · authorship sealed · this judgment is locked (SPEC §4.4)</div>' +
       '</div>'
     );
   }
@@ -4316,14 +4318,15 @@
       ' title="Hold to propose this' + (n > 1 ? ' in all ' + n + ' places' : '') +
       ' — one edit leaves your wallet to pay for it">✏️</button>' +
       '</div>' +
-      '<div class="foot">' +
-      (rival
-        ? 'Yours joins the proposals already racing here, and you will be asked to judge it against them'
-        : 'This opens a race against the current text') +
-      ' · your own preference for it is counted without asking (SPEC §3.3)' +
-      (n > 1 ? ' · all ' + n + ' places go in as one change and are judged together' : '') +
-      ' · cancelling costs nothing, and withdrawing later returns the edit in full (§3.3a)' +
-      '</div>' +
+      // Only the two facts that change what pressing ✏️ *does* (Ed, 2026-08-17).
+      // What it costs is now shown rather than said — the pencil crosses the
+      // screen — and the rest was the design explaining itself.
+      (rival || n > 1
+        ? '<div class="foot">' +
+          (rival ? 'Yours joins the proposals already racing here' : '') +
+          (rival && n > 1 ? ' · ' : '') +
+          (n > 1 ? 'All ' + n + ' places go in as one change' : '') + '.</div>'
+        : '') +
       '</div>'
     );
   }
@@ -4372,8 +4375,6 @@
       '<button class="btn btn-propose" aria-pressed="true" disabled' +
       ' title="Proposed — one edit spent. It is in the race now.">✏️ Submitted</button>' +
       '</div>' +
-      '<div class="foot">Withdrawing returns the edit in full and takes the wording out of the race — ' +
-      'it stays in the record either way (SPEC §3.3a, §7) · to reword it, withdraw and write again · authorship sealed</div>' +
       '</div>'
     );
   }
@@ -4444,8 +4445,7 @@
         fieldHtml(q(s.pair[0], 'first') + q(s.pair[1], 'second'), 2, 'The two questions') +
         commitRowHtml(s) +
         reviseNote(s) +
-        '<div class="foot">This ranks the questions, never the answers — neither text changes either way · ' +
-        'it steers whose argument gets the room’s time next (SPEC §8.3) · authorship sealed</div>' +
+        '<div class="foot">This ranks the questions, never the answers — neither text changes either way.</div>' +
         '</div>'
       );
     }
@@ -4467,8 +4467,12 @@
           proposalHtml(s, { v: 'b', html: wordingHtml(cur, s.race.b.text), why: s.race.b.rationale }), 2) +
         commitRowHtml(s, s.deadlocked ? proposeBtnHtml() : '') +
         reviseNote(s) +
-        '<div class="foot">Neither of these has to win: the clause above stands unless the leader clears the bar (SPEC §5) · ' +
-        'authorship sealed · no counts, no standings</div>' +
+        // The one thing a race card cannot say any other way: neither of its
+        // two candidates has an incumbent radio, so nothing on the card votes
+        // to keep the clause, and a reader could reasonably think one of them
+        // must win. Everything else that used to be here was the design
+        // explaining itself.
+        '<div class="foot">Neither of these has to win — the clause above stands unless the leader clears the bar.</div>' +
         '</div>'
       );
     }
@@ -4501,7 +4505,7 @@
         commitRowHtml(s) +
         reviseNote(s) +
         '<div class="foot">One judgment for all ' + n +
-        ' places — they cannot be taken separately, so choosing here chooses everywhere · choosing the current text records a judgment for it · authorship sealed</div>' +
+        ' places — choosing here chooses everywhere.</div>' +
         '</div>'
       );
     }
@@ -4527,7 +4531,6 @@
       fieldHtml(proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, edit: noEdit })) +
       commitRowHtml(s) +
       reviseNote(s) +
-      '<div class="foot">Choosing the current text records a judgment for it · indifference here involves the current text, so it feeds the care map (SPEC §3.2) · authorship sealed · no counts, no standings</div>' +
       '</div>'
     );
   }
@@ -4872,7 +4875,7 @@
     //
     // Under reduced motion the pencil does not travel: it fades at the wallet
     // and arrives at the button. Same gesture, same duration, no flight.
-    const HOLD_MS = 900;
+    const HOLD_MS = 3000;
     let holding = null;
     const flyStop = (fired) => {
       if (!holding) return;

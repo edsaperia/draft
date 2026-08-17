@@ -1941,3 +1941,39 @@ One regression this caused and the shape of it is worth keeping: making
 `.btn-propose` a 3.25rem glyph squashed the proposed card's *✏️ Submitted* to
 52px, because both wear that class. **A rule about a control belongs on the act,
 not on the class** — it is scoped to `[data-act="draft-propose"]` now.
+
+### Three seconds, and a pass over the helper text
+
+**The flight is 3s.** Ed: *slightly too fast to fulfil its purpose as a delay.*
+900ms was a confirmation you could complete by accident; three seconds is a
+decision. It is long enough to be a real hesitation and short enough that the
+thing you are watching stays interesting, which is the whole reason the delay is
+a pencil crossing the screen rather than a spinner.
+
+**Helper text.** The `.foot` on a card had become the place the design explained
+itself — *authorship sealed*, *no counts, no standings*, *the adoption-threshold
+rises through the session* — printed under every card, every time, for a reader
+who either already knows or is not going to learn it from a footnote. It is the
+same fault the rails had before their notes came off in the QA of 2026-08-16, and
+the same fix.
+
+Eighteen of twenty-three cards now carry no foot at all. Five keep one sentence,
+and the test each survivor passed is that **it changes what pressing something
+does, and nothing else on the card says it**:
+
+- a **race**: *neither of these has to win — the clause above stands unless the
+  leader clears the bar.* Both candidates are challengers, so nothing on the card
+  votes to keep the clause, and a reader could reasonably think one must win.
+- a **patch**: *one judgment for all 3 places — choosing here chooses everywhere.*
+- a **diagonal**: *this ranks the questions, never the answers.* The card looks
+  exactly like a judgment and is not one.
+- the **editing card**: only where it is joining an existing race, or covers
+  several places. What it costs is no longer said, because it is now shown.
+
+The revise note went the same way: it says what you said and that you can change
+it, and stops. Why you can, and when you stop being able to, was explanation —
+and the *locked* variants keep their full reason, because there the controls are
+dead and the reader is owed one.
+
+The rule the pass ran on: **a footnote that appears on every card is a design
+note, not information.** Information is what differs between cards.
