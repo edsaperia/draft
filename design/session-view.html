@@ -96,14 +96,23 @@
            lift has to carry the whole job on its own. `--shadow-xl` is the
            only step that is allowed to be big — the earlier lesson holds
            everywhere else, and it is still a light source rather than a
-           halo: the offset grows with the blur, the blur stays near 2.5×
-           it, and the contact shadow keeps the near edge crisp so the card
-           reads as *lifted* rather than as *blurred*. */
-    --shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 1px 1px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.09);
-    --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.10);
-    --shadow-xl: 0 1px 2px rgba(0, 0, 0, 0.07), 0 6px 14px rgba(0, 0, 0, 0.10),
-                 0 18px 40px rgba(0, 0, 0, 0.16);
+           halo: the offset grows with the blur, and the contact shadow
+           keeps the near edge crisp so the card reads as *lifted* rather
+           than as *blurred*.
+
+           **Darker and less diffuse** (Ed, 2026-08-17). The 2.5× blur
+           ratio was tuned when the shadows were the faintest thing that
+           would read; once depth had to carry *open* on its own they were
+           asked to be seen, and a wide faint cast that is asked to be seen
+           becomes exactly the halo 2026-08-16 removed. So the alphas
+           roughly double and the blur comes in to ~1.6× the offset: the
+           same total darkness arrives concentrated instead of spread, and
+           the edge of the shadow is a shape rather than a fade. */
+    --shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.10);
+    --shadow-md: 0 1px 1px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.14);
+    --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.10), 0 4px 7px rgba(0, 0, 0, 0.16);
+    --shadow-xl: 0 1px 2px rgba(0, 0, 0, 0.10), 0 5px 9px rgba(0, 0, 0, 0.15),
+                 0 13px 22px rgba(0, 0, 0, 0.20);
 
     /* --- the three columns ---------------------------------------- */
     /* How long a lifecycle colour takes to become another one. A wash change
@@ -562,6 +571,19 @@
      `pre-wrap` is safe here because the lane's markup is concatenated with no
      incidental whitespace in it. */
   .lp { white-space: pre-wrap; }
+  /* A proposal that removes the text entirely says so (Ed, 274). Result-only
+     rendering shows what would stand, and what would stand here is nothing —
+     which is the one case where "nothing" and "unchanged" look identical,
+     because both are blank. Drawn as a pseudo-element so it is never content:
+     in the editing lane there is nothing to serialise back into the candidate
+     and nothing for the caret to land behind, and the `<br>` under it keeps the
+     line something you can type into. */
+  .lp.empty { position: relative; }
+  .lp.empty::before {
+    content: '(all text removed)';
+    position: absolute; left: 0; top: 0; pointer-events: none;
+    color: var(--muted); font-style: italic; font-size: var(--t-small);
+  }
 
   /* chip-gutter: marks sit in the document's left margin, stacked and
      right-aligned, so the prose column itself stays unbroken. They are the
@@ -849,19 +871,19 @@
   }
   .speaker .said.none { color: var(--muted); font-style: italic; }
 
-  /* ---- redline --------------------------------------------------------
-     91 said the lanes show the result rather than a redline, and it was
-     right *while the current text was in the next column* — you could see
-     what had gone by looking left. Stacked, nothing is in the next column,
-     and a proposal whose only change is a deletion would render as a
-     sentence identical to the clause above it. So a proposal states its own
-     change in full: what it adds, and what it takes out. It is also what
-     the pattern Ed is pointing at does — a suggestion in a document is
-     shown as both halves.
+  /* ---- result-only, and the end of the redline ------------------------
+     91 said a lane shows the result rather than a redline; 274 brought
+     deletions back for the stacked card, on the argument that with nothing
+     in the next column a proposal whose only change is a cut renders as a
+     sentence identical to the clause above it. Ed reversed it 2026-08-17,
+     and the reason is about the reader rather than the tuning: *normal
+     people struggle to read or interpret redlines*.
 
-     The editing lane keeps insertions only: you cannot strike text inside
-     the box you are deleting it in without putting words back under the
-     caret that are not there. */
+     So there is one rendering everywhere — what would stand, with what it
+     adds marked — and the deletion blind spot is covered at its worst case
+     only, by `.lp.empty` saying so in words when a proposal removes the
+     text entirely. `del` is left styled because `markHtml2` can still emit
+     one; nothing on this surface asks it to. */
   del { background: rgba(220, 53, 69, 0.09); color: #9b2c36; padding: 0 1px; }
 
   /* ---- the rationale, under the texts (Ed, QA 2026-08-16, revising 87) --
@@ -1151,10 +1173,16 @@
   /* **Lifted to the height of the cards it joins** (Ed, 289a). A 6px opaque
      cord lying flat between two things that are visibly off the page was the
      odd object out — and depth is the one thing this surface uses to say where
-     something is, so a cable at card height has to cast what a card casts. The
-     same three-layer light as --shadow-xl, written as chained drop-shadows
-     because a filter takes no spread: one contact shadow keeping the near edge
-     crisp, then two casts whose blur stays near 2.5x their offset.
+     something is, so a cable at card height has to be lit like one.
+
+     Lit like one, **not shadowed like one** (Ed, 2026-08-17: the cable "casts
+     shadows on the cards it connects, which doesn't seem right"). It was given
+     --shadow-xl verbatim, and a 470px card's cast on a 6px cord is a 40px wash
+     that lands on everything either side of it — which reads as the cable
+     floating *above* the cards rather than sitting level with them, since a
+     thing at the same height as its neighbours does not shadow them. Same light
+     source, same darkness, cast **scaled to the object**: a cord's shadow is a
+     cord's width. What is left falls in the gutter, where the cable is.
 
      On the container rather than on the paths, so the *union* of the white
      underlay and the colour over it casts one shadow — per-path it would be two
@@ -1162,9 +1190,8 @@
      under the colour it is there to sit behind. */
   #wires {
     position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.07))
-            drop-shadow(0 6px 14px rgba(0, 0, 0, 0.10))
-            drop-shadow(0 18px 40px rgba(0, 0, 0, 0.16));
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.10))
+            drop-shadow(0 3px 5px rgba(0, 0, 0, 0.20));
   }
   #wires path { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
   #wires .cap { stroke: none; }
@@ -1947,14 +1974,22 @@
 
   // Decision cards show the text as it would *stand*, not a redline: the struck
   // words come out and only what is new stays lit. The fixture keeps the full
-  // diff — this is a rendering, so the sealed record can still show both sides.
+  // diff, because this is a rendering — which is what made it cheap to put the
+  // redline back in 274 and cheap to take it out again when Ed reversed that
+  // 2026-08-17. Nothing about the data changed either time.
+  //
+  // A proposal that removes the text **entirely** would come out of here as an
+  // empty string, and blank is the one rendering that cannot be told from
+  // unchanged — so that case says so in words (Ed, 274).
   function resultOnly(marked) {
-    return marked
+    const out = marked
       .replace(/\s*<del>[\s\S]*?<\/del>\s*/g, ' ')          // a cut leaves one space behind…
       .replace(/\s+((?:<\/?ins>)*)([,.;:!?’”)])/g, '$1$2')  // …which closes up before punctuation
       .replace(/(<ins>)\s+/g, '$1')                          // a highlight never opens on a space
       .replace(/\s{2}/g, ' ')
       .trim();
+    return out.replace(/<[^>]*>/g, '').trim()
+      ? out : '<div class="lp empty"><br></div>';
   }
 
   // The text a suggestion is arguing against, for the quick card's yellow band.
@@ -2825,7 +2860,7 @@
       for (const [x, y] of dots) {
         const c = document.createElementNS(SVGNS, 'circle');
         c.setAttribute('class', 'cap');
-        c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 5);
+        c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 7);
         c.setAttribute('fill', col);
         g.appendChild(c);
       }
@@ -3602,28 +3637,36 @@
     return esc(m[1]) + (m[2] ? '<' + tag + '>' + r(m[2]) + '</' + tag + '>' : '') + esc(m[3]);
   };
   const insHtml = (t) => markHtml2(t, 'ins');
-  // A proposal, stating its own change against the clause it rewrites — but
-  // only while it *is* a change. A redline is informative in proportion to how
-  // much of the sentence survives it: mark two words and the eye goes straight
-  // to them; mark two thirds of a clause and you have confetti, and the reader
-  // has to reassemble two sentences out of one shredded one. Rival candidates
-  // in a race are usually whole rewrites rather than edits, so most of them
-  // fall the second way — measured on the fixture's own races, a redline was
-  // running to nineteen cuts and twenty insertions in a single clause.
+  // **Result-only** (Ed, 274, retiring the redline). A proposal states the text
+  // as it would stand, with what it adds marked and nothing struck through.
+  // Ed's reason is about the reader rather than the tuning — *normal people
+  // struggle to read or interpret redlines* — and it takes the old floor
+  // question with it, since that floor existed to stop a redline turning into
+  // confetti.
   //
-  // So: below half surviving, the proposal states itself plainly and the
-  // comparison is with the clause at the head of the card, which is one line
-  // above it. That is also what a reader does anyway once a diff gets dense.
-  const REDLINE_FLOOR = 0.5;
-  function redline(oldText, newText) {
-    const pieces = diffPieces(oldText, newText, true);
+  // What the deletions were there for is still real: in a stacked card, a
+  // proposal whose only change is a cut renders as a sentence that looks like
+  // the clause above it. Ed's answer is to cover the case where that is worst
+  // and accept it elsewhere — a proposal that removes the text **entirely**
+  // would otherwise render as blank space, so it says so in words instead. A
+  // partial cut is left to be found by reading against the clause at the head,
+  // which is one line up.
+  //
+  // A marking floor survives, now measured on the *new* text: below half of it
+  // surviving from the clause, the proposal states itself plainly. Rival
+  // candidates in a race are whole rewrites rather than edits, so this is what
+  // keeps a race lane from being marked green end to end (Q92).
+  const MARK_FLOOR = 0.5;
+  function wordingHtml(oldText, newText) {
+    if (!String(newText ?? '').trim()) return '<div class="lp empty"><br></div>';
+    const pieces = diffPieces(oldText, newText, false);
     let same = 0, all = 0;
     for (const [t, mk] of pieces) {
       if (/^\s+$/.test(t)) continue;
       all += t.length;
       if (!mk) same += t.length;
     }
-    if (!all || same / all < REDLINE_FLOOR) return esc(newText);
+    if (!all || same / all < MARK_FLOOR) return mdToHtml(newText);
     // rendered, not raw: a proposal is read, not checked, so emphasis in it
     // should look like emphasis rather than like asterisks
     return pieces.map(([t, mk]) => (mk ? markHtml2(t, mk, mdToHtml) : mdToHtml(t))).join('');
@@ -3634,12 +3677,14 @@
   // still reads as one wherever the run is shown. Matched by position, which
   // holds while the block count does — and where the author has added or
   // removed lines it simply stops claiming, which is the honest failure.
-  function laneBlocks(text, oldText, withDel, heads, raw) {
+  function laneBlocks(text, oldText, heads, raw) {
     // `raw` is markdown mode: the characters as they are, monospace, nothing
     // rendered — which is the whole point of the mode, since it exists to let
     // somebody check that their edit is exactly what they meant.
     const render = raw ? esc : mdToHtml;
-    const pieces = oldText == null ? [[String(text), null]] : diffPieces(oldText, text, withDel);
+    // Result-only (274): the diff marks what a proposal adds and never what it
+    // cut, in the lane exactly as on the card.
+    const pieces = oldText == null ? [[String(text), null]] : diffPieces(oldText, text, false);
     const blocks = [[]];
     for (const [t, mark] of pieces) {
       const parts = t.split('\n');
@@ -3648,8 +3693,15 @@
         if (part) blocks[blocks.length - 1].push([part, mark]);
       });
     }
-    return blocks.map((ps, i) => '<div class="lp' + (heads && heads[i] ? ' hblock' : '') + '">' +
-      (ps.map(([t, mark]) => (mark ? markHtml2(t, mark, render) : render(t))).join('') || '<br>') + '</div>').join('');
+    // An emptied block keeps its `<br>` — it is still a line you can put a
+    // caret in — and says what it is through a pseudo-element, so the helper is
+    // drawn without being *content*: nothing for `htmlToMd` to serialise back
+    // into the candidate, and nothing for the caret to land after.
+    return blocks.map((ps, i) => {
+      const inner = ps.map(([t, mark]) => (mark ? markHtml2(t, mark, render) : render(t))).join('');
+      return '<div class="lp' + (heads && heads[i] ? ' hblock' : '') +
+        (inner ? '' : ' empty') + '">' + (inner || '<br>') + '</div>';
+    }).join('');
   }
   const headFlags = (site) => site.origin.map((o) => o.t === 'h');
 
@@ -3798,7 +3850,7 @@
       '</span></div>' +
       '<div class="editlane' + (laneRaw() ? ' md' : '') + '" contenteditable="true" data-lane="' +
       site.keys[0] + '" spellcheck="false">' +
-      laneBlocks(site.text, originText(site), false, headFlags(site), laneRaw()) + '</div>' +
+      laneBlocks(site.text, originText(site), headFlags(site), laneRaw()) + '</div>' +
       // The rationale is **inside** the same surface (Ed, 2026-08-17): you are
       // expected to fill in both, so they are one editing surface at one
       // height rather than two boxes at different ones — and the speaker's
@@ -3862,7 +3914,7 @@
       clauseHeadHtml(d, { text: s.origin.map((o) => o.text).join(' '), key: s.keys[0],
                           chips: chipsFor(s.keys[0], d.id) }) +
       fieldHtml('<div class="propblock"><div class="rtext">' +
-        laneBlocks(s.text, originText(s), true, headFlags(s)) + '</div>' + speakerHtml(d.rationale) + '</div>',
+        laneBlocks(s.text, originText(s), headFlags(s)) + '</div>' + speakerHtml(d.rationale) + '</div>',
         1, 'What you proposed') +
       '<div class="race-mid"><button class="btn btn-outline" data-act="draft-withdraw">Withdraw' +
       (n > 1 ? ' all ' + n + ' places' : '') + '</button></div>' +
@@ -3943,8 +3995,8 @@
         // two replies to the same post; each states its own change against the
         // clause above, and carries its own argument and controls
         fieldHtml(
-          proposalHtml(s, { v: 'a', html: redline(cur, s.race.a.text), why: s.race.a.rationale }) +
-          proposalHtml(s, { v: 'b', html: redline(cur, s.race.b.text), why: s.race.b.rationale }), 2) +
+          proposalHtml(s, { v: 'a', html: wordingHtml(cur, s.race.a.text), why: s.race.a.rationale }) +
+          proposalHtml(s, { v: 'b', html: wordingHtml(cur, s.race.b.text), why: s.race.b.rationale }), 2) +
         commitRowHtml(s, s.deadlocked ? proposeBtnHtml() : '') +
         reviseNote(s) +
         '<div class="foot">Neither of these has to win: the clause above stands unless the leader clears the bar (SPEC §5) · ' +
@@ -3977,7 +4029,7 @@
         // recomputing one.
         clauseHeadHtml(s, { text: currentTextFor(site.key), key: site.key, v: 'keep',
                             chips: chipsFor(site.key, s.id) }) +
-        fieldHtml(proposalHtml(s, { v: 'approve', html: site.marked, why: s.rationale, key: site.key })) +
+        fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, key: site.key })) +
         commitRowHtml(s) +
         reviseNote(s) +
         '<div class="foot">One judgment for all ' + n +
@@ -3997,7 +4049,7 @@
     // it states itself whole and its new heading is all-new
     const prop = s.isInsert
       ? '<div class="rtext"><ins>' + esc(s.newHeading) + '</ins></div><div class="rtext">' + resultOnly(s.marked) + '</div>'
-      : s.marked;
+      : resultOnly(s.marked);
     return (
       '<div class="sugg quick-open" data-card="' + s.id + '" data-site="' + (key || '') + '">' +
       clauseHeadHtml(s, { text: cur, key: key, v: 'keep', edit: noEdit,
@@ -4224,7 +4276,7 @@
         site.text = readLane(el);
         const off = laneCaret(el);
         el.classList.toggle('md', laneRaw());
-        el.innerHTML = laneBlocks(site.text, originText(site), false, headFlags(site), laneRaw());
+        el.innerHTML = laneBlocks(site.text, originText(site), headFlags(site), laneRaw());
         if (off != null) placeCaret(el, off);
         layoutQueue(); drawWires();
       };
@@ -4267,7 +4319,7 @@
           const site = d && siteFor(d, el.dataset.lane);
           if (!site) return;
           el.classList.toggle('md', laneRaw());
-          el.innerHTML = laneBlocks(site.text, originText(site), false, headFlags(site), laneRaw());
+          el.innerHTML = laneBlocks(site.text, originText(site), headFlags(site), laneRaw());
           el.focus({ preventScroll: true });
           if (off != null) placeCaret(el, off);
           layoutQueue(); drawWires();

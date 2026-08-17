@@ -1309,3 +1309,58 @@ shape the problem actually had.
 Worth keeping as a rule: **translucency belongs to the layer, not to the
 shapes** — the moment two shapes in one conceptual object are separately
 translucent, every overlap in that object becomes a visible seam.
+
+### Shadows darker and less diffuse, and a cord's shadow is a cord's
+
+Ed, on the cables: *our shadows should be darker and less diffuse. Note that the
+cables cast shadows on the cards they connect, which doesn't seem right.*
+
+The first half is the whole ladder, not just the cable — the cable's filter was
+a copy of `--shadow-xl`, so changing one without the other would break the rule
+that they are the same light. The 2.5× blur ratio was tuned in 2026-08-16 when
+shadows were the faintest thing that would read; once depth had to carry *open*
+on its own (the outline came off), they were being asked to be **seen**, and a
+wide faint cast that is asked to be seen is exactly the halo that retune
+removed. So the alphas roughly double and the blur comes in to ~1.6× the offset:
+the same ink arrives concentrated instead of spread, and the edge of a shadow is
+a shape rather than a fade.
+
+The second half is a different mistake, and a good one. The cable had been given
+`--shadow-xl` *verbatim* — a 470px card's cast applied to a 6px cord, which is
+40px of grey landing on everything either side of it. What that reads as is the
+cable floating *above* the cards, because a thing at the same height as its
+neighbours does not shadow them. The correction is the same light and the same
+darkness with the cast **scaled to the object**: a cord's shadow is a cord's
+width. Same lesson as the wire colour, arrived at from the other side — *lit
+like a card, not shadowed like one*.
+
+### Result-only, and the end of the redline (274)
+
+Ed: *result-only, and if it's a pure deletion we give a helper in place saying
+"(all text removed)".*
+
+Which is option (a) plus a patch for the case option (a) fails worst at. The
+blind spot the redline existed to cover — a stacked card where a proposal's only
+change is a cut renders as a sentence that looks like the clause above it — is
+accepted for a *partial* cut and closed for a total one, where result-only would
+have printed **blank space**, the one rendering that cannot be told from
+unchanged.
+
+Two things worth keeping.
+
+The rendering was already there. `resultOnly` was written for 91, abandoned when
+274 brought redlines back, and left in the file; the fixture has always carried
+the full diff and every card has always been a *rendering* of it. That is why
+this was a fifteen-minute change in both directions, and it is the argument for
+keeping fixture data richer than any one view of it.
+
+And the recommendation lost to a better answer. Mine was (b), a machine-drafted
+sentence saying what changed — which is more informative and depends entirely on
+generating good prose, and a bad mechanical sentence is worse than none. Ed's
+costs nothing and fails safe.
+
+The helper is drawn as a pseudo-element on an empty block rather than as text.
+In the editing lane that matters twice: there is nothing for `htmlToMd` to
+serialise back into the candidate, and nothing for the caret to land behind —
+the same bug the rationale placeholder had an hour earlier, avoided this time by
+having just had it.
