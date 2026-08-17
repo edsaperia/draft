@@ -799,6 +799,47 @@
      =================================================================== */
   .clausehead { margin-bottom: var(--s3); }
   .clausehead .headclause { position: relative; }
+
+  /* ---- the marks become **tabs** on an open card (Ed, 2026-08-17) ------
+     They were already in the right place and doing the right thing: several
+     live suggestions at one clause stack their marks in the gutter, they
+     travel into the card's head when one opens, and clicking another has
+     always switched the card to it. What was missing was that any of that
+     *looked* like a tab strip — a column of keys beside a card reads as
+     decoration, where a column of tabs reads as "these are the other things
+     here, and you can go to them".
+
+     Three moves, and none of them may shift the mark you clicked (the whole
+     card-opening motion is built on it staying at 0,0):
+
+     - every tab is rounded on its **left** only, so its right edge is a
+       joint rather than an end;
+     - the active tab takes the card's own white surface and is **6px wider**,
+       carrying it under the card's left edge so there is no seam — the width
+       goes on the padding side with `border-box`, so the glyph centres in the
+       same 30px it always did and does not move;
+     - its shadow casts **leftward only**, because the card is what it is
+       attached to and a shadow between them would be the seam again.
+
+     The inactive tabs keep their lifecycle ground and stop at the card's
+     edge, which is what makes the active one look joined and the rest look
+     stacked behind it. */
+  .clausehead .achip { border-radius: var(--r-sm) 0 0 var(--r-sm); }
+  .clausehead .achip.wmark {
+    /* the column is right-aligned, so the extra width has to be pushed out on
+       the right with a negative margin — widening alone grows it leftwards and
+       takes the glyph with it (measured: -7px, which is exactly the movement
+       the card-opening motion exists to avoid) */
+    width: 36px; padding-right: 6px; margin-right: -6px;
+    background: var(--bg);
+    box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.07), -3px 2px 4px rgba(0, 0, 0, 0.13);
+    position: relative; z-index: 1;
+  }
+  .clausehead .achip.wmark:hover {
+    background: var(--bg); transform: none;
+    box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.09), -4px 3px 6px rgba(0, 0, 0, 0.16);
+  }
+  .clausehead .achip.wmark:active { transform: none; }
   .clausehead .headlab {
     display: flex; align-items: baseline; gap: var(--s2);
     font-size: var(--t-micro); font-weight: 700; text-transform: uppercase;
