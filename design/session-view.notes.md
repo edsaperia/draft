@@ -1022,3 +1022,23 @@ It left one thing behind, logged as 282. The charter fixture is plain text, so t
 The duplication is accepted; what changed is the rail. A diagonal had been taking one entry per clause, which was the patch grammar borrowed without checking whether it applied. A patch stands at several places because that is where its work is — each site is a place you will be asked about. **Neither clause is where a diagonal lives.** It is one judgment about the relative worth of two questions, so standing at both said "there is something here" twice about a card that is really about the pair.
 
 It now takes one entry, at the earlier of its two clauses, titled *Prioritise A vs B* — which is the first entry title on the surface that states the question rather than naming the place, and it can, because for once the question is not "what should this say".
+
+### Depth instead of outline (Ed, 2026-08-17)
+
+*I'd like for active boxes to be highlighted purely through depth and not a blue border… they need to really look like they're lifting off the page.*
+
+This retires 198's one-blue-for-every-card as a **boundary**, and the reason is one 164 had already found from the other end: a rule round the outside competes with the wash inside it for the job of saying *this is one thing*. 198's blue was doing two jobs — naming the accent and drawing an edge — and the edge was the weaker of them. The accent survives as an accent: wires, selections, controls that are on.
+
+What replaces it has to be a real lift, so there is a fourth step on the elevation ladder and it is the only one allowed to be big. It is still a light source rather than the halo the 2026-08-16 pass removed: the offset grows with the blur, the blur stays near two and a half times it, and a one-pixel contact shadow keeps the near edge crisp — which is what makes a card read as *lifted* rather than as *blurred*. Three casts stacked, not one enormous one.
+
+It applies everywhere "active" is said: the decision card, the open rail entry (which loses its ring), and the drafting box. The last is the interesting one, because a border there was doing real work — a text editor says it is one by looking like one. So it is replaced rather than removed: the box sits above the card at rest and higher again while the caret is in it, which says *editable* and *focused* with the device the whole surface now uses for *open*. The rationale field follows the same rule one step lower.
+
+### Hot for actions, cold for information (Ed, 2026-08-17)
+
+Ed gave the palette a rule it had been obeying without stating: **hot colours for actions, cold for information.** Orange and yellow are the two states that want something from you; blue and grey are the two that are telling you where things stand.
+
+A stated rule earns its keep by deciding the next case, and it did immediately. A `salience-diagonal` wants a judgment, so it has to be hot — it cannot be blue however much it feels like a system-generated thing. But it is a *different kind* of judgment from a proposal: it asks which of two questions deserves the room's time, and nothing about a wording. So it cannot be the same hot as a proposal either. Pink is the remaining warm hue that reads as neither alarm nor caution, and the diagonal now carries it in the rail, in the gutter and in its card's head.
+
+The queue's hue also stopped being computed separately from the document's — both come from `anchHue` now, so a lifecycle cannot show one colour in the margin and another in the charter.
+
+**And it needs no rationale.** A teaser in the rail quotes somebody's *argument for their wording*; a diagonal has none, because nobody proposed anything. Its title says what it is asking — *Prioritise A vs B* — and the description it used to quote was the system explaining itself twice.

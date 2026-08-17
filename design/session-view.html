@@ -30,8 +30,17 @@
            it, matching its glyph. Raw channels, because the wash
            varies its strength by urgency. Colour means you can still
            affect it; grey means the door is shut (Ed, 164). --------- */
+    /* **Hot for actions, cold for information** (Ed, 2026-08-17). The one rule
+       that orders the whole palette, and it explains what was already here:
+       orange and yellow are the two states that want something from you, blue
+       and grey are the two that are telling you where things stand. It also
+       says where a new hue may go — a salience diagonal wants a judgment, so
+       it must be hot; it is a different *kind* of judgment from a proposal, so
+       it must not be the same hot as one. Pink is the remaining warm hue that
+       reads as neither alarm nor caution. */
     --lc-urgent: 253, 126, 20;    /* 🔥 orange — wants you most        */
     --lc-open: 245, 197, 24;      /* 💡 ❌ yellow — open, or stuck     */
+    --lc-weigh: 214, 51, 132;     /* ⚖️ pink — wants a ranking, not a judgment */
     --lc-deciding: 13, 110, 253;  /* ⏳ blue — judged, still running   */
     --lc-closed: 108, 117, 125;   /* ✅ ❎ 🔄 ☑️ grey — nothing to do  */
     /* ✏️ 💡-in-green — a proposal of *your own*, from the first keystroke
@@ -80,10 +89,21 @@
            **contact** shadow (1px, tight, the card meeting the page) plus
            one soft cast whose blur stays near 2.5× its offset. Total ink
            is roughly halved; what changed is the shape, not the ladder —
-           three steps, still neutral, still the same three users. */
+           three steps, still neutral, still the same three users.
+
+           A fourth step 2026-08-17 (Ed): **what is open is said by depth
+           alone**, so the blue outline comes off every active box and the
+           lift has to carry the whole job on its own. `--shadow-xl` is the
+           only step that is allowed to be big — the earlier lesson holds
+           everywhere else, and it is still a light source rather than a
+           halo: the offset grows with the blur, the blur stays near 2.5×
+           it, and the contact shadow keeps the near edge crisp so the card
+           reads as *lifted* rather than as *blurred*. */
     --shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
     --shadow-md: 0 1px 1px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.09);
     --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.10);
+    --shadow-xl: 0 1px 2px rgba(0, 0, 0, 0.07), 0 6px 14px rgba(0, 0, 0, 0.10),
+                 0 18px 40px rgba(0, 0, 0, 0.16);
 
     /* --- the three columns ---------------------------------------- */
     /* How long a lifecycle colour takes to become another one. A wash change
@@ -291,7 +311,9 @@
     transition: box-shadow 140ms ease;
   }
   .queue button:hover { box-shadow: var(--shadow-md); }
-  .queue button[aria-current="true"] { box-shadow: var(--shadow-md), 0 0 0 2px var(--primary); }
+  /* the open entry lifts rather than gaining a ring (Ed, 2026-08-17) — the same
+     rule as its card, and the rail and the card now say "open" the same way */
+  .queue button[aria-current="true"] { box-shadow: var(--shadow-xl); }
   @media (prefers-reduced-motion: reduce) { .queue button { transition: none; } }
 
   /* The wash is the progress bar (Ed, 105/116): how far the fill reaches is
@@ -396,7 +418,7 @@
     font-size: var(--t-small); line-height: 22px; text-align: center;
   }
   .queue .sealdot:hover { box-shadow: var(--shadow-md); }
-  .queue .sealdot[aria-current="true"] { box-shadow: var(--shadow-md), 0 0 0 2px var(--primary); }
+  .queue .sealdot[aria-current="true"] { box-shadow: var(--shadow-xl); }
 
   /* an entry judged for the first time slides out of the needs-you band */
   @keyframes slideOut { to { opacity: 0; transform: translateY(14px); } }
@@ -560,9 +582,16 @@
      =================================================================== */
   .sugg {
     max-width: none; margin: var(--s1) auto var(--s4);
-    border: 1.5px solid var(--primary);      /* one blue for every card (198) */
+    /* No outline (Ed, 2026-08-17): **an open card is said by depth alone.**
+       198's one-blue-for-every-card was doing two jobs at once — naming the
+       accent and drawing a boundary — and the boundary was the weaker of the
+       two, because a rule round the outside competes with the wash inside it
+       for the job of saying "this is one thing" (the same argument 164 made
+       about rail cards, arrived at again from the other end). What is left is
+       the lift, which has to be a real one: see --shadow-xl. */
+    border: 0;
     border-radius: var(--r-lg);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-xl);
     /* --s5 rather than --s4 of side padding: the lifecycle mark hangs in the
        left one, so the rationale below the lanes stays column-aligned with
        them instead of being pushed right by its own glyph. */
@@ -813,11 +842,20 @@
      like one, and nothing else here is typed into */
   /* The box is the editor; the controls sit in its top right (Ed, 2026-08-17)
      and the lane is the rest of it, so the border is drawn once around both. */
+  /* The drafting box lifts too (Ed, 2026-08-17). It is the one place a border
+     was doing real work — a text editor says it is one by looking like one —
+     so it is replaced rather than simply removed: the box sits *above* the
+     card at rest and higher again while the caret is in it, which says
+     "editable" and "focused" with the same device the rest of the surface
+     now uses for "open". */
   .editcard .lanebox {
-    border: 1.5px solid var(--border); border-radius: var(--r-md);
+    border: 0; border-radius: var(--r-md);
     background: var(--bg); overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: box-shadow 140ms ease;
   }
-  .editcard .lanebox:focus-within { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+  .editcard .lanebox:focus-within { box-shadow: var(--shadow-xl); }
+  @media (prefers-reduced-motion: reduce) { .editcard .lanebox { transition: none; } }
   .editcard .lanectl {
     display: flex; align-items: center; justify-content: flex-end; gap: var(--s2);
     padding: 5px 8px 0;
@@ -859,7 +897,7 @@
     background: var(--bg); cursor: text;
     min-height: 4rem;
   }
-  .editcard .editlane:focus { outline: none; border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+  .editcard .editlane:focus { outline: none; }
   /* The rationale is written here rather than quoted, so it is a field — but
      it sits in the speaker's own slot, at the speaker's own weight, because it
      is the same sentence in the same place that everybody else will read it
@@ -869,7 +907,11 @@
     padding: 3px var(--s2); cursor: text; min-height: 1.9rem;
     align-self: start;
   }
-  .editcard .edit-why:focus { outline: none; border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+  /* the rationale field is the other thing you type into, so it lifts on the
+     same rule rather than gaining a ring of its own */
+  .editcard .edit-why { border: 0; box-shadow: var(--shadow-sm); transition: box-shadow 140ms ease; }
+  .editcard .edit-why:focus { outline: none; box-shadow: var(--shadow-lg); }
+  @media (prefers-reduced-motion: reduce) { .editcard .edit-why { transition: none; } }
   .editcard .edit-why:empty::before,
   .editcard .edit-why.blank::before {
     content: attr(data-placeholder); color: var(--muted); font-weight: 400; font-style: italic;
@@ -2024,12 +2066,12 @@
   // apart in the charter that you rarely see two at once.
   function teasersFor(g, e) {
     if (g.kind === 'race') return [g.race && g.race.a && g.race.a.rationale, g.race && g.race.b && g.race.b.rationale].filter(Boolean);
-    // a diagonal quotes the question it is weighing here, not both — the other
-    // one is a screen away and has its own entry beside it
-    if (g.kind === 'diagonal') {
-      const c = g.pair.find((x) => x.key === e.site) || g.pair[0];
-      return [c.why];
-    }
+    // A diagonal quotes nothing (Ed, 2026-08-17). A teaser is a *rationale* —
+    // somebody's argument for their wording — and a diagonal has none, because
+    // nobody proposed anything: it is the surface asking which of two questions
+    // deserves the room's time. Its title now says exactly that, and the
+    // description it used to quote was the system explaining itself twice.
+    if (g.kind === 'diagonal') return [];
     return g.rationale ? [g.rationale] : [];
   }
 
@@ -2222,8 +2264,10 @@
         (locked ? ' tabindex="-1"' : '') + ' aria-current="' + (openId === g.id) + '"' +
         (oneLine ? ' title="' + esc(g.shifted || cap) + '"' : '') +
         (() => {
+          // the hue comes from `anchHue` so the rail entry and the clause it
+          // stands beside cannot drift apart — one lifecycle, one colour
           const w = oneLine ? wash(g, g.shifted ? 'closed' : 'deciding')
-            : wash(g, top ? 'urgent' : 'open', g.deadlocked ? 0.55 : u);
+            : wash(g, anchHue(g) || 'open', g.deadlocked ? 0.55 : u);
           return washAttrs(qKey(g, e), w.col, w.fill);
         })() + '>' +
         (oneLine
@@ -4519,6 +4563,9 @@
     if (st === 'yours') return 'yours';
     if (st === 'deciding') return g.shifted ? 'closed' : 'deciding';
     if (g.deadlocked) return 'open';
+    // a diagonal asks for a *ranking*, not a judgment about a wording, so it
+    // gets its own hot hue rather than borrowing a proposal's (Ed, 2026-08-17)
+    if (g.kind === 'diagonal') return 'weigh';
     return g.id === topUrgentId ? 'urgent' : 'open';
   };
   // Keyed by the clause rather than by the element, so the paragraph and the
