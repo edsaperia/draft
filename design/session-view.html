@@ -47,7 +47,12 @@
     /* --- type scale. Four sizes and a caption; anything outside this
            list is a mistake rather than a decision ------------------ */
     --t-lead: 1.25rem;      /* the document's title                    */
-    --t-body: 0.9375rem;    /* a lane's text, a clause under judgment  */
+    /* A clause under judgment is the document's own text, so it is set at the
+       document's own size (Ed, 2026-08-17). It had been a notch smaller, which
+       meant a clause *changed size* the moment its card opened even though it
+       had been made to stay in exactly the same place — the one movement left,
+       and the more distracting for being the only one. */
+    --t-body: 1rem;         /* a lane's text, a clause under judgment  */
     --t-ui: 0.875rem;       /* card and rail titles, buttons           */
     --t-small: 0.8125rem;   /* rationales, one-line entries            */
     --t-cap: 0.72rem;       /* captions, footers, notes                */
@@ -155,9 +160,16 @@
       rgba(13, 110, 253, 0.22) var(--fill), transparent var(--fill));
   }
   .pnext i { opacity: 0.28; }
-  /* what the row stops drawing and starts counting, and when the next one lands */
+  /* what the row stops drawing and starts counting, and when the next one lands.
+     The countdown wears the drip's own wash — the fill is how far the tenth has
+     run — so one object says both when and how far. */
   .pmore { font-size: var(--t-cap); font-weight: 600; color: var(--fg); margin: 0 1px 0 2px; }
-  .pwhen { font-size: var(--t-cap); color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
+  .pwhen {
+    font-size: var(--t-cap); color: var(--muted); margin-left: 6px;
+    font-variant-numeric: tabular-nums; padding: 1px 5px; border-radius: var(--r-sm);
+    background: linear-gradient(90deg,
+      rgba(13, 110, 253, 0.22) var(--fill), rgba(13, 110, 253, 0.07) var(--fill));
+  }
   /* Nothing held: the label goes quiet, and the tray is the only thing left
      with anything to say. */
   .wallet.empty { color: var(--muted); }
@@ -462,9 +474,31 @@
      No focus ring: the caret is the indication, and a box drawn round a
      paragraph you have merely clicked into would be a fifth thing in the
      margin's vocabulary. */
-  .doc p.editable { cursor: text; }
-  .doc p.editable:focus { outline: none; }
-  .doc p.editable .chipcol { user-select: none; }
+  /* Headings carry a caret too (Ed, 2026-08-17): a section that cannot be
+     renamed is a section the charter cannot revise. The fold triangle and the
+     "N suggestions inside" hint are marked `.nocaret` and taken out of the
+     editable flow, so the caret cannot land inside furniture. */
+  /* A heavier, serifed I-beam wherever text can be edited (Ed, 2026-08-17).
+     The browser's default is a hairline, and on a surface where the caret is
+     the whole offer — every clause carries one — it is too quiet to find. Drawn
+     twice: a white stroke underneath so it survives a yellow or green wash, the
+     ink on top. The hotspot is the middle of the stem.
+
+     Note this changes the **mouse pointer**, not the blinking caret: CSS can
+     set `caret-color` and nothing else, so the caret's shape and weight are not
+     ours to choose (Q281). */
+  :root {
+    --ibeam: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='17'%20height='25'%3E%3Cg%20fill='none'%20stroke='%23fff'%20stroke-width='5'%20stroke-linecap='round'%3E%3Cpath%20d='M8.5%205V20'/%3E%3Cpath%20d='M4.5%205H12.5'/%3E%3Cpath%20d='M4.5%2020H12.5'/%3E%3C/g%3E%3Cg%20fill='none'%20stroke='%23111'%20stroke-width='2.6'%20stroke-linecap='round'%3E%3Cpath%20d='M8.5%205V20'/%3E%3Cpath%20d='M4.5%205H12.5'/%3E%3Cpath%20d='M4.5%2020H12.5'/%3E%3C/g%3E%3C/svg%3E") 8 12, text;
+  }
+  .doc .editable, .editcard .editlane, .editcard .edit-why { cursor: var(--ibeam); }
+  /* the caret itself: colour is the one property CSS gives us */
+  .doc .editable, .editcard .editlane { caret-color: var(--primary); }
+  .doc .editable:focus { outline: none; }
+  .doc .editable .chipcol, .doc .editable .nocaret { user-select: none; }
+  .nocaret { display: contents; }
+  /* a heading inside a lane or a head keeps its weight, so editing a section
+     title alongside its paragraph does not silently flatten it to body text */
+  .lp.hblock { font-weight: 700; }
 
   /* chip-gutter: marks sit in the document's left margin, stacked and
      right-aligned, so the prose column itself stays unbroken. They are the
@@ -1646,7 +1680,13 @@
   // an identity to hang a draft on — until now only the ones the fixture had
   // something to say about carried a key. Index-derived, and stable for as long
   // as DOC is (which is the life of the mockup).
-  DOC.forEach((l, i) => { if (l.t === 'p' && !l.key) l.key = 'c' + i; });
+  // Headings carry keys too (Ed, 2026-08-17). A section that cannot be renamed
+  // is a section the charter cannot revise, and Ed's ruling is that a heading
+  // edited together with its paragraph is **one candidate** — which it can only
+  // be if the heading is an addressable block like any other.
+  DOC.forEach((l, i) => { if ((l.t === 'p' || l.t === 'h') && !l.key) l.key = (l.t === 'h' ? 'h' : 'c') + i; });
+  const lineOf = (key) => DOC.find((l) => l.key === key);
+  const isHeadingKey = (key) => (lineOf(key) || {}).t === 'h';
 
   // The nearest heading above a clause, which is what a draft of your own is
   // labelled by in the rail. The same deterministic fallback the `race-labeler`
@@ -2876,7 +2916,7 @@
   // whatever run it landed in.
   function addDraftSite(d, key, text, seed) {
     const at = docIndexOfKey(key);
-    const orig = { key, text: seed ? seed.text : currentTextFor(key), note: seed ? seed.note : null };
+    const orig = originOf(key, seed);
     for (const s of d.sites) {
       const first = docIndexOfKey(s.keys[0]);
       const last = docIndexOfKey(s.keys[s.keys.length - 1]);
@@ -2898,6 +2938,31 @@
     d.sites.push(s);
     d.sites.sort((a, b) => docIndexOfKey(a.keys[0]) - docIndexOfKey(b.keys[0]));
     return { site: s, offset: 0 };
+  }
+
+  // What a site records about each block it replaces. The block *type* travels
+  // with it (Ed, 2026-08-17) so a heading still reads as a heading in the lane
+  // and in the proposal — otherwise editing a section title alongside its
+  // paragraph would silently flatten it into body text.
+  function originOf(key, seed) {
+    const l = lineOf(key) || {};
+    return { key, text: seed ? seed.text : currentTextFor(key), note: seed ? seed.note : null,
+             t: l.t, level: l.level };
+  }
+
+  // A **run** of blocks taken as one site. Ed's ruling (2026-08-17): four
+  // contiguous paragraphs deleted together are one candidate, and not even a
+  // patch — a patch is one judgment shown at several *separate* places, and a
+  // run is one place that happens to be several blocks long. So this makes a
+  // single site whatever the run's length, which is what `draft-site` has meant
+  // since 225; all that is new is being able to select one rather than having
+  // to type your way across it.
+  function addDraftRun(d, keys, text) {
+    const s = { keys: keys.slice(), origin: keys.map((k) => originOf(k, null)),
+                text, label: headingForKey(keys[0]) };
+    d.sites.push(s);
+    d.sites.sort((a, b) => docIndexOfKey(a.keys[0]) - docIndexOfKey(b.keys[0]));
+    return s;
   }
 
   const syncDraftKeys = (d) => { d.keys = d.sites.flatMap((s) => s.keys); };
@@ -2932,20 +2997,48 @@
   // lands just after it. Held as a character offset rather than as a node,
   // because the node measured before the render does not exist after it — the
   // same rule the scroll anchoring works by.
+  // Everything a block carries that is not its text: the gutter marks on a
+  // clause, the fold triangle on a heading. All of it sits *before* the words,
+  // so its length is a constant to subtract rather than a position to track.
+  const leadLen = (block) => [...block.querySelectorAll('.chipcol, .nocaret')]
+    .reduce((n, el) => n + el.textContent.length, 0);
+
+  // Where a point in the document falls inside one block, in characters.
+  function offsetIn(block, node, off) {
+    if (!block.contains(node)) return null;
+    const r = document.createRange();
+    r.selectNodeContents(block);
+    try { r.setEnd(node, off); } catch (e) { return null; }
+    return Math.max(0, r.toString().length - leadLen(block));
+  }
+
   function caretRangeIn(p) {
     const sel = getSelection();
     if (!sel || !sel.rangeCount) return null;
     const r0 = sel.getRangeAt(0);
     if (!p.contains(r0.startContainer) || !p.contains(r0.endContainer)) return null;
-    const chip = p.querySelector('.chipcol');
-    const lead = chip ? chip.textContent.length : 0;   // the gutter marks live inside the paragraph
-    const upto = (node, off) => {
-      const r = document.createRange();
-      r.selectNodeContents(p);
-      r.setEnd(node, off);
-      return Math.max(0, r.toString().length - lead);
+    return { start: offsetIn(p, r0.startContainer, r0.startOffset),
+             end: offsetIn(p, r0.endContainer, r0.endOffset) };
+  }
+
+  // The run of blocks a selection touches. One block is the ordinary case; more
+  // than one is Ed's — select across paragraphs, or across a heading and its
+  // paragraph, and act on the lot as a single candidate (2026-08-17).
+  function selectedBlocks() {
+    const sel = getSelection();
+    if (!sel || !sel.rangeCount) return null;
+    const r = sel.getRangeAt(0);
+    const blockOf = (n) => {
+      const el = n.nodeType === 1 ? n : n.parentElement;
+      const b = el && el.closest ? el.closest('.editable[data-key]') : null;
+      return b && !b.closest('.sugg') ? b : null;
     };
-    return { start: upto(r0.startContainer, r0.startOffset), end: upto(r0.endContainer, r0.endOffset) };
+    const a = blockOf(r.startContainer), b = blockOf(r.endContainer);
+    if (!a || !b) return null;
+    const all = [...doc.querySelectorAll('.editable[data-key]')].filter((el) => !el.closest('.sugg'));
+    const i = all.indexOf(a), j = all.indexOf(b);
+    if (i < 0 || j < 0) return null;
+    return { blocks: all.slice(Math.min(i, j), Math.max(i, j) + 1), range: r, a, b };
   }
 
   function setCaretIn(block, n) {
@@ -3051,6 +3144,57 @@
     startDraft(key, null, { text: orig.slice(0, a) + ins + orig.slice(b), caret: a + ins.length });
   }
 
+  // What the same keystroke means when the selection spans more than one block
+  // (Ed, 2026-08-17). The run is flattened to one string with a newline between
+  // blocks — which is exactly what a `draft-site` already is — the selection is
+  // located in *that* string rather than in any one block, and the edit is
+  // applied to it. Deleting four paragraphs is therefore not four deletions
+  // coordinated afterwards: it is one edit to one piece of text, which is why
+  // it comes out as one candidate and not as a patch.
+  function startDraftFromRun(picked, ev) {
+    const keys = picked.blocks.map((b) => b.dataset.key);
+    const texts = keys.map(currentTextFor);
+    const run = texts.join('\n');
+    const flat = (block, node, off) => {
+      const i = picked.blocks.indexOf(block);
+      const within = offsetIn(block, node, off);
+      if (i < 0 || within == null) return null;
+      return texts.slice(0, i).reduce((n, t) => n + t.length + 1, 0) + Math.min(within, texts[i].length);
+    };
+    const r = picked.range;
+    let a = flat(picked.a, r.startContainer, r.startOffset);
+    let b = flat(picked.b, r.endContainer, r.endOffset);
+    if (a == null || b == null) return;
+    if (a > b) { const t = a; a = b; b = t; }
+    let ins = '';
+    switch (ev.inputType) {
+      case 'insertText': ins = ev.data == null ? '' : ev.data; break;
+      case 'insertParagraph': case 'insertLineBreak': ins = '\n'; break;
+      case 'insertFromPaste':
+        ins = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || ''; break;
+      case 'deleteContentBackward': case 'deleteContentForward':
+      case 'deleteByCut': case 'deleteWordBackward': case 'deleteWordForward':
+        break;                                 // the selection itself is what goes
+      default: return;
+    }
+    const d = ensureDraft();
+    const site = addDraftRun(d, keys, run.slice(0, a) + ins + run.slice(b));
+    syncDraftKeys(d);
+    d.focusKey = keys[0];
+    const caret = a + ins.length;
+    const land = () => {
+      const lane = doc.querySelector('[data-lane="' + site.keys[0] + '"]');
+      if (!lane) return;
+      lane.focus({ preventScroll: true });
+      placeCaret(lane, caret);
+    };
+    if (openId === d.id) {
+      keepStill(() => renderAll(), '[data-key="' + keys[0] + '"]');
+      land(); layoutQueue(); drawWires(); return;
+    }
+    toggle(d.id, true, land);
+  }
+
   // The right-hand lane marks what is new, exactly as every other pair does
   // (Ed, 263, applying 91: the *result*, never a redline — only the new wording
   // is lit, and nothing is ever struck through). It earns its place twice over
@@ -3145,7 +3289,11 @@
   }
   // Blocks are split on newlines *after* the diff, so a run of new wording that
   // spans a paragraph break is still one comparison rather than two.
-  function laneBlocks(text, oldText, withDel) {
+  // `heads` marks which blocks of the run were headings, so a section title
+  // still reads as one wherever the run is shown. Matched by position, which
+  // holds while the block count does — and where the author has added or
+  // removed lines it simply stops claiming, which is the honest failure.
+  function laneBlocks(text, oldText, withDel, heads) {
     const pieces = oldText == null ? [[String(text), null]] : diffPieces(oldText, text, withDel);
     const blocks = [[]];
     for (const [t, mark] of pieces) {
@@ -3155,9 +3303,10 @@
         if (part) blocks[blocks.length - 1].push([part, mark]);
       });
     }
-    return blocks.map((ps) => '<div class="lp">' +
+    return blocks.map((ps, i) => '<div class="lp' + (heads && heads[i] ? ' hblock' : '') + '">' +
       (ps.map(([t, mark]) => (mark ? markHtml2(t, mark) : esc(t))).join('') || '<br>') + '</div>').join('');
   }
+  const headFlags = (site) => site.origin.map((o) => o.t === 'h');
   const originText = (site) => site.origin.map((o) => o.text).join('\n');
   // Read back whatever the browser made of the editing: blocks separated by
   // newlines, however they ended up nested.
@@ -3188,7 +3337,7 @@
       // place to write a paragraph of prose than a 300px column.
       clauseHeadHtml(d, {
         label: seeded ? seeded.note : undefined,
-        html: site.origin.map((o) => '<div class="lp" data-key="' + o.key + '">' + esc(o.text) + '</div>').join(''),
+        html: site.origin.map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock' : '') + '" data-key="' + o.key + '">' + esc(o.text) + '</div>').join(''),
       }) +
       // and your draft as the one reply, in the reply's own order: the wording,
       // then the argument for it behind the same blank disc everybody else's
@@ -3196,7 +3345,7 @@
       '<div class="field"><div class="fieldlab">What you are proposing</div>' +
       '<div class="propblock">' +
       '<div class="editlane" contenteditable="true" data-lane="' + site.keys[0] + '" spellcheck="false">' +
-      laneBlocks(site.text, originText(site)) + '</div>' +
+      laneBlocks(site.text, originText(site), false, headFlags(site)) + '</div>' +
       '<div class="speaker">' +
       '<span class="disc" aria-hidden="true" title="This is how your reason will reach everybody else: with your name off it (SPEC §3.4)."></span>' +
       '<div class="said edit-why" contenteditable="plaintext-only" data-why spellcheck="false"' +
@@ -3249,7 +3398,7 @@
       clauseHeadHtml(d, { text: s.origin.map((o) => o.text).join(' '), key: s.keys[0],
                           chips: chipsFor(s.keys[0], d.id) }) +
       fieldHtml('<div class="propblock"><div class="rtext">' +
-        laneBlocks(s.text, originText(s), true) + '</div>' + speakerHtml(d.rationale) + '</div>',
+        laneBlocks(s.text, originText(s), true, headFlags(s)) + '</div>' + speakerHtml(d.rationale) + '</div>',
         1, 'What you proposed') +
       '<div class="race-mid"><button class="btn btn-outline" data-act="draft-withdraw">Withdraw' +
       (n > 1 ? ' all ' + n + ' places' : '') + '</button></div>' +
@@ -3407,27 +3556,37 @@
     })();
     for (const line of DOC) {
       if (line.t === 'title') { html += '<div class="doctitle">' + esc(line.x) + '</div>'; continue; }
+      let secN = -1;
       if (line.t === 'h') {
-        const n = headIdx++;
-        if (buriedBy(n)) continue;                      // an outer fold hides this heading too
-        const inside = collapsed.has(n) ? suggestionsInSection(n) : 0;
-        html += '<h2 class="docline lvl' + (line.level ?? 1) + '" id="sec-' + n + '">' + toggleHtml(n) + esc(line.x) +
-          (inside ? '<span class="sechint">' + inside + (inside === 1 ? ' suggestion' : ' suggestions') + ' inside</span>' : '') +
-          '</h2>';
-        continue;
+        secN = headIdx++;
+        if (buriedBy(secN)) continue;                   // an outer fold hides this heading too
+      } else if (headIdx > 0 && hiddenSection(headIdx - 1)) {
+        continue;              // a paragraph goes with the innermost heading above it
       }
-      // a paragraph goes with the innermost heading above it, and with its parents
-      if (headIdx > 0 && hiddenSection(headIdx - 1)) continue;
 
-      // A draft of your own **replaces** the clauses it is editing, so the
-      // paragraph opens into two lanes where it stands rather than sprouting a
-      // card underneath its own copy (Ed, 2026-08-16). One card per site; the
-      // rest of a site's run is inside it.
+      // A draft of your own **replaces** the blocks it is editing, so they open
+      // into the composer where they stand rather than sprouting a card
+      // underneath their own copy (Ed, 2026-08-16). One card per site; the rest
+      // of a site's run is inside it. This is checked before the heading is
+      // drawn, because a run may *start* at a heading now (Ed, 2026-08-17) —
+      // it used to sit below the heading branch, which is why a draft on a
+      // section title opened nothing at all.
       if (writing && siteFor(writing, line.key)) {
         const site = siteFor(writing, line.key);
         if (site.keys[0] === line.key) {
           html += '</div>' + editCardHtml(writing, site) + '<div class="prose">';
         }
+        continue;
+      }
+
+      if (line.t === 'h') {
+        const inside = collapsed.has(secN) ? suggestionsInSection(secN) : 0;
+        html += '<h2 class="docline editable lvl' + (line.level ?? 1) + '" id="sec-' + secN + '"' +
+          ' data-key="' + line.key + '"' + EDITABLE + '>' +
+          '<span class="nocaret" contenteditable="false">' + toggleHtml(secN) + '</span>' + esc(line.x) +
+          (inside ? '<span class="sechint" contenteditable="false">' + inside +
+            (inside === 1 ? ' suggestion' : ' suggestions') + ' inside</span>' : '') +
+          '</h2>';
         continue;
       }
 
@@ -3590,7 +3749,7 @@
         if (!site) return;
         site.text = readLane(el);
         const off = laneCaret(el);
-        el.innerHTML = laneBlocks(site.text, originText(site));
+        el.innerHTML = laneBlocks(site.text, originText(site), false, headFlags(site));
         if (off != null) placeCaret(el, off);
         layoutQueue(); drawWires();
       };
@@ -4235,35 +4394,36 @@
       : 'Your edits — proposing one costs ' + EDIT_RULES.stake +
         '. You hold ' + editsHeld + ' of a possible ' + EDIT_RULES.cap +
         (full ? ', which is the cap.' : '; the tray shows how far the drip has got toward the next.');
-    // Above four, the wallet counts rather than draws (Ed, 2026-08-17).
-    // Glyphs are good at *a few* — you read three or five at a glance and no
-    // faster — and past that a row of identical pencils is a bar chart nobody
-    // asked for, which also makes a single spend invisible. So four is the most
-    // it ever draws and the rest is a number, and the tray gains the one thing
-    // it could never say: **when**. A fraction told you how far the drip had
-    // got; a countdown tells you how long you would have to wait, which is the
-    // question anybody standing at an empty wallet is actually asking.
-    const SHOWN = 4;
-    const drawn = Math.min(editsHeld, SHOWN);
+    // The wallet draws at most four slots wide, and counts when it cannot fit
+    // (Ed, 2026-08-17). Four held is four pencils, because "+1" costs exactly
+    // the space it saves and reads as an abbreviation of nothing. Five is three
+    // pencils and a +2 — the count takes a glyph's width, so the row stays the
+    // same length whatever you hold, and a spend is always visible as a change
+    // in the number even when it is not visible as a missing pencil.
+    const drawn = editsHeld <= 4 ? editsHeld : 3;
     const rest = editsHeld - drawn;
     walletEl.innerHTML =
       'your edits <span class="pencils">' +
       '<i>✏️</i>'.repeat(drawn) +
       (rest > 0 ? '<span class="pmore">+' + rest + '</span>' : '') +
-      (full ? '' : '<span class="pnext" style="--fill: ' +
-        Math.round(Math.max(0, Math.min(1, editsToNext)) * 100) + '%"><i>✏️</i></span>' +
-        '<span class="pwhen">' + dripIn() + '</span>') +
+      // The countdown carries the drip's own wash: the fill *is* how far the
+      // tenth has run, so the thing that says **when** and the thing that shows
+      // **how far** are one object rather than two saying it twice. That
+      // retires the ghost pencil, whose only job was the fraction.
+      (full ? '' : '<span class="pwhen" style="--fill: ' +
+        (Math.max(0, Math.min(1, editsToNext)) * 100).toFixed(1) + '%">' + dripIn() + '</span>') +
       '</span>';
   }
 
   // How long until the next edit arrives. The drip is one per tenth of the
-  // window (SPEC §7), so what is left of the current tenth is the wait — which
-  // is why this is stated in minutes rather than as a share of anything.
+  // window (SPEC §7), so what is left of the current tenth is the wait. Stated
+  // to the second (Ed, 2026-08-17) — a wallet you are waiting at wants a clock,
+  // not a rounding, and the seconds are what make it read as running.
   function dripIn() {
-    const perDrip = SESSION_MINUTES / 10;
-    const mins = Math.max(0, Math.round((1 - Math.max(0, Math.min(1, editsToNext))) * perDrip));
-    return mins >= 60 ? '+' + Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm'
-      : mins <= 0 ? 'any moment' : '+' + mins + 'm';
+    const secs = Math.max(0, Math.round((1 - Math.max(0, Math.min(1, editsToNext))) * SESSION_MINUTES * 6));
+    if (secs <= 0) return 'any moment';
+    const m = Math.floor(secs / 60), s = secs % 60;
+    return (m ? m + 'm ' : '') + String(s).padStart(m ? 2 : 1, '0') + 's';
   }
 
   // settleWashes last: every washed element has just been rendered wearing its
@@ -4274,6 +4434,17 @@
     markCurrentSection(); renderWallet(); drawWires(); settleWashes();
   }
   renderAll();
+
+  // The drip runs. Seconds in the countdown only mean anything if they move, so
+  // the wallet is the one thing here that changes without being touched: the
+  // tenth advances, the wash creeps, and when it lands an edit arrives. Only
+  // the wallet re-renders — the document and the rail are not involved.
+  setInterval(() => {
+    if (editsHeld >= EDIT_RULES.cap) return;
+    editsToNext += 1 / (SESSION_MINUTES * 6);
+    if (editsToNext >= 1) { editsToNext = 0; editsHeld = Math.min(EDIT_RULES.cap, editsHeld + 1); }
+    renderWallet();
+  }, 1000);
 
 
   // Always-on typing, bound once on the container rather than per paragraph:
@@ -4286,9 +4457,12 @@
   // it safe to put a caret in a constitutional document: nothing you do in the
   // prose can change it, because changing it is a thing you propose.
   doc.addEventListener('beforeinput', (ev) => {
-    const p = ev.target && ev.target.closest ? ev.target.closest('p.editable') : null;
+    const p = ev.target && ev.target.closest ? ev.target.closest('.editable[data-key]') : null;
     if (!p || p.closest('.sugg')) return;      // the composer's own fields are real editors
     ev.preventDefault();
+    // One block or several — the same keystroke, told apart by what is selected.
+    const picked = selectedBlocks();
+    if (picked && picked.blocks.length > 1) return startDraftFromRun(picked, ev);
     startDraftFromTyping(p, ev);
   });
 

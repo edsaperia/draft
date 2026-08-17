@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.18
+# Group Drafting Engine — Specification v0.19
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -71,7 +71,17 @@ Because withdrawal changes the field, it is a **ground shift** for that race (§
 
 **3.5 Disclosure.** **Judgment is blind; composition is briefed.** Standings, splits, and camps are visible in exactly one place — the composer's briefing (§6.1) — and only where there is no live judgment left to contaminate: a race that has left the judgment stream for the bounty board (§8.3), or an invitation about the participant's own candidate (§6.2). Drafting against a race that is **still being judged** shows the text and nothing else; a participant who could read the standings and then judge the pair would be casting an informed judgment in a blind field, which is the one thing this section exists to prevent. That constraint is what allows §3.3 to drop the forfeit rather than merely relocating the cost. No feed, card, sort, or notification shows direction on a race the participant hasn't judged. Resolved outcomes are public in the gazette immediately.
 
-Candidate authorship is governed by a constitution setting — **public** (visible live), **sealed** (hidden during the session, revealed at close), or **anonymous** (never revealed); default sealed. Rationales are always visible.
+**3.5a Disclosure is constitutional** (Ed, 2026-08-17). Who may be seen, and when, is not one setting but a small family of them, and none is decided by the convenor: they are settled by the roster at the **founding ceremony** (§9.0a), like quorum and the bar.
+
+**Candidate authorship** runs on a ladder from most private to least: **anonymous** (never revealed) · **sealed** (hidden during the session, revealed at close) · **public** (visible live). Rationales are always visible whatever the setting — what varies is only whether a name is attached to one.
+
+**Who may sign.** Independently, a document says whether authorship is uniform or elective: **nobody signs**, **everybody signs**, or **each author chooses per candidate**. Elective signing is a real option and a costly one: in a small roster an unsigned candidate among signed ones says something about its author, so a document that allows the choice is not neutral between the two. That is a cost for the roster to weigh rather than a reason to withhold the option (Ed, 2026-08-17).
+
+**Judgments** have their own ladder, one rung shorter: **never revealed** (the default and the assumption everywhere else in this spec) or **revealed after the decision they contributed to**. Live disclosure is not on it — §8.3's no-standings rule is not a preference but the thing that keeps judgment blind while it is still being collected.
+
+Two consequences worth stating, because they are the reason this is constitutional rather than cosmetic. Disclosure changes what the mechanism measures: a room that can see whose text it is can prefer the person, and §3.3's *preference is not measurement* has a sibling problem in deference. And in some rooms that is fine or even wanted — a standing committee that knows each other, a body whose members are accountable for their positions — which is exactly why the answer belongs to the roster and not to this document.
+
+**Anonymous is the strong default**, and structurally rather than by preselection: see §9.0a.
 
 ---
 
@@ -171,6 +181,10 @@ Taking the maximum of stated minimums is what makes this a **consent rule rather
 
 Answers are collected blind, for the same reason judgment is blind: otherwise the room anchors on whoever answers first. The **distribution is published without names** — the shape of what people asked for is worth seeing and makes the resulting bar easier to live with; the identity of whoever needed most is not.
 
+**The ceremony extends to disclosure** (Ed, 2026-08-17), and the consent rule generalises without amendment. Quorum and threshold are numbers, and "the lowest I will accept" is read up the scale. The disclosure settings of §3.5a are **ordered by privacy** — anonymous is more private than sealed, which is more private than public; nobody-signs than each-chooses than everybody-signs; judgments never revealed than revealed after the decision. Each member states the **most exposure they are willing to accept**, and the document takes the **most private** of those answers. It is the same rule seen from the other end: whatever the document ends up doing, no member is exposed further than they said they would accept, so nothing is imposed on anybody and there is still no vote to govern.
+
+That is also what makes **anonymous the strong default** without anything being preselected. Anonymous sits at the top of the privacy lattice, so it holds unless *every* member is content with more exposure — a single person who wants to stay unnamed keeps the whole document unnamed. A default that has to be argued out of by unanimity is a much stronger thing than a radio button that happens to be ticked, and it means the room only becomes visible to itself when it has genuinely all agreed to be.
+
 Quorum may be a percentage of the roster or a fixed count. Percentages suit a windowed convention, where the roster is stable and a fraction expresses legitimacy; fixed counts suit a perpetual document, where a drifting roster would otherwise silently re-rate every parked race whenever somebody joined. Participants who join later **inherit** the constitution rather than reopening it (Q257) — otherwise every arrival re-opens the founding question and a long-lived document never settles.
 
 **9.1 Distributed by default.** The baseline is a fully remote window, possibly days long. Co-presence is optional; a projector is another client rendering the chamber view (room mode: ticker, bounty board, closing sweep). Nothing in the mechanism references a room.
@@ -249,4 +263,7 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 | Quorum and threshold source | convenor-set, or the roster's founding ceremony — max of each member's stated minimum |
 | Perpetual drip | per real time rather than per 10% window; capped as above; no reset |
 | Visibility | chamber link-only by default; observer role off by default |
-| Authorship visibility | public · sealed · anonymous; default sealed |
+| Authorship visibility (§3.5a) | anonymous · sealed · public; **anonymous by default**, and by unanimity rather than by preselection |
+| Who may sign (§3.5a) | nobody · each author chooses · everybody; default nobody |
+| Judgment visibility (§3.5a) | never · revealed after the decision; default never. Live disclosure is not an option (§8.3) |
+| Disclosure source (§9.0a) | the roster's founding ceremony — the **most private** of each member's stated maximum exposure |

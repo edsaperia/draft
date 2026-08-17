@@ -952,3 +952,33 @@ Not a rendering bug: `queueEntries()` had always produced both of its entries. T
 That is the same trouble a deadlocked race had, from the other end (223). Its urgency is an honest judgment-leverage number, and judgment leverage is the wrong measure for it: what a diagonal buys is not the judgment it collects but the **ordering it fixes for everything else**, and it is rare (about one card in ten, SPEC §8.3) and cheap to answer. So it gets a floor, above ordinary questions and below both the flame and the stuck races — which have drafting leverage on top of everything else. The number is a guess and is logged as such.
 
 Found on the way, and logged as 280: the admission loop `break`s at the first entry too tall for the room left, so a shorter one further down never gets the leftover space. Measured 38px spare with a 29px entry available.
+
+### Disclosure becomes constitutional (Ed, 2026-08-17)
+
+Ed's instinct — make anonymous-or-signed a constitutional choice rather than a preference — turned out to fit the founding ceremony's existing rule without amending it, which is the sort of thing that suggests the rule was right.
+
+The ceremony's consent device is *each member states the lowest they will accept, and the document takes the maximum*. That reads naturally for quorum and the bar because they are numbers. The disclosure settings are not numbers, but they are **ordered by privacy**: anonymous is more private than sealed, which is more private than public; nobody-signs than each-chooses than everybody-signs. So each member states the **most exposure they will accept**, and the document takes the **most private** answer. Same rule, seen from the other end — nobody ends up more exposed than they said they would accept, so there is still nothing imposed and still no vote to govern.
+
+That also delivers **anonymous as a strong default** structurally rather than by preselection. Anonymous sits at the top of the lattice, so it holds unless *every* member is content with more — one person who wants to stay unnamed keeps the whole document unnamed. A default you have to argue out of by unanimity is a far stronger thing than a radio button that happens to be ticked, and it means a room only becomes visible to itself when it has genuinely all agreed to be.
+
+Ed's other extension — that judgments could be revealed after the decisions they contributed to — gets its own ladder, one rung shorter: never, or after the fact. Live is not on it, and that is not a preference either: §8.3's no-standings rule is what keeps judgment blind while it is still being collected, so it is the one rung the constitution may not reach.
+
+Folded into SPEC v0.19 at §3.5a, §9.0a and Appendix A. Nothing about the *surface* is designed yet — how the ceremony asks, how a signed rationale renders beside the blank-disc ones it sits among, what the record shows when judgments are revealed.
+
+### The editor learns to select (Ed, 2026-08-17)
+
+Two rulings, and both simplify rather than complicate. **A contiguous run deleted together is one candidate, not a patch.** **A heading edited with its paragraph is one candidate too.**
+
+The first was almost already true. A `draft-site` has been a *run* of adjacent clauses since 225 — the composer joins them when you type across a paragraph break. What was missing was only the ability to *select* a run rather than having to type your way across it. So the mechanism did not move: the run is flattened to one string with a newline between blocks, the selection is located in that string rather than in any one block, and the edit is applied to it. Deleting four blocks is therefore not four deletions coordinated afterwards; it is one edit to one piece of text, which is exactly why it comes out as one candidate. Ed's ruling and the existing data structure agreed with each other, which is usually a sign both are right.
+
+The second needed headings to become addressable blocks — they had no keys at all, because only clauses had ever been proposed against. Giving them keys is what lets a section be renamed, and it is also the only way a heading and its paragraph can be *one* candidate rather than two coordinated ones.
+
+Two things that had to come with it. The block **type** travels with each origin, so a section title still reads as a title in the lane and in the proposal rather than being silently flattened to body text. And `renderDoc`'s loop had to be restructured: the composer check sat *below* the heading branch, so a draft that began at a heading rendered nothing at all — the heading was emitted and the loop moved on before anything asked whether a draft covered it.
+
+### Three smaller things
+
+**The clause changed size when its card opened.** Having gone to some trouble to keep it in exactly the same place, the one remaining movement was the more conspicuous for being the only one: `--t-body` was a notch under the document's own size. A clause under judgment *is* the document's text, so the token is now the document's size and the head, the proposals and the editing lane all follow.
+
+**The caret.** Ed asked for a heavier, serifed vertical bar. CSS gives `caret-color` and nothing else — no width, no shape — so what changed is the **mouse pointer**: a drawn I-beam, bolder, white-haloed so it survives a yellow or green wash. The blinking caret is merely coloured. Getting the caret itself means hiding the native one and drawing a div at the selection rectangle, kept in step with typing, blinking, IME composition, selection changes and scroll — in a contenteditable that is a real source of bugs, and it is the one element that must never be wrong. Logged as 281 rather than attempted.
+
+**The wallet counts and ticks.** Four held is four pencils, because "+1" costs exactly the space it saves; five is three pencils and a +2, so the row stays one length whatever you hold and a spend is visible as a change in the number even when it is not visible as a missing pencil. The countdown carries the drip's own wash — the fill *is* how far the tenth has run — so the thing that says *when* and the thing that shows *how far* are one object rather than two saying it twice, which retires the ghost pencil whose only job was the fraction. And it runs: seconds only mean anything if they move, so the wallet is the one thing on this surface that changes without being touched.
