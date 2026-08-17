@@ -3067,3 +3067,65 @@ while the shapes are disjoint. Nothing said so, and it held for months because
 nothing at card height overlapped anything else — the invariant was real and
 undocumented, and the first design that broke it would have been blamed for the
 artefact it revealed.
+
+### The filed pile, and two helper texts that went with it (2026-08-17)
+
+Ed's answer to 294: *we open the decision card where tabs now line up nicely,
+except that filed decisions sit at the bottom of that line still stacked, and
+only open when we click on the filed stack. If there are too many, the decision
+card gets longer until it can hold them all.*
+
+Which is the tab stack applied one level down — the closed posture, inside a
+strip that is otherwise open — and it is worth noticing how much it costs:
+nothing. No history tab, no separate surface, no rule about when a filed mark is
+allowed to appear. A busy clause shows what is happening at it, with what has
+happened at it folded into one object underneath, in the place you are already
+looking. The idea that arrived this morning to bound a gutter turns out to
+answer a question that had been open since the gutter existed.
+
+**Newest at the top**, which is the one ordering question a pile of records has,
+and the closed state settles it: only the top glyph shows, so the top has to be
+the last thing that happened here. Opened, it then reads down into the past,
+which is how every record anybody keeps is read.
+
+**What is not in the pile**: a decision that is decided but *unread*. It is still
+asking for its OK, so it stays with the live tabs. Filed is precisely the state
+that wants nothing, which is the same line the palette draws with its greys.
+
+**And the card grows** — a floor on its height, not a height. The strip is
+absolutely positioned in the head, so it never pushes the card and would simply
+have hung out of the bottom of it. Eight filed decisions expand to 261px against
+a card of 382px, and the card goes to 448px.
+
+**The bug the pile revealed.** Clicking a filed tab opened nothing, on all eight.
+The document only ever swallowed a clause into its record where the clause had
+*nothing live on it* — and that had never been wrong, because until this
+afternoon there was no way to reach a filed decision from a clause that had live
+ones. The gutter hid every filed mark the moment anything live shared the clause,
+which is the whole of what 294 was complaining about. So the missing branch and
+the complaint were the same fact seen from two ends, and fixing the one exposed
+the other instantly. **A feature that was never reachable was never tested**, and
+"it has always worked" means only "nothing has ever asked".
+
+### Two helper texts, removed (Ed, same session)
+
+The `yoursnote` opened every proposal of your own with three sentences of
+mechanism: that nothing is asked of you, that standing behind a proposal counts
+as preferring it, that you will still be served the rest of the race against it.
+Every one is a fact about *all* your proposals, which is why it appeared on all
+of them — and **a footnote that appears on every card is a design note, not
+information**. The card already says the two things a reader needs: there is no
+radio on it, and the one control is a withdrawal.
+
+The ⏳ card's *You kept the current text · You can change this while the race
+runs* had been trimmed once already, from a longer sentence about revision, down
+to what you said plus the fact it can change. Both halves are drawn elsewhere on
+the same card. The radio on the lane you chose reads **Preferred** — that is what
+you said. It is still a live radio — that is what *you can change this* means. A
+line of prose restating two controls the reader is looking at is the design
+explaining itself.
+
+The two locked variants keep theirs, and the contrast is the reason: on a settled
+or ground-shifted card the controls are *dead*, so the card cannot say it by
+being itself, and a sentence is the only thing left that can. **Prose earns its
+place where a control cannot speak.**

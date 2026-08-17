@@ -760,6 +760,22 @@
     background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg));
     border-radius: 0 0 var(--r-sm) var(--r-sm);
   }
+  /* **The filed pile**: the same closed posture, one level down, inside a strip
+     that is otherwise open. It sits under the live tabs with a little more air
+     than the 3px that separates them from each other, because it is a different
+     group and not one more tab; and opening it simply hands the group back the
+     strip's own gap, so the two states are one rule with one number changed. */
+  .filedpile { display: flex; flex-direction: column; align-items: flex-end; margin-top: 5px; }
+  .filedpile:not(.open) { gap: 0; cursor: pointer; }
+  .filedpile:not(.open) .achip { pointer-events: none; }
+  .filedpile:not(.open) .achip + .achip { margin-top: -26px; }
+  .filedpile:not(.open) .achip + .achip {
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg));
+    border-radius: 0 0 var(--r-sm) var(--r-sm);
+  }
+  .filedpile.open { gap: 3px; }
+  .filedpile:not(.open):hover .achip:first-child { transform: translateY(-1px); }
+  .filedpile:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--r-sm); }
   .achip:hover {
     transform: translateY(-1px);
     background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 30%, var(--bg));
@@ -2039,10 +2055,86 @@
       verdict: 'kept the current text', pick: 'keep',
       qLabel: '§ Guests — dogs', urgency: 0,
       pct: 100, cap: 'sealed — the current text stood · judgment locked',
-      decided: { outcome: 'retired — the current text stood', when: 'yesterday, 17:40', p: 0.38, bar: 0.69, judges: 6 },
-      optionA: 'Friends of the house are welcome whenever a member is in.',
-      optionB: 'Friends of the house are welcome whenever a member is in, and so are their dogs, on the ground floor.',
+      // the oldest decision at this clause, and it is declared first because the
+      // filed pile reads declaration order as time
+      decided: { outcome: 'retired — the current text stood', when: 'Monday, 17:40', p: 0.38, bar: 0.69, judges: 6 },
+      optionA: 'Friends of the house are welcome.',
+      optionB: 'Friends of the house are welcome, and so are their dogs, on the ground floor.',
       rationale: 'Hollis’s lurcher has been coming for two years and nobody has ever objected. Write down what we already do.'
+    },
+    // § Bringing a Guest carries the charter's longest history, which is what
+    // makes it the clause to test the filed pile on: four decisions already
+    // taken here, three of them refused, under four still live.
+    {
+      id: 'quick-guests-inhouse', kind: 'quick', keys: ['guests'], state: 'sealed',
+      verdict: 'preferred the new wording', pick: 'b',
+      qLabel: '§ Guests — a member being in', urgency: 0,
+      pct: 100, cap: 'sealed — adopted · the charter changed here',
+      won: 'b',
+      decided: { outcome: 'adopted', when: 'Tuesday, 11:20', p: 0.81, bar: 0.66, judges: 9 },
+      optionA: 'Friends of the house are welcome.',
+      optionB: 'Friends of the house are welcome whenever a member is in.',
+      rationale: 'As it stood it invited people to a house with nobody in it. The guest is a member’s guest, and the member should be here.'
+    },
+    {
+      id: 'quick-guests-three', kind: 'quick', keys: ['guests'], state: 'sealed',
+      verdict: 'kept the current text', pick: 'keep',
+      qLabel: '§ Guests — how many at once', urgency: 0,
+      pct: 100, cap: 'sealed — the current text stood',
+      decided: { outcome: 'retired — the current text stood', when: 'Wednesday, 09:05', p: 0.31, bar: 0.68, judges: 8 },
+      optionA: 'Friends of the house are welcome whenever a member is in.',
+      optionB: 'Friends of the house are welcome whenever a member is in, to a maximum of three at a time.',
+      rationale: 'The Common Room holds nine at a push. Four of us bringing three friends each is not an evening, it is an incident.'
+    },
+    {
+      id: 'quick-guests-book', kind: 'quick', keys: ['guests'], state: 'sealed',
+      verdict: 'kept the current text', pick: 'keep',
+      qLabel: '§ Guests — signing in', urgency: 0,
+      pct: 100, cap: 'sealed — the current text stood',
+      decided: { outcome: 'retired — the current text stood', when: 'Thursday, 19:44', p: 0.44, bar: 0.70, judges: 7 },
+      optionA: 'Friends of the house are welcome whenever a member is in.',
+      optionB: 'Friends of the house are welcome whenever a member is in, and are written in the book on the landing.',
+      rationale: 'If the house burns down we should know who was in it. It costs a line of a pen.'
+    },
+    {
+      id: 'quick-guests-children', kind: 'quick', keys: ['guests'], state: 'sealed',
+      verdict: 'kept the current text', pick: 'keep',
+      qLabel: '§ Guests — children', urgency: 0,
+      pct: 100, cap: 'sealed — the current text stood',
+      decided: { outcome: 'retired — the current text stood', when: 'Thursday, 20:12', p: 0.22, bar: 0.70, judges: 7 },
+      optionA: 'Friends of the house are welcome whenever a member is in.',
+      optionB: 'Friends of the house are welcome whenever a member is in; children under twelve are welcome in the Garden only.',
+      rationale: 'The Library Corner is not a place for a four-year-old and none of us wants to be the one who says so.'
+    },
+    {
+      id: 'quick-guests-late', kind: 'quick', keys: ['guests'], state: 'sealed',
+      verdict: 'kept the current text', pick: 'keep',
+      qLabel: '§ Guests — arriving late', urgency: 0,
+      pct: 100, cap: 'sealed — the current text stood',
+      decided: { outcome: 'retired — the current text stood', when: 'Friday, 08:31', p: 0.49, bar: 0.71, judges: 10 },
+      optionA: 'Friends of the house are welcome whenever a member is in.',
+      optionB: 'Friends of the house are welcome whenever a member is in, and are not brought in after ten in the evening.',
+      rationale: 'The Upper Floors hear everything. Ten is not early and the rule would be kind to whoever is asleep.'
+    },
+    {
+      id: 'quick-guests-dinner', kind: 'quick', keys: ['guests'], state: 'sealed',
+      verdict: 'preferred the new wording', pick: 'b',
+      qLabel: '§ Guests — at the Thursday Dinner', urgency: 0,
+      pct: 100, cap: 'sealed — the current text stood',
+      decided: { outcome: 'retired — the current text stood', when: 'Friday, 12:07', p: 0.66, bar: 0.72, judges: 11 },
+      optionA: 'Friends of the house are welcome whenever a member is in.',
+      optionB: 'Friends of the house are welcome whenever a member is in, though not at the Thursday Dinner unless the cook is told the day before.',
+      rationale: 'The cook buys for the number they are given. A guest nobody mentioned is somebody else going without.'
+    },
+    {
+      id: 'quick-guests-wine', kind: 'quick', keys: ['guests'], state: 'sealed',
+      verdict: 'kept the current text', pick: 'keep',
+      qLabel: '§ Guests — bringing something', urgency: 0,
+      pct: 100, cap: 'sealed — the current text stood',
+      decided: { outcome: 'retired — the current text stood', when: 'Friday, 16:55', p: 0.18, bar: 0.72, judges: 6 },
+      optionA: 'Friends of the house are welcome whenever a member is in.',
+      optionB: 'Friends of the house are welcome whenever a member is in; a member bringing the same guest twice in a week brings the wine.',
+      rationale: 'Half a joke, but the house does keep buying drink for people who are not in it.'
     },
     {
       id: 'quick-guestkey', kind: 'quick', keys: ['guestkey'], state: 'needs',
@@ -2568,6 +2660,10 @@
   // Decisions have a read state (Ed, 112): one you haven't opened pins itself
   // to the screen, and settles down into a dot at its clause once you have.
   const readSeals = new Set();
+  // Which clauses have had their filed pile opened out. Keyed by clause rather
+  // than by card, because the pile belongs to the clause and not to whichever
+  // decision you happen to be reading it from.
+  const filedOpen = new Set();
 
 
 
@@ -3752,12 +3848,18 @@
       return '<div class="srationale locked">' + said +
         'This one is settled, so your judgment is on the record as it stands (SPEC §4.4).</div>';
     }
-    // The unlocked case says only what you said and that it can change. Why it
-    // can, and when it stops being able to, was the design explaining itself —
-    // and the two locked cases above are where that explanation is actually
-    // needed, because there the controls are dead and the reader deserves the
-    // reason (Ed, 2026-08-17).
-    return '<div class="srationale">' + said + 'You can change this while the race runs.</div>';
+    // **The unlocked case says nothing at all** (Ed, 2026-08-17). It had been
+    // trimmed once already, to what you said plus the fact it can change, and
+    // both halves turn out to be drawn elsewhere on the same card: the radio on
+    // the lane you chose reads *Preferred*, which is what you said, and it is
+    // still a live radio, which is what *you can change this* means. A line of
+    // prose restating two controls the reader is looking at is the design
+    // explaining itself.
+    //
+    // The two locked cases above keep theirs, and the contrast is the whole
+    // reason: there the controls are dead, so the card cannot say it by being
+    // itself and a sentence is the only thing that can.
+    return '';
   }
 
   // The author's pinned rationale (SPEC §2.6, §3.4) is drawn by `speakerHtml`
@@ -4937,9 +5039,14 @@
           '<span class="psteps">' + step(i > 0 ? i - 1 : null, 'The place before', '↑') +
           step(i < n - 1 ? i + 1 : null, 'The next place', '↓') + '</span></div>'
         : '') +
-      '<div class="yoursnote">This is yours. Nobody asks you to judge it — a proposal you are still standing behind ' +
-      'counts as your preference for as long as it is live, and counts toward quorum (SPEC §3.3, §8.2)' +
-      (rival ? '. You will still be served the others in this race against it' : '') + '.</div>' +
+      // The `yoursnote` is gone (Ed, 2026-08-17). It opened every card of your
+      // own with three sentences of mechanism — that nothing is asked of you,
+      // that standing behind a proposal counts as preferring it, that you will
+      // still be served the rest of the race against it — and every one of them
+      // is a fact about *all* your proposals, so it appeared on every one. A
+      // footnote that appears on every card is a design note, not information.
+      // The card already says the two things that matter here: there is no
+      // radio, and the one control is a withdrawal.
       // Your own proposal is a proposal like any other, so it is drawn like
       // any other: the clause it rewrites at the head, your wording under it
       // stating its own change, your argument behind the same blank disc
@@ -5007,17 +5114,83 @@
     });
   }
 
+  // **The card grows to hold its strip** (Ed, 2026-08-17). A card's height has
+  // always come from its content, which was safe while the strip was shorter
+  // than anything it could sit beside — open a filed pile of six and it is not.
+  // The strip is absolutely positioned in the head, so it never pushes the card
+  // and would simply have hung out of the bottom of it.
+  //
+  // A floor rather than a height: the card is still as tall as it needs to be
+  // for what it says, and the strip only ever stops it being shorter than that.
+  // No reflow loop, because the strip's own height does not depend on the card's.
+  function fitCards() {
+    doc.querySelectorAll('.sugg[data-card]').forEach((card) => {
+      card.style.minHeight = '';
+      const col = card.querySelector('.chipcol');
+      if (!col) return;
+      const c = card.getBoundingClientRect();
+      const need = col.getBoundingClientRect().bottom - c.top + 14;
+      if (need > c.height) card.style.minHeight = Math.ceil(need) + 'px';
+    });
+  }
+
+  // Everything decided at this clause that you have already acknowledged. Note
+  // what is *not* in here: a decision that is decided but unread is still asking
+  // for its OK, so it stays in the live part of the strip with everything else
+  // that wants something. Filed is the state that wants nothing.
+  function filedFor(key) {
+    return key ? SUGGS.filter((g) => (g.keys ?? []).includes(key) &&
+      stateOf(g) === 'sealed' && !isUnread(g)) : [];
+  }
+
+  const achipHtml = (g, key, o) =>
+    '<span class="achip' + (o.inert ? ' behind' : '') + '"' +
+    (o.inert ? ' aria-hidden="true"' : ' role="button" tabindex="0"') +
+    ' data-anchor="' + g.id + '"' + chipStyle(g, o.z ? 'z-index:' + o.z : '') +
+    (o.inert ? '' : ' title="' + esc(plainLabel(g.qLabel)) +
+      (g.kind === 'patch'
+        ? ' · place ' + (g.sites.findIndex((x) => x.key === key) + 1) + ' of ' + g.sites.length
+        : '') + (o.title || ' — open it') + '"') +
+    '>' + mkHtml(markKindOf(g)) + '</span>';
+
+  // **The filed pile** (Ed, 2026-08-17, answering 294). A card's tab strip lines
+  // the live decisions up at full height, and the ones already filed sit at the
+  // **bottom of that line, still stacked** — the closed posture, inside a strip
+  // that is otherwise open — until you click the pile, when they line up too and
+  // the card grows to hold them.
+  //
+  // Which is the whole idea of the stack applied one level down, and it is what
+  // makes the answer to *where does history live* cost nothing: a busy clause
+  // shows what is happening at it, with what has happened at it folded into one
+  // object underneath, in the one place you are already looking. No history tab,
+  // no separate surface, no rule about when a filed mark is allowed to appear.
+  //
+  // **Newest at the top**, which is the one ordering question a pile of records
+  // has and it is settled by the closed state: only the top glyph shows, so the
+  // top must be the last thing that happened at this clause. Expanded it then
+  // reads down into the past, which is how every record anybody keeps is read.
+  // Ranking it by anything other than time would be a claim about which past
+  // decision mattered, and nothing here is entitled to make one.
+  function filedPileHtml(key, gs0) {
+    const gs = gs0.slice().reverse();
+    const open = filedOpen.has(key);
+    return '<span class="filedpile' + (open ? ' open' : '') + '" data-filed="' + key + '"' +
+      (open ? '' : ' role="button" tabindex="0" title="' + gs.length +
+        ' decided and filed at this clause — open them"') + '>' +
+      gs.map((g, i) => achipHtml(g, key, {
+        inert: !open, z: gs.length - i, title: ' — the record',
+      })).join('') + '</span>';
+  }
+
   function chipsFor(key, exceptId) {
     // Same order as the gutter stack, for the same reason (see `stackOrder`):
     // the card's tab strip is that stack expanded, so the two must not disagree
     // about what sits where. The card's own tab is prepended by the head and is
     // always first, because it is the active tab.
-    return (key ? stackOrder(suggFor(key)) : []).filter((g) => g.id !== exceptId).map((g) => {
-      const i = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === key) : -1;
-      const where = g.kind === 'patch' ? ' · place ' + (i + 1) + ' of ' + g.sites.length : '';
-      return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '"' + chipStyle(g) + ' title="' +
-        esc(plainLabel(g.qLabel)) + where + ' — open it">' + mkHtml(markKindOf(g)) + '</span>';
-    }).join('');
+    const live = stackOrder(key ? suggFor(key) : []).filter((g) => g.id !== exceptId)
+      .map((g) => achipHtml(g, key, {})).join('');
+    const filed = filedFor(key).filter((g) => g.id !== exceptId);
+    return live + (filed.length ? filedPileHtml(key, filed) : '');
   }
 
   // **What a ground shift actually looks like** (SPEC §4.4, built 2026-08-17).
@@ -5333,7 +5506,19 @@
         // arguing about it. It also settles 265, which asked why the two
         // behaved differently.
         let swallowed = false;
-        if (openSugg) {
+        // **A filed record opens from a clause that also has live decisions.**
+        // It could not before, and there was no bug to see, because there was no
+        // way to *reach* one from here — the gutter hid every filed mark the
+        // moment anything live shared the clause, which is the whole of what 294
+        // complained about. The filed pile put eight of them one click away and
+        // the document quietly rendered nothing for all eight, because the
+        // branch that swallows a clause into its record only ran where the
+        // clause had nothing live on it.
+        const openFiled = filedFor(line.key).find((x) => x.id === openId);
+        if (openFiled && !cardDone) {
+          html += '</div>' + suggCardHtml(openFiled) + PROSE;
+          cardDone = swallowed = true;
+        } else if (openSugg) {
           if (openSugg.kind === 'patch') {
             // a card at *every* place a patch touches (Ed, 181)
             if (openSugg.sites.some((x) => x.key === line.key)) {
@@ -5434,6 +5619,7 @@
     html += '</div>';
     doc.innerHTML = html;
     fitStacks();
+    fitCards();
 
     doc.querySelectorAll('[data-sec-toggle]').forEach((b) =>
       b.addEventListener('click', (ev) => { ev.stopPropagation(); toggleSection(+b.dataset.secToggle); })
@@ -5463,6 +5649,22 @@
         toggle(el.dataset.anchor, false);
       })
     );
+    // The filed pile opens as one object and closes the same way. When it is
+    // open its chips are ordinary tabs and handle their own clicks, so this only
+    // fires on the pile's own box — which is what closes it again.
+    doc.querySelectorAll('[data-filed]').forEach((el) => {
+      const flip = (ev) => {
+        ev.stopPropagation();
+        const k = el.dataset.filed;
+        if (filedOpen.has(k)) filedOpen.delete(k); else filedOpen.add(k);
+        renderAll(); drawWires();
+      };
+      el.addEventListener('click', (ev) => { if (ev.target === el || !el.classList.contains('open')) flip(ev); });
+      el.addEventListener('keydown', (ev) => {
+        if (ev.key !== 'Enter' && ev.key !== ' ') return;
+        ev.preventDefault(); flip(ev);
+      });
+    });
     // ✏️ on a lane: start writing from that wording (Ed, 228).
     doc.querySelectorAll('[data-propose-from]').forEach((b) =>
       b.addEventListener('click', (ev) => {
