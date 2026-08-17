@@ -300,13 +300,6 @@
   .qitem.mosturgent { z-index: 3; }
   @media (prefers-reduced-motion: reduce) { .qitem { transition: none; } }
 
-  /* what would not fit on the screen (Ed, 110) — counted, never silently dropped */
-  .qmore {
-    position: fixed; z-index: 2; text-align: center;
-    font-size: var(--t-cap); color: var(--muted);
-    background: var(--bg); border: 1px dashed var(--border); border-radius: var(--r-md);
-    padding: 3px var(--s2);
-  }
 
 
   /* No borders (Ed, 164): a card is its wash plus the shadow that lifts it off
@@ -408,7 +401,16 @@
      alphabet appears in the contents rail and the document gutter. Emoji carry
      their own colour, so they are held small and never given a weight — the
      glyph is the signal, not its size. */
-  .qmark { flex: none; font-size: var(--t-small); line-height: 1.35; font-weight: 400; }
+  /* Emoji do not share an advance width — 🔥 is narrower than ⏳, ☑️ narrower
+     than ✏️ — so a flex `gap` after the glyph put the title in a different
+     place on every kind of entry (Ed, 2026-08-17: the spacing "varies between
+     types; it's correct for 💡"). The mark is given a fixed box and the glyph
+     centred in it, so the column of titles lines up whatever the alphabet does.
+     Sized from 💡, which is the one that read right. */
+  .qmark {
+    flex: none; font-size: var(--t-small); line-height: 1.35; font-weight: 400;
+    width: 1.15em; display: inline-flex; justify-content: center; align-items: baseline;
+  }
 
   /* A diagonal's title, set over four lines (Ed, 284). On one line the two
      section names collided and truncated at 290px — the entry exists to let
@@ -507,14 +509,25 @@
     border-radius: var(--r-sm);
   }
   .anch.active:hover { box-shadow: none; }
-  /* one rule for every washed surface in the document, and one transition:
-     the clause, the head of the card that swallows it, and a held-open gap */
-  .doc .anch, .clausehead .headclause, .insert-anchor {
+  /* **The prose carries no highlight** (Ed, 2026-08-17). A contested clause
+     used to wear its lifecycle hue behind the words; it now wears nothing, and
+     the whole of that colour lives in the gutter mark beside it. The charter
+     reads as a charter, and the margin does the work — which is what the
+     surface has been claiming since the north star ("most of a session should
+     feel like approving typo fixes; the machinery earns its visibility").
+
+     The **geometry** stays: `.anch` and `.headclause` keep their padding and
+     negative margin, because the card-opening motion is measured against the
+     two boxes being identical. Only the paint is gone.
+
+     A held-open gap keeps its wash, because there is no text there to leave
+     unmarked — the colour *is* the thing. */
+  .insert-anchor {
     background-color: var(--washcol, transparent);
     transition: background-color var(--wash-ms) ease;
   }
   @media (prefers-reduced-motion: reduce) {
-    .doc .anch, .clausehead .headclause, .insert-anchor { transition: none; }
+    .insert-anchor { transition: none; }
   }
 
   /* Always-on typing (Ed, 224). Every clause in the charter carries a caret:
@@ -613,7 +626,7 @@
        says it was pressed. */
   .achip {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 30px; height: 27px; font-size: var(--t-body); line-height: 1;
+    width: 34px; height: 30px; font-size: 1.125rem; line-height: 1;
     border-radius: var(--r-sm);
     background: rgba(var(--chiphue, var(--lc-closed)), 0.18);
     box-shadow: var(--shadow-sm);
@@ -839,13 +852,20 @@
        the right with a negative margin — widening alone grows it leftwards and
        takes the glyph with it (measured: -7px, which is exactly the movement
        the card-opening motion exists to avoid) */
-    width: 36px; padding-right: 6px; margin-right: -6px;
-    background: var(--bg);
+    width: 40px; padding-right: 6px; margin-right: -6px;
+    /* **The active tab keeps its colour** (Ed, 2026-08-17). It used to take the
+       card's white surface, which is the ordinary tab move — but now that the
+       prose carries no highlight, the gutter holds the only lifecycle colour on
+       this side of the screen, and a tab that goes white the moment you open it
+       throws away the one thing it is there to say. It is deepened instead,
+       against the lighter marks stacked under it, and the join is carried by
+       the width and the lift rather than by the ground. */
+    background: rgba(var(--chiphue, var(--lc-closed)), 0.34);
     box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.07), -3px 2px 4px rgba(0, 0, 0, 0.13);
     position: relative; z-index: 1;
   }
   .clausehead .achip.wmark:hover {
-    background: var(--bg); transform: none;
+    background: rgba(var(--chiphue, var(--lc-closed)), 0.42); transform: none;
     box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.09), -4px 3px 6px rgba(0, 0, 0, 0.16);
   }
   .clausehead .achip.wmark:active { transform: none; }
@@ -1272,8 +1292,12 @@
 
 <div class="wrap">
   <div class="layout">
+    <!-- Neither rail is titled (Ed, 2026-08-17). "Amendments" scrolled away
+         with the page while "Contents" stayed put, and the asymmetry was worse
+         than either label was useful: both columns say what they are by what is
+         in them, which is the same argument that took the explanatory notes off
+         them in the QA of 2026-08-16. -->
     <nav class="toc">
-      <h2 class="eyebrow">Contents</h2>
       <ul id="toc"></ul>
     </nav>
 
@@ -1282,9 +1306,7 @@
     </main>
 
     <aside class="queue">
-      <h2 class="eyebrow">In the margin</h2>
       <ul id="queue"></ul>
-      <div id="qmore" class="qmore"></div>
     </aside>
   </div>
 
@@ -1995,7 +2017,6 @@
 
   const doc = document.getElementById('doc');
   const queueEl = document.getElementById('queue');
-  const moreEl = document.getElementById('qmore');
   const tocEl = document.getElementById('toc');
   const wiresEl = document.getElementById('wires');
   let openId = null;
@@ -2813,12 +2834,13 @@
       bottom = Math.max(bottom, t + r.h);
     }
     queueEl.style.height = Math.round(bottom + 24) + 'px';
-    const n = pinned.length - shown.length;
-    moreEl.textContent = n === 1 ? '+1 further off in the charter' : '+' + n + ' further off in the charter';
-    moreEl.style.display = n ? '' : 'none';
-    moreEl.style.left = Math.round(railRect.left) + 'px';
-    moreEl.style.width = Math.round(railRect.width) + 'px';
-    moreEl.style.top = Math.round(innerHeight - BAND_BOT - 22) + 'px';
+    // The "+n further off in the charter" tally is gone (Ed, 2026-08-17). It
+    // came in under 110 — *counted, never silently dropped* — and that rule was
+    // right while the rail's admission cap felt like a failure to show
+    // everything. It no longer does: the rail is a margin index of a document
+    // you can scroll, the entries it cannot fit are a few inches away in the
+    // thing they annotate, and a running count of them at the foot was a
+    // permanent apology for a limit nobody experiences as one.
   }
 
 
@@ -5269,12 +5291,30 @@
     return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
   }
 
-  // settleWashes last: every washed element has just been rendered wearing its
-  // *previous* colour, and this is what hands it the new one so the transition
-  // has something to run from (Ed, 2026-08-17).
+  // settleWashes before the wires, and both after everything else. Every washed
+  // element has just been rendered wearing its *previous* colour, and
+  // settleWashes is what hands it the new one so the transition has something
+  // to run from (Ed, 2026-08-17).
+  //
+  // The wires have to come **after** it, because a cable takes its colour by
+  // reading its own rail entry's `--washcol` — and until the washes settle, that
+  // is still the previous colour. Drawn first, the cable read the old value and
+  // nothing ever redrew it, so it kept the hue of a state its card had left
+  // (Ed, 2026-08-17: *cables don't change colour when the cards change colour*).
+  // The wire's own fade is unaffected by the order: it carries its previous
+  // value in `prevWire` rather than reading it off the DOM.
   function renderAll() {
+    // `layoutQueue` belongs here rather than at each call site (Ed, 2026-08-17:
+    // *when I resolve the 🔥 card, a new one should appear in my sidebar
+    // immediately, rather than me having to deselect it first*). The rail was
+    // being rebuilt without being laid out, so the entry promoted to 🔥 by the
+    // judgment sat at its clause's own position — six thousand pixels down —
+    // until the next scroll or card-close happened to run the layout. A rebuilt
+    // rail always needs positioning; making that a rule rather than a habit at
+    // eight call sites removes the whole class of bug. It is idempotent, so the
+    // sites that still call it explicitly are harmless.
     settleTopUrgent(); renderDoc(); renderQueue(); renderToc();
-    markCurrentSection(); renderWallet(); drawWires(); settleWashes();
+    markCurrentSection(); renderWallet(); settleWashes(); layoutQueue(); drawWires();
   }
   renderAll();
 

@@ -1592,3 +1592,69 @@ after any capture — and captures **scroll the page** — the wires and their c
 holes are stale, and a zoomed screenshot shows the shadow landing exactly where
 the clip says it should not. Two separate false diagnoses came out of that before
 I made the shadow layer bright red and looked at where it actually painted.
+
+### Colour leaves the prose
+
+Ed: *I want to try removing the highlights on document text, instead keep the
+coloured background behind the left gutter emoji when they are acting as tabs.*
+
+Built as read: the wash comes off `.anch` and off the `clause-head`'s block, and
+the whole of the lifecycle colour on that side of the screen now lives in the
+gutter. The charter reads as a charter. It is also the north star arriving where
+it was always headed — *most of a session should feel like approving typo fixes;
+the machinery earns its visibility* — because the machinery is now entirely in
+the margin and the text is just text.
+
+Two consequences worth stating.
+
+The **geometry stays**. `.anch` and `.headclause` keep their padding and negative
+margin even with nothing painted on them, because the card-opening motion is
+measured against those two boxes being identical. Removing the paint is safe;
+removing the box would have cost the 0px clause movement that took a day to get.
+
+And the **active tab keeps its colour** rather than taking the card's white
+surface, which reverses yesterday's tab treatment. White was right when the card
+head carried the hue: the tab joined a coloured thing. With the head white, a tab
+that goes white on opening throws away the only lifecycle colour left on that
+side. It deepens instead — 0.34 against the 0.18 of the marks stacked under it —
+and the join is carried by the width and the lift, which were doing most of the
+work anyway.
+
+They also finally have a name: **`clause-tab`**. They are one per decision at a
+clause, they carry the `lifecycle mark`, they are the only way into a decision
+card from the document, and when a card is open they are its tabs. The name says
+where they live and what they become.
+
+### 🔥 to 🔥
+
+Ed: *when I resolve the 🔥 card, a new one should appear in my sidebar
+immediately, rather than me having to deselect it first. I think the main
+workflow will be jumping from 🔥 to 🔥 until everything is done.*
+
+`settleTopUrgent` was already promoting the next flame on the same render — the
+fault was one line further out. `renderAll` rebuilt the rail without laying it
+out, so the newly-promoted entry sat at its clause's own position, six thousand
+pixels down, until a scroll or a card-close happened to run `layoutQueue`.
+Closing the card ran it, which is exactly why deselecting "worked".
+
+`layoutQueue` is now part of `renderAll` rather than a habit at eight call sites.
+A rebuilt rail always needs positioning; making that a rule removes the class of
+bug rather than this instance of it.
+
+Worth keeping as a diagnostic pattern: **"it works if I do X first" almost always
+means X is running something the first path forgot**, not that X is required.
+
+### Two removals
+
+The rails have **no titles**. "Amendments" — one turn old — scrolled away with
+the page while "Contents" stayed put, and Ed's read was that the asymmetry cost
+more than either label was worth. Both columns say what they are by what is in
+them, which is the same argument that took the explanatory notes off them a day
+earlier.
+
+And the **"+n further off in the charter"** tally is gone. It came in under 110's
+*counted, never silently dropped*, and that rule was right while the rail's
+admission cap felt like a failure to show everything. It no longer does: the rail
+annotates a document you can scroll, and the entries it cannot fit are a few
+inches away in the thing they annotate. A running count of them at the foot was a
+permanent apology for a limit nobody experiences as one.
