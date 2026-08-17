@@ -982,3 +982,19 @@ Two things that had to come with it. The block **type** travels with each origin
 **The caret.** Ed asked for a heavier, serifed vertical bar. CSS gives `caret-color` and nothing else — no width, no shape — so what changed is the **mouse pointer**: a drawn I-beam, bolder, white-haloed so it survives a yellow or green wash. The blinking caret is merely coloured. Getting the caret itself means hiding the native one and drawing a div at the selection rectangle, kept in step with typing, blinking, IME composition, selection changes and scroll — in a contenteditable that is a real source of bugs, and it is the one element that must never be wrong. Logged as 281 rather than attempted.
 
 **The wallet counts and ticks.** Four held is four pencils, because "+1" costs exactly the space it saves; five is three pencils and a +2, so the row stays one length whatever you hold and a spend is visible as a change in the number even when it is not visible as a missing pencil. The countdown carries the drip's own wash — the fill *is* how far the tenth has run — so the thing that says *when* and the thing that shows *how far* are one object rather than two saying it twice, which retires the ghost pencil whose only job was the fraction. And it runs: seconds only mean anything if they move, so the wallet is the one thing on this surface that changes without being touched.
+
+### The selection bug I tested green (Ed, 2026-08-17)
+
+Ed: *I still don't seem to be able to select multiple paragraphs at once, or a paragraph and a heading.* He was right, and the way the first build came to be wrong is worth keeping.
+
+**A native selection cannot leave the `contenteditable` element it began in.** Every clause was its own editing host, so a drag stopped dead at the paragraph boundary. What it *could* do was accept a Range built in code — `setStart` in one block, `setEnd` in another — which is exactly how every one of my tests had built one. The machinery underneath was right; the only thing that could not reach it was a user.
+
+That is the lesson rather than the fix. **A test that constructs the state it is testing has not tested the path to it.** The selection tests should have gone through `caretRangeFromPoint` plus `Selection.extend` from the start — the path a drag actually takes — and they now do.
+
+The fix is one editing host for the whole prose column instead of one per block. `contenteditable="true"` rather than `plaintext-only`, because the host now contains block children; safe for the same reason it always was, which is that **every** beforeinput is refused, so the browser never modifies the charter whatever it believes it is allowed to do. The blocks keep their class and their key and stop being hosts. One consequence in the handler: the block being typed in comes from the *selection* now rather than from the event's target, because the target is the column.
+
+### The caret, on the second reading
+
+Ed meant the blinking caret, not the mouse pointer, and the I-beam is reverted — the pointer was never the thing that was hard to find.
+
+What is available is `caret-color` and nothing else. So the caret is the accent blue, and **where it lands is announced**: a short flash at the new position that shrinks onto the bar and fades over 460ms, only in the charter and only for a collapsed selection so dragging a range does not strobe. It answers the question the request was really asking — *where did it just go?* — and it costs nothing, where faking the caret itself would mean hiding the native one and keeping a div in step with typing, blinking, IME composition, selection changes and scroll, on the one element that must never be wrong.

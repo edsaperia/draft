@@ -163,9 +163,10 @@
   /* what the row stops drawing and starts counting, and when the next one lands.
      The countdown wears the drip's own wash — the fill is how far the tenth has
      run — so one object says both when and how far. */
-  .pmore { font-size: var(--t-cap); font-weight: 600; color: var(--fg); margin: 0 1px 0 2px; }
+  /* the count stands as tall as the glyphs it is standing in for */
+  .pmore { font-size: var(--t-ui); font-weight: 700; color: var(--fg); margin: 0 1px 0 3px; line-height: 1; }
   .pwhen {
-    font-size: var(--t-cap); color: var(--muted); margin-left: 6px;
+    font-size: var(--t-ui); color: var(--muted); margin-left: 8px;
     font-variant-numeric: tabular-nums; padding: 1px 5px; border-radius: var(--r-sm);
     background: linear-gradient(90deg,
       rgba(13, 110, 253, 0.22) var(--fill), rgba(13, 110, 253, 0.07) var(--fill));
@@ -478,22 +479,35 @@
      renamed is a section the charter cannot revise. The fold triangle and the
      "N suggestions inside" hint are marked `.nocaret` and taken out of the
      editable flow, so the caret cannot land inside furniture. */
-  /* A heavier, serifed I-beam wherever text can be edited (Ed, 2026-08-17).
-     The browser's default is a hairline, and on a surface where the caret is
-     the whole offer — every clause carries one — it is too quiet to find. Drawn
-     twice: a white stroke underneath so it survives a yellow or green wash, the
-     ink on top. The hotspot is the middle of the stem.
+  /* The caret, made findable (Ed, 2026-08-17). It moves around a great deal on
+     this surface — every clause carries one — and a hairline that has just
+     jumped four hundred pixels is genuinely hard to locate.
 
-     Note this changes the **mouse pointer**, not the blinking caret: CSS can
-     set `caret-color` and nothing else, so the caret's shape and weight are not
-     ours to choose (Q281). */
-  :root {
-    --ibeam: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='17'%20height='25'%3E%3Cg%20fill='none'%20stroke='%23fff'%20stroke-width='5'%20stroke-linecap='round'%3E%3Cpath%20d='M8.5%205V20'/%3E%3Cpath%20d='M4.5%205H12.5'/%3E%3Cpath%20d='M4.5%2020H12.5'/%3E%3C/g%3E%3Cg%20fill='none'%20stroke='%23111'%20stroke-width='2.6'%20stroke-linecap='round'%3E%3Cpath%20d='M8.5%205V20'/%3E%3Cpath%20d='M4.5%205H12.5'/%3E%3Cpath%20d='M4.5%2020H12.5'/%3E%3C/g%3E%3C/svg%3E") 8 12, text;
-  }
-  .doc .editable, .editcard .editlane, .editcard .edit-why { cursor: var(--ibeam); }
-  /* the caret itself: colour is the one property CSS gives us */
+     CSS gives `caret-color` and nothing else: no width, no shape. So the caret
+     is coloured the accent, and **where it lands is announced** rather than
+     drawn differently — a short blue flash at the new position that shrinks
+     onto the bar and fades. It answers the actual question ("where did it go?")
+     without any of the cost of faking a caret, which would mean hiding the
+     native one and keeping a div in step with typing, blinking, IME
+     composition, selection and scroll (Q281).
+
+     An earlier attempt changed the mouse pointer to a drawn serif I-beam.
+     Reverted — the pointer was never the thing that was hard to find. */
+  .doc .editable, .editcard .editlane, .editcard .edit-why { cursor: text; }
   .doc .editable, .editcard .editlane { caret-color: var(--primary); }
-  .doc .editable:focus { outline: none; }
+  .caretpulse {
+    position: absolute; z-index: 30; pointer-events: none;
+    width: 3px; margin-left: -1px; border-radius: 2px;
+    background: var(--primary); opacity: 0;
+  }
+  .caretpulse.go { animation: caretland 460ms cubic-bezier(.22, .61, .36, 1); }
+  @keyframes caretland {
+    0%   { opacity: 0.85; transform: scaleX(4) scaleY(1.25); }
+    100% { opacity: 0;    transform: scaleX(1) scaleY(1); }
+  }
+  @media (prefers-reduced-motion: reduce) { .caretpulse { display: none; } }
+  .doc .prose:focus, .doc .editable:focus { outline: none; }
+  .doc .prose { caret-color: var(--primary); }
   .doc .editable .chipcol, .doc .editable .nocaret { user-select: none; }
   .nocaret { display: contents; }
   /* a heading inside a lane or a head keeps its weight, so editing a section
@@ -1741,7 +1755,19 @@
   // `plaintext-only` rather than plain `true` because the charter is prose, not
   // a rich-text field — a paste should arrive as words, and there is no
   // formatting in this document for a keystroke to apply.
-  const EDITABLE = ' contenteditable="plaintext-only" spellcheck="false"';
+  // **One editing host for the whole charter, not one per block** (Ed,
+  // 2026-08-17: *I still don't seem to be able to select multiple paragraphs*).
+  // A native selection cannot leave the `contenteditable` element it began in —
+  // a drag stops dead at the boundary — so making every clause its own host
+  // made cross-block selection impossible for a *user* while leaving it
+  // perfectly possible for a Range built in code, which is exactly how the
+  // first build came to be tested green and be wrong.
+  //
+  // `true` rather than `plaintext-only` because the host now contains block
+  // children, and it is safe for the same reason it always was: **every**
+  // beforeinput is refused, so the browser never modifies the charter whatever
+  // it thinks it is allowed to do.
+  const PROSE = '<div class="prose" contenteditable="true" spellcheck="false">';
 
   // Decision cards show the text as it would *stand*, not a redline: the struck
   // words come out and only what is new stays lit. The fixture keeps the full
@@ -3544,7 +3570,7 @@
   }
 
   function renderDoc() {
-    let html = '<div class="prose">';
+    let html = PROSE;
     let cardDone = false;
     let headIdx = 0;
     // The draft being written, if the composer is open on it. `pendingId`
@@ -3574,7 +3600,7 @@
       if (writing && siteFor(writing, line.key)) {
         const site = siteFor(writing, line.key);
         if (site.keys[0] === line.key) {
-          html += '</div>' + editCardHtml(writing, site) + '<div class="prose">';
+          html += '</div>' + editCardHtml(writing, site) + PROSE;
         }
         continue;
       }
@@ -3582,7 +3608,7 @@
       if (line.t === 'h') {
         const inside = collapsed.has(secN) ? suggestionsInSection(secN) : 0;
         html += '<h2 class="docline editable lvl' + (line.level ?? 1) + '" id="sec-' + secN + '"' +
-          ' data-key="' + line.key + '"' + EDITABLE + '>' +
+          ' data-key="' + line.key + '">' +
           '<span class="nocaret" contenteditable="false">' + toggleHtml(secN) + '</span>' + esc(line.x) +
           (inside ? '<span class="sechint" contenteditable="false">' + inside +
             (inside === 1 ? ' suggestion' : ' suggestions') + ' inside</span>' : '') +
@@ -3611,7 +3637,7 @@
           if (openSugg.kind === 'patch') {
             // a card at *every* place a patch touches (Ed, 181)
             if (openSugg.sites.some((x) => x.key === line.key)) {
-              html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
+              html += '</div>' + suggCardHtml(openSugg, line.key) + PROSE;
               cardDone = swallowed = true;
             }
           } else if (openSugg.kind === 'draft') {
@@ -3620,7 +3646,7 @@
               // a site is a run of clauses; the card stands where the run began
               // and the rest of the run is inside it
               if (site.keys[0] === line.key) {
-                html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
+                html += '</div>' + suggCardHtml(openSugg, line.key) + PROSE;
                 cardDone = true;
               }
               swallowed = true;
@@ -3628,7 +3654,7 @@
           } else if (!cardDone) {
             // the key matters to a diagonal, which spans two clauses and needs
             // to say which of them it is standing in
-            html += '</div>' + suggCardHtml(openSugg, line.key) + '<div class="prose">';
+            html += '</div>' + suggCardHtml(openSugg, line.key) + PROSE;
             cardDone = swallowed = true;
           }
         }
@@ -3642,7 +3668,7 @@
           }).join('');
           html +=
             '<p class="anch editable' + (openId === primary.id ? ' active' : '') + '" data-key="' + line.key +
-            '" data-anchor="' + primary.id + '"' + EDITABLE +
+            '" data-anchor="' + primary.id + '"' +
             anchWash(primary, openId === primary.id, line.key) + '>' +
             '<span class="chipcol" contenteditable="false">' + chips + '</span>' + esc(line.x) + '</p>';
         }
@@ -3651,13 +3677,13 @@
         // the clause, so leaving the paragraph above it would print it twice
         const swallowed = wasResolved && openId === wasResolved.id && !cardDone;
         if (swallowed) {
-          html += '</div>' + suggCardHtml(wasResolved) + '<div class="prose">';
+          html += '</div>' + suggCardHtml(wasResolved) + PROSE;
           cardDone = true;
         } else {
           html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + '"' +
             (wasResolved ? ' data-anchor="' + wasResolved.id + '"' +
               anchWash(wasResolved, openId === wasResolved.id, line.key) : '') +
-            (line.key ? ' data-key="' + line.key + '"' : '') + EDITABLE + '>' +
+            (line.key ? ' data-key="' + line.key + '"' : '') + '>' +
             (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0" data-anchor="' + wasResolved.id +
               '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + markOf(wasResolved) + '</span></span>' : '') +
             esc(line.x) + '</p>';
@@ -3675,7 +3701,7 @@
           anchWash(ins, openId === ins.id) + '>' +
           '<span class="chipcol"><span class="achip" data-anchor="' + ins.id + '">' +
           markOf(ins) + '</span></span></div>';
-        if (openId === ins.id) html += '</div>' + suggCardHtml(ins) + '<div class="prose">';
+        if (openId === ins.id) html += '</div>' + suggCardHtml(ins) + PROSE;
       }
     }
     html += '</div>';
@@ -4402,8 +4428,11 @@
     // in the number even when it is not visible as a missing pencil.
     const drawn = editsHeld <= 4 ? editsHeld : 3;
     const rest = editsHeld - drawn;
+    // No label (Ed, 2026-08-17). A row of pencils next to a clock is not
+    // ambiguous enough to need naming, and the words were the widest thing in
+    // it; the title still says what it is for anybody who hovers.
     walletEl.innerHTML =
-      'your edits <span class="pencils">' +
+      '<span class="pencils">' +
       '<i>✏️</i>'.repeat(drawn) +
       (rest > 0 ? '<span class="pmore">+' + rest + '</span>' : '') +
       // The countdown carries the drip's own wash: the fill *is* how far the
@@ -4421,9 +4450,10 @@
   // not a rounding, and the seconds are what make it read as running.
   function dripIn() {
     const secs = Math.max(0, Math.round((1 - Math.max(0, Math.min(1, editsToNext))) * SESSION_MINUTES * 6));
-    if (secs <= 0) return 'any moment';
     const m = Math.floor(secs / 60), s = secs % 60;
-    return (m ? m + 'm ' : '') + String(s).padStart(m ? 2 : 1, '0') + 's';
+    // mm:ss (Ed, 2026-08-17) — a clock reads as a clock, and the fixed shape
+    // stops the row twitching as the digits change
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
   }
 
   // settleWashes last: every washed element has just been rendered wearing its
@@ -4457,14 +4487,47 @@
   // it safe to put a caret in a constitutional document: nothing you do in the
   // prose can change it, because changing it is a thing you propose.
   doc.addEventListener('beforeinput', (ev) => {
-    const p = ev.target && ev.target.closest ? ev.target.closest('.editable[data-key]') : null;
-    if (!p || p.closest('.sugg')) return;      // the composer's own fields are real editors
-    ev.preventDefault();
-    // One block or several — the same keystroke, told apart by what is selected.
+    const t = ev.target && ev.target.closest ? ev.target : null;
+    if (!t || t.closest('.sugg')) return;      // the composer's own fields are real editors
+    // The host is the whole prose column now, so the block being typed in comes
+    // from the *selection* rather than from the event's target — the target is
+    // the column itself.
     const picked = selectedBlocks();
-    if (picked && picked.blocks.length > 1) return startDraftFromRun(picked, ev);
-    startDraftFromTyping(p, ev);
+    if (!picked) return;
+    ev.preventDefault();
+    // One block or several: the same keystroke, told apart by what is selected.
+    if (picked.blocks.length > 1) return startDraftFromRun(picked, ev);
+    startDraftFromTyping(picked.blocks[0], ev);
   });
+
+  // Where the caret just went. Only in the charter — the composer's own lanes
+  // are ordinary editors where you already know where you are — and only for a
+  // collapsed selection, so dragging out a range does not strobe.
+  const caretPulse = (() => {
+    let el = null;
+    return () => {
+      if (REDUCED()) return;
+      const sel = getSelection();
+      if (!sel || !sel.rangeCount || !sel.isCollapsed) return;
+      const r = sel.getRangeAt(0);
+      const node = r.startContainer;
+      const host = node.nodeType === 1 ? node : node.parentElement;
+      if (!host || !host.closest || !host.closest('.doc .prose')) return;
+      // a collapsed range has no width, and sometimes no rect at all until it
+      // is asked for its client rects rather than its bounding box
+      let rect = r.getBoundingClientRect();
+      if (!rect || !rect.height) rect = (r.getClientRects() || [])[0];
+      if (!rect || !rect.height) return;
+      if (!el) { el = document.createElement('div'); el.className = 'caretpulse'; document.body.appendChild(el); }
+      el.style.left = (rect.left + scrollX) + 'px';
+      el.style.top = (rect.top + scrollY) + 'px';
+      el.style.height = rect.height + 'px';
+      el.classList.remove('go');
+      void el.offsetHeight;                       // restart the animation
+      el.classList.add('go');
+    };
+  })();
+  document.addEventListener('selectionchange', caretPulse);
 
   // The queue is sticky and the wires are drawn in viewport space, so both the
   // rail highlight and the wires have to be recomputed as the page moves.
