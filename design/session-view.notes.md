@@ -2064,3 +2064,87 @@ three-second wait.
 Both landings carry a `setTimeout` backstop beside `onfinish`: a document
 timeline is paused while a tab is hidden, and the one thing that must not happen
 is a wallet left holding a gap for an edit that is no longer in the air.
+
+---
+
+## The patch is joined at its cards, and a deadlock waits until you have judged (2026-08-17)
+
+**Patch cables.** The spine used to run down the middle of the gutter,
+bracketing the runs where they left the rail. That says *these three pointers
+are one*, which is a claim about the margin index; the thing that is actually
+one is the three clauses. At three sites it read as a bracket rather than as an
+object.
+
+The link now runs down the `chip-gutter`, between the `clause-tab`s of the
+patch's own cards. It joins the things themselves, in the column where the
+document says what is happening to it — and it is the only cable on the surface
+whose two ends are both already marked, so it carries no cap: a landing ball
+says *this clause, here*, and both of these ends are a tab that has already
+said it.
+
+Two versions. The first ran end to end, from one tab's bottom edge to the next
+one's top, which covers no glyph and looked right until it met a clause that
+stacks several tabs and ran straight down through the one below its own. Ed's
+correction — *out of the left of the clause-tab, curving neatly upwards or
+downwards* — is the right shape for a better reason than it not crossing
+anything: it is the shape every other cable on this surface makes, a stub, a
+corner and a straight run. And **a cable that never enters the column cannot
+cross what is in it**, which retires the whole problem rather than routing
+around it. It also lets the cable leave from the patch's *own* tab rather than
+from whatever strip happens to hold it.
+
+Consecutive segments share the run and overlap at each middle tab. That costs
+nothing — the ink group carries the alpha, so a shape drawn twice is not drawn
+darker, which is the same property that let a spine cross its own runs — and it
+gives the middle sites a proper drop off a through-run instead of two cables
+meeting end to end.
+
+`clause-tab`s joined the shadow's clip holes at the same time. A tab is an
+object at card height with a contact shadow of its own, and it sits *outside*
+its card's box, so punching only the cards left the new cable shadowing every
+tab it ran between, including the two it joins. Same rule as before, one more
+member of the layer: **a thing does not shadow its own layer.**
+
+**Deadlock waits.** Ed's ruling on 297/298: *force drafters to do all the
+judging in the race first, and then encourage them to propose alternatives* —
+per race, not per document. So a deadlocked race is an ordinary 💡 until you
+have judged it, and turns ⚔️ only when it has nothing left to ask you.
+
+This is not only clearer, it is better evidence. The judgments it extracts are
+exactly the ones most likely to unstick the race, and **a deadlock declared
+before the room has finished judging is declared early**. The old surface told
+you the race was stuck before you had contributed the one thing you could still
+contribute.
+
+It also makes deadlock a **personal** state, like ⏳, which is what finally
+makes the alphabet consistent: *a mark says what the document wants from you,
+not what state the machine is in.* ⚔️ is tested before ⏳ everywhere, because it
+is the state that replaces it — you have judged, and where an ordinary race
+would now go grey and run on without you, this one still wants something.
+Yellow still, and the palette rule is why: hot for actions, and a bridge is an
+action. What changed is *which* action, and that is the glyph's job to say.
+
+Three consequences fell out. A stuck entry does not collapse to one line, since
+it is asking for the largest thing on the surface. Its caption is a second
+string (`capStuck`), because before you are through with it the entry is an
+ordinary race and must say ordinary-race things. And the bridge button moved
+off the race card onto every card type: what makes a bridge the ask is that
+judging has stopped moving the question, not what shape the question has.
+
+**⚔️ rather than ❌.** A cross says *this failed*, which is both wrong and
+discouraging — nothing failed, the room disagrees, and the disagreement is
+exactly what makes writing a bridge worth doing. Crossed swords say two things
+are still fighting. It also stops the mark being read as a close button, which
+at 13px beside a card it plainly was.
+
+The fixture carries one of each: `race-sanctions` is already judged, so ⚔️ is on
+the surface at load; `race-guests-notice` is stuck and says nothing about it, so
+the transition can be watched. Judging it turns the entry, keeps the card open,
+and puts the pen in the commit row you have just used.
+
+**And the pencil tumbles.** One flight in five turns once, one in twenty twice,
+one in a hundred three times — in the direction it was thrown, since the curve
+and the tumble come off the same flick. Whole turns only, so it always lands in
+the pose it would have landed in anyway. A rarity you cannot make happen is
+worth more than one you can: the point is the flight you were not expecting, and
+a pencil that spun every time would just be a pencil that spins.
