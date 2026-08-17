@@ -81,6 +81,13 @@
     --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.10);
 
     /* --- the three columns ---------------------------------------- */
+    /* How long a lifecycle colour takes to become another one. A wash change
+       means something happened — a judgment landed, a race sealed, a card
+       opened — and a jump left the reader to notice it after the fact
+       (Ed, 2026-08-17). Long enough to be seen as a change, short enough not
+       to be a performance. */
+    --wash-ms: 700ms;
+
     --rail-left: 210px;
     --rail-right: 290px;
     --nav-h: 58px;
@@ -110,6 +117,22 @@
   .navbar .brand .sess { color: var(--muted); font-weight: 400; }
   .navbar .stats { display: flex; gap: 18px; white-space: nowrap; font-size: var(--t-ui); color: var(--muted); }
   .navbar .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
+  /* You, at the right-hand end. Initials rather than a photograph: this is a
+     mockup with no accounts behind it, and a stock face would be a claim the
+     product cannot yet make. */
+  .navbar .me {
+    appearance: none; border: 0; background: none; padding: 0; cursor: pointer;
+    display: inline-flex; align-items: center; align-self: center;
+  }
+  .navbar .me .face {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    font-size: 0.62rem; font-weight: 700; letter-spacing: 0.02em;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-sm); transition: box-shadow 120ms ease;
+  }
+  .navbar .me:hover .face { box-shadow: var(--shadow-md); }
+  .navbar .me:focus-visible .face { outline: 2px solid var(--primary); outline-offset: 2px; }
 
   /* The edit-wallet (Ed, 2026-08-16). A token *is* an edit, so it is drawn as
      the writing glyph rather than counted in words: the wallet says what it
@@ -132,6 +155,9 @@
       rgba(13, 110, 253, 0.22) var(--fill), transparent var(--fill));
   }
   .pnext i { opacity: 0.28; }
+  /* what the row stops drawing and starts counting, and when the next one lands */
+  .pmore { font-size: var(--t-cap); font-weight: 600; color: var(--fg); margin: 0 1px 0 2px; }
+  .pwhen { font-size: var(--t-cap); color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
   /* Nothing held: the label goes quiet, and the tray is the only thing left
      with anything to say. */
   .wallet.empty { color: var(--muted); }
@@ -257,11 +283,26 @@
 
   /* The wash is the progress bar (Ed, 105/116): how far the fill reaches is
      closeness to resolution, how strong the colour is is urgency, and the hue
-     is lifecycle (Ed, 162). Built per entry in wash(); set as --wash so one
-     rule can paint every state. */
-  .queue button.needs,
-  .queue button.wants, .queue button.deciding, .queue button.unread,
-  .queue button.yours { background: var(--wash); }
+     is lifecycle (Ed, 162). Built per entry in wash().
+
+     Painted as a bar rather than as a gradient (Ed, 2026-08-17) so that both
+     halves of it can move: no browser interpolates between two gradients, so
+     a lifecycle change used to arrive as a jump. Now the hue fades and the
+     fill slides, over the same 700ms the document's washes use.
+
+     The bar is a child box, so it would paint over the entry's text; the
+     entry's own children are lifted above it rather than the bar being pushed
+     behind, which would need a stacking context on the button. */
+  .queue button:not(.sealdot) { position: relative; overflow: hidden; }
+  .queue button:not(.sealdot) > * { position: relative; z-index: 1; }
+  .queue button:not(.sealdot)::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; z-index: 0;
+    width: var(--fill, 0%); background-color: var(--washcol, transparent);
+    transition: background-color var(--wash-ms) ease, width var(--wash-ms) ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .queue button:not(.sealdot)::before { transition: none; }
+  }
 
   /* Anything already judged is one line. Everything still open is a full card:
      the compression ladder is gone (Ed, 2026-08-16 — see the rail's own note on
@@ -398,11 +439,20 @@
      on whatever is open, including all of a patch's clauses at once. A filed
      clause washes nothing — the document should look settled where it is.
      The extra class beats `.doc p`, which also sets margin. */
-  .doc .anch {
+  .doc .anch, .clausehead .headclause {
     padding: 6px var(--s2) 6px var(--s3); margin-left: calc(-1 * var(--s3));
     border-radius: var(--r-sm);
   }
   .anch.active:hover { box-shadow: none; }
+  /* one rule for every washed surface in the document, and one transition:
+     the clause, the head of the card that swallows it, and a held-open gap */
+  .doc .anch, .clausehead .headclause, .insert-anchor {
+    background-color: var(--washcol, transparent);
+    transition: background-color var(--wash-ms) ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .doc .anch, .clausehead .headclause, .insert-anchor { transition: none; }
+  }
 
   /* Always-on typing (Ed, 224). Every clause in the charter carries a caret:
      click and you are in the text, type and the editing-card opens around what
@@ -591,7 +641,8 @@
      and one proposal, a race is the clause and two, a record is the clause
      and the field with its numbers.
      =================================================================== */
-  .clausehead { position: relative; margin-bottom: var(--s3); }
+  .clausehead { margin-bottom: var(--s3); }
+  .clausehead .headclause { position: relative; }
   .clausehead .headlab {
     display: flex; align-items: baseline; gap: var(--s2);
     font-size: var(--t-micro); font-weight: 700; text-transform: uppercase;
@@ -602,21 +653,16 @@
      lifted into a card */
   .clausehead .rtext { font-size: var(--t-body); margin-bottom: 0; }
   .clausehead .rtext.none { color: var(--muted); font-style: italic; }
-  /* the entry's own lifecycle mark, in the card's left padding, level with
-     the label — the same margin position it holds in the gutter and the
-     contents rail */
-  .clausehead .wmark {
-    position: absolute; left: calc(-1 * var(--s5) + 2px); top: 0;
-    font-size: var(--t-small); line-height: 1.4;
-  }
-  /* Marks belonging to *other* live suggestions at this clause, which travel
-     into the head when the card swallows the paragraph. They are labelled,
-     because an unlabelled 💡 beside the card's own 💡 is the same glyph
-     meaning two different things a hand's width apart. */
-  .clausehead .headchips { display: inline-flex; align-items: center; gap: 2px; }
-  .clausehead .headchips::before { content: '·'; margin-right: var(--s1); }
-  .clausehead .headchips .alsolab { margin-right: 2px; font-weight: 500; text-transform: none; letter-spacing: 0; }
-
+  /* The card's own content column is laid on the same axis as the prose, so a
+     clause does not shift sideways when it becomes a head — and the `.chipcol`
+     inside the head therefore lands in exactly the gutter column the document
+     puts its marks in. Width is the prose measure plus the card's own padding
+     and border; `margin: auto` centres it on the same axis .prose centres on. */
+  .sugg { max-width: calc(70ch + 2 * var(--s5) + 3px); }
+  /* Marks belonging to *other* live suggestions at this clause travel into the
+     head's own chip column, where they stack under the card's mark exactly as
+     they stacked beside the paragraph. No label needed any more: the column
+     itself says what they are, because it is the same column. */
   /* Three bands, and a rule between each: what stands, what is proposed, what
      you can do about it. The rules are the whole structure of the card — there
      is no other line on it. */
@@ -910,6 +956,12 @@
       <span title="How sure the house has to be that a change beats the current text. It rises through the session — this is not a vote share.">confidence bar <b>0.74 ▲</b></span>
       <span title="Quorum for a decision, not for the meeting: this many distinct members must weigh in on a question before it can be adopted (a third of the roster). A question short of quorum simply waits — silence is never counted as a vote.">quorum <b>5 of 14</b></span>
       <span class="wallet" id="wallet"></span>
+      <!-- The one place on the surface that says who *you* are. Everybody
+           else's authorship is sealed (SPEC §3.4), so this is deliberately the
+           only face in the room — see Q278 on whether that stays true. -->
+      <button class="me" id="me" title="Wren Ashby — you. Accounts and profiles are not built yet.">
+        <span class="face" aria-hidden="true">WA</span>
+      </button>
     </div>
   </div>
 </header>
@@ -1627,6 +1679,9 @@
   // calibration note says participants sit near the cap at v1 defaults, which
   // is the open question behind Q251.
   let editsHeld = 5, editsToNext = 0.6;
+  // the window this document was given at creation (SPEC §9.0), in minutes —
+  // the drip is one edit per tenth of it, which is what the wallet counts down
+  const SESSION_MINUTES = 8 * 60;
 
   const doc = document.getElementById('doc');
   const queueEl = document.getElementById('queue');
@@ -1812,9 +1867,45 @@
   // needs-you card the strength of the colour is also urgency — one device,
   // three readings. A deadlocked race washes grey: more judgment won't move it
   // (SPEC §8.3), which is the one case where the state is not the whole story.
-  function wash(g, hue, u) {
-    return 'linear-gradient(90deg, ' + tint(hue, u == null ? 0.16 : URG_LO + (URG_HI - URG_LO) * u) +
-      ' ' + g.pct + '%, var(--bg) ' + g.pct + '%)';
+  //
+  // Split into a colour and a fill (Ed, 2026-08-17). It used to be one
+  // hard-stopped linear-gradient, which said the same thing but could not be
+  // *transitioned*: no browser interpolates between two gradients, so every
+  // change of lifecycle hue arrived as a jump. Painted instead as a bar whose
+  // width is the fill and whose background-color is the hue, both of which
+  // animate — so the wash now moves when it means something has moved.
+  const washCol = (hue, u) => tint(hue, u == null ? 0.16 : URG_LO + (URG_HI - URG_LO) * u);
+  const wash = (g, hue, u) => ({ col: washCol(hue, u), fill: g.pct + '%' });
+  // what a wash is *about*: the rail entry, or the clause in the document
+  const qKey = (g, e) => 'q:' + g.id + ':' + (e.site ?? '');
+
+  // ---- fading a wash across a re-render --------------------------------
+  // The document and the rail are both rebuilt wholesale, so a CSS transition
+  // has nothing to run from: the new element is born wearing the new colour.
+  // So each washed element is rendered wearing its **previous** colour and
+  // carrying the new one in a data attribute; one forced reflow later, the new
+  // value is assigned and the transition runs. Keyed by what the wash is
+  // *about* rather than by element, which is why a clause and the head of the
+  // card that swallows it share one key — opening a card deepens its wash
+  // rather than repainting it.
+  const WASH_MS = 700;
+  const prevWash = new Map();
+  function washAttrs(key, col, fill) {
+    const from = prevWash.get(key) || { col, fill };
+    const varsOf = (w) => '--washcol: ' + w.col + (fill == null ? '' : '; --fill: ' + w.fill);
+    return ' data-washkey="' + esc(key) + '" data-wash="' + col + '"' +
+      (fill == null ? '' : ' data-fill="' + fill + '"') +
+      ' style="' + varsOf(from) + '"';
+  }
+  function settleWashes() {
+    const els = [...document.querySelectorAll('[data-washkey]')];
+    if (!els.length) return;
+    void document.body.offsetHeight;        // one reflow, so the "from" value is painted
+    for (const el of els) {
+      el.style.setProperty('--washcol', el.dataset.wash);
+      if (el.dataset.fill != null) el.style.setProperty('--fill', el.dataset.fill);
+      prevWash.set(el.dataset.washkey, { col: el.dataset.wash, fill: el.dataset.fill });
+    }
   }
   let topUrgentId = null;   // the one card that is never dropped
 
@@ -1947,7 +2038,7 @@
         const d = g.decided || {};
         html += '<li class="qitem" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
           '<button class="unread" data-q="' + g.id + '" aria-current="' + (openId === g.id) + '"' +
-          ' style="--wash: ' + wash(g, 'closed') + '"' +
+          washAttrs(qKey(g, e), wash(g, 'closed').col, wash(g, 'closed').fill) +
           ' title="' + esc(d.outcome || 'sealed') + ' — you haven’t opened this one yet">' +
           '<span class="ql">' + markHtml(carried(g) ? MARK.adopted : MARK.retired) + plainLabel(e.label || g.qLabel) +
           '<span class="qv"> · decided ' + esc(d.when || '') + '</span></span>' +
@@ -1979,7 +2070,9 @@
           '<li class="qitem" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
           '<button class="yours' + (drafting ? ' drafting' : '') + '" data-q="' + g.id + '"' +
           ' aria-current="' + (openId === g.id) + '"' +
-          ' style="--wash: ' + (drafting ? tint('yours', 0.20) : wash(g, 'yours')) + '"' +
+          // a draft has no fill: there is nothing yet to be close to
+          washAttrs(qKey(g, e), drafting ? tint('yours', 0.20) : wash(g, 'yours').col,
+            drafting ? '100%' : wash(g, 'yours').fill) +
           ' title="' + esc(drafting
             ? 'Your draft — not proposed yet. Open it to keep writing, propose it, or cancel.'
             : (g.cap || 'Yours, in the race') + ' — open it to withdraw') + '">' +
@@ -2015,9 +2108,11 @@
         '" data-q="' + g.id + '"' +
         (locked ? ' tabindex="-1"' : '') + ' aria-current="' + (openId === g.id) + '"' +
         (oneLine ? ' title="' + esc(g.shifted || cap) + '"' : '') +
-        ' style="--wash: ' + (oneLine
-          ? wash(g, g.shifted ? 'closed' : 'deciding')
-          : wash(g, top ? 'urgent' : 'open', g.deadlocked ? 0.55 : u)) + '">' +
+        (() => {
+          const w = oneLine ? wash(g, g.shifted ? 'closed' : 'deciding')
+            : wash(g, top ? 'urgent' : 'open', g.deadlocked ? 0.55 : u);
+          return washAttrs(qKey(g, e), w.col, w.fill);
+        })() + '>' +
         (oneLine
           ? '<span class="ql">' + markHtml(g.shifted ? MARK.shifted : MARK.deciding) + plainLabel(e.label || g.qLabel) +
             '<span class="qv"> · you ' + (verdict || 'judged') + '</span></span>'
@@ -2104,6 +2199,7 @@
   // regardless of room, so its primacy rests on the exemption rather than on
   // where it sits in the sort.
   const DEADLOCK_FLOOR = 0.9;
+  const DIAGONAL_FLOOR = 0.75;
   function layoutQueue() {
     const railRect = queueEl.getBoundingClientRect();
     const railTop = railRect.top + scrollY;
@@ -2135,8 +2231,20 @@
         // would give, and the rail and the board agree with each other.
         // A proposal of your own is not ranked at all: it is force-kept below,
         // on the same grounds as the flame and the open card.
+        // A `salience-diagonal` has the same trouble as a deadlocked race, from
+        // the other end (Ed, 2026-08-17 — "they don't seem to appear"). Its
+        // urgency is an ordinary judgment-leverage number, and on a full rail
+        // that buried it: measured at 0.44 it sat eighth, one place below the
+        // cut, so both of its entries vanished at every scroll position. But
+        // what a diagonal buys is not the judgment it collects — it is the
+        // *ordering* it fixes for everything else, and it is rare (roughly one
+        // card in ten, SPEC §8.3) and cheap to answer. Ranking it by the act it
+        // asks for measures the wrong thing, exactly as it did for a stuck
+        // race. So it gets a floor: above ordinary questions, below the flame
+        // and below the stuck races, which have drafting leverage on top.
         mine: !!g.mine,
         u: isUnread(g) ? 0.5 : g.deadlocked ? DEADLOCK_FLOOR + (1 - DEADLOCK_FLOOR) * (g.bounty ?? 0.5)
+          : g.kind === 'diagonal' ? Math.max(g.urgency ?? 0, DIAGONAL_FLOOR)
           : (g.urgency ?? 0) };
       // Whatever is open is pinned for as long as it is open, whatever its
       // state: it is the thing you are looking at, and its wire has to hold.
@@ -2378,7 +2486,15 @@
       const b = el.getBoundingClientRect();
       const r = t.getBoundingClientRect();
       const sx = b.left, sy = b.top + Math.min(b.height / 2, 18);
-      const tx = r.right, ty = r.top + Math.min(r.height / 2, 16);
+      // The wire leaves the entry at its own natural height and arrives at the
+      // *same* height on the card, clamped into the card's box (Ed, 2026-08-17
+      // — "cables aren't quite aligned"). It used to take a fixed 16px inset at
+      // the card end against the entry's 18px, so a wire between two things
+      // that layoutQueue had levelled exactly still ran 2px downhill. A card is
+      // taller than an entry in every real case, so the clamp almost never
+      // bites and the wire is flat by construction rather than by coincidence.
+      const tx = r.right;
+      const ty = Math.min(Math.max(sy, r.top + 8), Math.max(r.top + 8, r.bottom - 8));
       ys.push(sy);
       const down = ty > sy;
       const rad = Math.max(0, Math.min(8, Math.abs(ty - sy) / 2, (sx - gx) / 2, (gx - tx) / 2));
@@ -2516,19 +2632,37 @@
   // label above says it has been picked up. The gutter marks come with it, so
   // a second live suggestion at this clause keeps the way in that it had while
   // the paragraph was there.
+  // The clause keeps its highlight when it becomes a head, and its gutter mark
+  // keeps its place (Ed, 2026-08-17). Both fall out of one move: the washed
+  // block inside the head is given the same box as a `.anch` paragraph — the
+  // same negative margin, the same padding — so the wash lands on the same
+  // rectangle and the `.chipcol` inside it lands in the same gutter column.
+  // The mark you clicked therefore does not move at all, which is what makes
+  // the card feel like the clause opening rather than something replacing it.
   function clauseHeadHtml(s, o) {
     const opt = !!o.v;
+    // The mark is the same control it was in the gutter, in the same place, so
+    // the thing you clicked to open the card is the thing you click to close
+    // it — and it never moves under the pointer.
+    const marks = '<span class="chipcol"><span class="achip wmark" role="button" tabindex="0"' +
+      ' data-anchor="' + s.id + '" title="Close this one">' + markOf(s) + '</span>' +
+      (o.chips || '') + '</span>';
     return '<div class="clausehead">' +
-      '<span class="wmark" aria-hidden="true">' + markOf(s) + '</span>' +
-      '<div class="headlab"><span>' + (o.label || 'The clause as it stands') + '</span>' +
-      (o.chips ? '<span class="headchips"><span class="alsolab">also here</span>' + o.chips + '</span>' : '') + '</div>' +
+      '<div class="headlab"><span>' + (o.label || 'The clause as it stands') + '</span></div>' +
+      // `data-key` sits on the washed block, not on the text inside it, because
+      // that is the box `.anch` is: hold the text instead and the scroll
+      // anchoring lands six pixels out, which is exactly the paragraph's own
+      // padding-top that the text does not carry.
+      '<div class="headclause"' + (o.key ? ' data-key="' + o.key + '"' : '') +
+      (o.wash === false ? '' : anchWash(s, true, o.key)) + '>' + marks +
       // `html` for the one head built of several paragraphs: a composer site is
       // a run of clauses joined into one piece of text (225)
       (o.html !== undefined
         ? '<div class="rtext">' + o.html + '</div>'
         : o.text === null
         ? '<div class="rtext none">Nothing stands here — the charter runs straight from Bringing a Guest to Guests Staying Over.</div>'
-        : '<div class="rtext"' + (o.key ? ' data-key="' + o.key + '"' : '') + '>' + esc(o.text) + '</div>') +
+        : '<div class="rtext">' + esc(o.text) + '</div>') +
+      '</div>' +
       (opt ? laneBarHtml(s, o.v, { lane: 'keep', key: o.key, edit: o.edit }) : '') +
       '</div>';
   }
@@ -3350,7 +3484,7 @@
           html +=
             '<p class="anch editable' + (openId === primary.id ? ' active' : '') + '" data-key="' + line.key +
             '" data-anchor="' + primary.id + '"' + EDITABLE +
-            anchWash(primary, openId === primary.id) + '>' +
+            anchWash(primary, openId === primary.id, line.key) + '>' +
             '<span class="chipcol" contenteditable="false">' + chips + '</span>' + esc(line.x) + '</p>';
         }
       } else {
@@ -3363,7 +3497,7 @@
         } else {
           html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + '"' +
             (wasResolved ? ' data-anchor="' + wasResolved.id + '"' +
-              anchWash(wasResolved, openId === wasResolved.id) : '') +
+              anchWash(wasResolved, openId === wasResolved.id, line.key) : '') +
             (line.key ? ' data-key="' + line.key + '"' : '') + EDITABLE + '>' +
             (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0" data-anchor="' + wasResolved.id +
               '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + markOf(wasResolved) + '</span></span>' : '') +
@@ -3993,9 +4127,14 @@
     if (g.deadlocked) return 'open';
     return g.id === topUrgentId ? 'urgent' : 'open';
   };
-  const anchWash = (g, active) => {
+  // Keyed by the clause rather than by the element, so the paragraph and the
+  // head of the card that swallows it are one washed thing: opening a card
+  // deepens the clause's colour rather than repainting it, and the deepening
+  // is visible as a movement (Ed, 2026-08-17).
+  const anchWash = (g, active, key) => {
     const hue = anchHue(g);
-    return hue ? ' style="background: ' + tint(hue, active ? 0.30 : 0.17) + '"' : '';
+    return washAttrs('doc:' + (key ?? (g.keys ?? [])[0] ?? g.id),
+      hue ? tint(hue, active ? 0.30 : 0.17) : 'transparent');
   };
 
   const markOf = (g) => {
@@ -4096,15 +4235,44 @@
       : 'Your edits — proposing one costs ' + EDIT_RULES.stake +
         '. You hold ' + editsHeld + ' of a possible ' + EDIT_RULES.cap +
         (full ? ', which is the cap.' : '; the tray shows how far the drip has got toward the next.');
+    // Above four, the wallet counts rather than draws (Ed, 2026-08-17).
+    // Glyphs are good at *a few* — you read three or five at a glance and no
+    // faster — and past that a row of identical pencils is a bar chart nobody
+    // asked for, which also makes a single spend invisible. So four is the most
+    // it ever draws and the rest is a number, and the tray gains the one thing
+    // it could never say: **when**. A fraction told you how far the drip had
+    // got; a countdown tells you how long you would have to wait, which is the
+    // question anybody standing at an empty wallet is actually asking.
+    const SHOWN = 4;
+    const drawn = Math.min(editsHeld, SHOWN);
+    const rest = editsHeld - drawn;
     walletEl.innerHTML =
       'your edits <span class="pencils">' +
-      '<i>✏️</i>'.repeat(editsHeld) +
+      '<i>✏️</i>'.repeat(drawn) +
+      (rest > 0 ? '<span class="pmore">+' + rest + '</span>' : '') +
       (full ? '' : '<span class="pnext" style="--fill: ' +
-        Math.round(Math.max(0, Math.min(1, editsToNext)) * 100) + '%"><i>✏️</i></span>') +
+        Math.round(Math.max(0, Math.min(1, editsToNext)) * 100) + '%"><i>✏️</i></span>' +
+        '<span class="pwhen">' + dripIn() + '</span>') +
       '</span>';
   }
 
-  function renderAll() { settleTopUrgent(); renderDoc(); renderQueue(); renderToc(); markCurrentSection(); renderWallet(); drawWires(); }
+  // How long until the next edit arrives. The drip is one per tenth of the
+  // window (SPEC §7), so what is left of the current tenth is the wait — which
+  // is why this is stated in minutes rather than as a share of anything.
+  function dripIn() {
+    const perDrip = SESSION_MINUTES / 10;
+    const mins = Math.max(0, Math.round((1 - Math.max(0, Math.min(1, editsToNext))) * perDrip));
+    return mins >= 60 ? '+' + Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm'
+      : mins <= 0 ? 'any moment' : '+' + mins + 'm';
+  }
+
+  // settleWashes last: every washed element has just been rendered wearing its
+  // *previous* colour, and this is what hands it the new one so the transition
+  // has something to run from (Ed, 2026-08-17).
+  function renderAll() {
+    settleTopUrgent(); renderDoc(); renderQueue(); renderToc();
+    markCurrentSection(); renderWallet(); drawWires(); settleWashes();
+  }
   renderAll();
 
 

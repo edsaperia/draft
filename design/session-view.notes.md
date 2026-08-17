@@ -918,3 +918,37 @@ Race candidates are usually whole rewrites rather than edits — that is what a 
 The rule is not in doubt; the **number** is. 0.5 was chosen because it is roughly where "an edit" stops being a fair description of what happened, and it has never been swept — the fixture has nothing between about 0.9 (a word or two changed) and about 0.2 (a rewrite), so it cannot discriminate. A real corpus would settle it, and the cost of being wrong is small and symmetrical: too low and a rewrite renders as confetti, too high and a substantial edit loses its marks.
 
 The other half of the change is not a guess. **Punctuation is its own token**, without which a clause that merely gained a comma rendered as the word deleted and an identical word re-inserted — *used on ~~bone~~ bone,* — which is nonsense the reader has to see through. That one improves the composer's own marking as a side effect.
+
+### The clause keeps its colour and its mark (Ed, 2026-08-17)
+
+Two notes that turned out to be one fix.
+
+The card had been swallowing its clause and then dropping both of the things that identified it: the lifecycle wash, and the gutter mark you had just clicked to open it. Ed's word for the result was disorientating, which is exact — you press a mark, and the mark and the colour both vanish while the text stays.
+
+The move is to stop treating the head as a new kind of block. **The washed block inside the head is given the same box as a `.anch` paragraph** — the same negative margin, the same padding, the same radius. Everything else falls out of that: the wash lands on the same rectangle, and a `.chipcol` inside it lands in exactly the gutter column the document puts its marks in, because that column is defined relative to the same box. The card's own geometry was then set so its content column sits on the prose's axis (its width is the prose measure plus its own padding and border, centred the same way), so nothing shifts sideways either.
+
+Measured after: the mark moves **0px in both axes** on every kind of card, and the clause text sits on the prose axis to the pixel. One correction was needed to get the vertical to zero — `data-key` had to move from the text to the washed block, because that block is what a `<p>` *is*, and holding the text instead left the scroll anchoring six pixels out. Six pixels is exactly the paragraph's own padding-top, which the text does not carry.
+
+Two things worth keeping from this. The mark in the head is the *same control* it was in the gutter, so it closes the card as well as opening it — a toggle that never moves under the pointer. And the other suggestions at that clause no longer need the "also here" label they briefly had: they stack under the card's mark exactly as they stacked beside the paragraph, and the column says what they are because it is the same column.
+
+### Washes move now
+
+Ed asked for the colour change to fade rather than jump, and then generalised it: everywhere, queue cards included. Two obstacles, both instructive.
+
+**A gradient cannot be transitioned.** The queue entry's wash was one hard-stopped `linear-gradient` carrying both the hue and the fill, and no browser interpolates between two of those. It is now a bar — a `::before` whose `width` is the fill and whose `background-color` is the hue — which gains something the gradient could not have: the fill *slides* as well, so a card getting closer to resolution shows it moving rather than being redrawn a little longer.
+
+**A re-rendered element has nothing to transition from.** The document and the rail are both rebuilt wholesale, so the new element is born wearing the new colour and the transition never runs. So each washed element is rendered wearing its **previous** colour and carrying the new one in a data attribute; one forced reflow later the new value is assigned and the transition runs. `void document.body.offsetHeight` rather than `requestAnimationFrame`, deliberately: rAF never fires in a backgrounded tab, so a rAF version would have left the colour stuck at the old value in exactly the environment these are measured in.
+
+The keying is the part worth remembering. A wash is keyed by **what it is about** — the clause, the rail entry — not by the element carrying it. Which is why a paragraph and the head of the card that swallows it share one key, and opening a card *deepens* its colour over 700ms instead of repainting it. The identity survives the element.
+
+### Cables
+
+The wire took a fixed 16px inset at the card end and 18px at the entry end, so two things `layoutQueue` had levelled exactly still ran two pixels downhill. It now leaves the entry at its own natural height and arrives at the *same* height on the card, clamped into the card's box — flat by construction rather than by coincidence, and self-correcting for a short entry against a tall card. Measured: every entry-to-card wire is exactly 0. The remaining non-zero paths are the spine that joins a patch's several entries, which is vertical on purpose.
+
+### Why the diagonal was never in the rail
+
+Not a rendering bug: `queueEntries()` had always produced both of its entries. The rail was simply full, and the diagonal's urgency of 0.44 put it eighth — one place below the cut — at every scroll position.
+
+That is the same trouble a deadlocked race had, from the other end (223). Its urgency is an honest judgment-leverage number, and judgment leverage is the wrong measure for it: what a diagonal buys is not the judgment it collects but the **ordering it fixes for everything else**, and it is rare (about one card in ten, SPEC §8.3) and cheap to answer. So it gets a floor, above ordinary questions and below both the flame and the stuck races — which have drafting leverage on top of everything else. The number is a guess and is logged as such.
+
+Found on the way, and logged as 280: the admission loop `break`s at the first entry too tall for the room left, so a shorter one further down never gets the leftover space. Measured 38px spare with a 29px entry available.
