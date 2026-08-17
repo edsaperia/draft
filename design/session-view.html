@@ -384,7 +384,7 @@
   /* Anything already judged is one line. Everything still open is a full card:
      the compression ladder is gone (Ed, 2026-08-16 — see the rail's own note on
      what urgency now decides). */
-  .queue .ql { font-weight: 600; font-size: var(--t-ui); display: flex; gap: 6px; }
+  .queue .ql { font-weight: 600; font-size: var(--t-ui); display: flex; }
   .queue .qs { font-size: 0.75rem; color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
   .queue .qv { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
   .mcap { display: block; font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
@@ -442,6 +442,13 @@
   .qmark {
     flex: none; font-size: var(--t-small); line-height: 1.35; font-weight: 400;
     width: 1.15em; display: inline-flex; justify-content: center; align-items: baseline;
+    /* The space after the mark is the mark's own margin, not the row's `gap`
+       (Ed, 2026-08-17 — the ✏️ entries were still out). A one-line entry sets
+       its `.ql` to `display: block` so the title can ellipsis, and a block box
+       has no `gap` — so exactly the rows that could not spare the space were the
+       ones losing it, while the flex rows kept theirs. A margin belongs to the
+       thing it follows and travels with it into either layout. */
+    margin-right: 6px;
   }
 
   /* A diagonal's title, set over four lines (Ed, 284). On one line the two

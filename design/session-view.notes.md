@@ -1845,3 +1845,21 @@ it is wrong: **Propose goes blue.** Green means *decided* and only that in this
 palette — a submission is the start of a decision, not one — and since ✏️ became
 the accent, a green button was the one part of your own proposal that did not
 look like yours.
+
+### The gap belongs to the mark, not the row
+
+Ed, on the queue entries again: *the gap between ✏️ and title is not consistent
+with the rest.* The fixed-width mark had fixed the glyph-advance problem and left
+a second one underneath it.
+
+A one-line entry — ⏳, ☑️, ✏️, 🔄 — sets its `.ql` to `display: block` so the
+title can ellipsis. A block box has no `gap`. So the rows that could least afford
+it were the ones losing the space entirely, while the flex rows kept theirs, and
+the fix for the *first* problem had made the second one uniform rather than
+removing it.
+
+The space is now the mark's own `margin-right`, and the row's `gap` is gone. **A
+margin belongs to the thing it follows and travels with it into either layout**,
+where a gap belongs to a container and only exists in some of them. Measured
+after: 6px between mark and title on every visible entry, in both display modes,
+across all seven glyphs.
