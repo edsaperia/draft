@@ -166,16 +166,32 @@
   }
   .wrap { max-width: 1440px; margin: 0 auto; padding: 0 var(--s4); }
 
-  /* An eyebrow: the small upper-case label that names a region or a
-     block. One rule, so they cannot drift apart. */
-  .eyebrow {
-    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+  /* **An eyebrow: the small upper-case label that names a region or a block.**
+     One rule, so they cannot drift apart — which is what it said before the
+     housekeeping pass of 2026-08-17 found that the rule had **no users at all**.
+     Every eyebrow on the surface was a hand-rolled copy of it, and the copies
+     had drifted to three sizes: `.headlab` and `.fieldlab` at 0.65rem, `.rtag`
+     and `.rechead` at 0.7rem, and this rule itself at a 0.75rem that appeared
+     nowhere else on the page.
+
+     So the rule now has the users it was written for, they are listed here so a
+     new one cannot be added without touching this line, and the size is the
+     token that exists for exactly this — `--t-micro`, whose own comment has
+     said *eyebrow labels only* since the scale was written. What each of them
+     keeps for itself below is colour and layout, and nothing else. */
+  .eyebrow,
+  .clausehead .headlab,
+  .fieldlab,
+  .rtag,
+  .rechead,
+  .pwhere {
+    font-size: var(--t-micro); font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.05em; color: var(--muted);
   }
 
   .navbar { background: var(--light); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 40; }
   .navbar .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s4); padding: 10px var(--s4); }
-  .navbar .brand { font-weight: 600; font-size: 1rem; margin: 0; }
+  .navbar .brand { font-weight: 600; font-size: var(--t-body); margin: 0; }
   .navbar .brand .sess { color: var(--muted); font-weight: 400; }
   .navbar .stats { display: flex; gap: 18px; white-space: nowrap; font-size: var(--t-ui); color: var(--muted); align-items: center; }
   /* room-pulse. Grey at rest and grey at its brightest: activity is information
@@ -206,7 +222,7 @@
   .navbar .me .face {
     width: 26px; height: 26px; border-radius: 50%;
     background: var(--primary); color: #fff;
-    font-size: 0.62rem; font-weight: 700; letter-spacing: 0.02em;
+    font-size: var(--t-micro); font-weight: 700; letter-spacing: 0.02em;
     display: inline-flex; align-items: center; justify-content: center;
     box-shadow: var(--shadow-sm); transition: box-shadow 120ms ease;
   }
@@ -230,13 +246,6 @@
   /* the slot an edit has left, or the one it is on its way into: it keeps its
      width, so the row neither closes up nor jumps when the pencil arrives */
   .wallet .gone { visibility: hidden; }
-  .pnext {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 1.15em; height: 1.35em; border-radius: var(--r-sm);
-    background: linear-gradient(90deg,
-      rgba(var(--lc-yours), 0.22) var(--fill), transparent var(--fill));
-  }
-  .pnext i { opacity: 0.28; }
   /* what the row stops drawing and starts counting, and when the next one lands.
      The countdown wears the drip's own wash — the fill is how far the tenth has
      run — so one object says both when and how far. */
@@ -290,18 +299,28 @@
   .toc ul::-webkit-scrollbar { width: 0; height: 0; }
   .toc li { display: flex; align-items: baseline; gap: 2px; }
   .toc li a { flex: 1; min-width: 0; }
-  /* the rail carries the document's own hierarchy: parts, chapters, sections */
+  /* The rail carries the document's own hierarchy: parts, chapters, sections —
+     and until the housekeeping pass of 2026-08-17 it carried it **upside down**.
+     A Part was 12px, a chapter inside it 13px, and a section inside *that*
+     12.48px, so the outermost level was the smallest text in the column and a
+     leaf outranked the Part containing it. The document's own headings had
+     always descended correctly (15.2 / 12.8 / 11.52); only the rail was
+     inverted, and three off-scale sizes were what hid it.
+
+     A Part is a **divider**, so it is set as one: upper-case, bold, at --t-cap,
+     below the entries rather than above them, which is what a small-caps label
+     is for. The two levels under it are then the same size and are told apart
+     by weight and indent — which is the job indentation was already doing. */
   .toc li.lvl1 { margin-top: var(--s2); }
-  .toc li.lvl1 a { font-weight: 700; color: var(--fg); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .toc li.lvl1 a { font-weight: 700; color: var(--fg); font-size: var(--t-cap); text-transform: uppercase; letter-spacing: 0.04em; }
   .toc li.lvl2 { padding-left: var(--s3); }
   .toc li.lvl2 a { font-weight: 600; color: var(--fg); }
   .toc li.lvl3 { padding-left: 26px; }
-  .toc li.lvl3 a { font-size: 0.78rem; }
 
   /* section-toggle: the same control in the contents rail and the document gutter */
   .sectoggle {
     appearance: none; background: none; border: 0; padding: 2px var(--s1); margin: 0;
-    font: inherit; font-size: 0.7rem; line-height: 1; color: var(--muted); cursor: pointer;
+    font: inherit; font-size: var(--t-cap); line-height: 1; color: var(--muted); cursor: pointer;
   }
   .sectoggle:hover { color: var(--fg); }
   .sectoggle .tri { display: inline-block; transition: transform 140ms ease; }
@@ -327,7 +346,7 @@
      right edge so they read as a margin annotation, not as part of the heading */
   .tocmarks {
     flex: none; display: flex; align-items: center; gap: 1px;
-    font-size: 0.62rem; line-height: 1; padding-right: 2px; letter-spacing: -1px;
+    font-size: var(--t-micro); line-height: 1; padding-right: 2px; letter-spacing: -1px;
   }
   /* **The four decided marks, drawn** (Ed, 2026-08-17). They are the only ones
      that are not silhouettes — a plate with a shape knocked out of it — so they
@@ -343,11 +362,6 @@
      to cross. Same stroke as ✔ and ✖, a hair smaller, and sitting just after
      their number the way a unit does. */
   .unit { font-size: 1.15em; margin-left: 2px; letter-spacing: 0; }
-  .actg {
-    width: 1.15em; height: 1.15em; display: inline-block; vertical-align: -0.2em;
-    fill: none; stroke: currentColor; stroke-width: 1.7;
-    stroke-linecap: round; stroke-linejoin: round;
-  }
   .mkg {
     width: 1em; height: 1em; display: inline-block; vertical-align: -0.13em;
     fill: none; stroke: currentColor; stroke-width: 1.9;
@@ -364,7 +378,7 @@
      needs a little of its own or the marks sit on top of each other */
   .tocmarks .mk { font-size: 1.15em; letter-spacing: 0.06em; }
   .qmark .mk { font-size: 0.95em; }
-  .tocmarks .more { font-size: 0.58rem; color: var(--muted); letter-spacing: 0; margin-left: 2px; }
+  .tocmarks .more { font-size: var(--t-micro); color: var(--muted); letter-spacing: 0; margin-left: 2px; }
 
   /* ===================================================================
      The needs-you-queue: a margin index (Ed, 104–110). Every entry stands
@@ -436,9 +450,8 @@
      the compression ladder is gone (Ed, 2026-08-16 — see the rail's own note on
      what urgency now decides). */
   .queue .ql { font-weight: 600; font-size: var(--t-ui); display: flex; }
-  .queue .qs { font-size: 0.75rem; color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
-  .queue .qv { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
-  .mcap { display: block; font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
+  .queue .qs { font-size: var(--t-cap); color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
+  .queue .qv { display: block; font-size: var(--t-cap); color: var(--muted); margin-top: 1px; }
 
   .queue button.deciding, .queue button.unread { padding: var(--s1) 10px; }
   .queue button.deciding .ql, .queue button.unread .ql {
@@ -469,7 +482,6 @@
   .queue button.unread .qv { color: var(--muted); }
   /* a deadlocked race states its unusual ask in full, and its caption is an
      instruction rather than a progress note (Ed, 166) */
-  .queue button.wants .mcap { color: var(--stuck-ink); font-weight: 500; }
 
   /* Your own proposal (Ed, 2026-08-16). Once it is in, it is a **status
      line**, not a question: nothing is being asked of you, because your
@@ -531,7 +543,7 @@
      teaser for an argument, not an argument (Ed, 2026-08-16). Fewer cards fit
      as a result, which is the trade being made deliberately. */
   .qwhy {
-    font-size: 0.78rem; line-height: 1.35; color: var(--fg); margin-top: 6px;
+    font-size: var(--t-small); line-height: 1.35; color: var(--fg); margin-top: 6px;
     display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
     -webkit-line-clamp: 4; line-clamp: 4;
   }
@@ -542,8 +554,7 @@
 
   /* An acknowledged decision is a tiny card, not a bare glyph (Ed, 164): still
      an entry in the rail, just the smallest one. Grey card, full-colour glyph
-     (Ed, 165). Dots near each other in the charter share a row (Ed, 106). */
-  .sealdots { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; padding: 2px 0; }
+     (Ed, 165). The row that used to gather several of them went with 106. */
   .queue .sealdot {
     appearance: none; cursor: pointer; flex: none;
     width: 24px; height: 22px; padding: 0; border: 0; border-radius: 0.3rem;
@@ -587,10 +598,10 @@
     color: var(--muted); margin: 22px 0 var(--s2); position: relative;
   }
   .doc h2.docline.lvl1 {
-    font-size: 0.95rem; color: var(--fg); letter-spacing: 0.08em;
+    font-size: var(--t-body); color: var(--fg); letter-spacing: 0.08em;
     margin: 46px 0 14px; padding-top: 14px; border-top: 1px solid var(--border);
   }
-  .doc h2.docline.lvl2 { font-size: 0.8rem; color: var(--fg); margin: 30px 0 10px; }
+  .doc h2.docline.lvl2 { font-size: var(--t-small); color: var(--fg); margin: 30px 0 10px; }
   .doc h2.docline.lvl3 { font-size: var(--t-cap); color: var(--muted); margin: 22px 0 var(--s2); }
   .doc .prose > h2.docline.lvl1:first-child { margin-top: var(--s5); }
   /* the fold triangle sits in the chip-gutter, in line with the anchor marks */
@@ -832,7 +843,6 @@
     background: var(--bg);
   }
   .sugg .foot { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); }
-  .sugg .sactions { display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; }
 
   /* The rationale is drawn by the `sealed-speaker` now, attached to its own
      proposal. `.swhy` survives only in the sealed record's ranked blocks. */
@@ -845,12 +855,14 @@
      into the end of the label above it */
   .rtag {
     display: flex; align-items: baseline; gap: var(--s2);
-    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     color: var(--primary-emphasis); margin-bottom: 6px;
   }
+  /* Not an eyebrow — it sits *under* one and says a thing in words, so it keeps
+     its own weight and case. On the scale at --t-cap, which is the step for a
+     caption. */
   .rsub {
     display: block; margin-top: 2px;
-    font-size: 0.7rem; font-weight: 500; text-transform: none; letter-spacing: 0;
+    font-size: var(--t-cap); font-weight: 500; text-transform: none; letter-spacing: 0;
     color: var(--muted);
   }
   .rsub.stood { color: var(--ok); font-weight: 700; }
@@ -1044,9 +1056,7 @@
   }
   .clausehead .achip.wmark:active { transform: none; }
   .clausehead .headlab {
-    display: flex; align-items: baseline; gap: var(--s2);
-    font-size: var(--t-micro); font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.05em; color: var(--muted); margin-bottom: var(--s1);
+    display: flex; align-items: baseline; gap: var(--s2); margin-bottom: var(--s1);
   }
   /* the clause reads as the document, because it *is* the document: same
      size, same colour, no box — only the label above it says it has been
@@ -1067,10 +1077,7 @@
      you can do about it. The rules are the whole structure of the card — there
      is no other line on it. */
   .field { border-top: 1px solid var(--border); padding-top: var(--s3); }
-  .fieldlab {
-    font-size: var(--t-micro); font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.05em; color: var(--muted); margin-bottom: var(--s2);
-  }
+  .fieldlab { margin-bottom: var(--s2); }
   .propblock + .propblock {
     border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
   }
@@ -1079,12 +1086,6 @@
      sits directly under the clause in the band the field would otherwise start.
      It takes the lifecycle hue rather than a border, by the surface's own rule
      that open is said by depth and colour rather than by outline. */
-  .deadsay {
-    background: rgba(var(--lc-open), 0.13); border-radius: var(--r-md);
-    padding: var(--s3); margin-bottom: var(--s3);
-  }
-  .deadsay p { margin: var(--s1) 0 0; font-size: var(--t-body); }
-  .deadsay .eyebrow { color: var(--stuck-ink); }
   /* Eight wordings is a long read, so the blocks get more air between them than
      a two-candidate field needs — the separator is doing more work here. */
 
@@ -1102,38 +1103,61 @@
   /* Nor above the action row: the boxes above it and the button in it are both
      objects with their own edges, so the rule was drawing a third one between
      two things already separated. */
-  .sealed-open .field + .race-mid { border-top: 0; padding-top: 0; }
+  .sealed-open .race-mid.commitrow { border-top: 0; padding-top: 0; }
   /* The winner is the head, and its reason belongs to it — so it wants room
      above to sit under the text rather than against it, and more room below to
      close the group off from the field (Ed, 2026-08-17). */
   .sealed-open > .speaker { margin: var(--s3) 0 var(--s4); }
   .bridgedesk .fieldlab { color: var(--stuck-ink); }
   .dead-open .field.bridgedesk { margin-top: var(--s3); }
+  /* **A commit row is one object, so its controls share a height** (housekeeping
+     pass, 2026-08-17). They did not: the judgment ✓ and 🗑️ were 40px, the
+     deadlock desk's hold-✏️ was 30px *sitting in the same row as a 40px 🗑️*, the
+     sealed record's OK was 34px, and the proposed card's ✏️ Submitted 34px
+     beside its own 40px 🗑️. Each was an independent little rule about a
+     particular button, and independent rules about buttons that stand in a row
+     together is exactly how a row stops being one.
+
+     Height belongs to the row, so the row sets it; width still belongs to the
+     control, so a glyph stays 52px and a labelled button stays as wide as its
+     label. Nothing here overrides a button's colour or its pressed state. */
+  .commitrow .btn { height: 2.5rem; display: inline-flex; align-items: center; justify-content: center; }
+
   /* 🗑️ and ✏️ are lifted, because they are actions **for the box above them**
      (Ed, 2026-08-17) and the box is lifted. A flat control under a raised
      surface reads as belonging to the card rather than to the thing it acts on;
      putting them at its height joins them to it. They go down on press, like
      every other object on this surface that can be pressed, and stay flat while
-     disabled — there is nothing to act on, so there is nothing to raise. */
-  .editcard .commitrow .btn:not([aria-pressed="true"]),
-  .dead-open .commitrow .btn:not([aria-pressed="true"]) { box-shadow: var(--shadow-md); }
-  .editcard .commitrow .btn:not([disabled]):hover,
-  .dead-open .commitrow .btn:not([disabled]):hover { box-shadow: var(--shadow-lg); }
+     disabled — there is nothing to act on, so there is nothing to raise.
+
+     **On every card, not two** (housekeeping pass, 2026-08-17). It was scoped to
+     the editing card and the deadlock desk because that is where Ed asked for
+     it, and the reason he gave — *they are actions for that box* — is true of
+     the judgment ✓ and the ❄️ beside it and the record's OK. Worse, the two it
+     missed are the two outline buttons on the surface, which are the ones with
+     no fill to read as a control instead. */
+  .commitrow .btn:not([aria-pressed="true"]) { box-shadow: var(--shadow-md); }
+  .commitrow .btn:not([disabled]):hover { box-shadow: var(--shadow-lg); }
   /* And they **follow the box up** (Ed, 2026-08-17: *still not the height of the
      edit box*). The box lifts to --shadow-xl while you are writing in it, and
      buttons left at --shadow-md then sat visibly below the thing they belong to
      for exactly the minute anybody is looking at them. Keyed off the card, since
      the box cannot style its own siblings. */
-  .editcard:focus-within .commitrow .btn:not([disabled]):not(.holding),
-  .dead-open:focus-within .commitrow .btn:not([disabled]):not(.holding) { box-shadow: var(--shadow-xl); }
-  .editcard .commitrow .btn:not([disabled]):active,
-  .dead-open .commitrow .btn:not([disabled]):active,
-  .editcard .commitrow .btn.holding,
-  .dead-open .commitrow .btn.holding { box-shadow: none; }
-  .editcard .commitrow .btn[disabled],
-  .dead-open .commitrow .btn[disabled] { box-shadow: none; }
+  /* the card climbs to --shadow-xl while you are working in it, and its
+     controls climb with it — otherwise they sink into the card that rose */
+  .sugg:focus-within .commitrow .btn:not([disabled]):not(.holding) { box-shadow: var(--shadow-xl); }
+  .commitrow .btn:not([disabled]):active,
+  .commitrow .btn.holding { box-shadow: none; }
+  .commitrow .btn[disabled] { box-shadow: none; }
   .propblock .rtext { font-size: var(--t-body); margin-bottom: 0; }
-  .field + .race-mid {
+  /* The commit row's own hairline and band rhythm belong to **the row**, not to
+     what happens to precede it. This was `.field + .race-mid`, which was true
+     for as long as the field was always the band immediately above — and stopped
+     being true the moment a card's type note and a lock note moved above the row
+     rather than below it (housekeeping pass, 2026-08-17). An adjacent-sibling
+     selector is a rule about *order*, and it was being used to say something
+     about *identity*. */
+  .race-mid.commitrow {
     border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
   }
 
@@ -1254,7 +1278,18 @@
     background: none; border: 0; color: var(--muted); cursor: pointer;
     padding: 3px 6px; border-radius: var(--r-sm);
   }
-  .lfmt, .lmode { width: 26px; text-align: center; }
+  /* **A strip of three controls is one object, so they are one size**
+     (housekeeping pass, 2026-08-17). They were 26x20, 26x**23** and 26x20: the
+     italic button was three pixels taller than the bold one beside it and sat
+     two pixels higher, because the height was coming from whatever the glyph
+     *inside* each button happened to be — B at --t-ui, the serif I at 1.05rem —
+     and a button sized by its content is a button whose size is a coincidence.
+     A fixed box, centred, so an optical adjustment to a glyph can never move the
+     control around it again. */
+  .lfmt, .lmode {
+    width: 26px; height: 22px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
   .lfmt:hover, .lmode:hover { background: var(--light); color: var(--fg); }
   .lfmt b { font-size: var(--t-ui); }
   /* a serif italic I: the serifs are what stop it being a slash (Ed, 2026-08-17) */
@@ -1328,12 +1363,12 @@
     background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600;
   }
   .btn.btn-propose:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
-  /* A glyph the size of every other glyph button; it never grows, because what
-     grows instead is the pencil crossing the screen towards it. Scoped to the
-     *draft's* button — the same class dressed the proposed card's "✏️ Submitted"
-     and squashed it to 52px, which is what happens when a rule about a control
-     is written against the class rather than against the act. */
-  .btn.btn-propose[data-act="draft-propose"] { width: 3.25rem; padding: 0; font-size: 1.2rem; }
+  /* The draft's propose button **is** a glyph button, so it says so in its class
+     list rather than restating .glyphbtn's geometry here and getting the height
+     wrong (housekeeping pass, 2026-08-17: it was 52x30 in a row of 52x40). What
+     is left is the one thing that is true of this button and no other glyph
+     button: it never grows, because what grows instead is the pencil crossing
+     the screen towards it. */
   .btn.btn-propose.holding { background: var(--primary-hover); transform: scale(0.97); }
   /* the edit in flight: it belongs to neither end, so it lives on the body and
      is pointer-transparent — you are still holding the button underneath it.
@@ -1460,13 +1495,10 @@
     display: flex; justify-content: space-between; align-items: center; gap: var(--s2);
     margin-bottom: var(--s3); padding-bottom: var(--s3); border-bottom: 1px solid var(--border);
   }
-  .pwhere {
-    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--primary-emphasis);
-  }
+  .pwhere { color: var(--primary-emphasis); }
   .psteps { display: flex; gap: var(--s1); }
   .pstep {
-    appearance: none; font: inherit; font-size: 0.85rem; line-height: 1;
+    appearance: none; font: inherit; font-size: var(--t-ui); line-height: 1;
     width: 26px; height: var(--s5); padding: 0; cursor: pointer;
     border: 1px solid var(--border); border-radius: var(--r-sm);
     background: var(--bg); color: var(--fg);
@@ -1479,15 +1511,10 @@
      look like it. The text that stands takes the full width; the whole field
      is ranked beneath it, each with the probability it reached. */
   .rechead {
-    display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
-    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--ok); margin-bottom: 10px;
+    display: flex; justify-content: space-between; gap: var(--s3); align-items: baseline;
+    color: var(--ok); margin-bottom: var(--s3);
   }
   .rechead .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
-  .stoodblock { background: var(--ok-subtle); border-radius: var(--r-md); padding: var(--s3) 14px; margin-bottom: var(--s3); }
-  .stoodblock .rtext { margin-bottom: 0; }
-  .stoodblock .swhy { margin-bottom: var(--s2); }
-  .stoodblock .mcap { margin-top: var(--s2); }
   .ranked {
     border: 1px solid var(--border); border-radius: var(--r-md);
     padding: var(--s3) 14px; margin-bottom: var(--s2);
@@ -1515,7 +1542,7 @@
   .ranked:not(.stood) .rtext { color: var(--muted); }
   .ranked:not(.stood) .swhy { font-weight: 500; color: var(--muted); }
   .pline {
-    margin-left: auto; font-size: 0.78rem; color: var(--muted);
+    margin-left: auto; font-size: var(--t-small); color: var(--muted);
     font-variant-numeric: tabular-nums; letter-spacing: 0;
   }
   .ranked.stood .pline { color: var(--ok); }
@@ -1533,11 +1560,6 @@
   .replaced .rtext { color: var(--muted); margin-bottom: 0; }
   .replaced .rtag { color: var(--muted); }
   /* the winning block states no wording — it is the head of the card */
-  .ranked .atop { font-size: var(--t-small); color: var(--ok); font-weight: 500; }
-  .record {
-    display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 14px; padding-top: 10px;
-    border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--muted);
-  }
   .record b { color: var(--fg); font-variant-numeric: tabular-nums; }
 
   /* new wording inside a lane. Nothing is struck through anywhere (Ed, 91):
@@ -2469,7 +2491,6 @@
   // be if the heading is an addressable block like any other.
   DOC.forEach((l, i) => { if ((l.t === 'p' || l.t === 'h') && !l.key) l.key = (l.t === 'h' ? 'h' : 'c') + i; });
   const lineOf = (key) => DOC.find((l) => l.key === key);
-  const isHeadingKey = (key) => (lineOf(key) || {}).t === 'h';
 
   // The nearest heading above a clause, which is what a draft of your own is
   // labelled by in the rail. The same deterministic fallback the `race-labeler`
@@ -4014,16 +4035,6 @@
   // lane buttons are already two routes to the composer and a third would be
   // ink for its own sake.
   //
-  // It no longer states a price, because it no longer charges one: the composer
-  // is free to open and the edit is spent at Propose, which is where the cost
-  // is now said in words (Ed, 2026-08-16, revising 234/668).
-  // On a `deadlock-card` it is not *something else*, it is the whole ask, so it
-  // says what the job is and stops being an outline button among others.
-  const proposeBtnHtml = (bridge) =>
-    '<button class="btn ' + (bridge ? 'btn-propose' : 'btn-outline') + '" data-act="propose"' +
-    ' title="Write something else for this clause — free to open; proposing costs one edit">' +
-    (bridge ? '✏️ Write a bridge' : '✏️ Propose something else') + '</button>';
-
   // ✏️ on a lane: take *this* wording as your starting point (Ed, 228). A null
   // seed means the clause's own current text, which is what the composer uses
   // by default — so the left-hand lane of a quick card or a patch, which is the
@@ -4841,7 +4852,6 @@
     const r = render || esc;
     return esc(m[1]) + (m[2] ? '<' + tag + '>' + r(m[2]) + '</' + tag + '>' : '') + esc(m[3]);
   };
-  const insHtml = (t) => markHtml2(t, 'ins');
   // **Result-only** (Ed, 274, retiring the redline). A proposal states the text
   // as it would stand, with what it adds marked and nothing struck through.
   // Ed's reason is about the reader rather than the tuning — *normal people
@@ -5121,7 +5131,7 @@
       // spent at Propose, which is where the price is said in words* — and
       // makes the price itself the confirmation step, rather than bolting a
       // "sure?" onto it. Pressing anything else disarms it.
-      '<button class="btn btn-propose" data-act="draft-propose"' +
+      '<button class="btn btn-propose glyphbtn" data-act="draft-propose"' +
       (broke ? ' disabled title="No edits left — another arrives as the drip accrues"' : '') +
       ' title="Hold to propose this' + (n > 1 ? ' in all ' + n + ' places' : '') +
       ' — one edit leaves your wallet to pay for it">✏️</button>' +
@@ -5145,7 +5155,7 @@
     const n = d.sites.length;
     const i = Math.max(0, d.sites.indexOf(site));
     const s = site || d.sites[0];
-    const rival = liveRivalFor(d, s);
+    // (`liveRivalFor` went with the `yoursnote`: the note was its only reader.)
     const step = (to, label, glyph) => (to === null
       ? '<span class="pstep off">' + glyph + '</span>'
       : '<button class="pstep" data-step="' + d.id + ':' + d.sites[to].keys[0] + '" title="' + esc(label) + '">' + glyph + '</button>');
@@ -5438,7 +5448,7 @@
       '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
       (site ? '' : ' disabled') +
       ' title="Discard this draft — nothing has been spent on it yet">🗑️</button>' +
-      '<button class="btn btn-propose" data-act="draft-propose"' +
+      '<button class="btn btn-propose glyphbtn" data-act="draft-propose"' +
       (site && !broke ? '' : ' disabled') +
       ' title="Hold to propose this — one edit leaves your wallet to pay for it">✏️</button>' +
       '</div>' +
@@ -5480,9 +5490,20 @@
         clauseHeadHtml(s, { label: 'This card asks',
                             html: 'Which of these deserves more of the room’s attention?' }) +
         fieldHtml(q(s.pair[0], 'first') + q(s.pair[1], 'second'), 2, 'The two questions') +
-        commitRowHtml(s) +
+        // **The commit row is the card's bottom band, on every card**
+        // (housekeeping pass, 2026-08-17). Three card types printed their
+        // one-line type note *after* it, and a locked card its lock note, so on
+        // half the cards the row that ends the card had something under it.
+        //
+        // Both notes belong above it on their own merits, too. A type note is
+        // about the field — *neither of these has to win*, *one judgment for all
+        // three places* — so it reads as the last thing said about what you are
+        // looking at, rather than as a footnote to the act. And a lock note is
+        // the reason the controls below it are dead, which is worth knowing
+        // before you reach for them rather than after.
         reviseNote(s) +
         '<div class="foot">This ranks the questions, never the answers — neither text changes either way.</div>' +
+        commitRowHtml(s) +
         '</div>'
       );
     }
@@ -5502,7 +5523,6 @@
         fieldHtml(
           proposalHtml(s, { v: 'a', html: wordingHtml(cur, s.race.a.text), why: s.race.a.rationale }) +
           proposalHtml(s, { v: 'b', html: wordingHtml(cur, s.race.b.text), why: s.race.b.rationale }), 2) +
-        commitRowHtml(s) +
         reviseNote(s) +
         // The one thing a race card cannot say any other way: neither of its
         // two candidates has an incumbent radio, so nothing on the card votes
@@ -5510,6 +5530,7 @@
         // must win. Everything else that used to be here was the design
         // explaining itself.
         '<div class="foot">Neither of these has to win — the clause above stands unless the leader clears the bar.</div>' +
+        commitRowHtml(s) +
         '</div>'
       );
     }
@@ -5539,10 +5560,10 @@
         clauseHeadHtml(s, { text: currentTextFor(site.key), key: site.key, v: 'keep',
                             chips: chipsFor(site.key, s.id) }) +
         fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, key: site.key })) +
-        commitRowHtml(s) +
         reviseNote(s) +
         '<div class="foot">One judgment for all ' + n +
         ' places — choosing here chooses everywhere.</div>' +
+        commitRowHtml(s) +
         '</div>'
       );
     }
@@ -5566,8 +5587,8 @@
                           chips: chipsFor(key, s.id) }) +
       groundNote(s) +
       fieldHtml(proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, edit: noEdit })) +
-      commitRowHtml(s) +
       reviseNote(s) +
+      commitRowHtml(s) +
       '</div>'
     );
   }

@@ -3321,3 +3321,124 @@ remaining ones actually measure — not what they are supposed to express.** The
 urgency ramp was supposed to express urgency and does; it just does not have the
 resolution to carry a categorical claim, and nothing said so until the hue that
 was carrying it went away.
+
+## The housekeeping pass (2026-08-17)
+
+Ed, after a long run of feature work on the queue and the decision cards: *time
+to do housekeeping, refactor, and review everything for consistency.*
+
+Everything below was found by **measuring rather than looking** — opening all
+thirty-two cards and dumping the computed geometry of every button, band and
+label, then diffing the results against each other. Every one of these had been
+on the screen for days without being visible, which is the argument for the
+method: a surface built one instruction at a time drifts in ways that are
+invisible from inside any single instruction.
+
+### The class written to stop eyebrows drifting had no users
+
+`.eyebrow` was added with the comment *one rule, so they cannot drift apart*. It
+had **zero consumers**. Every eyebrow on the surface was a hand-rolled copy of
+it, and the copies had drifted to three sizes: `.headlab` and `.fieldlab` at
+0.65rem, `.rtag` and `.rechead` at 0.7rem, and `.eyebrow` itself at a 0.75rem
+that appeared nowhere else on the page. `--t-micro`'s own comment has said
+*eyebrow labels only* since the scale was written.
+
+So the rule now names its users in its selector, which is what makes it a rule —
+a new eyebrow cannot be added without touching that line — and each of them keeps
+colour and layout and nothing else. **A shared rule nothing points at is not a
+shared rule, it is a fifth opinion.**
+
+### The type scale had six steps and the stylesheet used thirteen
+
+0.58, 0.62, 0.7, 0.75, 0.78, 0.8, 0.85 and 0.95rem all appeared as literals,
+most within half a pixel of a token that already existed. Snapped onto the six
+steps. What is left as a literal is now exactly one category and it is worth
+stating so it stays that way: **glyph sizes**. `.achip` at 1.125rem, the glyph
+buttons at 1.2 and 1.35, the serif italic *I* at 1.05 — these tune a *silhouette*
+to a box, not text to a scale, and a glyph's optical size has no business
+being on the same ladder as prose.
+
+### The contents rail's hierarchy was upside down
+
+lvl1 12px, lvl2 **13px**, lvl3 12.48px. The outermost level was the smallest text
+in the column and a leaf outranked the Part containing it. The document's own
+headings had always descended correctly (15.2 / 12.8 / 11.52); only the rail was
+inverted, and three off-scale sizes were exactly what hid it — no two of them
+were comparable at a glance.
+
+A Part is a **divider**, so it is set as one: upper-case, bold, `--t-cap`, below
+the entries rather than above them. The two levels under it are the same size and
+are told apart by weight and indent, which is the job indentation was already
+doing.
+
+### A commit row is one object, so its controls share a height
+
+They did not. The judgment ✓ and 🗑️ were 40px; the deadlock desk's hold-✏️ was
+**30px sitting in the same row as a 40px 🗑️**; the sealed record's OK was 34px;
+and the proposed card's *✏️ Submitted* was 34px beside its own 40px 🗑️. Four
+independent little rules about particular buttons — and independent rules about
+buttons that stand in a row together is precisely how a row stops being one.
+
+Height belongs to the row, so the row sets it. Width still belongs to the
+control, so a glyph stays 52px and a labelled button stays as wide as its label.
+
+The same for the lift. It was scoped to the editing card and the deadlock desk
+because that is where Ed asked for it — and the reason he gave, *they are actions
+for that box*, is just as true of the ✓, the ❄️ and the OK. Worse, the two cards
+it missed contain the surface's only **outline** buttons, which are the ones with
+no fill to read as a control instead.
+
+And the deadlock desk's propose button now says `glyphbtn` in its class list
+instead of restating that class's geometry in a rule of its own — which is how it
+came to have the width and not the height.
+
+### Three controls sized by their own contents
+
+**B** was 26×20, *I* 26×**23**, the mode toggle 26×20 — the italic one three
+pixels taller than the bold one beside it and sitting two pixels higher, because
+each button's height was coming from whatever glyph happened to be inside it.
+A fixed box, centred, so an optical adjustment to a glyph can never move the
+control around it again. **A button sized by its content is a button whose size
+is a coincidence.**
+
+### The commit row is the card's bottom band — on every card now
+
+Three card types printed their one-line type note *after* the row, and a locked
+card its lock note, so on half the cards the band that ends the card had
+something under it. Both belong above it on their own merits: a type note is
+about the field, so it reads as the last thing said about what you are looking
+at; and a lock note is the reason the controls below it are dead, which is worth
+knowing before you reach for them rather than after.
+
+**And moving them broke the row's hairline**, which is the most useful thing this
+pass turned up. The rule was `.field + .race-mid` — an *adjacent sibling*
+selector, true for exactly as long as the field was always the band immediately
+above. Put anything between them and the commit row silently loses its rule and
+its 12px band. It is now `.race-mid.commitrow`. **An adjacent-sibling selector is
+a rule about order being used to say something about identity**, and it fails
+silently the first time the order changes.
+
+### Dead code
+
+Nine CSS rule-sets whose class no longer appears in anything the page emits —
+the bounty board's next-pencil pip, the line-art unit glyphs, the sealed record's
+action row and its green winner box, the queue's caption line, the dot rows of
+filed decisions, the deadlock card's raised box, the record band. Three functions
+with no callers (`insHtml`, `isHeadingKey`, `proposeBtnHtml`) and one local that
+went with the `yoursnote`. After it: 198 declarations, none unreferenced.
+
+### Two things found and left for Ed
+
+**The three type notes.** A race card, a patch card and a diagonal each carry one
+sentence saying what that kind of card does. They are the same species as the
+three footnotes Ed cut earlier the same day — but these are per *type* rather
+than per card, and each says something the card cannot say any other way (that
+neither race candidate has to win; that one judgment lands in three places; that
+a diagonal changes no text). Worth his ruling rather than mine.
+
+**`locked` without `shifted`.** `reviseNote` has a branch for it — *this one is
+settled, so your judgment is on the record as it stands* — and no fixture reaches
+it, because the only locked card in the fixture is also ground-shifted and
+`shifted` is tested first. Either the state is reachable and wants a fixture, or
+it is not and the branch should go; I could not convince myself which, since a
+settled race becomes a sealed record rather than a locked judgment card.
