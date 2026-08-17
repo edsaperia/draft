@@ -1474,3 +1474,71 @@ card, where `[disabled]` faded the whole trio to 55% including the answer. The
 greying is saying *you cannot change this*, which is true; dimming your own
 answer with it says something else. The unchosen options fade now; yours does
 not.
+
+### Served, not offered — and the panel goes
+
+Built the offer on Monday's reasoning and Ed removed it the same day, correctly:
+*the top of the queue-sidebar is a bad place to put things; rather than ask
+people if they want to prioritise, let's just serve them a card as soon as their
+active queue is empty.*
+
+Two things wrong with the offer, and the second is the one I should have seen.
+The panel needed somewhere to live and the only place was above the rail — but
+the rail is a **margin index**, where position means *where in the charter this
+is*, and a panel pinned on top of it is a banner in a column that has no room
+for banners. And the question was one nobody benefits from being asked: the
+entire justification for the audience gate is that a diagonal costs an idle
+member nothing, so asking whether they mind is asking a question whose answer
+the gate has already assumed.
+
+What survives is better than what it replaced: `served()` now derives from the
+state rather than from a flag somebody set, and the whole end-of-queue panel —
+markup, styles, three copy states, and a height that had to be subtracted from
+the band — is gone. **A rule that can be derived should not be a mode.**
+
+### A diagonal has no progress
+
+Ed: *if salience has no ratification threshold, why does the diagonal card have
+a progress bar?* It should not, and the bar was inherited rather than chosen —
+every rail entry gets `pct` from the fixture and the wash paints it.
+
+The fill means closeness-to-resolution. Salience never resolves: it is a
+continuous ranking with no bar to clear and no quorum to ratify, which is
+exactly the property that lets it be advisory and stay out of adoption. A
+progress bar on it claims a finish line that does not exist. It washes flat now,
+for the same reason an unproposed draft does — there is nothing to be close to —
+and the rule is in §8.3a so no future surface draws one.
+
+Worth noting what caught it: not a rendering that looked wrong, but a **mechanism
+fact noticed on a surface**. The wash is a good enough instrument that it can be
+read back against the spec.
+
+### The same technique, applied wrongly
+
+*How is it you managed to join two things that share a shadow with the left
+gutter tabs, but not with the cables?* It is the same technique, and it was
+applied wrongly.
+
+`clip-path` resolves in the user space of the element referencing it **after**
+that element's own transform. The shadow group carried both the clip and the
+`translate(0 3)` that makes it a shadow, so the holes moved down with it: every
+card's hole sat 3px low, and a 3px sliver of shadow survived along its top edge.
+That is why it looked fixed on decision cards and not on queue cards — a cable
+arrives at a decision card well below its top edge, and at a rail entry right at
+it.
+
+Two groups now, clip on the outer and offset on the inner. The rule to keep:
+**a clip and a transform on the same element are not independent.**
+
+### Ed on the resolved document
+
+*This is the first time I've seen a document with every card resolved — it looks
+great, like a document with a set of loading bars down the side, which is exactly
+correct.*
+
+Worth recording because it was not designed for: the `evidence-meter` was built
+to say closeness-to-resolution on one card at a time, and the emergent reading at
+rest — a charter with a column of fills beside it — turns out to be the clearest
+statement of session state the surface makes. It is also the argument for the
+meter surviving future passes: it earns its place twice, once per card and once
+in aggregate.

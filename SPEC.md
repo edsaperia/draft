@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.20
+# Group Drafting Engine — Specification v0.21
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -161,7 +161,11 @@ E is the whole non-removed roster, and silence is never imputed (Q43, Ed 2026-08
 
 **Audience.** A diagonal is served **only to a participant with nothing else to judge** — no live pair the router would otherwise hand them. Everyone else's attention is better spent judging, which is the act that resolves questions rather than ordering them. This is not a heuristic about who is keen: a diagonal costs a member with an empty queue nothing, and costs a member with a full one a judgment.
 
-**And it terminates.** An empty queue must not become an endless stream of prioritisations. Diagonals are served only while a pair would still move the salience ranking — the same active-sampling rule races use — and stop when the remaining pairs are already ordered confidently, with a hard ceiling of **three in a row** per participant regardless. Past either limit the participant is told they are up to date rather than handed another card. The offer is framed as an offer: *you are done — unless you would like to help prioritise*.
+**Served, not offered** (Ed, 2026-08-17). When the queue empties the card simply arrives, as every card does when it becomes yours to judge. Asking first — *would you like to help prioritise?* — needs somewhere to put the question, and the answer is not in doubt: the whole reason a diagonal is cheap here is that the participant has nothing else to do.
+
+**And it terminates.** An empty queue must not become an endless stream of prioritisations. Diagonals are served only while a pair would still move the salience ranking — the same active-sampling rule races use — and stop when the remaining pairs are already ordered confidently, with a hard ceiling of **three in a row** per participant regardless. Past either limit nothing is served and the queue is simply empty.
+
+**Nothing about a diagonal has a completion state.** Salience is a continuous ranking with no threshold to clear and no quorum to ratify — which is precisely what allows it to be advisory — so a diagonal has no closeness-to-resolution, and no surface may draw one for it. A progress bar on a diagonal claims a finish line that does not exist.
 
 **Known limitation.** Salience is then measured on a biased sample: the members who reach the end of their queue, who are systematically the most active. The ranking this feeds is advisory — routing weight, bounty order, backlog order — and never touches adoption (§4.2), which is what makes the bias tolerable. It is recorded here rather than corrected because the alternative, spending scarce judgment on ordering instead of deciding, is worse.
 
@@ -263,7 +267,7 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 | Rationale cap | 300 chars |
 | Bout gap threshold | > 90 s discarded from latency |
 | Hot set / exploration | ~3 races / ~1 in 7 |
-| Salience diagonal gate (§8.3a) | live questions ≥ roster size E (a race counts once), served only to a participant with an empty queue, max 3 in a row |
+| Salience diagonal gate (§8.3a) | live questions ≥ roster size E (a race counts once), served (not offered) to a participant with an empty queue, max 3 in a row, no completion state |
 | Rival-pair gate (§8.3) | open when some challenger's posterior P(beats incumbent) > 0.5 on ≥ 3 incumbent-involving comparisons (current ground) |
 | Re-opened race boost (§4.4 ground shift) | 1.5× routing value while fresh judgments < live candidates |
 | Bridge metric | minimum support across camps, stratified probes |
