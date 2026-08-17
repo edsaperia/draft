@@ -956,6 +956,20 @@
   .propblock + .propblock {
     border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
   }
+  /* The deadlock card's one raised voice: on every other card a line like this
+     is a caveat at the foot, and here it is the reason the card exists, so it
+     sits directly under the clause in the band the field would otherwise start.
+     It takes the lifecycle hue rather than a border, by the surface's own rule
+     that open is said by depth and colour rather than by outline. */
+  .deadsay {
+    background: rgba(var(--lc-open), 0.13); border-radius: var(--r-md);
+    padding: var(--s3); margin-bottom: var(--s3);
+  }
+  .deadsay p { margin: var(--s1) 0 0; font-size: var(--t-body); }
+  .deadsay .eyebrow { color: var(--stuck-ink); }
+  /* Eight wordings is a long read, so the blocks get more air between them than
+     a two-candidate field needs — the separator is doing more work here. */
+  .dead-open .propblock + .propblock { margin-top: var(--s4); padding-top: var(--s4); }
   .propblock .rtext { font-size: var(--t-body); margin-bottom: 0; }
   .field + .race-mid {
     border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
@@ -1939,10 +1953,36 @@
       qLabel: '§ Sanctions',
       // judgment leverage is nil here, which is what deadlocked *means*; the
       // rail ranks it on `bounty` instead — resolvable disagreement × salience,
-      // the bounty board's own score (Ed, 223)
+      // the score that outlived the board it was named for (Ed, 223)
       urgency: 0.05, bounty: 0.86,
       pct: 100, cap: 'gathering — needs roughly 3 more judgments',
       capStuck: 'deadlocked — more judgments won’t move it; only a new proposal can',
+      judges: 11, pairsJudged: 7,
+      // **Eight wordings** (Ed, 2026-08-17: *maybe I need to see a race with 8
+      // proposals to really understand what's happening here*). This is what a
+      // constitutional argument looks like when it has genuinely stuck: not two
+      // options that split the room, but eight attempts at the same sentence,
+      // most of them answering the ones before them, arranged in two camps
+      // nobody has yet bridged. `race` survives beneath it for the pairwise
+      // machinery; `fieldOf` prefers `slate`, which is what the card shows.
+      slate: [
+        { text: 'The house may ask for an apology or suspend a right for a season; removal under Part III is available only where a sanction has already been imposed and has not been kept to.',
+          rationale: 'Removal should never be the first thing reached for. Making it conditional on a broken sanction gives everyone a step back from the cliff.' },
+        { text: 'The house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III; every sanction is proposed by a member who is not party to the dispute.',
+          rationale: 'The problem isn’t the ladder of sanctions, it’s who proposes them. An uninvolved proposer stops a hearing turning into the aggrieved party naming their own remedy.' },
+        { text: 'The house may ask for an apology or suspend a right for a season. Removal is not a sanction and is dealt with only under Part III, at a meeting called for that purpose alone.',
+          rationale: 'Putting removal in the same sentence as an apology makes them the same kind of thing. They are not, and a charter that lists them together will eventually be read as a menu.' },
+        { text: 'The house may ask for an apology, suspend a right for a season, or remove a member under Part III. No sanction may be proposed by a member party to the dispute, and none may be decided at the meeting it was proposed at.',
+          rationale: 'Both halves of the argument are right and they do not conflict. A neutral proposer and a night’s sleep between proposing and deciding cost nothing and prevent most of what we are worried about.' },
+        { text: 'The house may ask for an apology or suspend a right for a season. Where a sanction has been imposed twice in a year and not kept to, the house may remove a member under Part III.',
+          rationale: 'The one-broken-sanction version is still a two-step to the door. Twice in a year is a pattern, and a pattern is the only honest ground for removing somebody.' },
+        { text: 'The house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III. Every sanction expires when its reason does, and the Steward says so at the next meeting.',
+          rationale: 'We keep arguing about the ladder and nobody has said what happens afterwards. A sanction with no end is a removal in instalments.' },
+        { text: 'The house may ask for an apology or suspend a right for a season. Removal under Part III requires the agreement of two thirds of those present, and may not be proposed by a member party to the dispute.',
+          rationale: 'If removal is going to stay on the list, it should be harder to reach than a suspension. A bare majority is the same bar as choosing the wine.' },
+        { text: 'The house may ask for an apology or suspend a right for a season, and may ask the Trust’s visitor to sit with the matter. Removal under Part III is available only where the visitor has been asked and the matter has not settled.',
+          rationale: 'We have a visitor and never use them. An outside pair of eyes before the door is opened is cheaper than any of the rules being argued over here.' },
+      ],
       race: {
         a: {
           text: 'The house may ask for an apology or suspend a right for a season; removal under Part III is available only where a sanction has already been imposed and has not been kept to.',
@@ -3466,9 +3506,12 @@
   // It no longer states a price, because it no longer charges one: the composer
   // is free to open and the edit is spent at Propose, which is where the cost
   // is now said in words (Ed, 2026-08-16, revising 234/668).
-  const proposeBtnHtml = () =>
-    '<button class="btn btn-outline" data-act="propose" title="Write something else for this clause — free to open; proposing costs one edit">' +
-    '✏️ Propose something else</button>';
+  // On a `deadlock-card` it is not *something else*, it is the whole ask, so it
+  // says what the job is and stops being an outline button among others.
+  const proposeBtnHtml = (bridge) =>
+    '<button class="btn ' + (bridge ? 'btn-propose' : 'btn-outline') + '" data-act="propose"' +
+    ' title="Write something else for this clause — free to open; proposing costs one edit">' +
+    (bridge ? '✏️ Write a bridge' : '✏️ Propose something else') + '</button>';
 
   // ✏️ on a lane: take *this* wording as your starting point (Ed, 228). A null
   // seed means the clause's own current text, which is what the composer uses
@@ -4499,8 +4542,76 @@
       '<span class="rsub">it changed under you — SPEC §4.4</span></div>' +
       '<div class="rtext">' + esc(s.wasGround) + '</div></div>');
 
+  // ---- the deadlock card -------------------------------------------------
+  // **⚔️ is a different card, not a race card with a button on it** (Ed,
+  // 2026-08-17). And "replaces the race card" was the wrong way to put it, as
+  // Ed pointed out: by the time you see this, the race has nothing left to ask
+  // you (§8.3b), so there is no live judgment card here to replace. What was
+  // there was a record of pairs you had already decided, with the option to
+  // change your mind — which is a thing you can still do, from the same rail
+  // entry, and is not what this card is for.
+  //
+  // **No standings, and therefore no lock** (Ed, 303: *if we don't give
+  // numbers, do we still need to lock?* — the question is the design). A card
+  // showing the field's *rankings* would be the briefing SPEC §3.5 permits on a
+  // race out of the judgment stream, and would have to close your judgments
+  // with it: a member who reads the standings and then revises is casting an
+  // informed judgment in a blind field, which is the one thing §3.5 exists to
+  // prevent. A card showing only the **wordings and their arguments** leaks
+  // nothing at all — every candidate text and rationale is already public — so
+  // it takes nothing away, needs no warning, and needs no rule. The cheaper
+  // card is also the better one.
+  //
+  // Order is arrival, oldest first: it is the only ordering that is not a
+  // ranking, and it happens to be the useful one, because a field of eight is
+  // largely a conversation in which each wording answers the ones before it.
+  function deadlockCardHtml(s) {
+    const key = (s.keys ?? [])[0];
+    const field = fieldOf(s);
+    const yours = verdicts.get(s.id) || s.verdict;
+    return (
+      '<div class="sugg dead-open" data-card="' + s.id + '"' +
+      (key ? ' data-site="' + key + '"' : '') + '>' +
+      clauseHeadHtml(s, { text: currentTextFor(key), key: key, chips: chipsFor(key, s.id),
+                          label: 'The clause as it stands — and it is still standing' }) +
+      // The card's own voice, and the only place it raises it. On a race card a
+      // line like this is a caveat at the foot; here it is the whole point of
+      // the card, so it goes at the top and is the first thing read.
+      '<div class="deadsay"><div class="eyebrow">⚔️ Deadlocked</div>' +
+      '<p>The room has stopped moving on this. More judging will not decide it — ' +
+      'a wording that both sides can live with is the only thing that will.</p></div>' +
+      '<div class="field"><div class="fieldlab">Everything in flight · ' + field.length +
+      ' wordings, oldest first</div>' +
+      // Stated plainly, and the attempt to mark them is worth recording as a
+      // dead end. `result-only` against the clause is what every other card
+      // does, and at eight it marks **three** of them: the floor in
+      // `wordingHtml` is measured against the incumbent, and a wording this far
+      // from the clause is a rewrite rather than an edit, so it states itself
+      // plain by design (Q92). Half a field wearing green reads as arbitrary,
+      // which is worse than none of it.
+      //
+      // The finding underneath is the useful one: **at eight, the comparison
+      // you need is not each-against-the-clause but each-against-the-others**,
+      // and no diff against the incumbent can draw that. See Q301.
+      field.map((c) =>
+        '<div class="propblock">' +
+        '<div class="rtext">' + esc(c.text) + '</div>' +
+        (c.why ? speakerHtml(c.why) : '') + '</div>').join('') + '</div>' +
+      // What you said, as record rather than control — one line for however
+      // many pairs it took, because this card is about the race and not about
+      // any pair in it (Ed: *may relate to several votes in a race*).
+      '<div class="record"><span>' +
+      (yours ? 'You ' + esc(yours) : 'You judged every pair here') +
+      (s.pairsJudged ? ' · <b>' + s.pairsJudged + '</b> pairs judged' : '') +
+      '</span><span>' + (s.judges ?? 0) + ' of ' + ROSTER + ' have weighed in</span></div>' +
+      '<div class="race-mid commitrow"><span></span>' + proposeBtnHtml(true) + '</div>' +
+      '</div>'
+    );
+  }
+
   function suggCardHtml(s, siteKey) {
     if (stateOf(s) === 'sealed') return sealedCardHtml(s);
+    if (stuck(s)) return deadlockCardHtml(s);
     if (s.kind === 'draft') {
       const site = (siteKey && siteFor(s, siteKey)) || s.sites[0];
       return s.unproposed ? editCardHtml(s, site) : mineCardHtml(s, site);
@@ -4554,7 +4665,7 @@
         fieldHtml(
           proposalHtml(s, { v: 'a', html: wordingHtml(cur, s.race.a.text), why: s.race.a.rationale }) +
           proposalHtml(s, { v: 'b', html: wordingHtml(cur, s.race.b.text), why: s.race.b.rationale }), 2) +
-        commitRowHtml(s, stuck(s) ? proposeBtnHtml() : '') +
+        commitRowHtml(s) +
         reviseNote(s) +
         // The one thing a race card cannot say any other way: neither of its
         // two candidates has an incumbent radio, so nothing on the card votes
@@ -4591,7 +4702,7 @@
         clauseHeadHtml(s, { text: currentTextFor(site.key), key: site.key, v: 'keep',
                             chips: chipsFor(site.key, s.id) }) +
         fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, key: site.key })) +
-        commitRowHtml(s, stuck(s) ? proposeBtnHtml() : '') +
+        commitRowHtml(s) +
         reviseNote(s) +
         '<div class="foot">One judgment for all ' + n +
         ' places — choosing here chooses everywhere.</div>' +
@@ -4618,9 +4729,7 @@
                           chips: chipsFor(key, s.id) }) +
       groundNote(s) +
       fieldHtml(proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, edit: noEdit })) +
-      // A bridge is the ask on any deadlocked judgment, not only on a race:
-      // what makes it the ask is that judging has stopped moving it.
-      commitRowHtml(s, stuck(s) ? proposeBtnHtml() : '') +
+      commitRowHtml(s) +
       reviseNote(s) +
       '</div>'
     );

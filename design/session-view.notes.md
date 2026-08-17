@@ -2148,3 +2148,66 @@ and the tumble come off the same flick. Whole turns only, so it always lands in
 the pose it would have landed in anyway. A rarity you cannot make happen is
 worth more than one you can: the point is the flight you were not expecting, and
 a pencil that spun every time would just be a pencil that spins.
+
+---
+
+## The deadlock card, and what eight proposals taught (2026-08-17)
+
+Ed's objection to ⚔️ as I first built it — a race card with a bridge button on
+it — was stronger than he put it. It isn't only that a re-vote control sits
+oddly beside a call to action: showing you the field *and* leaving your vote
+open is exactly the informed-judgment-in-a-blind-field that SPEC §3.5 exists to
+prevent. And the converse is the permission that makes the card possible at all.
+§3.5 allows the briefing — standings, splits, camps — in one circumstance: a
+race that has left the judgment stream. §8.3b now says that happens, for you,
+when the race stops asking you things.
+
+**Then Ed asked the question that removed the whole problem: *if we don't give
+numbers, do we still need to lock?*** No. A card showing the field's rankings is
+the briefing, and would have to close your judgments with it. A card showing
+only **wordings and their arguments** leaks nothing at all — every candidate text
+and rationale is already public — so it takes nothing away, needs no warning,
+and needs no rule. The cheaper card is also the better one, and it needed asking
+rather than designing around.
+
+He also caught a sloppy word. I had written that the deadlock card *replaces*
+the race card; it can't, because by the time you see it the race has nothing
+left to ask you. There is no live judgment card there to replace — what was
+there was a record of pairs you had already decided.
+
+**The shape.** The clause at the head, reference only. Then the card's own voice
+in the band the field would otherwise start — *the room has stopped moving on
+this; more judging will not decide it* — which on any other card would be a
+caveat at the foot and here is the point, so it goes first. Then the field:
+everything in flight, full width, oldest first. Arrival order is the only
+ordering that is not a ranking, and it happens to be the useful one, because a
+field of eight is largely a conversation in which each wording answers the ones
+before it. Then what you said, as a grey record line rather than a control — one
+line for however many pairs it took, since the card is about the race and not
+about any pair in it. Then ✏️ **Write a bridge**, at the right where every
+commit control lives.
+
+### What eight proposals taught
+
+Ed asked to see a race with eight, and it was the right instinct: the design
+question only appears at that size. **The field is a wall of near-identical
+sentences.** They all open *The house may ask for an apology* and diverge in the
+middle, so you have to read each one whole and hold it in your head.
+
+Two fixes tried and rejected, both worth recording.
+
+**Marking against the clause** — `result-only`, what every other card does —
+marks **three of the eight**. The floor in `wordingHtml` is measured against the
+incumbent, and a wording this far from the clause is a rewrite rather than an
+edit, so it states itself plain by design (Q92). Half a field wearing green
+reads as arbitrary, which is worse than none of it.
+
+**Ranking** is unavailable by construction. Being level is what deadlock *means*,
+so the axis a decided card sorts on is precisely the one that says nothing here.
+
+The finding underneath both is the useful one, and it is now Q301: **at eight,
+the comparison you need is not each-against-the-clause but each-against-the-
+others**, and nothing computed against the incumbent can draw that. Q305 (a
+six-word advisory label per wording) and Q306 (the `camp-map`) are the two ways
+out, and 305 is the cheaper: two candidates with near-identical labels are
+visibly one camp without anything having to say so.
