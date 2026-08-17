@@ -1695,3 +1695,32 @@ Worth noticing how the rule changed: not by argument, but because two colour
 moves made the old wording false and the new one obvious. **A palette rule is a
 description of a palette, and it has to be re-derived whenever the palette
 moves** — the alternative is a rule that everybody quotes and nothing obeys.
+
+### The 🔄 card was saying the opposite of the truth
+
+Looking into Ed's (cut-off) note about the 🔄 example turned up a real fault, and
+a second one underneath it.
+
+Every judged card carried the same footnote — *choosing again replaces your
+earlier judgment, allowed while the race is still deciding* — including the cards
+where it is not allowed. `quick-garden` is locked: its ground moved, its
+comparison is spent, and its radios are disabled. It was telling the reader they
+could change their mind while refusing to let them, and offering no reason
+anywhere on the card. The one sentence that would have explained it — *the text
+changed after your judgment* — existed only as a `title` attribute on the rail
+entry, which is to say nowhere a reader will find it.
+
+Fixed: a locked card says why it is locked, in the grey its dead controls wear,
+with the ground-shift wording where the revision offer used to be.
+
+The deeper fault is not fixed, because fixing it means writing charter fiction
+and that is Ed's. **The fixture's 🔄 is not a ground shift.** Its `marked` string
+carries no `<del>` and no `<ins>`, so the proposal renders word-for-word
+identical to the clause above it, and nothing on the card shows what moved
+underneath the judgment. A ground shift is *the text changed under you*; this one
+shows no text changing anywhere. It is a judged card wearing a 🔄 and a tooltip.
+
+What it would need: the clause as it now stands, a candidate that actually
+proposes something against it, and — the thing that makes it a ground shift
+rather than a lock — **the text you judged against**, shown as what it was. That
+is one new sentence of the Hollow Oak charter and one new fixture field.

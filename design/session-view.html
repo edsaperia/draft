@@ -1176,6 +1176,9 @@
     display: block; font-weight: 700; font-size: var(--t-micro); text-transform: uppercase;
     letter-spacing: 0.05em; color: var(--muted); margin-bottom: 2px;
   }
+  /* a locked card's note is the reason its controls are dead, so it wears the
+     same grey those controls do rather than the neutral tray */
+  .sugg .srationale.locked { background: rgba(var(--lc-closed), 0.16); }
 
   /* A patch's card says which of its places you are looking at, and lets you
      walk to the others without leaving the judgment (Ed, 181). */
@@ -3148,10 +3151,24 @@
   // What you already said, and that you may still change it. Below the commit
   // row (Ed, 215): it is a note *about* the button you are looking at, and at
   // the top of the card it read as an instruction before you had seen the texts.
+  // A **locked** card said the opposite of the truth (found 2026-08-17). Every
+  // judged card carried one note — *choosing again replaces your earlier
+  // judgment, allowed while the race is still deciding* — including the cards
+  // where it is not allowed, whose controls were disabled with no explanation
+  // anywhere on them. The one sentence that would have explained it, the ground
+  // shift itself, existed only as a `title` on the rail entry.
   function reviseNote(s) {
     if (!isJudged(s)) return '';
-    return '<div class="srationale"><span class="rl">You ' +
-      (verdicts.get(s.id) || s.verdict || 'judged') + '</span>' +
+    const said = '<span class="rl">You ' + (verdicts.get(s.id) || s.verdict || 'judged') + '</span>';
+    if (s.shifted) {
+      return '<div class="srationale locked">' + said + esc(s.shifted) +
+        ' You cannot change it, because it was not a judgment about this text (SPEC §4.4).</div>';
+    }
+    if (s.locked) {
+      return '<div class="srationale locked">' + said +
+        'This one is settled, so your judgment is on the record as it stands (SPEC §4.4).</div>';
+    }
+    return '<div class="srationale">' + said +
       'Choosing again replaces your earlier judgment — allowed while the race is still deciding; ' +
       'it locks when the race seals or the text changes under it (SPEC §4.4).</div>';
   }
