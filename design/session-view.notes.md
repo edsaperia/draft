@@ -2334,3 +2334,34 @@ differ only in how they say the same thing, and *proposals* felt too heavy for a
 comma. But it is jargon the surface invented, the objects are proposals
 everywhere else in the product, and a reader meeting a new noun for a thing they
 already have a name for assumes it must be a different thing.
+
+### The helper text comes off the rail too (2026-08-17)
+
+The same pass the cards had, run on the queue entries, and the same rule
+decided it: **a line that appears on every entry of a kind is a design note,
+not information. Information is what differs between entries.**
+
+**The progress caption is gone from every open card.** *Gathering — needs
+roughly 4 more judgments* sat directly above the `evidence-meter` that already
+draws exactly that magnitude as a bar. Two devices, one fact, and the words on
+every card in the rail. It survives as the entry's tooltip, where it costs no
+ink and still answers a reader who wants the number the bar is only showing
+them.
+
+**✏️ no longer says "yours".** The pencil means *you wrote this*, the entry is
+the accent blue, and a word saying it a third time is the surface reading its
+own glossary aloud. The place count survives, because it says *which* place and
+nothing else does. The unproposed draft's caption went from *a draft of yours ·
+not proposed yet* to *not proposed yet* — the first half was the same
+redundancy, the second half is a real state.
+
+**✅ and ❎ give just the time.** The tick already says *decided, and the charter
+changed*; the cross already says *decided, and the incumbent held*. Writing
+"decided" beside them was the glyph's own meaning spelled out, which left the
+one thing the reader actually wants — *when* — carrying a preamble.
+
+What stayed, and why: the teaser on an open card (somebody's argument, different
+on every card), the verdict on a ⏳ or 🔄 (what *you* said, which is the thing
+you are most likely to have forgotten), the place count on a patch, and ⚔️'s
+sentence — which is not a caption but the entry's whole content, and is
+different in kind because it states a situation rather than a progress reading.

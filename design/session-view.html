@@ -2757,7 +2757,7 @@
           washAttrs(qKey(g, e), wash(g, 'closed').col, wash(g, 'closed').fill) +
           ' title="' + esc(d.outcome || 'sealed') + ' — you haven’t opened this one yet">' +
           '<span class="ql">' + markHtml(carried(g) ? MARK.adopted : MARK.retired) + plainLabel(e.label || g.qLabel) +
-          '<span class="qv"> · decided ' + esc(d.when || '') + '</span></span>' +
+          '<span class="qv"> · ' + esc(d.when || '') + '</span></span>' +
           '</button></li>';
         continue;
       }
@@ -2790,16 +2790,20 @@
           washAttrs(qKey(g, e), drafting ? tint('yours', 0.20) : wash(g, 'yours').col,
             drafting ? '100%' : wash(g, 'yours').fill) +
           ' title="' + esc(drafting
-            ? 'Your draft — not proposed yet. Open it to keep writing, propose it, or cancel.'
-            : (g.cap || 'Yours, in the race') + ' — open it to withdraw') + '">' +
+            ? 'Your draft — not proposed yet.'
+            : (g.cap || 'Yours, in the race')) + '">' +
           (drafting
             ? '<span class="ql">' + markHtml(MARK.propose) + '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span></span>' +
               where +
               '<span class="qwhy' + (why ? '' : ' empty') + '">' +
               (why ? esc(why) : 'no reason given yet — say what this is for') + '</span>' +
-              '<span class="mcap">a draft of yours · not proposed yet</span>'
+              '<span class="mcap">not proposed yet</span>'
+            // **✏️ does not say "yours"** (Ed, 2026-08-17). The pencil means *you
+            // wrote this* and the entry is the accent blue; a word saying it a third
+            // time is the surface reading its own glossary aloud. The place count
+            // survives, because it says *which* place and nothing else does.
             : '<span class="ql">' + markHtml(MARK.propose) + esc(plainLabel(e.label || g.qLabel)) +
-              '<span class="qv"> · yours' + (e.of > 1 ? ', ' + e.n + ' of ' + e.of + ' places' : '') + '</span></span>') +
+              (e.of > 1 ? '<span class="qv"> · ' + e.n + ' of ' + e.of + ' places</span>' : '') + '</span>') +
           '</button></li>';
         continue;
       }
@@ -2833,7 +2837,7 @@
         (oneLine && g.shifted ? ' shifted' : '') + (justArrived === g.id ? ' arriving' : '') +
         '" data-q="' + g.id + '"' +
         (locked ? ' tabindex="-1"' : '') + ' aria-current="' + (openId === g.id) + '"' +
-        (oneLine ? ' title="' + esc(g.shifted || cap) + '"' : '') +
+        (cap ? ' title="' + esc(g.shifted || cap) + '"' : '') +
         (() => {
           // the hue comes from `anchHue` so the rail entry and the clause it
           // stands beside cannot drift apart — one lifecycle, one colour
@@ -2871,8 +2875,14 @@
             // Every open card says its whole piece now. It used to depend on
             // the card's tier, which meant the least urgent said nothing at all
             // and you had to open it to find out what it was.
-            teasersFor(g, e).map((t) => '<span class="qwhy">' + esc(t) + '</span>').join('') +
-            (cap ? '<span class="mcap">' + cap + '</span>' : '')) +
+            // **No progress caption** (Ed, 2026-08-17: *💡 doesn't need to say how
+            // many left to decide*). Every open card carried one — *gathering, needs
+            // roughly 4 more judgments* — which is the `evidence-meter` restated in
+            // words directly above the bar that already draws it. Two devices, one
+            // magnitude, and the words on every card. It survives as the entry's
+            // tooltip, where it costs nothing and answers the reader who wants the
+            // number the bar is only showing them.
+            teasersFor(g, e).map((t) => '<span class="qwhy">' + esc(t) + '</span>').join('')) +
         '</button></li>';
     }
     queueEl.innerHTML = html;
