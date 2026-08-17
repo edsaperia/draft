@@ -907,11 +907,16 @@
     padding: 3px var(--s2); cursor: text; min-height: 1.9rem;
     align-self: start;
   }
-  /* the rationale field is the other thing you type into, so it lifts on the
-     same rule rather than gaining a ring of its own */
-  .editcard .edit-why { border: 0; box-shadow: var(--shadow-sm); transition: box-shadow 140ms ease; }
-  .editcard .edit-why:focus { outline: none; box-shadow: var(--shadow-lg); }
-  @media (prefers-reduced-motion: reduce) { .editcard .edit-why { transition: none; } }
+  /* The rationale sits inside the drafting surface rather than under it (Ed,
+     2026-08-17), so it needs no elevation of its own — the surface carries
+     both, at one height, because you are expected to fill in both. A hairline
+     separates the two without dividing them. */
+  .editcard .lanebox .speaker {
+    margin: 0; padding: var(--s3) 14px var(--s3) 12px;
+    border-top: 1px solid var(--border);
+  }
+  .editcard .edit-why { border: 0; box-shadow: none; padding: 0; min-height: 1.4rem; }
+  .editcard .edit-why:focus { outline: none; }
   .editcard .edit-why:empty::before,
   .editcard .edit-why.blank::before {
     content: attr(data-placeholder); color: var(--muted); font-weight: 400; font-style: italic;
@@ -3580,12 +3585,18 @@
       '<div class="editlane' + (laneRaw() ? ' md' : '') + '" contenteditable="true" data-lane="' +
       site.keys[0] + '" spellcheck="false">' +
       laneBlocks(site.text, originText(site), false, headFlags(site), laneRaw()) + '</div>' +
-      '</div>' +
+      // The rationale is **inside** the same surface (Ed, 2026-08-17): you are
+      // expected to fill in both, so they are one editing surface at one
+      // height rather than two boxes at different ones — and the speaker's
+      // disc comes with it, because it belongs to the words beside it. A
+      // hairline separates them without dividing them, which is the card's own
+      // band grammar applied one level down.
       '<div class="speaker">' +
       '<span class="disc" aria-hidden="true" title="This is how your reason will reach everybody else: with your name off it (SPEC §3.4)."></span>' +
       '<div class="said edit-why" contenteditable="plaintext-only" data-why spellcheck="false"' +
       ' data-placeholder="Why this change? — the one thing anyone gets to say about it">' +
       esc(d.rationale || '') + '</div></div>' +
+      '</div>' +
       '</div></div>' +
       '<div class="race-mid">' +
       '<button class="btn btn-propose" data-act="draft-propose"' +

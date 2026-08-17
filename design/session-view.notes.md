@@ -1042,3 +1042,13 @@ A stated rule earns its keep by deciding the next case, and it did immediately. 
 The queue's hue also stopped being computed separately from the document's — both come from `anchHue` now, so a lifecycle cannot show one colour in the margin and another in the charter.
 
 **And it needs no rationale.** A teaser in the rail quotes somebody's *argument for their wording*; a diagonal has none, because nobody proposed anything. Its title says what it is asking — *Prioritise A vs B* — and the description it used to quote was the system explaining itself twice.
+
+### One editing surface (Ed, 283)
+
+Ed's note had been the single fragment "rationale box", and I logged three readings rather than guess. None of them was right, which is the useful part: I had read it as a question about the box's *depth* — is it too flat, should it lift more — and his answer was about where its **edges** are.
+
+*It should be as high as the text edit box (and maybe the user avatar too, since they're connected) — this is the whole "editing surface", as you're expected to fill in both.*
+
+So the wording lane and the reason are not two boxes to be levelled against each other. They are one surface with two fields in it, and the speaker's disc belongs inside because it belongs to the words beside it. The rationale row moved inside the drafting box, a hairline separates the two without dividing them, and the field lost the elevation it had been given — it needs none, because the surface carries both. `:focus-within` lifts the whole thing whichever field you are in, which is now the truthful behaviour rather than a convenience.
+
+Worth keeping the shape of the mistake. Having just built an elevation vocabulary, I read a note about two adjacent things as a question about their relative heights — the answer was that they should not have been two things. **A new vocabulary makes you read every subsequent note in it.**
