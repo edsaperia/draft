@@ -64,7 +64,15 @@
     --lc-open: 245, 197, 24;      /* 💡 ⚔️ yellow — open, or stuck     */
     --lc-weigh: 214, 51, 132;     /* 🌶️ pink — which question is hotter */
     --lc-deciding: 154, 162, 170; /* ⏳ grey — judged, running without you */
-    --lc-closed: 154, 162, 170;   /* ✅ ❎ 🔄 ☑️ grey — nothing to do  */
+    --lc-closed: 154, 162, 170;   /* ✖ ↻ grey — nothing to do        */
+    /* **Adopted, and you have not seen it** (Ed, 2026-08-17). The one decided
+       state that is news: the text under your eye moved. A retired decision is
+       a receipt — somebody proposed, nobody liked it, the charter is exactly as
+       it was — and stays grey. It is also the one place the palette rule was
+       being broken: a ✅ pins itself to your screen until you acknowledge it,
+       which is a thing being asked of you, and grey was saying the opposite.
+       Green enters the margin as a *wash* only, never as --ok itself (Q264). */
+    --lc-changed: 25, 135, 84;    /* ✔ green — the charter moved here  */
     --lc-yours: 13, 110, 253;     /* ✏️ blue — yours, and still yours  */
     --stuck-ink: #8A6D00;         /* the one caption that instructs    */
 
@@ -323,7 +331,12 @@
      chooses it instead of the reader's emoji font, and it is the same in all
      four columns. Kept at the colours the emoji happened to have, so the change
      is the plate and nothing else; see the note on whether that survives. */
-  .mk { font-family: inherit; font-weight: 700; }
+  .mk { font-family: inherit; font-weight: 700; line-height: 1; }
+  .mkg {
+    width: 1em; height: 1em; display: inline-block; vertical-align: -0.13em;
+    fill: none; stroke: currentColor; stroke-width: 1.9;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
   /* Green for **decided**, grey for **filed** — the same two glyphs in the two
      colours (Ed, 2026-08-17). Which way it went is the glyph; whether it still
      wants anything from you is the colour, which is the rule the whole palette
@@ -2538,7 +2551,11 @@
     SUGGS.some((g) => isDiagonal(g) && stateOf(g) === 'needs');
   window.__q291 = () => ({ live: liveQuestions(), more: diagonalsAvailable(),
     nothing: nothingToJudge(), needs: SUGGS.filter(judgeable).map((g) => g.id) });
-  const isUnread = (g) => stateOf(g) === 'sealed' && g.unread && !readSeals.has(g.id);
+  // **Only an adopted decision pins itself** (Ed, 2026-08-17). Acknowledgement
+  // is for news, and a retired decision is not news: nothing changed, so there
+  // is nothing to review and no reason to hold a slot in the margin for it. It
+  // goes straight to a filed dot — grey ✖, findable, openable, silent.
+  const isUnread = (g) => stateOf(g) === 'sealed' && g.unread && carried(g) && !readSeals.has(g.id);
 
   // Urgency — how much this wants *you* (leverage), not how close it is to
   // resolution (that stays the meter's job). It is carried by the strength of
@@ -2706,6 +2723,21 @@
   // beside it — two marks, two axes.
   // the text-presentation selector: forces a glyph rather than an emoji, which
   // is what lets these take the palette instead of bringing their own
+  // **Drawn, not typed** (Ed, 2026-08-17: *I still see the calligraphic check*).
+  // He was right and the font was the reason: system-ui has no U+2714, so it
+  // falls through to Segoe UI Symbol, where the heavy check mark is a tapered
+  // brush stroke. At 34px in a test that reads as a solid tick; at 18px in a
+  // gutter chip it is a thin calligraphic squiggle beside a geometric ✖, which
+  // is the exact mismatch the pair was chosen to avoid — and it would be a
+  // different mismatch on every machine.
+  //
+  // So the two marks that have to match are **two SVG paths on one stroke
+  // width**. They cannot drift, they scale, they take `currentColor` so the
+  // lifecycle classes still colour them, and the match is a property of the
+  // drawing rather than a hope about a font. ↻ stays a character: it has no
+  // partner whose weight it must equal, and no font disagrees about an arrow.
+  const TICK = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2 6.4 L4.7 9.2 L10 2.9\"/></svg>";
+  const CROSS = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2.9 2.9 L9.1 9.1 M9.1 2.9 L2.9 9.1\"/></svg>";
   const VS16 = "︎";
   const MARK = {
     // A rail entry is somebody's proposal, not a question the system invented,
@@ -2762,16 +2794,16 @@
     // calligraphic — tapered strokes with a lean — so beside a solid heavy tick
     // it reads lighter and tilted. 2716 is the same solid uniform weight and
     // sits upright, which is what a pair has to do at 13px in a margin.
-    adopted: '✔' + VS16,  // a proposal carried: the charter changed here
-    retired: '✖' + VS16,  // the incumbent held: nothing changed
+    adopted: TICK,   // a proposal carried: the charter changed here
+    retired: CROSS,  // the incumbent held: nothing changed
     // **Filed keeps which way it went** (Ed, 2026-08-17). ☑️ collapsed both
     // outcomes into one mark the moment you acknowledged them, which threw away
     // the only thing about a settled clause anybody ever wants from a margin:
     // *did this change or not*. Same two glyphs, grey — because the difference
     // between decided and filed is whether it still wants something from you,
     // and grey is exactly what this surface uses to say that.
-    filedYes: '✔' + VS16, // filed, and the charter changed
-    filedNo: '✖' + VS16,  // filed, and the incumbent held
+    filedYes: TICK,  // filed, and the charter changed
+    filedNo: CROSS,  // filed, and the incumbent held
   };
   // did anything displace the incumbent?
   const carried = (g) => fieldOf(g).some((c) => c.won);
@@ -2830,7 +2862,7 @@
         const d = g.decided || {};
         html += '<li class="qitem" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
           '<button class="unread" data-q="' + g.id + '" aria-current="' + (openId === g.id) + '"' +
-          washAttrs(qKey(g, e), wash(g, 'closed').col, wash(g, 'closed').fill) +
+          washAttrs(qKey(g, e), wash(g, 'changed').col, wash(g, 'changed').fill) +
           ' title="' + esc(d.outcome || 'sealed') + ' — you haven’t opened this one yet">' +
           '<span class="ql">' + markHtml(markKindOf(g)) +
           '<span class="qt">' + plainLabel(e.label || g.qLabel) + '</span>' +
@@ -5928,7 +5960,7 @@
   // unacknowledged one keeps a tint, because it still owes you something.
   const anchHue = (g) => {
     const st = stateOf(g);
-    if (st === 'sealed') return isUnread(g) ? 'closed' : null;
+    if (st === 'sealed') return isUnread(g) ? 'changed' : null;
     if (st === 'yours') return 'yours';
     // ⚔️ is tested **before** ⏳, because it is the state that replaces it: you
     // have judged, and where an ordinary race would now go grey and run on

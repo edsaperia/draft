@@ -2514,3 +2514,42 @@ so nothing can identify a mark by its glyph any more. `markKindOf` returns the
 ternary that `markOf` and the colour lookup had each grown a copy of. Missing
 three call sites that still passed glyphs printed `undefined` in the rail, which
 is the good kind of bug: loud, immediate, and impossible to ship.
+
+### Green for what changed, and the marks get drawn (2026-08-17)
+
+**Ed: *I still see the calligraphic check.*** He did, and the font was the
+reason. U+2714 was the right code point and the wrong object: system-ui has no
+glyph for it, so it falls through to Segoe UI Symbol, where the heavy check mark
+is a **tapered brush stroke**. At 34px in a comparison it reads as a solid tick;
+at 18px in a gutter chip it is a thin calligraphic squiggle beside a geometric
+✖ — the exact mismatch the pair was chosen to avoid, and a *different* mismatch
+on every machine.
+
+So the two marks that have to match are now **two SVG paths on one stroke
+width**. They cannot drift, they scale, and they take `currentColor`, so the
+lifecycle classes still colour them. ↻ stays a character: it has no partner
+whose weight it must equal, and no font disagrees about an arrow.
+
+The lesson is the cable's, again, one level down: **testing a glyph at display
+size tells you nothing about it at 13px**, and a font stack is a hope rather
+than a specification.
+
+**And green comes back to the margin, for one state only.** Ed's own caveat was
+the sharper half: an adopted decision *changed the document you are reading*; a
+retired one did not — somebody proposed, nobody liked it, the charter is exactly
+as it was. Grey for both said they were the same event.
+
+- **✅ adopted, unread → a light green wash** (`--lc-changed`). It is news.
+- **❎ retired → grey, and it no longer pins.** Acknowledgement is for news;
+  there is nothing to review, so it goes straight to a filed dot — findable,
+  openable, silent.
+
+This tightens the palette rather than loosening it. The rule is *grey means
+nothing is being asked of you*, and a ✅ that pins itself to your screen until
+you press **OK, I've seen this** is asking for something — it was the one place
+the rule was being broken. Q264 survives intact: green enters the margin as a
+*wash*, never as `--ok` itself, which is the same relationship every other
+lifecycle hue has to its card.
+
+One line did it: `isUnread` now requires `carried`, and everything else — the
+sealed dot, the missing OK button, the urgency floor — falls out of that.
