@@ -1724,3 +1724,46 @@ What it would need: the clause as it now stands, a candidate that actually
 proposes something against it, and — the thing that makes it a ground shift
 rather than a lock — **the text you judged against**, shown as what it was. That
 is one new sentence of the Hollow Oak charter and one new fixture field.
+
+### A real ground shift, and a clause wearing the whole alphabet
+
+**The 🔄** is now one. The story it tells: you judged The Garden when the clause
+was a single line about the rota; somebody else's patch adding the Garden Steward
+carried, which changed the text under you; a live candidate is now arguing about
+the heroic weekends against the new ground. So the card shows the clause as it
+now stands, **the text you judged against** in the dashed band the sealed record
+uses for a displaced wording — the same fact in a different tense, a wording the
+charter no longer holds — a proposal that actually proposes something, and your
+locked judgment with the reason it is locked.
+
+The band is the whole difference between a ground shift and a lock. Without it
+the reader is told their comparison is void and shown nothing that would make
+that make sense.
+
+**One clause wearing the whole alphabet.** `guests` now carries four suggestions
+chosen to be one of each kind — 💡 open, ⏳ judged and running, ❌ deadlocked, ✏️
+yours — so the `clause-tab` stack can be looked at with four hues and four states
+in it at once. It is a stress case rather than a typical clause, and that is the
+point.
+
+What it exposed, and I have left alone: the fifth kind, a **filed** decision,
+does not get a tab there. `suggFor` excludes sealed suggestions, and `renderDoc`
+gives a clause its filed chip only when the clause has no live ones — so a clause
+where something was decided *and* something is still running shows no trace of
+the decision in the gutter at all. That is arguably a gap rather than a choice,
+but it is a behaviour change nobody asked for.
+
+### The tabs go opaque
+
+Ed: *I think their background is transparent so the tabbed-ness is acting
+strange.* Exactly right, and the diagnosis is in the word *tab*. A translucent
+ground was fine while these were marks lying on the page — but a tab **overlaps
+the card it is attached to**, and the card's edge and shadow showed straight
+through the overlap, so the join the tab exists to make was the one place you
+could see the seam.
+
+Same colour, mixed with the page rather than laid over it: `color-mix(…, var(--bg))`
+at the alphas they already had. The rule generalises — **anything that overlaps
+something else cannot be translucent**, which is the third time that has come up
+today (the cap over the run, the spine over the runs, and now the tab over the
+card).

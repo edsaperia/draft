@@ -643,14 +643,20 @@
     display: inline-flex; align-items: center; justify-content: center;
     width: 34px; height: 30px; font-size: 1.125rem; line-height: 1;
     border-radius: var(--r-sm);
-    background: rgba(var(--chiphue, var(--lc-closed)), 0.18);
+    /* **Opaque, not a wash** (Ed, 2026-08-17: the tabbed-ness "acting strange").
+       A translucent ground was fine while a tab was a mark lying on the page —
+       but a tab overlaps the card it is attached to, and the card's edge and
+       shadow showed straight through the overlap, so the join it exists to make
+       was the one place you could see the seam. The colour is the same colour;
+       it is mixed with the page instead of laid over it. */
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 18%, var(--bg));
     box-shadow: var(--shadow-sm);
     white-space: nowrap; user-select: none; cursor: pointer;
     transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
   }
   .achip:hover {
     transform: translateY(-1px);
-    background: rgba(var(--chiphue, var(--lc-closed)), 0.30);
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 30%, var(--bg));
     box-shadow: var(--shadow-md);
   }
   .achip:active { transform: translateY(1px); box-shadow: none; }
@@ -875,12 +881,12 @@
        throws away the one thing it is there to say. It is deepened instead,
        against the lighter marks stacked under it, and the join is carried by
        the width and the lift rather than by the ground. */
-    background: rgba(var(--chiphue, var(--lc-closed)), 0.34);
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
     box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.07), -3px 2px 4px rgba(0, 0, 0, 0.13);
     position: relative; z-index: 1;
   }
   .clausehead .achip.wmark:hover {
-    background: rgba(var(--chiphue, var(--lc-closed)), 0.42); transform: none;
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg)); transform: none;
     box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.09), -4px 3px 6px rgba(0, 0, 0, 0.16);
   }
   .clausehead .achip.wmark:active { transform: none; }
@@ -1723,6 +1729,55 @@
       marked: 'The subscription is set once a year at the spring meeting, and may not be raised by more than <del>a quarter</del> <ins>a tenth</ins> in any year without a reserved decision.',
       rationale: 'A quarter is a lot to be voted onto somebody by a simple majority. A tenth still covers ordinary inflation and makes a real rise something the house has to agree properly.'
     },
+    // ---- one clause wearing the whole alphabet (Ed, 2026-08-17) ---------
+    // Five suggestions on 'guests', deliberately one of each kind, so the
+    // `clause-tab` stack can be looked at with every hue and every state in it
+    // at once: 💡 open, ⏳ judged-and-running, ✏️ yours, ❌ deadlocked, ☑️ filed.
+    // It is a stress case rather than a typical clause — the point is to see
+    // what five tabs of five colours do to the gutter and to the card that
+    // opens under them.
+    {
+      id: 'quick-guests-hours', kind: 'quick', keys: ['guests'], state: 'needs',
+      qLabel: '§ Guests', urgency: 0.34,
+      pct: 30, cap: 'gathering — needs roughly 4 more judgments',
+      marked: 'Friends of the house are welcome whenever a member is in<ins>, and until the quiet hours begin</ins>.',
+      rationale: 'Welcome and “welcome at three in the morning” are different offers, and only one of them is fair on whoever is asleep upstairs.'
+    },
+    {
+      id: 'quick-guests-count', kind: 'quick', keys: ['guests'], state: 'deciding',
+      verdict: 'kept the current text', pick: 'keep',
+      qLabel: '§ Guests — numbers', urgency: 0.2,
+      pct: 61, cap: 'still deciding — a way from resolution yet',
+      marked: 'Friends of the house are welcome whenever a member is in<ins>, up to three at a time without telling anybody</ins>.',
+      rationale: 'Nobody minds two friends. Nine is a party, and a party is a thing you mention.'
+    },
+    {
+      id: 'race-guests-notice', kind: 'quick', keys: ['guests'], state: 'needs',
+      deadlocked: true, bounty: 0.55,
+      qLabel: '§ Guests — notice', urgency: 0.42,
+      pct: 48, cap: 'deadlocked — more judgments won’t move it; only a new proposal can',
+      marked: 'Friends of the house are welcome whenever a member is in<del>. </del><ins>, and a member expecting more than one says so in the Members’ Book. </ins>',
+      rationale: 'The house splits cleanly on this and has not moved in a week: half want it written down, half think a rule about friends is the beginning of the end. Somebody needs to find the version both halves can live with.'
+    },
+    {
+      id: 'mine-guests-wording', kind: 'draft', mine: true, state: 'needs',
+      qLabel: '§ Guests', urgency: 0.3,
+      pct: 12, cap: 'yours · just in, evidence starting',
+      rationale: '“Whenever a member is in” is doing the work already — it is the being-in that makes it hospitality rather than a key.',
+      sites: [{ key: 'guests', keys: ['guests'], label: '§ Guests',
+        text: 'Friends of the house are welcome whenever a member is in, which is what makes them guests and not visitors.',
+        origin: [{ t: 'p', key: 'guests', x: 'Friends of the house are welcome whenever a member is in.' }] }]
+    },
+    {
+      id: 'quick-guests-pets', kind: 'quick', keys: ['guests'], state: 'sealed',
+      verdict: 'kept the current text', pick: 'keep',
+      qLabel: '§ Guests — dogs', urgency: 0,
+      pct: 100, cap: 'sealed — the current text stood · judgment locked',
+      decided: { outcome: 'retired — the current text stood', when: 'yesterday, 17:40', p: 0.38, bar: 0.69, judges: 6 },
+      optionA: 'Friends of the house are welcome whenever a member is in.',
+      optionB: 'Friends of the house are welcome whenever a member is in, and so are their dogs, on the ground floor.',
+      rationale: 'Hollis’s lurcher has been coming for two years and nobody has ever objected. Write down what we already do.'
+    },
     {
       id: 'quick-guestkey', kind: 'quick', keys: ['guestkey'], state: 'needs',
       qLabel: '§ Guests Staying Over', urgency: 0.19,
@@ -1833,14 +1888,25 @@
       rationale: 'Six months is two meetings. You cannot know how someone handles a hard evening in the house until you have seen one, and there is usually one a year.'
     },
     {
+      // The one **ground shift** on the surface (SPEC §4.4), rebuilt 2026-08-17
+      // so that it is actually one. It had the 🔄 glyph and a tooltip, and a
+      // `marked` string identical to the clause — so the card showed a proposal
+      // that proposed nothing, against a text that had visibly not moved.
+      //
+      // The story it now tells: you judged this clause when it was one line
+      // about the rota. Somebody else's patch adding the Garden Steward carried,
+      // which changed the text under you — so your comparison was against a
+      // wording that no longer exists, and it is locked (§4.4). A live candidate
+      // is now arguing about the heroic weekends, against the new ground.
       id: 'quick-garden', kind: 'quick', keys: ['garden'], state: 'deciding', locked: true,
       verdict: 'preferred the posted rota', pick: 'keep',
       qLabel: '§ The Garden',
       urgency: 0.5,
       pct: 90, cap: 'still deciding — close to resolution',
-      shifted: 'the text changed after your judgment — that judgment is now locked; new pairs will serve fresh',
-      marked: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.',
-      rationale: 'The rota belongs where the tools are, not in a message nobody scrolls back to.'
+      shifted: 'The Garden Steward was adopted here after you judged, so your judgment was about a wording that no longer exists.',
+      wasGround: 'The Garden is kept up by a rota posted in the shed.',
+      marked: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and <del>call heroic weekends when it gets ahead of us</del><ins>set two working weekends a year, in spring and in autumn</ins>.',
+      rationale: 'Heroic weekends are called by whoever minds most, which means the same four people. Two dates in the calendar are something everyone can plan around.'
     },
     // A sealed race with a field rather than a pair (Ed, 120): five proposals,
     // one of which stands. `slate` replaces the a/b pair when there were more
@@ -4201,6 +4267,20 @@
     }).join('');
   }
 
+  // **What a ground shift actually looks like** (SPEC §4.4, built 2026-08-17).
+  // A 🔄 card is not a locked card with a note on it: the whole point is that
+  // the text moved *underneath a judgment you already made*, so the card has to
+  // show the wording you judged against. Without it the reader is told their
+  // comparison is void and shown nothing that would make that make sense.
+  //
+  // It sits directly under the head, in the same dashed band the sealed record
+  // uses for the text a winner displaced — which is the same fact in a different
+  // tense: this is a wording the charter no longer holds.
+  const groundNote = (s) => (!s.shifted || !s.wasGround ? ''
+    : '<div class="replaced"><div class="rtag">The text you judged against' +
+      '<span class="rsub">it changed under you — SPEC §4.4</span></div>' +
+      '<div class="rtext">' + esc(s.wasGround) + '</div></div>');
+
   function suggCardHtml(s, siteKey) {
     if (stateOf(s) === 'sealed') return sealedCardHtml(s);
     if (s.kind === 'draft') {
@@ -4315,6 +4395,7 @@
       clauseHeadHtml(s, { text: cur, key: key, v: 'keep', edit: noEdit,
                           label: s.isInsert ? 'The gap as it stands' : undefined,
                           chips: chipsFor(key, s.id) }) +
+      groundNote(s) +
       fieldHtml(proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, edit: noEdit })) +
       commitRowHtml(s) +
       reviseNote(s) +
