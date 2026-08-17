@@ -2666,3 +2666,44 @@ the number a person holds. It also helps the one thing this figure's tooltip has
 always had to say in words — *this is not a vote share* — because a bare decimal
 beside a headcount reads *more* like a share, not less. Whole percent: the second
 decimal was only ever suggesting the model is more precise than it is.
+
+---
+
+### One list, and the incumbent is in it (2026-08-17)
+
+Ed: *it should be the list of the whole field, with the winner at the top, and
+the incumbent clearly marked, and OK at the bottom. At the moment it has current
+text as previous text twice.*
+
+The card was three bands before the reader reached anything ranked — the clause
+at the head, the text it replaced in a band of its own, then the field — and on
+a clause whose rewrite changed one sentence, the first two are two paragraphs
+that look identical. The fix is his: one list.
+
+**The incumbent has a true place in it.** Every score on this card is the
+probability that proposal beats the current text, so the current text sits at
+**50%** by construction. Slotting it there is not a layout convenience — it is
+the line that says *these two beat what we had and those three did not*, which
+is the most useful sentence on the card and was nowhere on it before. On § the
+Guest Bedroom the column now reads 86 · 58 · **50** · 49 · 35 · 21, and the
+whole outcome is legible as one fall of numbers.
+
+It shows its 50% too, quietly. Without a number in the column it just sits
+between two rows and the placement says nothing; with one, the column explains
+itself. Muted weight, because it is a construction rather than a measurement.
+
+**And whichever text is the clause at the head does not print itself again** —
+the winner where it carried, the incumbent where it held. The same rule in both
+directions, and it is the whole of the duplication the three bands were making.
+
+**The button is a word.** The tray-and-arrow read as *download*, which is the
+wrong verb entirely: nothing is being taken away, it is being put down. Every
+other candidate has the same trouble — an archive box says *storage*, an eye
+says *seen* rather than *done* — and there is no glyph in common use for *I have
+taken this in*. **When a set has no member, the word is not a fallback, it is
+the answer.**
+
+(Ed's 👏-if-it-passed / 🎻-if-it-failed is the funniest thing proposed all
+session and has to be declined for a real reason: authorship is sealed, and a
+violin is the surface editorialising about somebody whose name it will not
+print.)
