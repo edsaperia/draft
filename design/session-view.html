@@ -316,6 +316,22 @@
     flex: none; display: flex; align-items: center; gap: 1px;
     font-size: 0.62rem; line-height: 1; padding-right: 2px; letter-spacing: -1px;
   }
+  /* **The four decided marks, drawn** (Ed, 2026-08-17). They are the only ones
+     that are not silhouettes — a plate with a shape knocked out of it — so they
+     read as a different kind of object beside 💡🔥✏️⏳⚔️ rather than as a
+     different state. As text glyphs they take a colour, which means the palette
+     chooses it instead of the reader's emoji font, and it is the same in all
+     four columns. Kept at the colours the emoji happened to have, so the change
+     is the plate and nothing else; see the note on whether that survives. */
+  .mk { font-family: inherit; font-weight: 700; }
+  .mk-adopted { color: var(--ok); }
+  .mk-retired { color: var(--ok); }
+  .mk-read { color: #6f42c1; font-weight: 500; }
+  .mk-shifted { color: var(--primary); }
+  /* a drawn glyph has no plate to give it width, so at the two small sizes it
+     needs a little of its own or the marks sit on top of each other */
+  .tocmarks .mk { font-size: 1.15em; letter-spacing: 0.06em; }
+  .qmark .mk { font-size: 0.95em; }
   .tocmarks .more { font-size: 0.58rem; color: var(--muted); letter-spacing: 0; margin-left: 2px; }
 
   /* ===================================================================
@@ -2685,6 +2701,9 @@
   // Lifecycle marks (Ed, 147–157): where an entry stands in *your* relationship
   // to it, at the top left of every card. Kind (quick/race/patch) stays a word
   // beside it — two marks, two axes.
+  // the text-presentation selector: forces a glyph rather than an emoji, which
+  // is what lets these take the palette instead of bringing their own
+  const VS16 = "︎";
   const MARK = {
     // A rail entry is somebody's proposal, not a question the system invented,
     // so it wears a lightbulb rather than a question mark (Ed, 241). The move
@@ -2722,17 +2741,33 @@
     // card is already wearing.
     weigh: '🌶️',
     deciding: '⏳',   // yours is in; the race runs on
-    shifted: '🔄',    // the ground moved: this one comes back around, rebuilt
+    // **The four decided marks are drawn glyphs, not emoji** (Ed, 2026-08-17:
+    // *they carry their own background unlike all the other symbols*). ✅❎☑️🔄
+    // are the only marks in the alphabet that come as a coloured plate with a
+    // white shape knocked out of it, so beside 💡🔥✏️⏳⚔️ — all silhouettes —
+    // they read as a different *kind* of object rather than as a different
+    // state. Text-presentation glyphs (U+FE0E) take `color` like any other
+    // character, so the colour is now chosen here rather than by whichever
+    // emoji font the reader happens to have, and it is the same in every column.
+    shifted: '↻',      // the ground moved: this one comes back around, rebuilt
     // A decision says which way it went, not just that it happened (Ed, 160):
     // a matched pair — same green square, check or cross — so the outcome is
     // legible before you open anything.
-    adopted: '✅',    // a proposal carried: the charter changed here
-    retired: '❎',    // the incumbent held: nothing changed
-    read: '☑️',       // decided and filed
+    adopted: '✔' + VS16,  // a proposal carried: the charter changed here
+    retired: '✘' + VS16,  // the incumbent held: nothing changed
+    read: '✓' + VS16,     // decided and filed
   };
   // did anything displace the incumbent?
   const carried = (g) => fieldOf(g).some((c) => c.won);
-  const markHtml = (m) => '<span class="qmark" aria-hidden="true">' + m + '</span>';
+  // Which of the four drawn marks this is, so CSS can colour it. Only they
+  // need it: every other mark is an emoji and brings its own colour with it.
+  const markClass = (m) => (m === MARK.adopted ? 'mk-adopted' : m === MARK.retired ? 'mk-retired'
+    : m === MARK.read ? 'mk-read' : m === MARK.shifted ? 'mk-shifted' : '');
+  // The glyph, wrapped so it can be coloured wherever it is drawn — the queue,
+  // the contents rail, the gutter tab and a card's head all show the same mark
+  // and must show it the same way.
+  const mkHtml = (m) => { const c = markClass(m); return c ? '<span class="mk ' + c + '">' + m + '</span>' : m; };
+  const markHtml = (m) => '<span class="qmark" aria-hidden="true">' + mkHtml(m) + '</span>';
   // The rail is already a margin against the document; the section sign is a
   // citation mark, and nothing here is being cited (Ed, 188).
   const plainLabel = (t) => String(t ?? '').replace(/^§\s*/, '');
@@ -2771,7 +2806,7 @@
           group.map((x) => '<button class="sealdot" data-q="' + x.g.id + '" data-site="' + (x.site ?? '') +
             '" aria-current="' + (openId === x.g.id) +
             '" title="' + esc(plainLabel(x.label || x.g.qLabel)) + ' — ' + esc((x.g.decided || {}).outcome || 'sealed') + '">' +
-            MARK.read + '</button>').join('') +
+            mkHtml(MARK.read) + '</button>').join('') +
           '</div></li>';
         continue;
       }
@@ -3667,7 +3702,7 @@
     // the thing you clicked to open the card is the thing you click to close
     // it — and it never moves under the pointer.
     const marks = '<span class="chipcol"><span class="achip wmark" role="button" tabindex="0"' +
-      ' data-anchor="' + s.id + '"' + chipStyle(s) + ' title="Close this one">' + markOf(s) + '</span>' +
+      ' data-anchor="' + s.id + '"' + chipStyle(s) + ' title="Close this one">' + mkHtml(markOf(s)) + '</span>' +
       (o.chips || '') + '</span>';
     return '<div class="clausehead">' +
       '<div class="headlab"><span>' + (o.label || 'The clause as it stands') + '</span></div>' +
@@ -4654,7 +4689,7 @@
       const i = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === key) : -1;
       const where = g.kind === 'patch' ? ' · place ' + (i + 1) + ' of ' + g.sites.length : '';
       return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '"' + chipStyle(g) + ' title="' +
-        esc(plainLabel(g.qLabel)) + where + ' — open it">' + markOf(g) + '</span>';
+        esc(plainLabel(g.qLabel)) + where + ' — open it">' + mkHtml(markOf(g)) + '</span>';
     }).join('');
   }
 
@@ -4749,17 +4784,18 @@
       // surface does — the lane bar minus its radio, since nothing here votes.
       // Which is also the answer to *how do I use all this*: you take whichever
       // came closest and write from it.
-      // ✏️ sits **under the wording and above the reason** (Ed, 2026-08-17), at
-      // the right. On an ordinary card the lane bar carries a radio as well, and
-      // that radio is a judgment about the whole block — text and argument
-      // together — so it belongs at the foot of both. Here the only control is
-      // ✏️, which is about the *wording*: it seeds the desk with these words and
-      // not with this reason. A control belongs against the thing it acts on.
+      // ✏️ sits **at the foot of the block**, under the reason and to the right
+      // — the place a lane bar sits on every other card (Ed, 2026-08-17,
+      // reversing his own earlier note and mine). It had gone above the reason on
+      // the argument that the control is about the wording rather than about the
+      // block; true, and outweighed by the fact that a reader who has learnt
+      // where a card puts its controls should not have to learn again here.
+      // Consistency across the surface beats local precision inside one card.
       field.map((c, i) =>
         '<div class="propblock">' +
         '<div class="rtext">' + wordingHtml(cur, c.text, true) + '</div>' +
-        '<div class="lanebar solo">' + laneProposeHtml(s, 'slate:' + i, key) + '</div>' +
         (c.why ? speakerHtml(c.why) : '') +
+        '<div class="lanebar solo">' + laneProposeHtml(s, 'slate:' + i, key) + '</div>' +
         '</div>').join('') + '</div>' +
       '<div class="field bridgedesk"><div class="fieldlab">' +
       '✏️ propose something everyone can agree on</div>' +
@@ -5001,7 +5037,7 @@
             const siteIdx = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === line.key) : -1;
             const where = g.kind === 'patch' ? ' · place ' + (siteIdx + 1) + ' of ' + g.sites.length : '';
             return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '"' + chipStyle(g) + ' title="' +
-              esc(plainLabel(g.qLabel)) + where + ' — open it">' + markOf(g) + '</span>';
+              esc(plainLabel(g.qLabel)) + where + ' — open it">' + mkHtml(markOf(g)) + '</span>';
           }).join('');
           html +=
             '<p class="anch editable' + (openId === primary.id ? ' active' : '') + '" data-key="' + line.key +
@@ -5022,7 +5058,7 @@
               anchWash(wasResolved, openId === wasResolved.id, line.key) : '') +
             (line.key ? ' data-key="' + line.key + '"' : '') + '>' +
             (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
-              '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + markOf(wasResolved) + '</span></span>' : '') +
+              '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + mkHtml(markOf(wasResolved)) + '</span></span>' : '') +
             esc(line.x) + '</p>';
         }
       }
@@ -5947,7 +5983,7 @@
       .sort((a, b) => keepRank(a[0]) - keepRank(b[0]) || a[1] - b[1])
       .slice(0, TOC_MARKS).map(([, i]) => i));
     const shown = marks.filter((_, i) => keep.has(i));
-    return '<span class="tocmarks" aria-hidden="true">' + shown.join('') +
+    return '<span class="tocmarks" aria-hidden="true">' + shown.map(mkHtml).join('') +
       (marks.length > shown.length ? '<span class="more">+' + (marks.length - shown.length) + '</span>' : '') +
       '</span>';
   }

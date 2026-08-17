@@ -2448,3 +2448,42 @@ else can see yet. The entry earns its place on an ordinary draft because it is
 where you read your rationale back as you type; on the deadlock card that field
 is six inches away on the card you are looking at. It appears when you propose,
 which is when there is something to point at.
+
+### The four decided marks stop being plates (2026-08-17)
+
+Ed: *they carry their own background unlike all the other symbols.* Exactly
+right, and it is the one structural difference in the alphabet. 💡🔥🌶️✏️⏳⚔️ are
+silhouettes — a shape on the page. ✅❎☑️🔄 are a **coloured plate with a shape
+knocked out of it**, so beside the others they read as a different *kind* of
+object rather than as a different state, which is the one thing a single
+alphabet must not do.
+
+They are now text-presentation glyphs — `✔` `✘` `✓` `↻`, each with U+FE0E to stop
+the font reaching for the emoji — which means they take a `color` like any other
+character. Three consequences, and the second and third are the reason this was
+worth doing beyond the plates:
+
+- **The palette chooses the colour**, not whichever emoji font the reader
+  happens to have. Segoe, Apple and Noto all draw ✅ differently and none of them
+  asked us.
+- **It is the same in all four columns.** They are drawn through one `mkHtml`,
+  so the queue, the contents rail, the gutter tab and a card's head cannot
+  drift.
+- The two ticks stay distinguishable in code as well as on screen: `✔` heavy for
+  *adopted*, `✓` light for *filed*, which also puts the lighter glyph on the
+  quieter state.
+
+Kept at the colours the emoji happened to have, so that the change under review
+is the plate and nothing else. **Two of those colours should probably not
+survive** and are raised with Ed rather than decided here: a **green ✘** is a
+strange object once we are choosing it rather than inheriting it — *the
+incumbent held* is a decision, but drawing it in the adopted colour says the
+opposite of what a cross says; and the marks now carry colour **in the contents
+rail**, which the surface's own rule says they do not.
+
+Also, ✏️ *propose edit* went back under the rationale on the deadlock card, at
+the right — the place a lane bar sits on every other card. It had gone above the
+reason on the argument that the control is about the wording rather than about
+the block, which is true and is outweighed: a reader who has learnt where a card
+puts its controls should not have to learn again here. **Consistency across the
+surface beats local precision inside one card.**
