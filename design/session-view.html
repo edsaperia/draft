@@ -3134,6 +3134,7 @@
       if (!lane) return;
       lane.focus({ preventScroll: true });      // the card may still be unrolling
       placeCaret(lane, caret);
+      caretPulse();          // the one caret move the reader did not make
     };
     if (openId === d.id) {
       keepStill(() => renderAll(), '[data-key="' + key + '"]');
@@ -3213,6 +3214,7 @@
       if (!lane) return;
       lane.focus({ preventScroll: true });
       placeCaret(lane, caret);
+      caretPulse();          // the one caret move the reader did not make
     };
     if (openId === d.id) {
       keepStill(() => renderAll(), '[data-key="' + keys[0] + '"]');
@@ -4500,9 +4502,14 @@
     startDraftFromTyping(picked.blocks[0], ev);
   });
 
-  // Where the caret just went. Only in the charter — the composer's own lanes
-  // are ordinary editors where you already know where you are — and only for a
-  // collapsed selection, so dragging out a range does not strobe.
+  // Where the caret just went — announced **only when the surface moved it**
+  // (Ed, 2026-08-17). It first fired on every selection change, which meant it
+  // flashed every time you clicked in the document; a click is you putting the
+  // caret somewhere and you already know where. The moment that actually needs
+  // announcing is the one you did not ask for: you start typing in the charter,
+  // the charter cannot be edited in place, and the caret is carried off into
+  // the proposing lane of a card that has just appeared. So this is called at
+  // the landing rather than bound to `selectionchange`.
   const caretPulse = (() => {
     let el = null;
     return () => {
@@ -4510,15 +4517,17 @@
       const sel = getSelection();
       if (!sel || !sel.rangeCount || !sel.isCollapsed) return;
       const r = sel.getRangeAt(0);
-      const node = r.startContainer;
-      const host = node.nodeType === 1 ? node : node.parentElement;
-      if (!host || !host.closest || !host.closest('.doc .prose')) return;
       // a collapsed range has no width, and sometimes no rect at all until it
       // is asked for its client rects rather than its bounding box
       let rect = r.getBoundingClientRect();
       if (!rect || !rect.height) rect = (r.getClientRects() || [])[0];
       if (!rect || !rect.height) return;
-      if (!el) { el = document.createElement('div'); el.className = 'caretpulse'; document.body.appendChild(el); }
+      // `isConnected` as well as null: the closure would otherwise keep a
+      // detached node for ever if anything removed it from the page
+      if (!el || !el.isConnected) {
+        el = document.createElement('div'); el.className = 'caretpulse';
+        document.body.appendChild(el);
+      }
       el.style.left = (rect.left + scrollX) + 'px';
       el.style.top = (rect.top + scrollY) + 'px';
       el.style.height = rect.height + 'px';
@@ -4527,7 +4536,6 @@
       el.classList.add('go');
     };
   })();
-  document.addEventListener('selectionchange', caretPulse);
 
   // The queue is sticky and the wires are drawn in viewport space, so both the
   // rail highlight and the wires have to be recomputed as the page moves.
