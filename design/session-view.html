@@ -164,7 +164,24 @@
   .navbar .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s4); padding: 10px var(--s4); }
   .navbar .brand { font-weight: 600; font-size: 1rem; margin: 0; }
   .navbar .brand .sess { color: var(--muted); font-weight: 400; }
-  .navbar .stats { display: flex; gap: 18px; white-space: nowrap; font-size: var(--t-ui); color: var(--muted); }
+  .navbar .stats { display: flex; gap: 18px; white-space: nowrap; font-size: var(--t-ui); color: var(--muted); align-items: center; }
+  /* room-pulse. Grey at rest and grey at its brightest: activity is information
+     and nothing is being asked of you, which is what grey means here. It beats
+     by growing a ring rather than by changing colour — a colour change in the
+     topbar would read as a state, and this is an event. */
+  .pulse {
+    width: 7px; height: 7px; border-radius: 50%; flex: none;
+    background: rgba(var(--lc-closed), 0.7);
+    transition: background 400ms ease;
+  }
+  .pulse.beat { background: rgba(var(--lc-closed), 1); animation: pulseRing 900ms ease-out; }
+  @keyframes pulseRing {
+    from { box-shadow: 0 0 0 0 rgba(var(--lc-closed), 0.55); }
+    to   { box-shadow: 0 0 0 9px rgba(var(--lc-closed), 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pulse, .pulse.beat { transition: none; animation: none; }
+  }
   .navbar .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
   /* You, at the right-hand end. Initials rather than a photograph: this is a
      mockup with no accounts behind it, and a stock face would be a claim the
@@ -1137,6 +1154,13 @@
     display: inline-flex; align-items: center; justify-content: center;
     width: 3.25rem; height: 2.5rem; padding: 0; font-size: 1.2rem; line-height: 1;
   }
+  /* the only thing in its row, and it belongs at the commit end of it */
+  .race-mid.withdrawrow { justify-content: flex-end; }
+  /* Withdrawal is a real thing to do and not a danger — the stake comes back in
+     full (SPEC §3.3a) — so it is an ordinary outline button rather than a red
+     one, sitting where the tick sits without pretending to be one. */
+  .btn.btn-withdraw { border-color: var(--border); background: var(--bg); }
+  .btn.btn-withdraw:hover { border-color: var(--primary); background: var(--light); }
   /* greyed, not merely faded: a pale green tick reads as a tick that has been
      pressed, which is the one thing it must not say before you have chosen */
   .btn.btn-approve.glyphbtn[disabled],
@@ -1300,6 +1324,14 @@
   <div class="wrap">
     <p class="brand">The Hollow Oak Club — House Charter <span class="sess">· convention in session</span></p>
     <div class="stats">
+      <!-- `room-pulse` (Ed, 2026-08-17): the document is live and other people
+           are working in it, and nothing on the surface said so. One dot, one
+           beat per action by anybody — including you. Deliberately content-free:
+           no count, no direction, no author, so it says only *the room is
+           moving*, which is the one fact about other people's work that §3.5
+           lets a live surface carry. -->
+      <span class="pulse" id="pulse" aria-hidden="true"
+            title="The room is working — this blinks when anybody judges or proposes anything. It never says who, what, or which way."></span>
       <span>time left <b>2h 11m</b></span>
       <span title="How sure the house has to be that a change beats the current text. It rises through the session — this is not a vote share.">confidence bar <b>0.74 ▲</b></span>
       <span title="Quorum for a decision, not for the meeting: this many distinct members must weigh in on a question before it can be adopted (a third of the roster). A question short of quorum simply waits — silence is never counted as a vote.">quorum <b>5 of 14</b></span>
@@ -4242,8 +4274,16 @@
       fieldHtml('<div class="propblock"><div class="rtext">' +
         laneBlocks(s.text, originText(s), headFlags(s)) + '</div>' + speakerHtml(d.rationale) + '</div>',
         1, 'What you proposed') +
-      '<div class="race-mid"><button class="btn btn-outline" data-act="draft-withdraw">Withdraw' +
-      (n > 1 ? ' all ' + n + ' places' : '') + '</button></div>' +
+      // **Withdraw sits where submit sits** (Ed, 2026-08-17): bottom right, as a
+      // glyph, because it is this card's version of the same act — the one
+      // thing that finishes what you are looking at. A centred outline button
+      // put the only control on the surface that commits *your* work in a place
+      // no other card's commit lives. 🗑️ rather than a word, matching the ✓ it
+      // stands in for; the wording moves into the tooltip, where the place
+      // count can go with it.
+      '<div class="race-mid commitrow withdrawrow">' +
+      '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw" title="Withdraw' +
+      (n > 1 ? ' all ' + n + ' places' : '') + ' — the edit comes back in full">🗑️</button></div>' +
       '<div class="foot">Withdrawing returns the edit in full and takes the wording out of the race — ' +
       'it stays in the record either way (SPEC §3.3a, §7) · to reword it, withdraw and write again · authorship sealed</div>' +
       '</div>'
@@ -5120,6 +5160,8 @@
   }
 
   function act(id, what) {
+    // your own moves beat too — the pulse is *the room*, and you are in it
+    if (what !== 'propose') beat();
     const s = SUGGS.find((x) => x.id === id);
     // ---- the composer ------------------------------------------------
     // "Propose something else", on a deadlocked race: the composer opens on the
@@ -5512,6 +5554,31 @@
     requestAnimationFrame(() => { layoutQueue(); markCurrentSection(); drawWires(); ticking = false; });
   };
   addEventListener('scroll', onViewportChange, { passive: true });
+
+  // ---- room-pulse (Ed, 2026-08-17) -------------------------------------
+  // One beat per action by anybody. It carries no count, no direction and no
+  // author — the room is moving, and that is the whole message. That is also
+  // what keeps it inside §3.5: a content-free heartbeat cannot leak standings,
+  // because there is nothing in it to read.
+  //
+  // In the mockup the other fourteen members are a timer. The intervals are a
+  // fixed irregular cycle rather than random, so the page behaves the same way
+  // twice — a mockup that is different every time is one you cannot QA. They
+  // are deliberately uneven: a metronome reads as a machine ticking over, and
+  // what this is trying to say is that people are working.
+  const pulseEl = document.getElementById('pulse');
+  function beat() {
+    if (!pulseEl) return;
+    pulseEl.classList.remove('beat');
+    void pulseEl.offsetWidth;                 // restart the animation
+    pulseEl.classList.add('beat');
+    setTimeout(() => pulseEl.classList.remove('beat'), 900);
+  }
+  const BEATS = [4200, 9700, 2600, 15400, 6100, 3300, 11800, 5200, 7600, 2900];
+  let beatAt = 0;
+  (function nextBeat() {
+    setTimeout(() => { beat(); nextBeat(); }, BEATS[beatAt++ % BEATS.length]);
+  })();
   // A resize re-wraps the document, so every clause moves and the margin has to
   // be measured again — the rail's positions are in page space, not viewport.
   addEventListener('resize', () => { layoutQueue(); onViewportChange(); });

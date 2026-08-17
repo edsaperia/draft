@@ -1767,3 +1767,46 @@ at the alphas they already had. The rule generalises — **anything that overlap
 something else cannot be translucent**, which is the third time that has come up
 today (the cap over the run, the spine over the runs, and now the tab over the
 card).
+
+### room-pulse
+
+Ed: *I want some kind of indicator when any judgement or proposal is made by
+anyone, just to show the document is live and changing. It can be very subtle.*
+
+One grey dot in the topbar, one beat per action by anybody — including you,
+because the pulse is *the room* and you are in it.
+
+The design constraint that matters is what it must **not** carry. Blind judgment
+(SPEC §3.5) is the thing this whole surface protects, so a liveness indicator has
+to be content-free: no count, no direction, no author, no which-race. What
+survives is *the room is moving*, and that is a fact about other people's work
+that a live surface is allowed to carry precisely because there is nothing in it
+to read. A dot that showed a number would be a standings feed with the numbers
+filed off.
+
+Two smaller calls. It is **grey at rest and grey at its brightest**, because
+activity is information and nothing is being asked of you, which is what grey
+now means here. And it beats by growing a **ring** rather than by changing
+colour: a colour change in the topbar reads as a state, and this is an event.
+
+The other fourteen members are a timer, on a fixed **irregular** cycle. Irregular
+because a metronome reads as a machine ticking over and the thing being said is
+that people are working; fixed rather than random because a mockup that behaves
+differently every time is one you cannot QA — the same reason `Math.random` has
+stayed out of this file.
+
+### Withdraw moves to the commit corner
+
+Ed: *withdraw button on your proposal cards should be on the right side, where
+submit usually is: 🗑️*
+
+Right, and the reason is stronger than symmetry: withdrawal is this card's
+version of the same act. Every other card has exactly one control that finishes
+what you are looking at, and it lives bottom right; your own proposal has one
+too, and it was sitting centred in the middle of the card where no other commit
+lives. As a glyph it matches the ✓ it stands in for, and the wording — including
+the place count on a patch — moves into the tooltip.
+
+It stays an ordinary outline button rather than a red one. The stake comes back
+in full (SPEC §3.3a), so withdrawing is a real thing to do and not a danger, and
+the surface should not flinch at it.
