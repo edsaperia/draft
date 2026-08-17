@@ -2577,3 +2577,20 @@ rather than to *changing*. It is grey: green is for what changed, and this one
 holds a slot in the margin for a different reason. The fixture now shows both —
 § Nomination retired and judged, pinned in grey; the larder's food rule retired
 and never judged, already a filed dot on load.
+
+### A one-line self-inflicted wound (2026-08-17)
+
+Clicking the pinned § Nomination entry opened nothing, silently. The cause was
+mine and it is worth writing down because the mistake is so easy to repeat:
+tidying an unused `const yours` out of the `deadlock-card`, I ran a *single*
+string replace on `const yours = verdicts.get(s.id) || s.verdict;` — and that
+line appears twice, with `sealedCardHtml`'s copy first in the file. So the
+deadlock card kept its dead binding and the **sealed record lost its live one**,
+which threw a ReferenceError inside the render and left the click doing nothing
+at all.
+
+Two rules from it. **A "remove the unused variable" edit is not a text edit** —
+the line that is unused in one function is load-bearing three hundred lines up.
+And a silent failure to open is worth treating as a thrown error until proved
+otherwise: nothing on the surface said anything, and the console had been saying
+`yours is not defined` since the moment it broke.

@@ -3877,6 +3877,7 @@
     // Everything full width, in order, the adopted one first.
     const field = fieldOf(s);
     const held = !field.some((c) => c.won);
+    const yours = verdicts.get(s.id) || s.verdict;
     const ranked = field.slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1));
     // what the field was measured against: still standing, or displaced by the
     // winner and therefore nowhere in the document any more
