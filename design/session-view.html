@@ -1009,7 +1009,19 @@
        not lined up, and the seam it was hiding is hidden anyway: the tab is a
        descendant of the card, so it paints over the card's own shadow where
        they meet. What marks it as active is the deeper ground and the lift. */
-    padding-right: 0;
+    /* **It grows out to the left** (Ed, 2026-08-17). Since the active tab stopped
+       being lifted to the top of the strip, depth and a deeper ground were the
+       only things saying which one you are reading — and both are quiet next to
+       a silhouette. Width is the loud one, and leftward is the only direction
+       available: the column is right-aligned onto the card's edge, so growing is
+       *automatically* growing left, and the strip keeps its single vertical
+       joint.
+
+       The glyph must not move — the card-opening motion is measured on it
+       staying at 0,0 — so the 8px goes on `padding-left` as well as on `width`.
+       With `border-box` the content box is still 34px and the glyph still
+       centres in it; the tab simply starts 8px further out. */
+    width: 42px; padding-left: 8px; padding-right: 0;
     /* **The active tab keeps its colour** (Ed, 2026-08-17). It used to take the
        card's white surface, which is the ordinary tab move — but now that the
        prose carries no highlight, the gutter holds the only lifecycle colour on
@@ -3330,7 +3342,33 @@
       // `pendingId` counts as open — the document is moved *before* the card
       // is inserted (Ed, 75), so the entry has to be in its final population
       // by then or its wire aims at a position it will not end up in.
-      const live = stateOf(g) === 'needs' || stateOf(g) === 'yours' || isUnread(g) || holdsFocus(el);
+      // **Four things pin, and an ordinary question is not one of them** (Ed,
+      // 2026-08-17: *there's a load of stuff in the sidebar and it doesn't feel
+      // like it relates to what's in front of you when you move around*).
+      //
+      // Every `needs` entry used to pin, which followed from 110 — *never let
+      // work walk off the screen* — and that rule turns out to be right about
+      // the wrong population. A rail of pinned questions is a to-do list wearing
+      // a margin's clothes: it travels with you, so wherever you are reading,
+      // most of what is beside you is about somewhere else, and the one claim
+      // the `needs-you-queue` makes — *this entry stands beside its own clause*
+      // — is false for nearly every row on screen.
+      //
+      // What survives is the set of things that are genuinely about you rather
+      // than about the document, and each pins for its own reason:
+      //   🔥 the one question the surface is asking you to answer next, which is
+      //      the whole of what 110 was actually protecting;
+      //   ✔✖ a decision you have not acknowledged — it is owed to you, and it
+      //      leaves the moment you press OK;
+      //   ✏️ a proposal of your own, because the act it carries is withdrawal
+      //      and nobody else can do it;
+      //   🌶️ a prioritisation, which is served rather than found and would be
+      //      absurd to have to scroll to.
+      // Everything else stands beside its clause and scrolls with it, which is
+      // what a margin index is. Nothing is lost: the document is right there.
+      const kind = markKindOf(g);
+      const live = kind === 'urgent' || kind === 'propose' || kind === 'weigh' ||
+        isUnread(g) || holdsFocus(el);
       (live ? pinned : flow).push(row);
     }
     pinned.sort((x, y) => x.want - y.want);
@@ -3990,12 +4028,25 @@
   // the card feel like the clause opening rather than something replacing it.
   function clauseHeadHtml(s, o) {
     const opt = !!o.v;
-    // The mark is the same control it was in the gutter, in the same place, so
-    // the thing you clicked to open the card is the thing you click to close
-    // it — and it never moves under the pointer.
-    const marks = '<span class="chipcol"><span class="achip wmark" role="button" tabindex="0"' +
-      ' data-anchor="' + s.id + '"' + chipStyle(s) + ' title="Close this one">' + mkHtml(markKindOf(s)) + '</span>' +
-      (o.chips || '') + '</span>';
+    // **The strip does not reorder** (Ed, 2026-08-17: *when I click between tabs
+    // on a card, they shouldn't move around*). The card's own tab used to be
+    // prepended, so every switch dealt the column again and the tab you were
+    // aiming at moved out from under the pointer on arrival. A tab strip is a
+    // fixed set of places you move a highlight around — that is the whole of
+    // what makes it a strip rather than a list of shortcuts.
+    //
+    // It costs nothing that the active one is no longer first: the gutter's pile
+    // only ever opens its *front* tab, which is index 0 in the same stack order
+    // the strip uses, so the mark you clicked is still at index 0 when the card
+    // arrives and the 0px claim holds.
+    //
+    // `o.chips` is the whole strip when it is given. A card built without one —
+    // the diagonal, which stands at no clause of its own — still needs its own
+    // mark, because that mark is how it closes.
+    const marks = '<span class="chipcol">' +
+      (o.chips && o.chips.includes('data-anchor="' + s.id + '"')
+        ? o.chips
+        : ownChipHtml(s) + (o.chips || '')) + '</span>';
     return '<div class="clausehead">' +
       // `label: null` means *no eyebrow*: the decided card's head is the top of a
       // ranking whose rank, outcome and score are all in the card's own eyebrow
@@ -5143,6 +5194,13 @@
       stateOf(g) === 'sealed' && !isUnread(g)) : [];
   }
 
+  // The tab of the card you are reading: the same control it was in the gutter,
+  // in the same place, so the thing you clicked to open the card is the thing
+  // you click to close it.
+  const ownChipHtml = (g) =>
+    '<span class="achip wmark" role="button" tabindex="0" data-anchor="' + g.id + '"' +
+    chipStyle(g) + ' title="Close this one">' + mkHtml(markKindOf(g)) + '</span>';
+
   const achipHtml = (g, key, o) =>
     '<span class="achip' + (o.inert ? ' behind' : '') + '"' +
     (o.inert ? ' aria-hidden="true"' : ' role="button" tabindex="0"') +
@@ -5171,26 +5229,32 @@
   // reads down into the past, which is how every record anybody keeps is read.
   // Ranking it by anything other than time would be a claim about which past
   // decision mattered, and nothing here is entitled to make one.
-  function filedPileHtml(key, gs0) {
+  function filedPileHtml(key, gs0, activeId) {
     const gs = gs0.slice().reverse();
-    const open = filedOpen.has(key);
-    return '<span class="filedpile' + (open ? ' open' : '') + '" data-filed="' + key + '"' +
+    // **A pile never closes over the card you are reading.** If the active card
+    // is one of these, the pile is open and is not a toggle — its box carries no
+    // handle, so the only way to shut it is to leave the clause. Anything else
+    // would hide the tab that says where you are.
+    const holdsActive = gs.some((g) => g.id === activeId);
+    const open = filedOpen.has(key) || holdsActive;
+    return '<span class="filedpile' + (open ? ' open' : '') + '"' +
+      (holdsActive ? '' : ' data-filed="' + key + '"') +
       (open ? '' : ' role="button" tabindex="0" title="' + gs.length +
         ' decided and filed at this clause — open them"') + '>' +
-      gs.map((g, i) => achipHtml(g, key, {
+      gs.map((g, i) => (g.id === activeId ? ownChipHtml(g) : achipHtml(g, key, {
         inert: !open, z: gs.length - i, title: ' — the record',
-      })).join('') + '</span>';
+      }))).join('') + '</span>';
   }
 
-  function chipsFor(key, exceptId) {
+  function chipsFor(key, activeId) {
     // Same order as the gutter stack, for the same reason (see `stackOrder`):
     // the card's tab strip is that stack expanded, so the two must not disagree
-    // about what sits where. The card's own tab is prepended by the head and is
-    // always first, because it is the active tab.
-    const live = stackOrder(key ? suggFor(key) : []).filter((g) => g.id !== exceptId)
-      .map((g) => achipHtml(g, key, {})).join('');
-    const filed = filedFor(key).filter((g) => g.id !== exceptId);
-    return live + (filed.length ? filedPileHtml(key, filed) : '');
+    // about what sits where. The active card's tab is marked **in place** and
+    // never lifted (Ed, 2026-08-17) — see `clauseHeadHtml`.
+    const live = stackOrder(key ? suggFor(key) : [])
+      .map((g) => (g.id === activeId ? ownChipHtml(g) : achipHtml(g, key, {}))).join('');
+    const filed = filedFor(key);
+    return live + (filed.length ? filedPileHtml(key, filed, activeId) : '');
   }
 
   // **What a ground shift actually looks like** (SPEC §4.4, built 2026-08-17).
@@ -6261,10 +6325,40 @@
   // out around it — before it finishes unrolling. That is where the composer
   // puts the caret back, so the character you typed and the caret that follows
   // it arrive in the same frame rather than a quarter of a second apart.
+  // Every clause a suggestion stands at, whatever kind it is.
+  const clauseKeysOf = (id) => {
+    const g = SUGGS.find((x) => x.id === id);
+    if (!g) return [];
+    return [].concat(g.keys ?? [],
+      (g.sites ?? []).flatMap((s) => s.keys ?? (s.key ? [s.key] : [])),
+      (g.pair ?? []).map((c) => c.key)).filter(Boolean);
+  };
+
   function toggle(id, scroll, after) {
     const closing = openId;
     const next = openId === id ? null : id;
     if (!closing && !next) return;
+    // **The pile shuts when the stack does** (Ed, 2026-08-17). Opening a
+    // tab-stack always starts from the same place, filed decisions piled,
+    // because being piled is a *posture of the closed stack* rather than a
+    // setting you have chosen — and a preference you never set is one you will
+    // not remember setting.
+    //
+    // It survives exactly one thing: moving between the tabs of one stack,
+    // which is a single continuous piece of looking at a clause, and where
+    // shutting the pile behind you would take away the row you just picked out
+    // of. Everything else is arriving somewhere, and arriving starts piled.
+    if (!next || !closing ||
+        !clauseKeysOf(next).some((k) => clauseKeysOf(closing).includes(k))) {
+      filedOpen.clear();
+    }
+    // Opening a filed record *is* opening the pile, however you got there — from
+    // the queue, from a link, from the pile itself. Recorded as state rather
+    // than inferred at paint time so that moving from it to a live card at the
+    // same clause leaves the pile where you left it.
+    if (next && SUGGS.some((g) => g.id === next && stateOf(g) === 'sealed' && !isUnread(g))) {
+      clauseKeysOf(next).forEach((k) => filedOpen.add(k));
+    }
     const my = ++seqToken;
     const alive = () => my === seqToken;
     pendingId = next;                             // keeps the wire drawn throughout

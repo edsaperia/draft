@@ -3129,3 +3129,77 @@ The two locked variants keep theirs, and the contrast is the reason: on a settle
 or ground-shifted card the controls are *dead*, so the card cannot say it by
 being itself, and a sentence is the only thing left that can. **Prose earns its
 place where a control cannot speak.**
+
+### Four QA notes on the strip and the rail (2026-08-17)
+
+**The pile shuts when the stack does.** *Every time I open a tab-stack, the
+retired stack should start as piled.* Being piled is a **posture of the closed
+stack**, not a setting you have chosen — and a preference you never set is one
+you will not remember setting, so it should not follow you around. It survives
+exactly one thing: moving between the tabs of a single stack, which is one
+continuous piece of looking at a clause and where shutting the pile behind you
+would take away the row you just picked out of. Everything else is arriving
+somewhere, and arriving starts piled.
+
+Two rules fell out of building it. Opening a filed record **is** opening the
+pile, however you got there — from the queue, from the pile, from anywhere — so
+that is recorded as state rather than inferred at paint time, which is what lets
+you step from a filed record to a live card at the same clause and find the pile
+where you left it. And **a pile never closes over the card you are reading**: if
+the active card is inside it, it is open and carries no handle, because the only
+alternatives are hiding the tab that says where you are or moving it out of the
+pile, and Ed had just ruled out moving tabs.
+
+**The strip does not reorder.** *When I click between tabs on a card, they
+shouldn't move around.* The card's own tab was prepended, so every switch dealt
+the column again and the tab you were aiming at moved out from under the pointer
+at the moment of arrival — the worst possible time, because you are still
+looking at where it was.
+
+**A tab strip is a fixed set of places you move a highlight around.** That is the
+whole of what makes it a strip rather than a list of shortcuts, and the previous
+behaviour was quietly denying it.
+
+The reason it had been prepended is the 0px claim: the mark you click in the
+gutter must not move when the card opens. That turns out to survive untouched,
+because the gutter is a **pile** now and a pile only ever opens its *front* tab —
+which is index 0 in the same stack order the strip uses. The constraint that
+forced the reordering was retired by the tab-stack that morning without anybody
+noticing.
+
+**And the active tab grows 8px out to the left.** With it no longer at the top,
+depth and a deeper ground were all that said which one you were reading, and both
+are quiet beside a silhouette. Width is the loud one, and leftward is the only
+direction available: the column is right-aligned onto the card's edge, so growing
+*is* growing left, and the strip keeps its single vertical joint. The 8px goes on
+`padding-left` as well as `width`, so with `border-box` the content box is still
+34px and the glyph does not move.
+
+### Only four things pin (Ed, same session)
+
+*Queue-card pinning is too aggressive — otherwise there's a load of stuff in the
+sidebar and it doesn't feel like it relates to what's in front of you when you
+move around.*
+
+Every `needs` entry pinned, which followed from 110 — *never let work walk off
+the screen* — and 110 turns out to be right about the wrong population. **A rail
+of pinned questions is a to-do list wearing a margin's clothes.** It travels with
+you, so wherever you are reading, most of what is beside you is about somewhere
+else, and the one claim the `needs-you-queue` makes — *this entry stands beside
+its own clause* — is false for nearly every row on screen. The rail was
+contradicting its own premise in order to obey a rule about not losing work.
+
+What survives is the set of things that are about **you** rather than about the
+document, and each has its own reason: 🔥 is the question the surface is asking
+you next, which is what 110 was actually protecting; an unacknowledged decision
+is owed to you and leaves the moment you press OK; a proposal of your own carries
+an act nobody else can perform; a prioritisation is served rather than found and
+would be absurd to have to scroll to. Everything else stands beside its clause
+and scrolls with it, which is what a margin index *is*.
+
+Measured: **8 pinned of 44, against 20 before.**
+
+Nothing is lost, and that is the part worth stating, because 110's fear was
+real. The document is right there. An ordinary question you scroll past is a
+question at a clause you scrolled past, and the whole design of this surface is
+the claim that those two are the same thing.
