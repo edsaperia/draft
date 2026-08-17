@@ -2707,3 +2707,35 @@ the answer.**
 session and has to be declined for a real reason: authorship is sealed, and a
 violin is the surface editorialising about somebody whose name it will not
 print.)
+
+---
+
+### The card starts at the top of the field (2026-08-17)
+
+Ed: *I don't want "the clause as it now stands" at the top — I want the card to
+start at the top entry in the field, with the text. And instead of highlighting
+it green, remove the box that it's in.*
+
+The head was printing the clause and the field was printing the same text again
+as its first entry, because **on a decided card the top of the ranking is the
+clause** — the winner where it carried, the incumbent where it held. Two ways of
+saying that were one too many, and the head was the one carrying nothing the
+ranking did not already have.
+
+So the top entry *is* the head. It keeps the head's machinery — the gutter mark
+that closes the card, the washed block sitting on the paragraph's own axis, the
+geometry the opening motion is measured against — and gives up only its label,
+which becomes the entry's own rank, outcome and score: **1 · adopted · 86%**, or
+**the text that stood · 50%** where nothing displaced it. Its rationale follows
+directly beneath, and the rest of the field follows that.
+
+The winner also loses its box, which is the better half of Ed's note. A
+green-bordered panel was saying *this one* to a reader who could already see it
+at the top of a ranked list, under a green ✔, at the head of a card. Four
+devices for one fact.
+
+One consequence worth noting: the field label went with the head, so the bar
+moved up into the eyebrow — *Decided · the bar was 72%* — where it governs every
+number on the card including the one now in the head. That is the third home
+that sentence has had today and the first one that is above everything it
+describes.

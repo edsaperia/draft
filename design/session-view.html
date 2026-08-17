@@ -1413,7 +1413,15 @@
     border: 1px solid var(--border); border-radius: var(--r-md);
     padding: var(--s3) 14px; margin-bottom: var(--s2);
   }
-  .ranked.stood { background: var(--ok-subtle); border-color: var(--ok); }
+  /* The winner has no box (Ed, 2026-08-17): it is the head of the card now, and
+     a green-bordered panel round it was saying *this one* to a reader who could
+     already see it at the top of a ranked list under a green mark. */
+  .sealed-open .headlab > span {
+    display: flex; align-items: baseline; gap: var(--s2);
+  }
+  .sealed-open .headlab .rank, .sealed-open .headlab .rsub { letter-spacing: 0.05em; }
+  .sealed-open .headlab .rsub.stood { color: var(--ok); }
+  .sealed-open > .speaker { margin: var(--s2) 0 0; }
   /* The incumbent sits in the ranking at its own 50%, and says what it is with
      a dashed edge — the border the standalone "text it replaced" band used to
      wear, kept so the object is recognisable in its new place. */
@@ -3942,34 +3950,56 @@
     // the duplication, and it is the same rule in both directions.
     const atHead = (c) => (c.won || (c.incumbent && held));
     let rank = 0;
+    // **The card starts at the top of the field** (Ed, 2026-08-17). There was a
+    // clause-head above it labelled *the clause as it now stands*, and then the
+    // same text again as the first entry — because on a decided card the top of
+    // the ranking **is** the clause: the winner where it carried, the incumbent
+    // where it held. Two ways of saying that were one too many, and the head was
+    // the one carrying no information the ranking did not already have.
+    //
+    // So the top entry *is* the head. It keeps the head's machinery — the gutter
+    // mark that closes the card, the washed block on the paragraph's own axis,
+    // the geometry the opening motion is measured against — and gives up only
+    // its label, which becomes the entry's own rank, outcome and score.
+    //
+    // It also loses its box. A green-bordered panel round the winner was saying
+    // *this one* to a reader who could already see it at the top of a ranked
+    // list, under a green ✔, at the head of a card (Ed: *remove the box that it
+    // is in*).
+    const top = skey ? ranked[0] : null;
+    const rest = top ? ranked.slice(1) : ranked;
+    if (top && !top.incumbent) rank++;
+    const tag = (c) => (c.incumbent
+      ? '<span class="rsub">' + (held ? 'the text that stood' : 'the text it replaced') + '</span>'
+      : '<span class="rank">' + rank + '</span>' + c.label +
+        (c.won ? '<span class="rsub stood">adopted</span>' : ''));
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
-      '<div class="rechead"><span>Decided</span>' +
+      // The axis and the bar moved up here when the field label went: they govern
+      // every number on the card, including the one now in the head.
+      '<div class="rechead"><span>Decided · the bar was ' + pct(d.bar) + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
-      (skey
+      (top
         ? clauseHeadHtml(s, {
             text: currentTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
-            label: carried(s) ? 'The clause as it now stands' : 'The clause as it stands — nothing displaced it',
-          })
+            label: tag(top) + line(top),
+          }) + (top.why ? speakerHtml(top.why) : '')
         : '') +
-      '<div class="field"><div class="fieldlab">' +
-      'The whole field · scored against the text they were measured on · the bar was ' + pct(d.bar) +
-      '</div>' +
-      ranked.map((c) => {
-        if (!c.incumbent) rank++;
-        return '<div class="ranked' + (c.won ? ' stood' : '') + (c.incumbent ? ' wasthere' : '') + '">' +
-        '<div class="rtag">' +
-        (c.incumbent
-          ? '<span class="rsub">' + (held ? 'the text that stood' : 'the text it replaced') + '</span>'
-          : '<span class="rank">' + rank + '</span>' + c.label +
-            (c.won ? '<span class="rsub stood">adopted</span>' : '')) +
-        line(c) + '</div>' +
-        (atHead(c)
-          ? '<div class="atop">Its wording is the clause above.</div>'
-          : '<div class="rtext">' + esc(c.text) + '</div>') +
-        (c.why ? speakerHtml(c.why) : '') + '</div>';
-      }).join('') + '</div>' +
+      (rest.length
+        ? '<div class="field"><div class="fieldlab">' +
+          (top ? 'The rest of the field · scored against the text they were measured on'
+               : 'The whole field · scored against the text they were measured on') + '</div>' +
+          rest.map((c) => {
+            if (!c.incumbent) rank++;
+            return '<div class="ranked' + (c.incumbent ? ' wasthere' : '') + '">' +
+            '<div class="rtag">' + tag(c) + line(c) + '</div>' +
+            '<div class="rtext">' + esc(c.text) + '</div>' +
+            // the same blank disc a live card gives it: whoever argued for this is
+            // still sealed unless the session's visibility setting says otherwise
+            (c.why ? speakerHtml(c.why) : '') + '</div>';
+          }).join('') + '</div>'
+        : '') +
       // The two numbers are different in kind and the record says which is
       // which (Ed, 186): the bar is a confidence, the quorum is a headcount.
       '<div class="record">' +
