@@ -3203,3 +3203,45 @@ Nothing is lost, and that is the part worth stating, because 110's fear was
 real. The document is right there. An ordinary question you scroll past is a
 question at a clause you scrolled past, and the whole design of this surface is
 the claim that those two are the same thing.
+
+### One comparator, two columns (2026-08-17, closing 309)
+
+I raised 309 with a proposal: a pile in the rail, one entry per clause expanding
+on click, mirroring the `tab-stack`. Ed: *rather than have queue-card piles, we
+want to prioritise them in the sidebar in the same way that the tabs prioritise.*
+
+He is right, and the reason is worth writing down because it is the cheaper move
+by a long way. **The rail already knew how to choose.** Its admission rule has
+been *most urgent first, a ranking over admission and never over position* since
+110. What it had no answer for was entries at the **same** position — several
+decisions at one clause all want one line of the rail — and with no tiebreak it
+fell through to fixture order. That had never mattered, because until § Bringing
+a Guest carried twelve decisions no tie was ever tight enough to notice.
+
+So the fix is a tiebreak, not an object. Sort same-clause entries by the tab
+stack's own keys and the two columns agree: **whichever decision the gutter would
+open is the one the rail shows.** No new control, no new gesture, nothing to
+learn — and the rail keeps being a rail, where a pile in it would have been a
+second kind of entry with its own rules in a column where every rule written so
+far assumes an entry is one judgment.
+
+**And building it found the mirror of the bug.** The first version gave the rail
+a `y.u - x.u` tiebreak and the two columns disagreed *immediately*: at § Bringing
+a Guest the rail promoted the more urgent of two 💡 while the gutter's front tab
+was still whichever came first in the fixture — because `stackOrder` had no
+tiebreak either. Two orderings meant to express one idea, each incomplete in a
+different place.
+
+The fix was not to add a matching tiebreak to the gutter but to **give them one
+comparator**: `leverage(g)` pulled out of `layoutQueue`, used by both. A
+duplicated formula would have agreed on the day it was written and drifted the
+first time either end was touched.
+
+**When two surfaces annotate the same thing, an ordering they do not share is a
+disagreement waiting to be noticed.** Both of these had been wrong for as long as
+they had existed, and neither was visible until a clause got busy enough to make
+the tie bite.
+
+Measured at § Bringing a Guest: the gutter's four-tab pile leads with
+`race-guests-notice`, and `race-guests-notice` is the entry the rail shows.
+Across all 31 clauses carrying gutter marks, no disagreement.

@@ -3291,6 +3291,19 @@
   // where it sits in the sort.
   const DEADLOCK_FLOOR = 0.9;
   const DIAGONAL_FLOOR = 0.75;
+  // Pulled out of `layoutQueue` so the **gutter stack and the rail share one
+  // comparator** (Ed, 2026-08-17). They must: they are two columns annotating
+  // the same clause, and whichever decision the gutter would open is the one the
+  // rail should show. When the rail first got this tiebreak they disagreed
+  // immediately — the rail promoted the more urgent of two 💡 at § Bringing a
+  // Guest while the gutter's front tab was still whichever came first in the
+  // fixture — and a duplicated formula would have gone on disagreeing quietly
+  // every time either end was touched.
+  const leverage = (g) => (isUnread(g) ? 0.5
+    : stuck(g) ? DEADLOCK_FLOOR + (1 - DEADLOCK_FLOOR) * (g.bounty ?? 0.5)
+    : g.kind === 'diagonal' ? Math.max(g.urgency ?? 0, DIAGONAL_FLOOR)
+    : (g.urgency ?? 0));
+
   function layoutQueue() {
     const railRect = queueEl.getBoundingClientRect();
     const railTop = railRect.top + scrollY;
@@ -3333,10 +3346,7 @@
         // asks for measures the wrong thing, exactly as it did for a stuck
         // race. So it gets a floor: above ordinary questions, below the flame
         // and below the stuck races, which have drafting leverage on top.
-        mine: !!g.mine,
-        u: isUnread(g) ? 0.5 : stuck(g) ? DEADLOCK_FLOOR + (1 - DEADLOCK_FLOOR) * (g.bounty ?? 0.5)
-          : g.kind === 'diagonal' ? Math.max(g.urgency ?? 0, DIAGONAL_FLOOR)
-          : (g.urgency ?? 0) };
+        mine: !!g.mine, u: leverage(g) };
       // Whatever is open is pinned for as long as it is open, whatever its
       // state: it is the thing you are looking at, and its wire has to hold.
       // `pendingId` counts as open — the document is moved *before* the card
@@ -3367,12 +3377,32 @@
       // Everything else stands beside its clause and scrolls with it, which is
       // what a margin index is. Nothing is lost: the document is right there.
       const kind = markKindOf(g);
+      // **Entries at one clause compete in the tab stack's order** (Ed,
+      // 2026-08-17, closing 309). `want` is a position in the document, and
+      // several decisions at one clause all want the same one — so the tie was
+      // being broken by fixture order, which meant the rail and the gutter could
+      // disagree about which decision at a clause comes first. They should not:
+      // they are two columns annotating the same clause, and *whichever the
+      // gutter would open, the rail should show*.
+      //
+      // This is the rail's own admission rule (most urgent first, never a
+      // ranking over position) reaching a case it had never had to think about,
+      // because until a clause carried twelve decisions no tie was ever tight
+      // enough to notice. It is also why the rail needs no pile of its own: it
+      // already knew how to choose, it just did not know how to choose *here*.
+      row.rank = stackRank(kind);
       const live = kind === 'urgent' || kind === 'propose' || kind === 'weigh' ||
         isUnread(g) || holdsFocus(el);
       (live ? pinned : flow).push(row);
     }
-    pinned.sort((x, y) => x.want - y.want);
-    flow.sort((x, y) => x.want - y.want);
+    // Position, then the tab stack's lifecycle order, then urgency. The third
+    // key matters more than it looks: two 💡 at one clause tie on the second,
+    // and the rail's own admission rule has always been *most urgent first* —
+    // so this is where that rule finally applies, rather than the array order
+    // it was quietly falling through to.
+    const order = (x, y) => x.want - y.want || x.rank - y.rank || y.u - x.u;
+    pinned.sort(order);
+    flow.sort(order);
 
     // the visible band, in the rail's own coordinates
     const bandTop = scrollY + BAND_TOP - railTop;
@@ -6663,8 +6693,14 @@
     const i = STACK_ORDER.indexOf(kind);
     return i < 0 ? STACK_ORDER.length : i;
   };
+  // Lifecycle first, then leverage — the same two keys, in the same order, that
+  // the rail sorts by within a clause (see `leverage`). Two 💡 at one clause tie
+  // on the first, and until they were made to agree the gutter fell through to
+  // fixture order while the rail promoted the more urgent, so the front tab and
+  // the rail entry were different judgments about the same clause.
   const stackOrder = (gs) =>
-    gs.slice().sort((a, b) => stackRank(markKindOf(a)) - stackRank(markKindOf(b)));
+    gs.slice().sort((a, b) => stackRank(markKindOf(a)) - stackRank(markKindOf(b)) ||
+      leverage(b) - leverage(a));
 
   function tocMarksHtml(n) {
     // **☑️ is not in the contents rail** (Ed, 2026-08-17). It was already the
