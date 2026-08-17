@@ -2873,7 +2873,17 @@
       if (!t) continue;
       const b = el.getBoundingClientRect();
       const r = t.getBoundingClientRect();
-      const sx = b.left, sy = b.top + Math.min(b.height / 2, 18);
+      // **No cable ink lies on top of a card** (Ed, 2026-08-17: they "still
+      // cast onto cards"). The shadow cannot be told where to stop — it falls
+      // on whatever is under the ink, and the wire has to paint above the cards
+      // because its horizontal run crosses the document's own white ground on
+      // the way in. So the ink stops instead: the run begins a cap-radius
+      // *outside* the rail entry and ends a ball-radius outside the card, and
+      // the ball sits tangent to the card's edge rather than centred on it.
+      // Nothing overlaps, so nothing casts onto anything it is level with, and
+      // touching still reads as landing.
+      const CAP = 3, BALL = 7;
+      const sx = b.left - CAP, sy = b.top + Math.min(b.height / 2, 18);
       // The wire leaves the entry at its own natural height and arrives at the
       // *same* height on the card, clamped into the card's box (Ed, 2026-08-17
       // — "cables aren't quite aligned"). It used to take a fixed 16px inset at
@@ -2881,7 +2891,7 @@
       // that layoutQueue had levelled exactly still ran 2px downhill. A card is
       // taller than an entry in every real case, so the clamp almost never
       // bites and the wire is flat by construction rather than by coincidence.
-      const tx = r.right;
+      const tx = r.right + BALL;
       const ty = Math.min(Math.max(sy, r.top + 8), Math.max(r.top + 8, r.bottom - 8));
       ys.push(sy);
       const down = ty > sy;

@@ -1364,3 +1364,58 @@ In the editing lane that matters twice: there is nothing for `htmlToMd` to
 serialise back into the candidate, and nothing for the caret to land behind —
 the same bug the rationale placeholder had an hour earlier, avoided this time by
 having just had it.
+
+### The cable, told where to stop
+
+Ed again: *they still cast onto cards.* The tighter shadow was not the fix,
+because the shadow cannot be told where to stop — it falls on whatever the ink
+is over, and the wire has to paint **above** the cards: its horizontal run
+crosses the document column's own opaque white ground on the way in, so pushing
+the layer under the cards would hide most of the cable rather than only its
+shadow. (Measured: `.doc` is white and spans the whole middle column; the gutter
+between the columns is 24px.)
+
+So the *ink* stops instead. The run begins a cap-radius outside the rail entry
+and ends a ball-radius outside the card, and the landing ball sits **tangent** to
+the card's edge rather than centred on it — it had been centred on `r.right`,
+which put half a 14px ball, and all of its shadow, on the card. Nothing overlaps
+now, so nothing casts onto anything it is level with, and touching still reads as
+landing. Measured: ball left edge 1484, card right edge 1484.
+
+The general form is worth keeping, because it came up twice in one hour in two
+different disguises: **when a shadow lands somewhere it should not, move the
+object, not the shadow.**
+
+### Diagonals are not a rate (SPEC v0.20 §8.3a)
+
+Ed: *diagonals are only useful if there really are too many decisions to make and
+time must be prioritised … one in every 10 being a ⚖️ to help prioritise 15
+things, which is really just deciding which one is 🔥, seems overkill.*
+
+That is a mechanism change, not a UI one, and it is right: at low volume the
+salience question degenerates into the urgency question, which the surface
+already answers. Two gates, both required.
+
+**Volume** — at least E live *questions*, counting a race once however many
+candidates it holds, because they all prioritise to the same place. Ed's own
+correction, and it matters: counting candidates would have let a single busy race
+open the tap.
+
+**Audience** — only a participant with nothing else to judge. This is the better
+half. It is not a heuristic about who is keen: a diagonal costs an idle member
+nothing and costs a busy one a judgment, and judging is the act that resolves
+questions where prioritising only orders them.
+
+Ed also closed the hole his own rule opens — an empty queue must not become an
+endless stream of prioritisations — so it terminates on the same active-sampling
+rule races already use (serve only while a pair would still move the ranking),
+with a hard ceiling of three in a row, then *you are up to date*.
+
+What this costs is written into the spec rather than hidden: salience is then
+measured on the members who reach the end of their queue, who are systematically
+the most active. It is tolerable only because the ranking is advisory — routing
+weight, bounty order, backlog order — and never touches adoption.
+
+The consequence for this mockup is that the diagonal, designed across 221, 276,
+277 and 284, has nowhere to appear in a fixture built around a **full** queue.
+That is Q291.
