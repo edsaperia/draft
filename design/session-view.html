@@ -1043,6 +1043,14 @@
      a box of its own, and a rule above a row of boxes is a second boundary for
      the same edge. */
   .sealed-open .field { border-top: 0; padding-top: 0; }
+  /* Nor above the action row: the boxes above it and the button in it are both
+     objects with their own edges, so the rule was drawing a third one between
+     two things already separated. */
+  .sealed-open .field + .race-mid { border-top: 0; padding-top: 0; }
+  /* The winner is the head, and its reason belongs to it — so it wants room
+     above to sit under the text rather than against it, and more room below to
+     close the group off from the field (Ed, 2026-08-17). */
+  .sealed-open > .speaker { margin: var(--s3) 0 var(--s4); }
   .bridgedesk .fieldlab { color: var(--stuck-ink); }
   .dead-open .field.bridgedesk { margin-top: var(--s3); }
   /* 🗑️ and ✏️ are lifted, because they are actions **for the box above them**
@@ -1429,7 +1437,7 @@
   }
   .sealed-open .headlab .rank, .sealed-open .headlab .rsub { letter-spacing: 0.05em; }
   .sealed-open .headlab .rsub.stood { color: var(--ok); }
-  .sealed-open > .speaker { margin: var(--s2) 0 0; }
+
   /* The incumbent sits in the ranking at its own 50%, and says what it is with
      a dashed edge — the border the standalone "text it replaced" band used to
      wear, kept so the object is recognisable in its new place. */
@@ -4084,7 +4092,11 @@
         // an archive box says *storage*, an eye says *seen* and not *done*, and
         // there is no glyph in common use for *I have taken this in*. When a set
         // has no member, the word is not a fallback — it is the answer.
-        ? '<div class="race-mid commitrow"><span class="mcap">Not filed yet</span>' +
+        // No *Not filed yet* beside it (Ed, 2026-08-17): the button says what
+        // pressing it does, the entry in the rail says it has not been pressed, and
+        // a label whose whole job is to be there until you act is a caption for the
+        // absence of an act.
+        ? '<div class="race-mid commitrow"><span></span>' +
           '<button class="btn btn-approve" data-seen="' + s.id + '"' +
           ' title="It leaves your margin and stays in the record">OK</button></div>'
         : '') +

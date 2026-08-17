@@ -2835,3 +2835,21 @@ argument I wrote for removing the scores — *the ordering already says it* — 
 a perfectly good argument, and it was an argument about the **other** number.
 A justification that fits the thing you removed is not evidence you removed the
 right thing.
+
+### Three last cuts on the decided card (2026-08-17)
+
+**"Not filed yet" went.** The button says what pressing it does and the entry in
+the rail says it has not been pressed — a label whose whole job is to sit there
+until you act is a caption for the *absence* of an act.
+
+**The hairline above the action row went**, for the same reason as the one above
+the field: the boxes above it and the button in it are both objects with their
+own edges, so the rule was drawing a third boundary between two things already
+separated. Two hairlines removed in one evening, both of them separating things
+that were already apart.
+
+**And the winner's reason got room.** It is the head's reason, not a field
+entry's, so it wants space above to sit *under* the text rather than against it,
+and more space below to close the group off before the field starts. 12 above,
+16 below — the only place on the card where the rhythm deliberately opens, and
+it opens because that is where one thing ends and a list begins.
