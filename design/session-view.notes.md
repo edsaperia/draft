@@ -1282,3 +1282,30 @@ And the copy: *Why this change?* invited an answer to a different question. *We
 should change this because…* is an opening clause rather than a prompt, so what
 you write finishes a sentence, and it states the act — you are writing the case
 for a change, not a note about one.
+
+### The cable, lifted (289a) — and composited once
+
+Ed's *raised to the height of the cards they join* meant elevation, and the
+reason it is right is the surface's own rule: depth is the only thing here that
+says where something is. A 6px opaque cord lying flat between two objects that
+are visibly off the page was the odd one out. It now casts what a card casts —
+the same three-layer light as `--shadow-xl`, written as chained `drop-shadow`s
+because a filter takes no spread.
+
+On the **container**, not on the paths. Per-path, the white underlay would cast
+its own shadow under the colour it exists to sit behind, and the cable would be
+carrying two shadows of itself.
+
+The same note caught a compositing bug: *the ball colour is covering the cable
+colour so comes out darker*. Two translucent shapes painted over each other
+composite twice, so the cap doubled the alpha of the run it capped — and, less
+visibly, a patch's spine doubled it along every run it crossed. The fix is to
+stop making the shapes translucent: the colour pass is drawn at full hue inside
+a `<g>` that carries the alpha, so the **union** of every run, cap and spine
+composites exactly once however many of them overlap. `wireColor` therefore
+returns a hue and an alpha kept apart rather than one rgba string, which is the
+shape the problem actually had.
+
+Worth keeping as a rule: **translucency belongs to the layer, not to the
+shapes** — the moment two shapes in one conceptual object are separately
+translucent, every overlap in that object becomes a visible seam.

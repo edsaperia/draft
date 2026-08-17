@@ -1148,7 +1148,24 @@
   /* queue-wire: the run from the open entry, down the gutter between document
      and rail, and into every place in the charter it refers to (Ed, 71/78).
      Only the open judgment draws one; a patch's several runs share a spine. */
-  #wires { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
+  /* **Lifted to the height of the cards it joins** (Ed, 289a). A 6px opaque
+     cord lying flat between two things that are visibly off the page was the
+     odd object out — and depth is the one thing this surface uses to say where
+     something is, so a cable at card height has to cast what a card casts. The
+     same three-layer light as --shadow-xl, written as chained drop-shadows
+     because a filter takes no spread: one contact shadow keeping the near edge
+     crisp, then two casts whose blur stays near 2.5x their offset.
+
+     On the container rather than on the paths, so the *union* of the white
+     underlay and the colour over it casts one shadow — per-path it would be two
+     shadows of the same cable stacked, and the white run would cast its own
+     under the colour it is there to sit behind. */
+  #wires {
+    position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.07))
+            drop-shadow(0 6px 14px rgba(0, 0, 0, 0.10))
+            drop-shadow(0 18px 40px rgba(0, 0, 0, 0.16));
+  }
   #wires path { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
   #wires .cap { stroke: none; }
   @media (max-width: 900px) { #wires { display: none; } }
@@ -2701,14 +2718,23 @@
   // row the wire happens to start from. A sealed dot carries none — its grey is
   // a fixed 0.16 in the stylesheet — so that is the fallback, and it matches
   // the dot the wire is leaving exactly.
+  //
+  // Returned as a **hue and an alpha kept apart**, not as one rgba string (Ed,
+  // 2026-08-17: "the ball colour is covering the cable colour so comes out
+  // darker"). Painting translucent shapes one over another composites them
+  // twice: the cap sat on the end of the run it was capping, so the landing
+  // came out at roughly double alpha — and a patch's spine did the same thing
+  // to every run it crossed. The colour layer is therefore drawn at *full*
+  // strength inside a group carrying the alpha, so the union of every run, cap
+  // and spine composites exactly once, however many of them overlap.
   const wireColor = (g, el) => {
     const host = !el ? null
       : (el.dataset && el.dataset.washkey ? el : el.querySelector('[data-washkey]'));
     const raw = host ? getComputedStyle(host).getPropertyValue('--washcol').trim() : '';
     const m = raw.match(/^rgba\((.+?),\s*([\d.]+)\s*\)$/);
-    if (!m) return 'rgba(var(--lc-' + (anchHue(g) || 'closed') + '), 0.16)';
+    if (!m) return { rgb: 'rgb(var(--lc-' + (anchHue(g) || 'closed') + '))', a: 0.16 };
     const a = +m[2];
-    return 'rgba(' + m[1] + ', ' + (a + GROUND_A * (1 - a)).toFixed(3) + ')';
+    return { rgb: 'rgb(' + m[1] + ')', a: +(a + GROUND_A * (1 - a)).toFixed(3) };
   };
   const WIRE_UNDER = '#FFFFFF';
   const SVGNS = 'http://www.w3.org/2000/svg';
@@ -2779,23 +2805,31 @@
     // coloured run on top — rather than each run twice. Painting them in pairs
     // would have a patch's second white run erase the first coloured one where
     // they meet on the spine, which is precisely where they always meet.
+    //
+    // Each pass goes into its own `<g>`, and the colour pass carries the alpha
+    // on the group rather than on the shapes: overlapping translucent shapes
+    // composite once that way, so a cap does not darken the run it caps and a
+    // spine does not darken the runs it crosses.
     const lines = [], dots = [];
     const dot = (x, y) => dots.push([x, y]);
     const line = (d) => lines.push(d);
-    const paint = (stroke) => {
+    const paint = (col, alpha) => {
+      const g = document.createElementNS(SVGNS, 'g');
+      if (alpha != null) g.setAttribute('opacity', alpha);
       for (const d of lines) {
         const p = document.createElementNS(SVGNS, 'path');
         p.setAttribute('d', d);
-        p.setAttribute('stroke', stroke);
-        wiresEl.appendChild(p);
+        p.setAttribute('stroke', col);
+        g.appendChild(p);
       }
       for (const [x, y] of dots) {
         const c = document.createElementNS(SVGNS, 'circle');
         c.setAttribute('class', 'cap');
         c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 5);
-        c.setAttribute('fill', stroke);
-        wiresEl.appendChild(c);
+        c.setAttribute('fill', col);
+        g.appendChild(c);
       }
+      wiresEl.appendChild(g);
     };
 
     const ys = [];
@@ -2827,8 +2861,8 @@
     }
     // the spine: what makes several entries visibly one judgment
     if (ys.length > 1) line('M ' + gx + ' ' + Math.min(...ys) + ' V ' + Math.max(...ys));
-    paint(WIRE_UNDER);
-    paint(color);
+    paint(WIRE_UNDER, null);
+    paint(color.rgb, color.a);
   }
 
 
