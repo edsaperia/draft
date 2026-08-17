@@ -1863,3 +1863,51 @@ margin belongs to the thing it follows and travels with it into either layout**,
 where a gap belongs to a container and only exists in some of them. Measured
 after: 6px between mark and title on every visible entry, in both display modes,
 across all seven glyphs.
+
+### Propose asks twice, and the price is the asking
+
+Ed: *the proposing editor's submit button should just be a ✏️, but we should
+require a second click to confirm it.*
+
+Built so the confirmation and the price are the **same step**. The button is a
+bare ✏️; the first press arms it and it grows into *✏️ Propose · costs one edit*;
+the second press spends it. Anything else you touch on the card disarms it,
+because a button that stays armed while you go back to editing is a trap waiting
+for a stray click.
+
+The reason this shape rather than a "sure?" dialog or a hold: the surface already
+had a rule that *the edit is spent at Propose, which is where the price is said
+in words*. A confirm step bolted on top would have had two places saying two
+things. Making the armed state the place the price appears keeps one rule and
+gets the certainty measure for free — you cannot spend an edit without having
+read what it costs, because reading it is the state you have to pass through.
+
+### Three smaller corrections
+
+**The italic button is a serif I.** A sans italic capital I is a slash with no
+serifs on it — it reads as punctuation, which is the one thing a letterform
+button must not do. The serifs are what make it a letter while it is leaning.
+
+**The mode control is one button.** `[]`, off by default, pressed for markdown.
+The two-segment Rich/Markdown switch spent most of its width saying that a thing
+which is off is off; a single toggle carries the state in its own pressed-ness,
+which is what every other control here does. The note that argued for two
+segments — *a single button would have to name either the mode you are in or the
+one you would get, and both read as a lie half the time* — is answered by not
+naming a mode at all: `[]` names the **thing**, and pressed means you are in it.
+
+**"✏️ edit this" becomes "✏️ propose edit."** What the button starts is a
+proposal; "edit this" promises an edit, which is the one thing this surface never
+lets you do to the charter directly.
+
+### The tabs line up
+
+All four right edges now land exactly on the card's left edge, so the strip has
+one vertical edge instead of three — the inactive tabs had been stopping 2px
+short and the active one overshooting 4px into the card.
+
+The active tab loses the extra 6px it was using to carry under the card and kill
+the seam. It turns out not to need it: the tab is a **descendant** of the card, so
+it paints over the card's own shadow where they meet, and the seam it was hiding
+was already hidden. What marks it as active is the deeper ground and the lift —
+which is what the design system says should mark anything as active anyway.

@@ -891,13 +891,21 @@
      The inactive tabs keep their lifecycle ground and stop at the card's
      edge, which is what makes the active one look joined and the rest look
      stacked behind it. */
-  .clausehead .achip { border-radius: var(--r-sm) 0 0 var(--r-sm); }
+  /* **Every tab's right edge lands exactly on the card's left edge** (Ed,
+     2026-08-17). They had been out in both directions — the inactive ones
+     stopping 2px short, the active one overshooting 4px into the card — so the
+     strip had three vertical edges where it should have one. The 2px is the
+     `chipcol`'s own offset, corrected here rather than in the gutter, because
+     in the gutter there is no card to line up with and the current position is
+     the one the card-opening motion is measured against. */
+  .clausehead .achip { border-radius: var(--r-sm) 0 0 var(--r-sm); margin-right: -2px; }
   .clausehead .achip.wmark {
-    /* the column is right-aligned, so the extra width has to be pushed out on
-       the right with a negative margin — widening alone grows it leftwards and
-       takes the glyph with it (measured: -7px, which is exactly the movement
-       the card-opening motion exists to avoid) */
-    width: 40px; padding-right: 6px; margin-right: -6px;
+    /* The active tab is the same box as the others. It had been 6px wider,
+       carried under the card to kill the seam — but a tab that overshoots is
+       not lined up, and the seam it was hiding is hidden anyway: the tab is a
+       descendant of the card, so it paints over the card's own shadow where
+       they meet. What marks it as active is the deeper ground and the lift. */
+    padding-right: 0;
     /* **The active tab keeps its colour** (Ed, 2026-08-17). It used to take the
        card's white surface, which is the ordinary tab move — but now that the
        prose carries no highlight, the gutter holds the only lifecycle colour on
@@ -1067,16 +1075,21 @@
     background: none; border: 0; color: var(--muted); cursor: pointer;
     padding: 3px 6px; border-radius: var(--r-sm);
   }
-  .lfmt { width: 24px; }
+  .lfmt, .lmode { width: 26px; text-align: center; }
   .lfmt:hover, .lmode:hover { background: var(--light); color: var(--fg); }
-  .lfmt b, .lfmt i { font-size: var(--t-ui); }
-  /* a two-segment control, because a single button would have to name either
-     the mode you are in or the one you would get, and both read as a lie half
-     the time */
-  .lseg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--r-sm); overflow: hidden; }
-  .lseg .lmode { border-radius: 0; padding: 3px 8px; }
-  .lseg .lmode[aria-pressed="true"] { background: var(--primary); color: #fff; font-weight: 600; }
-  .lseg .lmode[aria-pressed="true"]:hover { background: var(--primary-hover); color: #fff; }
+  .lfmt b { font-size: var(--t-ui); }
+  /* a serif italic I: the serifs are what stop it being a slash (Ed, 2026-08-17) */
+  .lfmt .ital {
+    font-family: Georgia, "Times New Roman", serif; font-style: italic;
+    font-size: 1.05rem; font-weight: 500;
+  }
+  /* one button, off by default, its own pressed-ness carrying the state */
+  .lmode {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--t-ui); letter-spacing: -0.05em;
+  }
+  .lmode[aria-pressed="true"] { background: var(--primary); color: #fff; font-weight: 600; }
+  .lmode[aria-pressed="true"]:hover { background: var(--primary-hover); color: #fff; }
   .editcard .editlane code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.9em; background: var(--light); padding: 0 3px; border-radius: 3px;
@@ -1136,6 +1149,12 @@
     background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600;
   }
   .btn.btn-propose:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  /* unarmed it is a glyph the size of every other glyph button; armed it grows
+     into the sentence that says what it costs */
+  .btn.btn-propose[data-armed="0"] { width: 3.25rem; padding: 0; font-size: 1.2rem; }
+  .btn.btn-propose.armed { animation: armNudge 180ms ease-out; }
+  @keyframes armNudge { from { transform: scale(0.97); } to { transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .btn.btn-propose.armed { animation: none; } }
   .btn.btn-propose[disabled]:hover { background: var(--primary); border-color: var(--primary); }
   /* Withdrawal is a real thing to do and not a danger (SPEC §3.3a — the stake
      comes back in full), so it is an ordinary outline button rather than a red
@@ -3367,7 +3386,10 @@
   const laneProposeHtml = (s, lane, key) =>
     '<button class="lanepropose" data-propose-from="' + s.id + '|' + lane + '|' + (key || '') +
     '" title="Write your own version of this wording. Free to open — proposing costs one edit.">' +
-    '✏️ edit this</button>';
+    // "propose edit" rather than "edit this" (Ed, 2026-08-17): what the button
+    // starts is a *proposal*, and "edit this" promises an edit — which is the
+    // one thing this surface never lets you do to the charter directly.
+    '✏️ propose edit</button>';
 
   // The pick control. Two labels rather than one rewritten in JS, so the
   // existing `choose()` — which only ever flips aria-pressed — keeps working
@@ -4221,14 +4243,24 @@
       // edited, so a topbar toolbar would be greyed out for the whole session
       // except the minute you are writing.
       '<div class="lanebox">' +
+      // The italic button is a **serif capital I** (Ed, 2026-08-17). A sans
+      // italic I is a slash with no serifs on it — it reads as punctuation
+      // rather than as a letter, which is the one thing a letterform button
+      // must not do. The serifs are what make it an I while it is still leaning.
+      //
+      // And the mode control is **one button, not a pair** (Ed, 2026-08-17):
+      // `[]` off by default, pressed for markdown. A two-segment Rich/Markdown
+      // switch spent a lot of the strip saying that a thing which is off is
+      // off; a single toggle says the same with the state in its own pressed-
+      // ness, which is what every other control on this surface does.
       '<div class="lanectl">' +
       '<button class="lfmt" data-fmt="bold" title="Bold (the markdown is **like this**)"><b>B</b></button>' +
-      '<button class="lfmt" data-fmt="italic" title="Italic (the markdown is *like this*)"><i>I</i></button>' +
-      '<span class="lseg">' +
-      '<button class="lmode" data-mode="rich" aria-pressed="' + (!laneRaw()) + '">Rich</button>' +
-      '<button class="lmode" data-mode="md" aria-pressed="' + laneRaw() + '"' +
-      ' title="See the characters exactly as they are stored">Markdown</button>' +
-      '</span></div>' +
+      '<button class="lfmt" data-fmt="italic" title="Italic (the markdown is *like this*)">' +
+      '<span class="ital">I</span></button>' +
+      '<button class="lmode" data-mode="' + (laneRaw() ? 'rich' : 'md') + '"' +
+      ' aria-pressed="' + laneRaw() + '"' +
+      ' title="Markdown — see and type the characters exactly as they are stored">[]</button>' +
+      '</div>' +
       '<div class="editlane' + (laneRaw() ? ' md' : '') + '" contenteditable="true" data-lane="' +
       site.keys[0] + '" spellcheck="false">' +
       laneBlocks(site.text, originText(site), headFlags(site), laneRaw()) + '</div>' +
@@ -4258,9 +4290,20 @@
       '<div class="race-mid commitrow">' +
       '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
       ' title="Discard this draft — nothing has been spent on it yet">🗑️</button>' +
-      '<button class="btn btn-propose" data-act="draft-propose"' +
+      // **✏️, and a second press to mean it** (Ed, 2026-08-17). Proposing is
+      // the one irreversible-feeling act on this surface — it spends an edit and
+      // puts your wording in front of the room — and it was a single click on a
+      // button sitting under the text you were typing in.
+      //
+      // The confirmation is not a dialog and not a hold. The button starts as a
+      // bare ✏️ and the first press **arms** it, at which point it says what it
+      // will cost. That keeps the rule the price has always had — *the edit is
+      // spent at Propose, which is where the price is said in words* — and
+      // makes the price itself the confirmation step, rather than bolting a
+      // "sure?" onto it. Pressing anything else disarms it.
+      '<button class="btn btn-propose" data-act="draft-propose" data-armed="0"' +
       (broke ? ' disabled title="No edits left — another arrives as the drip accrues"' : '') +
-      '>✏️ Propose' + (n > 1 ? ' all ' + n + ' places' : '') + ' · costs one edit</button>' +
+      ' title="Propose this' + (n > 1 ? ' in all ' + n + ' places' : '') + '">✏️</button>' +
       '</div>' +
       '<div class="foot">' +
       (rival
@@ -4728,8 +4771,11 @@
               : sourceToRich(site0.text, off);
           }
           laneMode = b.dataset.mode;
-          box.querySelectorAll('.lmode').forEach((o) =>
-            o.setAttribute('aria-pressed', String(o.dataset.mode === laneMode)));
+          // one button now, so it carries the state and the *next* mode both:
+          // pressed while markdown is on, and its data-mode is where it would
+          // take you
+          b.dataset.mode = laneRaw() ? 'rich' : 'md';
+          b.setAttribute('aria-pressed', String(laneRaw()));
           const d = draftOf();
           const site = d && siteFor(d, el.dataset.lane);
           if (!site) return;
@@ -4800,10 +4846,33 @@
       })
     );
     // committing
+    // Propose arms on the first press and fires on the second (Ed, 2026-08-17).
+    // The armed state is where the price appears, so the confirmation step and
+    // the price are the same step rather than two. Anything else touched on the
+    // card disarms it — a button that stays armed while you go back to editing
+    // is a trap waiting for a stray click.
+    const disarm = (except) => doc.querySelectorAll('[data-armed="1"]').forEach((b) => {
+      if (b === except) return;
+      b.dataset.armed = '0';
+      b.innerHTML = '✏️';
+      b.classList.remove('armed');
+    });
+    doc.addEventListener('mousedown', (ev) => {
+      if (!ev.target.closest('[data-act="draft-propose"]')) disarm(null);
+    }, true);
     doc.querySelectorAll('.sugg [data-act]').forEach((b) =>
       b.addEventListener('click', (ev) => {
         ev.stopPropagation();
         const id = b.closest('.sugg').dataset.card;
+        if (b.dataset.act === 'draft-propose' && b.dataset.armed === '0') {
+          disarm(b);
+          b.dataset.armed = '1';
+          b.classList.add('armed');
+          const d = draftOf();
+          const n = d ? d.sites.length : 1;
+          b.innerHTML = '✏️ Propose' + (n > 1 ? ' all ' + n + ' places' : '') + ' · costs one edit';
+          return;
+        }
         const what = b.dataset.act === 'submit'
           ? pickOf(SUGGS.find((x) => x.id === id) || {}) : b.dataset.act;
         if (!what) return;                       // nothing chosen yet
