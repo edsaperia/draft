@@ -1419,3 +1419,58 @@ weight, bounty order, backlog order — and never touches adoption.
 The consequence for this mockup is that the diagonal, designed across 221, 276,
 277 and 284, has nowhere to appear in a fixture built around a **full** queue.
 That is Q291.
+
+### The end of the queue (Q291b)
+
+§8.3a took the diagonal out of the stream, and the fixture models a member with
+a full queue — so the card designed across 221, 276, 277 and 284 had nowhere to
+appear. Ed chose to build the state it actually belongs to rather than caption
+the impossible one, which was the right call for a reason beyond the diagonal:
+**the end of the queue was a moment this surface had nothing at all to say
+about.** A rail that empties and simply goes blank is not a design.
+
+Three states, and they are the three sentences the mechanism can truthfully say:
+
+- nothing is waiting on your judgment;
+- nothing is waiting, **and** the room has more open questions than members — so
+  it could use a hand deciding which ones deserve the time (the offer, with the
+  live count in it, because *22 questions* is the argument);
+- nothing is waiting, and the priorities are as clear as more answers would
+  make them.
+
+**Offered, never served.** Another card arriving unasked is the opposite of
+being told you are finished, and the difference is the whole reason the audience
+gate is defensible: a diagonal that costs an idle member nothing must not be
+allowed to cost them the feeling of having finished.
+
+Two build notes worth keeping.
+
+Until the offer is taken, the diagonal is **nowhere on the surface** — not in
+the rail and not in the gutter. That took a second gate (`served`) inside
+`suggFor`, because a suggestion's marks are drawn from the clause it anchors to
+rather than from the rail; without it the ⚖️ marks sat in the margin advertising
+a card the member could not open.
+
+And the panel pins at the top of the band, so it has to **take the top of the
+band with it** — `bandTop` moves down by its height before anything else is laid
+out. Rendered at the end of `layoutQueue` it simply sat on top of the judged
+entries, which is what it looked like for the first pass.
+
+### Testing note: a clamped timeout looks exactly like a broken feature
+
+Submitting a judgment runs `renderAll` inside `setTimeout(…, 240)` so the rail
+entry can animate out first. In a backgrounded automation tab `setTimeout` is
+clamped to ~1s, so a loop that judges twenty cards and then checks the state
+sees **none** of them judged — and the natural conclusion is that submitting is
+broken. It is not; the conclusion cost twenty minutes. A loop over an animated
+action has to wait out the animation, or the test has to read the state through
+something the animation does not gate.
+
+### A lock should not dim the record
+
+Ed: *decisions that I have decided on and are waiting for other responses (⏳)
+should have the radio that I chose selected.* They did — except on a **locked**
+card, where `[disabled]` faded the whole trio to 55% including the answer. The
+greying is saying *you cannot change this*, which is true; dimming your own
+answer with it says something else. The unchosen options fade now; yours does
+not.

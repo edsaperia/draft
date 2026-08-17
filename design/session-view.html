@@ -308,6 +308,26 @@
     padding: 3px var(--s2);
   }
 
+  /* The end of the queue (Q291b, SPEC §8.3a). The rail's one moment with
+     nothing in it, and the only place a salience diagonal can now be served:
+     prioritising is offered to somebody who has run out of things to judge,
+     and offered rather than served, because "you are done" and "here is
+     another card" are different messages and the reader has earned the first
+     one. Pinned at the top of the band like the entries it is replacing. */
+  .qdone {
+    position: fixed; z-index: 2;
+    background: rgba(var(--lc-closed), 0.06); border-radius: var(--r-md);
+    box-shadow: var(--shadow-sm); padding: var(--s3) 12px;
+  }
+  .qdone .dtitle { font-size: var(--t-ui); font-weight: 600; display: flex; gap: 6px; }
+  .qdone .dsub { font-size: var(--t-small); color: var(--muted); margin-top: 4px; line-height: 1.35; }
+  .qdone .btn { margin-top: var(--s2); width: 100%; font-size: var(--t-ui); }
+  .qdone .btn-weigh {
+    background: rgba(var(--lc-weigh), 0.14); border-color: rgba(var(--lc-weigh), 0.45);
+    color: var(--fg); font-weight: 600;
+  }
+  .qdone .btn-weigh:hover { background: rgba(var(--lc-weigh), 0.24); }
+
   /* No borders (Ed, 164): a card is its wash plus the shadow that lifts it off
      the page. A rule round the outside only competed with the wash for the job
      of saying "this is one thing". Selection is a ring in box-shadow, so
@@ -748,6 +768,14 @@
   }
   .lanepick[disabled] { opacity: 0.55; cursor: default; }
   .lanepick[disabled]:hover { color: var(--fg); border-color: var(--border); background: var(--light); }
+  /* **What you chose stays at full strength on a locked card** (Ed,
+     2026-08-17). Greying the whole trio said *you cannot change this*, which is
+     true, and dimmed the record of what you said, which is not what a lock
+     means. The unchosen options fade; your answer does not. */
+  .lanepick[disabled][aria-pressed="true"] { opacity: 1; }
+  .lanepick[disabled][aria-pressed="true"]:hover {
+    color: #fff; background: var(--primary); border-color: var(--primary);
+  }
   @media (prefers-reduced-motion: reduce) { .lanepick, .lanepick .dot { transition: none; } }
 
   /* propose-edit, on either lane (Ed, 228). Writing from a lane is free — the
@@ -1269,6 +1297,9 @@
       <h2 class="eyebrow">In the margin</h2>
       <ul id="queue"></ul>
       <div id="qmore" class="qmore"></div>
+      <!-- the end of the queue: the one moment this surface had nothing to say
+           about, and where SPEC §8.3a puts the salience diagonal (Q291b) -->
+      <div id="qdone" class="qdone" hidden></div>
     </aside>
   </div>
 
@@ -2140,7 +2171,7 @@
   function suggFor(key) {
     // Anchors persist while a race is still deciding — a judged suggestion
     // is revisable until it seals or its ground shifts.
-    return SUGGS.filter((s) => s.state !== 'sealed' &&
+    return SUGGS.filter((s) => s.state !== 'sealed' && served(s) &&
       ((s.keys ?? []).includes(key) || (s.pair ?? []).some((c) => c.key === key)));
   }
 
@@ -2163,6 +2194,33 @@
     : g.mine ? 'yours'
     : (g.state === 'deciding' || resolved.has(g.id)) ? 'deciding' : 'needs';
   const isJudged = (g) => stateOf(g) !== 'needs';
+
+  // ---- the end of the queue (SPEC §8.3a, Q291b) ------------------------
+  // A salience diagonal is not a rate. It is served only where prioritisation
+  // is actually needed and only to somebody with nothing else to judge, so in
+  // this surface it cannot be a standing rail entry at all — it appears at the
+  // end of the queue and nowhere else.
+  //
+  // **Nothing else to judge** means no live proposal is waiting on you. A
+  // deadlocked race does not count: it wants a draft rather than a judgment
+  // (SPEC §8.3), so it can sit in the rail all day without being work you can
+  // do. Your own proposals and everything already judged are not work either.
+  let prioritising = false;
+  const isDiagonal = (g) => g.kind === 'diagonal';
+  // An unserved diagonal is not in the rail *and not in the gutter either*: it
+  // has not been put to you, so nothing about it should be on the surface.
+  const served = (g) => !isDiagonal(g) || prioritising || g.state === 'deciding' || resolved.has(g.id);
+  const judgeable = (g) => stateOf(g) === 'needs' && !isDiagonal(g) && !g.deadlocked;
+  const nothingToJudge = () => !SUGGS.some(judgeable);
+  // The volume gate: as many live **questions** as there are people on the
+  // roster, a race counting once — which it does here, because a suggestion in
+  // this fixture *is* a question.
+  const liveQuestions = () =>
+    SUGGS.filter((g) => stateOf(g) !== 'sealed' && !g.unproposed && !isDiagonal(g)).length;
+  const diagonalsAvailable = () =>
+    SUGGS.some((g) => isDiagonal(g) && stateOf(g) === 'needs');
+  window.__q291 = () => ({ prioritising, live: liveQuestions(), more: diagonalsAvailable(),
+    nothing: nothingToJudge(), needs: SUGGS.filter(judgeable).map((g) => g.id) });
   const isUnread = (g) => stateOf(g) === 'sealed' && g.unread && !readSeals.has(g.id);
 
   // Urgency — how much this wants *you* (leverage), not how close it is to
@@ -2282,6 +2340,11 @@
       // clause is where it lives; standing at both said "there is something
       // here" twice about a card that is really about the pair. So it stands at
       // the earlier of the two and says what it is asking in its own title.
+      // A diagonal is in the rail only once it has actually been served —
+      // which SPEC §8.3a allows only at the end of the queue, and only if the
+      // member takes the offer (Q291b). Judged ones stay, so the rail still
+      // shows what you did.
+      else if (!served(g)) continue;
       else if (g.kind === 'diagonal') {
         // named in document order, so the one it stands beside is the one it
         // names first
@@ -2611,7 +2674,11 @@
     flow.sort((x, y) => x.want - y.want);
 
     // the visible band, in the rail's own coordinates
-    const bandTop = scrollY + BAND_TOP - railTop;
+    // The end-of-queue panel is pinned at the top of the band, so it takes the
+    // top of the band with it: everything else settles below it rather than
+    // under it (Q291b). Rendered before the layout so its height is known.
+    const doneH = renderDone(railRect);
+    const bandTop = scrollY + BAND_TOP + doneH - railTop;
     const bandBot = scrollY + innerHeight - BAND_BOT - railTop;
 
     // As many as fit, **most urgent first** (Ed, 2026-08-16).
@@ -2746,6 +2813,43 @@
     moreEl.style.left = Math.round(railRect.left) + 'px';
     moreEl.style.width = Math.round(railRect.width) + 'px';
     moreEl.style.top = Math.round(innerHeight - BAND_BOT - 22) + 'px';
+  }
+
+  // The end of the queue (Q291b). Three states, and the third is the point of
+  // the whole §8.3a change: you are done and there is nothing more to do; you
+  // are done and the room could use help prioritising; you are done because
+  // you have just prioritised everything there was.
+  function renderDone(railRect) {
+    const el = document.getElementById('qdone');
+    if (!el) return 0;
+    const enough = liveQuestions() >= ROSTER;
+    const more = diagonalsAvailable();
+    // Once the offer is taken the diagonal is in the rail, so the rail is not
+    // empty and the panel has nothing true left to say.
+    if (!nothingToJudge() || (prioritising && more)) { el.hidden = true; return 0; }
+    // Offered, never served (SPEC §8.3a): another card arriving unasked is the
+    // opposite of being told you are finished.
+    const offer = enough && more && !prioritising;
+    el.innerHTML =
+      '<div class="dtitle"><span aria-hidden="true">✅</span><span>You’re up to date</span></div>' +
+      '<div class="dsub">' +
+      (offer
+        ? 'Nothing is waiting on your judgment. The room has ' + liveQuestions() +
+          ' questions open — more than there are members — so it could use a hand deciding which ones deserve the time.'
+        : more && !enough
+        ? 'Nothing is waiting on your judgment. Too few questions are open for prioritising to be worth anybody’s attention.'
+        : prioritising && !more
+        ? 'Nothing is waiting on your judgment, and the priorities are as clear as more answers would make them.'
+        : 'Nothing is waiting on your judgment.') +
+      '</div>' +
+      (offer ? '<button class="btn btn-weigh" id="doprio">⚖️ Help prioritise</button>' : '');
+    el.hidden = false;
+    el.style.left = Math.round(railRect.left) + 'px';
+    el.style.width = Math.round(railRect.width) + 'px';
+    el.style.top = Math.round(BAND_TOP) + 'px';
+    const b = el.querySelector('#doprio');
+    if (b) b.addEventListener('click', () => { prioritising = true; renderAll(); layoutQueue(); });
+    return el.getBoundingClientRect().height + QGAP;
   }
 
   // queue-wire: out of the left edge of the queue card, down (or up) the gutter
