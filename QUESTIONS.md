@@ -118,6 +118,10 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 295. **Deadlocked proposals are confusing** (Ed, 2026-08-17; deferred by him to a planning discussion): *I think we should make them look like normal races until the drafter has voted, and then when there's no more judging to do, they can be prompted to propose alternatives.* This is a sequencing claim rather than a styling one — the ❌ tells you the race is stuck before you have contributed the one thing you can still contribute, which is your own judgment on the pair. It also interacts with §8.3a's empty-queue rule, since *no more judging to do* is now a state the surface knows about.
 
+Ed, 2026-08-17, second pass: *force drafters to do all the judging in the race first, and then encourage them to propose alternatives.* That settles the sequencing — deadlock is **not a state you can see your way out of before you have paid into it**. What it leaves open is what "all the judging" means when a race holds more than two candidates (every pair the sampler would serve you? or just the pairs still separating the leaders?), and where the prompt to propose lands once you are through: the deadlock is the room's, not yours, so an invitation that arrives on the card you have just finished judging is arriving at the right moment but on a card you are trying to close. The obvious home is the same slot `salience-diagonal` now uses — the thing that arrives when your queue empties — which would make **bridge-writing and prioritising two answers to one question**, *you have judged everything, here is the most useful thing left to do*, ranked against each other by the bounty score. That is a real design and it wants Ed's read before it is built.
+
+296. **Patch cables, and the experience of writing a patch** (Ed, 2026-08-17). Two halves. **The cable**: a patch currently draws one run per site off a shared spine, which says *these are the same judgment* by geometry alone and at three sites reads as a bracket rather than as one thing — Ed wants a different look for it. **The writing**: `draft-site` says a second edit somewhere else turns your draft into a patch in the making, and the mockup renders that, but nobody has designed the *experience* — how you know you are now writing one judgment in several places, how you move between the sites while drafting, whether a site can be dropped, and what the single Propose is committing you to. Both are unstarted.
+
 ## Backlog (provisioned, build later)
 
 42. **Spectator commentary view** (Ed, 2026-08-14): an optional commentating view for people watching a convention — like the sim's commentator, but consuming **public data only**: gazette, live candidate texts/rationales, bounty board, document state. Never individual judgments, never standings, authorship only per the session's visibility setting. Provision: expose a `spectator-api` in engine-core (a strictly-public projection, sibling of the participant-api) and have every spectator surface — commentary LLM included — consume only that, so privacy holds by construction rather than by prompt discipline. Note the sim's own commentator is deliberately different: it is omniscient (sees temperaments and hidden agendas) because it narrates a fiction for the experimenter; the product spectator box narrates real people and gets none of that.
@@ -138,7 +142,7 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 ## Spent numbers
 
-Next unused number: **296**. Never reuse a spent number.
+Next unused number: **297**. Never reuse a spent number.
 
 *Tidied 2026-08-16 (housekeeping pass): items sorted numerically within each section; 158 and 163 deleted as fully resolved; 70 and 92 rewritten to their surviving halves, since the questions they originally asked no longer exist.*
 

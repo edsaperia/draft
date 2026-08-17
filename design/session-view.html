@@ -214,6 +214,9 @@
   .wallet { display: inline-flex; align-items: center; gap: 6px; }
   .pencils { display: inline-flex; align-items: center; gap: 1px; line-height: 1; }
   .pencils i { font-style: normal; font-size: var(--t-ui); }
+  /* the slot an edit has left, or the one it is on its way into: it keeps its
+     width, so the row neither closes up nor jumps when the pencil arrives */
+  .wallet .gone { visibility: hidden; }
   .pnext {
     display: inline-flex; align-items: center; justify-content: center;
     width: 1.15em; height: 1.35em; border-radius: var(--r-sm);
@@ -1157,12 +1160,18 @@
   .btn.btn-propose[data-act="draft-propose"] { width: 3.25rem; padding: 0; font-size: 1.2rem; }
   .btn.btn-propose.holding { background: var(--primary-hover); transform: scale(0.97); }
   /* the edit in flight: it belongs to neither end, so it lives on the body and
-     is pointer-transparent — you are still holding the button underneath it */
+     is pointer-transparent — you are still holding the button underneath it.
+     It travels along a curve rather than a straight run, because a thing thrown
+     across a room does not go in a straight line, and the curve is drawn fresh
+     each flight (Ed, 2026-08-17) — so the animation is a sampled arc handed to
+     the Web Animations API rather than a CSS transition, since a shape that
+     changes every time cannot be a keyframe rule. It is placed at the centre of
+     its slot and pulled back by half itself, which is why every frame carries a
+     -50% translate. */
   .flypencil {
     position: fixed; z-index: 60; pointer-events: none;
-    font-size: var(--t-ui); line-height: 1;
-    transition: transform cubic-bezier(.45, .05, .3, 1), opacity ease-in;
-    transition-duration: 0ms;
+    font-size: var(--t-ui); line-height: 1; will-change: transform;
+    transform: translate(-50%, -50%);
   }
   @media (prefers-reduced-motion: reduce) { .btn.btn-propose.holding { transform: none; } }
   .btn.btn-propose[disabled]:hover { background: var(--primary); border-color: var(--primary); }
@@ -4879,48 +4888,59 @@
     let holding = null;
     const flyStop = (fired) => {
       if (!holding) return;
-      const { el, pencil, timer, src } = holding;
+      const { el, pencil, timer, anim } = holding;
       holding = null;
       clearTimeout(timer);
       el.classList.remove('holding');
-      if (!pencil) { if (src) src.style.visibility = ''; return; }
-      if (fired) { pencil.remove(); if (src) src.style.visibility = ''; return; }
-      // let go early: it goes home, and only then does the gap in the wallet close
-      pencil.style.transitionDuration = '220ms';
-      pencil.style.transform = 'translate(0, 0) rotate(0deg)';
-      setTimeout(() => { pencil.remove(); if (src) src.style.visibility = ''; }, 240);
+      // Fired: the edit is spent, and act() renders the wallet one lighter — so
+      // the reserved gap is released without a render of its own, or the wallet
+      // would show the old count for a frame before the spend lands.
+      if (fired) { walletGhost = false; if (pencil) pencil.remove(); return; }
+      if (!pencil) { walletGhost = false; renderWallet(); return; }
+      // Let go early and it comes home **along its own arc** — the flight run
+      // backwards rather than a second, straighter journey, because the way it
+      // came is the way it goes back. Faster than it left: rewinding at the
+      // speed it flew would punish a late change of mind with a three-second
+      // wait, and the return is not a gesture anybody is performing.
+      anim.playbackRate = -4;
+      anim.play();
+      // Belt and braces on both flights: a document timeline is paused while the
+      // tab is hidden, so `onfinish` can be arbitrarily late, and the one thing
+      // that must not happen is a wallet left holding a gap for an edit that is
+      // no longer in the air.
+      const home = () => { pencil.remove(); walletGhost = false; renderWallet(); };
+      anim.onfinish = home;
+      setTimeout(() => { if (pencil.isConnected) home(); }, HOLD_MS / 4 + 60);
     };
     const flyStart = (el) => {
       flyStop(false);
       if (el.disabled) return;
-      const reduced = REDUCED();
-      // the pencil that leaves is one you **hold** — the last of the drawn row,
-      // or the counter when the row has stopped drawing them
-      const src = [...walletEl.querySelectorAll('.pencils i')].pop() ||
-        walletEl.querySelector('.pmore');
-      let pencil = null;
+      // The slot the pencil leaves and the pencil that leaves are the same
+      // object: ghosting the wallet marks it, and the mark is what we measure
+      // from. It is render state, not a poke at the DOM — the drip re-renders
+      // the wallet every second and used to put the flying pencil straight back
+      // (Ed, 2026-08-17).
+      walletGhost = true;
+      renderWallet();
+      const src = walletEl.querySelector('.gone');
+      let pencil = null, anim = null;
       if (src) {
         const a = src.getBoundingClientRect();
         const b = el.getBoundingClientRect();
         pencil = document.createElement('div');
         pencil.className = 'flypencil';
         pencil.textContent = '✏️';
-        pencil.style.left = a.left + 'px';
-        pencil.style.top = a.top + 'px';
+        pencil.style.left = (a.left + a.width / 2) + 'px';
+        pencil.style.top = (a.top + a.height / 2) + 'px';
         document.body.appendChild(pencil);
-        src.style.visibility = 'hidden';
-        void pencil.offsetWidth;
-        pencil.style.transitionDuration = HOLD_MS + 'ms';
-        if (!reduced) {
-          pencil.style.transform = 'translate(' + (b.left + b.width / 2 - a.left - a.width / 2) +
-            'px, ' + (b.top + b.height / 2 - a.top - a.height / 2) + 'px) rotate(-24deg)';
-        } else {
-          pencil.style.opacity = '0';
-        }
+        anim = REDUCED()
+          ? pencil.animate([{ opacity: 1 }, { opacity: 0 }], { duration: HOLD_MS, fill: 'both' })
+          : pencil.animate(arcFrames(a, b, 0, -24),
+              { duration: HOLD_MS, easing: 'cubic-bezier(.45, .05, .3, 1)', fill: 'both' });
       }
       el.classList.add('holding');
       const id = el.closest('.sugg').dataset.card;
-      holding = { el, pencil, src, timer: setTimeout(() => { flyStop(true); act(id, 'draft-propose'); }, HOLD_MS) };
+      holding = { el, pencil, anim, timer: setTimeout(() => { flyStop(true); act(id, 'draft-propose'); }, HOLD_MS) };
     };
     doc.querySelectorAll('[data-act="draft-propose"]').forEach((b) => {
       b.addEventListener('pointerdown', (ev) => { ev.preventDefault(); ev.stopPropagation(); flyStart(b); });
@@ -5374,7 +5394,15 @@
     // reason a proposal of yours stays pinned — there is always an act
     // available, and a significant one (Ed, 240).
     if (what === 'draft-withdraw') {
+      // The rect is read before anything moves: the card is about to collapse
+      // out from under the button, and the pencil is fixed-positioned, so the
+      // launch point has to be the one the button occupied when you pressed it.
+      const btn = doc.querySelector('.sugg[data-card="' + id + '"] [data-act="draft-withdraw"]');
+      const before = editsHeld;
       editsHeld = Math.min(EDIT_RULES.cap, editsHeld + EDIT_RULES.stake);
+      // At the cap there is nothing to fly: the refund is real but the wallet
+      // cannot hold it, and a pencil landing in a full tray would say otherwise.
+      if (btn && editsHeld > before) refundFlight(btn.getBoundingClientRect(), before);
       const shut = () => {
         if (openId === id) openId = null;
         const i = SUGGS.findIndex((x) => x.id === id);
@@ -5564,13 +5592,85 @@
   // pencil; the tray keeps whatever it had accrued, which is what makes the
   // two magnitudes legible as separate things.
   const walletEl = document.getElementById('wallet');
-  function renderWallet() {
-    const full = editsHeld >= EDIT_RULES.cap;
-    walletEl.className = 'wallet' + (full ? ' full' : '') + (editsHeld === 0 ? ' empty' : '');
-    walletEl.title = editsHeld === 0
+
+  // **The arc.** A pencil crossing the room does not travel in a straight line,
+  // and it does not travel the same line twice (Ed, 2026-08-17), so the flight
+  // is a quadratic bowed off the straight run by a signed amount drawn fresh
+  // each time — which side it swings and how far are the whole of the variation
+  // and everything else about the journey is fixed. It has to be sampled into
+  // keyframes because a shape that changes every flight cannot be a CSS rule.
+  // The rotation runs alongside the curve rather than following it: an emoji has
+  // its own axis, so a pencil steered by the path points its tip somewhere
+  // different in every font.
+  function arcFrames(a, b, r0, r1) {
+    const ax = a.left + a.width / 2, ay = a.top + a.height / 2;
+    const dx = b.left + b.width / 2 - ax, dy = b.top + b.height / 2 - ay;
+    const len = Math.hypot(dx, dy) || 1;
+    const bow = len * (0.09 + Math.random() * 0.15) * (Math.random() < 0.5 ? -1 : 1);
+    const cx = dx / 2 - (dy / len) * bow, cy = dy / 2 + (dx / len) * bow;
+    return Array.from({ length: 21 }, (_, i) => {
+      const t = i / 20, u = 1 - t;
+      return { transform: 'translate(-50%, -50%) translate(' +
+        (2 * u * t * cx + t * t * dx).toFixed(1) + 'px, ' +
+        (2 * u * t * cy + t * t * dy).toFixed(1) + 'px) rotate(' +
+        (r0 + (r1 - r0) * t).toFixed(1) + 'deg)' };
+    });
+  }
+
+  // **The refund, flying home.** Withdrawing hands the edit back in full (SPEC
+  // §3.3a), and what comes back is the same object that paid — so it makes the
+  // return journey, and the wallet holds at its old count until the pencil is
+  // actually in it (Ed, 2026-08-17). It leaves in the pose it arrived in and
+  // lands flat, which is the outbound tilt run backwards.
+  //
+  // Where it lands is measured by rendering the after-state, reading whichever
+  // slot changed, and rendering the before-state back — two synchronous renders
+  // with no paint between them, so the wallet never flickers forward. Which
+  // slot changed is not always a new pencil: past four the wallet counts, and
+  // there the landing is the counter itself ticking up.
+  const REFUND_MS = 640;
+  function refundFlight(from, before) {
+    renderWallet();
+    const grew = (editsHeld <= 4 ? editsHeld : 3) > (before <= 4 ? before : 3);
+    const slot = grew ? [...walletEl.querySelectorAll('.pencils i')].pop()
+                      : walletEl.querySelector('.pmore');
+    const to = (slot || walletEl).getBoundingClientRect();
+    walletShow = before;
+    renderWallet();
+    const land = () => { walletShow = null; renderWallet(); };
+    const pencil = document.createElement('div');
+    pencil.className = 'flypencil';
+    pencil.textContent = '✏️';
+    pencil.style.left = (from.left + from.width / 2) + 'px';
+    pencil.style.top = (from.top + from.height / 2) + 'px';
+    document.body.appendChild(pencil);
+    const anim = REDUCED()
+      ? pencil.animate([{ opacity: 1 }, { opacity: 0 }], { duration: REFUND_MS, fill: 'both' })
+      : pencil.animate(arcFrames(from, to, -24, 0),
+          { duration: REFUND_MS, easing: 'cubic-bezier(.3, 0, .2, 1)', fill: 'both' });
+    const done = () => { pencil.remove(); land(); };
+    anim.onfinish = done;
+    setTimeout(() => { if (pencil.isConnected) done(); }, REFUND_MS + 60);
+  }
+  // **An edit in flight is drawn once.** Both flights hold the wallet at the
+  // count that has not happened yet — outbound, the edit is not spent until it
+  // lands (let go and it comes home), so the wallet keeps its five and leaves
+  // the traveller's slot empty; inbound, it is not yours again until it lands,
+  // so the wallet keeps its old count until the pencil arrives. Two pieces of
+  // *render* state rather than a poke at the DOM, because the drip re-renders
+  // the wallet every second and was putting the flying pencil back (Ed,
+  // 2026-08-17).
+  //   `walletShow` — draw this count instead of what is held (the refund's hold)
+  //   `walletGhost` — draw the count, but leave the last slot empty (the spend's)
+  let walletShow = null, walletGhost = false;
+  function renderWallet(showAs) {
+    const held = showAs != null ? showAs : (walletShow != null ? walletShow : editsHeld);
+    const full = held >= EDIT_RULES.cap;
+    walletEl.className = 'wallet' + (full ? ' full' : '') + (held === 0 ? ' empty' : '');
+    walletEl.title = held === 0
       ? 'No edits left. Another arrives as the drip accrues; proposing costs one.'
       : 'Your edits — proposing one costs ' + EDIT_RULES.stake +
-        '. You hold ' + editsHeld + ' of a possible ' + EDIT_RULES.cap +
+        '. You hold ' + held + ' of a possible ' + EDIT_RULES.cap +
         (full ? ', which is the cap.' : '; the tray shows how far the drip has got toward the next.');
     // The wallet draws at most four slots wide, and counts when it cannot fit
     // (Ed, 2026-08-17). Four held is four pencils, because "+1" costs exactly
@@ -5578,15 +5678,19 @@
     // pencils and a +2 — the count takes a glyph's width, so the row stays the
     // same length whatever you hold, and a spend is always visible as a change
     // in the number even when it is not visible as a missing pencil.
-    const drawn = editsHeld <= 4 ? editsHeld : 3;
-    const rest = editsHeld - drawn;
+    const drawn = held <= 4 ? held : 3;
+    const rest = held - drawn;
+    // The empty slot a flight leaves behind: hidden, not removed, so the row
+    // does not close up around the gap and reopen when the pencil comes back.
+    const gh = (i) => (walletGhost && i === drawn - 1 ? ' class="gone"' : '');
     // No label (Ed, 2026-08-17). A row of pencils next to a clock is not
     // ambiguous enough to need naming, and the words were the widest thing in
     // it; the title still says what it is for anybody who hovers.
     walletEl.innerHTML =
       '<span class="pencils">' +
-      '<i>✏️</i>'.repeat(drawn) +
-      (rest > 0 ? '<span class="pmore">+' + rest + '</span>' : '') +
+      Array.from({ length: drawn }, (_, i) => '<i' + gh(i) + '>✏️</i>').join('') +
+      (rest > 0 ? '<span class="pmore' + (walletGhost && !drawn ? ' gone' : '') +
+        '">+' + rest + '</span>' : '') +
       // The countdown carries the drip's own wash: the fill *is* how far the
       // tenth has run, so the thing that says **when** and the thing that shows
       // **how far** are one object rather than two saying it twice. That

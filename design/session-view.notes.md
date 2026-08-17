@@ -1977,3 +1977,90 @@ dead and the reader is owed one.
 
 The rule the pass ran on: **a footnote that appears on every card is a design
 note, not information.** Information is what differs between cards.
+
+---
+
+## The refund flies home, and no two flights are alike (2026-08-17)
+
+Three things, and the first one is a bug Ed caught while playing with the second.
+
+**The flying pencil was being put back.** Hold Propose and the pencil takes off,
+leaving a gap in the wallet — except the gap was a `visibility: hidden` poked
+onto the source element, and the drip re-renders the wallet every second, which
+rebuilt the row with the pencil in it. So for most of a three-second hold the
+edit was on the screen twice, and the duplicate only vanished when the flight
+landed and the spend re-rendered the wallet honestly.
+
+The fix is the same one the washes and the cables needed: **anything that must
+survive a wholesale re-render has to be render state, not a poke at the DOM.**
+The wallet now carries two flags, and both say the same thing from opposite ends
+— *an edit in flight is drawn once, and it is drawn where it actually is*:
+
+- `walletGhost` — draw the count, but leave the traveller's slot empty. Used
+  outbound, because the edit is **not spent until it lands**: let go and it comes
+  home, so the wallet keeps its five and shows a hole where the fifth is.
+- `walletShow` — draw *this* count instead of what is held. Used inbound, because
+  the edit is **not yours again until it lands**: the wallet keeps its old number
+  until the pencil is in it.
+
+Ghosting rather than decrementing matters outbound because the wallet counts past
+four: five held is three pencils and a `+2`, four is four pencils, so a spend
+that reflowed the row mid-flight would rearrange the tray under the pencil that
+had just left it. Hiding a slot keeps the row's shape and reopens nothing when
+the pencil comes back.
+
+A useful side effect: the ghosted slot **is** the launch point. `flyStart` sets
+the flag, renders, and measures `.gone` — so the pencil that leaves and the gap
+it leaves behind are one object by construction rather than two things kept in
+step.
+
+**Withdrawing flies it home** (Ed: *of course, when you wastebasket a your-edit
+the pencil should fly back and refund there too*). Withdrawal returns the stake
+in full (SPEC §3.3a), and what comes back is the same object that paid — so it
+makes the return journey, leaving in the pose it arrived in and landing flat,
+which is the outbound tilt run backwards. 640ms, not 3000: the outbound duration
+*is* the confirmation gesture, and a refund is not a gesture anybody is
+performing, so it only has to be long enough to see where it went.
+
+Where it lands is measured by rendering the after-state, reading whichever slot
+changed, and rendering the before-state back — two synchronous renders with no
+paint between them, so the wallet never flickers forward. **Which slot changed is
+not always a pencil**: past four the wallet counts, and there the landing is the
+`+2` ticking to `+3`. That is the right target and it took writing the wrong one
+first (the last drawn pencil, which does not move at all when five becomes six).
+
+Two edges. At the **cap** nothing flies: the refund is real but the wallet cannot
+hold it, and a pencil landing in a full tray would say otherwise. And
+**discarding an unproposed draft flies nothing**, which is the whole point of the
+symmetry — a draft has cost nothing, so there is nothing to hand back. The 🗑️ is
+the same glyph in both places precisely because the difference is whether an edit
+comes out of it.
+
+**The arc.** Ed: *is it easy to give the pencils slightly different curved flight
+paths each time?* Yes, once the animation stops being a CSS transition. A shape
+that changes every flight cannot be a keyframe rule, so the journey is now a
+quadratic — bowed off the straight run by a signed amount drawn fresh each time,
+sampled into 21 keyframes and handed to the Web Animations API. Which side it
+swings and how far are the whole of the variation; everything else about the
+journey is fixed, which is what keeps it from reading as a glitch. The bow runs
+9–24% of the flight's length, so the curve peaks 4–12% off the straight line:
+enough to see, not enough to look thrown.
+
+Two details the arc forced. The rotation runs **alongside** the curve rather than
+following it — an emoji has its own axis, so a pencil steered by its path points
+its tip somewhere different in every font, and `offset-rotate: auto` was the
+first thing tried and the first thing removed. And every keyframe carries a
+`translate(-50%, -50%)` in front, because the element is placed at the *centre*
+of its slot and has to be pulled back by half itself; the alternative is
+measuring the glyph before it exists.
+
+WAAPI also bought a better let-go. The pencil now comes home **along its own
+arc** — the flight run backwards at four times the speed — rather than taking a
+second, straighter journey home, which is what the old fixed 220ms transition
+did. The way it came is the way it goes back. Four times, not one, because
+rewinding at the speed it flew would punish a late change of mind with a
+three-second wait.
+
+Both landings carry a `setTimeout` backstop beside `onfinish`: a document
+timeline is paused while a tab is hidden, and the one thing that must not happen
+is a wallet left holding a gap for an edit that is no longer in the air.
