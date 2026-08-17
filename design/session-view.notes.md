@@ -1911,3 +1911,33 @@ the seam. It turns out not to need it: the tab is a **descendant** of the card, 
 it paints over the card's own shadow where they meet, and the seam it was hiding
 was already hidden. What marks it as active is the deeper ground and the lift —
 which is what the design system says should mark anything as active anyway.
+
+### Hold to propose, and watch the edit go
+
+Ed called it a silly idea. It is the most literal thing on the surface: you hold
+the ✏️, one of your pencils leaves the wallet and travels to the button, and the
+proposal goes in **when it arrives**. Let go and it flies home with nothing
+spent.
+
+What makes it more than whimsy is that the gesture and the price become one
+object. Hold-to-confirm is usually an arbitrary duration — you are waiting out a
+timer for no reason connected to the act — and here the duration *is* the cost
+crossing the screen. Nobody has to be told what proposing costs, because they
+watch it being paid.
+
+It replaces the two-press arming built an hour earlier, which put the price in
+words at the moment of confirming. This says the same thing by moving the thing
+being spent, which is better the way a diagram is better than a caption. The
+standing rule survives in a stronger form: the price is still stated **at**
+Propose rather than in advance — it is just no longer stated in words.
+
+Two build notes. The pencil lives on `body` rather than in either end, because it
+belongs to neither and must not be clipped by the card; it is
+`pointer-events: none`, since you are still holding the button underneath it.
+And it flies from the **last drawn pencil** rather than from the `+N` counter,
+even when the counter exists — the thing that should visibly leave is a pencil.
+
+One regression this caused and the shape of it is worth keeping: making
+`.btn-propose` a 3.25rem glyph squashed the proposed card's *✏️ Submitted* to
+52px, because both wear that class. **A rule about a control belongs on the act,
+not on the class** — it is scoped to `[data-act="draft-propose"]` now.
