@@ -1542,3 +1542,53 @@ rest — a charter with a column of fills beside it — turns out to be the clea
 statement of session state the surface makes. It is also the argument for the
 meter surviving future passes: it earns its place twice, once per card and once
 in aggregate.
+
+### 🌶️ instead of ⚖️
+
+Ed: *it's about saying which one is more urgent — judge makes no sense because
+all cards are judgements. Then it also matches the pink background; ⚖️ was hard
+to read.*
+
+Three arguments and each is sufficient on its own, which is usually the sign of a
+glyph that was chosen for its dictionary meaning rather than its job. Scales say
+*weigh this*, and weighing is what every card on this surface asks for, so they
+distinguished nothing. What a diagonal actually asks is which question is
+**hotter**, which is a temperature and not a balance. And ⚖️ is a fine-detailed
+figure that turns to mush at 13px, where a chilli is one silhouette — and one
+already in the hue its card wears.
+
+Worth watching: 🔥 and 🌶️ are now both heat. They are distinguishable in kind —
+🔥 is *this ordinary judgment wants you most*, 🌶️ is *which of these two
+questions is hotter* — but if the alphabet is ever reviewed as a whole, that
+adjacency is the first thing to test on somebody who has not read this file.
+
+### A cable follows its card
+
+Ed: *cables should change colour when the card changes colour.* They now do, over
+the same 700ms and by exactly the technique the washes use: the wire is rebuilt
+from scratch on every draw, so the new shapes are born wearing the **previous**
+colour and handed the new one after a forced reflow. Keyed by the judgment rather
+than by the element, so a wire merely redrawn at a new scroll position does not
+re-run the fade.
+
+This is the third place that trick has been needed — rail entries, document
+clauses, and now the cable. It is the standing consequence of rebuilding
+wholesale on every render, and it is cheaper than the alternative (diffing the
+DOM) for a surface this size. Worth stating as a rule: **anything rebuilt
+wholesale that is supposed to animate needs its previous value carried across the
+rebuild.**
+
+### The shadow, third attempt
+
+The clip was right for the two cards a cable joins and wrong about everything
+else. The rail is a **layer** of cards at one height, and a cable at that height
+passes several of them on the way down the gutter — so it was shadowing cards it
+merely went past. Every card on the surface is punched out now, not just the two
+ends. *A thing does not shadow its own layer.*
+
+A testing note that cost real time: `onViewportChange` drives the redraw through
+`requestAnimationFrame`, which never fires in a backgrounded automation tab. So
+after any capture — and captures **scroll the page** — the wires and their clip
+holes are stale, and a zoomed screenshot shows the shadow landing exactly where
+the clip says it should not. Two separate false diagnoses came out of that before
+I made the shadow layer bright red and looked at where it actually painted.

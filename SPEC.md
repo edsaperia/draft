@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.21
+# Group Drafting Engine — Specification v0.22
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -167,7 +167,9 @@ E is the whole non-removed roster, and silence is never imputed (Q43, Ed 2026-08
 
 **Nothing about a diagonal has a completion state.** Salience is a continuous ranking with no threshold to clear and no quorum to ratify — which is precisely what allows it to be advisory — so a diagonal has no closeness-to-resolution, and no surface may draw one for it. A progress bar on a diagonal claims a finish line that does not exist.
 
-**Known limitation.** Salience is then measured on a biased sample: the members who reach the end of their queue, who are systematically the most active. The ranking this feeds is advisory — routing weight, bounty order, backlog order — and never touches adoption (§4.2), which is what makes the bias tolerable. It is recorded here rather than corrected because the alternative, spending scarce judgment on ordering instead of deciding, is worse.
+**A second gate reopens the stream** (Ed, 2026-08-17, answering the timing objection below). The audience gate starves salience of exactly the data it needs *while a session is busy*, because that is when nobody has an empty queue. So above **2E live questions** the room is saturated enough that ordering the work is itself the valuable act, and diagonals return to the judgment stream at a low rate for everybody — the old ~1 in 10. Between E and 2E the audience gate alone applies; below E there are none at all. The three-in-a-row ceiling still governs what an idle participant is served; the stream rate is separate from it.
+
+**Known limitation.** Below 2E, salience is measured on a biased sample: the members who reach the end of their queue, who are systematically the most active. The ranking this feeds is advisory — routing weight, bounty order, backlog order — and never touches adoption (§4.2), which is what makes the bias tolerable. It is recorded here rather than corrected because the alternative, spending scarce judgment on ordering instead of deciding, is worse.
 
 Rival-vs-rival pairs answer a conditional question — "if this text changes, which change is better?" — and their signal is precious precisely because it cannot be recovered from incumbent comparisons. Two serving rules follow (Ed, 2026-08-14). First, cards never offer "keep the current text" on a rival pair: a pro-incumbent judge expresses that on incumbent-involving pairs, which the router owes them, and the rival card's prompt states the conditional framing plainly. Second, rival pairs are served sparingly until the race shows evidence that at least one challenger plausibly displaces the incumbent; before that, incumbent-involving pairs dominate the race's sampling — there is little decision value in finely ranking challengers that are all losing to the status quo (their order matters only to the backlog).
 
@@ -267,7 +269,7 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 | Rationale cap | 300 chars |
 | Bout gap threshold | > 90 s discarded from latency |
 | Hot set / exploration | ~3 races / ~1 in 7 |
-| Salience diagonal gate (§8.3a) | live questions ≥ roster size E (a race counts once), served (not offered) to a participant with an empty queue, max 3 in a row, no completion state |
+| Salience diagonal gate (§8.3a) | none below E live questions (a race counts once); between E and 2E, served (not offered) to a participant with an empty queue, max 3 in a row; at 2E and above, also ~1 in 10 of everyone's stream. No completion state. |
 | Rival-pair gate (§8.3) | open when some challenger's posterior P(beats incumbent) > 0.5 on ≥ 3 incumbent-involving comparisons (current ground) |
 | Re-opened race boost (§4.4 ground shift) | 1.5× routing value while fresh judgments < live candidates |
 | Bridge metric | minimum support across camps, stratified probes |

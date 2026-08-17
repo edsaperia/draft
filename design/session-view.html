@@ -40,7 +40,7 @@
        reads as neither alarm nor caution. */
     --lc-urgent: 253, 126, 20;    /* 🔥 orange — wants you most        */
     --lc-open: 245, 197, 24;      /* 💡 ❌ yellow — open, or stuck     */
-    --lc-weigh: 214, 51, 132;     /* ⚖️ pink — wants a ranking, not a judgment */
+    --lc-weigh: 214, 51, 132;     /* 🌶️ pink — which question is hotter    */
     --lc-deciding: 13, 110, 253;  /* ⏳ blue — judged, still running   */
     --lc-closed: 108, 117, 125;   /* ✅ ❎ 🔄 ☑️ grey — nothing to do  */
     /* ✏️ 💡-in-green — a proposal of *your own*, from the first keystroke
@@ -1241,6 +1241,13 @@
   #wires { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
   #wires path { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
   #wires .cap { stroke: none; }
+  /* the cable follows its card's wash, over the same 700ms (Ed, 2026-08-17) */
+  #wires .ink { transition: opacity var(--wash-ms) ease; }
+  #wires .ink path { transition: stroke var(--wash-ms) ease; }
+  #wires .ink .cap { transition: fill var(--wash-ms) ease; }
+  @media (prefers-reduced-motion: reduce) {
+    #wires .ink, #wires .ink path, #wires .ink .cap { transition: none; }
+  }
   @media (max-width: 900px) { #wires { display: none; } }
 
 </style>
@@ -2376,7 +2383,15 @@
     // thing on the table is an ordinary proposal and wears the ordinary 💡;
     // what says it is *yours* is the green.
     propose: '✏️',    // ...and this is where you write one
-    weigh: '⚖️',      // a salience diagonal: which of two questions matters more
+    // A salience diagonal: which of two questions is the more **urgent**.
+    // 🌶️ rather than ⚖️ (Ed, 2026-08-17). The scales were the wrong idea twice
+    // over: weighing is what *every* card on this surface asks for, so a pair
+    // of scales says nothing that distinguishes this one — and what a diagonal
+    // actually asks is which question is hotter, which is a temperature rather
+    // than a balance. It also reads: ⚖️ is a fine-detailed glyph that turns to
+    // mush at 13px, where a chilli is one silhouette, and it is the hue the
+    // card is already wearing.
+    weigh: '🌶️',
     deciding: '⏳',   // yours is in; the race runs on
     shifted: '🔄',    // the ground moved: this one comes back around, rebuilt
     // A decision says which way it went, not just that it happened (Ed, 160):
@@ -2962,9 +2977,10 @@
     };
     const paint = (col, alpha) => {
       const g = document.createElementNS(SVGNS, 'g');
-      if (alpha != null) g.setAttribute('opacity', alpha);
+      if (alpha != null) { g.setAttribute('class', 'ink'); g.setAttribute('opacity', alpha); }
       shapes(g, col);
       wiresEl.appendChild(g);
+      return g;
     };
 
     // **The cable and the cards cast one shadow between them** (Ed, 2026-08-17:
@@ -3002,12 +3018,18 @@
       outer.appendChild(g);
       wiresEl.appendChild(outer);
     };
-    // the union: every box the cable joins, punched out of the viewport
+    // Every card on the surface is punched out, not only the ones this cable
+    // joins (Ed, 2026-08-17 — *I can still see a shadow*). The first version
+    // holed only the two ends, which is right about the join and wrong about
+    // everything else: the rail is a **layer** of cards at one height, and a
+    // cable at that height passes several of them on its way down the gutter.
+    // A thing does not shadow its own layer, so nothing at card height takes
+    // one. What is left falls on the page, which is where a shadow belongs.
     const clipHoles = () => {
       const defs = document.createElementNS(SVGNS, 'defs');
       const boxes = [
-        ...doc.querySelectorAll('.sugg[data-card="' + id + '"]'),
-        ...queueEl.querySelectorAll('[data-q="' + id + '"]'),
+        ...doc.querySelectorAll('.sugg[data-card]'),
+        ...queueEl.querySelectorAll('button'),
       ].map((e) => e.getBoundingClientRect()).filter((r) => r.width && r.height);
       let d = 'M0 0H' + innerWidth + 'V' + innerHeight + 'H0Z';
       for (const r of boxes) {
@@ -3066,8 +3088,23 @@
     shadow(1, 1, 0.13);
     shadow(3, 3, 0.20);
     paint(WIRE_UNDER, null);
-    paint(color.rgb, color.a);
+    // **A cable changes colour when its card does** (Ed, 2026-08-17), and by
+    // the same means the washes do: the wire is rebuilt from scratch on every
+    // draw, so a CSS transition has nothing to run from unless the new shapes
+    // are born wearing the **previous** colour and handed the new one after one
+    // forced reflow. Keyed by the judgment, so a wire that is simply redrawn at
+    // a new scroll position does not re-run the fade.
+    const from = prevWire.get(id) || color;
+    const ink = paint(from.rgb, from.a);
+    if (from.rgb !== color.rgb || from.a !== color.a) {
+      void wiresEl.getBoundingClientRect();
+      ink.setAttribute('opacity', color.a);
+      ink.querySelectorAll('path').forEach((p) => p.setAttribute('stroke', color.rgb));
+      ink.querySelectorAll('circle').forEach((c) => c.setAttribute('fill', color.rgb));
+    }
+    prevWire.set(id, color);
   }
+  const prevWire = new Map();
 
 
 
