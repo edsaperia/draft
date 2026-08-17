@@ -2970,3 +2970,100 @@ Worth saying plainly because it changes the priority: this is not a
 degrades-gracefully-at-scale problem to be handled when rosters get big. The
 fixture is a roster of fourteen with an ordinary number of live suggestions at
 one clause, and the gutter is already lying about which text a mark belongs to.
+
+### The tab stack (2026-08-17)
+
+Ed's own suggestion, and it is the right one: *make them into a "tab stack"
+which, when clicked on, opens the card they refer to, which then has the tabs
+down the side of it.*
+
+The first thing worth recording is that **half of it already shipped**. The tab
+strip down the side of an open card has existed since the tabs travelled into
+the `clause-head`, and it works — a card is ~380px tall, so four tabs at a 33px
+pitch fit inside it with room to spare. The failure was never the strip. It was
+the strip drawn at full height in a **36px gutter**. So the whole of the fix
+belongs in the closed state, and the closed state has an obvious right answer
+because the metaphor already contains it: **a strip of tabs seen closed is a
+pile.**
+
+That is why this reads as inevitable rather than clever. Nothing new is invented
+— no badge, no cap, no overflow control, no second navigation route. The same
+objects, in the same column, in the posture they take when the thing they are
+attached to is shut.
+
+**Four rules it needed.**
+
+*What is at the front.* The pile has one target, so something has to lead, and
+having to answer that is what closes 294's ordering question — before the stack
+the gutter drew tabs in fixture order, which was arbitrary and harmless only
+because every tab was its own target.
+
+It is deliberately **not** `KEEP_ORDER`, and this is the part worth keeping. The
+two lists look like the same list and answer different questions. The contents
+rail ranks by **what must not be lost**: there ✏️ sits above 💡, because a
+proposal of your own carries the largest remaining act and dropping it off the
+screen is worse than dropping one 💡 out of many. The stack ranks by **what most
+wants you**, because the front tab is the one that opens — and ✏️ wants nothing.
+It is your own work, waiting. You do not click into a pile to be shown it.
+
+**Retention and priority are different questions with the same-looking answer.**
+The first version reused `KEEP_ORDER` and § Bringing a Guest immediately showed
+why it could not: the pile led with your own draft and clicking it opened your
+own draft, past two 💡 asking for a judgment.
+
+*What the ones behind say.* Slivers of their own lifecycle hue. Colour is the
+whole vocabulary on this surface, so an orange sliver says *something in here is
+urgent* without drawing a flame, and the pile says how many by being a pile. The
+alternative was a count — `+3` — which is precisely the tally Ed took out of the
+queue this morning, and a tally in a margin is a permanent apology for a limit.
+
+Two calibrations the first cut got wrong. The sliver needs a **stronger mix than
+a tab face** (42% against 18%): the face is 30px tall and carrying a glyph, four
+pixels of the same mix is a smudge, and the hue is the entire reason to draw the
+pile rather than count it. And the slivers are **squared at the top**, because
+a 6px radius eats most of a 4px band; the pile's own bottom edge keeps its
+corners, so a stack still ends like a tab and not like a cut.
+
+*The slivers are inert.* One stack, one target — which is what "opens the card
+they refer to" means, singular. A 4px sliver is not a control to ask anybody to
+hit, and the full strip is one click away. The cost, and it is real: you can no
+longer go straight from the gutter to the third decision at a clause. The queue
+is the other route in and the card's strip is the third, so nothing is
+unreachable, but the gutter has stopped being a random-access index of a clause
+and become a way in to it.
+
+*The pile is fitted, not fixed.* This is the half that goes beyond the ask, and
+it is what makes the collision **structurally impossible** rather than merely
+rarer. `fitStacks()` runs after layout across the whole gutter and shrinks each
+stack's peek until it reaches no further than the next mark — so a stack may use
+the space down to the next mark and no further, and two anchors can never claim
+one strip. Measured across all 32 columns in the fixture: zero collisions, and
+§ Bringing a Guest went from 129px to 42px with 6px clear of the gap's own mark.
+
+That rule is the answer 294 could not reach, and the reason it could not is
+worth naming: **each `chipcol` is laid out inside its own anchor and knows
+nothing of the one below**, so no amount of per-anchor cleverness can see the
+collision, let alone resolve it. It takes a pass over the whole column at once —
+which is exactly what the `needs-you-queue` already does when it steps entries
+around a pinned card. *The gutter had not yet learned what the rail already
+knew.*
+
+A chipcol's top does not depend on `--peek` (it is absolutely positioned against
+its block), so every top is final before the first write and there is no reflow
+loop.
+
+**And a bug that was already there.** The wire-shadow clip is one path with
+`evenodd`, so two hole rectangles that overlap XOR back to **solid** — the
+shadow reappears exactly where two punched objects meet. A pile overlaps by 26px
+of every 30, so the stack would have made this glaring; going to look, 74 boxes
+in the fixture were already resolving to 48 non-overlapping regions, meaning
+twenty-six overlaps were already XOR-ing the shadow back on, most of them where
+an active tab carries under its own card's left edge. Merged by bounding box
+before punching. Over-punching where two objects genuinely overlap is right:
+a thing does not shadow its own layer, whichever of them is on top.
+
+**A new thing to be careful of.** `evenodd` on a union of shapes is only a union
+while the shapes are disjoint. Nothing said so, and it held for months because
+nothing at card height overlapped anything else — the invariant was real and
+undocumented, and the first design that broke it would have been blamed for the
+artefact it revealed.

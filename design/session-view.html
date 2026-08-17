@@ -737,6 +737,29 @@
     white-space: nowrap; user-select: none; cursor: pointer;
     transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
   }
+  /* **A closed tab strip is a pile** (Ed, 2026-08-17). The tabs behind slide up
+     under the front one, leaving a sliver each — enough for the lifecycle hue,
+     which is the whole vocabulary, so a stack with an orange sliver in it says
+     *something here is urgent* without drawing a flame or counting anything. A
+     count was the other option and it is the thing Ed removed from the queue
+     this morning: a tally in a margin is a permanent apology for a limit.
+     `--peek` is set per stack by `fitStacks()` — the pile is fitted to the space
+     it actually has, so it can never be the thing it replaced. */
+  .chipcol.stack { gap: 0; }
+  .chipcol.stack .achip + .achip { margin-top: calc(var(--peek, 4px) - 30px); }
+  /* one stack, one target */
+  .chipcol.stack .achip.behind { pointer-events: none; }
+  /* A sliver has to be **stronger than a face** to say the same thing. The tab
+     ground is an 18% mix because it is 30px tall and carrying a glyph; four
+     pixels of the same mix is not a colour, it is a smudge — and the sliver's
+     hue is the whole reason the pile is worth drawing rather than counting.
+     Squared at the top, because a radius eats a 4px band; the pile's own bottom
+     edge keeps its corners, so the stack still ends like a tab and not like a
+     cut. */
+  .chipcol.stack .achip.behind {
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg));
+    border-radius: 0 0 var(--r-sm) var(--r-sm);
+  }
   .achip:hover {
     transform: translateY(-1px);
     background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 30%, var(--bg));
@@ -3572,8 +3595,31 @@
         ...doc.querySelectorAll('.achip'),
         ...queueEl.querySelectorAll('button'),
       ].map((e) => e.getBoundingClientRect()).filter((r) => r.width && r.height);
-      let d = 'M0 0H' + innerWidth + 'V' + innerHeight + 'H0Z';
+      // **Overlapping holes have to be merged, not stacked.** The clip is one
+      // path with `evenodd`, so two hole rectangles that overlap XOR back to
+      // solid in their intersection — the shadow reappears exactly where two
+      // objects meet. It never showed until the tab stack, because until then
+      // nothing at card height overlapped anything else; a pile of tabs overlaps
+      // by 26px of every 30. Union them by bounding box: over-punching where two
+      // objects genuinely overlap is right, since a thing does not shadow its
+      // own layer whichever of them is on top.
+      const merged = [];
       for (const r of boxes) {
+        let cur = { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+        for (let i = merged.length - 1; i >= 0; i--) {
+          const m = merged[i];
+          if (cur.left < m.right && m.left < cur.right && cur.top < m.bottom && m.top < cur.bottom) {
+            cur = {
+              left: Math.min(cur.left, m.left), top: Math.min(cur.top, m.top),
+              right: Math.max(cur.right, m.right), bottom: Math.max(cur.bottom, m.bottom),
+            };
+            merged.splice(i, 1);
+          }
+        }
+        merged.push(cur);
+      }
+      let d = 'M0 0H' + innerWidth + 'V' + innerHeight + 'H0Z';
+      for (const r of merged) {
         d += 'M' + r.left + ' ' + r.top + 'H' + r.right + 'V' + r.bottom + 'H' + r.left + 'Z';
       }
       const cp = document.createElementNS(SVGNS, 'clipPath');
@@ -4928,10 +4974,45 @@
   // into the head instead.
   // A gutter mark wears its own lifecycle hue as a resting ground, so the chip
   // and the rail's sealed dot are visibly the same object in two columns.
-  const chipStyle = (g) => ' style="--chiphue: var(--lc-' + (anchHue(g) || 'closed') + ')"';
+  const chipStyle = (g, extra) => ' style="--chiphue: var(--lc-' + (anchHue(g) || 'closed') + ')' +
+    (extra ? '; ' + extra : '') + '"';
+
+  // **The pile is fitted to the gutter it has, not to a constant.** This is the
+  // half of Ed's suggestion that makes the collision *structurally* impossible
+  // rather than merely rarer: a stack may reach down as far as the next mark in
+  // the gutter and no further, so two anchors can never claim the same strip.
+  // That is the question 294 could not answer — each `chipcol` is laid out
+  // inside its own anchor and knows nothing of the one below — and it is
+  // answerable here only because this pass runs over the whole column at once,
+  // after layout, which is what the `needs-you-queue` already does when it steps
+  // entries around a pinned card.
+  //
+  // A chipcol's own top does not depend on `--peek` (it is absolutely positioned
+  // against its block), so there is no reflow loop: every top is final before
+  // the first write.
+  function fitStacks() {
+    const all = [...doc.querySelectorAll('.chipcol')];
+    const tops = all.map((c) => c.getBoundingClientRect().top);
+    all.forEach((c, i) => {
+      if (!c.classList.contains('stack')) return;
+      const n = c.children.length;
+      // the next mark down the gutter, whatever block it belongs to
+      const next = tops.findIndex((t, j) => j > i && t > tops[i] + 1);
+      const avail = next < 0 ? 1e4 : tops[next] - tops[i] - 4;
+      // 4px is a sliver you can see; 1.5px is one you can still tell is there.
+      // Below that the pile would be claiming a depth it cannot draw, so it
+      // stops shrinking and accepts a small overhang — see 308.
+      c.style.setProperty('--peek',
+        Math.max(1.5, Math.min(4, (avail - 30) / (n - 1))).toFixed(2) + 'px');
+    });
+  }
 
   function chipsFor(key, exceptId) {
-    return (key ? suggFor(key) : []).filter((g) => g.id !== exceptId).map((g) => {
+    // Same order as the gutter stack, for the same reason (see `stackOrder`):
+    // the card's tab strip is that stack expanded, so the two must not disagree
+    // about what sits where. The card's own tab is prepended by the head and is
+    // always first, because it is the active tab.
+    return (key ? stackOrder(suggFor(key)) : []).filter((g) => g.id !== exceptId).map((g) => {
       const i = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === key) : -1;
       const where = g.kind === 'patch' ? ' · place ' + (i + 1) + ' of ' + g.sites.length : '';
       return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '"' + chipStyle(g) + ' title="' +
@@ -5279,17 +5360,44 @@
         }
 
         if (!swallowed) {
-          const chips = live.map((g) => {
+          // **The tab stack** (Ed, 2026-08-17). A clause used to give every live
+          // decision a tab at full height, which is fine at one and a lie at
+          // four: § Bringing a Guest ran a 129px column down the side of a 36px
+          // clause, so three of its four marks stood beside prose they had
+          // nothing to do with, and the overhang landed *on top of* the held-open
+          // gap's own mark below — two tabs rendering as one blob.
+          //
+          // Ed's answer is the physical one, and it is right because the tab
+          // metaphor already contains it: **a strip of tabs seen closed is a
+          // pile.** The front one is the object; the rest are slivers of their
+          // own lifecycle colour behind it. So the gutter says *there are four
+          // here, and one of them is urgent* in the space of one tab, and the
+          // full strip — which already exists, and already works, because a card
+          // is 380px tall — is one click away down the side of the card.
+          //
+          // The slivers are inert. The stack has exactly one target, which is
+          // what "opens the card they refer to" means, and a 3px sliver is not a
+          // control anybody should be asked to hit.
+          const stack = stackOrder(live);
+          const chips = stack.map((g, i) => {
             const siteIdx = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === line.key) : -1;
             const where = g.kind === 'patch' ? ' · place ' + (siteIdx + 1) + ' of ' + g.sites.length : '';
-            return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '"' + chipStyle(g) + ' title="' +
-              esc(plainLabel(g.qLabel)) + where + ' — open it">' + mkHtml(markKindOf(g)) + '</span>';
+            const behind = i > 0;
+            return '<span class="achip' + (behind ? ' behind' : '') + '"' +
+              (behind ? ' aria-hidden="true"' : ' role="button" tabindex="0"') +
+              ' data-anchor="' + g.id + '"' + chipStyle(g, 'z-index:' + (stack.length - i)) +
+              (behind ? '' : ' title="' + esc(plainLabel(g.qLabel)) + where +
+                (stack.length > 1
+                  ? ' — open it; the ' + (stack.length - 1) + ' behind it are down the side of the card'
+                  : ' — open it') + '"') +
+              '>' + mkHtml(markKindOf(g)) + '</span>';
           }).join('');
           html +=
             '<p class="anch editable' + (openId === primary.id ? ' active' : '') + '" data-key="' + line.key +
             '" data-anchor="' + primary.id + '"' +
             anchWash(primary, openId === primary.id, line.key) + '>' +
-            '<span class="chipcol" contenteditable="false">' + chips + '</span>' + esc(line.x) + '</p>';
+            '<span class="chipcol' + (stack.length > 1 ? ' stack' : '') +
+            '" contenteditable="false">' + chips + '</span>' + esc(line.x) + '</p>';
         }
       } else {
         // a settled clause opens its record the same way — the record's head is
@@ -5325,6 +5433,7 @@
     }
     html += '</div>';
     doc.innerHTML = html;
+    fitStacks();
 
     doc.querySelectorAll('[data-sec-toggle]').forEach((b) =>
       b.addEventListener('click', (ev) => { ev.stopPropagation(); toggleSection(+b.dataset.secToggle); })
@@ -6231,6 +6340,35 @@
     const i = KEEP_ORDER.indexOf(kind);
     return i < 0 ? KEEP_ORDER.length : i;
   };
+
+  // **What sits at the front of a tab stack** (Ed, 2026-08-17). The stack has
+  // one click target, so something has to be in front, and having to answer that
+  // settles 294's *order* question by making it consequential — before the stack
+  // the gutter drew tabs in `SUGGS` order, which is fixture order, which is
+  // arbitrary, and which was harmless only because every tab was its own target.
+  //
+  // It is **not** `KEEP_ORDER`, and the difference is worth naming because the
+  // two look like the same list. The rail ranks by **what must not be lost**:
+  // there ✏️ sits third, above 💡, because a proposal of your own carries the
+  // largest remaining act and dropping it off screen is worse than dropping one
+  // 💡 out of many. The stack ranks by **what most wants you**, because the
+  // front tab is the one that opens — and ✏️ wants nothing at all. It is your
+  // own work, waiting; you do not click into a pile to be shown it. So the hot
+  // marks lead (🔥 ⚔️ 💡 🌶️), then the decisions owed an acknowledgement, then
+  // your own, then the ones that are only telling you where things stand.
+  //
+  // Retention and priority are different questions with the same-looking answer,
+  // and this is the first place on the surface where they disagree: § Bringing a
+  // Guest holds a ✏️ of yours and two 💡, and under the rail's order clicking
+  // that pile opened your own draft.
+  const STACK_ORDER = ['urgent', 'stuck', 'needs', 'weigh', 'adopted', 'retired',
+    'propose', 'deciding', 'shifted', 'filedYes', 'filedNo'];
+  const stackRank = (kind) => {
+    const i = STACK_ORDER.indexOf(kind);
+    return i < 0 ? STACK_ORDER.length : i;
+  };
+  const stackOrder = (gs) =>
+    gs.slice().sort((a, b) => stackRank(markKindOf(a)) - stackRank(markKindOf(b)));
 
   function tocMarksHtml(n) {
     // **☑️ is not in the contents rail** (Ed, 2026-08-17). It was already the
