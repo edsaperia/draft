@@ -2853,3 +2853,40 @@ entry's, so it wants space above to sit *under* the text rather than against it,
 and more space below to close the group off before the field starts. 12 above,
 16 below — the only place on the card where the rhythm deliberately opens, and
 it opens because that is where one thing ends and a list begins.
+
+---
+
+### ❄️ — the first design for Skip that had somewhere to go (2026-08-17)
+
+Skip has been homeless for weeks: an act with no obvious place, no obvious
+glyph, and a meaning nobody could state in one line. Ed's design settles all
+three at once, and it does it by **changing what Skip is**.
+
+It is not an act on the judgment. Nothing is skipped, recirculated or decayed,
+and no evidence is touched. It is a **toggle on the flame**: what it says is
+*stop putting this at the front of my queue*, and it says it by taking the card
+out of the running for 🔥, so the card drops back to an ordinary 💡 and the next
+most urgent question takes the flame.
+
+That is what a member actually means when they want to move on — and it is
+reversible, because a mood is. Which in turn is what earns it a place beside the
+✓ rather than a sentence of its own: **both are things you do to this card, and
+only one of them is a judgment.** The old control said *Not this one, not now*
+in five words in the middle of the row, because it could not say what it did in
+fewer; a snowflake says it, and a pressed snowflake says the state as well.
+
+The two acts share the right-hand corner in the order you reach for them — ❄️
+first because it is the one that says *not now*, then the ✓ that says *now* —
+grouped in a pair so `space-between` does not float the snowflake into the
+middle of the row.
+
+**Pressing it closes the card, and un-pressing it does not.** *Not this one, not
+now* means you are going somewhere else, and leaving the card open behind you
+would be the surface disagreeing; coming back to it is the opposite gesture and
+wants the card to stay.
+
+Ed also spotted that the ✓ was still the typed character while the outcome marks
+had become drawn ones. It is the drawn tick now, which is right for the reason
+the drawn set exists — a control and a mark should not look like they came from
+different alphabets — and safe because the two never share a card: the commit ✓
+lives on a live judgment, the adopted ✔ on a sealed record.

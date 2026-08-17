@@ -1309,6 +1309,13 @@
   /* The judgment's own row: indifference at the left as the last of the trio,
      the tick at the right where finishing happens (Ed, 2026-08-16). */
   .race-mid.commitrow { justify-content: space-between; align-items: center; }
+  .commitrow .rightpair { display: flex; align-items: center; gap: var(--s2); }
+  /* ❄️ is a toggle, so it says so the way every toggle on this surface does:
+     pressed-in when it is on, and quiet when it is not. */
+  .btn.chill[aria-pressed="true"] {
+    background: var(--light); border-color: var(--primary); color: var(--primary-emphasis);
+    box-shadow: inset 0 2px var(--s1) rgba(var(--lc-yours), 0.20);
+  }
   .btn {
     appearance: none; font: inherit; font-size: var(--t-ui);
     padding: 0.375rem 0.75rem; cursor: pointer;
@@ -2898,12 +2905,26 @@
   // Whatever wants you most keeps its place on the screen whatever else is
   // going on (Ed, 115). Settled before anything draws, because the document's
   // own highlights need it too now (200) and they are rendered first.
+  // **❄️ — not this one, not now** (Ed, 2026-08-17, and it is the first design
+  // for Skip that puts it anywhere). It is a **toggle on the flame**, not an act
+  // on the judgment: nothing is skipped, recirculated or decayed, and no
+  // evidence changes. What it says is *stop putting this at the front of my
+  // queue*, and it says it by taking the card out of the running for 🔥 — the
+  // card drops back to an ordinary 💡 and the next most urgent question takes
+  // the flame. Which is exactly what a member means when they want to move on,
+  // and it is reversible, because a mood is.
+  //
+  // That it is a toggle is what earns it a place beside the ✓ rather than a
+  // sentence of its own: both are things you do to this card and only one of
+  // them is a judgment.
+  const chilled = new Set();
+
   function settleTopUrgent() {
     // 🔥 always means "an ordinary judgment that wants you most", so the two
     // differently-addressed kinds are never it: a stuck race wants a draft and
     // a diagonal wants a ranking, and both say so with their own glyph.
     const live = queueEntries().filter((e) =>
-      stateOf(e.g) === 'needs' && !stuck(e.g) && e.g.kind !== 'diagonal');
+      stateOf(e.g) === 'needs' && !stuck(e.g) && e.g.kind !== 'diagonal' && !chilled.has(e.g.id));
     topUrgentId = live.length
       ? live.reduce((best, e) => ((e.g.urgency ?? 0) > (best.urgency ?? 0) ? e.g : best), live[0].g).id
       : null;
@@ -3897,13 +3918,25 @@
       ' title="' + (s.kind === 'diagonal' ? 'They matter equally' : 'I can’t split them') + '">' +
       '<i class="dot" aria-hidden="true"></i>' +
       '<span class="off">Indifferent</span><span class="on">Indifferent</span></button>' +
-      (insists ? '<button class="btn" data-act="skip">Not this one, not now</button>' : '') +
       (extra || '') +
+      // The two acts on this card share the right-hand corner, in the order you
+      // would reach for them: ❄️ first because it is the one that says *not now*,
+      // then the ✓ that says *now*. Grouped, so space-between does not float the
+      // snowflake into the middle of the row.
+      '<span class="rightpair">' +
+      ((insists || chilled.has(s.id))
+        ? '<button class="btn glyphbtn chill" data-act="chill"' +
+          ' aria-pressed="' + chilled.has(s.id) + '" title="' +
+          (chilled.has(s.id)
+            ? 'Cooled — this one will not be put at the front of your queue. Press again to allow it.'
+            : 'Not this one, not now — it stays open and stops being the most urgent') + '">❄️</button>'
+        : '') +
       (s.locked ? '' : '<button class="btn btn-approve glyphbtn"' +
         (pick ? '' : ' disabled') +
         ' data-act="submit" aria-pressed="' + isCast(s) + '" title="' +
         (isCast(s) ? 'Recorded — choose again to change it'
-          : pick ? 'Submit this judgment' : 'Choose one of the three first') + '">✓</button>') +
+          : pick ? 'Submit this judgment' : 'Choose one of the three first') + '">' + TICK + '</button>') +
+      '</span>' +
       '</div>';
   }
 
@@ -6055,14 +6088,24 @@
       : what === 'b' ? 'preferred ' + quote(s.race && s.race.b.text)
       : what === 'indifferent' ? (s.kind === 'diagonal' ? 'said they matter equally' : 'indifferent')
       : 'skipped (recirculates with decay)';
-    if (what === 'skip') {
+    // **❄️ cools the flame and closes the card** (Ed, 2026-08-17). It is not a
+    // judgment, so nothing about the race changes and no evidence is touched —
+    // the entry simply stops being eligible for 🔥 and the next most urgent
+    // question takes it. Closing on the way is the whole gesture: *not this one,
+    // not now* means you are going somewhere else, and leaving the card open
+    // behind you would be the surface disagreeing.
+    //
+    // Un-cooling does **not** close, because there you are coming back to it.
+    if (what === 'chill') {
+      const on = !chilled.has(id);
+      if (on) chilled.add(id); else chilled.delete(id);
       const shut = () => {
         if (openId === id) openId = null;
         if (restoreAutoFolds()) renderToc();
         renderAll();
         drawWires();
       };
-      if (openId === id) collapseCards(id, shut); else shut();
+      if (on && openId === id) collapseCards(id, shut); else { renderAll(); drawWires(); }
       return;
     }
     // Submitting no longer closes the card (Ed, 217): it stays open and simply
