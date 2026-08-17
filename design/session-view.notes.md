@@ -1149,3 +1149,136 @@ early exit instead: `bringIntoView` returns immediately when the target is alrea
 between 100 and 300px from the top, so scrolling the target chip to 220 first makes
 the whole open path synchronous. Worth remembering — **the cheapest way past an
 animation is usually the branch that skips it, not a faster clock.**
+
+## The QA of 2026-08-17, second pass
+
+Six notes, and unusually for a QA round three of them were bugs rather than
+judgments. Worth separating, because the bugs all had the same shape: a rule
+stated in the notes and the glossary that the code had quietly stopped honouring.
+
+### The record printed its answer twice
+
+A decided-and-adopted card showed the clause at the head and then the winning
+proposal below it — and once a proposal has carried, those are the same sentence.
+The one text a reader of a decided card actually wants is the wording it
+*replaced*, and that was present only as a redline inside the winner's block,
+where it has to be reconstructed rather than read.
+
+The fix was already half-written: a `.replaced` style had been in the sheet since
+the record was designed, with a comment saying the displaced text sits after the
+field, and nothing had ever emitted it. It is emitted now, and directly **under
+the head** rather than after the field, because the second thing you want on a
+decided card is what it used to say. The winning block states no wording at all —
+it says *the wording is at the head of this card* — and every losing proposal
+states its own text plainly rather than as a redline against a text that is
+itself no longer in the document.
+
+That last part quietly anticipates 274. It was not the reason for the change, but
+it is a data point for it: the record reads better in plain sentences, and the
+thing the redline was protecting (you cannot see what a deletion removed) is
+solved here by having the old text on the card in full.
+
+### Cables: match what the eye sees, not what the token says
+
+Three versions in one session, and the middle two are the lesson.
+
+1. The hue mixed 28% toward the ink, so a 1.5px line would carry. Ed: *a bit
+   dark*. It read as a different object from the card it came out of.
+2. The card's literal wash colour, composited over its ground. Right colour,
+   wrong medium — at 6px a translucent cable shows the charter through it.
+3. Fully opaque at full hue. Right medium, wrong colour again: a card at 0.13
+   alpha *looks* pale, and matching a card means matching what the eye sees.
+
+Ed's own diagnosis closed it — *the colour should match the queue card, which
+happens to be perceived as lighter because it's transparent; maybe put white
+underneath it*. So the cable is drawn twice: a white cable, then the card's own
+translucent colour on top. Opaque as an object, identical as a colour. It gains
+something nobody asked for, which is usually the sign of a right answer: because
+a card's wash carries urgency, so now does its cable, and the 🔥 cable is visibly
+the strongest cord on the surface.
+
+One implementation note: the two passes are *whole-cable* passes, not per-run
+pairs. A patch's runs meet on the spine, so painting each run white-then-colour
+would have the second run's white erase the first run's colour exactly where they
+join.
+
+The rail-end cap went and the document-end cap grew to 10px. A dot against the
+card it was leaving restated what the card already said; the far end is where the
+wire makes a claim — *this clause, here* — so that is the end that gets a landing
+mark.
+
+### The gutter mark as an object
+
+Ed: *these are great and do a lot of work; they should read more obviously as
+buttons*. Three things say it, and none of them is an outline — the palette has
+spent three passes removing outlines and it would be strange to reintroduce one at
+24px. A resting **ground** in the mark's own lifecycle hue plus the contact
+shadow, which makes it exactly the object the rail's sealed dot already is; a
+**size** that matches its job (30×27, glyph at document size — it had been a 13px
+glyph in a 24px box, a target sized like a control and a glyph sized like an
+annotation); and a **press**, lifting on hover and going down on pointer-down.
+Depth is how this surface says *active*, so a control that never moves in depth
+never says it was pressed.
+
+The flatter glyph set Ed also asked for is Q288: the design series is
+self-contained single files with no network, so there is no pack to point at, and
+the honest options all cost something.
+
+### Radios in a column
+
+A locked card centred its lone Indifferent pill, and the code had a comment
+explaining why: pushing a single disabled radio to the left edge leaves the other
+end of the card empty. True, and beside the point — Ed's rule is that the
+alignment is what says the three radios are answers to one question, and a card
+you cannot judge is exactly the card that most needs to look like the ones you
+can. Measured after: 24px from the card's left edge on every card, every state.
+
+### Closing, and a dead control
+
+*Cards on the document should be smoother when they close.* The collapse animated
+the card's height down to `headOnlyHeight` and then handed over to a re-render
+that swapped it for a paragraph. Symmetrical with the opening on paper; wrong in
+use, because **a card at head height is not a paragraph**. It is a lifted white
+box with an eyebrow over the clause, 14px of padding, and its top edge 34px above
+where the paragraph's will be. So a 190ms motion ran smoothly to a shape that was
+still 93px too tall, and *then* everything jumped.
+
+Opening survives the same discrepancy because the jump happens in the frame of
+the click, before the motion. Closing put it after, which is the one order the eye
+cannot forgive.
+
+Now the collapse animates the whole box onto the paragraph's box: height down to
+the `.headclause` — which *is* the paragraph's box by construction, same padding,
+same negative margin, same width — padding to zero, eyebrow shut, shadow and white
+ground gone, and `margin-top` growing by exactly what the padding and the eyebrow
+give up, so the clause does not move a pixel while everything around it leaves.
+Measured: the card's final top lands at 197px, the clause's original top was
+197px. The last frame is a paragraph and the swap has nothing left to do. Given
+240ms and a curve that lands softly rather than accelerating into a jump it was
+never going to make.
+
+Half the problem was also that **the card's own mark was inert**. A guard dropped
+any click whose target sat inside a `.sugg`, which predates the rebuild that
+lifted the clause and its marks into the card's head — so the glyph you pressed to
+open a card did nothing when you pressed it again, and the only way out was the
+rail. The glossary had been claiming otherwise for a day.
+
+### The composer's three
+
+*I can't write spaces into the proposal text.* The lane rewrites its own markup on
+every keystroke so the green marking can follow the caret, which means a space you
+have just typed is round-tripped through the model and re-rendered as HTML — where
+an ordinary trailing space collapses to nothing. You typed, nothing appeared. Set
+the lane's blocks `pre-wrap`, which is safe because the lane's markup is
+concatenated with no incidental whitespace in it.
+
+*I can't delete the helper text for the rationale.* Of course not: it was a
+`::before`, and as ordinary inline content it sat *in* the line, so an empty field
+put the caret after it. You could see a text cursor at the end of a sentence and
+backspace at it all day. Taken out of flow it is what it always claimed to be —
+something printed behind an empty field.
+
+And the copy: *Why this change?* invited an answer to a different question. *We
+should change this because…* is an opening clause rather than a prompt, so what
+you write finishes a sentence, and it states the act — you are writing the case
+for a change, not a note about one.

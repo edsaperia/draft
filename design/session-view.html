@@ -553,6 +553,15 @@
   /* a heading inside a lane or a head keeps its weight, so editing a section
      title alongside its paragraph does not silently flatten it to body text */
   .lp.hblock { font-weight: 700; }
+  /* **Spaces are preserved** (Ed, 2026-08-17: "I can't write spaces into the
+     proposal text"). The lane rewrites its own markup on every keystroke so the
+     green marking can follow the caret, which means a space you have just typed
+     is round-tripped through the model and re-rendered as HTML — where an
+     ordinary trailing space collapses to nothing. So you typed, nothing
+     appeared, and the lane looked broken until the next character arrived.
+     `pre-wrap` is safe here because the lane's markup is concatenated with no
+     incidental whitespace in it. */
+  .lp { white-space: pre-wrap; }
 
   /* chip-gutter: marks sit in the document's left margin, stacked and
      right-aligned, so the prose column itself stays unbroken. They are the
@@ -562,21 +571,43 @@
     position: absolute; right: 100%; margin-right: 14px; top: 0.15em;
     display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
   }
-  /* The mark is now the *only* way into a decision card from the document
-     (Ed, 224), so it has to look like a control rather than an annotation: a
-     real 24px target with a ground that comes up under the pointer. It was a
-     14px glyph with 2px of padding when the whole paragraph was clickable and
-     it was merely the label on a much larger target. */
+  /* The mark is the *only* way into a decision card from the document (Ed,
+     224), and it is doing more work than anything else its size on the surface
+     — so at rest it has to be an **object**, not a glyph with a hit area
+     (Ed, 2026-08-17: "they should read more obviously as buttons").
+     Three things say it, and none of them is an outline:
+
+     - a **key**: a resting ground in the mark's own lifecycle hue plus the
+       contact shadow, exactly the object the rail's `sealdot` already is. The
+       chip and the dot are the same control in two columns, so they should not
+       have been two shapes.
+     - **size**: 30x27 with the glyph at document size. It was a 13px glyph in
+       a 24px box, which is a target sized for a control and a glyph sized for
+       an annotation.
+     - **a press**: it lifts on hover and goes *down* on pointer-down, losing
+       its shadow at the bottom. Depth is what this surface uses to say
+       "active", so a control that never moves in depth is a control that never
+       says it was pressed. */
   .achip {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 24px; height: 22px; font-size: var(--t-small); line-height: 1;
+    width: 30px; height: 27px; font-size: var(--t-body); line-height: 1;
     border-radius: var(--r-sm);
+    background: rgba(var(--chiphue, var(--lc-closed)), 0.18);
+    box-shadow: var(--shadow-sm);
     white-space: nowrap; user-select: none; cursor: pointer;
-    transition: background 120ms ease, transform 120ms ease;
+    transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
   }
-  .achip:hover { transform: scale(1.15); background: var(--light); }
+  .achip:hover {
+    transform: translateY(-1px);
+    background: rgba(var(--chiphue, var(--lc-closed)), 0.30);
+    box-shadow: var(--shadow-md);
+  }
+  .achip:active { transform: translateY(1px); box-shadow: none; }
   .achip:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
-  @media (prefers-reduced-motion: reduce) { .achip { transition: none; } .achip:hover { transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .achip { transition: none; }
+    .achip:hover, .achip:active { transform: none; }
+  }
   @media (max-width: 900px) {
     .chipcol { position: static; flex-direction: row; align-items: baseline; margin: 0 0 var(--s1); }
   }
@@ -941,11 +972,22 @@
     margin: 0; padding: var(--s3) 14px var(--s3) 12px;
     border-top: 1px solid var(--border);
   }
-  .editcard .edit-why { border: 0; box-shadow: none; padding: 0; min-height: 1.4rem; }
+  .editcard .edit-why {
+    border: 0; box-shadow: none; padding: 0; min-height: 1.4rem;
+    position: relative;
+  }
   .editcard .edit-why:focus { outline: none; }
+  /* **Absolutely positioned** (Ed, 2026-08-17: "I can't delete the helper text
+     for the rationale"). As ordinary inline content the placeholder sat *in*
+     the line, so an empty field put the caret after it — you could see a text
+     cursor sitting at the end of a sentence and backspace at it all day with
+     nothing happening, because there was nothing there. Taken out of flow it
+     is what it always claimed to be: something printed behind an empty field,
+     with the caret at the start where the first character will go. */
   .editcard .edit-why:empty::before,
   .editcard .edit-why.blank::before {
     content: attr(data-placeholder); color: var(--muted); font-weight: 400; font-style: italic;
+    position: absolute; left: 0; top: 0; right: 0; pointer-events: none;
   }
   .btn.btn-propose { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 600; }
   .btn.btn-propose:hover { background: var(--ok-hover); border-color: var(--ok-hover); color: #fff; }
@@ -1080,9 +1122,19 @@
   }
   .pline b { color: var(--fg); }
   .ranked.stood .pline b { color: var(--ok); }
-  /* the text the winner displaced: history, so it sits after the field */
-  .replaced { margin-top: var(--s3); padding-top: 10px; border-top: 1px dashed var(--border); }
+  /* The text the winner displaced (Ed, 2026-08-17). It sits directly under the
+     head, not after the field, because the second thing you want on a decided
+     card is *what it used to say* — that is the whole of what "decided" means
+     here. The band is deliberately quiet and dashed: this is the one text on
+     the card the charter no longer holds. */
+  .replaced {
+    margin: 0 0 14px; padding: 10px 14px;
+    border: 1px dashed var(--border); border-radius: var(--r-md);
+  }
   .replaced .rtext { color: var(--muted); margin-bottom: 0; }
+  .replaced .rtag { color: var(--muted); }
+  /* the winning block states no wording — it is the head of the card */
+  .ranked .atop { font-size: var(--t-small); color: var(--ok); font-weight: 500; }
   .record {
     display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 14px; padding-top: 10px;
     border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--muted);
@@ -1097,7 +1149,7 @@
      and rail, and into every place in the charter it refers to (Ed, 71/78).
      Only the open judgment draws one; a patch's several runs share a spine. */
   #wires { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
-  #wires path { fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  #wires path { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
   #wires .cap { stroke: none; }
   @media (max-width: 900px) { #wires { display: none; } }
 
@@ -2629,8 +2681,36 @@
   // document should look settled — so it takes the grey its own mark and its
   // sealed dot already wear. Falling back to the accent there would have left
   // the blue meaning "filed", which is the one thing it has never meant.
-  const wireColor = (g) => 'color-mix(in srgb, rgb(var(--lc-' + (anchHue(g) || 'closed') +
-    ')), var(--fg) 28%)';
+  //
+  // **The colour of the queue card, which is a wash over white** (Ed,
+  // 2026-08-17). Three versions to get here and the last two are one lesson.
+  // The first mixed the hue 28% toward the ink so a 1.5px line would carry —
+  // darker than the card it came out of, so it read as a different object. The
+  // second took the wash literally and drew it at wash alpha, which is the
+  // right colour and the wrong medium: a translucent cable shows the charter
+  // through it. The third went fully opaque at full hue, which is the right
+  // medium and now the wrong colour — a card at 0.13 alpha *looks* pale, and
+  // matching it means matching what the eye sees, not what the token says.
+  //
+  // So: the card's own composited colour — its wash over the ground, over
+  // white — painted **on top of a white cable of the same weight**. Opaque as
+  // an object, identical as a colour. `wireUnder` is that underlay.
+  //
+  // The wash lives on the entry's *button*, which is where `washAttrs` puts it,
+  // so the lookup goes to whatever carries `data-washkey` rather than to the
+  // row the wire happens to start from. A sealed dot carries none — its grey is
+  // a fixed 0.16 in the stylesheet — so that is the fallback, and it matches
+  // the dot the wire is leaving exactly.
+  const wireColor = (g, el) => {
+    const host = !el ? null
+      : (el.dataset && el.dataset.washkey ? el : el.querySelector('[data-washkey]'));
+    const raw = host ? getComputedStyle(host).getPropertyValue('--washcol').trim() : '';
+    const m = raw.match(/^rgba\((.+?),\s*([\d.]+)\s*\)$/);
+    if (!m) return 'rgba(var(--lc-' + (anchHue(g) || 'closed') + '), 0.16)';
+    const a = +m[2];
+    return 'rgba(' + m[1] + ', ' + (a + GROUND_A * (1 - a)).toFixed(3) + ')';
+  };
+  const WIRE_UNDER = '#FFFFFF';
   const SVGNS = 'http://www.w3.org/2000/svg';
 
   // Everywhere in the document this judgment bites. A chip carries the id when
@@ -2685,24 +2765,37 @@
     if (!s || !starts.length) return;
 
     const mainR = document.querySelector('main').getBoundingClientRect();
-    const color = wireColor(s);
+    const color = wireColor(s, starts[0].el);
     // The gutter runs between the two rails, so it is measured from the rail's
     // own edge — a dot sits inset within its row and would pull it rightwards.
     const railX = (starts[0].el.closest('.qitem') || starts[0].el).getBoundingClientRect().left;
     const gx = (mainR.right + railX) / 2;
 
-    const dot = (x, y) => {
-      const c = document.createElementNS(SVGNS, 'circle');
-      c.setAttribute('class', 'cap');
-      c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 2.5);
-      c.setAttribute('fill', color);
-      wiresEl.appendChild(c);
-    };
-    const line = (d) => {
-      const p = document.createElementNS(SVGNS, 'path');
-      p.setAttribute('d', d);
-      p.setAttribute('stroke', color);
-      wiresEl.appendChild(p);
+    // Only the **document** end is capped (Ed, 2026-08-17). A dot at the rail
+    // end sat against the card it was leaving and said nothing the card did not
+    // already say; at the document end it is a landing mark, which is where the
+    // wire is making a claim — *this clause, here* — so that one grew instead.
+    // The whole cable is drawn twice — every white run first, then every
+    // coloured run on top — rather than each run twice. Painting them in pairs
+    // would have a patch's second white run erase the first coloured one where
+    // they meet on the spine, which is precisely where they always meet.
+    const lines = [], dots = [];
+    const dot = (x, y) => dots.push([x, y]);
+    const line = (d) => lines.push(d);
+    const paint = (stroke) => {
+      for (const d of lines) {
+        const p = document.createElementNS(SVGNS, 'path');
+        p.setAttribute('d', d);
+        p.setAttribute('stroke', stroke);
+        wiresEl.appendChild(p);
+      }
+      for (const [x, y] of dots) {
+        const c = document.createElementNS(SVGNS, 'circle');
+        c.setAttribute('class', 'cap');
+        c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 5);
+        c.setAttribute('fill', stroke);
+        wiresEl.appendChild(c);
+      }
     };
 
     const ys = [];
@@ -2731,10 +2824,11 @@
         ' Q ' + gx + ' ' + ty + ' ' + (gx - rad) + ' ' + ty +
         ' H ' + tx);
       dot(tx, ty);
-      dot(sx, sy);
     }
     // the spine: what makes several entries visibly one judgment
     if (ys.length > 1) line('M ' + gx + ' ' + Math.min(...ys) + ' V ' + Math.max(...ys));
+    paint(WIRE_UNDER);
+    paint(color);
   }
 
 
@@ -2871,7 +2965,7 @@
     // the thing you clicked to open the card is the thing you click to close
     // it — and it never moves under the pointer.
     const marks = '<span class="chipcol"><span class="achip wmark" role="button" tabindex="0"' +
-      ' data-anchor="' + s.id + '" title="Close this one">' + markOf(s) + '</span>' +
+      ' data-anchor="' + s.id + '"' + chipStyle(s) + ' title="Close this one">' + markOf(s) + '</span>' +
       (o.chips || '') + '</span>';
     return '<div class="clausehead">' +
       '<div class="headlab"><span>' + (o.label || 'The clause as it stands') + '</span></div>' +
@@ -2930,10 +3024,14 @@
     // gives the row no shape and the reader no idea what finishing looks like.
     // A greyed tick in the corner says *this is where this ends* from the
     // moment the card opens.
-    // A locked card has no tick — there is nothing to submit — so it keeps the
-    // centred row rather than pushing a lone disabled radio to the left edge
-    // and leaving the other end of the card empty.
-    return '<div class="race-mid' + (s.locked ? '' : ' commitrow') + '">' +
+    // **Every radio on a card lines up down its left edge** (Ed, 2026-08-17),
+    // locked or not. A locked card used to keep the centred row on the argument
+    // that a lone disabled radio pushed left leaves the other end of the card
+    // empty — which is true and does not matter, because the alignment is what
+    // says the three radios are answers to one question. One of them wandering
+    // to the middle breaks the column, and a card the reader cannot judge is
+    // exactly the card that most needs to look like the ones they can.
+    return '<div class="race-mid commitrow">' +
       '<button class="lanepick vin" type="button" data-v="indifferent"' +
       ' aria-pressed="' + (pick === 'indifferent') + '"' + (s.locked ? ' disabled' : '') +
       ' title="' + (s.kind === 'diagonal' ? 'They matter equally' : 'I can’t split them') + '">' +
@@ -3015,6 +3113,22 @@
           '<div class="mcap">No proposal cleared the bar, so the charter kept the text it had. ' +
           'The field below is in the record and can be redrafted next session.</div></div>'
         : '') +
+      // **The text it replaced, stated plainly, directly under the head**
+      // (Ed, 2026-08-17). A decided-and-adopted card used to print the clause
+      // at the head and then the winning proposal below it — the same sentence
+      // twice, because the winner *is* the clause now — and the one text the
+      // reader actually wants, the wording this displaced, appeared only as a
+      // redline inside the winner's block, where it is inferred rather than
+      // read. So the old wording is now a band of its own, and the winner's
+      // block states no wording at all: it is the head of the card.
+      //
+      // Nothing is replaced where the incumbent held, so the band appears only
+      // on a decision that carried.
+      (!held && incumbent
+        ? '<div class="replaced"><div class="rtag">The text it replaced' +
+          '<span class="rsub">the charter no longer holds this</span></div>' +
+          '<div class="rtext">' + esc(incumbent) + '</div></div>'
+        : '') +
       // the same band as a live card's, so the record is literally the same
       // structure and not merely the same idea (Ed, 276's rule applied here too)
       '<div class="field"><div class="fieldlab">' + (ranked.length > 1
@@ -3026,12 +3140,14 @@
         (c.won ? '<span class="rsub stood">✓ this is the text that stands</span>'
                : '<span class="rsub">not adopted</span>') + '</div>' +
         line(c) +
-        // Each proposal states its own change against the text it was arguing
-        // with — the clause where it held, the text it displaced where it
-        // carried. That is what stops the record printing the winning wording
-        // twice: the head shows the clause as it now stands, and the block
-        // below shows what this proposal did to it.
-        '<div class="rtext">' + (incumbent ? redline(incumbent, c.text) : esc(c.text)) + '</div>' +
+        // A proposal that carried has its wording at the head of this card, so
+        // it does not restate it. Every other proposal states its own wording
+        // **plainly** — the old text is one band up to compare it against, and
+        // a redline of a losing rewrite against a text that is itself no longer
+        // in the document is two removes from anything the reader can check.
+        (c.won
+          ? '<div class="atop">The wording is at the head of this card.</div>'
+          : '<div class="rtext">' + esc(c.text) + '</div>') +
         // the same blank disc a live card gives it: whoever argued for this is
         // still sealed unless the session's visibility setting says otherwise
         (c.why ? speakerHtml(c.why) : '') + '</div>').join('') + '</div>' +
@@ -3658,7 +3774,11 @@
       '<div class="speaker">' +
       '<span class="disc" aria-hidden="true" title="This is how your reason will reach everybody else: with your name off it (SPEC §3.4)."></span>' +
       '<div class="said edit-why" contenteditable="plaintext-only" data-why spellcheck="false"' +
-      ' data-placeholder="Why this change? — the one thing anyone gets to say about it">' +
+      // Ed, 2026-08-17. A question invited an answer to a different question —
+      // "because it's clearer" — where an opening clause invites the sentence
+      // the field is actually for. It also states the act: what you are writing
+      // is the case for a change, not a note about one.
+      ' data-placeholder="We should change this because…">' +
       esc(d.rationale || '') + '</div></div>' +
       '</div>' +
       '</div></div>' +
@@ -3722,11 +3842,15 @@
   // building. A stacked card replaces its paragraph, so any *other* live
   // suggestion at the same clause would lose its way in — the marks travel up
   // into the head instead.
+  // A gutter mark wears its own lifecycle hue as a resting ground, so the chip
+  // and the rail's sealed dot are visibly the same object in two columns.
+  const chipStyle = (g) => ' style="--chiphue: var(--lc-' + (anchHue(g) || 'closed') + ')"';
+
   function chipsFor(key, exceptId) {
     return (key ? suggFor(key) : []).filter((g) => g.id !== exceptId).map((g) => {
       const i = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === key) : -1;
       const where = g.kind === 'patch' ? ' · place ' + (i + 1) + ' of ' + g.sites.length : '';
-      return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '" title="' +
+      return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '"' + chipStyle(g) + ' title="' +
         esc(plainLabel(g.qLabel)) + where + ' — open it">' + markOf(g) + '</span>';
     }).join('');
   }
@@ -3947,7 +4071,7 @@
           const chips = live.map((g) => {
             const siteIdx = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === line.key) : -1;
             const where = g.kind === 'patch' ? ' · place ' + (siteIdx + 1) + ' of ' + g.sites.length : '';
-            return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '" title="' +
+            return '<span class="achip" role="button" tabindex="0" data-anchor="' + g.id + '"' + chipStyle(g) + ' title="' +
               esc(plainLabel(g.qLabel)) + where + ' — open it">' + markOf(g) + '</span>';
           }).join('');
           html +=
@@ -3968,7 +4092,7 @@
             (wasResolved ? ' data-anchor="' + wasResolved.id + '"' +
               anchWash(wasResolved, openId === wasResolved.id, line.key) : '') +
             (line.key ? ' data-key="' + line.key + '"' : '') + '>' +
-            (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0" data-anchor="' + wasResolved.id +
+            (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
               '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + markOf(wasResolved) + '</span></span>' : '') +
             esc(line.x) + '</p>';
         }
@@ -3983,7 +4107,7 @@
         html += '<div class="insert-anchor" data-anchor="' + ins.id + '" title="' +
           esc(plainLabel(ins.qLabel)) + ' — a section proposed for this gap"' +
           anchWash(ins, openId === ins.id) + '>' +
-          '<span class="chipcol"><span class="achip" data-anchor="' + ins.id + '">' +
+          '<span class="chipcol"><span class="achip"' + chipStyle(ins) + ' data-anchor="' + ins.id + '">' +
           markOf(ins) + '</span></span></div>';
         if (openId === ins.id) html += '</div>' + suggCardHtml(ins) + PROSE;
       }
@@ -3999,9 +4123,15 @@
     // the text is a thing you write in; the glyph in the gutter is the thing
     // you press. A proposed section keeps its whole gap clickable, since there
     // is no text there to put a caret into.
+    // Marks **inside** a card are live too (fixed 2026-08-17). A guard here
+    // dropped every click whose target sat inside a `.sugg`, which predates the
+    // rebuild that lifted the clause — and its marks — into the card's head. It
+    // left the card's own mark inert, so the glyph you pressed to open a card
+    // did nothing when you pressed it again, and the only way out was the rail.
+    // That is also half of why closing felt abrupt: the gesture that should
+    // have run the collapse was not reaching it.
     doc.querySelectorAll('.achip[data-anchor], .insert-anchor[data-anchor]').forEach((el) =>
       el.addEventListener('click', (ev) => {
-        if (ev.target.closest('.sugg')) return;
         ev.stopPropagation();
         toggle(el.dataset.anchor, false);
       })
@@ -4337,7 +4467,11 @@
   // scroll, so doing both in one frame makes the page lurch. Collapse the old
   // card, *then* move, *then* expand the new one — three steps, never overlapping.
   const REDUCED = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const COLLAPSE_MS = 190, EXPAND_MS = 230;
+  // The collapse now travels the card's whole box back onto its paragraph
+  // rather than stopping at head height, so it is given a little longer and a
+  // curve that *lands* — fast out, soft in — where the old one accelerated into
+  // a jump it was never going to make gracefully.
+  const COLLAPSE_MS = 240, EXPAND_MS = 230;
 
   // **The card grows out of its own clause** (Ed, 273; replacing the swap that
   // came in with the stacked card, which was correct but jarring).
@@ -4369,6 +4503,28 @@
   // everything except the clause: what the opening gap reveals
   const cardBody = (el) => [...el.children].filter((c) => !c.classList.contains('clausehead'));
 
+  // **A card closes all the way back into its paragraph** (Ed, 2026-08-17: the
+  // close "feels quite abrupt … the whole card disappears and the text above
+  // shifts").
+  //
+  // It used to collapse to `headOnlyHeight` — the height at which only the head
+  // shows, which is where *opening* starts — and then hand over to a re-render
+  // that swapped the card for a plain paragraph. Symmetrical on paper, and
+  // wrong in use, because a card at head height is not a paragraph: it is a
+  // lifted white box with an eyebrow over the clause, 14px of padding round it
+  // and its top edge 34px higher than the paragraph's will be. So the animation
+  // ran smoothly to a shape that was still 93px too tall and 38px too high, and
+  // *then* everything jumped. Opening gets away with the same discrepancy
+  // because the jump happens in the frame of the click, before the motion;
+  // closing puts it after, which is the one order the eye cannot forgive.
+  //
+  // So the collapse animates the card's whole box onto the paragraph's box —
+  // its height down to the `.headclause` (which is the paragraph's own box by
+  // construction: same padding, same negative margin, same width), its padding
+  // away, its eyebrow shut, its lift and its white ground out. The margin-top
+  // grows by exactly what the padding and the eyebrow gave up, so the clause
+  // itself does not move a pixel while everything around it leaves. The last
+  // frame *is* a paragraph, and the swap that follows has nothing left to do.
   function collapseCard(el, done) {
     if (!el || REDUCED()) return done();
     // A card that has scrolled off the top is not worth animating: for 190ms it
@@ -4376,14 +4532,48 @@
     // up the screen, and the delay is 190ms the click doesn't answer in. It goes
     // at once, and the caller's keepStill takes up the slack in the same frame.
     if (el.getBoundingClientRect().bottom < READ_LINE) { el.style.display = 'none'; return done(); }
+    const cs = getComputedStyle(el);
+    const hc = el.querySelector('.clausehead .headclause');
+    const lab = el.querySelector('.clausehead .headlab');
     const h = el.offsetHeight;
-    const end = headOnlyHeight(el);
     const body = cardBody(el);
+    // Falls back to the old head-height collapse where there is no clause to
+    // land on — an `insert-anchor` card has no head, so there is no paragraph
+    // for it to become.
+    const end = hc ? hc.offsetHeight : headOnlyHeight(el);
+    const padT = parseFloat(cs.paddingTop) || 0;
+    const labH = lab ? lab.getBoundingClientRect().height +
+      (parseFloat(getComputedStyle(lab).marginBottom) || 0) : 0;
+    const mt = parseFloat(cs.marginTop) || 0;
+    const para = doc.querySelector('.prose p');
+    const endMB = para ? getComputedStyle(para).marginBottom : cs.marginBottom;
+
     el.style.overflow = 'hidden';
     el.style.height = h + 'px';
     void el.offsetHeight;
-    el.style.transition = 'height ' + COLLAPSE_MS + 'ms cubic-bezier(.4, 0, .7, .3)';
-    el.style.height = end + 'px';
+    const ease = COLLAPSE_MS + 'ms cubic-bezier(.32, .72, 0, 1)';
+    el.style.transition = ['height', 'padding-top', 'padding-bottom', 'margin-top',
+      'margin-bottom', 'box-shadow', 'background-color'].map((p) => p + ' ' + ease).join(', ');
+    if (hc) {
+      el.style.height = end + 'px';
+      el.style.paddingTop = '0px';
+      el.style.paddingBottom = '0px';
+      // the top edge descends by exactly what it stops holding, so the clause
+      // stays put while the card leaves from every other side
+      el.style.marginTop = (mt + padT + labH) + 'px';
+      el.style.marginBottom = endMB;
+      el.style.boxShadow = 'none';
+      el.style.backgroundColor = 'transparent';
+      if (lab) {
+        lab.style.transition = 'opacity 90ms ease-in, height ' + ease + ', margin-bottom ' + ease;
+        lab.style.overflow = 'hidden';
+        lab.style.height = '0px';
+        lab.style.marginBottom = '0px';
+        lab.style.opacity = '0';
+      }
+    } else {
+      el.style.height = end + 'px';
+    }
     // the body goes first and faster, so the gap is closing over something
     // already gone rather than crushing it
     body.forEach((c) => {
