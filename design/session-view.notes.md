@@ -2301,3 +2301,36 @@ them and the box is lifted (Ed). A flat control under a raised surface reads as
 belonging to the card rather than to the thing it acts on; putting them at its
 height joins them to it. They go down on press and stay flat while disabled —
 nothing to act on, nothing to raise.
+
+### Four more, and a rename (2026-08-17)
+
+**✏️ propose edit did nothing on the second press.** `startDraft` seeded a site
+only when creating one, so once the desk held a draft — which on a deadlock card
+it does from the first press, or from the first keystroke — every later ✏️ was
+inert. Which is precisely the use the card is built around: reading eight and
+trying two of them. A seed now **replaces** what is in the box, and the origin
+travels with it, so the green marking is measured against the proposal you took
+rather than against the clause. The cost is that it overwrites what you have
+typed; 🗑️ is beside it, and Ed's instruction was explicit.
+
+**The lift was there and invisible.** `--shadow-sm` under a bordered button is
+nothing you can see; the box beside it wears `--shadow-md`, and matching the box
+was the whole point. Lesson repeated from the cable: **match what the eye sees,
+not what the token says.**
+
+**The stuck entry says what is stuck, not what people argued.** A teaser is
+somebody's case for their proposal — the right thing while the question is
+*which of these*, and the wrong thing entirely once it is *can you write a
+better one*. Quoting two of eight arguments there picks a side by accident and
+says nothing about the state the entry is in. It now reads: *Deadlocked — 11
+people can't agree on a proposal even after 34 judgments. Can you propose
+something everyone will agree on?* The caption under it went with the change:
+it said two thirds of the same thing in smaller type, and there is no progress
+to report on a deadlock anyway — that is what deadlock means.
+
+**"Wordings" became "proposals" throughout** (Ed). Worth recording why it was
+ever *wordings*: the word was doing real work in a race, where two candidates
+differ only in how they say the same thing, and *proposals* felt too heavy for a
+comma. But it is jargon the surface invented, the objects are proposals
+everywhere else in the product, and a reader meeting a new noun for a thing they
+already have a name for assumes it must be a different thing.

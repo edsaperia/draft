@@ -991,9 +991,9 @@
      every other object on this surface that can be pressed, and stay flat while
      disabled — there is nothing to act on, so there is nothing to raise. */
   .editcard .commitrow .btn:not([aria-pressed="true"]),
-  .dead-open .commitrow .btn:not([aria-pressed="true"]) { box-shadow: var(--shadow-sm); }
+  .dead-open .commitrow .btn:not([aria-pressed="true"]) { box-shadow: var(--shadow-md); }
   .editcard .commitrow .btn:not([disabled]):hover,
-  .dead-open .commitrow .btn:not([disabled]):hover { box-shadow: var(--shadow-md); }
+  .dead-open .commitrow .btn:not([disabled]):hover { box-shadow: var(--shadow-lg); }
   .editcard .commitrow .btn:not([disabled]):active,
   .dead-open .commitrow .btn:not([disabled]):active,
   .editcard .commitrow .btn.holding,
@@ -1894,10 +1894,9 @@
       // have judged it, and turns ⚔️ the moment you do. The pair below it is
       // already judged, so the two states can be seen side by side.
       id: 'race-guests-notice', kind: 'quick', keys: ['guests'], state: 'needs',
-      deadlocked: true, bounty: 0.55,
+      deadlocked: true, bounty: 0.55, judges: 9, comparisons: 21,
       qLabel: '§ Guests — notice', urgency: 0.42,
       pct: 48, cap: 'gathering — needs roughly 4 more judgments',
-      capStuck: 'deadlocked — more judgments won’t move it; only a new proposal can',
       marked: 'Friends of the house are welcome whenever a member is in<del>. </del><ins>, and a member expecting more than one says so in the Members’ Book. </ins>',
       rationale: 'The house splits cleanly on this and has not moved in a week: half want it written down, half think a rule about friends is the beginning of the end. Somebody needs to find the version both halves can live with.'
     },
@@ -1986,8 +1985,7 @@
       // the score that outlived the board it was named for (Ed, 223)
       urgency: 0.05, bounty: 0.86,
       pct: 100, cap: 'gathering — needs roughly 3 more judgments',
-      capStuck: 'deadlocked — more judgments won’t move it; only a new proposal can',
-      judges: 11,
+      judges: 11, comparisons: 34,
       // **Eight wordings** (Ed, 2026-08-17: *maybe I need to see a race with 8
       // proposals to really understand what's happening here*). This is what a
       // constitutional argument looks like when it has genuinely stuck: not two
@@ -2595,6 +2593,14 @@
   // beside that clause rather than as a repeat, and its sites are far enough
   // apart in the charter that you rarely see two at once.
   function teasersFor(g, e) {
+    // **A stuck entry says what is stuck, not what people argued** (Ed,
+    // 2026-08-17). A teaser is somebody's case for their proposal, which is the
+    // right thing to show while the question is *which of these* — and the
+    // wrong thing entirely once the question is *can you write a better one*.
+    // Quoting two of eight arguments there is picking a side by accident and
+    // saying nothing about the state the entry is actually in.
+    if (stuck(g)) return ['Deadlocked — ' + (g.judges ?? 0) + ' people can’t agree on a proposal even ' +
+      'after ' + (g.comparisons ?? 0) + ' judgments. Can you propose something everyone will agree on?'];
     if (g.kind === 'race') return [g.race && g.race.a && g.race.a.rationale, g.race && g.race.b && g.race.b.rationale].filter(Boolean);
     // A diagonal quotes nothing (Ed, 2026-08-17). A teaser is a *rationale* —
     // somebody's argument for their wording — and a diagonal has none, because
@@ -2806,7 +2812,10 @@
       // A stuck race says what it is only once it has stopped asking you to
       // judge; before that it carries an ordinary race's caption, because it
       // *is* one until you are through with it.
-      const cap = stuck(g) ? (g.capStuck || g.cap)
+      // A stuck entry has no caption: its teaser now says the whole thing, and
+      // the caption said two thirds of it again in smaller type (2026-08-17).
+      // There is no progress to report either — that is what deadlock means.
+      const cap = stuck(g) ? ''
         : justJudged ? 'still deciding — click to change your mind' : g.cap;
       const sib = e.of > 1 ? ' sib' : '';
 
@@ -3550,7 +3559,7 @@
   const stripTags = (h) => String(h).replace(/<[^>]+>/g, '');
   function laneSeed(s, lane, key) {
     if (lane === 'keep') return null;
-    const note = 'the wording you are editing';
+    const note = 'the proposal you are editing';
     // a `deadlock-card`'s field is a slate, so the lane is its index in it
     if (String(lane).startsWith('slate:')) {
       const c = (s.slate || [])[+String(lane).slice(6)];
@@ -3565,7 +3574,7 @@
   }
   const laneProposeHtml = (s, lane, key) =>
     '<button class="lanepropose" data-propose-from="' + s.id + '|' + lane + '|' + (key || '') +
-    '" title="Write your own version of this wording. Free to open — proposing costs one edit.">' +
+    '" title="Write your own version of this proposal. Free to open — proposing costs one edit.">' +
     // "propose edit" rather than "edit this" (Ed, 2026-08-17): what the button
     // starts is a *proposal*, and "edit this" promises an edit — which is the
     // one thing this surface never lets you do to the charter directly.
@@ -3579,7 +3588,7 @@
     return '<div class="lanebar">' +
       '<button class="lanepick" type="button" data-v="' + v + '"' +
       ' aria-pressed="' + (pickOf(s) === v) + '"' + (s.locked ? ' disabled' : '') +
-      ' title="Say you prefer this wording — nothing leaves the card until you submit">' +
+      ' title="Say you prefer this proposal — nothing leaves the card until you submit">' +
       '<i class="dot" aria-hidden="true"></i>' +
       '<span class="off">Prefer this</span><span class="on">Preferred</span></button>' +
       (o.edit === false ? '' : laneProposeHtml(s, o.lane || v, o.key)) +
@@ -3654,7 +3663,7 @@
   // §8.3 has nothing to say about it.
   const fieldHtml = (inner, n, label) =>
     '<div class="field"><div class="fieldlab">' +
-    (label || (n > 1 ? 'Proposed · ' + n + ' rival wordings' : 'Proposed')) +
+    (label || (n > 1 ? 'Proposed · ' + n + ' rival proposals' : 'Proposed')) +
     '</div>' + inner + '</div>';
 
   function commitRowHtml(s, extra) {
@@ -3797,7 +3806,7 @@
         // a redline of a losing rewrite against a text that is itself no longer
         // in the document is two removes from anything the reader can check.
         (c.won
-          ? '<div class="atop">The wording is at the head of this card.</div>'
+          ? '<div class="atop">The proposal is at the head of this card.</div>'
           : '<div class="rtext">' + esc(c.text) + '</div>') +
         // the same blank disc a live card gives it: whoever argued for this is
         // still sealed unless the session's visibility setting says otherwise
@@ -4047,7 +4056,23 @@
     if (!key) return;
     const d = ensureDraft();
     let site = siteFor(d, key), offset = 0;
-    if (site) { if (initial) site.text = initial.text; }
+    if (site) {
+      if (initial) site.text = initial.text;
+      // **A seed replaces what is in the box** (Ed, 2026-08-17: *clicking a
+      // "propose edit" puts that text in it instead*). It used to seed only on
+      // the way in, so pressing ✏️ on a second wording — or on any wording once
+      // the desk already held a draft — did nothing at all, which is exactly
+      // the case the `deadlock-card` is built around: reading eight and trying
+      // two of them. The origin travels with it, so the green marking is
+      // measured against the wording you took rather than against the clause.
+      else if (seed) {
+        const at = site.keys.indexOf(key);
+        site.text = seed.text;
+        site.keys = [key];
+        site.origin = [originOf(key, seed)];
+        if (at < 0) site.label = headingForKey(key);
+      }
+    }
     else {
       const added = addDraftSite(d, key, (initial ? initial.text : (seed ? seed.text : currentTextFor(key))), seed);
       site = added.site; offset = added.offset;
@@ -4664,10 +4689,10 @@
       // rest is gone.
       '<div class="deadsay"><div class="eyebrow">⚔️ Deadlocked</div>' +
       '<p>' + (s.judges ?? 0) + ' of the ' + ROSTER + ' have judged this and it has not ' +
-      'separated. More judging will not decide it — a wording that both camps can ' +
+      'separated. More judging will not decide it — a proposal that everybody can ' +
       'live with is the only thing that will.</p></div>' +
       '<div class="field"><div class="fieldlab">Everything in flight · ' + field.length +
-      ' wordings, oldest first</div>' +
+      ' proposals, oldest first</div>' +
       // `result-only`, marked, **with the floor forced off** (Ed, 2026-08-17).
       // Left to itself the floor marks three of the eight and silences the
       // rest, because each of these is far enough from the clause to count as a
@@ -4692,8 +4717,8 @@
         '<div class="lanebar solo">' + laneProposeHtml(s, 'slate:' + i, key) + '</div>' +
         (c.why ? speakerHtml(c.why) : '') +
         '</div>').join('') + '</div>' +
-      '<div class="field bridgedesk"><div class="fieldlab">✏️ Write a bridge — ' +
-      'a wording both camps can live with</div>' +
+      '<div class="field bridgedesk"><div class="fieldlab">' +
+      '✏️ propose something everyone can agree on</div>' +
       '<div class="propblock">' + laneBoxHtml(d, site, site ? null : key) + '</div></div>' +
       // The same row as the editing card's, and it stays the same row: 🗑️ at
       // the very left for the whole of a proposal's life, the commit control at
