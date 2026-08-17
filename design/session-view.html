@@ -3970,9 +3970,16 @@
     // and which nothing else on the card was saying in words.
     // Where it held, the incumbent is the clause at the head and is not previous
     // anything — its label already says it stood, and the slot stays empty.
-    const line = (c) => (c.incumbent
-      ? (held ? '' : '<span class="pline ref">Previous text</span>')
-      : c.p == null ? '' : '<span class="pline">' + pct(c.p) + '</span>');
+    // **No score on the alternatives** (Ed, 2026-08-17). The list is in order,
+    // so each box's place already says where it came — and the one comparison
+    // anybody actually makes is against the text they had, which the incumbent's
+    // own position in the list makes without a single number: everything above it
+    // beat the charter, everything below did not. The numbers were five decimals
+    // answering a question the ordering had already answered.
+    //
+    // The eyebrow keeps its two, because there the numbers are the point: what
+    // the room came to, and what it had to clear.
+    const line = (c) => (c.incumbent && !held ? '<span class="pline ref">Previous text</span>' : '');
     const skey = (s.keys ?? [])[0];
     // Whichever text is the clause at the head does not print itself again: the
     // winner where it carried, the incumbent where it held. That is the whole of

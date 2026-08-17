@@ -2807,3 +2807,17 @@ A thing worth noticing about the sequence: none of the three removals would have
 been visible a week ago. They only become obvious once the numbers around them
 are compact enough to sit on one line, which is what the units bought — **the
 units did not save space, they made the redundancy legible.**
+
+### The alternatives lose their numbers (2026-08-17)
+
+Ed: *we don't need the number for each alternative in the race.* Right, and
+for a reason the last change made visible: the list is in order, so a box's place
+already says where it came — and the one comparison anybody actually makes is
+against the text they had, which **the incumbent's own position makes without a
+single number**: everything above it beat the charter, everything below did not.
+Five decimals were answering a question the ordering had already answered.
+
+The eyebrow keeps its two, because there the numbers *are* the point: what the
+room came to, and what it had to clear. That is the shape this card has been
+converging on all evening — **the quantities live in one line at the top, and
+everything below it is text in the order the room put it**.
