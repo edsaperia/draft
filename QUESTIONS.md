@@ -140,6 +140,22 @@ Marking the field green (Ed, 2026-08-17) took most of the weight off both of the
 
 ## Backlog (provisioned, build later)
 
+315. **The ranking model as a document-creation setting: approval · Bradley–Terry · Crowd-BT** (Ed, 2026-08-17, parked as a note for later). *There are situations where each is appropriate and I think much of our machinery still applies for each.* Crowd-BT is Chen, Bennett, Collins-Thompson & Horvitz, *Pairwise Ranking Aggregation in a Crowdsourced Setting*, WSDM 2013 (10.1145/2433396.2433420) — Bradley–Terry with a **per-judge reliability parameter** estimated jointly with the item scores, plus an active-learning scheme that chooses which pair to serve *and whom to serve it to*. Details want checking against the paper before anything is built on them.
+
+Ed is right that most of the machinery is indifferent to the choice. The `patch-engine`, `overlap-gates` and `dedup-gate` are text machinery and never touch the model. The `adoption-threshold` and its ramp are stated as P(challenger beats incumbent), and all three produce something that plays that role. Quorum, adoption floors, the record, the gazette, and the whole of `session-view` are unaffected — a card asks for a judgment either way.
+
+What genuinely changes is worth listing, because it is more than the estimator. **Active sampling largely disappears under approval**: everybody can rate everything, so the `router` stops *selecting* and only *orders*, which would make the queue dramatically shorter and the `evidence-meter` mean something different. **Deadlock (§8.3) is a Bradley–Terry construct** — *close relative to the marginal value of further sampling* — and under approval it becomes two candidates with similar approval rates, which is detectable but is not the same claim. **Indifference** has no separate existence under approval; approving both *is* indifference. And the **`bounty score`** rests on resolvable disagreement, which is model-specific.
+
+Two things worth having written down before this is picked up.
+
+**The choice is constitutional, not statistical.** Crowd-BT's reliability parameter says a judge is *often wrong*, which presupposes there is a right answer to be wrong about. This project's §3.3 says the opposite in as many words — *preference is not measurement*. If Hollis prefers the shorter clause and thirteen people prefer the longer one, Hollis is not unreliable; Hollis disagrees. Down-weighting a judge is **disenfranchising them by an algorithm nobody in the room can audit**, which is a serious thing to do to a member of a constitutional convention. But there are documents where it is exactly right — a technical standard, a specification being cleaned up, any domain where some readings are simply mistakes — and those are the same documents where a large roster contains people of very different expertise. So the real question a convenor is answering is **does this document treat disagreement as difference or as error**, which is the kind of question that belongs at `document-creation` or the `founding-ceremony` beside quorum and the bar, and not in a settings menu. Under the §9.0a logic it is arguably the roster's to settle rather than the convenor's: being told your judgments count for less is a thing done *to* you.
+
+**And the sophisticated model is probably wrong at v1 scale.** Crowd-BT spends data on extra per-judge parameters, and CLAUDE.md tunes v1 for rosters of 5–10 where data-efficiency beats throughput; on fourteen judges it may be strictly worse than plain Bradley–Terry, which is itself chosen over approval *because* it extracts more per judgment. Crowd-BT's home is hundreds of annotators. Which puts its threshold at roughly the roster size where you stop being able to know everyone — the same point at which a room stops being able to vouch for each other's good faith. Those two thresholds coinciding is not a coincidence, and it is the strongest argument that this is a real setting rather than a knob: **the model should change when the room changes kind.**
+
+One reversal to expect if approval is built: it produces the **more legible record**. The `sealed record`'s best sentence — *these two beat what we had and those three did not* — is currently a Bradley–Terry construction in which every number is a probability against the incumbent. Approval counts are less informative and far easier for a lay reader to trust. The more sophisticated model makes the harder-to-explain record, which matters for a document whose legitimacy rests on people believing the record.
+
+
+
 42. **Spectator commentary view** (Ed, 2026-08-14): an optional commentating view for people watching a convention — like the sim's commentator, but consuming **public data only**: gazette, live candidate texts/rationales, bounty board, document state. Never individual judgments, never standings, authorship only per the session's visibility setting. Provision: expose a `spectator-api` in engine-core (a strictly-public projection, sibling of the participant-api) and have every spectator surface — commentary LLM included — consume only that, so privacy holds by construction rather than by prompt discipline. Note the sim's own commentator is deliberately different: it is omniscient (sees temperaments and hidden agendas) because it narrates a fiction for the experimenter; the product spectator box narrates real people and gets none of that.
 
 55. **Participant-api composer surface** (sim evidence 2026-08-14): `ParticipantApi` has no composer-opening call — the sim runner invokes `Session.openComposer` directly (same precedent as its dedup co-sign path). The product composer needs that surface, including the §3.3 forfeit semantics, before the UI can exist.
@@ -159,7 +175,7 @@ Marking the field green (Ed, 2026-08-17) took most of the weight off both of the
 
 ## Spent numbers
 
-Next unused number: **315**. Never reuse a spent number.
+Next unused number: **316**. Never reuse a spent number.
 
 *Tidied 2026-08-16 (housekeeping pass): items sorted numerically within each section; 158 and 163 deleted as fully resolved; 70 and 92 rewritten to their surviving halves, since the questions they originally asked no longer exist.*
 
