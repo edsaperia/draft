@@ -361,7 +361,7 @@ window.SETUP = (function () {
       // is the same sentence that stood on the page, exactly where it was
       // — the decision-card gesture, with a rule for a clause.
       (ctx.headFor && ctx.headFor(c)
-        ? '<div class="rtext">' + ctx.headFor(c) + '</div>'
+        ? '<div class="rtext headrule">' + ctx.headFor(c) + '</div>'
         : '<h2 class="rtext">' + esc(c.t) + '</h2>') +
       // **The clause a setting card opens from can be a thing, not a line**
       // (Ed, 2026-08-18): the membership card keeps the membership list at

@@ -514,3 +514,7 @@ button.cline:hover b { text-decoration: underline; }
 /* Founded by [avatar] [name] (at [time]) — the avatar rides in the line */
 .cpv.founded .av { width: 20px; height: 20px; font-size: 7px;
   display: inline-flex; vertical-align: -5px; margin: 0 2px; }
+
+/* a rule standing as a card's head is the clause, not a title: document size
+   and colour, exactly as it stood on the page (Ed's QA, 2026-08-18) */
+.setupcard .clausehead .rtext.headrule { font-size: 1rem; font-weight: 400; line-height: 1.55; }
