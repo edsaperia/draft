@@ -445,7 +445,8 @@ button.cline:hover b { text-decoration: underline; }
 .constsec .cptext b { font-weight: 600; }
 .constsec .cpara.notab { min-height: 0; }
 .constsec .cpara.notab .cptext { padding-top: 0; }
-.constsec .cpara.open { margin: var(--s3) 0; }
+/* same margins as a closed paragraph — the measured shift does the rest */
+.constsec .cpara.open { margin: 0 0 var(--s3); }
 .constsec .pilelab { margin-bottom: var(--s3); }
 
 /* the constitution's sections (Ed, 2026-08-18): a subtitle at the document's

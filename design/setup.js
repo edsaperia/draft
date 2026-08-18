@@ -291,6 +291,26 @@ window.SETUP = (function () {
       if (n > 1) col.style.setProperty('--peek', Math.max(1.5, Math.min(4, 60 / (n - 1))).toFixed(2) + 'px');
       row.style.minHeight = Math.ceil(col.getBoundingClientRect().height + 8) + 'px';
     });
+    // **The rule does not move when its card opens** — session-view's own
+    // discipline, by session-view's own means: measurement, not a constant
+    // (Ed, 2026-08-18: *can we re-use infrastructure from the session-view?*).
+    // A closed paragraph tells us where text sits inside a .cpara; the open
+    // card is shifted until its head-rule sits at exactly that offset. Runs
+    // before the strip alignment below, which re-measures against the moved
+    // card.
+    band.querySelectorAll('.cpara.open > .setupcard').forEach((card) => {
+      const rule = card.querySelector('.clausehead .rtext.headrule');
+      if (!rule) return;
+      const holder = card.parentElement;
+      const ref = holder.closest('.constsec')?.querySelector('.cpara:not(.open):not(.textanchor) .cpv');
+      if (!ref) return;
+      const want = ref.getBoundingClientRect().top - ref.closest('.cpara').getBoundingClientRect().top;
+      card.style.marginTop = '';
+      const have = rule.getBoundingClientRect().top - holder.getBoundingClientRect().top;
+      if (Math.abs(have - want) > 0.5) {
+        card.style.marginTop = ((parseFloat(getComputedStyle(card).marginTop) || 0) + (want - have)).toFixed(1) + 'px';
+      }
+    });
     // the card grows to hold its strip: a floor, not a height, so the card is
     // still as tall as what it says and the strip only stops it being shorter
     band.querySelectorAll('.setupcard').forEach((card) => {
