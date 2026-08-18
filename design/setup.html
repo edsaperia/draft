@@ -466,9 +466,17 @@
   // more, which also closes Q323: delegation reads as a birth rather than a
   // teleport.
   const ansKey = (c) => c.ansFor || c.k;
-  const answered = (c) => S.myAns[ansKey(c)] !== null && S.myAns[ansKey(c)] !== undefined;
+  // **Choosing and committing are two acts** (Ed, 363a, 2026-08-18): a blind
+  // question's answers feed a count everyone sees and resolve to maxima, so
+  // a stray click while exploring the ladder must not be an answer. Touching
+  // the control fills a provisional value (which is what wakes the ✓); the ✓
+  // commits it, and only committed answers count anywhere — the tally, the
+  // gates, the resolution. Every other card already works this way.
+  const filled = (c) => S.myAns[ansKey(c)] !== null && S.myAns[ansKey(c)] !== undefined;
+  const myAnsOk = () => (viewerRow().ansOk || (viewerRow().ansOk = new Set()));
+  const answered = (c) => filled(c) && myAnsOk().has(ansKey(c));
   const owesAnswer = (c) => !!c.ansFor && viewerIsMember() && !answered(c);
-  const ready = (c) => (c.ansFor ? answered(c) : c.ready ? c.ready() : true);
+  const ready = (c) => (c.ansFor ? filled(c) : c.ready ? c.ready() : true);
   const settled = (c) => (c.isGate ? S.okd.has(c.k)
     : c.ansFor ? answered(c)
     : S.seen.has(c.k) && ready(c));
@@ -484,7 +492,8 @@
   // founder's own share: a question cannot read as resolved while the one
   // answer the surface can actually collect is still outstanding.
   const resolveCounts = () => CARDS.forEach((c) => { if (c.p != null) {
-    const real = S.roster.filter((r) => r.ans && r.ans[c.k] !== null && r.ans[c.k] !== undefined).length;
+    const real = S.roster.filter((r) => r.ansOk && r.ansOk.has(c.k) &&
+      r.ans && r.ans[c.k] !== null && r.ans[c.k] !== undefined).length;
     const mine = isRoom(c) && viewerIsMember();
     c.in = Math.max(real, Math.min(E() - (mine && !answered(c) ? 1 : 0), Math.round(c.p * E()) +
       (mine && answered(c) ? 1 : 0)));
@@ -644,7 +653,7 @@
     lapse: 'The shortest you will accept',
     rate: 'The most generous you will accept' };
   const value = (c) => (c.ansFor
-    ? esc(answered(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
+    ? esc(filled(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
     : esc(VALUE[c.k]()));
   const summary = (c) => {
     const m = motionOn(c);
@@ -672,8 +681,11 @@
   const motionsLive = () => canJudge();
   const motionOn = (c) => (c && motionsLive() ? S.motions[c.k] : null);
   const routeOfM = (m, c) => (m.kind || routeFor(c, m.to));
-  const answeredMotion = (c) => S.mAns[c.k] !== undefined;
-  const motionJudged = (k) => S.roster.filter((r) => r.mAns && r.mAns[k] !== undefined).length;
+  // the same two-act gesture (363a): the radio is provisional, the ✓ commits
+  const myMAnsOk = () => (viewerRow().mAnsOk || (viewerRow().mAnsOk = new Set()));
+  const motionPicked = (c) => S.mAns[c.k] !== undefined;
+  const answeredMotion = (c) => motionPicked(c) && myMAnsOk().has(c.k);
+  const motionJudged = (k) => S.roster.filter((r) => r.mAnsOk && r.mAnsOk.has(k)).length;
   // one 🏛️ out per member at a time (Ed, Q327): withdrawn, it comes back whole
   const myHeldOut = () => Object.keys(S.motions).find((k) =>
     S.motions[k].by === S.viewer && (S.motions[k].kind || 'ordinary') === 'constitutional') || null;
@@ -709,6 +721,7 @@
     signing: ['everybody', 'each', 'nobody'], judgments: ['after', 'never'],
     chamber: ['public', 'link', 'closed'] };
   const roomAnswers = (k) => S.roster.filter((r) => r.role !== 'clerk' && r.in &&
+    r.ansOk && r.ansOk.has(k) &&
     r.ans && r.ans[k] !== undefined && r.ans[k] !== null).map((r) => r.ans[k]);
   const takenOf = (k) => {
     const vs = roomAnswers(k); if (!vs.length) return null;
@@ -886,8 +899,11 @@
     S.roster.forEach((r) => {
       if (r.role === 'clerk') return;
       r.ans = r.ans || {}; r.okd = r.okd || new Set();
-      for (const k of Object.keys(FILL))
+      r.ansOk = r.ansOk || new Set();
+      for (const k of Object.keys(FILL)) {
         if (r.ans[k] === undefined || r.ans[k] === null) r.ans[k] = FILL[k];
+        r.ansOk.add(k);
+      }
       CARDS.forEach((c) => { r.okd.add('res-' + c.k); r.okd.add('set-' + c.k); });
       r.okd.add('canpropose'); r.okd.add('canjudge');
     });
@@ -1425,7 +1441,7 @@
             : '') +
           '<button class="lanepick" aria-pressed="' + (S.mAns[c.k] === 'either') + '"' +
           ' data-motion="either"><span class="dot"></span><span>Indifferent</span></button>' +
-          '<button class="btn btn-approve glyphbtn"' + (answeredMotion(c) ? '' : ' disabled') +
+          '<button class="btn btn-approve glyphbtn"' + (motionPicked(c) ? '' : ' disabled') +
           ' data-confirm="1">' + TICK + '</button>',
           g.cards, { v: 'stands', s: { ...m, pick: S.mAns[c.k] } });
       }
@@ -1438,7 +1454,7 @@
           (m.by === S.viewer
             ? '<button class="btn" data-withdrawmotion="' + c.k + '" title="Withdrawing hands your 🏛️ back">🗑️ Withdraw</button>'
             : '<button class="btn" data-close="1">Close</button>') +
-          '<button class="btn btn-approve glyphbtn"' + (answeredMotion(c) ? '' : ' disabled') +
+          '<button class="btn btn-approve glyphbtn"' + (motionPicked(c) ? '' : ' disabled') +
           ' data-confirm="1">' + TICK + '</button>', g.cards);
       }
       if (composerOn(c)) {
@@ -1686,7 +1702,7 @@
     const wm = ev.target.closest('[data-withdrawmotion]');
     if (wm) return closeThen(() => { const k = wm.dataset.withdrawmotion;
       delete S.motions[k];
-      S.roster.forEach((r) => { if (r.mAns) delete r.mAns[k]; });
+      S.roster.forEach((r) => { if (r.mAns) delete r.mAns[k]; if (r.mAnsOk) r.mAnsOk.delete(k); });
       S.open = null; });
     if (ev.target.closest('[data-putmotion]')) {
       if (S.draft && S.draft.to) {
@@ -1703,6 +1719,10 @@
     if (ev.target.closest('[data-confirm]')) {
       return closeThen(() => {
         const was = S.open; S.seen.add(was); S.open = null;
+        // the ✓ is the act (363a): committing the provisional answer
+        const cw = card(was);
+        if (cw && cw.ansFor && filled(cw)) myAnsOk().add(ansKey(cw));
+        if (cw && motionOn(cw) && motionPicked(cw)) myMAnsOk().add(cw.k);
         // the link card is born pre-filled the moment the title settles
         if (was === 'title' && S.title && !S.slug) {
           const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken;
