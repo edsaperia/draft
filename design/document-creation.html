@@ -29,12 +29,15 @@
    The fourth retired the modal. The fifth retired the last two inventions on the
    screen: the flat tab group, which is now two `chip-gutter` piles like
    everything else, and the compound card, which was a form in card's clothing.
-   **Nineteen decisions, nineteen cards.** A picture and a name are two questions; a
-   roster and whether the convenor is in it are two questions; a grant, a drip
-   and a stake are three. Each is a thing somebody could answer differently and
-   on its own, which is the test — what is *not* split is a parameter and its own
-   value, since *rising, 55% → 78%* is one thought and cutting it in half would
-   be splitting a sentence rather than a decision.
+   **One decision, one card**, and the test is whether somebody could answer it
+   differently and on its own: a picture and a name are two questions, and so are
+   a membership and whether the convenor is in it. What is *not* split is a
+   parameter and its own value — *rising, 55% → 78%* is one thought, and cutting
+   it in half would be splitting a sentence rather than a decision. The same test
+   cuts the other way twice, on 2026-08-18: *when it ends* swallowed *whether it
+   ends*, because **never** is one of the answers to *when*; and the stake stopped
+   being a card at all, because it is a flat 1 in the mechanism and a card for it
+   was offering a decision nobody has. Seventeen.
 
    What is left in this file is its own fixture and the bodies of the cards a
    convenor fills in. The piles, the strip, the cable, the rail entry, the card
@@ -106,7 +109,7 @@
 <script>
 (function () {
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
-    nameBody, pictureBody, drawWire, opt, num, someIn, bandToc, KIND, kindNote } = window.SETUP;
+    nameBody, pictureBody, drawWire, opt, num, someIn, KIND, kindNote } = window.SETUP;
   const prose = document.getElementById('prose');
   const titleEl = document.getElementById('title');
   const band = document.getElementById('band');
@@ -123,7 +126,6 @@
     authorshipSet: 'anonymous', signingSet: 'nobody', judgmentsSet: 'never',
     grantBy: 'convenor', grant: 4,
     dripBy: 'convenor', drip: 1, dripPer: 10, cap: 8,
-    stakeBy: 'convenor', stake: 1,
     chamber: 'roster', auditor: 'roster', auditorBudget: 6,
     roster: [{ n: 'Wren Ashby', e: 'wren@hollowoak.club', role: 'member', convenor: true, in: true }],
     // **Confirmed, not merely defaulted** (Ed, 2026-08-17). A default nobody
@@ -173,7 +175,7 @@
   }
   function renderToc() {
     const hs = [...prose.children].filter((b) => b.dataset.h !== undefined);
-    document.getElementById('toc').innerHTML = bandToc(groups()) + hs.map((b, i) => {
+    document.getElementById('toc').innerHTML = hs.map((b, i) => {
       b.id = 'h' + i;
       const lvl = (b.className.match(/lvl(\d)/) || [0, 2])[1];
       return '<li class="lvl' + lvl + '"><a href="#h' + i + '">' + esc(b.dataset.h) + '</a></li>';
@@ -196,14 +198,14 @@
   // you can — picture and name separate! — admin choosing if they're a
   // participant — etc*). Both of his examples are the same fault: two questions
   // of *different kinds* bundled into one card because they happened to be asked
-  // at the same moment. A picture and a name; a roster and whether the convenor
-  // is in it; a grant, a drip and a stake; whether the document ends and when.
+  // at the same moment. A picture and a name; a membership and whether the
+  // convenor is in it; how many ✏️s you start with and how fast they come back.
   //
   // `key` is the state field that carries delegation, and it is what decides
   // which **pile** a card stands in: taking a setting back moves its tab from
   // the members' pile to the convenor's, in front of you.
   const DELEGABLE = ['ending', 'shape', 'quorumForm', 'authorship', 'signing',
-    'judgments', 'grantBy', 'dripBy', 'stakeBy', 'chamber', 'auditor'];
+    'judgments', 'grantBy', 'dripBy', 'chamber', 'auditor'];
   const delegated = (key) => DELEGABLE.includes(key) && S[key] === 'roster';
 
   const CARDS = [
@@ -218,25 +220,30 @@
     // it the one thing on the screen decided by not being decided.
     { k: 'slug', g: '🔗', t: 'The link', kind: 'ordinary', ready: () => SLUG_OK.test(S.slug), changeable: true },
     { k: 'roster', g: '✉️', t: 'Membership', kind: 'constitutional', ready: () => members().length >= 1, changeable: true },
-    { k: 'myrole', g: '🎩', t: 'Your part in it', kind: 'constitutional' },
+    { k: 'myrole', g: '🎩', t: 'Is the convenor a member?', kind: 'constitutional' },
 
     // — yours as a person, whoever you are ------------------------------
     { k: 'myname', g: '📛', t: 'Your name', kind: 'personal', own: 'you', ready: () => !!S.myname.trim(), changeable: true },
-    { k: 'mypic', g: '🙂', t: 'Your picture', kind: 'personal', own: 'you', changeable: true },
+    { k: 'mypic', g: '🖼️', t: 'Your picture', kind: 'personal', own: 'you', changeable: true },
 
     // — the document's shape --------------------------------------------
-    { k: 'ending', g: '📅', t: 'Whether it ends', kind: 'constitutional', key: 'ending', dep: ['roster'], p: 0.5,
-      rule: 'Each member says whether they want an ending, and if so the <b>latest</b> one anybody asks for is taken, so nobody is cut off before they were ready.',
-      takes: 'The document takes the latest', result: 'It ends',
-      dist: [11, 3], distTop: 0, distEnds: ['It ends', 'Perpetual'] },
-    { k: 'endsAt', g: '⏰', t: 'When it ends', kind: 'ordinary', dep: ['ending'],
-      hide: () => perpetual(),
-      rule: 'The <b>latest</b> ending anybody asked for.',
-      takes: 'The document takes the latest', result: 'Thu 18:00',
-      dist: [2, 3, 5, 3, 1], distTop: 3, distEnds: ['Tue', 'Sat'] },
+    // **When it ends and whether it ends are one card** (Ed, 2026-08-18:
+    // *“if it ends” is just the “never” option*). They had been split under the
+    // one-card-per-decision rule, and the split does not survive that rule's own
+    // test — you cannot answer *when* differently from *whether*, because
+    // **never** is one of the answers to *when*. What made them look like two
+    // decisions is that they take different routes to change afterwards, and
+    // that is a fact about the motion rather than about the question (Q329).
+    { k: 'ending', g: '⏰', t: 'When does it end?', kind: 'constitutional', motionKind: 'ordinary',
+      key: 'ending', dep: ['roster'], p: 0.5,
+      ready: () => S.ending !== 'ends' || !!S.endsAt,
+      knote: '<b>Whether</b> it ends is constitutional: a document with no ending has no ramp, so every past adoption would mean something different. <b>When</b> it ends is ordinary — a date can be moved by proposal, because moving it changes nothing that has already happened.',
+      rule: 'Each member says when they want it to end and the <b>latest</b> answer is taken — <b>never</b> being the latest of all — so nobody is cut off before they were ready.',
+      takes: 'The document takes the latest', result: 'Saturday 18:00',
+      dist: [2, 3, 5, 3, 1], distTop: 4, distEnds: ['Tue', 'Never'] },
 
     // — the constitution -------------------------------------------------
-    { k: 'bar', g: '✒️', t: 'The bar', kind: 'constitutional', gate: 'judge', key: 'shape', dep: ['ending'], p: 0.64,
+    { k: 'bar', g: '✒️', t: 'Approval threshold', kind: 'constitutional', gate: 'judge', key: 'shape', dep: ['ending'], p: 0.64,
       rule: 'Each member states the <b>lowest bar</b> they will accept and the document takes the highest, so it will never be easier to change than any one of them wanted.',
       takes: 'The document takes the highest', result: '80%',
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
@@ -257,19 +264,23 @@
       takes: 'The document takes the most private', result: 'Never revealed',
       dist: [11, 3], distTop: 0, distEnds: ['Never', 'After the decision'] },
 
-    // — the economy, which is three decisions and not one -----------------
-    { k: 'grant', g: '🪙', t: 'The starting grant', kind: 'ordinary', key: 'grantBy', dep: ['roster'], p: 0.36,
-      rule: 'Each member states the <b>fewest edits</b> they would accept being given, and the document takes the most generous answer.',
-      takes: 'The document takes the most generous', result: '5 edits',
+    // — the **proposal rate**: how often anybody may propose ---------------
+    // Not an “economy” and not “tokens” (Ed, 2026-08-18). Both words describe
+    // the machinery from the outside; what a member is being asked is how
+    // often they may propose, and that is two decisions — how many ✏️s they
+    // start with, and how fast a spent one comes back.
+    //
+    // It is **not three**: the stake is a flat 1 and always was (§13 parameters,
+    // §7), so the card that offered to set it was offering a decision the
+    // mechanism does not have (Ed, 2026-08-18: *isn’t the stake fixed at 1?*).
+    { k: 'grant', g: '🪙', t: 'How many ✏️s do members start with?', kind: 'ordinary', key: 'grantBy', dep: ['roster'], p: 0.36,
+      rule: 'Each member states the <b>fewest</b> they would accept being given, and the document takes the most generous answer.',
+      takes: 'The document takes the most generous', result: '5 each',
       dist: [1, 2, 4, 3, 2, 1, 1], distTop: 4, distEnds: ['0', '12'] },
-    { k: 'drip', g: '💧', t: 'The drip', kind: 'ordinary', key: 'dripBy', dep: ['ending'], p: 0.36,
-      rule: 'Each member states the <b>slowest drip</b> they would accept, and the document takes the fastest.',
+    { k: 'drip', g: '💧', t: 'How fast do ✏️s come back?', kind: 'ordinary', key: 'dripBy', dep: ['ending'], p: 0.36,
+      rule: 'Each member states the <b>slowest</b> return they would accept, and the document takes the fastest.',
       takes: 'The document takes the fastest', result: '1 per 10%, up to 8',
       dist: [2, 3, 5, 2, 1, 1], distTop: 2, distEnds: ['slowest', 'fastest'] },
-    { k: 'stake', g: '🎲', t: 'The stake', kind: 'ordinary', key: 'stakeBy', dep: ['roster'], p: 0.29,
-      rule: 'Each member states the <b>highest stake</b> they would accept, and the document takes the lowest — a stake is a risk imposed on the proposer, so consent runs the way privacy does.',
-      takes: 'The document takes the lowest', result: '1 edit',
-      dist: [3, 7, 3, 1], distTop: 1, distEnds: ['none', '3 edits'] },
 
     // — the room around it ------------------------------------------------
     { k: 'chamber', g: '🔭', t: 'Who else can see it', kind: 'constitutional', key: 'chamber', dep: ['roster'], p: 0.43,
@@ -294,7 +305,7 @@
   // (Ed, 2026-08-18: *if there are dependencies, just don't show them the next
   // cards until they're done*). Two dependencies, both real: anything the room
   // can be asked waits on the **roster**, since *the members decide* means
-  // nothing until there are members; and the bar, the drip and the ending
+  // nothing until there are members; and the threshold, the drip and the ending
   // date wait on **whether it ends**, since a rising bar needs an endpoint and
   // the drip is paced against one.
   const visible = (c) => !(c.hide && c.hide()) && (c.dep || []).every((k) => settled(card(k)));
@@ -327,12 +338,12 @@
     slug: () => 'draft.to/' + (S.slug || '…'),
     myname: () => S.myname || 'Unnamed',
     mypic: () => (S.mypic ? 'Chosen' : 'Your initials'),
-    myrole: () => (iDraft() ? 'A drafter, like everybody else' : 'The clerk — you do not write'),
+    myrole: () => (iDraft() ? 'Yes — a drafter like everybody else' : 'No — the clerk, who does not write'),
     roster: () => members().length + (members().length === 1 ? ' member' : ' members') +
       (iDraft() ? '' : ' — you are the clerk, and not one of them'),
-    ending: () => (perpetual() ? 'Perpetual' : 'It ends at a set time'),
-    endsAt: () => new Date(S.endsAt).toLocaleString(undefined,
-      { weekday: 'short', hour: '2-digit', minute: '2-digit' }),
+    ending: () => (perpetual() ? 'Never — it runs until it is frozen'
+      : new Date(S.endsAt).toLocaleString(undefined,
+        { weekday: 'short', hour: '2-digit', minute: '2-digit' })),
     bar: () => (S.shape === 'fixed' ? 'Fixed at ' + S.tFixed + '%' : 'Rising, ' + S.tStart + '% → ' + S.tEnd + '%'),
     quorum: () => (S.quorumForm === 'count' ? Math.min(S.quorumN, E()) + ' of ' + E()
       : S.quorumPct + '% — ' + quorumCount() + ' of ' + E()),
@@ -340,10 +351,9 @@
       public: 'Names from the start' }[S.authorshipSet]),
     signing: () => ({ nobody: 'Nobody signs', each: 'Each author chooses', everybody: 'Everybody signs' }[S.signingSet]),
     judgments: () => ({ never: 'Never revealed', after: 'Revealed after the decision' }[S.judgmentsSet]),
-    grant: () => S.grant + ' edits to start',
+    grant: () => S.grant + ' each',
     drip: () => S.drip + ' back per ' + (perpetual() ? S.dripPer + ' hours' : S.dripPer + '% of the window') +
       ', up to ' + S.cap,
-    stake: () => (S.stake ? S.stake + ' staked per proposal' : 'Nothing staked'),
     chamber: () => ({ link: 'Anyone with the link', closed: 'Roster only', public: 'Public' }[S.chamber]),
     machines: () => (S.auditor === true ? 'The coherence auditor, ' + S.auditorBudget + ' edits' : 'People only'),
   };
@@ -409,7 +419,7 @@
 
   // ---- the bodies a convenor fills in ------------------------------------
   // **Constitutional settings default to the room; ordinary ones default to
-  // you** (Ed, 2026-08-18, agreeing the economy back to the convenor). One rule
+  // you** (Ed, 2026-08-18, agreeing the proposal rate back to the convenor). One rule
   // where there had been a rule and three exceptions, and the ordinary /
   // constitutional cut is what explains it: an ordinary setting can be taken
   // back by the room at any time with a motion at the bar, so defaulting it to
@@ -437,7 +447,12 @@
       '<button class="btn" data-act="copy">Copy</button></span></span>' +
       '<p class="setnote">' + (SLUG_OK.test(S.slug)
         ? 'Lower case, digits and hyphens. <b>draft.to/' + esc(S.slug) + '</b> is free.'
-        : 'Lower case, digits and hyphens, three characters or more.') + '</p>',
+        : 'Lower case, digits and hyphens, three characters or more.') + '</p>' +
+      // **Changing it sets up a redirect** (Ed, 2026-08-18). The link is
+      // changeable and it is also the thing that has already been sent to
+      // fourteen people — so a change that broke the old one would make this
+      // the one ordinary setting with a cost for using it as intended.
+      '<p class="setnote">Every link this document has ever had keeps working: changing it leaves a redirect behind, so an invitation somebody was sent weeks ago still opens the right document.</p>',
     myname: () => nameBody(me()),
     mypic: () => pictureBody(me()),
     // **Whether the convenor is in it is its own question** (Ed, 2026-08-18).
@@ -449,11 +464,11 @@
       '<p class="why">You set this document up. That is an administrative act, and it does not by itself put you in the room — a facilitator running a convention they are not a member of and a member who happened to start the document are different people performing it.</p>' +
       '<div class="choice" role="radiogroup">' +
       '<div class="pick' + (iDraft() ? ' on' : '') + '"><button class="lanepick" aria-pressed="' + iDraft() + '" data-me="member">' +
-      '<span class="dot"></span><span>A drafter, like everybody else</span></button>' +
-      '<span class="exp">You get a wallet, you judge, you count towards quorum, and you answer the opening questions with the rest of the room.</span></div>' +
+      '<span class="dot"></span><span>Yes</span></button>' +
+      '<span class="exp">A member like anybody else: a wallet, judgments, a place in quorum, and the opening questions to answer with the rest of the room.</span></div>' +
       '<div class="pick' + (iDraft() ? '' : ' on') + '"><button class="lanepick" aria-pressed="' + !iDraft() + '" data-me="clerk">' +
-      '<span class="dot"></span><span>Just the clerk</span></button>' +
-      '<span class="exp">You set it up and keep it running, but the document is not yours to write: no wallet, no judgments, no place in quorum, and no opening questions to answer. You are not one of the members.</span></div></div>',
+      '<span class="dot"></span><span>No</span></button>' +
+      '<span class="exp">You are the <b>clerk</b>: you set it up and keep it running, but the document is not yours to write — no wallet, no judgments, no place in quorum, and no opening questions to answer.</span></div></div>',
     roster: () =>
       '<p class="why">Everyone here gets a link by email — there are no passwords. You can keep adding people after this; a joiner gets the base grant plus the drip accrued so far, and quorum recomputes.</p>' +
       '<div class="roster">' + S.roster.map((p, i) =>
@@ -473,24 +488,21 @@
       'Nobody has to be here for the document to exist — the link works from the first second, and ' +
       'a joiner gets the base grant plus the drip accrued so far.</p>',
     ending: () =>
-      '<p class="why">Whether this document has an ending at all. A window buys a proper close, a drip paced against it, and a record cut at a known moment; without one the drip runs against real time and the document ends by <b>freeze</b> — when too few members are still active, the roster ends it rather than the calendar (§9.5).</p>' +
+      '<p class="why">The moment this document closes: the close itself, the record, and the top of the approval threshold’s ramp. <b>Never</b> is one of the answers — a perpetual document has no close of its own and a bar that cannot rise, because a ramp needs an endpoint to rise towards, and it ends by <b>freeze</b> when too few members are still active (§9.5) rather than by the calendar.</p>' +
       '<div class="choice" role="radiogroup">' +
-      opt(S, 'ending', 'ends', 'It ends at a set time', 'You will be asked when, on the next card.') +
-      opt(S, 'ending', 'perpetual', 'Perpetual', 'No close of its own, and a bar that cannot rise, because a ramp needs an endpoint to rise towards.') +
-      theyDecide('ending', 'For a window that means the <b>latest</b> ending anybody asks for, so nobody is cut off before they were ready.') +
+      opt(S, 'ending', 'ends', 'At a set time', '',
+        '<span class="fld"><label>Ends</label><input type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '"></span>') +
+      opt(S, 'ending', 'perpetual', 'Never', 'It runs until it is frozen. The ✏️s come back against real time instead of against a window.') +
+      theyDecide('ending', 'That means the <b>latest</b> answer anybody gives, and <b>never</b> is the latest of all — so one member who wants it to run on keeps it running.') +
       '</div>',
-    endsAt: () =>
-      '<p class="why">The moment the window closes: the close, the record, and the top of the bar’s ramp.</p>' +
-      '<span class="fld"><label>Ends</label><input type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '"></span>' +
-      '<p class="setnote">Everything else here is fixed once people are drafting, because changing it would change what earlier judgments meant. A date does not have that problem — so whether a room may later agree to move its own ending is an open question rather than a settled no (Q321).</p>',
     bar: () =>
       '<div class="unlocks">Part of the constitution — judging waits on this and the four beside it.</div>' +
       '<p class="why">How sure the room has to be that a change beats the current text. Never a vote share — a confidence.</p>' +
       '<div class="choice" role="radiogroup">' +
-      opt(S, 'shape', 'ramp', 'Rising', 'Starts low and rises to the close, because the bar should track irreversibility: an early adoption can still be challenged, a late one is permanent.',
+      opt(S, 'shape', 'ramp', 'Rising', 'Starts low and rises to the close, because the threshold should track irreversibility: an early adoption can still be challenged, a late one is permanent.',
         '<span class="setrow2">' + num(S, 'tStart', 'At the opening', 50, 99, '%') + num(S, 'tEnd', 'At the close', 50, 99, '%') + '</span>', perpetual()) +
-      opt(S, 'shape', 'fixed', 'Fixed', 'One bar for the life of the document.',
-        '<span class="setrow2">' + num(S, 'tFixed', 'The bar', 50, 99, '%') + '</span>') +
+      opt(S, 'shape', 'fixed', 'Fixed', 'One threshold for the life of the document.',
+        '<span class="setrow2">' + num(S, 'tFixed', 'Threshold', 50, 99, '%') + '</span>') +
       theyDecide('shape', 'Each states the <b>lowest bar</b> they will accept and the document takes the highest.') +
       '</div>' + (perpetual() ? '<p class="setnote">A rising bar needs an endpoint to rise towards, so a perpetual document holds its bar fixed.</p>' : ''),
     quorum: () =>
@@ -530,27 +542,20 @@
       opt(S, 'judgments', 'after', 'Revealed once the decision is made', 'Published with the record, never before it.') +
       '</div>',
     grant: () =>
-      '<p class="why">How many edits everybody holds on the first day. Proposing costs one, and members see the number in their wallets from the first minute — so a document meant to move quickly and one meant to be hard to change want different answers.</p>' +
+      '<p class="why">How many ✏️s everybody holds on the first day. Proposing costs one, and members see the number in their wallets from the first minute — so a document meant to move quickly and one meant to be hard to change want different answers. A proposal also stakes one, which comes back in full if you withdraw it and in proportion to how well it did if it does not carry (§7) — that is a flat one, and not settable.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('grantBy', 'Each states the <b>fewest edits</b> they would accept being given, and the document takes the most generous answer. Until it settles, everyone drafts on the standard grant.') +
       opt(S, 'grantBy', 'convenor', 'I set it', '',
-        '<span class="setrow2">' + num(S, 'grant', 'Edits to start with', 0, 40) + '</span>') +
+        '<span class="setrow2">' + num(S, 'grant', '✏️s to start with', 0, 40) + '</span>') +
       '</div>',
     drip: () =>
-      '<p class="why">How fast a spent edit comes back, and the most anybody may hold at once. This is the setting that decides whether the wallet is ever felt: at v1 defaults most members sit near the cap all session and never meet the constraint at all.</p>' +
+      '<p class="why">How fast a spent ✏️ comes back, and the most anybody may hold at once. Between them these two settings are the <b>proposal rate</b> — how often anybody may put something to the room. This is the half that decides whether the wallet is ever felt: at v1 defaults most members sit near the cap all session and never meet the constraint at all.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('dripBy', 'Each states the <b>slowest drip</b> they would accept, and the document takes the fastest.') +
       opt(S, 'dripBy', 'convenor', 'I set it', '',
-        '<span class="setrow2">' + num(S, 'drip', 'Edits returned', 0, 10) +
+        '<span class="setrow2">' + num(S, 'drip', '✏️s returned', 0, 10) +
         num(S, 'dripPer', perpetual() ? 'every N hours' : 'per N% of the window', 1, 100) +
         num(S, 'cap', 'Never more than', 1, 99) + '</span>') +
-      '</div>',
-    stake: () =>
-      '<p class="why">What a proposal risks. A stake comes back in full if you withdraw it, and in proportion to how well it did if it does not carry (§7) — so it prices carelessness rather than disagreement.</p>' +
-      '<div class="choice" role="radiogroup">' +
-      theyDecide('stakeBy', 'A stake is a risk imposed on the proposer, so consent runs the way privacy does: each states the <b>highest</b> they would accept and the document takes the lowest.') +
-      opt(S, 'stakeBy', 'convenor', 'I set it', '',
-        '<span class="setrow2">' + num(S, 'stake', 'Staked per proposal', 0, 10) + '</span>') +
       '</div>',
     chamber: () =>
       '<p class="why">Who may read it besides the members. Whoever that is, they are <b>not members</b> — nothing is known about them, they have a link and nothing else, and they cannot propose, judge or be counted. What they see is the chamber view: adoptions as they land, the rolling log hash and which races are stuck. Live standings are never visible to anybody, whatever is chosen here.</p>' +
@@ -560,7 +565,7 @@
       opt(S, 'chamber', 'closed', 'Roster only') +
       opt(S, 'chamber', 'public', 'Public', 'Listed and readable by anyone.') + '</div>',
     machines: () =>
-      '<p class="why">A machine member holds a token budget like anybody else and competes on the same terms.</p>' +
+      '<p class="why">A machine member holds ✏️s like anybody else and competes on the same terms.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('auditor', 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.') +
       opt(S, 'auditor', true, 'Include the coherence auditor', 'Patrols the document for drift — a definition changed in one place and not another — and proposes fixes.',
@@ -578,7 +583,7 @@
       // question while it runs.
       const body = BODY[c.k]() + (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
       const kindLine = c.kind === 'personal' ? '' :
-        '<p class="setnote"><b>' + KIND[c.kind] + '.</b> ' + kindNote[c.kind] + '</p>';
+        '<p class="setnote"><b>' + KIND[c.kind] + '.</b> ' + (c.knote || kindNote[c.kind]) + '</p>';
       const foot = '<button class="btn" data-close="1">Close</button>' +
         '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
         ' data-confirm="1" title="' + (ready(c) ? 'Confirm' : 'Not answered yet') + '">' + TICK + '</button>';
@@ -601,6 +606,33 @@
   };
 
   // ---- wiring ------------------------------------------------------------
+  // **The picture card is an uploader** (Ed, 2026-08-18). Delegated, because
+  // the card is rebuilt on every render; the file is read locally and never
+  // sent anywhere.
+  const takePic = (file) => {
+    if (!file || !/^image\//.test(file.type)) return;
+    const fr = new FileReader();
+    fr.onload = () => { S.mypic = 'u' + fr.result; render(); };
+    fr.readAsDataURL(file);
+  };
+  document.addEventListener('change', (ev) => {
+    if (ev.target.matches('[data-picfile]')) takePic(ev.target.files[0]);
+  });
+  document.addEventListener('dragover', (ev) => {
+    const z = ev.target.closest && ev.target.closest('.picdrop');
+    if (z) { ev.preventDefault(); z.classList.add('over'); }
+  });
+  document.addEventListener('dragleave', (ev) => {
+    const z = ev.target.closest && ev.target.closest('.picdrop');
+    if (z) z.classList.remove('over');
+  });
+  document.addEventListener('drop', (ev) => {
+    const z = ev.target.closest && ev.target.closest('.picdrop');
+    if (!z) return;
+    ev.preventDefault(); z.classList.remove('over');
+    takePic(ev.dataTransfer.files && ev.dataTransfer.files[0]);
+  });
+
   document.addEventListener('click', (ev) => {
     const t = ev.target.closest('[data-tab], [data-card]');
     if (t) { const k = t.dataset.tab || t.dataset.card;

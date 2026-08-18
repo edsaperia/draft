@@ -50,6 +50,17 @@
     margin: 0 auto var(--s4); padding: 0 var(--s5);
   }
   .setrow .pilelab { display: flex; flex-direction: column; gap: 2px; padding-top: 3px; }
+  /* **Convenor and Membership are document headings** (Ed, 2026-08-18: *the
+     same size as “Part I — The Club”*). They had been eyebrows, which is the
+     label treatment for naming a region *inside* a card — and these are not
+     inside anything: they are the first two headings of the document, above
+     Part I, and a reader scanning the charter should meet them at the weight
+     every other top-level heading has. So they take `.docline.lvl1`'s own type
+     and stop being eyebrows, since an eyebrow that is 16px is not one. */
+  .setrow .pilehead {
+    font-size: var(--t-body); font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--fg);
+  }
   .setrow .pilen { font-size: var(--t-small); color: var(--muted); }
 
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden;
@@ -142,8 +153,66 @@
    THE CONSENT SLIDER — nothing preselected, and it must not look answered.
    --------------------------------------------------------------------------- */
   .cs { margin-bottom: var(--s2); }
-  .cs input[type=range] { width: 100%; accent-color: var(--primary); }
-  .cs.unset input[type=range] { accent-color: var(--border); opacity: 0.55; }
+
+  /* **Thicker, and ticked** (Ed, 2026-08-18: *sliders should be thicker and
+     have tick-marks (since they're discrete)*). A hairline track under a small
+     thumb is the control an operating system gives you for a **continuous**
+     quantity, and this one is not: there are fourteen answers to *how much of
+     this room*, and ten to *how sure*. The ticks say so before you touch it —
+     you can count the answers, and the thumb lands **on** one rather than
+     being read off a ruler. Which matters more here than on an ordinary
+     control, because what you are stating is a minimum you will be held to.
+
+     Drawn by hand rather than left to `accent-color`, which only applies to a
+     range in its default appearance — so the fill, the ticks and the thumb are
+     three background layers and a pseudo-element. `--pct` and `--n` come in on
+     the element, because only the card knows how many answers there are. The
+     ticks are painted over the fill and inset by half a thumb at each end, so
+     tick and thumb-centre coincide at every stop. */
+  .cs input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 26px; background: transparent; cursor: pointer;
+    --th: 22px; --trk: 12px; --fillcol: var(--primary);
+  }
+  .cs input[type=range]::-webkit-slider-runnable-track {
+    height: var(--trk); border-radius: calc(var(--trk) / 2);
+    background-color: var(--light);
+    background-image:
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.22) 0 2px, transparent 2px calc(100% / var(--n))),
+      linear-gradient(90deg, rgba(0,0,0,0.22) 0 2px, transparent 2px),
+      linear-gradient(var(--fillcol) 0 0);
+    background-repeat: no-repeat;
+    background-size:
+      calc(100% - var(--th)) 100%,
+      calc(100% - var(--th)) 100%,
+      calc(var(--th) / 2 + (100% - var(--th)) * var(--pct) / 100) 100%;
+    background-position:
+      calc(var(--th) / 2 - 1px) 0,
+      calc(100% - var(--th) / 2 - 1px) 0,
+      left center;
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+  .cs input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: var(--th); height: var(--th); border-radius: 50%;
+    background: var(--primary); border: 2px solid var(--bg);
+    box-shadow: var(--shadow-md);
+    margin-top: calc((var(--trk) - var(--th)) / 2);
+  }
+  .cs input[type=range]::-moz-range-track {
+    height: var(--trk); border-radius: calc(var(--trk) / 2);
+    background: var(--light); box-shadow: inset 0 0 0 1px var(--border);
+  }
+  .cs input[type=range]::-moz-range-thumb {
+    width: var(--th); height: var(--th); border-radius: 50%; border: 2px solid var(--bg);
+    background: var(--primary); box-shadow: var(--shadow-md);
+  }
+  /* Nothing chosen yet: the thumb has to sit somewhere, so it sits in the
+     middle and says nothing — grey, and with no fill behind it, because a
+     fill running up to it would be an answer the member has not given. */
+  .cs.unset input[type=range] { --fillcol: transparent; }
+  .cs.unset input[type=range]::-webkit-slider-thumb { background: var(--muted); }
+  .cs.unset input[type=range]::-moz-range-thumb { background: var(--muted); }
   .csval { font-size: var(--t-lead); font-weight: 600; min-height: 1.6em; }
   .csval.unset { color: var(--muted); font-weight: 400; font-size: var(--t-ui); }
   .csends { display: flex; justify-content: space-between; font-size: var(--t-cap); color: var(--muted); }
@@ -209,6 +278,21 @@
 /* ---------------------------------------------------------------------------
    THE IDENTITY CARD — how you appear in this room (Ed, 2026-08-18).
    --------------------------------------------------------------------------- */
+  /* the uploader: a drop box that is mostly the picture it will hold */
+  .picdrop { display: flex; align-items: center; gap: var(--s4);
+    border: 1px dashed var(--border); border-radius: var(--r-md);
+    padding: var(--s4); margin-bottom: var(--s4); }
+  .picdrop.over { border-color: var(--primary); background: var(--light); }
+  .picact { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+  .picact .btn { font: inherit; font-size: var(--t-cap); padding: var(--s1) var(--s3);
+    cursor: pointer; border: 1px solid var(--border); background: var(--bg);
+    border-radius: var(--r-sm); }
+  .picact .btn:hover { border-color: var(--primary); color: var(--primary-emphasis); }
+  .picact input[type=file] { position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip: rect(0 0 0 0); }
+  .picnote { font-size: var(--t-cap); color: var(--muted); }
+  .av.photo { background-size: cover; background-position: center; color: transparent; }
+
   .avpick { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
   .avopt { border: 2px solid transparent; border-radius: 50%; padding: 2px; background: none;
     cursor: pointer; line-height: 0; }

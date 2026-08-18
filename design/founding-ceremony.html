@@ -66,7 +66,7 @@
 (function () {
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, readBody,
     watchBody, nameBody, pictureBody, drawWire, opt, faces, someIn,
-    KIND, kindNote, motionBody, motionReopen, motionCompose, bandToc } = window.SETUP;
+    KIND, kindNote, motionBody, motionReopen, motionCompose } = window.SETUP;
   const band = document.getElementById('band');
   const rail = document.getElementById('rail');
   const wires = document.getElementById('wires');
@@ -98,7 +98,7 @@
     document.getElementById('prose').innerHTML = DOC.map(([t, x], i) =>
       t === 'p' ? '<p>' + esc(x) + '</p>'
         : '<h2 class="docline lvl' + (t === 'h1' ? 1 : 2) + '" id="h' + i + '">' + esc(x) + '</h2>').join('');
-    document.getElementById('toc').innerHTML = bandToc(groups()) + DOC.map(([t, x], i) =>
+    document.getElementById('toc').innerHTML = DOC.map(([t, x], i) =>
       t === 'p' ? '' : '<li class="lvl' + (t === 'h1' ? 1 : 2) + '"><a href="#h' + i + '">' + esc(x) + '</a></li>').join('');
   }
 
@@ -111,17 +111,18 @@
   // nothing. The live rail marks **state**; this one marks **subject**.
   //
   // Since the decomposition of 2026-08-18 a member answers nine of these rather
-  // than four, because *who may be seen* is three questions and the economy is
-  // three more. Whether nine blind consent questions is too many to put in front
-  // of somebody who came to read a charter is Q322.
+  // than four — *who may be seen* alone is three questions, and a name and a
+  // picture are two more. The proposal rate is not among them here: the convenor
+  // holds it by default (§9.7), because the room can take an ordinary setting
+  // back cheaply and cannot take a constitutional one back at all.
   const ROOM = [
     { k: 'myname', g: '📛', t: 'Your name', kind: 'personal', own: 'you', ready: () => !!S.myname.trim() },
-    { k: 'mypic', g: '🙂', t: 'Your picture', kind: 'personal', own: 'you' },
+    { k: 'mypic', g: '🖼️', t: 'Your picture', kind: 'personal', own: 'you' },
     { k: 'quorum', g: '👥', t: 'Quorum', kind: 'constitutional', in: 11,
       rule: 'Each member states the <b>lowest quorum</b> they will accept and the charter takes the highest.',
       takes: 'The charter takes the highest', result: '10 of 14',
       dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', 'all of them'] },
-    { k: 'bar', g: '✒️', t: 'The bar', kind: 'constitutional', in: 9,
+    { k: 'bar', g: '✒️', t: 'Approval threshold', kind: 'constitutional', in: 9,
       rule: 'Each member states the <b>lowest bar</b> they will accept and the charter takes the highest.',
       takes: 'The charter takes the highest', result: '80%',
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
@@ -155,16 +156,16 @@
     { k: 'slug', g: '🔗', t: 'The link', own: 'convenor', kind: 'ordinary', v: 'draft.to/hollow-oak-4f2a' },
     { k: 'roster', g: '✉️', t: 'Membership', own: 'convenor', kind: 'constitutional', v: 'Fourteen members',
       readNote: 'Anybody else who can read this is not a member — nothing is known about them, they have a link and nothing else. That is the 🔭 setting, not this one.' },
-    { k: 'myrole', g: '🎩', t: 'The convenor’s part', own: 'convenor', kind: 'constitutional', v: 'Wren Ashby is drafting too',
+    { k: 'myrole', g: '🎩', t: 'Is the convenor a member?', own: 'convenor', kind: 'constitutional', v: 'Yes — Wren Ashby drafts too',
       setBy: 'Chosen by Wren Ashby when they set the charter up',
-      readNote: 'A convenor may instead be the <b>clerk</b> — administering without writing, with no wallet, no judgments and no place in quorum.' },
-    { k: 'ending', g: '📅', t: 'Whether it ends', own: 'convenor', kind: 'constitutional', v: 'It ends at a set time' },
-    { k: 'endsAt', g: '⏰', t: 'When it ends', own: 'convenor', kind: 'ordinary', v: 'Thursday 18:00',
-      readNote: 'The bar rises towards that moment, and the drip is paced against it.' },
-    { k: 'grant', g: '🪙', t: 'The starting grant', own: 'convenor', kind: 'ordinary', v: '4 edits' },
-    { k: 'drip', g: '💧', t: 'The drip', own: 'convenor', kind: 'ordinary', v: '1 back per 10% of the window, up to 8' },
-    { k: 'stake', g: '🎲', t: 'The stake', own: 'convenor', kind: 'ordinary', v: '1 edit staked per proposal',
-      readNote: 'Ordinary, so the room is not stuck with it — anybody may propose a change, and it carries at the bar like any other proposal.' },
+      readNote: 'Had the answer been no, Wren would be the <b>clerk</b> — administering without writing, with no wallet, no judgments and no place in quorum.' },
+    // One card, two routes to change it — see the ⏰ entry in document-creation.
+    { k: 'ending', g: '⏰', t: 'When does it end?', own: 'convenor', kind: 'constitutional',
+      motionKind: 'ordinary', v: 'Thursday 18:00',
+      readNote: 'The approval threshold rises towards that moment, and ✏️s come back paced against it. <b>Never</b> is one of the answers to this question, which is why it is constitutional — a document with no ending has no ramp. The date itself is ordinary, and anybody may propose moving it.' },
+    { k: 'grant', g: '🪙', t: 'How many ✏️s do members start with?', own: 'convenor', kind: 'ordinary', v: '4 each' },
+    { k: 'drip', g: '💧', t: 'How fast do ✏️s come back?', own: 'convenor', kind: 'ordinary', v: '1 back per 10% of the window, up to 8',
+      readNote: 'With the one above, this is the <b>proposal rate</b> — how often anybody may put something to the room. Each proposal also stakes one ✏️, which is a flat one and not a setting: it comes back in full if you withdraw, and in proportion to how well it did if it does not carry.' },
   ];
   const CARDS = ROOM.concat(CONVENOR);
   const card = (k) => CARDS.find((c) => c.k === k);
@@ -184,7 +185,7 @@
   // — quorum is a fraction of the membership, so a new member silently re-rates
   // every judgment already cast).
   const MOTIONS = {
-    endsAt: { to: 'Saturday 18:00', judged: 6,
+    ending: { to: 'Saturday 18:00', judged: 6, kind: 'ordinary',
       why: 'Three of us are away from Thursday lunchtime and the Guests part has barely been looked at. Two more days costs nothing and we would finish it.' },
     roster: { to: 'Fifteen drafting — Rowan Pike joins', judged: 11, invite: 'Rowan Pike',
       why: 'Rowan has kept the garden for six years and every clause about it was written without them in the room.' },
@@ -306,11 +307,17 @@
     'What you are about to say is how much of <b>this room</b> you need behind a change before it moves.</div>' +
     faces(ROSTER, S.myname) + '</div>');
 
-  const slider = (key, min, max, fmt, mean) => {
-    const v = S[key];
+  // `step` is not decoration: the ticks are drawn from it, and a control that
+  // ticks every answer has to have countably few. It is also the more honest
+  // claim — *the lowest bar I will accept* to the nearest percentage point is a
+  // precision nobody holds, and the fives are what people actually mean.
+  const slider = (key, min, max, fmt, mean, step) => {
+    const v = S[key], st = step || 1;
+    const at = (v === null ? Math.round((min + max) / 2 / st) * st : v);
     return '<div class="cs' + (v === null ? ' unset' : '') + '">' +
       '<div class="csval' + (v === null ? ' unset' : '') + '">' + (v === null ? 'Drag to answer' : fmt(v)) + '</div>' +
-      '<input type="range" min="' + min + '" max="' + max + '" value="' + (v === null ? Math.round((min + max) / 2) : v) + '"' +
+      '<input type="range" min="' + min + '" max="' + max + '" step="' + st + '" value="' + at + '"' +
+      ' style="--n:' + Math.round((max - min) / st) + ';--pct:' + (v === null ? 0 : (v - min) / (max - min) * 100) + '"' +
       ' data-slide="' + key + '">' +
       '<div class="csends"><span>' + fmt(min) + '</span><span>' + fmt(max) + '</span></div>' +
       '<div class="csmean">' + (v === null ? mean(min) + '<br>' + mean(max) : mean(v)) + '</div></div>';
@@ -358,7 +365,7 @@
       slider('bar', 50, 95, (v) => v + '%', (v) =>
         v >= 85 ? 'Only near-agreement changes anything. Expect the charter to move slowly and keep most of what it started with.'
         : v <= 60 ? 'A modest preference is enough. The charter will move quickly, and reverse itself more often.'
-        : 'A clear preference is needed, but not agreement.') +
+        : 'A clear preference is needed, but not agreement.', 5) +
       '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> of the fourteen.</p>',
     authorship: () =>
       '<p class="why">Rationales are visible whatever the room settles on. What varies is only whether a name is attached to one. Here the rule runs the other way: the charter takes the <b>most private</b> answer, so one person who wants to stay unnamed keeps the whole charter unnamed.</p>' +
@@ -473,6 +480,33 @@
     }
     ROOM.forEach((c) => { if (COUNTS[c.k] != null) c.in = k === 'settled' ? E : COUNTS[c.k]; });
   }
+
+  // **The picture card is an uploader** (Ed, 2026-08-18). Delegated, because
+  // the card is rebuilt on every render; the file is read locally and never
+  // sent anywhere.
+  const takePic = (file) => {
+    if (!file || !/^image\//.test(file.type)) return;
+    const fr = new FileReader();
+    fr.onload = () => { S.mypic = 'u' + fr.result; render(); };
+    fr.readAsDataURL(file);
+  };
+  document.addEventListener('change', (ev) => {
+    if (ev.target.matches('[data-picfile]')) takePic(ev.target.files[0]);
+  });
+  document.addEventListener('dragover', (ev) => {
+    const z = ev.target.closest && ev.target.closest('.picdrop');
+    if (z) { ev.preventDefault(); z.classList.add('over'); }
+  });
+  document.addEventListener('dragleave', (ev) => {
+    const z = ev.target.closest && ev.target.closest('.picdrop');
+    if (z) z.classList.remove('over');
+  });
+  document.addEventListener('drop', (ev) => {
+    const z = ev.target.closest && ev.target.closest('.picdrop');
+    if (!z) return;
+    ev.preventDefault(); z.classList.remove('over');
+    takePic(ev.dataTransfer.files && ev.dataTransfer.files[0]);
+  });
 
   document.addEventListener('click', (ev) => {
     const st = ev.target.closest('[data-state]');

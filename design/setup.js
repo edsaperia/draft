@@ -39,6 +39,12 @@ window.SETUP = (function () {
   function avHtml(person, cls) {
     const pic = person && person.pic;
     const c = 'av ' + (cls || '') + (pic ? ' set' : '');
+    // An uploaded picture is stored as 'u' + a data URL: the file never leaves
+    // the browser, which is what lets a mockup have a real uploader in it
+    // without inventing a face for anybody (Ed, 2026-08-18).
+    if (pic && pic[0] === 'u') {
+      return '<span class="' + c + ' photo" style="background-image:url(' + pic.slice(1) + ')"></span>';
+    }
     if (pic && pic[0] === 'c') {
       return '<span class="' + c + '" style="background:' + GROUNDS[+pic.slice(1)] + '">' +
         esc(initials(person.n)) + '</span>';
@@ -140,7 +146,7 @@ window.SETUP = (function () {
       // a placeholder rather than nothing, so the shape of the row does not
       // change as people arrive.
       return '<div class="setrow" id="pile-' + g.key + '" data-pile="' + g.key + '">' + pileHtml(g.cards, ctx) +
-        '<div class="pilelab"><span class="eyebrow">' + esc(g.label) + '</span>' +
+        '<div class="pilelab"><span class="pilehead">' + esc(g.label) + '</span>' +
         (g.who ? '<div class="pilewho">' + g.who() + '</div>' : '') +
         '<span class="pilen">' + esc(g.note(left)) + '</span></div></div>';
     }).join('');
@@ -220,8 +226,12 @@ window.SETUP = (function () {
      Read-only is not the same as hidden — the whole point of the tab group is
      that the constitution is legible to everyone it binds. */
   function readBody(c, ctx) {
-    return '<h2>' + esc(c.t) + '</h2>' +
-      '<div class="lockline">' + TICK + '<span>' + esc(c.setBy || 'Set by the convenor when the document was made') +
+    // No heading of its own, for the reason `watchBody` gives below: the card
+    // head has already said what this is about, and a second copy of the title
+    // three lines under the first is the surest sign a body is not reading as
+    // part of its own card. Caught 2026-08-18, on the one card whose title is a
+    // question — which asked itself twice.
+    return '<div class="lockline">' + TICK + '<span>' + esc(c.setBy || 'Set by the convenor when the document was made') +
       '. Fixed for the life of the document.</span></div>' +
       '<div class="statline"><span class="k">Set to</span><span class="v">' +
       ctx.value(c) + '</span></div>' +
@@ -296,13 +306,28 @@ window.SETUP = (function () {
     '<input id="myname" data-txt="myname" value="' + esc(me.n || '') + '" placeholder="Your name"></span></div>' +
     '<p class="setnote">Change it whenever you like; it is yours and it binds nobody.</p>';
 
+  /* **It is an uploader** (Ed, 2026-08-18). The card had offered a ground for
+     your initials or a drawn mark, on the reasoning that a mockup has no
+     business inventing faces — which is a good rule about *fixtures* and was
+     the wrong rule for a *control*, because the thing a member will actually
+     do here is give the room their own face. The file never leaves the page:
+     it is read into a data URL and drawn, so the mockup invents nothing and
+     still behaves like the real control. The initials stay underneath as a
+     real answer rather than a fallback — most rooms run on them. */
   const pictureBody = (me) =>
-    '<p class="why">The shape people will recognise you by in the roster and the presence row. Your initials are a real answer — most rooms run on them.</p>' +
+    '<p class="why">The shape people will recognise you by in the membership and the presence row.</p>' +
+    '<div class="picdrop">' + avHtml(me, 'big') +
+    '<div class="picact">' +
+    '<label class="btn">' + (me.pic && me.pic[0] === 'u' ? 'Choose another' : 'Choose a picture') +
+    '<input type="file" accept="image/*" data-picfile="1"></label>' +
+    (me.pic && me.pic[0] === 'u' ? '<button class="btn" data-pic="">Remove</button>' : '') +
+    '<span class="picnote">or drag one onto this box</span></div></div>' +
+    '<div class="eyebrow fieldlab">Or your initials</div>' +
     '<div class="avpick">' + avatarOptions().map((o) =>
       '<button class="avopt" data-pic="' + o.id + '" aria-pressed="' + ((me.pic || '') === o.id) + '"' +
-      ' title="' + (o.id ? 'A picture' : 'Your initials') + '">' +
+      ' title="' + (o.id ? 'A ground for your initials' : 'Plain') + '">' +
       avHtml({ n: me.n, pic: o.id }, 'big') + '</button>').join('') + '</div>' +
-    '<p class="setnote">Photographs arrive with real accounts; a mockup has no business inventing faces for people who do not exist.</p>';
+    '<p class="setnote">Initials are a real answer, not a placeholder — most rooms run on them. Whichever you choose is how you appear in the room, and it is not authorship: whether your name sits beside a <i>proposal</i> is the disclosure rule, not this.</p>';
 
   /* ---- ordinary and constitutional ----------------------------------------
      **This is a constitution editor, and what we need to decide is which
@@ -381,7 +406,7 @@ window.SETUP = (function () {
      question is live again — and then the ordinary consent control underneath
      it. */
   function motionBody(c, ctx, m) {
-    const kind = c.kind || 'ordinary';
+    const kind = m.kind || c.motionKind || c.kind || 'ordinary';
     const need = 'the bar, with quorum';
     const speaker = (why) => '<div class="speaker">' +
       '<span class="disc" aria-hidden="true" title="A member of the roster wrote this. Who, is sealed until the record (SPEC §3.4)."></span>' +
@@ -420,7 +445,7 @@ window.SETUP = (function () {
      surface however small the thing being proposed. */
   const motionCompose = (c, ctx, draft) =>
     '<div class="unlocks">You are proposing a change to <b>' + esc(c.t) + '</b>. ' +
-    kindNote[c.kind || 'ordinary'] + '</div>' +
+    kindNote[c.motionKind || c.kind || 'ordinary'] + '</div>' +
     // **What it costs, said where the price is paid** (Ed, 2026-08-18). An
     // ordinary motion is a proposal, so it costs an edit like every other
     // proposal — the wallet is what prices proposals, and one that cost nothing
@@ -429,7 +454,7 @@ window.SETUP = (function () {
     // a member asking to be asked again about a rule that binds them. Charging
     // for that would price consent, which is the one thing here that must stay
     // free. What stops it being spammed is a limit rather than a price (Q327).
-    '<p class="setnote">' + (c.kind === 'constitutional'
+    '<p class="setnote">' + ((c.motionKind || c.kind) === 'constitutional'
       ? '<b>Free.</b> You are not proposing against the charter, you are asking the room to be asked again about a rule that binds you — and consent should not have a price.'
       : '<b>Costs one ✏️.</b> A motion is a proposal, so it is priced like every other proposal, and you get it back if you withdraw it.') + '</p>'
     + '<div class="propblock"><div class="eyebrow fieldlab">As it stands</div>' +
@@ -575,11 +600,6 @@ window.SETUP = (function () {
     '<input class="num" type="number" data-num="' + key + '" value="' + S[key] + '" min="' + min + '" max="' + max + '">' +
     (suffix ? '<span class="setnote" style="margin:0">' + suffix + '</span>' : '') + '</span></span>';
 
-  /* The band's two rows are the document's first two headings, so they are the
-     first two entries in the contents rail. */
-  const bandToc = (groups) => groups.map((g) =>
-    '<li class="lvl1"><a href="#pile-' + g.key + '">' + esc(g.label) + '</a></li>').join('');
-
   const someIn = (n, E) => (n >= E ? 'everyone in' : n + ' of ' + E + ' in');
 
   const faces = (roster, meName) => '<div class="faces">' + roster.map((p) =>
@@ -588,6 +608,6 @@ window.SETUP = (function () {
 
   return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
-    nameBody, pictureBody, drawWire, opt, num, faces, someIn, bandToc,
+    nameBody, pictureBody, drawWire, opt, num, faces, someIn,
     KIND, kindNote, motionBody, motionReopen, motionCompose };
 })();
