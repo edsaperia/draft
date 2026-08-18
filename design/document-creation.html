@@ -117,7 +117,7 @@
 
   const S = {
     title: '', slug: '',
-    myname: 'Wren Ashby', mypic: 'c0',
+    myname: 'Wren Ashby', mypic: 'c0', myemail: '',
     ending: 'roster', endsAt: '2026-08-20T18:00',
     myAns: { ending: null, bar: null, quorum: null, authorship: null,
       signing: null, judgments: null, chamber: null, machines: null,
@@ -156,6 +156,7 @@
     ? Math.max(1, Math.round(E() * S.quorumPct / 100)) : Math.min(S.quorumN, E()));
   const perpetual = () => S.ending === 'perpetual';
   const SLUG_OK = /^[a-z0-9][a-z0-9-]{2,}$/;
+  const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   // The mockup's stand-in for the real registry check: these slugs exist, so
   // a title that collides gets a short suffix — which is also why the
   // fixture's own link ends in one.
@@ -252,28 +253,35 @@
   ];
 
   const CARDS = [
-    // — the convenor's own, never delegable ------------------------------
+    // — the opening order is Ed's, card by card (2026-08-18): **title → link
+    // → am-I-a-member → the rest**. The first two are the order of existence
+    // — a name, then the address that saves it — and the third is the hat
+    // question, asked before anything that depends on who you are in the
+    // room: the membership you invite, the name and picture you appear
+    // under, the text you start with. Each is born when the one before it
+    // settles, so arriving at docs.vote you are asked exactly one thing.
+    { k: 'title', g: '🏷️', t: 'The title', kind: 'ordinary', ready: () => !!S.title, changeable: true },
+    // Pre-filled with a slug generated from the title and checked against the
+    // ones that already exist; confirming it is what SAVES the document.
+    { k: 'slug', g: '🔗', t: 'The link', kind: 'ordinary', dep: ['title'], ready: () => SLUG_OK.test(S.slug), changeable: true },
+    // **The convenor's own address** (Ed, 2026-08-18: *presumably we have to
+    // collect the convenor's email as well so they can log back in*). There
+    // are no passwords: getting back in is a magic link like everybody
+    // else's, so the address is part of the save — a saved document with no
+    // address is lost the moment the tab closes.
+    { k: 'myemail', g: '📧', t: 'Your email', kind: 'personal', own: 'you', dep: ['slug'],
+      ready: () => EMAIL_OK.test(S.myemail), changeable: true },
+    { k: 'myrole', g: '🎩', t: 'Is the convenor a member?', kind: 'constitutional', dep: ['myemail'] },
+
+    // — the rest, together once the hat is on ----------------------------
+    { k: 'roster', g: '✉️', t: 'Membership', kind: 'constitutional', dep: ['myrole'], ready: () => members().length >= 1, changeable: true },
+    { k: 'myname', g: '📛', t: 'Your name', kind: 'personal', own: 'you', dep: ['myrole'], ready: () => !!S.myname.trim(), changeable: true },
+    { k: 'mypic', g: '🖼️', t: 'Your picture', kind: 'personal', own: 'you', dep: ['myrole'], changeable: true },
     // A document may start empty, which is why this is not a blocker on having
     // content but on having *decided*: a page nobody has looked at and a page
     // somebody chose to leave blank look identical, and only one of them should
     // let people start proposing.
-    // **The title is the first question** (Ed, 2026-08-18): arriving at
-    // docs.vote you are presented with a brand-new document, and nothing about
-    // it exists anywhere until the link is set — so the order here is the
-    // order of existence: a name, then the address that saves it, then the
-    // people, who are invited *with* that address and so cannot come first.
-    { k: 'title', g: '🏷️', t: 'The title', kind: 'ordinary', ready: () => !!S.title, changeable: true },
-    { k: 'text', g: '📄', t: 'The starting text', kind: 'ordinary', gate: 'propose' },
-    // Born when the title settles, pre-filled with a slug generated from it
-    // and checked against the ones that already exist; confirming it is what
-    // SAVES the document.
-    { k: 'slug', g: '🔗', t: 'The link', kind: 'ordinary', dep: ['title'], ready: () => SLUG_OK.test(S.slug), changeable: true },
-    { k: 'roster', g: '✉️', t: 'Membership', kind: 'constitutional', dep: ['slug'], ready: () => members().length >= 1, changeable: true },
-    { k: 'myrole', g: '🎩', t: 'Is the convenor a member?', kind: 'constitutional' },
-
-    // — yours as a person, whoever you are ------------------------------
-    { k: 'myname', g: '📛', t: 'Your name', kind: 'personal', own: 'you', ready: () => !!S.myname.trim(), changeable: true },
-    { k: 'mypic', g: '🖼️', t: 'Your picture', kind: 'personal', own: 'you', changeable: true },
+    { k: 'text', g: '📄', t: 'The starting text', kind: 'ordinary', dep: ['myrole'], gate: 'propose' },
 
     // — the document's shape --------------------------------------------
     // **When it ends and whether it ends are one card** (Ed, 2026-08-18:
@@ -423,6 +431,7 @@
       return n ? n + ' blocks' : (S.seen.has('text') ? 'Starts empty — the room writes it' : 'Nothing yet'); },
     title: () => S.title || 'Not named yet',
     slug: () => 'docs.vote/' + (S.slug || '…'),
+    myemail: () => S.myemail || 'Not given yet',
     myname: () => S.myname || 'Unnamed',
     mypic: () => (S.mypic ? 'Chosen' : 'Your initials'),
     myrole: () => (iDraft() ? 'Yes — a drafter like everybody else' : 'No — the clerk, who does not write'),
@@ -565,6 +574,10 @@
       // fourteen people — so a change that broke the old one would make this
       // the one ordinary setting with a cost for using it as intended.
       '<p class="setnote">Every link this document has ever had keeps working: changing it leaves a redirect behind, so an invitation somebody was sent weeks ago still opens the right document.</p>',
+    myemail: () =>
+      '<p class="why">The document is saved under its link, and this is how <b>you</b> get back to it: there are no passwords, so signing back in is a link mailed to this address — the same kind every member gets. It is also where the document’s own news reaches you.</p>' +
+      '<span class="fld"><label>Your email</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>' +
+      '<p class="setnote">Yours alone — it appears nowhere in the document, and it is not your name: who you are in the room is the 📛 card, later.</p>',
     myname: () => nameBody(me()),
     mypic: () => pictureBody(me()),
     // **Whether the convenor is in it is its own question** (Ed, 2026-08-18).
@@ -854,6 +867,9 @@
       renderTitle(); renderRail(); refreshCommit(); return; }
     if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); renderRail(); refreshCommit(); return; }
     if (t.dataset.txt === 'myname') { S.myname = t.value; renderRail(); refreshCommit(); return; }
+    if (t.dataset.txt === 'myemail') { S.myemail = t.value.trim();
+      const m = meRow(); if (m) m.e = S.myemail;
+      renderRail(); refreshCommit(); return; }
     if (t.dataset.txt) { S[t.dataset.txt] = t.value; renderRail(); }
     if (t.dataset.num) { S[t.dataset.num] = +t.value; renderRail(); }
   });
