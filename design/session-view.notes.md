@@ -3602,3 +3602,60 @@ document they are about to make. So a sticky panel says it back in plain English
 in the words the members will meet it in, written from the state rather than from
 the controls — which is what stops the summary and the form drifting apart the
 way two descriptions of the same thing always do.
+
+### document-creation, rebuilt as the document (2026-08-17)
+
+Ed, on the form I had built: *what I tend to prefer for this kind of screen is
+something that looks like the document itself; the admin pastes the text into the
+space where it will later be edited, the ToC appears on cue, they click on the
+placeholder title in the topbar to edit it, and the sidebar holds cards with each
+of the questions they need to decide before things can begin.*
+
+The reason this is right, rather than merely nicer: **the settings are not a
+form, they are a queue of things that want you before drafting can start** — and
+this project already has a surface whose right-hand rail means exactly *the
+things that want something from you*. So the setup screen is `session-view` with
+nothing in it yet. Same three columns, same rails, same card-over-document
+gesture. Yellow while a question wants an answer, grey once it has one, on the
+lifecycle palette's own rule.
+
+Two small things fell out of building it and both are about the same instinct.
+**Markdown hashes do not survive the paste** — this is the column the charter
+will be edited in, and session-view's document has no markdown in it, so leaving
+`##` on screen would make the setup screen the one place the document does not
+look like itself. And **a leading `# Title` becomes the title and leaves the
+document**, because a charter usually begins with its own name and there is a
+field for that in the bar; pasting it and watching the page take itself apart
+into a title, a contents rail and a body is the moment the screen exists for.
+
+### Three corrections that changed the model, not the layout
+
+**"Participants decide" is a value, not a switch** (Ed). I had built one card
+called *who settles the constitution* holding two delegation toggles. Wrong shape:
+the delegation is an **answer to the same question**. *What is the window?* has
+three answers here and *we will decide together* is one of them. Modelling it as
+a third value rather than a switch beside the control also makes it impossible to
+leave a setting both chosen and delegated, which two controls would allow.
+
+**And the participants are the default** (Ed: *the main one that the convenor
+chooses is roster and window*). So everything starts delegated and a convenor has
+to take it back rather than hand it over. That inversion is the whole screen —
+what is left is the text, its name, when it ends, and who is in the room. And it
+is the same argument §9.0a already makes about anonymity: **a default that has to
+be argued out of is a far stronger thing than a radio button that happens to be
+ticked.** The blocking list drops to four, most of them the document itself.
+
+**The convenor is a hat, not a role** (Ed: *not always! they should be able to
+decide whether they're a drafter or just the clerk*). Somebody has to set the
+document up; whether that person also writes in it is a separate question with
+two real answers. A facilitator running a convention they are not a member of,
+and a member of the house who happened to start the document, are different
+people performing the same administrative act. So the roster modal asks it
+outright, and `clerk` means a convenor with no wallet, no judgments, no place in
+quorum and no answer at the ceremony.
+
+That one also fixes a piece of copy I would not otherwise have questioned. *The
+participants decide* reads as handing something away to other people — when in
+the ordinary case the convenor is delegating to a room they are **standing in**.
+It now says *you among them, if you are on the roster*, which is both true and
+conditional, and the condition is the clerk.
