@@ -1521,29 +1521,40 @@
   }
 
   // **Opening the title must not move the title** (Ed, 2026-08-18: *the
-  // title jumps*). The card's head is the title; the heading it replaces
-  // is display:none while the card stands, so its box is measured by
-  // un-hiding it for one synchronous beat — never painted — and the card
-  // is shifted until its head text sits exactly on the heading's text.
+  // title jumps*), **and the tab must still meet the card** (Ed, same day:
+  // *the clause-tab doesn't meet the card*). The first build satisfied the
+  // first rule by shifting the whole card onto the heading's text and
+  // dragging the strip back onto the closed tab — which pulled the strip
+  // off the card's edge, because the strip hangs on the card's box. So the
+  // two corrections go to different owners: the **vertical** one moves the
+  // card (a card moving up does not break the strip's contact with its own
+  // edge), and the **horizontal** one moves the head **text** only — the
+  // card box, and the strip flush on it, never move sideways. With the
+  // closed tab standing on the card's edge too (see #titlechip .chipcol in
+  // setup.css), the tab needs pinning only in Y. All measured, from text
+  // rects rather than boxes, because the title wraps and paddings differ.
+  const textRect = (el) => { const r = document.createRange();
+    r.selectNodeContents(el); const rs = r.getClientRects(); return rs.length ? rs[0] : null; };
   function fitTitleCard() {
     if (S.open !== 'title') return;
     const cardEl = document.querySelector('#titlepara > .setupcard');
     const hd = cardEl && cardEl.querySelector('.headdoct');
     const d = document.getElementById('doctitle');
     if (!cardEl || !hd || !d) return;
-    cardEl.style.marginTop = ''; cardEl.style.marginLeft = '';
+    cardEl.style.marginTop = ''; hd.style.marginLeft = '';
     d.style.display = '';
-    const want = d.getBoundingClientRect();
+    const want = textRect(d);
     d.style.display = 'none';
-    const have = hd.getBoundingClientRect();
-    const dy = want.top - have.top, dx = want.left + parseFloat(getComputedStyle(d).paddingLeft) - have.left;
-    if (Math.abs(dy) > 0.5) cardEl.style.marginTop =
-      ((parseFloat(getComputedStyle(cardEl).marginTop) || 0) + dy).toFixed(1) + 'px';
-    if (Math.abs(dx) > 0.5) cardEl.style.marginLeft =
-      ((parseFloat(getComputedStyle(cardEl).marginLeft) || 0) + dx).toFixed(1) + 'px';
-    // **and the tab does not move either** (Ed, 2026-08-18): the closed
-    // pile tab is re-materialised for one unpainted beat as the reference,
-    // and the card's strip is translated onto it — both axes, measured
+    const have = textRect(hd);
+    if (want && have) {
+      const dy = want.top - have.top, dx = want.left - have.left;
+      if (Math.abs(dy) > 0.5) cardEl.style.marginTop =
+        ((parseFloat(getComputedStyle(cardEl).marginTop) || 0) + dy).toFixed(1) + 'px';
+      if (Math.abs(dx) > 0.5) hd.style.marginLeft = dx.toFixed(1) + 'px';
+    }
+    // pin the tab vertically onto the re-materialised closed tab — one
+    // unpainted beat, never shown. No horizontal pin: the strip's x is the
+    // card's edge, which is where the closed tab now stands by rule.
     const col = cardEl.querySelector('.chipcol');
     const chipHost = document.getElementById('titlechip');
     if (col && chipHost) {
@@ -1556,10 +1567,8 @@
       d.style.display = 'none';
       const haveG = col.querySelector('.achip span');
       if (wantG && haveG) {
-        const r2 = haveG.getBoundingClientRect();
-        const dx2 = wantG.left - r2.left, dy2 = wantG.top - r2.top;
-        if (Math.abs(dx2) > 0.5 || Math.abs(dy2) > 0.5)
-          col.style.transform = 'translate(' + dx2.toFixed(1) + 'px,' + dy2.toFixed(1) + 'px)';
+        const dy2 = wantG.top - haveG.getBoundingClientRect().top;
+        if (Math.abs(dy2) > 0.5) col.style.transform = 'translateY(' + dy2.toFixed(1) + 'px)';
       }
     }
   }

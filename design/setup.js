@@ -597,7 +597,7 @@ window.SETUP = (function () {
     personal: 'Yours alone',
   };
   const kindNote = {
-    constitutional: 'Changing it would make past decisions mean something different, so it is not judged — the founding question is asked again, and the document takes the most demanding answer anybody gives.',
+    constitutional: 'Changing it would make past decisions mean something different, so it takes everyone: a proposed change is a unanimous vote, and one refusal keeps what stands.',
     ordinary: 'Anybody may propose changing it, any time; it carries if it clears the approval threshold with quorum.',
     personal: 'Yours to change whenever you like. It binds nobody.',
   };
@@ -639,13 +639,13 @@ window.SETUP = (function () {
      This band is the whole of the addition — everything below it is the consent
      control that was always there. */
   const motionReopen = (c, ctx, m) =>
-    '<div class="unlocks"><b>Re-opened.</b> A member has asked the room to look at this again' +
+    '<div class="unlocks"><b>Re-opened.</b> A member has proposed an amendment' +
     (m.why ? ' — <i>' + esc(m.why) + '</i>' : '') + '. ' +
-    'It is constitutional, so nothing is being judged: you are asked what you will accept, ' +
-    'as you were at the founding, and the document takes the most demanding answer. ' +
+    'It is constitutional, so it takes everyone: nothing is judged and nothing is ranked — ' +
+    'you accept the amendment or keep what stands, and one refusal keeps what stands. ' +
     'Until every one of the ' + ctx.E + ' has answered, what stands stands.</div>' +
-    '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have answered again. ' +
-    'Your own previous answer is not carried over — it would anchor you to it.</p>';
+    '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have answered. ' +
+    'Only the count shows while it runs — no names, no split — and you may change your answer until it settles.</p>';
 
   /* Writing one. The same `.lanebox` the `editing-card` writes a clause in,
      because a motion is a proposal and proposing is one gesture on this
