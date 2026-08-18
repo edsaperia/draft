@@ -195,9 +195,11 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
     },
     deps: [], judgeGate: true },
 
-  // Constitutional pending Q352 (the consent grounding: 'no AI will draft
-  // at me' is a promise people join under).
-  { id: 'machines', glyph: '🤖', kind: 'constitutional', holderDefault: 'members',
+  // Ordinary (Q352, Ed 2026-08-18): the auditor is not a member — it judges
+  // nothing and counts toward no quorum, so switching it re-rates nothing
+  // already decided. A member could put the document through an AI
+  // themselves; the tool is a convenience for the membership.
+  { id: 'machines', glyph: '🤖', kind: 'ordinary', holderDefault: 'convenor',
     delegable: true, valueType: 'machines',
     consent: {
       ask: 'the most machine proposing you will accept',
@@ -208,7 +210,7 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
         return mb.budget - ma.budget;
       },
     },
-    deps: [], judgeGate: true },
+    deps: [], judgeGate: false },
 
   // The register itself — changed by command (invite, arrive, remove),
   // never by a scalar motion. Who holds it lives on 'applications' (§9.7½).
@@ -247,7 +249,7 @@ export function entryOf(id: SettingId): CatalogueEntry {
   return e;
 }
 
-/** The eight settings judging waits on (§9.0b; matches the mock's gate list). */
+/** The seven settings judging waits on (§9.0b; machines left with Q352). */
 export const JUDGE_GATES: readonly SettingId[] =
   CATALOGUE.filter((e) => e.judgeGate).map((e) => e.id);
 

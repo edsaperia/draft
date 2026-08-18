@@ -340,6 +340,11 @@ export class ConstitutionSession {
           openedAtT: event.t,
           status: 'pending',
         });
+        // Either route parks here (§9.7 v0.49): the change is the members'
+        // and the assent is still owed.
+        const parked = this.motions.get(event.motion)!;
+        parked.status = 'awaiting-crown';
+        parked.settledAtT = null;
         this.nextCrownN += 1;
         break;
       }
@@ -363,12 +368,17 @@ export class ConstitutionSession {
         break;
       }
       case 'crown-lapsed': {
-        // A lapsed crown passes to the members (§9.7) — and with it every
-        // reserved setting, since reservation has no holder left (NOTES.md).
+        // Lapse is automatic abstention (§9.7 v0.49): nothing changes hands —
+        // every reserved setting stays reserved, and while the flag stands
+        // assent is granted by itself (reservedTarget reads it).
         this.crownLapsedFlag = true;
-        for (const st of this.settings.values()) {
-          if (st.holder === 'convenor') st.holder = 'members';
-        }
+        break;
+      }
+      case 'crown-returned': {
+        // Revival is logging in (§9.5a): the assent requirement resumes.
+        this.crownLapsedFlag = false;
+        this.convenor.lapseWarned = false;
+        this.touch(this.convenor.id, event.t);
         break;
       }
       default:
@@ -803,11 +813,11 @@ export class ConstitutionSession {
       route = motionRouteOf(entry, payload.value, st.value);
     } else if (payload.kind === 'invite') {
       this.requireEmailFree(payload.email);
-      route = this.membershipReserved() ? 'ordinary' : 'constitutional';
+      route = 'constitutional'; // membership's own kind — reservation adds assent, never a route (§9.7 v0.49)
     } else if (payload.kind === 'remove') {
       const target = this.members.get(payload.member);
       if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
-      route = this.membershipReserved() ? 'ordinary' : 'constitutional';
+      route = 'constitutional'; // membership's own kind — reservation adds assent, never a route (§9.7 v0.49)
     } else {
       // admit rides submitApplication/proposeApplicant (§9.7½)
       route = 'ordinary';
@@ -820,6 +830,13 @@ export class ConstitutionSession {
       payload, route, stake: route === 'ordinary' ? 1 : 0 };
     if (why !== undefined && why !== '') (e as { why?: string }).why = why;
     this.emit(e);
+    if (route === 'constitutional') {
+      // The mover's answer is accept from the moment the motion is put
+      // (§9.6 v0.49): proposers prefer their own proposals, as §3.3 counts
+      // an author's preference for their own candidate without asking.
+      this.emit({ type: 'motion-answer', t, motion: id, member: by, answer: 'accept' });
+      this.maybeSettleMotions(t);
+    }
     return id;
   }
 
@@ -874,16 +891,20 @@ export class ConstitutionSession {
     if (!q || q.status !== 'pending') throw new Error('no such pending 👑 question');
     if (this.crownLapsedFlag) throw new Error('the crown has lapsed — the question passes by itself');
     this.emit({ type: 'crown-question-answered', t, question, outcome });
+    const rec = this.motions.get(q.motion)!;
     if (outcome === 'accept') {
-      this.settleCarriedEffects(t, this.motions.get(q.motion)!, false);
+      // Under unanimity everyone already had their say; under the ordinary
+      // route the judges are the engine's business, so everybody is owed.
+      this.settleCarriedEffects(t, rec, rec.route === 'constitutional');
     } else {
-      this.settleHeldEffects(t, this.motions.get(q.motion)!);
+      this.settleHeldEffects(t, rec);
     }
   }
 
   private heldOutBy(member: MemberId): boolean {
     for (const rec of this.motions.values()) {
-      if (rec.by === member && rec.route === 'constitutional' && rec.status === 'running') {
+      if (rec.by === member && rec.route === 'constitutional' &&
+        (rec.status === 'running' || rec.status === 'awaiting-crown')) {
         return true;
       }
     }
@@ -907,6 +928,14 @@ export class ConstitutionSession {
         const answers = electorate.map((m) => rec.answers.get(m.id));
         if (answers.some((a) => a === undefined || a === 'keep')) continue;
         if (!answers.some((a) => a === 'accept')) continue; // nobody consented to anything
+        if (this.reservedTarget(rec)) {
+          // Reserved is assent at the end of either route (§9.7 v0.49):
+          // unanimity carries the change to the crown, not into the document.
+          this.emit({ type: 'crown-question-opened', t,
+            question: `cq-${this.nextCrownN}`, motion: rec.id });
+          settled = true;
+          break;
+        }
         this.emit({ type: 'motion-carried', t, motion: rec.id });
         this.settleCarriedEffects(t, rec, true);
         settled = true; // a departure-by-removal can complete another motion
@@ -985,8 +1014,17 @@ export class ConstitutionSession {
    * routine activity rides the member's own commands (NOTES.md).
    */
   memberReturn(t: number, member: MemberId): void {
+    // The convenor's return revives a lapsed crown (§9.7 v0.49): the assent
+    // requirement resumes from this moment. A clerk is not in the members
+    // map, so for them this is the whole revival.
+    if (member === this.convenor.id && this.crownLapsedFlag) {
+      this.emit({ type: 'crown-returned', t });
+    }
     const m = this.members.get(member);
-    if (!m || m.removed) throw new Error(`unknown member '${member}'`);
+    if (!m || m.removed) {
+      if (member === this.convenor.id) return;
+      throw new Error(`unknown member '${member}'`);
+    }
     // nothing to revive → no event, no state: the clock only moves on events
     if (m.signedOut === null && !m.lapsed && !m.lapseWarned) return;
     const wasLapsed = m.lapsed;
@@ -1015,16 +1053,17 @@ export class ConstitutionSession {
         }
       }
       // The §9.5a clock runs on the convenor too (§9.7): a quiet crown
-      // lapses, and its reserved settings pass to the members.
+      // lapses into automatic assent (v0.49) — nothing changes hands.
       if (!this.crownLapsedFlag && this.holdsAnythingReserved()) {
         const due = lapseDue(this.convenor.lastActivityT, lapse.afterMs)!;
         if (t >= due.lapseAtT) {
           this.emit({ type: 'crown-lapsed', t });
           for (const q of [...this.crownQuestions.values()]) {
             if (q.status !== 'pending') continue;
-            // The assent was the crown's alone; its heirs already passed it.
+            // Lapse is automatic abstention; on an assent, abstaining grants.
             this.emit({ type: 'crown-question-auto-passed', t, question: q.id });
-            this.settleCarriedEffects(t, this.motions.get(q.motion)!, false);
+            const mrec = this.motions.get(q.motion)!;
+            this.settleCarriedEffects(t, mrec, mrec.route === 'constitutional');
           }
         } else if (t >= due.warnAtT && !this.convenor.lapseWarned &&
           !this.members.has(this.convenor.id)) {

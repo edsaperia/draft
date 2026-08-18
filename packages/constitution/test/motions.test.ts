@@ -3,9 +3,10 @@ import { ConstitutionSession } from '../src/session.js';
 import type { ConstitutionEvent } from '../src/types.js';
 
 /**
- * Motions (SPEC §9.6–§9.7, v0.48): the ordinary route through the
- * adjudicator seam, the constitutional route's live-electorate unanimity,
- * the one-🏛️-each limit, and the crown's assent.
+ * Motions (SPEC §9.6–§9.7, v0.49): the ordinary route through the
+ * adjudicator seam, the constitutional route's live-electorate unanimity
+ * with the mover standing at accept from the open, the one-🏛️-each limit,
+ * and the crown's assent at the end of either route.
  */
 
 /** A constituted three-member document: ada (convenor), bo, cy. */
@@ -19,22 +20,26 @@ const constituted = (opts: { reserveRate?: boolean } = {}) => {
   const cy = s.invite(1, 'cy@example.org');
   s.arrive(1, bo);
   s.arrive(1, cy);
-  // ending resolves by ceremony, so it is members-held — the ordinary route
-  // on a member-held setting applies directly, with no crown in the way
+  // ending, bar and chamber resolve by ceremony, so they are members-held —
+  // motions on them apply directly, with no crown in the way (§9.7 v0.49)
   s.answer(1, 'ada', 'ending', { endsAtMs: 500_000 });
   s.answer(1, bo, 'ending', { endsAtMs: 1_000_000 });
-  s.answer(1, cy, 'ending', { endsAtMs: 800_000 });
+  s.answer(1, cy, 'ending', { endsAtMs: 800_000 }); // resolved — bar may follow
+  s.answer(1, 'ada', 'bar', { pct: 66 });
+  s.answer(1, bo, 'bar', { pct: 60 });
+  s.answer(1, cy, 'bar', { pct: 55 });
+  s.answer(1, 'ada', 'chamber', { rung: 'link' });
+  s.answer(1, bo, 'chamber', { rung: 'public' });
+  s.answer(1, cy, 'chamber', { rung: 'public' });
   const values = {
-    bar: { pct: 66 },
     pace: { shape: 'fixed' },
     quorum: { form: 'share', n: 60 },
     authorship: { rung: 'sealed' },
     signing: { rung: 'each' },
     judgments: { rung: 'after' },
-    chamber: { rung: 'link' },
     applications: { holder: 'members', joinPolicy: 'invite' },
-    lapse: { afterMs: null },
     machines: { enabled: false, budget: 0 },
+    lapse: { afterMs: null },
   } as const;
   // text and rate first: the last gate set below constitutes the document
   s.confirmStartingText(2, 'The clubhouse shall be kept open.');
@@ -105,8 +110,9 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     const { s, bo, cy } = constituted();
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
     expect(s.motionRecords().get(m)!.stake).toBe(0); // consent stays free
+    // the mover stands at accept from the open (§9.6 v0.49)
+    expect(s.motionRecords().get(m)!.answers.get(bo)).toBe('accept');
     s.answerMotion(4, 'ada', m, 'accept');
-    s.answerMotion(5, bo, m, 'accept');
     expect(s.motionRecords().get(m)!.status).toBe('running'); // cy still owes
     s.answerMotion(6, cy, m, 'abstain'); // abstention is an answer, not a block
     expect(s.motionRecords().get(m)!.status).toBe('carried');
@@ -128,11 +134,11 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(s.settingState('chamber').value).toEqual({ rung: 'closed' });
   });
 
-  it('pure abstention carries nothing', () => {
+  it('pure abstention carries nothing — even the mover may stand down to it', () => {
     const { s, bo, cy } = constituted();
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
     s.answerMotion(4, 'ada', m, 'abstain');
-    s.answerMotion(5, bo, m, 'abstain');
+    s.answerMotion(5, bo, m, 'abstain'); // revises the open's own accept
     s.answerMotion(6, cy, m, 'abstain');
     expect(s.motionRecords().get(m)!.status).toBe('running');
   });
@@ -155,24 +161,27 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     const bo = s.invite(1, 'bo@example.org');
     const dee = s.invite(1, 'dee@example.org'); // invited, never arrives (yet)
     s.arrive(1, bo);
+    s.answer(1, 'ada', 'ending', { endsAtMs: 1_000_000 });
+    s.answer(1, bo, 'ending', { endsAtMs: 800_000 }); // resolved — bar may follow
+    s.answer(1, 'ada', 'bar', { pct: 66 });
+    s.answer(1, bo, 'bar', { pct: 60 }); // resolves members-held: no crown in the way
     const values = {
-      ending: { endsAtMs: 1_000_000 }, bar: { pct: 66 }, pace: { shape: 'fixed' },
+      pace: { shape: 'fixed' },
       quorum: { form: 'share', n: 60 }, authorship: { rung: 'sealed' },
       signing: { rung: 'each' }, judgments: { rung: 'after' },
       chamber: { rung: 'link' },
       applications: { holder: 'members', joinPolicy: 'invite' },
-      lapse: { afterMs: null }, machines: { enabled: false, budget: 0 },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
     } as const;
     for (const [id, v] of Object.entries(values)) {
       s.reclaim(2, id as never);
       s.setSetting(2, id as never, v as never);
     }
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
-    s.answerMotion(4, 'ada', m, 'accept');
-    s.arrive(5, dee); // the electorate grew under the motion — no snapshot
-    s.answerMotion(6, bo, m, 'accept');
+    s.arrive(4, dee); // the electorate grew under the motion — no snapshot
+    s.answerMotion(5, 'ada', m, 'accept');
     expect(s.motionRecords().get(m)!.status).toBe('running'); // dee's answer needed
-    s.answerMotion(7, dee, m, 'accept');
+    s.answerMotion(6, dee, m, 'accept');
     expect(s.motionRecords().get(m)!.status).toBe('carried');
   });
 
@@ -181,11 +190,12 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     const m1 = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
     s.answerMotion(4, 'ada', m1, 'accept');
     s.answerMotion(5, bo, m1, 'accept'); // cy never answers m1
-    const m2 = s.openMotion(6, cy, { kind: 'remove', member: cy }); // cy asks to go
+    const m2 = s.openMotion(6, cy, { kind: 'remove', member: cy }); // cy asks to go —
+    // and the open is cy's own accept (v0.49), which removal requires anyway
     expect(s.motionRecords().get(m2)!.route).toBe('constitutional');
     s.answerMotion(7, 'ada', m2, 'accept');
+    expect(s.motionRecords().get(m2)!.status).toBe('running'); // bo still owes
     s.answerMotion(8, bo, m2, 'accept');
-    s.answerMotion(9, cy, m2, 'accept'); // removal needs the removed member too
     expect(s.motionRecords().get(m2)!.status).toBe('carried');
     expect(s.E()).toBe(2);
     // and m1, no longer waiting on cy, settled in the same beat
@@ -245,7 +255,32 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
   });
 });
 
-describe('the crown (§9.7): reserved is assent, not silence', () => {
+describe('the crown (§9.7 v0.49): reserved is assent, at the end of either route', () => {
+  it('unanimity on a reserved setting carries the change to the crown, not into the document', () => {
+    const { s, bo, cy } = constituted(); // quorum is reserved (convenor-held)
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
+      value: { form: 'share', n: 80 } });
+    expect(s.motionRecords().get(m)!.route).toBe('constitutional');
+    s.answerMotion(4, 'ada', m, 'accept');
+    s.answerMotion(5, cy, m, 'accept'); // bo stood at accept from the open
+    expect(s.motionRecords().get(m)!.status).toBe('awaiting-crown');
+    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 60 });
+    // the 🏛️ stays out while the crown considers
+    expect(() => s.openMotion(6, bo, { kind: 'set', setting: 'signing',
+      value: { rung: 'nobody' } })).toThrow(/one 🏛️/);
+    const q = [...s.crownQuestionRecords().values()].find((x) => x.motion === m)!;
+    s.answerCrownQuestion(7, q.id, 'accept');
+    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 80 });
+    expect(s.settingState('quorum').settledBy).toBe('crown');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    // and the carry itself owed nobody an OK — everyone had their say
+    // (the fixture's pre-start reserved set owed its own, hence t >= 3)
+    const owes = s.logEntries().filter((e) => e.event.type === 'ok-owed' &&
+      e.event.t >= 3 &&
+      (e.event as unknown as { settings: string[] }).settings.includes('quorum'));
+    expect(owes.length).toBe(0);
+  });
+
   it('an ordinary motion on a reserved setting ends at a 👑 question', () => {
     const { s, bo } = constituted(); // rate is reserved (convenor-held)
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'rate',

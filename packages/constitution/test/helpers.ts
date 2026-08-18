@@ -4,8 +4,9 @@ import type { LapseValue, ApplicationsValue } from '../src/values.js';
 
 /**
  * A constituted document: convenor ada (member unless clerk), members bo and
- * cy, everything reserved-set except ending (resolved by ceremony, so it is
- * members-held), text confirmed, judging open at t=2.
+ * cy, everything reserved-set except ending, bar and chamber (resolved by
+ * ceremony, so members-held — motions on them apply without the crown),
+ * text confirmed, judging open at t=2.
  */
 export function buildConstituted(opts: {
   clerk?: boolean;
@@ -22,22 +23,29 @@ export function buildConstituted(opts: {
   const cy = s.invite(1, 'cy@example.org');
   s.arrive(1, bo);
   s.arrive(1, cy);
+  // ending resolves first: bar waits on it (§9.0a deps)
   s.answer(1, bo, 'ending', { endsAtMs: 1_000_000 });
   s.answer(1, cy, 'ending', { endsAtMs: 800_000 });
   if (!opts.clerk) s.answer(1, 'ada', 'ending', { endsAtMs: 500_000 });
+  s.answer(1, bo, 'bar', { pct: 66 });
+  s.answer(1, cy, 'bar', { pct: 55 });
+  if (!opts.clerk) s.answer(1, 'ada', 'bar', { pct: 60 });
+  s.answer(1, bo, 'chamber', { rung: 'link' });
+  s.answer(1, cy, 'chamber', { rung: 'public' });
+  if (!opts.clerk) s.answer(1, 'ada', 'chamber', { rung: 'public' });
   s.confirmStartingText(2, 'The clubhouse shall be kept open.');
   s.setSetting(2, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
+  // machines (ordinary since Q352) before lapse, so the last gate set is
+  // lapse and the document constitutes on it
   const values = {
-    bar: { pct: 66 },
     pace: { shape: 'fixed' },
     quorum: opts.quorum ?? { form: 'share', n: 60 },
     authorship: { rung: 'sealed' },
     signing: { rung: 'each' },
     judgments: { rung: 'after' },
-    chamber: { rung: 'link' },
     applications: opts.applications ?? { holder: 'members', joinPolicy: 'invite' },
-    lapse: opts.lapse ?? { afterMs: null },
     machines: { enabled: false, budget: 0 },
+    lapse: opts.lapse ?? { afterMs: null },
   } as const;
   for (const [id, v] of Object.entries(values)) {
     s.reclaim(2, id as never);

@@ -14,10 +14,16 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
     expect(CATALOGUE_BY_ID.has('email' as SettingId)).toBe(false);
   });
 
-  it('judge gate is exactly the eight of §9.0b (the mock ceremony list)', () => {
+  it('judge gate is exactly the seven of §9.0b (machines left with Q352)', () => {
     expect([...JUDGE_GATES].sort()).toEqual(
-      ['authorship', 'bar', 'chamber', 'judgments', 'lapse', 'machines', 'quorum', 'signing'].sort(),
+      ['authorship', 'bar', 'chamber', 'judgments', 'lapse', 'quorum', 'signing'].sort(),
     );
+  });
+
+  it('machines is ordinary and convenor-held (Q352, Ed 2026-08-18)', () => {
+    expect(entryOf('machines').kind).toBe('ordinary');
+    expect(entryOf('machines').holderDefault).toBe('convenor');
+    expect(entryOf('machines').delegable).toBe(true); // the consent question survives
   });
 
   it('deps are acyclic and reference real settings', () => {

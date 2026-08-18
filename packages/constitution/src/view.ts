@@ -122,7 +122,8 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
   const motions: MotionView[] = [];
   let myHeldMotion: string | null = null;
   for (const rec of s.motionRecords().values()) {
-    if (rec.status === 'running' && rec.route === 'constitutional' &&
+    if ((rec.status === 'running' || rec.status === 'awaiting-crown') &&
+      rec.route === 'constitutional' &&
       rec.by === member) {
       myHeldMotion = rec.id;
     }

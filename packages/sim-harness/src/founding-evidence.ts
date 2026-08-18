@@ -35,7 +35,8 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
   check(s.settingState('rate').holder === 'convenor',
     'ordinary settings default to the convenor');
   s.delegate(0, 'rate');
-  say('        …and ada hands the proposal rate to the room as well');
+  s.delegate(0, 'machines'); // ordinary since Q352, so it needs the hand-over
+  say('        …and ada hands the proposal rate and the AI question to the room');
 
   const ids: string[] = [];
   for (const [t, email] of [[1, 'bo'], [1, 'cy'], [1, 'dee'], [1, 'eve'],
@@ -143,7 +144,7 @@ say('\n== clerk variant: an anonymous convenor who administers and never writes 
     authorship: { rung: 'sealed' }, signing: { rung: 'each' },
     judgments: { rung: 'after' }, chamber: { rung: 'link' },
     applications: { holder: 'members', joinPolicy: 'invite' },
-    lapse: { afterMs: null }, machines: { enabled: false, budget: 0 },
+    machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
   })) {
     s.reclaim(2, id as never);
     s.setSetting(2, id as never, v as never);
@@ -187,20 +188,19 @@ say('\n== motions, constitutional route: unanimity over the live electorate ==='
   eq(s.motionRecords().get(m)!.stake, 0, 'consent stays free (§9.6)');
   check(view(s, cy).myHeldMotion === null && view(s, bo).myHeldMotion === m,
     'the 🏛️ is out, and it is bo’s');
+  check(s.motionRecords().get(m)!.answers.get(bo) === 'accept',
+    'and bo stands at accept from the open — proposers prefer their own proposals (v0.49)');
   s.answerMotion(4, 'ada', m, 'accept');
   s.answerMotion(5, cy, m, 'keep');
   check(s.motionRecords().get(m)!.status === 'running',
     'a standing keep blocks but does not kill');
   eq(s.settingState('bar').value, { pct: 66 }, 'until it settles, what stands stands');
   const blind = view(s, 'ada').motions.find((x) => x.id === m)!;
-  check(blind.answeredCount === 2 && JSON.stringify(blind).indexOf('keep') < 0,
+  check(blind.answeredCount === 3 && JSON.stringify(blind).indexOf('keep') < 0,
     'while it runs, only the count shows — no split, no names');
   s.answerMotion(6, cy, m, 'abstain');
-  check(s.motionRecords().get(m)!.status === 'running',
-    'still short: bo himself has not answered — opening is not answering (363a)');
-  s.answerMotion(7, bo, m, 'accept');
   check(s.motionRecords().get(m)!.status === 'carried',
-    'carried the moment everyone stands at accept-or-abstain with zero keep');
+    'cy stands down to abstain and it carries — everyone at accept-or-abstain, zero keep');
   eq(s.settingState('bar').value, { pct: 80 }, 'the amendment applied in the fold');
 
   say('  an arrival mid-motion joins the electorate — no snapshot (v0.48)');
@@ -214,10 +214,9 @@ say('\n== motions, constitutional route: unanimity over the live electorate ==='
   eq(s.E(), 3, 'invited, dee still counts toward nothing');
   const m2 = s.openMotion(10, bo, { kind: 'set', setting: 'chamber',
     value: { rung: 'closed' } });
-  s.answerMotion(11, 'ada', m2, 'accept');
   s.answerMotion(11, cy, m2, 'accept');
   s.arrive(12, dee.id);
-  s.answerMotion(13, bo, m2, 'accept');
+  s.answerMotion(13, 'ada', m2, 'accept');
   check(s.motionRecords().get(m2)!.status === 'running',
     'dee arrived under the motion, so dee’s answer is now needed too');
   s.answerMotion(14, dee.id, m2, 'accept');
@@ -249,6 +248,37 @@ say('\n== the crown: reserved is assent, not silence =========================='
   s.setSetting(9, 'rate', { grant: 5, cap: 9, dripMinutes: 180 });
   check(s.settingState('rate').settledBy === 'crown',
     'while the crown’s own hand stays unilateral on reserved matters');
+}
+
+/* ========================================================================= */
+say('\n== the crown, v0.49: assent ends either route; a lapsed crown assents by itself ==');
+{
+  const { s, bo, cy } = threeRoom({ lapse: { afterMs: 10_000 } });
+  const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
+    value: { form: 'share', n: 80 } });
+  say('  bo moves the reserved quorum — constitutional by kind, reservation adds assent');
+  s.answerMotion(4, 'ada', m, 'accept');
+  s.answerMotion(5, cy, m, 'accept');
+  check(s.motionRecords().get(m)!.status === 'awaiting-crown',
+    'unanimity carries the change to the crown, not into the document');
+  const q = view(s, 'ada').crownTasks[0]!;
+  s.answerCrownQuestion(6, q.id, 'accept');
+  eq(s.settingState('quorum').value, { form: 'share', n: 80 }, 'assent applies it');
+
+  say('  ada goes quiet; the members stay active; the §9.5a clock runs');
+  const m2 = s.openMotion(7_000, bo, { kind: 'set', setting: 'rate',
+    value: { grant: 6, cap: 10, dripMinutes: 120 } });
+  s.setIdentity(9_000, bo, { name: 'Bo' });
+  s.setIdentity(9_000, cy, { name: 'Cy' });
+  s.tick(16_500);
+  check(s.crownLapsed, 'the crown lapsed with its member');
+  s.adjudicateOrdinaryMotion(16_800, m2, 'carried');
+  check(s.motionRecords().get(m2)!.status === 'carried',
+    'lapse is automatic abstention: assent grants itself, the change applies');
+  check(s.settingState('title').holder === 'convenor',
+    'and nothing changes hands — every reserved setting stays reserved');
+  s.memberReturn(17_000, 'ada');
+  check(!s.crownLapsed, 'revival is logging in: the assent requirement resumes');
 }
 
 /* ========================================================================= */
@@ -297,17 +327,25 @@ function threeRoom(opts: { lapse?: { afterMs: number | null } } = {}) {
   s.arrive(1, cy);
   s.answer(1, 'ada', 'ending', { endsAtMs: 500_000 });
   s.answer(1, bo, 'ending', { endsAtMs: 1_000_000 });
-  s.answer(1, cy, 'ending', { endsAtMs: 800_000 });
+  s.answer(1, cy, 'ending', { endsAtMs: 800_000 }); // resolved — bar may follow
+  // bar and chamber resolve by ceremony, so they are members-held and a
+  // motion on them applies without the crown (§9.7 v0.49)
+  s.answer(1, 'ada', 'bar', { pct: 66 });
+  s.answer(1, bo, 'bar', { pct: 60 });
+  s.answer(1, cy, 'bar', { pct: 55 });
+  s.answer(1, 'ada', 'chamber', { rung: 'link' });
+  s.answer(1, bo, 'chamber', { rung: 'public' });
+  s.answer(1, cy, 'chamber', { rung: 'public' });
   s.confirmStartingText(2, 'The clubhouse shall be kept open.');
   s.setSetting(2, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
   for (const [id, v] of Object.entries({
-    bar: { pct: 66 }, pace: { shape: 'fixed' },
+    pace: { shape: 'fixed' },
     quorum: { form: 'share', n: 60 },
     authorship: { rung: 'sealed' }, signing: { rung: 'each' },
-    judgments: { rung: 'after' }, chamber: { rung: 'link' },
+    judgments: { rung: 'after' },
     applications: { holder: 'members', joinPolicy: 'invite' },
-    lapse: opts.lapse ?? { afterMs: null },
     machines: { enabled: false, budget: 0 },
+    lapse: opts.lapse ?? { afterMs: null },
   })) {
     s.reclaim(2, id as never);
     s.setSetting(2, id as never, v as never);

@@ -76,8 +76,8 @@ describe('lapsing (§9.5a): sign-out applied by clock', () => {
   });
 });
 
-describe('the crown lapses like a member (§9.7)', () => {
-  it('a quiet clerk-crown lapses; pending 👑 questions pass automatically; holders flip', () => {
+describe('the crown lapses like a member (§9.7 v0.49): automatic assent', () => {
+  it('a quiet clerk-crown lapses; pending 👑 questions pass; nothing changes hands; return revives', () => {
     const { s, bo, cy } = buildConstituted({ clerk: true, lapse: { afterMs: 10_000 } });
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'rate',
       value: { grant: 6, cap: 10, dripMinutes: 120 } });
@@ -90,10 +90,25 @@ describe('the crown lapses like a member (§9.7)', () => {
     expect(s.convenorRecord().lapseWarned).toBe(true); // warned by email first
     s.tick(12_500);
     expect(s.crownLapsed).toBe(true);
-    expect(s.motionRecords().get(m)!.status).toBe('carried'); // the heirs already passed it
+    // lapse is automatic abstention, and on an assent, abstaining is granting
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
     expect(s.settingState('rate').value).toEqual({ grant: 6, cap: 10, dripMinutes: 120 });
-    expect(s.settingState('title').holder).toBe('members'); // reserved passed to the members
+    expect(s.settingState('title').holder).toBe('convenor'); // nothing changes hands (v0.49)
     expect(() => s.answerCrownQuestion(13_000, 'cq-1', 'reject')).toThrow(); // passed already
+    // while the crown sleeps, a members-passed change on a reserved setting
+    // applies as if accepted
+    const m2 = s.openMotion(13_500, bo, { kind: 'set', setting: 'title',
+      value: { text: 'The Hollow Oak Charter' } });
+    s.adjudicateOrdinaryMotion(14_000, m2, 'carried');
+    expect(s.motionRecords().get(m2)!.status).toBe('carried');
+    expect(s.titleOf).toBe('The Hollow Oak Charter');
+    // revival is logging in: the assent requirement resumes from that moment
+    s.memberReturn(15_000, 'ada');
+    expect(s.crownLapsed).toBe(false);
+    const m3 = s.openMotion(15_500, bo, { kind: 'set', setting: 'rate',
+      value: { grant: 5, cap: 9, dripMinutes: 180 } });
+    s.adjudicateOrdinaryMotion(16_000, m3, 'carried');
+    expect(s.motionRecords().get(m3)!.status).toBe('awaiting-crown');
   });
 });
 

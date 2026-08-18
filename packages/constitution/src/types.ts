@@ -84,6 +84,7 @@ export type ConstitutionEvent =
       outcome: 'accept' | 'reject' }
   | { type: 'crown-question-auto-passed'; t: number; question: CrownQuestionId }
   | { type: 'crown-lapsed'; t: number }
+  | { type: 'crown-returned'; t: number }
   /* -- presence and the freeze (§9.5, §9.5a) ------------------------------ */
   | { type: 'signed-out'; t: number; member: MemberId; mode: 'holding' | 'abstaining' }
   | { type: 'member-returned'; t: number; member: MemberId }

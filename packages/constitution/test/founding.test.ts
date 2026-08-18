@@ -18,8 +18,9 @@ const openDoc = (isMember = true) =>
 /** Settle everything reserved-style except the delegated set the test keeps. */
 const settleAllReserved = (s: ConstitutionSession, t: number,
   except: string[] = []) => {
-  // machines last: it is the eighth gate, so the document constitutes on its
-  // set and everything before it still enjoys the pre-start free hand.
+  // lapse last: it is the seventh gate (machines is ordinary since Q352),
+  // so the document constitutes on its set and everything before it still
+  // enjoys the pre-start free hand.
   const values = {
     ending: { endsAtMs: 1_000_000 },
     bar: { pct: 78 },
@@ -31,8 +32,8 @@ const settleAllReserved = (s: ConstitutionSession, t: number,
     chamber: { rung: 'link' },
     applications: { holder: 'members', joinPolicy: 'invite' },
     rate: { grant: 4, cap: 8, dripMinutes: 240 },
-    lapse: { afterMs: null },
     machines: { enabled: false, budget: 0 },
+    lapse: { afterMs: null },
   } as const;
   for (const [id, v] of Object.entries(values)) {
     if (except.includes(id)) continue;
@@ -230,15 +231,16 @@ describe('owed OKs (§9.6a): inheritance as unacknowledged decisions', () => {
     s.arrive(3, bo);                          // arrival inherits (§9.6a)
     const owed = s.memberRecords().get(bo)!.okOwed;
     for (const id of ['ending', 'bar', 'quorum', 'authorship', 'signing',
-      'judgments', 'chamber', 'lapse', 'machines', 'applications']) {
+      'judgments', 'chamber', 'lapse', 'applications']) {
       expect(owed.has(id as never), id).toBe(true);
     }
     expect(owed.has('rate' as never)).toBe(false); // ordinary settings are not owed
+    expect(owed.has('machines' as never)).toBe(false); // ordinary since Q352
   });
 });
 
 describe('constituted (§9.6a): the moment judging opens', () => {
-  it('fires when the eight gates settle, and the pre-start rights die with it', () => {
+  it('fires when the seven gates settle, and the pre-start rights die with it', () => {
     const s = openDoc();
     settleAllReserved(s, 1, ['applications']); // applications is not a gate
     expect(s.constitutedAtT).toBe(1);

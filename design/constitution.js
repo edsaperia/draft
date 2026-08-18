@@ -487,13 +487,15 @@ var CONSTITUTION = (() => {
       deps: [],
       judgeGate: true
     },
-    // Constitutional pending Q352 (the consent grounding: 'no AI will draft
-    // at me' is a promise people join under).
+    // Ordinary (Q352, Ed 2026-08-18): the auditor is not a member — it judges
+    // nothing and counts toward no quorum, so switching it re-rates nothing
+    // already decided. A member could put the document through an AI
+    // themselves; the tool is a convenience for the membership.
     {
       id: "machines",
       glyph: "🤖",
-      kind: "constitutional",
-      holderDefault: "members",
+      kind: "ordinary",
+      holderDefault: "convenor",
       delegable: true,
       valueType: "machines",
       consent: {
@@ -506,7 +508,7 @@ var CONSTITUTION = (() => {
         }
       },
       deps: [],
-      judgeGate: true
+      judgeGate: false
     },
     // The register itself — changed by command (invite, arrive, remove),
     // never by a scalar motion. Who holds it lives on 'applications' (§9.7½).
@@ -977,6 +979,9 @@ var CONSTITUTION = (() => {
             openedAtT: event.t,
             status: "pending"
           });
+          const parked = this.motions.get(event.motion);
+          parked.status = "awaiting-crown";
+          parked.settledAtT = null;
           this.nextCrownN += 1;
           break;
         }
@@ -998,9 +1003,12 @@ var CONSTITUTION = (() => {
         }
         case "crown-lapsed": {
           this.crownLapsedFlag = true;
-          for (const st of this.settings.values()) {
-            if (st.holder === "convenor") st.holder = "members";
-          }
+          break;
+        }
+        case "crown-returned": {
+          this.crownLapsedFlag = false;
+          this.convenor.lapseWarned = false;
+          this.touch(this.convenor.id, event.t);
           break;
         }
         default:
@@ -1418,11 +1426,11 @@ var CONSTITUTION = (() => {
         route = motionRouteOf(entry, payload.value, st.value);
       } else if (payload.kind === "invite") {
         this.requireEmailFree(payload.email);
-        route = this.membershipReserved() ? "ordinary" : "constitutional";
+        route = "constitutional";
       } else if (payload.kind === "remove") {
         const target = this.members.get(payload.member);
         if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
-        route = this.membershipReserved() ? "ordinary" : "constitutional";
+        route = "constitutional";
       } else {
         route = "ordinary";
       }
@@ -1441,6 +1449,10 @@ var CONSTITUTION = (() => {
       };
       if (why !== void 0 && why !== "") e.why = why;
       this.emit(e);
+      if (route === "constitutional") {
+        this.emit({ type: "motion-answer", t, motion: id, member: by, answer: "accept" });
+        this.maybeSettleMotions(t);
+      }
       return id;
     }
     answerMotion(t, member, motion, answer) {
@@ -1498,15 +1510,16 @@ var CONSTITUTION = (() => {
       if (!q || q.status !== "pending") throw new Error("no such pending 👑 question");
       if (this.crownLapsedFlag) throw new Error("the crown has lapsed — the question passes by itself");
       this.emit({ type: "crown-question-answered", t, question, outcome });
+      const rec = this.motions.get(q.motion);
       if (outcome === "accept") {
-        this.settleCarriedEffects(t, this.motions.get(q.motion), false);
+        this.settleCarriedEffects(t, rec, rec.route === "constitutional");
       } else {
-        this.settleHeldEffects(t, this.motions.get(q.motion));
+        this.settleHeldEffects(t, rec);
       }
     }
     heldOutBy(member) {
       for (const rec of this.motions.values()) {
-        if (rec.by === member && rec.route === "constitutional" && rec.status === "running") {
+        if (rec.by === member && rec.route === "constitutional" && (rec.status === "running" || rec.status === "awaiting-crown")) {
           return true;
         }
       }
@@ -1529,6 +1542,16 @@ var CONSTITUTION = (() => {
           const answers = electorate.map((m) => rec.answers.get(m.id));
           if (answers.some((a) => a === void 0 || a === "keep")) continue;
           if (!answers.some((a) => a === "accept")) continue;
+          if (this.reservedTarget(rec)) {
+            this.emit({
+              type: "crown-question-opened",
+              t,
+              question: `cq-${this.nextCrownN}`,
+              motion: rec.id
+            });
+            settled = true;
+            break;
+          }
           this.emit({ type: "motion-carried", t, motion: rec.id });
           this.settleCarriedEffects(t, rec, true);
           settled = true;
@@ -1599,8 +1622,14 @@ var CONSTITUTION = (() => {
      * routine activity rides the member's own commands (NOTES.md).
      */
     memberReturn(t, member) {
+      if (member === this.convenor.id && this.crownLapsedFlag) {
+        this.emit({ type: "crown-returned", t });
+      }
       const m = this.members.get(member);
-      if (!m || m.removed) throw new Error(`unknown member '${member}'`);
+      if (!m || m.removed) {
+        if (member === this.convenor.id) return;
+        throw new Error(`unknown member '${member}'`);
+      }
       if (m.signedOut === null && !m.lapsed && !m.lapseWarned) return;
       const wasLapsed = m.lapsed;
       this.emit({ type: "member-returned", t, member });
@@ -1633,7 +1662,8 @@ var CONSTITUTION = (() => {
             for (const q of [...this.crownQuestions.values()]) {
               if (q.status !== "pending") continue;
               this.emit({ type: "crown-question-auto-passed", t, question: q.id });
-              this.settleCarriedEffects(t, this.motions.get(q.motion), false);
+              const mrec = this.motions.get(q.motion);
+              this.settleCarriedEffects(t, mrec, mrec.route === "constitutional");
             }
           } else if (t >= due.warnAtT && !this.convenor.lapseWarned && !this.members.has(this.convenor.id)) {
             this.emit({ type: "lapse-warned", t, member: this.convenor.id });
@@ -1913,7 +1943,7 @@ var CONSTITUTION = (() => {
     const motions = [];
     let myHeldMotion = null;
     for (const rec of s.motionRecords().values()) {
-      if (rec.status === "running" && rec.route === "constitutional" && rec.by === member) {
+      if ((rec.status === "running" || rec.status === "awaiting-crown") && rec.route === "constitutional" && rec.by === member) {
         myHeldMotion = rec.id;
       }
       motions.push({
