@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.37
+# Group Drafting Engine — Specification v0.38
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -225,7 +225,7 @@ A **starting text may be empty**, which is why the prerequisite is a confirmed d
 
 **The moment has a name**: the document is **constituted** when judging opens, and the head of the document states the time — the Constitution block carries the convenor, the constituted-at time, and every constitutional setting’s current value (Ed, 2026-08-18).
 
-**The hat question is a roster fact, not a role** (Ed, 2026-08-18). *Is the convenor a member* asks only whether the convenor appears in the **opening** membership; they are then removed, lapsed and counted like any other member. The right to put themselves back in unilaterally **dies at the start**: from then on the convenor joins the way anybody joins — by constitutional motion — and what survives the start is only the administrative hat.
+**The hat question is a row in the membership list** (Ed, 2026-08-18, twice in one day — first *a roster fact, not a role*, then folded entirely): *is the convenor a member* is just **whether the convenor invites themselves**, asked as their own **pre-checked row** in the membership card rather than as a card of its own — they did not have to be the first member they invited. Unticked, they are the **clerk**, and a clerk’s name and picture are **optional**: an anonymous convenor is a perfectly ordinary thing, and leaving them unset simply shows no name. From the start onwards their membership — if any — is ordinary membership: removed, lapsed and counted like anybody’s, and the right to re-tick themselves **dies at the start**; from then on the convenor joins the way anybody joins, by constitutional motion. What survives the start is only the administrative hat.
 
 **Membership begins at first arrival, not at invitation** (Ed, 2026-08-18). An invitation is an invitation *to become* a member; until somebody opens the document they are listed under the membership as **invited**, with no wallet, no answers owed, and no place in any count. The ceremony’s E is the arrived, which is what keeps one unopened email from blocking judging for everybody (Q339); a late arrival inherits the constitution (Q257) and is owed an **OK** on every constitutional setting they had no say in — the unacknowledged-decision rule, covering inheritance with no new machinery.
 

@@ -64,6 +64,8 @@
      NOT on the design system — no tokens, Arial, an email client's idea of a
      page — because this is a preview of another medium, and soon enough it is
      a real email whose look must owe nothing to this surface (Ed, 2026-08-18). */
+  /* the convenor's own row carries the hat as a pre-checked toggle */
+  .rperson .mepick { font-size: var(--t-cap); }
   #mailmodal { position: fixed; inset: 0; z-index: 90; background: rgba(20,20,24,0.4);
     display: flex; align-items: center; justify-content: center; }
   .mailwin { background: #fff; width: min(560px, 92vw); border-radius: 6px;
@@ -80,7 +82,7 @@
     background: #1a73e8; color: #fff; border-radius: 4px; cursor: pointer;
     font-weight: bold; text-decoration: none; }
 
-  /* the controls the share box took with it, now on the 🔗 and ✉️ cards */
+  /* the controls the share box took with it, now on the 🔗 and 🪪 cards */
   .setupcard textarea { width: 100%; font-size: var(--t-ui); padding: var(--s2);
     resize: vertical; min-height: 60px; }
   .setupcard .btn { font: inherit; font-size: var(--t-cap); padding: var(--s1) var(--s3);
@@ -276,7 +278,7 @@
   const GATES = [
     { k: 'canpropose', g: '✏️', t: 'Proposing', own: 'you', isGate: true,
       open: () => canPropose() && !LIVE().some(owesAnswer),
-      why: 'Members can read a document from the first second, and they cannot propose against a text that is not there yet — nor should you be able to act on a document whose rules you have not yet said what you will accept of (§9.0b), so your own outstanding answers wait here too.',
+      why: 'Members can read a document from the first second, and they cannot propose against a text that is not there yet — nor should you be able to act on a document whose rules you have not yet said what you will accept of — so your own outstanding answers wait here too.',
       waiting: 'Waiting on the starting text, and on your own answers.',
       done: 'Open — members can propose as soon as they arrive.',
       blockers: () => [card('text')].filter((c) => !settled(c)).concat(LIVE().filter(owesAnswer)) },
@@ -289,13 +291,12 @@
   ];
 
   const CARDS = [
-    // — the opening order is Ed's, card by card (2026-08-18): **title → link
-    // → am-I-a-member → the rest**. The first two are the order of existence
-    // — a name, then the address that saves it — and the third is the hat
-    // question, asked before anything that depends on who you are in the
-    // room: the membership you invite, the name and picture you appear
-    // under, the text you start with. Each is born when the one before it
-    // settles, so arriving at docs.vote you are asked exactly one thing.
+    // — the opening order is Ed's, card by card (2026-08-18): **title →
+    // email (verified) → link → the rest**. The first three are the order
+    // of existence — a name, the address that can always get back in, the
+    // address that saves it — and then everything that lives inside the
+    // saved document. Each is born when the one before it settles, so
+    // arriving at docs.vote you are asked exactly one thing.
     { k: 'title', g: '🏷️', t: 'The title', kind: 'ordinary', ready: () => !!S.title, changeable: true },
     // Pre-filled with a slug generated from the title and checked against the
     // ones that already exist; confirming it is what SAVES the document.
@@ -308,17 +309,20 @@
     { k: 'myemail', g: '📧', t: 'Your email', kind: 'personal', own: 'you', dep: ['title'],
       ready: () => S.emailVerified, changeable: true },
     { k: 'slug', g: '🔗', t: 'The link', kind: 'ordinary', dep: ['myemail'], ready: () => SLUG_OK.test(S.slug), changeable: true },
-    { k: 'myrole', g: '🎩', t: 'Is the convenor a member?', kind: 'constitutional', dep: ['slug'] },
-
-    // — the rest, together once the hat is on ----------------------------
-    { k: 'roster', g: '✉️', t: 'Membership', kind: 'constitutional', dep: ['myrole'], ready: () => members().length >= 1, changeable: true },
-    { k: 'myname', g: '✋', t: 'Your name', kind: 'personal', own: 'you', dep: ['myrole'], ready: () => !!S.myname.trim(), changeable: true },
-    { k: 'mypic', g: '🖼️', t: 'Your picture', kind: 'personal', own: 'you', dep: ['myrole'], changeable: true },
+    // — the rest, together once the document exists ----------------------
+    // 🎩 folded into 🪪 (Ed, 2026-08-18): whether the convenor is a
+    // member is just whether they invite themselves, asked as their own
+    // pre-checked row in the membership card.
+    { k: 'roster', g: '🪪', t: 'Membership', kind: 'constitutional', dep: ['slug'], ready: () => members().length >= 1, changeable: true },
+    // optional for a clerk (Ed, 2026-08-18): an anonymous convenor is a
+    // perfectly ordinary thing — they can simply not set a name or picture
+    { k: 'myname', g: '✋', t: 'Your name', kind: 'personal', own: 'you', dep: ['slug'], ready: () => (iDraft() ? !!S.myname.trim() : true), changeable: true },
+    { k: 'mypic', g: '🖼️', t: 'Your picture', kind: 'personal', own: 'you', dep: ['slug'], changeable: true },
     // A document may start empty, which is why this is not a blocker on having
     // content but on having *decided*: a page nobody has looked at and a page
     // somebody chose to leave blank look identical, and only one of them should
     // let people start proposing.
-    { k: 'text', g: '📄', t: 'The starting text', kind: 'ordinary', dep: ['myrole'], gate: 'propose' },
+    { k: 'text', g: '📄', t: 'The starting text', kind: 'ordinary', dep: ['slug'], gate: 'propose' },
 
     // — the document's shape --------------------------------------------
     // **When it ends and whether it ends are one card** (Ed, 2026-08-18:
@@ -394,8 +398,8 @@
     // finding, 2026-08-18)
     { k: 'chamber', g: '🔭', t: 'Who else can see it?', kind: 'constitutional', gate: 'judge', key: 'chamber', dep: ['roster'], p: 0.43,
       rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.',
-      takes: 'The document takes the most private', result: 'Roster only',
-      dist: [5, 8, 1], distTop: 1, distEnds: ['Roster only', 'Public'] },
+      takes: 'The document takes the most private', result: 'Members only',
+      dist: [5, 8, 1], distTop: 1, distEnds: ['Members only', 'Public'] },
     // **Do memberships lapse?** (Ed, 2026-08-18, closing Q345 with the sunset
     // option.) Constitutional — it is a rule about the roster, and it passes
     // §9.6's test the honest way round: it re-rates nothing already decided,
@@ -482,7 +486,6 @@
       : S.emailSent ? 'Check your inbox' : 'Not given yet'),
     myname: () => S.myname || 'Unnamed',
     mypic: () => (S.mypic ? 'Chosen' : 'Your initials'),
-    myrole: () => (iDraft() ? 'Yes — a drafter like everybody else' : 'No — the clerk, who does not write'),
     // an invitee is not a member yet (§9.6a): the line counts the arrived,
     // and says who is still only invited
     roster: () => arrived() + (arrived() === 1 ? ' member' : ' members') +
@@ -503,7 +506,7 @@
     grant: () => S.grant + ' each',
     drip: () => S.drip + ' back per ' + (perpetual() ? S.dripPer + ' hours' : S.dripPer + '% of the window') +
       ', up to ' + S.cap,
-    chamber: () => ({ link: 'Anyone with the link', closed: 'Roster only', public: 'Public' }[S.chamber]),
+    chamber: () => ({ link: 'Anyone with the link', closed: 'Members only', public: 'Public' }[S.chamber]),
     lapse: () =>
       '<div class="unlocks">Part of the constitution — judging waits on it.</div>' +
       '<p class="why">Whether a membership lapses after a long quiet spell. A lapsed member leaves the quorum base the way an abstainer does — the room can finish without them — and their judgments keep counting; they are warned by email first, sent the package (the document as it stands, and the record so far) when it happens, and coming back is just logging in. On a perpetual document this is the answer to the member who will neither participate nor leave.</p>' +
@@ -522,11 +525,13 @@
   const ANSVALUE = {
     quorum: (v) => 'You said ' + v + ' of ' + E(),
     bar: (v) => 'You said ' + v + '%',
-    ending: (v) => (v === 'never' ? 'You said never' : 'You said ' + v),
+    ending: (v) => (v === 'never' ? 'You said never'
+      : 'You said ' + (isNaN(Date.parse(v)) ? v
+        : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' }))),
     authorship: (v) => 'You said ' + ({ anonymous: 'no names, ever', sealed: 'names at the close', public: 'names from the start' }[v] || v),
     signing: (v) => 'You said ' + ({ nobody: 'nobody signs', each: 'each author chooses', everybody: 'everybody signs' }[v] || v),
     judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
-    chamber: (v) => 'You said ' + ({ closed: 'roster only', link: 'anyone with the link', public: 'public' }[v] || v),
+    chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
     machines: (v) => 'You said ' + (v ? 'a machine member is fine' : 'people only'),
     lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' quiet days'),
     grant: (v) => 'You said ' + v + ' ✏️s',
@@ -555,15 +560,24 @@
   const ceremonyRunning = () => ceremony().some((c) => isRoom(c) && (c.in || 0) < E());
   const canJudge = () => ceremony().every(settled) && !ceremonyRunning();
 
-  // the membership list, as the ✉️ card's clause — the current text of the
+  // the membership list, as the 🪪 card's clause — the current text of the
   // rule, with the ✕ that edits it, replacing the copy that lived in the body
+  // **The hat is a row in this list** (Ed, 2026-08-18: *does the convenor
+  // invite themselves? … make it a default, pre-checked*). Your own row is
+  // first and ticked; unticking it makes you the clerk — administering
+  // without writing — and you did not have to be the first member you
+  // invited. Only yours to flip until judging starts; after that you join
+  // the way anybody joins.
   const rosterClause = () =>
     '<div class="roster clauselist">' + S.roster.map((p, i) =>
       '<div class="rperson">' + avHtml(p) +
       '<span><span class="nm">' + esc(p.n) + (p.convenor ? ' <span class="chip convenor">convenor</span>' : '') +
       '</span><br><span class="em">' + esc(p.e) + '</span></span>' +
-      '<span class="chip' + (p.in ? '' : ' pending') + '">' +
-      (p.role === 'clerk' ? 'clerk' : 'member') + (p.in ? '' : ' · invited') + '</span>' +
+      (p.convenor
+        ? '<button class="lanepick mepick" aria-pressed="' + iDraft() + '" data-metoggle="1">' +
+          '<span class="dot"></span><span>' + (iDraft() ? 'Member — drafting too' : 'Clerk — not drafting') + '</span></button>'
+        : '<span class="chip' + (p.in ? '' : ' pending') + '">' +
+          (p.role === 'clerk' ? 'clerk' : 'member') + (p.in ? '' : ' · invited') + '</span>') +
       (p.convenor ? '<span class="xdrop"> </span>' : '<button class="xdrop" data-drop="' + i + '">✕</button>') +
       '</div>').join('') + '</div>';
 
@@ -574,7 +588,7 @@
     const line = (g, t, v) => '<span class="cline" title="' + esc(t) + '">' +
       '<span class="cg">' + g + '</span><span><b>' + v + '</b></span></span>';
     return '<div class="constlist">' +
-      line('🎩', 'Convenor', esc(S.myname || 'Unnamed') + (iDraft() ? '' : ' · clerk')) +
+      line('🎩', 'Convenor', esc(S.myname || (iDraft() ? 'Unnamed' : 'Anonymous')) + (iDraft() ? '' : ' · clerk')) +
       line('⏱️', 'Constituted', canJudge() ? 'constituted — judging is open'
         : 'not yet constituted — it happens when judging opens') +
       // summary(), not value(): a delegated setting states "the members
@@ -643,7 +657,7 @@
       '<p class="why">Type or paste it into the page below — the same column it will be edited in once drafting begins. Lines starting with #, ## or ### become sections, and the contents appear on the left as you go.</p>' +
       '<p class="setnote"><b>Or leave it blank.</b> A roster writing something from nothing is an ordinary way to begin, and an empty page is a real answer to this question. What this card asks is not whether there is text, but whether you have decided.</p>',
     title: () =>
-      '<p class="why">What members read in the bar at the top, and what the invitation says. Unlike almost everything else here it is not fixed at creation — come back to this card and change it whenever you like.</p>' +
+      '<p class="why">What members read at the top of the screen, and what the invitation says. Unlike almost everything else here it is not fixed at creation — come back to this card and change it whenever you like.</p>' +
       '<div class="lanebox"><div class="lp editlane titlelane' + (S.title ? '' : ' blank') + '"' +
       ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
       ' data-ph="The name of this document">' + esc(S.title) + '</div></div>',
@@ -651,7 +665,7 @@
       '<div class="unlocks">Confirming this <b>saves the document</b> — until the link exists, nothing does, anywhere. Invitations wait on it, because an invitation <i>is</i> this link.</div>' +
       (S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> already exists, so a short suffix was added. Change it to anything free.</p>'
         : '<p class="setnote">Suggested from the title. Change it to anything free.</p>') +
-      '<p class="why">What people paste to each other. Also the one setting here that is awkward rather than impossible to change later — an old link keeps working, but the one in everybody’s address bar stops matching the one in the invitation.</p>' +
+      '<p class="why">What people paste to each other.</p>' +
       '<span class="fld"><label>The link</label><span class="setrow2">' +
       '<span class="setnote" style="margin:0">docs.vote/</span>' +
       '<input data-slug="1" value="' + esc(S.slug) + '" spellcheck="false" style="width:16rem">' +
@@ -677,25 +691,15 @@
         '<span class="fld"><label>Your email</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>' +
         '<div style="margin-top:var(--s3)"><button class="btn"' + (EMAIL_OK.test(S.myemail) ? '' : ' disabled') + ' data-act="sendverify">Send the link</button></div>' +
         '<p class="setnote">Yours alone — it appears nowhere in the document, and it is not your name: who you are in the room is the ✋ card, later.</p>'),
-    myname: () => nameBody(me()),
+    myname: () => nameBody(me(), { optional: !iDraft() }),
     mypic: () => pictureBody(me()),
     // **Whether the convenor is in it is its own question** (Ed, 2026-08-18).
     // It had been the top half of the roster card, which made a decision about
     // one person a preamble to a list of everybody — and the convenor is a hat
     // worn over a role rather than a role itself (SPEC §9.0a), so the hat and
     // the roster are two things.
-    myrole: () =>
-      '<p class="why">You set this document up. That is an administrative act, and it does not by itself put you in the room — a facilitator running a convention they are not a member of and a member who happened to start the document are different people performing it.</p>' +
-      '<div class="choice" role="radiogroup">' +
-      '<div class="pick' + (iDraft() ? ' on' : '') + '"><button class="lanepick" aria-pressed="' + iDraft() + '" data-me="member">' +
-      '<span class="dot"></span><span>Yes</span></button>' +
-      '<span class="exp">A member like anybody else: a wallet, judgments, a place in quorum, and the opening questions to answer with the rest of the room.</span></div>' +
-      '<div class="pick' + (iDraft() ? '' : ' on') + '"><button class="lanepick" aria-pressed="' + !iDraft() + '" data-me="clerk">' +
-      '<span class="dot"></span><span>No</span></button>' +
-      '<span class="exp">You are the <b>clerk</b>: you set it up and keep it running, but the document is not yours to write — no wallet, no judgments, no place in quorum, and no opening questions to answer.</span></div></div>' +
-      '<p class="setnote">A roster fact, not a role: this only decides whether you are in the <b>opening</b> membership. After judging starts your membership is ordinary membership — it lapses and leaves like anybody’s — and joining again happens the way anybody joins.</p>',
     roster: () =>
-      '<p class="why">An invitation <b>is the link</b>, sent by email — there are no passwords — which is why nobody could be invited before the link existed. It is an invitation <b>to become a member</b>: until somebody opens the document they are listed as <i>invited</i> and count toward nothing. Until judging opens you may invite and uninvite freely — nothing has been decided yet, so nothing is being changed (§9.6a). After that, both directions are constitutional motions. A joiner gets the base grant plus the drip accrued so far, and quorum recomputes.</p>' +
+      '<p class="why">An invitation <b>is the link</b>, sent by email — there are no passwords — which is why nobody could be invited before the link existed. It is an invitation <b>to become a member</b>: until somebody opens the document they are listed as <i>invited</i> and count toward nothing. Until judging opens you may invite and uninvite freely — nothing has been decided yet, so nothing is being changed. After that, both directions are constitutional motions — you included: your own row above is <b>pre-checked</b>, and you may untick it and be the clerk, who administers without writing, but after judging starts you join the way anybody joins. A joiner starts with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</p>' +
       '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1">' +
       '<button class="btn" data-act="add">Invite</button></div></div>' +
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
@@ -705,7 +709,7 @@
       'Nobody has to be here for the document to exist — the link works from the first second, and ' +
       'a joiner gets the base grant plus the drip accrued so far.</p>',
     ending: () =>
-      '<p class="why">The moment this document closes: the close itself, the record, and the top of the approval threshold’s ramp. <b>Never</b> is one of the answers — a perpetual document has no close of its own and a bar that cannot rise, because a ramp needs an endpoint to rise towards, and it ends by <b>freeze</b> when too few members are still active (§9.5) rather than by the calendar.</p>' +
+      '<p class="why">The moment this document closes: the close itself, the record, and the top of the approval threshold’s ramp. <b>Never</b> is one of the answers — a perpetual document has no close of its own and a bar that cannot rise, because a ramp needs an endpoint to rise towards, and it ends by <b>freeze</b>, when too few members are still active, rather than by the calendar.</p>' +
       '<div class="choice" role="radiogroup">' +
       opt(S, 'ending', 'ends', 'At a set time', '',
         '<span class="fld"><label>Ends</label><input type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '"></span>') +
@@ -773,14 +777,14 @@
       opt(S, 'judgments', 'after', 'Revealed once the decision is made', 'Published with the record, never before it.') +
       '</div>',
     grant: () =>
-      '<p class="why">How many ✏️s everybody holds on the first day. Proposing costs one, and members see the number in their wallets from the first minute — so a document meant to move quickly and one meant to be hard to change want different answers. A proposal also stakes one, which comes back in full if you withdraw it and in proportion to how well it did if it does not carry (§7) — that is a flat one, and not settable.</p>' +
+      '<p class="why">How many ✏️s everybody holds on the first day. Proposing costs one, and members see the number in their wallets from the first minute — so a document meant to move quickly and one meant to be hard to change want different answers. A proposal also stakes one, which comes back in full if you withdraw it and in proportion to how well it did if it does not carry — that is a flat one, and not settable.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('grantBy', 'Each states the <b>fewest edits</b> they would accept being given, and the document takes the most generous answer. Until it settles, everyone drafts on the standard grant.') +
       opt(S, 'grantBy', 'convenor', 'I set it', '',
         '<span class="setrow2">' + num(S, 'grant', '✏️s to start with', 0, 40) + '</span>') +
       '</div>',
     drip: () =>
-      '<p class="why">How fast a spent ✏️ comes back, and the most anybody may hold at once. Between them these two settings are the <b>proposal rate</b> — how often anybody may put something to the room. This is the half that decides whether the wallet is ever felt: at v1 defaults most members sit near the cap all session and never meet the constraint at all.</p>' +
+      '<p class="why">How fast a spent ✏️ comes back, and the most anybody may hold at once. Between them these two settings are the <b>proposal rate</b> — how often anybody may put something to the room. This is the half that decides whether the wallet is ever felt: at the standard rate most members sit near the cap all session and never feel the wallet at all.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('dripBy', 'Each states the <b>slowest drip</b> they would accept, and the document takes the fastest.') +
       opt(S, 'dripBy', 'convenor', 'I set it', '',
@@ -789,11 +793,11 @@
         num(S, 'cap', 'Never more than', 1, 99) + '</span>') +
       '</div>',
     chamber: () =>
-      '<p class="why">Who may read it besides the members. Whoever that is, they are <b>not members</b> — nothing is known about them, they have a link and nothing else, and they cannot propose, judge or be counted. What they see is the chamber view: adoptions as they land, the rolling log hash and which races are stuck. Live standings are never visible to anybody, whatever is chosen here.</p>' +
+      '<p class="why">Who may read it besides the members. Whoever that is, they are <b>not members</b> — nothing is known about them, they have a link and nothing else, and they cannot propose, judge or be counted. What they see is a public window: adoptions as they land, and which questions are stuck. Live standings are never visible to anybody, whatever is chosen here.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('chamber', 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.') +
       opt(S, 'chamber', 'link', 'Anyone with the link') +
-      opt(S, 'chamber', 'closed', 'Roster only') +
+      opt(S, 'chamber', 'closed', 'Members only') +
       opt(S, 'chamber', 'public', 'Public', 'Listed and readable by anyone.') + '</div>',
     lapse: () =>
       '<div class="unlocks">Part of the constitution — judging waits on it.</div>' +
@@ -827,7 +831,7 @@
           '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
           ' data-ok="' + c.k + '">OK</button>', g.cards);
       }
-      const body = c.ansFor ? ANSWER[c.ansFor](S.myAns, E())
+      const body = c.ansFor ? ANSWER[c.ansFor](S.myAns, E(), c.ansFor === 'quorum' ? S.quorumForm : undefined)
         : BODY[c.k]() +
           (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
       const kindLine = (c.kind === 'personal' || c.ansFor) ? '' :
@@ -926,6 +930,8 @@
       }
       return render(); }
     if (ev.target.closest('button[data-close]')) { S.open = null; return render(); }
+    const mt = ev.target.closest('[data-metoggle]');
+    if (mt) { const m = meRow(); if (m) m.role = iDraft() ? 'clerk' : 'member'; return render(); }
     const mv2 = ev.target.closest('[data-act="sendverify"]');
     if (mv2) { S.emailSent = true; S.mailOpen = true; return render(); }
     const om = ev.target.closest('[data-act="openmail"]');
@@ -951,8 +957,6 @@
       return render(); }
     const pic = ev.target.closest('[data-pic]');
     if (pic) { S.mypic = pic.dataset.pic; return render(); }
-    const m = ev.target.closest('[data-me]');
-    if (m) { const row = meRow(); if (row) row.role = m.dataset.me; return render(); }
     const d = ev.target.closest('[data-drop]');
     if (d) { S.roster.splice(+d.dataset.drop, 1); return render(); }
     if (ev.target.closest('[data-act="add"]')) {

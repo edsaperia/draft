@@ -254,7 +254,11 @@ window.SETUP = (function () {
     // part of its own card. Caught 2026-08-18, on the one card whose title is a
     // question — which asked itself twice.
     return '<div class="lockline">' + TICK + '<span>' + esc(c.setBy || 'Set by the convenor when the document was made') +
-      '. Fixed for the life of the document.</span></div>' +
+      // what changing it takes is the kind, said plainly — “fixed for the
+      // life of the document” predated motions and was simply false
+      (c.kind === 'constitutional'
+        ? '. Constitutional — changing it means asking everyone again.'
+        : '. Ordinary — anybody may propose changing it, any time.') + '</span></div>' +
       '<div class="statline"><span class="k">Set to</span><span class="v">' +
       ctx.value(c) + '</span></div>' +
       (c.readNote ? '<p class="setnote">' + c.readNote + '</p>' : '');
@@ -321,12 +325,15 @@ window.SETUP = (function () {
      whether a name is attached to a **proposal**, which is sealed by default
      (SPEC §9.0c). Both are written by `setup.js` because both are the same
      question for a convenor and for a member. */
-  const nameBody = (me) =>
+  const nameBody = (me, opts) =>
     '<p class="why">What other people call you here. It is not authorship: who proposed what is settled by the disclosure rule, and under most of its settings your name never appears beside a proposal at all — a document showing fourteen named people and not one named candidate is the ordinary case.</p>' +
     '<div class="idrow">' + avHtml(me, 'big') +
     '<span class="fld"><label for="myname">Your name</label>' +
     '<input id="myname" data-txt="myname" value="' + esc(me.n || '') + '" placeholder="Your name"></span></div>' +
-    '<p class="setnote">Change it whenever you like; it is yours and it binds nobody.</p>';
+    '<p class="setnote">Change it whenever you like; it is yours and it binds nobody.' +
+    ((opts && opts.optional)
+      ? ' You are not a member, so this is <b>optional</b> — an anonymous convenor is a perfectly ordinary thing; leave it blank and the constitution simply shows no name.'
+      : '') + '</p>';
 
   /* **It is an uploader** (Ed, 2026-08-18). The card had offered a ground for
      your initials or a drawn mark, on the reasoning that a mockup has no
@@ -431,7 +438,7 @@ window.SETUP = (function () {
     const kind = m.kind || routeFor(c, m.to);
     const need = 'the bar, with quorum';
     const speaker = (why) => '<div class="speaker">' +
-      '<span class="disc" aria-hidden="true" title="A member of the roster wrote this. Who, is sealed until the record (SPEC §3.4)."></span>' +
+      '<span class="disc" aria-hidden="true" title="A member wrote this. Who, is sealed until the closing record."></span>' +
       (why ? '<div class="said">' + esc(why) + '</div>' : '<div class="said none">No reason given.</div>') +
       '</div>';
     const lane = (val, key, label) =>
@@ -547,13 +554,19 @@ window.SETUP = (function () {
   /* One body per delegable question — the copy a member answers against,
      identical on both surfaces because it is the same question. */
   const ANSWER = {
-    quorum: (A, E) =>
-      '<p class="why">How many of the ' + E + ' must weigh in on a question before it can change the charter. A question short of quorum simply waits — nobody’s silence is ever counted as a vote. Asked as a <b>count</b> — the convenor’s wording of the question; the number is the room’s.</p>' +
-      slider(A, 'quorum', 1, E, (v) => v + ' of ' + E, (v) =>
-        v >= E ? 'Nothing moves unless every member has weighed in. A charter that cannot change without all of them is a perfectly reasonable thing to want.'
-        : v <= Math.ceil(E / 4) ? 'A small part of the room can carry a change while the rest are elsewhere.'
-        : 'Rather more than half the room has to have looked at a question before it can move.') +
-      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> answer given, so it will never be lower than what you say here.</p>',
+    quorum: (A, E, form) => {
+      const share = form === 'share';
+      const asN = (v) => (share ? Math.max(1, Math.ceil(v / 100 * E)) : v);
+      const mean = (v) => (asN(v) >= E
+        ? 'Nothing moves unless every member has weighed in. A charter that cannot change without all of them is a perfectly reasonable thing to want.'
+        : asN(v) <= Math.ceil(E / 4) ? 'A small part of the room can carry a change while the rest are elsewhere.'
+        : 'Rather more than half the room has to have looked at a question before it can move.');
+      return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in on a question before it can change the charter. A question short of quorum simply waits — nobody’s silence is ever counted as a vote. Asked as a <b>' + (share ? 'share of the membership' : 'count') + '</b> — the convenor’s wording of the question; the number is the room’s.</p>' +
+      (share
+        ? slider(A, 'quorum', 5, 100, (v) => v + '% — ' + asN(v) + ' of ' + E, mean, 5)
+        : slider(A, 'quorum', 1, E, (v) => v + ' of ' + E, mean)) +
+      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> answer given, so it will never be lower than what you say here.</p>';
+    },
     bar: (A) =>
       '<p class="why">How sure the room has to be that a new wording beats the one it would replace, <b>at the close, where an adoption is permanent</b>. A confidence, not a vote share — at 60% a change goes through on a real but slender preference; at 90% only something close to agreement moves anything. Everything before the close can still be challenged, so this one number covers the whole way there; how the bar climbs is the convenor’s pacing.</p>' +
       slider(A, 'bar', 50, 95, (v) => v + '%', (v) =>
@@ -582,7 +595,7 @@ window.SETUP = (function () {
     chamber: (A) =>
       '<p class="why">Who may read the charter besides the members. Whoever they are, they are <b>not members</b>: nothing is known about them, they have a link and nothing else, and they cannot propose, judge or be counted. A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.</p>' +
       ladder(A, 'chamber', [
-        { v: 'closed', t: 'Roster only', e: 'Nobody outside the membership sees anything at all.' },
+        { v: 'closed', t: 'Members only', e: 'Nobody outside the membership sees anything at all.' },
         { v: 'link', t: 'Anyone with the link', e: 'The chamber view only, to whoever the link reaches.' },
         { v: 'public', t: 'Public', e: 'Listed and readable by anyone.' }]) + BLINDNOTE,
     machines: (A) =>

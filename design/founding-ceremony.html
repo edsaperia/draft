@@ -141,8 +141,8 @@
       dist: [11, 3], distTop: 0, distEnds: ['Never', 'After the decision'] },
     { k: 'chamber', g: '🔭', t: 'Who else can see it?', kind: 'constitutional', in: 6,
       rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.',
-      takes: 'The charter takes the most private', result: 'Roster only',
-      dist: [5, 8, 1], distTop: 1, distEnds: ['Roster only', 'Public'] },
+      takes: 'The charter takes the most private', result: 'Members only',
+      dist: [5, 8, 1], distTop: 1, distEnds: ['Members only', 'Public'] },
     { k: 'lapse', g: '💤', t: 'Do memberships lapse?', kind: 'constitutional', in: 8,
       rule: 'Each member states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.',
       takes: 'The document takes the longest', result: 'Never',
@@ -159,12 +159,12 @@
     { k: 'text', g: '📄', t: 'The starting text', own: 'convenor', kind: 'ordinary', v: '42 blocks, 9 sections' },
     { k: 'title', g: '🏷️', t: 'The title', own: 'convenor', kind: 'ordinary', v: 'The Hollow Oak Club — House Charter' },
     { k: 'slug', g: '🔗', t: 'The link', own: 'convenor', kind: 'ordinary', v: 'docs.vote/hollow-oak-4f2a' },
-    { k: 'roster', g: '✉️', t: 'Membership', own: 'convenor', kind: 'constitutional', v: 'Fourteen members',
+    { k: 'roster', g: '🪪', t: 'Membership', own: 'convenor', kind: 'constitutional', v: 'Fourteen members',
+      // 🎩 folded in (Ed, 2026-08-18): whether the convenor is a member is
+      // their own row in this list, pre-checked when the document was made
+      setBy: 'Invited by Wren Ashby — themselves included, their own row pre-checked',
 
       readNote: 'Anybody else who can read this is not a member — nothing is known about them, they have a link and nothing else. That is the 🔭 setting, not this one.' },
-    { k: 'myrole', g: '🎩', t: 'Is the convenor a member?', own: 'convenor', kind: 'constitutional', v: 'Yes — Wren Ashby drafts too',
-      setBy: 'Chosen by Wren Ashby when they set the charter up',
-      readNote: 'Had the answer been no, Wren would be the <b>clerk</b> — administering without writing, with no wallet, no judgments and no place in quorum. A roster fact, not a role: it only put Wren in the opening membership, and since the start their membership has been ordinary membership — it lapses and leaves like anybody’s, and rejoining happens the way anybody joins.' },
     // One card, two routes to change it — see the ⏰ entry in document-creation.
     { k: 'ending', g: '⏰', t: 'When does it end?', own: 'convenor', kind: 'constitutional',
       motionKind: 'ordinary', v: 'Thursday 18:00',
@@ -312,7 +312,7 @@
     judgments: () => (!S.judgments ? 'The most you will accept' : 'You said ' +
       { never: 'never revealed', after: 'revealed after the decision' }[S.judgments]),
     chamber: () => (!S.chamber ? 'The most you will accept' : 'You said ' +
-      { closed: 'roster only', link: 'anyone with the link', public: 'public' }[S.chamber]),
+      { closed: 'members only', link: 'anyone with the link', public: 'public' }[S.chamber]),
     lapse: () => (S.lapse === null ? 'The shortest you will accept'
       : S.lapse === 'never' ? 'You said never' : 'You said after ' + S.lapse + ' quiet days'),
     machines: () => (S.machines === null ? 'The most you will accept'
@@ -378,7 +378,7 @@
     '<div class="pick' + (S.mAns.roster === 'yes' ? ' on' : '') + '"><button class="lanepick"' +
     ' aria-pressed="' + (S.mAns.roster === 'yes') + '" data-motion="yes"><span class="dot"></span>' +
     '<span>I accept them joining</span></button>' +
-    '<span class="exp">They get the base grant plus the drip accrued so far, and quorum recomputes.</span></div></div>' + BLIND;
+    '<span class="exp">They start with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</span></div></div>' + BLIND;
 
   const BLIND = '<p class="blindnote">Nobody sees your answer, and you will see nobody else’s until every one of them is in.</p>';
 
@@ -427,7 +427,7 @@
   const BODY = {
     myname: () => nameBody(me()),
     mypic: () => pictureBody(me()),
-    quorum: () => whoBox('quorum') + ANSWER.quorum(S, E),
+    quorum: () => whoBox('quorum') + ANSWER.quorum(S, E, 'count'),
     bar: () => whoBox('bar') + ANSWER.bar(S),
     authorship: () => ANSWER.authorship(S),
     signing: () => ANSWER.signing(S),
