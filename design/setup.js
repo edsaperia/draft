@@ -790,14 +790,10 @@ window.SETUP = (function () {
       '<span class="setnote" style="margin:0">days</span></span></span>' +
       ansRow(A.lapse === 'never', 'lapse', 'never', 'Never', 'Memberships do not lapse, however long inactive.') +
       '<p class="blindnote">Nobody sees your answer. The charter takes the <b>longest</b> asked for, <b>never</b> the longest of all.</p>',
-    grant: (A) =>
-      '<p class="why">The fewest ✏️s you would accept being given to start with. The charter takes the <b>most generous</b> answer.</p>' +
-      '<span class="fld"><label>✏️s to start with</label><input class="num" type="number" min="0" max="40"' +
-      ' data-ansnum="grant"' + (A.grant !== null ? ' value="' + A.grant + '"' : '') + '></span>' + BLINDNOTE,
-    drip: (A) =>
-      '<p class="why">The slowest return you would accept — ✏️s given back per tenth of the window. The charter takes the <b>fastest</b> answer.</p>' +
-      '<span class="fld"><label>✏️s back per 10%</label><input class="num" type="number" min="0" max="10"' +
-      ' data-ansnum="drip"' + (A.drip !== null ? ' value="' + A.drip + '"' : '') + '></span>' + BLINDNOTE,
+    rate: (A) =>
+      '<p class="why">The most sparing proposal rate you would accept. The charter takes the <b>most generous</b> answer given.</p>' +
+      '<span class="fld"><label>The fewest ✏️ to start with</label><input class="num" type="number" min="0" max="40"' +
+      ' data-ansnum="rate"' + (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '></span>' + BLINDNOTE,
   };
 
   /* ---- the mails -----------------------------------------------------------

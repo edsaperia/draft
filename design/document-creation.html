@@ -128,15 +128,14 @@
     ending: 'roster', endsAt: '2026-08-20T18:00',
     myAns: { ending: null, bar: null, quorum: null, authorship: null,
       signing: null, judgments: null, chamber: null, machines: null,
-      grant: null, drip: null },
+      rate: null },
     barBy: 'roster', tClose: 78, shape: 'ramp', tStart: 55,
     quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
     joinBy: 'invite', rosterBy: 'roster',
     lapse: 'roster', lapseDays: 90,
     authorship: 'roster', signing: 'roster', judgments: 'roster',
     authorshipSet: 'anonymous', signingSet: 'nobody', judgmentsSet: 'never',
-    grantBy: 'founder', grant: 4,
-    dripBy: 'founder', drip: 1, dripPer: 10, cap: 8,
+    rateBy: 'founder', grant: 4, dripMin: 180, cap: 8,
     chamber: 'roster', auditor: 'roster', auditorBudget: 6,
     roster: [{ n: '', e: '', role: 'member', founder: true, in: true }],
     // **Confirmed, not merely defaulted** (Ed, 2026-08-17). A default nobody
@@ -245,7 +244,7 @@
   // which **pile** a card stands in: taking a setting back moves its tab from
   // the members' pile to the founder's, in front of you.
   const DELEGABLE = ['ending', 'barBy', 'quorumBy', 'authorship', 'signing',
-    'judgments', 'grantBy', 'dripBy', 'chamber', 'auditor', 'lapse'];
+    'judgments', 'rateBy', 'chamber', 'auditor', 'lapse'];
   const delegated = (key) => DELEGABLE.includes(key) && S[key] === 'roster';
 
   // **The gates are cards** (Ed, 330b) — see the ceremony surface for the
@@ -369,14 +368,12 @@
     // It is **not three**: the stake is a flat 1 and always was (§13 parameters,
     // §7), so the card that offered to set it was offering a decision the
     // mechanism does not have (Ed, 2026-08-18: *isn’t the stake fixed at 1?*).
-    { k: 'grant', g: '🪙', t: 'How Many ✏️s Do Members Start With?', kind: 'ordinary', key: 'grantBy', dep: ['roster'], p: 0.36,
-      rule: 'Each member states the <b>fewest</b> they would accept being given, and the document takes the most generous answer.',
-      takes: 'The document takes the most generous', result: '5 each',
-      dist: [1, 2, 4, 3, 2, 1, 1], distTop: 4, distEnds: ['0', '12'] },
-    { k: 'drip', g: '💧', t: 'How Fast Do ✏️s Come Back?', kind: 'ordinary', key: 'dripBy', dep: ['ending'], p: 0.36,
-      rule: 'Each member states the <b>slowest</b> return they would accept, and the document takes the fastest.',
-      takes: 'The document takes the fastest', result: '1 per 10%, up to 8',
-      dist: [2, 3, 5, 2, 1, 1], distTop: 2, distEnds: ['slowest', 'fastest'] },
+    // **One decision, not two** (Ed, 2026-08-18: the grant and the drip
+    // merged — the rate is one thought, stated as one sentence)
+    { k: 'rate', g: '⏱️', t: 'Proposal Rate', kind: 'ordinary', key: 'rateBy', dep: ['roster'], p: 0.36,
+      rule: 'Each member states the <b>most generous</b> rate they would accept, and the document takes it.',
+      takes: 'The document takes the most generous', result: '5 each, one back every 120 minutes',
+      dist: [1, 2, 4, 3, 2, 1, 1], distTop: 4, distEnds: ['sparing', 'generous'] },
 
     // — the room around it ------------------------------------------------
     // gate 'judge': constitutional (§9.6 disclosure family), so judging waits
@@ -489,7 +486,7 @@
     // the gates lead the Proposals section (Ed, 2026-08-18)
     { key: 'rate', title: 'Proposals',
       text: 'How often anybody may put something to the room, and whether an AI drafts proposals alongside them.',
-      keys: ['canpropose', 'canjudge', 'grant', 'drip', 'machines'] },
+      keys: ['canpropose', 'canjudge', 'rate', 'machines'] },
     { key: 'deciding', title: 'Decisions',
       text: 'How a change carries: how many must weigh in, how sure the room must be, and when the document ends.',
       keys: ['ending', 'quorum', 'bar', 'pace'] },
@@ -559,9 +556,7 @@
       public: 'Names from the start' }[S.authorshipSet]),
     signing: () => ({ nobody: 'Nobody signs', each: 'Each author chooses', everybody: 'Everybody signs' }[S.signingSet]),
     judgments: () => ({ never: 'Never revealed', after: 'Revealed after the decision' }[S.judgmentsSet]),
-    grant: () => S.grant + ' each',
-    drip: () => S.drip + ' back per ' + (perpetual() ? S.dripPer + ' hours' : S.dripPer + '% of the window') +
-      ', up to ' + S.cap,
+    rate: () => S.grant + ' each · +1 every ' + S.dripMin + ' min · cap ' + S.cap,
     chamber: () => ({ link: 'Anyone with the link', closed: 'Members only', public: 'Public' }[S.chamber]),
     machines: () => (S.auditor === true ? 'The coherence auditor, ' + S.auditorBudget + ' ✏️s' : 'People only'),
     lapse: () => (S.lapse === 'never' ? 'Never — however long inactive'
@@ -581,15 +576,14 @@
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
     machines: (v) => 'You said ' + (v ? 'AI proposals are fine' : 'no AI proposals'),
     lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days of inactivity'),
-    grant: (v) => 'You said ' + v + ' ✏️s',
-    drip: (v) => 'You said ' + v + ' per 10%',
+    rate: (v) => 'You said ' + v,
   };
   const ANSASK = { quorum: 'The lowest you will accept', bar: 'The lowest you will accept',
     ending: 'The latest you will accept', authorship: 'The most you will accept',
     signing: 'The most you will accept', judgments: 'The most you will accept',
     chamber: 'The most you will accept', machines: 'The most you will accept',
     lapse: 'The shortest you will accept',
-    grant: 'The fewest you will accept', drip: 'The slowest you will accept' };
+    rate: 'The most generous you will accept' };
   const value = (c) => (c.ansFor
     ? esc(answered(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
     : esc(VALUE[c.k]()));
@@ -674,8 +668,7 @@
     chamber: 'who may read the document',
     lapse: 'whether an inactive membership lapses',
     machines: 'whether an AI makes proposals',
-    grant: 'how many ✏️s members start with',
-    drip: 'how fast ✏️s come back',
+    rate: 'how often members may propose',
     policy: 'how people become members',
     slug: 'the document’s address',
     text: 'the text the document starts from',
@@ -707,9 +700,8 @@
     machines: () => (S.auditor === true
       ? 'An AI — the coherence auditor — makes proposals, holding ' + S.auditorBudget + ' ✏️s. It never judges and counts toward nothing.'
       : 'There are no AI proposals.'),
-    grant: () => 'Members start with ' + S.grant + ' ✏️s each.',
-    drip: () => 'A spent ✏️ comes back at ' + S.drip + ' per ' +
-      (perpetual() ? S.dripPer + ' hours' : S.dripPer + '% of the window') + ', up to ' + S.cap + '.',
+    rate: () => 'Members start with ' + S.grant + ' ✏️ each, up to a maximum of ' + S.cap +
+      '. They get an additional ✏️ every ' + S.dripMin + ' minutes. Successful ✏️s are refunded.',
     policy: () => ({ invite: 'Membership is by invitation only.',
       proposed: 'Anyone may apply, but an application must be proposed by a member.',
       apply: 'Anyone may apply to join.',
@@ -949,21 +941,14 @@
       opt(S, 'judgments', 'never', 'Never revealed', 'What you preferred stays yours, permanently.') +
       opt(S, 'judgments', 'after', 'Revealed once the decision is made', 'Published with the record, never before it.') +
       '</div>',
-    grant: () =>
-      '<p class="why">How many ✏️s everybody holds on the first day. Proposing costs one, and members see the number in their wallets from the first minute — so a document meant to move quickly and one meant to be hard to change want different answers. A proposal also stakes one, which comes back in full if you withdraw it and in proportion to how well it did if it does not carry — that is a flat one, and not settable.</p>' +
+    rate: () =>
+      '<p class="why">How often anybody may put something to the room. Proposing costs one ✏️; a successful ✏️ is refunded, and withdrawing returns it in full.</p>' +
       '<div class="choice" role="radiogroup">' +
-      theyDecide('grantBy', 'Each states the <b>fewest edits</b> they would accept being given, and the document takes the most generous answer. Until it settles, everyone drafts on the standard grant.') +
-      opt(S, 'grantBy', 'founder', 'I set it', '',
-        '<span class="setrow2">' + num(S, 'grant', '✏️s to start with', 0, 40) + '</span>') +
-      '</div>',
-    drip: () =>
-      '<p class="why">How fast a spent ✏️ comes back, and the most anybody may hold at once. Between them these two settings are the <b>proposal rate</b> — how often anybody may put something to the room. This is the half that decides whether the wallet is ever felt: at the standard rate most members sit near the cap all session and never feel the wallet at all.</p>' +
-      '<div class="choice" role="radiogroup">' +
-      theyDecide('dripBy', 'Each states the <b>slowest drip</b> they would accept, and the document takes the fastest.') +
-      opt(S, 'dripBy', 'founder', 'I set it', '',
-        '<span class="setrow2">' + num(S, 'drip', '✏️s returned', 0, 10) +
-        num(S, 'dripPer', perpetual() ? 'every N hours' : 'per N% of the window', 1, 100) +
-        num(S, 'cap', 'Never more than', 1, 99) + '</span>') +
+      theyDecide('rateBy', 'Each states the <b>most generous</b> rate they would accept, and the document takes it. Until it settles, everyone drafts on the standard rate.') +
+      opt(S, 'rateBy', 'founder', 'I set it', '',
+        '<span class="setrow2">' + num(S, 'grant', '✏️ to start with', 0, 40) +
+        num(S, 'cap', 'up to a maximum of', 1, 99) +
+        num(S, 'dripMin', 'an additional ✏️ every N minutes', 5, 2880) + '</span>') +
       '</div>',
     chamber: () =>
       '<p class="why">Who may read it besides the members. Whoever that is, they are <b>not members</b>: nothing is known about them, and they cannot propose, judge or be counted. Live standings are never visible to anybody, whatever is chosen here.</p>' +

@@ -195,8 +195,8 @@
     // their own pile; how it climbs there is the founder's, like the drip.
     { k: 'pace', g: '📈', t: 'How Does the Bar Get There?', own: 'founder', kind: 'ordinary', v: 'Rising from 55%',
       readNote: 'Every adoption is recorded against the bar as it stood, so re-shaping the ramp re-rates nothing already decided — which is why this is open to proposals (✏️) while the close bar is constitutional (🏛️).' },
-    { k: 'grant', g: '🪙', t: 'How Many ✏️s Do Members Start With?', own: 'founder', kind: 'ordinary', v: '4 each' },
-    { k: 'drip', g: '💧', t: 'How Fast Do ✏️s Come Back?', own: 'founder', kind: 'ordinary', v: '1 back per 10% of the window, up to 8',
+    // **One decision, not two** (Ed, 2026-08-18): the rate is one sentence
+    { k: 'rate', g: '⏱️', t: 'Proposal Rate', own: 'founder', kind: 'ordinary', v: '4 each, one back every 180 minutes',
       readNote: 'With the one above, this is the <b>proposal rate</b> — how often anybody may put something to the room. Each proposal also stakes one ✏️, which is a flat one and not a setting: it comes back in full if you withdraw, and in proportion to how well it did if it does not carry.' },
   ];
   // **The gates are cards** (Ed, 330b). Kept out of ROOM, which defines what
@@ -352,7 +352,7 @@
     // and judging wait on is the first thing this section says
     { key: 'rate', title: 'Proposals',
       text: 'How often anybody may put something to the room, and whether an AI drafts proposals alongside them.',
-      keys: ['canpropose', 'canjudge', 'grant', 'drip', 'machines'] },
+      keys: ['canpropose', 'canjudge', 'rate', 'machines'] },
     { key: 'deciding', title: 'Decisions',
       text: 'How a change carries: how many must weigh in, how sure the room must be, and when the document ends.',
       keys: ['ending', 'quorum', 'bar', 'pace'] },
@@ -453,8 +453,7 @@
     slug: 'The document lives at docs.vote/hollow-oak-4f2a.',
     ending: 'The drafting process will end on Thursday at 18:00.',
     pace: 'The approval threshold rises from 55% to the close.',
-    grant: 'Members start with 4 ✏️s each.',
-    drip: 'A spent ✏️ comes back at 1 per 10% of the window, up to 8.',
+    rate: 'Members start with 4 ✏️ each, up to a maximum of 8. They get an additional ✏️ every 180 minutes. Successful ✏️s are refunded.',
     policy: 'Anyone may apply to join.',
     quorum: '10 of the 14 members must weigh in before a question can change the document.',
     bar: 'At the close, the room must be 80% sure for a change to carry.',
@@ -611,9 +610,13 @@
       inputBlock('The approval threshold rises from ' +
         '<input class="num" type="number" min="50" max="99" data-mpace="1" value="' +
         esc((/^Rising/.test(d.to) && (d.to.match(/\d+/) || [])[0]) || '65') + '">% to the close.'),
-    drip: (d) => inputBlock('A spent ✏️ comes back at ' +
-      '<input class="num" type="number" min="0" max="10" data-mnum="back per 10% of the window" value="' +
-      esc((d.to.match(/\d+/) || ['1'])[0]) + '"> per 10% of the window, up to 8.'),
+    rate: (d) => {
+      const n = d.to.match(/\d+/g) || [];
+      return inputBlock('Members start with ' +
+        '<input class="num" type="number" min="0" max="40" data-mrate="x" value="' + esc(n[0] || '4') + '"> ✏️ each, up to a maximum of ' +
+        '<input class="num" type="number" min="1" max="99" data-mrate="y" value="' + esc(n[1] || '8') + '">. They get an additional ✏️ every ' +
+        '<input class="num" type="number" min="5" max="2880" data-mrate="z" value="' + esc(n[2] || '180') + '"> minutes.');
+    },
     ending: (d) => {
       const never = /never/i.test(d.to);
       return inputBlock('The drafting process will end on ' +
@@ -655,9 +658,7 @@
       '<div class="addrow"><input placeholder="Somebody to invite" data-mjoin="1">' +
       '<button class="btn" data-mjoinbtn="1">Invite</button></div></div>' +
       '<p class="setnote">Either way it is one motion and it is constitutional, because who is in the room is what quorum is a fraction of. One member who says no settles it.</p>',
-    grant: (d) => inputBlock('Members start with ' +
-      '<input class="num" type="number" min="0" max="40" data-mnum="✏️s to start with" value="' +
-      esc((d.to.match(/\d+/) || ['4'])[0]) + '"> ✏️s each.'),
+
   };
 
   const BODY = {
@@ -927,7 +928,7 @@
     // a motion's own control writes the value it proposes. On `change` rather
     // than on every keystroke, because a date picker rebuilt under the pointer
     // is a date picker you cannot use.
-    if (ev.target.matches('[data-mtext],[data-mslug],[data-mpace],[data-mdate],[data-mnum]') &&
+    if (ev.target.matches('[data-mtext],[data-mslug],[data-mpace],[data-mdate],[data-mnum],[data-mrate]') &&
       (!S.draft || S.draft.k !== S.open)) S.draft = { k: S.open, to: '', why: '' };
     if (!S.draft) return;
     if (ev.target.matches('[data-mtext]')) { S.draft.to = ev.target.value.trim(); return render(); }
@@ -936,6 +937,11 @@
       S.draft.to = v ? 'docs.vote/' + v : '';
       return render(); }
     if (ev.target.matches('[data-mpace]')) { S.draft.to = 'Rising from ' + ev.target.value + '%'; return render(); }
+    if (ev.target.matches('[data-mrate]')) {
+      const g2 = (k2) => document.querySelector('[data-mrate="' + k2 + '"]');
+      S.draft.to = (g2('x')?.value || '4') + ' each, up to ' + (g2('y')?.value || '8') +
+        ', one every ' + (g2('z')?.value || '180') + ' minutes';
+      return render(); }
     if (ev.target.matches('[data-mdate]')) {
       S.draft.to = ev.target.value
         ? new Date(ev.target.value).toLocaleString(undefined,
