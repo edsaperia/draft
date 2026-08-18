@@ -442,7 +442,7 @@ button.cline:hover b { text-decoration: underline; }
    ------------------------------------------------------------------------ */
 .constsec .cpara { position: relative; min-height: 32px; margin: 0 0 var(--s2); }
 .constsec .cpara .chipcol { top: 0; }
-.constsec .cptext { margin: 0; padding-top: 5px; font-size: var(--t-small); line-height: 1.5; }
+.constsec .cptext { margin: 0; padding-top: 3px; }
 .constsec .cptext b { font-weight: 600; }
 .constsec .cpara.notab { min-height: 0; }
 .constsec .cpara.notab .cptext { padding-top: 0; }
@@ -453,18 +453,17 @@ button.cline:hover b { text-decoration: underline; }
    own second level, a line of prose saying what the section governs, then
    the decision paragraphs — the members' tasks standing among them. */
 .constsec .csec { margin: var(--s4) 0 var(--s5); }
-.constsec .cst { margin: 0 0 2px; font-size: var(--t-ui); font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.04em; }
-.constsec .csintro { margin: 0 0 var(--s3); font-size: var(--t-small);
-  color: var(--muted); max-width: 60ch; }
+/* section headings are the document's own (docline lvl2/lvl3); the intro
+   and state lines are plain document paragraphs */
+.constsec .csintro { margin: 0 0 var(--s3); }
 .constsec .csec .pilewho { margin: 0 0 var(--s3); }
 
 /* each decision: its own heading, the decision in prose underneath (Ed,
    2026-08-18) — the tab keeps the gutter, the heading carries the name, and
    the state line says where the decision stands in whole sentences. */
 .constsec .cptext { padding-top: 2px; }
-.constsec .cph { margin: 0; font-size: var(--t-body); font-weight: 600; line-height: 1.35; }
-.constsec .cpv { margin: 1px 0 0; font-size: var(--t-small); line-height: 1.5; }
+.constsec .cph { margin: 0; font-size: inherit; font-weight: 600; }
+.constsec .cpv { margin: 1px 0 0; }
 .constsec .cpara { margin: 0 0 var(--s3); }
 
 /* the title heading is the way into the title card */
@@ -474,12 +473,12 @@ button.cline:hover b { text-decoration: underline; }
 /* Members / Applications subsections (Ed, 2026-08-18): Members IS the list,
    🪪 the invitations tab beside it, your own row last wearing ✋ and 🖼️;
    Applicants is the list under the Applications decision. */
-.constsec .csub { margin: var(--s3) 0 4px; font-size: var(--t-ui); font-weight: 600; }
-.constsec .csub.sub2 { font-size: var(--t-small); color: var(--muted); font-weight: 600; }
 .memlist { display: flex; flex-direction: column; gap: 5px; }
-.memrow { display: flex; align-items: center; gap: 8px; font-size: var(--t-small); }
+/* only avatars and names keep the compact dress (Ed) */
+.memrow { display: flex; align-items: center; gap: 8px; font-size: var(--t-small);
+  position: relative; }
 .memrow .av { width: 22px; height: 22px; font-size: 8px; flex: none; }
-.memrow .achip { width: 28px; height: 26px; font-size: 1rem; }
-.memrow .achip .mkg { width: 13px; height: 13px; }
-.memrow.meRow { margin-top: 3px; }
+/* the identity tabs are regular gutter clause tabs: a pile at your row */
+.memrow .chipcol { top: -3px; }
+.memrow.meRow { margin-top: 3px; min-height: 30px; }
 .memrow .chip { font-size: var(--t-micro); }

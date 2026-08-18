@@ -460,20 +460,20 @@
           others.map((p) => '<div class="memrow">' + avHtml(p) +
             '<span class="mn">' + esc(p.n || p.e || '—') +
             (p.in ? '' : ' <span class="chip pending">invited</span>') + '</span></div>').join('') +
-          '<div class="memrow meRow">' + my.map(h.chip).join('') + avHtml(me()) +
+          '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
           '<span class="mn">' + esc(S.myname || 'Not named yet') + ' <span class="chip">you</span>' +
           (iDraft() ? '' : ' <span class="chip">clerk</span>') + '</span></div></div>';
         const openId = my.find((c) => S.open === c.k);
         const rest = ['lapse', 'machines', 'myemail', 'canpropose', 'canjudge']
           .map(card).filter((c) => c && visible(c));
-        return '<h4 class="csub">Members</h4>' +
+        return '<h2 class="docline lvl3">Members</h2>' +
           (S.open === 'roster' ? h.para(card('roster'))
             : visible(card('roster'))
             ? '<div class="cpara"><span class="chipcol">' + h.chip(card('roster')) + '</span>' + list + '</div>'
             : '') +
-          (openId ? h.para(openId) : '') +
+          (openId ? h.paraWith(openId, my) : '') +
           (visible(card('policy'))
-            ? '<h4 class="csub">Applications</h4>' + h.para(card('policy'))
+            ? '<h2 class="docline lvl3">Applications</h2>' + h.para(card('policy'))
             : '') +
           rest.map((c) => h.para(c) + h.tasks(c)).join('');
       } },

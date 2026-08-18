@@ -227,11 +227,18 @@ window.SETUP = (function () {
           // subsection that is the list itself, an Applications subsection
           // with the applicants under it) — everything else takes the
           // default run of decision paragraphs
+          // the constitution is document text, so its headings are the
+          // document's own (Ed, 2026-08-18): sections at lvl2, subsections
+          // at lvl3, state lines plain paragraphs — only avatars and names
+          // keep their compact dress
           g.sections.map((sec) => '<div class="csec">' +
-            '<h3 class="cst">' + esc(sec.title) + '</h3>' +
+            '<h2 class="docline lvl2">' + esc(sec.title) + '</h2>' +
             '<p class="csintro">' + sec.text + '</p>' +
             (sec.who ? '<div class="pilewho">' + sec.who() + '</div>' : '') +
             (sec.body ? sec.body({ para, chip: (c) => chipHtml(c, ctx, {}),
+              pile: (cards) => pileHtml(cards, ctx),
+              paraWith: (c, sibs) => (ctx.open === c.k
+                ? '<div class="cpara open">' + cardFor({ ...g, cards: sibs }) + '</div>' : ''),
               tasks: (c) => (ctx.tasksFor ? ctx.tasksFor(c).map(para).join('') : '') })
               : sec.cards.map(withTasks).join('')) +
             (sec.block ? sec.block() : '') + '</div>').join('') +
