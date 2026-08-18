@@ -116,7 +116,7 @@
   const wires = document.getElementById('wires');
 
   const S = {
-    title: '', slug: 'hollow-oak-4f2a',
+    title: '', slug: '',
     myname: 'Wren Ashby', mypic: 'c0',
     ending: 'roster', endsAt: '2026-08-20T18:00',
     myAns: { ending: null, bar: null, quorum: null, authorship: null,
@@ -136,7 +136,7 @@
     // render — the rail is never a list of blanks — and stays yellow until it
     // has been opened and committed.
     seen: new Set(), okd: new Set(),
-    open: null,
+    open: 'title',
   };
   const me = () => ({ n: S.myname, pic: S.mypic });
 
@@ -156,6 +156,22 @@
     ? Math.max(1, Math.round(E() * S.quorumPct / 100)) : Math.min(S.quorumN, E()));
   const perpetual = () => S.ending === 'perpetual';
   const SLUG_OK = /^[a-z0-9][a-z0-9-]{2,}$/;
+  // The mockup's stand-in for the real registry check: these slugs exist, so
+  // a title that collides gets a short suffix — which is also why the
+  // fixture's own link ends in one.
+  const TAKEN = new Set(['hollow-oak-club', 'the-hollow-oak-club',
+    'the-hollow-oak-club-house-charter', 'house-charter', 'charter']);
+  const slugify = (t) => t.toLowerCase().replace(/['’]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
+    .replace(/-+$/g, '');
+  // deterministic, so the mockup behaves the same on every load
+  const suffix = (t) => Math.abs([...t].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 7))
+    .toString(16).slice(0, 4);
+  const suggestSlug = (title) => {
+    const base = slugify(title);
+    if (!base || base.length < 3) return { slug: 'untitled-' + suffix(title || 'x'), taken: null };
+    return TAKEN.has(base) ? { slug: base + '-' + suffix(title), taken: base } : { slug: base, taken: null };
+  };
 
   // ---- the document ------------------------------------------------------
   function relabel() {
@@ -192,7 +208,9 @@
     const txt = (ev.clipboardData || window.clipboardData).getData('text');
     let lines = txt.split(/\n{2,}|\n/).filter((l) => l.trim());
     const first = lines[0] && lines[0].match(/^#\s+(.+)$/);
-    if (first && !S.title) { S.title = first[1]; lines = lines.slice(1); }
+    if (first && !S.title) { S.title = first[1]; lines = lines.slice(1);
+      S.seen.add('title');
+      if (!S.slug) { const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken; } }
     document.execCommand('insertHTML', false, lines.map((l) => '<div>' + esc(l) + '</div>').join(''));
     setTimeout(relabel, 0);
   });
@@ -239,12 +257,18 @@
     // content but on having *decided*: a page nobody has looked at and a page
     // somebody chose to leave blank look identical, and only one of them should
     // let people start proposing.
-    { k: 'text', g: '📄', t: 'The starting text', kind: 'ordinary', gate: 'propose' },
+    // **The title is the first question** (Ed, 2026-08-18): arriving at
+    // docs.vote you are presented with a brand-new document, and nothing about
+    // it exists anywhere until the link is set — so the order here is the
+    // order of existence: a name, then the address that saves it, then the
+    // people, who are invited *with* that address and so cannot come first.
     { k: 'title', g: '🏷️', t: 'The title', kind: 'ordinary', ready: () => !!S.title, changeable: true },
-    // The link had been a read-only field in the share box, which quietly made
-    // it the one thing on the screen decided by not being decided.
-    { k: 'slug', g: '🔗', t: 'The link', kind: 'ordinary', ready: () => SLUG_OK.test(S.slug), changeable: true },
-    { k: 'roster', g: '✉️', t: 'Membership', kind: 'constitutional', ready: () => members().length >= 1, changeable: true },
+    { k: 'text', g: '📄', t: 'The starting text', kind: 'ordinary', gate: 'propose' },
+    // Born when the title settles, pre-filled with a slug generated from it
+    // and checked against the ones that already exist; confirming it is what
+    // SAVES the document.
+    { k: 'slug', g: '🔗', t: 'The link', kind: 'ordinary', dep: ['title'], ready: () => SLUG_OK.test(S.slug), changeable: true },
+    { k: 'roster', g: '✉️', t: 'Membership', kind: 'constitutional', dep: ['slug'], ready: () => members().length >= 1, changeable: true },
     { k: 'myrole', g: '🎩', t: 'Is the convenor a member?', kind: 'constitutional' },
 
     // — yours as a person, whoever you are ------------------------------
@@ -402,7 +426,10 @@
     myname: () => S.myname || 'Unnamed',
     mypic: () => (S.mypic ? 'Chosen' : 'Your initials'),
     myrole: () => (iDraft() ? 'Yes — a drafter like everybody else' : 'No — the clerk, who does not write'),
-    roster: () => members().length + (members().length === 1 ? ' member' : ' members') +
+    // an invitee is not a member yet (§9.6a): the line counts the arrived,
+    // and says who is still only invited
+    roster: () => arrived() + (arrived() === 1 ? ' member' : ' members') +
+      (members().length > arrived() ? ' · ' + (members().length - arrived()) + ' invited' : '') +
       (iDraft() ? '' : ' — you are the clerk, and not one of them'),
     ending: () => (perpetual() ? 'Never — it runs until it is frozen'
       : new Date(S.endsAt).toLocaleString(undefined,
@@ -522,6 +549,9 @@
       ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
       ' data-ph="The name of this document">' + esc(S.title) + '</div></div>',
     slug: () =>
+      '<div class="unlocks">Confirming this <b>saves the document</b> — until the link exists, nothing does, anywhere. Invitations wait on it, because an invitation <i>is</i> this link.</div>' +
+      (S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> already exists, so a short suffix was added. Change it to anything free.</p>'
+        : '<p class="setnote">Suggested from the title. Change it to anything free.</p>') +
       '<p class="why">What people paste to each other. Also the one setting here that is awkward rather than impossible to change later — an old link keeps working, but the one in everybody’s address bar stops matching the one in the invitation.</p>' +
       '<span class="fld"><label>The link</label><span class="setrow2">' +
       '<span class="setnote" style="margin:0">docs.vote/</span>' +
@@ -552,7 +582,7 @@
       '<span class="dot"></span><span>No</span></button>' +
       '<span class="exp">You are the <b>clerk</b>: you set it up and keep it running, but the document is not yours to write — no wallet, no judgments, no place in quorum, and no opening questions to answer.</span></div></div>',
     roster: () =>
-      '<p class="why">Everyone here gets a link by email — there are no passwords, and an invitation is an invitation <b>to become a member</b>: until somebody opens the document they are listed as <i>invited</i> and count toward nothing. Until judging opens you may invite and uninvite freely — nothing has been decided yet, so nothing is being changed (§9.6a). After that, both directions are constitutional motions. A joiner gets the base grant plus the drip accrued so far, and quorum recomputes.</p>' +
+      '<p class="why">An invitation <b>is the link</b>, sent by email — there are no passwords — which is why nobody could be invited before the link existed. It is an invitation <b>to become a member</b>: until somebody opens the document they are listed as <i>invited</i> and count toward nothing. Until judging opens you may invite and uninvite freely — nothing has been decided yet, so nothing is being changed (§9.6a). After that, both directions are constitutional motions. A joiner gets the base grant plus the drip accrued so far, and quorum recomputes.</p>' +
       '<div class="roster">' + S.roster.map((p, i) =>
         '<div class="rperson">' + avHtml(p) +
         '<span><span class="nm">' + esc(p.n) + (p.convenor ? ' <span class="chip convenor">convenor</span>' : '') +
@@ -761,7 +791,13 @@
     const t = ev.target.closest('[data-tab], [data-card]');
     if (t) { const k = t.dataset.tab || t.dataset.card;
       S.open = (S.open === k) ? null : k; return render(); }
-    if (ev.target.closest('[data-confirm]')) { S.seen.add(S.open); S.open = null; return render(); }
+    if (ev.target.closest('[data-confirm]')) {
+      const was = S.open; S.seen.add(was); S.open = null;
+      // the link card is born pre-filled the moment the title settles
+      if (was === 'title' && S.title && !S.slug) {
+        const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken;
+      }
+      return render(); }
     if (ev.target.closest('button[data-close]')) { S.open = null; return render(); }
     const an = ev.target.closest('[data-ans]');
     if (an) { const v = an.dataset.ansval;
