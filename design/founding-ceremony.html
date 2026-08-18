@@ -448,6 +448,7 @@
     machines: 'whether an AI makes proposals',
   };
   const DECIDED = {
+    title: 'The document is titled “The Hollow Oak Club — House Charter”.',
     text: 'The document started from 42 blocks of text in 9 sections.',
     slug: 'The document lives at docs.vote/hollow-oak-4f2a.',
     ending: 'The drafting process will end on Thursday at 18:00.',
@@ -585,36 +586,41 @@
     (exp ? '<span class="exp">' + exp + '</span>' : '') +
     (inner ? '<span class="inner">' + inner + '</span>' : '') + '</div>';
 
+  // **Every composer speaks the decision-card grammar** (Ed, 2026-08-18,
+  // generalising the Applications example): the head is the current rule,
+  // reference only; each alternative below is the rule it would make,
+  // stated as it would stand — with a Prefer this lane where there is a
+  // set to choose among, and the value riding inside the sentence as an
+  // input where the alternative is a continuum (there the input is the
+  // preference, and the commit wakes when it diverges from what stands).
+  const laneBlock = (d, val, text) =>
+    '<div class="propblock"><div class="rtext">' + text + '</div>' +
+    '<div class="lanebar"><button class="lanepick" aria-pressed="' + (d.to === val) + '"' +
+    ' data-mval="' + esc(val) + '"><span class="dot"></span>' +
+    '<span class="off">Prefer this</span><span class="on">Preferred</span></button></div></div>';
+  const inputBlock = (html, note) =>
+    '<div class="propblock"><div class="rtext">' + html + '</div>' + (note || '') + '</div>';
   const PROPOSE = {
-    // a title's own control is a single line of text — the free lane
-    // allowed newlines in a name
-    title: (d) => '<span class="fld"><label>Title</label>' +
-      '<input data-mtext="1" value="' + esc(d.to) + '" placeholder="The document’s name" style="width:24rem"></span>',
-    // the link's own control is the slug beside its fixed prefix, exactly
-    // as the creation card asks it — and the note that no old link breaks
-    slug: (d) => '<span class="fld"><label>Link</label><span class="setrow2">' +
-      '<span class="setnote" style="margin:0">docs.vote/</span>' +
-      '<input data-mslug="1" value="' + esc(d.to.replace(/^docs\.vote\//, '')) + '" placeholder="new-slug"></span></span>' +
-      '<p class="setnote">Every link the document has ever had keeps working — a change leaves a redirect behind.</p>',
-    // pacing is the creation card's own pair: fixed, or rising from a start
-    pace: (d) => '<div class="choice" role="radiogroup">' +
-      mrow(/^Rising/.test(d.to), 'Rising from 55%', 'Rising', 'From a lower start when judging opens, up to the close bar.',
-        '<span class="fld"><label>% at the start</label><input class="num" type="number" min="50" max="99" data-mpace="1" value="' + esc((d.to.match(/\d+/) || ['55'])[0]) + '"></span>') +
-      mrow(/^Fixed/.test(d.to), 'Fixed — the close bar throughout', 'Fixed', 'The close bar for the life of the document.') +
-      '</div>',
-    drip: (d) => '<span class="fld"><label>✏️s back per 10% of the window</label>' +
+    title: (d) => inputBlock('The document is titled ' +
+      '<input data-mtext="1" value="' + esc(d.to || 'The Hollow Oak Club — House Charter') + '" style="width:22rem">.'),
+    slug: (d) => inputBlock('The document lives at docs.vote/' +
+      '<input data-mslug="1" value="' + esc(d.to.replace(/^docs\.vote\//, '') || 'hollow-oak-4f2a') + '" style="width:12rem">.',
+      '<p class="setnote">Every link the document has ever had keeps working — a change leaves a redirect behind.</p>'),
+    pace: (d) => laneBlock(d, 'Fixed — the close bar throughout',
+        'The approval threshold holds at its close value throughout.') +
+      inputBlock('The approval threshold rises from ' +
+        '<input class="num" type="number" min="50" max="99" data-mpace="1" value="' +
+        esc((/^Rising/.test(d.to) && (d.to.match(/\d+/) || [])[0]) || '65') + '">% to the close.'),
+    drip: (d) => inputBlock('A spent ✏️ comes back at ' +
       '<input class="num" type="number" min="0" max="10" data-mnum="back per 10% of the window" value="' +
-      esc((d.to.match(/\d+/) || [''])[0]) + '"></span>',
+      esc((d.to.match(/\d+/) || ['1'])[0]) + '"> per 10% of the window, up to 8.'),
     ending: (d) => {
       const never = /never/i.test(d.to);
-      const when = never ? '' : d.to;
-      return '<div class="choice" role="radiogroup">' +
-        mrow(!never && !!d.to, when || '', 'At a set time', '',
-          '<span class="fld"><label>Ends</label>' +
-          '<input type="datetime-local" data-mdate="1" value="' + esc(when) + '"></span>') +
-        mrow(never, 'Never', 'Never',
-          'No close of its own. This is the constitutional answer — see above.') +
-        '</div>';
+      return inputBlock('The drafting process will end on ' +
+          '<input type="datetime-local" data-mdate="1"' + (never || !d.to ? '' : ' value="' + esc(d.to) + '"') + '>.') +
+        laneBlock(d, 'Never — it runs until it is frozen',
+          'The drafting process has no set end — it runs until it is frozen.') +
+        (never ? '<p class="setnote">Removing the ending is constitutional — a document with no ending has no rising threshold.</p>' : '');
     },
     // **A motion is composed with the setting's own control** (the
     // motion-controls rule) — the policy is the join rungs and the holder,
@@ -649,9 +655,9 @@
       '<div class="addrow"><input placeholder="Somebody to invite" data-mjoin="1">' +
       '<button class="btn" data-mjoinbtn="1">Invite</button></div></div>' +
       '<p class="setnote">Either way it is one motion and it is constitutional, because who is in the room is what quorum is a fraction of. One member who says no settles it.</p>',
-    grant: (d) => '<span class="fld"><label>✏️s to start with</label>' +
+    grant: (d) => inputBlock('Members start with ' +
       '<input class="num" type="number" min="0" max="40" data-mnum="✏️s to start with" value="' +
-      esc((d.to.match(/\d+/) || [''])[0]) + '"></span>',
+      esc((d.to.match(/\d+/) || ['4'])[0]) + '"> ✏️s each.'),
   };
 
   const BODY = {
