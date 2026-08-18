@@ -1,0 +1,1439 @@
+<meta charset="utf-8">
+<title>Document creation</title>
+<link rel="stylesheet" href="system.css">
+<link rel="stylesheet" href="setup.css">
+<style>
+/* ============================================================================
+   document-creation — **the document, from its first minute.**
+
+   Five notes built this, in order, and each one made the screen less of a form:
+
+   1. *Something that looks like the document itself; the admin pastes the text
+      into the space where it will later be edited, the ToC appears on cue, they
+      click the placeholder title in the topbar, and the sidebar holds cards with
+      each of the questions they need to decide.*
+   2. *Can we import as much of the session-view as we can? I think ultimately
+      this will literally be the session view.*
+   3. *You can start inviting people immediately after creating the document …
+      and as soon as you've confirmed the starting text they can start making
+      proposals … and judgements unlock as soon as everyone is ready.*
+   4. *Ceremony and admin cards are absolutely just queue-cards. Instead of
+      modals they open cards in the document at the top, above the text, pushing
+      it down like decision-cards do a clause. They have cables and tabs.*
+   5. *I'd like all of these tabs to act like clause-tabs and pile like clause
+      tabs. The founder's settings sit in one pile, and members' in the
+      pile below. … Go through every decision each role needs to make and turn it
+      into a queue-card. Break them down as much as you can.*
+
+   The third changed the model — there is no moment when the document "opens".
+   The fourth retired the modal. The fifth retired the last two inventions on the
+   screen: the flat tab group, which is now two `chip-gutter` piles like
+   everything else, and the compound card, which was a form in card's clothing.
+   **One decision, one card**, and the test is whether somebody could answer it
+   differently and on its own: a picture and a name are two questions, and so are
+   a membership and whether the founder is in it. What is *not* split is a
+   parameter and its own value — *rising, 55% → 78%* is one thought, and cutting
+   it in half would be splitting a sentence rather than a decision. The same test
+   cuts the other way twice, on 2026-08-18: *when it ends* swallowed *whether it
+   ends*, because **never** is one of the answers to *when*; and the stake stopped
+   being a card at all, because it is a flat 1 in the mechanism and a card for it
+   was offering a decision nobody has. Then ✒️ split the other way on Ed’s Q341 rethink — the close bar is consent where the ramp is pacing, two kinds — so seventeen became eighteen — and 💤 *Do memberships lapse?* (Ed, closing Q345) made it nineteen.
+
+   What is left in this file is its own fixture and the bodies of the cards a
+   founder fills in. The piles, the strip, the cable, the rail entry, the card
+   shell, the read-only and watching bodies and the identity cards are in
+   `setup.js`, because the founding ceremony is this same screen seen by
+   somebody else.
+   ========================================================================== */
+
+  /* **The title is not edited in the topbar** (Ed, 2026-08-18). It had been a
+     contenteditable in the bar, which is the one place on this screen that is
+     not a card — so the title was the single setting with no card behind it, no
+     confirm, and no way back to it except clicking the words. The bar shows the
+     title; the 🏷️ card is where you write it, in the same `.lanebox` the
+     `editing-card` writes a clause in. */
+  .navbar .brand.ph { color: var(--muted); font-weight: 400; }
+  /* dev chrome, deliberately off the design system: dashed, monospace,
+     top-left — a stagehand, not a member of the cast (Ed, 362) */
+  .devswitch { position: fixed; top: calc(var(--nav-h) + 8px); left: 10px; z-index: 60;
+    font: 11px/1.4 ui-monospace, Consolas, monospace; color: var(--muted);
+    background: var(--bg); border: 1px dashed var(--border); border-radius: 6px;
+    padding: 4px 8px; opacity: 0.85; }
+  .devswitch select { font: inherit; color: var(--fg); border: none; background: transparent; }
+
+  /* the paste-well: the empty state of the prose column, and nothing more */
+  .prose.empty.pasteready::before {
+    content: "Paste the text this document starts from, or begin typing it.\A\A Markdown headings become its sections, and the contents appear beside you as you go.";
+    white-space: pre-wrap; color: var(--muted); font-size: var(--t-body); line-height: 1.6;
+  }
+
+
+  /* the controls the share box took with it, now on the 🔗 and 🪪 cards */
+  .setupcard textarea { width: 100%; font-size: var(--t-ui); padding: var(--s2);
+    resize: vertical; min-height: 60px; }
+  .setupcard .btn:not(.glyphbtn) { font: inherit; font-size: var(--t-cap); padding: var(--s1) var(--s3);
+    cursor: pointer; border: 1px solid var(--border); background: var(--bg);
+    border-radius: var(--r-sm); }
+  .setupcard .btn:hover { border-color: var(--primary); color: var(--primary-emphasis); }
+  /* the page's .setupcard .btn ground ties with system.css's .btn.btn-approve
+     and wins on order, leaving white-on-white — restate the approve look at
+     the same scope so the mail's login button reads as one */
+  .setupcard .btn.btn-approve { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+  .setupcard .btn.btn-approve:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  .pf.waiting { color: var(--muted); }
+
+  /* ---- what is unlocked, and what is waiting ----------------------------- */
+  .stage-REMOVED { display: none;
+    font-size: var(--t-small); }
+  .stage .nm { font-weight: 600; }
+  .stage .st { color: var(--muted); font-size: var(--t-cap); margin-left: auto; text-align: right; }
+  .stage.live .nm, .stage.live .st { color: var(--ok); }
+  .stage .mkg { flex: none; }
+  .stage.wait .mkg { visibility: hidden; }
+</style>
+
+<header class="navbar">
+  <div class="wrap">
+    <p class="brand ph" id="title">Untitled document</p>
+    <div class="stats">
+      <span id="stat-stage">reading only</span>
+      <span id="stat-who">1 in the room</span>
+      <button class="me" id="mebtn" title="You, and the founder of this document."></button>
+    </div>
+  </div>
+</header>
+<div class="devswitch" title="Dev only — not part of the product"><label for="devwho">dev · viewing as</label> <select id="devwho"></select></div>
+<div class="wrap">
+  <div class="layout">
+    <nav class="toc"><ul id="toc"></ul></nav>
+    <main>
+      <div class="doc" id="doc">
+        <!-- the tab beside the title is the way in (Ed, 2026-08-18: the
+             UI teaches itself, so the door must be the same everywhere) -->
+        <div class="setrow constsec titlerow"><div class="csec"><div class="cpara notab" id="titlepara">
+          <span id="titlechip" style="display:contents"></span>
+          <h1 class="doctitle ph" id="doctitle">Untitled document</h1>
+        </div></div></div>
+        <div class="setupband" id="band"></div>
+        <div class="prose empty" id="prose" contenteditable="true" spellcheck="false"></div>
+      </div>
+    </main>
+    <aside class="queue stack"><div id="rail"></div></aside>
+  </div>
+</div>
+<svg id="wires" aria-hidden="true"></svg>
+
+<script src="cards.js"></script>
+<script src="setup.js"></script>
+<script>
+(function () {
+  const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
+    nameBody, pictureBody, drawWire, opt, num, someIn, KIND, kindNote, ANSWER, stateOf,
+    MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, readBody } = window.SETUP;
+  // **A setup card opens and closes like a decision card** (Ed, 2026-08-18:
+  // *the whole point of building off session-view is that we would have all
+  // this stuff*): cards.js own expandCard/collapseCard, which have been
+  // sitting in the shared module since the lift — the card grows out of its
+  // own head, and every way of leaving it rolls it back into its paragraph.
+  const CC = window.CARDS.make({ onExpand: () => drawWire(wires, S.open) });
+  let lastOpen = null;
+  // run the close animation, then the state change it was closing for
+  const closeThen = (fn) => {
+    const el = document.querySelector('.setupcard');
+    if (!el) { fn(); return render(); }
+    CC.collapseCard(el, () => { fn(); render(); });
+  };
+  const prose = document.getElementById('prose');
+  const titleEl = document.getElementById('title');
+  const band = document.getElementById('band');
+  const rail = document.getElementById('rail');
+  const wires = document.getElementById('wires');
+
+  const S = {
+    title: '', slug: '',
+    emailSent: false, emailVerified: false, mailOpen: false,
+    viewer: 0,
+    app: { started: false, email: '', emailSent: false, emailVerified: false,
+      mailOpen: false, name: '', pic: '', text: '', submitted: false },
+    ending: 'roster', endsAt: '2026-08-20T18:00',
+    barBy: 'roster', tClose: 78, shape: 'ramp', tStart: 55,
+    quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
+    joinBy: 'invite', rosterBy: 'roster',
+    lapse: 'roster', lapseDays: 90,
+    authorship: 'roster', signing: 'roster', judgments: 'roster',
+    authorshipSet: 'anonymous', signingSet: 'nobody', judgmentsSet: 'never',
+    rateBy: 'founder', grant: 4, dripMin: 180, cap: 8,
+    chamber: 'roster', auditor: 'roster', auditorBudget: 6,
+    roster: [{ n: '', e: '', role: 'member', founder: true, in: true, ans: {}, okd: new Set() }],
+    // **Confirmed, not merely defaulted** (Ed, 2026-08-17). A default nobody
+    // read is not a decision, and these are the decisions that cannot be changed
+    // once people are drafting. So a card carries its value from the first
+    // render — the rail is never a list of blanks — and stays yellow until it
+    // has been opened and committed.
+    seen: new Set(),
+    open: null,
+  };
+  // ---- who is looking (Ed, 362: a dev dropdown of the actual users) ----
+  // Per-user state lives on the roster rows; S.myAns / S.okd / S.myname…
+  // are accessors delegating to whoever is in the chair, so every existing
+  // call site reads and writes the current viewer without knowing it.
+  const APP_STUB = { n: '', pic: '', role: 'applicant', ans: {}, okd: new Set() };
+  const viewerRow = () => (S.viewer === 'applicant' ? APP_STUB : (S.roster[S.viewer] || S.roster[0]));
+  const amFounder = () => !!viewerRow().founder;
+  const viewerIsMember = () => S.viewer !== 'applicant' && viewerRow().role !== 'clerk';
+  for (const [prop, key] of [['myname', 'n'], ['mypic', 'pic'], ['myemail', 'e']]) {
+    Object.defineProperty(S, prop, { get: () => viewerRow()[key] || '',
+      set: (v) => { viewerRow()[key] = v; } });
+  }
+  Object.defineProperty(S, 'myAns', { get: () => (viewerRow().ans || (viewerRow().ans = {})) });
+  Object.defineProperty(S, 'okd', { get: () => (viewerRow().okd || (viewerRow().okd = new Set())) });
+  const me = () => ({ n: S.myname, pic: S.mypic });
+
+  // Everybody on the roster is a member; the only person who might not be is
+  // the founder, who may be the clerk instead. There is no observer here —
+  // see the chamber card.
+  const members = () => S.roster.filter((p) => p.role !== 'clerk');
+  // **Membership begins at first arrival, not at invitation** (Ed, 2026-08-18,
+  // §9.6a). An invitee is listed under the membership as *invited* and counts
+  // toward nothing — which is what keeps one unopened email from blocking
+  // judging for everybody. E is the arrived.
+  const arrived = () => members().filter((m) => m.in).length;
+  const E = () => Math.max(arrived(), 1);
+  const meRow = () => S.roster.find((p) => p.founder);
+  const iDraft = () => { const m = meRow(); return !!m && m.role !== 'clerk'; };
+  const quorumCount = () => (S.quorumForm === 'share'
+    ? Math.max(1, Math.round(E() * S.quorumPct / 100)) : Math.min(S.quorumN, E()));
+  const perpetual = () => S.ending === 'perpetual';
+  const SLUG_OK = /^[a-z0-9][a-z0-9-]{2,}$/;
+  const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // The mockup's stand-in for the real registry check: these slugs exist, so
+  // a title that collides gets a short suffix — which is also why the
+  // fixture's own link ends in one.
+  const TAKEN = new Set(['hollow-oak-club', 'the-hollow-oak-club',
+    'the-hollow-oak-club-house-charter', 'house-charter', 'charter']);
+  const slugify = (t) => t.toLowerCase().replace(/['’]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
+    .replace(/-+$/g, '');
+  // deterministic, so the mockup behaves the same on every load
+  const suffix = (t) => Math.abs([...t].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 7))
+    .toString(16).slice(0, 4);
+  const suggestSlug = (title) => {
+    const base = slugify(title);
+    if (!base || base.length < 3) return { slug: 'untitled-' + suffix(title || 'x'), taken: null };
+    return TAKEN.has(base) ? { slug: base + '-' + suffix(title), taken: base } : { slug: base, taken: null };
+  };
+
+  // ---- the document ------------------------------------------------------
+  function relabel() {
+    const sel = getSelection();
+    const at = sel.rangeCount ? sel.getRangeAt(0).startContainer : null;
+    for (const b of [...prose.children]) {
+      const t = b.textContent;
+      const m = t.match(/^(#{1,3})\s+/);
+      if (m) {
+        const liveHere = at && b.contains(at);
+        b.textContent = t.slice(m[0].length);
+        b.className = 'docline lvl' + m[1].length;
+        b.dataset.h = b.textContent;
+        if (liveHere && b.firstChild) {
+          const r = document.createRange();
+          r.setStart(b.firstChild, 0); r.collapse(true);
+          sel.removeAllRanges(); sel.addRange(r);
+        }
+      } else if (b.className) { b.dataset.h = t; } else { delete b.dataset.h; }
+    }
+    prose.classList.toggle('empty', prose.textContent.trim() === '');
+    renderToc(); render();
+  }
+  function renderToc() {
+    const hs = [...prose.children].filter((b) => b.dataset.h !== undefined);
+    // the constitution's sections lead the table of contents (Ed,
+    // 2026-08-18); on this surface they appear as their cards do
+    // the outline lists only what exists: before the save there is no
+    // constitution to point at (Ed, 2026-08-18)
+    document.getElementById('toc').innerHTML =
+      (!settled(card('slug')) ? '' :
+      '<li class="lvl1"><a href="#cs-constitution">Constitution</a></li>' +
+      secLive().filter((s2) => !s2.railOnly).map((s2) =>
+        '<li class="lvl2"><a href="#cs-' + s2.key + '">' + esc(s2.title) + '</a></li>').join('')) +
+      hs.map((b, i) => {
+      b.id = 'h' + i;
+      const lvl = (b.className.match(/lvl(\d)/) || [0, 2])[1];
+      return '<li class="lvl' + lvl + '"><a href="#h' + i + '">' + esc(b.dataset.h) + '</a></li>';
+    }).join('');
+  }
+  prose.addEventListener('paste', (ev) => {
+    ev.preventDefault();
+    const txt = (ev.clipboardData || window.clipboardData).getData('text');
+    let lines = txt.split(/\n{2,}|\n/).filter((l) => l.trim());
+    const first = lines[0] && lines[0].match(/^#\s+(.+)$/);
+    if (first && !S.title) { S.title = first[1]; lines = lines.slice(1);
+      S.seen.add('title');
+      if (!S.slug) { const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken; } }
+    document.execCommand('insertHTML', false, lines.map((l) => '<div>' + esc(l) + '</div>').join(''));
+    setTimeout(relabel, 0);
+  });
+  prose.addEventListener('input', relabel);
+
+  // ---- the nineteen decisions ----------------------------------------------
+  // **One card per decision, and the test is whether somebody could answer it
+  // differently and on its own** (Ed, 2026-08-18: *break them down as much as
+  // you can — picture and name separate! — admin choosing if they're a
+  // participant — etc*). Both of his examples are the same fault: two questions
+  // of *different kinds* bundled into one card because they happened to be asked
+  // at the same moment. A picture and a name; a membership and whether the
+  // founder is in it; how many ✏️s you start with and how fast they come back.
+  //
+  // `key` is the state field that carries delegation, and it is what decides
+  // which **pile** a card stands in: taking a setting back moves its tab from
+  // the members' pile to the founder's, in front of you.
+  const DELEGABLE = ['ending', 'barBy', 'quorumBy', 'authorship', 'signing',
+    'judgments', 'rateBy', 'chamber', 'auditor', 'lapse'];
+  const delegated = (key) => DELEGABLE.includes(key) && S[key] === 'roster';
+
+  // **The gates are cards** (Ed, 330b) — see the ceremony surface for the
+  // reasoning. Here they wait on the founder's own work rather than on a
+  // room, and they stand in the members' pile because what they gate is what
+  // the members will be able to do.
+  const GATES = [
+    { k: 'canpropose', g: '✏️', t: 'Proposing', own: 'you', isGate: true,
+      open: () => canPropose() && !LIVE().some(owesAnswer),
+      why: 'Members can read a document from the first second, and they cannot propose against a text that is not there yet — nor should you be able to act on a document whose rules you have not yet said what you will accept of — so your own outstanding answers wait here too.',
+      waiting: 'Waiting on the starting text, and on your own answers.',
+      done: 'Open — members can propose as soon as they arrive.',
+      blockers: () => [card('text')].filter((c) => !settled(c)).concat(LIVE().filter(owesAnswer)) },
+    { k: 'canjudge', g: '⚖️', t: 'Judging', own: 'you', isGate: true,
+      open: () => canJudge(),
+      why: 'A judgment is counted towards a quorum and recorded under a disclosure rule, so none of the constitution can be settled after it without changing what the judgment was.',
+      waiting: 'Waiting on the constitution.',
+      done: 'Open — the constitution is settled.',
+      blockers: () => ceremony().filter((c) => !settled(c) || (isRoom(c) && (c.in || 0) < E())) },
+  ];
+
+  const CARDS = [
+    // — the opening order is Ed's, card by card (2026-08-18): **title →
+    // email (verified) → link → the rest**. The first three are the order
+    // of existence — a name, the address that can always get back in, the
+    // address that saves it — and then everything that lives inside the
+    // saved document. Each is born when the one before it settles, so
+    // arriving at docs.vote you are asked exactly one thing.
+    // inDoc: the document's own heading IS the title (Ed, 2026-08-18) — no
+    // paragraph restates it; the heading opens the card
+    { k: 'title', g: '🏷️', t: 'Title', kind: 'ordinary', inDoc: true, ready: () => !!S.title, changeable: true },
+    // Pre-filled with a slug generated from the title and checked against the
+    // ones that already exist; confirming it is what SAVES the document.
+    // **The address is verified before anything is saved** (Ed, 2026-08-18:
+    // *we should do this before saving anything, just in case a founder
+    // loses their ability to log in*). There are no passwords — getting back
+    // in is a magic link — so the first mail is the proof the address works,
+    // sent while nothing yet exists and a typo still costs nothing. The mail
+    // is the login: clicking it is what carries you on to the save.
+    { k: 'myemail', g: '📧', t: 'Your Email', kind: 'personal', own: 'you', dep: ['title'],
+      hide: () => !amFounder(), ready: () => S.emailVerified, changeable: true },
+    { k: 'slug', g: '🔗', t: 'Link', kind: 'ordinary', dep: ['myemail'], ready: () => SLUG_OK.test(S.slug), changeable: true },
+    // — the rest, together once the document exists ----------------------
+    // 🎩 folded into 🪪 (Ed, 2026-08-18): whether the founder is a
+    // member is just whether they invite themselves, asked as their own
+    // pre-checked row in the membership card.
+    { k: 'roster', g: '🪪', t: 'Membership', kind: 'constitutional', dep: ['policy'], ready: () => members().length >= 1, changeable: true },
+    // **The register and the door are two decisions** (Ed, 2026-08-18: *We
+    // should separate "Membership" which is the register of people who are
+    // members from "Membership Policy" which is how people become members
+    // after the ceremony*). The one-card test agrees: who is in the room
+    // now, and how anybody gets in later, can be answered differently and
+    // on their own.
+    { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', dep: ['slug'], changeable: true },
+    // optional for a clerk (Ed, 2026-08-18): an anonymous founder is a
+    // perfectly ordinary thing — they can simply not set a name or picture
+    { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you', dep: ['slug'], ready: () => (iDraft() ? !!S.myname.trim() : true), changeable: true },
+    { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you', dep: ['slug'], changeable: true },
+    // A document may start empty, which is why this is not a blocker on having
+    // content but on having *decided*: a page nobody has looked at and a page
+    // somebody chose to leave blank look identical, and only one of them should
+    // let people start proposing.
+    { k: 'text', g: '📄', t: 'Starting Text', kind: 'ordinary', dep: ['slug'], gate: 'propose' },
+
+    // — the document's shape --------------------------------------------
+    // **When it ends and whether it ends are one card** (Ed, 2026-08-18:
+    // *“if it ends” is just the “never” option*). They had been split under the
+    // one-card-per-decision rule, and the split does not survive that rule's own
+    // test — you cannot answer *when* differently from *whether*, because
+    // **never** is one of the answers to *when*. What made them look like two
+    // decisions is that they take different routes to change afterwards, and
+    // that is a fact about the motion rather than about the question (Q329).
+    { k: 'ending', g: '⏰', t: 'When Does It End?', kind: 'constitutional', motionKind: 'ordinary',
+      key: 'ending', dep: ['roster'], p: 0.5,
+      // 329(a): *never* is the constitutional answer; any date is ordinary.
+      routeOf: (v) => (/never|perpetual|no end/i.test(v) ? 'constitutional' : 'ordinary'),
+      routeNote: 'Which route this takes depends on what you write. A different date is a proposal (✏️), judged like any other. Never — no ending at all — re-opens the founding question instead, because a document with no ending has no rising threshold, and every decision already taken was taken under one.',
+
+      ready: () => S.ending !== 'ends' || !!S.endsAt,
+      knote: '<b>Whether</b> it ends is constitutional: a document with no ending has no ramp, so every past adoption would mean something different. <b>When</b> it ends is not — a date can be moved by proposal (✏️), because moving it changes nothing that has already happened.',
+      rule: 'Each member says when they want it to end and the <b>latest</b> answer is taken — <b>never</b> being the latest of all — so nobody is cut off before they were ready.',
+      takes: 'The document takes the latest', result: 'Saturday 18:00',
+      dist: [2, 3, 5, 3, 1], distTop: 4, distEnds: ['Tue', 'Never'] },
+
+    // — the constitution -------------------------------------------------
+    // **The threshold is two decisions of different kinds** (Ed, 2026-08-18,
+    // Q341). Consent is about the bar **at the close**, where an adoption is
+    // permanent — one number. How it gets there is *pacing*, ordinary by §9.6's
+    // own test, on the next card.
+    { k: 'bar', g: '✒️', t: 'How Sure Must the Room Be?', kind: 'constitutional', gate: 'judge', key: 'barBy', dep: ['ending'], p: 0.64,
+      rule: 'Each member states the <b>lowest bar</b> they will accept — at the close, where an adoption is permanent — and the document takes the highest, so it will never be easier to change than any one of them wanted.',
+      takes: 'The document takes the highest', result: '80%',
+      dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
+    { k: 'pace', g: '📈', t: 'How Does the Bar Get There?', kind: 'ordinary', dep: ['ending'], changeable: true },
+    // The number is the room's; the **form** — count or share — is the
+    // founder's wording of the question (Ed, 2026-08-18: *quorum can either be
+    // a fixed number or a proportion of membership size*; §9.0a).
+    { k: 'quorum', g: '👥', t: 'Quorum', kind: 'constitutional', gate: 'judge', key: 'quorumBy', dep: ['roster'], p: 0.79,
+      rule: 'Each member states the <b>lowest quorum</b> they will accept and the document takes the highest.',
+      takes: 'The document takes the highest', result: '10 of 14',
+      dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', 'all of them'] },
+    { k: 'authorship', g: '👤', t: 'When Is a Proposer Named?', kind: 'constitutional', gate: 'judge', key: 'authorship', dep: ['roster'], p: 0.5,
+      rule: 'A privacy question, so it runs the other way and takes the <b>most private</b> answer: one member who wants to stay unnamed keeps the whole document unnamed.',
+      takes: 'The document takes the most private', result: 'Nobody’s name, ever',
+      dist: [8, 4, 2], distTop: 0, distEnds: ['No names, ever', 'Names from the start'] },
+    { k: 'signing', g: '✍️', t: 'Who May Sign a Proposal?', kind: 'constitutional', gate: 'judge', key: 'signing', dep: ['roster'], p: 0.5,
+      rule: 'Also a privacy question, and the <b>most private</b> answer wins.',
+      takes: 'The document takes the most private', result: 'Nobody signs',
+      dist: [9, 3, 2], distTop: 0, distEnds: ['Nobody signs', 'Everybody signs'] },
+    { k: 'judgments', g: '👁️', t: 'When Are Judgments Revealed?', kind: 'constitutional', gate: 'judge', key: 'judgments', dep: ['roster'], p: 0.86,
+      rule: 'Never revealed while a question is live, whichever is chosen. What this settles is only whether they are published with the record.',
+      takes: 'The document takes the most private', result: 'Never revealed',
+      dist: [11, 3], distTop: 0, distEnds: ['Never', 'After the decision'] },
+
+    // — the **proposal rate**: how often anybody may propose ---------------
+    // Not an “economy” and not “tokens” (Ed, 2026-08-18). Both words describe
+    // the machinery from the outside; what a member is being asked is how
+    // often they may propose, and that is two decisions — how many ✏️s they
+    // start with, and how fast a spent one comes back.
+    //
+    // It is **not three**: the stake is a flat 1 and always was (§13 parameters,
+    // §7), so the card that offered to set it was offering a decision the
+    // mechanism does not have (Ed, 2026-08-18: *isn’t the stake fixed at 1?*).
+    // **One decision, not two** (Ed, 2026-08-18: the grant and the drip
+    // merged — the rate is one thought, stated as one sentence)
+    { k: 'rate', g: '⏱️', t: 'Proposal Rate', kind: 'ordinary', key: 'rateBy', dep: ['roster'], p: 0.36,
+      rule: 'Each member states the <b>most generous</b> rate they would accept, and the document takes it.',
+      takes: 'The document takes the most generous', result: '5 each, one back every 120 minutes',
+      dist: [1, 2, 4, 3, 2, 1, 1], distTop: 4, distEnds: ['sparing', 'generous'] },
+
+    // — the room around it ------------------------------------------------
+    // gate 'judge': constitutional (§9.6 disclosure family), so judging waits
+    // on it — the member surface already did, and the two disagreed (review
+    // finding, 2026-08-18)
+    { k: 'chamber', g: '🌍', t: 'Visibility', kind: 'constitutional', gate: 'judge', key: 'chamber', dep: ['roster'], p: 0.43,
+      rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.',
+      takes: 'The document takes the most private', result: 'Members only',
+      dist: [5, 8, 1], distTop: 1, distEnds: ['Members only', 'Public'] },
+    // **Do memberships lapse?** (Ed, 2026-08-18, closing Q345 with the sunset
+    // option.) Constitutional — it is a rule about the roster, and it passes
+    // §9.6's test the honest way round: it re-rates nothing already decided,
+    // and it binds by consent, since everyone stated the shortest spell they
+    // would accept on the way in.
+    { k: 'lapse', g: '💤', t: 'Do Memberships Lapse?', kind: 'constitutional', gate: 'judge', key: 'lapse', dep: ['roster'], p: 0.29,
+      rule: 'Each member states the <b>shortest period of inactivity</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all — so nobody is lapsed faster than they accepted.',
+      takes: 'The document takes the longest', result: 'Never',
+      dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
+    // **Not a member** (Ed, 2026-08-18): it never judges and counts toward
+    // nothing — it only proposes, so it lives with the proposal settings
+    { k: 'machines', g: '🤖', t: 'AI Proposals', kind: 'constitutional', gate: 'judge', key: 'auditor', dep: ['roster'], p: 0.86,
+      rule: 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.',
+      takes: 'The document takes the most restrictive', result: 'People only',
+      dist: [9, 5], distTop: 0, distEnds: ['People only', 'A machine is fine'] },
+  ];
+  const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
+    GATES.find((c) => c.k === k);
+  const isRoom = (c) => !!(c.key && delegated(c.key));
+  // **Your own answer is a separate card in the membership pile** (Ed,
+  // 2026-08-18, revising the both-halves-on-one-card build of the same
+  // morning): delegating is one act and answering is another, done later and
+  // wearing a different hat — so the setting card stays in the founder's
+  // pile with the delegation radio and the watching half, and handing a
+  // question to the room makes a question card **appear** in the membership
+  // pile, which is the same card a member gets. Nothing jumps piles any
+  // more, which also closes Q323: delegation reads as a birth rather than a
+  // teleport.
+  const ansKey = (c) => c.ansFor || c.k;
+  const answered = (c) => S.myAns[ansKey(c)] !== null && S.myAns[ansKey(c)] !== undefined;
+  const owesAnswer = (c) => !!c.ansFor && viewerIsMember() && !answered(c);
+  const ready = (c) => (c.ansFor ? answered(c) : c.ready ? c.ready() : true);
+  const settled = (c) => (c.isGate ? S.okd.has(c.k)
+    : c.ansFor ? answered(c)
+    : S.seen.has(c.k) && ready(c));
+  // nothing on a founder-held card is asked of anybody else: a member sees
+  // it waiting (⏳) until it settles, then as news to acknowledge
+  const mustAct = (c) => (c.isGate ? (c.open() && !S.okd.has(c.k))
+    : c.ansFor || c.own === 'you' || amFounder() ? !settled(c)
+    : false);
+  // How far the room has got, against the roster **as it stands** — held as a
+  // proportion because a founder's roster starts at one person and grows.
+  // The fixture's other members answer in proportion, but never the
+  // founder's own share: a question cannot read as resolved while the one
+  // answer the surface can actually collect is still outstanding.
+  const resolveCounts = () => CARDS.forEach((c) => { if (c.p != null) {
+    const real = S.roster.filter((r) => r.ans && r.ans[c.k] !== null && r.ans[c.k] !== undefined).length;
+    const mine = isRoom(c) && viewerIsMember();
+    c.in = Math.max(real, Math.min(E() - (mine && !answered(c) ? 1 : 0), Math.round(c.p * E()) +
+      (mine && answered(c) ? 1 : 0)));
+  } });
+
+  // **A card with a dependency does not appear until its dependency is settled**
+  // (Ed, 2026-08-18: *if there are dependencies, just don't show them the next
+  // cards until they're done*). Two dependencies, both real: anything the room
+  // can be asked waits on the **roster**, since *the members decide* means
+  // nothing until there are members; and the threshold, the drip and the ending
+  // date wait on **whether it ends**, since a rising bar needs an endpoint and
+  // the drip is paced against one.
+  const visible = (c) => (c.ansFor
+    ? viewerIsMember() && isRoom(card(c.ansFor)) && visible(card(c.ansFor))
+    : !(c.hide && c.hide()) && (c.dep || []).every((k) => settled(card(k))));
+  // One question card per delegable setting, born when its setting is handed
+  // over and gone if it is taken back. Same glyph, same title — it is the
+  // same question — told apart by whose pile it stands in.
+  const ANS = CARDS.filter((c) => c.key && ANSWER[c.k]).map((c) => ({
+    k: 'ans-' + c.k, g: c.g, t: c.t, kind: c.kind, own: 'you', ansFor: c.k }));
+  const LIVE = () => CARDS.concat(ANS, GATES).filter(visible);
+  // **The sections of the constitution** (Ed, 2026-08-18): subtitles his
+  // ask, the grouping and the prose mine to draft — each line says what
+  // the section governs, in the surface's own words.
+  const SEC = [
+    // no intro line (Ed, 2026-08-18) — the sentences are the section
+    { key: 'members', title: 'Membership',
+      text: '',
+      keys: ['roster', 'policy', 'lapse', 'myemail', 'myname', 'mypic'],
+      // **Members and Applications are subsections** (Ed, 2026-08-18):
+      // Members IS the list — 🪪, the tab for invitations, stands beside
+      // it, and the bottom row is your own membership wearing the ✋ and
+      // 🖼️ tabs. Applications is the 🤝 decision (its Applicants list
+      // arrives with the first applicant, after the start).
+      body: (h) => {
+        const my = ['myname', 'mypic'].map(card).filter((c) => c && visible(c));
+        const others = S.roster.filter((p) => !p.founder);
+        const list = '<div class="memlist">' +
+          others.map((p) => '<div class="memrow">' + avHtml(p) +
+            '<span class="mn">' + esc(p.n || p.e || '—') +
+            (p.in ? '' : ' <span class="chip pending">invited</span>') + '</span></div>').join('') +
+          '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
+          '<span class="mn">' + esc(S.myname || 'Not named yet') + ' <span class="chip founder">founder</span> <span class="chip">you</span>' +
+          (iDraft() ? '' : ' <span class="chip">clerk</span>') + '</span></div></div>';
+        const openId = my.find((c) => S.open === c.k);
+        const rest = ['myemail']
+          .map(card).filter((c) => c && visible(c));
+        // policy first, lapse under it, then the Members list (Ed)
+        return (visible(card('policy')) ? h.para(card('policy')) : '') +
+          (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
+          '<h2 class="docline lvl3">Members</h2>' +
+          (S.open === 'roster' ? h.para(card('roster'))
+            : visible(card('roster'))
+            ? '<div class="cpara"><span class="chipcol">' + h.chip(card('roster')) + '</span>' + list + '</div>'
+            : '') +
+          (openId ? h.paraWith(openId, my) : '') +
+          rest.map((c) => h.para(c) + h.tasks(c)).join('');
+      } },
+    // the gates lead the Proposals section (Ed, 2026-08-18)
+    { key: 'rate', title: 'Proposals',
+      text: 'How often anybody may put something to the room, and whether an AI drafts proposals alongside them.',
+      keys: ['canpropose', 'canjudge', 'rate', 'machines'] },
+    { key: 'deciding', title: 'Decisions',
+      text: 'How a change carries: how many must weigh in, how sure the room must be, and when the document ends.',
+      keys: ['ending', 'quorum', 'bar', 'pace'] },
+    { key: 'privacy', title: 'Privacy',
+      text: 'Who is seen doing what — proposing, signing, judging — and who may read the document at all.',
+      keys: ['authorship', 'signing', 'judgments', 'chamber'] },
+    // rail-only: the title is the heading, the link leads the constitution,
+    // and the starting text anchors the prose (Ed, 2026-08-18)
+    { key: 'doc', title: 'The Document', railOnly: true,
+      text: '', keys: ['title', 'slug', 'text'] },
+  ];
+  const secLive = () => SEC.map((s2) => ({ ...s2,
+    cards: s2.keys.map(card).filter((c) => c && visible(c)) }))
+    .filter((s2) => s2.cards.length);
+  // a delegated setting's paragraph is followed by the founder's own
+  // answer-task, the same card a member gets, standing where the rule is
+  // a resolved question keeps no answer-task paragraph: the rule above it
+  // now states the outcome, and a standing “has answered” line under a
+  // decided rule is a task that finished still asking to be read
+  const tasksFor = (c) => (c.key && ANSWER[c.k] && (c.in || 0) < E()
+    ? [card('ans-' + c.k)].filter((x) => x && visible(x)) : []);
+  // A member who has not opened the document yet is drawn faintly rather than
+  // left out: they are on the membership, which is the fact the heading is
+  // stating, and whether they have looked at it yet is a different one.
+  const groups = () => [
+    { key: 'constitution', label: 'Constitution',
+      sections: secLive(),
+      // Founded by [avatar] [name] — only once the founder has a name; the
+      // founding time is never known before the start (Ed)
+      lead: (h) => (visible(card('slug')) ? h.para(card('slug')) : '') +
+        (S.myname.trim()
+          ? '<div class="cpara notab"><p class="cpv founded">Founded by ' +
+            avHtml(me()) + ' ' + esc(S.myname) + '.</p></div>' : ''),
+      textAnchor: (h) => (!visible(card('text')) ? ''
+        : S.open === 'text' ? h.para(card('text'))
+        : '<div class="cpara textanchor"><span class="chipcol">' + h.chip(card('text')) + '</span></div>'),
+      note: (n) => (n ? n + ' still to confirm or answer' : 'all confirmed') },
+  ];
+
+  const VALUE = {
+    text: () => { const n = [...prose.children].filter((b) => b.textContent.trim()).length;
+      return n ? n + ' blocks' : (S.seen.has('text') ? 'Starts empty — the room writes it' : 'Nothing yet'); },
+    title: () => S.title || 'Not named yet',
+    slug: () => 'docs.vote/' + (S.slug || '…'),
+    myemail: () => (S.emailVerified ? S.myemail + ' · verified'
+      : S.emailSent ? 'Check your inbox' : 'Not given yet'),
+    myname: () => S.myname || 'Not given yet',
+    mypic: () => (S.mypic ? 'Chosen' : 'Your initials'),
+    // an invitee is not a member yet (§9.6a): the line counts the arrived,
+    // and says who is still only invited
+    roster: () => arrived() + (arrived() === 1 ? ' member' : ' members') +
+      (members().length > arrived() ? ' · ' + (members().length - arrived()) + ' invited' : '') +
+      (iDraft() ? '' : ' · you are the clerk'),
+    policy: () => ({ invite: 'Invitation only', proposed: 'Applications by proposal',
+      apply: 'Anyone may apply', open: 'Open' }[S.joinBy]) +
+      (S.rosterBy === 'founder' ? ' · 👑 reserved' : ''),
+    ending: () => (perpetual() ? 'Never — it runs until it is frozen'
+      : new Date(S.endsAt).toLocaleString(undefined,
+        { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
+    bar: () => S.tClose + '% sure at the close',
+    pace: () => (perpetual() ? 'Fixed — no window to rise over'
+      : S.shape === 'ramp' ? 'Rising from ' + S.tStart + '%' : 'The close bar throughout'),
+    quorum: () => (S.quorumForm === 'count' ? Math.min(S.quorumN, E()) + ' of ' + E()
+      : S.quorumPct + '% — ' + quorumCount() + ' of ' + E()),
+    authorship: () => ({ anonymous: 'Nobody’s name, ever', sealed: 'Names at the close',
+      public: 'Names from the start' }[S.authorshipSet]),
+    signing: () => ({ nobody: 'Nobody signs', each: 'Each author chooses', everybody: 'Everybody signs' }[S.signingSet]),
+    judgments: () => ({ never: 'Never revealed', after: 'Revealed after the decision' }[S.judgmentsSet]),
+    rate: () => S.grant + ' each · +1 every ' + S.dripMin + ' min · cap ' + S.cap,
+    chamber: () => ({ link: 'Anyone with the link', closed: 'Members only', public: 'Public' }[S.chamber]),
+    machines: () => (S.auditor === true ? 'The coherence auditor, ' + S.auditorBudget + ' ✏️s' : 'People only'),
+    lapse: () => (S.lapse === 'never' ? 'Never — however long inactive'
+      : 'After ' + S.lapseDays + ' days of inactivity'),
+    canpropose: () => (canPropose() ? 'Open' : 'Waiting on the starting text'),
+    canjudge: () => (canJudge() ? 'Open' : 'Waiting on the constitution'),
+  };
+  const ANSVALUE = {
+    quorum: (v) => 'You said ' + v + ' of ' + E(),
+    bar: (v) => 'You said ' + v + '%',
+    ending: (v) => (v === 'never' ? 'You said never'
+      : 'You said ' + (isNaN(Date.parse(v)) ? v
+        : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }))),
+    authorship: (v) => 'You said ' + ({ anonymous: 'no names, ever', sealed: 'names at the close', public: 'names from the start' }[v] || v),
+    signing: (v) => 'You said ' + ({ nobody: 'nobody signs', each: 'each author chooses', everybody: 'everybody signs' }[v] || v),
+    judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
+    chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
+    machines: (v) => 'You said ' + (v ? 'AI proposals are fine' : 'no AI proposals'),
+    lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days of inactivity'),
+    rate: (v) => 'You said ' + v,
+  };
+  const ANSASK = { quorum: 'The lowest you will accept', bar: 'The lowest you will accept',
+    ending: 'The latest you will accept', authorship: 'The most you will accept',
+    signing: 'The most you will accept', judgments: 'The most you will accept',
+    chamber: 'The most you will accept', machines: 'The most you will accept',
+    lapse: 'The shortest you will accept',
+    rate: 'The most generous you will accept' };
+  const value = (c) => (c.ansFor
+    ? esc(answered(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
+    : esc(VALUE[c.k]()));
+  const summary = (c) => (c.k === 'title' ? '' : isRoom(c)
+    ? (settled(c) ? '<i>The members decide</i> · ' + someIn(c.in || 0, E()) : '<i>The members decide</i>')
+    : value(c));
+
+  // **What is unlocked, and by what.** Reading needs nothing. Proposing needs a
+  // text to propose against. Judging needs the constitution settled, because a
+  // judgment is *recorded under a disclosure setting* and *counted towards a
+  // quorum*, and neither can be decided after the judgment without changing what
+  // the judgment was.
+  const canPropose = () => settled(card('text'));
+  const ceremony = () => CARDS.filter((c) => c.gate === 'judge');
+  const ceremonyRunning = () => ceremony().some((c) => isRoom(c) && (c.in || 0) < E());
+  const canJudge = () => ceremony().every(settled) && !ceremonyRunning();
+
+  // the membership list, as the 🪪 card's clause — the current text of the
+  // rule, with the ✕ that edits it, replacing the copy that lived in the body
+  // **The hat is a row in this list** (Ed, 2026-08-18: *does the founder
+  // invite themselves? … make it a default, pre-checked*). Your own row is
+  // first and ticked; unticking it makes you the clerk — administering
+  // without writing — and you did not have to be the first member you
+  // invited. Only yours to flip until judging starts; after that you join
+  // the way anybody joins.
+  const rosterClause = () =>
+    '<div class="roster clauselist">' + S.roster.map((p, i) =>
+      '<div class="rperson">' + avHtml(p) +
+      '<span><span class="nm">' + esc(p.n || 'Not named yet') + (p.founder ? ' <span class="chip founder">founder</span>' : '') +
+      '</span><br><span class="em">' + esc(p.e || '—') + '</span></span>' +
+      (p.founder
+        ? '<button class="lanepick mepick" aria-pressed="' + iDraft() + '" data-metoggle="1">' +
+          '<span class="dot"></span><span>' + (iDraft() ? 'Member — drafting too' : 'Clerk — not drafting') + '</span></button>'
+        : '<span class="chip' + (p.in ? '' : ' pending') + '">' +
+          (p.role === 'clerk' ? 'clerk' : 'member') + (p.in ? '' : ' · invited') + '</span>') +
+      (p.founder ? '<span class="xdrop"> </span>' : '<button class="xdrop" data-drop="' + i + '">✕</button>') +
+      '</div>').join('') + '</div>';
+
+  // **The constitution, stated** (Ed, 2026-08-18): who convened it, when it
+  // was constituted — the moment judging opens — and every constitutional
+  // setting's current value, one line each, the glyph doing the naming.
+  // ---- the grammar's other three states (Ed, 2026-08-18) ------------------
+  // wait: the inbox holds the next move, a delegated question is being
+  // answered, your own answer is in and the room's are not, a gate's
+  // blockers are still above it. news: a delegated question resolved — the
+  // number came back, and it pins until your OK, because a reveal you
+  // answered blind into is a decision you are owed; a gate opening takes
+  // the same rule, being exactly the shape of an unacknowledged decision.
+  const waiting = (c) => (c.isGate ? !c.open()
+    : c.k === 'myemail' ? (S.emailSent && !S.emailVerified)
+    : c.ansFor ? (answered(c) && ((card(c.ansFor).in || 0) < E()))
+    : isRoom(c) && settled(c) && (c.in || 0) < E());
+  const news = (c) => (c.isGate ? (c.open() && !S.okd.has(c.k))
+    : !c.ansFor && isRoom(c) && settled(c) && E() > 0 && (c.in || 0) >= E() &&
+      !S.okd.has('res-' + c.k))
+    // **a constitutional rule you had no say in is a decision you are
+    // owed** (the live rail's rule, arriving here): a founder-set
+    // constitutional setting is news to every other member until their OK
+    || (!amFounder() && !c.ansFor && !c.isGate && !isRoom(c) && c.own !== 'you' &&
+      c.kind === 'constitutional' && settled(c) && !S.okd.has('set-' + c.k));
+
+  // **The constitution states itself in sentences** (Ed, 2026-08-18): each
+  // decision has a what-phrase for its open states and a declarative
+  // sentence once decided, all in the founder's own frame.
+  const WHAT = {
+    ending: 'when the drafting process will end',
+    quorum: 'how many members must weigh in before a question can carry',
+    bar: 'how sure the room must be at the close',
+    pace: 'how the approval threshold climbs to the close',
+    authorship: 'when a proposer is named',
+    signing: 'who may sign a proposal',
+    judgments: 'whether judgments are revealed with the record',
+    chamber: 'who may read the document',
+    lapse: 'whether an inactive membership lapses',
+    machines: 'whether an AI makes proposals',
+    rate: 'how often members may propose',
+    policy: 'how people become members',
+    slug: 'the document’s address',
+    text: 'the text the document starts from',
+  };
+  const endFmt = () => new Date(S.endsAt).toLocaleString(undefined,
+    { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).replace(' ', ' at ');
+  const DECIDED = {
+    ending: () => (perpetual() ? 'The drafting process has no set end — it runs until it is frozen.'
+      : 'The drafting process will end on ' + endFmt() + '.'),
+    quorum: () => (S.quorumForm === 'count'
+      ? Math.min(S.quorumN, E()) + ' of the ' + E() + ' members'
+      : S.quorumPct + '% of the members') + ' must weigh in before a question can change the document.',
+    bar: () => 'At the close, the room must be ' + S.tClose + '% sure for a change to carry.',
+    pace: () => (perpetual() || S.shape !== 'ramp'
+      ? 'The approval threshold holds at its close value throughout.'
+      : 'The approval threshold rises from ' + S.tStart + '% to the close.'),
+    authorship: () => ({ anonymous: 'Proposers are never named — not during the session and not in the record.',
+      sealed: 'Proposers are named only in the closing record.',
+      public: 'Proposers are named from the start.' })[S.authorshipSet],
+    signing: () => ({ nobody: 'Nobody may sign a proposal.', each: 'Each author chooses whether to sign.',
+      everybody: 'Every proposal is signed.' })[S.signingSet],
+    judgments: () => ({ never: 'Judgments are never revealed.',
+      after: 'Judgments are revealed with the closing record.' })[S.judgmentsSet],
+    chamber: () => ({ closed: 'Only members can see the document.',
+      link: 'Anyone with the link can read the document.',
+      public: 'The document is public — listed and readable by anyone.' })[S.chamber],
+    lapse: () => (S.lapse === 'never' ? 'Memberships do not lapse, however long inactive.'
+      : 'A membership lapses after ' + S.lapseDays + ' days of inactivity.'),
+    machines: () => (S.auditor === true
+      ? 'An AI — the coherence auditor — makes proposals, holding ' + S.auditorBudget + ' ✏️s. It never judges and counts toward nothing.'
+      : 'There are no AI proposals.'),
+    rate: () => 'Members start with ' + S.grant + ' ✏️ each, up to a maximum of ' + S.cap +
+      '. They get an additional ✏️ every ' + S.dripMin + ' minutes. Successful ✏️s are refunded.',
+    policy: () => ({ invite: 'Membership is by invitation only.',
+      proposed: 'Anyone may apply, but an application must be proposed by a member.',
+      apply: 'Anyone may apply to join.',
+      open: 'Anyone with the link joins on arrival.' })[S.joinBy] +
+      (S.rosterBy === 'founder' ? ' The membership is reserved — this document has a 👑.' : ''),
+    slug: () => 'The document lives at docs.vote/' + S.slug + '.',
+    text: () => { const n = [...prose.children].filter((b) => b.textContent.trim()).length;
+      return n ? 'The document starts from ' + n + ' blocks of text.'
+        : 'The document starts empty — the room writes it.'; },
+  };
+  const decisionLine = (c) => {
+    if (c.ansFor) return answered(c)
+      ? 'The Founder has answered as a member.'
+      : 'The Founder has not yet answered as a member.';
+    if (c.k === 'canpropose') { const done = LIVE().some(owesAnswer) ? 0 : 1;
+      return canPropose() && done
+      ? 'Members may propose as soon as they arrive.'
+      : 'Members may begin proposing when the starting text has been decided and they have answered the questions the Founder delegated — ' +
+        done + ' of ' + E() + ' have answered everything.'; }
+    if (c.k === 'canjudge') return canJudge()
+      ? 'Judging on proposals is open.'
+      : 'Members may begin judging proposals when the whole constitution has been decided.';
+    if (c.k === 'myemail') return S.emailVerified ? 'The Founder’s address is verified.'
+      : S.emailSent ? 'The Founder’s address is awaiting verification.'
+      : 'The Founder’s address is not yet given.';
+    if (c.kind === 'personal') return summary(c);
+    if (isRoom(c)) {
+      return (c.in || 0) >= E() && E() > 0
+        ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c))
+        : 'The Founder has delegated to members to decide ' + (WHAT[c.k] || 'this') + ' — ' +
+          Math.min(c.in || 0, E()) + ' of ' + E() + ' have answered.';
+    }
+    return settled(c) ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c))
+      : 'The Founder is deciding ' + (WHAT[c.k] || 'this') + '.';
+  };
+
+  const ctx = {
+    get open() { return S.open; }, get E() { return E(); },
+    clauseFor: (c) => (c.k === 'roster' ? rosterClause() : ''),
+    // the title card's head is the document title itself — the clause,
+    // opened — never the word “Title” (Ed, 2026-08-18)
+    inDocOpenSlot: false,
+    headFor: (c) => (c.k === 'title'
+      ? '<span class="headdoct' + (S.title ? '' : ' ph') + '">' + esc(S.title || 'Untitled document') + '</span>'
+      : null),
+    mustAct, summary, value, isRoom, waiting, news, tasksFor, decisionLine,
+  };
+
+  // ---- the rail ----------------------------------------------------------
+  // Grouped by pile and in pile order, so the two columns agree and nothing
+  // jumps when you confirm something (Q320). Your own pile first: on this
+  // screen that is the founder's, on the ceremony it is the members'.
+  function renderRail() {
+    if (S.viewer === 'applicant') {
+      rail.innerHTML = '<ul>' + APPCARDS().map((c) => railEntry(c, appCtx)).join('') + '</ul>';
+      document.getElementById('stat-stage').textContent = 'reading only · applications open';
+      document.getElementById('stat-who').textContent = arrived() + ' in the room';
+      return;
+    }
+    const gs = groups();
+    rail.innerHTML =
+      // What is settled leaves the rail — it is the pile's, and the block's
+      // to name — and a gate shows only as news: the moment it opens, until
+      // its OK. Locked, it is a ⏳ tab in the pile and nothing else, because
+      // nothing is being asked of you (Ed, 2026-08-18: *everyone should only
+      // see cards they can act on*). ⏳ entries stay: they are where the
+      // fill says how far the room has got.
+      '<ul>' + secLive().map((s2) => ({ ...s2, cards: s2.cards
+        .flatMap((c) => [c].concat(tasksFor(c)))
+        .filter((c) => (c.isGate ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done')) }))
+        .filter((s2) => s2.cards.length).map((s2) =>
+        s2.cards.map((c) => railEntry(c, ctx)).join('')).join('') + '</ul>';
+
+    document.getElementById('stat-stage').textContent =
+      canJudge() ? 'open' : canPropose() ? 'proposals open' : 'reading only';
+    document.getElementById('stat-who').textContent = arrived() + ' in the room';
+    document.getElementById('mebtn').innerHTML = avHtml(me(), 'face');
+  }
+  // the dev dropdown of actual users (Ed, 362) — rebuilt only when it
+  // changes, so an open dropdown is not snapped shut under the pointer
+  function renderDev() {
+    const sel = document.getElementById('devwho');
+    const opts = S.roster.map((r, i) => '<option value="' + i + '"' + (S.viewer === i ? ' selected' : '') + '>' +
+      esc(r.n || (r.founder ? 'Unnamed founder' : 'Invited · ' + (r.e || '?'))) +
+      (r.founder ? ' 🎩' : r.in ? '' : ' (invited)') + '</option>').join('') +
+      '<option value="applicant"' + (S.viewer === 'applicant' ? ' selected' : '') + '>— an applicant</option>';
+    if (sel.innerHTML !== opts) sel.innerHTML = opts;
+  }
+
+  function renderTitle() {
+    const d = document.getElementById('doctitle');
+    for (const el of [titleEl, d]) {
+      el.textContent = S.title || 'Untitled document';
+      el.classList.toggle('ph', !S.title);
+    }
+    // the open card IS the title, so the heading does not also stand
+    // above it (the decision-card gesture: the clause, opened); closed,
+    // the tab beside it is the door, and the heading is just a heading
+    d.style.display = S.open === 'title' ? 'none' : '';
+    document.getElementById('titlechip').innerHTML =
+      S.open === 'title' ? '' : pileHtml([card('title')], ctx);
+    prose.classList.toggle('pasteready', visible(card('text')));
+  }
+
+  // ---- the bodies a founder fills in ------------------------------------
+  // **Constitutional settings default to the room; ordinary ones default to
+  // you** (Ed, 2026-08-18, agreeing the proposal rate back to the founder). One rule
+  // where there had been a rule and three exceptions, and the ordinary /
+  // constitutional cut is what explains it: an ordinary setting can be taken
+  // back by the room at any time with a motion at the bar, so defaulting it to
+  // the founder costs them nothing. A constitutional one cannot — changing it
+  // needs everybody — so it has to be theirs from the start or it is not
+  // really theirs at all.
+  const theyDecide = (key, note) => opt(S, key, 'roster', 'The members decide',
+    'Asked of everyone before drafting begins, blind — you among them, if you are on the roster. ' + note);
+
+  const BODY = {
+    text: () =>
+      '<div class="unlocks">Confirming this lets everyone start <b>proposing</b>. They will not be able to judge until the constitution is settled.</div>' +
+      '<p class="why">Type or paste it into the page below — the same column it will be edited in once drafting begins. Lines starting with #, ## or ### become sections, and the contents appear on the left as you go.</p>' +
+      '<p class="setnote"><b>Or leave it blank.</b> A membership writing something from nothing is a perfectly good way to begin, and an empty page is a real answer to this question. What this card asks is not whether there is text, but whether you have decided.</p>',
+    title: () =>
+      '<div class="lanebox"><div class="lp editlane titlelane' + (S.title ? '' : ' blank') + '"' +
+      ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
+      ' data-ph="Name this document">' + esc(S.title) + '</div></div>',
+    slug: () =>
+      '<div class="unlocks">Confirming this <b>saves the document</b> — until the link exists, nothing does, anywhere. Invitations wait on it, because an invitation <i>is</i> this link.</div>' +
+      (S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> already exists, so a short suffix was added. Change it to anything free.</p>'
+        : '<p class="setnote">Suggested from the title. Change it to anything free.</p>') +
+      '<p class="why">What people paste to each other.</p>' +
+      '<span class="fld"><label>The link</label><span class="setrow2">' +
+      '<span class="setnote" style="margin:0">docs.vote/</span>' +
+      '<input data-slug="1" value="' + esc(S.slug) + '" spellcheck="false" style="width:16rem">' +
+      '<button class="btn" data-act="copy">Copy</button></span></span>' +
+      '<p class="setnote">' + (SLUG_OK.test(S.slug)
+        ? 'Lower case, digits and hyphens. <b>docs.vote/' + esc(S.slug) + '</b> is free.'
+        : 'Lower case, digits and hyphens, three characters or more.') + '</p>' +
+      // **Changing it sets up a redirect** (Ed, 2026-08-18). The link is
+      // changeable and it is also the thing that has already been sent to
+      // fourteen people — so a change that broke the old one would make this
+      // the one ordinary setting with a cost for using it as intended.
+      '<p class="setnote">Every link this document has ever had keeps working: changing it leaves a redirect behind, so an invitation somebody was sent weeks ago still opens the right document.</p>',
+    myemail: () => (S.emailVerified
+      ? '<div class="lockline">' + TICK + '<span>Verified — <b>' + esc(S.myemail) + '</b> can get back in.</span></div>' +
+        '<span class="fld"><label>Change it</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" style="width:20rem"></span>' +
+        '<p class="setnote">Changing it starts verification again — the new address has to prove it works too.</p>'
+      : S.emailSent
+      ? '<p class="why">Sent to <b>' + esc(S.myemail) + '</b>. Nothing is saved yet, so a typo here still costs nothing — which is exactly why this happens now and not after.</p>' +
+        '<div style="margin-top:var(--s3)"><button class="btn" data-act="openmail">Open your inbox</button> ' +
+        '<button class="btn" data-act="editemail">Wrong address?</button></div>' +
+        '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works and carries you on to the save.</p>'
+      : '<p class="why">Before anything is saved, this address has to prove it works — because there are no passwords, and it is the only way back in. A document saved under an address with a typo in it would be lost the moment this tab closes.</p>' +
+        '<span class="fld"><label>Your email</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>' +
+        '<div style="margin-top:var(--s3)"><button class="btn"' + (EMAIL_OK.test(S.myemail) ? '' : ' disabled') + ' data-act="sendverify">Send the link</button></div>' +
+        '<p class="setnote">Yours alone — it appears nowhere in the document, and it is not your name: who you are in the room is the ✋ card, later.</p>'),
+    myname: () => nameBody(me(), { optional: !iDraft() }),
+    mypic: () => pictureBody(me()),
+    // **Whether the founder is in it is its own question** (Ed, 2026-08-18).
+    // It had been the top half of the roster card, which made a decision about
+    // one person a preamble to a list of everybody — and the founder is a hat
+    // worn over a role rather than a role itself (SPEC §9.0a), so the hat and
+    // the roster are two things.
+    roster: () =>
+      '<p class="why">An invitation <b>is the link</b>, sent by email — there are no passwords — which is why nobody could be invited before the link existed. It is an invitation <b>to become a member</b>: until somebody opens the document they are listed as <i>invited</i> and count toward nothing. Until judging opens you may invite and uninvite freely — nothing has been decided yet, so nothing is being changed. After that, both directions are constitutional motions — you included: your own row above is <b>pre-checked</b>, and you may untick it and be the clerk, who administers without writing, but after judging starts you join the way anybody joins. A joiner starts with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</p>' +
+      '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1">' +
+      '<button class="btn" data-act="add">Invite</button></div></div>' +
+      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
+      '<textarea placeholder="Paste addresses here, one per line" data-emails="1"></textarea>' +
+      '<div style="margin-top:var(--s2)"><button class="btn" data-act="invite">Send invitations</button></div>' +
+      '<p class="setnote">' + arrived() + ' of ' + S.roster.length + ' have opened it so far. ' +
+      'Nobody has to be here for the document to exist — the link works from the first second, and ' +
+      'a joiner gets the base grant plus the drip accrued so far.</p>',
+    // **The door, apart from the register** (Ed, 2026-08-18). The policy is
+    // the constitutional act; each application that arrives through it is
+    // its ordinary consequence.
+    policy: () =>
+      '<p class="why">How people become members <b>after the start</b>. The register is who is in; this is the door.</p>' +
+      // **Who holds it** (Ed, 2026-08-18): delegated — the members' — by
+      // default, like every constitutional setting. A founder may **reserve**
+      // it instead (reserved is the word for not-delegated, Ed), and a
+      // document with a reserved membership is a 👑: the founder keeps
+      // unilateral invite-and-remove past the start. What keeps a crown from
+      // being immortal is the lapse rule: it applies to the crown as to any
+      // member, and a lapsed crown passes to the members.
+      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Who holds it</div>' +
+      '<div class="choice" role="radiogroup" aria-label="Who holds the membership">' +
+      opt(S, 'rosterBy', 'roster', 'The members', 'After the start, joining and leaving are the members’ to decide — invitations by everyone’s consent, applications at the bar. You would be a 📯: a founder whose membership is the members’.') +
+      opt(S, 'rosterBy', 'founder', 'Reserved — I hold it', 'You would be a 👑: the founder of a document that reserves its membership, keeping invite-and-remove for its life. A crown lapses like a member — go inactive past the lapse rule and the membership becomes the members’.') +
+      '</div>' +
+      // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
+      // the gate the Apply card hangs off. An application becomes an
+      // ordinary proposal to grant membership, judged like any other.
+      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Who may join</div>' +
+      '<div class="choice" role="radiogroup" aria-label="Who may join">' +
+      opt(S, 'joinBy', 'invite', 'Invitation only', 'Nobody joins unless a member brings them in.') +
+      opt(S, 'joinBy', 'proposed', 'Applications must be proposed', 'A reader may apply, but the application waits until a member <b>proposes</b> it — the member stakes the ✏️ as with any proposal, which is what a second is.') +
+      opt(S, 'joinBy', 'apply', 'Anyone may apply', 'An application goes straight before the members as a proposal (✏️) — free to make, because the tasks are its price and the bar is its filter.') +
+      opt(S, 'joinBy', 'open', 'Open', 'Anyone with the link joins on arrival. For documents that are more petition than charter.') +
+      '</div>',
+    ending: () =>
+      '<p class="why">The moment this document closes: the close itself, the record, and the top of the approval threshold’s ramp. <b>Never</b> is one of the answers — a perpetual document has no close of its own and a bar that cannot rise, because a ramp needs an endpoint to rise towards, and it ends by <b>freeze</b>, when too few members are still active, rather than by the calendar.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      opt(S, 'ending', 'ends', 'At a set time', '',
+        '<span class="fld"><label>Ends</label><input type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '"></span>') +
+      opt(S, 'ending', 'perpetual', 'Never', 'It runs until it is frozen. The ✏️s come back against real time instead of against a window.') +
+      theyDecide('ending', 'That means the <b>latest</b> answer anybody gives, and <b>never</b> is the latest of all — so one member who wants it to run on keeps it running.') +
+      '</div>',
+    bar: () =>
+      '<div class="unlocks">Part of the constitution — judging waits on this and the rest of it.</div>' +
+      '<p class="why">How sure the room has to be that a change beats the current text before it is <b>permanent</b> — the bar at the close. Never a vote share, a confidence. Everything before the close can still be challenged, so this one number covers the whole way there; how the bar climbs is pacing, on the next card.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      opt(S, 'barBy', 'founder', 'I set it', '',
+        '<span class="setrow2">' + num(S, 'tClose', 'At the close', 50, 99, '%') + '</span>') +
+      theyDecide('barBy', 'Each states the <b>lowest bar</b> they will accept — at the close — and the document takes the highest.') +
+      '</div>',
+    pace: () =>
+      '<p class="why">How the bar gets to the close: held there for the whole window, or rising from a lower start so early adoptions come cheap while they are still challengeable. Pacing, not consent — every adoption is recorded against the bar as it stood, so re-shaping the ramp re-rates nothing already decided, which is why this card is open to proposals (✏️) while the close is constitutional (🏛️).</p>' +
+      '<div class="choice" role="radiogroup">' +
+      opt(S, 'shape', 'ramp', 'Rising', 'From a lower start when judging opens, up to the close bar.',
+        '<span class="setrow2">' + num(S, 'tStart', 'When judging opens', 50, 99, '%') + '</span>', perpetual()) +
+      opt(S, 'shape', 'fixed', 'Fixed', 'The close bar for the life of the document.') +
+      '</div>' + (perpetual() ? '<p class="setnote">A rising bar needs an endpoint to rise towards, so a perpetual document holds its bar fixed.</p>' : ''),
+    quorum: () =>
+      '<div class="unlocks">Part of the constitution — judging waits on it.</div>' +
+      '<p class="why">How many distinct members must weigh in before a question can be adopted. A question short of quorum simply waits — silence is never counted as a vote.</p>' +
+      // **The form is the wording, the number is the decision** (§9.0a): count
+      // or share is how the question tracks a changing membership, and it is
+      // the founder's even when the number is the room's.
+      '<div class="eyebrow fieldlab">Asked as</div>' +
+      '<div class="choice" role="radiogroup" aria-label="Form">' +
+      opt(S, 'quorumForm', 'share', 'A share of the membership', 'Suits a document with a window: the number tracks the membership as it changes.') +
+      opt(S, 'quorumForm', 'count', 'A fixed number', 'Suits a perpetual document, where a drifting membership would otherwise silently re-rate every parked race.') +
+      '</div>' +
+      '<div class="eyebrow fieldlab" style="margin-top:var(--s4)">The number</div>' +
+      '<div class="choice" role="radiogroup" aria-label="Number">' +
+      opt(S, 'quorumBy', 'founder', 'I set it', '',
+        '<span class="setrow2">' + (S.quorumForm === 'share'
+          ? num(S, 'quorumPct', 'Share', 1, 100, '% — ' + quorumCount() + ' of ' + E() + ' today')
+          : num(S, 'quorumN', 'Members', 1, 40, 'of ' + E())) + '</span>') +
+      theyDecide('quorumBy', 'Each states the <b>lowest quorum</b> they will accept — in the form above — and the document takes the highest.') +
+      '</div>',
+    authorship: () =>
+      '<div class="unlocks">Part of the constitution — judging waits on it, because a judgment is recorded under whatever this says.</div>' +
+      '<p class="why">Rationales are visible whatever is chosen. What varies is only whether a name is attached to one.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      theyDecide('authorship', 'A privacy question, so it takes the <b>most private</b> answer — which is what makes anonymity structural rather than merely the default.') +
+      opt(S, 'authorship', 'anonymous', 'Anonymous', 'Never revealed, not even in the record.') +
+      opt(S, 'authorship', 'sealed', 'Sealed', 'Hidden while live; revealed at the close.') +
+      opt(S, 'authorship', 'public', 'Public', 'Visible from the moment a proposal is made.') +
+      '</div><p class="setnote">Setting it yourself has a cost worth naming: anonymity becomes a default like any other, and members can be named without having agreed to it.</p>',
+    signing: () =>
+      '<div class="unlocks">Part of the constitution.</div>' +
+      '<p class="why">Whether an author may put their name to a proposal that is otherwise unattributed.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      theyDecide('signing', 'The <b>most private</b> answer wins.') +
+      opt(S, 'signing', 'nobody', 'Nobody signs', 'The only setting under which an unsigned proposal says nothing about its author.') +
+      opt(S, 'signing', 'each', 'Each author chooses', 'In a roster this small, an unsigned candidate among signed ones says something.') +
+      opt(S, 'signing', 'everybody', 'Everybody signs', 'Uniform in the other direction.') +
+      '</div>',
+    judgments: () =>
+      '<div class="unlocks">Part of the constitution.</div>' +
+      '<p class="why">Whether what somebody preferred is ever attached to their name. Never while a question is live, whichever is chosen — blind judgment while preferences are being collected is what makes the measurement mean anything.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      theyDecide('judgments', 'The <b>most private</b> answer wins.') +
+      opt(S, 'judgments', 'never', 'Never revealed', 'What you preferred stays yours, permanently.') +
+      opt(S, 'judgments', 'after', 'Revealed once the decision is made', 'Published with the record, never before it.') +
+      '</div>',
+    rate: () =>
+      '<p class="why">How often anybody may put something to the room. Proposing costs one ✏️; a successful ✏️ is refunded, and withdrawing returns it in full.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      theyDecide('rateBy', 'Each states the <b>most generous</b> rate they would accept, and the document takes it. Until it settles, everyone drafts on the standard rate.') +
+      opt(S, 'rateBy', 'founder', 'I set it', '',
+        '<span class="setrow2">' + num(S, 'grant', '✏️ to start with', 0, 40) +
+        num(S, 'cap', 'up to a maximum of', 1, 99) +
+        num(S, 'dripMin', 'an additional ✏️ every N minutes', 5, 2880) + '</span>') +
+      '</div>',
+    chamber: () =>
+      '<p class="why">Who may read it besides the members. Whoever that is, they are <b>not members</b>: nothing is known about them, and they cannot propose, judge or be counted. Live standings are never visible to anybody, whatever is chosen here.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      theyDecide('chamber', 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.') +
+      opt(S, 'chamber', 'link', 'Anyone with the link') +
+      opt(S, 'chamber', 'closed', 'Members only') +
+      opt(S, 'chamber', 'public', 'Public', 'Listed and readable by anyone.') + '</div>',
+    lapse: () =>
+      '<div class="unlocks">Part of the constitution — judging waits on it.</div>' +
+      '<p class="why">Whether a membership lapses after a period of inactivity. A lapsed member leaves the quorum base like an abstainer, their judgments keep counting, they are warned by email first and sent the document and record when it happens — and coming back is just logging in.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      opt(S, 'lapse', 'days', 'They lapse', 'After a period of inactivity you choose.',
+        '<span class="setrow2">' + num(S, 'lapseDays', 'Days of inactivity', 7, 365) + '</span>') +
+      opt(S, 'lapse', 'never', 'Never', 'A membership holds however long its holder is away.') +
+      theyDecide('lapse', 'Each states the <b>shortest period of inactivity</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.') +
+      '</div>',
+    machines: () =>
+      '<p class="why">An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      theyDecide('auditor', 'The <b>most restrictive</b> answer wins, so a single member who would rather not have AI proposals keeps them out.') +
+      opt(S, 'auditor', true, 'Include the coherence auditor', 'Patrols the document for drift — a definition changed in one place and not another — and proposes fixes.',
+        '<span class="setrow2">' + num(S, 'auditorBudget', 'Its edit budget', 0, 40) + '</span>') +
+      opt(S, 'auditor', false, 'No AI proposals') + '</div>',
+  };
+
+
+  // ---- the applicant's seat (ported from founding-ceremony, Ed 361) -------
+  // Plain tasks: the same rail entries and the same card shell, asking for
+  // the only things an application is. The email is the identity (verified
+  // by magic link before anything can be submitted), member emails are
+  // unique, and an empty application is a real application.
+  const APPLICANT = { judged: 2 };
+  const MEMBER_EMAILS = { has: (e2) => S.roster.some((r) => (r.e || '').toLowerCase() === e2) };
+  const APPCARDS = () => {
+    const a = S.app;
+    const base = [{ k: 'apply', g: '🪪', t: 'Apply for Membership', own: 'you',
+      kind: 'personal', done: () => a.submitted }];
+    if (!a.started) return base;
+    return base.concat([
+      { k: 'appmail', g: '📧', t: 'Your Email', own: 'you', kind: 'personal', done: () => a.emailVerified },
+      { k: 'appname', g: '✋', t: 'Your Name', own: 'you', kind: 'personal', done: () => !!a.name.trim() },
+      { k: 'apppic', g: '🖼️', t: 'Your Picture', own: 'you', kind: 'personal', done: () => !!a.pic },
+      { k: 'apptext', g: '📝', t: 'Your Application', own: 'you', kind: 'personal', optional: true, done: () => !!a.text.trim() },
+    ]);
+  };
+  const appCtx = {
+    get open() { return S.open; }, get E() { return E(); },
+    mustAct: (c) => !c.done() && !(c.optional && S.app.submitted),
+    yours: (c) => c.k === 'apply' && S.app.submitted,
+    waiting: (c) => c.k === 'appmail' && S.app.emailSent && !S.app.emailVerified,
+    fillOf: (c) => (c.k === 'apply' && S.app.submitted
+      ? Math.round(APPLICANT.judged / E() * 100) + '%' : '100%'),
+    summary: (c) => (c.k === 'apply'
+      ? (S.app.submitted ? 'Before the members — a proposal like any other' : S.app.started ? (['appname', 'apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
+      : c.k === 'appmail' ? (S.app.emailVerified ? S.app.email + ' · verified'
+        : S.app.emailSent ? 'Check your inbox' : 'Your identity here')
+      : c.k === 'appname' ? (S.app.name || 'What members will call you')
+      : c.k === 'apppic' ? (S.app.pic ? 'Chosen' : 'A ground for your initials')
+      : (S.app.text ? 'Written' : 'A few words — optional')),
+    value: (c) => appCtx.summary(c), isRoom: () => false,
+  };
+  const APPBODY = {
+    apply: () => {
+      const a = S.app;
+      const ready2 = a.started && a.emailVerified && a.name.trim() && a.pic;
+      return '<p class="why">Your application goes before the members as a proposal (✏️) — it carries if the room is sure enough.</p>' +
+        (a.submitted
+          ? '<div class="lockline">' + TICK + '<span>Submitted. ' + APPLICANT.judged + ' of ' + E() + ' have judged it — you will get an email either way.</span></div>'
+          : a.started
+          ? '<p class="setnote">' + (ready2 ? 'Everything needed is in — the words are optional.' : 'The email, the name and the picture are needed; the words are optional.') + '</p>'
+          : '<p class="setnote">Nothing is collected before you begin, and nothing is sent until you submit.</p>');
+    },
+    appmail: () => {
+      const a = S.app;
+      const taken = MEMBER_EMAILS.has(a.email.trim().toLowerCase());
+      const okAddr = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email) && !taken;
+      return a.emailVerified
+        ? '<div class="lockline">' + TICK + '<span>Verified — <b>' + esc(a.email) + '</b> is your identity here.</span></div>'
+        : a.emailSent
+        ? '<p class="why">Sent to <b>' + esc(a.email) + '</b>. Nothing is submitted until the address has proved it works — it is your identity here, and the only way the answer can reach you.</p>' +
+          '<div style="margin-top:var(--s3)"><button class="btn" data-appmailopen="1">Open your inbox</button> ' +
+          '<button class="btn" data-appmailedit="1">Wrong address?</button></div>'
+        : '<p class="why">Your email is your <b>identity</b> here — the magic link is the login, the answer to your application arrives on it, and no two members may share one. It has to prove it works before you can submit.</p>' +
+          '<span class="fld"><label>Your email</label><input type="email" data-appmail="1" value="' + esc(a.email) + '" placeholder="you@example.com" style="width:20rem"></span>' +
+          (taken ? '<p class="setnote"><b>Already a member’s address.</b> A member email is one identity — if it is yours, log in with it instead of applying.</p>' : '') +
+          '<div style="margin-top:var(--s3)"><button class="btn"' + (okAddr ? '' : ' disabled') + ' data-appmailsend="1">Send the link</button></div>';
+    },
+    appname: () => '<p class="why">What the members will call you — in the application, and in the membership if it carries.</p>' +
+      '<span class="fld"><label>Your name</label><input data-appname="1" value="' + esc(S.app.name) + '" placeholder="Your name" style="width:20rem"></span>',
+    apppic: () => '<p class="why">The shape they will recognise you by.</p>' +
+      '<div class="avpick">' + avatarOptions().map((o) =>
+        '<button class="avopt" data-apppic="' + o.id + '" aria-pressed="' + (S.app.pic === o.id) + '">' +
+        avHtml({ n: S.app.name || '?', pic: o.id }, 'big') + '</button>').join('') + '</div>',
+    apptext: () => '<p class="why">A few words to the members, if you want them — who you are, why this document. Optional: an empty application is a real application.</p>' +
+      '<div class="lanebox"><div class="lp editlane' + (S.app.text ? '' : ' blank') + '" contenteditable="plaintext-only"' +
+      ' spellcheck="false" data-apptext="1" data-ph="To the members…">' + esc(S.app.text) + '</div></div>',
+  };
+  function applicantCardHtml() {
+    const c = APPCARDS().find((x) => x.k === S.open);
+    if (!c) return '';
+    const a = S.app;
+    let foot;
+    if (c.k === 'apply') {
+      foot = a.submitted ? '<button class="btn" data-close="1">Close</button>'
+        : !a.started ? '<button class="btn btn-approve" data-appstart="1">Begin</button>'
+        : '<button class="btn" data-close="1">Close</button>' +
+          '<button class="btn btn-approve glyphbtn"' + (a.name.trim() && a.pic ? '' : ' disabled') +
+          ' data-appsubmit="1" title="Submit — your application goes before the members">🏛️</button>';
+    } else {
+      foot = '<button class="btn" data-close="1">Close</button>' +
+        '<button class="btn btn-approve glyphbtn"' + (c.done() || c.optional ? '' : ' disabled') + ' data-close="1">' + TICK + '</button>';
+    }
+    return cardHtml(c, appCtx, APPBODY[c.k](), foot, [c]);
+  }
+
+  // ---- the band: two piles, and the card one of them opens into ----------
+  function renderBand() {
+    if (S.viewer === 'applicant') {
+      const tp0 = document.getElementById('titlepara');
+      tp0.classList.remove('open');
+      tp0.querySelectorAll('.setupcard').forEach((el) => el.remove());
+      band.innerHTML = (S.open
+        ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + applicantCardHtml() + '</div></div></div>' : '') +
+        (settled(card('slug')) ? bandHtml(groups(), ctx, () => '') : '');
+      fitBand(band);
+      return;
+    }
+    const cardFor = (g) => {
+      const c = card(S.open);
+      // A card the room owns keeps its own body — choosing to hand it over is
+      // the founder's decision and stays editable — and grows a **watching**
+      // half underneath, which is the whole of what anybody may see of a blind
+      // question while it runs.
+      if (c.isGate) {
+        return cardHtml(c, ctx, gateBody(c),
+          '<button class="btn" data-close="1">Close</button>' +
+          '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
+          ' data-ok="' + c.k + '">OK</button>', g.cards);
+      }
+      const body = c.ansFor ? ANSWER[c.ansFor](S.myAns, E(), c.ansFor === 'quorum' ? S.quorumForm : undefined)
+        // a card that is not yours to answer reads as the rule it is —
+        // the founder's settings are read-only from any other chair
+        : (!amFounder() && c.own !== 'you')
+        ? readBody(c, ctx) + (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '')
+        : BODY[c.k]() +
+          (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
+      const kindLine = (c.kind === 'personal' || c.ansFor || c.k === 'title') ? '' :
+        '<p class="setnote"><b>' + KIND[c.kind] + '.</b> ' + (c.knote || kindNote[c.kind]) + '</p>';
+      const clearable = { myname: S.myname, mypic: S.mypic };
+      const newsKey = isRoom(c) ? 'res-' + c.k : 'set-' + c.k;
+      const foot = (!amFounder() && c.own !== 'you' && !c.ansFor)
+        ? (stateOf(c, ctx) === 'news'
+          ? '<button class="btn" data-close="1">Close</button>' +
+            '<button class="btn btn-approve" data-ok="' + newsKey + '">OK</button>'
+          : '<button class="btn" data-close="1">Close</button>')
+        : (c.k === 'myname' || c.k === 'mypic')
+        ? '<button class="btn glyphbtn" data-clearval="' + c.k + '"' + (clearable[c.k] ? '' : ' disabled') +
+          ' title="' + (c.k === 'myname' ? 'Clear the name' : 'Remove the picture') + '">🗑️</button>' +
+          '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
+          ' data-confirm="1">✒️</button>'
+        : c.k === 'title'
+        ? '<button class="btn glyphbtn" data-cleartitle="1"' + (S.title ? '' : ' disabled') +
+          ' title="Clear the title">🗑️</button>' +
+          '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
+          ' data-confirm="1" title="' + (ready(c) ? 'Set it — yours to change any time' : 'Give it a name first') + '">✒️</button>'
+        : stateOf(c, ctx) === 'news'
+        ? '<button class="btn" data-close="1">Close</button>' +
+          '<button class="btn btn-approve" data-ok="' + newsKey + '">OK</button>'
+        : '<button class="btn" data-close="1">Close</button>' +
+        '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
+        // ✒️ is the founder's unilateral pen (Ed, 360): every confirm on
+        // this surface is a unilateral set — except an answer to a shared
+        // question, which is the one act here that is not yours alone
+        ' data-confirm="1" title="' + (ready(c) ? 'Confirm' : 'Not answered yet') + '">' + (c.ansFor ? TICK : '✒️') + '</button>';
+      return cardHtml(c, ctx, body + kindLine, foot, g.cards);
+    };
+    // the title card opens in the title's own paragraph, whatever else
+    // the band is doing — the clause, opened, with its tab in its strip
+    const tp = document.getElementById('titlepara');
+    tp.classList.toggle('open', S.open === 'title');
+    tp.querySelectorAll('.setupcard').forEach((el) => el.remove());
+    if (S.open === 'title') tp.insertAdjacentHTML('beforeend', cardFor(groups()[0]));
+    // **Before the save there is no constitution** (Ed, 2026-08-18): an
+    // unsaved document is a topbar, an outline, an empty title and its
+    // tasks. The band holds only the open card, in the section geometry
+    // it will keep, with none of the chrome.
+    if (!settled(card('slug'))) {
+      band.innerHTML = (S.open && S.open !== 'title')
+        ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + cardFor(groups()[0]) + '</div></div></div>'
+        : '';
+    } else {
+      band.innerHTML = bandHtml(groups(), ctx, cardFor);
+    }
+    fitBand(band);
+    fitBand(tp.closest('.titlerow'));
+    fitTitleCard();
+  }
+
+  // **Opening the title must not move the title** (Ed, 2026-08-18: *the
+  // title jumps*). The card's head is the title; the heading it replaces
+  // is display:none while the card stands, so its box is measured by
+  // un-hiding it for one synchronous beat — never painted — and the card
+  // is shifted until its head text sits exactly on the heading's text.
+  function fitTitleCard() {
+    if (S.open !== 'title') return;
+    const cardEl = document.querySelector('#titlepara > .setupcard');
+    const hd = cardEl && cardEl.querySelector('.headdoct');
+    const d = document.getElementById('doctitle');
+    if (!cardEl || !hd || !d) return;
+    cardEl.style.marginTop = ''; cardEl.style.marginLeft = '';
+    d.style.display = '';
+    const want = d.getBoundingClientRect();
+    d.style.display = 'none';
+    const have = hd.getBoundingClientRect();
+    const dy = want.top - have.top, dx = want.left + parseFloat(getComputedStyle(d).paddingLeft) - have.left;
+    if (Math.abs(dy) > 0.5) cardEl.style.marginTop =
+      ((parseFloat(getComputedStyle(cardEl).marginTop) || 0) + dy).toFixed(1) + 'px';
+    if (Math.abs(dx) > 0.5) cardEl.style.marginLeft =
+      ((parseFloat(getComputedStyle(cardEl).marginLeft) || 0) + dx).toFixed(1) + 'px';
+    // **and the tab does not move either** (Ed, 2026-08-18): the closed
+    // pile tab is re-materialised for one unpainted beat as the reference,
+    // and the card's strip is translated onto it — both axes, measured
+    const col = cardEl.querySelector('.chipcol');
+    const chipHost = document.getElementById('titlechip');
+    if (col && chipHost) {
+      col.style.transform = '';
+      d.style.display = '';
+      chipHost.innerHTML = pileHtml([card('title')], ctx);
+      const refG = chipHost.querySelector('.achip span');
+      const wantG = refG && refG.getBoundingClientRect();
+      chipHost.innerHTML = '';
+      d.style.display = 'none';
+      const haveG = col.querySelector('.achip span');
+      if (wantG && haveG) {
+        const r2 = haveG.getBoundingClientRect();
+        const dx2 = wantG.left - r2.left, dy2 = wantG.top - r2.top;
+        if (Math.abs(dx2) > 0.5 || Math.abs(dy2) > 0.5)
+          col.style.transform = 'translate(' + dx2.toFixed(1) + 'px,' + dy2.toFixed(1) + 'px)';
+      }
+    }
+  }
+
+  function refreshCommit() {
+    const b = document.querySelector('[data-confirm]');
+    if (b && S.open) b.disabled = !ready(card(S.open));
+    // the title card's other live pieces follow the typing without a
+    // re-render (which would take the caret): the head is the clause and
+    // the clause is what is being typed, and the bin keys on there being
+    // anything to clear
+    const hd = document.querySelector('.setupcard .headrule .headdoct');
+    if (hd && S.open === 'title') {
+      hd.textContent = S.title || 'Untitled document';
+      hd.classList.toggle('ph', !S.title);
+    }
+    const bin = document.querySelector('[data-cleartitle]');
+    if (bin) bin.disabled = !S.title;
+  }
+
+  const renderMail = () => (S.viewer === 'applicant'
+    ? renderMailModal(S.app.mailOpen, MAILS.applyVerify(S.title || 'this document', S.app.email))
+    : renderMailModal(S.mailOpen, MAILS.verify(S.title, S.myemail)));
+
+  const render = () => {
+    // the roster rows ARE the people now (per-user state, Ed 362): the
+    // identity cards write straight onto the viewer's row
+    resolveCounts();
+    renderDev();
+    renderTitle(); renderRail(); renderBand(); drawWire(wires, S.open); renderMail();
+    document.getElementById('mebtn').innerHTML = avHtml(
+      S.viewer === 'applicant' ? { n: S.app.name || '?', pic: S.app.pic } : me(), 'face');
+    if (S.open && S.open !== lastOpen) {
+      const el = document.querySelector('.setupcard');
+      if (el) CC.expandCard(el, () => {});
+    }
+    lastOpen = S.open;
+  };
+
+  // ---- wiring ------------------------------------------------------------
+  // **The picture card is an uploader** (Ed, 2026-08-18). Delegated, because
+  // the card is rebuilt on every render; the file is read locally and never
+  // sent anywhere.
+  wirePicDrop((d) => { S.mypic = d; render(); });
+  document.addEventListener('change', (ev) => {
+    if (ev.target.matches('[data-ansdate]')) {
+      S.myAns[ev.target.dataset.ansdate] = ev.target.value || null; return render(); }
+    if (ev.target.matches('[data-ansnum]')) {
+      S.myAns[ev.target.dataset.ansnum] = ev.target.value === '' ? null : +ev.target.value;
+      return render(); }
+  });
+  document.addEventListener('click', (ev) => {
+    const ct = ev.target.closest('[data-cleartitle]');
+    if (ct) return closeThen(() => { S.title = ''; S.open = null; });
+    const cv = ev.target.closest('[data-clearval]');
+    if (cv) return closeThen(() => { S[cv.dataset.clearval === 'myname' ? 'myname' : 'mypic'] = ''; S.open = null; });
+    const ams = ev.target.closest('[data-appmailsend]');
+    if (ams) { S.app.emailSent = true; S.app.mailOpen = true; return render(); }
+    const ame = ev.target.closest('[data-appmailedit]');
+    if (ame) { S.app.emailSent = false; return render(); }
+    const amo = ev.target.closest('[data-appmailopen]');
+    if (amo) { S.app.mailOpen = true; return render(); }
+    const ast = ev.target.closest('[data-appstart]');
+    if (ast) { S.app.started = true; return render(); }
+    const asu = ev.target.closest('[data-appsubmit]');
+    if (asu) { S.app.submitted = true; S.open = 'apply'; return render(); }
+    const ap2 = ev.target.closest('[data-apppic]');
+    if (ap2) { S.app.pic = ap2.dataset.apppic; return render(); }
+    const okb = ev.target.closest('[data-ok]');
+    if (okb) return closeThen(() => { S.okd.add(okb.dataset.ok); S.open = null; });
+    const t = ev.target.closest('[data-tab], [data-card]');
+    if (t) { const k = t.dataset.tab || t.dataset.card;
+      if (S.open === k) return closeThen(() => { S.open = null; });
+      S.open = k; return render(); }
+    if (ev.target.closest('[data-confirm]')) {
+      return closeThen(() => {
+        const was = S.open; S.seen.add(was); S.open = null;
+        // the link card is born pre-filled the moment the title settles
+        if (was === 'title' && S.title && !S.slug) {
+          const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken;
+        }
+      }); }
+    if (ev.target.closest('button[data-close]')) return closeThen(() => { S.open = null; });
+    const mt = ev.target.closest('[data-metoggle]');
+    if (mt) { const m = meRow(); if (m) m.role = iDraft() ? 'clerk' : 'member'; return render(); }
+    const mv2 = ev.target.closest('[data-act="sendverify"]');
+    if (mv2) { S.emailSent = true; S.mailOpen = true; return render(); }
+    const om = ev.target.closest('[data-act="openmail"]');
+    if (om) { S.mailOpen = true; return render(); }
+    if (ev.target.closest('[data-mailclose]') ||
+        (ev.target.id === 'mailmodal')) { S.mailOpen = false; S.app.mailOpen = false; return render(); }
+    const cm = ev.target.closest('[data-act="clickmail"]');
+    // clicking the mail's login button IS arriving back, so it settles the
+    // card itself — there is no second act of confirming you exist
+    if (cm && S.viewer === 'applicant') { S.app.emailVerified = true; S.app.mailOpen = false; return render(); }
+    if (cm) { S.emailVerified = true; S.mailOpen = false; S.seen.add('myemail'); S.open = 'slug'; return render(); }
+    const ee = ev.target.closest('[data-act="editemail"]');
+    if (ee) { S.emailSent = false; return render(); }
+    const an = ev.target.closest('[data-ans]');
+    if (an) { const v = an.dataset.ansval;
+      S.myAns[an.dataset.ans] = (v === 'true') ? true : (v === 'false') ? false
+        : (v === 'date') ? (S.myAns[an.dataset.ans] === 'never' ? null : S.myAns[an.dataset.ans])
+        : v;
+      return render(); }
+    const o = ev.target.closest('[data-set]');
+    if (o) { const v = o.dataset.val;
+      S[o.dataset.set] = (v === 'true') ? true : (v === 'false') ? false : v;
+      if (perpetual() && S.shape === 'ramp') S.shape = 'fixed';
+      return render(); }
+    const pic = ev.target.closest('[data-pic]');
+    if (pic) { S.mypic = pic.dataset.pic; return render(); }
+    const d = ev.target.closest('[data-drop]');
+    if (d) { S.roster.splice(+d.dataset.drop, 1); return render(); }
+    if (ev.target.closest('[data-act="add"]')) {
+      const f = document.querySelector('[data-add]');
+      if (f && f.value.trim()) invite(f.value.trim());
+      return render(); }
+    if (ev.target.closest('[data-act="invite"]')) {
+      const box = document.querySelector('[data-emails]');
+      if (box) { box.value.split(/[\s,;]+/).filter((x) => x.includes('@')).forEach(invite); box.value = ''; }
+      return render();
+    }
+  });
+  function invite(em) {
+    if (S.roster.some((p) => p.e === em)) return;
+    S.roster.push({ n: em.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (x) => x.toUpperCase()),
+      e: em, role: 'member', in: false });
+    setTimeout(() => { const p = S.roster.find((x) => x.e === em); if (p) { p.in = true; render(); } },
+      1200 + Math.random() * 2600);
+  }
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && S.open) { S.open = null; return render(); }
+    if (ev.key === 'Enter' && ev.target.closest('[data-titlelane]')) ev.preventDefault();
+    if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.closest('[data-tab]')) {
+      ev.preventDefault(); ev.target.closest('[data-tab]').click();
+    }
+  });
+  // A lane rebuilt on every keystroke would lose the caret, so typing repaints
+  // the bar and the rail and leaves the card alone — only the commit control,
+  // which is about what you have just typed, is set directly.
+  document.addEventListener('input', (ev) => {
+    const sl = ev.target.closest && ev.target.closest('[data-slide]');
+    if (sl) { S.myAns[sl.dataset.slide] = +sl.value; render();
+      const again = document.querySelector('[data-slide="' + sl.dataset.slide + '"]');
+      if (again) again.focus(); return; }
+    const t = ev.target;
+    const lane = t.closest && t.closest('[data-titlelane]');
+    if (lane) { S.title = lane.textContent.trim(); lane.classList.toggle('blank', !S.title);
+      renderTitle(); renderRail(); refreshCommit(); return; }
+    if (t.dataset.appmail !== undefined) { S.app.email = t.value.trim();
+      const sb = document.querySelector('[data-appmailsend]');
+      if (sb) sb.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S.app.email) ||
+        MEMBER_EMAILS.has(S.app.email.toLowerCase());
+      return; }
+    if (t.dataset.appname !== undefined) { S.app.name = t.value; return; }
+    const at = t.closest && t.closest('[data-apptext]');
+    if (at) { S.app.text = at.textContent.trim(); at.classList.toggle('blank', !S.app.text); return; }
+    if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); renderRail(); refreshCommit(); return; }
+    if (t.dataset.txt === 'myname') { S.myname = t.value; renderRail(); refreshCommit(); return; }
+    if (t.dataset.txt === 'myemail') { S.myemail = t.value.trim();
+      S.emailSent = false; S.emailVerified = false; S.seen.delete('myemail');
+      const m = meRow(); if (m) m.e = S.myemail;
+      // the send button tracks validity in place — a full render would
+      // rebuild the card under the caret
+      const sv = document.querySelector('[data-act="sendverify"]');
+      if (sv) sv.disabled = !EMAIL_OK.test(S.myemail);
+      renderRail(); refreshCommit(); return; }
+    if (t.dataset.txt) { S[t.dataset.txt] = t.value; renderRail(); }
+    if (t.dataset.num) { S[t.dataset.num] = +t.value; renderRail(); }
+  });
+  document.getElementById('devwho').addEventListener('change', (ev) => {
+    const v = ev.target.value;
+    S.viewer = v === 'applicant' ? 'applicant' : +v;
+    S.open = null; lastOpen = null;
+    render();
+  });
+  addEventListener('resize', () => { fitBand(band); drawWire(wires, S.open); });
+  addEventListener('scroll', () => drawWire(wires, S.open), true);
+
+  relabel(); render();
+})();
+</script>
