@@ -332,16 +332,25 @@
       takes: 'The document takes the most restrictive', result: 'People only',
       dist: [9, 5], distTop: 0, distEnds: ['People only', 'A machine is fine'] },
   ];
-  const card = (k) => CARDS.find((c) => c.k === k) || GATES.find((c) => c.k === k);
+  const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
+    GATES.find((c) => c.k === k);
   const isRoom = (c) => !!(c.key && delegated(c.key));
-  // **A delegated question is also yours to answer** (Q344): 🎩 decides
-  // whether — a clerk owes nothing — and once it says yes, the card carries
-  // the member's own answering body and stays outstanding until answered.
-  const answered = (c) => S.myAns[c.k] !== null && S.myAns[c.k] !== undefined;
-  const owesAnswer = (c) => isRoom(c) && iDraft() && ANSWER[c.k] && !answered(c);
-  const ready = (c) => (c.ready ? c.ready() : true);
+  // **Your own answer is a separate card in the membership pile** (Ed,
+  // 2026-08-18, revising the both-halves-on-one-card build of the same
+  // morning): delegating is one act and answering is another, done later and
+  // wearing a different hat — so the setting card stays in the convenor's
+  // pile with the delegation radio and the watching half, and handing a
+  // question to the room makes a question card **appear** in the membership
+  // pile, which is the same card a member gets. Nothing jumps piles any
+  // more, which also closes Q323: delegation reads as a birth rather than a
+  // teleport.
+  const ansKey = (c) => c.ansFor || c.k;
+  const answered = (c) => S.myAns[ansKey(c)] !== null && S.myAns[ansKey(c)] !== undefined;
+  const owesAnswer = (c) => !!c.ansFor && iDraft() && !answered(c);
+  const ready = (c) => (c.ansFor ? answered(c) : c.ready ? c.ready() : true);
   const settled = (c) => (c.isGate ? S.okd.has(c.k)
-    : S.seen.has(c.k) && ready(c) && !owesAnswer(c));
+    : c.ansFor ? answered(c)
+    : S.seen.has(c.k) && ready(c));
   const mustAct = (c) => (c.isGate ? (c.open() && !S.okd.has(c.k)) : !settled(c));
   // How far the room has got, against the roster **as it stands** — held as a
   // proportion because a convenor's roster starts at one person and grows.
@@ -355,9 +364,16 @@
   // nothing until there are members; and the threshold, the drip and the ending
   // date wait on **whether it ends**, since a rising bar needs an endpoint and
   // the drip is paced against one.
-  const visible = (c) => !(c.hide && c.hide()) && (c.dep || []).every((k) => settled(card(k)));
-  const LIVE = () => CARDS.concat(GATES).filter(visible);
-  const pileOf = (c) => (c.own === 'you' || isRoom(c) ? 'room' : 'convenor');
+  const visible = (c) => (c.ansFor
+    ? iDraft() && isRoom(card(c.ansFor)) && visible(card(c.ansFor))
+    : !(c.hide && c.hide()) && (c.dep || []).every((k) => settled(card(k))));
+  // One question card per delegable setting, born when its setting is handed
+  // over and gone if it is taken back. Same glyph, same title — it is the
+  // same question — told apart by whose pile it stands in.
+  const ANS = CARDS.filter((c) => c.key && ANSWER[c.k]).map((c) => ({
+    k: 'ans-' + c.k, g: c.g, t: c.t, kind: c.kind, own: 'you', ansFor: c.k }));
+  const LIVE = () => CARDS.concat(ANS, GATES).filter(visible);
+  const pileOf = (c) => (c.own === 'you' ? 'room' : 'convenor');
   // A member who has not opened the document yet is drawn faintly rather than
   // left out: they are on the membership, which is the fact the heading is
   // stating, and whether they have looked at it yet is a different one.
@@ -408,7 +424,26 @@
     canpropose: () => (canPropose() ? 'Open' : 'Waiting on the starting text'),
     canjudge: () => (canJudge() ? 'Open' : 'Waiting on the constitution'),
   };
-  const value = (c) => esc(VALUE[c.k]());
+  const ANSVALUE = {
+    quorum: (v) => 'You said ' + v + ' of ' + E(),
+    bar: (v) => 'You said ' + v + '%',
+    ending: (v) => (v === 'never' ? 'You said never' : 'You said ' + v),
+    authorship: (v) => 'You said ' + ({ anonymous: 'no names, ever', sealed: 'names at the close', public: 'names from the start' }[v] || v),
+    signing: (v) => 'You said ' + ({ nobody: 'nobody signs', each: 'each author chooses', everybody: 'everybody signs' }[v] || v),
+    judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
+    chamber: (v) => 'You said ' + ({ closed: 'roster only', link: 'anyone with the link', public: 'public' }[v] || v),
+    machines: (v) => 'You said ' + (v ? 'a machine member is fine' : 'people only'),
+    grant: (v) => 'You said ' + v + ' ✏️s',
+    drip: (v) => 'You said ' + v + ' per 10%',
+  };
+  const ANSASK = { quorum: 'The lowest you will accept', bar: 'The lowest you will accept',
+    ending: 'The latest you will accept', authorship: 'The most you will accept',
+    signing: 'The most you will accept', judgments: 'The most you will accept',
+    chamber: 'The most you will accept', machines: 'The most you will accept',
+    grant: 'The fewest you will accept', drip: 'The slowest you will accept' };
+  const value = (c) => (c.ansFor
+    ? esc(answered(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
+    : esc(VALUE[c.k]()));
   const summary = (c) => (isRoom(c)
     ? (settled(c) ? '<i>The members decide</i> · ' + someIn(c.in || 0, E()) : '<i>The members decide</i>')
     : value(c));
@@ -429,6 +464,7 @@
     // the head says **what kind of decision this is** and then who holds it,
     // because the kind is what tells you what could ever be done about it
     bandLabel: (c) => (c.isGate ? 'Not a decision · it follows from the others'
+      : c.ansFor ? KIND[c.kind] + ' · yours to answer, as a member'
       : c.kind === 'personal' ? 'Yours alone'
       : KIND[c.kind || 'ordinary'] + ' · ' +
         (isRoom(c) ? 'the members decide' : 'the convenor sets this')),
@@ -647,12 +683,10 @@
           '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
           ' data-ok="' + c.k + '">OK</button>', g.cards);
       }
-      const mine = isRoom(c) && iDraft() && ANSWER[c.k]
-        ? '<div class="body"><div class="eyebrow fieldlab">Your own answer</div>' +
-          ANSWER[c.k](S.myAns, E()) + '</div>' : '';
-      const body = BODY[c.k]() + mine +
-        (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
-      const kindLine = c.kind === 'personal' ? '' :
+      const body = c.ansFor ? ANSWER[c.ansFor](S.myAns, E())
+        : BODY[c.k]() +
+          (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
+      const kindLine = (c.kind === 'personal' || c.ansFor) ? '' :
         '<p class="setnote"><b>' + KIND[c.kind] + '.</b> ' + (c.knote || kindNote[c.kind]) + '</p>';
       const foot = '<button class="btn" data-close="1">Close</button>' +
         '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
