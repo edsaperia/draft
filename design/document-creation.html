@@ -357,7 +357,7 @@
     text: () => { const n = [...prose.children].filter((b) => b.textContent.trim()).length;
       return n ? n + ' blocks' : (S.seen.has('text') ? 'Starts empty — the room writes it' : 'Nothing yet'); },
     title: () => S.title || 'Not named yet',
-    slug: () => 'draft.to/' + (S.slug || '…'),
+    slug: () => 'docs.vote/' + (S.slug || '…'),
     myname: () => S.myname || 'Unnamed',
     mypic: () => (S.mypic ? 'Chosen' : 'Your initials'),
     myrole: () => (iDraft() ? 'Yes — a drafter like everybody else' : 'No — the clerk, who does not write'),
@@ -461,11 +461,11 @@
     slug: () =>
       '<p class="why">What people paste to each other. Also the one setting here that is awkward rather than impossible to change later — an old link keeps working, but the one in everybody’s address bar stops matching the one in the invitation.</p>' +
       '<span class="fld"><label>The link</label><span class="setrow2">' +
-      '<span class="setnote" style="margin:0">draft.to/</span>' +
+      '<span class="setnote" style="margin:0">docs.vote/</span>' +
       '<input data-slug="1" value="' + esc(S.slug) + '" spellcheck="false" style="width:16rem">' +
       '<button class="btn" data-act="copy">Copy</button></span></span>' +
       '<p class="setnote">' + (SLUG_OK.test(S.slug)
-        ? 'Lower case, digits and hyphens. <b>draft.to/' + esc(S.slug) + '</b> is free.'
+        ? 'Lower case, digits and hyphens. <b>docs.vote/' + esc(S.slug) + '</b> is free.'
         : 'Lower case, digits and hyphens, three characters or more.') + '</p>' +
       // **Changing it sets up a redirect** (Ed, 2026-08-18). The link is
       // changeable and it is also the thing that has already been sent to
