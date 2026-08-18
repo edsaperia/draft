@@ -1,6 +1,8 @@
 # The setup surfaces — task grammar and dependency tree
 
-Working notes for `document-creation.html` and `founding-ceremony.html`, kept
+Working notes for `design/setup.html` — one surface since 2026-08-18 evening
+(Ed, 361; `document-creation.html` and `founding-ceremony.html` are
+redirects, who you are is the dev dropdown top-left) — kept
 here because they describe structure the code holds in scattered `dep:` arrays,
 `ready()` functions, gate `blockers()` and `ansFor` births (Ed, 2026-08-18:
 *it might be helpful for you to maintain a dependency tree for all the founding
