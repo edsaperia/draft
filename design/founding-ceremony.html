@@ -175,19 +175,19 @@
     // card also un-swallows a note the old single card had lost: two readNote
     // keys on one object, and the reserved one silently overridden.
     { k: 'policy', g: '🚪', t: 'Membership Policy', own: 'convenor', kind: 'constitutional', v: 'Anyone may apply',
-      readNote: 'The membership here is the members’ — joining and leaving are theirs to decide, and applications go before them as ordinary proposals. Had Wren <b>reserved</b> it, Wren would be a 👑 — the convenor of a document that reserves its membership, invite-and-remove staying in their hand; a crown lapses like a member, and a lapsed crown passes to the members.' },
+      readNote: 'The membership here is the members’ — joining and leaving are theirs to decide, and applications go before them as proposals (✏️). Had Wren <b>reserved</b> it, Wren would be a 👑 — the convenor of a document that reserves its membership, invite-and-remove staying in their hand; a crown lapses like a member, and a lapsed crown passes to the members.' },
     // One card, two routes to change it — see the ⏰ entry in document-creation.
     { k: 'ending', g: '⏰', t: 'When Does It End?', own: 'convenor', kind: 'constitutional',
       motionKind: 'ordinary', v: 'Thursday 18:00',
       // 329(a): *never* is the constitutional answer; any date is ordinary.
       routeOf: (v) => (/never|perpetual|no end/i.test(v) ? 'constitutional' : 'ordinary'),
-      routeNote: 'Which route this takes depends on what you write. A different date is an ordinary proposal, judged like any other. Never — no ending at all — re-opens the founding question instead, because a document with no ending has no rising threshold, and every decision already taken was taken under one.',
+      routeNote: 'Which route this takes depends on what you write. A different date is a proposal (✏️), judged like any other. Never — no ending at all — re-opens the founding question instead, because a document with no ending has no rising threshold, and every decision already taken was taken under one.',
 
-      readNote: 'The approval threshold rises towards that moment, and ✏️s come back paced against it. <b>Never</b> is one of the answers to this question, which is why it is constitutional — a document with no ending has no ramp. The date itself is ordinary, and anybody may propose moving it — and postponing never lowers the bar: it stays where it is and rises more slowly to the same ceiling.' },
+      readNote: 'The approval threshold rises towards that moment, and ✏️s come back paced against it. <b>Never</b> is one of the answers to this question, which is why it is constitutional — a document with no ending has no ramp. The date itself anybody may propose moving (✏️) — and postponing never lowers the bar: it stays where it is and rises more slowly to the same ceiling.' },
     // Pacing, not consent (§9.0, Q341): the close bar is the room's, above in
     // their own pile; how it climbs there is the convenor's, like the drip.
     { k: 'pace', g: '📈', t: 'How Does the Bar Get There?', own: 'convenor', kind: 'ordinary', v: 'Rising from 55%',
-      readNote: 'Every adoption is recorded against the bar as it stood, so re-shaping the ramp re-rates nothing already decided — which is what makes this ordinary while the close bar is constitutional.' },
+      readNote: 'Every adoption is recorded against the bar as it stood, so re-shaping the ramp re-rates nothing already decided — which is why this is open to proposals (✏️) while the close bar is constitutional (🏛️).' },
     { k: 'grant', g: '🪙', t: 'How Many ✏️s Do Members Start With?', own: 'convenor', kind: 'ordinary', v: '4 each' },
     { k: 'drip', g: '💧', t: 'How Fast Do ✏️s Come Back?', own: 'convenor', kind: 'ordinary', v: '1 back per 10% of the window, up to 8',
       readNote: 'With the one above, this is the <b>proposal rate</b> — how often anybody may put something to the room. Each proposal also stakes one ✏️, which is a flat one and not a setting: it comes back in full if you withdraw, and in proportion to how well it did if it does not carry.' },
@@ -233,6 +233,22 @@
       why: 'Rowan has kept the garden for six years and every clause about it was written without them in the room.' },
   };
   const motionOn = (c) => (S.state === 'settled' ? MOTIONS[c.k] : null);
+  // The commit follows the route the typed value asks for (329a): a
+  // proposal goes in with a click, a constitutional change with the
+  // assembly-press. One builder, because the input handler must swap the
+  // button in place as typing flips the route — a full re-render would
+  // throw the caret out of the lane.
+  const motionCommitHtml = (c) => {
+    const constitutional = routeFor(c, S.draft.to) === 'constitutional';
+    const heldOut = S.myMotion && S.myMotion !== c.k;
+    return constitutional
+      ? '<button class="btn btn-approve holdmotion"' +
+        (!S.draft.to || heldOut ? ' disabled' : '') +
+        ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first' : 'A full ten-second hold') + '"' +
+        ' data-holdmotion="' + c.k + '">🏛️ Hold to ask everyone</button>'
+      : '<button class="btn btn-approve"' + (S.draft.to ? '' : ' disabled') +
+        ' data-putmotion="1">Propose</button>';
+  };
   const answeredMotion = (c) => S.mAns[c.k] !== undefined;
 
   const ANSWERED = {
@@ -306,7 +322,7 @@
         const who = S.state === 'applicant' ? { n: S.app.name, pic: S.app.pic } : APPLICANT;
         return '<div class="applicants"><span class="eyebrow">Applicants</span>' +
           '<span class="pf">' + avHtml(who) + esc(who.n) +
-          '<span class="appnote">· an ordinary proposal · ' + APPLICANT.judged + ' of ' + E + ' judged</span></span></div>';
+          '<span class="appnote">· a proposal (✏️) · ' + APPLICANT.judged + ' of ' + E + ' judged</span></span></div>';
       },
       // Wren convened it and is drafting, so they are in the membership too
       who: () => ROSTER.map((p) => face(p)).join(''),
@@ -430,6 +446,22 @@
 
   const BLIND = '<p class="blindnote">Nobody sees your answer, and you will see nobody else’s until every one of them is in.</p>';
 
+  // A constitutional motion on a setting that was never a ceremony question
+  // (the policy; the membership when no invitee is named) still re-opens as
+  // consent: what is proposed, what stands, two answers, one refusal keeps
+  // what stands. inviteBody is this body with a person where the value is.
+  const consentBody = (c, m) => (m.invite ? inviteBody(m) :
+    '<p class="why">Whether <b>' + esc(m.to) + '</b> replaces <i>' + value(c) + '</i>. Nothing is being judged: you state what you will accept, and one refusal keeps what stands.</p>' +
+    '<div class="choice" role="radiogroup">' +
+    '<div class="pick' + (S.mAns[c.k] === 'no' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns[c.k] === 'no') + '" data-motion="no"><span class="dot"></span>' +
+    '<span>Keep what stands</span></button>' +
+    '<span class="exp">Nobody is told which of the fourteen said so.</span></div>' +
+    '<div class="pick' + (S.mAns[c.k] === 'yes' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns[c.k] === 'yes') + '" data-motion="yes"><span class="dot"></span>' +
+    '<span>I accept the change</span></button>' +
+    '<span class="exp">It takes every one of the ' + E + ' accepting.</span></div></div>' + BLIND);
+
   /* **What a motion is composed with** (Ed, 2026-08-18). The control that set
      a value is the control that proposes a new one — a date picker for a date,
      the membership for the membership. `data-mval` writes straight into the
@@ -527,7 +559,7 @@
     fillOf: (c) => (c.k === 'apply' && S.app.submitted
       ? Math.round(APPLICANT.judged / E * 100) + '%' : '100%'),
     summary: (c) => (c.k === 'apply'
-      ? (S.app.submitted ? 'Before the members — an ordinary proposal' : S.app.started ? (['appname','apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
+      ? (S.app.submitted ? 'Before the members — a proposal like any other' : S.app.started ? (['appname','apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
       : c.k === 'appmail' ? (S.app.emailVerified ? S.app.email + ' · verified'
         : S.app.emailSent ? 'Check your inbox' : 'Your identity here')
       : c.k === 'appname' ? (S.app.name || 'What members will call you')
@@ -540,7 +572,7 @@
     apply: () => {
       const a = S.app;
       const ready2 = a.started && a.emailVerified && a.name.trim() && a.pic;
-      return '<p class="why">This document’s membership is not open, but it takes <b>applications</b>. Applying is four small tasks — your email, your name, your picture, and a few words if you want them — and your application then goes before the members as an <b>ordinary proposal</b> to grant you membership, judged like any other: it carries if the room is sure enough.</p>' +
+      return '<p class="why">This document’s membership is not open, but it takes <b>applications</b>. Applying is four small tasks — your email, your name, your picture, and a few words if you want them — and your application then goes before the members as a <b>proposal (✏️)</b> to grant you membership, judged like any other: it carries if the room is sure enough.</p>' +
         (a.submitted
           ? '<div class="lockline">' + TICK + '<span>Submitted. Your application is before the members — ' + APPLICANT.judged + ' of ' + E + ' have judged it so far. You will get an email either way.</span></div>'
           : a.started
@@ -604,9 +636,9 @@
       const m = motionOn(c);
       if (S.draft && S.draft.k === c.k) {
         body = motionCompose(c, ctx, S.draft, PROPOSE[c.k]);
-        foot = '<button class="btn" data-dropmotion="1">Discard</button>' +
-          '<button class="btn btn-approve"' + (S.draft.to ? '' : ' disabled') +
-          ' data-putmotion="1">Propose</button>';
+        // One 🏛️ per member at a time (Q327): the hold is dead while yours
+        // is out, live again when it settles or you withdraw it.
+        foot = '<button class="btn" data-dropmotion="1">Discard</button>' + motionCommitHtml(c);
       // a live motion takes the route its own value asks for (329a), which on
       // the window is the difference between moving a date and abolishing one
       } else if (m && (m.kind || routeFor(c, m.to)) === 'ordinary') {
@@ -616,9 +648,13 @@
           '<button class="btn btn-approve glyphbtn"' + (answeredMotion(c) ? '' : ' disabled') +
           ' data-confirm="1">' + TICK + '</button>';
       } else if (m) {
-        // constitutional: the founding question, live again
-        body = motionReopen(c, ctx, m) + (BODY[c.k] ? BODY[c.k]() : inviteBody(m));
-        foot = '<button class="btn" data-close="1">Close</button>' +
+        // constitutional: the founding question, live again. Yours carries
+        // the withdraw at the very left, where 🗑️ always is — it hands the
+        // 🏛️ back whole, which is what makes the one-each limit livable.
+        body = motionReopen(c, ctx, m) + (BODY[c.k] ? BODY[c.k]() : consentBody(c, m));
+        foot = (m.mine
+            ? '<button class="btn" data-withdrawmotion="' + c.k + '" title="Withdrawing hands your 🏛️ back">🗑️ Withdraw</button>'
+            : '<button class="btn" data-close="1">Close</button>') +
           '<button class="btn btn-approve glyphbtn"' + (answeredMotion(c) ? '' : ' disabled') +
           ' data-confirm="1">' + TICK + '</button>';
       } else if (c.isGate) {
@@ -688,14 +724,14 @@
       S.judgments = 'never'; S.chamber = 'link'; S.machines = false; S.lapse = 'never';
       S.seen = new Set(ROOM.map((c) => c.k));
       S.okd = new Set([...CONVENOR.map((c) => c.k), ...ROOM.map((c) => 'res-' + c.k), 'canpropose', 'canjudge']);
-      S.mAns = {}; S.draft = null; S.open = 'apply';
+      S.mAns = {}; S.draft = null; S.myMotion = null; S.open = 'apply';
       ROOM.forEach((c) => { if (COUNTS[c.k] != null) c.in = E; });
       return;
     }
     if (k === 'ask') {
       S.quorum = S.bar = S.machines = null; S.lapse = null;
       S.authorship = S.signing = S.judgments = S.chamber = null;
-      S.mypic = ''; S.seen = new Set(); S.okd = new Set(); S.mAns = {}; S.draft = null;
+      S.mypic = ''; S.seen = new Set(); S.okd = new Set(); S.mAns = {}; S.draft = null; S.myMotion = null;
     } else {
       S.quorum = 10; S.bar = 80; S.authorship = 'anonymous'; S.signing = 'nobody';
       S.judgments = 'never'; S.chamber = 'closed'; S.machines = false; S.lapse = 'never';
@@ -703,7 +739,7 @@
       S.okd = k === 'settled'
         ? new Set([...CONVENOR.map((c) => c.k), ...ROOM.map((c) => 'res-' + c.k), 'canpropose', 'canjudge'])
         : new Set();
-      S.mAns = {}; S.draft = null;
+      S.mAns = {}; S.draft = null; S.myMotion = null;
     }
     ROOM.forEach((c) => { if (COUNTS[c.k] != null) c.in = k === 'settled' ? E : COUNTS[c.k]; });
   }
@@ -798,8 +834,61 @@
     const nm = ev.target.closest('[data-newmotion]');
     if (nm) { S.draft = { k: nm.dataset.newmotion, to: '', why: '' }; S.open = S.draft.k; return render(); }
     if (ev.target.closest('[data-dropmotion]')) { S.draft = null; return render(); }
+    const wm = ev.target.closest('[data-withdrawmotion]');
+    if (wm) { delete MOTIONS[wm.dataset.withdrawmotion];
+      delete S.mAns[wm.dataset.withdrawmotion]; S.myMotion = null; return render(); }
     if (ev.target.closest('[data-putmotion]')) { S.draft = null; return render(); }
   });
+  // ---- assembly-press (Ed, 2026-08-18) -----------------------------------
+  // A constitutional change goes in by a **full ten-second hold**, and the
+  // progress meter is the room itself: one member convenes onto a circle
+  // around the button roughly every 700ms, and the motion is put at the
+  // moment the assembly is complete. Release early and it disperses —
+  // nothing sent, nothing spent. Under reduced motion the seats appear
+  // without the spring; the stagger stays, because the ring IS the meter.
+  const HOLD_MS = 10000;
+  let assembly = null;
+  function conveneAssembly(btn, k) {
+    disperseAssembly();
+    const r = btn.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.id = 'assembly';
+    el.style.left = (r.left + r.width / 2) + 'px';
+    el.style.top = (r.top + r.height / 2) + 'px';
+    const RADIUS = 88;
+    ROSTER.forEach((p, i) => {
+      const seat = document.createElement('span');
+      seat.className = 'seat';
+      const th = -Math.PI / 2 + (i / ROSTER.length) * 2 * Math.PI;
+      seat.style.left = Math.round(Math.cos(th) * RADIUS) + 'px';
+      seat.style.top = Math.round(Math.sin(th) * RADIUS) + 'px';
+      seat.innerHTML = avHtml(p);
+      el.appendChild(seat);
+    });
+    document.body.appendChild(el);
+    const seats = [...el.children];
+    const timers = seats.map((s2, i) =>
+      setTimeout(() => s2.classList.add('in'), 80 + i * (HOLD_MS - 800) / seats.length));
+    assembly = { el, timers, done: setTimeout(() => {
+      el.classList.add('done');
+      MOTIONS[k] = { to: S.draft.to, why: S.draft.why, judged: 0, mine: true, kind: 'constitutional' };
+      S.myMotion = k; S.draft = null; assembly = null;
+      setTimeout(() => { el.remove(); render(); }, 420);
+    }, HOLD_MS) };
+  }
+  function disperseAssembly() {
+    if (!assembly) return;
+    assembly.timers.forEach(clearTimeout); clearTimeout(assembly.done);
+    const el = assembly.el; assembly = null;
+    el.classList.add('gone');
+    setTimeout(() => el.remove(), 260);
+  }
+  document.addEventListener('pointerdown', (ev) => {
+    const b = ev.target.closest('[data-holdmotion]');
+    if (b && !b.disabled) { ev.preventDefault(); conveneAssembly(b, b.dataset.holdmotion); }
+  });
+  ['pointerup', 'pointercancel'].forEach((t) => document.addEventListener(t, disperseAssembly));
+
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && S.open) { S.open = null; return render(); }
     if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.closest('[data-tab]')) {
@@ -821,7 +910,10 @@
     const ml = ev.target.closest && ev.target.closest('[data-motionlane]');
     if (ml) { S.draft[ml.dataset.motionlane] = ml.textContent.trim();
       ml.classList.toggle('blank', !ml.textContent.trim());
-      const b = document.querySelector('[data-putmotion]'); if (b) b.disabled = !S.draft.to;
+      // the commit slot follows the route of what is now typed (329a):
+      // "never" in the ending lane turns Propose into the assembly-press
+      const slot = document.querySelector('[data-putmotion], [data-holdmotion]');
+      if (slot && S.draft) slot.outerHTML = motionCommitHtml(card(S.draft.k));
       return; }
     if (ev.target.dataset.txt === 'myname') {
       S.myname = ev.target.value; renderRail();

@@ -299,8 +299,8 @@ window.SETUP = (function () {
       // what changing it takes is the kind, said plainly — “fixed for the
       // life of the document” predated motions and was simply false
       (c.kind === 'constitutional'
-        ? '. Constitutional — changing it means asking everyone again.'
-        : '. Ordinary — anybody may propose changing it, any time.') + '</span></div>' +
+        ? '. 🏛️ Changing it means asking everyone again.'
+        : '. ✏️ Anybody may propose changing it, any time.') + '</span></div>' +
       '<div class="statline"><span class="k">Set to</span><span class="v">' +
       ctx.value(c) + '</span></div>' +
       (c.readNote ? '<p class="setnote">' + c.readNote + '</p>' : '');
@@ -367,13 +367,13 @@ window.SETUP = (function () {
      (SPEC §9.0c). Both are written by `setup.js` because both are the same
      question for a convenor and for a member. */
   const nameBody = (me, opts) =>
-    '<p class="why">What other people call you here. It is not authorship: who proposed what is settled by the disclosure rule, and under most of its settings your name never appears beside a proposal at all — a document showing fourteen named people and not one named candidate is the ordinary case.</p>' +
+    '<p class="why">What other people call you here. It is not authorship: who proposed what is settled by the disclosure rule, and under most of its settings your name never appears beside a proposal at all — a document showing fourteen named people and not one named candidate is the usual case.</p>' +
     '<div class="idrow">' + avHtml(me, 'big') +
     '<span class="fld"><label for="myname">Your name</label>' +
     '<input id="myname" data-txt="myname" value="' + esc(me.n || '') + '" placeholder="Your name"></span></div>' +
     '<p class="setnote">Change it whenever you like; it is yours and it binds nobody.' +
     ((opts && opts.optional)
-      ? ' You are not a member, so this is <b>optional</b> — an anonymous convenor is a perfectly ordinary thing; leave it blank and the constitution simply shows no name.'
+      ? ' You are not a member, so this is <b>optional</b> — an anonymous convenor is a perfectly normal thing; leave it blank and the constitution simply shows no name.'
       : '') + '</p>';
 
   /* **It is an uploader** (Ed, 2026-08-18). The card had offered a ground for
@@ -453,14 +453,18 @@ window.SETUP = (function () {
      A `motion` is the act; which route it takes is a fact about the setting.
      `personal` is neither — your name and your picture bind nobody, so there is
      nothing to pass. */
+  // The kind pair is glyphic on the surface (Ed, 2026-08-18): ✏️ already
+  // means a proposal, so the word "ordinary" said the machinery twice; 🏛️
+  // is the constitutional change, the ask-everyone route. "Ordinary" stays
+  // engine vocabulary only — SPEC, code, never a card.
   const KIND = {
-    constitutional: 'Constitutional',
-    ordinary: 'Ordinary',
+    constitutional: '🏛️ Constitutional',
+    ordinary: '✏️ Open to proposals',
     personal: 'Yours alone',
   };
   const kindNote = {
     constitutional: 'Changing it would make past decisions mean something different, so it is not judged — the founding question is asked again, and the document takes the most demanding answer anybody gives.',
-    ordinary: 'Changing it is an ordinary proposal — anybody may put one, and it carries if it clears the bar with quorum.',
+    ordinary: 'Anybody may propose changing it, any time; it carries if it clears the approval threshold with quorum.',
     personal: 'Yours to change whenever you like. It binds nobody.',
   };
 
@@ -477,7 +481,7 @@ window.SETUP = (function () {
      it. */
   function motionBody(c, ctx, m) {
     const kind = m.kind || routeFor(c, m.to);
-    const need = 'the bar, with quorum';
+    const need = 'the approval threshold, with quorum';
     const speaker = (why) => '<div class="speaker">' +
       '<span class="disc" aria-hidden="true" title="A member wrote this. Who, is sealed until the closing record."></span>' +
       (why ? '<div class="said">' + esc(why) + '</div>' : '<div class="said none">No reason given.</div>') +
@@ -535,7 +539,7 @@ window.SETUP = (function () {
     // free. What stops it being spammed is a limit rather than a price (Q327).
     (c.routeOf ? '<p class="setnote">' + esc(c.routeNote || '') + '</p>' : '') +
     '<p class="setnote">' + (routeFor(c, draft.to) === 'constitutional'
-      ? '<b>Free.</b> You are not proposing against the charter, you are asking the room to be asked again about a rule that binds you — and consent should not have a price.'
+      ? '<b>Free — and one at a time.</b> You are asking the room to be asked again about a rule that binds you, and consent should not have a price. What keeps it from being constant is a limit, not a charge: each member may have <b>one 🏛️ out at once</b>, back in hand the moment it settles or is withdrawn. Putting it is a <b>full ten-second hold</b> — long enough to mean it.'
       : '<b>Costs one ✏️.</b> A motion is a proposal, so it is priced like every other proposal, and you get it back if you withdraw it.') + '</p>'
     + '<div class="propblock"><div class="eyebrow fieldlab">As it stands</div>' +
     '<div class="rtext">' + ctx.value(c) + '</div></div>' +

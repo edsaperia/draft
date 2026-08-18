@@ -411,3 +411,24 @@
 button.cline { border: 0; background: none; padding: 0; text-align: left;
   cursor: pointer; font: inherit; color: inherit; }
 button.cline:hover b { text-decoration: underline; }
+
+/* ---------------------------------------------------------------------------
+   assembly-press (Ed, 2026-08-18). A constitutional motion goes in by a full
+   ten-second hold, and the progress meter is the room: the members' avatars
+   convene one by one into a circle around the 🏛️ button — the assembly is
+   complete exactly when the motion is put. Release early and it disperses.
+   ------------------------------------------------------------------------ */
+#assembly { position: fixed; z-index: 120; width: 0; height: 0; pointer-events: none; }
+#assembly .seat { position: absolute; opacity: 0;
+  transform: translate(-50%, -50%) scale(0.3);
+  transition: opacity 220ms ease, transform 320ms cubic-bezier(0.2, 1.45, 0.45, 1); }
+#assembly .seat.in { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+#assembly .seat .av { width: 30px; height: 30px; font-size: 11px; box-shadow: var(--shadow-md); }
+#assembly.done .seat { transform: translate(-50%, -50%) scale(1.14); }
+#assembly.gone .seat { opacity: 0 !important;
+  transform: translate(-50%, -50%) scale(0.3) !important; transition-duration: 160ms; }
+.holdmotion { touch-action: none; user-select: none; }
+@media (prefers-reduced-motion: reduce) {
+  #assembly .seat { transition: opacity 120ms ease; transform: translate(-50%, -50%); }
+  #assembly .seat.in, #assembly.done .seat { transform: translate(-50%, -50%); }
+}

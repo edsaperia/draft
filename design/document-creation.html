@@ -314,10 +314,10 @@
       key: 'ending', dep: ['roster'], p: 0.5,
       // 329(a): *never* is the constitutional answer; any date is ordinary.
       routeOf: (v) => (/never|perpetual|no end/i.test(v) ? 'constitutional' : 'ordinary'),
-      routeNote: 'Which route this takes depends on what you write. A different date is an ordinary proposal, judged like any other. Never — no ending at all — re-opens the founding question instead, because a document with no ending has no rising threshold, and every decision already taken was taken under one.',
+      routeNote: 'Which route this takes depends on what you write. A different date is a proposal (✏️), judged like any other. Never — no ending at all — re-opens the founding question instead, because a document with no ending has no rising threshold, and every decision already taken was taken under one.',
 
       ready: () => S.ending !== 'ends' || !!S.endsAt,
-      knote: '<b>Whether</b> it ends is constitutional: a document with no ending has no ramp, so every past adoption would mean something different. <b>When</b> it ends is ordinary — a date can be moved by proposal, because moving it changes nothing that has already happened.',
+      knote: '<b>Whether</b> it ends is constitutional: a document with no ending has no ramp, so every past adoption would mean something different. <b>When</b> it ends is not — a date can be moved by proposal (✏️), because moving it changes nothing that has already happened.',
       rule: 'Each member says when they want it to end and the <b>latest</b> answer is taken — <b>never</b> being the latest of all — so nobody is cut off before they were ready.',
       takes: 'The document takes the latest', result: 'Saturday 18:00',
       dist: [2, 3, 5, 3, 1], distTop: 4, distEnds: ['Tue', 'Never'] },
@@ -657,7 +657,7 @@
     text: () =>
       '<div class="unlocks">Confirming this lets everyone start <b>proposing</b>. They will not be able to judge until the constitution is settled.</div>' +
       '<p class="why">Type or paste it into the page below — the same column it will be edited in once drafting begins. Lines starting with #, ## or ### become sections, and the contents appear on the left as you go.</p>' +
-      '<p class="setnote"><b>Or leave it blank.</b> A roster writing something from nothing is an ordinary way to begin, and an empty page is a real answer to this question. What this card asks is not whether there is text, but whether you have decided.</p>',
+      '<p class="setnote"><b>Or leave it blank.</b> A membership writing something from nothing is a perfectly good way to begin, and an empty page is a real answer to this question. What this card asks is not whether there is text, but whether you have decided.</p>',
     title: () =>
       '<p class="why">What members read at the top of the screen, and what the invitation says. Unlike almost everything else here it is not fixed at creation — come back to this card and change it whenever you like.</p>' +
       '<div class="lanebox"><div class="lp editlane titlelane' + (S.title ? '' : ' blank') + '"' +
@@ -734,7 +734,7 @@
       '<div class="choice" role="radiogroup" aria-label="Who may join">' +
       opt(S, 'joinBy', 'invite', 'Invitation only', 'Nobody joins unless a member brings them in.') +
       opt(S, 'joinBy', 'proposed', 'Applications must be proposed', 'A reader may apply, but the application waits until a member <b>proposes</b> it — the member stakes the ✏️ as with any proposal, which is what a second is.') +
-      opt(S, 'joinBy', 'apply', 'Anyone may apply', 'An application goes straight before the members as an ordinary proposal — free to make, because the tasks are its price and the bar is its filter.') +
+      opt(S, 'joinBy', 'apply', 'Anyone may apply', 'An application goes straight before the members as a proposal (✏️) — free to make, because the tasks are its price and the bar is its filter.') +
       opt(S, 'joinBy', 'open', 'Open', 'Anyone with the link joins on arrival. For documents that are more petition than charter.') +
       '</div>',
     ending: () =>
@@ -754,7 +754,7 @@
       theyDecide('barBy', 'Each states the <b>lowest bar</b> they will accept — at the close — and the document takes the highest.') +
       '</div>',
     pace: () =>
-      '<p class="why">How the bar gets to the close: held there for the whole window, or rising from a lower start so early adoptions come cheap while they are still challengeable. Pacing, not consent — every adoption is recorded against the bar as it stood, so re-shaping the ramp re-rates nothing already decided, which is what makes this card ordinary while the close is constitutional.</p>' +
+      '<p class="why">How the bar gets to the close: held there for the whole window, or rising from a lower start so early adoptions come cheap while they are still challengeable. Pacing, not consent — every adoption is recorded against the bar as it stood, so re-shaping the ramp re-rates nothing already decided, which is why this card is open to proposals (✏️) while the close is constitutional (🏛️).</p>' +
       '<div class="choice" role="radiogroup">' +
       opt(S, 'shape', 'ramp', 'Rising', 'From a lower start when judging opens, up to the close bar.',
         '<span class="setrow2">' + num(S, 'tStart', 'When judging opens', 50, 99, '%') + '</span>', perpetual()) +
