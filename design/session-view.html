@@ -548,6 +548,9 @@
     -webkit-line-clamp: 4; line-clamp: 4;
   }
   .queue button.mosturgent .qwhy { -webkit-line-clamp: 5; line-clamp: 5; }
+  /* the flame drops its rationale only while it is following you — see the
+     teaser in `renderQueue` and the `offclause` test in `layoutQueue` */
+  .qitem.mosturgent.offclause .qwhy { display: none; }
   /* a race quotes both proposals, stacked with a hairline between: 290px will
      not carry two readable columns of prose */
   .qwhy + .qwhy { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
@@ -3268,22 +3271,28 @@
             // magnitude, and the words on every card. It survives as the entry's
             // tooltip, where it costs nothing and answers the reader who wants the
             // number the bar is only showing them.
-            // **The flame carries no rationale** (Ed, 2026-08-17). Every other
-            // entry's teaser is doing a job: it is what makes you decide whether
-            // this is the one to open. 🔥 has already been decided *for* you —
-            // the mark and the hue are what get it your attention, not the
-            // argument inside it — so the teaser there is answering a question
-            // nobody is asking, and the rationale is one click away as it is on
-            // every other card.
+            // **The flame carries no rationale — while it is following you**
+            // (Ed, 2026-08-17, in two passes). Every other entry's teaser is
+            // doing a job: it is what makes you decide whether this is the one to
+            // open. 🔥 has already been decided *for* you — the mark and the hue
+            // are what get it your attention, not the argument inside it — so
+            // while the flame is piled against the band edge, miles from the
+            // clause it belongs to, the teaser is answering a question nobody is
+            // asking.
             //
-            // Ed scoped it to the unselected state, which is where he met it.
-            // Dropping it in both states is the same change plus one judgment:
-            // an entry that *grows* a paragraph when you open its card would be
-            // the rail's only element that changes size on selection, and it
-            // would grow it at the exact moment the document is showing the same
-            // words in full.
-            (top ? '' :
-              teasersFor(g, e).map((t) => '<span class="qwhy">' + esc(t) + '</span>').join(''))) +
+            // But that is a fact about being **pinned**, not about being the
+            // flame. Scroll to its own clause and it is standing in the margin
+            // beside the text it is about, among neighbours that all carry
+            // theirs — *then it is an ordinary 💡* (Ed), and reading as the odd
+            // one out is the opposite of what dropping the teaser was for.
+            //
+            // So the teaser is always here, and `layoutQueue` hides it for the
+            // one case: the flame, with its clause off screen. That test is on
+            // the **anchor's** position rather than on where the entry landed,
+            // which is what keeps it from oscillating — showing a teaser makes
+            // the entry taller, and a rule that read the entry's own position
+            // could hide what it had just shown.
+            teasersFor(g, e).map((t) => '<span class="qwhy">' + esc(t) + '</span>').join('')) +
         '</button></li>';
     }
     queueEl.innerHTML = html;
@@ -3373,6 +3382,13 @@
       if (!a) { el.style.display = 'none'; continue; }
       el.style.display = '';
       const g = SUGGS.find((x) => x.id === el.dataset.q);
+      // Is this entry on screen **in its own right** — that is, would it be here
+      // even if it were not pinned? It would exactly when its clause is inside
+      // the band the rail lays out in. Only the flame reads this (see the teaser
+      // in `renderQueue`), and it is set before `offsetHeight` below, so the
+      // layout measures the height the entry is actually about to have.
+      const ay = a.getBoundingClientRect().top;
+      el.classList.toggle('offclause', ay < BAND_TOP || ay > innerHeight - BAND_BOT);
       const row = { el, want: (a.getBoundingClientRect().top + scrollY) - railTop, h: el.offsetHeight,
         // The ranking is over **judgment leverage**, so an entry that is not
         // asking for a judgment cannot be ranked on it.

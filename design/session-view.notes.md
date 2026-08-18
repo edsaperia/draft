@@ -3442,3 +3442,37 @@ it, because the only locked card in the fixture is also ground-shifted and
 `shifted` is tested first. Either the state is reachable and wants a fixture, or
 it is not and the branch should go; I could not convince myself which, since a
 settled race becomes a sealed record rather than a locked judgment card.
+
+### The flame keeps its rationale at its own clause (2026-08-17)
+
+Ed, refining this morning's cut: *the 🔥 queue-card ought to get its rationale
+when it's on screen in its own right (not because it's pinned) — because then
+it's an ordinary 💡.*
+
+That is the better rule, and it exposes what was wrong with mine. I had read
+*the flame does not need a teaser* as a fact about **the flame**. It is a fact
+about **being pinned**. A pinned entry is on your screen because it followed you
+there, not because you are anywhere near what it is about — and a paragraph
+arguing a case, attached to a clause six thousand pixels away, is answering a
+question nobody asked. Scroll to § Arrears and none of that holds: the entry is
+standing in the margin beside its own text, among neighbours that all carry
+theirs, and an entry that alone had nothing to say would read as the odd one out
+— which is the exact opposite of what dropping the teaser was for.
+
+**The same object is doing two jobs, and the rule belongs to the job rather than
+to the object.** Following you, it is a reminder. Beside its clause, it is a
+margin index entry like every other one.
+
+So the teaser is always in the markup and `layoutQueue` hides it for the one
+case. The measurement that makes it safe: **the test is on the anchor's position,
+not the entry's.** An entry displaced to the band edge is the obvious thing to
+test, and it is a feedback loop — showing the teaser makes the entry taller,
+which can push it off its clause, which would hide the teaser, which shrinks it
+back. Testing whether the *clause* is in the band is a fact about the document
+and the scroll, so it cannot be changed by what the rail does about it. Walked
+across the boundary in 60px steps: one clean transition, no thrash.
+
+The class is set before `offsetHeight` is read, so the layout measures the height
+the entry is about to have rather than the one it is leaving.
+
+**A rule that reads what it is about to change is a rule that can chase itself.**
