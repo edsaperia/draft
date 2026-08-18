@@ -2,9 +2,9 @@
    setup.js — the machinery the two setup surfaces share.
 
    document-creation and founding-ceremony are the same screen seen by two
-   people. The convenor sets what is theirs to set and watches the room answer
+   people. The founder sets what is theirs to set and watches the room answer
    the rest; a member answers what the room was given and reads what the
-   convenor settled. Same document, same tab group at its head, same rail, same
+   founder settled. Same document, same tab group at its head, same rail, same
    cards — only *who may act on which* differs.
 
    So the cards themselves, the tab group, the cable and the read-only and
@@ -112,7 +112,7 @@ window.SETUP = (function () {
   /* ---- the piles ----------------------------------------------------------
      **These are clause-tabs, and they pile like clause-tabs** (Ed, 2026-08-18,
      overruling the flat group of the morning: *I'd like all of these tabs to act
-     like clause-tabs and pile like clause tabs. The convenor's settings sit in
+     like clause-tabs and pile like clause tabs. The founder's settings sit in
      one pile, and members' in the pile below*).
 
      Which is the right call and settles Q316 the other way. The flat group was
@@ -184,7 +184,7 @@ window.SETUP = (function () {
       // its own tab with it, so the tab you click does not move. The
       // membership stays a pile: it holds the people's tasks, not the
       // document's rules. Constitutional paragraphs come first; the
-      // convenor's ✏️-changeable settings follow, because the section is
+      // founder's ✏️-changeable settings follow, because the section is
       // read as a constitution and ends in housekeeping. `g.extra` lets a
       // surface state rules whose tab must live elsewhere (the ceremony's
       // room questions are tasks in the membership pile — one tab, one
@@ -200,10 +200,10 @@ window.SETUP = (function () {
       // task's tab**, because the rule and the question about it are one
       // object standing in one place. ctx.tasksFor lets a surface hang a
       // member's own answer-task under the setting it answers (the
-      // convenor's surface: the setting watches, the answer asks).
+      // founder's surface: the setting watches, the answer asks).
       if (g.sections) {
         // **A decision is a complete sentence describing the constitutional
-        // state, open or decided** (Ed, 2026-08-18: *'Convenor is deciding
+        // state, open or decided** (Ed, 2026-08-18: *'Founder is deciding
         // when the drafting process will end.' … 'The drafting process
         // will end on Thursday at 18:00.' Only use subheadings as needed;
         // they aren't part of the decisions themselves*). No per-decision
@@ -244,7 +244,7 @@ window.SETUP = (function () {
           // keep their compact dress
           g.sections.filter((sec) => !sec.railOnly).map((sec) => '<div class="csec">' +
             '<h2 class="docline lvl2" id="cs-' + sec.key + '">' + esc(sec.title) + '</h2>' +
-            '<p class="csintro">' + sec.text + '</p>' +
+            (sec.text ? '<p class="csintro">' + sec.text + '</p>' : '') +
             (sec.who ? '<div class="pilewho">' + sec.who() + '</div>' : '') +
             (sec.body ? sec.body(H) : sec.cards.map(withTasks).join('')) +
             (sec.block ? sec.block() : '') + '</div>').join('') +
@@ -258,7 +258,7 @@ window.SETUP = (function () {
       const holds = g.cards.some((c) => ctx.open === c.k);
       if (holds) return '<div class="setrow open" id="pile-' + g.key + '">' + cardFor(g) + '</div>';
       const left = g.cards.filter((c) => ctx.mustAct(c)).length;
-      // **The heading is the people** (Ed, 2026-08-18: *"Convenor" heading gets a
+      // **The heading is the people** (Ed, 2026-08-18: *"Founder" heading gets a
       // name and picture under it as soon as they exist; "Membership" heading
       // gets the roster's names and pictures under it as those appear*). Which
       // turns the band at the head of the document from a list of settings into
@@ -351,12 +351,18 @@ window.SETUP = (function () {
     // **The kind line left the card heads** (Ed, 2026-08-18: *this
     // information is conveyed through the controls on the card*): a
     // constitutional change commits with the 🏛️ hold, and a reserved
-    // change the membership passes ends at the convenor's 👑 question —
+    // change the membership passes ends at the founder's 👑 question —
     // so an eyebrow restating either was chrome.
     return '<div class="sugg setupcard quick-open" role="tabpanel" data-setupcard="' + c.k + '">' +
       '<div class="clausehead">' +
       '<div class="headclause">' + stripHtml(siblings || [c], ctx) +
-      '<h2 class="rtext">' + esc(c.t) + '</h2>' +
+      // **The head is the rule, not the title**, where a surface says so
+      // (Ed, 2026-08-18, the Applications example): the card's first line
+      // is the same sentence that stood on the page, exactly where it was
+      // — the decision-card gesture, with a rule for a clause.
+      (ctx.headFor && ctx.headFor(c)
+        ? '<div class="rtext">' + ctx.headFor(c) + '</div>'
+        : '<h2 class="rtext">' + esc(c.t) + '</h2>') +
       // **The clause a setting card opens from can be a thing, not a line**
       // (Ed, 2026-08-18): the membership card keeps the membership list at
       // its head, because the list IS the clause — the current text of the
@@ -369,7 +375,7 @@ window.SETUP = (function () {
 
   /* ---- the bodies that are the same on both surfaces ----------------------- */
 
-  /* What a **member** sees when they open one of the convenor's cards, and what
+  /* What a **member** sees when they open one of the founder's cards, and what
      anybody sees once a setting is closed: the value, and who it came from.
      Read-only is not the same as hidden — the whole point of the tab group is
      that the constitution is legible to everyone it binds. */
@@ -379,7 +385,7 @@ window.SETUP = (function () {
     // three lines under the first is the surest sign a body is not reading as
     // part of its own card. Caught 2026-08-18, on the one card whose title is a
     // question — which asked itself twice.
-    return '<div class="lockline">' + TICK + '<span>' + esc(c.setBy || 'Set by the convenor when the document was made') +
+    return '<div class="lockline">' + TICK + '<span>' + esc(c.setBy || 'Set by the founder when the document was made') +
       // what changing it takes is the kind, said plainly — “fixed for the
       // life of the document” predated motions and was simply false
       (c.kind === 'constitutional'
@@ -390,7 +396,7 @@ window.SETUP = (function () {
       (c.readNote ? '<p class="setnote">' + c.readNote + '</p>' : '');
   }
 
-  /* What the **convenor** sees when they open a card they handed to the room —
+  /* What the **founder** sees when they open a card they handed to the room —
      and what a member sees on one they have already answered. While it runs it
      can say only how many have answered: any of the values, or a running
      maximum, would let the room read itself before it had finished, which is
@@ -449,7 +455,7 @@ window.SETUP = (function () {
      roster, the presence row, beside your own wallet — where authorship is
      whether a name is attached to a **proposal**, which is sealed by default
      (SPEC §9.0c). Both are written by `setup.js` because both are the same
-     question for a convenor and for a member. */
+     question for a founder and for a member. */
   const nameBody = (me, opts) =>
     '<p class="why">What other people call you here. It is not authorship: who proposed what is settled by the disclosure rule, and under most of its settings your name never appears beside a proposal at all — a document showing fourteen named people and not one named candidate is the usual case.</p>' +
     '<div class="idrow">' + avHtml(me, 'big') +
@@ -457,7 +463,7 @@ window.SETUP = (function () {
     '<input id="myname" data-txt="myname" value="' + esc(me.n || '') + '" placeholder="Your name"></span></div>' +
     '<p class="setnote">Change it whenever you like; it is yours and it binds nobody.' +
     ((opts && opts.optional)
-      ? ' You are not a member, so this is <b>optional</b> — an anonymous convenor is a perfectly normal thing; leave it blank and the constitution simply shows no name.'
+      ? ' You are not a member, so this is <b>optional</b> — an anonymous founder is a perfectly normal thing; leave it blank and the constitution simply shows no name.'
       : '') + '</p>';
 
   /* **It is an uploader** (Ed, 2026-08-18). The card had offered a ground for
@@ -580,10 +586,10 @@ window.SETUP = (function () {
       ' To carry, it needs ' + esc(need) + '.' +
       // **Reserved is assent, not silence** (Ed, 2026-08-18): the room may
       // pass a change to a reserved setting; what reservation means is that
-      // it then goes to the convenor as a 👑 question, theirs to accept or
+      // it then goes to the founder as a 👑 question, theirs to accept or
       // reject.
       (kind === 'ordinary' && ctx.reserved && ctx.reserved(c)
-        ? ' It is <b>reserved</b>: carrying does not change it by itself — it goes to the convenor as a <b>👑 question</b>, theirs to accept or reject.'
+        ? ' It is <b>reserved</b>: carrying does not change it by itself — it goes to the founder as a <b>👑 question</b>, theirs to accept or reject.'
         : '') + '</div>' +
       lane(ctx.value(c), 'stands', 'As it stands') +
       lane(m.to, 'proposed', 'As proposed') +
@@ -633,7 +639,7 @@ window.SETUP = (function () {
       ? '<b>Free — and one at a time.</b> You are asking the room to be asked again about a rule that binds you, and consent should not have a price. What keeps it from being constant is a limit, not a charge: each member may have <b>one 🏛️ out at once</b>, back in hand the moment it settles or is withdrawn. Putting it is a <b>full ten-second hold</b> — long enough to mean it.'
       : '<b>Costs one ✏️.</b> A motion is a proposal, so it is priced like every other proposal, and you get it back if you withdraw it.') + '</p>'
     + (routeFor(c, draft.to) === 'ordinary' && ctx.reserved && ctx.reserved(c)
-      ? '<p class="setnote">This setting is <b>reserved</b>: carrying at the threshold does not change it by itself — it goes to the convenor as a <b>👑 question</b>, theirs to accept or reject.</p>'
+      ? '<p class="setnote">This setting is <b>reserved</b>: carrying at the threshold does not change it by itself — it goes to the founder as a <b>👑 question</b>, theirs to accept or reject.</p>'
       : '')
     + '<div class="propblock"><div class="eyebrow fieldlab">As it stands</div>' +
     '<div class="rtext">' + ctx.value(c) + '</div></div>' +
@@ -651,13 +657,13 @@ window.SETUP = (function () {
 
   /* ---- the consent controls, shared -----------------------------------------
      Moved out of founding-ceremony.html when Q344 closed (Ed, 2026-08-18): a
-     drafter-convenor answers the questions they delegated on their own surface,
+     drafter-founder answers the questions they delegated on their own surface,
      so the controls a member answers with are now vocabulary both surfaces
      speak — and two copies of a consent slider would drift like everything
-     else. `A` is the answers object (the ceremony passes its S, the convenor
+     else. `A` is the answers object (the ceremony passes its S, the founder
      surface passes S.myAns), so one control serves both without either surface
      leaking its state shape into the other. Ladder rungs write `data-ans`
-     rather than opt()'s `data-set`, because on the convenor surface data-set
+     rather than opt()'s `data-set`, because on the founder surface data-set
      already means "set the delegation", and one attribute must not mean two
      things on one page. */
   const slider = (A, key, min, max, fmt, mean, step) => {
@@ -700,14 +706,14 @@ window.SETUP = (function () {
         ? 'Nothing moves unless every member has weighed in. A charter that cannot change without all of them is a perfectly reasonable thing to want.'
         : asN(v) <= Math.ceil(E / 4) ? 'A small part of the room can carry a change while the rest are elsewhere.'
         : 'Rather more than half the room has to have looked at a question before it can move.');
-      return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in before a question can change the charter — short of that it waits; silence is never a vote. Asked as a <b>' + (share ? 'share of the membership' : 'count') + '</b>: the wording is the convenor’s, the number is the room’s.</p>' +
+      return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in before a question can change the charter — short of that it waits; silence is never a vote. Asked as a <b>' + (share ? 'share of the membership' : 'count') + '</b>: the wording is the founder’s, the number is the room’s.</p>' +
       (share
         ? slider(A, 'quorum', 5, 100, (v) => v + '% — ' + asN(v) + ' of ' + E, mean, 5)
         : slider(A, 'quorum', 1, E, (v) => v + ' of ' + E, mean)) +
       '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> given, so it is never lower than yours.</p>';
     },
     bar: (A) =>
-      '<p class="why">How sure the room must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. A confidence, not a vote share. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the convenor’s pacing.</p>' +
+      '<p class="why">How sure the room must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. A confidence, not a vote share. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the founder’s pacing.</p>' +
       slider(A, 'bar', 50, 95, (v) => v + '%', (v) =>
         v >= 85 ? 'Only near-agreement changes anything. Expect the charter to move slowly and keep most of what it started with.'
         : v <= 60 ? 'A modest preference is enough. The charter will move quickly, and reverse itself more often.'

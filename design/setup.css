@@ -25,7 +25,7 @@
 
    **They are clause-tabs, and they pile like clause-tabs** (Ed, 2026-08-18,
    overruling the flat group of the morning). Two piles, one per holder — the
-   convenor's settings above, the members' below — standing in the
+   founder's settings above, the members' below — standing in the
    `chip-gutter` exactly where each card's strip will be, so a pile expands into
    its strip without the tab you clicked moving. Everything the gutter already
    knows applies unchanged: the front tab is what most wants you, the slivers
@@ -50,7 +50,7 @@
     margin: 0 auto var(--s4); padding: 0 var(--s5);
   }
   .setrow .pilelab { display: flex; flex-direction: column; gap: 2px; padding-top: 3px; }
-  /* **Convenor and Membership are document headings** (Ed, 2026-08-18: *the
+  /* **Founder and Membership are document headings** (Ed, 2026-08-18: *the
      same size as “Part I — The Club”*). They had been eyebrows, which is the
      label treatment for naming a region *inside* a card — and these are not
      inside anything: they are the first two headings of the document, above
@@ -274,7 +274,7 @@
   .rperson .em { font-size: var(--t-cap); color: var(--muted); }
   .chip { font-size: var(--t-cap); border: 1px solid var(--border); border-radius: 999px;
     padding: 2px var(--s2); color: var(--muted); background: var(--bg); cursor: pointer; font-family: inherit; }
-  .chip.convenor { border-color: var(--primary); color: var(--primary-emphasis);
+  .chip.founder { border-color: var(--primary); color: var(--primary-emphasis);
     background: var(--primary-subtle); cursor: default; }
   .chip.pending { border-style: dashed; }
   /* the person a motion would remove */
@@ -320,7 +320,7 @@
   .idrow input { width: 100%; }
 
   /* **The pile headings are the people** (Ed, 2026-08-18). A row of faces under
-     each heading, arriving as the people do — the convenor under Convenor, the
+     each heading, arriving as the people do — the founder under Founder, the
      roster under Membership. It is what turns the band at the head of the
      document from a list of settings into the room itself, and it costs nothing
      because both piles were already named after a holder. */
@@ -360,7 +360,7 @@
   .setrow.open { position: static; padding: 0; max-width: none; margin: 0; min-height: 0 !important; }
 
   /* **The document's title, at the top of the document** (Ed, 2026-08-18),
-     above Convenor. It had lived only in the sticky topbar, which is chrome —
+     above Founder. It had lived only in the sticky topbar, which is chrome —
      so the charter itself began with a pile of glyphs and no name on it, and
      the first thing any reader looks for was the one thing not in the column
      they were reading. It is text and not a control: the 🏷️ card is where a
@@ -499,3 +499,14 @@ button.cline:hover b { text-decoration: underline; }
    the first block of the document text below */
 .cpara.textanchor { height: 0; min-height: 0; margin: 0; }
 .cpara.textanchor .chipcol { top: 10px; }
+
+/* the composer's rationale wears your avatar (Ed, 2026-08-18) — the same
+   speaker slot the editing card gives a rationale, with you as the speaker */
+.composeWhy { display: flex; gap: 10px; align-items: flex-start; margin-top: var(--s3); }
+.composeWhy .av { width: 26px; height: 26px; font-size: 9px; flex: none; margin-top: 8px; }
+.composeWhy .lanebox { flex: 1; }
+
+/* the rule at a composer's head sits exactly on the text axis it stood on
+   (card padding minus the 14px overhang) — the strip is anchored to the
+   headclause and must not move with it, so the compensation is on the text */
+.constsec .cpara.open .setupcard .clausehead .rtext { margin-left: calc(14px - var(--s5)); }

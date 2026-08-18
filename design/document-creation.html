@@ -21,7 +21,7 @@
       modals they open cards in the document at the top, above the text, pushing
       it down like decision-cards do a clause. They have cables and tabs.*
    5. *I'd like all of these tabs to act like clause-tabs and pile like clause
-      tabs. The convenor's settings sit in one pile, and members' in the
+      tabs. The founder's settings sit in one pile, and members' in the
       pile below. … Go through every decision each role needs to make and turn it
       into a queue-card. Break them down as much as you can.*
 
@@ -31,7 +31,7 @@
    everything else, and the compound card, which was a form in card's clothing.
    **One decision, one card**, and the test is whether somebody could answer it
    differently and on its own: a picture and a name are two questions, and so are
-   a membership and whether the convenor is in it. What is *not* split is a
+   a membership and whether the founder is in it. What is *not* split is a
    parameter and its own value — *rising, 55% → 78%* is one thought, and cutting
    it in half would be splitting a sentence rather than a decision. The same test
    cuts the other way twice, on 2026-08-18: *when it ends* swallowed *whether it
@@ -40,7 +40,7 @@
    was offering a decision nobody has. Then ✒️ split the other way on Ed’s Q341 rethink — the close bar is consent where the ramp is pacing, two kinds — so seventeen became eighteen — and 💤 *Do memberships lapse?* (Ed, closing Q345) made it nineteen.
 
    What is left in this file is its own fixture and the bodies of the cards a
-   convenor fills in. The piles, the strip, the cable, the rail entry, the card
+   founder fills in. The piles, the strip, the cable, the rail entry, the card
    shell, the read-only and watching bodies and the identity cards are in
    `setup.js`, because the founding ceremony is this same screen seen by
    somebody else.
@@ -91,7 +91,7 @@
     <div class="stats">
       <span id="stat-stage">reading only</span>
       <span id="stat-who">1 in the room</span>
-      <button class="me" id="mebtn" title="You, and the convenor of this document."></button>
+      <button class="me" id="mebtn" title="You, and the founder of this document."></button>
     </div>
   </div>
 </header>
@@ -135,10 +135,10 @@
     lapse: 'roster', lapseDays: 90,
     authorship: 'roster', signing: 'roster', judgments: 'roster',
     authorshipSet: 'anonymous', signingSet: 'nobody', judgmentsSet: 'never',
-    grantBy: 'convenor', grant: 4,
-    dripBy: 'convenor', drip: 1, dripPer: 10, cap: 8,
+    grantBy: 'founder', grant: 4,
+    dripBy: 'founder', drip: 1, dripPer: 10, cap: 8,
     chamber: 'roster', auditor: 'roster', auditorBudget: 6,
-    roster: [{ n: '', e: '', role: 'member', convenor: true, in: true }],
+    roster: [{ n: '', e: '', role: 'member', founder: true, in: true }],
     // **Confirmed, not merely defaulted** (Ed, 2026-08-17). A default nobody
     // read is not a decision, and these are the decisions that cannot be changed
     // once people are drafting. So a card carries its value from the first
@@ -150,7 +150,7 @@
   const me = () => ({ n: S.myname, pic: S.mypic });
 
   // Everybody on the roster is a member; the only person who might not be is
-  // the convenor, who may be the clerk instead. There is no observer here —
+  // the founder, who may be the clerk instead. There is no observer here —
   // see the chamber card.
   const members = () => S.roster.filter((p) => p.role !== 'clerk');
   // **Membership begins at first arrival, not at invitation** (Ed, 2026-08-18,
@@ -159,7 +159,7 @@
   // judging for everybody. E is the arrived.
   const arrived = () => members().filter((m) => m.in).length;
   const E = () => Math.max(arrived(), 1);
-  const meRow = () => S.roster.find((p) => p.convenor);
+  const meRow = () => S.roster.find((p) => p.founder);
   const iDraft = () => { const m = meRow(); return !!m && m.role !== 'clerk'; };
   const quorumCount = () => (S.quorumForm === 'share'
     ? Math.max(1, Math.round(E() * S.quorumPct / 100)) : Math.min(S.quorumN, E()));
@@ -239,17 +239,17 @@
   // participant — etc*). Both of his examples are the same fault: two questions
   // of *different kinds* bundled into one card because they happened to be asked
   // at the same moment. A picture and a name; a membership and whether the
-  // convenor is in it; how many ✏️s you start with and how fast they come back.
+  // founder is in it; how many ✏️s you start with and how fast they come back.
   //
   // `key` is the state field that carries delegation, and it is what decides
   // which **pile** a card stands in: taking a setting back moves its tab from
-  // the members' pile to the convenor's, in front of you.
+  // the members' pile to the founder's, in front of you.
   const DELEGABLE = ['ending', 'barBy', 'quorumBy', 'authorship', 'signing',
     'judgments', 'grantBy', 'dripBy', 'chamber', 'auditor', 'lapse'];
   const delegated = (key) => DELEGABLE.includes(key) && S[key] === 'roster';
 
   // **The gates are cards** (Ed, 330b) — see the ceremony surface for the
-  // reasoning. Here they wait on the convenor's own work rather than on a
+  // reasoning. Here they wait on the founder's own work rather than on a
   // room, and they stand in the members' pile because what they gate is what
   // the members will be able to do.
   const GATES = [
@@ -280,7 +280,7 @@
     // Pre-filled with a slug generated from the title and checked against the
     // ones that already exist; confirming it is what SAVES the document.
     // **The address is verified before anything is saved** (Ed, 2026-08-18:
-    // *we should do this before saving anything, just in case a convenor
+    // *we should do this before saving anything, just in case a founder
     // loses their ability to log in*). There are no passwords — getting back
     // in is a magic link — so the first mail is the proof the address works,
     // sent while nothing yet exists and a typo still costs nothing. The mail
@@ -289,7 +289,7 @@
       ready: () => S.emailVerified, changeable: true },
     { k: 'slug', g: '🔗', t: 'Link', kind: 'ordinary', dep: ['myemail'], ready: () => SLUG_OK.test(S.slug), changeable: true },
     // — the rest, together once the document exists ----------------------
-    // 🎩 folded into 🪪 (Ed, 2026-08-18): whether the convenor is a
+    // 🎩 folded into 🪪 (Ed, 2026-08-18): whether the founder is a
     // member is just whether they invite themselves, asked as their own
     // pre-checked row in the membership card.
     { k: 'roster', g: '🪪', t: 'Membership', kind: 'constitutional', dep: ['policy'], ready: () => members().length >= 1, changeable: true },
@@ -300,7 +300,7 @@
     // now, and how anybody gets in later, can be answered differently and
     // on their own.
     { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', dep: ['slug'], changeable: true },
-    // optional for a clerk (Ed, 2026-08-18): an anonymous convenor is a
+    // optional for a clerk (Ed, 2026-08-18): an anonymous founder is a
     // perfectly ordinary thing — they can simply not set a name or picture
     { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you', dep: ['slug'], ready: () => (iDraft() ? !!S.myname.trim() : true), changeable: true },
     { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you', dep: ['slug'], changeable: true },
@@ -341,7 +341,7 @@
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
     { k: 'pace', g: '📈', t: 'How Does the Bar Get There?', kind: 'ordinary', dep: ['ending'], changeable: true },
     // The number is the room's; the **form** — count or share — is the
-    // convenor's wording of the question (Ed, 2026-08-18: *quorum can either be
+    // founder's wording of the question (Ed, 2026-08-18: *quorum can either be
     // a fixed number or a proportion of membership size*; §9.0a).
     { k: 'quorum', g: '👥', t: 'Quorum', kind: 'constitutional', gate: 'judge', key: 'quorumBy', dep: ['roster'], p: 0.79,
       rule: 'Each member states the <b>lowest quorum</b> they will accept and the document takes the highest.',
@@ -408,7 +408,7 @@
   // **Your own answer is a separate card in the membership pile** (Ed,
   // 2026-08-18, revising the both-halves-on-one-card build of the same
   // morning): delegating is one act and answering is another, done later and
-  // wearing a different hat — so the setting card stays in the convenor's
+  // wearing a different hat — so the setting card stays in the founder's
   // pile with the delegation radio and the watching half, and handing a
   // question to the room makes a question card **appear** in the membership
   // pile, which is the same card a member gets. Nothing jumps piles any
@@ -423,9 +423,9 @@
     : S.seen.has(c.k) && ready(c));
   const mustAct = (c) => (c.isGate ? (c.open() && !S.okd.has(c.k)) : !settled(c));
   // How far the room has got, against the roster **as it stands** — held as a
-  // proportion because a convenor's roster starts at one person and grows.
+  // proportion because a founder's roster starts at one person and grows.
   // The fixture's other members answer in proportion, but never the
-  // convenor's own share: a question cannot read as resolved while the one
+  // founder's own share: a question cannot read as resolved while the one
   // answer the surface can actually collect is still outstanding.
   const resolveCounts = () => CARDS.forEach((c) => { if (c.p != null) {
     const mine = isRoom(c) && iDraft();
@@ -453,8 +453,9 @@
   // ask, the grouping and the prose mine to draft — each line says what
   // the section governs, in the surface's own words.
   const SEC = [
+    // no intro line (Ed, 2026-08-18) — the sentences are the section
     { key: 'members', title: 'Membership',
-      text: 'Who is in the room, how anybody joins or leaves it, and how each member appears in it.',
+      text: '',
       keys: ['roster', 'policy', 'lapse', 'myemail', 'myname', 'mypic'],
       // **Members and Applications are subsections** (Ed, 2026-08-18):
       // Members IS the list — 🪪, the tab for invitations, stands beside
@@ -463,26 +464,26 @@
       // arrives with the first applicant, after the start).
       body: (h) => {
         const my = ['myname', 'mypic'].map(card).filter((c) => c && visible(c));
-        const others = S.roster.filter((p) => !p.convenor);
+        const others = S.roster.filter((p) => !p.founder);
         const list = '<div class="memlist">' +
           others.map((p) => '<div class="memrow">' + avHtml(p) +
             '<span class="mn">' + esc(p.n || p.e || '—') +
             (p.in ? '' : ' <span class="chip pending">invited</span>') + '</span></div>').join('') +
           '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
-          '<span class="mn">' + esc(S.myname || 'Not named yet') + ' <span class="chip convenor">convenor</span> <span class="chip">you</span>' +
+          '<span class="mn">' + esc(S.myname || 'Not named yet') + ' <span class="chip founder">founder</span> <span class="chip">you</span>' +
           (iDraft() ? '' : ' <span class="chip">clerk</span>') + '</span></div></div>';
         const openId = my.find((c) => S.open === c.k);
-        const rest = ['lapse', 'myemail']
+        const rest = ['myemail']
           .map(card).filter((c) => c && visible(c));
-        return '<h2 class="docline lvl3">Members</h2>' +
+        // policy first, lapse under it, then the Members list (Ed)
+        return (visible(card('policy')) ? h.para(card('policy')) : '') +
+          (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
+          '<h2 class="docline lvl3">Members</h2>' +
           (S.open === 'roster' ? h.para(card('roster'))
             : visible(card('roster'))
             ? '<div class="cpara"><span class="chipcol">' + h.chip(card('roster')) + '</span>' + list + '</div>'
             : '') +
           (openId ? h.paraWith(openId, my) : '') +
-          (visible(card('policy'))
-            ? '<h2 class="docline lvl3">Applications</h2>' + h.para(card('policy'))
-            : '') +
           rest.map((c) => h.para(c) + h.tasks(c)).join('');
       } },
     // the gates lead the Proposals section (Ed, 2026-08-18)
@@ -503,7 +504,7 @@
   const secLive = () => SEC.map((s2) => ({ ...s2,
     cards: s2.keys.map(card).filter((c) => c && visible(c)) }))
     .filter((s2) => s2.cards.length);
-  // a delegated setting's paragraph is followed by the convenor's own
+  // a delegated setting's paragraph is followed by the founder's own
   // answer-task, the same card a member gets, standing where the rule is
   const tasksFor = (c) => (c.key && ANSWER[c.k]
     ? [card('ans-' + c.k)].filter((x) => x && visible(x)) : []);
@@ -540,7 +541,7 @@
       (iDraft() ? '' : ' · you are the clerk'),
     policy: () => ({ invite: 'Invitation only', proposed: 'Applications by proposal',
       apply: 'Anyone may apply', open: 'Open' }[S.joinBy]) +
-      (S.rosterBy === 'convenor' ? ' · 👑 reserved' : ''),
+      (S.rosterBy === 'founder' ? ' · 👑 reserved' : ''),
     ending: () => (perpetual() ? 'Never — it runs until it is frozen'
       : new Date(S.endsAt).toLocaleString(undefined,
         { weekday: 'short', hour: '2-digit', minute: '2-digit' })),
@@ -603,7 +604,7 @@
 
   // the membership list, as the 🪪 card's clause — the current text of the
   // rule, with the ✕ that edits it, replacing the copy that lived in the body
-  // **The hat is a row in this list** (Ed, 2026-08-18: *does the convenor
+  // **The hat is a row in this list** (Ed, 2026-08-18: *does the founder
   // invite themselves? … make it a default, pre-checked*). Your own row is
   // first and ticked; unticking it makes you the clerk — administering
   // without writing — and you did not have to be the first member you
@@ -612,14 +613,14 @@
   const rosterClause = () =>
     '<div class="roster clauselist">' + S.roster.map((p, i) =>
       '<div class="rperson">' + avHtml(p) +
-      '<span><span class="nm">' + esc(p.n || 'Not named yet') + (p.convenor ? ' <span class="chip convenor">convenor</span>' : '') +
+      '<span><span class="nm">' + esc(p.n || 'Not named yet') + (p.founder ? ' <span class="chip founder">founder</span>' : '') +
       '</span><br><span class="em">' + esc(p.e || '—') + '</span></span>' +
-      (p.convenor
+      (p.founder
         ? '<button class="lanepick mepick" aria-pressed="' + iDraft() + '" data-metoggle="1">' +
           '<span class="dot"></span><span>' + (iDraft() ? 'Member — drafting too' : 'Clerk — not drafting') + '</span></button>'
         : '<span class="chip' + (p.in ? '' : ' pending') + '">' +
           (p.role === 'clerk' ? 'clerk' : 'member') + (p.in ? '' : ' · invited') + '</span>') +
-      (p.convenor ? '<span class="xdrop"> </span>' : '<button class="xdrop" data-drop="' + i + '">✕</button>') +
+      (p.founder ? '<span class="xdrop"> </span>' : '<button class="xdrop" data-drop="' + i + '">✕</button>') +
       '</div>').join('') + '</div>';
 
   // **The constitution, stated** (Ed, 2026-08-18): who convened it, when it
@@ -631,7 +632,7 @@
       '<span class="cg">' + g + '</span><span><b>' + v + '</b></span>' +
       '</' + (k ? 'button' : 'span') + '>';
     return '<div class="constlist">' +
-      line('🎩', 'Convenor', esc(S.myname || (iDraft() ? 'Unnamed' : 'Anonymous')) + (iDraft() ? '' : ' · clerk') + (S.rosterBy === 'convenor' ? ' · 👑' : ' · 🏴')) +
+      line('🎩', 'Founder', esc(S.myname || (iDraft() ? 'Unnamed' : 'Anonymous')) + (iDraft() ? '' : ' · clerk') + (S.rosterBy === 'founder' ? ' · 👑' : ' · 🏴')) +
       line('⏱️', 'Constituted', canJudge() ? 'constituted — judging is open'
         : 'not yet constituted — it happens when judging opens') +
       // the settings themselves are the section's paragraphs now (Ed,
@@ -656,7 +657,7 @@
 
   // **The constitution states itself in sentences** (Ed, 2026-08-18): each
   // decision has a what-phrase for its open states and a declarative
-  // sentence once decided, all in the convenor's own frame.
+  // sentence once decided, all in the founder's own frame.
   const WHAT = {
     ending: 'when the drafting process will end',
     quorum: 'how many members must weigh in before a question can carry',
@@ -708,7 +709,7 @@
       proposed: 'Anyone may apply, but an application must be proposed by a member.',
       apply: 'Anyone may apply to join.',
       open: 'Anyone with the link joins on arrival.' })[S.joinBy] +
-      (S.rosterBy === 'convenor' ? ' The membership is reserved — this document has a 👑.' : ''),
+      (S.rosterBy === 'founder' ? ' The membership is reserved — this document has a 👑.' : ''),
     slug: () => 'The document lives at docs.vote/' + S.slug + '.',
     text: () => { const n = [...prose.children].filter((b) => b.textContent.trim()).length;
       return n ? 'The document starts from ' + n + ' blocks of text.'
@@ -716,28 +717,28 @@
   };
   const decisionLine = (c) => {
     if (c.ansFor) return answered(c)
-      ? 'The Convenor has answered as a member.'
-      : 'The Convenor has not yet answered as a member.';
+      ? 'The Founder has answered as a member.'
+      : 'The Founder has not yet answered as a member.';
     if (c.k === 'canpropose') { const done = LIVE().some(owesAnswer) ? 0 : 1;
       return canPropose() && done
       ? 'Members may propose as soon as they arrive.'
-      : 'Members may begin proposing when the starting text has been decided and they have answered the questions the Convenor delegated — ' +
+      : 'Members may begin proposing when the starting text has been decided and they have answered the questions the Founder delegated — ' +
         done + ' of ' + E() + ' have answered everything.'; }
     if (c.k === 'canjudge') return canJudge()
       ? 'Judging on proposals is open.'
       : 'Members may begin judging proposals when the whole constitution has been decided.';
-    if (c.k === 'myemail') return S.emailVerified ? 'The Convenor’s address is verified.'
-      : S.emailSent ? 'The Convenor’s address is awaiting verification.'
-      : 'The Convenor’s address is not yet given.';
+    if (c.k === 'myemail') return S.emailVerified ? 'The Founder’s address is verified.'
+      : S.emailSent ? 'The Founder’s address is awaiting verification.'
+      : 'The Founder’s address is not yet given.';
     if (c.kind === 'personal') return summary(c);
     if (isRoom(c)) {
       return (c.in || 0) >= E() && E() > 0
         ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c))
-        : 'The Convenor has delegated to members to decide ' + (WHAT[c.k] || 'this') + ' — ' +
+        : 'The Founder has delegated to members to decide ' + (WHAT[c.k] || 'this') + ' — ' +
           Math.min(c.in || 0, E()) + ' of ' + E() + ' have answered.';
     }
     return settled(c) ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c))
-      : 'The Convenor is deciding ' + (WHAT[c.k] || 'this') + '.';
+      : 'The Founder is deciding ' + (WHAT[c.k] || 'this') + '.';
   };
 
   const ctx = {
@@ -749,7 +750,7 @@
   // ---- the rail ----------------------------------------------------------
   // Grouped by pile and in pile order, so the two columns agree and nothing
   // jumps when you confirm something (Q320). Your own pile first: on this
-  // screen that is the convenor's, on the ceremony it is the members'.
+  // screen that is the founder's, on the ceremony it is the members'.
   function renderRail() {
     const gs = groups();
     rail.innerHTML =
@@ -779,13 +780,13 @@
     }
   }
 
-  // ---- the bodies a convenor fills in ------------------------------------
+  // ---- the bodies a founder fills in ------------------------------------
   // **Constitutional settings default to the room; ordinary ones default to
-  // you** (Ed, 2026-08-18, agreeing the proposal rate back to the convenor). One rule
+  // you** (Ed, 2026-08-18, agreeing the proposal rate back to the founder). One rule
   // where there had been a rule and three exceptions, and the ordinary /
   // constitutional cut is what explains it: an ordinary setting can be taken
   // back by the room at any time with a motion at the bar, so defaulting it to
-  // the convenor costs them nothing. A constitutional one cannot — changing it
+  // the founder costs them nothing. A constitutional one cannot — changing it
   // needs everybody — so it has to be theirs from the start or it is not
   // really theirs at all.
   const theyDecide = (key, note) => opt(S, key, 'roster', 'The members decide',
@@ -833,9 +834,9 @@
         '<p class="setnote">Yours alone — it appears nowhere in the document, and it is not your name: who you are in the room is the ✋ card, later.</p>'),
     myname: () => nameBody(me(), { optional: !iDraft() }),
     mypic: () => pictureBody(me()),
-    // **Whether the convenor is in it is its own question** (Ed, 2026-08-18).
+    // **Whether the founder is in it is its own question** (Ed, 2026-08-18).
     // It had been the top half of the roster card, which made a decision about
-    // one person a preamble to a list of everybody — and the convenor is a hat
+    // one person a preamble to a list of everybody — and the founder is a hat
     // worn over a role rather than a role itself (SPEC §9.0a), so the hat and
     // the roster are two things.
     roster: () =>
@@ -854,16 +855,16 @@
     policy: () =>
       '<p class="why">How people become members <b>after the start</b>. The register is who is in; this is the door.</p>' +
       // **Who holds it** (Ed, 2026-08-18): delegated — the members' — by
-      // default, like every constitutional setting. A convenor may **reserve**
+      // default, like every constitutional setting. A founder may **reserve**
       // it instead (reserved is the word for not-delegated, Ed), and a
-      // document with a reserved membership is a 👑: the convenor keeps
+      // document with a reserved membership is a 👑: the founder keeps
       // unilateral invite-and-remove past the start. What keeps a crown from
       // being immortal is the lapse rule: it applies to the crown as to any
       // member, and a lapsed crown passes to the members.
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Who holds it</div>' +
       '<div class="choice" role="radiogroup" aria-label="Who holds the membership">' +
-      opt(S, 'rosterBy', 'roster', 'The members', 'After the start, joining and leaving are the members’ to decide — invitations by everyone’s consent, applications at the bar. You would be a 🏴: a convenor whose membership is the members’.') +
-      opt(S, 'rosterBy', 'convenor', 'Reserved — I hold it', 'You would be a 👑: the convenor of a document that reserves its membership, keeping invite-and-remove for its life. A crown lapses like a member — go inactive past the lapse rule and the membership becomes the members’.') +
+      opt(S, 'rosterBy', 'roster', 'The members', 'After the start, joining and leaving are the members’ to decide — invitations by everyone’s consent, applications at the bar. You would be a 🏴: a founder whose membership is the members’.') +
+      opt(S, 'rosterBy', 'founder', 'Reserved — I hold it', 'You would be a 👑: the founder of a document that reserves its membership, keeping invite-and-remove for its life. A crown lapses like a member — go inactive past the lapse rule and the membership becomes the members’.') +
       '</div>' +
       // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
       // the gate the Apply card hangs off. An application becomes an
@@ -887,7 +888,7 @@
       '<div class="unlocks">Part of the constitution — judging waits on this and the rest of it.</div>' +
       '<p class="why">How sure the room has to be that a change beats the current text before it is <b>permanent</b> — the bar at the close. Never a vote share, a confidence. Everything before the close can still be challenged, so this one number covers the whole way there; how the bar climbs is pacing, on the next card.</p>' +
       '<div class="choice" role="radiogroup">' +
-      opt(S, 'barBy', 'convenor', 'I set it', '',
+      opt(S, 'barBy', 'founder', 'I set it', '',
         '<span class="setrow2">' + num(S, 'tClose', 'At the close', 50, 99, '%') + '</span>') +
       theyDecide('barBy', 'Each states the <b>lowest bar</b> they will accept — at the close — and the document takes the highest.') +
       '</div>',
@@ -903,7 +904,7 @@
       '<p class="why">How many distinct members must weigh in before a question can be adopted. A question short of quorum simply waits — silence is never counted as a vote.</p>' +
       // **The form is the wording, the number is the decision** (§9.0a): count
       // or share is how the question tracks a changing membership, and it is
-      // the convenor's even when the number is the room's.
+      // the founder's even when the number is the room's.
       '<div class="eyebrow fieldlab">Asked as</div>' +
       '<div class="choice" role="radiogroup" aria-label="Form">' +
       opt(S, 'quorumForm', 'share', 'A share of the membership', 'Suits a document with a window: the number tracks the membership as it changes.') +
@@ -911,7 +912,7 @@
       '</div>' +
       '<div class="eyebrow fieldlab" style="margin-top:var(--s4)">The number</div>' +
       '<div class="choice" role="radiogroup" aria-label="Number">' +
-      opt(S, 'quorumBy', 'convenor', 'I set it', '',
+      opt(S, 'quorumBy', 'founder', 'I set it', '',
         '<span class="setrow2">' + (S.quorumForm === 'share'
           ? num(S, 'quorumPct', 'Share', 1, 100, '% — ' + quorumCount() + ' of ' + E() + ' today')
           : num(S, 'quorumN', 'Members', 1, 40, 'of ' + E())) + '</span>') +
@@ -947,14 +948,14 @@
       '<p class="why">How many ✏️s everybody holds on the first day. Proposing costs one, and members see the number in their wallets from the first minute — so a document meant to move quickly and one meant to be hard to change want different answers. A proposal also stakes one, which comes back in full if you withdraw it and in proportion to how well it did if it does not carry — that is a flat one, and not settable.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('grantBy', 'Each states the <b>fewest edits</b> they would accept being given, and the document takes the most generous answer. Until it settles, everyone drafts on the standard grant.') +
-      opt(S, 'grantBy', 'convenor', 'I set it', '',
+      opt(S, 'grantBy', 'founder', 'I set it', '',
         '<span class="setrow2">' + num(S, 'grant', '✏️s to start with', 0, 40) + '</span>') +
       '</div>',
     drip: () =>
       '<p class="why">How fast a spent ✏️ comes back, and the most anybody may hold at once. Between them these two settings are the <b>proposal rate</b> — how often anybody may put something to the room. This is the half that decides whether the wallet is ever felt: at the standard rate most members sit near the cap all session and never feel the wallet at all.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('dripBy', 'Each states the <b>slowest drip</b> they would accept, and the document takes the fastest.') +
-      opt(S, 'dripBy', 'convenor', 'I set it', '',
+      opt(S, 'dripBy', 'founder', 'I set it', '',
         '<span class="setrow2">' + num(S, 'drip', '✏️s returned', 0, 10) +
         num(S, 'dripPer', perpetual() ? 'every N hours' : 'per N% of the window', 1, 100) +
         num(S, 'cap', 'Never more than', 1, 99) + '</span>') +
@@ -989,7 +990,7 @@
     band.innerHTML = bandHtml(groups(), ctx, (g) => {
       const c = card(S.open);
       // A card the room owns keeps its own body — choosing to hand it over is
-      // the convenor's decision and stays editable — and grows a **watching**
+      // the founder's decision and stays editable — and grows a **watching**
       // half underneath, which is the whole of what anybody may see of a blind
       // question while it runs.
       if (c.isGate) {
@@ -1023,7 +1024,7 @@
 
   const render = () => {
     // the identity cards and the roster are two views of one person, so the
-    // convenor's row follows what those cards say rather than holding a copy
+    // founder's row follows what those cards say rather than holding a copy
     const row = meRow(); if (row) { row.n = S.myname; row.pic = S.mypic; row.e = S.myemail; }
     resolveCounts();
     renderTitle(); renderRail(); renderBand(); drawWire(wires, S.open); renderMail();

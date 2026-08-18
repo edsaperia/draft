@@ -17,12 +17,12 @@
    questions in the right-sidebar as cards, and once they're done they can
    start.* Then 2026-08-18: *the admin's cards are visible to the roster (but not
    editable by them); the roster's cards are visible to the admin (with
-   completion bar).* And then: *the convenor's settings sit in one pile, and
+   completion bar).* And then: *the founder's settings sit in one pile, and
    members' in the pile below.*
 
-   Those three make this screen and the convenor's screen the same screen, which
+   Those three make this screen and the founder's screen the same screen, which
    is why so little lives in this file. Two piles at the head of the document
-   hold the whole constitution — the convenor's above, the members' below —
+   hold the whole constitution — the founder's above, the members' below —
    and what differs between the two surfaces is only **which pile is yours**. A
    member answers the ones handed over, reads the rest, and watches the ones they
    have answered fill up as the room catches them.
@@ -126,7 +126,7 @@
   //
   // Since the decomposition of 2026-08-18 a member answers nine of these rather
   // than four — *who may be seen* alone is three questions, and a name and a
-  // picture are two more. The proposal rate is not among them here: the convenor
+  // picture are two more. The proposal rate is not among them here: the founder
   // holds it by default (§9.7), because the room can take an ordinary setting
   // back cheaply and cannot take a constitutional one back at all.
   const ROOM = [
@@ -165,26 +165,26 @@
       takes: 'The charter takes the most restrictive', result: 'No AI proposals',
       dist: [9, 5], distTop: 0, distEnds: ['People only', 'A machine is fine'] },
   ];
-  // The convenor's own, as a member meets them: readable, never editable.
+  // The founder's own, as a member meets them: readable, never editable.
   // Read-only is not the same as hidden — the whole point of a pile at the head
   // of the document is that the constitution is legible to everyone it binds.
   const CONVENOR = [
-    { k: 'text', g: '📄', t: 'Starting Text', own: 'convenor', kind: 'ordinary', v: '42 blocks, 9 sections' },
+    { k: 'text', g: '📄', t: 'Starting Text', own: 'founder', kind: 'ordinary', v: '42 blocks, 9 sections' },
     // inDoc: the heading at the top of the document IS the title (Ed)
-    { k: 'title', g: '🏷️', t: 'Title', own: 'convenor', kind: 'ordinary', inDoc: true, v: 'The Hollow Oak Club — House Charter' },
-    { k: 'slug', g: '🔗', t: 'Link', own: 'convenor', kind: 'ordinary', v: 'docs.vote/hollow-oak-4f2a' },
-    { k: 'roster', g: '🪪', t: 'Membership', own: 'convenor', kind: 'constitutional', v: 'Fourteen members',
-      // 🎩 folded in (Ed, 2026-08-18): whether the convenor is a member is
+    { k: 'title', g: '🏷️', t: 'Title', own: 'founder', kind: 'ordinary', inDoc: true, v: 'The Hollow Oak Club — House Charter' },
+    { k: 'slug', g: '🔗', t: 'Link', own: 'founder', kind: 'ordinary', v: 'docs.vote/hollow-oak-4f2a' },
+    { k: 'roster', g: '🪪', t: 'Membership', own: 'founder', kind: 'constitutional', v: 'Fourteen members',
+      // 🎩 folded in (Ed, 2026-08-18): whether the founder is a member is
       // their own row in this list, pre-checked when the document was made
       setBy: 'Invited by Wren Ashby — themselves included, their own row pre-checked',
       readNote: 'Anybody else who can read this is not a member — nothing is known about them, they have a link and nothing else. That is the 🌍 setting, not this one.' },
     // **The register and the door are two decisions** (Ed, 2026-08-18). This
     // card also un-swallows a note the old single card had lost: two readNote
     // keys on one object, and the reserved one silently overridden.
-    { k: 'policy', g: '🤝', t: 'Applications', own: 'convenor', kind: 'constitutional', v: 'Anyone may apply',
-      readNote: 'The membership here is the members’ — joining and leaving are theirs to decide, and applications go before them as proposals (✏️). Had Wren <b>reserved</b> it, Wren would be a 👑 — the convenor of a document that reserves its membership, invite-and-remove staying in their hand; a crown lapses like a member, and a lapsed crown passes to the members.' },
+    { k: 'policy', g: '🤝', t: 'Applications', own: 'founder', kind: 'constitutional', v: 'Anyone may apply',
+      readNote: 'The membership here is the members’ — joining and leaving are theirs to decide, and applications go before them as proposals (✏️). Had Wren <b>reserved</b> it, Wren would be a 👑 — the founder of a document that reserves its membership, invite-and-remove staying in their hand; a crown lapses like a member, and a lapsed crown passes to the members.' },
     // One card, two routes to change it — see the ⏰ entry in document-creation.
-    { k: 'ending', g: '⏰', t: 'When Does It End?', own: 'convenor', kind: 'constitutional',
+    { k: 'ending', g: '⏰', t: 'When Does It End?', own: 'founder', kind: 'constitutional',
       motionKind: 'ordinary', v: 'Thursday 18:00',
       // 329(a): *never* is the constitutional answer; any date is ordinary.
       routeOf: (v) => (/never|perpetual|no end/i.test(v) ? 'constitutional' : 'ordinary'),
@@ -192,11 +192,11 @@
 
       readNote: 'The approval threshold rises towards that moment, and ✏️s come back paced against it. <b>Never</b> is one of the answers to this question, which is why it is constitutional — a document with no ending has no ramp. The date itself anybody may propose moving (✏️) — and postponing never lowers the bar: it stays where it is and rises more slowly to the same ceiling.' },
     // Pacing, not consent (§9.0, Q341): the close bar is the room's, above in
-    // their own pile; how it climbs there is the convenor's, like the drip.
-    { k: 'pace', g: '📈', t: 'How Does the Bar Get There?', own: 'convenor', kind: 'ordinary', v: 'Rising from 55%',
+    // their own pile; how it climbs there is the founder's, like the drip.
+    { k: 'pace', g: '📈', t: 'How Does the Bar Get There?', own: 'founder', kind: 'ordinary', v: 'Rising from 55%',
       readNote: 'Every adoption is recorded against the bar as it stood, so re-shaping the ramp re-rates nothing already decided — which is why this is open to proposals (✏️) while the close bar is constitutional (🏛️).' },
-    { k: 'grant', g: '🪙', t: 'How Many ✏️s Do Members Start With?', own: 'convenor', kind: 'ordinary', v: '4 each' },
-    { k: 'drip', g: '💧', t: 'How Fast Do ✏️s Come Back?', own: 'convenor', kind: 'ordinary', v: '1 back per 10% of the window, up to 8',
+    { k: 'grant', g: '🪙', t: 'How Many ✏️s Do Members Start With?', own: 'founder', kind: 'ordinary', v: '4 each' },
+    { k: 'drip', g: '💧', t: 'How Fast Do ✏️s Come Back?', own: 'founder', kind: 'ordinary', v: '1 back per 10% of the window, up to 8',
       readNote: 'With the one above, this is the <b>proposal rate</b> — how often anybody may put something to the room. Each proposal also stakes one ✏️, which is a flat one and not a setting: it comes back in full if you withdraw, and in proportion to how well it did if it does not carry.' },
   ];
   // **The gates are cards** (Ed, 330b). Kept out of ROOM, which defines what
@@ -245,6 +245,9 @@
   // assembly-press. One builder, because the input handler must swap the
   // button in place as typing flips the route — a full re-render would
   // throw the caret out of the lane.
+  // what each radio-composed setting currently stands at: picking it back
+  // is not a change, so it clears the draft and the commit greys
+  const CURRENT = { policy: 'Anyone may apply', pace: 'Rising from 55%' };
   const motionCommitHtml = (c) => {
     const dto = (S.draft && S.draft.k === c.k) ? S.draft.to : '';
     const constitutional = routeFor(c, dto) === 'constitutional';
@@ -277,37 +280,38 @@
   // an unacknowledged decision pins itself until you press OK, because a
   // decision you were part of and did not get to see is the one thing a margin
   // must not let scroll past. Here the same is true of a rule you never chose
-  // and are nonetheless bound by — the membership you joined, the convenor's
+  // and are nonetheless bound by — the membership you joined, the founder's
   // part in it, whether the charter ends at all. Reading is not enough, because
   // reading is what you do to everything.
   //
   // And then it goes, which is the half that makes the rail honest: the sidebar
   // holds what wants something from you, so an acknowledged rule wants nothing
   // and belongs in the pile with the rest of the constitution. The **ordinary**
-  // settings the convenor made never enter the rail at all — nothing is being
+  // settings the founder made never enter the rail at all — nothing is being
   // asked, and anybody may motion one at the bar whenever they like.
-  const needsOk = (c) => c.own === 'convenor' && c.kind === 'constitutional' && !S.okd.has(c.k);
+  const needsOk = (c) => c.own === 'founder' && c.kind === 'constitutional' && !S.okd.has(c.k);
   const settled = (c) => (c.isGate ? S.okd.has(c.k)
-    : c.own === 'convenor' ? !needsOk(c) : (S.seen.has(c.k) && ready(c)));
+    : c.own === 'founder' ? !needsOk(c) : (S.seen.has(c.k) && ready(c)));
   // **A motion makes its card want you again**, whoever normally holds it — a
-  // convenor's setting under motion is a question for the room like any other,
+  // founder's setting under motion is a question for the room like any other,
   // which is the whole of what a motion does to the piles. The hue says it and
   // the subject glyph does not change, because hue has always been the state
   // here and the glyph has always been the subject.
   const mustAct = (c) => (c.isGate ? (c.open() && !S.okd.has(c.k))
     : motionOn(c) ? !answeredMotion(c) : !settled(c));
-  const isRoom = (c) => c.own !== 'convenor' && c.own !== 'you';
+  const isRoom = (c) => c.own !== 'founder' && c.own !== 'you';
 
   const face = (p, ghost) => '<span class="pf' + (ghost ? ' ghost' : '') + '">' +
     avHtml(ghost ? {} : p) + esc(ghost ? 'Not named yet' : p.n) + '</span>';
   // **The sections of the constitution** (Ed, 2026-08-18: the members'
   // choices are *about the constitution*, so each stands as a task in the
   // section it decides — the rule and the question about it are one
-  // paragraph wearing one tab). Same five sections as the convenor's
+  // paragraph wearing one tab). Same five sections as the founder's
   // surface, because it is the same document.
   const SEC = [
+    // no intro line (Ed, 2026-08-18) — the sentences are the section
     { key: 'members', title: 'Membership',
-      text: 'Who is in the room, how anybody joins or leaves it, and how each member appears in it.',
+      text: '',
       keys: ['roster', 'policy', 'lapse', 'myname', 'mypic'],
       // **Members and Applications are subsections** (Ed, 2026-08-18):
       // Members IS the list, 🪪 beside it, your own row at the bottom
@@ -319,17 +323,20 @@
         const list = '<div class="memlist">' +
           others.map((p) => '<div class="memrow">' + avHtml(p) +
             '<span class="mn">' + esc(p.n) +
-            (p.n === 'Wren Ashby' ? ' <span class="chip convenor">convenor</span>' : '') +
+            (p.n === 'Wren Ashby' ? ' <span class="chip founder">founder</span>' : '') +
             '</span></div>').join('') +
           '<div class="memrow meRow">' + h.pile(my) + avHtml(me()) +
           '<span class="mn">' + esc(S.myname || 'Not named yet') + ' <span class="chip">you</span></span></div></div>';
         const openId = my.find((c) => S.open === c.k);
-        const rest = ['lapse'].map(card).filter(Boolean);
-        return '<h2 class="docline lvl3">Members</h2>' +
+        const rest = [].map(card).filter(Boolean);
+        // policy first, lapse under it, then the Members list; the
+        // Applications subheading dissolved into the Applicants list
+        // (Ed, 2026-08-18)
+        return h.para(card('policy')) + h.para(card('lapse')) +
+          '<h2 class="docline lvl3">Members</h2>' +
           (S.open === 'roster' ? h.para(card('roster'))
             : '<div class="cpara"><span class="chipcol">' + h.chip(card('roster')) + '</span>' + list + '</div>') +
           (openId ? h.paraWith(openId, my) : '') +
-          '<h2 class="docline lvl3">Applications</h2>' + h.para(card('policy')) +
           applicantsHtml() +
           rest.map((c) => h.para(c)).join('');
       },
@@ -413,7 +420,7 @@
     : isRoom(c) && settled(c) && (c.in || 0) < E);
   const news = (c) => (c.isGate ? (c.open() && !S.okd.has(c.k))
     : motionOn(c) ? false
-    : c.own === 'convenor' ? (c.kind === 'constitutional' && !S.okd.has(c.k))
+    : c.own === 'founder' ? (c.kind === 'constitutional' && !S.okd.has(c.k))
     : isRoom(c) && settled(c) && (c.in || 0) >= E && !S.okd.has('res-' + c.k));
 
   // **The constitution states itself in sentences** (Ed, 2026-08-18), in a
@@ -451,7 +458,7 @@
     // fixture's members-done count is the floor of the per-question counts
     const allDone = () => Math.min(...ROOM.filter((x) => x.own !== 'you').map((x) => Math.min(x.in || 0, E)));
     if (c.k === 'canpropose') return mine() ? 'Proposing is open.'
-      : 'Members may begin proposing when they have answered the questions the Convenor delegated — ' +
+      : 'Members may begin proposing when they have answered the questions the Founder delegated — ' +
         allDone() + ' of ' + E + ' have answered everything.';
     if (c.k === 'canjudge') return roomDone() ? 'Judging on proposals began on Tuesday at 14:02.'
       : 'Members may begin judging proposals when every member has answered everything — ' +
@@ -460,7 +467,7 @@
     if (isRoom(c)) {
       return (c.in || 0) >= E
         ? (DECIDED[c.k] || esc(c.result || ''))
-        : 'The Convenor has delegated to members to decide ' + (WHAT[c.k] || 'this') + ' — ' +
+        : 'The Founder has delegated to members to decide ' + (WHAT[c.k] || 'this') + ' — ' +
           Math.min(c.in || 0, E) + ' of ' + E + ' have answered.';
     }
     return DECIDED[c.k] || value(c);
@@ -470,19 +477,23 @@
     get open() { return S.open; }, get E() { return E; },
     clauseFor: (c) => (c.k === 'roster' ? faces(ROSTER, S.myname) : ''),
     mustAct, settled, summary, value, isRoom, waiting, news, decisionLine,
-    // reserved = held by the convenor: the room may pass a change, and it
-    // then goes to the convenor as a 👑 question (accept or reject)
-    reserved: (c) => c.own === 'convenor',
+    // the composer cards open with the rule itself where the clause goes —
+    // no title, the sentence exactly where it stood on the page
+    headFor: (c) => (c && c.own === 'founder' && !c.isGate && c.k !== 'text' &&
+      !needsOk(c) && !motionOn(c) ? (DECIDED[c.k] || value(c)) : null),
+    // reserved = held by the founder: the room may pass a change, and it
+    // then goes to the founder as a 👑 question (accept or reject)
+    reserved: (c) => c.own === 'founder',
   };
 
   // ---- the rail ----------------------------------------------------------
   // Your own pile first — which on this surface is the members' — then the
-  // convenor's. The same two groups as the band, in the order that puts what
+  // founder's. The same two groups as the band, in the order that puts what
   // wants you at the top.
   function renderRail() {
     // The rail holds what wants something from you and nothing else: your own
     // questions, the constitutional rules you have not yet acknowledged, and
-    // anything under motion. Everything the convenor settled that asks nothing
+    // anything under motion. Everything the founder settled that asks nothing
     // lives in the pile at the head of the document, which is where you go to
     // look a rule up rather than to be told about it.
     if (S.state === 'applicant') {
@@ -507,7 +518,7 @@
     faces(ROSTER, S.myname) + '</div>');
 
   // The consent controls and the answer bodies live in setup.js since Q344
-  // closed: the convenor answers the questions they delegated on their own
+  // closed: the founder answers the questions they delegated on their own
   // surface, so the member's controls are shared vocabulary now.
 
   // A constitutional motion on the roster has no ceremony card of its own,
@@ -594,13 +605,12 @@
     // change; one motion proposes one rule, and what you do not touch
     // stands. (QA 2026-08-18: this card was falling through to the
     // free-text lane.)
+    // **The current setting is the selected radio** (Ed, 2026-08-18):
+    // opening shows the rule as chosen; the commit greys until the
+    // selection moves, and picking the current value back clears the draft.
     policy: (d) => {
-      const stands = 'Anyone may apply';
-      const rung = (val, ttl, exp) => (val === stands
-        ? '<div class="pick off"><button class="lanepick" disabled aria-pressed="false">' +
-          '<span class="dot"></span><span>' + ttl + '</span></button>' +
-          '<span class="exp">What stands — nothing to propose.</span></div>'
-        : mrow(d.to === val, val, ttl, exp));
+      const sel = d.to || CURRENT.policy;
+      const rung = (val, ttl, exp) => mrow(sel === val, val, ttl, exp);
       return '<div class="eyebrow fieldlab">Who may join</div>' +
         '<div class="choice" role="radiogroup">' +
         rung('Invitation only', 'Invitation only', 'Nobody joins unless a member brings them in.') +
@@ -609,7 +619,7 @@
         rung('Open', 'Open', 'Anyone with the link joins on arrival.') + '</div>' +
         '<div class="eyebrow fieldlab" style="margin-top:var(--s4)">Who holds the membership</div>' +
         '<div class="choice" role="radiogroup">' +
-        rung('Reserved — the convenor holds it', 'Reserved — the convenor holds it', 'A 👑: invite-and-remove in one hand for the document’s life. A crown lapses like a member, and a lapsed crown passes to the members.') + '</div>' +
+        rung('Reserved — the founder holds it', 'Reserved — the founder holds it', 'A 👑: invite-and-remove in one hand for the document’s life. A crown lapses like a member, and a lapsed crown passes to the members.') + '</div>' +
         '<p class="setnote">One motion proposes one rule; what you do not touch stands.</p>';
     },
     // the membership, in front of you, with an ✕ beside each and a field at
@@ -783,7 +793,7 @@
         foot = '<button class="btn" data-close="1">Close</button>' +
           '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
           ' data-ok="' + c.k + '">OK</button>';
-      } else if (c.own === 'convenor' && (needsOk(c) || c.k === 'text')) {
+      } else if (c.own === 'founder' && (needsOk(c) || c.k === 'text')) {
         // unacknowledged: the acknowledgment card; 📄: no motion door at all
         body = readBody(c, ctx) +
           (c.k === 'text' ? '<p class="setnote">The text is not changed by motion — you change it by proposing in the document itself; every clause carries a caret.</p>' : '') +
@@ -792,7 +802,7 @@
         foot = (needsOk(c)
             ? '<button class="btn btn-approve" data-ok="' + c.k + '">OK</button>'
             : '<button class="btn" data-close="1">Close</button>');
-      } else if (c.own === 'convenor') {
+      } else if (c.own === 'founder') {
         // **The settled card is the composer** (Ed, 2026-08-18, using
         // Applications as the example): the current rule at the top as the
         // clause, the other options below as the setting's own radios, a
@@ -801,23 +811,22 @@
         // starting the motion.
         const d = (S.draft && S.draft.k === c.k) ? S.draft : { k: c.k, to: '', why: '' };
         const route = routeFor(c, d.to);
-        body = '<div class="propblock"><div class="rtext">' + (DECIDED[c.k] || value(c)) + '</div></div>' +
-          '<div class="eyebrow fieldlab">' + (route === 'constitutional' ? 'Or ask everyone again' : 'Or propose a change') + '</div>' +
-          (PROPOSE[c.k] ? PROPOSE[c.k](d)
+        body = (PROPOSE[c.k] ? PROPOSE[c.k](d)
             : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
               ' data-motionlane="to" data-ph="The value you are proposing">' + esc(d.to) + '</div></div>') +
+          '<div class="speaker composeWhy">' + avHtml(me()) +
           '<div class="lanebox"><div class="lp edit-why' + (d.why ? '' : ' blank') + '" contenteditable="plaintext-only"' +
-          ' spellcheck="false" data-motionlane="why" data-ph="We should change this because…">' + esc(d.why) + '</div></div>' +
+          ' spellcheck="false" data-motionlane="why" data-ph="We should change this because…">' + esc(d.why) + '</div></div></div>' +
           (route === 'constitutional'
             ? '<p class="setnote"><b>Free — and one at a time.</b> Each member may have one 🏛️ out at once; withdraw it and it comes back whole. Putting it is a full ten-second hold.</p>'
             : '<p class="setnote"><b>Costs one ✏️</b>, returned in full if withdrawn.' +
-              (ctx.reserved(c) ? ' Carrying sends it to the convenor as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>');
+              (ctx.reserved(c) ? ' Carrying sends it to the founder as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>');
         foot = '<button class="btn" data-dropmotion="1"' +
           (S.draft && S.draft.k === c.k ? '' : ' disabled') + ' title="Discard this motion">🗑️</button>' +
           motionCommitHtml(c);
       } else {
         // Once you have answered, the card keeps your answer and grows the
-        // watching half underneath — the same half the convenor sees, because it
+        // watching half underneath — the same half the founder sees, because it
         // is the same question and neither of you may see more of it than how
         // many have answered until every one of them has.
         body = BODY[c.k]() + (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
@@ -971,7 +980,8 @@
     const mo = ev.target.closest('[data-motion]');
     if (mo) { S.mAns[S.open] = mo.dataset.motion; return render(); }
     const mv = ev.target.closest('[data-mval]');
-    if (mv) { if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
+    if (mv) { if (CURRENT[S.open] === mv.dataset.mval) { S.draft = null; return render(); }
+      if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
       S.draft.to = mv.dataset.mval; return render(); }
     const mj = ev.target.closest('[data-mjoinbtn]');
     if (mj && S.draft) {
