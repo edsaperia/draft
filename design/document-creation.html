@@ -115,7 +115,7 @@
 (function () {
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, drawWire, opt, num, someIn, KIND, kindNote, ANSWER, stateOf,
-    MAILS, renderMailModal } = window.SETUP;
+    MAILS, renderMailModal, gateBody, wirePicDrop } = window.SETUP;
   const prose = document.getElementById('prose');
   const titleEl = document.getElementById('title');
   const band = document.getElementById('band');
@@ -1006,48 +1006,14 @@
   // **The picture card is an uploader** (Ed, 2026-08-18). Delegated, because
   // the card is rebuilt on every render; the file is read locally and never
   // sent anywhere.
-  const takePic = (file) => {
-    if (!file || !/^image\//.test(file.type)) return;
-    const fr = new FileReader();
-    fr.onload = () => { S.mypic = 'u' + fr.result; render(); };
-    fr.readAsDataURL(file);
-  };
+  wirePicDrop((d) => { S.mypic = d; render(); });
   document.addEventListener('change', (ev) => {
-    if (ev.target.matches('[data-picfile]')) return takePic(ev.target.files[0]);
     if (ev.target.matches('[data-ansdate]')) {
       S.myAns[ev.target.dataset.ansdate] = ev.target.value || null; return render(); }
     if (ev.target.matches('[data-ansnum]')) {
       S.myAns[ev.target.dataset.ansnum] = ev.target.value === '' ? null : +ev.target.value;
       return render(); }
   });
-  document.addEventListener('dragover', (ev) => {
-    const z = ev.target.closest && ev.target.closest('.picdrop');
-    if (z) { ev.preventDefault(); z.classList.add('over'); }
-  });
-  document.addEventListener('dragleave', (ev) => {
-    const z = ev.target.closest && ev.target.closest('.picdrop');
-    if (z) z.classList.remove('over');
-  });
-  document.addEventListener('drop', (ev) => {
-    const z = ev.target.closest && ev.target.closest('.picdrop');
-    if (!z) return;
-    ev.preventDefault(); z.classList.remove('over');
-    takePic(ev.dataTransfer.files && ev.dataTransfer.files[0]);
-  });
-
-  // A gate card says one thing: what it is waiting for, and whether that has
-  // happened. What it is waiting *on* is drawn as the cards themselves, so a
-  // member reads it as “these, and then you can write” rather than as a rule.
-  const gateBody = (c) =>
-    '<p class="why">' + c.why + '</p>' +
-    '<div class="lockline">' + (c.open() ? TICK : '') + '<span>' +
-    (c.open() ? c.done : c.waiting) + '</span></div>' +
-    (c.open() ? '' : '<div class="gatelist">' + c.blockers().map((b) =>
-      '<span class="gaterow"><span class="gg">' + b.g + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
-    '<p class="setnote">' + (c.open()
-      ? 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.'
-      : 'It comes back to you the moment it opens.') + '</p>';
-
   document.addEventListener('click', (ev) => {
     const okb = ev.target.closest('[data-ok]');
     if (okb) { S.okd.add(okb.dataset.ok); S.open = null; return render(); }

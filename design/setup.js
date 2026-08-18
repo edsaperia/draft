@@ -720,6 +720,49 @@ window.SETUP = (function () {
     return ansRow(String(A[key]) === String(r.v), key, r.v, r.t, r.e, (at >= 0 && i > at) ? ' above' : '');
   }).join('') + '</div>';
 
+  // A gate card says one thing: what it is waiting for, and whether that has
+  // happened. What it is waiting *on* is drawn as the cards themselves, so a
+  // member reads it as “these, and then you can write” rather than as a rule.
+  // (One copy since 2026-08-18 — it had been byte-identical in both surfaces.)
+  const gateBody = (c) =>
+    '<p class="why">' + c.why + '</p>' +
+    '<div class="lockline">' + (c.open() ? TICK : '') + '<span>' +
+    (c.open() ? c.done : c.waiting) + '</span></div>' +
+    (c.open() ? '' : '<div class="gatelist">' + c.blockers().map((b) =>
+      '<span class="gaterow"><span class="gg">' + b.g + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
+    '<p class="setnote">' + (c.open()
+      ? 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.'
+      : 'It comes back to you the moment it opens.') + '</p>';
+
+  // The FileReader dance and the .picdrop drag targets, one copy for both
+  // surfaces (2026-08-18): the file is read locally and never sent anywhere;
+  // where the data lands (S.mypic, and which render runs) stays the caller's.
+  const wirePicDrop = (onFile) => {
+    const take = (file) => {
+      if (!file || !/^image\//.test(file.type)) return;
+      const fr = new FileReader();
+      fr.onload = () => onFile('u' + fr.result);
+      fr.readAsDataURL(file);
+    };
+    document.addEventListener('change', (ev) => {
+      if (ev.target.matches('[data-picfile]')) take(ev.target.files[0]);
+    });
+    document.addEventListener('dragover', (ev) => {
+      const z = ev.target.closest && ev.target.closest('.picdrop');
+      if (z) { ev.preventDefault(); z.classList.add('over'); }
+    });
+    document.addEventListener('dragleave', (ev) => {
+      const z = ev.target.closest && ev.target.closest('.picdrop');
+      if (z) z.classList.remove('over');
+    });
+    document.addEventListener('drop', (ev) => {
+      const z = ev.target.closest && ev.target.closest('.picdrop');
+      if (!z) return;
+      ev.preventDefault(); z.classList.remove('over');
+      take(ev.dataTransfer.files && ev.dataTransfer.files[0]);
+    });
+  };
+
   const BLINDNOTE = '<p class="blindnote">Nobody sees your answer, and you will see nobody else’s until every one of them is in.</p>';
 
   /* One body per delegable question — the copy a member answers against,
@@ -971,5 +1014,5 @@ window.SETUP = (function () {
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
     nameBody, pictureBody, drawWire, opt, num, faces, someIn,
     KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor,
-    slider, ladder, ANSWER, BLINDNOTE, MAILS, renderMailModal };
+    slider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal };
 })();

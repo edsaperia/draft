@@ -67,7 +67,7 @@
   const { esc, TICK, avHtml, avatarOptions, bandHtml, fitBand, railEntry, cardHtml, readBody,
     watchBody, nameBody, pictureBody, drawWire, opt, faces, someIn,
     KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor, ANSWER,
-    MAILS, renderMailModal, stateOf } = window.SETUP;
+    MAILS, renderMailModal, stateOf, BLINDNOTE, gateBody, wirePicDrop } = window.SETUP;
   const band = document.getElementById('band');
   const rail = document.getElementById('rail');
   const wires = document.getElementById('wires');
@@ -552,9 +552,8 @@
     '<div class="pick' + (S.mAns.roster === 'yes' ? ' on' : '') + '"><button class="lanepick"' +
     ' aria-pressed="' + (S.mAns.roster === 'yes') + '" data-motion="yes"><span class="dot"></span>' +
     '<span>I accept them joining</span></button>' +
-    '<span class="exp">They start with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</span></div></div>' + BLIND;
+    '<span class="exp">They start with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</span></div></div>' + BLINDNOTE;
 
-  const BLIND = '<p class="blindnote">Nobody sees your answer, and you will see nobody else’s until every one of them is in.</p>';
 
   // A constitutional motion on a setting that was never a ceremony question
   // (the policy; the membership when no invitee is named) still re-opens as
@@ -570,19 +569,12 @@
     '<div class="pick' + (S.mAns[c.k] === 'yes' ? ' on' : '') + '"><button class="lanepick"' +
     ' aria-pressed="' + (S.mAns[c.k] === 'yes') + '" data-motion="yes"><span class="dot"></span>' +
     '<span>I accept the change</span></button>' +
-    '<span class="exp">It takes every one of the ' + E + ' accepting.</span></div></div>' + BLIND);
+    '<span class="exp">It takes every one of the ' + E + ' accepting.</span></div></div>' + BLINDNOTE);
 
   /* **What a motion is composed with** (Ed, 2026-08-18). The control that set
      a value is the control that proposes a new one — a date picker for a date,
      the membership for the membership. `data-mval` writes straight into the
      draft, so what the button says is what the motion will say. */
-  const mrow = (on, val, ttl, exp, inner) =>
-    '<div class="pick' + (on ? ' on' : '') + '">' +
-    '<button class="lanepick" aria-pressed="' + !!on + '" data-mval="' + esc(val) + '">' +
-    '<span class="dot"></span><span>' + ttl + '</span></button>' +
-    (exp ? '<span class="exp">' + exp + '</span>' : '') +
-    (inner ? '<span class="inner">' + inner + '</span>' : '') + '</div>';
-
   // **Every composer speaks the decision-card grammar** (Ed, 2026-08-18,
   // generalising the Applications example): the head is the current rule,
   // reference only; each alternative below is the rule it would make,
@@ -671,19 +663,6 @@
     machines: () => ANSWER.machines(S),
     lapse: () => ANSWER.lapse(S),
   };
-
-  // A gate card says one thing: what it is waiting for, and whether that has
-  // happened. What it is waiting *on* is drawn as the cards themselves, so a
-  // member reads it as “these, and then you can write” rather than as a rule.
-  const gateBody = (c) =>
-    '<p class="why">' + c.why + '</p>' +
-    '<div class="lockline">' + (c.open() ? TICK : '') + '<span>' +
-    (c.open() ? c.done : c.waiting) + '</span></div>' +
-    (c.open() ? '' : '<div class="gatelist">' + c.blockers().map((b) =>
-      '<span class="gaterow"><span class="gg">' + b.g + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
-    '<p class="setnote">' + (c.open()
-      ? 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.'
-      : 'It comes back to you the moment it opens.') + '</p>';
 
   /* ---- the applicant's tasks ---------------------------------------------
      Plain tasks (Ed's word): the same rail entries and the same card shell,
@@ -914,14 +893,8 @@
   // **The picture card is an uploader** (Ed, 2026-08-18). Delegated, because
   // the card is rebuilt on every render; the file is read locally and never
   // sent anywhere.
-  const takePic = (file) => {
-    if (!file || !/^image\//.test(file.type)) return;
-    const fr = new FileReader();
-    fr.onload = () => { S.mypic = 'u' + fr.result; render(); };
-    fr.readAsDataURL(file);
-  };
+  wirePicDrop((d) => { S.mypic = d; render(); });
   document.addEventListener('change', (ev) => {
-    if (ev.target.matches('[data-picfile]')) return takePic(ev.target.files[0]);
     // a motion's own control writes the value it proposes. On `change` rather
     // than on every keystroke, because a date picker rebuilt under the pointer
     // is a date picker you cannot use.
@@ -950,21 +923,6 @@
       return render();
     }
   });
-  document.addEventListener('dragover', (ev) => {
-    const z = ev.target.closest && ev.target.closest('.picdrop');
-    if (z) { ev.preventDefault(); z.classList.add('over'); }
-  });
-  document.addEventListener('dragleave', (ev) => {
-    const z = ev.target.closest && ev.target.closest('.picdrop');
-    if (z) z.classList.remove('over');
-  });
-  document.addEventListener('drop', (ev) => {
-    const z = ev.target.closest && ev.target.closest('.picdrop');
-    if (!z) return;
-    ev.preventDefault(); z.classList.remove('over');
-    takePic(ev.dataTransfer.files && ev.dataTransfer.files[0]);
-  });
-
   document.addEventListener('click', (ev) => {
     const st = ev.target.closest('[data-state]');
     if (st) { setState(st.dataset.state); return render(); }
