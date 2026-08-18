@@ -124,7 +124,7 @@
 
   const S = {
     title: '', slug: '',
-    myname: 'Wren Ashby', mypic: 'c0', myemail: '', emailSent: false, emailVerified: false, mailOpen: false,
+    myname: '', mypic: '', myemail: '', emailSent: false, emailVerified: false, mailOpen: false,
     ending: 'roster', endsAt: '2026-08-20T18:00',
     myAns: { ending: null, bar: null, quorum: null, authorship: null,
       signing: null, judgments: null, chamber: null, machines: null,
@@ -138,7 +138,7 @@
     grantBy: 'convenor', grant: 4,
     dripBy: 'convenor', drip: 1, dripPer: 10, cap: 8,
     chamber: 'roster', auditor: 'roster', auditorBudget: 6,
-    roster: [{ n: 'Wren Ashby', e: 'wren@hollowoak.club', role: 'member', convenor: true, in: true }],
+    roster: [{ n: '', e: '', role: 'member', convenor: true, in: true }],
     // **Confirmed, not merely defaulted** (Ed, 2026-08-17). A default nobody
     // read is not a decision, and these are the decisions that cannot be changed
     // once people are drafting. So a card carries its value from the first
@@ -446,7 +446,7 @@
     { key: 'members', title: 'Membership',
       text: 'Who is in the room, how anybody joins or leaves it, and how each member appears in it.',
       keys: ['roster', 'policy', 'lapse', 'machines', 'myemail', 'myname', 'mypic', 'canpropose', 'canjudge'],
-      who: () => (members().length ? members().map((p) => face(p)).join('') : face({}, true)) },
+      who: () => (members().length ? members().map((p) => face(p, !(p.n || '').trim())).join('') : face({}, true)) },
     { key: 'deciding', title: 'Decisions',
       text: 'How a change carries: how many must weigh in, how sure the room must be, and when the document ends.',
       keys: ['ending', 'quorum', 'bar', 'pace'] },
@@ -487,7 +487,7 @@
     slug: () => 'docs.vote/' + (S.slug || '…'),
     myemail: () => (S.emailVerified ? S.myemail + ' · verified'
       : S.emailSent ? 'Check your inbox' : 'Not given yet'),
-    myname: () => S.myname || 'Unnamed',
+    myname: () => S.myname || 'Not given yet',
     mypic: () => (S.mypic ? 'Chosen' : 'Your initials'),
     // an invitee is not a member yet (§9.6a): the line counts the arrived,
     // and says who is still only invited
@@ -568,8 +568,8 @@
   const rosterClause = () =>
     '<div class="roster clauselist">' + S.roster.map((p, i) =>
       '<div class="rperson">' + avHtml(p) +
-      '<span><span class="nm">' + esc(p.n) + (p.convenor ? ' <span class="chip convenor">convenor</span>' : '') +
-      '</span><br><span class="em">' + esc(p.e) + '</span></span>' +
+      '<span><span class="nm">' + esc(p.n || 'Not named yet') + (p.convenor ? ' <span class="chip convenor">convenor</span>' : '') +
+      '</span><br><span class="em">' + esc(p.e || '—') + '</span></span>' +
       (p.convenor
         ? '<button class="lanepick mepick" aria-pressed="' + iDraft() + '" data-metoggle="1">' +
           '<span class="dot"></span><span>' + (iDraft() ? 'Member — drafting too' : 'Clerk — not drafting') + '</span></button>'
@@ -905,7 +905,7 @@
   const render = () => {
     // the identity cards and the roster are two views of one person, so the
     // convenor's row follows what those cards say rather than holding a copy
-    const row = meRow(); if (row) { row.n = S.myname; row.pic = S.mypic; }
+    const row = meRow(); if (row) { row.n = S.myname; row.pic = S.mypic; row.e = S.myemail; }
     resolveCounts();
     renderTitle(); renderRail(); renderBand(); drawWire(wires, S.open); renderMail();
   };
