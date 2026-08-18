@@ -171,6 +171,18 @@ window.SETUP = (function () {
       card.style.minHeight = '';
       const col = card.querySelector('.chipcol');
       if (!col) return;
+      // **The tab you clicked does not move.** The strip is positioned against
+      // the `.headclause`, which starts below the card's own label — so left
+      // alone the first tab arrives a label's height lower than the pile front
+      // it replaced. Measured rather than written as a constant, because the
+      // label wraps on a narrow card and the distance is not a number anybody
+      // can know in advance: the same move `fitStacks` makes in the gutter.
+      col.style.top = '';
+      const want = card.getBoundingClientRect().top + 2.4;
+      const have = col.getBoundingClientRect().top;
+      if (Math.abs(have - want) > 0.5) {
+        col.style.top = (parseFloat(getComputedStyle(col).top || 0) + (want - have)).toFixed(1) + 'px';
+      }
       const r = card.getBoundingClientRect();
       const need = col.getBoundingClientRect().bottom - r.top + 14;
       if (need > r.height) card.style.minHeight = Math.ceil(need) + 'px';
@@ -406,7 +418,7 @@ window.SETUP = (function () {
      question is live again — and then the ordinary consent control underneath
      it. */
   function motionBody(c, ctx, m) {
-    const kind = m.kind || c.motionKind || c.kind || 'ordinary';
+    const kind = m.kind || routeFor(c, m.to);
     const need = 'the bar, with quorum';
     const speaker = (why) => '<div class="speaker">' +
       '<span class="disc" aria-hidden="true" title="A member of the roster wrote this. Who, is sealed until the record (SPEC §3.4)."></span>' +
@@ -443,9 +455,18 @@ window.SETUP = (function () {
   /* Writing one. The same `.lanebox` the `editing-card` writes a clause in,
      because a motion is a proposal and proposing is one gesture on this
      surface however small the thing being proposed. */
-  const motionCompose = (c, ctx, draft) =>
+  // **The route is a fact about the value, not about the card** (Ed, 329a,
+  // 2026-08-18). One setting can be changed two ways: moving a closing date
+  // changes nothing that has already happened, and removing the ending
+  // abolishes the ramp and makes every past adoption mean something else. So
+  // the card offers a `routeOf` and the compose form asks it about whatever is
+  // currently typed — the note and the price flip as you write, which is also
+  // the only honest way to tell somebody what they are about to set in motion.
+  const routeFor = (c, v) => (c.routeOf ? c.routeOf(v || '') : (c.motionKind || c.kind || 'ordinary'));
+
+  const motionCompose = (c, ctx, draft, control) =>
     '<div class="unlocks">You are proposing a change to <b>' + esc(c.t) + '</b>. ' +
-    kindNote[c.motionKind || c.kind || 'ordinary'] + '</div>' +
+    kindNote[routeFor(c, draft.to)] + '</div>' +
     // **What it costs, said where the price is paid** (Ed, 2026-08-18). An
     // ordinary motion is a proposal, so it costs an edit like every other
     // proposal — the wallet is what prices proposals, and one that cost nothing
@@ -454,17 +475,22 @@ window.SETUP = (function () {
     // a member asking to be asked again about a rule that binds them. Charging
     // for that would price consent, which is the one thing here that must stay
     // free. What stops it being spammed is a limit rather than a price (Q327).
-    '<p class="setnote">' + ((c.motionKind || c.kind) === 'constitutional'
+    (c.routeOf ? '<p class="setnote">' + esc(c.routeNote || '') + '</p>' : '') +
+    '<p class="setnote">' + (routeFor(c, draft.to) === 'constitutional'
       ? '<b>Free.</b> You are not proposing against the charter, you are asking the room to be asked again about a rule that binds you — and consent should not have a price.'
       : '<b>Costs one ✏️.</b> A motion is a proposal, so it is priced like every other proposal, and you get it back if you withdraw it.') + '</p>'
     + '<div class="propblock"><div class="eyebrow fieldlab">As it stands</div>' +
     '<div class="rtext">' + ctx.value(c) + '</div></div>' +
     '<div class="propblock"><div class="eyebrow fieldlab">As you would have it</div>' +
-    '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
-    ' data-motionlane="to" data-ph="The value you are proposing">' + esc(draft.to || '') + '</div>' +
-    '<div class="lp edit-why' + (draft.why ? '' : ' blank') + '" contenteditable="plaintext-only"' +
-    ' spellcheck="false" data-motionlane="why" data-ph="We should change this because…">' +
-    esc(draft.why || '') + '</div></div></div>';
+    (control ? control(draft) +
+      '<div class="lanebox"><div class="lp edit-why' + (draft.why ? '' : ' blank') + '"' +
+      ' contenteditable="plaintext-only" spellcheck="false" data-motionlane="why"' +
+      ' data-ph="We should change this because…">' + esc(draft.why || '') + '</div></div>'
+     : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
+      ' data-motionlane="to" data-ph="The value you are proposing">' + esc(draft.to || '') + '</div>' +
+      '<div class="lp edit-why' + (draft.why ? '' : ' blank') + '" contenteditable="plaintext-only"' +
+      ' spellcheck="false" data-motionlane="why" data-ph="We should change this because…">' +
+      esc(draft.why || '') + '</div></div>') + '</div>';
 
   /* ---- the cable ----------------------------------------------------------
      `queue-wire`, lifted from session-view with its rules intact: 6px, opaque,
@@ -609,5 +635,5 @@ window.SETUP = (function () {
   return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
     nameBody, pictureBody, drawWire, opt, num, faces, someIn,
-    KIND, kindNote, motionBody, motionReopen, motionCompose };
+    KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor };
 })();

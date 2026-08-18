@@ -66,7 +66,7 @@
 (function () {
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, readBody,
     watchBody, nameBody, pictureBody, drawWire, opt, faces, someIn,
-    KIND, kindNote, motionBody, motionReopen, motionCompose } = window.SETUP;
+    KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor } = window.SETUP;
   const band = document.getElementById('band');
   const rail = document.getElementById('rail');
   const wires = document.getElementById('wires');
@@ -126,23 +126,23 @@
       rule: 'Each member states the <b>lowest bar</b> they will accept and the charter takes the highest.',
       takes: 'The charter takes the highest', result: '80%',
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
-    { k: 'authorship', g: '👤', t: 'Whose proposal it is', kind: 'constitutional', in: 7,
+    { k: 'authorship', g: '👤', t: 'When is a proposer named?', kind: 'constitutional', in: 7,
       rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants to stay unnamed keeps the whole charter unnamed.',
       takes: 'The charter takes the most private', result: 'Nobody’s name, ever',
       dist: [8, 4, 2], distTop: 0, distEnds: ['No names, ever', 'Names from the start'] },
-    { k: 'signing', g: '✍️', t: 'Signing', kind: 'constitutional', in: 7,
+    { k: 'signing', g: '✍️', t: 'Who may sign a proposal?', kind: 'constitutional', in: 7,
       rule: 'Also a privacy question, and the <b>most private</b> answer wins.',
       takes: 'The charter takes the most private', result: 'Nobody signs',
       dist: [9, 3, 2], distTop: 0, distEnds: ['Nobody signs', 'Everybody signs'] },
-    { k: 'judgments', g: '👁️', t: 'Your judgments', kind: 'constitutional', in: 12,
+    { k: 'judgments', g: '👁️', t: 'When are judgments revealed?', kind: 'constitutional', in: 12,
       rule: 'Never revealed while a question is live, whichever is chosen. What this settles is only whether they are published with the record.',
       takes: 'The charter takes the most private', result: 'Never revealed',
       dist: [11, 3], distTop: 0, distEnds: ['Never', 'After the decision'] },
-    { k: 'chamber', g: '🔭', t: 'Who else can see it', kind: 'constitutional', in: 6,
+    { k: 'chamber', g: '🔭', t: 'Who else can see it?', kind: 'constitutional', in: 6,
       rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.',
       takes: 'The charter takes the most private', result: 'Roster only',
       dist: [5, 8, 1], distTop: 1, distEnds: ['Roster only', 'Public'] },
-    { k: 'machines', g: '🤖', t: 'Machine members', kind: 'constitutional', in: 12,
+    { k: 'machines', g: '🤖', t: 'Is there a machine member?', kind: 'constitutional', in: 12,
       rule: 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.',
       takes: 'The charter takes the most restrictive', result: 'People only',
       dist: [9, 5], distTop: 0, distEnds: ['People only', 'A machine is fine'] },
@@ -155,6 +155,10 @@
     { k: 'title', g: '🏷️', t: 'The title', own: 'convenor', kind: 'ordinary', v: 'The Hollow Oak Club — House Charter' },
     { k: 'slug', g: '🔗', t: 'The link', own: 'convenor', kind: 'ordinary', v: 'draft.to/hollow-oak-4f2a' },
     { k: 'roster', g: '✉️', t: 'Membership', own: 'convenor', kind: 'constitutional', v: 'Fourteen members',
+      // **you should be presented with the roster** (Ed, 2026-08-18): a card
+      // about who is in the room that says only how many is a card you have to
+      // leave to answer the question it raises
+      extra: () => faces(ROSTER, S.myname),
       readNote: 'Anybody else who can read this is not a member — nothing is known about them, they have a link and nothing else. That is the 🔭 setting, not this one.' },
     { k: 'myrole', g: '🎩', t: 'Is the convenor a member?', own: 'convenor', kind: 'constitutional', v: 'Yes — Wren Ashby drafts too',
       setBy: 'Chosen by Wren Ashby when they set the charter up',
@@ -162,12 +166,33 @@
     // One card, two routes to change it — see the ⏰ entry in document-creation.
     { k: 'ending', g: '⏰', t: 'When does it end?', own: 'convenor', kind: 'constitutional',
       motionKind: 'ordinary', v: 'Thursday 18:00',
+      // 329(a): *never* is the constitutional answer; any date is ordinary.
+      routeOf: (v) => (/never|perpetual|no end/i.test(v) ? 'constitutional' : 'ordinary'),
+      routeNote: 'Which route this takes depends on what you write. A different date is an ordinary proposal, judged like any other. Never — no ending at all — re-opens the founding question instead, because a document with no ending has no rising threshold, and every decision already taken was taken under one.',
+
       readNote: 'The approval threshold rises towards that moment, and ✏️s come back paced against it. <b>Never</b> is one of the answers to this question, which is why it is constitutional — a document with no ending has no ramp. The date itself is ordinary, and anybody may propose moving it.' },
     { k: 'grant', g: '🪙', t: 'How many ✏️s do members start with?', own: 'convenor', kind: 'ordinary', v: '4 each' },
     { k: 'drip', g: '💧', t: 'How fast do ✏️s come back?', own: 'convenor', kind: 'ordinary', v: '1 back per 10% of the window, up to 8',
       readNote: 'With the one above, this is the <b>proposal rate</b> — how often anybody may put something to the room. Each proposal also stakes one ✏️, which is a flat one and not a setting: it comes back in full if you withdraw, and in proportion to how well it did if it does not carry.' },
   ];
-  const CARDS = ROOM.concat(CONVENOR);
+  // **The gates are cards** (Ed, 330b). Kept out of ROOM, which defines what
+  // *your own answers* means — a gate that waited on itself would never open.
+  const GATES = [
+    { k: 'canpropose', g: '✏️', t: 'Proposing', own: 'you', isGate: true,
+      open: () => mine(),
+      why: 'You cannot propose a change to a document whose rules you have not yet said what you will accept of — a proposal is judged under them, and you would be writing against a bar you had declined to set.',
+      waiting: 'Waiting on your own answers.',
+      done: 'Open — you can write in the charter.',
+      blockers: () => ROOM.filter((c) => !settled(c)) },
+    { k: 'canjudge', g: '⚖️', t: 'Judging', own: 'you', isGate: true,
+      open: () => roomDone(),
+      why: 'A judgment is counted towards a quorum and recorded under a disclosure rule, and neither exists until everybody has answered. So judging waits on the room rather than on you.',
+      waiting: 'Waiting on everyone’s answers.',
+      done: 'Open — the room is ready.',
+      blockers: () => ROOM.filter((c) => c.own !== 'you' && (c.in || 0) < E) },
+  ];
+
+  const CARDS = ROOM.concat(CONVENOR, GATES);
   const card = (k) => CARDS.find((c) => c.k === k);
 
   // ---- motions -----------------------------------------------------------
@@ -220,13 +245,15 @@
   // settings the convenor made never enter the rail at all — nothing is being
   // asked, and anybody may motion one at the bar whenever they like.
   const needsOk = (c) => c.own === 'convenor' && c.kind === 'constitutional' && !S.okd.has(c.k);
-  const settled = (c) => (c.own === 'convenor' ? !needsOk(c) : (S.seen.has(c.k) && ready(c)));
+  const settled = (c) => (c.isGate ? S.okd.has(c.k)
+    : c.own === 'convenor' ? !needsOk(c) : (S.seen.has(c.k) && ready(c)));
   // **A motion makes its card want you again**, whoever normally holds it — a
   // convenor's setting under motion is a question for the room like any other,
   // which is the whole of what a motion does to the piles. The hue says it and
   // the subject glyph does not change, because hue has always been the state
   // here and the glyph has always been the subject.
-  const mustAct = (c) => (motionOn(c) ? !answeredMotion(c) : !settled(c));
+  const mustAct = (c) => (c.isGate ? (c.open() && !S.okd.has(c.k))
+    : motionOn(c) ? !answeredMotion(c) : !settled(c));
   const isRoom = (c) => c.own !== 'convenor' && c.own !== 'you';
 
   const face = (p, ghost) => '<span class="pf' + (ghost ? ' ghost' : '') + '">' +
@@ -235,7 +262,7 @@
     { key: 'convenor', label: 'Convenor', cards: CONVENOR,
       who: () => face({ n: 'Wren Ashby', pic: 'c0' }),
       note: (n) => (n ? n + ' to acknowledge' : 'settled before you arrived') },
-    { key: 'room', label: 'Membership', cards: ROOM,
+    { key: 'room', label: 'Membership', cards: ROOM.concat(GATES),
       // Wren convened it and is drafting, so they are in the membership too
       who: () => ROSTER.map((p) => face(p)).join(''),
       note: (n) => (n ? n + ' still want you' : 'all answered') },
@@ -248,7 +275,11 @@
   const mine = () => ROOM.every(settled);
   const roomDone = () => ROOM.every((c) => c.own === 'you' || (c.in || 0) >= E);
 
+  const gateOpen = (c) => !!(c.isGate && c.open());
+
   const VALUE = {
+    canpropose: () => (mine() ? 'Open' : 'Waiting on your answers'),
+    canjudge: () => (roomDone() ? 'Open' : 'Waiting on the room'),
     myname: () => S.myname || 'Unnamed',
     mypic: () => (S.mypic ? 'Chosen' : 'Your initials'),
     quorum: () => (S.quorum === null ? 'The lowest you will accept' : 'You said ' + S.quorum + ' of ' + E),
@@ -294,10 +325,7 @@
     rail.innerHTML = '<ul>' + gs.map((g) =>
       '<li class="qhead">' + esc(g.label) + '</li>' +
       g.cards.map((c) => railEntry(c, ctx)).join('')).join('') + '</ul>' +
-      '<div class="railnote">' + (roomDone()
-        ? 'Everyone is ready. Judging is open.'
-        : mine() ? 'Your answers are sealed. Judging opens when everyone is ready.'
-        : 'You can read the charter now. Proposing and judging both wait on these.') + '</div>';
+      '';
     document.getElementById('mebtn').innerHTML = avHtml(me(), 'face');
   }
 
@@ -350,6 +378,48 @@
 
   const BLIND = '<p class="blindnote">Nobody sees your answer, and you will see nobody else’s until every one of them is in.</p>';
 
+  /* **What a motion is composed with** (Ed, 2026-08-18). The control that set
+     a value is the control that proposes a new one — a date picker for a date,
+     the membership for the membership. `data-mval` writes straight into the
+     draft, so what the button says is what the motion will say. */
+  const mrow = (on, val, ttl, exp, inner) =>
+    '<div class="pick' + (on ? ' on' : '') + '">' +
+    '<button class="lanepick" aria-pressed="' + !!on + '" data-mval="' + esc(val) + '">' +
+    '<span class="dot"></span><span>' + ttl + '</span></button>' +
+    (exp ? '<span class="exp">' + exp + '</span>' : '') +
+    (inner ? '<span class="inner">' + inner + '</span>' : '') + '</div>';
+
+  const PROPOSE = {
+    ending: (d) => {
+      const never = /never/i.test(d.to);
+      const when = never ? '' : d.to;
+      return '<div class="choice" role="radiogroup">' +
+        mrow(!never && !!d.to, when || '', 'At a set time', '',
+          '<span class="fld"><label>Ends</label>' +
+          '<input type="datetime-local" data-mdate="1" value="' + esc(when) + '"></span>') +
+        mrow(never, 'Never', 'Never',
+          'No close of its own. This is the constitutional answer — see above.') +
+        '</div>';
+    },
+    // the membership, in front of you, with an ✕ beside each and a field at
+    // the bottom — which is what “propose a change to the membership” means
+    roster: (d) =>
+      '<div class="roster">' + ROSTER.map((p) =>
+        '<div class="rperson' + (d.to === 'Thirteen drafting — ' + p.n + ' leaves' ? ' picked' : '') + '">' +
+        avHtml(p) + '<span><span class="nm">' + esc(p.n) +
+        (p.n === S.myname ? ' <span class="chip">you</span>' : '') + '</span></span>' +
+        (p.n === S.myname ? '<span class="xdrop"> </span>'
+          : '<button class="xdrop" data-mval="Thirteen drafting — ' + esc(p.n) + ' leaves"' +
+            ' title="Propose that they leave">✕</button>') +
+        '</div>').join('') +
+      '<div class="addrow"><input placeholder="Somebody to invite" data-mjoin="1">' +
+      '<button class="btn" data-mjoinbtn="1">Invite</button></div></div>' +
+      '<p class="setnote">Either way it is one motion and it is constitutional, because who is in the room is what quorum is a fraction of. One member who says no settles it.</p>',
+    grant: (d) => '<span class="fld"><label>✏️s to start with</label>' +
+      '<input class="num" type="number" min="0" max="40" data-mnum="✏️s to start with" value="' +
+      esc((d.to.match(/\d+/) || [''])[0]) + '"></span>',
+  };
+
   const BODY = {
     myname: () => nameBody(me()),
     mypic: () => pictureBody(me()),
@@ -398,6 +468,19 @@
         { v: 'true', t: 'A machine member is fine', e: 'It competes on the same terms as anybody else and can be out-judged like anybody else.' }]) + BLIND,
   };
 
+  // A gate card says one thing: what it is waiting for, and whether that has
+  // happened. What it is waiting *on* is drawn as the cards themselves, so a
+  // member reads it as “these, and then you can write” rather than as a rule.
+  const gateBody = (c) =>
+    '<p class="why">' + c.why + '</p>' +
+    '<div class="lockline">' + (c.open() ? TICK : '') + '<span>' +
+    (c.open() ? c.done : c.waiting) + '</span></div>' +
+    (c.open() ? '' : '<div class="gatelist">' + c.blockers().map((b) =>
+      '<span class="gaterow"><span class="gg">' + b.g + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
+    '<p class="setnote">' + (c.open()
+      ? 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.'
+      : 'It comes back to you the moment it opens.') + '</p>';
+
   // ---- the band ----------------------------------------------------------
   function renderBand() {
     band.innerHTML = bandHtml(groups(), ctx, (g) => {
@@ -405,11 +488,13 @@
       let body, foot;
       const m = motionOn(c);
       if (S.draft && S.draft.k === c.k) {
-        body = motionCompose(c, ctx, S.draft);
+        body = motionCompose(c, ctx, S.draft, PROPOSE[c.k]);
         foot = '<button class="btn" data-dropmotion="1">Discard</button>' +
           '<button class="btn btn-approve"' + (S.draft.to ? '' : ' disabled') +
           ' data-putmotion="1">Propose</button>';
-      } else if (m && c.kind === 'ordinary') {
+      // a live motion takes the route its own value asks for (329a), which on
+      // the window is the difference between moving a date and abolishing one
+      } else if (m && (m.kind || routeFor(c, m.to)) === 'ordinary') {
         body = motionBody(c, ctx, { ...m, pick: S.mAns[c.k] });
         foot = '<button class="lanepick" aria-pressed="' + (S.mAns[c.k] === 'either') + '"' +
           ' data-motion="either"><span class="dot"></span><span>Indifferent</span></button>' +
@@ -421,8 +506,13 @@
         foot = '<button class="btn" data-close="1">Close</button>' +
           '<button class="btn btn-approve glyphbtn"' + (answeredMotion(c) ? '' : ' disabled') +
           ' data-confirm="1">' + TICK + '</button>';
+      } else if (c.isGate) {
+        body = gateBody(c);
+        foot = '<button class="btn" data-close="1">Close</button>' +
+          '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
+          ' data-ok="' + c.k + '">OK</button>';
       } else if (c.own === 'convenor') {
-        body = readBody(c, ctx) +
+        body = readBody(c, ctx) + (c.extra ? c.extra() : '') +
           (needsOk(c) ? '<p class="setnote">You had no say in this one and it binds you all the same, ' +
             'so it waits here until you have looked at it. <b>OK</b> files it with the rest of the ' +
             'constitution at the head of the charter.</p>' : '');
@@ -491,7 +581,21 @@
     fr.readAsDataURL(file);
   };
   document.addEventListener('change', (ev) => {
-    if (ev.target.matches('[data-picfile]')) takePic(ev.target.files[0]);
+    if (ev.target.matches('[data-picfile]')) return takePic(ev.target.files[0]);
+    // a motion's own control writes the value it proposes. On `change` rather
+    // than on every keystroke, because a date picker rebuilt under the pointer
+    // is a date picker you cannot use.
+    if (!S.draft) return;
+    if (ev.target.matches('[data-mdate]')) {
+      S.draft.to = ev.target.value
+        ? new Date(ev.target.value).toLocaleString(undefined,
+          { weekday: 'long', hour: '2-digit', minute: '2-digit' }) : '';
+      return render();
+    }
+    if (ev.target.matches('[data-mnum]')) {
+      S.draft.to = ev.target.value + ' ' + ev.target.dataset.mnum;
+      return render();
+    }
   });
   document.addEventListener('dragover', (ev) => {
     const z = ev.target.closest && ev.target.closest('.picdrop');
@@ -525,6 +629,15 @@
     if (pic) { S.mypic = pic.dataset.pic; return render(); }
     const mo = ev.target.closest('[data-motion]');
     if (mo) { S.mAns[S.open] = mo.dataset.motion; return render(); }
+    const mv = ev.target.closest('[data-mval]');
+    if (mv && S.draft) { S.draft.to = mv.dataset.mval; return render(); }
+    const mj = ev.target.closest('[data-mjoinbtn]');
+    if (mj && S.draft) {
+      const f = document.querySelector('[data-mjoin]');
+      const n = (f && f.value || '').trim();
+      if (n) { S.draft.to = 'Fifteen drafting — ' + n + ' joins'; render(); }
+      return;
+    }
     const nm = ev.target.closest('[data-newmotion]');
     if (nm) { S.draft = { k: nm.dataset.newmotion, to: '', why: '' }; S.open = S.draft.k; return render(); }
     if (ev.target.closest('[data-dropmotion]')) { S.draft = null; return render(); }

@@ -217,6 +217,13 @@
   .csval.unset { color: var(--muted); font-weight: 400; font-size: var(--t-ui); }
   .csends { display: flex; justify-content: space-between; font-size: var(--t-cap); color: var(--muted); }
   .csmean { font-size: var(--t-small); color: var(--muted); margin-top: var(--s2); min-height: 3em; }
+  /* a gate card's list of what it is waiting for: the rail's own objects,
+     small, so it reads as “these cards, then you can write” */
+  .gatelist { display: flex; flex-direction: column; gap: var(--s1); margin: var(--s3) 0; }
+  .gaterow { display: flex; align-items: center; gap: var(--s2);
+    font-size: var(--t-ui); color: var(--muted); }
+  .gaterow .gg { font-size: 1.05rem; }
+
   .blindnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
 
 /* ---------------------------------------------------------------------------
@@ -270,6 +277,10 @@
   .chip.convenor { border-color: var(--primary); color: var(--primary-emphasis);
     background: var(--primary-subtle); cursor: default; }
   .chip.pending { border-style: dashed; }
+  /* the person a motion would remove */
+  .rperson.picked { background: color-mix(in srgb, rgb(var(--lc-open)) 22%, var(--bg));
+    border-radius: var(--r-sm); }
+  .rperson .xdrop:hover { color: var(--fg); }
   .xdrop { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0 var(--s1); }
   .addrow { display: flex; gap: var(--s2); padding: var(--s3); background: var(--light);
     border-top: 1px solid var(--border); }
@@ -320,6 +331,18 @@
 
   /* the row that holds the open card keeps the pile's id, so the contents rail
      still lands on it */
+  /* **The tab you click must not move** — the pile occupies exactly the gutter
+     column its strip will (Ed, 2026-08-18: *why do my constitutional
+     clause-tabs-piles jump around when I click on them?*). It was claimed in
+     the glossary and never true in the code: a closed pile inherited
+     `.chipcol`'s 14px gutter margin, which is the right distance from a
+     paragraph and the wrong one from a card edge, so every tab stepped 14px
+     right on opening. 2px puts the pile's right edge exactly where the open
+     strip's is, and the active tab still overhangs by 2 to carry under the
+     card with no seam. The vertical half of the jump is fixed in `fitBand`,
+     since it depends on how tall the card's own label runs. */
+  .setrow:not(.open) .chipcol { margin-right: 0; }
+
   .setrow.open { position: static; padding: 0; max-width: none; margin: 0; min-height: 0 !important; }
 
   /* **The document's title, at the top of the document** (Ed, 2026-08-18),
