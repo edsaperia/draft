@@ -66,7 +66,8 @@
 (function () {
   const { esc, TICK, avHtml, avatarOptions, bandHtml, fitBand, railEntry, cardHtml, readBody,
     watchBody, nameBody, pictureBody, drawWire, opt, faces, someIn,
-    KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor, ANSWER } = window.SETUP;
+    KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor, ANSWER,
+    MAILS, renderMailModal } = window.SETUP;
   const band = document.getElementById('band');
   const rail = document.getElementById('rail');
   const wires = document.getElementById('wires');
@@ -92,10 +93,12 @@
     // a motion you are writing, and your answers to the ones in flight
     draft: null, mAns: {},
     lapse: null,
-    app: { started: false, name: '', pic: '', text: '', submitted: false },
+    app: { started: false, email: '', emailSent: false, emailVerified: false,
+      mailOpen: false, name: '', pic: '', text: '', submitted: false },
     seen: new Set(), okd: new Set(), open: null };
   // the applicant the members see in the settled fixture
   const APPLICANT = { n: 'Marlow Voss', pic: 'm1', judged: 5 };
+  const MEMBER_EMAILS = new Set(['ida@hollowoak.club', 'wren@hollowoak.club']);
   const me = () => ({ n: S.myname, pic: S.mypic });
 
   function renderDoc() {
@@ -166,7 +169,7 @@
       // 🎩 folded in (Ed, 2026-08-18): whether the convenor is a member is
       // their own row in this list, pre-checked when the document was made
       setBy: 'Invited by Wren Ashby — themselves included, their own row pre-checked',
-      readNote: 'The membership here is the members’ — joining and leaving are theirs to decide. Had Wren <b>reserved</b> it, this document would be a 👑, with invite-and-remove staying in one hand; a crown lapses like a member, and a lapsed crown passes to the members.',
+      readNote: 'The membership here is the members’ — joining and leaving are theirs to decide. Had Wren <b>reserved</b> it, Wren would be a 👑 — the convenor of a document that reserves its membership, invite-and-remove staying in their hand; a crown lapses like a member, and a lapsed crown passes to the members.',
 
       readNote: 'Anybody else who can read this is not a member — nothing is known about them, they have a link and nothing else. That is the 🔭 setting, not this one.' },
     // One card, two routes to change it — see the ⏰ entry in document-creation.
@@ -276,7 +279,7 @@
         const line = (g, t, v) => '<span class="cline" title="' + esc(t) + '">' +
           '<span class="cg">' + g + '</span><span><b>' + v + '</b></span></span>';
         return '<div class="constlist">' +
-          line('🎩', 'Convenor', 'Wren Ashby · drafting too') +
+          line('🎩', 'Convenor', 'Wren Ashby · drafting too · 🏴') +
           line('⏱️', 'Constituted', S.state === 'settled' ? 'constituted Tuesday 14:02'
             : 'not yet constituted — when everyone is ready') +
           // the block states the DOCUMENT's rule, never your own answer —
@@ -480,6 +483,9 @@
       kind: 'personal', done: () => a.submitted }];
     if (!a.started) return base;
     return base.concat([
+      // **the email is the identity** (Ed, 2026-08-18): verified by magic
+      // link before anything can be submitted, and unique among members
+      { k: 'appmail', g: '📧', t: 'Your email', own: 'you', kind: 'personal', done: () => a.emailVerified },
       { k: 'appname', g: '✋', t: 'Your name', own: 'you', kind: 'personal', done: () => !!a.name.trim() },
       { k: 'apppic', g: '🖼️', t: 'Your picture', own: 'you', kind: 'personal', done: () => !!a.pic },
       { k: 'apptext', g: '📝', t: 'Your application', own: 'you', kind: 'personal', optional: true, done: () => !!a.text.trim() },
@@ -491,6 +497,8 @@
     settled: (c) => c.done() || (c.optional && S.app.submitted),
     summary: (c) => (c.k === 'apply'
       ? (S.app.submitted ? 'Before the members — an ordinary proposal' : S.app.started ? (['appname','apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
+      : c.k === 'appmail' ? (S.app.emailVerified ? S.app.email + ' · verified'
+        : S.app.emailSent ? 'Check your inbox' : 'Your identity here')
       : c.k === 'appname' ? (S.app.name || 'What members will call you')
       : c.k === 'apppic' ? (S.app.pic ? 'Chosen' : 'A ground for your initials')
       : (S.app.text ? 'Written' : 'A few words — optional')),
@@ -500,13 +508,28 @@
   const APPBODY = {
     apply: () => {
       const a = S.app;
-      const ready2 = a.started && a.name.trim() && a.pic;
-      return '<p class="why">This document’s membership is not open, but it takes <b>applications</b>. Applying is three small tasks — your name, your picture, and a few words if you want them — and your application then goes before the members as an <b>ordinary proposal</b> to grant you membership, judged like any other: it carries if the room is sure enough.</p>' +
+      const ready2 = a.started && a.emailVerified && a.name.trim() && a.pic;
+      return '<p class="why">This document’s membership is not open, but it takes <b>applications</b>. Applying is four small tasks — your email, your name, your picture, and a few words if you want them — and your application then goes before the members as an <b>ordinary proposal</b> to grant you membership, judged like any other: it carries if the room is sure enough.</p>' +
         (a.submitted
           ? '<div class="lockline">' + TICK + '<span>Submitted. Your application is before the members — ' + APPLICANT.judged + ' of ' + E + ' have judged it so far. You will get an email either way.</span></div>'
           : a.started
-          ? '<p class="setnote">' + (ready2 ? 'Everything needed is in — the words are optional.' : 'Two of the three are needed; the words are optional.') + '</p>'
+          ? '<p class="setnote">' + (ready2 ? 'Everything needed is in — the words are optional.' : 'The email, the name and the picture are needed; the words are optional.') + '</p>'
           : '<p class="setnote">Nothing is sent until you say so, and nothing about you is collected before you begin.</p>');
+    },
+    appmail: () => {
+      const a = S.app;
+      const taken = MEMBER_EMAILS.has(a.email.trim().toLowerCase());
+      const okAddr = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email) && !taken;
+      return a.emailVerified
+        ? '<div class="lockline">' + TICK + '<span>Verified — <b>' + esc(a.email) + '</b> is your identity here.</span></div>'
+        : a.emailSent
+        ? '<p class="why">Sent to <b>' + esc(a.email) + '</b>. Nothing is submitted until the address has proved it works — it is your identity here, and the only way the answer can reach you.</p>' +
+          '<div style="margin-top:var(--s3)"><button class="btn" data-appmailopen="1">Open your inbox</button> ' +
+          '<button class="btn" data-appmailedit="1">Wrong address?</button></div>'
+        : '<p class="why">Your email is your <b>identity</b> here — the magic link is the login, the answer to your application arrives on it, and no two members may share one. It has to prove it works before you can submit.</p>' +
+          '<span class="fld"><label>Your email</label><input type="email" data-appmail="1" value="' + esc(a.email) + '" placeholder="you@example.com" style="width:20rem"></span>' +
+          (taken ? '<p class="setnote"><b>Already a member’s address.</b> A member email is one identity — if it is yours, log in with it instead of applying.</p>' : '') +
+          '<div style="margin-top:var(--s3)"><button class="btn"' + (okAddr ? '' : ' disabled') + ' data-appmailsend="1">Send the link</button></div>';
     },
     appname: () => '<p class="why">What the members will call you — in the application, and in the membership if it carries.</p>' +
       '<span class="fld"><label>Your name</label><input data-appname="1" value="' + esc(S.app.name) + '" placeholder="Your name" style="width:20rem"></span>',
@@ -613,14 +636,17 @@
       : 'reading only · proposing waits on your answers';
   }
 
-  const render = () => { renderStates(); renderRail(); renderBand(); drawWire(wires, S.open); };
+  const render = () => { renderStates(); renderRail(); renderBand(); drawWire(wires, S.open);
+    renderMailModal(S.state === 'applicant' && S.app.mailOpen,
+      MAILS.applyVerify('The Hollow Oak Club — House Charter', S.app.email)); };
 
   // the three states are a fixture switch, so all of them are inspectable
   const COUNTS = { quorum: 11, bar: 9, authorship: 7, signing: 7, judgments: 12,
     chamber: 6, machines: 12, lapse: 8 };
   function setState(k) {
     S.state = k; S.open = null;
-    S.app = { started: false, name: '', pic: '', text: '', submitted: false };
+    S.app = { started: false, email: '', emailSent: false, emailVerified: false,
+      mailOpen: false, name: '', pic: '', text: '', submitted: false };
     if (k === 'applicant') {
       // everything settled, and readable from outside: the fixture's chamber
       // opens to the link, or there would be no document for an applicant to
@@ -693,6 +719,16 @@
     const t = ev.target.closest('[data-tab], [data-card]');
     if (t) { const k = t.dataset.tab || t.dataset.card;
       S.open = (S.open === k) ? null : k; return render(); }
+    const ams = ev.target.closest('[data-appmailsend]');
+    if (ams) { S.app.emailSent = true; S.app.mailOpen = true; return render(); }
+    const amo = ev.target.closest('[data-appmailopen]');
+    if (amo) { S.app.mailOpen = true; return render(); }
+    const ame = ev.target.closest('[data-appmailedit]');
+    if (ame) { S.app.emailSent = false; return render(); }
+    if (ev.target.closest('[data-act="clickmail"]')) {
+      S.app.emailVerified = true; S.app.mailOpen = false; return render(); }
+    if (ev.target.closest('[data-mailclose]') || ev.target.id === 'mailmodal') {
+      S.app.mailOpen = false; return render(); }
     const ast = ev.target.closest('[data-appstart]');
     if (ast) { S.app.started = true; return render(); }
     const asu = ev.target.closest('[data-appsubmit]');
@@ -735,6 +771,13 @@
     }
   });
   document.addEventListener('input', (ev) => {
+    if (ev.target.closest && ev.target.closest('[data-appmail]')) {
+      S.app.email = ev.target.value;
+      S.app.emailSent = false; S.app.emailVerified = false;
+      const sv = document.querySelector('[data-appmailsend]');
+      if (sv) sv.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S.app.email) ||
+        MEMBER_EMAILS.has(S.app.email.trim().toLowerCase());
+      renderRail(); return; }
     if (ev.target.closest && ev.target.closest('[data-appname]')) {
       S.app.name = ev.target.value; renderRail(); return; }
     if (ev.target.closest && ev.target.closest('[data-apptext]')) {

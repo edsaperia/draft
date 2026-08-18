@@ -629,6 +629,37 @@ window.SETUP = (function () {
       ' data-ansnum="drip"' + (A.drip !== null ? ' value="' + A.drip + '"' : '') + '></span>' + BLINDNOTE,
   };
 
+  /* ---- the mails -----------------------------------------------------------
+     Templates as data (soon enough these are real emails; the words must not
+     be tangled into a view) and one modal that stands for the reader's inbox.
+     Its styles live in setup.css behind a NOT-DESIGN-SYSTEM fence: the mail
+     previews another medium, and its look must owe nothing to this surface. */
+  const MAILS = {
+    verify: (title, to) => ({
+      to, from: 'docs.vote',
+      subject: 'Log in to create “' + title + '”',
+      body: 'You have created a document called <b>' + esc(title) + '</b> on docs.vote.',
+      action: 'Log in to create it',
+    }),
+    applyVerify: (title, to) => ({
+      to, from: 'docs.vote',
+      subject: 'Log in to continue your application',
+      body: 'You are applying to join <b>' + esc(title) + '</b> on docs.vote. This address will be your identity there.',
+      action: 'Log in to continue',
+    }),
+  };
+  function renderMailModal(open, mail) {
+    let el = document.getElementById('mailmodal');
+    if (!open) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement('div'); el.id = 'mailmodal'; document.body.appendChild(el); }
+    el.innerHTML = '<div class="mailwin" role="dialog" aria-label="Email">' +
+      '<div class="mw-head"><span>' + esc(mail.from) + '</span><span>to ' + esc(mail.to) + '</span>' +
+      '<button data-mailclose="1" title="Close">✕</button></div>' +
+      '<div class="mw-subj">' + esc(mail.subject) + '</div>' +
+      '<div class="mw-body"><p>' + mail.body + '</p>' +
+      '<a class="mw-act" data-act="clickmail">' + esc(mail.action) + '</a></div></div>';
+  }
+
   /* ---- the cable ----------------------------------------------------------
      `queue-wire`, lifted from session-view with its rules intact: 6px, opaque,
      exactly the colour of its own queue card (the wash composited over white,
@@ -773,5 +804,5 @@ window.SETUP = (function () {
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
     nameBody, pictureBody, drawWire, opt, num, faces, someIn,
     KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor,
-    slider, ladder, ANSWER, BLINDNOTE };
+    slider, ladder, ANSWER, BLINDNOTE, MAILS, renderMailModal };
 })();
