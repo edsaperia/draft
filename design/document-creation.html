@@ -1,0 +1,443 @@
+<meta charset="utf-8">
+<title>Document creation</title>
+<style>
+/* ============================================================================
+   document-creation — where every §9.0 setting is chosen when a document is
+   made, and the roster is invited. First pass (Ed, 2026-08-17): the brief was
+   "put all the required controls on it and we can see what we're looking at",
+   so this errs towards completeness. Nothing here has been cut yet — Q259 asks
+   Ed to see every option before any are.
+
+   It adopts session-view's design system rather than inventing one (CLAUDE.md).
+   ========================================================================== */
+  :root {
+    --bg: #FFFFFF; --fg: #212529; --muted: #6C757D; --border: #DEE2E6; --light: #F8F9FA;
+    --primary: #0D6EFD; --primary-hover: #0B5ED7; --primary-subtle: #CFE2FF; --primary-emphasis: #084298;
+    --ok: #198754; --ok-hover: #146C43; --ok-subtle: #D1E7DD;
+    --lc-open: 245, 197, 24; --lc-yours: 13, 110, 253; --lc-closed: 154, 162, 170;
+    --t-lead: 1.25rem; --t-body: 1rem; --t-ui: 0.875rem;
+    --t-small: 0.8125rem; --t-cap: 0.72rem; --t-micro: 0.65rem;
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+    --r-sm: 0.25rem; --r-md: 0.375rem; --r-lg: 0.5rem;
+    --shadow-sm: 0 1px 1px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.10);
+    --shadow-md: 0 1px 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.14);
+    --shadow-lg: 0 1px 2px rgba(0,0,0,0.10), 0 4px 7px rgba(0,0,0,0.16);
+    --nav-h: 58px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg); font-size: 16px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .eyebrow, .seclab {
+    font-size: var(--t-micro); font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--muted);
+  }
+
+  /* ---- chrome ---------------------------------------------------------- */
+  .navbar { background: var(--light); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 40; }
+  .navbar .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s4); padding: 10px var(--s4); }
+  .navbar .brand { font-weight: 600; font-size: var(--t-body); margin: 0; }
+  .navbar .sub { font-size: var(--t-ui); color: var(--muted); }
+  .layout {
+    display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--s5);
+    max-width: 1180px; margin: 0 auto; padding: var(--s5) var(--s4) 120px;
+  }
+
+  /* ---- a section ------------------------------------------------------- */
+  .sec { border-top: 1px solid var(--border); padding: var(--s5) 0; }
+  .sec:first-child { border-top: 0; padding-top: var(--s2); }
+  .sec > h2 { font-size: var(--t-lead); margin: 0 0 var(--s1); font-weight: 600; }
+  .sec > .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch; }
+  .row { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; margin-bottom: var(--s3); }
+  .field { display: flex; flex-direction: column; gap: var(--s1); }
+  .field > label { font-size: var(--t-cap); color: var(--muted); }
+  input[type=text], input[type=number], input[type=email], input[type=datetime-local], textarea, select {
+    font: inherit; font-size: var(--t-ui); color: var(--fg); background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--s2) var(--s3);
+  }
+  input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible {
+    outline: 2px solid var(--primary); outline-offset: 2px;
+  }
+  textarea { width: 100%; min-height: 190px; line-height: 1.55; resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: var(--t-small); }
+  .num { width: 5.5rem; }
+
+  /* ---- the choice: a stack of options, one of which is on --------------- */
+  .choice { display: flex; flex-direction: column; gap: var(--s2); }
+  .opt {
+    display: grid; grid-template-columns: 20px 1fr; gap: var(--s3);
+    align-items: start; padding: var(--s3) var(--s4);
+    border: 1px solid var(--border); border-radius: var(--r-lg); cursor: pointer;
+    background: var(--bg);
+  }
+  .opt:hover { background: var(--light); }
+  .opt.on { border-color: var(--primary); background: var(--primary-subtle); box-shadow: var(--shadow-sm); }
+  .opt.on .dot { border-color: var(--primary); }
+  .opt.on .dot::after { transform: scale(1); }
+  .opt[aria-disabled="true"] { opacity: 0.42; cursor: default; }
+  .opt[aria-disabled="true"]:hover { background: var(--bg); }
+  .dot {
+    width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid var(--muted);
+    margin-top: 3px; display: grid; place-items: center;
+  }
+  .dot::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--primary);
+    transform: scale(0); transition: transform 120ms ease; }
+  .opt .ttl { display: block; font-weight: 600; font-size: var(--t-ui); }
+  .opt .exp { display: block; color: var(--muted); font-size: var(--t-small); margin-top: 2px; }
+  .opt .inner { margin-top: var(--s3); display: none; }
+  .opt.on .inner { display: block; }
+
+  /* ---- the roster ------------------------------------------------------ */
+  .roster { border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
+  .rperson { display: grid; grid-template-columns: 30px 1fr auto auto; gap: var(--s3);
+    align-items: center; padding: var(--s2) var(--s3); border-top: 1px solid var(--border); }
+  .rperson:first-child { border-top: 0; }
+  .face {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff;
+    font-size: var(--t-micro); font-weight: 700; display: grid; place-items: center; letter-spacing: 0.02em;
+  }
+  .rperson .who { min-width: 0; }
+  .rperson .nm { font-size: var(--t-ui); font-weight: 500; }
+  .rperson .em { font-size: var(--t-cap); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip {
+    font-size: var(--t-cap); border: 1px solid var(--border); border-radius: 999px;
+    padding: 2px var(--s2); color: var(--muted); background: var(--bg); cursor: pointer; font-family: inherit;
+  }
+  .chip.convenor { border-color: var(--primary); color: var(--primary-emphasis); background: var(--primary-subtle); }
+  .chip.observer { border-style: dashed; }
+  .x { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: var(--t-ui); padding: 0 var(--s1); }
+  .x:hover { color: var(--fg); }
+  .addrow { display: flex; gap: var(--s2); padding: var(--s3); background: var(--light); border-top: 1px solid var(--border); }
+  .addrow input { flex: 1; }
+
+  /* ---- buttons --------------------------------------------------------- */
+  .btn {
+    font: inherit; font-size: var(--t-ui); padding: var(--s2) var(--s4); cursor: pointer;
+    border: 1px solid var(--border); background: var(--bg); color: var(--fg); border-radius: var(--r-md);
+  }
+  .btn:hover { background: var(--light); }
+  .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+  .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+  .btn-go { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 600; font-size: var(--t-body); padding: var(--s3) var(--s5); }
+  .btn-go:hover { background: var(--ok-hover); border-color: var(--ok-hover); }
+
+  /* ---- the readback ---------------------------------------------------- */
+  .readback { position: sticky; top: calc(var(--nav-h) + var(--s5)); align-self: start; }
+  .rb {
+    border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s4);
+    background: var(--light); box-shadow: var(--shadow-sm);
+  }
+  .rb p { margin: 0 0 var(--s3); font-size: var(--t-small); line-height: 1.65; }
+  .rb p:last-child { margin-bottom: 0; }
+  .rb b { color: var(--fg); }
+  .rb .warn { color: var(--stuck-ink, #8A6D00); }
+  .rb-hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--s3); }
+  .toggles { display: flex; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s3); }
+
+  .note { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); }
+  .inline { display: inline-flex; align-items: baseline; gap: var(--s2); }
+  .bar { height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; margin: var(--s2) 0; }
+  .bar > i { display: block; height: 100%; background: var(--primary); }
+</style>
+
+<nav class="navbar"><div class="wrap">
+  <h1 class="brand">New document</h1>
+  <span class="sub">nothing is published until you open it</span>
+</div></nav>
+
+<div class="layout">
+  <main id="form"></main>
+  <aside class="readback"><div class="rb" id="rb"></div></aside>
+</div>
+
+<script>
+(function () {
+  // ---- state ------------------------------------------------------------
+  // One object holding every §9.0 answer, so the `readback` can be written
+  // from the state rather than from the controls — which is what stops the
+  // summary and the form drifting apart the way two descriptions always do.
+  const S = {
+    title: 'The Hollow Oak Club — House Charter',
+    purpose: 'A society of friends keeping a house together.',
+    text: '# The Hollow Oak Club — House Charter\n\nThe Hollow Oak Club exists so that its members may have a place of their own: to meet, make, cook, argue, garden, and put the world to rights.\n\nWhat follows is the whole of the Club’s law. Where it is silent, the membership decides; where it speaks, it binds until it is changed by the process set out at the end.',
+    window: 'ends', endsAt: '2026-08-20T18:00',
+    shape: 'ramp', tStart: 55, tEnd: 78, tFixed: 66,
+    quorumForm: 'share', quorumPct: 33, quorumN: 5,
+    // Ed, 2026-08-17: the ceremony is **fully optional**. A convenor may settle
+    // the constitution alone, disclosure included, and the document opens
+    // straight into drafting. (SPEC §3.5a said the disclosure family was never
+    // the convenor's; his ruling reverses that, and the spec is amended to v0.25
+    // to match.) The two delegations are independent: a convenor may fix the
+    // numbers and still hand the room its own privacy, or the other way about.
+    numbersBy: 'roster', disclosureBy: 'roster',
+    authorship: 'anonymous', signing: 'nobody', judgments: 'never',
+    grant: 4, drip: 1, dripPer: 10, cap: 8, stake: 1,
+    roster: [
+      { n: 'Wren Ashby', e: 'wren@hollowoak.club', role: 'convenor' },
+      { n: 'Hollis Mear', e: 'hollis@hollowoak.club', role: 'member' },
+      { n: 'Ida Fenwick', e: 'ida@hollowoak.club', role: 'member' },
+      { n: 'Tobias Crane', e: 'tobias@hollowoak.club', role: 'member' },
+      { n: 'Sylva Renn', e: 'sylva@hollowoak.club', role: 'member' },
+      { n: 'Marlow Pike', e: 'marlow@hollowoak.club', role: 'member' },
+      { n: 'Perrin Oakes', e: 'perrin@hollowoak.club', role: 'member' },
+      { n: 'Nella Quist', e: 'nella@hollowoak.club', role: 'member' },
+      { n: 'Ansel Whitlow', e: 'ansel@hollowoak.club', role: 'member' },
+      { n: 'Bee Harkness', e: 'bee@hollowoak.club', role: 'member' },
+      { n: 'Corin Vale', e: 'corin@hollowoak.club', role: 'member' },
+      { n: 'Dov Attaway', e: 'dov@hollowoak.club', role: 'member' },
+      { n: 'Esme Rooke', e: 'esme@hollowoak.club', role: 'member' },
+      { n: 'Fay Lindmoor', e: 'fay@hollowoak.club', role: 'observer' },
+    ],
+    chamber: 'link', auditor: true, auditorBudget: 6,
+  };
+
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const members = () => S.roster.filter((p) => p.role !== 'observer');
+  const E = () => members().length;
+  const quorumCount = () => (S.quorumForm === 'share'
+    ? Math.max(1, Math.round(E() * S.quorumPct / 100)) : Math.min(S.quorumN, E()));
+  const initials = (n) => n.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+
+  // ---- one option in a choice ------------------------------------------
+  const opt = (key, val, ttl, exp, inner, off) =>
+    '<div class="opt' + (S[key] === val ? ' on' : '') + '"' +
+    (off ? ' aria-disabled="true"' : ' data-set="' + key + '" data-val="' + val + '" role="radio" tabindex="0"' +
+      ' aria-checked="' + (S[key] === val) + '"') + '>' +
+    '<span class="dot"></span><span><span class="ttl">' + ttl + '</span>' +
+    (exp ? '<span class="exp">' + exp + '</span>' : '') +
+    (inner ? '<span class="inner">' + inner + '</span>' : '') + '</span></div>';
+
+  const num = (key, label, min, max, suffix) =>
+    '<span class="field"><label>' + label + '</label><span class="inline">' +
+    '<input class="num" type="number" data-num="' + key + '" value="' + S[key] + '" min="' + min + '" max="' + max + '">' +
+    (suffix ? '<span class="note" style="margin:0">' + suffix + '</span>' : '') + '</span></span>';
+
+  // ---- the form ---------------------------------------------------------
+  function render() {
+    const perpetual = S.window === 'perpetual';
+    let h = '';
+
+    // 1 ── the document itself
+    h += '<section class="sec"><h2>The document</h2>' +
+      '<p class="why">The title, and the text the room starts from. Everything else on this page is about how that text is allowed to change.</p>' +
+      '<div class="row"><span class="field" style="flex:1;min-width:280px"><label>Title</label>' +
+      '<input type="text" data-txt="title" value="' + esc(S.title) + '"></span></div>' +
+      '<div class="row"><span class="field" style="flex:1;min-width:280px"><label>One line about it</label>' +
+      '<input type="text" data-txt="purpose" value="' + esc(S.purpose) + '"></span></div>' +
+      '<span class="field"><label>The starting text — Markdown</label>' +
+      '<textarea data-txt="text">' + esc(S.text) + '</textarea></span>' +
+      '<p class="note">Or <a href="#">upload a file</a>. This is published at the opening along with the roster and the constitution, hash-anchored (SPEC §9.2).</p>' +
+      '</section>';
+
+    // 2 ── the window
+    h += '<section class="sec"><h2>The window</h2>' +
+      '<p class="why">Whether this document has an ending. It is fixed at creation and cannot be changed afterwards — every other setting on this page is too.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      opt('window', 'ends', 'It ends at a set time',
+        'Buys a closing ceremony, a token drip paced against the window, and a record cut at a known moment.',
+        '<span class="field"><label>Ends</label><input type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '"></span>') +
+      opt('window', 'perpetual', 'Perpetual',
+        'No end date. The drip runs against real time and never resets, and the document ends by <b>freeze</b> instead — when too few members are still active, the roster ends it rather than the calendar (§9.5).') +
+      '</div></section>';
+
+    // 3 ── the bar
+    h += '<section class="sec"><h2>The bar</h2>' +
+      '<p class="why">How sure the room has to be that a change beats the current text. This is never a vote share — it is a confidence.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      opt('shape', 'ramp', 'Rising', 'Starts low and rises to the close, because the bar should track irreversibility: an early adoption can still be challenged inside the window, a late one is permanent.',
+        '<span class="row" style="margin:0">' + num('tStart', 'At the opening', 50, 99, '%') + num('tEnd', 'At the close', 50, 99, '%') + '</span>',
+        perpetual) +
+      opt('shape', 'fixed', 'Fixed', 'One bar for the life of the document. Anything may displace anything, always, at the same price.',
+        '<span class="row" style="margin:0">' + num('tFixed', 'The bar', 50, 99, '%') + '</span>') +
+      '</div>' +
+      (perpetual ? '<p class="note">A rising bar needs an endpoint to rise towards, so a perpetual document holds its bar fixed. This is the only place the two settings are not independent.</p>' : '') +
+      '</section>';
+
+    // 4 ── quorum
+    h += '<section class="sec"><h2>Quorum</h2>' +
+      '<p class="why">How many distinct members must weigh in on a question before it can be adopted. A question short of quorum simply waits — silence is never counted as a vote.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      opt('quorumForm', 'share', 'A share of the roster',
+        'Suits a document with a window, where the roster is stable and a fraction expresses legitimacy.',
+        '<span class="row" style="margin:0">' + num('quorumPct', 'Share', 1, 100, '% — that is ' + quorumCount() + ' of ' + E() + ' today') + '</span>') +
+      opt('quorumForm', 'count', 'A fixed number of members',
+        'Suits a perpetual document, where a drifting roster would otherwise silently re-rate every parked race whenever somebody joined.',
+        '<span class="row" style="margin:0">' + num('quorumN', 'Members', 1, 40, 'of ' + E()) + '</span>') +
+      '</div></section>';
+
+    // 5 ── who settles the constitution
+    h += '<section class="sec"><h2>Who settles the constitution</h2>' +
+      '<p class="why">Quorum, the bar and the disclosure settings can be yours to choose, or the roster’s to agree before any drafting begins. The two are independent — you may fix the numbers and still hand the room its own privacy.</p>' +
+      '<div class="seclab" style="margin-bottom:var(--s2)">Quorum and the bar</div>' +
+      '<div class="choice" role="radiogroup" style="margin-bottom:var(--s5)">' +
+      opt('numbersBy', 'convenor', 'I set them', 'The values above stand as written.') +
+      opt('numbersBy', 'roster', 'The roster decides, at an opening ceremony',
+        'Each member is asked, blind, for the <b>lowest they are willing to accept</b>, and the document takes the highest of those answers. Nobody can say the rules were imposed on them, because the result satisfies every stated minimum. The cost: the most demanding member sets the bar.') +
+      '</div>' +
+      '<div class="seclab" style="margin-bottom:var(--s2)">Who may be seen, and when</div>' +
+      '<div class="choice" role="radiogroup">' +
+      opt('disclosureBy', 'convenor', 'I set them', 'You choose the three settings below.') +
+      opt('disclosureBy', 'roster', 'The roster decides, at the same ceremony',
+        'Each member states the <b>most exposure they are willing to accept</b>, and the document takes the most private of those answers — so a single person who wants to stay unnamed keeps the whole document unnamed.') +
+      '</div></section>';
+
+    // 6 ── disclosure, when it is the convenor's
+    if (S.disclosureBy === 'convenor') {
+      h += '<section class="sec"><h2>Who may be seen</h2>' +
+        '<p class="why">Three independent settings. Rationales are always visible whatever you choose here — what varies is only whether a name is attached to one. Disclosure changes what the mechanism measures: a room that can see whose text it is can prefer the person.</p>' +
+        '<div class="seclab" style="margin-bottom:var(--s2)">Candidate authorship</div>' +
+        '<div class="choice" role="radiogroup" style="margin-bottom:var(--s5)">' +
+        opt('authorship', 'anonymous', 'Anonymous', 'Never revealed, not even in the closing record.') +
+        opt('authorship', 'sealed', 'Sealed', 'Hidden while the document is live; revealed at the close.') +
+        opt('authorship', 'public', 'Public', 'Visible from the moment a proposal is made.') +
+        '</div>' +
+        '<div class="seclab" style="margin-bottom:var(--s2)">Who may sign</div>' +
+        '<div class="choice" role="radiogroup" style="margin-bottom:var(--s5)">' +
+        opt('signing', 'nobody', 'Nobody signs', 'Uniform, and the only setting under which an unsigned proposal says nothing about its author.') +
+        opt('signing', 'each', 'Each author chooses, per proposal', 'A real option and a costly one: in a small roster, an unsigned candidate among signed ones says something about whoever wrote it.') +
+        opt('signing', 'everybody', 'Everybody signs', 'Uniform in the other direction.') +
+        '</div>' +
+        '<div class="seclab" style="margin-bottom:var(--s2)">Judgments</div>' +
+        '<div class="choice" role="radiogroup">' +
+        opt('judgments', 'never', 'Never revealed', 'The assumption everywhere else in the mechanism.') +
+        opt('judgments', 'after', 'Revealed after the decision they contributed to', 'Never live — blind judgment while it is still being collected is what keeps the measurement honest.') +
+        '</div></section>';
+    }
+
+    // 7 ── the economy
+    h += '<section class="sec"><h2>The edit economy</h2>' +
+      '<p class="why">Proposing costs an edit. Members see these numbers in their wallets from the first minute, so a document meant to move quickly and one meant to be hard to change want different answers here.</p>' +
+      '<div class="row">' + num('grant', 'Edits to start with', 0, 40) +
+      num('drip', 'Edits returned', 0, 10) +
+      num('dripPer', perpetual ? 'every N hours' : 'per N% of the window', 1, 100) +
+      num('cap', 'Never more than', 1, 99) +
+      num('stake', 'Staked per proposal', 0, 10) + '</div>' +
+      '<p class="note">A stake comes back in full if you withdraw, and is repaid in proportion to how well the proposal did if it does not carry (§7).</p>' +
+      '</section>';
+
+    // 8 ── the roster
+    h += '<section class="sec"><h2>The roster</h2>' +
+      '<p class="why">Everyone here gets a link by email — there are no passwords. Observers can watch the chamber but never judge, propose, or count towards quorum.</p>' +
+      '<div class="roster">' +
+      S.roster.map((p, i) =>
+        '<div class="rperson"><span class="face">' + initials(p.n) + '</span>' +
+        '<span class="who"><span class="nm">' + esc(p.n) + '</span><br><span class="em">' + esc(p.e) + '</span></span>' +
+        '<button class="chip ' + p.role + '" data-role="' + i + '">' + p.role + '</button>' +
+        '<button class="x" data-drop="' + i + '" title="Remove">✕</button></div>').join('') +
+      '<div class="addrow"><input type="email" placeholder="name@example.com" data-add="1">' +
+      '<button class="btn" data-act="add">Invite</button>' +
+      '<button class="btn" data-act="paste">Paste a list…</button></div>' +
+      '</div>' +
+      '<p class="note">' + E() + ' members and ' + (S.roster.length - E()) + ' observer' +
+      ((S.roster.length - E()) === 1 ? '' : 's') + '. The convenor may add or remove people later: a joiner gets the base grant plus the drip accrued so far, and quorum recomputes — announced in the gazette, so races parked at the old floor never complete silently.</p>' +
+      '</section>';
+
+    // 9 ── who else can see it
+    h += '<section class="sec"><h2>Who else can see it</h2>' +
+      '<div class="choice" role="radiogroup">' +
+      opt('chamber', 'link', 'Anyone with the link', 'The chamber view only: adoptions as they land, the rolling log hash, which races are stuck. Live standings are never visible to anybody.') +
+      opt('chamber', 'closed', 'Roster only', 'No chamber view outside the roster.') +
+      opt('chamber', 'public', 'Public', 'Listed and readable by anyone.') +
+      '</div></section>';
+
+    // 10 ── machine participants
+    h += '<section class="sec"><h2>Machine participants</h2>' +
+      '<p class="why">A machine member holds a token budget like anybody else and competes on the same terms — it cannot judge more cheaply or propose more often than a person.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      opt('auditor', true, 'Include the coherence auditor',
+        'Patrols the document for drift — a definition changed in one place and not another, a cross-reference that no longer points anywhere — and proposes fixes.',
+        '<span class="row" style="margin:0">' + num('auditorBudget', 'Its edit budget', 0, 40) + '</span>') +
+      opt('auditor', false, 'People only') +
+      '</div></section>';
+
+    // 11 ── open it
+    h += '<section class="sec"><h2>Open the document</h2>' +
+      '<p class="why">This publishes the roster, the constitution and the starting text to everyone at once, hash-anchored so the opening is common knowledge. None of the settings above can be changed afterwards.</p>' +
+      '<button class="btn-go btn">' +
+      (S.numbersBy === 'roster' || S.disclosureBy === 'roster'
+        ? 'Send the invitations and open the ceremony' : 'Send the invitations and open for drafting') +
+      '</button>' +
+      '<p class="note">' + (S.numbersBy === 'roster' || S.disclosureBy === 'roster'
+        ? 'Drafting begins once every member has answered the ceremony.'
+        : 'Drafting begins immediately.') + '</p>' +
+      '</section>';
+
+    document.getElementById('form').innerHTML = h;
+    readback();
+  }
+
+  // ---- the readback -----------------------------------------------------
+  // **One plain sentence, built from the state.** Eleven sections of controls
+  // is a lot to hold in the head, and the thing a convenor actually wants to
+  // check is not any single setting but the shape of the document they are
+  // about to make. So the page says it back in the words the members will
+  // experience rather than in the words of the form.
+  function readback() {
+    const perpetual = S.window === 'perpetual';
+    const when = perpetual ? 'runs until the roster freezes it'
+      : 'runs until ' + new Date(S.endsAt).toLocaleString(undefined,
+        { weekday: 'long', hour: '2-digit', minute: '2-digit' });
+    const bar = S.shape === 'fixed' || perpetual
+      ? 'a fixed bar of <b>' + S.tFixed + '%</b>'
+      : 'a bar rising from <b>' + S.tStart + '%</b> to <b>' + S.tEnd + '%</b>';
+    const q = S.quorumForm === 'share'
+      ? '<b>' + quorumCount() + ' of ' + E() + '</b> (' + S.quorumPct + '% of the roster)'
+      : '<b>' + Math.min(S.quorumN, E()) + '</b> members';
+    const dis = { anonymous: 'nobody’s name is ever attached to a proposal',
+      sealed: 'names are hidden until the close', public: 'names are visible from the start' }[S.authorship];
+
+    let h = '<div class="rb-hd"><span class="eyebrow">What this will be</span></div>';
+    h += '<p><b>' + esc(S.title) + '</b> — a document for <b>' + E() + '</b> members that ' + when + ', with ' + bar +
+      ' and a quorum of ' + q + '.</p>';
+    h += '<p>Everyone starts with <b>' + S.grant + '</b> edits, gets <b>' + S.drip + '</b> back ' +
+      (perpetual ? 'every ' + S.dripPer + ' hours' : 'per ' + S.dripPer + '% of the window') +
+      ', and never holds more than <b>' + S.cap + '</b>.</p>';
+    if (S.numbersBy === 'roster' || S.disclosureBy === 'roster') {
+      h += '<p class="warn">Before anyone drafts, the roster settles ' +
+        (S.numbersBy === 'roster' && S.disclosureBy === 'roster' ? 'the quorum, the bar and who may be seen'
+          : S.numbersBy === 'roster' ? 'the quorum and the bar' : 'who may be seen') +
+        ' at an opening ceremony. The numbers above are your suggestion and may be raised by it, never lowered.</p>';
+    }
+    if (S.disclosureBy === 'convenor') h += '<p>You have chosen that ' + dis + '.</p>';
+    h += '<p>Once you open it, none of this can change.</p>';
+    h += '<div class="toggles"><button class="btn" data-act="preview">Preview as a member</button>' +
+      '<button class="btn" data-act="save">Save as a template</button></div>';
+    document.getElementById('rb').innerHTML = h;
+  }
+
+  // ---- wiring -----------------------------------------------------------
+  document.addEventListener('click', (ev) => {
+    const o = ev.target.closest('[data-set]');
+    if (o) { const v = o.dataset.val; S[o.dataset.set] = (v === 'true') ? true : (v === 'false') ? false : v;
+      if (S.window === 'perpetual') S.shape = 'fixed';
+      return render(); }
+    const r = ev.target.closest('[data-role]');
+    if (r) { const p = S.roster[+r.dataset.role];
+      p.role = p.role === 'member' ? 'observer' : p.role === 'observer' ? 'convenor' : 'member';
+      return render(); }
+    const d = ev.target.closest('[data-drop]');
+    if (d) { S.roster.splice(+d.dataset.drop, 1); return render(); }
+    const a = ev.target.closest('[data-act="add"]');
+    if (a) { const f = document.querySelector('[data-add]');
+      if (f && f.value.trim()) {
+        const em = f.value.trim();
+        const nm = em.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        S.roster.push({ n: nm, e: em, role: 'member' }); }
+      return render(); }
+  });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    const o = ev.target.closest('[data-set]');
+    if (o) { ev.preventDefault(); o.click(); }
+  });
+  document.addEventListener('input', (ev) => {
+    const t = ev.target;
+    if (t.dataset.txt) { S[t.dataset.txt] = t.value; readback(); }
+    if (t.dataset.num) { S[t.dataset.num] = +t.value; readback(); }
+  });
+
+  render();
+})();
+</script>

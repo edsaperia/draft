@@ -3531,3 +3531,74 @@ shown the least evidence that contributing did anything.
 
 The surface already has a place that says *something happened* — the
 `room-pulse`. It has no place that says *something changed*.
+
+## Two new surfaces: setting a document up, and opening it (2026-08-17)
+
+Ed: *take a quick pass at an "admin sets up a document and invites a roster"
+screen and an "opening ceremony" screen — at least make these screens and put
+all the required controls onto them and we can see what we're looking at.* So
+these err towards completeness rather than restraint; Q259 has always asked that
+he see every option before any are cut.
+
+### The ruling that shaped both
+
+I asked whether the ceremony is compulsory, because the spec disagreed with
+itself: §9.0a offered quorum and threshold as convenor-set *or* roster-decided,
+while §3.5a said of the disclosure family that **none is decided by the
+convenor**. Read strictly that made the ceremony mandatory and the convenor-set
+option merely a way of removing two of its questions.
+
+Ed: **fully optional.** A convenor may settle the whole constitution alone,
+disclosure included, and the document opens straight into drafting. SPEC amended
+to v0.25 at §3.5a, §9.0a and the parameter table — and with it, honestly, the
+thing that ruling costs: *anonymous is the strong default* was a **structural**
+claim, true because anonymity sits at the top of the privacy lattice and one
+person could hold the whole document there. Where the convenor decides, that
+guarantee is simply not available. Anonymity is then a default like any other
+and a convenor can open a document in which members are named without their
+having agreed to it. Written into the spec rather than left implied, because it
+is the kind of property that quietly stops being true.
+
+### What Ed said about the ceremony, which was better than any option I offered
+
+I asked what a member should see while stating their minimum — the scale
+explained, a bare field, or a suggested default — and he answered none of them:
+*they should see who else is on the roster — they're making a judgement about
+how much they trust the other people.*
+
+Which reframes the surface. The question is not **what number is right**, it is
+**how much of *these* people do I need behind a change before it moves** — and
+the answer depends entirely on whether you know them. So the roster stands beside
+the questions, fourteen names with yours marked, and the copy says what the
+answer is actually about: *fourteen people will hold this charter between them.*
+
+Three things follow that are worth keeping.
+
+**Nothing is preselected**, which is the one option I had recommended against
+myself: a suggested value is exactly the anchoring blind collection exists to
+prevent, and it would be a strange kind of blind that told everybody the same
+number before asking them. **But a range control with no default still has to put
+its thumb somewhere**, and a browser paints the track filled to it in the accent
+— so an untouched slider reads as a made choice. It is greyed and half-faded
+until touched. A control with no default needs to *look* like it has none.
+
+**The privacy-ladder dims the rungs above your answer rather than hiding them**,
+because *the most exposure I will accept* only reads as a ladder if you can see
+what you are refusing.
+
+**The waiting state shows a count and nothing else** — no names, no values, no
+running maximum. Every one of those would let the room read itself before it had
+finished answering, which is the whole of what blind collection protects. And the
+settled state publishes the distribution **without names**, with a line saying
+what the consent rule cost: *eleven of you would have accepted less than the
+charter settled on.* That is worth printing rather than hiding, because it is the
+sentence that makes the result liveable — and it is also the honest bill.
+
+### The readback
+
+`document-creation` has ten sections of controls, and the thing a convenor
+actually wants to check is not any single setting but the **shape** of the
+document they are about to make. So a sticky panel says it back in plain English,
+in the words the members will meet it in, written from the state rather than from
+the controls — which is what stops the summary and the form drifting apart the
+way two descriptions of the same thing always do.

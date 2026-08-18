@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.24
+# Group Drafting Engine — Specification v0.25
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -71,7 +71,7 @@ Because withdrawal changes the field, it is a **ground shift** for that race (§
 
 **3.5 Disclosure.** **Judgment is blind; composition is briefed.** Standings, splits, and camps are visible in exactly one place — the composer's briefing (§6.1) — and only where there is no live judgment left to contaminate: a race that has left the judgment stream as deadlocked, for that participant (§8.3, §8.3b), or an invitation about the participant's own candidate (§6.2). Drafting against a race that is **still being judged** shows the text and nothing else; a participant who could read the standings and then judge the pair would be casting an informed judgment in a blind field, which is the one thing this section exists to prevent. That constraint is what allows §3.3 to drop the forfeit rather than merely relocating the cost. No feed, card, sort, or notification shows direction on a race the participant hasn't judged. Resolved outcomes are public in the gazette immediately.
 
-**3.5a Disclosure is constitutional** (Ed, 2026-08-17). Who may be seen, and when, is not one setting but a small family of them, and none is decided by the convenor: they are settled by the roster at the **founding ceremony** (§9.0a), like quorum and the bar.
+**3.5a Disclosure is constitutional** (Ed, 2026-08-17). Who may be seen, and when, is not one setting but a small family of them, and it is settled the same way quorum and the bar are: **either by the convenor at creation, or by the roster at the founding ceremony** (§9.0a). The convenor chooses which, and may delegate the numbers and the disclosure independently — a convenor may fix the quorum and still hand the room its own privacy, or the reverse (Ed, 2026-08-17, revising this section: it had said the disclosure family was never the convenor's, and the ceremony was therefore compulsory).
 
 **Candidate authorship** runs on a ladder from most private to least: **anonymous** (never revealed) · **sealed** (hidden during the session, revealed at close) · **public** (visible live). Rationales are always visible whatever the setting — what varies is only whether a name is attached to one.
 
@@ -81,7 +81,7 @@ Because withdrawal changes the field, it is a **ground shift** for that race (§
 
 Two consequences worth stating, because they are the reason this is constitutional rather than cosmetic. Disclosure changes what the mechanism measures: a room that can see whose text it is can prefer the person, and §3.3's *preference is not measurement* has a sibling problem in deference. And in some rooms that is fine or even wanted — a standing committee that knows each other, a body whose members are accountable for their positions — which is exactly why the answer belongs to the roster and not to this document.
 
-**Anonymous is the strong default**, and structurally rather than by preselection: see §9.0a.
+**Anonymous is the strong default** — but note what that rests on. Where the roster decides, anonymity is structural rather than preselected: it sits at the top of the privacy lattice, so it holds unless *every* member is content with more, and a single person keeps the whole document unnamed. Where the **convenor** decides, that guarantee is not available; anonymity is then a default like any other, and a convenor may open a document in which members are named without their having agreed to it. That is the price of making the ceremony optional, and it is worth a convenor knowing they are paying it (Ed, 2026-08-17).
 
 ---
 
@@ -197,7 +197,7 @@ Two consequences. A deadlocked race that a participant has not judged **counts a
 
 Open: a perpetual document has no inter-session reset, so it loses the periodic moment where the threshold resets and the backlog re-enters stake-waived (§9.4, §4.5) — the device that kept entrenchment session-scoped. Whether something replaces it is Q252.
 
-**9.0a The founding ceremony.** Quorum and threshold may be set by the convenor, or **decided by the roster before any drafting begins**. Each member is asked, blind, for the *lowest they are willing to accept* — the lowest quorum, and the lowest threshold — and the document takes the **maximum** of each.
+**9.0a The founding ceremony.** Quorum, threshold and the disclosure family of §3.5a may each be set by the convenor, or **decided by the roster before any drafting begins**. The ceremony is **optional in full** (Ed, 2026-08-17): a convenor may settle the whole constitution alone, in which case there is no ceremony and the document opens straight into drafting. The delegations are independent, so a ceremony may ask about the numbers, about disclosure, or about both. Each member is asked, blind, for the *lowest they are willing to accept* — the lowest quorum, and the lowest threshold — and the document takes the **maximum** of each.
 
 Taking the maximum of stated minimums is what makes this a **consent rule rather than a vote**, and that matters more here than elegance: it dodges the constitutional bootstrap, which is the standing problem with founding decisions — *by what quorum do you decide the quorum?* There is no vote to govern, because the result satisfies every stated minimum by construction and nobody can say the rules were imposed on them. The cost is that the most demanding member sets the bar, and asking for full quorum is a perfectly reasonable position (Ed, 2026-08-16) — a document that cannot move without everyone is a legitimate thing to want.
 
@@ -284,7 +284,7 @@ Non-contiguous footprints render as multi-hunk diffs with collapsed context. Wid
 | Window (§9.0) | end datetime (default) or perpetual; set at creation, never after |
 | Threshold shape (§9.0) | ramping (default) or fixed; independent of the window, but perpetual forces fixed |
 | Quorum form (§9.0a) | percentage of roster (suits a window) or fixed count (suits perpetual) |
-| Quorum and threshold source | convenor-set, or the roster's founding ceremony — max of each member's stated minimum |
+| Constitution source (§9.0a) | quorum, threshold and disclosure each convenor-set **or** the roster's founding ceremony, independently; max of each member's stated minimum, most-private for disclosure. No ceremony at all if the convenor settles everything |
 | Perpetual drip | per real time rather than per 10% window; capped as above; no reset |
 | Visibility | chamber link-only by default; observer role off by default |
 | Authorship visibility (§3.5a) | anonymous · sealed · public; **anonymous by default**, and by unanimity rather than by preselection |
