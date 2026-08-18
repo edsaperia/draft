@@ -60,6 +60,13 @@
     white-space: pre-wrap; color: var(--muted); font-size: var(--t-body); line-height: 1.6;
   }
 
+  /* the verification mail, rendered as itself — the mockup's inbox */
+  .mailprev { border: 1px solid var(--border); border-radius: var(--r-md);
+    padding: var(--s3) var(--s4); margin: var(--s3) 0; background: var(--light); }
+  .mailprev .mailhead { font-size: var(--t-cap); color: var(--muted);
+    border-bottom: 1px solid var(--border); padding-bottom: var(--s2); margin-bottom: var(--s2); }
+  .mailprev p { margin: 0 0 var(--s3); }
+
   /* the controls the share box took with it, now on the 🔗 and ✉️ cards */
   .setupcard textarea { width: 100%; font-size: var(--t-ui); padding: var(--s2);
     resize: vertical; min-height: 60px; }
@@ -67,6 +74,11 @@
     cursor: pointer; border: 1px solid var(--border); background: var(--bg);
     border-radius: var(--r-sm); }
   .setupcard .btn:hover { border-color: var(--primary); color: var(--primary-emphasis); }
+  /* the page's .setupcard .btn ground ties with system.css's .btn.btn-approve
+     and wins on order, leaving white-on-white — restate the approve look at
+     the same scope so the mail's login button reads as one */
+  .setupcard .btn.btn-approve { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+  .setupcard .btn.btn-approve:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
   .pf.waiting { color: var(--muted); }
 
   /* ---- what is unlocked, and what is waiting ----------------------------- */
@@ -117,7 +129,7 @@
 
   const S = {
     title: '', slug: '',
-    myname: 'Wren Ashby', mypic: 'c0', myemail: '',
+    myname: 'Wren Ashby', mypic: 'c0', myemail: '', emailSent: false, emailVerified: false,
     ending: 'roster', endsAt: '2026-08-20T18:00',
     myAns: { ending: null, bar: null, quorum: null, authorship: null,
       signing: null, judgments: null, chamber: null, machines: null,
@@ -263,15 +275,16 @@
     { k: 'title', g: '🏷️', t: 'The title', kind: 'ordinary', ready: () => !!S.title, changeable: true },
     // Pre-filled with a slug generated from the title and checked against the
     // ones that already exist; confirming it is what SAVES the document.
-    { k: 'slug', g: '🔗', t: 'The link', kind: 'ordinary', dep: ['title'], ready: () => SLUG_OK.test(S.slug), changeable: true },
-    // **The convenor's own address** (Ed, 2026-08-18: *presumably we have to
-    // collect the convenor's email as well so they can log back in*). There
-    // are no passwords: getting back in is a magic link like everybody
-    // else's, so the address is part of the save — a saved document with no
-    // address is lost the moment the tab closes.
-    { k: 'myemail', g: '📧', t: 'Your email', kind: 'personal', own: 'you', dep: ['slug'],
-      ready: () => EMAIL_OK.test(S.myemail), changeable: true },
-    { k: 'myrole', g: '🎩', t: 'Is the convenor a member?', kind: 'constitutional', dep: ['myemail'] },
+    // **The address is verified before anything is saved** (Ed, 2026-08-18:
+    // *we should do this before saving anything, just in case a convenor
+    // loses their ability to log in*). There are no passwords — getting back
+    // in is a magic link — so the first mail is the proof the address works,
+    // sent while nothing yet exists and a typo still costs nothing. The mail
+    // is the login: clicking it is what carries you on to the save.
+    { k: 'myemail', g: '📧', t: 'Your email', kind: 'personal', own: 'you', dep: ['title'],
+      ready: () => S.emailVerified, changeable: true },
+    { k: 'slug', g: '🔗', t: 'The link', kind: 'ordinary', dep: ['myemail'], ready: () => SLUG_OK.test(S.slug), changeable: true },
+    { k: 'myrole', g: '🎩', t: 'Is the convenor a member?', kind: 'constitutional', dep: ['slug'] },
 
     // — the rest, together once the hat is on ----------------------------
     { k: 'roster', g: '✉️', t: 'Membership', kind: 'constitutional', dep: ['myrole'], ready: () => members().length >= 1, changeable: true },
@@ -431,7 +444,8 @@
       return n ? n + ' blocks' : (S.seen.has('text') ? 'Starts empty — the room writes it' : 'Nothing yet'); },
     title: () => S.title || 'Not named yet',
     slug: () => 'docs.vote/' + (S.slug || '…'),
-    myemail: () => S.myemail || 'Not given yet',
+    myemail: () => (S.emailVerified ? S.myemail + ' · verified'
+      : S.emailSent ? 'Check your inbox' : 'Not given yet'),
     myname: () => S.myname || 'Unnamed',
     mypic: () => (S.mypic ? 'Chosen' : 'Your initials'),
     myrole: () => (iDraft() ? 'Yes — a drafter like everybody else' : 'No — the clerk, who does not write'),
@@ -574,10 +588,21 @@
       // fourteen people — so a change that broke the old one would make this
       // the one ordinary setting with a cost for using it as intended.
       '<p class="setnote">Every link this document has ever had keeps working: changing it leaves a redirect behind, so an invitation somebody was sent weeks ago still opens the right document.</p>',
-    myemail: () =>
-      '<p class="why">The document is saved under its link, and this is how <b>you</b> get back to it: there are no passwords, so signing back in is a link mailed to this address — the same kind every member gets. It is also where the document’s own news reaches you.</p>' +
-      '<span class="fld"><label>Your email</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>' +
-      '<p class="setnote">Yours alone — it appears nowhere in the document, and it is not your name: who you are in the room is the 📛 card, later.</p>',
+    myemail: () => (S.emailVerified
+      ? '<div class="lockline">' + TICK + '<span>Verified — <b>' + esc(S.myemail) + '</b> can get back in.</span></div>' +
+        '<span class="fld"><label>Change it</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" style="width:20rem"></span>' +
+        '<p class="setnote">Changing it starts verification again — the new address has to prove it works too.</p>'
+      : S.emailSent
+      ? '<p class="why">Sent to <b>' + esc(S.myemail) + '</b>. Nothing is saved yet, so a typo here still costs nothing — which is exactly why this happens now and not after.</p>' +
+        '<div class="mailprev"><div class="mailhead">docs.vote · to ' + esc(S.myemail) + '</div>' +
+        '<p>You have created a document called <b>' + esc(S.title) + '</b> on docs.vote.</p>' +
+        '<button class="btn btn-approve" data-act="clickmail">Log in to create it</button></div>' +
+        '<p class="setnote">This is the email itself — in the mockup, your inbox is right here. The button is the magic link: clicking it proves the address works and carries you on to the save.</p>' +
+        '<button class="btn" data-act="editemail">Wrong address?</button>'
+      : '<p class="why">Before anything is saved, this address has to prove it works — because there are no passwords, and it is the only way back in. A document saved under an address with a typo in it would be lost the moment this tab closes.</p>' +
+        '<span class="fld"><label>Your email</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>' +
+        '<div style="margin-top:var(--s3)"><button class="btn"' + (EMAIL_OK.test(S.myemail) ? '' : ' disabled') + ' data-act="sendverify">Send the link</button></div>' +
+        '<p class="setnote">Yours alone — it appears nowhere in the document, and it is not your name: who you are in the room is the 📛 card, later.</p>'),
     myname: () => nameBody(me()),
     mypic: () => pictureBody(me()),
     // **Whether the convenor is in it is its own question** (Ed, 2026-08-18).
@@ -812,6 +837,14 @@
       }
       return render(); }
     if (ev.target.closest('button[data-close]')) { S.open = null; return render(); }
+    const mv2 = ev.target.closest('[data-act="sendverify"]');
+    if (mv2) { S.emailSent = true; return render(); }
+    const cm = ev.target.closest('[data-act="clickmail"]');
+    // clicking the mail's login button IS arriving back, so it settles the
+    // card itself — there is no second act of confirming you exist
+    if (cm) { S.emailVerified = true; S.seen.add('myemail'); S.open = 'slug'; return render(); }
+    const ee = ev.target.closest('[data-act="editemail"]');
+    if (ee) { S.emailSent = false; return render(); }
     const an = ev.target.closest('[data-ans]');
     if (an) { const v = an.dataset.ansval;
       S.myAns[an.dataset.ans] = (v === 'true') ? true : (v === 'false') ? false
@@ -868,7 +901,12 @@
     if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); renderRail(); refreshCommit(); return; }
     if (t.dataset.txt === 'myname') { S.myname = t.value; renderRail(); refreshCommit(); return; }
     if (t.dataset.txt === 'myemail') { S.myemail = t.value.trim();
+      S.emailSent = false; S.emailVerified = false; S.seen.delete('myemail');
       const m = meRow(); if (m) m.e = S.myemail;
+      // the send button tracks validity in place — a full render would
+      // rebuild the card under the caret
+      const sv = document.querySelector('[data-act="sendverify"]');
+      if (sv) sv.disabled = !EMAIL_OK.test(S.myemail);
       renderRail(); refreshCommit(); return; }
     if (t.dataset.txt) { S[t.dataset.txt] = t.value; renderRail(); }
     if (t.dataset.num) { S[t.dataset.num] = +t.value; renderRail(); }
