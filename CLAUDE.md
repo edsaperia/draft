@@ -13,7 +13,7 @@ A group drafting engine: patches race, blind pairwise judgments rank them, adopt
 ## V1 product decisions
 
 - Target context: constitutional conventions for Newspeak House cohorts. Rosters typically 5–10, conventions 15–20; design must not preclude 100+/1000+ instances, but v1 tunes to small rosters (data-efficiency over throughput).
-- Hosted multi-tenant web service; magic-link auth against roster emails.
+- Hosted multi-tenant web service; magic-link auth against roster emails. Invitations send from **docs.vote** via **Resend** (Ed, 2026-08-18) — the sending domain was the real hosting decision, and the host follows from it.
 - Documents are Markdown, rendered as rich text; usually a few pages, long-document behavior stays in scope for sim experiments.
 - TypeScript end-to-end; engine-core is a pure, dependency-free library shared by sim-harness and product server.
 - Sim personas are LLM-powered on a cheap model (Haiku-class) and speak the same participant API as human clients — no sim backdoor; mixed human/bot sessions are a goal.

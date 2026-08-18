@@ -272,16 +272,15 @@ the founding questions produce *is* the room's half of this object and it
 cannot produce half of a thing. A rename today, a data migration once real
 documents exist. Recommendation: **now**.
 
-**336. Whose address do the invitations come from?** Auth is a magic link
-mailed to a roster address, so the service's front door is an email that has to
-arrive — and mail from an unknown domain to fifteen people at once is the
-definition of what spam filters are for. The sending domain is the decision and
-the host is a consequence of it. Either **ours** (a domain we own, a
-transactional sender, any managed platform underneath — fastest, and the link
-arrives from a name nobody recognises), or **Newspeak House's** (a link from an
-address the cohort already trusts, which matters more than it sounds for a
-screen asking somebody what they will accept of a constitution — at the cost of
-needing somebody there to grant it).
+**Sending domain: docs.vote, via Resend.** Ed's call (2026-08-18). Auth is a
+magic link mailed to a roster address, so the service's front door is an email
+that has to arrive; the sending domain was the decision and the host follows
+from it — any managed platform, no interesting difference at this size. The
+cost accepted: the link arrives from a name the cohort does not yet know, so
+the invitation copy has to do the introducing (and the convenor's own name in
+the subject line is the obvious way to do it). Practical notes for whoever sets
+it up: SPF/DKIM/DMARC on docs.vote before the first real invitation, and warm
+the domain on the rehearsal cohort rather than the real one.
 
 **On the pilot.** An earlier draft made "which cohort, and when" a decision the
 plan needed. It is not: the contract, the client port, the engine catch-up and
