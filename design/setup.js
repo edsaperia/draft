@@ -294,19 +294,14 @@ window.SETUP = (function () {
     }).join('');
   }
 
-  /* A pile may reach down as far as the next thing in the band and no further,
-     which is `fitStacks` doing the same job one column over; and a row is never
-     shorter than the pile standing beside it, because there is no clause here to
-     give it a height of its own. */
+  /* Two measurement passes (a third fitted the .setrow piles with a
+     hard-coded 60/(n-1) peek; it went with the piles themselves when they
+     dissolved into the constitution section, 2026-08-18 — a paragraph's
+     pile runs on the CSS default, and if a deep pile ever appears there
+     the fit belongs at the .cpara level, measured the way session-view's
+     fitStacks measures: to the next mark, never by constant). */
   function fitBand(band) {
     if (!band) return;
-    band.querySelectorAll('.setrow:not(.constsec)').forEach((row) => {
-      const col = row.querySelector('.chipcol');
-      if (!col) return;
-      const n = col.children.length;
-      if (n > 1) col.style.setProperty('--peek', Math.max(1.5, Math.min(4, 60 / (n - 1))).toFixed(2) + 'px');
-      row.style.minHeight = Math.ceil(col.getBoundingClientRect().height + 8) + 'px';
-    });
     // **The rule does not move when its card opens** — session-view's own
     // discipline, by session-view's own means: measurement, not a constant
     // (Ed, 2026-08-18: *can we re-use infrastructure from the session-view?*).
@@ -672,38 +667,6 @@ window.SETUP = (function () {
         ' data-putmotion="1">Propose</button>';
   };
 
-  const motionCompose = (c, ctx, draft, control) =>
-    '<div class="unlocks">You are proposing a change to <b>' + esc(c.t) + '</b>. ' +
-    kindNote[routeFor(c, draft.to)] + '</div>' +
-    // **What it costs, said where the price is paid** (Ed, 2026-08-18). An
-    // ordinary motion is a proposal, so it costs an edit like every other
-    // proposal — the wallet is what prices proposals, and one that cost nothing
-    // would be one anybody could spam. A constitutional motion costs nothing,
-    // and that is not an oversight: it is not a proposal against the text, it is
-    // a member asking to be asked again about a rule that binds them. Charging
-    // for that would price consent, which is the one thing here that must stay
-    // free. What stops it being spammed is a limit rather than a price (Q327).
-    (c.routeOf ? '<p class="setnote">' + esc(c.routeNote || '') + '</p>' : '') +
-    '<p class="setnote">' + (routeFor(c, draft.to) === 'constitutional'
-      ? '<b>Free — and one at a time.</b> You are asking the room to be asked again about a rule that binds you, and consent should not have a price. What keeps it from being constant is a limit, not a charge: each member may have <b>one 🏛️ out at once</b>, back in hand the moment it settles or is withdrawn. Putting it is a <b>full ten-second hold</b> — long enough to mean it.'
-      : '<b>Costs one ✏️.</b> A motion is a proposal, so it is priced like every other proposal, and you get it back if you withdraw it.') + '</p>'
-    + (routeFor(c, draft.to) === 'ordinary' && ctx.reserved && ctx.reserved(c)
-      ? '<p class="setnote">This setting is <b>reserved</b>: carrying at the threshold does not change it by itself — it goes to the founder as a <b>👑 question</b>, theirs to accept or reject.</p>'
-      : '')
-    + '<div class="propblock"><div class="eyebrow fieldlab">As it stands</div>' +
-    '<div class="rtext">' + ctx.value(c) + '</div></div>' +
-    '<div class="propblock"><div class="eyebrow fieldlab">As you would have it</div>' +
-    (control ? control(draft) +
-      '<div class="lanebox"><div class="lp edit-why' + (draft.why ? '' : ' blank') + '"' +
-      ' contenteditable="plaintext-only" spellcheck="false" data-motionlane="why"' +
-      ' data-ph="We should change this because…">' + esc(draft.why || '') + '</div></div>'
-     : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
-      ' data-motionlane="to" data-ph="The value you are proposing">' + esc(draft.to || '') + '</div>' +
-      '<div class="lp edit-why' + (draft.why ? '' : ' blank') + '" contenteditable="plaintext-only"' +
-      ' spellcheck="false" data-motionlane="why" data-ph="We should change this because…">' +
-      esc(draft.why || '') + '</div></div>') + '</div>';
-
-
   /* ---- the consent controls, shared -----------------------------------------
      Moved out of founding-ceremony.html when Q344 closed (Ed, 2026-08-18): a
      drafter-founder answers the questions they delegated on their own surface,
@@ -1036,6 +999,6 @@ window.SETUP = (function () {
   return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, stateOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
     nameBody, pictureBody, drawWire, opt, num, faces, someIn,
-    KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor, motionCommitHtml,
+    KIND, kindNote, motionBody, motionReopen, routeFor, motionCommitHtml,
     slider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal };
 })();
