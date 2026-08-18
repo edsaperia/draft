@@ -442,10 +442,10 @@
     machines: 'There are no AI proposals.',
   };
   const decisionLine = (c) => {
-    if (c.k === 'canpropose') return mine() ? 'Proposing began when your answers went in.'
-      : 'Proposing will begin when your own answers have been given.';
+    if (c.k === 'canpropose') return mine() ? 'You may propose — your answers are in.'
+      : 'Members may begin proposing when their own answers have been given.';
     if (c.k === 'canjudge') return roomDone() ? 'Judging on proposals began on Tuesday at 14:02.'
-      : 'Judging on proposals will begin when everyone’s answers are in.';
+      : 'Members may begin judging proposals when everyone’s answers are in.';
     if (c.own === 'you') return value(c);
     if (isRoom(c)) {
       return (c.in || 0) >= E
