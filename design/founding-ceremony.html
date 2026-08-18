@@ -122,7 +122,7 @@
       rule: 'Each member states the <b>lowest quorum</b> they will accept and the charter takes the highest.',
       takes: 'The charter takes the highest', result: '10 of 14',
       dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', 'all of them'] },
-    { k: 'bar', g: '✒️', t: 'Approval threshold', kind: 'constitutional', in: 9,
+    { k: 'bar', g: '✒️', t: 'How sure must the room be?', kind: 'constitutional', in: 9,
       rule: 'Each member states the <b>lowest bar</b> they will accept and the charter takes the highest.',
       takes: 'The charter takes the highest', result: '80%',
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
@@ -171,6 +171,10 @@
       routeNote: 'Which route this takes depends on what you write. A different date is an ordinary proposal, judged like any other. Never — no ending at all — re-opens the founding question instead, because a document with no ending has no rising threshold, and every decision already taken was taken under one.',
 
       readNote: 'The approval threshold rises towards that moment, and ✏️s come back paced against it. <b>Never</b> is one of the answers to this question, which is why it is constitutional — a document with no ending has no ramp. The date itself is ordinary, and anybody may propose moving it.' },
+    // Pacing, not consent (§9.0, Q341): the close bar is the room's, above in
+    // their own pile; how it climbs there is the convenor's, like the drip.
+    { k: 'pace', g: '📈', t: 'How does the bar get there?', own: 'convenor', kind: 'ordinary', v: 'Rising from 55%',
+      readNote: 'Every adoption is recorded against the bar as it stood, so re-shaping the ramp re-rates nothing already decided — which is what makes this ordinary while the close bar is constitutional.' },
     { k: 'grant', g: '🪙', t: 'How many ✏️s do members start with?', own: 'convenor', kind: 'ordinary', v: '4 each' },
     { k: 'drip', g: '💧', t: 'How fast do ✏️s come back?', own: 'convenor', kind: 'ordinary', v: '1 back per 10% of the window, up to 8',
       readNote: 'With the one above, this is the <b>proposal rate</b> — how often anybody may put something to the room. Each proposal also stakes one ✏️, which is a flat one and not a setting: it comes back in full if you withdraw, and in proportion to how well it did if it does not carry.' },
@@ -424,14 +428,14 @@
     myname: () => nameBody(me()),
     mypic: () => pictureBody(me()),
     quorum: () => whoBox('quorum') +
-      '<p class="why">How many of the fourteen must weigh in on a question before it can change the charter. A question short of quorum simply waits — nobody’s silence is ever counted as a vote.</p>' +
+      '<p class="why">How many of the fourteen must weigh in on a question before it can change the charter. A question short of quorum simply waits — nobody’s silence is ever counted as a vote. Asked as a <b>count</b> — the convenor’s wording of the question; the number is the room’s.</p>' +
       slider('quorum', 1, E, (v) => v + ' of ' + E, (v) =>
         v >= E ? 'Nothing moves unless every member has weighed in. A charter that cannot change without all fourteen is a perfectly reasonable thing to want.'
         : v <= Math.ceil(E / 4) ? 'A small part of the room can carry a change while the rest are elsewhere.'
         : 'Rather more than half the room has to have looked at a question before it can move.') +
       '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> of the fourteen, so it will never be lower than what you say here.</p>',
     bar: () => whoBox('bar') +
-      '<p class="why">How sure the room has to be that a new wording beats the one it would replace. A confidence, not a vote share — at 60% a change goes through on a real but slender preference; at 90% only something close to agreement moves anything.</p>' +
+      '<p class="why">How sure the room has to be that a new wording beats the one it would replace, <b>at the close, where an adoption is permanent</b>. A confidence, not a vote share — at 60% a change goes through on a real but slender preference; at 90% only something close to agreement moves anything. Everything before the close can still be challenged, so this one number covers the whole way there; how the bar climbs is the convenor’s pacing, in their pile.</p>' +
       slider('bar', 50, 95, (v) => v + '%', (v) =>
         v >= 85 ? 'Only near-agreement changes anything. Expect the charter to move slowly and keep most of what it started with.'
         : v <= 60 ? 'A modest preference is enough. The charter will move quickly, and reverse itself more often.'

@@ -284,6 +284,8 @@ the subject line is the obvious way to do it). Practical notes for whoever sets
 it up: SPF/DKIM/DMARC on docs.vote before the first real invitation, and warm
 the domain on the rehearsal cohort rather than the real one.
 
+**Review follow-through (2026-08-18):** Ed answered findings 338–343 and they are folded — SPEC v0.32, both surfaces (✒️ split, quorum form/number, membership-at-arrival, §9.6a). 344 awaits his verdict after explanation; 345 (the immortal silent member) is the residue. The `Constitution` split (335) remains one commit away.
+
 **On the pilot.** An earlier draft made "which cohort, and when" a decision the
 plan needed. It is not: the contract, the client port, the engine catch-up and
 a server can all be built without knowing. What it decides is only **what to

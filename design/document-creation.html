@@ -37,7 +37,7 @@
    cuts the other way twice, on 2026-08-18: *when it ends* swallowed *whether it
    ends*, because **never** is one of the answers to *when*; and the stake stopped
    being a card at all, because it is a flat 1 in the mechanism and a card for it
-   was offering a decision nobody has. Seventeen.
+   was offering a decision nobody has. Then ✒️ split the other way on Ed’s Q341 rethink — the close bar is consent where the ramp is pacing, two kinds — so seventeen became eighteen.
 
    What is left in this file is its own fixture and the bodies of the cards a
    convenor fills in. The piles, the strip, the cable, the rail entry, the card
@@ -119,8 +119,8 @@
     title: '', slug: 'hollow-oak-4f2a',
     myname: 'Wren Ashby', mypic: 'c0',
     ending: 'roster', endsAt: '2026-08-20T18:00',
-    shape: 'roster', tStart: 55, tEnd: 78, tFixed: 66,
-    quorumForm: 'roster', quorumPct: 33, quorumN: 5,
+    barBy: 'roster', tClose: 78, shape: 'ramp', tStart: 55,
+    quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
     authorship: 'roster', signing: 'roster', judgments: 'roster',
     authorshipSet: 'anonymous', signingSet: 'nobody', judgmentsSet: 'never',
     grantBy: 'convenor', grant: 4,
@@ -141,8 +141,12 @@
   // the convenor, who may be the clerk instead. There is no observer here —
   // see the chamber card.
   const members = () => S.roster.filter((p) => p.role !== 'clerk');
-  const E = () => Math.max(members().length, 1);
-  const arrived = () => S.roster.filter((p) => p.in).length;
+  // **Membership begins at first arrival, not at invitation** (Ed, 2026-08-18,
+  // §9.6a). An invitee is listed under the membership as *invited* and counts
+  // toward nothing — which is what keeps one unopened email from blocking
+  // judging for everybody. E is the arrived.
+  const arrived = () => members().filter((m) => m.in).length;
+  const E = () => Math.max(arrived(), 1);
   const meRow = () => S.roster.find((p) => p.convenor);
   const iDraft = () => { const m = meRow(); return !!m && m.role !== 'clerk'; };
   const quorumCount = () => (S.quorumForm === 'share'
@@ -203,7 +207,7 @@
   // `key` is the state field that carries delegation, and it is what decides
   // which **pile** a card stands in: taking a setting back moves its tab from
   // the members' pile to the convenor's, in front of you.
-  const DELEGABLE = ['ending', 'shape', 'quorumForm', 'authorship', 'signing',
+  const DELEGABLE = ['ending', 'barBy', 'quorumBy', 'authorship', 'signing',
     'judgments', 'grantBy', 'dripBy', 'chamber', 'auditor'];
   const delegated = (key) => DELEGABLE.includes(key) && S[key] === 'roster';
 
@@ -265,11 +269,19 @@
       dist: [2, 3, 5, 3, 1], distTop: 4, distEnds: ['Tue', 'Never'] },
 
     // — the constitution -------------------------------------------------
-    { k: 'bar', g: '✒️', t: 'Approval threshold', kind: 'constitutional', gate: 'judge', key: 'shape', dep: ['ending'], p: 0.64,
-      rule: 'Each member states the <b>lowest bar</b> they will accept and the document takes the highest, so it will never be easier to change than any one of them wanted.',
+    // **The threshold is two decisions of different kinds** (Ed, 2026-08-18,
+    // Q341). Consent is about the bar **at the close**, where an adoption is
+    // permanent — one number. How it gets there is *pacing*, ordinary by §9.6's
+    // own test, on the next card.
+    { k: 'bar', g: '✒️', t: 'How sure must the room be?', kind: 'constitutional', gate: 'judge', key: 'barBy', dep: ['ending'], p: 0.64,
+      rule: 'Each member states the <b>lowest bar</b> they will accept — at the close, where an adoption is permanent — and the document takes the highest, so it will never be easier to change than any one of them wanted.',
       takes: 'The document takes the highest', result: '80%',
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
-    { k: 'quorum', g: '👥', t: 'Quorum', kind: 'constitutional', gate: 'judge', key: 'quorumForm', dep: ['roster'], p: 0.79,
+    { k: 'pace', g: '📈', t: 'How does the bar get there?', kind: 'ordinary', dep: ['ending'], changeable: true },
+    // The number is the room's; the **form** — count or share — is the
+    // convenor's wording of the question (Ed, 2026-08-18: *quorum can either be
+    // a fixed number or a proportion of membership size*; §9.0a).
+    { k: 'quorum', g: '👥', t: 'Quorum', kind: 'constitutional', gate: 'judge', key: 'quorumBy', dep: ['roster'], p: 0.79,
       rule: 'Each member states the <b>lowest quorum</b> they will accept and the document takes the highest.',
       takes: 'The document takes the highest', result: '10 of 14',
       dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', 'all of them'] },
@@ -369,7 +381,9 @@
     ending: () => (perpetual() ? 'Never — it runs until it is frozen'
       : new Date(S.endsAt).toLocaleString(undefined,
         { weekday: 'short', hour: '2-digit', minute: '2-digit' })),
-    bar: () => (S.shape === 'fixed' ? 'Fixed at ' + S.tFixed + '%' : 'Rising, ' + S.tStart + '% → ' + S.tEnd + '%'),
+    bar: () => S.tClose + '% sure at the close',
+    pace: () => (perpetual() ? 'Fixed — no window to rise over'
+      : S.shape === 'ramp' ? 'Rising from ' + S.tStart + '%' : 'The close bar throughout'),
     quorum: () => (S.quorumForm === 'count' ? Math.min(S.quorumN, E()) + ' of ' + E()
       : S.quorumPct + '% — ' + quorumCount() + ' of ' + E()),
     authorship: () => ({ anonymous: 'Nobody’s name, ever', sealed: 'Names at the close',
@@ -492,7 +506,7 @@
       '<span class="dot"></span><span>No</span></button>' +
       '<span class="exp">You are the <b>clerk</b>: you set it up and keep it running, but the document is not yours to write — no wallet, no judgments, no place in quorum, and no opening questions to answer.</span></div></div>',
     roster: () =>
-      '<p class="why">Everyone here gets a link by email — there are no passwords. You can keep adding people after this; a joiner gets the base grant plus the drip accrued so far, and quorum recomputes.</p>' +
+      '<p class="why">Everyone here gets a link by email — there are no passwords, and an invitation is an invitation <b>to become a member</b>: until somebody opens the document they are listed as <i>invited</i> and count toward nothing. Until judging opens you may invite and uninvite freely — nothing has been decided yet, so nothing is being changed (§9.6a). After that, both directions are constitutional motions. A joiner gets the base grant plus the drip accrued so far, and quorum recomputes.</p>' +
       '<div class="roster">' + S.roster.map((p, i) =>
         '<div class="rperson">' + avHtml(p) +
         '<span><span class="nm">' + esc(p.n) + (p.convenor ? ' <span class="chip convenor">convenor</span>' : '') +
@@ -518,24 +532,38 @@
       theyDecide('ending', 'That means the <b>latest</b> answer anybody gives, and <b>never</b> is the latest of all — so one member who wants it to run on keeps it running.') +
       '</div>',
     bar: () =>
-      '<div class="unlocks">Part of the constitution — judging waits on this and the four beside it.</div>' +
-      '<p class="why">How sure the room has to be that a change beats the current text. Never a vote share — a confidence.</p>' +
+      '<div class="unlocks">Part of the constitution — judging waits on this and the rest of it.</div>' +
+      '<p class="why">How sure the room has to be that a change beats the current text before it is <b>permanent</b> — the bar at the close. Never a vote share, a confidence. Everything before the close can still be challenged, so this one number covers the whole way there; how the bar climbs is pacing, on the next card.</p>' +
       '<div class="choice" role="radiogroup">' +
-      opt(S, 'shape', 'ramp', 'Rising', 'Starts low and rises to the close, because the threshold should track irreversibility: an early adoption can still be challenged, a late one is permanent.',
-        '<span class="setrow2">' + num(S, 'tStart', 'At the opening', 50, 99, '%') + num(S, 'tEnd', 'At the close', 50, 99, '%') + '</span>', perpetual()) +
-      opt(S, 'shape', 'fixed', 'Fixed', 'One threshold for the life of the document.',
-        '<span class="setrow2">' + num(S, 'tFixed', 'Threshold', 50, 99, '%') + '</span>') +
-      theyDecide('shape', 'Each states the <b>lowest bar</b> they will accept and the document takes the highest.') +
+      opt(S, 'barBy', 'convenor', 'I set it', '',
+        '<span class="setrow2">' + num(S, 'tClose', 'At the close', 50, 99, '%') + '</span>') +
+      theyDecide('barBy', 'Each states the <b>lowest bar</b> they will accept — at the close — and the document takes the highest.') +
+      '</div>',
+    pace: () =>
+      '<p class="why">How the bar gets to the close: held there for the whole window, or rising from a lower start so early adoptions come cheap while they are still challengeable. Pacing, not consent — every adoption is recorded against the bar as it stood, so re-shaping the ramp re-rates nothing already decided, which is what makes this card ordinary while the close is constitutional.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      opt(S, 'shape', 'ramp', 'Rising', 'From a lower start when judging opens, up to the close bar.',
+        '<span class="setrow2">' + num(S, 'tStart', 'When judging opens', 50, 99, '%') + '</span>', perpetual()) +
+      opt(S, 'shape', 'fixed', 'Fixed', 'The close bar for the life of the document.') +
       '</div>' + (perpetual() ? '<p class="setnote">A rising bar needs an endpoint to rise towards, so a perpetual document holds its bar fixed.</p>' : ''),
     quorum: () =>
       '<div class="unlocks">Part of the constitution — judging waits on it.</div>' +
       '<p class="why">How many distinct members must weigh in before a question can be adopted. A question short of quorum simply waits — silence is never counted as a vote.</p>' +
-      '<div class="choice" role="radiogroup">' +
-      opt(S, 'quorumForm', 'share', 'A share of the membership', 'Suits a document with a window, where the membership is stable.',
-        '<span class="setrow2">' + num(S, 'quorumPct', 'Share', 1, 100, '% — ' + quorumCount() + ' of ' + E() + ' today') + '</span>') +
-      opt(S, 'quorumForm', 'count', 'A fixed number', 'Suits a perpetual document, where a drifting membership would otherwise silently re-rate every parked race.',
-        '<span class="setrow2">' + num(S, 'quorumN', 'Members', 1, 40, 'of ' + E()) + '</span>') +
-      theyDecide('quorumForm', 'Each states the <b>lowest quorum</b> they will accept and the document takes the highest.') +
+      // **The form is the wording, the number is the decision** (§9.0a): count
+      // or share is how the question tracks a changing membership, and it is
+      // the convenor's even when the number is the room's.
+      '<div class="eyebrow fieldlab">Asked as</div>' +
+      '<div class="choice" role="radiogroup" aria-label="Form">' +
+      opt(S, 'quorumForm', 'share', 'A share of the membership', 'Suits a document with a window: the number tracks the membership as it changes.') +
+      opt(S, 'quorumForm', 'count', 'A fixed number', 'Suits a perpetual document, where a drifting membership would otherwise silently re-rate every parked race.') +
+      '</div>' +
+      '<div class="eyebrow fieldlab" style="margin-top:var(--s4)">The number</div>' +
+      '<div class="choice" role="radiogroup" aria-label="Number">' +
+      opt(S, 'quorumBy', 'convenor', 'I set it', '',
+        '<span class="setrow2">' + (S.quorumForm === 'share'
+          ? num(S, 'quorumPct', 'Share', 1, 100, '% — ' + quorumCount() + ' of ' + E() + ' today')
+          : num(S, 'quorumN', 'Members', 1, 40, 'of ' + E())) + '</span>') +
+      theyDecide('quorumBy', 'Each states the <b>lowest quorum</b> they will accept — in the form above — and the document takes the highest.') +
       '</div>',
     authorship: () =>
       '<div class="unlocks">Part of the constitution — judging waits on it, because a judgment is recorded under whatever this says.</div>' +
