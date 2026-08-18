@@ -1077,6 +1077,27 @@
       ((parseFloat(getComputedStyle(cardEl).marginTop) || 0) + dy).toFixed(1) + 'px';
     if (Math.abs(dx) > 0.5) cardEl.style.marginLeft =
       ((parseFloat(getComputedStyle(cardEl).marginLeft) || 0) + dx).toFixed(1) + 'px';
+    // **and the tab does not move either** (Ed, 2026-08-18): the closed
+    // pile tab is re-materialised for one unpainted beat as the reference,
+    // and the card's strip is translated onto it — both axes, measured
+    const col = cardEl.querySelector('.chipcol');
+    const chipHost = document.getElementById('titlechip');
+    if (col && chipHost) {
+      col.style.transform = '';
+      d.style.display = '';
+      chipHost.innerHTML = pileHtml([card('title')], ctx);
+      const refG = chipHost.querySelector('.achip span');
+      const wantG = refG && refG.getBoundingClientRect();
+      chipHost.innerHTML = '';
+      d.style.display = 'none';
+      const haveG = col.querySelector('.achip span');
+      if (wantG && haveG) {
+        const r2 = haveG.getBoundingClientRect();
+        const dx2 = wantG.left - r2.left, dy2 = wantG.top - r2.top;
+        if (Math.abs(dx2) > 0.5 || Math.abs(dy2) > 0.5)
+          col.style.transform = 'translate(' + dx2.toFixed(1) + 'px,' + dy2.toFixed(1) + 'px)';
+      }
+    }
   }
 
   function refreshCommit() {
