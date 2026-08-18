@@ -386,7 +386,7 @@
     // and it binds by consent, since everyone stated the shortest spell they
     // would accept on the way in.
     { k: 'lapse', g: '💤', t: 'Do Memberships Lapse?', kind: 'constitutional', gate: 'judge', key: 'lapse', dep: ['roster'], p: 0.29,
-      rule: 'Each member states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all — so nobody is lapsed faster than they accepted.',
+      rule: 'Each member states the <b>shortest period of inactivity</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all — so nobody is lapsed faster than they accepted.',
       takes: 'The document takes the longest', result: 'Never',
       dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
     // **Not a member** (Ed, 2026-08-18): it never judges and counts toward
@@ -546,8 +546,8 @@
       ', up to ' + S.cap,
     chamber: () => ({ link: 'Anyone with the link', closed: 'Members only', public: 'Public' }[S.chamber]),
     machines: () => (S.auditor === true ? 'The coherence auditor, ' + S.auditorBudget + ' ✏️s' : 'People only'),
-    lapse: () => (S.lapse === 'never' ? 'Never — however quiet'
-      : 'After ' + S.lapseDays + ' quiet days'),
+    lapse: () => (S.lapse === 'never' ? 'Never — however long inactive'
+      : 'After ' + S.lapseDays + ' days of inactivity'),
     canpropose: () => (canPropose() ? 'Open' : 'Waiting on the starting text'),
     canjudge: () => (canJudge() ? 'Open' : 'Waiting on the constitution'),
   };
@@ -562,7 +562,7 @@
     judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
     machines: (v) => 'You said ' + (v ? 'AI proposals are fine' : 'no AI proposals'),
-    lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' quiet days'),
+    lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days of inactivity'),
     grant: (v) => 'You said ' + v + ' ✏️s',
     drip: (v) => 'You said ' + v + ' per 10%',
   };
@@ -654,7 +654,7 @@
     signing: 'who may sign a proposal',
     judgments: 'whether judgments are revealed with the record',
     chamber: 'who may read the document',
-    lapse: 'whether a quiet membership lapses',
+    lapse: 'whether an inactive membership lapses',
     machines: 'whether an AI makes proposals',
     grant: 'how many ✏️s members start with',
     drip: 'how fast ✏️s come back',
@@ -684,8 +684,8 @@
     chamber: () => ({ closed: 'Only members can see the document.',
       link: 'Anyone with the link can read the document.',
       public: 'The document is public — listed and readable by anyone.' })[S.chamber],
-    lapse: () => (S.lapse === 'never' ? 'Memberships do not lapse, however quiet.'
-      : 'A membership lapses after ' + S.lapseDays + ' quiet days.'),
+    lapse: () => (S.lapse === 'never' ? 'Memberships do not lapse, however long inactive.'
+      : 'A membership lapses after ' + S.lapseDays + ' days of inactivity.'),
     machines: () => (S.auditor === true
       ? 'An AI — the coherence auditor — makes proposals, holding ' + S.auditorBudget + ' ✏️s. It never judges and counts toward nothing.'
       : 'There are no AI proposals.'),
@@ -844,7 +844,7 @@
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Who holds it</div>' +
       '<div class="choice" role="radiogroup" aria-label="Who holds the membership">' +
       opt(S, 'rosterBy', 'roster', 'The members', 'After the start, joining and leaving are the members’ to decide — invitations by everyone’s consent, applications at the bar. You would be a 🏴: a convenor whose membership is the members’.') +
-      opt(S, 'rosterBy', 'convenor', 'Reserved — I hold it', 'You would be a 👑: the convenor of a document that reserves its membership, keeping invite-and-remove for its life. A crown lapses like a member — go quiet past the lapse rule and the membership becomes the members’.') +
+      opt(S, 'rosterBy', 'convenor', 'Reserved — I hold it', 'You would be a 👑: the convenor of a document that reserves its membership, keeping invite-and-remove for its life. A crown lapses like a member — go inactive past the lapse rule and the membership becomes the members’.') +
       '</div>' +
       // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
       // the gate the Apply card hangs off. An application becomes an
@@ -949,12 +949,12 @@
       opt(S, 'chamber', 'public', 'Public', 'Listed and readable by anyone.') + '</div>',
     lapse: () =>
       '<div class="unlocks">Part of the constitution — judging waits on it.</div>' +
-      '<p class="why">Whether a membership lapses after a long quiet spell. A lapsed member leaves the quorum base like an abstainer, their judgments keep counting, they are warned by email first and sent the document and record when it happens — and coming back is just logging in.</p>' +
+      '<p class="why">Whether a membership lapses after a period of inactivity. A lapsed member leaves the quorum base like an abstainer, their judgments keep counting, they are warned by email first and sent the document and record when it happens — and coming back is just logging in.</p>' +
       '<div class="choice" role="radiogroup">' +
-      opt(S, 'lapse', 'days', 'They lapse', 'After a quiet spell you choose.',
-        '<span class="setrow2">' + num(S, 'lapseDays', 'Quiet days', 7, 365) + '</span>') +
+      opt(S, 'lapse', 'days', 'They lapse', 'After a period of inactivity you choose.',
+        '<span class="setrow2">' + num(S, 'lapseDays', 'Days of inactivity', 7, 365) + '</span>') +
       opt(S, 'lapse', 'never', 'Never', 'A membership holds however long its holder is away.') +
-      theyDecide('lapse', 'Each states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.') +
+      theyDecide('lapse', 'Each states the <b>shortest period of inactivity</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.') +
       '</div>',
     machines: () =>
       '<p class="why">An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.</p>' +

@@ -742,12 +742,12 @@ window.SETUP = (function () {
       ansRow(A.ending === 'never', 'ending', 'never', 'Never', 'It runs until it is frozen.') +
       '</div>' + BLINDNOTE,
     lapse: (A) =>
-      '<p class="why">Whether a membership <b>lapses</b> after a quiet spell — and how long. A lapsed member leaves the quorum base like an abstainer: the room can finish without them, their judgments keep counting, and coming back is just logging in. They are warned by email first, and sent the document and record when it happens.</p>' +
-      '<span class="fld"><label>The shortest quiet spell you will accept</label>' +
+      '<p class="why">Whether a membership <b>lapses</b> after a period of inactivity — and how long. A lapsed member leaves the quorum base like an abstainer: the room can finish without them, their judgments keep counting, and coming back is just logging in. They are warned by email first, and sent the document and record when it happens.</p>' +
+      '<span class="fld"><label>The shortest period of inactivity you will accept</label>' +
       '<span class="setrow2"><input class="num" type="number" min="7" max="365"' +
       ' data-ansnum="lapse"' + (typeof A.lapse === 'number' ? ' value="' + A.lapse + '"' : '') + '>' +
       '<span class="setnote" style="margin:0">days</span></span></span>' +
-      ansRow(A.lapse === 'never', 'lapse', 'never', 'Never', 'Memberships do not lapse, however quiet.') +
+      ansRow(A.lapse === 'never', 'lapse', 'never', 'Never', 'Memberships do not lapse, however long inactive.') +
       '<p class="blindnote">Nobody sees your answer. The charter takes the <b>longest</b> asked for, <b>never</b> the longest of all.</p>',
     grant: (A) =>
       '<p class="why">The fewest ✏️s you would accept being given to start with. The charter takes the <b>most generous</b> answer.</p>' +

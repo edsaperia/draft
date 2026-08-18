@@ -151,7 +151,7 @@
       takes: 'The charter takes the most private', result: 'Members only',
       dist: [5, 8, 1], distTop: 1, distEnds: ['Members only', 'Public'] },
     { k: 'lapse', g: '💤', t: 'Do Memberships Lapse?', kind: 'constitutional', in: 8,
-      rule: 'Each member states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.',
+      rule: 'Each member states the <b>shortest period of inactivity</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.',
       takes: 'The document takes the longest', result: 'Never',
       dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
     { k: 'machines', g: '🤖', t: 'AI Proposals', kind: 'constitutional', in: 12,
@@ -390,7 +390,7 @@
     chamber: () => (!S.chamber ? 'The most you will accept' : 'You said ' +
       { closed: 'members only', link: 'anyone with the link', public: 'public' }[S.chamber]),
     lapse: () => (S.lapse === null ? 'The shortest you will accept'
-      : S.lapse === 'never' ? 'You said never' : 'You said after ' + S.lapse + ' quiet days'),
+      : S.lapse === 'never' ? 'You said never' : 'You said after ' + S.lapse + ' days of inactivity'),
     machines: () => (S.machines === null ? 'The most you will accept'
       : 'You said ' + (S.machines ? 'AI proposals are fine' : 'no AI proposals')),
   };
@@ -421,7 +421,7 @@
     signing: 'who may sign a proposal',
     judgments: 'whether judgments are revealed with the record',
     chamber: 'who may read the document',
-    lapse: 'whether a quiet membership lapses',
+    lapse: 'whether an inactive membership lapses',
     machines: 'whether an AI makes proposals',
   };
   const DECIDED = {
@@ -438,7 +438,7 @@
     signing: 'Nobody may sign a proposal.',
     judgments: 'Judgments are never revealed.',
     chamber: 'Only members can see the document.',
-    lapse: 'Memberships do not lapse, however quiet.',
+    lapse: 'Memberships do not lapse, however long inactive.',
     machines: 'There are no AI proposals.',
   };
   const decisionLine = (c) => {
