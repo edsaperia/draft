@@ -492,6 +492,112 @@ window.SETUP = (function () {
       ' spellcheck="false" data-motionlane="why" data-ph="We should change this because…">' +
       esc(draft.why || '') + '</div></div>') + '</div>';
 
+
+  /* ---- the consent controls, shared -----------------------------------------
+     Moved out of founding-ceremony.html when Q344 closed (Ed, 2026-08-18): a
+     drafter-convenor answers the questions they delegated on their own surface,
+     so the controls a member answers with are now vocabulary both surfaces
+     speak — and two copies of a consent slider would drift like everything
+     else. `A` is the answers object (the ceremony passes its S, the convenor
+     surface passes S.myAns), so one control serves both without either surface
+     leaking its state shape into the other. Ladder rungs write `data-ans`
+     rather than opt()'s `data-set`, because on the convenor surface data-set
+     already means "set the delegation", and one attribute must not mean two
+     things on one page. */
+  const slider = (A, key, min, max, fmt, mean, step) => {
+    const v = A[key], st = step || 1;
+    const at = (v === null ? Math.round((min + max) / 2 / st) * st : v);
+    return '<div class="cs' + (v === null ? ' unset' : '') + '">' +
+      '<div class="csval' + (v === null ? ' unset' : '') + '">' + (v === null ? 'Drag to answer' : fmt(v)) + '</div>' +
+      '<input type="range" min="' + min + '" max="' + max + '" step="' + st + '" value="' + at + '"' +
+      ' style="--n:' + Math.max(1, Math.round((max - min) / st)) + ';--pct:' + (v === null ? 0 : (v - min) / (max - min) * 100) + '"' +
+      ' data-slide="' + key + '">' +
+      '<div class="csends"><span>' + fmt(min) + '</span><span>' + fmt(max) + '</span></div>' +
+      '<div class="csmean">' + (v === null ? mean(min) + '<br>' + mean(max) : mean(v)) + '</div></div>';
+  };
+
+  const ansRow = (on, key, val, ttl, exp, extra, inner) =>
+    '<div class="pick' + (on ? ' on' : '') + (extra || '') + '">' +
+    '<button class="lanepick" aria-pressed="' + !!on + '" data-ans="' + key + '" data-ansval="' + esc(String(val)) + '">' +
+    '<span class="dot"></span><span>' + ttl + '</span></button>' +
+    (exp ? '<span class="exp">' + exp + '</span>' : '') +
+    (inner ? '<span class="inner">' + inner + '</span>' : '') + '</div>';
+
+  // rungs *above* your answer are dimmed rather than hidden — "the most I will
+  // accept" only reads as a ladder if you can see what you are refusing.
+  // String() on both sides because the machines question stores booleans, and
+  // 'false' === false is how its rung quietly never lit (found in this move).
+  const ladder = (A, key, rungs) => '<div class="choice" role="radiogroup">' + rungs.map((r, i) => {
+    const at = rungs.findIndex((x) => String(x.v) === String(A[key]));
+    return ansRow(String(A[key]) === String(r.v), key, r.v, r.t, r.e, (at >= 0 && i > at) ? ' above' : '');
+  }).join('') + '</div>';
+
+  const BLINDNOTE = '<p class="blindnote">Nobody sees your answer, and you will see nobody else’s until every one of them is in.</p>';
+
+  /* One body per delegable question — the copy a member answers against,
+     identical on both surfaces because it is the same question. */
+  const ANSWER = {
+    quorum: (A, E) =>
+      '<p class="why">How many of the ' + E + ' must weigh in on a question before it can change the charter. A question short of quorum simply waits — nobody’s silence is ever counted as a vote. Asked as a <b>count</b> — the convenor’s wording of the question; the number is the room’s.</p>' +
+      slider(A, 'quorum', 1, E, (v) => v + ' of ' + E, (v) =>
+        v >= E ? 'Nothing moves unless every member has weighed in. A charter that cannot change without all of them is a perfectly reasonable thing to want.'
+        : v <= Math.ceil(E / 4) ? 'A small part of the room can carry a change while the rest are elsewhere.'
+        : 'Rather more than half the room has to have looked at a question before it can move.') +
+      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> answer given, so it will never be lower than what you say here.</p>',
+    bar: (A) =>
+      '<p class="why">How sure the room has to be that a new wording beats the one it would replace, <b>at the close, where an adoption is permanent</b>. A confidence, not a vote share — at 60% a change goes through on a real but slender preference; at 90% only something close to agreement moves anything. Everything before the close can still be challenged, so this one number covers the whole way there; how the bar climbs is the convenor’s pacing.</p>' +
+      slider(A, 'bar', 50, 95, (v) => v + '%', (v) =>
+        v >= 85 ? 'Only near-agreement changes anything. Expect the charter to move slowly and keep most of what it started with.'
+        : v <= 60 ? 'A modest preference is enough. The charter will move quickly, and reverse itself more often.'
+        : 'A clear preference is needed, but not agreement.', 5) +
+      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> answer given.</p>',
+    authorship: (A) =>
+      '<p class="why">Rationales are visible whatever the room settles on. What varies is only whether a name is attached to one. Here the rule runs the other way: the charter takes the <b>most private</b> answer, so one person who wants to stay unnamed keeps the whole charter unnamed.</p>' +
+      ladder(A, 'authorship', [
+        { v: 'anonymous', t: 'Nobody’s name, ever', e: 'Not during the session and not in the closing record.' },
+        { v: 'sealed', t: 'Names at the close', e: 'Hidden while the charter is being written; published with the record.' },
+        { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' }]) +
+      '<p class="blindnote">Nothing is preselected — anonymity holds unless every single member is content with more.</p>',
+    signing: (A) =>
+      '<p class="why">Whether an author may put their name to a proposal that is otherwise unattributed.</p>' +
+      ladder(A, 'signing', [
+        { v: 'nobody', t: 'Nobody signs', e: 'The only setting under which an unsigned proposal says nothing about whoever wrote it.' },
+        { v: 'each', t: 'Each author chooses', e: 'An unsigned proposal among signed ones says something.' },
+        { v: 'everybody', t: 'Everybody signs', e: 'Uniform in the other direction.' }]) + BLINDNOTE,
+    judgments: (A) =>
+      '<p class="why">Never revealed while a question is still being judged, whichever the room settles on — that would make the room read each other instead of the text. What this settles is only whether they are published with the closing record.</p>' +
+      ladder(A, 'judgments', [
+        { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
+        { v: 'after', t: 'Revealed once the decision is made', e: 'Published with the record, never before it.' }]) + BLINDNOTE,
+    chamber: (A) =>
+      '<p class="why">Who may read the charter besides the members. Whoever they are, they are <b>not members</b>: nothing is known about them, they have a link and nothing else, and they cannot propose, judge or be counted. A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.</p>' +
+      ladder(A, 'chamber', [
+        { v: 'closed', t: 'Roster only', e: 'Nobody outside the membership sees anything at all.' },
+        { v: 'link', t: 'Anyone with the link', e: 'The chamber view only, to whoever the link reaches.' },
+        { v: 'public', t: 'Public', e: 'Listed and readable by anyone.' }]) + BLINDNOTE,
+    machines: (A) =>
+      '<p class="why">A machine member — a coherence auditor that patrols for drift and proposes fixes, holding ✏️s like anybody else. The <b>most restrictive</b> answer wins, so if you would rather not draft alongside one, it stays out.</p>' +
+      ladder(A, 'machines', [
+        { v: false, t: 'People only', e: 'No machine member in this charter.' },
+        { v: true, t: 'A machine member is fine', e: 'It competes on the same terms as anybody else and can be out-judged like anybody else.' }]) + BLINDNOTE,
+    ending: (A) =>
+      '<p class="why">When the document should close. The <b>latest</b> answer anybody gives is taken, and <b>never</b> is the latest of all — so nobody is cut off before they were ready.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      ansRow(A.ending !== null && A.ending !== 'never', 'ending', 'date', 'At a set time', '',
+        '', '<span class="fld"><label>Ends</label><input type="datetime-local" data-ansdate="ending"' +
+        (A.ending && A.ending !== 'never' ? ' value="' + esc(A.ending) + '"' : '') + '></span>') +
+      ansRow(A.ending === 'never', 'ending', 'never', 'Never', 'It runs until it is frozen.') +
+      '</div>' + BLINDNOTE,
+    grant: (A) =>
+      '<p class="why">The fewest ✏️s you would accept being given to start with. The charter takes the <b>most generous</b> answer.</p>' +
+      '<span class="fld"><label>✏️s to start with</label><input class="num" type="number" min="0" max="40"' +
+      ' data-ansnum="grant"' + (A.grant !== null ? ' value="' + A.grant + '"' : '') + '></span>' + BLINDNOTE,
+    drip: (A) =>
+      '<p class="why">The slowest return you would accept — ✏️s given back per tenth of the window. The charter takes the <b>fastest</b> answer.</p>' +
+      '<span class="fld"><label>✏️s back per 10%</label><input class="num" type="number" min="0" max="10"' +
+      ' data-ansnum="drip"' + (A.drip !== null ? ' value="' + A.drip + '"' : '') + '></span>' + BLINDNOTE,
+  };
+
   /* ---- the cable ----------------------------------------------------------
      `queue-wire`, lifted from session-view with its rules intact: 6px, opaque,
      exactly the colour of its own queue card (the wash composited over white,
@@ -635,5 +741,6 @@ window.SETUP = (function () {
   return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
     nameBody, pictureBody, drawWire, opt, num, faces, someIn,
-    KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor };
+    KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor,
+    slider, ladder, ANSWER, BLINDNOTE };
 })();

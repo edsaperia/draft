@@ -66,7 +66,7 @@
 (function () {
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, readBody,
     watchBody, nameBody, pictureBody, drawWire, opt, faces, someIn,
-    KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor } = window.SETUP;
+    KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor, ANSWER } = window.SETUP;
   const band = document.getElementById('band');
   const rail = document.getElementById('rail');
   const wires = document.getElementById('wires');
@@ -170,7 +170,7 @@
       routeOf: (v) => (/never|perpetual|no end/i.test(v) ? 'constitutional' : 'ordinary'),
       routeNote: 'Which route this takes depends on what you write. A different date is an ordinary proposal, judged like any other. Never — no ending at all — re-opens the founding question instead, because a document with no ending has no rising threshold, and every decision already taken was taken under one.',
 
-      readNote: 'The approval threshold rises towards that moment, and ✏️s come back paced against it. <b>Never</b> is one of the answers to this question, which is why it is constitutional — a document with no ending has no ramp. The date itself is ordinary, and anybody may propose moving it.' },
+      readNote: 'The approval threshold rises towards that moment, and ✏️s come back paced against it. <b>Never</b> is one of the answers to this question, which is why it is constitutional — a document with no ending has no ramp. The date itself is ordinary, and anybody may propose moving it — and postponing never lowers the bar: it stays where it is and rises more slowly to the same ceiling.' },
     // Pacing, not consent (§9.0, Q341): the close bar is the room's, above in
     // their own pile; how it climbs there is the convenor's, like the drip.
     { k: 'pace', g: '📈', t: 'How does the bar get there?', own: 'convenor', kind: 'ordinary', v: 'Rising from 55%',
@@ -339,29 +339,9 @@
     'What you are about to say is how much of <b>this room</b> you need behind a change before it moves.</div>' +
     faces(ROSTER, S.myname) + '</div>');
 
-  // `step` is not decoration: the ticks are drawn from it, and a control that
-  // ticks every answer has to have countably few. It is also the more honest
-  // claim — *the lowest bar I will accept* to the nearest percentage point is a
-  // precision nobody holds, and the fives are what people actually mean.
-  const slider = (key, min, max, fmt, mean, step) => {
-    const v = S[key], st = step || 1;
-    const at = (v === null ? Math.round((min + max) / 2 / st) * st : v);
-    return '<div class="cs' + (v === null ? ' unset' : '') + '">' +
-      '<div class="csval' + (v === null ? ' unset' : '') + '">' + (v === null ? 'Drag to answer' : fmt(v)) + '</div>' +
-      '<input type="range" min="' + min + '" max="' + max + '" step="' + st + '" value="' + at + '"' +
-      ' style="--n:' + Math.round((max - min) / st) + ';--pct:' + (v === null ? 0 : (v - min) / (max - min) * 100) + '"' +
-      ' data-slide="' + key + '">' +
-      '<div class="csends"><span>' + fmt(min) + '</span><span>' + fmt(max) + '</span></div>' +
-      '<div class="csmean">' + (v === null ? mean(min) + '<br>' + mean(max) : mean(v)) + '</div></div>';
-  };
-
-  // `privacy-ladder` — the rungs *above* your answer are dimmed rather than
-  // hidden, since *the most I will accept* only reads as a ladder if you can see
-  // what you are refusing. The control is the session-view's own radio.
-  const ladder = (key, rungs) => '<div class="choice" role="radiogroup">' + rungs.map((r, i) => {
-    const at = rungs.findIndex((x) => x.v === S[key]);
-    return opt(S, key, r.v, r.t, r.e, '', false, (at >= 0 && i > at) ? ' above' : '');
-  }).join('') + '</div>';
+  // The consent controls and the answer bodies live in setup.js since Q344
+  // closed: the convenor answers the questions they delegated on their own
+  // surface, so the member's controls are shared vocabulary now.
 
   // A constitutional motion on the roster has no ceremony card of its own,
   // because nobody was asked at the start whether a person who was not there
@@ -427,49 +407,13 @@
   const BODY = {
     myname: () => nameBody(me()),
     mypic: () => pictureBody(me()),
-    quorum: () => whoBox('quorum') +
-      '<p class="why">How many of the fourteen must weigh in on a question before it can change the charter. A question short of quorum simply waits — nobody’s silence is ever counted as a vote. Asked as a <b>count</b> — the convenor’s wording of the question; the number is the room’s.</p>' +
-      slider('quorum', 1, E, (v) => v + ' of ' + E, (v) =>
-        v >= E ? 'Nothing moves unless every member has weighed in. A charter that cannot change without all fourteen is a perfectly reasonable thing to want.'
-        : v <= Math.ceil(E / 4) ? 'A small part of the room can carry a change while the rest are elsewhere.'
-        : 'Rather more than half the room has to have looked at a question before it can move.') +
-      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> of the fourteen, so it will never be lower than what you say here.</p>',
-    bar: () => whoBox('bar') +
-      '<p class="why">How sure the room has to be that a new wording beats the one it would replace, <b>at the close, where an adoption is permanent</b>. A confidence, not a vote share — at 60% a change goes through on a real but slender preference; at 90% only something close to agreement moves anything. Everything before the close can still be challenged, so this one number covers the whole way there; how the bar climbs is the convenor’s pacing, in their pile.</p>' +
-      slider('bar', 50, 95, (v) => v + '%', (v) =>
-        v >= 85 ? 'Only near-agreement changes anything. Expect the charter to move slowly and keep most of what it started with.'
-        : v <= 60 ? 'A modest preference is enough. The charter will move quickly, and reverse itself more often.'
-        : 'A clear preference is needed, but not agreement.', 5) +
-      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> of the fourteen.</p>',
-    authorship: () =>
-      '<p class="why">Rationales are visible whatever the room settles on. What varies is only whether a name is attached to one. Here the rule runs the other way: the charter takes the <b>most private</b> answer, so one person who wants to stay unnamed keeps the whole charter unnamed.</p>' +
-      ladder('authorship', [
-        { v: 'anonymous', t: 'Nobody’s name, ever', e: 'Not during the session and not in the closing record.' },
-        { v: 'sealed', t: 'Names at the close', e: 'Hidden while the charter is being written; published with the record.' },
-        { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' }]) +
-      '<p class="blindnote">Nothing is preselected — anonymity holds unless every one of the fourteen is content with more.</p>',
-    signing: () =>
-      '<p class="why">Whether an author may put their name to a proposal that is otherwise unattributed.</p>' +
-      ladder('signing', [
-        { v: 'nobody', t: 'Nobody signs', e: 'The only setting under which an unsigned proposal says nothing about whoever wrote it.' },
-        { v: 'each', t: 'Each author chooses', e: 'In a room of fourteen, an unsigned one among signed ones says something.' },
-        { v: 'everybody', t: 'Everybody signs', e: 'Uniform in the other direction.' }]) + BLIND,
-    judgments: () =>
-      '<p class="why">Never revealed while a question is still being judged, whichever the room settles on — that would make the room read each other instead of the text. What this settles is only whether they are published with the closing record.</p>' +
-      ladder('judgments', [
-        { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
-        { v: 'after', t: 'Revealed once the decision is made', e: 'Published with the record, never before it.' }]) + BLIND,
-    chamber: () =>
-      '<p class="why">Who may read the charter besides the fourteen of you. Whoever they are, they are <b>not members</b>: nothing is known about them, they have a link and nothing else, and they cannot propose, judge or be counted. What they see is the chamber view — adoptions as they land, the rolling log hash, which races are stuck. Live standings are never visible to anybody. A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.</p>' +
-      ladder('chamber', [
-        { v: 'closed', t: 'Roster only', e: 'Nobody outside the fourteen sees anything at all.' },
-        { v: 'link', t: 'Anyone with the link', e: 'The chamber view only, to whoever the link reaches.' },
-        { v: 'public', t: 'Public', e: 'Listed and readable by anyone.' }]) + BLIND,
-    machines: () =>
-      '<p class="why">The convenor has offered a machine member — a coherence auditor that patrols for drift and proposes fixes. It holds a budget like anybody else. The <b>most restrictive</b> answer wins, so if you would rather not draft alongside one, it stays out.</p>' +
-      ladder('machines', [
-        { v: 'false', t: 'People only', e: 'No machine member in this charter.' },
-        { v: 'true', t: 'A machine member is fine', e: 'It competes on the same terms as anybody else and can be out-judged like anybody else.' }]) + BLIND,
+    quorum: () => whoBox('quorum') + ANSWER.quorum(S, E),
+    bar: () => whoBox('bar') + ANSWER.bar(S),
+    authorship: () => ANSWER.authorship(S),
+    signing: () => ANSWER.signing(S),
+    judgments: () => ANSWER.judgments(S),
+    chamber: () => ANSWER.chamber(S),
+    machines: () => ANSWER.machines(S),
   };
 
   // A gate card says one thing: what it is waiting for, and whether that has
@@ -626,6 +570,10 @@
     if (ok) { S.okd.add(ok.dataset.ok); S.open = null; return render(); }
     if (ev.target.closest('[data-confirm]')) { S.seen.add(S.open); S.open = null; return render(); }
     if (ev.target.closest('button[data-close]')) { S.open = null; return render(); }
+    const an = ev.target.closest('[data-ans]');
+    if (an) { const v = an.dataset.ansval;
+      S[an.dataset.ans] = (v === 'true') ? true : (v === 'false') ? false : v;
+      return render(); }
     const p = ev.target.closest('[data-set]');
     if (p) { const v = p.dataset.val;
       S[p.dataset.set] = (v === 'true') ? true : (v === 'false') ? false : v; return render(); }

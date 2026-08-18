@@ -108,7 +108,7 @@
 <script>
 (function () {
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
-    nameBody, pictureBody, drawWire, opt, num, someIn, KIND, kindNote } = window.SETUP;
+    nameBody, pictureBody, drawWire, opt, num, someIn, KIND, kindNote, ANSWER } = window.SETUP;
   const prose = document.getElementById('prose');
   const titleEl = document.getElementById('title');
   const band = document.getElementById('band');
@@ -119,6 +119,9 @@
     title: '', slug: 'hollow-oak-4f2a',
     myname: 'Wren Ashby', mypic: 'c0',
     ending: 'roster', endsAt: '2026-08-20T18:00',
+    myAns: { ending: null, bar: null, quorum: null, authorship: null,
+      signing: null, judgments: null, chamber: null, machines: null,
+      grant: null, drip: null },
     barBy: 'roster', tClose: 78, shape: 'ramp', tStart: 55,
     quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
     authorship: 'roster', signing: 'roster', judgments: 'roster',
@@ -217,11 +220,11 @@
   // the members will be able to do.
   const GATES = [
     { k: 'canpropose', g: '✏️', t: 'Proposing', own: 'you', isGate: true,
-      open: () => canPropose(),
-      why: 'Members can read a document from the first second, and they cannot propose against a text that is not there yet. Confirming the starting text is the whole of it.',
-      waiting: 'Waiting on the starting text.',
+      open: () => canPropose() && !LIVE().some(owesAnswer),
+      why: 'Members can read a document from the first second, and they cannot propose against a text that is not there yet — nor should you be able to act on a document whose rules you have not yet said what you will accept of (§9.0b), so your own outstanding answers wait here too.',
+      waiting: 'Waiting on the starting text, and on your own answers.',
       done: 'Open — members can propose as soon as they arrive.',
-      blockers: () => [card('text')].filter((c) => !settled(c)) },
+      blockers: () => [card('text')].filter((c) => !settled(c)).concat(LIVE().filter(owesAnswer)) },
     { k: 'canjudge', g: '⚖️', t: 'Judging', own: 'you', isGate: true,
       open: () => canJudge(),
       why: 'A judgment is counted towards a quorum and recorded under a disclosure rule, so none of the constitution can be settled after it without changing what the judgment was.',
@@ -331,12 +334,19 @@
   ];
   const card = (k) => CARDS.find((c) => c.k === k) || GATES.find((c) => c.k === k);
   const isRoom = (c) => !!(c.key && delegated(c.key));
+  // **A delegated question is also yours to answer** (Q344): 🎩 decides
+  // whether — a clerk owes nothing — and once it says yes, the card carries
+  // the member's own answering body and stays outstanding until answered.
+  const answered = (c) => S.myAns[c.k] !== null && S.myAns[c.k] !== undefined;
+  const owesAnswer = (c) => isRoom(c) && iDraft() && ANSWER[c.k] && !answered(c);
   const ready = (c) => (c.ready ? c.ready() : true);
-  const settled = (c) => (c.isGate ? S.okd.has(c.k) : S.seen.has(c.k) && ready(c));
+  const settled = (c) => (c.isGate ? S.okd.has(c.k)
+    : S.seen.has(c.k) && ready(c) && !owesAnswer(c));
   const mustAct = (c) => (c.isGate ? (c.open() && !S.okd.has(c.k)) : !settled(c));
   // How far the room has got, against the roster **as it stands** — held as a
   // proportion because a convenor's roster starts at one person and grows.
-  const resolveCounts = () => CARDS.forEach((c) => { if (c.p != null) c.in = Math.round(c.p * E()); });
+  const resolveCounts = () => CARDS.forEach((c) => { if (c.p != null)
+    c.in = Math.min(E(), Math.round(c.p * E()) + (isRoom(c) && iDraft() && answered(c) ? 1 : 0)); });
 
   // **A card with a dependency does not appear until its dependency is settled**
   // (Ed, 2026-08-18: *if there are dependencies, just don't show them the next
@@ -637,7 +647,11 @@
           '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
           ' data-ok="' + c.k + '">OK</button>', g.cards);
       }
-      const body = BODY[c.k]() + (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
+      const mine = isRoom(c) && iDraft() && ANSWER[c.k]
+        ? '<div class="body"><div class="eyebrow fieldlab">Your own answer</div>' +
+          ANSWER[c.k](S.myAns, E()) + '</div>' : '';
+      const body = BODY[c.k]() + mine +
+        (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
       const kindLine = c.kind === 'personal' ? '' :
         '<p class="setnote"><b>' + KIND[c.kind] + '.</b> ' + (c.knote || kindNote[c.kind]) + '</p>';
       const foot = '<button class="btn" data-close="1">Close</button>' +
@@ -672,7 +686,12 @@
     fr.readAsDataURL(file);
   };
   document.addEventListener('change', (ev) => {
-    if (ev.target.matches('[data-picfile]')) takePic(ev.target.files[0]);
+    if (ev.target.matches('[data-picfile]')) return takePic(ev.target.files[0]);
+    if (ev.target.matches('[data-ansdate]')) {
+      S.myAns[ev.target.dataset.ansdate] = ev.target.value || null; return render(); }
+    if (ev.target.matches('[data-ansnum]')) {
+      S.myAns[ev.target.dataset.ansnum] = ev.target.value === '' ? null : +ev.target.value;
+      return render(); }
   });
   document.addEventListener('dragover', (ev) => {
     const z = ev.target.closest && ev.target.closest('.picdrop');
@@ -710,6 +729,12 @@
       S.open = (S.open === k) ? null : k; return render(); }
     if (ev.target.closest('[data-confirm]')) { S.seen.add(S.open); S.open = null; return render(); }
     if (ev.target.closest('button[data-close]')) { S.open = null; return render(); }
+    const an = ev.target.closest('[data-ans]');
+    if (an) { const v = an.dataset.ansval;
+      S.myAns[an.dataset.ans] = (v === 'true') ? true : (v === 'false') ? false
+        : (v === 'date') ? (S.myAns[an.dataset.ans] === 'never' ? null : S.myAns[an.dataset.ans])
+        : v;
+      return render(); }
     const o = ev.target.closest('[data-set]');
     if (o) { const v = o.dataset.val;
       S[o.dataset.set] = (v === 'true') ? true : (v === 'false') ? false : v;
@@ -749,6 +774,10 @@
   // the bar and the rail and leaves the card alone — only the commit control,
   // which is about what you have just typed, is set directly.
   document.addEventListener('input', (ev) => {
+    const sl = ev.target.closest && ev.target.closest('[data-slide]');
+    if (sl) { S.myAns[sl.dataset.slide] = +sl.value; render();
+      const again = document.querySelector('[data-slide="' + sl.dataset.slide + '"]');
+      if (again) again.focus(); return; }
     const t = ev.target;
     const lane = t.closest && t.closest('[data-titlelane]');
     if (lane) { S.title = lane.textContent.trim(); lane.classList.toggle('blank', !S.title);
