@@ -247,7 +247,7 @@
     emailSent: false, emailVerified: false, mailOpen: false,
     viewer: 0,
     app: { started: false, email: '', emailSent: false, emailVerified: false,
-      mailOpen: false, name: '', pic: '', text: '', submitted: false },
+      mailOpen: false, name: '', pic: '', text: '', submitted: false, csId: null },
     ending: 'roster', endsAt: '2026-08-20T18:00',
     barBy: 'roster', tClose: 78, shape: 'ramp', tStart: 55,
     quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
@@ -952,12 +952,27 @@
     const st = csState(k);
     return st && st.settledBy !== null && st.settledBy !== 'convenor' ? st.value : null;
   };
-  // a carried title or link changed under the page's mirrors — resync
+  // a carried title or link changed under the page's mirrors — resync; and
+  // the rows follow the register (carried invitations, removals, admissions)
   const syncFromCs = () => {
     if (!cs) return;
     const tv = csState('title'), lv = csState('slug');
     if (tv && tv.settledBy === 'motion' && tv.value.text !== S.title) S.title = tv.value.text;
     if (lv && lv.settledBy === 'motion' && lv.value.slug !== S.slug) S.slug = lv.value.slug;
+    for (const [mid2, rec] of cs.memberRecords()) {
+      if (mid2 === FOUNDER) continue;
+      const row = S.roster.find((r) => r.mid === mid2);
+      if (!row && !rec.removed) {
+        S.roster.push({ n: rec.name || rec.email.split('@')[0], e: rec.email,
+          role: 'member', in: rec.arrivedAtT !== null, mid: mid2, ans: {}, okd: new Set() });
+      } else if (row && rec.removed) {
+        const at = S.roster.indexOf(row);
+        S.roster.splice(at, 1);
+        if (S.viewer === at) S.viewer = 0;
+      } else if (row && rec.arrivedAtT !== null && !row.in) {
+        row.in = true;
+      }
+    }
   };
   // ...stated in the composers' own vocabulary, so a lane equal to what
   // stands filters itself out
@@ -1596,7 +1611,14 @@
   // the only things an application is. The email is the identity (verified
   // by magic link before anything can be submitted), member emails are
   // unique, and an empty application is a real application.
-  const APPLICANT = { judged: 2 };
+  const APPLICANT = { get judged() {
+    if (!cs || !S.app.csId) return 2; // fixture until the module holds it
+    const a = cs.applicantRecords().get(S.app.csId);
+    const rec = a && a.motion ? cs.motionRecords().get(a.motion) : null;
+    if (!rec) return 0;
+    if (rec.status === 'carried') return E();
+    return S.roster.filter((r) => r.mAnsOk && r.mAnsOk.has('roster')).length;
+  } };
   const MEMBER_EMAILS = { has: (e2) => S.roster.some((r) => (r.e || '').toLowerCase() === e2) };
   const APPCARDS = () => {
     const a = S.app;
@@ -1896,7 +1918,9 @@
 
   const render = () => {
     // the roster rows ARE the people now (per-user state, Ed 362): the
-    // identity cards write straight onto the viewer's row
+    // identity cards write straight onto the viewer's row — and the rows
+    // follow the module's register first
+    syncFromCs();
     resolveCounts();
     renderDev();
     renderTitle(); renderRail(); renderBand(); drawWire(wires, S.open); renderMail();
@@ -1967,7 +1991,13 @@
     const cv = ev.target.closest('[data-clearval]');
     if (cv) return closeThen(() => { S[cv.dataset.clearval === 'myname' ? 'myname' : 'mypic'] = ''; S.open = null; });
     const ams = ev.target.closest('[data-appmailsend]');
-    if (ams) { S.app.emailSent = true; S.app.mailOpen = true; return render(); }
+    if (ams) { S.app.emailSent = true; S.app.mailOpen = true;
+      // the address is the identity (§9.7½) — the module holds it from here
+      if (cs && !S.app.csId) {
+        try { S.app.csId = cs.startApplication(now(), S.app.email.trim()); }
+        catch (e) { console.warn('[cs]', e && e.message); }
+      }
+      return render(); }
     const ame = ev.target.closest('[data-appmailedit]');
     if (ame) { S.app.emailSent = false; return render(); }
     const amo = ev.target.closest('[data-appmailopen]');
@@ -1975,7 +2005,11 @@
     const ast = ev.target.closest('[data-appstart]');
     if (ast) { S.app.started = true; return render(); }
     const asu = ev.target.closest('[data-appsubmit]');
-    if (asu) { S.app.submitted = true; S.open = 'apply'; return render(); }
+    if (asu) { S.app.submitted = true; S.open = 'apply';
+      if (cs && S.app.csId) { try { cs.submitApplication(now(), S.app.csId,
+        { name: S.app.name || undefined, picture: S.app.pic || undefined,
+          words: S.app.text || undefined }); } catch (e) { console.warn('[cs]', e && e.message); } }
+      return render(); }
     const ap2 = ev.target.closest('[data-apppic]');
     if (ap2) { S.app.pic = ap2.dataset.apppic; return render(); }
     const mo2 = ev.target.closest('[data-motion]');
@@ -2093,7 +2127,9 @@
     const cm = ev.target.closest('[data-act="clickmail"]');
     // clicking the mail's login button IS arriving back, so it settles the
     // card itself — there is no second act of confirming you exist
-    if (cm && S.viewer === 'applicant') { S.app.emailVerified = true; S.app.mailOpen = false; return render(); }
+    if (cm && S.viewer === 'applicant') { S.app.emailVerified = true; S.app.mailOpen = false;
+      if (cs && S.app.csId) { try { cs.verifyApplication(now(), S.app.csId); } catch (e) {} }
+      return render(); }
     if (cm) { S.emailVerified = true; S.mailOpen = false; S.seen.add('myemail'); S.open = 'slug'; return render(); }
     const ee = ev.target.closest('[data-act="editemail"]');
     if (ee) { S.emailSent = false; return render(); }
@@ -2244,6 +2280,15 @@
   document.getElementById('devwho').addEventListener('change', (ev) => {
     const v = ev.target.value;
     S.viewer = v === 'applicant' ? 'applicant' : +v;
+    // sitting in an invited seat is that member's first arrival (§9.6a)
+    if (cs && v !== 'applicant') {
+      const row = S.roster[+v];
+      if (row && row.mid && !row.in) {
+        try { cs.arrive(now(), row.mid);
+          cs.setIdentity(now(), row.mid, { name: row.n });
+          row.in = true; } catch (e) {}
+      }
+    }
     S.open = null; lastOpen = null;
     render();
   });
