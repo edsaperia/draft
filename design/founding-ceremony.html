@@ -51,7 +51,7 @@
     <nav class="toc"><ul id="toc"></ul></nav>
     <main>
       <div class="doc" id="doc">
-        <h1 class="doctitle">The Hollow Oak Club — House Charter</h1>
+        <h1 class="doctitle" data-card="title" role="button" tabindex="0" title="The title — click to read the rule, or propose changing it">The Hollow Oak Club — House Charter</h1>
         <div class="setupband" id="band"></div>
         <div class="prose" id="prose"></div>
       </div>
@@ -164,7 +164,8 @@
   // of the document is that the constitution is legible to everyone it binds.
   const CONVENOR = [
     { k: 'text', g: '📄', t: 'Starting Text', own: 'convenor', kind: 'ordinary', v: '42 blocks, 9 sections' },
-    { k: 'title', g: '🏷️', t: 'Title', own: 'convenor', kind: 'ordinary', v: 'The Hollow Oak Club — House Charter' },
+    // inDoc: the heading at the top of the document IS the title (Ed)
+    { k: 'title', g: '🏷️', t: 'Title', own: 'convenor', kind: 'ordinary', inDoc: true, v: 'The Hollow Oak Club — House Charter' },
     { k: 'slug', g: '🔗', t: 'Link', own: 'convenor', kind: 'ordinary', v: 'docs.vote/hollow-oak-4f2a' },
     { k: 'roster', g: '🪪', t: 'Membership', own: 'convenor', kind: 'constitutional', v: 'Fourteen members',
       // 🎩 folded in (Ed, 2026-08-18): whether the convenor is a member is
@@ -387,10 +388,22 @@
     : c.own === 'convenor' ? (c.kind === 'constitutional' && !S.okd.has(c.k))
     : isRoom(c) && settled(c) && (c.in || 0) >= E && !S.okd.has('res-' + c.k));
 
+  // the decision, said in prose from a member's side of the table
+  const decisionLine = (c) => {
+    if (c.isGate || c.own === 'you') return value(c);
+    if (isRoom(c)) {
+      return (c.in || 0) >= E
+        ? esc(c.result || '') + ' — decided by the membership.'
+        : 'The convenor has delegated this to the membership, who are still deciding — ' +
+          Math.min(c.in || 0, E) + ' of ' + E + ' in.';
+    }
+    return value(c);
+  };
+
   const ctx = {
     get open() { return S.open; }, get E() { return E; },
     clauseFor: (c) => (c.k === 'roster' ? faces(ROSTER, S.myname) : ''),
-    mustAct, settled, summary, value, isRoom, waiting, news,
+    mustAct, settled, summary, value, isRoom, waiting, news, decisionLine,
     // the head says **what kind of decision this is** first, because the kind
     // is what tells you what could ever be done about it
     bandLabel: (c) => (c.isGate ? 'Not a decision · it follows from the others'

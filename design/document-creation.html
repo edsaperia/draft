@@ -100,7 +100,7 @@
     <nav class="toc"><ul id="toc"></ul></nav>
     <main>
       <div class="doc" id="doc">
-        <h1 class="doctitle ph" id="doctitle">Untitled document</h1>
+        <h1 class="doctitle ph" id="doctitle" data-card="title" role="button" tabindex="0" title="The title — click to change it">Untitled document</h1>
         <div class="setupband" id="band"></div>
         <div class="prose empty" id="prose" contenteditable="true" spellcheck="false"></div>
       </div>
@@ -268,7 +268,9 @@
     // address that saves it — and then everything that lives inside the
     // saved document. Each is born when the one before it settles, so
     // arriving at docs.vote you are asked exactly one thing.
-    { k: 'title', g: '🏷️', t: 'Title', kind: 'ordinary', ready: () => !!S.title, changeable: true },
+    // inDoc: the document's own heading IS the title (Ed, 2026-08-18) — no
+    // paragraph restates it; the heading opens the card
+    { k: 'title', g: '🏷️', t: 'Title', kind: 'ordinary', inDoc: true, ready: () => !!S.title, changeable: true },
     // Pre-filled with a slug generated from the title and checked against the
     // ones that already exist; confirming it is what SAVES the document.
     // **The address is verified before anything is saved** (Ed, 2026-08-18:
@@ -610,10 +612,22 @@
     : !c.ansFor && isRoom(c) && settled(c) && E() > 0 && (c.in || 0) >= E() &&
       !S.okd.has('res-' + c.k));
 
+  // the decision, said in prose from the convenor's side of the table
+  const decisionLine = (c) => {
+    if (c.ansFor || c.isGate || c.kind === 'personal') return summary(c);
+    if (isRoom(c)) {
+      return (c.in || 0) >= E() && E() > 0
+        ? (c.result ? esc(c.result) + ' — decided by the membership.' : 'Decided by the membership.')
+        : 'You have delegated this to the membership, who are still deciding — ' +
+          Math.min(c.in || 0, E()) + ' of ' + E() + ' in.';
+    }
+    return settled(c) ? value(c) : 'Waiting for you to decide.';
+  };
+
   const ctx = {
     get open() { return S.open; }, get E() { return E(); },
     clauseFor: (c) => (c.k === 'roster' ? rosterClause() : ''),
-    mustAct, settled, summary, value, isRoom, waiting, news, tasksFor,
+    mustAct, settled, summary, value, isRoom, waiting, news, tasksFor, decisionLine,
     // the head says **what kind of decision this is** and then who holds it,
     // because the kind is what tells you what could ever be done about it
     bandLabel: (c) => (c.isGate ? 'Not a decision · it follows from the others'

@@ -458,3 +458,15 @@ button.cline:hover b { text-decoration: underline; }
 .constsec .csintro { margin: 0 0 var(--s3); font-size: var(--t-small);
   color: var(--muted); max-width: 60ch; }
 .constsec .csec .pilewho { margin: 0 0 var(--s3); }
+
+/* each decision: its own heading, the decision in prose underneath (Ed,
+   2026-08-18) — the tab keeps the gutter, the heading carries the name, and
+   the state line says where the decision stands in whole sentences. */
+.constsec .cptext { padding-top: 2px; }
+.constsec .cph { margin: 0; font-size: var(--t-body); font-weight: 600; line-height: 1.35; }
+.constsec .cpv { margin: 1px 0 0; font-size: var(--t-small); line-height: 1.5; }
+.constsec .cpara { margin: 0 0 var(--s3); }
+
+/* the title heading is the way into the title card */
+.doctitle[data-card] { cursor: pointer; }
+.doctitle[data-card]:hover { text-decoration: underline dotted 1.5px; text-underline-offset: 4px; }

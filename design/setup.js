@@ -202,11 +202,18 @@ window.SETUP = (function () {
       // member's own answer-task under the setting it answers (the
       // convenor's surface: the setting watches, the answer asks).
       if (g.sections) {
+        // **Each decision is a heading with the decision underneath** (Ed,
+        // 2026-08-18): the title as its own heading, then a sentence of
+        // state or value in prose — 'Waiting for you to decide', 'The
+        // convenor has delegated this to the membership, who are still
+        // deciding' — supplied by ctx.decisionLine so each surface speaks
+        // from its reader's side of the table.
         const para = (c) => (ctx.open === c.k
           ? '<div class="cpara open">' + cardFor({ ...g, cards: [c] }) + '</div>'
+          : c.inDoc ? ''  // the document displays this itself (the title heading)
           : '<div class="cpara"><span class="chipcol">' + chipHtml(c, ctx, {}) + '</span>' +
-            '<p class="cptext"><b>' + esc(c.ansFor ? 'Your answer' : c.t) + '</b><span class="cpv"> — ' +
-            ctx.summary(c) + '</span></p></div>');
+            '<div class="cptext"><h4 class="cph">' + esc(c.ansFor ? 'Your answer' : c.t) + '</h4>' +
+            '<p class="cpv">' + (ctx.decisionLine ? ctx.decisionLine(c) : ctx.summary(c)) + '</p></div></div>');
         const withTasks = (c) => para(c) +
           (ctx.tasksFor ? ctx.tasksFor(c).map(para).join('') : '');
         const wants = g.sections.reduce((n, sec) => n + sec.cards
