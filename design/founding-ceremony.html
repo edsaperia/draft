@@ -371,7 +371,11 @@
   const groups = () => [
     { key: 'constitution', label: 'Constitution',
       sections: secAll(),
-      lead: (h) => h.para(card('slug')),
+      // Founded by [avatar] [name], at [time] once constituted (Ed)
+      lead: (h) => h.para(card('slug')) +
+        '<div class="cpara notab"><p class="cpv founded">Founded by ' +
+        avHtml({ n: 'Wren Ashby', pic: 'c0' }) + ' Wren Ashby' +
+        (S.state === 'settled' ? ' at Tuesday 14:02' : '') + '.</p></div>',
       textAnchor: (h) => (S.open === 'text' ? h.para(card('text'))
         : '<div class="cpara textanchor"><span class="chipcol">' + h.chip(card('text')) + '</span></div>'),
       note: (n) => (n ? n + ' still want you' : 'all answered — settled before you arrived') },

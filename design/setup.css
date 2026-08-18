@@ -510,3 +510,7 @@ button.cline:hover b { text-decoration: underline; }
    (card padding minus the 14px overhang) — the strip is anchored to the
    headclause and must not move with it, so the compensation is on the text */
 .constsec .cpara.open .setupcard .clausehead .rtext { margin-left: calc(14px - var(--s5)); }
+
+/* Founded by [avatar] [name] (at [time]) — the avatar rides in the line */
+.cpv.founded .av { width: 20px; height: 20px; font-size: 7px;
+  display: inline-flex; vertical-align: -5px; margin: 0 2px; }

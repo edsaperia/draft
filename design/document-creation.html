@@ -518,7 +518,12 @@
   const groups = () => [
     { key: 'constitution', label: 'Constitution',
       sections: secLive(),
-      lead: (h) => (visible(card('slug')) ? h.para(card('slug')) : ''),
+      // Founded by [avatar] [name] — only once the founder has a name; the
+      // founding time is never known before the start (Ed)
+      lead: (h) => (visible(card('slug')) ? h.para(card('slug')) : '') +
+        (S.myname.trim()
+          ? '<div class="cpara notab"><p class="cpv founded">Founded by ' +
+            avHtml(me()) + ' ' + esc(S.myname) + '.</p></div>' : ''),
       textAnchor: (h) => (!visible(card('text')) ? ''
         : S.open === 'text' ? h.para(card('text'))
         : '<div class="cpara textanchor"><span class="chipcol">' + h.chip(card('text')) + '</span></div>'),
