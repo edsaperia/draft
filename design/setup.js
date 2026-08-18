@@ -222,11 +222,18 @@ window.SETUP = (function () {
         return '<div class="setrow constsec" id="pile-' + g.key + '">' +
           '<div class="pilelab"><span class="pilehead">' + esc(g.label) + '</span>' +
           (g.intro ? g.intro() : '') + '</div>' +
+          // a section may compose its own body from the shared helpers —
+          // the Membership section does (Ed, 2026-08-18: a Members
+          // subsection that is the list itself, an Applications subsection
+          // with the applicants under it) — everything else takes the
+          // default run of decision paragraphs
           g.sections.map((sec) => '<div class="csec">' +
             '<h3 class="cst">' + esc(sec.title) + '</h3>' +
             '<p class="csintro">' + sec.text + '</p>' +
             (sec.who ? '<div class="pilewho">' + sec.who() + '</div>' : '') +
-            sec.cards.map(withTasks).join('') +
+            (sec.body ? sec.body({ para, chip: (c) => chipHtml(c, ctx, {}),
+              tasks: (c) => (ctx.tasksFor ? ctx.tasksFor(c).map(para).join('') : '') })
+              : sec.cards.map(withTasks).join('')) +
             (sec.block ? sec.block() : '') + '</div>').join('') +
           '<span class="pilen">' + esc(g.note(wants)) + '</span></div>';
       }

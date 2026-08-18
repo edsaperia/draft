@@ -302,18 +302,29 @@
     { key: 'members', title: 'Membership',
       text: 'Who is in the room, how anybody joins or leaves it, and how each member appears in it.',
       keys: ['roster', 'policy', 'lapse', 'machines', 'myname', 'mypic', 'canpropose', 'canjudge'],
-      who: () => ROSTER.map((p) => face(p)).join(''),
-      // **Applicants** (Ed, 2026-08-18): a subsection of Membership — the
-      // people asking to be in the room, each an ordinary proposal the
-      // members are judging
-      block: () => {
-        const show = S.state === 'settled' || (S.state === 'applicant' && S.app.submitted);
-        if (!show) return '';
-        const who = S.state === 'applicant' ? { n: S.app.name, pic: S.app.pic } : APPLICANT;
-        return '<div class="applicants"><span class="eyebrow">Applicants</span>' +
-          '<span class="pf">' + avHtml(who) + esc(who.n) +
-          '<span class="appnote">· a proposal (✏️) · ' + APPLICANT.judged + ' of ' + E + ' judged</span></span></div>';
-      } },
+      // **Members and Applications are subsections** (Ed, 2026-08-18):
+      // Members IS the list, 🪪 beside it, your own row at the bottom
+      // wearing ✋ and 🖼️; Applications is the 🤝 decision with the
+      // Applicants list under it.
+      body: (h) => {
+        const my = ['myname', 'mypic'].map(card).filter(Boolean);
+        const others = ROSTER.filter((p) => p.n !== S.myname);
+        const list = '<div class="memlist">' +
+          others.map((p) => '<div class="memrow">' + avHtml(p) +
+            '<span class="mn">' + esc(p.n) + '</span></div>').join('') +
+          '<div class="memrow meRow">' + my.map(h.chip).join('') + avHtml(me()) +
+          '<span class="mn">' + esc(S.myname || 'Not named yet') + ' <span class="chip">you</span></span></div></div>';
+        const openId = my.find((c) => S.open === c.k);
+        const rest = ['lapse', 'machines', 'canpropose', 'canjudge'].map(card).filter(Boolean);
+        return '<h4 class="csub">Members</h4>' +
+          (S.open === 'roster' ? h.para(card('roster'))
+            : '<div class="cpara"><span class="chipcol">' + h.chip(card('roster')) + '</span>' + list + '</div>') +
+          (openId ? h.para(openId) : '') +
+          '<h4 class="csub">Applications</h4>' + h.para(card('policy')) +
+          applicantsHtml() +
+          rest.map((c) => h.para(c)).join('');
+      },
+      },
     { key: 'deciding', title: 'Decisions',
       text: 'How a change carries: how many must weigh in, how sure the room must be, and when the document ends.',
       keys: ['ending', 'quorum', 'bar', 'pace'] },
@@ -328,6 +339,18 @@
       keys: ['text', 'title', 'slug'] },
   ];
   const secAll = () => SEC.map((s2) => ({ ...s2, cards: s2.keys.map(card).filter(Boolean) }));
+  // **Applicants** (Ed, 2026-08-18): the list of people asking to be in
+  // the room, a subsection under Applications — each one a proposal (✏️)
+  // the members are judging
+  const applicantsHtml = () => {
+    const show = S.state === 'settled' || (S.state === 'applicant' && S.app.submitted);
+    if (!show) return '';
+    const who = S.state === 'applicant' ? { n: S.app.name, pic: S.app.pic } : APPLICANT;
+    return '<h4 class="csub sub2">Applicants</h4><div class="memlist">' +
+      '<div class="memrow">' + avHtml(who) + '<span class="mn">' + esc(who.n) +
+      ' <span class="appnote">· a proposal (✏️) · ' + APPLICANT.judged + ' of ' + E + ' judged</span></span></div></div>';
+  };
+
   const groups = () => [
     { key: 'constitution', label: 'Constitution',
       sections: secAll(),

@@ -470,3 +470,16 @@ button.cline:hover b { text-decoration: underline; }
 /* the title heading is the way into the title card */
 .doctitle[data-card] { cursor: pointer; }
 .doctitle[data-card]:hover { text-decoration: underline dotted 1.5px; text-underline-offset: 4px; }
+
+/* Members / Applications subsections (Ed, 2026-08-18): Members IS the list,
+   🪪 the invitations tab beside it, your own row last wearing ✋ and 🖼️;
+   Applicants is the list under the Applications decision. */
+.constsec .csub { margin: var(--s3) 0 4px; font-size: var(--t-ui); font-weight: 600; }
+.constsec .csub.sub2 { font-size: var(--t-small); color: var(--muted); font-weight: 600; }
+.memlist { display: flex; flex-direction: column; gap: 5px; }
+.memrow { display: flex; align-items: center; gap: 8px; font-size: var(--t-small); }
+.memrow .av { width: 22px; height: 22px; font-size: 8px; flex: none; }
+.memrow .achip { width: 28px; height: 26px; font-size: 1rem; }
+.memrow .achip .mkg { width: 13px; height: 13px; }
+.memrow.meRow { margin-top: 3px; }
+.memrow .chip { font-size: var(--t-micro); }
