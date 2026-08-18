@@ -12,8 +12,9 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   bug class); and the host that would leak already saw the plaintext command.
   The upgrade path stays clean — a payload swap, same fold shape.
 - **Close moved earlier**: the threshold keeps its current value and rises to
-  T_end over the shorter remainder (§4.3 states only the postponement case;
-  the same keep-the-current-value principle applied in the other direction).
+  T_end over the shorter remainder — steeper, never discontinuous. Confirmed
+  by Ed 2026-08-18 (*a bar shouldn't need to jump if timings are changed*);
+  now §4.3, v0.49.
 - **`applications` is not judge-gated.** §9.0b's reason for the gate is that
   a judgment is *recorded under a disclosure setting* and *counted towards a
   quorum*; the join policy touches neither, and the mock's ceremony gate was
@@ -27,23 +28,32 @@ recorded here as they are made, so Ed can flip any of them cheaply.
 - **The quorum form never converts**: resolution refuses answers in the wrong
   form rather than converting count↔share, because the form is the frame the
   question was asked under (§9.0a — delegate the decision, not the field).
-- **The mover answers like everybody** — opening a motion does not auto-record
-  an accept (363a's own logic: choosing and committing are two acts, and
-  putting a question is neither).
+- ~~The mover answers like everybody~~ **Reversed by Ed 2026-08-18 (v0.49)**:
+  the mover stands at accept from the moment the motion is put — proposers
+  prefer their own proposals, the same way §3.3 counts an author's own
+  preference without asking. Revisable like any answer; 🗑️ stays their way out.
 - **A motion carried by pure abstention carries nothing**: at least one
   standing accept is required, because a motion nobody consented to is not a
   consent.
 - **A document-abstainer's standing keep leaves with them**: the electorate
   is live (v0.48), and abstaining the document is "I trust you to finish up"
   — so a keep from a member who then signs out abstaining stops blocking.
-  Worth Ed's eye: it is the one way a keep dies without being revised.
+  Confirmed by Ed 2026-08-18 (*abstain means abstain — if they wanted to
+  block it, they shouldn't have signed out*; Q371 closed).
 - **Convenor direct-change on reserved settings post-start is uniform**,
   constitutional ones included (Ed's 366; the reservation was consented by
   everybody on the way in, the crown argument generalised). A member's route
-  is untouched: ordinary → 👑 assent, constitutional → everyone anyway.
-- **On convenor lapse every reserved setting passes to the members**, not
-  only the membership — reservation has no holder left (§9.7 speaks only of
-  the crown; generalised here).
+  is untouched by reservation — and since Ed's 377 ruling (2026-08-18,
+  v0.49) **assent ends either route**: the v0.48 constitutional-route
+  exemption is gone, because consent's everyone does not include a clerk,
+  and a member-convenor's accept in the vote is their answer as a member,
+  not their assent as holder.
+- ~~On convenor lapse every reserved setting passes to the members~~
+  **Reversed by Ed 2026-08-18 (v0.49)**: lapse is automatic abstention, and
+  on an assent, abstaining is granting — nothing changes hands, every
+  reserved setting stays reserved, pending 👑 questions pass by themselves,
+  and while the crown sleeps a members-passed change applies as if accepted.
+  Revival is logging in (`crown-returned`), restoring the assent requirement.
 - **Late pace/ending resolution re-anchors prospectively**: if a non-gate
   pacing question resolves after constituted, the anchors reseed at that
   moment — a room-decided ramp can lower the bar from its fixed-interim
