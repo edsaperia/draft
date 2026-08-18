@@ -582,6 +582,13 @@
   // composer's "suggestion" is the draft, its pick the value it proposes,
   // and its radios speak data-mval — which is the whole of the env.
   const PC = window.CARDS.make({ valAttr: 'data-mval', pickOf: (d) => (d ? d.to : null) });
+  // a setup card opens and closes like a decision card (Ed, 2026-08-18)
+  let lastOpen = null;
+  const closeThen = (fn) => {
+    const el = document.querySelector('.setupcard');
+    if (!el) { fn(); return render(); }
+    PC.collapseCard(el, () => { fn(); render(); });
+  };
   const laneBlock = (d, val, text) =>
     '<div class="propblock"><div class="rtext">' + text + '</div>' +
     PC.laneBarHtml(d, val, { edit: false }) + '</div>';
@@ -852,6 +859,11 @@
   }
 
   const render = () => { renderStates(); renderRail(); renderBand(); drawWire(wires, S.open);
+    if (S.open && S.open !== lastOpen) {
+      const el = document.querySelector('.setupcard');
+      if (el) PC.expandCard(el, () => {});
+    }
+    lastOpen = S.open;
     renderMailModal(S.state === 'applicant' && S.app.mailOpen,
       MAILS.applyVerify('The Hollow Oak Club — House Charter', S.app.email)); };
 
@@ -928,7 +940,8 @@
     if (st) { setState(st.dataset.state); return render(); }
     const t = ev.target.closest('[data-tab], [data-card]');
     if (t) { const k = t.dataset.tab || t.dataset.card;
-      S.open = (S.open === k) ? null : k; return render(); }
+      if (S.open === k) return closeThen(() => { S.open = null; });
+      S.open = k; return render(); }
     const ams = ev.target.closest('[data-appmailsend]');
     if (ams) { S.app.emailSent = true; S.app.mailOpen = true; return render(); }
     const amo = ev.target.closest('[data-appmailopen]');
@@ -946,9 +959,9 @@
     const ap2 = ev.target.closest('[data-apppic]');
     if (ap2) { S.app.pic = ap2.dataset.apppic; return render(); }
     const ok = ev.target.closest('[data-ok]');
-    if (ok) { S.okd.add(ok.dataset.ok); S.open = null; return render(); }
-    if (ev.target.closest('[data-confirm]')) { S.seen.add(S.open); S.open = null; return render(); }
-    if (ev.target.closest('button[data-close]')) { S.open = null; return render(); }
+    if (ok) return closeThen(() => { S.okd.add(ok.dataset.ok); S.open = null; });
+    if (ev.target.closest('[data-confirm]')) return closeThen(() => { S.seen.add(S.open); S.open = null; });
+    if (ev.target.closest('button[data-close]')) return closeThen(() => { S.open = null; });
     const an = ev.target.closest('[data-ans]');
     if (an) { const v = an.dataset.ansval;
       S[an.dataset.ans] = (v === 'true') ? true : (v === 'false') ? false : v;
@@ -975,7 +988,7 @@
     }
     const nm = ev.target.closest('[data-newmotion]');
     if (nm) { S.draft = { k: nm.dataset.newmotion, to: '', why: '' }; S.open = S.draft.k; return render(); }
-    if (ev.target.closest('[data-dropmotion]')) { S.draft = null; return render(); }
+    if (ev.target.closest('[data-dropmotion]')) return closeThen(() => { S.draft = null; S.open = null; });
     const wm = ev.target.closest('[data-withdrawmotion]');
     if (wm) { delete MOTIONS[wm.dataset.withdrawmotion];
       delete S.mAns[wm.dataset.withdrawmotion]; S.myMotion = null; return render(); }

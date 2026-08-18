@@ -122,6 +122,19 @@
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, drawWire, opt, num, someIn, KIND, kindNote, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml } = window.SETUP;
+  // **A setup card opens and closes like a decision card** (Ed, 2026-08-18:
+  // *the whole point of building off session-view is that we would have all
+  // this stuff*): cards.js own expandCard/collapseCard, which have been
+  // sitting in the shared module since the lift — the card grows out of its
+  // own head, and every way of leaving it rolls it back into its paragraph.
+  const CC = window.CARDS.make({ onExpand: () => drawWire(wires, S.open) });
+  let lastOpen = null;
+  // run the close animation, then the state change it was closing for
+  const closeThen = (fn) => {
+    const el = document.querySelector('.setupcard');
+    if (!el) { fn(); return render(); }
+    CC.collapseCard(el, () => { fn(); render(); });
+  };
   const prose = document.getElementById('prose');
   const titleEl = document.getElementById('title');
   const band = document.getElementById('band');
@@ -1090,6 +1103,11 @@
     const row = meRow(); if (row) { row.n = S.myname; row.pic = S.mypic; row.e = S.myemail; }
     resolveCounts();
     renderTitle(); renderRail(); renderBand(); drawWire(wires, S.open); renderMail();
+    if (S.open && S.open !== lastOpen) {
+      const el = document.querySelector('.setupcard');
+      if (el) CC.expandCard(el, () => {});
+    }
+    lastOpen = S.open;
   };
 
   // ---- wiring ------------------------------------------------------------
@@ -1106,22 +1124,24 @@
   });
   document.addEventListener('click', (ev) => {
     const ct = ev.target.closest('[data-cleartitle]');
-    if (ct) { S.title = ''; return render(); }
+    if (ct) return closeThen(() => { S.title = ''; S.open = null; });
     const cv = ev.target.closest('[data-clearval]');
-    if (cv) { S[cv.dataset.clearval === 'myname' ? 'myname' : 'mypic'] = ''; return render(); }
+    if (cv) return closeThen(() => { S[cv.dataset.clearval === 'myname' ? 'myname' : 'mypic'] = ''; S.open = null; });
     const okb = ev.target.closest('[data-ok]');
-    if (okb) { S.okd.add(okb.dataset.ok); S.open = null; return render(); }
+    if (okb) return closeThen(() => { S.okd.add(okb.dataset.ok); S.open = null; });
     const t = ev.target.closest('[data-tab], [data-card]');
     if (t) { const k = t.dataset.tab || t.dataset.card;
-      S.open = (S.open === k) ? null : k; return render(); }
+      if (S.open === k) return closeThen(() => { S.open = null; });
+      S.open = k; return render(); }
     if (ev.target.closest('[data-confirm]')) {
-      const was = S.open; S.seen.add(was); S.open = null;
-      // the link card is born pre-filled the moment the title settles
-      if (was === 'title' && S.title && !S.slug) {
-        const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken;
-      }
-      return render(); }
-    if (ev.target.closest('button[data-close]')) { S.open = null; return render(); }
+      return closeThen(() => {
+        const was = S.open; S.seen.add(was); S.open = null;
+        // the link card is born pre-filled the moment the title settles
+        if (was === 'title' && S.title && !S.slug) {
+          const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken;
+        }
+      }); }
+    if (ev.target.closest('button[data-close]')) return closeThen(() => { S.open = null; });
     const mt = ev.target.closest('[data-metoggle]');
     if (mt) { const m = meRow(); if (m) m.role = iDraft() ? 'clerk' : 'member'; return render(); }
     const mv2 = ev.target.closest('[data-act="sendverify"]');
