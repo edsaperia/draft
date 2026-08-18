@@ -213,6 +213,12 @@ That is also what makes **anonymous the strong default** without anything being 
 
 Quorum may be a percentage of the roster or a fixed count. Percentages suit a windowed convention, where the roster is stable and a fraction expresses legitimacy; fixed counts suit a perpetual document, where a drifting roster would otherwise silently re-rate every parked race whenever somebody joined. Participants who join later **inherit** the constitution rather than reopening it (Q257) — otherwise every arrival re-opens the founding question and a long-lived document never settles.
 
+**9.0b Nothing waits for everything** (Ed, 2026-08-17). A document is live from the moment it is made: the link works, and anyone invited can open and read it immediately. Capability then arrives as its prerequisite is met, and there is no single moment at which the document "opens".
+
+**Reading** needs nothing. **Proposing** needs only a confirmed starting text — you do not have to know the constitution to say what a clause should say, and until the economy is settled everyone drafts on the standard grant. **Judging** needs the constitution, and that is not bureaucracy: a judgment is *recorded under a disclosure setting* and *counted towards a quorum*, and neither can be settled afterwards without changing what the judgment was.
+
+A **starting text may be empty**, which is why the prerequisite is a confirmed decision rather than content: a roster writing something from nothing is an ordinary way to begin, and a blank page nobody has looked at and a blank page somebody chose must not be the same state.
+
 **9.1 Distributed by default.** The baseline is a fully remote window, possibly days long. Co-presence is optional; a projector is another client rendering the chamber view (room mode: ticker, the stuck set, closing sweep). Nothing in the mechanism references a room.
 
 **9.2 Two publications.** Common knowledge is made by publication. **Opening:** roster, constitution, and starting text, hash-anchored and pushed to all. **Closing:** the text and the record. Between them the chamber view is ambient: adoptions land with a chime, the rolling log hash and deadlocked races are visible, live standings never are.

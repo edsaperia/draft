@@ -3659,3 +3659,57 @@ participants decide* reads as handing something away to other people — when in
 the ordinary case the convenor is delegating to a room they are **standing in**.
 It now says *you among them, if you are on the roster*, which is both true and
 conditional, and the condition is the clerk.
+
+### Everything is the session-view (2026-08-17)
+
+Five notes from Ed in one run, and by the end the two setup screens had stopped
+being setup screens.
+
+*Can we import as much of the session-view as we can? I think ultimately this
+will literally be the session view.* — so `system.css` now exists: session-view's
+stylesheet, lifted out of it, worn by all three surfaces. The alternative was a
+copy, and the housekeeping pass of the same morning was largely an inventory of
+what drifting had cost inside a **single** file. A second copy would have been
+that failure by construction. The mockup series stops being *single* static
+files, and that is a convention worth losing.
+
+The convergence is the finding, not the saving. **Whatever the document wants
+from you goes in the right-hand rail, and everything that wants something is a
+card.** A setup question, a founding question and a judgment are the same object
+in the same place. The only difference left is that a setup question opens as a
+modal rather than in place — and only because it has no clause to open out of.
+
+**Confirm, do not merely default** (Ed: *"participants are the default", but you
+should still have to open each card and confirm*). This separates two things a
+default was quietly conflating: what a setting **is**, and whether anybody has
+**looked** at it. A default nobody read is not a decision, and these are the
+decisions that cannot be changed once people are drafting. So a card carries its
+value from the first render — the rail is never a list of blanks — and stays
+yellow until it has been opened and committed. The tick means *seen and agreed*.
+
+**Nothing waits for everything.** *You can start inviting people immediately
+after creating the document … and as soon as you've confirmed the starting text
+they can start making proposals … and judgements unlock as soon as the ceremony
+is complete.* This deleted the "Open the document" button, and with it the idea
+that there is a moment when a document opens. Reading needs nothing. Proposing
+needs a text to propose against and nothing else — you do not have to know the
+constitution to say what a clause should say. Judging needs the constitution,
+and that one is not bureaucratic: a judgment is **recorded under a disclosure
+setting** and **counted towards a quorum**, and neither can be settled afterwards
+without changing what the judgment was. Folded into SPEC as §9.0b.
+
+**A document may start empty** (Ed), which is what makes the text card's
+prerequisite a *decision* rather than content. A roster writing a charter from
+nothing is an ordinary way to begin — arguably the purest one. So the card
+confirms either way and says which was meant, because a blank page nobody has
+looked at and a blank page somebody chose look identical, and only one of them
+should let people start proposing.
+
+One implementation note worth keeping. The setup rails had every card stacked on
+one spot, because `system.css` positions `.qitem` **absolutely** — in a live
+session `layoutQueue` places every entry itself against the document. There is
+nothing to track on a setup screen, so `.queue.stack` puts them back into normal
+flow. Marked with a class rather than by loosening `.qitem`, so the live layout
+is untouched and the difference is visible in the markup: **inheriting a
+stylesheet means inheriting its assumptions, and the assumptions are the part
+that does not announce itself.**

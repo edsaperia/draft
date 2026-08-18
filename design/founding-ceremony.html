@@ -1,105 +1,79 @@
 <meta charset="utf-8">
 <title>Opening ceremony</title>
+<link rel="stylesheet" href="system.css">
 <style>
 /* ============================================================================
-   founding-ceremony — the stage before any drafting, where the roster settles
-   quorum, the bar, and who may be seen (SPEC §9.0a). Each member states, blind,
-   the *lowest they will accept* — and for disclosure, the *most exposure* they
-   will accept — and the document takes the maximum of each, which for privacy
-   means the most private. A consent rule rather than a vote, which is what lets
-   it escape the constitutional bootstrap: there is no vote to govern, because
-   the result satisfies every stated minimum by construction.
+   founding-ceremony — **what a member sees when they arrive** (Ed, 2026-08-17:
+   *the roster members as they arrive get their opening ceremony questions in
+   the right-sidebar as cards, and once they're done they can start*).
 
-   Ed, 2026-08-17: **the roster is on the screen while you answer**, because
-   what you are actually judging is how much of *these people* you need behind a
-   change before it moves. A number in the abstract is not the question.
+   So it is the same surface again: session-view's chrome, wearing session-view's
+   stylesheet, with the ceremony's questions in the rail where judgments will be.
+   That is the third screen in a row to converge on it, and by now the pattern is
+   the finding rather than the coincidence — **whatever the document wants from
+   you goes in the right-hand rail, and everything that wants something is a
+   card**. A setup question, a founding question, a judgment: same rail, same
+   shape, same gesture.
 
-   Three states, switchable in the topbar so all of them can be looked at:
-   ask · waiting · settled.
+   The document is behind it and readable from the first second, and proposing is
+   already open if the convenor confirmed the starting text (SPEC §9.0a, the
+   staged unlock). Only judging waits on this.
+
+   Three states, switchable in the topbar so all are inspectable: answering ·
+   waiting · settled.
    ========================================================================== */
-  :root {
-    --bg: #FFFFFF; --fg: #212529; --muted: #6C757D; --border: #DEE2E6; --light: #F8F9FA;
-    --primary: #0D6EFD; --primary-hover: #0B5ED7; --primary-subtle: #CFE2FF; --primary-emphasis: #084298;
-    --ok: #198754; --ok-hover: #146C43; --ok-subtle: #D1E7DD;
-    --lc-open: 245, 197, 24; --lc-yours: 13, 110, 253; --lc-closed: 154, 162, 170;
-    --t-lead: 1.25rem; --t-body: 1rem; --t-ui: 0.875rem;
-    --t-small: 0.8125rem; --t-cap: 0.72rem; --t-micro: 0.65rem;
-    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
-    --r-sm: 0.25rem; --r-md: 0.375rem; --r-lg: 0.5rem;
-    --shadow-sm: 0 1px 1px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.10);
-    --shadow-md: 0 1px 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.14);
-    --shadow-lg: 0 1px 2px rgba(0,0,0,0.10), 0 4px 7px rgba(0,0,0,0.16);
-    --nav-h: 58px;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--fg); font-size: 16px;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    line-height: 1.5;
-  }
-  .eyebrow, .seclab {
-    font-size: var(--t-micro); font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.05em; color: var(--muted);
-  }
-  .navbar { background: var(--light); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 40; }
-  .navbar .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s4); padding: 10px var(--s4); }
-  .navbar .brand { font-weight: 600; font-size: var(--t-body); margin: 0; }
   .states { display: flex; gap: var(--s1); }
-  .states button {
-    font: inherit; font-size: var(--t-cap); padding: 3px var(--s3); cursor: pointer;
-    border: 1px solid var(--border); background: var(--bg); color: var(--muted); border-radius: 999px;
-  }
+  .states button { font: inherit; font-size: var(--t-cap); padding: 3px var(--s3); cursor: pointer;
+    border: 1px solid var(--border); background: var(--bg); color: var(--muted); border-radius: 999px; }
   .states button[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
 
-  .layout {
-    display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: var(--s5);
-    max-width: 1080px; margin: 0 auto; padding: var(--s5) var(--s4) 120px;
-  }
-  .single { max-width: 640px; margin: 0 auto; padding: 60px var(--s4) 120px; }
+  .queue .qhead { font-size: var(--t-cap); color: var(--muted); margin: 0 0 var(--s2); padding: 0 10px; }
+  .queue .setmark { margin-left: auto; display: inline-flex; align-items: center; }
+  .mkg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9;
+    stroke-linecap: round; stroke-linejoin: round; }
+  .queue .sendrow { margin-top: var(--s4); }
+  .btn-send { width: 100%; font: inherit; font-size: var(--t-ui); font-weight: 600; cursor: pointer;
+    background: var(--ok); border: 1px solid var(--ok); color: #fff; border-radius: var(--r-md);
+    padding: var(--s3); box-shadow: var(--shadow-md); }
+  .btn-send:hover { background: var(--ok-hover); border-color: var(--ok-hover); }
+  .btn-send[disabled] { opacity: 0.45; cursor: default; box-shadow: none; }
+  .railnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); text-align: center; }
 
-  /* ---- the roster, standing beside the question ------------------------ */
-  .who { position: sticky; top: calc(var(--nav-h) + var(--s5)); align-self: start; }
-  .who .lede { font-size: var(--t-small); color: var(--muted); margin: var(--s2) 0 var(--s4); }
-  .plist { display: flex; flex-direction: column; gap: 2px; }
-  .p { display: flex; align-items: center; gap: var(--s2); padding: 3px 0; }
-  .face {
-    width: 26px; height: 26px; border-radius: 50%; flex: none;
-    background: var(--light); color: var(--muted); border: 1px solid var(--border);
-    font-size: var(--t-micro); font-weight: 700; display: grid; place-items: center;
-  }
-  .p.me .face { background: var(--primary); color: #fff; border-color: var(--primary); }
-  .p .nm { font-size: var(--t-small); }
-  .p.me .nm { font-weight: 600; }
-  .p .you { font-size: var(--t-cap); color: var(--primary-emphasis); }
+  /* the modal is a decision card on a scrim, as it is on document-creation */
+  .scrim { position: fixed; inset: 0; background: rgba(33,37,41,0.28); z-index: 60;
+    display: grid; place-items: center; padding: var(--s5); }
+  .scrim .sugg { width: min(660px, 100%); max-height: 88vh; overflow-y: auto;
+    box-shadow: var(--shadow-xl); margin: 0; }
+  .scrim .sugg h2 { font-size: var(--t-lead); font-weight: 600; margin: var(--s1) 0; }
+  .scrim .sugg .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch; }
+  .blindnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
 
-  /* ---- a question ------------------------------------------------------ */
-  .q { border-top: 1px solid var(--border); padding: var(--s5) 0; }
-  .q:first-child { border-top: 0; padding-top: 0; }
-  .q h2 { font-size: var(--t-lead); font-weight: 600; margin: 0 0 var(--s1); }
-  .q .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s5); max-width: 58ch; }
-  .blind { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
+  /* the roster, standing beside the question (Ed, 2026-08-17) */
+  .whobox { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--light);
+    padding: var(--s3); margin-bottom: var(--s4); }
+  .whobox .lab { font-size: var(--t-small); color: var(--muted); margin-bottom: var(--s2); }
+  .faces { display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .pf { display: flex; align-items: center; gap: var(--s1); font-size: var(--t-cap); }
+  .pf .av { width: 22px; height: 22px; border-radius: 50%; background: var(--bg);
+    border: 1px solid var(--border); color: var(--muted); font-size: 8px; font-weight: 700;
+    display: grid; place-items: center; }
+  .pf.me .av { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .pf.me { font-weight: 600; }
 
-  /* the consent-slider: no default, so nothing is preselected to anchor on */
-  .cs { margin: 0 0 var(--s2); }
+  /* consent-slider — nothing preselected, and it must not look answered */
+  .cs { margin-bottom: var(--s2); }
   .cs input[type=range] { width: 100%; accent-color: var(--primary); }
-  /* **An untouched slider must not look answered.** With nothing preselected
-     the thumb still has to sit somewhere, and a browser paints the track filled
-     to it in the accent — so the control reads as a made choice while the state
-     is still null. Grey and half-faded until it is touched, which is the only
-     honest way to have a range control with no default. */
   .cs.unset input[type=range] { accent-color: var(--border); opacity: 0.55; }
-  .csends { display: flex; justify-content: space-between; font-size: var(--t-cap); color: var(--muted); }
   .csval { font-size: var(--t-lead); font-weight: 600; min-height: 1.6em; }
   .csval.unset { color: var(--muted); font-weight: 400; font-size: var(--t-ui); }
+  .csends { display: flex; justify-content: space-between; font-size: var(--t-cap); color: var(--muted); }
   .csmean { font-size: var(--t-small); color: var(--muted); margin-top: var(--s2); min-height: 3em; }
 
-  /* the privacy-ladder: ordered, most private first */
+  /* privacy-ladder — most private first, rungs above your answer dimmed */
   .ladder { display: flex; flex-direction: column; gap: var(--s2); }
-  .rung {
-    display: grid; grid-template-columns: 20px 1fr; gap: var(--s3); align-items: start;
+  .rung { display: grid; grid-template-columns: 20px 1fr; gap: var(--s3); align-items: start;
     padding: var(--s3) var(--s4); border: 1px solid var(--border); border-radius: var(--r-lg);
-    cursor: pointer; background: var(--bg);
-  }
+    cursor: pointer; background: var(--bg); }
   .rung:hover { background: var(--light); }
   .rung.on { border-color: var(--primary); background: var(--primary-subtle); box-shadow: var(--shadow-sm); }
   .rung.on .dot { border-color: var(--primary); }
@@ -110,227 +84,252 @@
   .dot::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--primary);
     transform: scale(0); transition: transform 120ms ease; }
   .rung .ttl { display: block; font-weight: 600; font-size: var(--t-ui); }
-  .rung .exp { color: var(--muted); font-size: var(--t-small); margin-top: 2px; display: block; }
-  .laddernote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); }
+  .rung .exp { display: block; color: var(--muted); font-size: var(--t-small); margin-top: 2px; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
-  .commit { border-top: 1px solid var(--border); padding-top: var(--s5); margin-top: var(--s5);
-    display: flex; justify-content: space-between; align-items: center; gap: var(--s4); }
-  .btn { font: inherit; font-size: var(--t-ui); padding: var(--s2) var(--s4); cursor: pointer;
-    border: 1px solid var(--border); background: var(--bg); color: var(--fg); border-radius: var(--r-md); }
-  .btn:hover { background: var(--light); }
-  .btn-go { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 600;
-    font-size: var(--t-body); padding: var(--s3) var(--s5); }
-  .btn-go:hover { background: var(--ok-hover); border-color: var(--ok-hover); }
-  .btn-go[disabled] { opacity: 0.45; cursor: default; }
-  button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-
-  /* ---- waiting --------------------------------------------------------- */
-  .wait { text-align: center; padding: 60px 0; }
-  .wait h2 { font-size: var(--t-lead); font-weight: 600; margin: 0 0 var(--s3); }
-  .wait p { color: var(--muted); font-size: var(--t-small); max-width: 46ch; margin: 0 auto var(--s5); }
-  .pips { display: flex; gap: var(--s2); justify-content: center; flex-wrap: wrap; margin-bottom: var(--s5); }
-  .pip { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); background: var(--light); }
-  .pip.in { background: var(--ok-subtle); border-color: var(--ok); }
-
-  /* ---- the settled record --------------------------------------------- */
-  .result { border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s5); margin-bottom: var(--s5); }
-  .result h2 { margin: 0 0 var(--s4); font-size: var(--t-lead); font-weight: 600; }
-  .line { display: flex; justify-content: space-between; align-items: baseline;
-    gap: var(--s4); padding: var(--s3) 0; border-top: 1px solid var(--border); }
+  /* the settled record, and the distribution-strip */
+  .rec { border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s5); margin-bottom: var(--s5); }
+  .rec h2 { margin: 0 0 var(--s4); font-size: var(--t-lead); font-weight: 600; }
+  .line { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4);
+    padding: var(--s3) 0; border-top: 1px solid var(--border); }
   .line:first-of-type { border-top: 0; }
   .line .k { font-size: var(--t-small); color: var(--muted); }
   .line .v { font-size: var(--t-body); font-weight: 600; }
-  /* the distribution-strip: what people asked for, without names */
   .dist { display: flex; align-items: flex-end; gap: 3px; height: 54px; margin: var(--s3) 0 var(--s1); }
   .dist span { flex: 1; background: rgba(var(--lc-yours), 0.30); border-radius: 2px 2px 0 0; min-height: 2px; }
   .dist span.top { background: var(--primary); }
   .distx { display: flex; justify-content: space-between; font-size: var(--t-cap); color: var(--muted); }
   .anon { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); }
+  .pips { display: flex; gap: var(--s2); flex-wrap: wrap; margin: var(--s3) 0; }
+  .pip { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: var(--light); }
+  .pip.in { background: var(--ok-subtle); border-color: var(--ok); }
+
+  /* **A setup rail does not pin.** `system.css` lays `.qitem` out absolutely,
+     because in a live session the rail tracks the document and `layoutQueue`
+     places every entry itself. Here there is nothing to track — these cards
+     stand in a list — so they go back into normal flow. Marked with a class
+     rather than by overriding `.qitem` globally, so the live layout is
+     untouched and the difference is visible in the markup. */
+  .queue.stack ul, .queue.stack > div { display: flex; flex-direction: column; gap: var(--s2); }
+  .queue.stack .qitem { position: static; }
 </style>
 
-<nav class="navbar"><div class="wrap">
-  <h1 class="brand">The Hollow Oak Club — House Charter <span style="color:var(--muted);font-weight:400">· opening ceremony</span></h1>
-  <span class="states" id="states"></span>
-</div></nav>
-
-<div id="root"></div>
+<header class="navbar">
+  <div class="wrap">
+    <p class="brand">The Hollow Oak Club — House Charter <span class="sess">· opening ceremony</span></p>
+    <div class="stats">
+      <span id="stat">proposals open · judging waits on the ceremony</span>
+      <span class="states" id="states"></span>
+      <button class="me" title="Ida Fenwick — you."><span class="face" aria-hidden="true">IF</span></button>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+  <div class="layout">
+    <nav class="toc"><ul id="toc"></ul></nav>
+    <main><div class="doc" id="doc"></div></main>
+    <aside class="queue stack"><div id="rail"></div></aside>
+  </div>
+</div>
+<div id="modalroot"></div>
 
 <script>
 (function () {
+  const TICK = '<svg class="mkg" viewBox="0 0 12 12"><path d="M2 6.4 L4.7 9.2 L10 2.9"/></svg>';
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
   const ROSTER = ['Wren Ashby', 'Hollis Mear', 'Ida Fenwick', 'Tobias Crane', 'Sylva Renn',
     'Marlow Pike', 'Perrin Oakes', 'Nella Quist', 'Ansel Whitlow', 'Bee Harkness',
     'Corin Vale', 'Dov Attaway', 'Esme Rooke', 'Fay Lindmoor'];
-  const ME = 'Ida Fenwick';
-  const E = ROSTER.length;
-
-  // **Nothing is preselected.** A suggested value is the anchoring that blind
-  // collection exists to prevent, and it would be a strange kind of blind that
-  // told everybody the same number before asking them. `null` until touched.
-  const S = { state: 'ask', quorum: null, bar: null,
-    authorship: null, signing: null, judgments: null };
-
+  const ME = 'Ida Fenwick', E = ROSTER.length;
   const initials = (n) => n.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
-  // ---- the roster, beside the question ---------------------------------
-  // Ed, 2026-08-17: *they should see who else is on the roster — they're making
-  // a judgement about how much they trust the other people.* Which reframes the
-  // whole screen: the question is not "what number is right" but "how much of
-  // this room do I need behind a change before it moves", and the room is a
-  // list of names you either know or do not.
-  const whoHtml = () =>
-    '<aside class="who"><div class="eyebrow">Who is here</div>' +
-    '<p class="lede">Fourteen people will hold this charter between them. What you are about to say is how much of this room you need behind a change before it moves.</p>' +
-    '<div class="plist">' + ROSTER.map((n) =>
-      '<div class="p' + (n === ME ? ' me' : '') + '"><span class="face">' + initials(n) + '</span>' +
-      '<span class="nm">' + n + '</span>' + (n === ME ? '<span class="you">you</span>' : '') + '</div>').join('') +
-    '</div></aside>';
+  const DOC = [
+    ['h1', 'Part I — The Club'], ['h2', 'Purpose'],
+    ['p', 'The Club is a society of friends keeping a house together. It is not a business, not a charity, and not a landlord; it exists for the common enjoyment of its members and for nothing else.'],
+    ['h2', 'Name and Seat'],
+    ['p', 'The Club is called The Hollow Oak Club, after the tree that stood in the garden until the storm of the second winter.'],
+    ['h1', 'Part II — The House'], ['h2', 'The Kitchen'],
+    ['p', 'Whoever cooks does not clear. Whoever clears does not have to have eaten.'],
+  ];
 
-  // ---- the consent-slider ----------------------------------------------
-  const slider = (key, min, max, fmt, meanings) => {
+  const S = { state: 'ask', quorum: null, bar: null,
+    authorship: null, signing: null, judgments: null, machines: null,
+    seen: new Set(), open: null };
+
+  // ---- the document, behind everything ----------------------------------
+  function renderDoc() {
+    document.getElementById('doc').innerHTML = '<div class="prose">' + DOC.map(([t, x], i) =>
+      t === 'p' ? '<p>' + esc(x) + '</p>'
+        : '<h2 class="docline lvl' + (t === 'h1' ? 1 : 2) + '" id="h' + i + '">' + esc(x) + '</h2>').join('') + '</div>';
+    document.getElementById('toc').innerHTML = DOC.map(([t, x], i) =>
+      t === 'p' ? '' : '<li class="lvl' + (t === 'h1' ? 1 : 2) + '"><a href="#h' + i + '">' + esc(x) + '</a></li>').join('');
+  }
+
+  // ---- the questions -----------------------------------------------------
+  const CARDS = [
+    { k: 'quorum', t: 'Quorum', ask: 'The lowest I will accept',
+      val: () => (S.quorum === null ? 'Not answered' : S.quorum + ' of ' + E) },
+    { k: 'bar', t: 'The bar', ask: 'The lowest I will accept',
+      val: () => (S.bar === null ? 'Not answered' : S.bar + '%') },
+    { k: 'disclosure', t: 'Who may be seen', ask: 'The most I will accept',
+      val: () => (!S.authorship ? 'Not answered'
+        : { anonymous: 'No names, ever', sealed: 'Names at the close', public: 'Names from the start' }[S.authorship]) },
+    { k: 'machines', t: 'Machine participants', ask: 'The most I will accept',
+      val: () => (S.machines === null ? 'Not answered' : S.machines ? 'A machine member is fine' : 'People only') },
+  ];
+  const answered = (c) => ({
+    quorum: () => S.quorum !== null, bar: () => S.bar !== null,
+    disclosure: () => !!S.authorship && !!S.signing && !!S.judgments,
+    machines: () => S.machines !== null,
+  })[c.k]();
+  const allAnswered = () => CARDS.every(answered);
+
+  // ---- the rail ----------------------------------------------------------
+  function renderRail() {
+    const rail = document.getElementById('rail');
+    if (S.state === 'waiting') {
+      rail.innerHTML = '<div class="qhead">Sent</div>' +
+        '<div style="padding:0 10px"><p style="font-size:var(--t-small);margin:0 0 var(--s3)">' +
+        '<b>Nine of fourteen</b> have answered. Judging opens when everyone has.</p>' +
+        '<div class="pips">' + ROSTER.map((_, i) => '<span class="pip' + (i < 9 ? ' in' : '') + '"></span>').join('') + '</div>' +
+        '<p style="font-size:var(--t-cap);color:var(--muted);margin:0">You will not see anybody’s answer and nobody will see yours. ' +
+        'Meanwhile the document is open — you can read it and propose changes to it now.</p>' +
+        '<p style="margin-top:var(--s3)"><button class="btn-send" data-act="change" style="background:var(--bg);color:var(--fg);border-color:var(--border)">Change my answers</button></p></div>';
+      return;
+    }
+    if (S.state === 'settled') {
+      rail.innerHTML = '<div class="qhead">Settled</div>' +
+        CARDS.map((c) => '<li class="qitem" style="list-style:none"><button class="deciding"' +
+          ' style="--washcol: rgba(var(--lc-closed),0.16); --washbg: rgba(var(--lc-closed),0.06); --fill:100%">' +
+          '<span class="ql"><span>' + c.t + '</span><span class="setmark">' + TICK + '</span></span>' +
+          '<span class="qwhy">' + esc({ quorum: '10 of 14', bar: '80%', disclosure: 'No names, ever', machines: 'People only' }[c.k]) + '</span>' +
+          '</button></li>').join('') +
+        '<div class="sendrow"><button class="btn-send" data-act="record">See what the room asked for</button>' +
+        '<div class="railnote">Judging is open.</div></div>';
+      return;
+    }
+    rail.innerHTML = '<div class="qhead">Before you can judge</div>' +
+      CARDS.map((c) => {
+        const done = answered(c) && S.seen.has(c.k);
+        const col = done ? 'rgba(var(--lc-closed), 0.16)' : 'rgba(var(--lc-open), 0.22)';
+        const bg = done ? 'rgba(var(--lc-closed), 0.06)' : 'rgba(var(--lc-open), 0.06)';
+        return '<li class="qitem" style="list-style:none" data-q="' + c.k + '">' +
+          '<button class="' + (done ? 'deciding' : 'needs') + '" data-card="' + c.k + '"' +
+          ' style="--washcol: ' + col + '; --washbg: ' + bg + '; --fill: 100%">' +
+          '<span class="ql"><span>' + c.t + '</span><span class="setmark">' + (done ? TICK : '') + '</span></span>' +
+          '<span class="qwhy">' + esc(c.val()) + '</span></button></li>';
+      }).join('') +
+      '<div class="sendrow"><button class="btn-send" data-act="send"' + (allAnswered() ? '' : ' disabled') + '>Send my answers</button>' +
+      '<div class="railnote">' + (allAnswered()
+        ? 'Sealed until everyone has finished.'
+        : 'The document is already open — you can read and propose while you decide.') + '</div></div>';
+  }
+
+  // ---- the modal ---------------------------------------------------------
+  const whoBox = () =>
+    '<div class="whobox"><div class="lab">Fourteen people will hold this charter between them. ' +
+    'What you are about to say is how much of <b>this room</b> you need behind a change before it moves.</div>' +
+    '<div class="faces">' + ROSTER.map((n) =>
+      '<span class="pf' + (n === ME ? ' me' : '') + '"><span class="av">' + initials(n) + '</span>' +
+      n + (n === ME ? ' (you)' : '') + '</span>').join('') + '</div></div>';
+
+  const slider = (key, min, max, fmt, mean) => {
     const v = S[key];
     return '<div class="cs' + (v === null ? ' unset' : '') + '">' +
-      '<div class="csval' + (v === null ? ' unset' : '') + '">' +
-      (v === null ? 'Drag to answer' : fmt(v)) + '</div>' +
+      '<div class="csval' + (v === null ? ' unset' : '') + '">' + (v === null ? 'Drag to answer' : fmt(v)) + '</div>' +
       '<input type="range" min="' + min + '" max="' + max + '" value="' + (v === null ? Math.round((min + max) / 2) : v) + '"' +
-      ' data-slide="' + key + '" aria-label="the lowest you will accept">' +
+      ' data-slide="' + key + '">' +
       '<div class="csends"><span>' + fmt(min) + '</span><span>' + fmt(max) + '</span></div>' +
-      '<div class="csmean">' + (v === null ? meanings(min) + '<br>' + meanings(max) : meanings(v)) + '</div>' +
-      '</div>';
+      '<div class="csmean">' + (v === null ? mean(min) + '<br>' + mean(max) : mean(v)) + '</div></div>';
   };
 
-  // ---- a privacy-ladder -------------------------------------------------
-  // Ordered most private first, and the rungs *above* your answer are dimmed
-  // rather than hidden: "the most I will accept" only reads as a ladder if you
-  // can see what you are refusing.
-  const ladder = (key, rungs) =>
-    '<div class="ladder" role="radiogroup">' + rungs.map((r, i) => {
-      const at = rungs.findIndex((x) => x.v === S[key]);
-      return '<div class="rung' + (S[key] === r.v ? ' on' : '') +
-        (at >= 0 && i > at ? ' above' : '') + '" role="radio" tabindex="0"' +
-        ' aria-checked="' + (S[key] === r.v) + '" data-pick="' + key + '" data-val="' + r.v + '">' +
-        '<span class="dot"></span><span><span class="ttl">' + r.t + '</span>' +
-        '<span class="exp">' + r.e + '</span></span></div>';
-    }).join('') + '</div>';
+  const ladder = (key, rungs) => '<div class="ladder" role="radiogroup">' + rungs.map((r, i) => {
+    const at = rungs.findIndex((x) => x.v === S[key]);
+    return '<div class="rung' + (S[key] === r.v ? ' on' : '') + (at >= 0 && i > at ? ' above' : '') +
+      '" role="radio" tabindex="0" aria-checked="' + (S[key] === r.v) + '" data-pick="' + key + '" data-val="' + r.v + '">' +
+      '<span class="dot"></span><span><span class="ttl">' + r.t + '</span><span class="exp">' + r.e + '</span></span></div>';
+  }).join('') + '</div>';
 
-  const AUTH = [
-    { v: 'anonymous', t: 'Nobody’s name, ever', e: 'Not during the session and not in the closing record.' },
-    { v: 'sealed', t: 'Names at the close', e: 'Hidden while the charter is being written; published with the record.' },
-    { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' },
-  ];
-  const SIGN = [
-    { v: 'nobody', t: 'Nobody signs', e: 'Uniform — and the only setting under which an unsigned proposal says nothing about whoever wrote it.' },
-    { v: 'each', t: 'Each author chooses', e: 'Per proposal. In a room of fourteen, an unsigned one among signed ones says something.' },
-    { v: 'everybody', t: 'Everybody signs', e: 'Uniform in the other direction.' },
-  ];
-  const JUDG = [
-    { v: 'never', t: 'My judgments are never revealed', e: 'What you preferred stays yours, permanently.' },
-    { v: 'after', t: 'Revealed once the decision is made', e: 'Never while a question is still being judged — that would make the room read each other instead of the text.' },
-  ];
-
-  const answered = () => S.quorum !== null && S.bar !== null &&
-    S.authorship && S.signing && S.judgments;
-
-  // ---- state 1: the ask -------------------------------------------------
-  function ask() {
-    return '<div class="layout">' + whoHtml() + '<main>' +
-      '<section class="q"><h2>The lowest quorum I will accept</h2>' +
+  const BODY = {
+    quorum: () => '<h2>The lowest quorum I will accept</h2>' + whoBox() +
       '<p class="why">How many of the fourteen must weigh in on a question before it can change the charter. A question short of quorum simply waits — nobody’s silence is ever counted as a vote.</p>' +
       slider('quorum', 1, E, (v) => v + ' of ' + E, (v) =>
         v >= E ? 'Nothing moves unless every member has weighed in. A charter that cannot change without all fourteen is a perfectly reasonable thing to want.'
         : v <= Math.ceil(E / 4) ? 'A small part of the room can carry a change while the rest are elsewhere.'
         : 'Rather more than half the room has to have looked at a question before it can move.') +
-      '<p class="blind">Nobody sees your answer. The charter takes the <b>highest</b> of the fourteen answers, so it will never be lower than what you say here.</p></section>' +
-
-      '<section class="q"><h2>The lowest bar I will accept</h2>' +
-      '<p class="why">How sure the room has to be that a new wording beats the one it would replace. This is a confidence, not a vote share — at 60% a change goes through on a real but slender preference; at 90% only something close to agreement moves anything.</p>' +
+      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> of the fourteen, so it will never be lower than what you say here.</p>',
+    bar: () => '<h2>The lowest bar I will accept</h2>' + whoBox() +
+      '<p class="why">How sure the room has to be that a new wording beats the one it would replace. A confidence, not a vote share — at 60% a change goes through on a real but slender preference; at 90% only something close to agreement moves anything.</p>' +
       slider('bar', 50, 95, (v) => v + '%', (v) =>
-        v >= 85 ? 'Only near-agreement changes anything. Expect the charter to move slowly and to keep most of what it started with.'
+        v >= 85 ? 'Only near-agreement changes anything. Expect the charter to move slowly and keep most of what it started with.'
         : v <= 60 ? 'A modest preference is enough. The charter will move quickly, and reverse itself more often.'
         : 'A clear preference is needed, but not agreement.') +
-      '<p class="blind">Nobody sees your answer. The charter takes the <b>highest</b> of the fourteen.</p></section>' +
+      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> of the fourteen.</p>',
+    disclosure: () => '<h2>The most I am willing to be seen</h2>' +
+      '<p class="why">Three questions about who may be seen and when. Here the rule runs the other way: the charter takes the <b>most private</b> answer, so one person who wants to stay unnamed keeps the whole charter unnamed. Nothing is preselected — anonymity holds unless every one of the fourteen is content with more.</p>' +
+      '<div class="eyebrow" style="margin-bottom:var(--s2)">Whose proposal it is</div>' +
+      ladder('authorship', [
+        { v: 'anonymous', t: 'Nobody’s name, ever', e: 'Not during the session and not in the closing record.' },
+        { v: 'sealed', t: 'Names at the close', e: 'Hidden while the charter is being written; published with the record.' },
+        { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' }]) +
+      '<div class="eyebrow" style="margin:var(--s5) 0 var(--s2)">Signing</div>' +
+      ladder('signing', [
+        { v: 'nobody', t: 'Nobody signs', e: 'The only setting under which an unsigned proposal says nothing about whoever wrote it.' },
+        { v: 'each', t: 'Each author chooses', e: 'In a room of fourteen, an unsigned one among signed ones says something.' },
+        { v: 'everybody', t: 'Everybody signs', e: 'Uniform in the other direction.' }]) +
+      '<div class="eyebrow" style="margin:var(--s5) 0 var(--s2)">Your judgments</div>' +
+      ladder('judgments', [
+        { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
+        { v: 'after', t: 'Revealed once the decision is made', e: 'Never while a question is still being judged — that would make the room read each other instead of the text.' }]),
+    machines: () => '<h2>The most I will accept</h2>' +
+      '<p class="why">The convenor has offered a machine member — a coherence auditor that patrols for drift and proposes fixes. It holds a budget like anybody else. The <b>most restrictive</b> answer wins, so if you would rather not draft alongside one, it stays out.</p>' +
+      ladder('machines', [
+        { v: 'false', t: 'People only', e: 'No machine member in this charter.' },
+        { v: 'true', t: 'A machine member is fine', e: 'It competes on the same terms as anybody else and can be out-judged like anybody else.' }]),
+  };
 
-      '<section class="q"><h2>The most I am willing to be seen</h2>' +
-      '<p class="why">Three separate questions about who may be seen and when. Here the rule runs the other way: the charter takes the <b>most private</b> answer, so one person who wants to stay unnamed keeps the whole charter unnamed. Nothing is preselected — anonymity holds unless every one of the fourteen is content with more.</p>' +
-      '<div class="seclab" style="margin-bottom:var(--s2)">Whose proposal it is</div>' + ladder('authorship', AUTH) +
-      '<p class="laddernote">Rationales are always visible whatever the room settles on. What varies is only whether a name is attached to one.</p>' +
-      '<div class="seclab" style="margin:var(--s5) 0 var(--s2)">Signing</div>' + ladder('signing', SIGN) +
-      '<div class="seclab" style="margin:var(--s5) 0 var(--s2)">Your judgments</div>' + ladder('judgments', JUDG) +
-      '</section>' +
-
-      '<div class="commit"><span class="blind" style="margin:0">' +
-      (answered() ? 'Your answers are sealed until everyone has finished.'
-        : 'Answer all five to finish.') + '</span>' +
-      '<button class="btn-go btn" data-act="send"' + (answered() ? '' : ' disabled') + '>Send my answers</button>' +
-      '</div></main></div>';
+  function renderModal() {
+    const root = document.getElementById('modalroot');
+    if (!S.open) { root.innerHTML = ''; return; }
+    const c = CARDS.find((x) => x.k === S.open);
+    root.innerHTML = '<div class="scrim" data-close="1"><div class="sugg quick-open" role="dialog" aria-modal="true">' +
+      BODY[S.open]() +
+      '<div class="race-mid commitrow"><button class="btn" data-close="1">Cancel</button>' +
+      '<button class="btn btn-approve glyphbtn"' + (answered(c) ? '' : ' disabled') +
+      ' data-confirm="1" title="' + (answered(c) ? 'Confirm' : 'Not answered yet') + '">' + TICK + '</button>' +
+      '</div></div></div>';
   }
 
-  // ---- state 2: waiting -------------------------------------------------
-  // Nothing but a count. No names, no values, no running maximum — every one of
-  // those would let the room read itself before it has finished answering,
-  // which is the whole thing blind collection is protecting.
-  function waiting() {
-    const inCount = 9;
-    return '<div class="single"><div class="wait">' +
-      '<div class="eyebrow">Sent</div><h2>Nine of fourteen have answered</h2>' +
-      '<p>Drafting begins when everyone has. You will not see anybody’s answer, and nobody will see yours — the charter is settled all at once or not at all.</p>' +
-      '<div class="pips">' + ROSTER.map((_, i) => '<span class="pip' + (i < inCount ? ' in' : '') + '"></span>').join('') + '</div>' +
-      '<button class="btn" data-act="nudge">Nudge the five who haven’t</button>' +
-      '<p style="margin-top:var(--s5)"><a href="#" data-act="change">Change my answers</a> — you can, until the last person sends theirs.</p>' +
-      '</div></div>';
-  }
-
-  // ---- state 3: settled -------------------------------------------------
-  function settled() {
-    const qd = [0, 0, 0, 1, 2, 4, 2, 0, 1, 0, 0, 1, 0, 3];  // asked-for quorums, 1..14
-    const bd = [1, 2, 3, 4, 2, 1, 1, 0, 0, 0];              // asked-for bars, 50..95 in 5s
-    const strip = (arr, fmt, topIdx) =>
-      '<div class="dist">' + arr.map((n, i) =>
-        '<span class="' + (i === topIdx ? 'top' : '') + '" style="height:' + (n ? (14 + n * 12) : 2) + 'px"' +
-        ' title="' + n + ' asked for ' + fmt(i) + '"></span>').join('') + '</div>' +
-      '<div class="distx"><span>' + fmt(0) + '</span><span>' + fmt(arr.length - 1) + '</span></div>';
-
-    return '<div class="single">' +
-      '<div class="result"><h2>The charter is settled</h2>' +
-      '<div class="line"><span class="k">Quorum</span><span class="v">10 of 14</span></div>' +
-      '<div class="line"><span class="k">The bar</span><span class="v">80%</span></div>' +
-      '<div class="line"><span class="k">Whose proposal it is</span><span class="v">Nobody’s name, ever</span></div>' +
-      '<div class="line"><span class="k">Signing</span><span class="v">Nobody signs</span></div>' +
-      '<div class="line"><span class="k">Your judgments</span><span class="v">Never revealed</span></div>' +
-      '<p class="anon">Every one of these satisfies what all fourteen of you said you needed. Nobody was outvoted, because nothing was put to a vote.</p></div>' +
-
-      '<div class="result"><div class="eyebrow">What the room asked for</div>' +
-      '<p class="why" style="margin:var(--s2) 0 var(--s3);color:var(--muted);font-size:var(--t-small)">' +
-      'Published without names. The shape of what people wanted is worth seeing and makes the result easier to live with; who needed the most is nobody’s business.</p>' +
-      '<div class="seclab">Quorum</div>' + strip(qd, (i) => (i + 1) + ' of 14', 13) +
-      '<div class="seclab" style="margin-top:var(--s5)">The bar</div>' + strip(bd, (i) => (50 + i * 5) + '%', 6) +
-      '<p class="anon">Eleven of you would have accepted less than the charter settled on. That is what a consent rule costs, and what it buys.</p></div>' +
-
-      '<div style="text-align:center"><button class="btn-go btn" data-act="open">Open the charter</button></div>' +
-      '</div>';
-  }
-
-  // ---- render -----------------------------------------------------------
-  function render() {
+  function renderStates() {
     document.getElementById('states').innerHTML =
       [['ask', 'Answering'], ['waiting', 'Waiting'], ['settled', 'Settled']].map(([k, t]) =>
         '<button data-state="' + k + '" aria-pressed="' + (S.state === k) + '">' + t + '</button>').join('');
-    document.getElementById('root').innerHTML =
-      S.state === 'ask' ? ask() : S.state === 'waiting' ? waiting() : settled();
+    document.getElementById('stat').textContent = S.state === 'settled'
+      ? 'open — reading, proposing and judging' : 'proposals open · judging waits on the ceremony';
   }
 
+  const render = () => { renderStates(); renderRail(); renderModal(); };
+
   document.addEventListener('click', (ev) => {
-    const s = ev.target.closest('[data-state]');
-    if (s) { S.state = s.dataset.state; return render(); }
+    const st = ev.target.closest('[data-state]');
+    if (st) { S.state = st.dataset.state; S.open = null; return render(); }
+    const c = ev.target.closest('[data-card]');
+    if (c) { S.open = c.dataset.card; return render(); }
+    if (ev.target.closest('[data-confirm]')) { S.seen.add(S.open); S.open = null; return render(); }
+    if (ev.target.closest('[data-close]')) { S.open = null; return render(); }
     const p = ev.target.closest('[data-pick]');
-    if (p) { S[p.dataset.pick] = p.dataset.val; return render(); }
+    if (p) { const v = p.dataset.val;
+      S[p.dataset.pick] = (v === 'true') ? true : (v === 'false') ? false : v; return render(); }
     const a = ev.target.closest('[data-act]');
     if (a) {
       if (a.dataset.act === 'send') S.state = 'waiting';
-      if (a.dataset.act === 'change') { ev.preventDefault(); S.state = 'ask'; }
+      if (a.dataset.act === 'change') S.state = 'ask';
+      if (a.dataset.act === 'record') S.open = null;
       return render();
     }
   });
   document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && S.open) { S.open = null; return render(); }
     if (ev.key !== 'Enter' && ev.key !== ' ') return;
     const p = ev.target.closest('[data-pick]');
     if (p) { ev.preventDefault(); p.click(); }
@@ -344,6 +343,6 @@
     if (again) again.focus();
   });
 
-  render();
+  renderDoc(); render();
 })();
 </script>
