@@ -246,9 +246,10 @@ window.SETUP = (function () {
           // an inDoc card (the title) has no paragraph and its section may
           // be rail-only, so its open card renders here, right under the
           // heading it opens from
+          (ctx.inDocOpenSlot === false ? '' :
           (() => { const c0 = g.sections.flatMap((sec) => sec.cards)
             .find((c) => c.inDoc && ctx.open === c.k);
-            return c0 ? '<div class="cpara open">' + cardFor({ ...g, cards: [c0] }) + '</div>' : ''; })() +
+            return c0 ? '<div class="cpara open">' + cardFor({ ...g, cards: [c0] }) + '</div>' : ''; })()) +
           // a section may compose its own body from the shared helpers —
           // the Membership section does (Ed, 2026-08-18: a Members
           // subsection that is the list itself, an Applications subsection

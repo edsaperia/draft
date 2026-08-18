@@ -55,7 +55,7 @@
   .navbar .brand.ph { color: var(--muted); font-weight: 400; }
 
   /* the paste-well: the empty state of the prose column, and nothing more */
-  .prose.empty::before {
+  .prose.empty.pasteready::before {
     content: "Paste the text this document starts from, or begin typing it.\A\A Markdown headings become its sections, and the contents appear beside you as you go.";
     white-space: pre-wrap; color: var(--muted); font-size: var(--t-body); line-height: 1.6;
   }
@@ -64,7 +64,7 @@
   /* the controls the share box took with it, now on the 🔗 and 🪪 cards */
   .setupcard textarea { width: 100%; font-size: var(--t-ui); padding: var(--s2);
     resize: vertical; min-height: 60px; }
-  .setupcard .btn { font: inherit; font-size: var(--t-cap); padding: var(--s1) var(--s3);
+  .setupcard .btn:not(.glyphbtn) { font: inherit; font-size: var(--t-cap); padding: var(--s1) var(--s3);
     cursor: pointer; border: 1px solid var(--border); background: var(--bg);
     border-radius: var(--r-sm); }
   .setupcard .btn:hover { border-color: var(--primary); color: var(--primary-emphasis); }
@@ -100,7 +100,12 @@
     <nav class="toc"><ul id="toc"></ul></nav>
     <main>
       <div class="doc" id="doc">
-        <h1 class="doctitle ph" id="doctitle" data-card="title" role="button" tabindex="0" title="The title — click to change it">Untitled document</h1>
+        <!-- the tab beside the title is the way in (Ed, 2026-08-18: the
+             UI teaches itself, so the door must be the same everywhere) -->
+        <div class="setrow constsec titlerow"><div class="csec"><div class="cpara notab" id="titlepara">
+          <span id="titlechip" style="display:contents"></span>
+          <h1 class="doctitle ph" id="doctitle">Untitled document</h1>
+        </div></div></div>
         <div class="setupband" id="band"></div>
         <div class="prose empty" id="prose" contenteditable="true" spellcheck="false"></div>
       </div>
@@ -116,7 +121,7 @@
 (function () {
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, drawWire, opt, num, someIn, KIND, kindNote, ANSWER, stateOf,
-    MAILS, renderMailModal, gateBody, wirePicDrop } = window.SETUP;
+    MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml } = window.SETUP;
   const prose = document.getElementById('prose');
   const titleEl = document.getElementById('title');
   const band = document.getElementById('band');
@@ -209,10 +214,13 @@
     const hs = [...prose.children].filter((b) => b.dataset.h !== undefined);
     // the constitution's sections lead the table of contents (Ed,
     // 2026-08-18); on this surface they appear as their cards do
+    // the outline lists only what exists: before the save there is no
+    // constitution to point at (Ed, 2026-08-18)
     document.getElementById('toc').innerHTML =
+      (!settled(card('slug')) ? '' :
       '<li class="lvl1"><a href="#cs-constitution">Constitution</a></li>' +
       secLive().filter((s2) => !s2.railOnly).map((s2) =>
-        '<li class="lvl2"><a href="#cs-' + s2.key + '">' + esc(s2.title) + '</a></li>').join('') +
+        '<li class="lvl2"><a href="#cs-' + s2.key + '">' + esc(s2.title) + '</a></li>').join('')) +
       hs.map((b, i) => {
       b.id = 'h' + i;
       const lvl = (b.className.match(/lvl(\d)/) || [0, 2])[1];
@@ -729,6 +737,7 @@
     clauseFor: (c) => (c.k === 'roster' ? rosterClause() : ''),
     // the title card's head is the document title itself — the clause,
     // opened — never the word “Title” (Ed, 2026-08-18)
+    inDocOpenSlot: false,
     headFor: (c) => (c.k === 'title'
       ? '<span class="headdoct' + (S.title ? '' : ' ph') + '">' + esc(S.title || 'Untitled document') + '</span>'
       : null),
@@ -766,8 +775,12 @@
       el.classList.toggle('ph', !S.title);
     }
     // the open card IS the title, so the heading does not also stand
-    // above it (the decision-card gesture: the clause, opened)
+    // above it (the decision-card gesture: the clause, opened); closed,
+    // the tab beside it is the door, and the heading is just a heading
     d.style.display = S.open === 'title' ? 'none' : '';
+    document.getElementById('titlechip').innerHTML =
+      S.open === 'title' ? '' : pileHtml([card('title')], ctx);
+    prose.classList.toggle('pasteready', visible(card('text')));
   }
 
   // ---- the bodies a founder fills in ------------------------------------
@@ -790,7 +803,7 @@
     title: () =>
       '<div class="lanebox"><div class="lp editlane titlelane' + (S.title ? '' : ' blank') + '"' +
       ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
-      ' data-ph="The name of this document">' + esc(S.title) + '</div></div>',
+      ' data-ph="Name this document">' + esc(S.title) + '</div></div>',
     slug: () =>
       '<div class="unlocks">Confirming this <b>saves the document</b> — until the link exists, nothing does, anywhere. Invitations wait on it, because an invitation <i>is</i> this link.</div>' +
       (S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> already exists, so a short suffix was added. Change it to anything free.</p>'
@@ -852,7 +865,7 @@
       // member, and a lapsed crown passes to the members.
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Who holds it</div>' +
       '<div class="choice" role="radiogroup" aria-label="Who holds the membership">' +
-      opt(S, 'rosterBy', 'roster', 'The members', 'After the start, joining and leaving are the members’ to decide — invitations by everyone’s consent, applications at the bar. You would be a 🏴: a founder whose membership is the members’.') +
+      opt(S, 'rosterBy', 'roster', 'The members', 'After the start, joining and leaving are the members’ to decide — invitations by everyone’s consent, applications at the bar. You would be a 📯: a founder whose membership is the members’.') +
       opt(S, 'rosterBy', 'founder', 'Reserved — I hold it', 'You would be a 👑: the founder of a document that reserves its membership, keeping invite-and-remove for its life. A crown lapses like a member — go inactive past the lapse rule and the membership becomes the members’.') +
       '</div>' +
       // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
@@ -986,7 +999,13 @@
           (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
       const kindLine = (c.kind === 'personal' || c.ansFor || c.k === 'title') ? '' :
         '<p class="setnote"><b>' + KIND[c.kind] + '.</b> ' + (c.knote || kindNote[c.kind]) + '</p>';
-      const foot = c.k === 'title'
+      const clearable = { myname: S.myname, mypic: S.mypic };
+      const foot = (c.k === 'myname' || c.k === 'mypic')
+        ? '<button class="btn glyphbtn" data-clearval="' + c.k + '"' + (clearable[c.k] ? '' : ' disabled') +
+          ' title="' + (c.k === 'myname' ? 'Clear the name' : 'Remove the picture') + '">🗑️</button>' +
+          '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
+          ' data-confirm="1">✒️</button>'
+        : c.k === 'title'
         ? '<button class="btn glyphbtn" data-cleartitle="1"' + (S.title ? '' : ' disabled') +
           ' title="Clear the title">🗑️</button>' +
           '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
@@ -996,22 +1015,55 @@
           '<button class="btn btn-approve" data-ok="res-' + c.k + '">OK</button>'
         : '<button class="btn" data-close="1">Close</button>' +
         '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
-        ' data-confirm="1" title="' + (ready(c) ? 'Confirm' : 'Not answered yet') + '">' + TICK + '</button>';
+        // ✒️ is the founder's unilateral pen (Ed, 360): every confirm on
+        // this surface is a unilateral set — except an answer to a shared
+        // question, which is the one act here that is not yours alone
+        ' data-confirm="1" title="' + (ready(c) ? 'Confirm' : 'Not answered yet') + '">' + (c.ansFor ? TICK : '✒️') + '</button>';
       return cardHtml(c, ctx, body + kindLine, foot, g.cards);
     };
+    // the title card opens in the title's own paragraph, whatever else
+    // the band is doing — the clause, opened, with its tab in its strip
+    const tp = document.getElementById('titlepara');
+    tp.classList.toggle('open', S.open === 'title');
+    tp.querySelectorAll('.setupcard').forEach((el) => el.remove());
+    if (S.open === 'title') tp.insertAdjacentHTML('beforeend', cardFor(groups()[0]));
     // **Before the save there is no constitution** (Ed, 2026-08-18): an
     // unsaved document is a topbar, an outline, an empty title and its
     // tasks. The band holds only the open card, in the section geometry
     // it will keep, with none of the chrome.
     if (!settled(card('slug'))) {
-      band.innerHTML = S.open
+      band.innerHTML = (S.open && S.open !== 'title')
         ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + cardFor(groups()[0]) + '</div></div></div>'
         : '';
-      fitBand(band);
-      return;
+    } else {
+      band.innerHTML = bandHtml(groups(), ctx, cardFor);
     }
-    band.innerHTML = bandHtml(groups(), ctx, cardFor);
     fitBand(band);
+    fitBand(tp.closest('.titlerow'));
+    fitTitleCard();
+  }
+
+  // **Opening the title must not move the title** (Ed, 2026-08-18: *the
+  // title jumps*). The card's head is the title; the heading it replaces
+  // is display:none while the card stands, so its box is measured by
+  // un-hiding it for one synchronous beat — never painted — and the card
+  // is shifted until its head text sits exactly on the heading's text.
+  function fitTitleCard() {
+    if (S.open !== 'title') return;
+    const cardEl = document.querySelector('#titlepara > .setupcard');
+    const hd = cardEl && cardEl.querySelector('.headdoct');
+    const d = document.getElementById('doctitle');
+    if (!cardEl || !hd || !d) return;
+    cardEl.style.marginTop = ''; cardEl.style.marginLeft = '';
+    d.style.display = '';
+    const want = d.getBoundingClientRect();
+    d.style.display = 'none';
+    const have = hd.getBoundingClientRect();
+    const dy = want.top - have.top, dx = want.left + parseFloat(getComputedStyle(d).paddingLeft) - have.left;
+    if (Math.abs(dy) > 0.5) cardEl.style.marginTop =
+      ((parseFloat(getComputedStyle(cardEl).marginTop) || 0) + dy).toFixed(1) + 'px';
+    if (Math.abs(dx) > 0.5) cardEl.style.marginLeft =
+      ((parseFloat(getComputedStyle(cardEl).marginLeft) || 0) + dx).toFixed(1) + 'px';
   }
 
   function refreshCommit() {
@@ -1055,6 +1107,8 @@
   document.addEventListener('click', (ev) => {
     const ct = ev.target.closest('[data-cleartitle]');
     if (ct) { S.title = ''; return render(); }
+    const cv = ev.target.closest('[data-clearval]');
+    if (cv) { S[cv.dataset.clearval === 'myname' ? 'myname' : 'mypic'] = ''; return render(); }
     const okb = ev.target.closest('[data-ok]');
     if (okb) { S.okd.add(okb.dataset.ok); S.open = null; return render(); }
     const t = ev.target.closest('[data-tab], [data-card]');
