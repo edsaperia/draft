@@ -1,0 +1,1615 @@
+/* ============================================================================
+   The draft design system — session-view's stylesheet, lifted out of it so more
+   than one surface can wear it (Ed, 2026-08-17: *can we import as much of the
+   session-view as we can? I think ultimately this will literally be the session
+   view*).
+
+   That is the whole reason this file exists rather than a copy. Two stylesheets
+   describing one design system drift, and the housekeeping pass of the same day
+   was mostly an inventory of what drifting had already cost inside a *single*
+   file. A second copy would have been that failure by construction.
+
+   Worn by: session-view.html · document-creation.html
+   ========================================================================== */
+  /* ===================================================================
+     Tokens. Deliberately single-theme (light) — Ed, 2026-08-14.
+     Bootstrap-plain, pending the design and branding pass (Ed, 198).
+     =================================================================== */
+  :root {
+    /* --- ink and ground ------------------------------------------- */
+    --bg: #FFFFFF;
+    --fg: #212529;
+    --muted: #6C757D;
+    --border: #DEE2E6;
+    --light: #F8F9FA;
+
+    /* --- accent: the one blue. Every open card, every wire, every
+           selection (Ed, 198) ------------------------------------- */
+    --primary: #0D6EFD;
+    --primary-hover: #0B5ED7;
+    --primary-subtle: #CFE2FF;
+    --primary-emphasis: #084298;
+
+    /* --- decided: green means settled, and only that. It marks the
+           winning text in a record and the tick that commits ------- */
+    --ok: #198754;
+    --ok-hover: #146C43;
+    --ok-subtle: #D1E7DD;
+
+    /* --- lifecycle (Ed, 162–165): in the rails and the document,
+           colour says where an entry stands in *your* relationship to
+           it, matching its glyph. Raw channels, because the wash
+           varies its strength by urgency.
+
+           **Hot for actions, cold for information** (Ed, 2026-08-17) is
+           the rule that orders it: orange, yellow and pink are the states
+           that want something from you; grey is where nothing does.
+
+           Ed, 2026-08-17 (second pass) moved two of them, and the moves
+           are what finally make the palette one idea rather than six
+           colours:
+
+           - **⏳ goes grey.** You have judged it; the race runs on without
+             you. It is the purest piece of information on the surface, and
+             it was wearing the accent. Grey is now simply *nothing is
+             being asked of you* — which is the same thing ✅ ❎ ☑️ say, so
+             they share it and the palette loses a hue.
+           - **✏️ goes blue**, and specifically the accent. Your own work
+             is the one state that is about *you* rather than about the
+             question, and the accent is already what this surface uses for
+             you — your caret, your selection, the control you have turned
+             on. Green leaves the margin entirely as a result, which is
+             most of Q264: `--ok` now means *decided* and nothing else.
+
+           The greys are lighter than they were, on the same reasoning: a
+           state that wants nothing should not be as loud as one that does.
+
+           What this costs, stated plainly: 164's *colour means you can
+           still affect it* no longer holds, because a ⏳ race is revisable
+           until it seals. The replacement is narrower and truer —
+           **grey means nothing is being asked of you**. 🔄 is the one
+           entry that strains it, since a ground shift does come back
+           around; it keeps grey because what it is telling you is that
+           your old judgment is gone, not that it wants a new one yet. */
+    /* 🔥 had a hue of its own here — orange — and gave it up (Ed, 2026-08-17).
+       A flame is *an ordinary judgment that wants you most*: the same kind of
+       thing as a bulb with a priority on it, so a second hue was claiming a
+       difference in kind to say a difference in degree. It is the deepest
+       yellow instead, at a fixed value clear of the urgency ramp (`FLAME_A`).
+       Three hues and a grey. */
+    --lc-open: 245, 197, 24;      /* 💡 ⚔️ yellow — open, or stuck     */
+    --lc-weigh: 214, 51, 132;     /* 🌶️ pink — which question is hotter */
+    --lc-deciding: 154, 162, 170; /* ⏳ grey — judged, running without you */
+    --lc-closed: 154, 162, 170;   /* ✖ ↻ grey — nothing to do        */
+    /* **Adopted, and you have not seen it** (Ed, 2026-08-17). The one decided
+       state that is news: the text under your eye moved. A retired decision is
+       a receipt — somebody proposed, nobody liked it, the charter is exactly as
+       it was — and stays grey. It is also the one place the palette rule was
+       being broken: a ✅ pins itself to your screen until you acknowledge it,
+       which is a thing being asked of you, and grey was saying the opposite.
+       Green enters the margin as a *wash* only, never as --ok itself (Q264). */
+    --lc-changed: 25, 135, 84;    /* ✔ green — the charter moved here  */
+    --lc-yours: 13, 110, 253;     /* ✏️ blue — yours, and still yours  */
+    --stuck-ink: #8A6D00;         /* the one caption that instructs    */
+
+    /* --- type scale. Four sizes and a caption; anything outside this
+           list is a mistake rather than a decision ------------------ */
+    --t-lead: 1.25rem;      /* the document's title                    */
+    /* A clause under judgment is the document's own text, so it is set at the
+       document's own size (Ed, 2026-08-17). It had been a notch smaller, which
+       meant a clause *changed size* the moment its card opened even though it
+       had been made to stay in exactly the same place — the one movement left,
+       and the more distracting for being the only one. */
+    --t-body: 1rem;         /* a lane's text, a clause under judgment  */
+    --t-ui: 0.875rem;       /* card and rail titles, buttons           */
+    --t-small: 0.8125rem;   /* rationales, one-line entries            */
+    --t-cap: 0.72rem;       /* captions, footers, notes                */
+    --t-micro: 0.65rem;     /* eyebrow labels only                     */
+
+    /* --- spacing. A 4px grid; use the step, not the pixel ---------- */
+    --s1: 4px;
+    --s2: 8px;
+    --s3: 12px;
+    --s4: 16px;
+    --s5: 24px;
+
+    --r-sm: 0.25rem;        /* an anchor, a chip                       */
+    --r-md: 0.375rem;       /* a card in a rail, a button              */
+    --r-lg: 0.5rem;         /* the document, an open decision card     */
+
+    /* --- elevation: the document is the ground, rail cards rest just
+           above it, an open decision card floats highest. Neutral, never
+           tinted — a coloured shadow reads as a glow.
+
+           Retuned 2026-08-16 (Ed, QA): Bootstrap's ladder is built for
+           dialogs on an empty backdrop, and at 3rem of blur on a card the
+           size of a paragraph it read as a dark halo rather than as
+           height. A drop shadow is a light source, so each step is now a
+           **contact** shadow (1px, tight, the card meeting the page) plus
+           one soft cast whose blur stays near 2.5× its offset. Total ink
+           is roughly halved; what changed is the shape, not the ladder —
+           three steps, still neutral, still the same three users.
+
+           A fourth step 2026-08-17 (Ed): **what is open is said by depth
+           alone**, so the blue outline comes off every active box and the
+           lift has to carry the whole job on its own. `--shadow-xl` is the
+           only step that is allowed to be big — the earlier lesson holds
+           everywhere else, and it is still a light source rather than a
+           halo: the offset grows with the blur, and the contact shadow
+           keeps the near edge crisp so the card reads as *lifted* rather
+           than as *blurred*.
+
+           **Darker and less diffuse** (Ed, 2026-08-17). The 2.5× blur
+           ratio was tuned when the shadows were the faintest thing that
+           would read; once depth had to carry *open* on its own they were
+           asked to be seen, and a wide faint cast that is asked to be seen
+           becomes exactly the halo 2026-08-16 removed. So the alphas
+           roughly double and the blur comes in to ~1.6× the offset: the
+           same total darkness arrives concentrated instead of spread, and
+           the edge of the shadow is a shape rather than a fade. */
+    --shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.10);
+    --shadow-md: 0 1px 1px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.14);
+    --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.10), 0 4px 7px rgba(0, 0, 0, 0.16);
+    --shadow-xl: 0 1px 2px rgba(0, 0, 0, 0.10), 0 5px 9px rgba(0, 0, 0, 0.15),
+                 0 13px 22px rgba(0, 0, 0, 0.20);
+
+    /* --- the three columns ---------------------------------------- */
+    /* How long a lifecycle colour takes to become another one. A wash change
+       means something happened — a judgment landed, a race sealed, a card
+       opened — and a jump left the reader to notice it after the fact
+       (Ed, 2026-08-17). Long enough to be seen as a change, short enough not
+       to be a performance. */
+    --wash-ms: 700ms;
+
+    --rail-left: 210px;
+    --rail-right: 290px;
+    --nav-h: 58px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    margin: 0;
+    padding-bottom: 60px;
+  }
+  .wrap { max-width: 1440px; margin: 0 auto; padding: 0 var(--s4); }
+
+  /* **An eyebrow: the small upper-case label that names a region or a block.**
+     One rule, so they cannot drift apart — which is what it said before the
+     housekeeping pass of 2026-08-17 found that the rule had **no users at all**.
+     Every eyebrow on the surface was a hand-rolled copy of it, and the copies
+     had drifted to three sizes: `.headlab` and `.fieldlab` at 0.65rem, `.rtag`
+     and `.rechead` at 0.7rem, and this rule itself at a 0.75rem that appeared
+     nowhere else on the page.
+
+     So the rule now has the users it was written for, they are listed here so a
+     new one cannot be added without touching this line, and the size is the
+     token that exists for exactly this — `--t-micro`, whose own comment has
+     said *eyebrow labels only* since the scale was written. What each of them
+     keeps for itself below is colour and layout, and nothing else. */
+  .eyebrow,
+  .clausehead .headlab,
+  .fieldlab,
+  .rtag,
+  .rechead,
+  .pwhere {
+    font-size: var(--t-micro); font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--muted);
+  }
+
+  .navbar { background: var(--light); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 40; }
+  .navbar .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s4); padding: 10px var(--s4); }
+  .navbar .brand { font-weight: 600; font-size: var(--t-body); margin: 0; }
+  .navbar .brand .sess { color: var(--muted); font-weight: 400; }
+  .navbar .stats { display: flex; gap: 18px; white-space: nowrap; font-size: var(--t-ui); color: var(--muted); align-items: center; }
+  /* room-pulse. Grey at rest and grey at its brightest: activity is information
+     and nothing is being asked of you, which is what grey means here. It beats
+     by growing a ring rather than by changing colour — a colour change in the
+     topbar would read as a state, and this is an event. */
+  .pulse {
+    width: 7px; height: 7px; border-radius: 50%; flex: none;
+    background: rgba(var(--lc-closed), 0.7);
+    transition: background 400ms ease;
+  }
+  .pulse.beat { background: rgba(var(--lc-closed), 1); animation: pulseRing 900ms ease-out; }
+  @keyframes pulseRing {
+    from { box-shadow: 0 0 0 0 rgba(var(--lc-closed), 0.55); }
+    to   { box-shadow: 0 0 0 9px rgba(var(--lc-closed), 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pulse, .pulse.beat { transition: none; animation: none; }
+  }
+  .navbar .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
+  /* You, at the right-hand end. Initials rather than a photograph: this is a
+     mockup with no accounts behind it, and a stock face would be a claim the
+     product cannot yet make. */
+  .navbar .me {
+    appearance: none; border: 0; background: none; padding: 0; cursor: pointer;
+    display: inline-flex; align-items: center; align-self: center;
+  }
+  .navbar .me .face {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    font-size: var(--t-micro); font-weight: 700; letter-spacing: 0.02em;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-sm); transition: box-shadow 120ms ease;
+  }
+  .navbar .me:hover .face { box-shadow: var(--shadow-md); }
+  .navbar .me:focus-visible .face { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  /* The edit-wallet (Ed, 2026-08-16). A token *is* an edit, so it is drawn as
+     the writing glyph rather than counted in words: the wallet says what it
+     buys without a sentence. One leaves every time you spend, and the next one
+     sits in a tray that fills as the drip accrues.
+
+     The tray is the same device as the queue card's wash — a hard-stopped
+     linear gradient whose fill is a fraction — reused for a second magnitude
+     rather than a second device invented for it. It sits under the *next*
+     pencil rather than behind the whole row: a wash behind the row would fill
+     left to right across pencils you already hold, which reads as "some of my
+     edits are highlighted" instead of "this much of the way to another one". */
+  .wallet { display: inline-flex; align-items: center; gap: 6px; }
+  .pencils { display: inline-flex; align-items: center; gap: 1px; line-height: 1; }
+  .pencils i { font-style: normal; font-size: var(--t-ui); }
+  /* the slot an edit has left, or the one it is on its way into: it keeps its
+     width, so the row neither closes up nor jumps when the pencil arrives */
+  .wallet .gone { visibility: hidden; }
+  /* what the row stops drawing and starts counting, and when the next one lands.
+     The countdown wears the drip's own wash — the fill is how far the tenth has
+     run — so one object says both when and how far. */
+  /* the count stands as tall as the glyphs it is standing in for */
+  .pmore { font-size: var(--t-ui); font-weight: 700; color: var(--fg); margin: 0 1px 0 3px; line-height: 1; }
+  .pwhen {
+    font-size: var(--t-ui); color: var(--muted); margin-left: 8px;
+    font-variant-numeric: tabular-nums; padding: 1px 5px; border-radius: var(--r-sm);
+    background: linear-gradient(90deg,
+      rgba(var(--lc-yours), 0.22) var(--fill), rgba(var(--lc-yours), 0.07) var(--fill));
+  }
+  /* Nothing held: the label goes quiet, and the tray is the only thing left
+     with anything to say. */
+  .wallet.empty { color: var(--muted); }
+
+  /* contents-rail (left) · document (centre) · needs-you queue (right) */
+  .layout {
+    display: grid; grid-template-columns: var(--rail-left) minmax(0, 1fr) var(--rail-right);
+    gap: var(--s5); align-items: start; margin-top: 18px;
+  }
+  /* `.layout >` rather than a bare class, on both of these. The rails set
+     `display` and `position` in their own rules further down the sheet, so at
+     equal specificity the later rule was winning and every one of these
+     overrides was dead: below 1240px the contents rail stayed visible and took
+     the document's column, leaving the charter in the 290px one. Found at Ed's
+     QA of 2026-08-16 — the mockup had only ever been read above 1240. */
+  @media (max-width: 1240px) {
+    .layout { grid-template-columns: minmax(0, 1fr) var(--rail-right); }
+    .layout > .toc { display: none; }
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .layout > .queue, .layout > .toc { position: static; max-height: none; }
+    .layout > .toc { display: flex; }
+  }
+
+  /* left rail: contents-rail, built from the document's own headings. A charter
+     with ninety headings is taller than the screen, and a sticky rail simply
+     clipped the tail — so the rail is a viewport-height column that scrolls
+     inside itself (Ed, 180). */
+  .toc {
+    position: sticky; top: var(--nav-h);
+    max-height: calc(100vh - var(--nav-h) - var(--s4)); display: flex; flex-direction: column;
+  }
+  .toc h2 { margin: 0 0 var(--s2); flex: none; }
+  .toc ul {
+    list-style: none; margin: 0; padding: 0 var(--s1) 0 0; display: flex; flex-direction: column; gap: 1px;
+    overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: none; -ms-overflow-style: none;   /* it scrolls, quietly (Ed, 186) */
+  }
+  .toc ul::-webkit-scrollbar { width: 0; height: 0; }
+  .toc li { display: flex; align-items: baseline; gap: 2px; }
+  .toc li a { flex: 1; min-width: 0; }
+  /* The rail carries the document's own hierarchy: parts, chapters, sections —
+     and until the housekeeping pass of 2026-08-17 it carried it **upside down**.
+     A Part was 12px, a chapter inside it 13px, and a section inside *that*
+     12.48px, so the outermost level was the smallest text in the column and a
+     leaf outranked the Part containing it. The document's own headings had
+     always descended correctly (15.2 / 12.8 / 11.52); only the rail was
+     inverted, and three off-scale sizes were what hid it.
+
+     A Part is a **divider**, so it is set as one: upper-case, bold, at --t-cap,
+     below the entries rather than above them, which is what a small-caps label
+     is for. The two levels under it are then the same size and are told apart
+     by weight and indent — which is the job indentation was already doing. */
+  .toc li.lvl1 { margin-top: var(--s2); }
+  .toc li.lvl1 a { font-weight: 700; color: var(--fg); font-size: var(--t-cap); text-transform: uppercase; letter-spacing: 0.04em; }
+  .toc li.lvl2 { padding-left: var(--s3); }
+  .toc li.lvl2 a { font-weight: 600; color: var(--fg); }
+  .toc li.lvl3 { padding-left: 26px; }
+
+  /* section-toggle: the same control in the contents rail and the document gutter */
+  .sectoggle {
+    appearance: none; background: none; border: 0; padding: 2px var(--s1); margin: 0;
+    font: inherit; font-size: var(--t-cap); line-height: 1; color: var(--muted); cursor: pointer;
+  }
+  .sectoggle:hover { color: var(--fg); }
+  .sectoggle .tri { display: inline-block; transition: transform 140ms ease; }
+  .sectoggle[aria-expanded="true"] .tri { transform: rotate(90deg); }
+  /* An unfolded section's triangle is only there when you reach for it (Ed, 81).
+     A folded one always shows — it is the only handle on hidden text. Faded by
+     opacity, never display, so the row never shifts as it appears. */
+  .sectoggle[aria-expanded="true"] { opacity: 0; transition: opacity 120ms ease; }
+  .toc li:hover .sectoggle[aria-expanded="true"],
+  .doc h2.docline:hover .sectoggle[aria-expanded="true"],
+  .sectoggle[aria-expanded="true"]:focus-visible { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .sectoggle .tri, .sectoggle { transition: none; }
+  }
+  .toc a {
+    display: block; padding: 3px 10px; font-size: var(--t-small); line-height: 1.35;
+    color: var(--muted); text-decoration: none;
+    border-left: 2px solid transparent; border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  }
+  .toc a:hover { background: var(--light); color: var(--fg); }
+  .toc a.current { background: var(--light); color: var(--fg); font-weight: 600; border-left-color: var(--primary); }
+  /* lifecycle marks in the contents rail (Ed, 177): held small and tight to the
+     right edge so they read as a margin annotation, not as part of the heading */
+  .tocmarks {
+    flex: none; display: flex; align-items: center; gap: 1px;
+    font-size: var(--t-micro); line-height: 1; padding-right: 2px; letter-spacing: -1px;
+  }
+  /* **The four decided marks, drawn** (Ed, 2026-08-17). They are the only ones
+     that are not silhouettes — a plate with a shape knocked out of it — so they
+     read as a different kind of object beside 💡🔥✏️⏳⚔️ rather than as a
+     different state. As text glyphs they take a colour, which means the palette
+     chooses it instead of the reader's emoji font, and it is the same in all
+     four columns. Kept at the colours the emoji happened to have, so the change
+     is the plate and nothing else; see the note on whether that survives. */
+  .mk { font-family: inherit; font-weight: 700; line-height: 1; }
+  /* An action glyph, drawn on the same stroke as the lifecycle marks so a
+     control and a mark never look like they came from different sets. */
+  /* Unit marks: a gauge for a reading of the room, a hurdle for the line it had
+     to cross. Same stroke as ✔ and ✖, a hair smaller, and sitting just after
+     their number the way a unit does. */
+  .unit { font-size: 1.15em; margin-left: 2px; letter-spacing: 0; }
+  .mkg {
+    width: 1em; height: 1em; display: inline-block; vertical-align: -0.13em;
+    fill: none; stroke: currentColor; stroke-width: 1.9;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  /* Green for **decided**, grey for **filed** — the same two glyphs in the two
+     colours (Ed, 2026-08-17). Which way it went is the glyph; whether it still
+     wants anything from you is the colour, which is the rule the whole palette
+     runs on. */
+  .mk-adopted, .mk-retired { color: var(--ok); }
+  .mk-filedYes, .mk-filedNo { color: var(--muted); font-weight: 500; }
+  .mk-shifted { color: var(--primary); }
+  /* a drawn glyph has no plate to give it width, so at the two small sizes it
+     needs a little of its own or the marks sit on top of each other */
+  .tocmarks .mk { font-size: 1.15em; letter-spacing: 0.06em; }
+  .qmark .mk { font-size: 0.95em; }
+  .tocmarks .more { font-size: var(--t-micro); color: var(--muted); letter-spacing: 0; margin-left: 2px; }
+
+  /* ===================================================================
+     The needs-you-queue: a margin index (Ed, 104–110). Every entry stands
+     beside the clause it argues about, so the rail asserts no ranking of its
+     own — urgency is colour strength and how much of the card is drawn, never
+     position. The rail is as tall as the document and travels with the page;
+     entries that still need you are pinned to the screen by layoutQueue().
+     =================================================================== */
+  .queue { position: relative; }
+  .queue h2 { margin: 0 0 var(--s2); }
+  .queue ul { list-style: none; margin: 0; padding: 0; position: relative; }
+
+  .qitem { position: absolute; left: 0; width: 100%; transition: top 220ms ease; }
+  /* a pinned entry tracks the viewport, so it must not lag behind the scroll */
+  .qitem.pinned { transition: none; z-index: 2; }
+  .qitem.mosturgent { z-index: 3; }
+  @media (prefers-reduced-motion: reduce) { .qitem { transition: none; } }
+
+
+
+  /* No borders (Ed, 164): a card is its wash plus the shadow that lifts it off
+     the page. A rule round the outside only competed with the wash for the job
+     of saying "this is one thing". Selection is a ring in box-shadow, so
+     nothing reflows when a card opens. */
+  .queue button {
+    appearance: none; font: inherit; text-align: left; width: 100%;
+    background-color: var(--washbg, var(--bg)); border: 0; border-radius: var(--r-md);
+    padding: var(--s2) 10px; cursor: pointer; color: var(--fg);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 140ms ease, background-color var(--wash-ms) ease;
+  }
+  .queue button:hover { box-shadow: var(--shadow-md); }
+  /* the open entry lifts rather than gaining a ring (Ed, 2026-08-17) — the same
+     rule as its card, and the rail and the card now say "open" the same way */
+  .queue button[aria-current="true"] { box-shadow: var(--shadow-xl); }
+  @media (prefers-reduced-motion: reduce) { .queue button { transition: none; } }
+
+  /* The wash is the progress bar (Ed, 105/116): how far the fill reaches is
+     closeness to resolution, how strong the colour is is urgency, and the hue
+     is lifecycle (Ed, 162). Built per entry in wash().
+
+     Painted as a bar rather than as a gradient (Ed, 2026-08-17) so that both
+     halves of it can move: no browser interpolates between two gradients, so
+     a lifecycle change used to arrive as a jump. Now the hue fades and the
+     fill slides, over the same 700ms the document's washes use.
+
+     The bar is a child box, so it would paint over the entry's text; the
+     entry's own children are lifted above it rather than the bar being pushed
+     behind, which would need a stacking context on the button. */
+  .queue button:not(.sealdot) { position: relative; overflow: hidden; }
+  .queue button:not(.sealdot) > * { position: relative; z-index: 1; }
+  /* The bar's leading edge is drawn a second time in its own colour, so it
+     composites to roughly double alpha and stays a crisp datum (Ed, 285). Once
+     the whole card carries a ground in the same hue, a low-urgency bar — 0.07
+     over a 0.06 ground — has almost no edge to read, and the edge is the whole
+     of what a progress bar says. Same variable, so it cannot drift. */
+  .queue button:not(.sealdot)::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; z-index: 0;
+    width: var(--fill, 0%); background-color: var(--washcol, transparent);
+    box-shadow: inset -1px 0 0 var(--washcol, transparent);
+    transition: background-color var(--wash-ms) ease, box-shadow var(--wash-ms) ease,
+                width var(--wash-ms) ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .queue button:not(.sealdot)::before { transition: none; }
+  }
+
+  /* Anything already judged is one line. Everything still open is a full card:
+     the compression ladder is gone (Ed, 2026-08-16 — see the rail's own note on
+     what urgency now decides). */
+  .queue .ql { font-weight: 600; font-size: var(--t-ui); display: flex; }
+  .queue .qs { font-size: var(--t-cap); color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
+  .queue .qv { display: block; font-size: var(--t-cap); color: var(--muted); margin-top: 1px; }
+
+  .queue button.deciding, .queue button.unread { padding: var(--s1) 10px; }
+  .queue button.deciding .ql, .queue button.unread .ql {
+    display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .queue button.deciding .ql .qv, .queue button.unread .qv {
+    display: inline; margin: 0; font-weight: 400;
+  }
+  .queue button.deciding { color: var(--muted); }
+  .queue button.deciding .ql { font-weight: 500; font-size: var(--t-small); }
+  .queue button.deciding.shifted .ql { color: var(--muted); }
+  /* a decision you have not acknowledged is quiet, not unimportant, and stays
+     pinned until you deal with it (Ed, 112) */
+  .queue button.unread .ql { font-weight: 600; font-size: var(--t-small); color: var(--fg); }
+  /* A filed line is the **same object, quieter** (Ed, 2026-08-17). It is not a
+     different kind of entry from an unacknowledged one — it is the same entry
+     after you have dealt with it — so it keeps the shape and gives up the
+     weight, which is the whole of the difference. */
+  .queue button.filed .ql { font-weight: 500; color: var(--muted); }
+  .queue button.filed .qt { color: var(--muted); }
+  /* The time goes to the right (Ed, 2026-08-17), which needs the row to be a
+     flex rather than one truncating line: the title takes what is left and
+     ellipses, and the time never gets eaten by a long one. It is also the only
+     thing on a sealed entry the reader is scanning *down* a column for. */
+  .queue button.unread .ql { display: flex; align-items: baseline; gap: 6px; }
+  .queue button.unread .qt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .queue button.unread .qv.when { margin-left: auto; flex: none; }
+  .queue button.unread .qv { color: var(--muted); }
+  /* a deadlocked race states its unusual ask in full, and its caption is an
+     instruction rather than a progress note (Ed, 166) */
+
+  /* Your own proposal (Ed, 2026-08-16). Once it is in, it is a **status
+     line**, not a question: nothing is being asked of you, because your
+     preference for your own candidate is already counted (SPEC §3.3). So it
+     takes one line like a judged entry — but green rather than grey, because
+     there is always something you can do to it, and it stays pinned until it
+     seals for exactly that reason (Ed, 240).
+
+     While it is still a *draft* it is a full card instead, and the reason is
+     worth keeping: the rail entry is where you read your own rationale back
+     as you write it (Ed, 2026-08-16), so it has to be able to show it. */
+  .queue button.yours { padding: var(--s1) 10px; }
+  .queue button.yours .ql {
+    display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-weight: 600; font-size: var(--t-small);
+  }
+  .queue button.yours .qv { display: inline; margin: 0; font-weight: 400; }
+  .queue button.yours.drafting { padding: var(--s2) 10px; }
+  .queue button.yours.drafting .ql { white-space: normal; display: flex; }
+  .queue button.yours.drafting .qwhy.empty { color: var(--muted); font-style: italic; }
+  /* a patch is one judgment shown at every site it touches (Ed, 108/183) */
+  .queue button.sib .sibn { font-size: var(--t-micro); color: var(--muted); font-weight: 500; }
+
+  /* The lifecycle mark, top left of every entry (Ed, 147–165). The same
+     alphabet appears in the contents rail and the document gutter. Emoji carry
+     their own colour, so they are held small and never given a weight — the
+     glyph is the signal, not its size. */
+  /* Emoji do not share an advance width — 🔥 is narrower than ⏳, ☑️ narrower
+     than ✏️ — so a flex `gap` after the glyph put the title in a different
+     place on every kind of entry (Ed, 2026-08-17: the spacing "varies between
+     types; it's correct for 💡"). The mark is given a fixed box and the glyph
+     centred in it, so the column of titles lines up whatever the alphabet does.
+     Sized from 💡, which is the one that read right. */
+  .qmark {
+    flex: none; font-size: var(--t-small); line-height: 1.35; font-weight: 400;
+    width: 1.15em; display: inline-flex; justify-content: center; align-items: baseline;
+    /* The space after the mark is the mark's own margin, not the row's `gap`
+       (Ed, 2026-08-17 — the ✏️ entries were still out). A one-line entry sets
+       its `.ql` to `display: block` so the title can ellipsis, and a block box
+       has no `gap` — so exactly the rows that could not spare the space were the
+       ones losing it, while the flex rows kept theirs. A margin belongs to the
+       thing it follows and travels with it into either layout. */
+    margin-right: 6px;
+  }
+
+  /* A diagonal's title, set over four lines (Ed, 284). On one line the two
+     section names collided and truncated at 290px — the entry exists to let
+     you weigh them against each other, so the one thing it must never do is
+     hide either name. Stacked, the two are the same shape in the same place
+     and the eye compares them directly; `Prioritise:` and `vs` drop back to
+     muted, because they are the frame and the names are the content. */
+  .qprio { display: flex; flex-direction: column; gap: 1px;
+    font-weight: 500; font-size: var(--t-cap); color: var(--muted); }
+  .qprio b { font-weight: 600; font-size: var(--t-ui); color: var(--fg); line-height: 1.25; }
+  .qprio i { font-style: normal; font-size: var(--t-cap); }
+
+  /* The rationale is the comment (Ed, 123): the rail quotes it. Four lines on
+     every open card and five on the 🔥 one — an argument cut to a line was a
+     teaser for an argument, not an argument (Ed, 2026-08-16). Fewer cards fit
+     as a result, which is the trade being made deliberately. */
+  .qwhy {
+    font-size: var(--t-small); line-height: 1.35; color: var(--fg); margin-top: 6px;
+    display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
+    -webkit-line-clamp: 4; line-clamp: 4;
+  }
+  .queue button.mosturgent .qwhy { -webkit-line-clamp: 5; line-clamp: 5; }
+  /* the flame drops its rationale only while it is following you — see the
+     teaser in `renderQueue` and the `offclause` test in `layoutQueue` */
+  .qitem.mosturgent.offclause .qwhy { display: none; }
+  /* a race quotes both proposals, stacked with a hairline between: 290px will
+     not carry two readable columns of prose */
+  .qwhy + .qwhy { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
+
+  /* An acknowledged decision is a tiny card, not a bare glyph (Ed, 164): still
+     an entry in the rail, just the smallest one. Grey card, full-colour glyph
+     (Ed, 165). The row that used to gather several of them went with 106. */
+  .queue .sealdot {
+    appearance: none; cursor: pointer; flex: none;
+    width: 24px; height: 22px; padding: 0; border: 0; border-radius: 0.3rem;
+    background: rgba(var(--lc-closed), 0.16); box-shadow: var(--shadow-sm);
+    font-size: var(--t-small); line-height: 22px; text-align: center;
+  }
+  .queue .sealdot:hover { box-shadow: var(--shadow-md); }
+  .queue .sealdot[aria-current="true"] { box-shadow: var(--shadow-xl); }
+
+  /* an entry judged for the first time slides out of the needs-you band */
+  @keyframes slideOut { to { opacity: 0; transform: translateY(14px); } }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-14px); } }
+  .queue button.leaving { animation: slideOut 0.24s ease-in forwards; pointer-events: none; }
+  .queue button.arriving { animation: slideIn 0.24s ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    .queue button.leaving, .queue button.arriving { animation: none; }
+  }
+
+  /* ===================================================================
+     The document. Its wide left padding is the chip-gutter (see .chipcol).
+     =================================================================== */
+  .doc {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    /* The tall bottom padding is scroll runway, not whitespace: without it a
+       clause near the end of the charter can never be brought up to the read
+       line, so opening anything down there would not move the page. Keeping it
+       inside .doc also keeps the middle column running to the bottom, and
+       keeps .layout tall enough for the rails to stay pinned. */
+    padding: 36px 44px 95vh 132px;
+  }
+  @media (max-width: 900px) { .doc { padding: var(--s5) 20px 95vh; } }
+  .doc .prose { max-width: 70ch; margin: 0 auto; }
+  .doc .doctitle { font-size: var(--t-lead); font-weight: 600; margin: 0 0 18px; text-wrap: balance; }
+  .doc p { margin: 0 0 var(--s3); position: relative; }
+
+  /* three ranks of heading: part, chapter, section */
+  .doc h2.docline {
+    font-size: var(--t-cap); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); margin: 22px 0 var(--s2); position: relative;
+  }
+  .doc h2.docline.lvl1 {
+    font-size: var(--t-body); color: var(--fg); letter-spacing: 0.08em;
+    margin: 46px 0 14px; padding-top: 14px; border-top: 1px solid var(--border);
+  }
+  .doc h2.docline.lvl2 { font-size: var(--t-small); color: var(--fg); margin: 30px 0 10px; }
+  .doc h2.docline.lvl3 { font-size: var(--t-cap); color: var(--muted); margin: 22px 0 var(--s2); }
+  .doc .prose > h2.docline.lvl1:first-child { margin-top: var(--s5); }
+  /* the fold triangle sits in the chip-gutter, in line with the anchor marks */
+  .doc h2.docline .sectoggle { position: absolute; right: 100%; margin-right: var(--s3); top: -2px; }
+  .doc h2.docline .sechint {
+    margin-left: 10px; font-weight: 400; text-transform: none; letter-spacing: 0;
+    font-size: var(--t-cap); color: var(--muted); font-style: italic;
+  }
+  @media (max-width: 900px) { .doc h2.docline .sectoggle { position: static; margin: 0 6px 0 0; } }
+
+  /* A challenged clause wears its queue card's own lifecycle hue and has no
+     left rule (Ed, 200): paragraph, gutter glyph and rail entry are one object
+     seen three times. The wash is set per paragraph by anchWash(); it deepens
+     on whatever is open, including all of a patch's clauses at once. A filed
+     clause washes nothing — the document should look settled where it is.
+     The extra class beats `.doc p`, which also sets margin. */
+  .doc .anch, .clausehead .headclause {
+    padding: 6px var(--s2) 6px var(--s3); margin-left: calc(-1 * var(--s3));
+    border-radius: var(--r-sm);
+  }
+  .anch.active:hover { box-shadow: none; }
+  /* **The prose carries no highlight** (Ed, 2026-08-17). A contested clause
+     used to wear its lifecycle hue behind the words; it now wears nothing, and
+     the whole of that colour lives in the gutter mark beside it. The charter
+     reads as a charter, and the margin does the work — which is what the
+     surface has been claiming since the north star ("most of a session should
+     feel like approving typo fixes; the machinery earns its visibility").
+
+     The **geometry** stays: `.anch` and `.headclause` keep their padding and
+     negative margin, because the card-opening motion is measured against the
+     two boxes being identical. Only the paint is gone.
+
+     A held-open gap keeps its wash, because there is no text there to leave
+     unmarked — the colour *is* the thing. */
+  .insert-anchor {
+    background-color: var(--washcol, transparent);
+    transition: background-color var(--wash-ms) ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .insert-anchor { transition: none; }
+  }
+
+  /* Always-on typing (Ed, 224). Every clause in the charter carries a caret:
+     click and you are in the text, type and the editing-card opens around what
+     you just wrote. So the paragraph is no longer a button — clicking one used
+     to open its decision card, which is now the gutter mark's job — and it
+     takes the text cursor everywhere, contested or not.
+     No focus ring: the caret is the indication, and a box drawn round a
+     paragraph you have merely clicked into would be a fifth thing in the
+     margin's vocabulary. */
+  /* Headings carry a caret too (Ed, 2026-08-17): a section that cannot be
+     renamed is a section the charter cannot revise. The fold triangle and the
+     "N suggestions inside" hint are marked `.nocaret` and taken out of the
+     editable flow, so the caret cannot land inside furniture. */
+  /* The caret, made findable (Ed, 2026-08-17). It moves around a great deal on
+     this surface — every clause carries one — and a hairline that has just
+     jumped four hundred pixels is genuinely hard to locate.
+
+     CSS gives `caret-color` and nothing else: no width, no shape. So the caret
+     is coloured the accent, and **where it lands is announced** rather than
+     drawn differently — a short blue flash at the new position that shrinks
+     onto the bar and fades. It answers the actual question ("where did it go?")
+     without any of the cost of faking a caret, which would mean hiding the
+     native one and keeping a div in step with typing, blinking, IME
+     composition, selection and scroll (Q281).
+
+     An earlier attempt changed the mouse pointer to a drawn serif I-beam.
+     Reverted — the pointer was never the thing that was hard to find. */
+  .doc .editable, .lanebox .editlane, .lanebox .edit-why { cursor: text; }
+  .doc .editable, .lanebox .editlane { caret-color: var(--primary); }
+  .caretpulse {
+    position: absolute; z-index: 30; pointer-events: none;
+    width: 3px; margin-left: -1px; border-radius: 2px;
+    background: var(--primary); opacity: 0;
+  }
+  .caretpulse.go { animation: caretland 460ms cubic-bezier(.22, .61, .36, 1); }
+  @keyframes caretland {
+    0%   { opacity: 0.85; transform: scaleX(4) scaleY(1.25); }
+    100% { opacity: 0;    transform: scaleX(1) scaleY(1); }
+  }
+  @media (prefers-reduced-motion: reduce) { .caretpulse { display: none; } }
+  .doc .prose:focus, .doc .editable:focus { outline: none; }
+  .doc .prose { caret-color: var(--primary); }
+  .doc .editable .chipcol, .doc .editable .nocaret { user-select: none; }
+  .nocaret { display: contents; }
+  /* a heading inside a lane or a head keeps its weight, so editing a section
+     title alongside its paragraph does not silently flatten it to body text */
+  .lp.hblock { font-weight: 700; }
+  /* **Spaces are preserved** (Ed, 2026-08-17: "I can't write spaces into the
+     proposal text"). The lane rewrites its own markup on every keystroke so the
+     green marking can follow the caret, which means a space you have just typed
+     is round-tripped through the model and re-rendered as HTML — where an
+     ordinary trailing space collapses to nothing. So you typed, nothing
+     appeared, and the lane looked broken until the next character arrived.
+     `pre-wrap` is safe here because the lane's markup is concatenated with no
+     incidental whitespace in it. */
+  .lp { white-space: pre-wrap; }
+  /* A proposal that removes the text entirely says so (Ed, 274). Result-only
+     rendering shows what would stand, and what would stand here is nothing —
+     which is the one case where "nothing" and "unchanged" look identical,
+     because both are blank. Drawn as a pseudo-element so it is never content:
+     in the editing lane there is nothing to serialise back into the candidate
+     and nothing for the caret to land behind, and the `<br>` under it keeps the
+     line something you can type into. */
+  .lp.empty { position: relative; }
+  .lp.empty::before {
+    content: '(all text removed)';
+    position: absolute; left: 0; top: 0; pointer-events: none;
+    color: var(--muted); font-style: italic; font-size: var(--t-small);
+  }
+
+  /* chip-gutter: marks sit in the document's left margin, stacked and
+     right-aligned, so the prose column itself stays unbroken. They are the
+     same lifecycle glyphs as the two rails (Ed, 199) — one alphabet in all
+     three columns — not a third vocabulary of word-chips. */
+  .chipcol {
+    position: absolute; right: 100%; margin-right: 14px; top: 0.15em;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+  }
+  /* The mark is the *only* way into a decision card from the document (Ed,
+     224), and it is doing more work than anything else its size on the surface
+     — so at rest it has to be an **object**, not a glyph with a hit area
+     (Ed, 2026-08-17: "they should read more obviously as buttons").
+     Three things say it, and none of them is an outline:
+
+     - a **key**: a resting ground in the mark's own lifecycle hue plus the
+       contact shadow, exactly the object the rail's `sealdot` already is. The
+       chip and the dot are the same control in two columns, so they should not
+       have been two shapes.
+     - **size**: 30x27 with the glyph at document size. It was a 13px glyph in
+       a 24px box, which is a target sized for a control and a glyph sized for
+       an annotation.
+     - **a press**: it lifts on hover and goes *down* on pointer-down, losing
+       its shadow at the bottom. Depth is what this surface uses to say
+       "active", so a control that never moves in depth is a control that never
+       says it was pressed. */
+  .achip {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 30px; font-size: 1.125rem; line-height: 1;
+    border-radius: var(--r-sm);
+    /* **Opaque, not a wash** (Ed, 2026-08-17: the tabbed-ness "acting strange").
+       A translucent ground was fine while a tab was a mark lying on the page —
+       but a tab overlaps the card it is attached to, and the card's edge and
+       shadow showed straight through the overlap, so the join it exists to make
+       was the one place you could see the seam. The colour is the same colour;
+       it is mixed with the page instead of laid over it. */
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 18%, var(--bg));
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap; user-select: none; cursor: pointer;
+    transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+  }
+  /* **A closed tab strip is a pile** (Ed, 2026-08-17). The tabs behind slide up
+     under the front one, leaving a sliver each — enough for the lifecycle hue,
+     which is the whole vocabulary, so a stack with an orange sliver in it says
+     *something here is urgent* without drawing a flame or counting anything. A
+     count was the other option and it is the thing Ed removed from the queue
+     this morning: a tally in a margin is a permanent apology for a limit.
+     `--peek` is set per stack by `fitStacks()` — the pile is fitted to the space
+     it actually has, so it can never be the thing it replaced. */
+  .chipcol.stack { gap: 0; }
+  .chipcol.stack .achip + .achip { margin-top: calc(var(--peek, 4px) - 30px); }
+  /* one stack, one target */
+  .chipcol.stack .achip.behind { pointer-events: none; }
+  /* A sliver has to be **stronger than a face** to say the same thing. The tab
+     ground is an 18% mix because it is 30px tall and carrying a glyph; four
+     pixels of the same mix is not a colour, it is a smudge — and the sliver's
+     hue is the whole reason the pile is worth drawing rather than counting.
+     Squared at the top, because a radius eats a 4px band; the pile's own bottom
+     edge keeps its corners, so the stack still ends like a tab and not like a
+     cut. */
+  .chipcol.stack .achip.behind {
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg));
+    border-radius: 0 0 var(--r-sm) var(--r-sm);
+  }
+  /* **The filed pile**: the same closed posture, one level down, inside a strip
+     that is otherwise open. It sits under the live tabs with a little more air
+     than the 3px that separates them from each other, because it is a different
+     group and not one more tab; and opening it simply hands the group back the
+     strip's own gap, so the two states are one rule with one number changed. */
+  .filedpile { display: flex; flex-direction: column; align-items: flex-end; margin-top: 5px; }
+  .filedpile:not(.open) { gap: 0; cursor: pointer; }
+  .filedpile:not(.open) .achip { pointer-events: none; }
+  .filedpile:not(.open) .achip + .achip { margin-top: -26px; }
+  .filedpile:not(.open) .achip + .achip {
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg));
+    border-radius: 0 0 var(--r-sm) var(--r-sm);
+  }
+  .filedpile.open { gap: 3px; }
+  .filedpile:not(.open):hover .achip:first-child { transform: translateY(-1px); }
+  .filedpile:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--r-sm); }
+  .achip:hover {
+    transform: translateY(-1px);
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 30%, var(--bg));
+    box-shadow: var(--shadow-md);
+  }
+  .achip:active { transform: translateY(1px); box-shadow: none; }
+  .achip:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+  @media (prefers-reduced-motion: reduce) {
+    .achip { transition: none; }
+    .achip:hover, .achip:active { transform: none; }
+  }
+  @media (max-width: 900px) {
+    .chipcol { position: static; flex-direction: row; align-items: baseline; margin: 0 0 var(--s1); }
+  }
+
+  /* insert-anchor: a held-open gap where a proposed section would stand. No
+     border and no caption (Ed, 201) — a labelled box made an absence look like
+     something already in the charter — but it takes the same lifecycle wash as
+     any other contested clause (Ed, 205), because the gap *is* the thing being
+     argued about. Blank of text, not blank of colour. */
+  .insert-anchor {
+    position: relative; min-height: 3.2rem; margin: 0 0 var(--s1) calc(-1 * var(--s3));
+    padding: 6px var(--s2) 6px var(--s3);
+    border-radius: var(--r-sm); cursor: pointer;
+  }
+  .insert-anchor:hover { box-shadow: inset 0 0 0 1px var(--border); }
+
+  /* ===================================================================
+     The decision card. Opens in place beneath its clause; one geometry for
+     quick, race and patch (Ed, 66/85), and a fourth read-only shape for a
+     sealed record (Ed, 112/120).
+     =================================================================== */
+  .sugg {
+    max-width: none; margin: var(--s1) auto var(--s4);
+    /* No outline (Ed, 2026-08-17): **an open card is said by depth alone.**
+       198's one-blue-for-every-card was doing two jobs at once — naming the
+       accent and drawing a boundary — and the boundary was the weaker of the
+       two, because a rule round the outside competes with the wash inside it
+       for the job of saying "this is one thing" (the same argument 164 made
+       about rail cards, arrived at again from the other end). What is left is
+       the lift, which has to be a real one: see --shadow-xl. */
+    border: 0;
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-xl);
+    /* --s5 rather than --s4 of side padding: the lifecycle mark hangs in the
+       left one, so the rationale below the lanes stays column-aligned with
+       them instead of being pushed right by its own glyph. */
+    padding: 14px var(--s5);
+    background: var(--bg);
+  }
+  .sugg .foot { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); }
+
+  /* The rationale is drawn by the `sealed-speaker` now, attached to its own
+     proposal. `.swhy` survives only in the sealed record's ranked blocks. */
+  .swhy {
+    margin-bottom: var(--s3); position: relative;
+    font-size: var(--t-ui); font-weight: 600; color: var(--fg); line-height: 1.45;
+  }
+  /* not scoped to a lane class: the sealed record's ranked blocks use the same two
+     and had been getting neither, so "✓ this is the text that stands" ran on
+     into the end of the label above it */
+  .rtag {
+    display: flex; align-items: baseline; gap: var(--s2);
+    color: var(--primary-emphasis); margin-bottom: 6px;
+  }
+  /* Not an eyebrow — it sits *under* one and says a thing in words, so it keeps
+     its own weight and case. On the scale at --t-cap, which is the step for a
+     caption. */
+  .rsub {
+    display: block; margin-top: 2px;
+    font-size: var(--t-cap); font-weight: 500; text-transform: none; letter-spacing: 0;
+    color: var(--muted);
+  }
+  .rsub.stood { color: var(--ok); font-weight: 700; }
+
+  /* ---- the lane-bar (Ed, QA 2026-08-16, retiring 197) -----------------
+     The lane is no longer the button. 197 made the text itself the control
+     on the argument that it was the most direct statement the card could
+     make of what it was asking; in use it asked the reader to click a
+     paragraph of constitutional prose, which is the one gesture the rest of
+     this surface now means *put a caret here* (224). So the choosing moves
+     into a control strip at the foot of each text, beside the ✏️ that was
+     already living there and reading well.
+
+     Everything the strip offers is scoped to its own lane — prefer this
+     wording, write from this wording — and the acts that are about the
+     *pair* stay underneath: indifference is a judgment about the pair
+     (SPEC §3.2) and Submit commits the card, so neither can sit in a lane.
+     `margin-top: auto` floats the strip to the bottom of its lane so the
+     bars sit level however unequal the two texts are. */
+  .lanebar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--s2); margin-top: auto; padding-top: var(--s3);
+  }
+  /* A lane bar with no radio in it: the ✏️ goes to the right where the second
+     control always sits, rather than sliding left into the space the radio has
+     left. Its own row is tighter too, since it now separates a wording from its
+     reason rather than closing a block. */
+  .lanebar.solo { justify-content: flex-end; padding-top: var(--s2); }
+  /* The radio is the loudest thing in the lane (Ed, 286). It had been caption
+     type in a hairline pill — quieter than the ✏️ beside it and far quieter
+     than the tick, which had the card whispering the one act it exists for.
+     Since 197 was retired the radio *is* the judgment, so it is set at UI size,
+     in the document's own ink rather than muted, on a 1.5px edge with a ground
+     that separates it from the lane behind it. Its dot grew with it: a 12px
+     ring at caption size reads as a bullet, a 15px one at UI size reads as a
+     radio, which is the whole of what it is trying to say. */
+  .lanepick {
+    appearance: none; font: inherit; font-size: var(--t-ui); font-weight: 600;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 13px 5px 8px; border-radius: 999px;
+    border: 1.5px solid var(--border); background: var(--light); color: var(--fg);
+    cursor: pointer; transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+  }
+  /* the mark is a radio, because that is exactly what the judgment is: one
+     of the texts on this card, or none of them yet */
+  .lanepick .dot {
+    flex: none; width: 15px; height: 15px; border-radius: 50%;
+    border: 2px solid var(--muted); background: var(--bg);
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+  }
+  /* both labels are in the markup and CSS picks one, so choosing stays a
+     single attribute flip on every card a patch is open on */
+  .lanepick .on { display: none; }
+  .lanepick[aria-pressed="true"] .on { display: inline; }
+  .lanepick[aria-pressed="true"] .off { display: none; }
+  .lanepick:hover { color: var(--primary); border-color: var(--primary); background: var(--bg); }
+  .lanepick:hover .dot { border-color: var(--primary); }
+  .lanepick[aria-pressed="true"] {
+    color: #fff; background: var(--primary); border-color: var(--primary); font-weight: 600;
+  }
+  .lanepick[aria-pressed="true"] .dot {
+    border-color: #fff; background: #fff; box-shadow: inset 0 0 0 3px var(--primary);
+  }
+  .lanepick[disabled] { opacity: 0.55; cursor: default; }
+  .lanepick[disabled]:hover { color: var(--fg); border-color: var(--border); background: var(--light); }
+  /* **What you chose stays at full strength on a locked card** (Ed,
+     2026-08-17). Greying the whole trio said *you cannot change this*, which is
+     true, and dimmed the record of what you said, which is not what a lock
+     means. The unchosen options fade; your answer does not. */
+  .lanepick[disabled][aria-pressed="true"] { opacity: 1; }
+  .lanepick[disabled][aria-pressed="true"]:hover {
+    color: #fff; background: var(--primary); border-color: var(--primary);
+  }
+  @media (prefers-reduced-motion: reduce) { .lanepick, .lanepick .dot { transition: none; } }
+
+  /* propose-edit, on either lane (Ed, 228). Writing from a lane is free — the
+     edit is charged at Propose, which is where the price is stated — so this
+     is the quiet half of the strip, against the pick's solid one. */
+  .lanepropose {
+    background: none; border: 0; font: inherit; font-size: var(--t-cap);
+    color: var(--muted); cursor: pointer; padding: 3px 0;
+  }
+  .lanepropose:hover { color: var(--primary); }
+
+  /* ---- the status-quo-block (Ed, QA 2026-08-16) ----------------------
+     The wording the card is arguing about, stated once, at the top.
+
+     Whether it carries a lane-bar is not a style choice — it is what the
+     mechanism is actually asking. On a quick card or a patch the judgment
+     *is* incumbent against proposal, so the block is one of the two things
+     being judged and picks like a lane. On a race both lanes are
+     challengers and nothing here can vote to keep the clause: displacement
+     is settled by the adoption-threshold, not by this judgment (SPEC §5).
+     There the block is reference only — greyed, no controls — and it is the
+     thing the race card was missing, since a reader was being asked to
+     choose between two rewrites without being shown what they rewrite. */
+  /* ===================================================================
+     The stacked card (Ed, QA 2026-08-16 — the second note).
+
+     The complaint was that the cards conform to no recognised pattern, and
+     that the rationale — which is *the comment* — neither sits where a
+     comment sits nor reads as something a person said. Underneath that was
+     a third thing: the clause the card argues about was sitting in the
+     document immediately above it and being restated inside it, with no
+     stated relation between the two.
+
+     All three come out of the same move. **The card is the clause, opened.**
+     It replaces its paragraph rather than sprouting beneath it — which is
+     what the composer has always done (265) — so the thing being proposed
+     about is the head of the card and appears exactly once on the screen.
+     Under it, the field: one proposal, or two, each carrying its own
+     wording, its own argument and its own controls.
+
+     That shape is the forum: a post and its replies, and the reply is where
+     the argument lives. It is also, and not by accident, the shape the
+     `sealed record` has always had — the text that stood, then the whole
+     field ranked beneath it. A live card and its record are now the same
+     object in two tenses, which is most of what "one card, with small
+     changes between types" means in practice: a quick card is the clause
+     and one proposal, a race is the clause and two, a record is the clause
+     and the field with its numbers.
+     =================================================================== */
+  .clausehead { margin-bottom: var(--s3); }
+  .clausehead .headclause { position: relative; }
+
+  /* ---- the marks become **tabs** on an open card (Ed, 2026-08-17) ------
+     They were already in the right place and doing the right thing: several
+     live suggestions at one clause stack their marks in the gutter, they
+     travel into the card's head when one opens, and clicking another has
+     always switched the card to it. What was missing was that any of that
+     *looked* like a tab strip — a column of keys beside a card reads as
+     decoration, where a column of tabs reads as "these are the other things
+     here, and you can go to them".
+
+     Three moves, and none of them may shift the mark you clicked (the whole
+     card-opening motion is built on it staying at 0,0):
+
+     - every tab is rounded on its **left** only, so its right edge is a
+       joint rather than an end;
+     - the active tab takes the card's own white surface and is **6px wider**,
+       carrying it under the card's left edge so there is no seam — the width
+       goes on the padding side with `border-box`, so the glyph centres in the
+       same 30px it always did and does not move;
+     - its shadow casts **leftward only**, because the card is what it is
+       attached to and a shadow between them would be the seam again.
+
+     The inactive tabs keep their lifecycle ground and stop at the card's
+     edge, which is what makes the active one look joined and the rest look
+     stacked behind it. */
+  /* **Every tab's right edge lands exactly on the card's left edge** (Ed,
+     2026-08-17). They had been out in both directions — the inactive ones
+     stopping 2px short, the active one overshooting 4px into the card — so the
+     strip had three vertical edges where it should have one. The 2px is the
+     `chipcol`'s own offset, corrected here rather than in the gutter, because
+     in the gutter there is no card to line up with and the current position is
+     the one the card-opening motion is measured against. */
+  .clausehead .achip { border-radius: var(--r-sm) 0 0 var(--r-sm); margin-right: -2px; }
+  .clausehead .achip.wmark {
+    /* The active tab is the same box as the others. It had been 6px wider,
+       carried under the card to kill the seam — but a tab that overshoots is
+       not lined up, and the seam it was hiding is hidden anyway: the tab is a
+       descendant of the card, so it paints over the card's own shadow where
+       they meet. What marks it as active is the deeper ground and the lift. */
+    /* **It grows out to the left** (Ed, 2026-08-17). Since the active tab stopped
+       being lifted to the top of the strip, depth and a deeper ground were the
+       only things saying which one you are reading — and both are quiet next to
+       a silhouette. Width is the loud one, and leftward is the only direction
+       available: the column is right-aligned onto the card's edge, so growing is
+       *automatically* growing left, and the strip keeps its single vertical
+       joint.
+
+       The glyph must not move — the card-opening motion is measured on it
+       staying at 0,0 — so the 8px goes on `padding-left` as well as on `width`.
+       With `border-box` the content box is still 34px and the glyph still
+       centres in it; the tab simply starts 8px further out. */
+    width: 42px; padding-left: 8px; padding-right: 0;
+    /* **The active tab keeps its colour** (Ed, 2026-08-17). It used to take the
+       card's white surface, which is the ordinary tab move — but now that the
+       prose carries no highlight, the gutter holds the only lifecycle colour on
+       this side of the screen, and a tab that goes white the moment you open it
+       throws away the one thing it is there to say. It is deepened instead,
+       against the lighter marks stacked under it, and the join is carried by
+       the width and the lift rather than by the ground. */
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
+    box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.07), -3px 2px 4px rgba(0, 0, 0, 0.13);
+    position: relative; z-index: 1;
+  }
+  .clausehead .achip.wmark:hover {
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg)); transform: none;
+    box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.09), -4px 3px 6px rgba(0, 0, 0, 0.16);
+  }
+  .clausehead .achip.wmark:active { transform: none; }
+  .clausehead .headlab {
+    display: flex; align-items: baseline; gap: var(--s2); margin-bottom: var(--s1);
+  }
+  /* the clause reads as the document, because it *is* the document: same
+     size, same colour, no box — only the label above it says it has been
+     lifted into a card */
+  .clausehead .rtext { font-size: var(--t-body); margin-bottom: 0; }
+  .clausehead .rtext.none { color: var(--muted); font-style: italic; }
+  /* The card's own content column is laid on the same axis as the prose, so a
+     clause does not shift sideways when it becomes a head — and the `.chipcol`
+     inside the head therefore lands in exactly the gutter column the document
+     puts its marks in. Width is the prose measure plus the card's own padding
+     and border; `margin: auto` centres it on the same axis .prose centres on. */
+  .sugg { max-width: calc(70ch + 2 * var(--s5) + 3px); }
+  /* Marks belonging to *other* live suggestions at this clause travel into the
+     head's own chip column, where they stack under the card's mark exactly as
+     they stacked beside the paragraph. No label needed any more: the column
+     itself says what they are, because it is the same column. */
+  /* Three bands, and a rule between each: what stands, what is proposed, what
+     you can do about it. The rules are the whole structure of the card — there
+     is no other line on it. */
+  .field { border-top: 1px solid var(--border); padding-top: var(--s3); }
+  .fieldlab { margin-bottom: var(--s2); }
+  .propblock + .propblock {
+    border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
+  }
+  /* The deadlock card's one raised voice: on every other card a line like this
+     is a caveat at the foot, and here it is the reason the card exists, so it
+     sits directly under the clause in the band the field would otherwise start.
+     It takes the lifecycle hue rather than a border, by the surface's own rule
+     that open is said by depth and colour rather than by outline. */
+  /* Eight wordings is a long read, so the blocks get more air between them than
+     a two-candidate field needs — the separator is doing more work here. */
+
+  /* The desk is a band like the others (Ed, 2026-08-17 — *it should look like
+     the other proposal boxes*). It had a blue ground on the argument that it is
+     the one band that is not reference; but the box inside it is already lifted
+     and already the only thing on the card you can put a caret in, and a tint
+     behind a lifted box says the same thing twice while making the desk look
+     like a different kind of object from the wordings it answers. Its label
+     carries the act, and that is enough. */
+  /* No hairline on a decided card (Ed, 2026-08-17): every entry below it is in
+     a box of its own, and a rule above a row of boxes is a second boundary for
+     the same edge. */
+  .sealed-open .field { border-top: 0; padding-top: 0; }
+  /* Nor above the action row: the boxes above it and the button in it are both
+     objects with their own edges, so the rule was drawing a third one between
+     two things already separated. */
+  .sealed-open .race-mid.commitrow { border-top: 0; padding-top: 0; }
+  /* The winner is the head, and its reason belongs to it — so it wants room
+     above to sit under the text rather than against it, and more room below to
+     close the group off from the field (Ed, 2026-08-17). */
+  .sealed-open > .speaker { margin: var(--s3) 0 var(--s4); }
+  .bridgedesk .fieldlab { color: var(--stuck-ink); }
+  .dead-open .field.bridgedesk { margin-top: var(--s3); }
+  /* **A commit row is one object, so its controls share a height** (housekeeping
+     pass, 2026-08-17). They did not: the judgment ✓ and 🗑️ were 40px, the
+     deadlock desk's hold-✏️ was 30px *sitting in the same row as a 40px 🗑️*, the
+     sealed record's OK was 34px, and the proposed card's ✏️ Submitted 34px
+     beside its own 40px 🗑️. Each was an independent little rule about a
+     particular button, and independent rules about buttons that stand in a row
+     together is exactly how a row stops being one.
+
+     Height belongs to the row, so the row sets it; width still belongs to the
+     control, so a glyph stays 52px and a labelled button stays as wide as its
+     label. Nothing here overrides a button's colour or its pressed state. */
+  .commitrow .btn { height: 2.5rem; display: inline-flex; align-items: center; justify-content: center; }
+
+  /* 🗑️ and ✏️ are lifted, because they are actions **for the box above them**
+     (Ed, 2026-08-17) and the box is lifted. A flat control under a raised
+     surface reads as belonging to the card rather than to the thing it acts on;
+     putting them at its height joins them to it. They go down on press, like
+     every other object on this surface that can be pressed, and stay flat while
+     disabled — there is nothing to act on, so there is nothing to raise.
+
+     **On every card, not two** (housekeeping pass, 2026-08-17). It was scoped to
+     the editing card and the deadlock desk because that is where Ed asked for
+     it, and the reason he gave — *they are actions for that box* — is true of
+     the judgment ✓ and the ❄️ beside it and the record's OK. Worse, the two it
+     missed are the two outline buttons on the surface, which are the ones with
+     no fill to read as a control instead. */
+  .commitrow .btn:not([aria-pressed="true"]) { box-shadow: var(--shadow-md); }
+  .commitrow .btn:not([disabled]):hover { box-shadow: var(--shadow-lg); }
+  /* And they **follow the box up** (Ed, 2026-08-17: *still not the height of the
+     edit box*). The box lifts to --shadow-xl while you are writing in it, and
+     buttons left at --shadow-md then sat visibly below the thing they belong to
+     for exactly the minute anybody is looking at them. Keyed off the card, since
+     the box cannot style its own siblings. */
+  /* the card climbs to --shadow-xl while you are working in it, and its
+     controls climb with it — otherwise they sink into the card that rose */
+  .sugg:focus-within .commitrow .btn:not([disabled]):not(.holding) { box-shadow: var(--shadow-xl); }
+  .commitrow .btn:not([disabled]):active,
+  .commitrow .btn.holding { box-shadow: none; }
+  .commitrow .btn[disabled] { box-shadow: none; }
+  .propblock .rtext { font-size: var(--t-body); margin-bottom: 0; }
+  /* The commit row's own hairline and band rhythm belong to **the row**, not to
+     what happens to precede it. This was `.field + .race-mid`, which was true
+     for as long as the field was always the band immediately above — and stopped
+     being true the moment a card's type note and a lock note moved above the row
+     rather than below it (housekeeping pass, 2026-08-17). An adjacent-sibling
+     selector is a rule about *order*, and it was being used to say something
+     about *identity*. */
+  .race-mid.commitrow {
+    border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
+  }
+
+  /* ---- the sealed-speaker --------------------------------------------
+     A rationale is the one thing anybody gets to *say* (SPEC §2.6, §3.4),
+     and it was being drawn as a bold line of text — which reads as a
+     heading the system wrote, not as a person talking. It now sits behind a
+     featureless disc, at ordinary weight, the way a comment does
+     everywhere else.
+
+     The disc is blank because the authorship *is* blank: §3.4 seals it
+     until the record. Drawing the speaker and leaving them faceless states
+     the discipline instead of hiding it — you can see that somebody
+     argued this, and see that you are not allowed to know who. */
+  .speaker { display: grid; grid-template-columns: auto 1fr; gap: var(--s2); margin-top: var(--s2); }
+  /* The placeholder avatar, drawn rather than left as a plain circle: a bare
+     grey disc reads as a bullet, and a bullet says "list item" where this has
+     to say "person". Head and shoulders, in the ground colour, is the shape
+     every product uses for somebody it cannot name. */
+  .speaker .disc {
+    flex: none; position: relative; overflow: hidden;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--border);
+  }
+  .speaker .disc::before, .speaker .disc::after {
+    content: ''; position: absolute; left: 50%; background: var(--light);
+  }
+  .speaker .disc::before {
+    width: 7.5px; height: 7.5px; border-radius: 50%; top: 4px; transform: translateX(-50%);
+  }
+  .speaker .disc::after {
+    width: 14px; height: 10px; border-radius: 7px 7px 0 0; bottom: -1px; transform: translateX(-50%);
+  }
+  .speaker .said {
+    font-size: var(--t-small); line-height: 1.45; color: var(--fg);
+    align-self: center;
+  }
+  .speaker .said.none { color: var(--muted); font-style: italic; }
+
+  /* ---- result-only, and the end of the redline ------------------------
+     91 said a lane shows the result rather than a redline; 274 brought
+     deletions back for the stacked card, on the argument that with nothing
+     in the next column a proposal whose only change is a cut renders as a
+     sentence identical to the clause above it. Ed reversed it 2026-08-17,
+     and the reason is about the reader rather than the tuning: *normal
+     people struggle to read or interpret redlines*.
+
+     So there is one rendering everywhere — what would stand, with what it
+     adds marked — and the deletion blind spot is covered at its worst case
+     only, by `.lp.empty` saying so in words when a proposal removes the
+     text entirely. `del` is left styled because `markHtml2` can still emit
+     one; nothing on this surface asks it to. */
+  del { background: rgba(220, 53, 69, 0.09); color: #9b2c36; padding: 0 1px; }
+
+  /* ---- the rationale, under the texts (Ed, QA 2026-08-16, revising 87) --
+     87 put the reason above the wording so you met the argument first. The
+     order is now the other way about: the texts, then the case for them.
+     What that buys is that the reader forms a view of the wording before
+     being told what to think of it — and what it costs is that a rationale
+     explaining an unusual choice arrives after the choice has been read.
+
+     The lifecycle mark sits in the card's left padding rather than in the
+     flow, so a race's two rationales stay in their lanes' own columns (95)
+     instead of being shunted right by the width of a glyph. One mark per
+     card: it belongs to the entry, not to a candidate, and it is the same
+     glyph the rail entry and the gutter are wearing. */
+  /* ===================================================================
+     The editing-card (Ed, 2026-08-16, decisions 224–241). Composing is not a
+     separate surface: you type in the charter and the clause you are typing in
+     opens up where it stands.
+
+     It has the same shape as every other card (Ed, 2026-08-16, closing Q275):
+     the clause at the head, your draft as the single reply beneath it, your
+     rationale behind the same blank disc everybody else's sits behind. It had
+     stayed a side-by-side pair on the argument that while writing you want the
+     original level with what you are typing — which does not survive contact.
+     The original is one line up; your own additions are marked green as you
+     type (263); and a full-width lane is a far better place to write a
+     paragraph of prose than a 300px column.
+     =================================================================== */
+  /* block, not flex: the lane is a text editor and the browser puts a caret
+     between block children far more predictably than between flex items */
+  .lanebox .editlane { display: block; font-size: var(--t-body); }
+  .editcard .lp, .lanebox .lp { margin: 0 0 var(--s2); }
+  .editcard .lp:last-child, .lanebox .lp:last-child { margin-bottom: 0; }
+  /* the one box left on the surface: a text editor says it is one by looking
+     like one, and nothing else here is typed into */
+  /* The box is the editor; the controls sit in its top right (Ed, 2026-08-17)
+     and the lane is the rest of it, so the border is drawn once around both. */
+  /* The drafting box lifts too (Ed, 2026-08-17). It is the one place a border
+     was doing real work — a text editor says it is one by looking like one —
+     so it is replaced rather than simply removed: the box sits *above* the
+     card at rest and higher again while the caret is in it, which says
+     "editable" and "focused" with the same device the rest of the surface
+     now uses for "open". */
+  .lanebox {
+    border: 0; border-radius: var(--r-md);
+    background: var(--bg); overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: box-shadow 140ms ease;
+  }
+  .lanebox:focus-within { box-shadow: var(--shadow-xl); }
+  @media (prefers-reduced-motion: reduce) { .lanebox { transition: none; } }
+  .lanebox .lanectl {
+    display: flex; align-items: center; justify-content: flex-end; gap: var(--s2);
+    padding: var(--s1) var(--s2) 0;
+  }
+  .lanebox .editlane {
+    border: 0; padding: var(--s2) 14px var(--s3);
+  }
+  /* markdown mode: the characters, exactly, and nothing rendered */
+  .lanebox .editlane.md {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--t-small); line-height: 1.6;
+  }
+  .lfmt, .lmode {
+    appearance: none; font: inherit; font-size: var(--t-cap); line-height: 1;
+    background: none; border: 0; color: var(--muted); cursor: pointer;
+    padding: 3px 6px; border-radius: var(--r-sm);
+  }
+  /* **A strip of three controls is one object, so they are one size**
+     (housekeeping pass, 2026-08-17). They were 26x20, 26x**23** and 26x20: the
+     italic button was three pixels taller than the bold one beside it and sat
+     two pixels higher, because the height was coming from whatever the glyph
+     *inside* each button happened to be — B at --t-ui, the serif I at 1.05rem —
+     and a button sized by its content is a button whose size is a coincidence.
+     A fixed box, centred, so an optical adjustment to a glyph can never move the
+     control around it again. */
+  .lfmt, .lmode {
+    width: 26px; height: 22px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .lfmt:hover, .lmode:hover { background: var(--light); color: var(--fg); }
+  .lfmt b { font-size: var(--t-ui); }
+  /* a serif italic I: the serifs are what stop it being a slash (Ed, 2026-08-17) */
+  .lfmt .ital {
+    font-family: Georgia, "Times New Roman", serif; font-style: italic;
+    font-size: 1.05rem; font-weight: 500;
+  }
+  /* one button, off by default, its own pressed-ness carrying the state */
+  .lmode {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--t-ui); letter-spacing: -0.05em;
+  }
+  .lmode[aria-pressed="true"] { background: var(--primary); color: #fff; font-weight: 600; }
+  .lmode[aria-pressed="true"]:hover { background: var(--primary-hover); color: #fff; }
+  .lanebox .editlane code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9em; background: var(--light); padding: 0 3px; border-radius: 3px;
+  }
+  /* The lane you are writing in is the only editable thing on the surface that
+     looks editable: paper-white, a ring when the caret is in it, and it grows
+     with what you put in it. The ring is the **blue** (198), not green: green
+     inside a lane means *new wording* now that the lane marks its own changes
+     (Ed, 263), and a green box around green words would be two meanings in one
+     hue an inch apart. */
+  .lanebox .editlane {
+    background: var(--bg); cursor: text;
+    min-height: 4rem;
+  }
+  .lanebox .editlane:focus { outline: none; }
+  /* The rationale is written here rather than quoted, so it is a field — but
+     it sits in the speaker's own slot, at the speaker's own weight, because it
+     is the same sentence in the same place that everybody else will read it
+     in. Writing it where it will land is most of the point. */
+  .lanebox .edit-why {
+    border: 1px solid var(--border); border-radius: var(--r-md);
+    padding: 3px var(--s2); cursor: text; min-height: 1.9rem;
+    align-self: start;
+  }
+  /* The rationale sits inside the drafting surface rather than under it (Ed,
+     2026-08-17), so it needs no elevation of its own — the surface carries
+     both, at one height, because you are expected to fill in both. A hairline
+     separates the two without dividing them. */
+  .lanebox .speaker {
+    margin: 0; padding: var(--s3) 14px var(--s3) 12px;
+    border-top: 1px solid var(--border);
+  }
+  .lanebox .edit-why {
+    border: 0; box-shadow: none; padding: 0; min-height: 1.4rem;
+    position: relative;
+  }
+  .lanebox .edit-why:focus { outline: none; }
+  /* **Absolutely positioned** (Ed, 2026-08-17: "I can't delete the helper text
+     for the rationale"). As ordinary inline content the placeholder sat *in*
+     the line, so an empty field put the caret after it — you could see a text
+     cursor sitting at the end of a sentence and backspace at it all day with
+     nothing happening, because there was nothing there. Taken out of flow it
+     is what it always claimed to be: something printed behind an empty field,
+     with the caret at the start where the first character will go. */
+  .lanebox .edit-why:empty::before,
+  .lanebox .edit-why.blank::before {
+    content: attr(data-placeholder); color: var(--muted); font-weight: 400; font-style: italic;
+    position: absolute; left: 0; top: 0; right: 0; pointer-events: none;
+  }
+  /* **Blue, not green** — a consequence of the palette move rather than a
+     separate decision (Ed's ⏳/✏️ change, 2026-08-17). Green means *decided*
+     and only that; a proposal being submitted is not a decision, it is the
+     start of one. And everything else about your work is now the accent — the
+     drafting box, the tab, the rail entry — so a green button was the one part
+     of your own proposal that did not look like yours. */
+  .btn.btn-propose {
+    background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600;
+  }
+  .btn.btn-propose:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  /* The draft's propose button **is** a glyph button, so it says so in its class
+     list rather than restating .glyphbtn's geometry here and getting the height
+     wrong (housekeeping pass, 2026-08-17: it was 52x30 in a row of 52x40). What
+     is left is the one thing that is true of this button and no other glyph
+     button: it never grows, because what grows instead is the pencil crossing
+     the screen towards it. */
+  .btn.btn-propose.holding { background: var(--primary-hover); transform: scale(0.97); }
+  /* the edit in flight: it belongs to neither end, so it lives on the body and
+     is pointer-transparent — you are still holding the button underneath it.
+     It travels along a curve rather than a straight run, because a thing thrown
+     across a room does not go in a straight line, and the curve is drawn fresh
+     each flight (Ed, 2026-08-17) — so the animation is a sampled arc handed to
+     the Web Animations API rather than a CSS transition, since a shape that
+     changes every time cannot be a keyframe rule. It is placed at the centre of
+     its slot and pulled back by half itself, which is why every frame carries a
+     -50% translate. */
+  .flypencil {
+    position: fixed; z-index: 60; pointer-events: none;
+    font-size: var(--t-ui); line-height: 1; will-change: transform;
+    transform: translate(-50%, -50%);
+  }
+  @media (prefers-reduced-motion: reduce) { .btn.btn-propose.holding { transform: none; } }
+  .btn.btn-propose[disabled]:hover { background: var(--primary); border-color: var(--primary); }
+  /* Withdrawal is a real thing to do and not a danger (SPEC §3.3a — the stake
+     comes back in full), so it is an ordinary outline button rather than a red
+     one. */
+  .minecard .yoursnote {
+    background: rgba(var(--lc-yours), 0.10); border-radius: var(--r-md);
+    padding: var(--s2) var(--s3); font-size: var(--t-small); margin-bottom: var(--s3);
+  }
+
+  /* The commit row. Two glyphs share one slot (Ed, 209/213): the shrug until
+     you choose, then a green tick standing where it was. */
+  .race-mid { display: flex; gap: var(--s2); justify-content: center; flex-wrap: wrap; }
+  /* The judgment's own row: indifference at the left as the last of the trio,
+     the tick at the right where finishing happens (Ed, 2026-08-16). */
+  .race-mid.commitrow { justify-content: space-between; align-items: center; }
+  .commitrow .rightpair { display: flex; align-items: center; gap: var(--s2); }
+  /* ❄️ is a toggle, so it says so the way every toggle on this surface does:
+     pressed-in when it is on, and quiet when it is not. */
+  .btn.chill[aria-pressed="true"] {
+    background: var(--light); border-color: var(--primary); color: var(--primary-emphasis);
+    box-shadow: inset 0 2px var(--s1) rgba(var(--lc-yours), 0.20);
+  }
+  .btn {
+    appearance: none; font: inherit; font-size: var(--t-ui);
+    padding: 0.375rem 0.75rem; cursor: pointer;
+    border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+    border-radius: var(--r-md);
+  }
+  .btn:hover { background: var(--light); }
+  .btn-outline { color: var(--muted); }
+  .btn-outline:hover { color: var(--primary); border-color: var(--primary); background: var(--bg); }
+  .btn[disabled] { opacity: 0.45; cursor: default; }
+  button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  /* a display utility has to outrank the two-class button rules it lands on */
+  .hidden { display: none !important; }
+
+  .btn.glyphbtn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 3.25rem; height: 2.5rem; padding: 0; font-size: 1.2rem; line-height: 1;
+  }
+  /* Discarding is a real thing to do and not a danger — a draft has cost
+     nothing, and withdrawing a proposal hands the edit back in full (SPEC
+     §3.3a) — so it is an ordinary outline button rather than a red one. It sits
+     at the left of the commit row for the whole of a proposal's life, opposite
+     whatever the right-hand control currently is. */
+  .btn.btn-withdraw { border-color: var(--border); background: var(--bg); }
+  .btn.btn-withdraw:hover { border-color: var(--primary); background: var(--light); }
+  /* the commit slot after it has been committed: the act became the fact of it,
+     the same move the judgment row's ✓ makes when it is pressed */
+  .btn.btn-propose[aria-pressed="true"],
+  .btn.btn-propose[aria-pressed="true"][disabled] {
+    background: var(--primary-subtle); border-color: var(--primary); color: var(--primary-emphasis);
+    box-shadow: inset 0 2px var(--s1) rgba(var(--lc-yours), 0.28);
+    opacity: 1; font-weight: 600;
+  }
+  /* greyed, not merely faded: a pale green tick reads as a tick that has been
+     pressed, which is the one thing it must not say before you have chosen */
+  .btn.btn-approve.glyphbtn[disabled],
+  .btn.btn-approve.glyphbtn[disabled]:hover {
+    background: var(--light); border-color: var(--border); color: var(--muted);
+    opacity: 1; box-shadow: none;
+  }
+  /* A diagonal weighs two questions rather than two texts (Ed, 221), and takes
+     the same card as everything else (Ed, 276). What sits in a proposal's
+     wording slot is the *question*; the clause it is about is quoted under it
+     as context, smaller and quieter, because on this card the clause is not
+     what is being chosen between. */
+  .qclause {
+    margin-top: 6px; font-size: var(--t-small); line-height: 1.4; color: var(--muted);
+    padding-left: 10px; border-left: 2px solid var(--border);
+  }
+  /* the head here is a question rather than a clause, so it carries a question's
+     weight instead of the document's */
+  .diag-open .clausehead .rtext { font-weight: 600; }
+  .btn.btn-approve { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+  .btn.btn-approve:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  /* the tick is the commit, so it is the one solid green thing on a card */
+  .btn.btn-approve.glyphbtn {
+    background: var(--ok); border-color: var(--ok); color: #fff;
+    font-size: 1.35rem; font-weight: 700;
+  }
+  .btn.btn-approve.glyphbtn:hover { background: var(--ok-hover); border-color: var(--ok-hover); color: #fff; }
+  /* cast: the judgment on the record. Pressed in, quieter, still clickable —
+     choosing something else springs it back out (Ed, 216). */
+  .btn.btn-approve.glyphbtn[aria-pressed="true"],
+  .btn.btn-approve.glyphbtn[aria-pressed="true"]:hover {
+    background: var(--ok-subtle); border-color: var(--ok); color: var(--ok);
+    box-shadow: inset 0 2px var(--s1) rgba(25, 135, 84, 0.28);
+  }
+
+  /* What you already said, and that you may still change it. Under the commit
+     row (Ed, 215), so it reads as a footnote to the button. */
+  .sugg .srationale {
+    background: var(--light); border-radius: var(--r-md);
+    padding: var(--s2) var(--s3); font-size: var(--t-small); margin-top: var(--s3); text-align: center;
+  }
+  .sugg .srationale .rl {
+    display: block; font-weight: 700; font-size: var(--t-micro); text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--muted); margin-bottom: 2px;
+  }
+  /* a locked card's note is the reason its controls are dead, so it wears the
+     same grey those controls do rather than the neutral tray */
+  .sugg .srationale.locked { background: rgba(var(--lc-closed), 0.16); }
+
+  /* A patch's card says which of its places you are looking at, and lets you
+     walk to the others without leaving the judgment (Ed, 181). */
+  .pnav {
+    display: flex; justify-content: space-between; align-items: center; gap: var(--s2);
+    margin-bottom: var(--s3); padding-bottom: var(--s3); border-bottom: 1px solid var(--border);
+  }
+  .pwhere { color: var(--primary-emphasis); }
+  .psteps { display: flex; gap: var(--s1); }
+  .pstep {
+    appearance: none; font: inherit; font-size: var(--t-ui); line-height: 1;
+    width: 26px; height: var(--s5); padding: 0; cursor: pointer;
+    border: 1px solid var(--border); border-radius: var(--r-sm);
+    background: var(--bg); color: var(--fg);
+  }
+  .pstep:hover { border-color: var(--primary); color: var(--primary); }
+  .pstep.off { display: inline-flex; align-items: center; justify-content: center; color: var(--border); cursor: default; }
+
+  /* ---- the record of a sealed judgment (Ed, 112/120/121) ---------------
+     Not symmetrical, unlike a live card: a record has a favourite and should
+     look like it. The text that stands takes the full width; the whole field
+     is ranked beneath it, each with the probability it reached. */
+  .rechead {
+    display: flex; justify-content: space-between; gap: var(--s3); align-items: baseline;
+    color: var(--ok); margin-bottom: var(--s3);
+  }
+  .rechead .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .ranked {
+    border: 1px solid var(--border); border-radius: var(--r-md);
+    padding: var(--s3) 14px; margin-bottom: var(--s2);
+  }
+  /* The winner has no box (Ed, 2026-08-17): it is the head of the card now, and
+     a green-bordered panel round it was saying *this one* to a reader who could
+     already see it at the top of a ranked list under a green mark. */
+  .sealed-open .headlab > span {
+    display: flex; align-items: baseline; gap: var(--s2);
+  }
+  .sealed-open .headlab .rank, .sealed-open .headlab .rsub { letter-spacing: 0.05em; }
+  .sealed-open .headlab .rsub.stood { color: var(--ok); }
+
+  /* The incumbent sits in the ranking at its own 50%, and says what it is with
+     a dashed edge — the border the standalone "text it replaced" band used to
+     wear, kept so the object is recognisable in its new place. */
+  .ranked.wasthere { border-style: dashed; background: transparent; }
+  .ranked.wasthere .rtext { color: var(--muted); }
+  .pline.ref { font-weight: 400; opacity: 0.7; }
+  .ranked .rank {
+    display: inline-block; min-width: 1.5em; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .ranked .rtext { margin-bottom: 0; }
+  .ranked:not(.stood) .rtext { color: var(--muted); }
+  .ranked:not(.stood) .swhy { font-weight: 500; color: var(--muted); }
+  .pline {
+    margin-left: auto; font-size: var(--t-small); color: var(--muted);
+    font-variant-numeric: tabular-nums; letter-spacing: 0;
+  }
+  .ranked.stood .pline { color: var(--ok); }
+  .pline b { color: var(--fg); }
+  .ranked.stood .pline b { color: var(--ok); }
+  /* The text the winner displaced (Ed, 2026-08-17). It sits directly under the
+     head, not after the field, because the second thing you want on a decided
+     card is *what it used to say* — that is the whole of what "decided" means
+     here. The band is deliberately quiet and dashed: this is the one text on
+     the card the charter no longer holds. */
+  .replaced {
+    margin: 0 0 var(--s3); padding: var(--s3) 14px;
+    border: 1px dashed var(--border); border-radius: var(--r-md);
+  }
+  .replaced .rtext { color: var(--muted); margin-bottom: 0; }
+  .replaced .rtag { color: var(--muted); }
+  /* the winning block states no wording — it is the head of the card */
+  .record b { color: var(--fg); font-variant-numeric: tabular-nums; }
+
+  /* new wording inside a lane. Nothing is struck through anywhere (Ed, 91):
+     the lanes show the text as it would stand, so red has no job here. */
+  ins { background: var(--ok-subtle); color: var(--ok); text-decoration: none; padding: 0 1px; }
+
+  /* queue-wire: the run from the open entry, down the gutter between document
+     and rail, and into every place in the charter it refers to (Ed, 71/78).
+     Only the open judgment draws one; a patch's several runs share a spine. */
+  /* **Lifted to the height of the cards it joins** (Ed, 289a). A 6px opaque
+     cord lying flat between two things that are visibly off the page was the
+     odd object out — and depth is the one thing this surface uses to say where
+     something is, so a cable at card height has to be lit like one.
+
+     Lit like one, **not shadowed like one** (Ed, 2026-08-17: the cable "casts
+     shadows on the cards it connects, which doesn't seem right"). It was given
+     --shadow-xl verbatim, and a 470px card's cast on a 6px cord is a 40px wash
+     that lands on everything either side of it — which reads as the cable
+     floating *above* the cards rather than sitting level with them, since a
+     thing at the same height as its neighbours does not shadow them. Same light
+     source, same darkness, cast **scaled to the object**: a cord's shadow is a
+     cord's width. What is left falls in the gutter, where the cable is.
+
+     On the container rather than on the paths, so the *union* of the white
+     underlay and the colour over it casts one shadow — per-path it would be two
+     shadows of the same cable stacked, and the white run would cast its own
+     under the colour it is there to sit behind. */
+  #wires { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
+  #wires path { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+  #wires .cap { stroke: none; }
+  /* the cable follows its card's wash, over the same 700ms (Ed, 2026-08-17) */
+  #wires .ink { transition: opacity var(--wash-ms) ease; }
+  #wires .ink path { transition: stroke var(--wash-ms) ease; }
+  #wires .ink .cap { transition: fill var(--wash-ms) ease; }
+  @media (prefers-reduced-motion: reduce) {
+    #wires .ink, #wires .ink path, #wires .ink .cap { transition: none; }
+  }
+  @media (max-width: 900px) { #wires { display: none; } }
+

@@ -1,0 +1,559 @@
+/* ============================================================================
+   setup.css — what the two setup surfaces add to `system.css`, and nothing more.
+
+   Both of them are the session-view: same three columns, same rails, same
+   card-over-document gesture. What they add is one object session-view has no
+   use for — **the constitution at the head of the document** — plus the small
+   vocabulary its cards are written in (choices, sliders, distributions, faces).
+
+   It exists as a third file for the reason `system.css` exists as a second one:
+   document-creation and founding-ceremony are now the same screen seen by two
+   people, and two copies of one design system drift.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   THE SETUP BAND — the constitution, at the top of the document.
+
+   **A setting card opens in the document** (Ed, 2026-08-18: *instead of modals
+   they open cards in the document at the top, above the text, pushing it down
+   like decision-cards do a clause*). A modal was the wrong object twice over.
+   It lifted the question off the document at exactly the moment the question is
+   *about* the document, and it made these cards the only ones on the surface
+   that do not behave like cards. A decision card replaces the clause it is
+   about; a setting is about the whole document, so it opens where the whole
+   document begins.
+
+   **They are clause-tabs, and they pile like clause-tabs** (Ed, 2026-08-18,
+   overruling the flat group of the morning). Two piles, one per holder — the
+   founder's settings above, the members' below — standing in the
+   `chip-gutter` exactly where each card's strip will be, so a pile expands into
+   its strip without the tab you clicked moving. Everything the gutter already
+   knows applies unchanged: the front tab is what most wants you, the slivers
+   carry hue and no count, one stack is one target.
+
+   Two piles say something a flat row of fourteen could not: **who decides**.
+   And handing a setting to the room moves its tab from the top pile to the
+   bottom one, so delegation stops being a radio you ticked and becomes a thing
+   you can watch happen.
+
+   That is also what the whole screen leaves behind: two grey piles at the head
+   of the document, holding the constitution. It is where you go to ask what the
+   bar is.
+   --------------------------------------------------------------------------- */
+  .setupband { margin: 0 auto var(--s5); }
+  /* Each row is the card's own box, so the pile stands in the gutter column the
+     strip will occupy. There is no clause here to give the row a height, so
+     `fitBand` floors it against the pile beside it. */
+  .setrow {
+    position: relative; box-sizing: border-box;
+    max-width: calc(70ch + 2 * var(--s5) + 3px);
+    margin: 0 auto var(--s4); padding: 0 var(--s5);
+  }
+  .setrow .pilelab { display: flex; flex-direction: column; gap: 2px; padding-top: 3px; }
+  /* **Founder and Membership are document headings** (Ed, 2026-08-18: *the
+     same size as “Part I — The Club”*). They had been eyebrows, which is the
+     label treatment for naming a region *inside* a card — and these are not
+     inside anything: they are the first two headings of the document, above
+     Part I, and a reader scanning the charter should meet them at the weight
+     every other top-level heading has. So they take `.docline.lvl1`'s own type
+     and stop being eyebrows, since an eyebrow that is 16px is not one. */
+  .setrow .pilehead {
+    font-size: var(--t-body); font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--fg);
+  }
+  .setrow .pilen { font-size: var(--t-small); color: var(--muted); }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; }
+  .setupcard { margin-top: 0; }
+  /* the card's title sits where a clause sits, at the head, with the strip
+     beside it — so it is set as the head's own text and not as a heading
+     floating above a body */
+  /* the rtext is a container since Phase 4 (clauseHeadHtml renders the
+     head): the title look lives on .headtitle, the rule look on .headrule,
+     and a clause-thing (the membership list) inherits document type */
+  .setupcard .clausehead .rtext { margin: 0; }
+  .setupcard .clausehead .headtitle { font-size: var(--t-lead); font-weight: 600; }
+  .setupcard h2 { font-size: var(--t-lead); font-weight: 600; margin: 0 0 var(--s2); }
+  .setupcard .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch; }
+  .setupcard .setnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
+  .setupcard .body { border-top: 1px solid var(--border); padding-top: var(--s3); margin-top: var(--s3); }
+  .unlocks { font-size: var(--t-cap); color: var(--primary-emphasis); background: var(--primary-subtle);
+    border-radius: var(--r-sm); padding: var(--s2) var(--s3); margin: 0 0 var(--s4); }
+  .lockline { font-size: var(--t-cap); color: var(--muted); margin: 0 0 var(--s4);
+    display: flex; align-items: center; gap: var(--s2); }
+
+/* ---------------------------------------------------------------------------
+   THE RAIL — same rail, laid out by hand, and pinned.
+
+   `system.css` positions `.qitem` **absolutely**, because in a live session
+   `layoutQueue` stands every entry beside its own clause. A setting belongs to
+   no clause, so they go back into normal flow — and the whole column is sticky,
+   which is what pinning means for this set. It reaches the live rail's rule
+   from the other end: there, four kinds of entry pin because they are the ones
+   about *you* rather than about a clause; here every card is one of those.
+   --------------------------------------------------------------------------- */
+  .queue.stack { position: sticky; top: calc(var(--nav-h) + var(--s5)); align-self: start;
+    max-height: calc(100vh - var(--nav-h) - var(--s5)); overflow-y: auto;
+    scrollbar-width: none; -ms-overflow-style: none; }
+  .queue.stack::-webkit-scrollbar { width: 0; }
+  .queue.stack ul, .queue.stack > div { display: flex; flex-direction: column; gap: var(--s2); }
+  .queue.stack .qitem { position: static; list-style: none; }
+  .queue .qhead { font-size: var(--t-cap); color: var(--muted); margin: var(--s3) 0 0; padding: 0 10px; }
+  .queue .qhead:first-child { margin-top: 0; }
+  .queue .setmark { margin-left: auto; display: inline-flex; align-items: center; }
+  /* scoped (2026-08-18): a global .mkg fought system.css's em-based rule
+     for every drawn mark on the page */
+  .queue .mkg, .achip .mkg, .cline .mkg, .constsec .mkg, .setupcard .mkg {
+    width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9;
+    stroke-linecap: round; stroke-linejoin: round; }
+  /* the **subject** glyph. A live rail marks lifecycle state, because every card
+     there is a different state of one kind of thing; a setup rail is the
+     reverse — one state, many kinds — so it marks subject instead. The two sets
+     never share a column. */
+  .queue.stack .ql { display: flex; align-items: baseline; gap: var(--s1); }
+  .queue.stack .ql .subj { font-size: 1.05em; line-height: 1; }
+  .queue.stack .ql > .qt { flex: 1; min-width: 0; }
+  .railnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); padding: 0 10px; }
+  /* wait/yours/done entries used to wear session-view's .deciding, whose
+     meaning there is *you already judged it* (drift fix, 2026-08-18):
+     same quiet one-line look, honest name */
+  .queue button.qwait { padding: var(--s1) 10px; color: var(--muted); }
+  .queue button.qwait .ql { display: block; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; font-weight: 500; font-size: var(--t-small); }
+  .queue button.qwait .ql .qv { display: inline; margin: 0; font-weight: 400; }
+
+/* ---------------------------------------------------------------------------
+   THE CHOICE — **the session-view's own radio** (Ed, 2026-08-18: *the
+   non-slider choices in the cards are just radio buttons, and the session-view
+   already has those*).
+
+   Three controls became one. document-creation had `.opt` and
+   founding-ceremony had `.rung` — the same bordered box with two names and two
+   paddings — and both were a hand-rolled radio standing a millimetre away from
+   `.lanepick`, which is the radio this design system already has and the one
+   every member will have used a hundred times by the end of a session. A
+   setting is exactly the judgment a lane bar puts: *one of these, or none of
+   them yet*.
+
+   The bordered box goes with it, and that is a gain rather than a loss: **open
+   is said by depth, not by outline**, and a rule drawn round each option was
+   competing with the radio for the job of saying which one is chosen.
+
+   `.above` is the ceremony's own addition: on a consent question the rungs
+   *above* your answer are dimmed rather than hidden, since *the most I will
+   accept* only reads as a ladder if you can see what you are refusing.
+   --------------------------------------------------------------------------- */
+  .choice { display: flex; flex-direction: column; gap: var(--s3); }
+  .pick .exp { display: block; color: var(--muted); font-size: var(--t-small);
+    margin-top: var(--s1); padding-left: 2px; max-width: 58ch; }
+  .pick .inner { display: none; margin-top: var(--s3); padding-left: 2px; }
+  .pick.on .inner { display: block; }
+  .pick.above { opacity: 0.5; }
+  .pick.off { opacity: 0.42; }
+  .pick.off .lanepick { pointer-events: none; }
+  /* a row of fields *inside* a card — distinct from `.setrow`, which is the
+     band row a pile stands in */
+  .setrow2 { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
+  .fld { display: flex; flex-direction: column; gap: var(--s1); }
+  .fld > label { font-size: var(--t-cap); color: var(--muted); }
+  .sugg input, .sugg textarea { font: inherit; font-size: var(--t-ui); color: var(--fg); background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--s2) var(--s3); }
+  input:focus-visible, button:focus-visible, textarea:focus-visible,
+  [role="radio"]:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .num { width: 5.5rem; }
+  .numrow { display: inline-flex; gap: var(--s2); align-items: baseline; }
+
+/* ---------------------------------------------------------------------------
+   THE CONSENT SLIDER — nothing preselected, and it must not look answered.
+   --------------------------------------------------------------------------- */
+  .cs { margin-bottom: var(--s2); }
+
+  /* **Thicker, and ticked** (Ed, 2026-08-18: *sliders should be thicker and
+     have tick-marks (since they're discrete)*). A hairline track under a small
+     thumb is the control an operating system gives you for a **continuous**
+     quantity, and this one is not: there are fourteen answers to *how much of
+     this room*, and ten to *how sure*. The ticks say so before you touch it —
+     you can count the answers, and the thumb lands **on** one rather than
+     being read off a ruler. Which matters more here than on an ordinary
+     control, because what you are stating is a minimum you will be held to.
+
+     Drawn by hand rather than left to `accent-color`, which only applies to a
+     range in its default appearance — so the fill, the ticks and the thumb are
+     three background layers and a pseudo-element. `--pct` and `--n` come in on
+     the element, because only the card knows how many answers there are. The
+     ticks are painted over the fill and inset by half a thumb at each end, so
+     tick and thumb-centre coincide at every stop. */
+  .cs input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 26px; background: transparent; cursor: pointer;
+    --th: 22px; --trk: 12px; --fillcol: var(--primary);
+  }
+  .cs input[type=range]::-webkit-slider-runnable-track {
+    height: var(--trk); border-radius: calc(var(--trk) / 2);
+    background-color: var(--light);
+    background-image:
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.22) 0 2px, transparent 2px calc(100% / var(--n))),
+      linear-gradient(90deg, rgba(0,0,0,0.22) 0 2px, transparent 2px),
+      linear-gradient(var(--fillcol) 0 0);
+    background-repeat: no-repeat;
+    background-size:
+      calc(100% - var(--th)) 100%,
+      calc(100% - var(--th)) 100%,
+      calc(var(--th) / 2 + (100% - var(--th)) * var(--pct) / 100) 100%;
+    background-position:
+      calc(var(--th) / 2 - 1px) 0,
+      calc(100% - var(--th) / 2 - 1px) 0,
+      left center;
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+  .cs input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: var(--th); height: var(--th); border-radius: 50%;
+    background: var(--primary); border: 2px solid var(--bg);
+    box-shadow: var(--shadow-md);
+    margin-top: calc((var(--trk) - var(--th)) / 2);
+  }
+  .cs input[type=range]::-moz-range-track {
+    height: var(--trk); border-radius: calc(var(--trk) / 2);
+    background: var(--light); box-shadow: inset 0 0 0 1px var(--border);
+  }
+  .cs input[type=range]::-moz-range-thumb {
+    width: var(--th); height: var(--th); border-radius: 50%; border: 2px solid var(--bg);
+    background: var(--primary); box-shadow: var(--shadow-md);
+  }
+  /* Nothing chosen yet: the thumb has to sit somewhere, so it sits in the
+     middle and says nothing — grey, and with no fill behind it, because a
+     fill running up to it would be an answer the member has not given. */
+  .cs.unset input[type=range] { --fillcol: transparent; }
+  .cs.unset input[type=range]::-webkit-slider-thumb { background: var(--muted); }
+  .cs.unset input[type=range]::-moz-range-thumb { background: var(--muted); }
+  .csval { font-size: var(--t-lead); font-weight: 600; min-height: 1.6em; }
+  .csval.unset { color: var(--muted); font-weight: 400; font-size: var(--t-ui); }
+  .csends { display: flex; justify-content: space-between; font-size: var(--t-cap); color: var(--muted); }
+  .csmean { font-size: var(--t-small); color: var(--muted); margin-top: var(--s2); min-height: 3em; }
+  /* a gate card's list of what it is waiting for: the rail's own objects,
+     small, so it reads as “these cards, then you can write” */
+  .gatelist { display: flex; flex-direction: column; gap: var(--s1); margin: var(--s3) 0; }
+  .gaterow { display: flex; align-items: center; gap: var(--s2);
+    font-size: var(--t-ui); color: var(--muted); }
+  .gaterow .gg { font-size: 1.05rem; }
+
+  .blindnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
+
+/* ---------------------------------------------------------------------------
+   THE ROSTER, and the distribution it produces.
+
+   `distribution-strip` is the published shape of what people asked for, without
+   names — and it is now what a **completed** room card carries (Ed, 2026-08-18:
+   *when the roster's cards are complete they have the roster statistics on
+   them*). Which is the right end state for a consent question: while it runs
+   the card can say only how many have answered, because anything else would let
+   the room read itself before it had finished; once it has closed there is
+   nothing left to anchor, and the shape of the answers is the most interesting
+   thing about the result.
+   --------------------------------------------------------------------------- */
+  .whobox { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--light);
+    padding: var(--s3); margin-bottom: var(--s4); }
+  .whobox .lab { font-size: var(--t-small); color: var(--muted); margin-bottom: var(--s2); }
+  .faces { display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .pf { display: flex; align-items: center; gap: var(--s1); font-size: var(--t-cap); }
+  .pf.me { font-weight: 600; }
+  .av { width: 22px; height: 22px; border-radius: 50%; background: var(--light);
+    border: 1px solid var(--border); color: var(--muted); font-size: 8px; font-weight: 700;
+    display: inline-grid; place-items: center; flex: none; overflow: hidden; }
+  .av.big { width: 44px; height: 44px; font-size: var(--t-cap); }
+  .av.set { border-color: transparent; color: #fff; }
+  /* invited, but they have not opened it yet */
+  .av.pending { opacity: 0.45; border-style: dashed; }
+  .av svg { width: 100%; height: 100%; display: block; }
+
+  .dist { display: flex; align-items: flex-end; gap: 3px; height: 54px; margin: var(--s3) 0 var(--s1); }
+  .dist span { flex: 1; background: rgba(var(--lc-yours), 0.30); border-radius: 2px 2px 0 0; min-height: 2px; }
+  .dist span.top { background: var(--primary); }
+  .distx { display: flex; justify-content: space-between; font-size: var(--t-cap); color: var(--muted); }
+  .statline { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4);
+    padding: var(--s2) 0; border-top: 1px solid var(--border); }
+  .statline:first-child { border-top: 0; }
+  .statline .k { font-size: var(--t-small); color: var(--muted); }
+  .statline .v { font-size: var(--t-body); font-weight: 600; }
+  .pips { display: flex; gap: var(--s2); flex-wrap: wrap; margin: var(--s3) 0; }
+  .pip { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--border); background: var(--light); }
+  .pip.in { background: var(--ok-subtle); border-color: var(--ok); }
+
+  .roster { border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
+  .rperson { display: grid; grid-template-columns: 30px 1fr auto auto; gap: var(--s3);
+    align-items: center; padding: var(--s2) var(--s3); border-top: 1px solid var(--border); }
+  .rperson:first-child { border-top: 0; }
+  .rperson .nm { font-size: var(--t-ui); }
+  .rperson .em { font-size: var(--t-cap); color: var(--muted); }
+  .chip { font-size: var(--t-cap); border: 1px solid var(--border); border-radius: 999px;
+    padding: 2px var(--s2); color: var(--muted); background: var(--bg); cursor: pointer; font-family: inherit; }
+  .chip.founder { border-color: var(--primary); color: var(--primary-emphasis);
+    background: var(--primary-subtle); cursor: default; }
+  .chip.pending { border-style: dashed; }
+  /* the person a motion would remove */
+  .rperson.picked { background: color-mix(in srgb, rgb(var(--lc-open)) 22%, var(--bg));
+    border-radius: var(--r-sm); }
+  .rperson .xdrop:hover { color: var(--fg); }
+  .xdrop { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0 var(--s1); }
+  .addrow { display: flex; gap: var(--s2); padding: var(--s3); background: var(--light);
+    border-top: 1px solid var(--border); }
+  .addrow input { flex: 1; }
+
+/* ---------------------------------------------------------------------------
+   THE IDENTITY CARD — how you appear in this room (Ed, 2026-08-18).
+   --------------------------------------------------------------------------- */
+  /* the uploader: a drop box that is mostly the picture it will hold */
+  .picdrop { display: flex; align-items: center; gap: var(--s4);
+    border: 1px dashed var(--border); border-radius: var(--r-md);
+    padding: var(--s4); margin-bottom: var(--s4); }
+  .picdrop.over { border-color: var(--primary); background: var(--light); }
+  .picact { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+  .picact .btn { font: inherit; font-size: var(--t-cap); padding: var(--s1) var(--s3);
+    cursor: pointer; border: 1px solid var(--border); background: var(--bg);
+    border-radius: var(--r-sm); }
+  .picact .btn:hover { border-color: var(--primary); color: var(--primary-emphasis); }
+  .picact input[type=file] { position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip: rect(0 0 0 0); }
+  .picnote { font-size: var(--t-cap); color: var(--muted); }
+  .av.photo { background-size: cover; background-position: center; color: transparent; }
+
+  .avpick { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
+  .avopt { border: 2px solid transparent; border-radius: 50%; padding: 2px; background: none;
+    cursor: pointer; line-height: 0; }
+  .avopt[aria-pressed="true"] { border-color: var(--primary); }
+  /* the title's composer. The same `.lanebox` the `editing-card` writes in, at
+     the size the title is actually read at, because the whole point of writing
+     in the place is that you see what you are making. */
+  .titlelane { font-size: var(--t-lead); font-weight: 600; }
+  .titlelane:empty::before, .titlelane.blank::before {
+    content: attr(data-ph); color: var(--muted); font-weight: 400; }
+
+  .idrow { display: flex; align-items: center; gap: var(--s4); margin-bottom: var(--s4); }
+  .idrow .fld { flex: 1; }
+  .idrow input { width: 100%; }
+
+  /* **The pile headings are the people** (Ed, 2026-08-18). A row of faces under
+     each heading, arriving as the people do — the founder under Founder, the
+     roster under Membership. It is what turns the band at the head of the
+     document from a list of settings into the room itself, and it costs nothing
+     because both piles were already named after a holder. */
+  /* the constitution, stated: one line per constitutional setting, the glyph
+     doing the naming the tabs already taught */
+  .setrow .constlist { display: flex; flex-direction: column; gap: 1px;
+    margin: 4px 0 3px; font-size: var(--t-cap); color: var(--muted); }
+  .setrow .constlist .cline { display: flex; gap: 6px; align-items: baseline; }
+  .setrow .constlist .cg { flex: none; width: 18px; text-align: center; }
+  .setrow .constlist b { color: var(--fg); font-weight: 600; }
+
+  /* the Applicants subsection under Membership */
+  .setrow .applicants { display: flex; align-items: baseline; gap: var(--s2);
+    margin: 3px 0 2px; font-size: var(--t-cap); color: var(--muted); }
+  .setrow .applicants .pf { display: inline-flex; align-items: center; gap: 5px; }
+  .setrow .applicants .av { width: 20px; height: 20px; font-size: 7px; }
+  .setrow .applicants .appnote { color: var(--muted); margin-left: 4px; }
+
+  .setrow .pilewho { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); margin: 3px 0 2px; }
+  .setrow .pilewho .pf { font-size: var(--t-cap); }
+  .setrow .pilewho .pf.ghost { color: var(--muted); font-style: italic; }
+  .setrow .pilewho .av { width: 20px; height: 20px; font-size: 7px; }
+
+  /* the row that holds the open card keeps the pile's id, so the contents rail
+     still lands on it */
+  /* **The tab you click must not move** — the pile occupies exactly the gutter
+     column its strip will (Ed, 2026-08-18: *why do my constitutional
+     clause-tabs-piles jump around when I click on them?*). It was claimed in
+     the glossary and never true in the code: a closed pile inherited
+     `.chipcol`'s 14px gutter margin, which is the right distance from a
+     paragraph and the wrong one from a card edge, so every tab stepped 14px
+     right on opening. 2px puts the pile's right edge exactly where the open
+     strip's is, and the active tab still overhangs by 2 to carry under the
+     card with no seam. The vertical half of the jump is fixed in `fitBand`,
+     since it depends on how tall the card's own label runs. */
+
+  .setrow.open { position: static; padding: 0; max-width: none; margin: 0; min-height: 0 !important; }
+
+  /* **The document's title, at the top of the document** (Ed, 2026-08-18),
+     above Founder. It had lived only in the sticky topbar, which is chrome —
+     so the charter itself began with a pile of glyphs and no name on it, and
+     the first thing any reader looks for was the one thing not in the column
+     they were reading. It is text and not a control: the 🏷️ card is where a
+     title is written, and a second way in would be a second answer to a
+     question this surface has already settled. */
+  /* type comes from system.css's own .doctitle rule (--t-lead, 600) — the
+     literal 1.5rem was drift (2026-08-18); only the box is ours, because
+     this title sits outside .prose and centres itself */
+  .doc .doctitle { max-width: calc(70ch + 2 * var(--s5) + 3px); margin: 0 auto var(--s5);
+    padding: 0 var(--s5); text-wrap: balance; }
+  .doc .doctitle.ph { color: var(--muted); font-weight: 400; }
+
+/* ===========================================================================
+   NOT THE DESIGN SYSTEM. The mail modal stands for the reader's inbox: it
+   previews another medium, so it is Arial, plain white, an email client's
+   idea of a page — no tokens on purpose (Ed, 2026-08-18).
+   ======================================================================== */
+#mailmodal { position: fixed; inset: 0; z-index: 90; background: rgba(20,20,24,0.4);
+  display: flex; align-items: center; justify-content: center; }
+.mailwin { background: #fff; width: min(560px, 92vw); border-radius: 6px;
+  font-family: Arial, Helvetica, sans-serif; color: #202124;
+  box-shadow: 0 14px 44px rgba(0,0,0,0.35); overflow: hidden; }
+.mw-head { display: flex; gap: 12px; align-items: baseline; padding: 12px 16px;
+  background: #f2f2f2; font-size: 12px; color: #5f6368; }
+.mw-head span:first-child { font-weight: bold; color: #202124; }
+.mw-head button { margin-left: auto; border: 0; background: none; cursor: pointer;
+  color: #5f6368; font-size: 14px; }
+.mw-subj { padding: 14px 20px 0; font-size: 17px; font-weight: bold; }
+.mw-body { padding: 10px 20px 24px; font-size: 14px; line-height: 1.5; }
+.mw-act { display: inline-block; margin-top: 10px; padding: 10px 18px;
+  background: #1a73e8; color: #fff; border-radius: 4px; cursor: pointer;
+  font-weight: bold; text-decoration: none; }
+
+/* ---------------------------------------------------------------------------
+   Lifecycle marks (Ed, 2026-08-18: the session-view's own grammar). The
+   subject glyph is the mark only while the question is asking; after that the
+   state speaks — ⏳ waiting, drawn ✔ decided (green while it is news, grey
+   once filed), ✏️ yours. One set of rules for tabs and rail entries, so the
+   two columns cannot disagree about what a state looks like.
+   ------------------------------------------------------------------------ */
+.achip .mkg { width: 15px; height: 15px; stroke-width: 2.2; }
+.achip.st-done, .achip.st-wait { color: rgb(var(--lc-closed)); }
+.achip.st-news { color: var(--ok); }
+.queue .subj .mkg { width: 13px; height: 13px; stroke-width: 2.1; }
+.queue button.st-done .subj, .queue button.st-wait .subj { color: rgb(var(--lc-closed)); }
+.queue button.st-news .subj { color: var(--ok); }
+/* the constitution block's lines are the way to a settled card now that its
+   tab says only ✔ — a button, but drawn as the line it always was */
+button.cline { border: 0; background: none; padding: 0; text-align: left;
+  cursor: pointer; font: inherit; color: inherit; }
+button.cline:hover b { text-decoration: underline; }
+
+/* ---------------------------------------------------------------------------
+   assembly-press (Ed, 2026-08-18). A constitutional motion goes in by a full
+   ten-second hold, and the progress meter is the room: the members' avatars
+   convene one by one into a circle around the 🏛️ button — the assembly is
+   complete exactly when the motion is put. Release early and it disperses.
+   ------------------------------------------------------------------------ */
+#assembly { position: fixed; z-index: 120; width: 0; height: 0; pointer-events: none; }
+#assembly .seat { position: absolute; opacity: 0;
+  transform: translate(-50%, -50%) scale(0.3);
+  transition: opacity 220ms ease, transform 320ms cubic-bezier(0.2, 1.45, 0.45, 1); }
+#assembly .seat.in { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+#assembly .seat .av { width: 30px; height: 30px; font-size: 11px; box-shadow: var(--shadow-md); }
+#assembly.done .seat { transform: translate(-50%, -50%) scale(1.14); }
+#assembly.gone .seat { opacity: 0 !important;
+  transform: translate(-50%, -50%) scale(0.3) !important; transition-duration: 160ms; }
+.holdmotion { touch-action: none; user-select: none; }
+@media (prefers-reduced-motion: reduce) {
+  #assembly .seat { transition: opacity 120ms ease; transform: translate(-50%, -50%); }
+  #assembly .seat.in, #assembly.done .seat { transform: translate(-50%, -50%); }
+}
+
+/* ---------------------------------------------------------------------------
+   The constitution as document text (Ed, 2026-08-18): one paragraph per
+   decision, its tab in the gutter to its left — the same geometry as a
+   clause-tab beside a clause — and the open card replacing its own
+   paragraph. A tabless paragraph (.notab) states a rule whose tab lives
+   elsewhere (the ceremony's room questions are the membership's tasks).
+   ------------------------------------------------------------------------ */
+.constsec .cpara { position: relative; min-height: 32px; margin: 0 0 var(--s2); }
+.constsec .cpara .chipcol { top: 0; }
+.constsec .cptext { margin: 0; padding-top: 3px; }
+.constsec .cptext b { font-weight: 600; }
+.constsec .cpara.notab { min-height: 0; }
+.constsec .cpara.notab .cptext { padding-top: 0; }
+/* same margins as a closed paragraph — the measured shift does the rest */
+.constsec .cpara.open { margin: 0 0 var(--s3); }
+.constsec .pilelab { margin-bottom: var(--s3); }
+
+/* the constitution's sections (Ed, 2026-08-18): a subtitle at the document's
+   own second level, a line of prose saying what the section governs, then
+   the decision paragraphs — the members' tasks standing among them. */
+.constsec .csec { margin: var(--s4) 0 var(--s5); }
+/* section headings are the document's own (docline lvl2/lvl3); the intro
+   and state lines are plain document paragraphs */
+.constsec .csintro { margin: 0 0 var(--s3); }
+.constsec .csec .pilewho { margin: 0 0 var(--s3); }
+
+/* each decision: its own heading, the decision in prose underneath (Ed,
+   2026-08-18) — the tab keeps the gutter, the heading carries the name, and
+   the state line says where the decision stands in whole sentences. */
+.constsec .cptext { padding-top: 2px; }
+.constsec .cph { margin: 0; font-size: inherit; font-weight: 600; }
+.constsec .cpv { margin: 1px 0 0; }
+.constsec .cpara { margin: 0 0 var(--s3); }
+
+/* the title heading is the way into the title card */
+.doctitle[data-card] { cursor: pointer; }
+.doctitle[data-card]:hover { text-decoration: underline dotted 1.5px; text-underline-offset: 4px; }
+
+/* Members / Applications subsections (Ed, 2026-08-18): Members IS the list,
+   🪪 the invitations tab beside it, your own row last wearing ✋ and 🖼️;
+   Applicants is the list under the Applications decision. */
+.memlist { display: flex; flex-wrap: wrap; gap: 5px 18px; }
+/* "you" — the one sanctioned per-reader difference (Ed): in the members list
+   you are always at the bottom, on your own line, your identity pile in the
+   gutter beside you */
+.memrow.meRow { flex-basis: 100%; }
+/* only avatars and names keep the compact dress (Ed) */
+.memrow { display: flex; align-items: center; gap: 8px; font-size: var(--t-small);
+  position: relative; }
+.memrow .av { width: 22px; height: 22px; font-size: 8px; flex: none; }
+/* the identity tabs are regular gutter clause tabs: a pile at your row */
+.memrow .chipcol { top: -3px; }
+.memrow.meRow { margin-top: 3px; min-height: 30px; }
+.memrow .chip { font-size: var(--t-micro); }
+
+/* **The card overhangs the text axis** (Ed's QA, 2026-08-18: the tabs were
+   touching the text, and fixing that must not bring back the tab-jump). A
+   paragraph's tab keeps the document's own 14px gutter gap; when the card
+   opens, its box extends 14px further left while its text stays on the
+   document axis — session-view's own model — so the strip lands where the
+   closed tab stood and the active tab still carries under the card edge. */
+.constsec .cpara.open > .setupcard { margin-left: -14px; }
+
+/* the starting-text task anchors the prose itself (Ed, 2026-08-18): a
+   zero-height row at the band's end whose 📄 tab hangs in the gutter beside
+   the first block of the document text below */
+.cpara.textanchor { height: 0; min-height: 0; margin: 0; }
+.cpara.textanchor .chipcol { top: 10px; }
+
+/* the composer's rationale wears your avatar (Ed, 2026-08-18) — the same
+   speaker slot the editing card gives a rationale, with you as the speaker */
+.composeWhy { display: flex; gap: 10px; align-items: flex-start; margin-top: var(--s3); }
+.composeWhy .av { width: 26px; height: 26px; font-size: 9px; flex: none; margin-top: 8px; }
+.composeWhy .lanebox { flex: 1; }
+
+/* the rule at a composer's head sits exactly on the text axis it stood on
+   (card padding minus the 14px overhang) — the strip is anchored to the
+   headclause and must not move with it, so the compensation is on the text */
+.constsec .cpara.open .setupcard .clausehead .rtext { margin-left: calc(14px - var(--s5)); }
+
+/* Founded by [avatar] [name] (at [time]) — the avatar rides in the line */
+.cpv.founded .av { width: 20px; height: 20px; font-size: 7px;
+  display: inline-flex; vertical-align: -5px; margin: 0 2px; }
+
+/* a rule standing as a card's head is the clause, not a title: document size
+   and colour, exactly as it stood on the page (Ed's QA, 2026-08-18) */
+.setupcard .clausehead .headrule { font-size: 1rem; font-weight: 400; line-height: 1.55; }
+
+/* the head-rule correction is a margin, and a block parent lets a child's
+   top margin collapse straight through it — fitBand's pass measured,
+   corrected, and changed nothing (found 2026-08-18, exposed by the Phase-4
+   zero-move probe; the pass was written in the .setrow flex era, where child
+   margins cannot collapse). flow-root makes the open paragraph a formatting
+   root so the margin lands — without overflow:hidden's clipping of the
+   14px tab overhang. */
+.constsec .cpara.open { display: flow-root; }
+
+/* the rail is a scroll container, and its entries sat flush against its
+   edges — every cast shadow was clipped mid-air (Ed, 2026-08-18: *sidebar
+   cards shadows seem to be broken*). Padding gives the shadows room; the
+   negative margin keeps the column where it stood. */
+.queue.stack { padding: 4px 14px 28px; margin: 0 -14px; }
+
+/* the title card's head is the document title itself (Ed, 2026-08-18:
+   *show me the current state of the title*), at the title's own type;
+   muted while it is still the placeholder */
+.setupcard .clausehead .headrule .headdoct { font-size: var(--t-lead); font-weight: 600; }
+.setupcard .clausehead .headrule .headdoct.ph { color: var(--muted); font-weight: 400; }
