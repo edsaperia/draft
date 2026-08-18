@@ -248,6 +248,13 @@
   // what each radio-composed setting currently stands at: picking it back
   // is not a change, so it clears the draft and the commit greys
   const CURRENT = { policy: 'Anyone may apply', pace: 'Rising from 55%' };
+  const POLICY_TEXTS = [
+    ['Invitation only', 'Membership is by invitation only.'],
+    ['Applications must be proposed', 'Anyone may apply, but an application must be proposed by a member, who stakes the ✏️.'],
+    ['Anyone may apply', 'Anyone may apply to join.'],
+    ['Open', 'Anyone with the link joins on arrival.'],
+    ['Reserved — the founder holds it', 'The membership is reserved: the Founder keeps invite-and-remove, and this document has a 👑.'],
+  ];
   const motionCommitHtml = (c) => {
     const dto = (S.draft && S.draft.k === c.k) ? S.draft.to : '';
     const constitutional = routeFor(c, dto) === 'constitutional';
@@ -483,8 +490,20 @@
     mustAct, settled, summary, value, isRoom, waiting, news, decisionLine,
     // the composer cards open with the rule itself where the clause goes —
     // no title, the sentence exactly where it stood on the page
-    headFor: (c) => (c && c.own === 'founder' && !c.isGate && c.k !== 'text' &&
-      !needsOk(c) && !motionOn(c) ? (DECIDED[c.k] || value(c)) : null),
+    headFor: (c) => {
+      if (!(c && c.own === 'founder' && !c.isGate && c.k !== 'text' &&
+        !needsOk(c) && !motionOn(c))) return null;
+      const rule = DECIDED[c.k] || value(c);
+      // a radio-composed setting's head is its incumbent: it wears the
+      // lane-bar, Preferred while no draft stands against it (the quick
+      // card's own grammar — the head has a lane exactly when keeping the
+      // clause is one of the answers)
+      if (!CURRENT[c.k] || !PROPOSE[c.k]) return rule;
+      const pressed = !(S.draft && S.draft.k === c.k && S.draft.to);
+      return rule + '<div class="lanebar"><button class="lanepick" aria-pressed="' + pressed + '"' +
+        ' data-mval="' + esc(CURRENT[c.k]) + '"><span class="dot"></span>' +
+        '<span class="off">Prefer this</span><span class="on">Preferred</span></button></div>';
+    },
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
     reserved: (c) => c.own === 'founder',
@@ -609,23 +628,18 @@
     // change; one motion proposes one rule, and what you do not touch
     // stands. (QA 2026-08-18: this card was falling through to the
     // free-text lane.)
-    // **The current setting is the selected radio** (Ed, 2026-08-18):
-    // opening shows the rule as chosen; the commit greys until the
-    // selection moves, and picking the current value back clears the draft.
-    policy: (d) => {
-      const sel = d.to || CURRENT.policy;
-      const rung = (val, ttl, exp) => mrow(sel === val, val, ttl, exp);
-      return '<div class="eyebrow fieldlab">Who may join</div>' +
-        '<div class="choice" role="radiogroup">' +
-        rung('Invitation only', 'Invitation only', 'Nobody joins unless a member brings them in.') +
-        rung('Applications must be proposed', 'Applications must be proposed', 'An application waits until a member proposes it, staking the ✏️ — which is what a second is.') +
-        rung('Anyone may apply', 'Anyone may apply', '') +
-        rung('Open', 'Open', 'Anyone with the link joins on arrival.') + '</div>' +
-        '<div class="eyebrow fieldlab" style="margin-top:var(--s4)">Who holds the membership</div>' +
-        '<div class="choice" role="radiogroup">' +
-        rung('Reserved — the founder holds it', 'Reserved — the founder holds it', 'A 👑: invite-and-remove in one hand for the document’s life. A crown lapses like a member, and a lapsed crown passes to the members.') + '</div>' +
-        '<p class="setnote">One motion proposes one rule; what you do not touch stands.</p>';
-    },
+    // **A set of different texts, and the radios say Prefer this** (Ed,
+    // 2026-08-18): each option is the rule it would make, stated as it
+    // would stand, in a proposal-block with the lane-bar's own radio —
+    // the decision-card grammar with rules for wordings. The current rule
+    // is the head, wearing Preferred, so it never prints itself again.
+    policy: (d) => POLICY_TEXTS.filter(([val]) => val !== CURRENT.policy)
+      .map(([val, text]) =>
+        '<div class="propblock"><div class="rtext">' + text + '</div>' +
+        '<div class="lanebar"><button class="lanepick" aria-pressed="' + (d.to === val) + '"' +
+        ' data-mval="' + esc(val) + '"><span class="dot"></span>' +
+        '<span class="off">Prefer this</span><span class="on">Preferred</span></button></div></div>').join('') +
+      '<p class="setnote">One motion proposes one rule; what you do not touch stands.</p>',
     // the membership, in front of you, with an ✕ beside each and a field at
     // the bottom — which is what “propose a change to the membership” means
     roster: (d) =>
@@ -712,12 +726,12 @@
     apply: () => {
       const a = S.app;
       const ready2 = a.started && a.emailVerified && a.name.trim() && a.pic;
-      return '<p class="why">This document’s membership is not open, but it takes <b>applications</b>. Applying is four small tasks — your email, your name, your picture, and a few words if you want them — and your application then goes before the members as a <b>proposal (✏️)</b> to grant you membership, judged like any other: it carries if the room is sure enough.</p>' +
+      return '<p class="why">Your application goes before the members as a proposal (✏️) — it carries if the room is sure enough.</p>' +
         (a.submitted
-          ? '<div class="lockline">' + TICK + '<span>Submitted. Your application is before the members — ' + APPLICANT.judged + ' of ' + E + ' have judged it so far. You will get an email either way.</span></div>'
+          ? '<div class="lockline">' + TICK + '<span>Submitted. ' + APPLICANT.judged + ' of ' + E + ' have judged it — you will get an email either way.</span></div>'
           : a.started
           ? '<p class="setnote">' + (ready2 ? 'Everything needed is in — the words are optional.' : 'The email, the name and the picture are needed; the words are optional.') + '</p>'
-          : '<p class="setnote">Nothing is sent until you say so, and nothing about you is collected before you begin.</p>');
+          : '<p class="setnote">Nothing is collected before you begin, and nothing is sent until you submit.</p>');
     },
     appmail: () => {
       const a = S.app;
@@ -753,7 +767,8 @@
       foot = a.submitted ? '<button class="btn" data-close="1">Close</button>'
         : !a.started ? '<button class="btn btn-approve" data-appstart="1">Begin</button>'
         : '<button class="btn" data-close="1">Close</button>' +
-          '<button class="btn btn-approve"' + (a.name.trim() && a.pic ? '' : ' disabled') + ' data-appsubmit="1">Submit application</button>';
+          '<button class="btn btn-approve glyphbtn"' + (a.name.trim() && a.pic ? '' : ' disabled') +
+          ' data-appsubmit="1" title="Submit — your application goes before the members">🏛️</button>';
     } else {
       foot = '<button class="btn" data-close="1">Close</button>' +
         '<button class="btn btn-approve glyphbtn"' + (c.done() || c.optional ? '' : ' disabled') + ' data-close="1">' + TICK + '</button>';
