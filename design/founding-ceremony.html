@@ -442,7 +442,7 @@
     machines: 'There are no AI proposals.',
   };
   const decisionLine = (c) => {
-    if (c.k === 'canpropose') return mine() ? 'You may propose — your answers are in.'
+    if (c.k === 'canpropose') return mine() ? 'Proposing is open.'
       : 'Members may begin proposing when their own answers have been given.';
     if (c.k === 'canjudge') return roomDone() ? 'Judging on proposals began on Tuesday at 14:02.'
       : 'Members may begin judging proposals when everyone’s answers are in.';
@@ -450,8 +450,8 @@
     if (isRoom(c)) {
       return (c.in || 0) >= E
         ? (DECIDED[c.k] || esc(c.result || ''))
-        : 'Convenor has delegated ' + (WHAT[c.k] || 'this') + ' to the members, who are still deciding (' +
-          Math.min(c.in || 0, E) + '/' + E + ').';
+        : 'The Convenor has delegated to members to decide ' + (WHAT[c.k] || 'this') + ' — ' +
+          Math.min(c.in || 0, E) + ' of ' + E + ' have answered.';
     }
     return DECIDED[c.k] || value(c);
   };

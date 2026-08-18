@@ -472,7 +472,9 @@ button.cline:hover b { text-decoration: underline; }
 /* Members / Applications subsections (Ed, 2026-08-18): Members IS the list,
    🪪 the invitations tab beside it, your own row last wearing ✋ and 🖼️;
    Applicants is the list under the Applications decision. */
-.memlist { display: flex; flex-direction: column; gap: 5px; }
+.memlist { display: flex; flex-wrap: wrap; gap: 5px 18px; }
+/* your own row keeps its own line: its identity pile hangs in the gutter */
+.memrow.meRow { flex-basis: 100%; }
 /* only avatars and names keep the compact dress (Ed) */
 .memrow { display: flex; align-items: center; gap: 8px; font-size: var(--t-small);
   position: relative; }

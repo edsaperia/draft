@@ -703,22 +703,27 @@
         : 'The document starts empty — the room writes it.'; },
   };
   const decisionLine = (c) => {
-    if (c.ansFor) return 'Your answer — ' + summary(c) + '.';
+    if (c.ansFor) return answered(c)
+      ? 'The Convenor has answered as a member.'
+      : 'The Convenor has not yet answered as a member.';
     if (c.k === 'canpropose') return canPropose() && !LIVE().some(owesAnswer)
       ? 'Members may propose as soon as they arrive.'
-      : 'Members may begin proposing when the starting text and your own answers have been decided.';
+      : 'Members may begin proposing when the starting text has been decided and their own answers have been given.';
     if (c.k === 'canjudge') return canJudge()
       ? 'Judging on proposals is open.'
       : 'Members may begin judging proposals when the whole constitution has been decided.';
+    if (c.k === 'myemail') return S.emailVerified ? 'The Convenor’s address is verified.'
+      : S.emailSent ? 'The Convenor’s address is awaiting verification.'
+      : 'The Convenor’s address is not yet given.';
     if (c.kind === 'personal') return summary(c);
     if (isRoom(c)) {
       return (c.in || 0) >= E() && E() > 0
         ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c))
-        : 'You have delegated ' + (WHAT[c.k] || 'this') + ' to the members, who are still deciding (' +
-          Math.min(c.in || 0, E()) + '/' + E() + ').';
+        : 'The Convenor has delegated to members to decide ' + (WHAT[c.k] || 'this') + ' — ' +
+          Math.min(c.in || 0, E()) + ' of ' + E() + ' have answered.';
     }
     return settled(c) ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c))
-      : 'You are deciding ' + (WHAT[c.k] || 'this') + '.';
+      : 'The Convenor is deciding ' + (WHAT[c.k] || 'this') + '.';
   };
 
   const ctx = {
