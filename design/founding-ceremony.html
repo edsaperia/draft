@@ -916,7 +916,7 @@
     if (ev.target.matches('[data-mdate]')) {
       S.draft.to = ev.target.value
         ? new Date(ev.target.value).toLocaleString(undefined,
-          { weekday: 'long', hour: '2-digit', minute: '2-digit' }) : '';
+          { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
       return render();
     }
     if (ev.target.matches('[data-mnum]')) {

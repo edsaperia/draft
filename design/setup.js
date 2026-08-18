@@ -335,7 +335,16 @@ window.SETUP = (function () {
       // label wraps on a narrow card and the distance is not a number anybody
       // can know in advance: the same move `fitStacks` makes in the gutter.
       col.style.top = '';
-      const want = card.getBoundingClientRect().top + 2.4;
+      // measured, not 2.4: the strip lands where a closed paragraph's tab
+      // sits — asked of a closed sibling, because the open card's own
+      // closed posture no longer exists to measure (sweep, 2026-08-18)
+      const holderP = card.closest('.cpara');
+      const refCol = holderP && card.closest('.constsec, body')
+        .querySelector('.cpara:not(.open):not(.textanchor) > .chipcol');
+      const want = holderP && refCol
+        ? holderP.getBoundingClientRect().top +
+          (refCol.getBoundingClientRect().top - refCol.closest('.cpara').getBoundingClientRect().top)
+        : card.getBoundingClientRect().top + 2.4;
       const have = col.getBoundingClientRect().top;
       if (Math.abs(have - want) > 0.5) {
         col.style.top = (parseFloat(getComputedStyle(col).top || 0) + (want - have)).toFixed(1) + 'px';

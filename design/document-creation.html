@@ -504,7 +504,10 @@
     .filter((s2) => s2.cards.length);
   // a delegated setting's paragraph is followed by the founder's own
   // answer-task, the same card a member gets, standing where the rule is
-  const tasksFor = (c) => (c.key && ANSWER[c.k]
+  // a resolved question keeps no answer-task paragraph: the rule above it
+  // now states the outcome, and a standing “has answered” line under a
+  // decided rule is a task that finished still asking to be read
+  const tasksFor = (c) => (c.key && ANSWER[c.k] && (c.in || 0) < E()
     ? [card('ans-' + c.k)].filter((x) => x && visible(x)) : []);
   // A member who has not opened the document yet is drawn faintly rather than
   // left out: they are on the membership, which is the fact the heading is
@@ -543,7 +546,7 @@
       (S.rosterBy === 'founder' ? ' · 👑 reserved' : ''),
     ending: () => (perpetual() ? 'Never — it runs until it is frozen'
       : new Date(S.endsAt).toLocaleString(undefined,
-        { weekday: 'short', hour: '2-digit', minute: '2-digit' })),
+        { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
     bar: () => S.tClose + '% sure at the close',
     pace: () => (perpetual() ? 'Fixed — no window to rise over'
       : S.shape === 'ramp' ? 'Rising from ' + S.tStart + '%' : 'The close bar throughout'),
@@ -566,7 +569,7 @@
     bar: (v) => 'You said ' + v + '%',
     ending: (v) => (v === 'never' ? 'You said never'
       : 'You said ' + (isNaN(Date.parse(v)) ? v
-        : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' }))),
+        : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }))),
     authorship: (v) => 'You said ' + ({ anonymous: 'no names, ever', sealed: 'names at the close', public: 'names from the start' }[v] || v),
     signing: (v) => 'You said ' + ({ nobody: 'nobody signs', each: 'each author chooses', everybody: 'everybody signs' }[v] || v),
     judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
@@ -657,7 +660,7 @@
     text: 'the text the document starts from',
   };
   const endFmt = () => new Date(S.endsAt).toLocaleString(undefined,
-    { weekday: 'long', hour: '2-digit', minute: '2-digit' }).replace(' ', ' at ');
+    { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).replace(' ', ' at ');
   const DECIDED = {
     ending: () => (perpetual() ? 'The drafting process has no set end — it runs until it is frozen.'
       : 'The drafting process will end on ' + endFmt() + '.'),
