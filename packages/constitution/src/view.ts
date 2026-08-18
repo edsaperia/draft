@@ -180,7 +180,7 @@ export function constitutionBlock(s: ConstitutionSession): {
     convenor: {
       name: member ? member.name : c.name,
       picture: member ? member.picture : c.picture,
-      crowned: s.membershipReserved(),
+      crowned: s.crowned(), // any reservation (Q379 wide), sleeping or not
     },
     constitutedAtT: s.constitutedAtT,
     rules: MANAGED

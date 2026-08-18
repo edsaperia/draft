@@ -76,6 +76,14 @@ describe('lapsing (§9.5a): sign-out applied by clock', () => {
   });
 });
 
+describe('the 👑 marks any reservation (Q379 wide)', () => {
+  it('reads holdership, not the membership — and a sleeping crown keeps it', () => {
+    const { s } = buildConstituted(); // membership is the members' here…
+    expect(s.membershipReserved()).toBe(false);
+    expect(s.crowned()).toBe(true); // …but the title and link are still ada's
+  });
+});
+
 describe('the crown lapses like a member (§9.7 v0.49): automatic assent', () => {
   it('a quiet clerk-crown lapses; pending 👑 questions pass; nothing changes hands; return revives', () => {
     const { s, bo, cy } = buildConstituted({ clerk: true, lapse: { afterMs: 10_000 } });

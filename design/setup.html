@@ -272,6 +272,11 @@
   const APP_STUB = { n: '', pic: '', role: 'applicant', ans: {}, okd: new Set() };
   const viewerRow = () => (S.viewer === 'applicant' ? APP_STUB : (S.roster[S.viewer] || S.roster[0]));
   const amFounder = () => !!viewerRow().founder;
+  // any reservation crowns (Q379 wide): the module's read where it exists,
+  // the radios' before the save. startingText never counts (no post-start
+  // change route); title and link always do, so this is true until Q381.
+  const founderCrowned = () => (cs ? cs.crowned()
+    : DELEGABLE.some((key) => S[key] !== 'roster') || S.rosterBy === 'founder' || true);
   const viewerIsMember = () => S.viewer !== 'applicant' && viewerRow().role !== 'clerk';
   for (const [prop, key] of [['myname', 'n'], ['mypic', 'pic'], ['myemail', 'e']]) {
     Object.defineProperty(S, prop, { get: () => viewerRow()[key] || '',
@@ -693,7 +698,14 @@
       lead: (h) => (visible(card('slug')) ? h.para(card('slug')) : '') +
         (S.myname.trim()
           ? '<div class="cpara notab"><p class="cpv founded">Founded by ' +
-            avHtml(me()) + ' ' + esc(S.myname) + '.</p></div>' : ''),
+            avHtml(me()) + ' ' + esc(S.myname) +
+            // 👑 by any reservation (Ed, Q379 wide); 📯 = holds nothing.
+            // Today the title and link cannot be handed over, so every
+            // founder is a 👑 until Q381's exit lands — drawn honestly.
+            ' <span title="' + (founderCrowned()
+              ? 'Part of the constitution is reserved: changing it needs the founder’s assent'
+              : 'The founder reserves nothing — no special part in the document') + '">' +
+            (founderCrowned() ? '👑' : '📯') + '</span>.</p></div>' : ''),
       textAnchor: (h) => (!visible(card('text')) ? ''
         : S.open === 'text' ? h.para(card('text'))
         : '<div class="cpara textanchor"><span class="chipcol">' + h.chip(card('text')) + '</span></div>'),
@@ -1502,8 +1514,8 @@
       // member, and a lapsed crown passes to the members.
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Who holds it</div>' +
       '<div class="choice" role="radiogroup" aria-label="Who holds the membership">' +
-      opt(S, 'rosterBy', 'roster', 'The members', 'After the start, joining and leaving are the members’ to decide — invitations by everyone’s consent, applications at the bar. You would be a 📯: a founder whose membership is the members’.') +
-      opt(S, 'rosterBy', 'founder', 'Reserved — I hold it', 'You would be a 👑: the founder of a document that reserves its membership, keeping invite-and-remove for its life. A crown lapses like a member — go inactive past the lapse rule and the membership becomes the members’.') +
+      opt(S, 'rosterBy', 'roster', 'The members', 'After the start, joining and leaving are the members’ to decide — invitations by everyone’s consent, applications at the bar.') +
+      opt(S, 'rosterBy', 'founder', 'Reserved — I hold it', 'Reserving anything makes you a 👑 — this one keeps invite-and-remove for the document’s life. A crown lapses like a member: go inactive past the lapse rule and changes pass without your assent until you log back in.') +
       '</div>' +
       // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
       // the gate the Apply card hangs off. An application becomes an

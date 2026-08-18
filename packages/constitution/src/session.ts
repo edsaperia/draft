@@ -1177,6 +1177,23 @@ export class ConstitutionSession {
     return apps !== null && apps.holder === 'reserved' && !this.crownLapsedFlag;
   }
 
+  /**
+   * 👑 by any reservation (Ed, 2026-08-18, Q379 wide): the mark reads what
+   * the convenor holds, not the membership alone — and a sleeping crown
+   * still holds it (lapse grants assent, it does not transfer anything).
+   * startingText never counts: it has no post-start change route, so
+   * holding it is not a lever.
+   */
+  crowned(): boolean {
+    const apps = this.settings.get('applications')!.value as ApplicationsValue | null;
+    if (apps !== null && apps.holder === 'reserved') return true;
+    for (const [id, st] of this.settings) {
+      if (id === 'startingText') continue;
+      if (st.holder === 'convenor') return true;
+    }
+    return false;
+  }
+
   private settledConstitutionalIds(): SettingId[] {
     return [...CONSTITUTIONAL].filter((id) => this.settings.get(id)!.settledBy !== null);
   }

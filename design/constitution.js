@@ -1773,6 +1773,22 @@ var CONSTITUTION = (() => {
       const apps = this.settings.get("applications").value;
       return apps !== null && apps.holder === "reserved" && !this.crownLapsedFlag;
     }
+    /**
+     * 👑 by any reservation (Ed, 2026-08-18, Q379 wide): the mark reads what
+     * the convenor holds, not the membership alone — and a sleeping crown
+     * still holds it (lapse grants assent, it does not transfer anything).
+     * startingText never counts: it has no post-start change route, so
+     * holding it is not a lever.
+     */
+    crowned() {
+      const apps = this.settings.get("applications").value;
+      if (apps !== null && apps.holder === "reserved") return true;
+      for (const [id, st] of this.settings) {
+        if (id === "startingText") continue;
+        if (st.holder === "convenor") return true;
+      }
+      return false;
+    }
     settledConstitutionalIds() {
       return [...CONSTITUTIONAL].filter((id) => this.settings.get(id).settledBy !== null);
     }
@@ -1983,7 +1999,8 @@ var CONSTITUTION = (() => {
       convenor: {
         name: member ? member.name : c.name,
         picture: member ? member.picture : c.picture,
-        crowned: s.membershipReserved()
+        crowned: s.crowned()
+        // any reservation (Q379 wide), sleeping or not
       },
       constitutedAtT: s.constitutedAtT,
       rules: MANAGED2.filter((e) => e.kind === "constitutional").map((e) => {
