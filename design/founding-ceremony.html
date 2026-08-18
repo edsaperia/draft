@@ -246,14 +246,15 @@
   // button in place as typing flips the route — a full re-render would
   // throw the caret out of the lane.
   const motionCommitHtml = (c) => {
-    const constitutional = routeFor(c, S.draft.to) === 'constitutional';
+    const dto = (S.draft && S.draft.k === c.k) ? S.draft.to : '';
+    const constitutional = routeFor(c, dto) === 'constitutional';
     const heldOut = S.myMotion && S.myMotion !== c.k;
     return constitutional
       ? '<button class="btn btn-approve holdmotion"' +
-        (!S.draft.to || heldOut ? ' disabled' : '') +
+        (!dto || heldOut ? ' disabled' : '') +
         ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first' : 'A full ten-second hold') + '"' +
         ' data-holdmotion="' + c.k + '">🏛️ Hold to ask everyone</button>'
-      : '<button class="btn btn-approve"' + (S.draft.to ? '' : ' disabled') +
+      : '<button class="btn btn-approve"' + (dto ? '' : ' disabled') +
         ' data-putmotion="1">Propose</button>';
   };
   const answeredMotion = (c) => S.mAns[c.k] !== undefined;
@@ -759,14 +760,9 @@
       const c = card(S.open);
       let body, foot;
       const m = motionOn(c);
-      if (S.draft && S.draft.k === c.k) {
-        body = motionCompose(c, ctx, S.draft, PROPOSE[c.k]);
-        // One 🏛️ per member at a time (Q327): the hold is dead while yours
-        // is out, live again when it settles or you withdraw it.
-        foot = '<button class="btn" data-dropmotion="1">Discard</button>' + motionCommitHtml(c);
       // a live motion takes the route its own value asks for (329a), which on
       // the window is the difference between moving a date and abolishing one
-      } else if (m && (m.kind || routeFor(c, m.to)) === 'ordinary') {
+      if (m && (m.kind || routeFor(c, m.to)) === 'ordinary') {
         body = motionBody(c, ctx, { ...m, pick: S.mAns[c.k] });
         foot = '<button class="lanepick" aria-pressed="' + (S.mAns[c.k] === 'either') + '"' +
           ' data-motion="either"><span class="dot"></span><span>Indifferent</span></button>' +
@@ -787,24 +783,38 @@
         foot = '<button class="btn" data-close="1">Close</button>' +
           '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
           ' data-ok="' + c.k + '">OK</button>';
-      } else if (c.own === 'convenor') {
+      } else if (c.own === 'convenor' && (needsOk(c) || c.k === 'text')) {
+        // unacknowledged: the acknowledgment card; 📄: no motion door at all
         body = readBody(c, ctx) +
           (c.k === 'text' ? '<p class="setnote">The text is not changed by motion — you change it by proposing in the document itself; every clause carries a caret.</p>' : '') +
           (needsOk(c) ? '<p class="setnote">You had no say in this and it binds you, ' +
             'so it waits for your <b>OK</b> — which files it with the rest of the constitution.</p>' : '');
-        // **✏️ is how a motion starts**, and it is the same control that starts a
-        // proposal anywhere else on the surface: you write from what stands. The
-        // right-hand slot is the commit, so it is OK while there is something to
-        // acknowledge and Close once there is not — the same slot going from the
-        // act to the fact of it, which is what every commit row here does.
-        // 📄 carries no motion button: the text is changed by proposing in
-        // the document itself — every clause carries a caret — and a motion
-        // here would be a second door to the same room.
-        foot = (c.k === 'text' ? ''
-          : '<button class="btn" data-newmotion="' + c.k + '">✏️ Propose a change</button>') +
-          (needsOk(c)
+        foot = (needsOk(c)
             ? '<button class="btn btn-approve" data-ok="' + c.k + '">OK</button>'
             : '<button class="btn" data-close="1">Close</button>');
+      } else if (c.own === 'convenor') {
+        // **The settled card is the composer** (Ed, 2026-08-18, using
+        // Applications as the example): the current rule at the top as the
+        // clause, the other options below as the setting's own radios, a
+        // rationale lane, and 🗑️ with the route's commit at the bottom.
+        // No separate "propose a change" step — picking an option IS
+        // starting the motion.
+        const d = (S.draft && S.draft.k === c.k) ? S.draft : { k: c.k, to: '', why: '' };
+        const route = routeFor(c, d.to);
+        body = '<div class="propblock"><div class="rtext">' + (DECIDED[c.k] || value(c)) + '</div></div>' +
+          '<div class="eyebrow fieldlab">' + (route === 'constitutional' ? 'Or ask everyone again' : 'Or propose a change') + '</div>' +
+          (PROPOSE[c.k] ? PROPOSE[c.k](d)
+            : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
+              ' data-motionlane="to" data-ph="The value you are proposing">' + esc(d.to) + '</div></div>') +
+          '<div class="lanebox"><div class="lp edit-why' + (d.why ? '' : ' blank') + '" contenteditable="plaintext-only"' +
+          ' spellcheck="false" data-motionlane="why" data-ph="We should change this because…">' + esc(d.why) + '</div></div>' +
+          (route === 'constitutional'
+            ? '<p class="setnote"><b>Free — and one at a time.</b> Each member may have one 🏛️ out at once; withdraw it and it comes back whole. Putting it is a full ten-second hold.</p>'
+            : '<p class="setnote"><b>Costs one ✏️</b>, returned in full if withdrawn.' +
+              (ctx.reserved(c) ? ' Carrying sends it to the convenor as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>');
+        foot = '<button class="btn" data-dropmotion="1"' +
+          (S.draft && S.draft.k === c.k ? '' : ' disabled') + ' title="Discard this motion">🗑️</button>' +
+          motionCommitHtml(c);
       } else {
         // Once you have answered, the card keeps your answer and grows the
         // watching half underneath — the same half the convenor sees, because it
@@ -888,6 +898,8 @@
     // a motion's own control writes the value it proposes. On `change` rather
     // than on every keystroke, because a date picker rebuilt under the pointer
     // is a date picker you cannot use.
+    if (ev.target.matches('[data-mtext],[data-mslug],[data-mpace],[data-mdate],[data-mnum]') &&
+      (!S.draft || S.draft.k !== S.open)) S.draft = { k: S.open, to: '', why: '' };
     if (!S.draft) return;
     if (ev.target.matches('[data-mtext]')) { S.draft.to = ev.target.value.trim(); return render(); }
     if (ev.target.matches('[data-mslug]')) {
@@ -959,7 +971,8 @@
     const mo = ev.target.closest('[data-motion]');
     if (mo) { S.mAns[S.open] = mo.dataset.motion; return render(); }
     const mv = ev.target.closest('[data-mval]');
-    if (mv && S.draft) { S.draft.to = mv.dataset.mval; return render(); }
+    if (mv) { if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
+      S.draft.to = mv.dataset.mval; return render(); }
     const mj = ev.target.closest('[data-mjoinbtn]');
     if (mj && S.draft) {
       const f = document.querySelector('[data-mjoin]');
@@ -1044,7 +1057,8 @@
     if (ev.target.closest && ev.target.closest('[data-apptext]')) {
       S.app.text = ev.target.textContent.trim(); renderRail(); return; }
     const ml = ev.target.closest && ev.target.closest('[data-motionlane]');
-    if (ml) { S.draft[ml.dataset.motionlane] = ml.textContent.trim();
+    if (ml) { if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
+      S.draft[ml.dataset.motionlane] = ml.textContent.trim();
       ml.classList.toggle('blank', !ml.textContent.trim());
       // the commit slot follows the route of what is now typed (329a):
       // "never" in the ending lane turns Propose into the assembly-press
