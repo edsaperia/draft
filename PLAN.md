@@ -240,27 +240,52 @@ Not blockers on starting, but they will block a pilot:
 
 ## 7. Decisions needed
 
-**333. Client framework.** React + Vite (recommended, for the ecosystem and
-handover), or Svelte (better fit for measured, bespoke layout), or stay with
-hand-rolled vanilla and a small build step (keeps the mockups' directness and
-costs a component model).
+**Client framework: React + Vite.** Ed's call, delegated (2026-08-18). Not
+because it suits this UI best — for a bespoke, measurement-heavy surface with
+no component library, Svelte is the nicer fit — but because engine-core is
+TypeScript and its types cross the wire unchanged, and because it is the choice
+that stays easy to hand to somebody else. The measured-layout passes are
+effects in either, which is what makes the decision low-stakes enough to take
+without asking again.
 
-**334. Where the §9 layer lives.** Inside `engine-core`; in its own package
-beside it; or in the server. Recommendation: **its own package**, depending on
-engine-core and depended on by both sim and server — the ceremony and the
-motion are mechanism, and mechanism belongs where sim can drive it, but they
-are not the *drafting* mechanism and putting them in the session state machine
-would blur what engine-core is.
+**334. Do we want to be able to simulate the founding questions and motions?**
+That is what "where the §9 layer lives" actually asks, because the only
+consequence that differs between the three homes is this one: in the server it
+can never be driven by `sim-harness`; in `engine-core` or in its own package
+beside it, it can. The reason to want it is that the consent rule has a shape
+worth testing before a cohort meets it — taking the maximum of stated minimums
+means one member who says *never* makes a document perpetual, and one who says
+*95%* sets the threshold at 95%. That may be exactly right, since it is the
+whole point of consent, or it may make documents that cannot move; a simulated
+room of fourteen answers it in an afternoon. Recommendation: **yes**, therefore
+not the server, and then **its own package** — the ceremony and the motion are
+mechanism but not the *drafting* mechanism, and engine-core's boundary is the
+one thing in this codebase that has stayed clean.
 
-**335. Split `Constitution` in two** — what the room agreed, and what the
-engine is tuned to — before anything else is built on it. Recommendation: yes,
-now, while it is a rename rather than a migration.
+**335. Split `Constitution` in two.** Three things go wrong while the room's
+settings and the engine's tuning share one object. The **record** published at
+the close would list `hotSetSize` beside the threshold as though the room had
+agreed it. The **motion** machinery routes on whether a setting is
+constitutional, and with one object there is nothing to stop somebody moving to
+amend `boutGapMs`. And the **ceremony** has no definable output, because what
+the founding questions produce *is* the room's half of this object and it
+cannot produce half of a thing. A rename today, a data migration once real
+documents exist. Recommendation: **now**.
 
-**336. Host.** Needs a call: Fly, Render, Railway, a VPS, something
-institutional at Newspeak House. This decides the auth and email story more
-than it decides anything else.
+**336. Whose address do the invitations come from?** Auth is a magic link
+mailed to a roster address, so the service's front door is an email that has to
+arrive — and mail from an unknown domain to fifteen people at once is the
+definition of what spam filters are for. The sending domain is the decision and
+the host is a consequence of it. Either **ours** (a domain we own, a
+transactional sender, any managed platform underneath — fastest, and the link
+arrives from a name nobody recognises), or **Newspeak House's** (a link from an
+address the cohort already trusts, which matters more than it sounds for a
+screen asking somebody what they will accept of a constitution — at the cost of
+needing somebody there to grant it).
 
-**337. What the pilot is.** Which cohort, roughly when, and whether the first
-real document is a real charter or a rehearsal. Everything above is scoped
-differently depending on the answer, and it is the only question here that
-cannot be answered from inside the project.
+**On the pilot.** An earlier draft made "which cohort, and when" a decision the
+plan needed. It is not: the contract, the client port, the engine catch-up and
+a server can all be built without knowing. What it decides is only **what to
+cut** — a rehearsal needs no `record-builder` and no gazette, a real charter
+needs both — so it is a question for the point where §6's list has to be
+scoped, not for the start.
