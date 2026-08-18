@@ -48,7 +48,9 @@ window.SETUP = (function () {
       return '<span class="' + c + '" style="background:' + m[0] + '">' +
         '<svg viewBox="0 0 44 44" aria-hidden="true">' + m[1] + '</svg></span>';
     }
-    return '<span class="' + c + '">' + esc(initials(person ? person.n : '?')) + '</span>';
+    // nobody yet: a blank disc rather than initials of the word "undefined"
+    if (!person || !person.n) return '<span class="' + c + '"></span>';
+    return '<span class="' + c + '">' + esc(initials(person.n)) + '</span>';
   }
 
   /* ---- the lifecycle of a setting -----------------------------------------
@@ -68,7 +70,7 @@ window.SETUP = (function () {
      **These are clause-tabs, and they pile like clause-tabs** (Ed, 2026-08-18,
      overruling the flat group of the morning: *I'd like all of these tabs to act
      like clause-tabs and pile like clause tabs. The convenor's settings sit in
-     one pile, and participants' in the pile below*).
+     one pile, and members' in the pile below*).
 
      Which is the right call and settles Q316 the other way. The flat group was
      defended on the grounds that a pile of fourteen shows one glyph and a
@@ -126,10 +128,20 @@ window.SETUP = (function () {
   function bandHtml(groups, ctx, cardFor) {
     return groups.map((g) => {
       const holds = g.cards.some((c) => ctx.open === c.k);
-      if (holds) return cardFor(g);
+      if (holds) return '<div class="setrow open" id="pile-' + g.key + '">' + cardFor(g) + '</div>';
       const left = g.cards.filter((c) => ctx.mustAct(c)).length;
-      return '<div class="setrow" data-pile="' + g.key + '">' + pileHtml(g.cards, ctx) +
+      // **The heading is the people** (Ed, 2026-08-18: *"Convenor" heading gets a
+      // name and picture under it as soon as they exist; "Membership" heading
+      // gets the roster's names and pictures under it as those appear*). Which
+      // turns the band at the head of the document from a list of settings into
+      // *the room* — who is here, and what they have settled — and it costs
+      // nothing, because both piles were already named after a holder and the
+      // holder is a person or a set of them. Before anybody has a name it holds
+      // a placeholder rather than nothing, so the shape of the row does not
+      // change as people arrive.
+      return '<div class="setrow" id="pile-' + g.key + '" data-pile="' + g.key + '">' + pileHtml(g.cards, ctx) +
         '<div class="pilelab"><span class="eyebrow">' + esc(g.label) + '</span>' +
+        (g.who ? '<div class="pilewho">' + g.who() + '</div>' : '') +
         '<span class="pilen">' + esc(g.note(left)) + '</span></div></div>';
     }).join('');
   }
@@ -166,11 +178,13 @@ window.SETUP = (function () {
      is theirs (Ed, 2026-08-18). */
   function railEntry(c, ctx) {
     const w = washOf(c, ctx);
-    const done = ctx.settled(c);
+    // A card under motion wants you again even though it is settled, so the
+    // class follows `mustAct` and the tick follows both.
+    const done = ctx.settled(c) && !ctx.mustAct(c);
     const room = ctx.isRoom(c);
     const fill = room ? Math.min(100, Math.round((c.in || 0) / ctx.E * 100)) + '%' : '100%';
     return '<li class="qitem" data-q="' + c.k + '">' +
-      '<button class="' + (done || !ctx.mustAct(c) ? 'deciding' : 'needs') + '"' +
+      '<button class="' + (ctx.mustAct(c) ? 'needs' : 'deciding') + '"' +
       ' data-card="' + c.k + '" data-washkey="set:' + c.k + '"' +
       ' aria-current="' + (ctx.open === c.k) + '"' +
       ' title="' + esc(room ? (c.in || 0) + ' of ' + ctx.E + ' have answered' : c.t) + '"' +
@@ -231,7 +245,7 @@ window.SETUP = (function () {
     // title was the surest sign the two halves were not reading as one card.
     let h = '<div class="eyebrow fieldlab">' + esc(done ? 'What the room said' : 'What the room is saying') + '</div>' +
       '<div class="lockline">' + (done ? TICK : '') +
-      '<span>The participants decide' + (done ? '' : ' — asked at the opening ceremony, blind') + '.</span></div>' +
+      '<span>The members decide' + (done ? '' : ' — asked of everyone before drafting began, blind') + '.</span></div>' +
       '<p class="why">' + (c.rule || '') + '</p>';
     if (!done) {
       h += '<div class="pips">' + Array.from({ length: ctx.E }, (_, i) =>
@@ -289,6 +303,143 @@ window.SETUP = (function () {
       ' title="' + (o.id ? 'A picture' : 'Your initials') + '">' +
       avHtml({ n: me.n, pic: o.id }, 'big') + '</button>').join('') + '</div>' +
     '<p class="setnote">Photographs arrive with real accounts; a mockup has no business inventing faces for people who do not exist.</p>';
+
+  /* ---- ordinary and constitutional ----------------------------------------
+     **This is a constitution editor, and what we need to decide is which
+     decisions are ordinary and which are constitutional** (Ed, 2026-08-18) —
+     and then, in his own words, the test: **a constitutional decision is one
+     that makes past decisions mean something different.** Everything follows
+     from that sentence, and it is a structural test rather than a matter of
+     taste, so the list can be derived rather than argued.
+
+       **the disclosure family** — the clearest case. A judgment was cast under
+       a promise about who would ever see it; changing the promise afterwards
+       reaches back and breaks it. Same for the chamber: a rationale was written
+       knowing who could read it.
+       **quorum, and the bar** — every past judgment was cast knowing what it
+       was being counted towards, and every past adoption means *this cleared
+       that bar with that many people behind it*. Move either and the record
+       stops saying what it said.
+       **the roster** — quorum is a fraction of it, so adding or removing anybody
+       silently re-rates every judgment already cast and every race still parked.
+       Which is why an invitation is constitutional, and why a machine member is
+       too: it is one more participant with a wallet.
+       **whether it ends at all** — windowed to perpetual abolishes the ramp,
+       and the ramp is the bar.
+
+     Everything else is **ordinary**, and the same test says so: no past
+     judgment means anything different because the title changed, or the link,
+     or the end date, or the size of the wallet. A proposal to change one of
+     those is a proposal like any other.
+
+     And there are two routes, not one rule with a dial on it:
+
+       **ordinary** — judged pairwise, adopted when it clears the document's
+       bar with the document's quorum. The race this engine already is.
+       **constitutional** — **the ceremony's question, asked again.** Each
+       member states the least they will accept and the document takes the
+       maximum, so the new answer satisfies every stated minimum by
+       construction and nobody is bound by a rule they did not consent to. It
+       is the same consent rule that escaped the constitutional bootstrap in
+       the first place, and it is the only rule that can be run *on* the
+       constitution without begging the question.
+
+     Ed's first instinct was full quorum and full approval, and it lands in the
+     same place — the consent rule *is* unanimity — but it gets there by
+     construction rather than by collecting votes, and that difference is the
+     whole point. A unanimity rule is still a vote, and a vote on the
+     constitution has to be governed by the constitution: *by what quorum do you
+     decide the quorum?* Taking the maximum of stated minimums has no vote in it
+     to govern. Which also means the amendment rule and the founding rule are
+     one rule, so the opening question is the amendment question — a constitutional
+     motion simply makes that question live again, and there is no new object on
+     the surface at all.
+
+     A `motion` is the act; which route it takes is a fact about the setting.
+     `personal` is neither — your name and your picture bind nobody, so there is
+     nothing to pass. */
+  const KIND = {
+    constitutional: 'Constitutional',
+    ordinary: 'Ordinary',
+    personal: 'Yours alone',
+  };
+  const kindNote = {
+    constitutional: 'Changing it would make past decisions mean something different, so it is not judged — the founding question is asked again, and the document takes the most demanding answer anybody gives.',
+    ordinary: 'Changing it is an ordinary proposal — anybody may put one, and it carries if it clears the bar with quorum.',
+    personal: 'Yours to change whenever you like. It binds nobody.',
+  };
+
+  /* An **ordinary motion in flight**: the value as it stands, the value as
+     proposed, a `lane-bar` radio on each, the rationale behind a
+     `sealed-speaker`. Nothing here is new — it is the decision card with a
+     setting where the prose would be, which is the point.
+
+     There is no constitutional equivalent of this function, and that is the
+     good news: a constitutional motion re-opens the **ceremony question**, so
+     the card that answers it is the one the surface already had. What a
+     constitutional motion draws is `motionReopen` below — a line saying the
+     question is live again — and then the ordinary consent control underneath
+     it. */
+  function motionBody(c, ctx, m) {
+    const kind = c.kind || 'ordinary';
+    const need = 'the bar, with quorum';
+    const speaker = (why) => '<div class="speaker">' +
+      '<span class="disc" aria-hidden="true" title="A member of the roster wrote this. Who, is sealed until the record (SPEC §3.4)."></span>' +
+      (why ? '<div class="said">' + esc(why) + '</div>' : '<div class="said none">No reason given.</div>') +
+      '</div>';
+    const lane = (val, key, label) =>
+      '<div class="propblock"><div class="eyebrow fieldlab">' + esc(label) + '</div>' +
+      '<div class="rtext">' + esc(val) + '</div>' +
+      '<div class="lanebar"><button class="lanepick" aria-pressed="' + (m.pick === key) + '"' +
+      ' data-motion="' + key + '"><span class="dot"></span>' +
+      '<span class="off">Prefer this</span><span class="on">Preferred</span></button></div></div>';
+    return '<div class="unlocks"><b>' + esc(KIND[kind]) + '.</b> ' + kindNote[kind] +
+      ' To carry, it needs ' + esc(need) + '.</div>' +
+      lane(ctx.value(c), 'stands', 'As it stands') +
+      lane(m.to, 'proposed', 'As proposed') +
+      speaker(m.why) +
+      '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have judged it.</p>';
+  }
+
+  /* A **constitutional motion**, which is not a judgment and has no card of its
+     own: somebody has asked to re-open a founding question, so the founding
+     question is live again and you answer it exactly as you did at the ceremony.
+     This band is the whole of the addition — everything below it is the consent
+     control that was always there. */
+  const motionReopen = (c, ctx, m) =>
+    '<div class="unlocks"><b>Re-opened.</b> A member has asked the room to look at this again' +
+    (m.why ? ' — <i>' + esc(m.why) + '</i>' : '') + '. ' +
+    'It is constitutional, so nothing is being judged: you are asked what you will accept, ' +
+    'as you were at the founding, and the document takes the most demanding answer. ' +
+    'Until every one of the ' + ctx.E + ' has answered, what stands stands.</div>' +
+    '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have answered again. ' +
+    'Your own previous answer is not carried over — it would anchor you to it.</p>';
+
+  /* Writing one. The same `.lanebox` the `editing-card` writes a clause in,
+     because a motion is a proposal and proposing is one gesture on this
+     surface however small the thing being proposed. */
+  const motionCompose = (c, ctx, draft) =>
+    '<div class="unlocks">You are proposing a change to <b>' + esc(c.t) + '</b>. ' +
+    kindNote[c.kind || 'ordinary'] + '</div>' +
+    // **What it costs, said where the price is paid** (Ed, 2026-08-18). An
+    // ordinary motion is a proposal, so it costs an edit like every other
+    // proposal — the wallet is what prices proposals, and one that cost nothing
+    // would be one anybody could spam. A constitutional motion costs nothing,
+    // and that is not an oversight: it is not a proposal against the text, it is
+    // a member asking to be asked again about a rule that binds them. Charging
+    // for that would price consent, which is the one thing here that must stay
+    // free. What stops it being spammed is a limit rather than a price (Q327).
+    '<p class="setnote">' + (c.kind === 'constitutional'
+      ? '<b>Free.</b> You are not proposing against the charter, you are asking the room to be asked again about a rule that binds you — and consent should not have a price.'
+      : '<b>Costs one ✏️.</b> A motion is a proposal, so it is priced like every other proposal, and you get it back if you withdraw it.') + '</p>'
+    + '<div class="propblock"><div class="eyebrow fieldlab">As it stands</div>' +
+    '<div class="rtext">' + ctx.value(c) + '</div></div>' +
+    '<div class="propblock"><div class="eyebrow fieldlab">As you would have it</div>' +
+    '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
+    ' data-motionlane="to" data-ph="The value you are proposing">' + esc(draft.to || '') + '</div>' +
+    '<div class="lp edit-why' + (draft.why ? '' : ' blank') + '" contenteditable="plaintext-only"' +
+    ' spellcheck="false" data-motionlane="why" data-ph="We should change this because…">' +
+    esc(draft.why || '') + '</div></div></div>';
 
   /* ---- the cable ----------------------------------------------------------
      `queue-wire`, lifted from session-view with its rules intact: 6px, opaque,
@@ -424,6 +575,11 @@ window.SETUP = (function () {
     '<input class="num" type="number" data-num="' + key + '" value="' + S[key] + '" min="' + min + '" max="' + max + '">' +
     (suffix ? '<span class="setnote" style="margin:0">' + suffix + '</span>' : '') + '</span></span>';
 
+  /* The band's two rows are the document's first two headings, so they are the
+     first two entries in the contents rail. */
+  const bandToc = (groups) => groups.map((g) =>
+    '<li class="lvl1"><a href="#pile-' + g.key + '">' + esc(g.label) + '</a></li>').join('');
+
   const someIn = (n, E) => (n >= E ? 'everyone in' : n + ' of ' + E + ' in');
 
   const faces = (roster, meName) => '<div class="faces">' + roster.map((p) =>
@@ -432,5 +588,6 @@ window.SETUP = (function () {
 
   return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
-    nameBody, pictureBody, drawWire, opt, num, faces, someIn };
+    nameBody, pictureBody, drawWire, opt, num, faces, someIn, bandToc,
+    KIND, kindNote, motionBody, motionReopen, motionCompose };
 })();

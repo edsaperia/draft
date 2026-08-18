@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.27
+# Group Drafting Engine — Specification v0.28
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -199,7 +199,7 @@ Open: a perpetual document has no inter-session reset, so it loses the periodic 
 
 **9.0a The founding ceremony.** Quorum, threshold and the disclosure family of §3.5a may each be set by the convenor, or **decided by the roster before any drafting begins**. The ceremony is **optional in full** (Ed, 2026-08-17): a convenor may settle the whole constitution alone, in which case there is no ceremony and the document opens straight into drafting. The delegations are independent and per-setting, so a ceremony may ask about any subset.
 
-**But the roster is the default holder of all of it** (Ed, 2026-08-17). Every constitutional setting starts delegated, and a convenor has to take one back rather than hand it over — what is theirs by default is the starting text, the title, the window and the roster, and nothing else. This is the same argument this section already makes about anonymity: a default that has to be argued out of is a far stronger thing than a radio button that happens to be ticked. It also means the ordinary document runs a ceremony, and the convenor-settled document is the deliberate exception.
+**But the roster is the default holder of the constitutional ones** (Ed, 2026-08-17, narrowed 2026-08-18 — see §9.7). Every *constitutional* setting starts delegated, and a convenor has to take one back rather than hand it over; the ordinary ones start with the convenor, because the room can take those back at any time with a motion. This is the same argument this section already makes about anonymity: a default that has to be argued out of is a far stronger thing than a radio button that happens to be ticked. It also means the ordinary document runs a ceremony, and the convenor-settled document is the deliberate exception.
 
 **The convenor is a hat, not a role** (Ed, 2026-08-17). Whoever sets a document up chooses whether they are also a participant in it: a **drafter**, with a wallet, judgments, a place in quorum and an answer at the ceremony — or a **clerk**, who administers and does not write. Both are ordinary: a facilitator running a convention they are not a member of, and a member who happened to be the one to start the document, are different people performing the same administrative act. Each member is asked, blind, for the *lowest they are willing to accept* — the lowest quorum, and the lowest threshold — and the document takes the **maximum** of each.
 
@@ -246,7 +246,35 @@ That split is also what makes a walkout visible. Quorum-busting remains possible
 
 ---
 
-## 10. Machine participants
+**9.6 Ordinary and constitutional** (Ed, 2026-08-18). A document is a constitution editor, so the question it has to answer about itself is which of its own decisions are **ordinary** and which are **constitutional**. The test is Ed's: **a constitutional decision is one that would make past decisions mean something different.**
+
+That is structural rather than a matter of taste, so the list is derived and not argued:
+
+- **the disclosure family** (§3.5a) and the **chamber**. A judgment was cast, and a rationale written, under a promise about who would ever see them. Changing the promise afterwards reaches back and breaks it.
+- **quorum** and **the bar**. Every past judgment was cast knowing what it was being counted towards, and every past adoption means *this cleared that bar with that many behind it*. Move either and the record stops saying what it said.
+- **the roster**, and with it **machine members**, since a machine member is one more participant with a wallet. Quorum is a fraction of the roster, so adding or removing anybody silently re-rates every judgment already cast and every race parked at a floor.
+- **whether the document ends at all**, because windowed-to-perpetual abolishes the ramp and the ramp is the bar.
+
+Everything else is **ordinary**, by the same test: no past judgment means anything different because the title changed, or the link, or the end **date**, or the size of the wallet. So the starting text, the title, the link, the closing datetime, the grant, the drip and the stake are ordinary. A member's own **name and picture** are neither: they bind nobody, so there is nothing to pass.
+
+**A motion is a proposal to change a setting**, and which route it takes is a fact about the setting rather than about the motion:
+
+- an **ordinary** motion is a race. It is judged pairwise against the setting as it stands and carries when it clears the bar with quorum — the mechanism this engine already is, with a value where the prose would be.
+- a **constitutional** motion is **the opening question, asked again**. Nothing is judged: each member states the least they will accept and the document takes the maximum, exactly as at the start (§9.0a), so the new answer satisfies every stated minimum by construction and nobody is bound by a rule they did not consent to.
+
+Full quorum with full approval reaches the same place and was the first proposal, but the consent rule gets there **by construction rather than by collecting votes**, and that difference is the whole point: a unanimity rule is still a vote, and a vote on the constitution must be governed by the constitution — *by what quorum do you decide the quorum?* Taking the maximum of stated minimums has no vote in it to govern. It also means the amendment rule and the founding rule are one rule, so no second mechanism exists to be reasoned about, and the surface that asks a founding question is the surface that amends it.
+
+**An ordinary motion costs an edit; a constitutional one costs nothing** (Ed, 2026-08-18). An ordinary motion *is* a proposal — it races against the value as it stands and carries at the bar — so it is priced exactly like a proposal against the text (§7): one edit, returned in full on withdrawal. A constitutional motion is not a proposal at all; it is a member asking to be asked again about a rule that binds them, and charging for that would put a price on consent, which is the one thing in this design that must stay free. What keeps it from being abused is therefore a **limit** rather than a price, and what that limit should be is open (Q327).
+
+**A member's own answer is not carried over** when a constitutional question re-opens. Showing somebody what they said last time anchors them to it, which is the same reason the first asking is blind.
+
+**9.7 Who holds what, by default.** Constitutional settings default to the **roster**; ordinary settings default to the **convenor** (Ed, 2026-08-18, moving the economy back). This replaces the flat "everything is delegated by default" of §9.0a with one rule that explains itself: an ordinary setting can be taken back by the room at any time with a motion at the bar, so defaulting it to the convenor costs them nothing. A constitutional setting cannot — changing it needs everybody — so it has to be theirs from the start or it is not really theirs at all. Either default may be overridden per setting at creation.
+
+The **roster itself** is the one constitutional setting the convenor must supply, because at creation there is no room to ask: somebody has to send the first invitations. It is constitutional from that moment on, which is why an invitation after the start is a **motion**, decided by consent — one member who says no keeps a joiner out (Ed, 2026-08-18: *drafters can also make proposals to invite new members, which are passed in the constitutional way*).
+
+**9.8 Names.** A document has one **convenor** — never an "admin", never a "founder" — who may be a **drafter** like anybody else or a **clerk** who administers without writing (§9.0a). Everybody on the roster is a **member**; a member who writes and judges is a **drafter**, one who only watches is an **observer**. "Participant" is the engine's word for whatever speaks the participant-api, where a human, a sim persona and a machine member are interchangeable, and it should not appear in anything a member reads (Ed, 2026-08-18).
+
+## 10. Machine members
 
 All advisory or ordinary-citizen; none carries authority. The dedup gate and equivalence judgments; semantic composition drafts (Gate 2); geometry diagnosis and synthesis seeds; briefing digests and loss accounts; stratified probe design; and the **coherence auditor** — a standing account with a fixed budget (4 tokens, no drip) that reads the whole document and enters patches against drift, labeled machine-authored, competing by the same arithmetic as anyone.
 

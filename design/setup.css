@@ -25,7 +25,7 @@
 
    **They are clause-tabs, and they pile like clause-tabs** (Ed, 2026-08-18,
    overruling the flat group of the morning). Two piles, one per holder — the
-   convenor's settings above, the participants' below — standing in the
+   convenor's settings above, the members' below — standing in the
    `chip-gutter` exactly where each card's strip will be, so a pile expands into
    its strip without the tab you clicked moving. Everything the gutter already
    knows applies unchanged: the front tab is what most wants you, the slivers
@@ -223,3 +223,29 @@
   .idrow { display: flex; align-items: center; gap: var(--s4); margin-bottom: var(--s4); }
   .idrow .fld { flex: 1; }
   .idrow input { width: 100%; }
+
+  /* **The pile headings are the people** (Ed, 2026-08-18). A row of faces under
+     each heading, arriving as the people do — the convenor under Convenor, the
+     roster under Membership. It is what turns the band at the head of the
+     document from a list of settings into the room itself, and it costs nothing
+     because both piles were already named after a holder. */
+  .setrow .pilewho { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); margin: 3px 0 2px; }
+  .setrow .pilewho .pf { font-size: var(--t-cap); }
+  .setrow .pilewho .pf.ghost { color: var(--muted); font-style: italic; }
+  .setrow .pilewho .av { width: 20px; height: 20px; font-size: 7px; }
+
+  /* the row that holds the open card keeps the pile's id, so the contents rail
+     still lands on it */
+  .setrow.open { position: static; padding: 0; max-width: none; margin: 0; min-height: 0 !important; }
+
+  /* **The document's title, at the top of the document** (Ed, 2026-08-18),
+     above Convenor. It had lived only in the sticky topbar, which is chrome —
+     so the charter itself began with a pile of glyphs and no name on it, and
+     the first thing any reader looks for was the one thing not in the column
+     they were reading. It is text and not a control: the 🏷️ card is where a
+     title is written, and a second way in would be a second answer to a
+     question this surface has already settled. */
+  .doc .doctitle { max-width: calc(70ch + 2 * var(--s5) + 3px); margin: 0 auto var(--s5);
+    padding: 0 var(--s5); font-size: 1.5rem; font-weight: 600; line-height: 1.25;
+    text-wrap: balance; }
+  .doc .doctitle.ph { color: var(--muted); font-weight: 400; }
