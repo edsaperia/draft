@@ -134,14 +134,36 @@
   .addrow { display: flex; gap: var(--s2); padding: var(--s3); background: var(--light); border-top: 1px solid var(--border); }
   .addrow input { flex: 1; }
 
-  /* **A setup rail does not pin.** `system.css` lays `.qitem` out absolutely,
-     because in a live session the rail tracks the document and `layoutQueue`
-     places every entry itself. Here there is nothing to track — these cards
-     stand in a list — so they go back into normal flow. Marked with a class
-     rather than by overriding `.qitem` globally, so the live layout is
-     untouched and the difference is visible in the markup. */
+  /* **A setup rail lays itself out, and pins** (Ed, 2026-08-17: *the ceremony
+     and admin cards should be pinned*).
+
+     Two halves. `system.css` positions `.qitem` **absolutely**, because in a
+     live session `layoutQueue` places every entry against its own clause in
+     the document; there is nothing to track here, so they go back into normal
+     flow. And then the whole column is sticky — which is what pinning means
+     for this set. It is the same rule the live rail follows and reaches the
+     same answer from the other end: there, four kinds of entry pin because
+     they are the things that are about *you* rather than about a clause. Here
+     **every** card is one of those. A setup question belongs to no clause, so
+     there is nowhere for it to scroll away to, and nothing on this screen may
+     be missed by reading past it.
+
+     Marked with a class rather than by loosening `.qitem`, so the live layout
+     is untouched and the difference is visible in the markup. */
+  .queue.stack { position: sticky; top: calc(var(--nav-h) + var(--s5)); align-self: start;
+    max-height: calc(100vh - var(--nav-h) - var(--s5)); overflow-y: auto;
+    scrollbar-width: none; -ms-overflow-style: none; }
+  .queue.stack::-webkit-scrollbar { width: 0; }
   .queue.stack ul, .queue.stack > div { display: flex; flex-direction: column; gap: var(--s2); }
   .queue.stack .qitem { position: static; }
+  /* the **subject** glyph: what this question is about. A live rail marks
+     lifecycle state, because every card there is a different state of one
+     kind of thing; a setup rail is the reverse — one state, many kinds — so
+     it marks subject instead. The two sets never share a column. */
+  .ql .subj { margin-right: var(--s1); font-size: 1.05em; line-height: 1; }
+  /* the subject glyph, the name and the tick are three slots on one line */
+  .queue.stack .ql { display: flex; align-items: baseline; gap: var(--s1); }
+  .queue.stack .ql > span:nth-child(2) { flex: 1; min-width: 0; }
 </style>
 
 <header class="navbar">
@@ -271,34 +293,34 @@
     // card confirms either way, and says which was meant: a page nobody has
     // looked at and a page somebody chose to leave blank look identical, and
     // only one of them should let people start proposing.
-    { k: 'text', t: 'The starting text', gate: 'propose',
+    { k: 'text', g: '📄', t: 'The starting text', gate: 'propose',
       val: () => { const n = [...prose.children].filter((b) => b.textContent.trim()).length;
         return n ? n + ' blocks' : (S.seen.has('text') ? 'Starts empty — the room writes it' : 'Nothing yet'); },
       ready: () => true },
-    { k: 'title', t: 'The title', val: () => S.title || 'Not named yet', ready: () => !!S.title },
-    { k: 'window', t: 'The window',
+    { k: 'title', g: '🏷️', t: 'The title', val: () => S.title || 'Not named yet', ready: () => !!S.title },
+    { k: 'window', g: '📅', t: 'The window',
       val: () => (S.window === 'perpetual' ? 'Perpetual'
         : 'Ends ' + new Date(S.endsAt).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' })),
       ready: () => true },
-    { k: 'roster', t: 'The roster',
+    { k: 'roster', g: '✉️', t: 'The roster',
       val: () => E() + ' drafting, ' + (S.roster.length - E()) + ' watching' + (iDraft() ? '' : ' — you are the clerk'),
       ready: () => E() >= 2 },
-    { k: 'bar', t: 'The bar', gate: 'judge',
+    { k: 'bar', g: '✒️', t: 'The bar', gate: 'judge',
       val: () => (S.shape === 'fixed' ? 'Fixed at ' + S.tFixed + '%' : 'Rising, ' + S.tStart + '% → ' + S.tEnd + '%'),
       ready: () => true },
-    { k: 'quorum', t: 'Quorum', gate: 'judge',
+    { k: 'quorum', g: '👥', t: 'Quorum', gate: 'judge',
       val: () => (S.quorumForm === 'count' ? Math.min(S.quorumN, E()) + ' of ' + E()
         : S.quorumPct + '% — ' + quorumCount() + ' of ' + E()), ready: () => true },
-    { k: 'disclosure', t: 'Who may be seen', gate: 'judge',
+    { k: 'disclosure', g: '👤', t: 'Who may be seen', gate: 'judge',
       val: () => ({ anonymous: 'Nobody’s name, ever', sealed: 'Names at the close', public: 'Names from the start' }[S.authorship]),
       ready: () => true },
-    { k: 'economy', t: 'The edit economy',
+    { k: 'economy', g: '🪙', t: 'The edit economy',
       val: () => S.grant + ' to start, ' + S.drip + ' back per ' + (perpetual() ? S.dripPer + 'h' : S.dripPer + '%'),
       ready: () => true },
-    { k: 'chamber', t: 'Who else can see it',
+    { k: 'chamber', g: '🔭', t: 'Who else can see it',
       val: () => ({ link: 'Anyone with the link', closed: 'Roster only', public: 'Public' }[S.chamber] || 'Anyone with the link'),
       ready: () => true },
-    { k: 'machines', t: 'Machine participants',
+    { k: 'machines', g: '🤖', t: 'Machine participants',
       val: () => (S.auditor === true ? 'The coherence auditor, ' + S.auditorBudget + ' edits' : 'People only'),
       ready: () => true },
   ];
@@ -353,7 +375,8 @@
         return '<li class="qitem" data-q="' + c.k + '">' +
           '<button class="' + (done ? 'deciding' : 'needs') + '" data-card="' + c.k + '"' +
           ' style="--washcol: ' + col + '; --washbg: ' + bg + '; --fill: 100%">' +
-          '<span class="ql"><span>' + c.t + '</span><span class="setmark">' + (done ? TICK : '') + '</span></span>' +
+          '<span class="ql"><span class="subj" aria-hidden="true">' + c.g + '</span>' +
+          '<span>' + c.t + '</span><span class="setmark">' + (done ? TICK : '') + '</span></span>' +
           '<span class="qwhy">' + (delegated(c.k) ? '<i>The participants decide</i>' : esc(c.val())) + '</span>' +
           '</button></li>';
       }).join('') + '</ul>';
@@ -494,7 +517,15 @@
     const c = ev.target.closest('[data-card]');
     if (c) { S.open = c.dataset.card; return render(); }
     if (ev.target.closest('[data-confirm]')) { S.seen.add(S.open); S.open = null; return render(); }
-    if (ev.target.closest('[data-close]')) { S.open = null; return render(); }
+    // **Only the scrim itself closes, and only a button that says so.**
+    // `data-close` sits on the scrim, and the scrim is an ancestor of every
+    // control in the card — so `closest('[data-close]')` matched on *every*
+    // click inside the modal and shut it before the option it had just set
+    // could be seen. It looked like the radios were not working; they were
+    // working and then being thrown away. Tested last, and against the target
+    // rather than its ancestry.
+    if (ev.target.closest('button[data-close]') || ev.target.classList.contains('scrim')) {
+      S.open = null; return render(); }
     const o = ev.target.closest('[data-set]');
     if (o) { const v = o.dataset.val;
       S[o.dataset.set] = (v === 'true') ? true : (v === 'false') ? false : v;

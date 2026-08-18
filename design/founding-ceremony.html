@@ -104,14 +104,32 @@
   .pip { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: var(--light); }
   .pip.in { background: var(--ok-subtle); border-color: var(--ok); }
 
-  /* **A setup rail does not pin.** `system.css` lays `.qitem` out absolutely,
-     because in a live session the rail tracks the document and `layoutQueue`
-     places every entry itself. Here there is nothing to track — these cards
-     stand in a list — so they go back into normal flow. Marked with a class
-     rather than by overriding `.qitem` globally, so the live layout is
-     untouched and the difference is visible in the markup. */
+  /* **A setup rail lays itself out, and pins** (Ed, 2026-08-17: *the ceremony
+     and admin cards should be pinned*).
+
+     Two halves. `system.css` positions `.qitem` **absolutely**, because in a
+     live session `layoutQueue` places every entry against its own clause in
+     the document; there is nothing to track here, so they go back into normal
+     flow. And then the whole column is sticky — which is what pinning means
+     for this set. It is the same rule the live rail follows and reaches the
+     same answer from the other end: there, four kinds of entry pin because
+     they are the things that are about *you* rather than about a clause. Here
+     **every** card is one of those. A setup question belongs to no clause, so
+     there is nowhere for it to scroll away to, and nothing on this screen may
+     be missed by reading past it.
+
+     Marked with a class rather than by loosening `.qitem`, so the live layout
+     is untouched and the difference is visible in the markup. */
+  .queue.stack { position: sticky; top: calc(var(--nav-h) + var(--s5)); align-self: start;
+    max-height: calc(100vh - var(--nav-h) - var(--s5)); overflow-y: auto;
+    scrollbar-width: none; -ms-overflow-style: none; }
+  .queue.stack::-webkit-scrollbar { width: 0; }
   .queue.stack ul, .queue.stack > div { display: flex; flex-direction: column; gap: var(--s2); }
   .queue.stack .qitem { position: static; }
+  .ql .subj { margin-right: var(--s1); font-size: 1.05em; line-height: 1; }
+  /* the subject glyph, the name and the tick are three slots on one line */
+  .queue.stack .ql { display: flex; align-items: baseline; gap: var(--s1); }
+  .queue.stack .ql > span:nth-child(2) { flex: 1; min-width: 0; }
 </style>
 
 <header class="navbar">
@@ -166,23 +184,49 @@
   }
 
   // ---- the questions -----------------------------------------------------
+  // **A second alphabet, and it is a different job from the first** (Ed,
+  // 2026-08-17, proposing 👥 ✒️ 👤 🤖). The `lifecycle mark` says *what the
+  // document wants from you* — and it works in the live rail because every card
+  // there is a different state of the same kind of thing, a judgment. A setup
+  // rail is the other way round: every card is the same state of a **different
+  // kind of thing**, so a state glyph would say nothing that distinguished one
+  // from another. So the live rail marks **state** and this one marks
+  // **subject**, and the two sets never appear in the same column.
+  //
+  // ✒️ is not a new sign at all — the topbar has written the threshold as
+  // `74%✒️` since the units landed, so the glyph already means exactly this.
+  // 👤 is likewise the `sealed-speaker`'s own disc: an unnamed person is
+  // already what it means on this surface. Its risk, worth watching at 13px:
+  // it is one silhouette against 👥's two, and the two cards sit near each
+  // other — the meaning is inherited but the shape is not far off.
+  //
+  // Lifecycle is carried by the card instead: **left says what it is about,
+  // right says whether it is done**, and the wash fills as the room answers.
   const CARDS = [
-    { k: 'quorum', t: 'Quorum', ask: 'The lowest I will accept',
-      val: () => (S.quorum === null ? 'Not answered' : S.quorum + ' of ' + E) },
-    { k: 'bar', t: 'The bar', ask: 'The lowest I will accept',
-      val: () => (S.bar === null ? 'Not answered' : S.bar + '%') },
-    { k: 'disclosure', t: 'Who may be seen', ask: 'The most I will accept',
-      val: () => (!S.authorship ? 'Not answered'
-        : { anonymous: 'No names, ever', sealed: 'Names at the close', public: 'Names from the start' }[S.authorship]) },
-    { k: 'machines', t: 'Machine participants', ask: 'The most I will accept',
-      val: () => (S.machines === null ? 'Not answered' : S.machines ? 'A machine member is fine' : 'People only') },
+    { k: 'quorum', g: '👥', t: 'Quorum', in: 11,
+      val: () => (S.quorum === null ? 'The lowest you will accept' : 'You said ' + S.quorum + ' of ' + E) },
+    { k: 'bar', g: '✒️', t: 'The bar', in: 9,
+      val: () => (S.bar === null ? 'The lowest you will accept' : 'You said ' + S.bar + '%') },
+    { k: 'disclosure', g: '👤', t: 'Who may be seen', in: 7,
+      val: () => (!S.authorship ? 'The most you will accept'
+        : 'You said ' + { anonymous: 'no names, ever', sealed: 'names at the close', public: 'names from the start' }[S.authorship]) },
+    { k: 'machines', g: '🤖', t: 'Machine participants', in: 12,
+      val: () => (S.machines === null ? 'The most you will accept'
+        : 'You said ' + (S.machines ? 'a machine member is fine' : 'people only')) },
   ];
   const answered = (c) => ({
     quorum: () => S.quorum !== null, bar: () => S.bar !== null,
     disclosure: () => !!S.authorship && !!S.signing && !!S.judgments,
     machines: () => S.machines !== null,
   })[c.k]();
-  const allAnswered = () => CARDS.every(answered);
+  // **Your own ceremony gates your own proposing** (Ed, 2026-08-17: *they can't
+  // propose until their ceremony is done*). Which is the right rule and a
+  // better one than the convenor-side gate it replaces: you should not be able
+  // to act on a document whose rules you have not yet said what you will accept
+  // of. Reading is the only thing available before you answer. Judging waits on
+  // the *room*, because a judgment is counted against a quorum that does not
+  // exist until everybody has spoken.
+  const mine = () => CARDS.every((c) => answered(c) && S.seen.has(c.k));
 
   // ---- the rail ----------------------------------------------------------
   function renderRail() {
@@ -193,7 +237,7 @@
         '<b>Nine of fourteen</b> have answered. Judging opens when everyone has.</p>' +
         '<div class="pips">' + ROSTER.map((_, i) => '<span class="pip' + (i < 9 ? ' in' : '') + '"></span>').join('') + '</div>' +
         '<p style="font-size:var(--t-cap);color:var(--muted);margin:0">You will not see anybody’s answer and nobody will see yours. ' +
-        'Meanwhile the document is open — you can read it and propose changes to it now.</p>' +
+        'Your own is in, so you can propose changes to the charter while the rest finish.</p>' +
         '<p style="margin-top:var(--s3)"><button class="btn-send" data-act="change" style="background:var(--bg);color:var(--fg);border-color:var(--border)">Change my answers</button></p></div>';
       return;
     }
@@ -208,21 +252,33 @@
         '<div class="railnote">Judging is open.</div></div>';
       return;
     }
-    rail.innerHTML = '<div class="qhead">Before you can judge</div>' +
+    // **No "send my answers"** (Ed, 2026-08-17). There was a button because I
+    // had modelled the ceremony as a form with a submit; it is a queue, and a
+    // queue is finished when it is empty. The last card you confirm is the act.
+    //
+    // And the cards **fill as the room answers**, exactly as a race card does:
+    // the wash's bar is how far through this question the roster is, so after
+    // you have answered the rail stops being a to-do list and becomes what it
+    // is everywhere else — a place to watch something you are already part of.
+    rail.innerHTML = '<div class="qhead">' +
+      (mine() ? 'Waiting on the room' : 'Before you can take part') + '</div>' +
       CARDS.map((c) => {
         const done = answered(c) && S.seen.has(c.k);
-        const col = done ? 'rgba(var(--lc-closed), 0.16)' : 'rgba(var(--lc-open), 0.22)';
-        const bg = done ? 'rgba(var(--lc-closed), 0.06)' : 'rgba(var(--lc-open), 0.06)';
+        const col = done ? 'rgba(var(--lc-deciding), 0.22)' : 'rgba(var(--lc-open), 0.22)';
+        const bg = done ? 'rgba(var(--lc-deciding), 0.06)' : 'rgba(var(--lc-open), 0.06)';
+        const fill = done ? Math.round(c.in / E * 100) + '%' : '100%';
         return '<li class="qitem" style="list-style:none" data-q="' + c.k + '">' +
           '<button class="' + (done ? 'deciding' : 'needs') + '" data-card="' + c.k + '"' +
-          ' style="--washcol: ' + col + '; --washbg: ' + bg + '; --fill: 100%">' +
-          '<span class="ql"><span>' + c.t + '</span><span class="setmark">' + (done ? TICK : '') + '</span></span>' +
-          '<span class="qwhy">' + esc(c.val()) + '</span></button></li>';
+          ' title="' + (done ? c.in + ' of ' + E + ' have answered this one' : 'Not answered yet') + '"' +
+          ' style="--washcol: ' + col + '; --washbg: ' + bg + '; --fill: ' + fill + '">' +
+          '<span class="ql"><span class="subj" aria-hidden="true">' + c.g + '</span>' +
+          '<span>' + c.t + '</span><span class="setmark">' + (done ? TICK : '') + '</span></span>' +
+          '<span class="qwhy">' + esc(c.val()) +
+          (done ? ' · ' + c.in + ' of ' + E + ' in' : '') + '</span></button></li>';
       }).join('') +
-      '<div class="sendrow"><button class="btn-send" data-act="send"' + (allAnswered() ? '' : ' disabled') + '>Send my answers</button>' +
-      '<div class="railnote">' + (allAnswered()
-        ? 'Sealed until everyone has finished.'
-        : 'The document is already open — you can read and propose while you decide.') + '</div></div>';
+      '<div class="railnote">' + (mine()
+        ? 'Your answers are sealed. Judging opens when everyone has finished theirs.'
+        : 'You can read the charter now. Proposing and judging both wait on these.') + '</div>';
   }
 
   // ---- the modal ---------------------------------------------------------
@@ -305,7 +361,9 @@
       [['ask', 'Answering'], ['waiting', 'Waiting'], ['settled', 'Settled']].map(([k, t]) =>
         '<button data-state="' + k + '" aria-pressed="' + (S.state === k) + '">' + t + '</button>').join('');
     document.getElementById('stat').textContent = S.state === 'settled'
-      ? 'open — reading, proposing and judging' : 'proposals open · judging waits on the ceremony';
+      ? 'open — reading, proposing and judging'
+      : mine() ? 'you can propose · judging waits on the room'
+      : 'reading only · proposing waits on your answers';
   }
 
   const render = () => { renderStates(); renderRail(); renderModal(); };
@@ -316,13 +374,20 @@
     const c = ev.target.closest('[data-card]');
     if (c) { S.open = c.dataset.card; return render(); }
     if (ev.target.closest('[data-confirm]')) { S.seen.add(S.open); S.open = null; return render(); }
-    if (ev.target.closest('[data-close]')) { S.open = null; return render(); }
     const p = ev.target.closest('[data-pick]');
     if (p) { const v = p.dataset.val;
       S[p.dataset.pick] = (v === 'true') ? true : (v === 'false') ? false : v; return render(); }
+    // **Only the scrim itself closes, and only a button that says so.**
+    // `data-close` sits on the scrim, and the scrim is an ancestor of every
+    // control in the card — so `closest('[data-close]')` matched on *every*
+    // click inside the modal and shut it before the option it had just set
+    // could be seen. It looked like the radios were not working; they were
+    // working and then being thrown away. Tested last, and against the target
+    // rather than its ancestry.
+    if (ev.target.closest('button[data-close]') || ev.target.classList.contains('scrim')) {
+      S.open = null; return render(); }
     const a = ev.target.closest('[data-act]');
     if (a) {
-      if (a.dataset.act === 'send') S.state = 'waiting';
       if (a.dataset.act === 'change') S.state = 'ask';
       if (a.dataset.act === 'record') S.open = null;
       return render();

@@ -3713,3 +3713,68 @@ flow. Marked with a class rather than by loosening `.qitem`, so the live layout
 is untouched and the difference is visible in the markup: **inheriting a
 stylesheet means inheriting its assumptions, and the assumptions are the part
 that does not announce itself.**
+
+### The ceremony becomes a queue (2026-08-17)
+
+Four more from Ed, and the first of them removed a thing I should not have built.
+
+**No "Send my answers".** *Once all questions are decided, they're done.* There
+was a button because I had modelled the ceremony as a **form with a submit**; it
+is a **queue**, and a queue is finished when it is empty. The last card you
+confirm is the act. Nothing else on this surface has ever had a submit-the-whole-
+thing control, and the one place I added one was the place most obviously shaped
+like the rest.
+
+**Your own ceremony gates your own proposing** — *and they can't propose until
+their ceremony is done!* This corrects the unlock I had built, where the
+convenor's confirmation of the starting text opened proposing for everybody. The
+right rule is per-member and it is the stronger one: **you should not be able to
+act on a document whose rules you have not yet said what you will accept of.**
+Reading is the only thing available before you answer. Judging still waits on the
+*room*, because a judgment is counted against a quorum that does not exist until
+everybody has spoken.
+
+**The cards fill as the room answers**, exactly as a race card does. So after you
+have answered, the rail stops being a to-do list and becomes what it is
+everywhere else — a place to watch something you are already part of. Measured on
+the fixture: 11 of 14 in on quorum, 9 on the bar, 7 on disclosure, 12 on the
+machines, and the four bars are visibly different lengths.
+
+**And they are pinned**, on Ed's word. Which arrives at the live rail's rule from
+the other end: there, four kinds of entry pin because they are the ones about
+*you* rather than about a clause. Here **every** card is one of those. A setup
+question belongs to no clause, so there is nowhere for it to scroll away to.
+
+### A second alphabet, and why it is not a contradiction
+
+Ed proposed 👥 quorum · ✒️ threshold · 👤 anonymity · 🤖 machines, and the
+reason a second glyph set is right rather than a dilution is worth stating.
+
+The `lifecycle mark` says **what the document wants from you**, and it works in
+the live rail because every card there is a *different state of the same kind of
+thing* — a judgment. A setup rail is the exact reverse: every card is the *same
+state of a different kind of thing*. A state glyph there would say nothing that
+distinguished one card from another. **So the live rail marks state and the setup
+rail marks subject, and the two sets never appear in the same column.** Lifecycle
+is carried by the card instead: left says what it is about, right says whether it
+is done, and the wash says how far the room has got.
+
+✒️ is not a new sign at all — the topbar has written the threshold as `74%✒️`
+since the units landed. 👤 is the `sealed-speaker`'s own disc, so *an unnamed
+person* is already what it means here. Its risk, worth watching: it is one
+silhouette against 👥's two and the cards sit near each other, so the meaning is
+inherited but the shape is not far off. The rest fell out by the same rule —
+📄 the text, 🏷️ the title, 📅 the window, ✉️ the roster (the invitation, which
+also keeps 👥 free for quorum), 🪙 the economy, 🔭 who else can see it.
+
+### The bug this turn produced
+
+Every option inside a modal was being thrown away the moment it was clicked, and
+it looked exactly like the radios not working. They were working, and then the
+card was closing. `data-close` sits on the **scrim**, the scrim is an ancestor of
+every control in the card, and `closest('[data-close]')` therefore matched on
+every click inside it. Tested last now, and against the *target* rather than its
+ancestry.
+
+**A delegated handler that asks "is this inside X" when it means "is this X" will
+be right until X contains anything.**
