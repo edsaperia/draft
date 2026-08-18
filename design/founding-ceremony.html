@@ -308,8 +308,6 @@
     : motionOn(c) ? !answeredMotion(c) : !settled(c));
   const isRoom = (c) => c.own !== 'founder' && c.own !== 'you';
 
-  const face = (p, ghost) => '<span class="pf' + (ghost ? ' ghost' : '') + '">' +
-    avHtml(ghost ? {} : p) + esc(ghost ? 'Not named yet' : p.n) + '</span>';
   // **The sections of the constitution** (Ed, 2026-08-18: the members'
   // choices are *about the constitution*, so each stands as a task in the
   // section it decides — the rule and the question about it are one
@@ -487,7 +485,7 @@
   const ctx = {
     get open() { return S.open; }, get E() { return E; },
     clauseFor: (c) => (c.k === 'roster' ? faces(ROSTER, S.myname) : ''),
-    mustAct, settled, summary, value, isRoom, waiting, news, decisionLine,
+    mustAct, summary, value, isRoom, waiting, news, decisionLine,
     // the composer cards open with the rule itself where the clause goes —
     // no title, the sentence exactly where it stood on the page
     headFor: (c) => {
@@ -707,7 +705,6 @@
   const appCtx = {
     get open() { return S.open; }, get E() { return E; },
     mustAct: (c) => !c.done() && !(c.optional && S.app.submitted),
-    settled: (c) => c.done() || (c.optional && S.app.submitted),
     // the submitted application is a proposal of your own in flight — ✏️
     // blue, its fill how far the judging has got (session-view's `yours`,
     // kept because it carries the one act nobody else can perform)

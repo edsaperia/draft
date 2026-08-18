@@ -98,7 +98,10 @@
   .queue .qhead { font-size: var(--t-cap); color: var(--muted); margin: var(--s3) 0 0; padding: 0 10px; }
   .queue .qhead:first-child { margin-top: 0; }
   .queue .setmark { margin-left: auto; display: inline-flex; align-items: center; }
-  .mkg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9;
+  /* scoped (2026-08-18): a global .mkg fought system.css's em-based rule
+     for every drawn mark on the page */
+  .queue .mkg, .achip .mkg, .cline .mkg, .constsec .mkg, .setupcard .mkg {
+    width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9;
     stroke-linecap: round; stroke-linejoin: round; }
   /* the **subject** glyph. A live rail marks lifecycle state, because every card
      there is a different state of one kind of thing; a setup rail is the
@@ -108,6 +111,13 @@
   .queue.stack .ql .subj { font-size: 1.05em; line-height: 1; }
   .queue.stack .ql > .qt { flex: 1; min-width: 0; }
   .railnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); padding: 0 10px; }
+  /* wait/yours/done entries used to wear session-view's .deciding, whose
+     meaning there is *you already judged it* (drift fix, 2026-08-18):
+     same quiet one-line look, honest name */
+  .queue button.qwait { padding: var(--s1) 10px; color: var(--muted); }
+  .queue button.qwait .ql { display: block; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; font-weight: 500; font-size: var(--t-small); }
+  .queue button.qwait .ql .qv { display: inline; margin: 0; font-weight: 400; }
 
 /* ---------------------------------------------------------------------------
    THE CHOICE — **the session-view's own radio** (Ed, 2026-08-18: *the
@@ -143,11 +153,12 @@
   .setrow2 { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
   .fld { display: flex; flex-direction: column; gap: var(--s1); }
   .fld > label { font-size: var(--t-cap); color: var(--muted); }
-  input, textarea { font: inherit; font-size: var(--t-ui); color: var(--fg); background: var(--bg);
+  .sugg input, .sugg textarea { font: inherit; font-size: var(--t-ui); color: var(--fg); background: var(--bg);
     border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--s2) var(--s3); }
   input:focus-visible, button:focus-visible, textarea:focus-visible,
   [role="radio"]:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   .num { width: 5.5rem; }
+  .numrow { display: inline-flex; gap: var(--s2); align-items: baseline; }
 
 /* ---------------------------------------------------------------------------
    THE CONSENT SLIDER — nothing preselected, and it must not look answered.
@@ -366,9 +377,11 @@
      they were reading. It is text and not a control: the 🏷️ card is where a
      title is written, and a second way in would be a second answer to a
      question this surface has already settled. */
+  /* type comes from system.css's own .doctitle rule (--t-lead, 600) — the
+     literal 1.5rem was drift (2026-08-18); only the box is ours, because
+     this title sits outside .prose and centres itself */
   .doc .doctitle { max-width: calc(70ch + 2 * var(--s5) + 3px); margin: 0 auto var(--s5);
-    padding: 0 var(--s5); font-size: 1.5rem; font-weight: 600; line-height: 1.25;
-    text-wrap: balance; }
+    padding: 0 var(--s5); text-wrap: balance; }
   .doc .doctitle.ph { color: var(--muted); font-weight: 400; }
 
 /* ===========================================================================

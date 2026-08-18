@@ -508,10 +508,6 @@
   // A member who has not opened the document yet is drawn faintly rather than
   // left out: they are on the membership, which is the fact the heading is
   // stating, and whether they have looked at it yet is a different one.
-  const face = (p, ghost) => '<span class="pf' + (ghost ? ' ghost' : '') +
-    (p && p.in === false ? ' waiting' : '') + '">' +
-    avHtml(ghost ? {} : p, p && p.in === false ? 'pending' : '') +
-    esc(ghost ? 'Not named yet' : p.n) + '</span>';
   const groups = () => [
     { key: 'constitution', label: 'Constitution',
       sections: secLive(),
@@ -625,20 +621,6 @@
   // **The constitution, stated** (Ed, 2026-08-18): who convened it, when it
   // was constituted — the moment judging opens — and every constitutional
   // setting's current value, one line each, the glyph doing the naming.
-  const constBlock = () => {
-    const line = (g, t, v, k) => '<' + (k ? 'button' : 'span') + ' class="cline"' +
-      ' title="' + esc(t) + '"' + (k ? ' data-card="' + k + '"' : '') + '>' +
-      '<span class="cg">' + g + '</span><span><b>' + v + '</b></span>' +
-      '</' + (k ? 'button' : 'span') + '>';
-    return '<div class="constlist">' +
-      line('🎩', 'Founder', esc(S.myname || (iDraft() ? 'Unnamed' : 'Anonymous')) + (iDraft() ? '' : ' · clerk') + (S.rosterBy === 'founder' ? ' · 👑' : ' · 🏴')) +
-      line('⏱️', 'Constituted', canJudge() ? 'constituted — judging is open'
-        : 'not yet constituted — it happens when judging opens') +
-      // the settings themselves are the section's paragraphs now (Ed,
-      // 2026-08-18) — the intro states only who convened it, and when
-      '</div>';
-  };
-
   // ---- the grammar's other three states (Ed, 2026-08-18) ------------------
   // wait: the inbox holds the next move, a delegated question is being
   // answered, your own answer is in and the room's are not, a gate's
@@ -741,7 +723,7 @@
   const ctx = {
     get open() { return S.open; }, get E() { return E(); },
     clauseFor: (c) => (c.k === 'roster' ? rosterClause() : ''),
-    mustAct, settled, summary, value, isRoom, waiting, news, tasksFor, decisionLine,
+    mustAct, summary, value, isRoom, waiting, news, tasksFor, decisionLine,
   };
 
   // ---- the rail ----------------------------------------------------------

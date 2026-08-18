@@ -355,7 +355,7 @@ window.SETUP = (function () {
     const fill = ctx.fillOf ? ctx.fillOf(c)
       : room ? Math.min(100, Math.round((c.in || 0) / ctx.E * 100)) + '%' : '100%';
     return '<li class="qitem" data-q="' + c.k + '">' +
-      '<button class="' + (st === 'ask' || st === 'news' ? 'needs' : 'deciding') + ' st-' + st + '"' +
+      '<button class="' + (st === 'ask' || st === 'news' ? 'needs' : 'qwait') + ' st-' + st + '"' +
       ' data-card="' + c.k + '" data-washkey="set:' + c.k + '"' +
       ' aria-current="' + (ctx.open === c.k) + '"' +
       ' title="' + esc(room ? (c.in || 0) + ' of ' + ctx.E + ' have answered' : c.t) + '"' +
@@ -379,7 +379,7 @@ window.SETUP = (function () {
     // constitutional change commits with the 🏛️ hold, and a reserved
     // change the membership passes ends at the founder's 👑 question —
     // so an eyebrow restating either was chrome.
-    return '<div class="sugg setupcard quick-open" role="tabpanel" data-setupcard="' + c.k + '">' +
+    return '<div class="sugg setupcard" role="tabpanel" data-setupcard="' + c.k + '">' +
       '<div class="clausehead">' +
       '<div class="headclause">' + stripHtml(siblings || [c], ctx) +
       // **The head is the rule, not the title**, where a surface says so
@@ -957,7 +957,7 @@ window.SETUP = (function () {
   };
 
   const num = (S, key, label, min, max, suffix) =>
-    '<span class="fld"><label>' + label + '</label><span class="setrow">' +
+    '<span class="fld"><label>' + label + '</label><span class="numrow">' +
     '<input class="num" type="number" data-num="' + key + '" value="' + S[key] + '" min="' + min + '" max="' + max + '">' +
     (suffix ? '<span class="setnote" style="margin:0">' + suffix + '</span>' : '') + '</span></span>';
 
