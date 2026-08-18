@@ -8,16 +8,17 @@
 
    Ed, 2026-08-17: *the roster members as they arrive get their opening ceremony
    questions in the right-sidebar as cards, and once they're done they can
-   start.* And then, 2026-08-18: *the admin's cards are visible to the roster
-   (but not editable by them); the roster's cards are visible to the admin (with
-   completion bar).*
+   start.* Then 2026-08-18: *the admin's cards are visible to the roster (but not
+   editable by them); the roster's cards are visible to the admin (with
+   completion bar).* And then: *the convenor's settings sit in one pile, and
+   participants' in the pile below.*
 
-   Together those two make this screen and the convenor's screen **the same
-   screen**, which is why almost nothing lives in this file. One tab group at
-   the head of the document holds the whole constitution — the convenor's
-   settings and the room's questions in one strip, because the constitution does
-   not depend on who is reading it. What differs is only which tabs you may act
-   on: a member fills in the ones the convenor handed over and reads the rest.
+   Those three make this screen and the convenor's screen the same screen, which
+   is why so little lives in this file. Two piles at the head of the document
+   hold the whole constitution — the convenor's above, the participants' below —
+   and what differs between the two surfaces is only **which pile is yours**. A
+   member answers the ones handed over, reads the rest, and watches the ones they
+   have answered fill up as the room catches them.
 
    Three states, switchable in the topbar so all are inspectable: answering ·
    waiting · settled.
@@ -55,8 +56,8 @@
 <script src="setup.js"></script>
 <script>
 (function () {
-  const { esc, TICK, avHtml, tabGroupHtml, railEntry, cardHtml, readBody,
-    watchBody, identityBody, drawWire, opt, faces, someIn } = window.SETUP;
+  const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, readBody,
+    watchBody, nameBody, pictureBody, drawWire, opt, faces, someIn } = window.SETUP;
   const band = document.getElementById('band');
   const rail = document.getElementById('rail');
   const wires = document.getElementById('wires');
@@ -77,7 +78,8 @@
   ];
 
   const S = { state: 'ask', myname: 'Ida Fenwick', mypic: '',
-    quorum: null, bar: null, authorship: null, signing: null, judgments: null, machines: null,
+    quorum: null, bar: null, authorship: null, signing: null, judgments: null,
+    grant: null, drip: null, stake: null, machines: null,
     seen: new Set(), open: null };
   const me = () => ({ n: S.myname, pic: S.mypic });
 
@@ -90,86 +92,104 @@
   }
 
   // ---- the cards ---------------------------------------------------------
-  // **A second alphabet, and it is a different job from the first.** The
-  // `lifecycle mark` says *what the document wants from you*, and it works in
-  // the live rail because every card there is a different state of one kind of
-  // thing — a judgment. A setup rail is the other way round: every card is the
-  // same state of a **different kind of thing**, so a state glyph would say
-  // nothing that distinguished one from another. The live rail marks **state**
-  // and this one marks **subject**, and the two sets never share a column.
+  // **A second alphabet, doing a different job from the first.** The `lifecycle
+  // mark` says *what the document wants from you*, and it works in the live rail
+  // because every card there is a different state of one kind of thing — a
+  // judgment. A setup rail is the other way round: every card is the same state
+  // of a **different kind of thing**, so a state glyph would distinguish
+  // nothing. The live rail marks **state**; this one marks **subject**.
   //
-  // *Who may be seen* is three of them (Ed, 2026-08-18), and their glyphs have
-  // to be three silhouettes rather than three shades of one idea, since all
-  // three are about being seen: 👤 a person attached to a proposal, ✍️ a hand
-  // putting a name to one, 👁️ whether anybody may look at what you preferred.
+  // Since the decomposition of 2026-08-18 a member answers nine of these rather
+  // than four, because *who may be seen* is three questions and the economy is
+  // three more. Whether nine blind consent questions is too many to put in front
+  // of somebody who came to read a charter is Q322.
   const ROOM = [
-    { k: 'quorum', g: '👥', t: 'Quorum', owner: 'room', in: 11, ask: 'The lowest I will accept',
-      rule: 'Each member states the <b>lowest quorum</b> they will accept and the document takes the highest.',
-      takes: 'The document takes the highest', result: '10 of 14',
-      dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', '14 of 14'] },
-    { k: 'bar', g: '✒️', t: 'The bar', owner: 'room', in: 9, ask: 'The lowest I will accept',
-      rule: 'Each member states the <b>lowest bar</b> they will accept and the document takes the highest.',
-      takes: 'The document takes the highest', result: '80%',
+    { k: 'myname', g: '📛', t: 'Your name', own: 'you', ready: () => !!S.myname.trim() },
+    { k: 'mypic', g: '🙂', t: 'Your picture', own: 'you' },
+    { k: 'quorum', g: '👥', t: 'Quorum', in: 11,
+      rule: 'Each member states the <b>lowest quorum</b> they will accept and the charter takes the highest.',
+      takes: 'The charter takes the highest', result: '10 of 14',
+      dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', 'all of them'] },
+    { k: 'bar', g: '✒️', t: 'The bar', in: 9,
+      rule: 'Each member states the <b>lowest bar</b> they will accept and the charter takes the highest.',
+      takes: 'The charter takes the highest', result: '80%',
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
-    { k: 'authorship', g: '👤', t: 'Whose proposal it is', owner: 'room', in: 7, ask: 'The most I will accept',
-      rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants to stay unnamed keeps the whole document unnamed.',
-      takes: 'The document takes the most private', result: 'Nobody’s name, ever',
+    { k: 'authorship', g: '👤', t: 'Whose proposal it is', in: 7,
+      rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants to stay unnamed keeps the whole charter unnamed.',
+      takes: 'The charter takes the most private', result: 'Nobody’s name, ever',
       dist: [8, 4, 2], distTop: 0, distEnds: ['No names, ever', 'Names from the start'] },
-    { k: 'signing', g: '✍️', t: 'Signing', owner: 'room', in: 7, ask: 'The most I will accept',
+    { k: 'signing', g: '✍️', t: 'Signing', in: 7,
       rule: 'Also a privacy question, and the <b>most private</b> answer wins.',
-      takes: 'The document takes the most private', result: 'Nobody signs',
+      takes: 'The charter takes the most private', result: 'Nobody signs',
       dist: [9, 3, 2], distTop: 0, distEnds: ['Nobody signs', 'Everybody signs'] },
-    { k: 'judgments', g: '👁️', t: 'Your judgments', owner: 'room', in: 12, ask: 'The most I will accept',
+    { k: 'judgments', g: '👁️', t: 'Your judgments', in: 12,
       rule: 'Never revealed while a question is live, whichever is chosen. What this settles is only whether they are published with the record.',
-      takes: 'The document takes the most private', result: 'Never revealed',
+      takes: 'The charter takes the most private', result: 'Never revealed',
       dist: [11, 3], distTop: 0, distEnds: ['Never', 'After the decision'] },
-    { k: 'machines', g: '🤖', t: 'Machine participants', owner: 'room', in: 12, ask: 'The most I will accept',
+    { k: 'grant', g: '🪙', t: 'The starting grant', in: 5,
+      rule: 'Each member states the <b>fewest edits</b> they would accept being given, and the charter takes the most generous.',
+      takes: 'The charter takes the most generous', result: '5 edits',
+      dist: [1, 2, 4, 3, 2, 1, 1], distTop: 4, distEnds: ['0', '12'] },
+    { k: 'drip', g: '💧', t: 'The drip', in: 5,
+      rule: 'Each member states the <b>slowest drip</b> they would accept, and the charter takes the fastest.',
+      takes: 'The charter takes the fastest', result: '1 per 10%',
+      dist: [2, 3, 5, 2, 1, 1], distTop: 2, distEnds: ['slowest', 'fastest'] },
+    { k: 'stake', g: '🎲', t: 'The stake', in: 4,
+      rule: 'A stake is a risk imposed on the proposer, so consent runs the way privacy does: each states the <b>highest</b> they would accept and the charter takes the lowest.',
+      takes: 'The charter takes the lowest', result: '1 edit',
+      dist: [3, 7, 3, 1], distTop: 1, distEnds: ['none', '3 edits'] },
+    { k: 'machines', g: '🤖', t: 'Machine participants', in: 12,
       rule: 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.',
-      takes: 'The document takes the most restrictive', result: 'People only',
+      takes: 'The charter takes the most restrictive', result: 'People only',
       dist: [9, 5], distTop: 0, distEnds: ['People only', 'A machine is fine'] },
   ];
-  // The convenor's own settings, as a member meets them: readable, never
-  // editable. Read-only is not the same as hidden — the whole point of a tab
-  // group at the head of the document is that the constitution is legible to
-  // everyone it binds.
+  // The convenor's own, as a member meets them: readable, never editable.
+  // Read-only is not the same as hidden — the whole point of a pile at the head
+  // of the document is that the constitution is legible to everyone it binds.
   const CONVENOR = [
-    { k: 'text', g: '📄', t: 'The starting text', owner: 'convenor', v: '42 blocks, 9 sections' },
-    { k: 'title', g: '🏷️', t: 'The title', owner: 'convenor', v: 'The Hollow Oak Club — House Charter' },
-    { k: 'slug', g: '🔗', t: 'The link', owner: 'convenor', v: 'draft.to/hollow-oak-4f2a' },
-    { k: 'window', g: '📅', t: 'The window', owner: 'convenor', v: 'Ends Thu 18:00',
+    { k: 'text', g: '📄', t: 'The starting text', own: 'convenor', v: '42 blocks, 9 sections' },
+    { k: 'title', g: '🏷️', t: 'The title', own: 'convenor', v: 'The Hollow Oak Club — House Charter' },
+    { k: 'slug', g: '🔗', t: 'The link', own: 'convenor', v: 'draft.to/hollow-oak-4f2a' },
+    { k: 'roster', g: '✉️', t: 'The roster', own: 'convenor', v: '14 drafting, 1 watching' },
+    { k: 'myrole', g: '🎩', t: 'The convenor’s part', own: 'convenor', v: 'Wren Ashby is drafting too',
+      setBy: 'Chosen by Wren Ashby when they set the charter up',
+      readNote: 'A convenor may instead be the <b>clerk</b> — administering without writing, with no wallet, no judgments and no place in quorum.' },
+    { k: 'ending', g: '📅', t: 'Whether it ends', own: 'convenor', v: 'It ends at a set time' },
+    { k: 'endsAt', g: '⏰', t: 'When it ends', own: 'convenor', v: 'Thursday 18:00',
       readNote: 'The bar rises towards that moment, and the drip is paced against it.' },
-    { k: 'roster', g: '✉️', t: 'The roster', owner: 'convenor', v: '14 drafting, 1 watching',
-      readNote: 'Wren Ashby convened this document and is drafting in it like everybody else.' },
-    { k: 'economy', g: '🪙', t: 'The edit economy', owner: 'convenor', v: '4 to start, 1 back per 10%' },
-    { k: 'chamber', g: '🔭', t: 'Who else can see it', owner: 'convenor', v: 'Anyone with the link' },
+    { k: 'chamber', g: '🔭', t: 'Who else can see it', own: 'convenor', v: 'Anyone with the link' },
   ];
-  const YOU = [{ k: 'you', g: '🙂', t: 'How you appear', owner: 'you' }];
-
-  // One group, in the order a member meets them: what is theirs to answer, then
-  // themselves, then what was already settled for them.
-  const CARDS = ROOM.concat(YOU, CONVENOR);
+  const CARDS = ROOM.concat(CONVENOR);
   const card = (k) => CARDS.find((c) => c.k === k);
 
   const ANSWERED = {
     quorum: () => S.quorum !== null, bar: () => S.bar !== null,
-    authorship: () => !!S.authorship, signing: () => !!S.signing,
-    judgments: () => !!S.judgments, machines: () => S.machines !== null,
-    you: () => !!S.myname.trim(),
+    authorship: () => !!S.authorship, signing: () => !!S.signing, judgments: () => !!S.judgments,
+    grant: () => S.grant !== null, drip: () => S.drip !== null, stake: () => S.stake !== null,
+    machines: () => S.machines !== null, myname: () => !!S.myname.trim(),
   };
   const ready = (c) => (ANSWERED[c.k] ? ANSWERED[c.k]() : true);
-  const settled = (c) => (c.owner === 'convenor' ? true : (S.seen.has(c.k) && ready(c)));
-  const mustAct = (c) => c.owner !== 'convenor' && !settled(c);
-  const isRoom = (c) => c.owner === 'room';
+  const settled = (c) => (c.own === 'convenor' ? true : (S.seen.has(c.k) && ready(c)));
+  const mustAct = (c) => c.own !== 'convenor' && !settled(c);
+  const isRoom = (c) => c.own !== 'convenor' && c.own !== 'you';
+
+  const groups = () => [
+    { key: 'convenor', label: 'The convenor', cards: CONVENOR,
+      note: () => 'settled before you arrived' },
+    { key: 'room', label: 'The participants', cards: ROOM,
+      note: (n) => (n ? n + ' still want you' : 'all answered') },
+  ];
 
   // **Your own ceremony gates your own proposing** (Ed, 2026-08-17). You should
   // not be able to act on a document whose rules you have not yet said what you
-  // will accept of. Reading is the only thing available before you answer.
-  // Judging waits on the *room*, because a judgment is counted against a quorum
-  // that does not exist until everybody has spoken.
-  const mine = () => CARDS.every(settled);
-  const roomDone = () => ROOM.every((c) => (c.in || 0) >= E);
+  // will accept of. Judging waits on the *room*, because a judgment is counted
+  // against a quorum that does not exist until everybody has spoken.
+  const mine = () => ROOM.every(settled);
+  const roomDone = () => ROOM.every((c) => c.own === 'you' || (c.in || 0) >= E);
 
   const VALUE = {
+    myname: () => S.myname || 'Unnamed',
+    mypic: () => (S.mypic ? 'Chosen' : 'Your initials'),
     quorum: () => (S.quorum === null ? 'The lowest you will accept' : 'You said ' + S.quorum + ' of ' + E),
     bar: () => (S.bar === null ? 'The lowest you will accept' : 'You said ' + S.bar + '%'),
     authorship: () => (!S.authorship ? 'The most you will accept' : 'You said ' +
@@ -178,9 +198,12 @@
       { nobody: 'nobody signs', each: 'each author chooses', everybody: 'everybody signs' }[S.signing]),
     judgments: () => (!S.judgments ? 'The most you will accept' : 'You said ' +
       { never: 'never revealed', after: 'revealed after the decision' }[S.judgments]),
+    grant: () => (S.grant === null ? 'The fewest you will accept' : 'You said ' + S.grant + ' to start'),
+    drip: () => (S.drip === null ? 'The slowest you will accept' : 'You said 1 per ' + S.drip + '%'),
+    stake: () => (S.stake === null ? 'The most you will accept'
+      : 'You said ' + (S.stake ? S.stake + ' staked' : 'nothing staked')),
     machines: () => (S.machines === null ? 'The most you will accept'
       : 'You said ' + (S.machines ? 'a machine member is fine' : 'people only')),
-    you: () => S.myname || 'Unnamed',
   };
   const value = (c) => esc(VALUE[c.k] ? VALUE[c.k]() : c.v);
   const summary = (c) => (isRoom(c) && settled(c)
@@ -189,19 +212,19 @@
   const ctx = {
     get open() { return S.open; }, get E() { return E; },
     mustAct, settled, summary, value, isRoom,
-    bandLabel: (c) => (c.owner === 'room' ? 'The participants decide'
-      : c.owner === 'you' ? 'You' : 'Set by the convenor'),
+    bandLabel: (c) => (c.own === 'convenor' ? 'Set by the convenor'
+      : c.own === 'you' ? 'Yours alone' : 'The participants decide'),
   };
 
   // ---- the rail ----------------------------------------------------------
+  // Your own pile first — which on this surface is the participants' — then the
+  // convenor's. The same two groups as the band, in the order that puts what
+  // wants you at the top.
   function renderRail() {
-    const yours = CARDS.filter((c) => c.owner !== 'convenor');
-    const theirs = CONVENOR;
-    rail.innerHTML =
-      '<ul><li class="qhead">' + (roomDone() ? 'Settled' : mine() ? 'Waiting on the room' : 'Before you can take part') + '</li>' +
-      yours.map((c) => railEntry(c, ctx)).join('') +
-      '<li class="qhead">Settled by the convenor</li>' +
-      theirs.map((c) => railEntry(c, ctx)).join('') + '</ul>' +
+    const gs = groups().slice().reverse();
+    rail.innerHTML = '<ul>' + gs.map((g) =>
+      '<li class="qhead">' + esc(g.label) + '</li>' +
+      g.cards.map((c) => railEntry(c, ctx)).join('')).join('') + '</ul>' +
       '<div class="railnote">' + (roomDone()
         ? 'The constitution is settled. Judging is open.'
         : mine() ? 'Your answers are sealed. Judging opens when everyone has finished theirs.'
@@ -226,78 +249,97 @@
   };
 
   // `privacy-ladder` — the rungs *above* your answer are dimmed rather than
-  // hidden, since *the most I will accept* only reads as a ladder if you can
-  // see what you are refusing. The control itself is the session-view's own
-  // radio now (Ed, 2026-08-18), so a ladder is a list of them and nothing else.
+  // hidden, since *the most I will accept* only reads as a ladder if you can see
+  // what you are refusing. The control is the session-view's own radio.
   const ladder = (key, rungs) => '<div class="choice" role="radiogroup">' + rungs.map((r, i) => {
     const at = rungs.findIndex((x) => x.v === S[key]);
     return opt(S, key, r.v, r.t, r.e, '', false, (at >= 0 && i > at) ? ' above' : '');
   }).join('') + '</div>';
 
+  const BLIND = '<p class="blindnote">Nobody sees your answer, and you will see nobody else’s until every one of them is in.</p>';
+
   const BODY = {
-    you: () => identityBody(me()),
-    quorum: () => '<h2>The lowest quorum I will accept</h2>' + whoBox('quorum') +
+    myname: () => nameBody(me()),
+    mypic: () => pictureBody(me()),
+    quorum: () => whoBox('quorum') +
       '<p class="why">How many of the fourteen must weigh in on a question before it can change the charter. A question short of quorum simply waits — nobody’s silence is ever counted as a vote.</p>' +
       slider('quorum', 1, E, (v) => v + ' of ' + E, (v) =>
         v >= E ? 'Nothing moves unless every member has weighed in. A charter that cannot change without all fourteen is a perfectly reasonable thing to want.'
         : v <= Math.ceil(E / 4) ? 'A small part of the room can carry a change while the rest are elsewhere.'
         : 'Rather more than half the room has to have looked at a question before it can move.') +
       '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> of the fourteen, so it will never be lower than what you say here.</p>',
-    bar: () => '<h2>The lowest bar I will accept</h2>' + whoBox('bar') +
+    bar: () => whoBox('bar') +
       '<p class="why">How sure the room has to be that a new wording beats the one it would replace. A confidence, not a vote share — at 60% a change goes through on a real but slender preference; at 90% only something close to agreement moves anything.</p>' +
       slider('bar', 50, 95, (v) => v + '%', (v) =>
         v >= 85 ? 'Only near-agreement changes anything. Expect the charter to move slowly and keep most of what it started with.'
         : v <= 60 ? 'A modest preference is enough. The charter will move quickly, and reverse itself more often.'
         : 'A clear preference is needed, but not agreement.') +
       '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> of the fourteen.</p>',
-    authorship: () => '<h2>Whose proposal it is</h2>' +
+    authorship: () =>
       '<p class="why">Rationales are visible whatever the room settles on. What varies is only whether a name is attached to one. Here the rule runs the other way: the charter takes the <b>most private</b> answer, so one person who wants to stay unnamed keeps the whole charter unnamed.</p>' +
       ladder('authorship', [
         { v: 'anonymous', t: 'Nobody’s name, ever', e: 'Not during the session and not in the closing record.' },
         { v: 'sealed', t: 'Names at the close', e: 'Hidden while the charter is being written; published with the record.' },
         { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' }]) +
       '<p class="blindnote">Nothing is preselected — anonymity holds unless every one of the fourteen is content with more.</p>',
-    signing: () => '<h2>Signing</h2>' +
+    signing: () =>
       '<p class="why">Whether an author may put their name to a proposal that is otherwise unattributed.</p>' +
       ladder('signing', [
         { v: 'nobody', t: 'Nobody signs', e: 'The only setting under which an unsigned proposal says nothing about whoever wrote it.' },
         { v: 'each', t: 'Each author chooses', e: 'In a room of fourteen, an unsigned one among signed ones says something.' },
-        { v: 'everybody', t: 'Everybody signs', e: 'Uniform in the other direction.' }]),
-    judgments: () => '<h2>Your judgments</h2>' +
+        { v: 'everybody', t: 'Everybody signs', e: 'Uniform in the other direction.' }]) + BLIND,
+    judgments: () =>
       '<p class="why">Never revealed while a question is still being judged, whichever the room settles on — that would make the room read each other instead of the text. What this settles is only whether they are published with the closing record.</p>' +
       ladder('judgments', [
         { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
-        { v: 'after', t: 'Revealed once the decision is made', e: 'Published with the record, never before it.' }]),
-    machines: () => '<h2>Machine participants</h2>' +
+        { v: 'after', t: 'Revealed once the decision is made', e: 'Published with the record, never before it.' }]) + BLIND,
+    grant: () =>
+      '<p class="why">How many edits everybody holds on the first day. Proposing costs one; withdrawing gives it back. Say the <b>fewest</b> you would accept being given — the charter takes the most generous answer, so nobody ends up with less than they were willing to work with.</p>' +
+      slider('grant', 0, 12, (v) => (v === 1 ? '1 edit' : v + ' edits'), (v) =>
+        v === 0 ? 'Nobody may propose anything until the drip has run. A real answer, and a very slow start.'
+        : v <= 3 ? 'Few enough that a member thinks before spending one.'
+        : v >= 9 ? 'Nobody will feel the wallet at all in a session this long.'
+        : 'Enough to open two or three fronts at once.') + BLIND,
+    drip: () =>
+      '<p class="why">How fast a spent edit comes back. Say the <b>slowest</b> you would accept; the charter takes the fastest of the fourteen.</p>' +
+      slider('drip', 5, 40, (v) => '1 back per ' + v + '% of the window', (v) =>
+        v <= 10 ? 'Ten or more edits over the window. The wallet is a rhythm rather than a budget.'
+        : v >= 30 ? 'Three or four all week. Every proposal is a real decision to spend.'
+        : 'Five or six over the window.') + BLIND,
+    stake: () =>
+      '<p class="why">What a proposal risks. A stake comes back in full if you withdraw it, and in proportion to how well it did if it does not carry (§7) — so it prices carelessness rather than disagreement. Say the <b>most</b> you would accept; the charter takes the lowest.</p>' +
+      slider('stake', 0, 3, (v) => (v === 0 ? 'Nothing staked' : v === 1 ? '1 edit staked' : v + ' edits staked'), (v) =>
+        v === 0 ? 'A proposal costs its edit and risks nothing further.'
+        : v >= 3 ? 'A proposal that goes nowhere is expensive. Expect fewer, and more considered.'
+        : 'A proposal that goes nowhere costs a little more than one that does.') + BLIND,
+    machines: () =>
       '<p class="why">The convenor has offered a machine member — a coherence auditor that patrols for drift and proposes fixes. It holds a budget like anybody else. The <b>most restrictive</b> answer wins, so if you would rather not draft alongside one, it stays out.</p>' +
       ladder('machines', [
         { v: 'false', t: 'People only', e: 'No machine member in this charter.' },
-        { v: 'true', t: 'A machine member is fine', e: 'It competes on the same terms as anybody else and can be out-judged like anybody else.' }]),
+        { v: 'true', t: 'A machine member is fine', e: 'It competes on the same terms as anybody else and can be out-judged like anybody else.' }]) + BLIND,
   };
 
   // ---- the band ----------------------------------------------------------
   function renderBand() {
-    band.className = 'setupband' + (S.open ? ' open' : '');
-    let h = tabGroupHtml(CARDS, ctx);
-    if (S.open) {
+    band.innerHTML = bandHtml(groups(), ctx, (g) => {
       const c = card(S.open);
       let body, foot;
-      if (c.owner === 'convenor') {
+      if (c.own === 'convenor') {
         body = readBody(c, ctx);
         foot = '<span></span><button class="btn" data-close="1">OK</button>';
       } else {
         // Once you have answered, the card keeps your answer and grows the
-        // watching half underneath — the same half the convenor sees, because
-        // it is the same question and neither of you may see more of it than
-        // how many have answered until every one of them has.
+        // watching half underneath — the same half the convenor sees, because it
+        // is the same question and neither of you may see more of it than how
+        // many have answered until every one of them has.
         body = BODY[c.k]() + (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
         foot = '<button class="btn" data-close="1">Close</button>' +
           '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
           ' data-confirm="1" title="' + (ready(c) ? 'Confirm' : 'Not answered yet') + '">' + TICK + '</button>';
       }
-      h += cardHtml(c, ctx, body, foot);
-    }
-    band.innerHTML = h;
+      return cardHtml(c, ctx, body, foot, g.cards);
+    });
+    fitBand(band);
   }
 
   function renderStates() {
@@ -313,18 +355,20 @@
   const render = () => { renderStates(); renderRail(); renderBand(); drawWire(wires, S.open); };
 
   // the three states are a fixture switch, so all of them are inspectable
+  const COUNTS = { quorum: 11, bar: 9, authorship: 7, signing: 7, judgments: 12,
+    grant: 5, drip: 5, stake: 4, machines: 12 };
   function setState(k) {
     S.state = k; S.open = null;
     if (k === 'ask') {
-      S.quorum = S.bar = S.machines = null; S.authorship = S.signing = S.judgments = null;
-      S.seen = new Set();
-      ROOM.forEach((c, i) => { c.in = [11, 9, 7, 7, 12, 12][i]; });
+      S.quorum = S.bar = S.grant = S.drip = S.stake = null;
+      S.machines = null; S.authorship = S.signing = S.judgments = null;
+      S.mypic = ''; S.seen = new Set();
     } else {
       S.quorum = 10; S.bar = 80; S.authorship = 'anonymous'; S.signing = 'nobody';
-      S.judgments = 'never'; S.machines = false;
-      S.seen = new Set(CARDS.map((c) => c.k));
-      ROOM.forEach((c, i) => { c.in = k === 'settled' ? E : [11, 9, 7, 7, 12, 12][i]; });
+      S.judgments = 'never'; S.grant = 5; S.drip = 10; S.stake = 1; S.machines = false;
+      S.mypic = 'c2'; S.seen = new Set(ROOM.map((c) => c.k));
     }
+    ROOM.forEach((c) => { if (COUNTS[c.k] != null) c.in = k === 'settled' ? E : COUNTS[c.k]; });
   }
 
   document.addEventListener('click', (ev) => {
@@ -343,6 +387,9 @@
   });
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && S.open) { S.open = null; return render(); }
+    if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.closest('[data-tab]')) {
+      ev.preventDefault(); ev.target.closest('[data-tab]').click();
+    }
   });
   document.addEventListener('input', (ev) => {
     if (ev.target.dataset.txt === 'myname') {
@@ -358,7 +405,7 @@
     const again = document.querySelector('[data-slide="' + r.dataset.slide + '"]');
     if (again) again.focus();
   });
-  addEventListener('resize', () => drawWire(wires, S.open));
+  addEventListener('resize', () => { fitBand(band); drawWire(wires, S.open); });
   addEventListener('scroll', () => drawWire(wires, S.open), true);
 
   renderDoc(); render();

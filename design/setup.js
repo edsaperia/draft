@@ -64,22 +64,99 @@ window.SETUP = (function () {
       bg: 'rgba(var(--lc-' + h + '), 0.06)' };
   };
 
-  /* ---- the tab group ------------------------------------------------------
-     Every card is a tab, whoever it belongs to, because the group is the
-     constitution and the constitution does not depend on who is reading it.
-     The strip does not reorder (Ed, 2026-08-17): it is a fixed set of places
-     you move a highlight around, which is what makes it a strip and not a list
-     of shortcuts. */
-  function tabGroupHtml(cards, ctx) {
-    return '<div class="tabgroup" role="tablist">' + cards.map((c) => {
-      const active = ctx.open === c.k;
-      const title = c.t + (ctx.mustAct(c) ? ' — waiting on you' : ctx.settled(c) ? ' — settled' : '');
-      return '<button class="achip' + (active ? ' wmark' : '') + '" role="tab"' +
-        ' aria-selected="' + active + '" data-tab="' + c.k + '"' +
-        ' style="--chiphue: var(--lc-' + hueOf(c, ctx) + ')"' +
-        ' title="' + esc(title) + '"><span aria-hidden="true">' + c.g + '</span>' +
-        '<span class="sr">' + esc(c.t) + '</span></button>';
-    }).join('') + '</div>';
+  /* ---- the piles ----------------------------------------------------------
+     **These are clause-tabs, and they pile like clause-tabs** (Ed, 2026-08-18,
+     overruling the flat group of the morning: *I'd like all of these tabs to act
+     like clause-tabs and pile like clause tabs. The convenor's settings sit in
+     one pile, and participants' in the pile below*).
+
+     Which is the right call and settles Q316 the other way. The flat group was
+     defended on the grounds that a pile of fourteen shows one glyph and a
+     constitution deserves better — but that argument was really about the wrong
+     thing being in one pile. **Two piles by who decides** says something a flat
+     row of fourteen could not say at all, and it says it in the vocabulary the
+     gutter already has: the front tab is what most wants you, the slivers behind
+     carry hue and no count, one stack is one target, and opening it expands the
+     pile into the strip down the card's left edge.
+
+     It also makes one behaviour visible that was previously only in the rail:
+     handing a setting to the room **moves its tab from the top pile to the
+     bottom one**. Delegation stops being a radio you ticked and becomes a thing
+     you can see happen.
+
+     One departure from the gutter, and it is a difference in the objects rather
+     than in the design: **a settled setting stays in the closed pile**. In the
+     document a filed decision leaves, because it is history at that clause; a
+     settled setting is not history, it is *the rule*. So it goes grey and stays,
+     which is what leaves the head of the document holding the constitution. */
+  const chipHtml = (c, ctx, o) =>
+    '<span class="achip' + (o.active ? ' wmark' : '') + (o.inert ? ' behind' : '') + '"' +
+    (o.inert ? ' aria-hidden="true"' : ' role="button" tabindex="0" data-tab="' + c.k + '"') +
+    ' style="--chiphue: var(--lc-' + hueOf(c, ctx) + ')' + (o.z ? '; z-index:' + o.z : '') + '"' +
+    (o.inert ? '' : ' title="' + esc(c.t + (o.active ? ' — close it'
+      : ctx.mustAct(c) ? ' — waiting on you' : ctx.settled(c) ? ' — settled' : '')) + '"') +
+    '><span aria-hidden="true">' + c.g + '</span>' +
+    (o.inert ? '' : '<span class="sr">' + esc(c.t) + '</span>') + '</span>';
+
+  /* **The front of a pile is what most wants you**, which is deliberately not
+     the order the rail uses. The rail ranks by what must not be lost; a stack
+     ranks by what is being asked — and you do not click into a pile to be shown
+     something that is finished. Stable within each half, so the strip a card
+     opens into is the pile expanded and the two never disagree about what sits
+     where. */
+  const stackOrder = (cards, ctx) =>
+    cards.slice().sort((a, b) => (ctx.mustAct(b) ? 1 : 0) - (ctx.mustAct(a) ? 1 : 0));
+
+  /* Closed: the pile, in the gutter, standing where the card's strip will be.
+     Open: the same tabs lined up down the side of the card. One list, two
+     postures — `stripHtml` is `pileHtml` with the peek taken off. */
+  const pileHtml = (cards, ctx) => {
+    const gs = stackOrder(cards, ctx);
+    return '<span class="chipcol' + (gs.length > 1 ? ' stack' : '') + '">' +
+      gs.map((c, i) => chipHtml(c, ctx, { inert: i > 0, z: gs.length - i })).join('') + '</span>';
+  };
+  const stripHtml = (cards, ctx) => '<span class="chipcol">' +
+    stackOrder(cards, ctx).map((c) => chipHtml(c, ctx, { active: ctx.open === c.k })).join('') + '</span>';
+
+  /* The band at the head of the document: one row per pile, in flow, so the
+     second pile stands under the first exactly as a second clause's marks stand
+     under a first's. The row whose pile holds the open card shows the card
+     instead — the card is where its pile was, which is the same move a decision
+     card makes on its paragraph. */
+  function bandHtml(groups, ctx, cardFor) {
+    return groups.map((g) => {
+      const holds = g.cards.some((c) => ctx.open === c.k);
+      if (holds) return cardFor(g);
+      const left = g.cards.filter((c) => ctx.mustAct(c)).length;
+      return '<div class="setrow" data-pile="' + g.key + '">' + pileHtml(g.cards, ctx) +
+        '<div class="pilelab"><span class="eyebrow">' + esc(g.label) + '</span>' +
+        '<span class="pilen">' + esc(g.note(left)) + '</span></div></div>';
+    }).join('');
+  }
+
+  /* A pile may reach down as far as the next thing in the band and no further,
+     which is `fitStacks` doing the same job one column over; and a row is never
+     shorter than the pile standing beside it, because there is no clause here to
+     give it a height of its own. */
+  function fitBand(band) {
+    if (!band) return;
+    band.querySelectorAll('.setrow').forEach((row) => {
+      const col = row.querySelector('.chipcol');
+      if (!col) return;
+      const n = col.children.length;
+      if (n > 1) col.style.setProperty('--peek', Math.max(1.5, Math.min(4, 60 / (n - 1))).toFixed(2) + 'px');
+      row.style.minHeight = Math.ceil(col.getBoundingClientRect().height + 8) + 'px';
+    });
+    // the card grows to hold its strip: a floor, not a height, so the card is
+    // still as tall as what it says and the strip only stops it being shorter
+    band.querySelectorAll('.setupcard').forEach((card) => {
+      card.style.minHeight = '';
+      const col = card.querySelector('.chipcol');
+      if (!col) return;
+      const r = card.getBoundingClientRect();
+      const need = col.getBoundingClientRect().bottom - r.top + 14;
+      if (need > r.height) card.style.minHeight = Math.ceil(need) + 'px';
+    });
   }
 
   /* ---- the rail entry -----------------------------------------------------
@@ -105,14 +182,20 @@ window.SETUP = (function () {
   }
 
   /* ---- the card shell -----------------------------------------------------
-     The `decision card`'s own shape: a head that says what this is, the body,
-     and a commit row at the foot. The head carries no clause because a setting
-     has none — what it is about is the document, and the document is what it
-     has opened at the top of. */
-  function cardHtml(c, ctx, body, foot) {
+     The `decision card`'s own shape, down to the markup: a `clausehead` whose
+     `headclause` carries the tab strip in the gutter, then the field, then the
+     commit row. The head holds the card's title where a clause would be —
+     because a setting has no clause, and what it is *about* is the document it
+     has opened at the top of. Everything else is the same object, so the strip
+     lands in the same gutter column the pile stood in and the tab you clicked
+     does not move. */
+  function cardHtml(c, ctx, body, foot, siblings) {
     return '<div class="sugg setupcard quick-open" role="tabpanel" data-setupcard="' + c.k + '">' +
-      '<div class="cardlab"><span class="eyebrow rechead">' + esc(ctx.bandLabel(c)) + '</span></div>' +
-      body +
+      '<div class="clausehead">' +
+      '<div class="headlab"><span>' + esc(ctx.bandLabel(c)) + '</span></div>' +
+      '<div class="headclause">' + stripHtml(siblings || [c], ctx) +
+      '<h2 class="rtext">' + esc(c.t) + '</h2></div></div>' +
+      '<div class="field">' + body + '</div>' +
       '<div class="race-mid commitrow">' + foot + '</div></div>';
   }
 
@@ -179,24 +262,33 @@ window.SETUP = (function () {
       '<p class="setnote">What the fourteen asked for, without names.</p>';
   }
 
-  /* The identity card, whole — it is the same question for a convenor and for a
-     member, so neither surface writes it. */
-  function identityBody(me) {
-    return '<h2>How you appear here</h2>' +
-      '<p class="why">Your name and picture are the only things about you anybody sees while the document is being written. ' +
-      'They are not the same as authorship: who proposed what is settled by the disclosure rule, and under most of its ' +
-      'settings your name never appears beside a proposal at all.</p>' +
-      '<div class="idrow">' + avHtml(me, 'big') +
-      '<span class="fld"><label for="myname">Your name</label>' +
-      '<input id="myname" data-txt="myname" value="' + esc(me.n || '') + '" placeholder="Your name"></span></div>' +
-      '<div class="fld"><label>Your picture</label><div class="avpick">' +
-      avatarOptions().map((o) =>
-        '<button class="avopt" data-pic="' + o.id + '" aria-pressed="' + ((me.pic || '') === o.id) + '"' +
-        ' title="' + (o.id ? 'A picture' : 'Your initials') + '">' +
-        avHtml({ n: me.n, pic: o.id }, 'big') + '</button>').join('') +
-      '</div></div>' +
-      '<p class="setnote">Photographs arrive with real accounts; a mockup has no business inventing faces for people who do not exist.</p>';
-  }
+  /* **A name and a picture are two cards** (Ed, 2026-08-18: *picture and name
+     separate!*). They were one, on the reasoning that they are answered in one
+     sitting — which is a fact about when you happen to do them and not about
+     what they are. They are also the pair that most clearly earns the split:
+     one is a word other people will type at you and the other is a shape they
+     will recognise across a rail, and a room where everybody has a name and
+     nobody has a picture is a perfectly ordinary room.
+
+     Neither is authorship. A name is how you appear **in the room** — the
+     roster, the presence row, beside your own wallet — where authorship is
+     whether a name is attached to a **proposal**, which is sealed by default
+     (SPEC §9.0c). Both are written by `setup.js` because both are the same
+     question for a convenor and for a member. */
+  const nameBody = (me) =>
+    '<p class="why">What other people call you here. It is not authorship: who proposed what is settled by the disclosure rule, and under most of its settings your name never appears beside a proposal at all — a document showing fourteen named people and not one named candidate is the ordinary case.</p>' +
+    '<div class="idrow">' + avHtml(me, 'big') +
+    '<span class="fld"><label for="myname">Your name</label>' +
+    '<input id="myname" data-txt="myname" value="' + esc(me.n || '') + '" placeholder="Your name"></span></div>' +
+    '<p class="setnote">Change it whenever you like; it is yours and it binds nobody.</p>';
+
+  const pictureBody = (me) =>
+    '<p class="why">The shape people will recognise you by in the roster and the presence row. Your initials are a real answer — most rooms run on them.</p>' +
+    '<div class="avpick">' + avatarOptions().map((o) =>
+      '<button class="avopt" data-pic="' + o.id + '" aria-pressed="' + ((me.pic || '') === o.id) + '"' +
+      ' title="' + (o.id ? 'A picture' : 'Your initials') + '">' +
+      avHtml({ n: me.n, pic: o.id }, 'big') + '</button>').join('') + '</div>' +
+    '<p class="setnote">Photographs arrive with real accounts; a mockup has no business inventing faces for people who do not exist.</p>';
 
   /* ---- the cable ----------------------------------------------------------
      `queue-wire`, lifted from session-view with its rules intact: 6px, opaque,
@@ -338,6 +430,7 @@ window.SETUP = (function () {
     '<span class="pf' + (p.n === meName ? ' me' : '') + '">' + avHtml(p) +
     esc(p.n) + (p.n === meName ? ' (you)' : '') + '</span>').join('') + '</div>';
 
-  return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, tabGroupHtml, railEntry,
-    cardHtml, readBody, watchBody, distHtml, identityBody, drawWire, opt, num, faces, someIn };
+  return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, railEntry,
+    bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
+    nameBody, pictureBody, drawWire, opt, num, faces, someIn };
 })();

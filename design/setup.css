@@ -23,53 +23,42 @@
    about; a setting is about the whole document, so it opens where the whole
    document begins.
 
-   **The tabs lie flat here.** In the gutter a strip of tabs is vertical,
-   because the space beside a clause is vertical and right-aligned onto the
-   card's left edge. At the head of the document the free space runs the other
-   way, so the same strip lies down: a group above a panel, joined along the
-   card's top edge instead of its left. Everything else is the rule that was
-   already there — the strip never reorders, the active tab grows in the only
-   direction available to it, and the glyph does not move when it does.
+   **They are clause-tabs, and they pile like clause-tabs** (Ed, 2026-08-18,
+   overruling the flat group of the morning). Two piles, one per holder — the
+   convenor's settings above, the participants' below — standing in the
+   `chip-gutter` exactly where each card's strip will be, so a pile expands into
+   its strip without the tab you clicked moving. Everything the gutter already
+   knows applies unchanged: the front tab is what most wants you, the slivers
+   carry hue and no count, one stack is one target.
 
-   And that is what the whole screen leaves behind: **a tab group at the top of
-   the document, next to the title**, every tab grey, one per rule the room
-   agreed. It is where you go to ask what the bar is.
+   Two piles say something a flat row of fourteen could not: **who decides**.
+   And handing a setting to the room moves its tab from the top pile to the
+   bottom one, so delegation stops being a radio you ticked and becomes a thing
+   you can watch happen.
+
+   That is also what the whole screen leaves behind: two grey piles at the head
+   of the document, holding the constitution. It is where you go to ask what the
+   bar is.
    --------------------------------------------------------------------------- */
-  .setupband { max-width: calc(70ch + 2 * var(--s5) + 3px); margin: 0 auto var(--s4); }
-  .setupband.open { margin-bottom: var(--s5); }
-
-  .tabgroup { display: flex; align-items: flex-end; gap: 3px; flex-wrap: wrap; }
-  /* rounded on the **top** only, so the bottom edge is a joint rather than an
-     end — the mirror of the gutter strip's left-only radius */
-  .tabgroup .achip { border-radius: var(--r-sm) var(--r-sm) 0 0; }
-  .setupband.open .tabgroup { margin-bottom: -2px; position: relative; z-index: 2; }
-
-  /* The active tab **grows upward**, which is the only direction available: the
-     group is bottom-aligned onto the card's top edge, so growing is
-     automatically growing up. The 8px goes on `padding-top` as well as on
-     `height`, so with `border-box` the content box is still 30px and the glyph
-     centres in the same place it did — the card-opening motion is measured on
-     the mark you clicked not moving. */
-  .tabgroup .achip.wmark {
-    height: 38px; padding-top: 8px; padding-bottom: 0;
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
-    box-shadow: 1px -1px 1px rgba(0, 0, 0, 0.07), 2px -3px 4px rgba(0, 0, 0, 0.13);
-    position: relative; z-index: 1;
+  .setupband { margin: 0 auto var(--s5); }
+  /* Each row is the card's own box, so the pile stands in the gutter column the
+     strip will occupy. There is no clause here to give the row a height, so
+     `fitBand` floors it against the pile beside it. */
+  .setrow {
+    position: relative; box-sizing: border-box;
+    max-width: calc(70ch + 2 * var(--s5) + 3px);
+    margin: 0 auto var(--s4); padding: 0 var(--s5);
   }
-  .tabgroup .achip.wmark:hover {
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg));
-    transform: none;
-    box-shadow: 1px -1px 1px rgba(0, 0, 0, 0.09), 3px -4px 6px rgba(0, 0, 0, 0.16);
-  }
-  .tabgroup .achip.wmark:active { transform: none; }
-  /* a tab you cannot act on is still a tab you can read */
-  .tabgroup .achip[data-readonly] { cursor: pointer; }
-  .tabgroup .gap { width: var(--s4); }
+  .setrow .pilelab { display: flex; flex-direction: column; gap: 2px; padding-top: 3px; }
+  .setrow .pilen { font-size: var(--t-small); color: var(--muted); }
 
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden;
     clip: rect(0 0 0 0); white-space: nowrap; }
   .setupcard { margin-top: 0; }
-  .setupcard .cardlab { display: flex; align-items: baseline; gap: var(--s2); margin-bottom: var(--s1); }
+  /* the card's title sits where a clause sits, at the head, with the strip
+     beside it — so it is set as the head's own text and not as a heading
+     floating above a body */
+  .setupcard .clausehead .rtext { font-size: var(--t-lead); font-weight: 600; margin: 0; }
   .setupcard h2 { font-size: var(--t-lead); font-weight: 600; margin: 0 0 var(--s2); }
   .setupcard .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch; }
   .setupcard .setnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
@@ -138,7 +127,9 @@
   .pick.above { opacity: 0.5; }
   .pick.off { opacity: 0.42; }
   .pick.off .lanepick { pointer-events: none; }
-  .setrow { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
+  /* a row of fields *inside* a card — distinct from `.setrow`, which is the
+     band row a pile stands in */
+  .setrow2 { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
   .fld { display: flex; flex-direction: column; gap: var(--s1); }
   .fld > label { font-size: var(--t-cap); color: var(--muted); }
   input, textarea { font: inherit; font-size: var(--t-ui); color: var(--fg); background: var(--bg);

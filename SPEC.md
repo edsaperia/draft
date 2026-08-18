@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.26
+# Group Drafting Engine — Specification v0.27
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -191,7 +191,7 @@ Two consequences. A deadlocked race that a participant has not judged **counts a
 
 **The window.** A document either has an **end datetime** or it is **perpetual**. A window buys the closing ceremony, a token drip paced against it, and a record cut at a known moment. Without one, the drip runs against **real time** and does not reset, and the document ends by **freeze** (§9.5) — so a perpetual document is not really endless, it is one whose ending is decided by its roster rather than its calendar.
 
-**The edit economy.** The starting number of edits and the rate they come back are creation-time parameters too (Ed, 2026-08-16), alongside quorum and the bar rather than buried among the defaults — a document meant to move quickly and one meant to be hard to change want different answers, and the members can see the difference in their wallets from the first minute.
+**The edit economy**, which is **three settings and not one** (Ed, 2026-08-18): the **grant** a member starts with, the **drip** that returns spent edits (with its cap), and the **stake** a proposal risks. They are delegable independently, and they resolve in different directions — the grant and the drip take the most generous answer any member stated, where the stake takes the **lowest**, because a stake is a risk imposed on the proposer and consent over a risk runs the way privacy does. They are creation-time parameters (Ed, 2026-08-16), alongside quorum and the bar rather than buried among the defaults — a document meant to move quickly and one meant to be hard to change want different answers, and the members can see the difference in their wallets from the first minute.
 
 **The threshold shape.** The bar is either **fixed** or **ramping**, and this is a separate choice: a windowed document may perfectly well hold its bar fixed for the whole window. Only the perpetual case is *constrained*, and only because a ramp needs an endpoint to ramp toward. §4.3's argument for ramping — the bar should track irreversibility, since an early adoption can still be challenged inside the window and a late one is permanent — is an argument available to any document with an end, and to no document without one. A fixed bar reads exactly as §4.4 already describes the mechanism: anything may displace anything, always, at the same price.
 
