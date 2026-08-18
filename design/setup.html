@@ -556,6 +556,11 @@
   const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
     GATES.find((c) => c.k === k);
   const isRoom = (c) => !!(c.key && delegated(c.key));
+  // who holds it, title and link included (§9.7 v0.51): the founder may
+  // unreserve either, after which they compose like any member
+  const membersHold = (c) => isRoom(c) ||
+    (!!cs && (c.k === 'title' || c.k === 'slug') &&
+      csState(midOf(c.k)) && csState(midOf(c.k)).holder === 'members');
   // **Your own answer is a separate card in the membership pile** (Ed,
   // 2026-08-18, revising the both-halves-on-one-card build of the same
   // morning): delegating is one act and answering is another, done later and
@@ -810,7 +815,8 @@
   const PKEY = { link: 'slug', startingText: 'text', applications: 'policy', membership: 'roster' };
   const pkeyOf = (mid2) => PKEY[mid2] || mid2;
   const motionTargets = (rec) =>
-    pkeyOf(rec.payload.kind === 'set' ? rec.payload.setting : 'membership');
+    pkeyOf(rec.payload.kind === 'set' || rec.payload.kind === 'reserve'
+      ? rec.payload.setting : 'membership');
   const nameOfMember = (mid2) => {
     const row = S.roster.find((r) => (r.mid || 'founder') === mid2);
     return row ? (row.n || row.e || mid2) : mid2;
@@ -818,6 +824,10 @@
   // what a typed motion proposes, said in the page's own vocabulary
   const motionDisplay = (rec) => {
     const p = rec.payload;
+    if (p.kind === 'reserve') {
+      return 'Returns ' + (p.setting === 'link' ? 'the link' : 'the title') +
+        ' to the founder’s reserve';
+    }
     if (p.kind === 'invite') return p.email.split('@')[0] + ' joins the membership';
     if (p.kind === 'remove') return nameOfMember(p.member) + ' leaves the membership';
     if (p.kind === 'admit') return 'an applicant joins the membership';
@@ -933,7 +943,7 @@
   // setting body itself rather than a composer.
   const composerOn = (c) => motionsLive() && viewerIsMember() && !c.isGate && !c.ansFor &&
     c.kind !== 'personal' && c.k !== 'text' && settled(c) && !motionOn(c) &&
-    !(amFounder() && !isRoom(c));
+    !(amFounder() && !membersHold(c));
   const commitFor = (c) => motionCommitHtml(c,
     (S.draft && S.draft.k === c.k) ? S.draft.to : '',
     !!myHeldOut() && myHeldOut() !== c.k);
@@ -1372,7 +1382,7 @@
     },
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
-    reserved: (c) => !c.isGate && !c.ansFor && c.kind !== 'personal' && !isRoom(c),
+    reserved: (c) => !c.isGate && !c.ansFor && c.kind !== 'personal' && !membersHold(c),
     mustAct, summary, value, isRoom, waiting, news, tasksFor, decisionLine,
   };
 
@@ -1444,6 +1454,12 @@
   const theyDecide = (key, note) => opt(S, key, 'roster', 'The members decide',
     'Asked of everyone before drafting begins, blind — you among them, if you are on the roster. ' + note);
 
+  // §9.7 v0.51 (Ed, 2026-08-19): the founder decides whether the title and
+  // link are reserved — the option opens with proposing, on the cards
+  // themselves, one-way: the road back is a constitutional motion.
+  const unreserveBlock = (k) => (!cs || !cs.textConfirmed ? '' :
+    '<p class="setnote"><b>Reserved — yours.</b> A member’s proposal that carries comes to you as a 👑 question. You may hand it to the members instead — one way: taking it back would take everyone.</p>' +
+    '<button class="btn" data-unreserve="' + k + '">Unreserve — hand it to the members</button>');
   const BODY = {
     text: () =>
       '<div class="unlocks">Confirming this lets everyone start <b>proposing</b>. They will not be able to judge until the constitution is settled.</div>' +
@@ -1452,7 +1468,8 @@
     title: () =>
       '<div class="lanebox"><div class="lp editlane titlelane' + (S.title ? '' : ' blank') + '"' +
       ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
-      ' data-ph="Name this document">' + esc(S.title) + '</div></div>',
+      ' data-ph="Name this document">' + esc(S.title) + '</div></div>' +
+      unreserveBlock('title'),
     slug: () =>
       '<div class="unlocks">Confirming this <b>saves the document</b> — until the link exists, nothing does, anywhere. Invitations wait on it, because an invitation <i>is</i> this link.</div>' +
       (S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> already exists, so a short suffix was added. Change it to anything free.</p>'
@@ -1469,7 +1486,8 @@
       // changeable and it is also the thing that has already been sent to
       // fourteen people — so a change that broke the old one would make this
       // the one ordinary setting with a cost for using it as intended.
-      '<p class="setnote">Every link this document has ever had keeps working: changing it leaves a redirect behind, so an invitation somebody was sent weeks ago still opens the right document.</p>',
+      '<p class="setnote">Every link this document has ever had keeps working: changing it leaves a redirect behind, so an invitation somebody was sent weeks ago still opens the right document.</p>' +
+      unreserveBlock('slug'),
     myemail: () => (S.emailVerified
       ? '<div class="lockline">' + TICK + '<span>Verified — <b>' + esc(S.myemail) + '</b> can get back in.</span></div>' +
         '<span class="fld"><label>Change it</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" style="width:20rem"></span>' +
@@ -2072,6 +2090,12 @@
         } catch (e) { console.warn('[cs]', e && e.message); }
       }
       return render(); }
+    const unr = ev.target.closest('[data-unreserve]');
+    if (unr) {
+      try { cs.unreserve(now(), midOf(unr.dataset.unreserve)); }
+      catch (e) { console.warn('[cs]', e && e.message); }
+      return render();
+    }
     const cq = ev.target.closest('[data-crownq]');
     if (cq) return closeThen(() => {
       const rec = liveMotionRec(card(S.open));

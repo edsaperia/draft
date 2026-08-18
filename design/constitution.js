@@ -954,6 +954,9 @@ var CONSTITUTION = (() => {
           if (rec.payload.kind === "set") {
             this.applyPayloadSet(rec.payload.setting, rec.payload.value, "motion", event.t);
           }
+          if (rec.payload.kind === "reserve") {
+            this.settings.get(rec.payload.setting).holder = "convenor";
+          }
           break;
         }
         case "motion-adjudicated": {
@@ -999,6 +1002,11 @@ var CONSTITUTION = (() => {
           if (event.type === "crown-question-answered") {
             this.touch(this.convenor.id, event.t);
           }
+          break;
+        }
+        case "setting-unreserved": {
+          this.settings.get(event.setting).holder = "members";
+          this.touch(this.convenor.id, event.t);
           break;
         }
         case "crown-lapsed": {
@@ -1120,6 +1128,7 @@ var CONSTITUTION = (() => {
       if (rec.payload.kind === "set") {
         return this.settings.get(rec.payload.setting).holder === "convenor";
       }
+      if (rec.payload.kind === "reserve") return false;
       return this.membershipReserved();
     }
     freshMember(id, email, invitedAtT, arrivedAtT) {
@@ -1206,7 +1215,7 @@ var CONSTITUTION = (() => {
       }
       const st = this.settings.get(setting);
       if (st.holder !== "convenor") {
-        throw new Error(`'${setting}' is delegated — reclaim it first (§9.0a)`);
+        throw new Error(this.constitutedT !== null ? `'${setting}' is the members' — not the convenor's to set (§9.7)` : `'${setting}' is delegated — reclaim it first (§9.0a)`);
       }
       const err = validateFor(entry, value);
       if (err) throw new Error(err);
@@ -1226,6 +1235,24 @@ var CONSTITUTION = (() => {
       });
       if (CONSTITUTIONAL.has(setting)) this.oweOks(t, setting);
       this.maybeConstitute(t);
+    }
+    /**
+     * The founder decides whether the title and link are reserved (§9.7
+     * v0.51, Ed 2026-08-19): unreserving is their own free act, offered from
+     * the moment proposing opens (text confirmed), one-way — the road back is
+     * a constitutional motion (the reserve payload), because taking a
+     * decision from the room needs everyone.
+     */
+    unreserve(t, setting) {
+      if (setting !== "title" && setting !== "link") {
+        throw new Error(`'${setting}' is not unreserved this way (title and link only, Q381)`);
+      }
+      if (!this.textConfirmedFlag) {
+        throw new Error("unreserving opens with proposing — confirm the starting text first (§9.7)");
+      }
+      const st = this.settings.get(setting);
+      if (st.holder !== "convenor") return;
+      this.emit({ type: "setting-unreserved", t, setting });
     }
     setQuorumForm(t, form) {
       this.requirePreStart("re-framing the quorum question");
@@ -1424,6 +1451,14 @@ var CONSTITUTION = (() => {
           throw new Error("the motion proposes what already stands");
         }
         route = motionRouteOf(entry, payload.value, st.value);
+      } else if (payload.kind === "reserve") {
+        if (payload.setting !== "title" && payload.setting !== "link") {
+          throw new Error(`'${payload.setting}' is not reserved this way (title and link only, Q381)`);
+        }
+        if (this.settings.get(payload.setting).holder === "convenor") {
+          throw new Error(`'${payload.setting}' is already reserved`);
+        }
+        route = "constitutional";
       } else if (payload.kind === "invite") {
         this.requireEmailFree(payload.email);
         route = "constitutional";

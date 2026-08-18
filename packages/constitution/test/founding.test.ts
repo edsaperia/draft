@@ -239,6 +239,35 @@ describe('owed OKs (§9.6a): inheritance as unacknowledged decisions', () => {
   });
 });
 
+describe('📯 is reachable (§9.7 v0.51)', () => {
+  it('delegate the ordinary defaults, resolve by ceremony, unreserve title and link', () => {
+    const s = openDoc();
+    s.delegate(0, 'rate');
+    s.delegate(0, 'machines');
+    const bo = s.invite(1, 'bo@example.org');
+    s.arrive(1, bo);
+    s.confirmStartingText(1, 'x');
+    const answers = {
+      ending: { endsAtMs: 1_000_000 }, bar: { pct: 66 },
+      pace: { shape: 'fixed' }, quorum: { form: 'share', n: 60 },
+      authorship: { rung: 'sealed' }, signing: { rung: 'each' },
+      judgments: { rung: 'after' }, chamber: { rung: 'link' },
+      applications: { holder: 'members', joinPolicy: 'invite' },
+      lapse: { afterMs: null }, rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      machines: { enabled: false, budget: 0 },
+    } as const;
+    for (const [id, v] of Object.entries(answers)) {
+      s.answer(2, 'ada', id as never, v as never);
+      s.answer(2, bo, id as never, v as never);
+    }
+    expect(s.constitutedAtT).toBe(2); // every gate resolved by the room
+    expect(s.crowned()).toBe(true);   // title and link are still ada's
+    s.unreserve(3, 'title');
+    s.unreserve(3, 'link');
+    expect(s.crowned()).toBe(false);  // 📯 — a name in the record
+  });
+});
+
 describe('constituted (§9.6a): the moment judging opens', () => {
   it('fires when the seven gates settle, and the pre-start rights die with it', () => {
     const s = openDoc();

@@ -61,6 +61,11 @@ recorded here as they are made, so Ed can flip any of them cheaply.
 - **`memberReturn` emits only when something revives** (lapse, sign-out, a
   warning); routine activity rides the member's own commands, so the log
   carries no heartbeats.
+- **A reservation returned to a lapsed founder sleeps from the next tick**:
+  the reserve motion applies immediately (holder → convenor), and the
+  crown-lapse event — with its auto-assent mode — fires at the next tick,
+  since the clocks are event-driven and never preempted. A 👑 question
+  raised in that gap simply auto-passes at the tick.
 - **`applications.holder` is the convenor's frame, not part of the consent**:
   the delegated question collects the join-policy rung; the holder (the crown
   choice) is consented by joining, the way §9.7 says — so the consent order
