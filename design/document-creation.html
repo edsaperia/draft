@@ -151,6 +151,7 @@
       grant: null, drip: null },
     barBy: 'roster', tClose: 78, shape: 'ramp', tStart: 55,
     quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
+    joinBy: 'invite',
     lapse: 'roster', lapseDays: 90,
     authorship: 'roster', signing: 'roster', judgments: 'roster',
     authorshipSet: 'anonymous', signingSet: 'nobody', judgmentsSet: 'never',
@@ -489,6 +490,7 @@
     // an invitee is not a member yet (§9.6a): the line counts the arrived,
     // and says who is still only invited
     roster: () => arrived() + (arrived() === 1 ? ' member' : ' members') +
+      (S.joinBy === 'apply' ? ' · applications open' : S.joinBy === 'open' ? ' · open to join' : '') +
       (members().length > arrived() ? ' · ' + (members().length - arrived()) + ' invited' : '') +
       (iDraft() ? '' : ' — you are the clerk, and not one of them'),
     ending: () => (perpetual() ? 'Never — it runs until it is frozen'
@@ -702,6 +704,15 @@
       '<p class="why">An invitation <b>is the link</b>, sent by email — there are no passwords — which is why nobody could be invited before the link existed. It is an invitation <b>to become a member</b>: until somebody opens the document they are listed as <i>invited</i> and count toward nothing. Until judging opens you may invite and uninvite freely — nothing has been decided yet, so nothing is being changed. After that, both directions are constitutional motions — you included: your own row above is <b>pre-checked</b>, and you may untick it and be the clerk, who administers without writing, but after judging starts you join the way anybody joins. A joiner starts with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</p>' +
       '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1">' +
       '<button class="btn" data-act="add">Invite</button></div></div>' +
+      // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
+      // the gate the Apply card hangs off. An application becomes an
+      // ordinary proposal to grant membership, judged like any other.
+      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Who may join</div>' +
+      '<div class="choice" role="radiogroup" aria-label="Who may join">' +
+      opt(S, 'joinBy', 'invite', 'Invitation only', 'Nobody joins unless a member brings them in.') +
+      opt(S, 'joinBy', 'apply', 'Anyone may apply', 'A reader who is not a member can apply — a name, a picture, a few words — and the application goes before the members as an ordinary proposal, judged like any other.') +
+      opt(S, 'joinBy', 'open', 'Open', 'Anyone with the link joins on arrival. For documents that are more petition than charter.') +
+      '</div>' +
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
       '<textarea placeholder="Paste addresses here, one per line" data-emails="1"></textarea>' +
       '<div style="margin-top:var(--s2)"><button class="btn" data-act="invite">Send invitations</button></div>' +

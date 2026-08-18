@@ -332,6 +332,13 @@
   .setrow .constlist .cg { flex: none; width: 18px; text-align: center; }
   .setrow .constlist b { color: var(--fg); font-weight: 600; }
 
+  /* the Applicants subsection under Membership */
+  .setrow .applicants { display: flex; align-items: baseline; gap: var(--s2);
+    margin: 3px 0 2px; font-size: var(--t-cap); color: var(--muted); }
+  .setrow .applicants .pf { display: inline-flex; align-items: center; gap: 5px; }
+  .setrow .applicants .av { width: 20px; height: 20px; font-size: 7px; }
+  .setrow .applicants .appnote { color: var(--muted); margin-left: 4px; }
+
   .setrow .pilewho { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); margin: 3px 0 2px; }
   .setrow .pilewho .pf { font-size: var(--t-cap); }
   .setrow .pilewho .pf.ghost { color: var(--muted); font-style: italic; }

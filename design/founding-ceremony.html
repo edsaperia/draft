@@ -64,7 +64,7 @@
 <script src="setup.js"></script>
 <script>
 (function () {
-  const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, readBody,
+  const { esc, TICK, avHtml, avatarOptions, bandHtml, fitBand, railEntry, cardHtml, readBody,
     watchBody, nameBody, pictureBody, drawWire, opt, faces, someIn,
     KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor, ANSWER } = window.SETUP;
   const band = document.getElementById('band');
@@ -92,7 +92,10 @@
     // a motion you are writing, and your answers to the ones in flight
     draft: null, mAns: {},
     lapse: null,
+    app: { started: false, name: '', pic: '', text: '', submitted: false },
     seen: new Set(), okd: new Set(), open: null };
+  // the applicant the members see in the settled fixture
+  const APPLICANT = { n: 'Marlow Voss', pic: 'm1', judged: 5 };
   const me = () => ({ n: S.myname, pic: S.mypic });
 
   function renderDoc() {
@@ -284,6 +287,17 @@
       },
       note: (n) => (n ? n + ' to acknowledge' : 'settled before you arrived') },
     { key: 'room', label: 'Membership', cards: ROOM.concat(GATES),
+      // **Applicants** (Ed, 2026-08-18): a subsection of Membership — the
+      // people asking to be in the room, each one an ordinary proposal the
+      // members are judging
+      block: () => {
+        const show = S.state === 'settled' || (S.state === 'applicant' && S.app.submitted);
+        if (!show) return '';
+        const who = S.state === 'applicant' ? { n: S.app.name, pic: S.app.pic } : APPLICANT;
+        return '<div class="applicants"><span class="eyebrow">Applicants</span>' +
+          '<span class="pf">' + avHtml(who) + esc(who.n) +
+          '<span class="appnote">· an ordinary proposal · ' + APPLICANT.judged + ' of ' + E + ' judged</span></span></div>';
+      },
       // Wren convened it and is drafting, so they are in the membership too
       who: () => ROSTER.map((p) => face(p)).join(''),
       note: (n) => (n ? n + ' still want you' : 'all answered') },
@@ -343,6 +357,12 @@
     // anything under motion. Everything the convenor settled that asks nothing
     // lives in the pile at the head of the document, which is where you go to
     // look a rule up rather than to be told about it.
+    if (S.state === 'applicant') {
+      rail.innerHTML = '<ul><li class="qhead">Membership</li>' +
+        APPCARDS().map((c) => railEntry(c, appCtx)).join('') + '</ul>';
+      document.getElementById('mebtn').innerHTML = avHtml({ n: S.app.name || '?', pic: S.app.pic }, 'face');
+      return;
+    }
     const gs = groups().slice().reverse()
       .map((g) => ({ ...g, cards: g.cards.filter((c) => mustAct(c) || motionOn(c)) }))
       .filter((g) => g.cards.length);
@@ -450,8 +470,79 @@
       ? 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.'
       : 'It comes back to you the moment it opens.') + '</p>';
 
+  /* ---- the applicant's tasks ---------------------------------------------
+     Plain tasks (Ed's word): the same rail entries and the same card shell,
+     asking for the only three things an application is. */
+  const APPCARDS = () => {
+    const a = S.app;
+    const base = [{ k: 'apply', g: '🪪', t: 'Apply for membership', own: 'you',
+      kind: 'personal', done: () => a.submitted }];
+    if (!a.started) return base;
+    return base.concat([
+      { k: 'appname', g: '✋', t: 'Your name', own: 'you', kind: 'personal', done: () => !!a.name.trim() },
+      { k: 'apppic', g: '🖼️', t: 'Your picture', own: 'you', kind: 'personal', done: () => !!a.pic },
+      { k: 'apptext', g: '📝', t: 'Your application', own: 'you', kind: 'personal', optional: true, done: () => !!a.text.trim() },
+    ]);
+  };
+  const appCtx = {
+    get open() { return S.open; }, get E() { return E; },
+    mustAct: (c) => !c.done() && !(c.optional && S.app.submitted),
+    settled: (c) => c.done() || (c.optional && S.app.submitted),
+    summary: (c) => (c.k === 'apply'
+      ? (S.app.submitted ? 'Before the members — an ordinary proposal' : S.app.started ? (['appname','apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
+      : c.k === 'appname' ? (S.app.name || 'What members will call you')
+      : c.k === 'apppic' ? (S.app.pic ? 'Chosen' : 'A ground for your initials')
+      : (S.app.text ? 'Written' : 'A few words — optional')),
+    value: (c) => appCtx.summary(c), isRoom: () => false,
+    bandLabel: (c) => (c.k === 'apply' ? 'Yours alone · an application' : 'Yours alone · part of your application'),
+  };
+  const APPBODY = {
+    apply: () => {
+      const a = S.app;
+      const ready2 = a.started && a.name.trim() && a.pic;
+      return '<p class="why">This document’s membership is not open, but it takes <b>applications</b>. Applying is three small tasks — your name, your picture, and a few words if you want them — and your application then goes before the members as an <b>ordinary proposal</b> to grant you membership, judged like any other: it carries if the room is sure enough.</p>' +
+        (a.submitted
+          ? '<div class="lockline">' + TICK + '<span>Submitted. Your application is before the members — ' + APPLICANT.judged + ' of ' + E + ' have judged it so far. You will get an email either way.</span></div>'
+          : a.started
+          ? '<p class="setnote">' + (ready2 ? 'Everything needed is in — the words are optional.' : 'Two of the three are needed; the words are optional.') + '</p>'
+          : '<p class="setnote">Nothing is sent until you say so, and nothing about you is collected before you begin.</p>');
+    },
+    appname: () => '<p class="why">What the members will call you — in the application, and in the membership if it carries.</p>' +
+      '<span class="fld"><label>Your name</label><input data-appname="1" value="' + esc(S.app.name) + '" placeholder="Your name" style="width:20rem"></span>',
+    apppic: () => '<p class="why">The shape they will recognise you by.</p>' +
+      '<div class="avpick">' + avatarOptions().map((o) =>
+        '<button class="avopt" data-apppic="' + o.id + '" aria-pressed="' + (S.app.pic === o.id) + '">' +
+        avHtml({ n: S.app.name || '?', pic: o.id }, 'big') + '</button>').join('') + '</div>',
+    apptext: () => '<p class="why">A few words to the members, if you want them — who you are, why this document. Optional: an empty application is a real application.</p>' +
+      '<div class="lanebox"><div class="lp editlane' + (S.app.text ? '' : ' blank') + '" contenteditable="plaintext-only"' +
+      ' spellcheck="false" data-apptext="1" data-ph="To the members…">' + esc(S.app.text) + '</div></div>',
+  };
+  function applicantCardHtml() {
+    const c = APPCARDS().find((x) => x.k === S.open);
+    if (!c) return '';
+    const a = S.app;
+    let foot;
+    if (c.k === 'apply') {
+      foot = a.submitted ? '<button class="btn" data-close="1">Close</button>'
+        : !a.started ? '<button class="btn btn-approve" data-appstart="1">Begin</button>'
+        : '<button class="btn" data-close="1">Close</button>' +
+          '<button class="btn btn-approve"' + (a.name.trim() && a.pic ? '' : ' disabled') + ' data-appsubmit="1">Submit application</button>';
+    } else {
+      foot = '<button class="btn" data-close="1">Close</button>' +
+        '<button class="btn btn-approve glyphbtn"' + (c.done() || c.optional ? '' : ' disabled') + ' data-close="1">' + TICK + '</button>';
+    }
+    return cardHtml(c, appCtx, APPBODY[c.k](), foot, [c]);
+  }
+
   // ---- the band ----------------------------------------------------------
   function renderBand() {
+    if (S.state === 'applicant') {
+      // the applicant's open card sits above the piles, which render read-only
+      band.innerHTML = applicantCardHtml() +
+        bandHtml(groups().map((g) => ({ ...g, cards: g.cards })), ctx, () => '');
+      fitBand(band);
+      return;
+    }
     band.innerHTML = bandHtml(groups(), ctx, (g) => {
       const c = card(S.open);
       let body, foot;
@@ -511,9 +602,11 @@
 
   function renderStates() {
     document.getElementById('states').innerHTML =
-      [['ask', 'Answering'], ['waiting', 'Waiting'], ['settled', 'Settled']].map(([k, t]) =>
+      [['ask', 'Answering'], ['waiting', 'Waiting'], ['settled', 'Settled'], ['applicant', 'An applicant']].map(([k, t]) =>
         '<button data-state="' + k + '" aria-pressed="' + (S.state === k) + '">' + t + '</button>').join('');
-    document.getElementById('stat').textContent = roomDone()
+    document.getElementById('stat').textContent = S.state === 'applicant'
+      ? 'reading only · not a member — applications open'
+      : roomDone()
       ? 'open — reading, proposing and judging'
       : mine() ? 'you can propose · judging waits on the room'
       : 'reading only · proposing waits on your answers';
@@ -526,6 +619,18 @@
     chamber: 6, machines: 12, lapse: 8 };
   function setState(k) {
     S.state = k; S.open = null;
+    S.app = { started: false, name: '', pic: '', text: '', submitted: false };
+    if (k === 'applicant') {
+      // everything settled, and readable from outside: the fixture's chamber
+      // opens to the link, or there would be no document for an applicant to
+      // be reading
+      S.quorum = 10; S.bar = 80; S.authorship = 'anonymous'; S.signing = 'nobody';
+      S.judgments = 'never'; S.chamber = 'link'; S.machines = false; S.lapse = 'never';
+      S.seen = new Set(ROOM.map((c) => c.k)); S.okd = new Set(CONVENOR.map((c) => c.k));
+      S.mAns = {}; S.draft = null; S.open = 'apply';
+      ROOM.forEach((c) => { if (COUNTS[c.k] != null) c.in = E; });
+      return;
+    }
     if (k === 'ask') {
       S.quorum = S.bar = S.machines = null; S.lapse = null;
       S.authorship = S.signing = S.judgments = S.chamber = null;
@@ -587,6 +692,12 @@
     const t = ev.target.closest('[data-tab], [data-card]');
     if (t) { const k = t.dataset.tab || t.dataset.card;
       S.open = (S.open === k) ? null : k; return render(); }
+    const ast = ev.target.closest('[data-appstart]');
+    if (ast) { S.app.started = true; return render(); }
+    const asu = ev.target.closest('[data-appsubmit]');
+    if (asu) { S.app.submitted = true; S.open = 'apply'; return render(); }
+    const ap2 = ev.target.closest('[data-apppic]');
+    if (ap2) { S.app.pic = ap2.dataset.apppic; return render(); }
     const ok = ev.target.closest('[data-ok]');
     if (ok) { S.okd.add(ok.dataset.ok); S.open = null; return render(); }
     if (ev.target.closest('[data-confirm]')) { S.seen.add(S.open); S.open = null; return render(); }
@@ -623,6 +734,10 @@
     }
   });
   document.addEventListener('input', (ev) => {
+    if (ev.target.closest && ev.target.closest('[data-appname]')) {
+      S.app.name = ev.target.value; renderRail(); return; }
+    if (ev.target.closest && ev.target.closest('[data-apptext]')) {
+      S.app.text = ev.target.textContent.trim(); renderRail(); return; }
     const ml = ev.target.closest && ev.target.closest('[data-motionlane]');
     if (ml) { S.draft[ml.dataset.motionlane] = ml.textContent.trim();
       ml.classList.toggle('blank', !ml.textContent.trim());
