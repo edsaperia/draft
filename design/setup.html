@@ -60,6 +60,8 @@
     background: var(--bg); border: 1px dashed var(--border); border-radius: 6px;
     padding: 4px 8px; opacity: 0.85; }
   .devswitch select { font: inherit; color: var(--fg); border: none; background: transparent; }
+  .devswitch button { font: inherit; color: var(--muted); background: transparent;
+    border: 1px dashed var(--border); border-radius: 4px; cursor: pointer; padding: 1px 6px; }
 
   /* the paste-well: the empty state of the prose column, and nothing more */
   .prose.empty.pasteready::before {
@@ -102,7 +104,7 @@
     </div>
   </div>
 </header>
-<div class="devswitch" title="Dev only — not part of the product"><label for="devwho">dev · viewing as</label> <select id="devwho"></select></div>
+<div class="devswitch" title="Dev only — not part of the product"><label for="devwho">dev · viewing as</label> <select id="devwho"></select> <button id="devff" title="Dev only — complete the founding: invite two members, answer everything, open the gates">⏩ settle the founding</button></div>
 <div class="wrap">
   <div class="layout">
     <nav class="toc"><ul id="toc"></ul></nav>
@@ -129,7 +131,8 @@
 (function () {
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, drawWire, opt, num, someIn, KIND, kindNote, ANSWER, stateOf,
-    MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, readBody } = window.SETUP;
+    MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, readBody,
+    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE } = window.SETUP;
   // **A setup card opens and closes like a decision card** (Ed, 2026-08-18:
   // *the whole point of building off session-view is that we would have all
   // this stuff*): cards.js own expandCard/collapseCard, which have been
@@ -172,6 +175,9 @@
     // has been opened and committed.
     seen: new Set(),
     open: null,
+    // live motions, room-level: k -> { to, why, by (roster index), kind,
+    // invite? } — who has judged/consented lives per-row in r.mAns
+    motions: {},
   };
   // ---- who is looking (Ed, 362: a dev dropdown of the actual users) ----
   // Per-user state lives on the roster rows; S.myAns / S.okd / S.myname…
@@ -187,6 +193,10 @@
   }
   Object.defineProperty(S, 'myAns', { get: () => (viewerRow().ans || (viewerRow().ans = {})) });
   Object.defineProperty(S, 'okd', { get: () => (viewerRow().okd || (viewerRow().okd = new Set())) });
+  // a motion draft and your consent answers are yours, not the room's
+  Object.defineProperty(S, 'mAns', { get: () => (viewerRow().mAns || (viewerRow().mAns = {})) });
+  Object.defineProperty(S, 'draft', { get: () => viewerRow().draft || null,
+    set: (v) => { viewerRow().draft = v; } });
   const me = () => ({ n: S.myname, pic: S.mypic });
 
   // Everybody on the roster is a member; the only person who might not be is
@@ -464,7 +474,8 @@
     : S.seen.has(c.k) && ready(c));
   // nothing on a founder-held card is asked of anybody else: a member sees
   // it waiting (⏳) until it settles, then as news to acknowledge
-  const mustAct = (c) => (c.isGate ? (c.open() && !S.okd.has(c.k))
+  const mustAct = (c) => (motionOn(c) ? (viewerIsMember() && !answeredMotion(c))
+    : c.isGate ? (c.open() && !S.okd.has(c.k))
     : c.ansFor || c.own === 'you' || amFounder() ? !settled(c)
     : false);
   // How far the room has got, against the roster **as it stands** — held as a
@@ -635,9 +646,13 @@
   const value = (c) => (c.ansFor
     ? esc(answered(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
     : esc(VALUE[c.k]()));
-  const summary = (c) => (c.k === 'title' ? '' : isRoom(c)
+  const summary = (c) => {
+    const m = motionOn(c);
+    if (m) return 'Under motion — ' + esc(m.to);
+    return (c.k === 'title' ? '' : isRoom(c)
     ? (settled(c) ? '<i>The members decide</i> · ' + someIn(c.in || 0, E()) : '<i>The members decide</i>')
     : value(c));
+  };
 
   // **What is unlocked, and by what.** Reading needs nothing. Proposing needs a
   // text to propose against. Judging needs the constitution settled, because a
@@ -648,6 +663,235 @@
   const ceremony = () => CARDS.filter((c) => c.gate === 'judge');
   const ceremonyRunning = () => ceremony().some((c) => isRoom(c) && (c.in || 0) < E());
   const canJudge = () => ceremony().every(settled) && !ceremonyRunning();
+
+  // ---- motions (stage D of the merge, Ed 361) ---------------------------
+  // A motion is the act of changing a **settled** document's rules (§9.6a):
+  // before judging opens there are no past decisions for a change to re-rate,
+  // so nothing is amended, only set — the founder re-sets freely, and these
+  // exist only once the constitution is settled and judging is open.
+  const motionsLive = () => canJudge();
+  const motionOn = (c) => (c && motionsLive() ? S.motions[c.k] : null);
+  const routeOfM = (m, c) => (m.kind || routeFor(c, m.to));
+  const answeredMotion = (c) => S.mAns[c.k] !== undefined;
+  const motionJudged = (k) => S.roster.filter((r) => r.mAns && r.mAns[k] !== undefined).length;
+  // one 🏛️ out per member at a time (Ed, Q327): withdrawn, it comes back whole
+  const myHeldOut = () => Object.keys(S.motions).find((k) =>
+    S.motions[k].by === S.viewer && (S.motions[k].kind || 'ordinary') === 'constitutional') || null;
+  // **The settled card is the composer** (Ed, 2026-08-18) — for any member,
+  // on any settled setting, once the document is live. The founder is the
+  // one exception on the settings they reserved: their control there is
+  // unilateral (the 👑 rule, consented on the way in), so they keep the
+  // setting body itself rather than a composer.
+  const composerOn = (c) => motionsLive() && viewerIsMember() && !c.isGate && !c.ansFor &&
+    c.kind !== 'personal' && c.k !== 'text' && settled(c) && !motionOn(c) &&
+    !(amFounder() && !isRoom(c));
+  const commitFor = (c) => motionCommitHtml(c,
+    (S.draft && S.draft.k === c.k) ? S.draft.to : '',
+    !!myHeldOut() && myHeldOut() !== c.k);
+
+  /* **A motion is composed with the setting's own control** (motion-controls),
+     and the grammar is session-view's, via cards.js (Ed, 2026-08-18: *the
+     composers on the session-view are the better ones*): the lane radios are
+     laneBarHtml speaking data-mval, the rationale is the editing-card's own
+     sealed-disc speaker — never an avatar, since authorship is sealed. */
+  const PC = window.CARDS.make({ valAttr: 'data-mval', pickOf: (d) => (d ? d.to : null) });
+  const laneBlock = (d, val, text) =>
+    '<div class="propblock"><div class="rtext">' + text + '</div>' +
+    PC.laneBarHtml(d, val, { edit: false }) + '</div>';
+  const inputBlock = (html, note) =>
+    '<div class="propblock"><div class="rtext">' + html + '</div>' + (note || '') + '</div>';
+  // **What stands on a delegated setting is what the room's answers took**,
+  // never the founder's field — that still says 'roster'. The consent rule,
+  // computed live: highest for quorum and the bar, latest for the ending
+  // (never latest of all), longest for lapse, most private for the privacy
+  // family, most restrictive for machines, most generous for the rate.
+  const RANK = { authorship: ['public', 'sealed', 'anonymous'],
+    signing: ['everybody', 'each', 'nobody'], judgments: ['after', 'never'],
+    chamber: ['public', 'link', 'closed'] };
+  const roomAnswers = (k) => S.roster.filter((r) => r.role !== 'clerk' && r.in &&
+    r.ans && r.ans[k] !== undefined && r.ans[k] !== null).map((r) => r.ans[k]);
+  const takenOf = (k) => {
+    const vs = roomAnswers(k); if (!vs.length) return null;
+    if (k === 'quorum' || k === 'bar' || k === 'rate') return Math.max(...vs.map(Number));
+    if (k === 'ending') return (vs.includes('never') ? 'never' : vs.slice().sort()[vs.length - 1]);
+    if (k === 'lapse') return (vs.includes('never') ? 'never' : Math.max(...vs.map(Number)));
+    if (k === 'machines') return vs.every((v) => v === true);
+    const r = RANK[k];
+    return r ? r[Math.max(...vs.map((v) => Math.max(0, r.indexOf(v))))] : vs[0];
+  };
+  // ...stated in the composers' own vocabulary, so a lane equal to what
+  // stands filters itself out
+  const STANDS = {
+    chamber: (v) => ({ closed: 'Members only', link: 'Anyone with the link', public: 'Public' })[v],
+    authorship: (v) => ({ anonymous: 'Nobody’s name, ever', sealed: 'Names at the close', public: 'Names from the start' })[v],
+    signing: (v) => ({ nobody: 'Nobody signs', each: 'Each author chooses', everybody: 'Everybody signs' })[v],
+    judgments: (v) => ({ never: 'Never revealed', after: 'Revealed after the decision' })[v],
+    lapse: (v) => (v === 'never' ? 'Never — however long inactive' : 'After ' + v + ' days of inactivity'),
+    machines: (v) => (v ? 'The coherence auditor drafts here' : 'People only'),
+    quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership' : v + '% of the membership'),
+    bar: (v) => v + '% sure at the close',
+    ending: (v) => (v === 'never' ? 'Never — it runs until it is frozen'
+      : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
+    rate: (v) => v + ' each · +1 every ' + S.dripMin + ' min · cap ' + S.cap,
+  };
+  const standsOf = (k) => {
+    const c = card(k);
+    if (c && isRoom(c)) {
+      const v = takenOf(k);
+      if (v !== null && STANDS[k]) return STANDS[k](v) || '';
+    }
+    return VALUE[k] ? String(VALUE[k]() || '') : '';
+  };
+  // what stands is never offered back: picking the current rule is not a change
+  const currentOf = (k) => standsOf(k);
+  const lanesFor = (d, pairs, k) => pairs.filter(([val]) => !currentOf(k).startsWith(val))
+    .map(([val, text]) => laneBlock(d, val, text)).join('');
+  const whyLane = (d) =>
+    '<div class="lanebox whylane"><div class="speaker">' +
+    '<span class="disc" aria-hidden="true" title="This is how your reason will reach everybody else: with your name off it."></span>' +
+    '<div class="said edit-why" contenteditable="plaintext-only" spellcheck="false" data-motionlane="why"' +
+    ' data-placeholder="We should change this because…">' + esc((d && d.why) || '') + '</div></div></div>';
+
+  const POLICY_TEXTS = [
+    ['Invitation only', 'Membership is by invitation only.'],
+    ['Applications by proposal', 'Anyone may apply, but an application must be proposed by a member, who stakes the ✏️.'],
+    ['Anyone may apply', 'Anyone may apply to join.'],
+    ['Open', 'Anyone with the link joins on arrival.'],
+  ];
+  // every composable setting has its control (Ed's QA, 2026-08-18) — a text
+  // box asks somebody to guess a format the surface already knows
+  const PROPOSE = {
+    title: (d) => inputBlock('The document is titled ' +
+      '<input data-mtext="1" value="' + esc(d.to || S.title) + '" style="width:22rem">.'),
+    slug: (d) => inputBlock('The document lives at docs.vote/' +
+      '<input data-mslug="1" value="' + esc((d.to || S.slug).replace(/^docs\.vote\//, '')) + '" style="width:12rem">.',
+      '<p class="setnote">Every link the document has ever had keeps working — a change leaves a redirect behind.</p>'),
+    pace: (d) => lanesFor(d, [['The close bar throughout',
+        'The approval threshold holds at its close value throughout.']], 'pace') +
+      inputBlock('The approval threshold rises from ' +
+        '<input class="num" type="number" min="50" max="99" data-mpace="1" value="' +
+        esc((/^Rising/.test(d.to) && (d.to.match(/\d+/) || [])[0]) || S.tStart) + '">% to the close.'),
+    rate: (d) => {
+      const n = d.to.match(/\d+/g) || [];
+      return inputBlock('Members start with ' +
+        '<input class="num" type="number" min="0" max="40" data-mrate="x" value="' + esc(n[0] || S.grant) + '"> ✏️ each, up to a maximum of ' +
+        '<input class="num" type="number" min="1" max="99" data-mrate="y" value="' + esc(n[1] || S.cap) + '">. They get an additional ✏️ every ' +
+        '<input class="num" type="number" min="5" max="2880" data-mrate="z" value="' + esc(n[2] || S.dripMin) + '"> minutes.');
+    },
+    ending: (d) => {
+      const never = /never/i.test(d.to);
+      return inputBlock('The drafting process will end on ' +
+          '<input type="datetime-local" data-mdate="1" value="' + esc(S.endsAt || '') + '">.') +
+        lanesFor(d, [['Never — it runs until it is frozen',
+          'The drafting process has no set end — it runs until it is frozen.']], 'ending') +
+        (never ? '<p class="setnote">Removing the ending is constitutional — a document with no ending has no rising threshold.</p>' : '');
+    },
+    bar: (d) => inputBlock('A change is adopted when the room is ' +
+      '<input class="num" type="number" min="50" max="99" data-mnum="% sure at the close" value="' +
+      esc((d.to.match(/\d+/) || [])[0] || takenOf('bar') || S.tClose) + '">% sure at the close.'),
+    quorum: (d) => (S.quorumForm === 'count'
+      ? inputBlock('Quorum is <input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
+        esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '"> of the membership.')
+      : inputBlock('Quorum is <input class="num" type="number" min="1" max="100" data-mnum="% of the membership" value="' +
+        esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct) + '">% of the membership.')),
+    lapse: (d) => lanesFor(d, [['Never — however long inactive',
+        'A membership never lapses, however long inactive.']], 'lapse') +
+      inputBlock('A membership lapses after ' +
+        '<input class="num" type="number" min="7" max="720" data-mnum=" days of inactivity" value="' +
+        esc((d.to.match(/\d+/) || [])[0] || S.lapseDays) + '"> days of inactivity.'),
+    authorship: (d) => lanesFor(d, [
+      ['Nobody’s name, ever', 'A proposer is never named — not even in the closing record.'],
+      ['Names at the close', 'Proposers are named in the closing record, never before.'],
+      ['Names from the start', 'Every proposal carries its proposer’s name from the moment it is made.']], 'authorship'),
+    signing: (d) => lanesFor(d, [
+      ['Nobody signs', 'No proposal carries a signature.'],
+      ['Each author chooses', 'A proposer may sign or stay unsigned, proposal by proposal.'],
+      ['Everybody signs', 'Every proposal is signed.']], 'signing'),
+    judgments: (d) => lanesFor(d, [
+      ['Never revealed', 'Judgments are never revealed — not even in the closing record.'],
+      ['Revealed after the decision', 'Judgments are published with the record of each decision, never before.']], 'judgments'),
+    chamber: (d) => lanesFor(d, [
+      ['Members only', 'Only members can read the document.'],
+      ['Anyone with the link', 'Anyone with the link can read it; it is not listed.'],
+      ['Public', 'Listed and readable by anyone.']], 'chamber'),
+    machines: (d) => lanesFor(d, [['People only', 'People only — no machine drafts here.']], 'machines') +
+      inputBlock('The coherence auditor drafts alongside the members, with a budget of ' +
+        '<input class="num" type="number" min="1" max="40" data-mnum=" ✏️s for the coherence auditor" value="' +
+        esc(S.auditorBudget) + '"> ✏️s.'),
+    policy: (d) => POLICY_TEXTS.filter(([val]) => !currentOf('policy').startsWith(val))
+      .map(([val, text]) => laneBlock(d, val, text)).join('') +
+      '<p class="setnote">One motion proposes one rule; what you do not touch stands.</p>',
+    // the membership, in front of you, with an ✕ beside each and a field at
+    // the bottom — which is what “propose a change to the membership” means
+    roster: (d) =>
+      '<div class="roster">' + S.roster.map((p, i) =>
+        '<div class="rperson' + (d.to === (p.n || p.e) + ' leaves the membership' ? ' picked' : '') + '">' +
+        avHtml(p) + '<span><span class="nm">' + esc(p.n || p.e || '—') +
+        (i === S.viewer ? ' <span class="chip">you</span>' : '') + '</span></span>' +
+        (i === S.viewer ? '<span class="xdrop"> </span>'
+          : '<button class="xdrop" data-mval="' + esc((p.n || p.e) + ' leaves the membership') + '"' +
+            ' title="Propose that they leave">✕</button>') +
+        '</div>').join('') +
+      '<div class="addrow"><input placeholder="Somebody to invite" data-mjoin="1">' +
+      '<button class="btn" data-mjoinbtn="1">Invite</button></div></div>' +
+      '<p class="setnote">Either way it is one motion and it is constitutional, because who is in the room is what quorum is a fraction of. One member who says no settles it.</p>',
+  };
+
+  // A constitutional motion re-opens consent: what is proposed, what stands,
+  // two answers, one refusal keeps what stands. inviteBody is this body with
+  // a person where the value is.
+  const inviteBody = (m) =>
+    '<p class="why">Whether <b>' + esc(m.invite) + '</b> joins the membership. Adding a member changes what quorum is a fraction of, so it is constitutional: the most restrictive answer wins, and one member who says no keeps them out.</p>' +
+    '<div class="choice" role="radiogroup">' +
+    '<div class="pick' + (S.mAns.roster === 'no' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns.roster === 'no') + '" data-motion="no"><span class="dot"></span>' +
+    '<span>I would rather they did not</span></button>' +
+    '<span class="exp">They stay out. Nobody is told who said so.</span></div>' +
+    '<div class="pick' + (S.mAns.roster === 'yes' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns.roster === 'yes') + '" data-motion="yes"><span class="dot"></span>' +
+    '<span>I accept them joining</span></button>' +
+    '<span class="exp">They start with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</span></div></div>' + BLINDNOTE;
+  const consentBody = (c, m) => (m.invite ? inviteBody(m) :
+    '<p class="why">Whether <b>' + esc(m.to) + '</b> replaces <i>' + esc(standsOf(c.k)) + '</i>. Nothing is being judged: you state what you will accept, and one refusal keeps what stands.</p>' +
+    '<div class="choice" role="radiogroup">' +
+    '<div class="pick' + (S.mAns[c.k] === 'no' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns[c.k] === 'no') + '" data-motion="no"><span class="dot"></span>' +
+    '<span>Keep what stands</span></button>' +
+    '<span class="exp">Nobody is told who said so.</span></div>' +
+    '<div class="pick' + (S.mAns[c.k] === 'yes' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns[c.k] === 'yes') + '" data-motion="yes"><span class="dot"></span>' +
+    '<span>I accept the change</span></button>' +
+    '<span class="exp">It takes every one of the ' + E() + ' accepting.</span></div></div>' + BLINDNOTE);
+
+  // dev only (with the dropdown, Ed 362): complete the founding in one press,
+  // because motions live on the far side of it and the mock has no persistence
+  function devFastForward() {
+    if (!S.title) S.title = 'The Hollow Oak Club — House Charter';
+    if (!S.slug) { const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken; }
+    const f = S.roster[0];
+    if (!f.e) f.e = 'ash@hollowoak.org';
+    if (!f.n) f.n = 'Ash Bellamy';
+    S.emailSent = true; S.emailVerified = true;
+    if (S.roster.length === 1) {
+      S.roster.push({ n: 'Ivy Fen', e: 'ivy@hollowoak.org', role: 'member', in: true, ans: {}, okd: new Set() });
+      S.roster.push({ n: 'Moss Whitlow', e: 'moss@hollowoak.org', role: 'member', in: true, ans: {}, okd: new Set() });
+    } else S.roster.forEach((r) => { r.in = true; });
+    CARDS.forEach((c) => S.seen.add(c.k));
+    // answers that agree with the founder defaults, so every sentence on the
+    // surface says the same thing after the fast-forward
+    const FILL = { quorum: (S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
+      bar: S.tClose, ending: S.endsAt || '2026-08-20T18:00',
+      authorship: S.authorshipSet, signing: S.signingSet, judgments: S.judgmentsSet,
+      chamber: 'closed', machines: false, lapse: 'never', rate: S.grant };
+    S.roster.forEach((r) => {
+      if (r.role === 'clerk') return;
+      r.ans = r.ans || {}; r.okd = r.okd || new Set();
+      for (const k of Object.keys(FILL))
+        if (r.ans[k] === undefined || r.ans[k] === null) r.ans[k] = FILL[k];
+      CARDS.forEach((c) => { r.okd.add('res-' + c.k); r.okd.add('set-' + c.k); });
+      r.okd.add('canpropose'); r.okd.add('canjudge');
+    });
+  }
 
   // the membership list, as the 🪪 card's clause — the current text of the
   // rule, with the ✕ that edits it, replacing the copy that lived in the body
@@ -680,11 +924,13 @@
   // number came back, and it pins until your OK, because a reveal you
   // answered blind into is a decision you are owed; a gate opening takes
   // the same rule, being exactly the shape of an unacknowledged decision.
-  const waiting = (c) => (c.isGate ? !c.open()
+  const waiting = (c) => (motionOn(c) ? answeredMotion(c)
+    : c.isGate ? !c.open()
     : c.k === 'myemail' ? (S.emailSent && !S.emailVerified)
     : c.ansFor ? (answered(c) && ((card(c.ansFor).in || 0) < E()))
     : isRoom(c) && settled(c) && (c.in || 0) < E());
-  const news = (c) => (c.isGate ? (c.open() && !S.okd.has(c.k))
+  const news = (c) => (motionOn(c) ? false
+    : c.isGate ? (c.open() && !S.okd.has(c.k))
     : !c.ansFor && isRoom(c) && settled(c) && E() > 0 && (c.in || 0) >= E() &&
       !S.okd.has('res-' + c.k))
     // **a constitutional rule you had no say in is a decision you are
@@ -733,10 +979,12 @@
       after: 'Judgments are revealed with the closing record.' })[S.judgmentsSet],
     chamber: () => ({ closed: 'Only members can see the document.',
       link: 'Anyone with the link can read the document.',
-      public: 'The document is public — listed and readable by anyone.' })[S.chamber],
-    lapse: () => (S.lapse === 'never' ? 'Memberships do not lapse, however long inactive.'
-      : 'A membership lapses after ' + S.lapseDays + ' days of inactivity.'),
-    machines: () => (S.auditor === true
+      public: 'The document is public — listed and readable by anyone.' })[
+      S.chamber === 'roster' ? (takenOf('chamber') || 'closed') : S.chamber],
+    lapse: () => { const v = (S.lapse === 'roster' ? takenOf('lapse') : S.lapse);
+      return (v === 'never' ? 'Memberships do not lapse, however long inactive.'
+      : 'A membership lapses after ' + (typeof v === 'number' ? v : S.lapseDays) + ' days of inactivity.'); },
+    machines: () => ((S.auditor === 'roster' ? takenOf('machines') : S.auditor) === true
       ? 'An AI — the coherence auditor — makes proposals, holding ' + S.auditorBudget + ' ✏️s. It never judges and counts toward nothing.'
       : 'There are no AI proposals.'),
     rate: () => 'Members start with ' + S.grant + ' ✏️ each, up to a maximum of ' + S.cap +
@@ -783,9 +1031,20 @@
     // the title card's head is the document title itself — the clause,
     // opened — never the word “Title” (Ed, 2026-08-18)
     inDocOpenSlot: false,
-    headFor: (c) => (c.k === 'title'
-      ? '<span class="headdoct' + (S.title ? '' : ' ph') + '">' + esc(S.title || 'Untitled document') + '</span>'
-      : null),
+    headFor: (c) => {
+      if (c.k === 'title') return '<span class="headdoct' + (S.title ? '' : ' ph') + '">' +
+        esc(S.title || 'Untitled document') + '</span>';
+      const m = motionOn(c);
+      // an ordinary motion's head is the value as it stands, wearing the
+      // keep-lane; a constitutional one re-opens the question, title head.
+      // The settled composer's head is reference only, as on decision cards.
+      if (m) return routeOfM(m, c) === 'ordinary' ? esc(standsOf(c.k)) : null;
+      if (composerOn(c)) return esc(standsOf(c.k));
+      return null;
+    },
+    // reserved = held by the founder: the room may pass a change, and it
+    // then goes to the founder as a 👑 question (accept or reject)
+    reserved: (c) => !c.isGate && !c.ansFor && c.kind !== 'personal' && !isRoom(c),
     mustAct, summary, value, isRoom, waiting, news, tasksFor, decisionLine,
   };
 
@@ -1156,6 +1415,52 @@
           '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
           ' data-ok="' + c.k + '">OK</button>', g.cards);
       }
+      const m = motionOn(c);
+      // a live motion takes the route its own value asks for (329a)
+      if (m && routeOfM(m, c) === 'ordinary') {
+        const mLive = { ...m, judged: motionJudged(c.k), pick: S.mAns[c.k] };
+        return cardHtml(c, ctx, motionBody(c, ctx, mLive),
+          (m.by === S.viewer
+            ? '<button class="btn" data-withdrawmotion="' + c.k + '" title="Withdrawing returns the ✏️ in full">🗑️ Withdraw</button>'
+            : '') +
+          '<button class="lanepick" aria-pressed="' + (S.mAns[c.k] === 'either') + '"' +
+          ' data-motion="either"><span class="dot"></span><span>Indifferent</span></button>' +
+          '<button class="btn btn-approve glyphbtn"' + (answeredMotion(c) ? '' : ' disabled') +
+          ' data-confirm="1">' + TICK + '</button>',
+          g.cards, { v: 'stands', s: { ...m, pick: S.mAns[c.k] } });
+      }
+      if (m) {
+        // constitutional: the founding question, live again. Yours carries
+        // the withdraw at the very left, where 🗑️ always is — it hands the
+        // 🏛️ back whole, which is what makes the one-each limit livable.
+        return cardHtml(c, ctx,
+          motionReopen(c, ctx, { ...m, judged: motionJudged(c.k) }) + consentBody(c, m),
+          (m.by === S.viewer
+            ? '<button class="btn" data-withdrawmotion="' + c.k + '" title="Withdrawing hands your 🏛️ back">🗑️ Withdraw</button>'
+            : '<button class="btn" data-close="1">Close</button>') +
+          '<button class="btn btn-approve glyphbtn"' + (answeredMotion(c) ? '' : ' disabled') +
+          ' data-confirm="1">' + TICK + '</button>', g.cards);
+      }
+      if (composerOn(c)) {
+        // **The settled card is the composer** (Ed, 2026-08-18): the rule as
+        // it stands at the head, the alternatives as the setting's own
+        // controls, session-view's rationale lane, 🗑️ and the route's commit.
+        const d = (S.draft && S.draft.k === c.k) ? S.draft : { k: c.k, to: '', why: '' };
+        const route = routeFor(c, d.to);
+        const body2 = (PROPOSE[c.k] ? PROPOSE[c.k](d)
+            : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
+              ' data-motionlane="to" data-ph="The value you are proposing">' + esc(d.to) + '</div></div>') +
+          whyLane(d) +
+          (route === 'constitutional'
+            ? '<p class="setnote"><b>Free — and one at a time.</b> Each member may have one 🏛️ out at once; withdraw it and it comes back whole. Putting it is a full ten-second hold.</p>'
+            : '<p class="setnote"><b>Costs one ✏️</b>, returned in full if withdrawn.' +
+              (ctx.reserved(c) ? ' Carrying sends it to the founder as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>') +
+          (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
+        return cardHtml(c, ctx, body2,
+          '<button class="btn glyphbtn" data-dropmotion="1"' +
+          (S.draft && S.draft.k === c.k ? '' : ' disabled') + ' title="Discard this motion">🗑️</button>' +
+          commitFor(c), g.cards);
+      }
       const body = c.ansFor ? ANSWER[c.ansFor](S.myAns, E(), c.ansFor === 'quorum' ? S.quorumForm : undefined)
         // a card that is not yours to answer reads as the rule it is —
         // the founder's settings are read-only from any other chair
@@ -1305,6 +1610,33 @@
     if (ev.target.matches('[data-ansnum]')) {
       S.myAns[ev.target.dataset.ansnum] = ev.target.value === '' ? null : +ev.target.value;
       return render(); }
+    // a motion's own control writes the value it proposes — on `change`, not
+    // every keystroke, because a date picker rebuilt under the pointer is a
+    // date picker you cannot use
+    if (ev.target.matches('[data-mtext],[data-mslug],[data-mpace],[data-mdate],[data-mnum],[data-mrate]') &&
+      (!S.draft || S.draft.k !== S.open)) S.draft = { k: S.open, to: '', why: '' };
+    if (!S.draft) return;
+    if (ev.target.matches('[data-mtext]')) { S.draft.to = ev.target.value.trim(); return render(); }
+    if (ev.target.matches('[data-mslug]')) {
+      const v = ev.target.value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+      S.draft.to = v ? 'docs.vote/' + v : '';
+      return render(); }
+    if (ev.target.matches('[data-mpace]')) { S.draft.to = 'Rising from ' + ev.target.value + '%'; return render(); }
+    if (ev.target.matches('[data-mrate]')) {
+      const g2 = (k2) => document.querySelector('[data-mrate="' + k2 + '"]');
+      S.draft.to = (g2('x') && g2('x').value || '4') + ' each, up to ' + (g2('y') && g2('y').value || '8') +
+        ', one every ' + (g2('z') && g2('z').value || '180') + ' minutes';
+      return render(); }
+    if (ev.target.matches('[data-mdate]')) {
+      S.draft.to = ev.target.value
+        ? new Date(ev.target.value).toLocaleString(undefined,
+          { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+      return render();
+    }
+    if (ev.target.matches('[data-mnum]')) {
+      S.draft.to = ev.target.value + ev.target.dataset.mnum;
+      return render();
+    }
   });
   document.addEventListener('click', (ev) => {
     const ct = ev.target.closest('[data-cleartitle]');
@@ -1323,6 +1655,36 @@
     if (asu) { S.app.submitted = true; S.open = 'apply'; return render(); }
     const ap2 = ev.target.closest('[data-apppic]');
     if (ap2) { S.app.pic = ap2.dataset.apppic; return render(); }
+    const mo2 = ev.target.closest('[data-motion]');
+    if (mo2) { S.mAns[S.open] = mo2.dataset.motion; return render(); }
+    const mval = ev.target.closest('[data-mval]');
+    if (mval) {
+      if (S.draft && S.draft.k === S.open && S.draft.to === mval.dataset.mval) {
+        S.draft = null; return render(); }
+      if (currentOf(S.open) === mval.dataset.mval) { S.draft = null; return render(); }
+      if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
+      S.draft.to = mval.dataset.mval; return render(); }
+    const mj = ev.target.closest('[data-mjoinbtn]');
+    if (mj) {
+      const f2 = document.querySelector('[data-mjoin]');
+      const n = (f2 && f2.value || '').trim();
+      if (n) { if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
+        S.draft.to = n + ' joins the membership'; render(); }
+      return;
+    }
+    if (ev.target.closest('[data-dropmotion]'))
+      return closeThen(() => { S.draft = null; S.open = null; });
+    const wm = ev.target.closest('[data-withdrawmotion]');
+    if (wm) return closeThen(() => { const k = wm.dataset.withdrawmotion;
+      delete S.motions[k];
+      S.roster.forEach((r) => { if (r.mAns) delete r.mAns[k]; });
+      S.open = null; });
+    if (ev.target.closest('[data-putmotion]')) {
+      if (S.draft && S.draft.to) {
+        S.motions[S.draft.k] = { to: S.draft.to, why: S.draft.why, by: S.viewer, kind: 'ordinary' };
+        S.draft = null;
+      }
+      return render(); }
     const okb = ev.target.closest('[data-ok]');
     if (okb) return closeThen(() => { S.okd.add(okb.dataset.ok); S.open = null; });
     const t = ev.target.closest('[data-tab], [data-card]');
@@ -1385,6 +1747,59 @@
     setTimeout(() => { const p = S.roster.find((x) => x.e === em); if (p) { p.in = true; render(); } },
       1200 + Math.random() * 2600);
   }
+  // ---- assembly-press (Ed, 2026-08-18) -----------------------------------
+  // A constitutional change goes in by a **full ten-second hold**, and the
+  // progress meter is the room itself: the members convene onto a circle
+  // around the button, and the motion is put at the moment the assembly is
+  // complete. Release early and it disperses — nothing sent.
+  const HOLD_MS = 10000;
+  let assembly = null;
+  function conveneAssembly(btn, k) {
+    disperseAssembly();
+    const d0 = S.draft;
+    if (!d0 || d0.k !== k) return;
+    const r = btn.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.id = 'assembly';
+    el.style.left = (r.left + r.width / 2) + 'px';
+    el.style.top = (r.top + r.height / 2) + 'px';
+    const RADIUS = 88;
+    const room = S.roster.filter((p) => p.in && p.role !== 'clerk');
+    room.forEach((p, i) => {
+      const seat = document.createElement('span');
+      seat.className = 'seat';
+      const th = -Math.PI / 2 + (i / room.length) * 2 * Math.PI;
+      seat.style.left = Math.round(Math.cos(th) * RADIUS) + 'px';
+      seat.style.top = Math.round(Math.sin(th) * RADIUS) + 'px';
+      seat.innerHTML = avHtml(p);
+      el.appendChild(seat);
+    });
+    document.body.appendChild(el);
+    const seats = [...el.children];
+    const timers = seats.map((s2, i) =>
+      setTimeout(() => s2.classList.add('in'), 80 + i * (HOLD_MS - 800) / seats.length));
+    assembly = { el, timers, done: setTimeout(() => {
+      el.classList.add('done');
+      S.motions[k] = { to: d0.to, why: d0.why, by: S.viewer, kind: 'constitutional',
+        invite: (/ joins the membership$/.test(d0.to)
+          ? d0.to.replace(/ joins the membership$/, '') : undefined) };
+      S.draft = null; assembly = null;
+      setTimeout(() => { el.remove(); render(); }, 420);
+    }, HOLD_MS) };
+  }
+  function disperseAssembly() {
+    if (!assembly) return;
+    assembly.timers.forEach(clearTimeout); clearTimeout(assembly.done);
+    const el = assembly.el; assembly = null;
+    el.classList.add('gone');
+    setTimeout(() => el.remove(), 260);
+  }
+  document.addEventListener('pointerdown', (ev) => {
+    const b = ev.target.closest('[data-holdmotion]');
+    if (b && !b.disabled) { ev.preventDefault(); conveneAssembly(b, b.dataset.holdmotion); }
+  });
+  ['pointerup', 'pointercancel'].forEach((t) => document.addEventListener(t, disperseAssembly));
+
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && S.open) { S.open = null; return render(); }
     if (ev.key === 'Enter' && ev.target.closest('[data-titlelane]')) ev.preventDefault();
@@ -1412,6 +1827,17 @@
     if (t.dataset.appname !== undefined) { S.app.name = t.value; return; }
     const at = t.closest && t.closest('[data-apptext]');
     if (at) { S.app.text = at.textContent.trim(); at.classList.toggle('blank', !S.app.text); return; }
+    const ml = t.closest && t.closest('[data-motionlane]');
+    if (ml) { if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
+      S.draft[ml.dataset.motionlane] = ml.textContent.trim();
+      ml.classList.toggle('blank', !ml.textContent.trim());
+      // the commit slot follows the route of what is now typed (329a) —
+      // swapped in place, because a re-render would throw the caret out
+      const slot = document.querySelector('[data-putmotion], [data-holdmotion]');
+      if (slot && S.draft) slot.outerHTML = commitFor(card(S.draft.k));
+      const dr = document.querySelector('[data-dropmotion]');
+      if (dr) dr.disabled = false;
+      return; }
     if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); renderRail(); refreshCommit(); return; }
     if (t.dataset.txt === 'myname') { S.myname = t.value; renderRail(); refreshCommit(); return; }
     if (t.dataset.txt === 'myemail') { S.myemail = t.value.trim();
@@ -1430,6 +1856,9 @@
     S.viewer = v === 'applicant' ? 'applicant' : +v;
     S.open = null; lastOpen = null;
     render();
+  });
+  document.getElementById('devff').addEventListener('click', () => {
+    devFastForward(); S.open = null; lastOpen = null; render();
   });
   addEventListener('resize', () => { fitBand(band); drawWire(wires, S.open); });
   addEventListener('scroll', () => drawWire(wires, S.open), true);
