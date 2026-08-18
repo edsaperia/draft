@@ -389,7 +389,9 @@
       rule: 'Each member states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all — so nobody is lapsed faster than they accepted.',
       takes: 'The document takes the longest', result: 'Never',
       dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
-    { k: 'machines', g: '🤖', t: 'Is There a Machine Member?', kind: 'constitutional', gate: 'judge', key: 'auditor', dep: ['roster'], p: 0.86,
+    // **Not a member** (Ed, 2026-08-18): it never judges and counts toward
+    // nothing — it only proposes, so it lives with the proposal settings
+    { k: 'machines', g: '🤖', t: 'AI Proposals', kind: 'constitutional', gate: 'judge', key: 'auditor', dep: ['roster'], p: 0.86,
       rule: 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.',
       takes: 'The document takes the most restrictive', result: 'People only',
       dist: [9, 5], distTop: 0, distEnds: ['People only', 'A machine is fine'] },
@@ -447,7 +449,7 @@
   const SEC = [
     { key: 'members', title: 'Membership',
       text: 'Who is in the room, how anybody joins or leaves it, and how each member appears in it.',
-      keys: ['roster', 'policy', 'lapse', 'machines', 'myemail', 'myname', 'mypic', 'canpropose', 'canjudge'],
+      keys: ['roster', 'policy', 'lapse', 'myemail', 'myname', 'mypic', 'canpropose', 'canjudge'],
       // **Members and Applications are subsections** (Ed, 2026-08-18):
       // Members IS the list — 🪪, the tab for invitations, stands beside
       // it, and the bottom row is your own membership wearing the ✋ and
@@ -464,7 +466,7 @@
           '<span class="mn">' + esc(S.myname || 'Not named yet') + ' <span class="chip">you</span>' +
           (iDraft() ? '' : ' <span class="chip">clerk</span>') + '</span></div></div>';
         const openId = my.find((c) => S.open === c.k);
-        const rest = ['lapse', 'machines', 'myemail', 'canpropose', 'canjudge']
+        const rest = ['lapse', 'myemail', 'canpropose', 'canjudge']
           .map(card).filter((c) => c && visible(c));
         return '<h2 class="docline lvl3">Members</h2>' +
           (S.open === 'roster' ? h.para(card('roster'))
@@ -483,9 +485,9 @@
     { key: 'privacy', title: 'Privacy',
       text: 'Who is seen doing what — proposing, signing, judging — and who may read the document at all.',
       keys: ['authorship', 'signing', 'judgments', 'chamber'] },
-    { key: 'rate', title: 'Proposal Rate',
-      text: 'How often anybody may put something to the room.',
-      keys: ['grant', 'drip'] },
+    { key: 'rate', title: 'Proposals',
+      text: 'How often anybody may put something to the room, and whether an AI drafts proposals alongside them.',
+      keys: ['grant', 'drip', 'machines'] },
     { key: 'doc', title: 'The Document',
       text: 'Its name, its address, and the text it starts from.',
       keys: ['title', 'slug', 'text'] },
@@ -559,7 +561,7 @@
     signing: (v) => 'You said ' + ({ nobody: 'nobody signs', each: 'each author chooses', everybody: 'everybody signs' }[v] || v),
     judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
-    machines: (v) => 'You said ' + (v ? 'a machine member is fine' : 'people only'),
+    machines: (v) => 'You said ' + (v ? 'AI proposals are fine' : 'no AI proposals'),
     lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' quiet days'),
     grant: (v) => 'You said ' + v + ' ✏️s',
     drip: (v) => 'You said ' + v + ' per 10%',
@@ -640,16 +642,83 @@
     : !c.ansFor && isRoom(c) && settled(c) && E() > 0 && (c.in || 0) >= E() &&
       !S.okd.has('res-' + c.k));
 
-  // the decision, said in prose from the convenor's side of the table
+  // **The constitution states itself in sentences** (Ed, 2026-08-18): each
+  // decision has a what-phrase for its open states and a declarative
+  // sentence once decided, all in the convenor's own frame.
+  const WHAT = {
+    ending: 'when the drafting process will end',
+    quorum: 'how many members must weigh in before a question can carry',
+    bar: 'how sure the room must be at the close',
+    pace: 'how the approval threshold climbs to the close',
+    authorship: 'when a proposer is named',
+    signing: 'who may sign a proposal',
+    judgments: 'whether judgments are revealed with the record',
+    chamber: 'who may read the document',
+    lapse: 'whether a quiet membership lapses',
+    machines: 'whether an AI makes proposals',
+    grant: 'how many ✏️s members start with',
+    drip: 'how fast ✏️s come back',
+    policy: 'how people become members',
+    slug: 'the document’s address',
+    text: 'the text the document starts from',
+  };
+  const endFmt = () => new Date(S.endsAt).toLocaleString(undefined,
+    { weekday: 'long', hour: '2-digit', minute: '2-digit' }).replace(' ', ' at ');
+  const DECIDED = {
+    ending: () => (perpetual() ? 'The drafting process has no set end — it runs until it is frozen.'
+      : 'The drafting process will end on ' + endFmt() + '.'),
+    quorum: () => (S.quorumForm === 'count'
+      ? Math.min(S.quorumN, E()) + ' of the ' + E() + ' members'
+      : S.quorumPct + '% of the members') + ' must weigh in before a question can change the document.',
+    bar: () => 'At the close, the room must be ' + S.tClose + '% sure for a change to carry.',
+    pace: () => (perpetual() || S.shape !== 'ramp'
+      ? 'The approval threshold holds at its close value throughout.'
+      : 'The approval threshold rises from ' + S.tStart + '% to the close.'),
+    authorship: () => ({ anonymous: 'Proposers are never named — not during the session and not in the record.',
+      sealed: 'Proposers are named only in the closing record.',
+      public: 'Proposers are named from the start.' })[S.authorshipSet],
+    signing: () => ({ nobody: 'Nobody may sign a proposal.', each: 'Each author chooses whether to sign.',
+      everybody: 'Every proposal is signed.' })[S.signingSet],
+    judgments: () => ({ never: 'Judgments are never revealed.',
+      after: 'Judgments are revealed with the closing record.' })[S.judgmentsSet],
+    chamber: () => ({ closed: 'Only members can see the document.',
+      link: 'Anyone with the link can read the document.',
+      public: 'The document is public — listed and readable by anyone.' })[S.chamber],
+    lapse: () => (S.lapse === 'never' ? 'Memberships do not lapse, however quiet.'
+      : 'A membership lapses after ' + S.lapseDays + ' quiet days.'),
+    machines: () => (S.auditor === true
+      ? 'An AI — the coherence auditor — makes proposals, holding ' + S.auditorBudget + ' ✏️s. It never judges and counts toward nothing.'
+      : 'There are no AI proposals.'),
+    grant: () => 'Members start with ' + S.grant + ' ✏️s each.',
+    drip: () => 'A spent ✏️ comes back at ' + S.drip + ' per ' +
+      (perpetual() ? S.dripPer + ' hours' : S.dripPer + '% of the window') + ', up to ' + S.cap + '.',
+    policy: () => ({ invite: 'Membership is by invitation only.',
+      proposed: 'Anyone may apply, but an application must be proposed by a member.',
+      apply: 'Anyone may apply to join.',
+      open: 'Anyone with the link joins on arrival.' })[S.joinBy] +
+      (S.rosterBy === 'convenor' ? ' The membership is reserved — this document has a 👑.' : ''),
+    slug: () => 'The document lives at docs.vote/' + S.slug + '.',
+    text: () => { const n = [...prose.children].filter((b) => b.textContent.trim()).length;
+      return n ? 'The document starts from ' + n + ' blocks of text.'
+        : 'The document starts empty — the room writes it.'; },
+  };
   const decisionLine = (c) => {
-    if (c.ansFor || c.isGate || c.kind === 'personal') return summary(c);
+    if (c.ansFor) return 'Your answer — ' + summary(c) + '.';
+    if (c.k === 'canpropose') return canPropose() && !LIVE().some(owesAnswer)
+      ? 'Proposing is open — members can propose as soon as they arrive.'
+      : 'Proposing will begin when the starting text and your own answers have been decided.';
+    if (c.k === 'canjudge') return canJudge()
+      ? 'Judging on proposals is open.'
+      : 'Judging on proposals will begin when the whole constitution has been decided.';
+    if (c.kind === 'personal') return summary(c);
     if (isRoom(c)) {
       return (c.in || 0) >= E() && E() > 0
-        ? (c.result ? esc(c.result) + ' — decided by the membership.' : 'Decided by the membership.')
-        : 'You have delegated this to the membership, who are still deciding — ' +
-          Math.min(c.in || 0, E()) + ' of ' + E() + ' in.';
+        ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c))
+        : 'You have delegated ' + (WHAT[c.k] || 'this') + ' to the members, who are still deciding (' +
+          Math.min(c.in || 0, E()) + '/' + E() + ').';
     }
-    return settled(c) ? value(c) : 'Waiting for you to decide.';
+    return settled(c) ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c))
+      : 'You are deciding ' + (WHAT[c.k] || 'this') + '.';
   };
 
   const ctx = {
@@ -888,12 +957,12 @@
       theyDecide('lapse', 'Each states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.') +
       '</div>',
     machines: () =>
-      '<p class="why">A machine member holds ✏️s like anybody else and competes on the same terms.</p>' +
+      '<p class="why">An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.</p>' +
       '<div class="choice" role="radiogroup">' +
-      theyDecide('auditor', 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.') +
+      theyDecide('auditor', 'The <b>most restrictive</b> answer wins, so a single member who would rather not have AI proposals keeps them out.') +
       opt(S, 'auditor', true, 'Include the coherence auditor', 'Patrols the document for drift — a definition changed in one place and not another — and proposes fixes.',
         '<span class="setrow2">' + num(S, 'auditorBudget', 'Its edit budget', 0, 40) + '</span>') +
-      opt(S, 'auditor', false, 'People only') + '</div>',
+      opt(S, 'auditor', false, 'No AI proposals') + '</div>',
   };
 
   // ---- the band: two piles, and the card one of them opens into ----------

@@ -202,18 +202,20 @@ window.SETUP = (function () {
       // member's own answer-task under the setting it answers (the
       // convenor's surface: the setting watches, the answer asks).
       if (g.sections) {
-        // **Each decision is a heading with the decision underneath** (Ed,
-        // 2026-08-18): the title as its own heading, then a sentence of
-        // state or value in prose — 'Waiting for you to decide', 'The
-        // convenor has delegated this to the membership, who are still
-        // deciding' — supplied by ctx.decisionLine so each surface speaks
-        // from its reader's side of the table.
+        // **A decision is a complete sentence describing the constitutional
+        // state, open or decided** (Ed, 2026-08-18: *'Convenor is deciding
+        // when the drafting process will end.' … 'The drafting process
+        // will end on Thursday at 18:00.' Only use subheadings as needed;
+        // they aren't part of the decisions themselves*). No per-decision
+        // heading — the rail keeps the question titles; the document
+        // states rules — and ctx.decisionLine supplies the sentence from
+        // its reader's side of the table.
         const para = (c) => (ctx.open === c.k
           ? '<div class="cpara open">' + cardFor({ ...g, cards: [c] }) + '</div>'
           : c.inDoc ? ''  // the document displays this itself (the title heading)
           : '<div class="cpara"><span class="chipcol">' + chipHtml(c, ctx, {}) + '</span>' +
-            '<div class="cptext"><h4 class="cph">' + esc(c.ansFor ? 'Your answer' : c.t) + '</h4>' +
-            '<p class="cpv">' + (ctx.decisionLine ? ctx.decisionLine(c) : ctx.summary(c)) + '</p></div></div>');
+            '<div class="cptext"><p class="cpv">' +
+            (ctx.decisionLine ? ctx.decisionLine(c) : ctx.summary(c)) + '</p></div></div>');
         const withTasks = (c) => para(c) +
           (ctx.tasksFor ? ctx.tasksFor(c).map(para).join('') : '');
         const wants = g.sections.reduce((n, sec) => n + sec.cards
@@ -727,10 +729,10 @@ window.SETUP = (function () {
         { v: 'link', t: 'Anyone with the link', e: 'The chamber view only, to whoever the link reaches.' },
         { v: 'public', t: 'Public', e: 'Listed and readable by anyone.' }]) + BLINDNOTE,
     machines: (A) =>
-      '<p class="why">A machine member patrols for drift and proposes fixes, holding ✏️s like anybody else. The <b>most restrictive</b> answer wins: if you would rather not draft alongside one, it stays out.</p>' +
+      '<p class="why">An AI that patrols the document for drift and proposes fixes — it never judges, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
       ladder(A, 'machines', [
-        { v: false, t: 'People only', e: 'No machine member in this charter.' },
-        { v: true, t: 'A machine member is fine', e: 'It competes on the same terms as anybody else and can be out-judged like anybody else.' }]) + BLINDNOTE,
+        { v: false, t: 'No AI proposals', e: 'People write everything in this charter.' },
+        { v: true, t: 'AI proposals are fine', e: 'They compete on the same terms as anybody’s and can be out-judged like anybody’s.' }]) + BLINDNOTE,
     ending: (A) =>
       '<p class="why">When the document should close. The <b>latest</b> answer anybody gives is taken, and <b>never</b> is the latest of all — so nobody is cut off before they were ready.</p>' +
       '<div class="choice" role="radiogroup">' +

@@ -154,9 +154,9 @@
       rule: 'Each member states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.',
       takes: 'The document takes the longest', result: 'Never',
       dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
-    { k: 'machines', g: '🤖', t: 'Is There a Machine Member?', kind: 'constitutional', in: 12,
-      rule: 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.',
-      takes: 'The charter takes the most restrictive', result: 'People only',
+    { k: 'machines', g: '🤖', t: 'AI Proposals', kind: 'constitutional', in: 12,
+      rule: 'The <b>most restrictive</b> answer wins, so a single member who would rather not have AI proposals keeps them out.',
+      takes: 'The charter takes the most restrictive', result: 'No AI proposals',
       dist: [9, 5], distTop: 0, distEnds: ['People only', 'A machine is fine'] },
   ];
   // The convenor's own, as a member meets them: readable, never editable.
@@ -301,7 +301,7 @@
   const SEC = [
     { key: 'members', title: 'Membership',
       text: 'Who is in the room, how anybody joins or leaves it, and how each member appears in it.',
-      keys: ['roster', 'policy', 'lapse', 'machines', 'myname', 'mypic', 'canpropose', 'canjudge'],
+      keys: ['roster', 'policy', 'lapse', 'myname', 'mypic', 'canpropose', 'canjudge'],
       // **Members and Applications are subsections** (Ed, 2026-08-18):
       // Members IS the list, 🪪 beside it, your own row at the bottom
       // wearing ✋ and 🖼️; Applications is the 🤝 decision with the
@@ -315,7 +315,7 @@
           '<div class="memrow meRow">' + h.pile(my) + avHtml(me()) +
           '<span class="mn">' + esc(S.myname || 'Not named yet') + ' <span class="chip">you</span></span></div></div>';
         const openId = my.find((c) => S.open === c.k);
-        const rest = ['lapse', 'machines', 'canpropose', 'canjudge'].map(card).filter(Boolean);
+        const rest = ['lapse', 'canpropose', 'canjudge'].map(card).filter(Boolean);
         return '<h2 class="docline lvl3">Members</h2>' +
           (S.open === 'roster' ? h.para(card('roster'))
             : '<div class="cpara"><span class="chipcol">' + h.chip(card('roster')) + '</span>' + list + '</div>') +
@@ -331,9 +331,9 @@
     { key: 'privacy', title: 'Privacy',
       text: 'Who is seen doing what — proposing, signing, judging — and who may read the document at all.',
       keys: ['authorship', 'signing', 'judgments', 'chamber'] },
-    { key: 'rate', title: 'Proposal Rate',
-      text: 'How often anybody may put something to the room.',
-      keys: ['grant', 'drip'] },
+    { key: 'rate', title: 'Proposals',
+      text: 'How often anybody may put something to the room, and whether an AI drafts proposals alongside them.',
+      keys: ['grant', 'drip', 'machines'] },
     { key: 'doc', title: 'The Document',
       text: 'Its name, its address, and the text it starts from.',
       keys: ['text', 'title', 'slug'] },
@@ -392,7 +392,7 @@
     lapse: () => (S.lapse === null ? 'The shortest you will accept'
       : S.lapse === 'never' ? 'You said never' : 'You said after ' + S.lapse + ' quiet days'),
     machines: () => (S.machines === null ? 'The most you will accept'
-      : 'You said ' + (S.machines ? 'a machine member is fine' : 'people only')),
+      : 'You said ' + (S.machines ? 'AI proposals are fine' : 'no AI proposals')),
   };
   const value = (c) => esc(VALUE[c.k] ? VALUE[c.k]() : c.v);
   const summary = (c) => (isRoom(c) && settled(c)
@@ -411,16 +411,49 @@
     : c.own === 'convenor' ? (c.kind === 'constitutional' && !S.okd.has(c.k))
     : isRoom(c) && settled(c) && (c.in || 0) >= E && !S.okd.has('res-' + c.k));
 
-  // the decision, said in prose from a member's side of the table
+  // **The constitution states itself in sentences** (Ed, 2026-08-18), in a
+  // member's frame. The fixture is static, so the decided sentences are
+  // written out rather than templated.
+  const WHAT = {
+    quorum: 'how many members must weigh in before a question can carry',
+    bar: 'how sure the room must be at the close',
+    authorship: 'when a proposer is named',
+    signing: 'who may sign a proposal',
+    judgments: 'whether judgments are revealed with the record',
+    chamber: 'who may read the document',
+    lapse: 'whether a quiet membership lapses',
+    machines: 'whether an AI makes proposals',
+  };
+  const DECIDED = {
+    text: 'The document started from 42 blocks of text in 9 sections.',
+    slug: 'The document lives at docs.vote/hollow-oak-4f2a.',
+    ending: 'The drafting process will end on Thursday at 18:00.',
+    pace: 'The approval threshold rises from 55% to the close.',
+    grant: 'Members start with 4 ✏️s each.',
+    drip: 'A spent ✏️ comes back at 1 per 10% of the window, up to 8.',
+    policy: 'Anyone may apply to join.',
+    quorum: '10 of the 14 members must weigh in before a question can change the document.',
+    bar: 'At the close, the room must be 80% sure for a change to carry.',
+    authorship: 'Proposers are never named — not during the session and not in the record.',
+    signing: 'Nobody may sign a proposal.',
+    judgments: 'Judgments are never revealed.',
+    chamber: 'Only members can see the document.',
+    lapse: 'Memberships do not lapse, however quiet.',
+    machines: 'There are no AI proposals.',
+  };
   const decisionLine = (c) => {
-    if (c.isGate || c.own === 'you') return value(c);
+    if (c.k === 'canpropose') return mine() ? 'Proposing began when your answers went in.'
+      : 'Proposing will begin when your own answers have been given.';
+    if (c.k === 'canjudge') return roomDone() ? 'Judging on proposals began on Tuesday at 14:02.'
+      : 'Judging on proposals will begin when everyone’s answers are in.';
+    if (c.own === 'you') return value(c);
     if (isRoom(c)) {
       return (c.in || 0) >= E
-        ? esc(c.result || '') + ' — decided by the membership.'
-        : 'The convenor has delegated this to the membership, who are still deciding — ' +
-          Math.min(c.in || 0, E) + ' of ' + E + ' in.';
+        ? (DECIDED[c.k] || esc(c.result || ''))
+        : 'Convenor has delegated ' + (WHAT[c.k] || 'this') + ' to the members, who are still deciding (' +
+          Math.min(c.in || 0, E) + '/' + E + ').';
     }
-    return value(c);
+    return DECIDED[c.k] || value(c);
   };
 
   const ctx = {

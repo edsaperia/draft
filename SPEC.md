@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.45
+# Group Drafting Engine — Specification v0.46
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
