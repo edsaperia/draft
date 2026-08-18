@@ -10,7 +10,8 @@
 import { chainHash } from './hash.js';
 import type {
   ApplicantRecord, ConstitutionEvent, ConvenorInput, CrownQuestionRecord,
-  LogEntry, MemberId, MemberRecord, MotionId, MotionRecord, SettingState,
+  LogEntry, MemberId, MemberRecord, MotionAnswer, MotionId, MotionPayload,
+  MotionRecord, SettingState,
 } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf, motionRouteOf, validateFor } from './catalogue.js';
@@ -268,9 +269,136 @@ export class ConstitutionSession {
     }
   }
 
-  /** Motions, the crown, presence and applications — folded in later commits. */
+  /** Motions and the crown (§9.6–§9.7, v0.48). */
   private applyLifecycle(event: ConstitutionEvent): void {
+    switch (event.type) {
+      case 'motion-opened': {
+        this.motions.set(event.motion, {
+          id: event.motion,
+          by: event.by,
+          payload: event.payload,
+          route: event.route,
+          stake: event.stake,
+          openedAtT: event.t,
+          status: 'running',
+          answers: new Map(),
+          settledAtT: null,
+        });
+        this.nextMotionN += 1;
+        if (event.by) this.touch(event.by, event.t);
+        break;
+      }
+      case 'motion-answer': {
+        const rec = this.motions.get(event.motion)!;
+        rec.answers.set(event.member, event.answer);
+        this.touch(event.member, event.t);
+        break;
+      }
+      case 'motion-withdrawn': {
+        const rec = this.motions.get(event.motion)!;
+        rec.status = 'withdrawn';
+        rec.settledAtT = event.t;
+        break;
+      }
+      case 'motion-carried': {
+        const rec = this.motions.get(event.motion)!;
+        rec.status = 'carried';
+        rec.settledAtT = event.t;
+        if (rec.payload.kind === 'set') {
+          this.applyPayloadSet(rec.payload.setting, rec.payload.value, 'motion', event.t);
+        }
+        // membership payloads apply through their follow-on events
+        break;
+      }
+      case 'motion-adjudicated': {
+        const rec = this.motions.get(event.motion)!;
+        rec.settledAtT = event.t;
+        if (event.outcome === 'held') {
+          rec.status = 'held';
+        } else if (this.reservedTarget(rec)) {
+          // Reserved is assent, not silence (§9.7): the carried change goes
+          // to the convenor as a 👑 question rather than applying.
+          rec.status = 'awaiting-crown';
+          rec.settledAtT = null;
+        } else {
+          rec.status = 'carried';
+          if (rec.payload.kind === 'set') {
+            this.applyPayloadSet(rec.payload.setting, rec.payload.value, 'motion', event.t);
+          }
+        }
+        break;
+      }
+      case 'crown-question-opened': {
+        this.crownQuestions.set(event.question, {
+          id: event.question,
+          motion: event.motion,
+          openedAtT: event.t,
+          status: 'pending',
+        });
+        this.nextCrownN += 1;
+        break;
+      }
+      case 'crown-question-answered':
+      case 'crown-question-auto-passed': {
+        const q = this.crownQuestions.get(event.question)!;
+        const accepted = event.type === 'crown-question-auto-passed' ||
+          event.outcome === 'accept';
+        q.status = event.type === 'crown-question-auto-passed'
+          ? 'auto-passed'
+          : accepted ? 'accepted' : 'rejected';
+        const rec = this.motions.get(q.motion)!;
+        rec.status = accepted ? 'carried' : 'held';
+        rec.settledAtT = event.t;
+        if (accepted && rec.payload.kind === 'set') {
+          this.applyPayloadSet(rec.payload.setting, rec.payload.value, 'crown', event.t);
+        }
+        if (event.type === 'crown-question-answered') {
+          this.touch(this.convenor.id, event.t);
+        }
+        break;
+      }
+      case 'crown-lapsed': {
+        // A lapsed crown passes to the members (§9.7) — and with it every
+        // reserved setting, since reservation has no holder left (NOTES.md).
+        this.crownLapsedFlag = true;
+        for (const st of this.settings.values()) {
+          if (st.holder === 'convenor') st.holder = 'members';
+        }
+        break;
+      }
+      default:
+        this.applyPresence(event);
+    }
+  }
+
+  /** Presence, the freeze, lapsing and applications — folded in a later commit. */
+  private applyPresence(event: ConstitutionEvent): void {
     throw new Error(`unhandled event '${event.type}'`);
+  }
+
+  /** A carried change lands on the setting, keeping who holds it. */
+  private applyPayloadSet(id: SettingId, value: SettingValue,
+    by: 'motion' | 'crown', t: number): void {
+    const st = this.settings.get(id)!;
+    st.value = value;
+    st.settledBy = by;
+    st.settledAtT = t;
+    st.collecting = false;
+    if (id === 'quorum') this.quorumFormValue = (value as QuorumValue).form;
+    if (id === 'link') {
+      const slug = (value as SlugValue).slug;
+      if (!this.slugHistory.includes(slug)) this.slugHistory.push(slug);
+    }
+    this.reseedAnchorsIfLive(t, id);
+  }
+
+  /** Does this motion's target sit behind the crown's assent (§9.7)? */
+  private reservedTarget(rec: MotionRecord): boolean {
+    if (this.crownLapsedFlag) return false;
+    if (rec.payload.kind === 'set') {
+      return this.settings.get(rec.payload.setting)!.holder === 'convenor';
+    }
+    return this.membershipReserved();
   }
 
   private freshMember(id: MemberId, email: string, invitedAtT: number,
@@ -559,9 +687,175 @@ export class ConstitutionSession {
       quorumN: q ? quorumCount(q, E) : null,
       floorTerm: adoptionFloorTerm(E) });
     // A departure can complete a question (live electorate); an arrival can
-    // only re-open one, which the resolve check reads for itself.
+    // only re-open one, which the resolve check reads for itself. The same
+    // live-electorate rule settles motions (v0.48).
     this.maybeResolveAll(t);
     this.maybeConstitute(t);
+    this.maybeSettleMotions(t);
+  }
+
+  // -------------------------------------------------------------------------
+  // Motions (§9.6, v0.48): the one act by which a settled document changes
+  // its own rules. The route is a fact about the setting.
+
+  openMotion(t: number, by: MemberId, payload: MotionPayload): MotionId {
+    if (this.constitutedT === null) {
+      throw new Error('before the start nothing is amended — only set (§9.6a)');
+    }
+    const mover = this.members.get(by);
+    if (!mover || !inE(mover)) throw new Error(`'${by}' is not an arrived member`);
+    let route: MotionRoute;
+    if (payload.kind === 'set') {
+      const entry = entryOf(payload.setting);
+      if (entry.kind === 'personal') throw new Error(`${payload.setting} is yours alone (§9.0c)`);
+      if (payload.setting === 'startingText' || !this.settings.has(payload.setting)) {
+        throw new Error(`'${payload.setting}' is not moved this way`);
+      }
+      const st = this.settings.get(payload.setting)!;
+      if (st.value === null) throw new Error(`'${payload.setting}' has no settled value to move against`);
+      const err = validateFor(entry, payload.value);
+      if (err) throw new Error(err);
+      if (eqValue(payload.value, st.value)) {
+        throw new Error('the motion proposes what already stands');
+      }
+      route = motionRouteOf(entry, payload.value, st.value);
+    } else if (payload.kind === 'invite') {
+      this.requireEmailFree(payload.email);
+      route = this.membershipReserved() ? 'ordinary' : 'constitutional';
+    } else if (payload.kind === 'remove') {
+      const target = this.members.get(payload.member);
+      if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
+      route = this.membershipReserved() ? 'ordinary' : 'constitutional';
+    } else {
+      // admit rides submitApplication/proposeApplicant (§9.7½)
+      route = 'ordinary';
+    }
+    if (route === 'constitutional' && this.heldOutBy(by)) {
+      throw new Error('one 🏛️ out per member at a time (§9.6)');
+    }
+    const id = `mo-${this.nextMotionN}`;
+    this.emit({ type: 'motion-opened', t, motion: id, by, payload, route,
+      stake: route === 'ordinary' ? 1 : 0 });
+    return id;
+  }
+
+  answerMotion(t: number, member: MemberId, motion: MotionId,
+    answer: MotionAnswer): void {
+    const rec = this.motions.get(motion);
+    if (!rec || rec.status !== 'running') throw new Error('the motion is not running');
+    if (rec.route !== 'constitutional') {
+      throw new Error('an ordinary motion is judged as a race, not answered (§9.6)');
+    }
+    const m = this.members.get(member);
+    if (!m || !motionElectorateOf([m]).length) {
+      throw new Error(`'${member}' is not in the motion's electorate`);
+    }
+    this.emit({ type: 'motion-answer', t, motion, member, answer });
+    this.maybeSettleMotions(t);
+  }
+
+  withdrawMotion(t: number, member: MemberId, motion: MotionId): void {
+    const rec = this.motions.get(motion);
+    if (!rec || rec.status !== 'running') throw new Error('the motion is not running');
+    if (rec.by !== member) throw new Error('only the mover withdraws a motion');
+    this.emit({ type: 'motion-withdrawn', t, motion });
+  }
+
+  /**
+   * The ordinary-route seam: this package never runs races. The host — the
+   * engine, the sim, a mock — judges the motion at the bar and reports the
+   * outcome here; post-368 the caller is an engine-core race over the value.
+   */
+  adjudicateOrdinaryMotion(t: number, motion: MotionId,
+    outcome: 'carried' | 'held'): void {
+    const rec = this.motions.get(motion);
+    if (!rec || rec.status !== 'running') throw new Error('the motion is not running');
+    if (rec.route !== 'ordinary') {
+      throw new Error('a constitutional motion settles by unanimity, not adjudication');
+    }
+    this.emit({ type: 'motion-adjudicated', t, motion, outcome });
+    const after = this.motions.get(motion)!.status as string; // the fold moved it
+    if (after === 'awaiting-crown') {
+      this.emit({ type: 'crown-question-opened', t,
+        question: `cq-${this.nextCrownN}`, motion: rec.id });
+    } else if (after === 'carried') {
+      this.settleCarriedEffects(t, rec, /* everyoneHadSay */ false);
+    }
+  }
+
+  answerCrownQuestion(t: number, question: string, outcome: 'accept' | 'reject'): void {
+    const q = this.crownQuestions.get(question);
+    if (!q || q.status !== 'pending') throw new Error('no such pending 👑 question');
+    if (this.crownLapsedFlag) throw new Error('the crown has lapsed — the question passes by itself');
+    this.emit({ type: 'crown-question-answered', t, question, outcome });
+    if (outcome === 'accept') {
+      this.settleCarriedEffects(t, this.motions.get(q.motion)!, false);
+    }
+  }
+
+  private heldOutBy(member: MemberId): boolean {
+    for (const rec of this.motions.values()) {
+      if (rec.by === member && rec.route === 'constitutional' && rec.status === 'running') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * The settle check (v0.48): a constitutional motion carries at the moment
+   * every currently active member — the quorum base, evaluated live — stands
+   * at accept or abstain with no keep standing. Re-run on every answer and
+   * every roster event; a standing keep blocks but does not kill.
+   */
+  private maybeSettleMotions(t: number): void {
+    let settled = true;
+    while (settled) {
+      settled = false;
+      for (const rec of this.motions.values()) {
+        if (rec.status !== 'running' || rec.route !== 'constitutional') continue;
+        const electorate = motionElectorateOf(this.members.values());
+        if (electorate.length === 0) continue;
+        const answers = electorate.map((m) => rec.answers.get(m.id));
+        if (answers.some((a) => a === undefined || a === 'keep')) continue;
+        if (!answers.some((a) => a === 'accept')) continue; // nobody consented to anything
+        this.emit({ type: 'motion-carried', t, motion: rec.id });
+        this.settleCarriedEffects(t, rec, true);
+        settled = true; // a departure-by-removal can complete another motion
+        break;
+      }
+    }
+  }
+
+  /** Follow-ons of a carried motion: membership events and owed OKs. */
+  private settleCarriedEffects(t: number, rec: MotionRecord,
+    everyoneHadSay: boolean): void {
+    if (rec.payload.kind === 'invite') {
+      const id = `m-${this.nextMemberN}`;
+      this.emit({ type: 'member-invited', t, member: id,
+        email: rec.payload.email, viaMotion: rec.id });
+      // an invitee counts toward nothing until they arrive — no roster follow-ons
+    } else if (rec.payload.kind === 'remove') {
+      const target = rec.payload.member;
+      const wasInE = inE(this.members.get(target)!);
+      this.emit({ type: 'member-removed', t, member: target, viaMotion: rec.id });
+      if (wasInE) this.afterRosterChange(t, 'departure', target);
+    } else if (rec.payload.kind === 'set' &&
+      CONSTITUTIONAL.has(rec.payload.setting)) {
+      // A constitutional value changed: anybody who had no say is owed the
+      // decision. Under unanimity that is only whoever stood outside the
+      // electorate (abstaining sign-outs, the lapsed); under an ordinary
+      // route (an ending date-move) the judges are the engine's business,
+      // so everybody is owed the news (NOTES.md).
+      for (const m of this.members.values()) {
+        if (m.removed) continue;
+        if (m.arrivedAtT === null) continue;
+        if (everyoneHadSay && rec.answers.has(m.id)) continue;
+        if (m.okOwed.has(rec.payload.setting)) continue;
+        this.emit({ type: 'ok-owed', t, member: m.id, settings: [rec.payload.setting] });
+      }
+    }
+    // 'admit' effects ride the applications machinery (§9.7½)
   }
 
   // -------------------------------------------------------------------------
