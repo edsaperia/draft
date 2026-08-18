@@ -23,6 +23,13 @@ custom emoji and just become ✔s*. Five states, implemented once in
 | **yours** | ✏️ | blue `--lc-yours` | yes | a thing of your own in flight (a submitted application); fill = how far judging has got |
 | **done** | rail: drawn ✔ · tab: **its own glyph** | grey | **no** — it leaves the rail | settled. The tab stays in the pile wearing its subject glyph (Ed, 2026-08-18: the piles stand in one place, most of their contents can still be acted on — *it's basically a menu*); the grey wash says settled. The constitution block's lines are buttons too |
 
+**The constitution is document text** (Ed, 2026-08-18, same evening): the
+Constitution group renders not as a pile but as a section — one paragraph
+per decision (*title — value*, Q331's (c) shape), its tab in the gutter to
+its left, constitutional first; the open card replaces its own paragraph.
+The Membership pile remains a pile. On the ceremony the room's questions'
+rules appear as tabless paragraphs, their tab staying with the task.
+
 Rules carried over whole from session-view: grey means nothing is being asked
 of you; hot for actions, cold for information; the ✔ is drawn (one function),
 never an emoji plate; a decision announces itself if it changed the document
@@ -60,7 +67,7 @@ only*).
  ├─⇒ 🚪 Membership Policy  who holds the register; how anyone joins later
  ├─⇒ ⏰ When Does It End?  delegable — "the members decide" needs members
  ├─⇒ 👥 Quorum             delegable, and counted against the roster
- ├─⇒ 👤 ✍️ 👁️ 🔭 💤 🤖 🪙   delegable — same reason
+ ├─⇒ 👤 ✍️ 👁️ 🌍 💤 🤖 🪙   delegable — same reason
  └─⇒ (every ans-* question card: born of delegating its setting)
 
 ⏰ When Does It End? (an endpoint may now exist)

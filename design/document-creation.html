@@ -374,7 +374,7 @@
     // gate 'judge': constitutional (§9.6 disclosure family), so judging waits
     // on it — the member surface already did, and the two disagreed (review
     // finding, 2026-08-18)
-    { k: 'chamber', g: '🔭', t: 'Who Else Can See It?', kind: 'constitutional', gate: 'judge', key: 'chamber', dep: ['roster'], p: 0.43,
+    { k: 'chamber', g: '🌍', t: 'Visibility', kind: 'constitutional', gate: 'judge', key: 'chamber', dep: ['roster'], p: 0.43,
       rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.',
       takes: 'The document takes the most private', result: 'Members only',
       dist: [5, 8, 1], distTop: 1, distEnds: ['Members only', 'Public'] },
@@ -452,7 +452,7 @@
     return [
       { key: 'convenor', label: 'Constitution', cards: live.filter((c) => pileOf(c) === 'convenor'),
         who: () => face(me(), !S.myname.trim()),
-        block: constBlock,
+        paras: true, intro: constBlock,
         note: (n) => (n ? n + ' still to confirm' : 'all confirmed') },
       { key: 'room', label: 'Membership', cards: live.filter((c) => pileOf(c) === 'room'),
         // the convenor is in the membership too, if they are a drafter (Ed)
@@ -571,10 +571,9 @@
       line('🎩', 'Convenor', esc(S.myname || (iDraft() ? 'Unnamed' : 'Anonymous')) + (iDraft() ? '' : ' · clerk') + (S.rosterBy === 'convenor' ? ' · 👑' : ' · 🏴')) +
       line('⏱️', 'Constituted', canJudge() ? 'constituted — judging is open'
         : 'not yet constituted — it happens when judging opens') +
-      // summary(), not value(): a delegated setting states "the members
-      // decide", never the convenor's own draft of a number
-      LIVE().filter((c) => c.kind === 'constitutional' && !c.ansFor && !['myrole'].includes(c.k))
-        .map((c) => line(c.g, c.t, summary(c), c.k)).join('') + '</div>';
+      // the settings themselves are the section's paragraphs now (Ed,
+      // 2026-08-18) — the intro states only who convened it, and when
+      '</div>';
   };
 
   // ---- the grammar's other three states (Ed, 2026-08-18) ------------------

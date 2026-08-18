@@ -175,6 +175,35 @@ window.SETUP = (function () {
      card makes on its paragraph. */
   function bandHtml(groups, ctx, cardFor) {
     return groups.map((g) => {
+      // **The constitution is document text** (Ed, 2026-08-18: *a distinct
+      // paragraph for each decision, with the relevant tab to the left of
+      // it*). A section rather than a pile: the heading, the people, the
+      // intro lines, then one paragraph per decision stating the rule, its
+      // tab standing in the gutter exactly as a clause-tab stands beside a
+      // clause — and the open card replaces **its own paragraph**, taking
+      // its own tab with it, so the tab you click does not move. The
+      // membership stays a pile: it holds the people's tasks, not the
+      // document's rules. Constitutional paragraphs come first; the
+      // convenor's ✏️-changeable settings follow, because the section is
+      // read as a constitution and ends in housekeeping. `g.extra` lets a
+      // surface state rules whose tab must live elsewhere (the ceremony's
+      // room questions are tasks in the membership pile — one tab, one
+      // card — so their rule appears here as a tabless paragraph).
+      if (g.paras) {
+        const order = g.cards.slice().sort((a, b) =>
+          (a.kind === 'constitutional' ? 0 : 1) - (b.kind === 'constitutional' ? 0 : 1));
+        return '<div class="setrow constsec" id="pile-' + g.key + '">' +
+          '<div class="pilelab"><span class="pilehead">' + esc(g.label) + '</span>' +
+          (g.who ? '<div class="pilewho">' + g.who() + '</div>' : '') +
+          (g.intro ? g.intro() : '') + '</div>' +
+          order.map((c) => (ctx.open === c.k
+            ? '<div class="cpara open">' + cardFor({ ...g, cards: [c] }) + '</div>'
+            : '<div class="cpara"><span class="chipcol">' + chipHtml(c, ctx, {}) + '</span>' +
+              '<p class="cptext"><b>' + esc(c.t) + '</b><span class="cpv"> — ' +
+              ctx.summary(c) + '</span></p></div>')).join('') +
+          (g.extra ? g.extra() : '') +
+          '<span class="pilen">' + esc(g.note(g.cards.filter((c) => ctx.mustAct(c)).length)) + '</span></div>';
+      }
       const holds = g.cards.some((c) => ctx.open === c.k);
       if (holds) return '<div class="setrow open" id="pile-' + g.key + '">' + cardFor(g) + '</div>';
       const left = g.cards.filter((c) => ctx.mustAct(c)).length;
@@ -204,7 +233,7 @@ window.SETUP = (function () {
      give it a height of its own. */
   function fitBand(band) {
     if (!band) return;
-    band.querySelectorAll('.setrow').forEach((row) => {
+    band.querySelectorAll('.setrow:not(.constsec)').forEach((row) => {
       const col = row.querySelector('.chipcol');
       if (!col) return;
       const n = col.children.length;

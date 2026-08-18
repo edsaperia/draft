@@ -146,7 +146,7 @@
       rule: 'Never revealed while a question is live, whichever is chosen. What this settles is only whether they are published with the record.',
       takes: 'The charter takes the most private', result: 'Never revealed',
       dist: [11, 3], distTop: 0, distEnds: ['Never', 'After the decision'] },
-    { k: 'chamber', g: '🔭', t: 'Who Else Can See It?', kind: 'constitutional', in: 6,
+    { k: 'chamber', g: '🌍', t: 'Visibility', kind: 'constitutional', in: 6,
       rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.',
       takes: 'The charter takes the most private', result: 'Members only',
       dist: [5, 8, 1], distTop: 1, distEnds: ['Members only', 'Public'] },
@@ -170,7 +170,7 @@
       // 🎩 folded in (Ed, 2026-08-18): whether the convenor is a member is
       // their own row in this list, pre-checked when the document was made
       setBy: 'Invited by Wren Ashby — themselves included, their own row pre-checked',
-      readNote: 'Anybody else who can read this is not a member — nothing is known about them, they have a link and nothing else. That is the 🔭 setting, not this one.' },
+      readNote: 'Anybody else who can read this is not a member — nothing is known about them, they have a link and nothing else. That is the 🌍 setting, not this one.' },
     // **The register and the door are two decisions** (Ed, 2026-08-18). This
     // card also un-swallows a note the old single card had lost: two readNote
     // keys on one object, and the reserved one silently overridden.
@@ -295,7 +295,16 @@
   const groups = () => [
     { key: 'convenor', label: 'Constitution', cards: CONVENOR,
       who: () => face({ n: 'Wren Ashby', pic: 'c0' }),
-      block: () => {
+      paras: true,
+      // the room's constitutional questions are tasks in the membership pile
+      // — one tab, one card — so their **rule** appears here as a tabless
+      // paragraph: what is settled states its answer, what is running says
+      // only how far the room has got (blindness intact)
+      extra: () => ROOM.filter((c) => c.kind === 'constitutional')
+        .map((c) => '<div class="cpara notab"><p class="cptext"><b>' + esc(c.t) + '</b><span class="cpv"> — ' +
+          (S.state === 'settled' ? esc(c.result || '—')
+            : 'being answered · ' + Math.min(c.in || 0, E) + ' of ' + E) + '</span></p></div>').join(''),
+      intro: () => {
         const line = (g, t, v, k) => '<' + (k ? 'button' : 'span') + ' class="cline"' +
           ' title="' + esc(t) + '"' + (k ? ' data-card="' + k + '"' : '') + '>' +
           '<span class="cg">' + g + '</span><span><b>' + v + '</b></span>' +
@@ -303,13 +312,7 @@
         return '<div class="constlist">' +
           line('🎩', 'Convenor', 'Wren Ashby · drafting too · 🏴') +
           line('⏱️', 'Constituted', S.state === 'settled' ? 'constituted Tuesday 14:02'
-            : 'not yet constituted — when everyone is ready') +
-          // the block states the DOCUMENT's rule, never your own answer —
-          // a running question shows only how far the room has got
-          CARDS.filter((c) => c.kind === 'constitutional' && c.k !== 'myrole')
-            .map((c) => line(c.g, c.t, c.own === 'convenor' ? value(c)
-              : S.state === 'settled' ? esc(c.result || '—')
-              : 'being answered · ' + Math.min(c.in || 0, E) + ' of ' + E, c.k)).join('') + '</div>';
+            : 'not yet constituted — when everyone is ready') + '</div>';
       },
       note: (n) => (n ? n + ' to acknowledge' : 'settled before you arrived') },
     { key: 'room', label: 'Membership', cards: ROOM.concat(GATES),
@@ -474,6 +477,25 @@
     (inner ? '<span class="inner">' + inner + '</span>' : '') + '</div>';
 
   const PROPOSE = {
+    // a title's own control is a single line of text — the free lane
+    // allowed newlines in a name
+    title: (d) => '<span class="fld"><label>Title</label>' +
+      '<input data-mtext="1" value="' + esc(d.to) + '" placeholder="The document’s name" style="width:24rem"></span>',
+    // the link's own control is the slug beside its fixed prefix, exactly
+    // as the creation card asks it — and the note that no old link breaks
+    slug: (d) => '<span class="fld"><label>Link</label><span class="setrow2">' +
+      '<span class="setnote" style="margin:0">docs.vote/</span>' +
+      '<input data-mslug="1" value="' + esc(d.to.replace(/^docs\.vote\//, '')) + '" placeholder="new-slug"></span></span>' +
+      '<p class="setnote">Every link the document has ever had keeps working — a change leaves a redirect behind.</p>',
+    // pacing is the creation card's own pair: fixed, or rising from a start
+    pace: (d) => '<div class="choice" role="radiogroup">' +
+      mrow(/^Rising/.test(d.to), 'Rising from 55%', 'Rising', 'From a lower start when judging opens, up to the close bar.',
+        '<span class="fld"><label>% at the start</label><input class="num" type="number" min="50" max="99" data-mpace="1" value="' + esc((d.to.match(/\d+/) || ['55'])[0]) + '"></span>') +
+      mrow(/^Fixed/.test(d.to), 'Fixed — the close bar throughout', 'Fixed', 'The close bar for the life of the document.') +
+      '</div>',
+    drip: (d) => '<span class="fld"><label>✏️s back per 10% of the window</label>' +
+      '<input class="num" type="number" min="0" max="10" data-mnum="back per 10% of the window" value="' +
+      esc((d.to.match(/\d+/) || [''])[0]) + '"></span>',
     ending: (d) => {
       const never = /never/i.test(d.to);
       const when = never ? '' : d.to;
@@ -484,6 +506,31 @@
         mrow(never, 'Never', 'Never',
           'No close of its own. This is the constitutional answer — see above.') +
         '</div>';
+    },
+    // **A motion is composed with the setting's own control** (the
+    // motion-controls rule) — the policy is the join rungs and the holder,
+    // so proposing a change offers exactly those radios again. What stands
+    // is marked and inert, because proposing the current rule is not a
+    // change; one motion proposes one rule, and what you do not touch
+    // stands. (QA 2026-08-18: this card was falling through to the
+    // free-text lane.)
+    policy: (d) => {
+      const stands = 'Anyone may apply';
+      const rung = (val, ttl, exp) => (val === stands
+        ? '<div class="pick off"><button class="lanepick" disabled aria-pressed="false">' +
+          '<span class="dot"></span><span>' + ttl + '</span></button>' +
+          '<span class="exp">What stands — nothing to propose.</span></div>'
+        : mrow(d.to === val, val, ttl, exp));
+      return '<div class="eyebrow fieldlab">Who may join</div>' +
+        '<div class="choice" role="radiogroup">' +
+        rung('Invitation only', 'Invitation only', 'Nobody joins unless a member brings them in.') +
+        rung('Applications must be proposed', 'Applications must be proposed', 'An application waits until a member proposes it, staking the ✏️ — which is what a second is.') +
+        rung('Anyone may apply', 'Anyone may apply', '') +
+        rung('Open', 'Open', 'Anyone with the link joins on arrival.') + '</div>' +
+        '<div class="eyebrow fieldlab" style="margin-top:var(--s4)">Who holds the membership</div>' +
+        '<div class="choice" role="radiogroup">' +
+        rung('Reserved — the convenor holds it', 'Reserved — the convenor holds it', 'A 👑: invite-and-remove in one hand for the document’s life. A crown lapses like a member, and a lapsed crown passes to the members.') + '</div>' +
+        '<p class="setnote">One motion proposes one rule; what you do not touch stands.</p>';
     },
     // the membership, in front of you, with an ✕ beside each and a field at
     // the bottom — which is what “propose a change to the membership” means
@@ -664,6 +711,7 @@
           ' data-ok="' + c.k + '">OK</button>';
       } else if (c.own === 'convenor') {
         body = readBody(c, ctx) +
+          (c.k === 'text' ? '<p class="setnote">The text is not changed by motion — you change it by proposing in the document itself; every clause carries a caret.</p>' : '') +
           (needsOk(c) ? '<p class="setnote">You had no say in this and it binds you, ' +
             'so it waits for your <b>OK</b> — which files it with the rest of the constitution.</p>' : '');
         // **✏️ is how a motion starts**, and it is the same control that starts a
@@ -671,7 +719,11 @@
         // right-hand slot is the commit, so it is OK while there is something to
         // acknowledge and Close once there is not — the same slot going from the
         // act to the fact of it, which is what every commit row here does.
-        foot = '<button class="btn" data-newmotion="' + c.k + '">✏️ Propose a change</button>' +
+        // 📄 carries no motion button: the text is changed by proposing in
+        // the document itself — every clause carries a caret — and a motion
+        // here would be a second door to the same room.
+        foot = (c.k === 'text' ? ''
+          : '<button class="btn" data-newmotion="' + c.k + '">✏️ Propose a change</button>') +
           (needsOk(c)
             ? '<button class="btn btn-approve" data-ok="' + c.k + '">OK</button>'
             : '<button class="btn" data-close="1">Close</button>');
@@ -759,6 +811,12 @@
     // than on every keystroke, because a date picker rebuilt under the pointer
     // is a date picker you cannot use.
     if (!S.draft) return;
+    if (ev.target.matches('[data-mtext]')) { S.draft.to = ev.target.value.trim(); return render(); }
+    if (ev.target.matches('[data-mslug]')) {
+      const v = ev.target.value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+      S.draft.to = v ? 'docs.vote/' + v : '';
+      return render(); }
+    if (ev.target.matches('[data-mpace]')) { S.draft.to = 'Rising from ' + ev.target.value + '%'; return render(); }
     if (ev.target.matches('[data-mdate]')) {
       S.draft.to = ev.target.value
         ? new Date(ev.target.value).toLocaleString(undefined,

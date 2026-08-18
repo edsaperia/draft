@@ -432,3 +432,19 @@ button.cline:hover b { text-decoration: underline; }
   #assembly .seat { transition: opacity 120ms ease; transform: translate(-50%, -50%); }
   #assembly .seat.in, #assembly.done .seat { transform: translate(-50%, -50%); }
 }
+
+/* ---------------------------------------------------------------------------
+   The constitution as document text (Ed, 2026-08-18): one paragraph per
+   decision, its tab in the gutter to its left — the same geometry as a
+   clause-tab beside a clause — and the open card replacing its own
+   paragraph. A tabless paragraph (.notab) states a rule whose tab lives
+   elsewhere (the ceremony's room questions are the membership's tasks).
+   ------------------------------------------------------------------------ */
+.constsec .cpara { position: relative; min-height: 32px; margin: 0 0 var(--s2); }
+.constsec .cpara .chipcol { top: 0; }
+.constsec .cptext { margin: 0; padding-top: 5px; font-size: var(--t-small); line-height: 1.5; }
+.constsec .cptext b { font-weight: 600; }
+.constsec .cpara.notab { min-height: 0; }
+.constsec .cpara.notab .cptext { padding-top: 0; }
+.constsec .cpara.open { margin: var(--s3) 0; }
+.constsec .pilelab { margin-bottom: var(--s3); }
