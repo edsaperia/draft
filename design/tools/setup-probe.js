@@ -30,8 +30,15 @@
   'use strict';
 
   /* Diffs expected from the swap, keyed 'scenario:step:region'. Seeded from
-   * the known mock bugs the module fixes; empty for the self-proof run. */
-  const ALLOWLIST = [];
+   * the known mock bugs the module fixes; empty for the self-proof run.
+   * confirm-membership: the delegated questions bloom here, and the frozen
+   * page's p-fixture tallies ("2 of 3 have answered", invented) became the
+   * module's real blind counts ("0 of 3") — the fixture-progress deletion
+   * the plan predicted. */
+  const ALLOWLIST = [
+    'founding:confirm-membership:band',
+    'founding:confirm-membership:rail',
+  ];
 
   /* ---- determinism stubs -------------------------------------------------- */
   const mmReal = window.matchMedia.bind(window);

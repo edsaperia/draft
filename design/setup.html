@@ -125,11 +125,12 @@
 </div>
 <svg id="wires" aria-hidden="true"></svg>
 
+<script src="constitution.js"></script>
 <script src="cards.js"></script>
 <script src="setup.js"></script>
 <script>
 (function () {
-  const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
+  const { esc, TICK, avHtml, avatarOptions, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, drawWire, opt, num, someIn, KIND, kindNote, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, readBody,
     motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE } = window.SETUP;
@@ -152,6 +153,95 @@
   const rail = document.getElementById('rail');
   const wires = document.getElementById('wires');
 
+  // ---- the module keeps truth (plan 367a): @draft/constitution ----------
+  // The page keeps rendering, its copy, and the provisional layer — radio
+  // positions, unsent answers, a motion being typed. Everything the ROOM
+  // holds — settled values, delegations, blind counts, resolutions, gates,
+  // motions, the membership — lives in the ConstitutionSession, born at
+  // the save (§9.7a: until the link exists, nothing does, anywhere).
+  const M = window.CONSTITUTION;
+  let cs = null;
+  let T = 0;                       // the logical clock every command stamps
+  const now = () => ++T;
+  const FOUNDER = 'founder';
+  // page key ↔ module setting id — the page keeps its own vocabulary
+  const MID = { slug: 'link', text: 'startingText', policy: 'applications', roster: 'membership' };
+  const midOf = (k) => MID[k] || k;
+  const MANAGED_KEYS = ['title', 'slug', 'ending', 'bar', 'pace', 'quorum',
+    'authorship', 'signing', 'judgments', 'chamber', 'rate', 'lapse',
+    'machines', 'policy'];
+  const csState = (k) => (cs && MANAGED_KEYS.includes(k) ? cs.settingState(midOf(k)) : null);
+  const csSettled = (k) => { const st = csState(k); return !!st && st.settledBy !== null; };
+  const csDelegated = (k) => { const st = csState(k); return !!st && st.holder === 'members'; };
+  const msToLocal = (ms) => {
+    const d2 = new Date(ms);
+    const p2 = (x) => String(x).padStart(2, '0');
+    return d2.getFullYear() + '-' + p2(d2.getMonth() + 1) + '-' + p2(d2.getDate()) +
+      'T' + p2(d2.getHours()) + ':' + p2(d2.getMinutes());
+  };
+  // the founder's provisional radio state → the typed value the module takes
+  const TYPED = {
+    title: () => ({ text: S.title }),
+    slug: () => ({ slug: S.slug }),
+    ending: () => (S.ending === 'perpetual' ? { endsAtMs: null } : { endsAtMs: Date.parse(S.endsAt) }),
+    bar: () => ({ pct: +S.tClose }),
+    pace: () => (S.shape === 'ramp' && S.ending !== 'perpetual'
+      ? { shape: 'ramp', startPct: +S.tStart } : { shape: 'fixed' }),
+    quorum: () => (S.quorumForm === 'count'
+      ? { form: 'count', n: +S.quorumN } : { form: 'share', n: +S.quorumPct }),
+    authorship: () => ({ rung: S.authorship }),
+    signing: () => ({ rung: S.signing }),
+    judgments: () => ({ rung: S.judgments }),
+    chamber: () => ({ rung: S.chamber }),
+    rate: () => ({ grant: +S.grant, cap: Math.max(+S.cap, +S.grant), dripMinutes: +S.dripMin }),
+    lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: +S.lapseDays * 86400000 }),
+    machines: () => (S.auditor === true ? { enabled: true, budget: +S.auditorBudget } : { enabled: false, budget: 0 }),
+    policy: () => ({ holder: S.rosterBy === 'founder' ? 'reserved' : 'members', joinPolicy: S.joinBy }),
+  };
+  // a member's page-vocabulary answer → typed, and back — one place each way
+  const ANSTYPED = {
+    quorum: (v) => ({ form: S.quorumForm, n: +v }),
+    bar: (v) => ({ pct: +v }),
+    ending: (v) => (v === 'never' ? { endsAtMs: null } : { endsAtMs: Date.parse(v) }),
+    authorship: (v) => ({ rung: v }),
+    signing: (v) => ({ rung: v }),
+    judgments: (v) => ({ rung: v }),
+    chamber: (v) => ({ rung: v }),
+    machines: (v) => (v === true ? { enabled: true, budget: +S.auditorBudget || 4 } : { enabled: false, budget: 0 }),
+    lapse: (v) => (v === 'never' ? { afterMs: null } : { afterMs: +v * 86400000 }),
+    rate: (v) => ({ grant: +v, cap: Math.max(+v, +S.cap || 8), dripMinutes: +S.dripMin || 240 }),
+  };
+  // a typed value → the page's own vocabulary (what STANDS/DECIDED speak)
+  const PAGEVAL = {
+    quorum: (v) => v.n, bar: (v) => v.pct, rate: (v) => v.grant,
+    ending: (v) => (v.endsAtMs === null ? 'never' : msToLocal(v.endsAtMs)),
+    lapse: (v) => (v.afterMs === null ? 'never' : Math.round(v.afterMs / 86400000)),
+    machines: (v) => v.enabled,
+    authorship: (v) => v.rung, signing: (v) => v.rung,
+    judgments: (v) => v.rung, chamber: (v) => v.rung,
+    policy: (v) => v.joinPolicy,
+  };
+  const viewerId = () => (S.viewer === 'applicant' ? null : (viewerRow().mid || FOUNDER));
+  const proseText = () => [...prose.children].map((b) => b.textContent).join('\n').trim();
+  // which page field carries a setting's delegation radio ('roster' = the members')
+  const DKEY = { ending: 'ending', bar: 'barBy', quorum: 'quorumBy',
+    authorship: 'authorship', signing: 'signing', judgments: 'judgments',
+    chamber: 'chamber', rate: 'rateBy', lapse: 'lapse', machines: 'auditor' };
+  const wantsDelegate = (k) => { const dk = DKEY[k]; return !!dk && S[dk] === 'roster'; };
+  // ✒️ on a setting card: the confirm is a module command (delegate, or
+  // reclaim-and-set). Post-start this is the crown's direct change on a
+  // reserved setting; the module refuses anything else and the page keeps
+  // rendering (mock discipline: commands may fail, rendering may not).
+  function commitSetting(k) {
+    const mid = midOf(k);
+    if (k === 'quorum' && cs.quorumForm !== S.quorumForm) {
+      try { cs.setQuorumForm(now(), S.quorumForm); } catch (e) {}
+    }
+    if (wantsDelegate(k)) { cs.delegate(now(), mid); return; }
+    if (csDelegated(k)) cs.reclaim(now(), mid);
+    cs.setSetting(now(), mid, TYPED[k]());
+  }
+
   const S = {
     title: '', slug: '',
     emailSent: false, emailVerified: false, mailOpen: false,
@@ -164,10 +254,9 @@
     joinBy: 'invite', rosterBy: 'roster',
     lapse: 'roster', lapseDays: 90,
     authorship: 'roster', signing: 'roster', judgments: 'roster',
-    authorshipSet: 'anonymous', signingSet: 'nobody', judgmentsSet: 'never',
     rateBy: 'founder', grant: 4, dripMin: 180, cap: 8,
     chamber: 'roster', auditor: 'roster', auditorBudget: 6,
-    roster: [{ n: '', e: '', role: 'member', founder: true, in: true, ans: {}, okd: new Set() }],
+    roster: [{ n: '', e: '', role: 'member', founder: true, in: true, ans: {}, okd: new Set(), mid: 'founder' }],
     // **Confirmed, not merely defaulted** (Ed, 2026-08-17). A default nobody
     // read is not a decision, and these are the decisions that cannot be changed
     // once people are drafting. So a card carries its value from the first
@@ -207,13 +296,20 @@
   // §9.6a). An invitee is listed under the membership as *invited* and counts
   // toward nothing — which is what keeps one unopened email from blocking
   // judging for everybody. E is the arrived.
-  const arrived = () => members().filter((m) => m.in).length;
+  const arrived = () => (cs ? cs.E() : members().filter((m) => m.in).length);
   const E = () => Math.max(arrived(), 1);
   const meRow = () => S.roster.find((p) => p.founder);
   const iDraft = () => { const m = meRow(); return !!m && m.role !== 'clerk'; };
-  const quorumCount = () => (S.quorumForm === 'share'
-    ? Math.max(1, Math.round(E() * S.quorumPct / 100)) : Math.min(S.quorumN, E()));
-  const perpetual = () => S.ending === 'perpetual';
+  const quorumCount = () => {
+    const st = csState('quorum');
+    if (st && st.value) return Math.min(M.quorumCount(st.value, E()), E());
+    return (S.quorumForm === 'share'
+      ? Math.max(1, Math.round(E() * S.quorumPct / 100)) : Math.min(S.quorumN, E()));
+  };
+  const endingVal = () => (S.ending === 'roster'
+    ? (takenOf('ending') || null)
+    : S.ending === 'perpetual' ? 'never' : S.endsAt);
+  const perpetual = () => endingVal() === 'never';
   const SLUG_OK = /^[a-z0-9][a-z0-9-]{2,}$/;
   const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   // The mockup's stand-in for the real registry check: these slugs exist, so
@@ -307,7 +403,7 @@
   // the members will be able to do.
   const GATES = [
     { k: 'canpropose', g: '✏️', t: 'Proposing', own: 'you', isGate: true,
-      open: () => canPropose() && !LIVE().some(owesAnswer),
+      open: () => !!cs && !!viewerId() && cs.canPropose(viewerId()),
       why: 'Members can read a document from the first second, and they cannot propose against a text that is not there yet — nor should you be able to act on a document whose rules you have not yet said what you will accept of — so your own outstanding answers wait here too.',
       waiting: 'Waiting on the starting text, and on your own answers.',
       done: 'Open — members can propose as soon as they arrive.',
@@ -473,13 +569,21 @@
   // commits it, and only committed answers count anywhere — the tally, the
   // gates, the resolution. Every other card already works this way.
   const filled = (c) => S.myAns[ansKey(c)] !== null && S.myAns[ansKey(c)] !== undefined;
-  const myAnsOk = () => (viewerRow().ansOk || (viewerRow().ansOk = new Set()));
-  const answered = (c) => filled(c) && myAnsOk().has(ansKey(c));
+  // committed = the answer reached the module; provisional stays page-side
+  const answered = (c) => { const st = csState(ansKey(c));
+    return !!st && st.answers.has(viewerId()); };
   const owesAnswer = (c) => !!c.ansFor && viewerIsMember() && !answered(c);
   const ready = (c) => (c.ansFor ? filled(c) : c.ready ? c.ready() : true);
-  const settled = (c) => (c.isGate ? S.okd.has(c.k)
-    : c.ansFor ? answered(c)
-    : S.seen.has(c.k) && ready(c));
+  const settled = (c) => {
+    if (c.isGate) return S.okd.has(c.k);
+    if (c.ansFor) return answered(c);
+    if (!S.seen.has(c.k) || !ready(c)) return false; // confirmed, not defaulted
+    if (!cs) return true;                            // pre-save: title, email
+    if (c.k === 'text') return cs.textConfirmed;
+    const st = csState(c.k);
+    if (st) return st.holder === 'members' ? true : st.settledBy !== null;
+    return true;                                     // roster, personal cards
+  };
   // nothing on a founder-held card is asked of anybody else: a member sees
   // it waiting (⏳) until it settles, then as news to acknowledge
   const mustAct = (c) => (motionOn(c) ? (viewerIsMember() && !answeredMotion(c))
@@ -491,12 +595,14 @@
   // The fixture's other members answer in proportion, but never the
   // founder's own share: a question cannot read as resolved while the one
   // answer the surface can actually collect is still outstanding.
-  const resolveCounts = () => CARDS.forEach((c) => { if (c.p != null) {
-    const real = S.roster.filter((r) => r.ansOk && r.ansOk.has(c.k) &&
-      r.ans && r.ans[c.k] !== null && r.ans[c.k] !== undefined).length;
-    const mine = isRoom(c) && viewerIsMember();
-    c.in = Math.max(real, Math.min(E() - (mine && !answered(c) ? 1 : 0), Math.round(c.p * E()) +
-      (mine && answered(c) ? 1 : 0)));
+  // how far the room has got: the module's blind count, nothing invented —
+  // the p-fixture arithmetic died with the shadow engine (plan 367a)
+  const resolveCounts = () => CARDS.forEach((c) => { if (c.key || c.p != null) {
+    const st = csState(c.k);
+    if (!st) { c.in = 0; return; }
+    if (st.settledBy === 'ceremony') { c.in = E(); return; }
+    const eIds = cs.motionElectorate();
+    c.in = eIds.filter((id) => st.answers.has(id)).length;
   } });
 
   // **A card with a dependency does not appear until its dependency is settled**
@@ -613,7 +719,7 @@
       apply: 'Anyone may apply', open: 'Open' }[S.joinBy]) +
       (S.rosterBy === 'founder' ? ' · 👑 reserved' : ''),
     ending: () => (perpetual() ? 'Never — it runs until it is frozen'
-      : new Date(S.endsAt).toLocaleString(undefined,
+      : new Date(endingVal() || S.endsAt).toLocaleString(undefined,
         { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
     bar: () => S.tClose + '% sure at the close',
     pace: () => (perpetual() ? 'Fixed — no window to rise over'
@@ -621,9 +727,11 @@
     quorum: () => (S.quorumForm === 'count' ? Math.min(S.quorumN, E()) + ' of ' + E()
       : S.quorumPct + '% — ' + quorumCount() + ' of ' + E()),
     authorship: () => ({ anonymous: 'Nobody’s name, ever', sealed: 'Names at the close',
-      public: 'Names from the start' }[S.authorshipSet]),
-    signing: () => ({ nobody: 'Nobody signs', each: 'Each author chooses', everybody: 'Everybody signs' }[S.signingSet]),
-    judgments: () => ({ never: 'Never revealed', after: 'Revealed after the decision' }[S.judgmentsSet]),
+      public: 'Names from the start' }[S.authorship === 'roster' ? (takenOf('authorship') || 'anonymous') : S.authorship]),
+    signing: () => ({ nobody: 'Nobody signs', each: 'Each author chooses', everybody: 'Everybody signs' }[
+      S.signing === 'roster' ? (takenOf('signing') || 'nobody') : S.signing]),
+    judgments: () => ({ never: 'Never revealed', after: 'Revealed after the decision' }[
+      S.judgments === 'roster' ? (takenOf('judgments') || 'never') : S.judgments]),
     rate: () => S.grant + ' each · +1 every ' + S.dripMin + ' min · cap ' + S.cap,
     chamber: () => ({ link: 'Anyone with the link', closed: 'Members only', public: 'Public' }[S.chamber]),
     machines: () => (S.auditor === true ? 'The coherence auditor, ' + S.auditorBudget + ' ✏️s' : 'People only'),
@@ -668,10 +776,9 @@
   // judgment is *recorded under a disclosure setting* and *counted towards a
   // quorum*, and neither can be decided after the judgment without changing what
   // the judgment was.
-  const canPropose = () => settled(card('text'));
+  const canPropose = () => !!cs && cs.textConfirmed;
   const ceremony = () => CARDS.filter((c) => c.gate === 'judge');
-  const ceremonyRunning = () => ceremony().some((c) => isRoom(c) && (c.in || 0) < E());
-  const canJudge = () => ceremony().every(settled) && !ceremonyRunning();
+  const canJudge = () => !!cs && cs.canJudge();
 
   // ---- motions (stage D of the merge, Ed 361) ---------------------------
   // A motion is the act of changing a **settled** document's rules (§9.6a):
@@ -717,20 +824,12 @@
   // computed live: highest for quorum and the bar, latest for the ending
   // (never latest of all), longest for lapse, most private for the privacy
   // family, most restrictive for machines, most generous for the rate.
-  const RANK = { authorship: ['public', 'sealed', 'anonymous'],
-    signing: ['everybody', 'each', 'nobody'], judgments: ['after', 'never'],
-    chamber: ['public', 'link', 'closed'] };
-  const roomAnswers = (k) => S.roster.filter((r) => r.role !== 'clerk' && r.in &&
-    r.ansOk && r.ansOk.has(k) &&
-    r.ans && r.ans[k] !== undefined && r.ans[k] !== null).map((r) => r.ans[k]);
+  // what the room's answers took: the module's resolution (the consent rule
+  // ran in the fold, §9.0a), translated back into the page's vocabulary
   const takenOf = (k) => {
-    const vs = roomAnswers(k); if (!vs.length) return null;
-    if (k === 'quorum' || k === 'bar' || k === 'rate') return Math.max(...vs.map(Number));
-    if (k === 'ending') return (vs.includes('never') ? 'never' : vs.slice().sort()[vs.length - 1]);
-    if (k === 'lapse') return (vs.includes('never') ? 'never' : Math.max(...vs.map(Number)));
-    if (k === 'machines') return vs.every((v) => v === true);
-    const r = RANK[k];
-    return r ? r[Math.max(...vs.map((v) => Math.max(0, r.indexOf(v))))] : vs[0];
+    const st = csState(k);
+    if (!st || st.settledBy !== 'ceremony' || st.value === null) return null;
+    return PAGEVAL[k] ? PAGEVAL[k](st.value) : null;
   };
   // ...stated in the composers' own vocabulary, so a lane equal to what
   // stands filters itself out
@@ -878,35 +977,64 @@
 
   // dev only (with the dropdown, Ed 362): complete the founding in one press,
   // because motions live on the far side of it and the mock has no persistence
+  // ⏩ settle the founding — now a scripted drive of REAL module commands
+  // (plan 367a: the strongest single assertion — the module-driven page must
+  // render what the state-poked page rendered)
   function devFastForward() {
-    if (!S.title) S.title = 'The Hollow Oak Club — House Charter';
+    if (!S.title) { S.title = 'The Hollow Oak Club — House Charter'; }
     if (!S.slug) { const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken; }
     const f = S.roster[0];
     if (!f.e) f.e = 'ash@hollowoak.org';
     if (!f.n) f.n = 'Ash Bellamy';
     S.emailSent = true; S.emailVerified = true;
-    if (S.roster.length === 1) {
-      S.roster.push({ n: 'Ivy Fen', e: 'ivy@hollowoak.org', role: 'member', in: true, ans: {}, okd: new Set() });
-      S.roster.push({ n: 'Moss Whitlow', e: 'moss@hollowoak.org', role: 'member', in: true, ans: {}, okd: new Set() });
-    } else S.roster.forEach((r) => { r.in = true; });
-    CARDS.forEach((c) => S.seen.add(c.k));
-    // answers that agree with the founder defaults, so every sentence on the
-    // surface says the same thing after the fast-forward
-    const FILL = { quorum: (S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
-      bar: S.tClose, ending: S.endsAt || '2026-08-20T18:00',
-      authorship: S.authorshipSet, signing: S.signingSet, judgments: S.judgmentsSet,
-      chamber: 'closed', machines: false, lapse: 'never', rate: S.grant };
-    S.roster.forEach((r) => {
-      if (r.role === 'clerk') return;
-      r.ans = r.ans || {}; r.okd = r.okd || new Set();
-      r.ansOk = r.ansOk || new Set();
-      for (const k of Object.keys(FILL)) {
-        if (r.ans[k] === undefined || r.ans[k] === null) r.ans[k] = FILL[k];
-        r.ansOk.add(k);
+    try {
+      if (!cs) {
+        cs = window.cs = M.ConstitutionSession.open({ title: S.title, slug: S.slug,
+          convenor: { id: FOUNDER, email: f.e, isMember: f.role !== 'clerk' } }, now());
       }
-      CARDS.forEach((c) => { r.okd.add('res-' + c.k); r.okd.add('set-' + c.k); });
-      r.okd.add('canpropose'); r.okd.add('canjudge');
-    });
+      if (f.role !== 'clerk') { try { cs.setIdentity(now(), FOUNDER, { name: f.n }); } catch (e) {} }
+      if (S.roster.length === 1) { invite('ivy@hollowoak.org'); invite('moss@hollowoak.org'); }
+      const named = { 'ivy@hollowoak.org': 'Ivy Fen', 'moss@hollowoak.org': 'Moss Whitlow' };
+      S.roster.forEach((r) => { if (named[r.e]) r.n = named[r.e]; });
+      S.roster.forEach((r) => { if (!r.founder && !r.in) { r.in = true;
+        if (r.mid) { try { cs.arrive(now(), r.mid);
+          cs.setIdentity(now(), r.mid, { name: r.n }); } catch (e) {} } } });
+      if (!cs.textConfirmed) { try { cs.confirmStartingText(now(), proseText()); } catch (e) {} }
+      CARDS.forEach((c) => S.seen.add(c.k));
+      // the founder's confirms: delegate what the radios delegate, set the rest
+      for (const k of MANAGED_KEYS) {
+        if (k === 'title' || k === 'slug') continue;
+        try { commitSetting(k); } catch (e) {}
+      }
+      // the room answers what was delegated — real commands, every seat,
+      // dependency order (ending first: the bar question waits on it)
+      const FILL = { ending: S.endsAt || '2026-08-20T18:00',
+        quorum: (S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
+        bar: S.tClose, authorship: 'anonymous', signing: 'nobody',
+        judgments: 'never', chamber: 'closed', machines: false,
+        lapse: 'never', rate: S.grant };
+      for (const k of Object.keys(FILL)) {
+        const st = csState(k);
+        if (!st || !st.collecting) continue;
+        S.roster.forEach((r) => {
+          if (r.role === 'clerk' || !r.in) return;
+          r.ans = r.ans || {};
+          if (r.ans[k] === undefined || r.ans[k] === null) r.ans[k] = FILL[k];
+          try { cs.answer(now(), r.mid || FOUNDER, midOf(k), ANSTYPED[k](r.ans[k])); } catch (e) {}
+        });
+      }
+      // acknowledgments, page and module agreeing
+      S.roster.forEach((r) => {
+        if (r.role === 'clerk') return;
+        r.okd = r.okd || new Set();
+        CARDS.forEach((c) => { r.okd.add('res-' + c.k); r.okd.add('set-' + c.k); });
+        r.okd.add('canpropose'); r.okd.add('canjudge');
+        const rec = cs.memberRecords().get(r.mid || FOUNDER);
+        if (rec) for (const sid of [...rec.okOwed]) {
+          try { cs.giveOk(now(), r.mid || FOUNDER, sid); } catch (e) {}
+        }
+      });
+    } catch (e) { console.warn('[cs devff]', e && e.message); }
   }
 
   // the membership list, as the 🪪 card's clause — the current text of the
@@ -974,8 +1102,9 @@
     slug: 'the document’s address',
     text: 'the text the document starts from',
   };
-  const endFmt = () => new Date(S.endsAt).toLocaleString(undefined,
-    { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).replace(' ', ' at ');
+  const endFmt = () => new Date((endingVal() !== 'never' && endingVal()) || S.endsAt)
+    .toLocaleString(undefined,
+      { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).replace(' ', ' at ');
   const DECIDED = {
     ending: () => (perpetual() ? 'The drafting process has no set end — it runs until it is frozen.'
       : 'The drafting process will end on ' + endFmt() + '.'),
@@ -988,11 +1117,14 @@
       : 'The approval threshold rises from ' + S.tStart + '% to the close.'),
     authorship: () => ({ anonymous: 'Proposers are never named — not during the session and not in the record.',
       sealed: 'Proposers are named only in the closing record.',
-      public: 'Proposers are named from the start.' })[S.authorshipSet],
+      public: 'Proposers are named from the start.' })[
+      S.authorship === 'roster' ? (takenOf('authorship') || 'anonymous') : S.authorship],
     signing: () => ({ nobody: 'Nobody may sign a proposal.', each: 'Each author chooses whether to sign.',
-      everybody: 'Every proposal is signed.' })[S.signingSet],
+      everybody: 'Every proposal is signed.' })[
+      S.signing === 'roster' ? (takenOf('signing') || 'nobody') : S.signing],
     judgments: () => ({ never: 'Judgments are never revealed.',
-      after: 'Judgments are revealed with the closing record.' })[S.judgmentsSet],
+      after: 'Judgments are revealed with the closing record.' })[
+      S.judgments === 'roster' ? (takenOf('judgments') || 'never') : S.judgments],
     chamber: () => ({ closed: 'Only members can see the document.',
       link: 'Anyone with the link can read the document.',
       public: 'The document is public — listed and readable by anyone.' })[
@@ -1711,7 +1843,11 @@
       }
       return render(); }
     const okb = ev.target.closest('[data-ok]');
-    if (okb) return closeThen(() => { S.okd.add(okb.dataset.ok); S.open = null; });
+    if (okb) return closeThen(() => { const kk = okb.dataset.ok;
+      S.okd.add(kk); S.open = null;
+      if (cs && kk.startsWith('set-') && viewerId()) {
+        try { cs.giveOk(now(), viewerId(), midOf(kk.slice(4))); } catch (e) {}
+      } });
     const t = ev.target.closest('[data-tab], [data-card]');
     if (t) { const k = t.dataset.tab || t.dataset.card;
       if (S.open === k) return closeThen(() => { S.open = null; });
@@ -1719,18 +1855,43 @@
     if (ev.target.closest('[data-confirm]')) {
       return closeThen(() => {
         const was = S.open; S.seen.add(was); S.open = null;
-        // the ✓ is the act (363a): committing the provisional answer
         const cw = card(was);
-        if (cw && cw.ansFor && filled(cw)) myAnsOk().add(ansKey(cw));
-        if (cw && motionOn(cw) && motionPicked(cw)) myMAnsOk().add(cw.k);
-        // the link card is born pre-filled the moment the title settles
-        if (was === 'title' && S.title && !S.slug) {
-          const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken;
-        }
+        try {
+          // the ✓ is the act (363a): the commit is a module command
+          if (cw && cw.ansFor && filled(cw)) {
+            cs.answer(now(), viewerId(), midOf(cw.ansFor),
+              ANSTYPED[cw.ansFor](S.myAns[cw.ansFor]));
+            return;
+          }
+          if (cw && motionOn(cw) && motionPicked(cw)) { myMAnsOk().add(cw.k); return; }
+          // the link card is born pre-filled the moment the title settles
+          if (was === 'title' && S.title && !S.slug) {
+            const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken;
+          }
+          // **the save** (§9.7a): confirming the link is the act of creation
+          if (was === 'slug' && !cs) {
+            cs = window.cs = M.ConstitutionSession.open({ title: S.title, slug: S.slug,
+              convenor: { id: FOUNDER, email: S.myemail, isMember: S.roster[0].role !== 'clerk' } }, now());
+            if (S.myname) cs.setIdentity(now(), FOUNDER, { name: S.myname });
+            return;
+          }
+          if (!cs) return;
+          if (was === 'title' && S.title !== cs.titleOf) {
+            cs.setSetting(now(), 'title', { text: S.title }); return; }
+          if (was === 'slug' && S.slug !== cs.slug) {
+            cs.setSetting(now(), 'link', { slug: S.slug }); return; }
+          if (was === 'text') { cs.confirmStartingText(now(), proseText()); return; }
+          if (was === 'myname') { cs.setIdentity(now(), viewerId(), { name: S.myname || null }); return; }
+          if (was === 'mypic') { cs.setIdentity(now(), viewerId(), { picture: S.mypic || null }); return; }
+          if (was === 'roster') return; // the register commits row by row
+          if (MANAGED_KEYS.includes(was) && amFounder()) commitSetting(was);
+        } catch (e) { console.warn('[cs]', e && e.message); }
       }); }
     if (ev.target.closest('button[data-close]')) return closeThen(() => { S.open = null; });
     const mt = ev.target.closest('[data-metoggle]');
-    if (mt) { const m = meRow(); if (m) m.role = iDraft() ? 'clerk' : 'member'; return render(); }
+    if (mt) { const m = meRow(); if (m) { m.role = iDraft() ? 'clerk' : 'member';
+      if (cs) { try { cs.setConvenorMembership(now(), m.role !== 'clerk'); } catch (e) {} } }
+      return render(); }
     const mv2 = ev.target.closest('[data-act="sendverify"]');
     if (mv2) { S.emailSent = true; S.mailOpen = true; return render(); }
     const om = ev.target.closest('[data-act="openmail"]');
@@ -1758,7 +1919,9 @@
     const pic = ev.target.closest('[data-pic]');
     if (pic) { S.mypic = pic.dataset.pic; return render(); }
     const d = ev.target.closest('[data-drop]');
-    if (d) { S.roster.splice(+d.dataset.drop, 1); return render(); }
+    if (d) { const row = S.roster[+d.dataset.drop];
+      if (cs && row && row.mid) { try { cs.uninvite(now(), row.mid); } catch (e) { return render(); } }
+      S.roster.splice(+d.dataset.drop, 1); return render(); }
     if (ev.target.closest('[data-act="add"]')) {
       const f = document.querySelector('[data-add]');
       if (f && f.value.trim()) invite(f.value.trim());
@@ -1771,9 +1934,16 @@
   });
   function invite(em) {
     if (S.roster.some((p) => p.e === em)) return;
+    let mid = null;
+    if (cs) { try { mid = cs.invite(now(), em); } catch (e) { return; } }
     S.roster.push({ n: em.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (x) => x.toUpperCase()),
-      e: em, role: 'member', in: false });
-    setTimeout(() => { const p = S.roster.find((x) => x.e === em); if (p) { p.in = true; render(); } },
+      e: em, role: 'member', in: false, mid });
+    // the arrival theatre stays; its payload is a real command now (§9.6a)
+    setTimeout(() => { const p = S.roster.find((x) => x.e === em);
+      if (p) { p.in = true;
+        if (cs && p.mid) { try { cs.arrive(now(), p.mid);
+          cs.setIdentity(now(), p.mid, { name: p.n }); } catch (e) {} }
+        render(); } },
       1200 + Math.random() * 2600);
   }
   // ---- assembly-press (Ed, 2026-08-18) -----------------------------------
