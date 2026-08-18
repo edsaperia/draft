@@ -649,6 +649,24 @@ window.SETUP = (function () {
   // the only honest way to tell somebody what they are about to set in motion.
   const routeFor = (c, v) => (c.routeOf ? c.routeOf(v || '') : (c.motionKind || c.kind || 'ordinary'));
 
+  // The commit follows the route the typed value asks for (329a): a
+  // proposal goes in with a click, a constitutional change with the
+  // assembly-press. One builder, because the input handler must swap the
+  // button in place as typing flips the route — a full re-render would
+  // throw the caret out of the lane. (Moved from founding-ceremony.html,
+  // 2026-08-18 — it was the only motion commit-foot on either surface and
+  // document-creation will need it; the surface passes what it knows.)
+  const motionCommitHtml = (c, dto, heldOut) => {
+    const constitutional = routeFor(c, dto) === 'constitutional';
+    return constitutional
+      ? '<button class="btn btn-approve holdmotion"' +
+        (!dto || heldOut ? ' disabled' : '') +
+        ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first' : 'A full ten-second hold') + '"' +
+        ' data-holdmotion="' + c.k + '">🏛️ Hold to ask everyone</button>'
+      : '<button class="btn btn-approve"' + (dto ? '' : ' disabled') +
+        ' data-putmotion="1">Propose</button>';
+  };
+
   const motionCompose = (c, ctx, draft, control) =>
     '<div class="unlocks">You are proposing a change to <b>' + esc(c.t) + '</b>. ' +
     kindNote[routeFor(c, draft.to)] + '</div>' +
@@ -1013,6 +1031,6 @@ window.SETUP = (function () {
   return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, stateOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
     nameBody, pictureBody, drawWire, opt, num, faces, someIn,
-    KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor,
+    KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor, motionCommitHtml,
     slider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal };
 })();

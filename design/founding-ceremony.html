@@ -61,13 +61,14 @@
 </div>
 <svg id="wires" aria-hidden="true"></svg>
 
+<script src="cards.js"></script>
 <script src="setup.js"></script>
 <script>
 (function () {
   const { esc, TICK, avHtml, avatarOptions, bandHtml, fitBand, railEntry, cardHtml, readBody,
     watchBody, nameBody, pictureBody, drawWire, opt, faces, someIn,
     KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor, ANSWER,
-    MAILS, renderMailModal, stateOf, BLINDNOTE, gateBody, wirePicDrop } = window.SETUP;
+    MAILS, renderMailModal, stateOf, BLINDNOTE, gateBody, wirePicDrop, motionCommitHtml } = window.SETUP;
   const band = document.getElementById('band');
   const rail = document.getElementById('rail');
   const wires = document.getElementById('wires');
@@ -255,18 +256,9 @@
     ['Open', 'Anyone with the link joins on arrival.'],
     ['Reserved — the founder holds it', 'The membership is reserved: the Founder keeps invite-and-remove, and this document has a 👑.'],
   ];
-  const motionCommitHtml = (c) => {
-    const dto = (S.draft && S.draft.k === c.k) ? S.draft.to : '';
-    const constitutional = routeFor(c, dto) === 'constitutional';
-    const heldOut = S.myMotion && S.myMotion !== c.k;
-    return constitutional
-      ? '<button class="btn btn-approve holdmotion"' +
-        (!dto || heldOut ? ' disabled' : '') +
-        ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first' : 'A full ten-second hold') + '"' +
-        ' data-holdmotion="' + c.k + '">🏛️ Hold to ask everyone</button>'
-      : '<button class="btn btn-approve"' + (dto ? '' : ' disabled') +
-        ' data-putmotion="1">Propose</button>';
-  };
+  const commitFor = (c) => motionCommitHtml(c,
+    (S.draft && S.draft.k === c.k) ? S.draft.to : '',
+    S.myMotion && S.myMotion !== c.k);
   const answeredMotion = (c) => S.mAns[c.k] !== undefined;
 
   const ANSWERED = {
@@ -582,11 +574,13 @@
   // set to choose among, and the value riding inside the sentence as an
   // input where the alternative is a continuum (there the input is the
   // preference, and the commit wakes when it diverges from what stands).
+  // The lane radio is session-view's own, via cards.js (2026-08-18): the
+  // composer's "suggestion" is the draft, its pick the value it proposes,
+  // and its radios speak data-mval — which is the whole of the env.
+  const PC = window.CARDS.make({ valAttr: 'data-mval', pickOf: (d) => (d ? d.to : null) });
   const laneBlock = (d, val, text) =>
     '<div class="propblock"><div class="rtext">' + text + '</div>' +
-    '<div class="lanebar"><button class="lanepick" aria-pressed="' + (d.to === val) + '"' +
-    ' data-mval="' + esc(val) + '"><span class="dot"></span>' +
-    '<span class="off">Prefer this</span><span class="on">Preferred</span></button></div></div>';
+    PC.laneBarHtml(d, val, { edit: false }) + '</div>';
   const inputBlock = (html, note) =>
     '<div class="propblock"><div class="rtext">' + html + '</div>' + (note || '') + '</div>';
   const PROPOSE = {
@@ -628,11 +622,7 @@
     // the decision-card grammar with rules for wordings. The current rule
     // is the head, wearing Preferred, so it never prints itself again.
     policy: (d) => POLICY_TEXTS.filter(([val]) => val !== CURRENT.policy)
-      .map(([val, text]) =>
-        '<div class="propblock"><div class="rtext">' + text + '</div>' +
-        '<div class="lanebar"><button class="lanepick" aria-pressed="' + (d.to === val) + '"' +
-        ' data-mval="' + esc(val) + '"><span class="dot"></span>' +
-        '<span class="off">Prefer this</span><span class="on">Preferred</span></button></div></div>').join('') +
+      .map(([val, text]) => laneBlock(d, val, text)).join('') +
       '<p class="setnote">One motion proposes one rule; what you do not touch stands.</p>',
     // the membership, in front of you, with an ✕ beside each and a field at
     // the bottom — which is what “propose a change to the membership” means
@@ -820,7 +810,7 @@
               (ctx.reserved(c) ? ' Carrying sends it to the founder as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>');
         foot = '<button class="btn" data-dropmotion="1"' +
           (S.draft && S.draft.k === c.k ? '' : ' disabled') + ' title="Discard this motion">🗑️</button>' +
-          motionCommitHtml(c);
+          commitFor(c);
       } else {
         // Once you have answered, the card keeps your answer and grows the
         // watching half underneath — the same half the founder sees, because it
@@ -1056,7 +1046,7 @@
       // the commit slot follows the route of what is now typed (329a):
       // "never" in the ending lane turns Propose into the assembly-press
       const slot = document.querySelector('[data-putmotion], [data-holdmotion]');
-      if (slot && S.draft) slot.outerHTML = motionCommitHtml(card(S.draft.k));
+      if (slot && S.draft) slot.outerHTML = commitFor(card(S.draft.k));
       return; }
     if (ev.target.dataset.txt === 'myname') {
       S.myname = ev.target.value; renderRail();
