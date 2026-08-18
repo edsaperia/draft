@@ -656,17 +656,6 @@
     get open() { return S.open; }, get E() { return E(); },
     clauseFor: (c) => (c.k === 'roster' ? rosterClause() : ''),
     mustAct, settled, summary, value, isRoom, waiting, news, tasksFor, decisionLine,
-    // the head says **what kind of decision this is** and then who holds it,
-    // because the kind is what tells you what could ever be done about it
-    bandLabel: (c) => (c.isGate ? 'Not a decision · it follows from the others'
-      : c.ansFor ? KIND[c.kind] + ' · yours to answer, as a member'
-      : c.kind === 'personal' ? 'Yours alone'
-      // the policy card carries the holder question itself, so its label
-      // follows its own radio rather than the delegation list
-      : c.k === 'policy' ? KIND[c.kind] + ' · ' +
-        (S.rosterBy === 'convenor' ? 'reserved by the convenor' : 'the members hold it')
-      : KIND[c.kind || 'ordinary'] + ' · ' +
-        (isRoom(c) ? 'the members decide' : 'reserved by the convenor')),
   };
 
   // ---- the rail ----------------------------------------------------------

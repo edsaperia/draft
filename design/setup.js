@@ -337,9 +337,13 @@ window.SETUP = (function () {
      lands in the same gutter column the pile stood in and the tab you clicked
      does not move. */
   function cardHtml(c, ctx, body, foot, siblings) {
+    // **The kind line left the card heads** (Ed, 2026-08-18: *this
+    // information is conveyed through the controls on the card*): a
+    // constitutional change commits with the 🏛️ hold, and a reserved
+    // change the membership passes ends at the convenor's 👑 question —
+    // so an eyebrow restating either was chrome.
     return '<div class="sugg setupcard quick-open" role="tabpanel" data-setupcard="' + c.k + '">' +
       '<div class="clausehead">' +
-      '<div class="headlab"><span>' + esc(ctx.bandLabel(c)) + '</span></div>' +
       '<div class="headclause">' + stripHtml(siblings || [c], ctx) +
       '<h2 class="rtext">' + esc(c.t) + '</h2>' +
       // **The clause a setting card opens from can be a thing, not a line**
@@ -562,7 +566,14 @@ window.SETUP = (function () {
       ' data-motion="' + key + '"><span class="dot"></span>' +
       '<span class="off">Prefer this</span><span class="on">Preferred</span></button></div></div>';
     return '<div class="unlocks"><b>' + esc(KIND[kind]) + '.</b> ' + kindNote[kind] +
-      ' To carry, it needs ' + esc(need) + '.</div>' +
+      ' To carry, it needs ' + esc(need) + '.' +
+      // **Reserved is assent, not silence** (Ed, 2026-08-18): the room may
+      // pass a change to a reserved setting; what reservation means is that
+      // it then goes to the convenor as a 👑 question, theirs to accept or
+      // reject.
+      (kind === 'ordinary' && ctx.reserved && ctx.reserved(c)
+        ? ' It is <b>reserved</b>: carrying does not change it by itself — it goes to the convenor as a <b>👑 question</b>, theirs to accept or reject.'
+        : '') + '</div>' +
       lane(ctx.value(c), 'stands', 'As it stands') +
       lane(m.to, 'proposed', 'As proposed') +
       speaker(m.why) +
@@ -610,6 +621,9 @@ window.SETUP = (function () {
     '<p class="setnote">' + (routeFor(c, draft.to) === 'constitutional'
       ? '<b>Free — and one at a time.</b> You are asking the room to be asked again about a rule that binds you, and consent should not have a price. What keeps it from being constant is a limit, not a charge: each member may have <b>one 🏛️ out at once</b>, back in hand the moment it settles or is withdrawn. Putting it is a <b>full ten-second hold</b> — long enough to mean it.'
       : '<b>Costs one ✏️.</b> A motion is a proposal, so it is priced like every other proposal, and you get it back if you withdraw it.') + '</p>'
+    + (routeFor(c, draft.to) === 'ordinary' && ctx.reserved && ctx.reserved(c)
+      ? '<p class="setnote">This setting is <b>reserved</b>: carrying at the threshold does not change it by itself — it goes to the convenor as a <b>👑 question</b>, theirs to accept or reject.</p>'
+      : '')
     + '<div class="propblock"><div class="eyebrow fieldlab">As it stands</div>' +
     '<div class="rtext">' + ctx.value(c) + '</div></div>' +
     '<div class="propblock"><div class="eyebrow fieldlab">As you would have it</div>' +

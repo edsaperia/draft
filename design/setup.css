@@ -356,7 +356,6 @@
      strip's is, and the active tab still overhangs by 2 to carry under the
      card with no seam. The vertical half of the jump is fixed in `fitBand`,
      since it depends on how tall the card's own label runs. */
-  .setrow:not(.open) .chipcol { margin-right: 0; }
 
   .setrow.open { position: static; padding: 0; max-width: none; margin: 0; min-height: 0 !important; }
 
@@ -482,3 +481,11 @@ button.cline:hover b { text-decoration: underline; }
 .memrow .chipcol { top: -3px; }
 .memrow.meRow { margin-top: 3px; min-height: 30px; }
 .memrow .chip { font-size: var(--t-micro); }
+
+/* **The card overhangs the text axis** (Ed's QA, 2026-08-18: the tabs were
+   touching the text, and fixing that must not bring back the tab-jump). A
+   paragraph's tab keeps the document's own 14px gutter gap; when the card
+   opens, its box extends 14px further left while its text stays on the
+   document axis — session-view's own model — so the strip lands where the
+   closed tab stood and the active tab still carries under the card edge. */
+.constsec .cpara.open > .setupcard { margin-left: -14px; }

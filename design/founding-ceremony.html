@@ -427,15 +427,9 @@
     get open() { return S.open; }, get E() { return E; },
     clauseFor: (c) => (c.k === 'roster' ? faces(ROSTER, S.myname) : ''),
     mustAct, settled, summary, value, isRoom, waiting, news, decisionLine,
-    // the head says **what kind of decision this is** first, because the kind
-    // is what tells you what could ever be done about it
-    bandLabel: (c) => (c.isGate ? 'Not a decision · it follows from the others'
-      : c.kind === 'personal' ? 'Yours alone'
-      // the policy card's label follows the holder it records: this
-      // fixture's membership is the members' (Wren is a 🏴)
-      : c.k === 'policy' ? KIND[c.kind] + ' · the members hold it'
-      : KIND[c.kind || 'ordinary'] + ' · ' +
-        (c.own === 'convenor' ? 'reserved by the convenor' : 'the members decide')),
+    // reserved = held by the convenor: the room may pass a change, and it
+    // then goes to the convenor as a 👑 question (accept or reject)
+    reserved: (c) => c.own === 'convenor',
   };
 
   // ---- the rail ----------------------------------------------------------
@@ -656,7 +650,6 @@
       : c.k === 'apppic' ? (S.app.pic ? 'Chosen' : 'A ground for your initials')
       : (S.app.text ? 'Written' : 'A few words — optional')),
     value: (c) => appCtx.summary(c), isRoom: () => false,
-    bandLabel: (c) => (c.k === 'apply' ? 'Yours alone · an application' : 'Yours alone · part of your application'),
   };
   const APPBODY = {
     apply: () => {
