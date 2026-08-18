@@ -305,11 +305,14 @@
       dist: [2, 3, 5, 2, 1, 1], distTop: 2, distEnds: ['slowest', 'fastest'] },
 
     // — the room around it ------------------------------------------------
-    { k: 'chamber', g: '🔭', t: 'Who else can see it?', kind: 'constitutional', key: 'chamber', dep: ['roster'], p: 0.43,
+    // gate 'judge': constitutional (§9.6 disclosure family), so judging waits
+    // on it — the member surface already did, and the two disagreed (review
+    // finding, 2026-08-18)
+    { k: 'chamber', g: '🔭', t: 'Who else can see it?', kind: 'constitutional', gate: 'judge', key: 'chamber', dep: ['roster'], p: 0.43,
       rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.',
       takes: 'The document takes the most private', result: 'Roster only',
       dist: [5, 8, 1], distTop: 1, distEnds: ['Roster only', 'Public'] },
-    { k: 'machines', g: '🤖', t: 'Is there a machine member?', kind: 'constitutional', key: 'auditor', dep: ['roster'], p: 0.86,
+    { k: 'machines', g: '🤖', t: 'Is there a machine member?', kind: 'constitutional', gate: 'judge', key: 'auditor', dep: ['roster'], p: 0.86,
       rule: 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.',
       takes: 'The document takes the most restrictive', result: 'People only',
       dist: [9, 5], distTop: 0, distEnds: ['People only', 'A machine is fine'] },

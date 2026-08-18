@@ -248,7 +248,9 @@ that stays easy to hand to somebody else. The measured-layout passes are
 effects in either, which is what makes the decision low-stakes enough to take
 without asking again.
 
-**334. Do we want to be able to simulate the founding questions and motions?**
+**The §9 layer is simulable, in its own package.** Ed’s call (2026-08-18, closing 334): yes to simulating the founding questions and motions, therefore not the server, therefore its own package beside engine-core — drivable by sim-harness, consumed by the server. The original framing follows for the reasoning.
+
+**334 (closed).**
 That is what "where the §9 layer lives" actually asks, because the only
 consequence that differs between the three homes is this one: in the server it
 can never be driven by `sim-harness`; in `engine-core` or in its own package
