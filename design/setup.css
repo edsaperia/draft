@@ -69,7 +69,11 @@
   /* the card's title sits where a clause sits, at the head, with the strip
      beside it — so it is set as the head's own text and not as a heading
      floating above a body */
-  .setupcard .clausehead .rtext { font-size: var(--t-lead); font-weight: 600; margin: 0; }
+  /* the rtext is a container since Phase 4 (clauseHeadHtml renders the
+     head): the title look lives on .headtitle, the rule look on .headrule,
+     and a clause-thing (the membership list) inherits document type */
+  .setupcard .clausehead .rtext { margin: 0; }
+  .setupcard .clausehead .headtitle { font-size: var(--t-lead); font-weight: 600; }
   .setupcard h2 { font-size: var(--t-lead); font-weight: 600; margin: 0 0 var(--s2); }
   .setupcard .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch; }
   .setupcard .setnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
@@ -531,4 +535,13 @@ button.cline:hover b { text-decoration: underline; }
 
 /* a rule standing as a card's head is the clause, not a title: document size
    and colour, exactly as it stood on the page (Ed's QA, 2026-08-18) */
-.setupcard .clausehead .rtext.headrule { font-size: 1rem; font-weight: 400; line-height: 1.55; }
+.setupcard .clausehead .headrule { font-size: 1rem; font-weight: 400; line-height: 1.55; }
+
+/* the head-rule correction is a margin, and a block parent lets a child's
+   top margin collapse straight through it — fitBand's pass measured,
+   corrected, and changed nothing (found 2026-08-18, exposed by the Phase-4
+   zero-move probe; the pass was written in the .setrow flex era, where child
+   margins cannot collapse). flow-root makes the open paragraph a formatting
+   root so the margin lands — without overflow:hidden's clipping of the
+   14px tab overhang. */
+.constsec .cpara.open { display: flow-root; }

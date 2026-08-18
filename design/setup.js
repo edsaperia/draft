@@ -14,6 +14,16 @@
 window.SETUP = (function () {
   'use strict';
 
+  if (!window.CARDS) throw new Error('cards.js must load before setup.js');
+  // The shared card grammar (cards.js), bound for the setup surfaces:
+  // motion-judging radios speak data-motion, their "suggestion" is the
+  // motion object with its live pick merged in by the surface, and the
+  // seal tooltip carries the audited copy (no spec citations on cards).
+  const CB = window.CARDS.make({
+    valAttr: 'data-motion',
+    pickOf: (m) => (m ? m.pick : null),
+    speakerTitle: 'A member wrote this. Who, is sealed until the closing record.',
+  });
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
   const TICK = '<svg class="mkg" viewBox="0 0 12 12"><path d="M2 6.4 L4.7 9.2 L10 2.9"/></svg>';
   const initials = (n) => String(n).trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
@@ -305,7 +315,7 @@ window.SETUP = (function () {
     // before the strip alignment below, which re-measures against the moved
     // card.
     band.querySelectorAll('.cpara.open > .setupcard').forEach((card) => {
-      const rule = card.querySelector('.clausehead .rtext.headrule');
+      const rule = card.querySelector('.clausehead .headrule');
       if (!rule) return;
       const holder = card.parentElement;
       const ref = holder.closest('.constsec')?.querySelector('.cpara:not(.open):not(.textanchor) .cpv');
@@ -373,28 +383,31 @@ window.SETUP = (function () {
      has opened at the top of. Everything else is the same object, so the strip
      lands in the same gutter column the pile stood in and the tab you clicked
      does not move. */
-  function cardHtml(c, ctx, body, foot, siblings) {
+  function cardHtml(c, ctx, body, foot, siblings, o) {
     // **The kind line left the card heads** (Ed, 2026-08-18: *this
     // information is conveyed through the controls on the card*): a
     // constitutional change commits with the 🏛️ hold, and a reserved
     // change the membership passes ends at the founder's 👑 question —
     // so an eyebrow restating either was chrome.
+    // **The head is session-view's own clauseHeadHtml** (Phase 4 of the
+    // cards.js extraction, 2026-08-18): the strip crosses through the
+    // o.marks seam already wrapped, no eyebrow, no wash. The rule-or-title
+    // and the clause-thing (ctx.clauseFor — the membership card keeps the
+    // membership list at its head, because the list IS the clause) ride
+    // inside the head's own rtext. A motion card may put the keep-lane on
+    // the head (o.v, o.s) — the quick card's grammar: the head has a lane
+    // exactly when keeping the clause is one of the answers.
+    const oo = o || {};
+    const rule = ctx.headFor && ctx.headFor(c);
     return '<div class="sugg setupcard" role="tabpanel" data-setupcard="' + c.k + '">' +
-      '<div class="clausehead">' +
-      '<div class="headclause">' + stripHtml(siblings || [c], ctx) +
-      // **The head is the rule, not the title**, where a surface says so
-      // (Ed, 2026-08-18, the Applications example): the card's first line
-      // is the same sentence that stood on the page, exactly where it was
-      // — the decision-card gesture, with a rule for a clause.
-      (ctx.headFor && ctx.headFor(c)
-        ? '<div class="rtext headrule">' + ctx.headFor(c) + '</div>'
-        : '<h2 class="rtext">' + esc(c.t) + '</h2>') +
-      // **The clause a setting card opens from can be a thing, not a line**
-      // (Ed, 2026-08-18): the membership card keeps the membership list at
-      // its head, because the list IS the clause — the current text of the
-      // rule being decided about — exactly as a decision card keeps its
-      // paragraph. Any card may supply one through ctx.clauseFor.
-      (ctx.clauseFor ? (ctx.clauseFor(c) || '') : '') + '</div></div>' +
+      CB.clauseHeadHtml(oo.s || c, {
+        label: null, wash: false,
+        marks: stripHtml(siblings || [c], ctx),
+        html: (rule ? '<div class="headrule">' + rule + '</div>'
+            : '<div class="headtitle">' + esc(c.t) + '</div>') +
+          (ctx.clauseFor ? (ctx.clauseFor(c) || '') : ''),
+        v: oo.v, edit: false,
+      }) +
       '<div class="field">' + body + '</div>' +
       '<div class="race-mid commitrow">' + foot + '</div></div>';
   }
@@ -598,16 +611,10 @@ window.SETUP = (function () {
   function motionBody(c, ctx, m) {
     const kind = m.kind || routeFor(c, m.to);
     const need = 'the approval threshold, with quorum';
-    const speaker = (why) => '<div class="speaker">' +
-      '<span class="disc" aria-hidden="true" title="A member wrote this. Who, is sealed until the closing record."></span>' +
-      (why ? '<div class="said">' + esc(why) + '</div>' : '<div class="said none">No reason given.</div>') +
-      '</div>';
-    const lane = (val, key, label) =>
-      '<div class="propblock"><div class="eyebrow fieldlab">' + esc(label) + '</div>' +
-      '<div class="rtext">' + esc(val) + '</div>' +
-      '<div class="lanebar"><button class="lanepick" aria-pressed="' + (m.pick === key) + '"' +
-      ' data-motion="' + key + '"><span class="dot"></span>' +
-      '<span class="off">Prefer this</span><span class="on">Preferred</span></button></div></div>';
+    // **The card grammar proper** (3b, 2026-08-18): what stands is the
+    // card's head, wearing the keep-lane — the quick card's own shape —
+    // so the body holds only the proposal: one propblock, the sealed
+    // speaker, the lane radio, all session-view's builders.
     return '<div class="unlocks"><b>' + esc(KIND[kind]) + '.</b> ' + kindNote[kind] +
       ' To carry, it needs ' + esc(need) + '.' +
       // **Reserved is assent, not silence** (Ed, 2026-08-18): the room may
@@ -617,9 +624,7 @@ window.SETUP = (function () {
       (kind === 'ordinary' && ctx.reserved && ctx.reserved(c)
         ? ' It is <b>reserved</b>: carrying does not change it by itself — it goes to the founder as a <b>👑 question</b>, theirs to accept or reject.'
         : '') + '</div>' +
-      lane(ctx.value(c), 'stands', 'As it stands') +
-      lane(m.to, 'proposed', 'As proposed') +
-      speaker(m.why) +
+      CB.proposalHtml(m, { tag: 'As proposed', html: esc(m.to), why: m.why, v: 'proposed', edit: false }) +
       '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have judged it.</p>';
   }
 

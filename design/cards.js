@@ -393,9 +393,12 @@ window.CARDS = (function () {
   // Somebody said this, and you are not allowed to know who (SPEC §3.4). The
   // disc is the person; its blankness is the seal. Without it the rationale
   // was a bold line of text that read as a heading the system had written.
-  const speakerHtml = (why) =>
+  // `title` is optional (2026-08-18): the setup surfaces carry an audited
+  // copy of the seal tooltip with no spec citation in it; absent, the
+  // session-view's own wording stands, byte for byte.
+  const speakerHtml = (why, title) =>
     '<div class="speaker">' +
-    '<span class="disc" aria-hidden="true" title="A member of the roster wrote this. Who, is sealed until the record (SPEC §3.4)."></span>' +
+    '<span class="disc" aria-hidden="true" title="' + (title || 'A member of the roster wrote this. Who, is sealed until the record (SPEC §3.4).') + '"></span>' +
     (why
       ? '<div class="said">' + esc(why) + '</div>'
       : '<div class="said none">No reason given.</div>') +
@@ -465,6 +468,7 @@ window.CARDS = (function () {
       isChilled: () => false,
       washFor: () => '',
       ownChip: () => '',
+      speakerTitle: '',   // falsy → speakerHtml's own default wording
       laneRaw: () => false,
       currentTextFor: () => '',
       valAttr: 'data-v',
@@ -558,7 +562,7 @@ window.CARDS = (function () {
       '<div class="propblock">' +
       (o.tag ? '<div class="rtag">' + o.tag + '</div>' : '') +
       '<div class="rtext">' + o.html + '</div>' +
-      speakerHtml(o.why) +
+      speakerHtml(o.why, env.speakerTitle) +
       (o.v ? laneBarHtml(s, o.v, { lane: o.lane || o.v, key: o.key, edit: o.edit }) : '') +
       '</div>';
 

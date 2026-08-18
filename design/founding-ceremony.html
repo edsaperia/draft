@@ -481,13 +481,18 @@
     // the composer cards open with the rule itself where the clause goes —
     // no title, the sentence exactly where it stood on the page
     headFor: (c) => {
-      if (!(c && c.own === 'founder' && !c.isGate && c.k !== 'text' &&
-        !needsOk(c) && !motionOn(c))) return null;
-      // the head is **reference only**, as on the decision cards (Ed,
-      // 2026-08-18): the blocks below are the alternatives, and keeping
-      // what stands is preferring none of them — a pressed Preferred
-      // toggles off, which is what greys the 🏛️ again
-      return DECIDED[c.k] || value(c);
+      if (!c || c.isGate || c.k === 'text' || needsOk(c)) return null;
+      const m = motionOn(c);
+      // an **ordinary motion's** head is the value as it stands, whoever
+      // holds the setting — it wears the keep-lane (3b), so preferring
+      // what stands is a first-class answer. A constitutional motion
+      // re-opens the question instead and keeps its title head.
+      if (m) return (m.kind || routeFor(c, m.to)) === 'ordinary' ? (DECIDED[c.k] || value(c)) : null;
+      // the settled composer's head is **reference only**, as on the
+      // decision cards (Ed, 2026-08-18): the blocks below are the
+      // alternatives, and keeping what stands is preferring none of them
+      // — a pressed Preferred toggles off, which is what greys the 🏛️
+      return c.own === 'founder' ? (DECIDED[c.k] || value(c)) : null;
     },
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
@@ -760,7 +765,8 @@
       // a live motion takes the route its own value asks for (329a), which on
       // the window is the difference between moving a date and abolishing one
       if (m && (m.kind || routeFor(c, m.to)) === 'ordinary') {
-        body = motionBody(c, ctx, { ...m, pick: S.mAns[c.k] });
+        const mLive = { ...m, pick: S.mAns[c.k] };
+        body = motionBody(c, ctx, mLive);
         foot = '<button class="lanepick" aria-pressed="' + (S.mAns[c.k] === 'either') + '"' +
           ' data-motion="either"><span class="dot"></span><span>Indifferent</span></button>' +
           '<button class="btn btn-approve glyphbtn"' + (answeredMotion(c) ? '' : ' disabled') +
@@ -824,7 +830,12 @@
           '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
           ' data-confirm="1" title="' + (ready(c) ? 'Confirm' : 'Not answered yet') + '">' + TICK + '</button>';
       }
-      return cardHtml(c, ctx, body, foot, g.cards);
+      // an ordinary motion's head wears the keep-lane: 'stands' is the
+      // judgment that keeps the value, pressed from the motion's live pick
+      const mo = motionOn(c);
+      const ordinary = mo && (mo.kind || routeFor(c, mo.to)) === 'ordinary';
+      return cardHtml(c, ctx, body, foot, g.cards,
+        ordinary ? { v: 'stands', s: { ...mo, pick: S.mAns[c.k] } } : undefined);
     });
     fitBand(band);
   }
