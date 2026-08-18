@@ -1,0 +1,234 @@
+/* ============================================================================
+   setup.css — what the two setup surfaces add to `system.css`, and nothing more.
+
+   Both of them are the session-view: same three columns, same rails, same
+   card-over-document gesture. What they add is one object session-view has no
+   use for — **the constitution at the head of the document** — plus the small
+   vocabulary its cards are written in (choices, sliders, distributions, faces).
+
+   It exists as a third file for the reason `system.css` exists as a second one:
+   document-creation and founding-ceremony are now the same screen seen by two
+   people, and two copies of one design system drift.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   THE SETUP BAND — the constitution, at the top of the document.
+
+   **A setting card opens in the document** (Ed, 2026-08-18: *instead of modals
+   they open cards in the document at the top, above the text, pushing it down
+   like decision-cards do a clause*). A modal was the wrong object twice over.
+   It lifted the question off the document at exactly the moment the question is
+   *about* the document, and it made these cards the only ones on the surface
+   that do not behave like cards. A decision card replaces the clause it is
+   about; a setting is about the whole document, so it opens where the whole
+   document begins.
+
+   **The tabs lie flat here.** In the gutter a strip of tabs is vertical,
+   because the space beside a clause is vertical and right-aligned onto the
+   card's left edge. At the head of the document the free space runs the other
+   way, so the same strip lies down: a group above a panel, joined along the
+   card's top edge instead of its left. Everything else is the rule that was
+   already there — the strip never reorders, the active tab grows in the only
+   direction available to it, and the glyph does not move when it does.
+
+   And that is what the whole screen leaves behind: **a tab group at the top of
+   the document, next to the title**, every tab grey, one per rule the room
+   agreed. It is where you go to ask what the bar is.
+   --------------------------------------------------------------------------- */
+  .setupband { max-width: calc(70ch + 2 * var(--s5) + 3px); margin: 0 auto var(--s4); }
+  .setupband.open { margin-bottom: var(--s5); }
+
+  .tabgroup { display: flex; align-items: flex-end; gap: 3px; flex-wrap: wrap; }
+  /* rounded on the **top** only, so the bottom edge is a joint rather than an
+     end — the mirror of the gutter strip's left-only radius */
+  .tabgroup .achip { border-radius: var(--r-sm) var(--r-sm) 0 0; }
+  .setupband.open .tabgroup { margin-bottom: -2px; position: relative; z-index: 2; }
+
+  /* The active tab **grows upward**, which is the only direction available: the
+     group is bottom-aligned onto the card's top edge, so growing is
+     automatically growing up. The 8px goes on `padding-top` as well as on
+     `height`, so with `border-box` the content box is still 30px and the glyph
+     centres in the same place it did — the card-opening motion is measured on
+     the mark you clicked not moving. */
+  .tabgroup .achip.wmark {
+    height: 38px; padding-top: 8px; padding-bottom: 0;
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
+    box-shadow: 1px -1px 1px rgba(0, 0, 0, 0.07), 2px -3px 4px rgba(0, 0, 0, 0.13);
+    position: relative; z-index: 1;
+  }
+  .tabgroup .achip.wmark:hover {
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg));
+    transform: none;
+    box-shadow: 1px -1px 1px rgba(0, 0, 0, 0.09), 3px -4px 6px rgba(0, 0, 0, 0.16);
+  }
+  .tabgroup .achip.wmark:active { transform: none; }
+  /* a tab you cannot act on is still a tab you can read */
+  .tabgroup .achip[data-readonly] { cursor: pointer; }
+  .tabgroup .gap { width: var(--s4); }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; }
+  .setupcard { margin-top: 0; }
+  .setupcard .cardlab { display: flex; align-items: baseline; gap: var(--s2); margin-bottom: var(--s1); }
+  .setupcard h2 { font-size: var(--t-lead); font-weight: 600; margin: 0 0 var(--s2); }
+  .setupcard .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch; }
+  .setupcard .setnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
+  .setupcard .body { border-top: 1px solid var(--border); padding-top: var(--s3); margin-top: var(--s3); }
+  .unlocks { font-size: var(--t-cap); color: var(--primary-emphasis); background: var(--primary-subtle);
+    border-radius: var(--r-sm); padding: var(--s2) var(--s3); margin: 0 0 var(--s4); }
+  .lockline { font-size: var(--t-cap); color: var(--muted); margin: 0 0 var(--s4);
+    display: flex; align-items: center; gap: var(--s2); }
+
+/* ---------------------------------------------------------------------------
+   THE RAIL — same rail, laid out by hand, and pinned.
+
+   `system.css` positions `.qitem` **absolutely**, because in a live session
+   `layoutQueue` stands every entry beside its own clause. A setting belongs to
+   no clause, so they go back into normal flow — and the whole column is sticky,
+   which is what pinning means for this set. It reaches the live rail's rule
+   from the other end: there, four kinds of entry pin because they are the ones
+   about *you* rather than about a clause; here every card is one of those.
+   --------------------------------------------------------------------------- */
+  .queue.stack { position: sticky; top: calc(var(--nav-h) + var(--s5)); align-self: start;
+    max-height: calc(100vh - var(--nav-h) - var(--s5)); overflow-y: auto;
+    scrollbar-width: none; -ms-overflow-style: none; }
+  .queue.stack::-webkit-scrollbar { width: 0; }
+  .queue.stack ul, .queue.stack > div { display: flex; flex-direction: column; gap: var(--s2); }
+  .queue.stack .qitem { position: static; list-style: none; }
+  .queue .qhead { font-size: var(--t-cap); color: var(--muted); margin: var(--s3) 0 0; padding: 0 10px; }
+  .queue .qhead:first-child { margin-top: 0; }
+  .queue .setmark { margin-left: auto; display: inline-flex; align-items: center; }
+  .mkg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9;
+    stroke-linecap: round; stroke-linejoin: round; }
+  /* the **subject** glyph. A live rail marks lifecycle state, because every card
+     there is a different state of one kind of thing; a setup rail is the
+     reverse — one state, many kinds — so it marks subject instead. The two sets
+     never share a column. */
+  .queue.stack .ql { display: flex; align-items: baseline; gap: var(--s1); }
+  .queue.stack .ql .subj { font-size: 1.05em; line-height: 1; }
+  .queue.stack .ql > .qt { flex: 1; min-width: 0; }
+  .railnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); padding: 0 10px; }
+
+/* ---------------------------------------------------------------------------
+   THE CHOICE — **the session-view's own radio** (Ed, 2026-08-18: *the
+   non-slider choices in the cards are just radio buttons, and the session-view
+   already has those*).
+
+   Three controls became one. document-creation had `.opt` and
+   founding-ceremony had `.rung` — the same bordered box with two names and two
+   paddings — and both were a hand-rolled radio standing a millimetre away from
+   `.lanepick`, which is the radio this design system already has and the one
+   every member will have used a hundred times by the end of a session. A
+   setting is exactly the judgment a lane bar puts: *one of these, or none of
+   them yet*.
+
+   The bordered box goes with it, and that is a gain rather than a loss: **open
+   is said by depth, not by outline**, and a rule drawn round each option was
+   competing with the radio for the job of saying which one is chosen.
+
+   `.above` is the ceremony's own addition: on a consent question the rungs
+   *above* your answer are dimmed rather than hidden, since *the most I will
+   accept* only reads as a ladder if you can see what you are refusing.
+   --------------------------------------------------------------------------- */
+  .choice { display: flex; flex-direction: column; gap: var(--s3); }
+  .pick .exp { display: block; color: var(--muted); font-size: var(--t-small);
+    margin-top: var(--s1); padding-left: 2px; max-width: 58ch; }
+  .pick .inner { display: none; margin-top: var(--s3); padding-left: 2px; }
+  .pick.on .inner { display: block; }
+  .pick.above { opacity: 0.5; }
+  .pick.off { opacity: 0.42; }
+  .pick.off .lanepick { pointer-events: none; }
+  .setrow { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
+  .fld { display: flex; flex-direction: column; gap: var(--s1); }
+  .fld > label { font-size: var(--t-cap); color: var(--muted); }
+  input, textarea { font: inherit; font-size: var(--t-ui); color: var(--fg); background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--s2) var(--s3); }
+  input:focus-visible, button:focus-visible, textarea:focus-visible,
+  [role="radio"]:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .num { width: 5.5rem; }
+
+/* ---------------------------------------------------------------------------
+   THE CONSENT SLIDER — nothing preselected, and it must not look answered.
+   --------------------------------------------------------------------------- */
+  .cs { margin-bottom: var(--s2); }
+  .cs input[type=range] { width: 100%; accent-color: var(--primary); }
+  .cs.unset input[type=range] { accent-color: var(--border); opacity: 0.55; }
+  .csval { font-size: var(--t-lead); font-weight: 600; min-height: 1.6em; }
+  .csval.unset { color: var(--muted); font-weight: 400; font-size: var(--t-ui); }
+  .csends { display: flex; justify-content: space-between; font-size: var(--t-cap); color: var(--muted); }
+  .csmean { font-size: var(--t-small); color: var(--muted); margin-top: var(--s2); min-height: 3em; }
+  .blindnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
+
+/* ---------------------------------------------------------------------------
+   THE ROSTER, and the distribution it produces.
+
+   `distribution-strip` is the published shape of what people asked for, without
+   names — and it is now what a **completed** room card carries (Ed, 2026-08-18:
+   *when the roster's cards are complete they have the roster statistics on
+   them*). Which is the right end state for a consent question: while it runs
+   the card can say only how many have answered, because anything else would let
+   the room read itself before it had finished; once it has closed there is
+   nothing left to anchor, and the shape of the answers is the most interesting
+   thing about the result.
+   --------------------------------------------------------------------------- */
+  .whobox { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--light);
+    padding: var(--s3); margin-bottom: var(--s4); }
+  .whobox .lab { font-size: var(--t-small); color: var(--muted); margin-bottom: var(--s2); }
+  .faces { display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .pf { display: flex; align-items: center; gap: var(--s1); font-size: var(--t-cap); }
+  .pf.me { font-weight: 600; }
+  .av { width: 22px; height: 22px; border-radius: 50%; background: var(--light);
+    border: 1px solid var(--border); color: var(--muted); font-size: 8px; font-weight: 700;
+    display: inline-grid; place-items: center; flex: none; overflow: hidden; }
+  .av.big { width: 44px; height: 44px; font-size: var(--t-cap); }
+  .av.set { border-color: transparent; color: #fff; }
+  /* invited, but they have not opened it yet */
+  .av.pending { opacity: 0.45; border-style: dashed; }
+  .av svg { width: 100%; height: 100%; display: block; }
+
+  .dist { display: flex; align-items: flex-end; gap: 3px; height: 54px; margin: var(--s3) 0 var(--s1); }
+  .dist span { flex: 1; background: rgba(var(--lc-yours), 0.30); border-radius: 2px 2px 0 0; min-height: 2px; }
+  .dist span.top { background: var(--primary); }
+  .distx { display: flex; justify-content: space-between; font-size: var(--t-cap); color: var(--muted); }
+  .statline { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4);
+    padding: var(--s2) 0; border-top: 1px solid var(--border); }
+  .statline:first-child { border-top: 0; }
+  .statline .k { font-size: var(--t-small); color: var(--muted); }
+  .statline .v { font-size: var(--t-body); font-weight: 600; }
+  .pips { display: flex; gap: var(--s2); flex-wrap: wrap; margin: var(--s3) 0; }
+  .pip { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--border); background: var(--light); }
+  .pip.in { background: var(--ok-subtle); border-color: var(--ok); }
+
+  .roster { border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
+  .rperson { display: grid; grid-template-columns: 30px 1fr auto auto; gap: var(--s3);
+    align-items: center; padding: var(--s2) var(--s3); border-top: 1px solid var(--border); }
+  .rperson:first-child { border-top: 0; }
+  .rperson .nm { font-size: var(--t-ui); }
+  .rperson .em { font-size: var(--t-cap); color: var(--muted); }
+  .chip { font-size: var(--t-cap); border: 1px solid var(--border); border-radius: 999px;
+    padding: 2px var(--s2); color: var(--muted); background: var(--bg); cursor: pointer; font-family: inherit; }
+  .chip.convenor { border-color: var(--primary); color: var(--primary-emphasis);
+    background: var(--primary-subtle); cursor: default; }
+  .chip.pending { border-style: dashed; }
+  .xdrop { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0 var(--s1); }
+  .addrow { display: flex; gap: var(--s2); padding: var(--s3); background: var(--light);
+    border-top: 1px solid var(--border); }
+  .addrow input { flex: 1; }
+
+/* ---------------------------------------------------------------------------
+   THE IDENTITY CARD — how you appear in this room (Ed, 2026-08-18).
+   --------------------------------------------------------------------------- */
+  .avpick { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
+  .avopt { border: 2px solid transparent; border-radius: 50%; padding: 2px; background: none;
+    cursor: pointer; line-height: 0; }
+  .avopt[aria-pressed="true"] { border-color: var(--primary); }
+  /* the title's composer. The same `.lanebox` the `editing-card` writes in, at
+     the size the title is actually read at, because the whole point of writing
+     in the place is that you see what you are making. */
+  .titlelane { font-size: var(--t-lead); font-weight: 600; }
+  .titlelane:empty::before, .titlelane.blank::before {
+    content: attr(data-ph); color: var(--muted); font-weight: 400; }
+
+  .idrow { display: flex; align-items: center; gap: var(--s4); margin-bottom: var(--s4); }
+  .idrow .fld { flex: 1; }
+  .idrow input { width: 100%; }

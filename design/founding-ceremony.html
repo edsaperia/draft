@@ -1,23 +1,23 @@
 <meta charset="utf-8">
 <title>Opening ceremony</title>
 <link rel="stylesheet" href="system.css">
+<link rel="stylesheet" href="setup.css">
 <style>
 /* ============================================================================
-   founding-ceremony — **what a member sees when they arrive** (Ed, 2026-08-17:
-   *the roster members as they arrive get their opening ceremony questions in
-   the right-sidebar as cards, and once they're done they can start*).
+   founding-ceremony — **document-creation, seen by somebody else.**
 
-   So it is the same surface again: session-view's chrome, wearing session-view's
-   stylesheet, with the ceremony's questions in the rail where judgments will be.
-   That is the third screen in a row to converge on it, and by now the pattern is
-   the finding rather than the coincidence — **whatever the document wants from
-   you goes in the right-hand rail, and everything that wants something is a
-   card**. A setup question, a founding question, a judgment: same rail, same
-   shape, same gesture.
+   Ed, 2026-08-17: *the roster members as they arrive get their opening ceremony
+   questions in the right-sidebar as cards, and once they're done they can
+   start.* And then, 2026-08-18: *the admin's cards are visible to the roster
+   (but not editable by them); the roster's cards are visible to the admin (with
+   completion bar).*
 
-   The document is behind it and readable from the first second, and proposing is
-   already open if the convenor confirmed the starting text (SPEC §9.0a, the
-   staged unlock). Only judging waits on this.
+   Together those two make this screen and the convenor's screen **the same
+   screen**, which is why almost nothing lives in this file. One tab group at
+   the head of the document holds the whole constitution — the convenor's
+   settings and the room's questions in one strip, because the constitution does
+   not depend on who is reading it. What differs is only which tabs you may act
+   on: a member fills in the ones the convenor handed over and reads the rest.
 
    Three states, switchable in the topbar so all are inspectable: answering ·
    waiting · settled.
@@ -26,140 +26,46 @@
   .states button { font: inherit; font-size: var(--t-cap); padding: 3px var(--s3); cursor: pointer;
     border: 1px solid var(--border); background: var(--bg); color: var(--muted); border-radius: 999px; }
   .states button[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
-
-  .queue .qhead { font-size: var(--t-cap); color: var(--muted); margin: 0 0 var(--s2); padding: 0 10px; }
-  .queue .setmark { margin-left: auto; display: inline-flex; align-items: center; }
-  .mkg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9;
-    stroke-linecap: round; stroke-linejoin: round; }
-  .queue .sendrow { margin-top: var(--s4); }
-  .btn-send { width: 100%; font: inherit; font-size: var(--t-ui); font-weight: 600; cursor: pointer;
-    background: var(--ok); border: 1px solid var(--ok); color: #fff; border-radius: var(--r-md);
-    padding: var(--s3); box-shadow: var(--shadow-md); }
-  .btn-send:hover { background: var(--ok-hover); border-color: var(--ok-hover); }
-  .btn-send[disabled] { opacity: 0.45; cursor: default; box-shadow: none; }
-  .railnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); text-align: center; }
-
-  /* the modal is a decision card on a scrim, as it is on document-creation */
-  .scrim { position: fixed; inset: 0; background: rgba(33,37,41,0.28); z-index: 60;
-    display: grid; place-items: center; padding: var(--s5); }
-  .scrim .sugg { width: min(660px, 100%); max-height: 88vh; overflow-y: auto;
-    box-shadow: var(--shadow-xl); margin: 0; }
-  .scrim .sugg h2 { font-size: var(--t-lead); font-weight: 600; margin: var(--s1) 0; }
-  .scrim .sugg .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch; }
-  .blindnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
-
-  /* the roster, standing beside the question (Ed, 2026-08-17) */
-  .whobox { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--light);
-    padding: var(--s3); margin-bottom: var(--s4); }
-  .whobox .lab { font-size: var(--t-small); color: var(--muted); margin-bottom: var(--s2); }
-  .faces { display: flex; flex-wrap: wrap; gap: var(--s2); }
-  .pf { display: flex; align-items: center; gap: var(--s1); font-size: var(--t-cap); }
-  .pf .av { width: 22px; height: 22px; border-radius: 50%; background: var(--bg);
-    border: 1px solid var(--border); color: var(--muted); font-size: 8px; font-weight: 700;
-    display: grid; place-items: center; }
-  .pf.me .av { background: var(--primary); border-color: var(--primary); color: #fff; }
-  .pf.me { font-weight: 600; }
-
-  /* consent-slider — nothing preselected, and it must not look answered */
-  .cs { margin-bottom: var(--s2); }
-  .cs input[type=range] { width: 100%; accent-color: var(--primary); }
-  .cs.unset input[type=range] { accent-color: var(--border); opacity: 0.55; }
-  .csval { font-size: var(--t-lead); font-weight: 600; min-height: 1.6em; }
-  .csval.unset { color: var(--muted); font-weight: 400; font-size: var(--t-ui); }
-  .csends { display: flex; justify-content: space-between; font-size: var(--t-cap); color: var(--muted); }
-  .csmean { font-size: var(--t-small); color: var(--muted); margin-top: var(--s2); min-height: 3em; }
-
-  /* privacy-ladder — most private first, rungs above your answer dimmed */
-  .ladder { display: flex; flex-direction: column; gap: var(--s2); }
-  .rung { display: grid; grid-template-columns: 20px 1fr; gap: var(--s3); align-items: start;
-    padding: var(--s3) var(--s4); border: 1px solid var(--border); border-radius: var(--r-lg);
-    cursor: pointer; background: var(--bg); }
-  .rung:hover { background: var(--light); }
-  .rung.on { border-color: var(--primary); background: var(--primary-subtle); box-shadow: var(--shadow-sm); }
-  .rung.on .dot { border-color: var(--primary); }
-  .rung.on .dot::after { transform: scale(1); }
-  .rung.above { opacity: 0.5; }
-  .dot { width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid var(--muted);
-    margin-top: 3px; display: grid; place-items: center; }
-  .dot::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--primary);
-    transform: scale(0); transition: transform 120ms ease; }
-  .rung .ttl { display: block; font-weight: 600; font-size: var(--t-ui); }
-  .rung .exp { display: block; color: var(--muted); font-size: var(--t-small); margin-top: 2px; }
-  button:focus-visible, input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-
-  /* the settled record, and the distribution-strip */
-  .rec { border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s5); margin-bottom: var(--s5); }
-  .rec h2 { margin: 0 0 var(--s4); font-size: var(--t-lead); font-weight: 600; }
-  .line { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4);
-    padding: var(--s3) 0; border-top: 1px solid var(--border); }
-  .line:first-of-type { border-top: 0; }
-  .line .k { font-size: var(--t-small); color: var(--muted); }
-  .line .v { font-size: var(--t-body); font-weight: 600; }
-  .dist { display: flex; align-items: flex-end; gap: 3px; height: 54px; margin: var(--s3) 0 var(--s1); }
-  .dist span { flex: 1; background: rgba(var(--lc-yours), 0.30); border-radius: 2px 2px 0 0; min-height: 2px; }
-  .dist span.top { background: var(--primary); }
-  .distx { display: flex; justify-content: space-between; font-size: var(--t-cap); color: var(--muted); }
-  .anon { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); }
-  .pips { display: flex; gap: var(--s2); flex-wrap: wrap; margin: var(--s3) 0; }
-  .pip { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: var(--light); }
-  .pip.in { background: var(--ok-subtle); border-color: var(--ok); }
-
-  /* **A setup rail lays itself out, and pins** (Ed, 2026-08-17: *the ceremony
-     and admin cards should be pinned*).
-
-     Two halves. `system.css` positions `.qitem` **absolutely**, because in a
-     live session `layoutQueue` places every entry against its own clause in
-     the document; there is nothing to track here, so they go back into normal
-     flow. And then the whole column is sticky — which is what pinning means
-     for this set. It is the same rule the live rail follows and reaches the
-     same answer from the other end: there, four kinds of entry pin because
-     they are the things that are about *you* rather than about a clause. Here
-     **every** card is one of those. A setup question belongs to no clause, so
-     there is nowhere for it to scroll away to, and nothing on this screen may
-     be missed by reading past it.
-
-     Marked with a class rather than by loosening `.qitem`, so the live layout
-     is untouched and the difference is visible in the markup. */
-  .queue.stack { position: sticky; top: calc(var(--nav-h) + var(--s5)); align-self: start;
-    max-height: calc(100vh - var(--nav-h) - var(--s5)); overflow-y: auto;
-    scrollbar-width: none; -ms-overflow-style: none; }
-  .queue.stack::-webkit-scrollbar { width: 0; }
-  .queue.stack ul, .queue.stack > div { display: flex; flex-direction: column; gap: var(--s2); }
-  .queue.stack .qitem { position: static; }
-  .ql .subj { margin-right: var(--s1); font-size: 1.05em; line-height: 1; }
-  /* the subject glyph, the name and the tick are three slots on one line */
-  .queue.stack .ql { display: flex; align-items: baseline; gap: var(--s1); }
-  .queue.stack .ql > span:nth-child(2) { flex: 1; min-width: 0; }
 </style>
 
 <header class="navbar">
   <div class="wrap">
     <p class="brand">The Hollow Oak Club — House Charter <span class="sess">· opening ceremony</span></p>
     <div class="stats">
-      <span id="stat">proposals open · judging waits on the ceremony</span>
+      <span id="stat">reading only · proposing waits on your answers</span>
       <span class="states" id="states"></span>
-      <button class="me" title="Ida Fenwick — you."><span class="face" aria-hidden="true">IF</span></button>
+      <button class="me" id="mebtn" title="You."></button>
     </div>
   </div>
 </header>
 <div class="wrap">
   <div class="layout">
     <nav class="toc"><ul id="toc"></ul></nav>
-    <main><div class="doc" id="doc"></div></main>
+    <main>
+      <div class="doc" id="doc">
+        <div class="setupband" id="band"></div>
+        <div class="prose" id="prose"></div>
+      </div>
+    </main>
     <aside class="queue stack"><div id="rail"></div></aside>
   </div>
 </div>
-<div id="modalroot"></div>
+<svg id="wires" aria-hidden="true"></svg>
 
+<script src="setup.js"></script>
 <script>
 (function () {
-  const TICK = '<svg class="mkg" viewBox="0 0 12 12"><path d="M2 6.4 L4.7 9.2 L10 2.9"/></svg>';
-  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const { esc, TICK, avHtml, tabGroupHtml, railEntry, cardHtml, readBody,
+    watchBody, identityBody, drawWire, opt, faces, someIn } = window.SETUP;
+  const band = document.getElementById('band');
+  const rail = document.getElementById('rail');
+  const wires = document.getElementById('wires');
+
   const ROSTER = ['Wren Ashby', 'Hollis Mear', 'Ida Fenwick', 'Tobias Crane', 'Sylva Renn',
     'Marlow Pike', 'Perrin Oakes', 'Nella Quist', 'Ansel Whitlow', 'Bee Harkness',
-    'Corin Vale', 'Dov Attaway', 'Esme Rooke', 'Fay Lindmoor'];
-  const ME = 'Ida Fenwick', E = ROSTER.length;
-  const initials = (n) => n.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+    'Corin Vale', 'Dov Attaway', 'Esme Rooke', 'Fay Lindmoor']
+    .map((n, i) => ({ n, pic: i % 3 === 0 ? 'c' + (i % 6) : (i % 5 === 0 ? 'm' + (i % 3) : '') }));
+  const E = ROSTER.length;
 
   const DOC = [
     ['h1', 'Part I — The Club'], ['h2', 'Purpose'],
@@ -170,124 +76,144 @@
     ['p', 'Whoever cooks does not clear. Whoever clears does not have to have eaten.'],
   ];
 
-  const S = { state: 'ask', quorum: null, bar: null,
-    authorship: null, signing: null, judgments: null, machines: null,
+  const S = { state: 'ask', myname: 'Ida Fenwick', mypic: '',
+    quorum: null, bar: null, authorship: null, signing: null, judgments: null, machines: null,
     seen: new Set(), open: null };
+  const me = () => ({ n: S.myname, pic: S.mypic });
 
-  // ---- the document, behind everything ----------------------------------
   function renderDoc() {
-    document.getElementById('doc').innerHTML = '<div class="prose">' + DOC.map(([t, x], i) =>
+    document.getElementById('prose').innerHTML = DOC.map(([t, x], i) =>
       t === 'p' ? '<p>' + esc(x) + '</p>'
-        : '<h2 class="docline lvl' + (t === 'h1' ? 1 : 2) + '" id="h' + i + '">' + esc(x) + '</h2>').join('') + '</div>';
+        : '<h2 class="docline lvl' + (t === 'h1' ? 1 : 2) + '" id="h' + i + '">' + esc(x) + '</h2>').join('');
     document.getElementById('toc').innerHTML = DOC.map(([t, x], i) =>
       t === 'p' ? '' : '<li class="lvl' + (t === 'h1' ? 1 : 2) + '"><a href="#h' + i + '">' + esc(x) + '</a></li>').join('');
   }
 
-  // ---- the questions -----------------------------------------------------
-  // **A second alphabet, and it is a different job from the first** (Ed,
-  // 2026-08-17, proposing 👥 ✒️ 👤 🤖). The `lifecycle mark` says *what the
-  // document wants from you* — and it works in the live rail because every card
-  // there is a different state of the same kind of thing, a judgment. A setup
-  // rail is the other way round: every card is the same state of a **different
-  // kind of thing**, so a state glyph would say nothing that distinguished one
-  // from another. So the live rail marks **state** and this one marks
-  // **subject**, and the two sets never appear in the same column.
+  // ---- the cards ---------------------------------------------------------
+  // **A second alphabet, and it is a different job from the first.** The
+  // `lifecycle mark` says *what the document wants from you*, and it works in
+  // the live rail because every card there is a different state of one kind of
+  // thing — a judgment. A setup rail is the other way round: every card is the
+  // same state of a **different kind of thing**, so a state glyph would say
+  // nothing that distinguished one from another. The live rail marks **state**
+  // and this one marks **subject**, and the two sets never share a column.
   //
-  // ✒️ is not a new sign at all — the topbar has written the threshold as
-  // `74%✒️` since the units landed, so the glyph already means exactly this.
-  // 👤 is likewise the `sealed-speaker`'s own disc: an unnamed person is
-  // already what it means on this surface. Its risk, worth watching at 13px:
-  // it is one silhouette against 👥's two, and the two cards sit near each
-  // other — the meaning is inherited but the shape is not far off.
-  //
-  // Lifecycle is carried by the card instead: **left says what it is about,
-  // right says whether it is done**, and the wash fills as the room answers.
-  const CARDS = [
-    { k: 'quorum', g: '👥', t: 'Quorum', in: 11,
-      val: () => (S.quorum === null ? 'The lowest you will accept' : 'You said ' + S.quorum + ' of ' + E) },
-    { k: 'bar', g: '✒️', t: 'The bar', in: 9,
-      val: () => (S.bar === null ? 'The lowest you will accept' : 'You said ' + S.bar + '%') },
-    { k: 'disclosure', g: '👤', t: 'Who may be seen', in: 7,
-      val: () => (!S.authorship ? 'The most you will accept'
-        : 'You said ' + { anonymous: 'no names, ever', sealed: 'names at the close', public: 'names from the start' }[S.authorship]) },
-    { k: 'machines', g: '🤖', t: 'Machine participants', in: 12,
-      val: () => (S.machines === null ? 'The most you will accept'
-        : 'You said ' + (S.machines ? 'a machine member is fine' : 'people only')) },
+  // *Who may be seen* is three of them (Ed, 2026-08-18), and their glyphs have
+  // to be three silhouettes rather than three shades of one idea, since all
+  // three are about being seen: 👤 a person attached to a proposal, ✍️ a hand
+  // putting a name to one, 👁️ whether anybody may look at what you preferred.
+  const ROOM = [
+    { k: 'quorum', g: '👥', t: 'Quorum', owner: 'room', in: 11, ask: 'The lowest I will accept',
+      rule: 'Each member states the <b>lowest quorum</b> they will accept and the document takes the highest.',
+      takes: 'The document takes the highest', result: '10 of 14',
+      dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', '14 of 14'] },
+    { k: 'bar', g: '✒️', t: 'The bar', owner: 'room', in: 9, ask: 'The lowest I will accept',
+      rule: 'Each member states the <b>lowest bar</b> they will accept and the document takes the highest.',
+      takes: 'The document takes the highest', result: '80%',
+      dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
+    { k: 'authorship', g: '👤', t: 'Whose proposal it is', owner: 'room', in: 7, ask: 'The most I will accept',
+      rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants to stay unnamed keeps the whole document unnamed.',
+      takes: 'The document takes the most private', result: 'Nobody’s name, ever',
+      dist: [8, 4, 2], distTop: 0, distEnds: ['No names, ever', 'Names from the start'] },
+    { k: 'signing', g: '✍️', t: 'Signing', owner: 'room', in: 7, ask: 'The most I will accept',
+      rule: 'Also a privacy question, and the <b>most private</b> answer wins.',
+      takes: 'The document takes the most private', result: 'Nobody signs',
+      dist: [9, 3, 2], distTop: 0, distEnds: ['Nobody signs', 'Everybody signs'] },
+    { k: 'judgments', g: '👁️', t: 'Your judgments', owner: 'room', in: 12, ask: 'The most I will accept',
+      rule: 'Never revealed while a question is live, whichever is chosen. What this settles is only whether they are published with the record.',
+      takes: 'The document takes the most private', result: 'Never revealed',
+      dist: [11, 3], distTop: 0, distEnds: ['Never', 'After the decision'] },
+    { k: 'machines', g: '🤖', t: 'Machine participants', owner: 'room', in: 12, ask: 'The most I will accept',
+      rule: 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.',
+      takes: 'The document takes the most restrictive', result: 'People only',
+      dist: [9, 5], distTop: 0, distEnds: ['People only', 'A machine is fine'] },
   ];
-  const answered = (c) => ({
+  // The convenor's own settings, as a member meets them: readable, never
+  // editable. Read-only is not the same as hidden — the whole point of a tab
+  // group at the head of the document is that the constitution is legible to
+  // everyone it binds.
+  const CONVENOR = [
+    { k: 'text', g: '📄', t: 'The starting text', owner: 'convenor', v: '42 blocks, 9 sections' },
+    { k: 'title', g: '🏷️', t: 'The title', owner: 'convenor', v: 'The Hollow Oak Club — House Charter' },
+    { k: 'slug', g: '🔗', t: 'The link', owner: 'convenor', v: 'draft.to/hollow-oak-4f2a' },
+    { k: 'window', g: '📅', t: 'The window', owner: 'convenor', v: 'Ends Thu 18:00',
+      readNote: 'The bar rises towards that moment, and the drip is paced against it.' },
+    { k: 'roster', g: '✉️', t: 'The roster', owner: 'convenor', v: '14 drafting, 1 watching',
+      readNote: 'Wren Ashby convened this document and is drafting in it like everybody else.' },
+    { k: 'economy', g: '🪙', t: 'The edit economy', owner: 'convenor', v: '4 to start, 1 back per 10%' },
+    { k: 'chamber', g: '🔭', t: 'Who else can see it', owner: 'convenor', v: 'Anyone with the link' },
+  ];
+  const YOU = [{ k: 'you', g: '🙂', t: 'How you appear', owner: 'you' }];
+
+  // One group, in the order a member meets them: what is theirs to answer, then
+  // themselves, then what was already settled for them.
+  const CARDS = ROOM.concat(YOU, CONVENOR);
+  const card = (k) => CARDS.find((c) => c.k === k);
+
+  const ANSWERED = {
     quorum: () => S.quorum !== null, bar: () => S.bar !== null,
-    disclosure: () => !!S.authorship && !!S.signing && !!S.judgments,
-    machines: () => S.machines !== null,
-  })[c.k]();
-  // **Your own ceremony gates your own proposing** (Ed, 2026-08-17: *they can't
-  // propose until their ceremony is done*). Which is the right rule and a
-  // better one than the convenor-side gate it replaces: you should not be able
-  // to act on a document whose rules you have not yet said what you will accept
-  // of. Reading is the only thing available before you answer. Judging waits on
-  // the *room*, because a judgment is counted against a quorum that does not
-  // exist until everybody has spoken.
-  const mine = () => CARDS.every((c) => answered(c) && S.seen.has(c.k));
+    authorship: () => !!S.authorship, signing: () => !!S.signing,
+    judgments: () => !!S.judgments, machines: () => S.machines !== null,
+    you: () => !!S.myname.trim(),
+  };
+  const ready = (c) => (ANSWERED[c.k] ? ANSWERED[c.k]() : true);
+  const settled = (c) => (c.owner === 'convenor' ? true : (S.seen.has(c.k) && ready(c)));
+  const mustAct = (c) => c.owner !== 'convenor' && !settled(c);
+  const isRoom = (c) => c.owner === 'room';
+
+  // **Your own ceremony gates your own proposing** (Ed, 2026-08-17). You should
+  // not be able to act on a document whose rules you have not yet said what you
+  // will accept of. Reading is the only thing available before you answer.
+  // Judging waits on the *room*, because a judgment is counted against a quorum
+  // that does not exist until everybody has spoken.
+  const mine = () => CARDS.every(settled);
+  const roomDone = () => ROOM.every((c) => (c.in || 0) >= E);
+
+  const VALUE = {
+    quorum: () => (S.quorum === null ? 'The lowest you will accept' : 'You said ' + S.quorum + ' of ' + E),
+    bar: () => (S.bar === null ? 'The lowest you will accept' : 'You said ' + S.bar + '%'),
+    authorship: () => (!S.authorship ? 'The most you will accept' : 'You said ' +
+      { anonymous: 'no names, ever', sealed: 'names at the close', public: 'names from the start' }[S.authorship]),
+    signing: () => (!S.signing ? 'The most you will accept' : 'You said ' +
+      { nobody: 'nobody signs', each: 'each author chooses', everybody: 'everybody signs' }[S.signing]),
+    judgments: () => (!S.judgments ? 'The most you will accept' : 'You said ' +
+      { never: 'never revealed', after: 'revealed after the decision' }[S.judgments]),
+    machines: () => (S.machines === null ? 'The most you will accept'
+      : 'You said ' + (S.machines ? 'a machine member is fine' : 'people only')),
+    you: () => S.myname || 'Unnamed',
+  };
+  const value = (c) => esc(VALUE[c.k] ? VALUE[c.k]() : c.v);
+  const summary = (c) => (isRoom(c) && settled(c)
+    ? value(c) + ' · ' + someIn(c.in || 0, E) : value(c));
+
+  const ctx = {
+    get open() { return S.open; }, get E() { return E; },
+    mustAct, settled, summary, value, isRoom,
+    bandLabel: (c) => (c.owner === 'room' ? 'The participants decide'
+      : c.owner === 'you' ? 'You' : 'Set by the convenor'),
+  };
 
   // ---- the rail ----------------------------------------------------------
   function renderRail() {
-    const rail = document.getElementById('rail');
-    if (S.state === 'waiting') {
-      rail.innerHTML = '<div class="qhead">Sent</div>' +
-        '<div style="padding:0 10px"><p style="font-size:var(--t-small);margin:0 0 var(--s3)">' +
-        '<b>Nine of fourteen</b> have answered. Judging opens when everyone has.</p>' +
-        '<div class="pips">' + ROSTER.map((_, i) => '<span class="pip' + (i < 9 ? ' in' : '') + '"></span>').join('') + '</div>' +
-        '<p style="font-size:var(--t-cap);color:var(--muted);margin:0">You will not see anybody’s answer and nobody will see yours. ' +
-        'Your own is in, so you can propose changes to the charter while the rest finish.</p>' +
-        '<p style="margin-top:var(--s3)"><button class="btn-send" data-act="change" style="background:var(--bg);color:var(--fg);border-color:var(--border)">Change my answers</button></p></div>';
-      return;
-    }
-    if (S.state === 'settled') {
-      rail.innerHTML = '<div class="qhead">Settled</div>' +
-        CARDS.map((c) => '<li class="qitem" style="list-style:none"><button class="deciding"' +
-          ' style="--washcol: rgba(var(--lc-closed),0.16); --washbg: rgba(var(--lc-closed),0.06); --fill:100%">' +
-          '<span class="ql"><span>' + c.t + '</span><span class="setmark">' + TICK + '</span></span>' +
-          '<span class="qwhy">' + esc({ quorum: '10 of 14', bar: '80%', disclosure: 'No names, ever', machines: 'People only' }[c.k]) + '</span>' +
-          '</button></li>').join('') +
-        '<div class="sendrow"><button class="btn-send" data-act="record">See what the room asked for</button>' +
-        '<div class="railnote">Judging is open.</div></div>';
-      return;
-    }
-    // **No "send my answers"** (Ed, 2026-08-17). There was a button because I
-    // had modelled the ceremony as a form with a submit; it is a queue, and a
-    // queue is finished when it is empty. The last card you confirm is the act.
-    //
-    // And the cards **fill as the room answers**, exactly as a race card does:
-    // the wash's bar is how far through this question the roster is, so after
-    // you have answered the rail stops being a to-do list and becomes what it
-    // is everywhere else — a place to watch something you are already part of.
-    rail.innerHTML = '<div class="qhead">' +
-      (mine() ? 'Waiting on the room' : 'Before you can take part') + '</div>' +
-      CARDS.map((c) => {
-        const done = answered(c) && S.seen.has(c.k);
-        const col = done ? 'rgba(var(--lc-deciding), 0.22)' : 'rgba(var(--lc-open), 0.22)';
-        const bg = done ? 'rgba(var(--lc-deciding), 0.06)' : 'rgba(var(--lc-open), 0.06)';
-        const fill = done ? Math.round(c.in / E * 100) + '%' : '100%';
-        return '<li class="qitem" style="list-style:none" data-q="' + c.k + '">' +
-          '<button class="' + (done ? 'deciding' : 'needs') + '" data-card="' + c.k + '"' +
-          ' title="' + (done ? c.in + ' of ' + E + ' have answered this one' : 'Not answered yet') + '"' +
-          ' style="--washcol: ' + col + '; --washbg: ' + bg + '; --fill: ' + fill + '">' +
-          '<span class="ql"><span class="subj" aria-hidden="true">' + c.g + '</span>' +
-          '<span>' + c.t + '</span><span class="setmark">' + (done ? TICK : '') + '</span></span>' +
-          '<span class="qwhy">' + esc(c.val()) +
-          (done ? ' · ' + c.in + ' of ' + E + ' in' : '') + '</span></button></li>';
-      }).join('') +
-      '<div class="railnote">' + (mine()
-        ? 'Your answers are sealed. Judging opens when everyone has finished theirs.'
+    const yours = CARDS.filter((c) => c.owner !== 'convenor');
+    const theirs = CONVENOR;
+    rail.innerHTML =
+      '<ul><li class="qhead">' + (roomDone() ? 'Settled' : mine() ? 'Waiting on the room' : 'Before you can take part') + '</li>' +
+      yours.map((c) => railEntry(c, ctx)).join('') +
+      '<li class="qhead">Settled by the convenor</li>' +
+      theirs.map((c) => railEntry(c, ctx)).join('') + '</ul>' +
+      '<div class="railnote">' + (roomDone()
+        ? 'The constitution is settled. Judging is open.'
+        : mine() ? 'Your answers are sealed. Judging opens when everyone has finished theirs.'
         : 'You can read the charter now. Proposing and judging both wait on these.') + '</div>';
+    document.getElementById('mebtn').innerHTML = avHtml(me(), 'face');
   }
 
-  // ---- the modal ---------------------------------------------------------
-  const whoBox = () =>
+  // ---- the bodies a member fills in --------------------------------------
+  const whoBox = (k) => (S.seen.has(k) ? '' :
     '<div class="whobox"><div class="lab">Fourteen people will hold this charter between them. ' +
     'What you are about to say is how much of <b>this room</b> you need behind a change before it moves.</div>' +
-    '<div class="faces">' + ROSTER.map((n) =>
-      '<span class="pf' + (n === ME ? ' me' : '') + '"><span class="av">' + initials(n) + '</span>' +
-      n + (n === ME ? ' (you)' : '') + '</span>').join('') + '</div></div>';
+    faces(ROSTER, S.myname) + '</div>');
 
   const slider = (key, min, max, fmt, mean) => {
     const v = S[key];
@@ -299,107 +225,132 @@
       '<div class="csmean">' + (v === null ? mean(min) + '<br>' + mean(max) : mean(v)) + '</div></div>';
   };
 
-  const ladder = (key, rungs) => '<div class="ladder" role="radiogroup">' + rungs.map((r, i) => {
+  // `privacy-ladder` — the rungs *above* your answer are dimmed rather than
+  // hidden, since *the most I will accept* only reads as a ladder if you can
+  // see what you are refusing. The control itself is the session-view's own
+  // radio now (Ed, 2026-08-18), so a ladder is a list of them and nothing else.
+  const ladder = (key, rungs) => '<div class="choice" role="radiogroup">' + rungs.map((r, i) => {
     const at = rungs.findIndex((x) => x.v === S[key]);
-    return '<div class="rung' + (S[key] === r.v ? ' on' : '') + (at >= 0 && i > at ? ' above' : '') +
-      '" role="radio" tabindex="0" aria-checked="' + (S[key] === r.v) + '" data-pick="' + key + '" data-val="' + r.v + '">' +
-      '<span class="dot"></span><span><span class="ttl">' + r.t + '</span><span class="exp">' + r.e + '</span></span></div>';
+    return opt(S, key, r.v, r.t, r.e, '', false, (at >= 0 && i > at) ? ' above' : '');
   }).join('') + '</div>';
 
   const BODY = {
-    quorum: () => '<h2>The lowest quorum I will accept</h2>' + whoBox() +
+    you: () => identityBody(me()),
+    quorum: () => '<h2>The lowest quorum I will accept</h2>' + whoBox('quorum') +
       '<p class="why">How many of the fourteen must weigh in on a question before it can change the charter. A question short of quorum simply waits — nobody’s silence is ever counted as a vote.</p>' +
       slider('quorum', 1, E, (v) => v + ' of ' + E, (v) =>
         v >= E ? 'Nothing moves unless every member has weighed in. A charter that cannot change without all fourteen is a perfectly reasonable thing to want.'
         : v <= Math.ceil(E / 4) ? 'A small part of the room can carry a change while the rest are elsewhere.'
         : 'Rather more than half the room has to have looked at a question before it can move.') +
       '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> of the fourteen, so it will never be lower than what you say here.</p>',
-    bar: () => '<h2>The lowest bar I will accept</h2>' + whoBox() +
+    bar: () => '<h2>The lowest bar I will accept</h2>' + whoBox('bar') +
       '<p class="why">How sure the room has to be that a new wording beats the one it would replace. A confidence, not a vote share — at 60% a change goes through on a real but slender preference; at 90% only something close to agreement moves anything.</p>' +
       slider('bar', 50, 95, (v) => v + '%', (v) =>
         v >= 85 ? 'Only near-agreement changes anything. Expect the charter to move slowly and keep most of what it started with.'
         : v <= 60 ? 'A modest preference is enough. The charter will move quickly, and reverse itself more often.'
         : 'A clear preference is needed, but not agreement.') +
       '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> of the fourteen.</p>',
-    disclosure: () => '<h2>The most I am willing to be seen</h2>' +
-      '<p class="why">Three questions about who may be seen and when. Here the rule runs the other way: the charter takes the <b>most private</b> answer, so one person who wants to stay unnamed keeps the whole charter unnamed. Nothing is preselected — anonymity holds unless every one of the fourteen is content with more.</p>' +
-      '<div class="eyebrow" style="margin-bottom:var(--s2)">Whose proposal it is</div>' +
+    authorship: () => '<h2>Whose proposal it is</h2>' +
+      '<p class="why">Rationales are visible whatever the room settles on. What varies is only whether a name is attached to one. Here the rule runs the other way: the charter takes the <b>most private</b> answer, so one person who wants to stay unnamed keeps the whole charter unnamed.</p>' +
       ladder('authorship', [
         { v: 'anonymous', t: 'Nobody’s name, ever', e: 'Not during the session and not in the closing record.' },
         { v: 'sealed', t: 'Names at the close', e: 'Hidden while the charter is being written; published with the record.' },
         { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' }]) +
-      '<div class="eyebrow" style="margin:var(--s5) 0 var(--s2)">Signing</div>' +
+      '<p class="blindnote">Nothing is preselected — anonymity holds unless every one of the fourteen is content with more.</p>',
+    signing: () => '<h2>Signing</h2>' +
+      '<p class="why">Whether an author may put their name to a proposal that is otherwise unattributed.</p>' +
       ladder('signing', [
         { v: 'nobody', t: 'Nobody signs', e: 'The only setting under which an unsigned proposal says nothing about whoever wrote it.' },
         { v: 'each', t: 'Each author chooses', e: 'In a room of fourteen, an unsigned one among signed ones says something.' },
-        { v: 'everybody', t: 'Everybody signs', e: 'Uniform in the other direction.' }]) +
-      '<div class="eyebrow" style="margin:var(--s5) 0 var(--s2)">Your judgments</div>' +
+        { v: 'everybody', t: 'Everybody signs', e: 'Uniform in the other direction.' }]),
+    judgments: () => '<h2>Your judgments</h2>' +
+      '<p class="why">Never revealed while a question is still being judged, whichever the room settles on — that would make the room read each other instead of the text. What this settles is only whether they are published with the closing record.</p>' +
       ladder('judgments', [
         { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
-        { v: 'after', t: 'Revealed once the decision is made', e: 'Never while a question is still being judged — that would make the room read each other instead of the text.' }]),
-    machines: () => '<h2>The most I will accept</h2>' +
+        { v: 'after', t: 'Revealed once the decision is made', e: 'Published with the record, never before it.' }]),
+    machines: () => '<h2>Machine participants</h2>' +
       '<p class="why">The convenor has offered a machine member — a coherence auditor that patrols for drift and proposes fixes. It holds a budget like anybody else. The <b>most restrictive</b> answer wins, so if you would rather not draft alongside one, it stays out.</p>' +
       ladder('machines', [
         { v: 'false', t: 'People only', e: 'No machine member in this charter.' },
         { v: 'true', t: 'A machine member is fine', e: 'It competes on the same terms as anybody else and can be out-judged like anybody else.' }]),
   };
 
-  function renderModal() {
-    const root = document.getElementById('modalroot');
-    if (!S.open) { root.innerHTML = ''; return; }
-    const c = CARDS.find((x) => x.k === S.open);
-    root.innerHTML = '<div class="scrim" data-close="1"><div class="sugg quick-open" role="dialog" aria-modal="true">' +
-      BODY[S.open]() +
-      '<div class="race-mid commitrow"><button class="btn" data-close="1">Cancel</button>' +
-      '<button class="btn btn-approve glyphbtn"' + (answered(c) ? '' : ' disabled') +
-      ' data-confirm="1" title="' + (answered(c) ? 'Confirm' : 'Not answered yet') + '">' + TICK + '</button>' +
-      '</div></div></div>';
+  // ---- the band ----------------------------------------------------------
+  function renderBand() {
+    band.className = 'setupband' + (S.open ? ' open' : '');
+    let h = tabGroupHtml(CARDS, ctx);
+    if (S.open) {
+      const c = card(S.open);
+      let body, foot;
+      if (c.owner === 'convenor') {
+        body = readBody(c, ctx);
+        foot = '<span></span><button class="btn" data-close="1">OK</button>';
+      } else {
+        // Once you have answered, the card keeps your answer and grows the
+        // watching half underneath — the same half the convenor sees, because
+        // it is the same question and neither of you may see more of it than
+        // how many have answered until every one of them has.
+        body = BODY[c.k]() + (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
+        foot = '<button class="btn" data-close="1">Close</button>' +
+          '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
+          ' data-confirm="1" title="' + (ready(c) ? 'Confirm' : 'Not answered yet') + '">' + TICK + '</button>';
+      }
+      h += cardHtml(c, ctx, body, foot);
+    }
+    band.innerHTML = h;
   }
 
   function renderStates() {
     document.getElementById('states').innerHTML =
       [['ask', 'Answering'], ['waiting', 'Waiting'], ['settled', 'Settled']].map(([k, t]) =>
         '<button data-state="' + k + '" aria-pressed="' + (S.state === k) + '">' + t + '</button>').join('');
-    document.getElementById('stat').textContent = S.state === 'settled'
+    document.getElementById('stat').textContent = roomDone()
       ? 'open — reading, proposing and judging'
       : mine() ? 'you can propose · judging waits on the room'
       : 'reading only · proposing waits on your answers';
   }
 
-  const render = () => { renderStates(); renderRail(); renderModal(); };
+  const render = () => { renderStates(); renderRail(); renderBand(); drawWire(wires, S.open); };
+
+  // the three states are a fixture switch, so all of them are inspectable
+  function setState(k) {
+    S.state = k; S.open = null;
+    if (k === 'ask') {
+      S.quorum = S.bar = S.machines = null; S.authorship = S.signing = S.judgments = null;
+      S.seen = new Set();
+      ROOM.forEach((c, i) => { c.in = [11, 9, 7, 7, 12, 12][i]; });
+    } else {
+      S.quorum = 10; S.bar = 80; S.authorship = 'anonymous'; S.signing = 'nobody';
+      S.judgments = 'never'; S.machines = false;
+      S.seen = new Set(CARDS.map((c) => c.k));
+      ROOM.forEach((c, i) => { c.in = k === 'settled' ? E : [11, 9, 7, 7, 12, 12][i]; });
+    }
+  }
 
   document.addEventListener('click', (ev) => {
     const st = ev.target.closest('[data-state]');
-    if (st) { S.state = st.dataset.state; S.open = null; return render(); }
-    const c = ev.target.closest('[data-card]');
-    if (c) { S.open = c.dataset.card; return render(); }
+    if (st) { setState(st.dataset.state); return render(); }
+    const t = ev.target.closest('[data-tab], [data-card]');
+    if (t) { const k = t.dataset.tab || t.dataset.card;
+      S.open = (S.open === k) ? null : k; return render(); }
     if (ev.target.closest('[data-confirm]')) { S.seen.add(S.open); S.open = null; return render(); }
-    const p = ev.target.closest('[data-pick]');
+    if (ev.target.closest('button[data-close]')) { S.open = null; return render(); }
+    const p = ev.target.closest('[data-set]');
     if (p) { const v = p.dataset.val;
-      S[p.dataset.pick] = (v === 'true') ? true : (v === 'false') ? false : v; return render(); }
-    // **Only the scrim itself closes, and only a button that says so.**
-    // `data-close` sits on the scrim, and the scrim is an ancestor of every
-    // control in the card — so `closest('[data-close]')` matched on *every*
-    // click inside the modal and shut it before the option it had just set
-    // could be seen. It looked like the radios were not working; they were
-    // working and then being thrown away. Tested last, and against the target
-    // rather than its ancestry.
-    if (ev.target.closest('button[data-close]') || ev.target.classList.contains('scrim')) {
-      S.open = null; return render(); }
-    const a = ev.target.closest('[data-act]');
-    if (a) {
-      if (a.dataset.act === 'change') S.state = 'ask';
-      if (a.dataset.act === 'record') S.open = null;
-      return render();
-    }
+      S[p.dataset.set] = (v === 'true') ? true : (v === 'false') ? false : v; return render(); }
+    const pic = ev.target.closest('[data-pic]');
+    if (pic) { S.mypic = pic.dataset.pic; return render(); }
   });
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && S.open) { S.open = null; return render(); }
-    if (ev.key !== 'Enter' && ev.key !== ' ') return;
-    const p = ev.target.closest('[data-pick]');
-    if (p) { ev.preventDefault(); p.click(); }
   });
   document.addEventListener('input', (ev) => {
+    if (ev.target.dataset.txt === 'myname') {
+      S.myname = ev.target.value; renderRail();
+      const btn = document.querySelector('[data-confirm]');
+      if (btn && S.open) btn.disabled = !ready(card(S.open));
+      return;
+    }
     const r = ev.target.closest('[data-slide]');
     if (!r) return;
     S[r.dataset.slide] = +r.value;
@@ -407,6 +358,8 @@
     const again = document.querySelector('[data-slide="' + r.dataset.slide + '"]');
     if (again) again.focus();
   });
+  addEventListener('resize', () => drawWire(wires, S.open));
+  addEventListener('scroll', () => drawWire(wires, S.open), true);
 
   renderDoc(); render();
 })();

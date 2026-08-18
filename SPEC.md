@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.25
+# Group Drafting Engine — Specification v0.26
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -215,9 +215,15 @@ Quorum may be a percentage of the roster or a fixed count. Percentages suit a wi
 
 **9.0b Nothing waits for everything** (Ed, 2026-08-17). A document is live from the moment it is made: the link works, and anyone invited can open and read it immediately. Capability then arrives as its prerequisite is met, and there is no single moment at which the document "opens".
 
-**Reading** needs nothing. **Proposing** needs only a confirmed starting text — you do not have to know the constitution to say what a clause should say, and until the economy is settled everyone drafts on the standard grant. **Judging** needs the constitution, and that is not bureaucracy: a judgment is *recorded under a disclosure setting* and *counted towards a quorum*, and neither can be settled afterwards without changing what the judgment was.
+**Reading** needs nothing. **Proposing** needs a confirmed starting text, and — for a member with ceremony questions of their own outstanding — **their own answers to them** (Ed, 2026-08-17). You do not have to know what the room decided to say what a clause should say, and until the economy is settled everyone drafts on the standard grant; but you should not be able to act on a document whose rules you have not yet said what you will accept of. **Judging** needs the whole constitution, and that is not bureaucracy: a judgment is *recorded under a disclosure setting* and *counted towards a quorum*, and neither can be settled afterwards without changing what the judgment was.
+
+So the three gates fall to three different holders: reading to nobody, proposing to the convenor and then to **you**, judging to the **room**. A member who has answered can draft while the rest of the roster is still answering, which is the point — the ceremony is not a queue everybody has to clear before anything can happen.
 
 A **starting text may be empty**, which is why the prerequisite is a confirmed decision rather than content: a roster writing something from nothing is an ordinary way to begin, and a blank page nobody has looked at and a blank page somebody chose must not be the same state.
+
+**9.0c Identity is not authorship** (Ed, 2026-08-18). Each participant chooses a **display name and a picture**, and this is settled by them alone: it is not part of the constitution, not delegable, and not asked at the ceremony, because nothing about it binds anybody else.
+
+It must not be confused with the disclosure family of §3.5a, and under most of that family's settings the two never meet: a name is how you appear **in the room** — in the roster, in the presence row, beside your own wallet — where authorship is whether a name is attached to a **proposal**, which is sealed by default and stays sealed unless every member consented to more (§9.0a). A document can perfectly well show fourteen named people and not one named candidate, and that is the ordinary case rather than a corner of it.
 
 **9.1 Distributed by default.** The baseline is a fully remote window, possibly days long. Co-presence is optional; a projector is another client rendering the chamber view (room mode: ticker, the stuck set, closing sweep). Nothing in the mechanism references a room.
 
