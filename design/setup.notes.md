@@ -23,12 +23,16 @@ custom emoji and just become ✔s*. Five states, implemented once in
 | **yours** | ✏️ | blue `--lc-yours` | yes | a thing of your own in flight (a submitted application); fill = how far judging has got |
 | **done** | rail: drawn ✔ · tab: **its own glyph** | grey | **no** — it leaves the rail | settled. The tab stays in the pile wearing its subject glyph (Ed, 2026-08-18: the piles stand in one place, most of their contents can still be acted on — *it's basically a menu*); the grey wash says settled. The constitution block's lines are buttons too |
 
-**The constitution is document text** (Ed, 2026-08-18, same evening): the
-Constitution group renders not as a pile but as a section — one paragraph
-per decision (*title — value*, Q331's (c) shape), its tab in the gutter to
-its left, constitutional first; the open card replaces its own paragraph.
-The Membership pile remains a pile. On the ceremony the room's questions'
-rules appear as tabless paragraphs, their tab staying with the task.
+**The constitution is document text with sections** (Ed, 2026-08-18,
+evening, two passes): five subtitled sections — Membership · Decisions ·
+Privacy · Proposal Rate · The Document — each a subtitle, a line of prose,
+then one paragraph per decision (*title — value*, Q331's (c) shape) with its
+tab in the gutter to its left; the open card replaces its own paragraph.
+**A question the members answer is a task standing in the section it
+decides**: on the ceremony the rule and its question are one paragraph
+wearing one tab; on the convenor surface a delegated setting's ⏳ paragraph
+is followed by a *Your answer* task via ctx.tasksFor. The rails group by
+section. Both piles are gone; tab-stacks survive only in the live gutter.
 
 Rules carried over whole from session-view: grey means nothing is being asked
 of you; hot for actions, cold for information; the ✔ is drawn (one function),

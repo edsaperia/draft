@@ -189,20 +189,39 @@ window.SETUP = (function () {
       // surface state rules whose tab must live elsewhere (the ceremony's
       // room questions are tasks in the membership pile — one tab, one
       // card — so their rule appears here as a tabless paragraph).
-      if (g.paras) {
-        const order = g.cards.slice().sort((a, b) =>
-          (a.kind === 'constitutional' ? 0 : 1) - (b.kind === 'constitutional' ? 0 : 1));
+      // **The constitution has sections, and the members' choices stand in
+      // them** (Ed, 2026-08-18: *they're choices to be made BY THE MEMBERS
+      // about the constitution, so they become tasks for members associated
+      // with the relevant constitutional section. These sections should
+      // each have proper subtitles, with the appropriate text underneath*).
+      // Each section: a subtitle, a line of prose saying what it governs,
+      // then one paragraph per decision with its tab to the left — and a
+      // decision the room answers is **the same paragraph wearing the
+      // task's tab**, because the rule and the question about it are one
+      // object standing in one place. ctx.tasksFor lets a surface hang a
+      // member's own answer-task under the setting it answers (the
+      // convenor's surface: the setting watches, the answer asks).
+      if (g.sections) {
+        const para = (c) => (ctx.open === c.k
+          ? '<div class="cpara open">' + cardFor({ ...g, cards: [c] }) + '</div>'
+          : '<div class="cpara"><span class="chipcol">' + chipHtml(c, ctx, {}) + '</span>' +
+            '<p class="cptext"><b>' + esc(c.ansFor ? 'Your answer' : c.t) + '</b><span class="cpv"> — ' +
+            ctx.summary(c) + '</span></p></div>');
+        const withTasks = (c) => para(c) +
+          (ctx.tasksFor ? ctx.tasksFor(c).map(para).join('') : '');
+        const wants = g.sections.reduce((n, sec) => n + sec.cards
+          .reduce((m, c) => m + (ctx.mustAct(c) ? 1 : 0) +
+            (ctx.tasksFor ? ctx.tasksFor(c).filter((t) => ctx.mustAct(t)).length : 0), 0), 0);
         return '<div class="setrow constsec" id="pile-' + g.key + '">' +
           '<div class="pilelab"><span class="pilehead">' + esc(g.label) + '</span>' +
-          (g.who ? '<div class="pilewho">' + g.who() + '</div>' : '') +
           (g.intro ? g.intro() : '') + '</div>' +
-          order.map((c) => (ctx.open === c.k
-            ? '<div class="cpara open">' + cardFor({ ...g, cards: [c] }) + '</div>'
-            : '<div class="cpara"><span class="chipcol">' + chipHtml(c, ctx, {}) + '</span>' +
-              '<p class="cptext"><b>' + esc(c.t) + '</b><span class="cpv"> — ' +
-              ctx.summary(c) + '</span></p></div>')).join('') +
-          (g.extra ? g.extra() : '') +
-          '<span class="pilen">' + esc(g.note(g.cards.filter((c) => ctx.mustAct(c)).length)) + '</span></div>';
+          g.sections.map((sec) => '<div class="csec">' +
+            '<h3 class="cst">' + esc(sec.title) + '</h3>' +
+            '<p class="csintro">' + sec.text + '</p>' +
+            (sec.who ? '<div class="pilewho">' + sec.who() + '</div>' : '') +
+            sec.cards.map(withTasks).join('') +
+            (sec.block ? sec.block() : '') + '</div>').join('') +
+          '<span class="pilen">' + esc(g.note(wants)) + '</span></div>';
       }
       const holds = g.cards.some((c) => ctx.open === c.k);
       if (holds) return '<div class="setrow open" id="pile-' + g.key + '">' + cardFor(g) + '</div>';

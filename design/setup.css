@@ -448,3 +448,13 @@ button.cline:hover b { text-decoration: underline; }
 .constsec .cpara.notab .cptext { padding-top: 0; }
 .constsec .cpara.open { margin: var(--s3) 0; }
 .constsec .pilelab { margin-bottom: var(--s3); }
+
+/* the constitution's sections (Ed, 2026-08-18): a subtitle at the document's
+   own second level, a line of prose saying what the section governs, then
+   the decision paragraphs — the members' tasks standing among them. */
+.constsec .csec { margin: var(--s4) 0 var(--s5); }
+.constsec .cst { margin: 0 0 2px; font-size: var(--t-ui); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em; }
+.constsec .csintro { margin: 0 0 var(--s3); font-size: var(--t-small);
+  color: var(--muted); max-width: 60ch; }
+.constsec .csec .pilewho { margin: 0 0 var(--s3); }

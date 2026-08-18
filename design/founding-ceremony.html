@@ -292,32 +292,18 @@
 
   const face = (p, ghost) => '<span class="pf' + (ghost ? ' ghost' : '') + '">' +
     avHtml(ghost ? {} : p) + esc(ghost ? 'Not named yet' : p.n) + '</span>';
-  const groups = () => [
-    { key: 'convenor', label: 'Constitution', cards: CONVENOR,
-      who: () => face({ n: 'Wren Ashby', pic: 'c0' }),
-      paras: true,
-      // the room's constitutional questions are tasks in the membership pile
-      // — one tab, one card — so their **rule** appears here as a tabless
-      // paragraph: what is settled states its answer, what is running says
-      // only how far the room has got (blindness intact)
-      extra: () => ROOM.filter((c) => c.kind === 'constitutional')
-        .map((c) => '<div class="cpara notab"><p class="cptext"><b>' + esc(c.t) + '</b><span class="cpv"> — ' +
-          (S.state === 'settled' ? esc(c.result || '—')
-            : 'being answered · ' + Math.min(c.in || 0, E) + ' of ' + E) + '</span></p></div>').join(''),
-      intro: () => {
-        const line = (g, t, v, k) => '<' + (k ? 'button' : 'span') + ' class="cline"' +
-          ' title="' + esc(t) + '"' + (k ? ' data-card="' + k + '"' : '') + '>' +
-          '<span class="cg">' + g + '</span><span><b>' + v + '</b></span>' +
-          '</' + (k ? 'button' : 'span') + '>';
-        return '<div class="constlist">' +
-          line('🎩', 'Convenor', 'Wren Ashby · drafting too · 🏴') +
-          line('⏱️', 'Constituted', S.state === 'settled' ? 'constituted Tuesday 14:02'
-            : 'not yet constituted — when everyone is ready') + '</div>';
-      },
-      note: (n) => (n ? n + ' to acknowledge' : 'settled before you arrived') },
-    { key: 'room', label: 'Membership', cards: ROOM.concat(GATES),
+  // **The sections of the constitution** (Ed, 2026-08-18: the members'
+  // choices are *about the constitution*, so each stands as a task in the
+  // section it decides — the rule and the question about it are one
+  // paragraph wearing one tab). Same five sections as the convenor's
+  // surface, because it is the same document.
+  const SEC = [
+    { key: 'members', title: 'Membership',
+      text: 'Who is in the room, how anybody joins or leaves it, and how each member appears in it.',
+      keys: ['roster', 'policy', 'lapse', 'machines', 'myname', 'mypic', 'canpropose', 'canjudge'],
+      who: () => ROSTER.map((p) => face(p)).join(''),
       // **Applicants** (Ed, 2026-08-18): a subsection of Membership — the
-      // people asking to be in the room, each one an ordinary proposal the
+      // people asking to be in the room, each an ordinary proposal the
       // members are judging
       block: () => {
         const show = S.state === 'settled' || (S.state === 'applicant' && S.app.submitted);
@@ -326,10 +312,33 @@
         return '<div class="applicants"><span class="eyebrow">Applicants</span>' +
           '<span class="pf">' + avHtml(who) + esc(who.n) +
           '<span class="appnote">· a proposal (✏️) · ' + APPLICANT.judged + ' of ' + E + ' judged</span></span></div>';
+      } },
+    { key: 'deciding', title: 'Decisions',
+      text: 'How a change carries: how many must weigh in, how sure the room must be, and when the document ends.',
+      keys: ['ending', 'quorum', 'bar', 'pace'] },
+    { key: 'privacy', title: 'Privacy',
+      text: 'Who is seen doing what — proposing, signing, judging — and who may read the document at all.',
+      keys: ['authorship', 'signing', 'judgments', 'chamber'] },
+    { key: 'rate', title: 'Proposal Rate',
+      text: 'How often anybody may put something to the room.',
+      keys: ['grant', 'drip'] },
+    { key: 'doc', title: 'The Document',
+      text: 'Its name, its address, and the text it starts from.',
+      keys: ['text', 'title', 'slug'] },
+  ];
+  const secAll = () => SEC.map((s2) => ({ ...s2, cards: s2.keys.map(card).filter(Boolean) }));
+  const groups = () => [
+    { key: 'constitution', label: 'Constitution',
+      sections: secAll(),
+      intro: () => {
+        const line = (g, t, v) => '<span class="cline" title="' + esc(t) + '">' +
+          '<span class="cg">' + g + '</span><span><b>' + v + '</b></span></span>';
+        return '<div class="constlist">' +
+          line('🎩', 'Convenor', 'Wren Ashby · drafting too · 🏴') +
+          line('⏱️', 'Constituted', S.state === 'settled' ? 'constituted Tuesday 14:02'
+            : 'not yet constituted — when everyone is ready') + '</div>';
       },
-      // Wren convened it and is drafting, so they are in the membership too
-      who: () => ROSTER.map((p) => face(p)).join(''),
-      note: (n) => (n ? n + ' still want you' : 'all answered') },
+      note: (n) => (n ? n + ' still want you' : 'all answered — settled before you arrived') },
   ];
 
   // **Your own answers gate your own proposing** (Ed, 2026-08-17). You should
@@ -409,14 +418,12 @@
       document.getElementById('mebtn').innerHTML = avHtml({ n: S.app.name || '?', pic: S.app.pic }, 'face');
       return;
     }
-    const gs = groups().slice().reverse()
-      .map((g) => ({ ...g, cards: g.cards.filter((c) =>
+    const secs = secAll().map((s2) => ({ ...s2, cards: s2.cards.filter((c) =>
         c.isGate ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done') }))
-      .filter((g) => g.cards.length);
-    rail.innerHTML = '<ul>' + gs.map((g) =>
-      '<li class="qhead">' + esc(g.label) + '</li>' +
-      g.cards.map((c) => railEntry(c, ctx)).join('')).join('') + '</ul>' +
-      '';
+      .filter((s2) => s2.cards.length);
+    rail.innerHTML = '<ul>' + secs.map((s2) =>
+      '<li class="qhead">' + esc(s2.title) + '</li>' +
+      s2.cards.map((c) => railEntry(c, ctx)).join('')).join('') + '</ul>';
     document.getElementById('mebtn').innerHTML = avHtml(me(), 'face');
   }
 

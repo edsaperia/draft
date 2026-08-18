@@ -439,7 +439,34 @@
   const ANS = CARDS.filter((c) => c.key && ANSWER[c.k]).map((c) => ({
     k: 'ans-' + c.k, g: c.g, t: c.t, kind: c.kind, own: 'you', ansFor: c.k }));
   const LIVE = () => CARDS.concat(ANS, GATES).filter(visible);
-  const pileOf = (c) => (c.own === 'you' ? 'room' : 'convenor');
+  // **The sections of the constitution** (Ed, 2026-08-18): subtitles his
+  // ask, the grouping and the prose mine to draft — each line says what
+  // the section governs, in the surface's own words.
+  const SEC = [
+    { key: 'members', title: 'Membership',
+      text: 'Who is in the room, how anybody joins or leaves it, and how each member appears in it.',
+      keys: ['roster', 'policy', 'lapse', 'machines', 'myemail', 'myname', 'mypic', 'canpropose', 'canjudge'],
+      who: () => (members().length ? members().map((p) => face(p)).join('') : face({}, true)) },
+    { key: 'deciding', title: 'Decisions',
+      text: 'How a change carries: how many must weigh in, how sure the room must be, and when the document ends.',
+      keys: ['ending', 'quorum', 'bar', 'pace'] },
+    { key: 'privacy', title: 'Privacy',
+      text: 'Who is seen doing what — proposing, signing, judging — and who may read the document at all.',
+      keys: ['authorship', 'signing', 'judgments', 'chamber'] },
+    { key: 'rate', title: 'Proposal Rate',
+      text: 'How often anybody may put something to the room.',
+      keys: ['grant', 'drip'] },
+    { key: 'doc', title: 'The Document',
+      text: 'Its name, its address, and the text it starts from.',
+      keys: ['title', 'slug', 'text'] },
+  ];
+  const secLive = () => SEC.map((s2) => ({ ...s2,
+    cards: s2.keys.map(card).filter((c) => c && visible(c)) }))
+    .filter((s2) => s2.cards.length);
+  // a delegated setting's paragraph is followed by the convenor's own
+  // answer-task, the same card a member gets, standing where the rule is
+  const tasksFor = (c) => (c.key && ANSWER[c.k]
+    ? [card('ans-' + c.k)].filter((x) => x && visible(x)) : []);
   // A member who has not opened the document yet is drawn faintly rather than
   // left out: they are on the membership, which is the fact the heading is
   // stating, and whether they have looked at it yet is a different one.
@@ -447,19 +474,11 @@
     (p && p.in === false ? ' waiting' : '') + '">' +
     avHtml(ghost ? {} : p, p && p.in === false ? 'pending' : '') +
     esc(ghost ? 'Not named yet' : p.n) + '</span>';
-  const groups = () => {
-    const live = LIVE();
-    return [
-      { key: 'convenor', label: 'Constitution', cards: live.filter((c) => pileOf(c) === 'convenor'),
-        who: () => face(me(), !S.myname.trim()),
-        paras: true, intro: constBlock,
-        note: (n) => (n ? n + ' still to confirm' : 'all confirmed') },
-      { key: 'room', label: 'Membership', cards: live.filter((c) => pileOf(c) === 'room'),
-        // the convenor is in the membership too, if they are a drafter (Ed)
-        who: () => (members().length ? members().map((p) => face(p)).join('') : face({}, true)),
-        note: (n) => (n ? n + ' still to hand over' : 'theirs to answer') },
-    ].filter((g) => g.cards.length);
-  };
+  const groups = () => [
+    { key: 'constitution', label: 'Constitution', intro: constBlock,
+      sections: secLive(),
+      note: (n) => (n ? n + ' still to confirm or answer' : 'all confirmed') },
+  ];
 
   const VALUE = {
     text: () => { const n = [...prose.children].filter((b) => b.textContent.trim()).length;
@@ -594,7 +613,7 @@
   const ctx = {
     get open() { return S.open; }, get E() { return E(); },
     clauseFor: (c) => (c.k === 'roster' ? rosterClause() : ''),
-    mustAct, settled, summary, value, isRoom, waiting, news,
+    mustAct, settled, summary, value, isRoom, waiting, news, tasksFor,
     // the head says **what kind of decision this is** and then who holds it,
     // because the kind is what tells you what could ever be done about it
     bandLabel: (c) => (c.isGate ? 'Not a decision · it follows from the others'
@@ -621,11 +640,12 @@
       // nothing is being asked of you (Ed, 2026-08-18: *everyone should only
       // see cards they can act on*). ⏳ entries stay: they are where the
       // fill says how far the room has got.
-      '<ul>' + gs.map((g) => ({ ...g, cards: g.cards.filter((c) =>
-        c.isGate ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done') }))
-        .filter((g) => g.cards.length).map((g) =>
-        '<li class="qhead">' + esc(g.label) + '</li>' +
-        g.cards.map((c) => railEntry(c, ctx)).join('')).join('') + '</ul>';
+      '<ul>' + secLive().map((s2) => ({ ...s2, cards: s2.cards
+        .flatMap((c) => [c].concat(tasksFor(c)))
+        .filter((c) => (c.isGate ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done')) }))
+        .filter((s2) => s2.cards.length).map((s2) =>
+        '<li class="qhead">' + esc(s2.title) + '</li>' +
+        s2.cards.map((c) => railEntry(c, ctx)).join('')).join('') + '</ul>';
 
     document.getElementById('stat-stage').textContent =
       canJudge() ? 'open' : canPropose() ? 'proposals open' : 'reading only';
