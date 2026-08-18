@@ -3476,3 +3476,58 @@ The class is set before `offsetHeight` is read, so the layout measures the heigh
 the entry is about to have rather than the one it is leaving.
 
 **A rule that reads what it is about to change is a rule that can chase itself.**
+
+### Running the workflow end to end (2026-08-17)
+
+Ed: *follow the workflow "click on 🔥, make judgement, click on next 🔥, make
+judgement, repeat" from a fresh mockup until all active cards are resolved.*
+
+Done as a scripted run of the **real** path — clicking the rail entry from
+wherever the page happened to be, so every step included the scroll, the card
+swap and the re-render. The automation tab has no `requestAnimationFrame`, which
+normally makes `bringIntoView` hang forever; the way through is that
+`smoothScrollBy` has a reduced-motion branch that scrolls instantly and calls
+its callback synchronously, so **emulating `prefers-reduced-motion` makes the
+whole flow testable** without stubbing anything the product owns. Worth
+remembering: it is the one lever that turns this surface's animation-gated logic
+into something a headless run can walk through.
+
+**Eighteen judgments, no failures, no errors.** What the run actually measured:
+
+- every 🔥 opened on the **first click**, 18 of 18;
+- the flame handed over on every submit — never stale, never two;
+- **the clause moved 0px on every submit**, all eighteen. That is `keepStill`
+  holding through a re-render that rebuilds the rail, the marks, the wash and the
+  wire underneath it;
+- cards arrived at the reading line: 15 of 18 at y116–117, after scrolls of up to
+  **±6,281px** between consecutive flames;
+- the ending is correct — the last judgment empties the queue, the salience
+  diagonal is **served** (§8.3a), and answering it leaves nothing.
+
+One probe assertion fired and was wrong, which is worth recording because the
+thing it caught is a feature: `race-guests-notice` had no ✓ after its judgment,
+because judging out the last pair turned it into a **⚔️ deadlock card**. That is
+Q297/298 working exactly as specified — you never see ⚔️ until the race has
+nothing left to ask *you*. **A test that asserts the shape of the surface will
+fail on the states that change shape**, and reading the failure rather than the
+assertion is the whole skill.
+
+### And it ends in silence (Q313)
+
+The mechanics are sound and the run is **completely unacknowledged**. You answer
+the last question, the diagonal arrives, you answer that, and the screen is a
+screen with nothing on it that wants you. Q291 recorded a third state — a panel
+saying the priorities are as clear as more answers would make them — and it went
+out with the *offer* when the diagonal became *served, not offered*. Right about
+the offer; it took the completion state with it by accident, and those are
+different things.
+
+Underneath it is a larger one. The topbar's *confidence bar 74%* and *quorum 5 of
+14* are **static markup**, never re-rendered — eighteen judgments move neither.
+In a mockup that is fidelity rather than a bug, but the shape of the problem is
+real: a workflow made entirely of judging is exactly the one that never touches
+the only place a session's vital signs live, so the member contributing most is
+shown the least evidence that contributing did anything.
+
+The surface already has a place that says *something happened* — the
+`room-pulse`. It has no place that says *something changed*.
