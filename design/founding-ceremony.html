@@ -105,7 +105,13 @@
     document.getElementById('prose').innerHTML = DOC.map(([t, x], i) =>
       t === 'p' ? '<p>' + esc(x) + '</p>'
         : '<h2 class="docline lvl' + (t === 'h1' ? 1 : 2) + '" id="h' + i + '">' + esc(x) + '</h2>').join('');
-    document.getElementById('toc').innerHTML = DOC.map(([t, x], i) =>
+    // the constitution's sections lead the table of contents (Ed,
+    // 2026-08-18) — they are document sections like any other
+    document.getElementById('toc').innerHTML =
+      '<li class="lvl1"><a href="#cs-constitution">Constitution</a></li>' +
+      SEC.filter((s2) => !s2.railOnly).map((s2) =>
+        '<li class="lvl2"><a href="#cs-' + s2.key + '">' + esc(s2.title) + '</a></li>').join('') +
+      DOC.map(([t, x], i) =>
       t === 'p' ? '' : '<li class="lvl' + (t === 'h1' ? 1 : 2) + '"><a href="#h' + i + '">' + esc(x) + '</a></li>').join('');
   }
 
@@ -301,7 +307,7 @@
   const SEC = [
     { key: 'members', title: 'Membership',
       text: 'Who is in the room, how anybody joins or leaves it, and how each member appears in it.',
-      keys: ['roster', 'policy', 'lapse', 'myname', 'mypic', 'canpropose', 'canjudge'],
+      keys: ['roster', 'policy', 'lapse', 'myname', 'mypic'],
       // **Members and Applications are subsections** (Ed, 2026-08-18):
       // Members IS the list, 🪪 beside it, your own row at the bottom
       // wearing ✋ and 🖼️; Applications is the 🤝 decision with the
@@ -311,11 +317,13 @@
         const others = ROSTER.filter((p) => p.n !== S.myname);
         const list = '<div class="memlist">' +
           others.map((p) => '<div class="memrow">' + avHtml(p) +
-            '<span class="mn">' + esc(p.n) + '</span></div>').join('') +
+            '<span class="mn">' + esc(p.n) +
+            (p.n === 'Wren Ashby' ? ' <span class="chip convenor">convenor</span>' : '') +
+            '</span></div>').join('') +
           '<div class="memrow meRow">' + h.pile(my) + avHtml(me()) +
           '<span class="mn">' + esc(S.myname || 'Not named yet') + ' <span class="chip">you</span></span></div></div>';
         const openId = my.find((c) => S.open === c.k);
-        const rest = ['lapse', 'canpropose', 'canjudge'].map(card).filter(Boolean);
+        const rest = ['lapse'].map(card).filter(Boolean);
         return '<h2 class="docline lvl3">Members</h2>' +
           (S.open === 'roster' ? h.para(card('roster'))
             : '<div class="cpara"><span class="chipcol">' + h.chip(card('roster')) + '</span>' + list + '</div>') +
@@ -325,18 +333,19 @@
           rest.map((c) => h.para(c)).join('');
       },
       },
+    // the gates lead the Proposals section (Ed, 2026-08-18): what proposing
+    // and judging wait on is the first thing this section says
+    { key: 'rate', title: 'Proposals',
+      text: 'How often anybody may put something to the room, and whether an AI drafts proposals alongside them.',
+      keys: ['canpropose', 'canjudge', 'grant', 'drip', 'machines'] },
     { key: 'deciding', title: 'Decisions',
       text: 'How a change carries: how many must weigh in, how sure the room must be, and when the document ends.',
       keys: ['ending', 'quorum', 'bar', 'pace'] },
     { key: 'privacy', title: 'Privacy',
       text: 'Who is seen doing what — proposing, signing, judging — and who may read the document at all.',
       keys: ['authorship', 'signing', 'judgments', 'chamber'] },
-    { key: 'rate', title: 'Proposals',
-      text: 'How often anybody may put something to the room, and whether an AI drafts proposals alongside them.',
-      keys: ['grant', 'drip', 'machines'] },
-    { key: 'doc', title: 'The Document',
-      text: 'Its name, its address, and the text it starts from.',
-      keys: ['text', 'title', 'slug'] },
+    { key: 'doc', title: 'The Document', railOnly: true,
+      text: '', keys: ['text', 'title', 'slug'] },
   ];
   const secAll = () => SEC.map((s2) => ({ ...s2, cards: s2.keys.map(card).filter(Boolean) }));
   // **Applicants** (Ed, 2026-08-18): the list of people asking to be in
@@ -354,14 +363,9 @@
   const groups = () => [
     { key: 'constitution', label: 'Constitution',
       sections: secAll(),
-      intro: () => {
-        const line = (g, t, v) => '<span class="cline" title="' + esc(t) + '">' +
-          '<span class="cg">' + g + '</span><span><b>' + v + '</b></span></span>';
-        return '<div class="constlist">' +
-          line('🎩', 'Convenor', 'Wren Ashby · drafting too · 🏴') +
-          line('⏱️', 'Constituted', S.state === 'settled' ? 'constituted Tuesday 14:02'
-            : 'not yet constituted — when everyone is ready') + '</div>';
-      },
+      lead: (h) => h.para(card('slug')),
+      textAnchor: (h) => (S.open === 'text' ? h.para(card('text'))
+        : '<div class="cpara textanchor"><span class="chipcol">' + h.chip(card('text')) + '</span></div>'),
       note: (n) => (n ? n + ' still want you' : 'all answered — settled before you arrived') },
   ];
 
@@ -442,10 +446,15 @@
     machines: 'There are no AI proposals.',
   };
   const decisionLine = (c) => {
+    // which answers, and how far the room has got (Ed, 2026-08-18): the
+    // fixture's members-done count is the floor of the per-question counts
+    const allDone = () => Math.min(...ROOM.filter((x) => x.own !== 'you').map((x) => Math.min(x.in || 0, E)));
     if (c.k === 'canpropose') return mine() ? 'Proposing is open.'
-      : 'Members may begin proposing when their own answers have been given.';
+      : 'Members may begin proposing when they have answered the questions the Convenor delegated — ' +
+        allDone() + ' of ' + E + ' have answered everything.';
     if (c.k === 'canjudge') return roomDone() ? 'Judging on proposals began on Tuesday at 14:02.'
-      : 'Members may begin judging proposals when everyone’s answers are in.';
+      : 'Members may begin judging proposals when every member has answered everything — ' +
+        allDone() + ' of ' + E + ' have.';
     if (c.own === 'you') return value(c);
     if (isRoom(c)) {
       return (c.in || 0) >= E

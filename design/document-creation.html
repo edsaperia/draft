@@ -207,7 +207,13 @@
   }
   function renderToc() {
     const hs = [...prose.children].filter((b) => b.dataset.h !== undefined);
-    document.getElementById('toc').innerHTML = hs.map((b, i) => {
+    // the constitution's sections lead the table of contents (Ed,
+    // 2026-08-18); on this surface they appear as their cards do
+    document.getElementById('toc').innerHTML =
+      '<li class="lvl1"><a href="#cs-constitution">Constitution</a></li>' +
+      secLive().filter((s2) => !s2.railOnly).map((s2) =>
+        '<li class="lvl2"><a href="#cs-' + s2.key + '">' + esc(s2.title) + '</a></li>').join('') +
+      hs.map((b, i) => {
       b.id = 'h' + i;
       const lvl = (b.className.match(/lvl(\d)/) || [0, 2])[1];
       return '<li class="lvl' + lvl + '"><a href="#h' + i + '">' + esc(b.dataset.h) + '</a></li>';
@@ -449,7 +455,7 @@
   const SEC = [
     { key: 'members', title: 'Membership',
       text: 'Who is in the room, how anybody joins or leaves it, and how each member appears in it.',
-      keys: ['roster', 'policy', 'lapse', 'myemail', 'myname', 'mypic', 'canpropose', 'canjudge'],
+      keys: ['roster', 'policy', 'lapse', 'myemail', 'myname', 'mypic'],
       // **Members and Applications are subsections** (Ed, 2026-08-18):
       // Members IS the list — 🪪, the tab for invitations, stands beside
       // it, and the bottom row is your own membership wearing the ✋ and
@@ -463,10 +469,10 @@
             '<span class="mn">' + esc(p.n || p.e || '—') +
             (p.in ? '' : ' <span class="chip pending">invited</span>') + '</span></div>').join('') +
           '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
-          '<span class="mn">' + esc(S.myname || 'Not named yet') + ' <span class="chip">you</span>' +
+          '<span class="mn">' + esc(S.myname || 'Not named yet') + ' <span class="chip convenor">convenor</span> <span class="chip">you</span>' +
           (iDraft() ? '' : ' <span class="chip">clerk</span>') + '</span></div></div>';
         const openId = my.find((c) => S.open === c.k);
-        const rest = ['lapse', 'myemail', 'canpropose', 'canjudge']
+        const rest = ['lapse', 'myemail']
           .map(card).filter((c) => c && visible(c));
         return '<h2 class="docline lvl3">Members</h2>' +
           (S.open === 'roster' ? h.para(card('roster'))
@@ -479,18 +485,20 @@
             : '') +
           rest.map((c) => h.para(c) + h.tasks(c)).join('');
       } },
+    // the gates lead the Proposals section (Ed, 2026-08-18)
+    { key: 'rate', title: 'Proposals',
+      text: 'How often anybody may put something to the room, and whether an AI drafts proposals alongside them.',
+      keys: ['canpropose', 'canjudge', 'grant', 'drip', 'machines'] },
     { key: 'deciding', title: 'Decisions',
       text: 'How a change carries: how many must weigh in, how sure the room must be, and when the document ends.',
       keys: ['ending', 'quorum', 'bar', 'pace'] },
     { key: 'privacy', title: 'Privacy',
       text: 'Who is seen doing what — proposing, signing, judging — and who may read the document at all.',
       keys: ['authorship', 'signing', 'judgments', 'chamber'] },
-    { key: 'rate', title: 'Proposals',
-      text: 'How often anybody may put something to the room, and whether an AI drafts proposals alongside them.',
-      keys: ['grant', 'drip', 'machines'] },
-    { key: 'doc', title: 'The Document',
-      text: 'Its name, its address, and the text it starts from.',
-      keys: ['title', 'slug', 'text'] },
+    // rail-only: the title is the heading, the link leads the constitution,
+    // and the starting text anchors the prose (Ed, 2026-08-18)
+    { key: 'doc', title: 'The Document', railOnly: true,
+      text: '', keys: ['title', 'slug', 'text'] },
   ];
   const secLive = () => SEC.map((s2) => ({ ...s2,
     cards: s2.keys.map(card).filter((c) => c && visible(c)) }))
@@ -507,8 +515,12 @@
     avHtml(ghost ? {} : p, p && p.in === false ? 'pending' : '') +
     esc(ghost ? 'Not named yet' : p.n) + '</span>';
   const groups = () => [
-    { key: 'constitution', label: 'Constitution', intro: constBlock,
+    { key: 'constitution', label: 'Constitution',
       sections: secLive(),
+      lead: (h) => (visible(card('slug')) ? h.para(card('slug')) : ''),
+      textAnchor: (h) => (!visible(card('text')) ? ''
+        : S.open === 'text' ? h.para(card('text'))
+        : '<div class="cpara textanchor"><span class="chipcol">' + h.chip(card('text')) + '</span></div>'),
       note: (n) => (n ? n + ' still to confirm or answer' : 'all confirmed') },
   ];
 
@@ -706,9 +718,11 @@
     if (c.ansFor) return answered(c)
       ? 'The Convenor has answered as a member.'
       : 'The Convenor has not yet answered as a member.';
-    if (c.k === 'canpropose') return canPropose() && !LIVE().some(owesAnswer)
+    if (c.k === 'canpropose') { const done = LIVE().some(owesAnswer) ? 0 : 1;
+      return canPropose() && done
       ? 'Members may propose as soon as they arrive.'
-      : 'Members may begin proposing when the starting text has been decided and their own answers have been given.';
+      : 'Members may begin proposing when the starting text has been decided and they have answered the questions the Convenor delegated — ' +
+        done + ' of ' + E() + ' have answered everything.'; }
     if (c.k === 'canjudge') return canJudge()
       ? 'Judging on proposals is open.'
       : 'Members may begin judging proposals when the whole constitution has been decided.';

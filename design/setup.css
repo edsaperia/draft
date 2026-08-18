@@ -493,3 +493,9 @@ button.cline:hover b { text-decoration: underline; }
    document axis — session-view's own model — so the strip lands where the
    closed tab stood and the active tab still carries under the card edge. */
 .constsec .cpara.open > .setupcard { margin-left: -14px; }
+
+/* the starting-text task anchors the prose itself (Ed, 2026-08-18): a
+   zero-height row at the band's end whose 📄 tab hangs in the gutter beside
+   the first block of the document text below */
+.cpara.textanchor { height: 0; min-height: 0; margin: 0; }
+.cpara.textanchor .chipcol { top: 10px; }

@@ -218,12 +218,21 @@ window.SETUP = (function () {
             (ctx.decisionLine ? ctx.decisionLine(c) : ctx.summary(c)) + '</p></div></div>');
         const withTasks = (c) => para(c) +
           (ctx.tasksFor ? ctx.tasksFor(c).map(para).join('') : '');
+        const H = { para, chip: (c) => chipHtml(c, ctx, {}),
+          pile: (cards) => pileHtml(cards, ctx),
+          paraWith: (c, sibs) => (ctx.open === c.k
+            ? '<div class="cpara open">' + cardFor({ ...g, cards: sibs }) + '</div>' : ''),
+          tasks: (c) => (ctx.tasksFor ? ctx.tasksFor(c).map(para).join('') : '') };
         const wants = g.sections.reduce((n, sec) => n + sec.cards
           .reduce((m, c) => m + (ctx.mustAct(c) ? 1 : 0) +
             (ctx.tasksFor ? ctx.tasksFor(c).filter((t) => ctx.mustAct(t)).length : 0), 0), 0);
         return '<div class="setrow constsec" id="pile-' + g.key + '">' +
-          '<div class="pilelab"><span class="pilehead">' + esc(g.label) + '</span>' +
+          '<div class="pilelab"><span class="pilehead" id="cs-constitution">' + esc(g.label) + '</span>' +
           (g.intro ? g.intro() : '') + '</div>' +
+          // **the link stands right at the top, under the Constitution
+          // heading** (Ed, 2026-08-18) — the document's address is the
+          // first thing the constitution states
+          (g.lead ? g.lead(H) : '') +
           // a section may compose its own body from the shared helpers —
           // the Membership section does (Ed, 2026-08-18: a Members
           // subsection that is the list itself, an Applications subsection
@@ -233,18 +242,18 @@ window.SETUP = (function () {
           // document's own (Ed, 2026-08-18): sections at lvl2, subsections
           // at lvl3, state lines plain paragraphs — only avatars and names
           // keep their compact dress
-          g.sections.map((sec) => '<div class="csec">' +
-            '<h2 class="docline lvl2">' + esc(sec.title) + '</h2>' +
+          g.sections.filter((sec) => !sec.railOnly).map((sec) => '<div class="csec">' +
+            '<h2 class="docline lvl2" id="cs-' + sec.key + '">' + esc(sec.title) + '</h2>' +
             '<p class="csintro">' + sec.text + '</p>' +
             (sec.who ? '<div class="pilewho">' + sec.who() + '</div>' : '') +
-            (sec.body ? sec.body({ para, chip: (c) => chipHtml(c, ctx, {}),
-              pile: (cards) => pileHtml(cards, ctx),
-              paraWith: (c, sibs) => (ctx.open === c.k
-                ? '<div class="cpara open">' + cardFor({ ...g, cards: sibs }) + '</div>' : ''),
-              tasks: (c) => (ctx.tasksFor ? ctx.tasksFor(c).map(para).join('') : '') })
-              : sec.cards.map(withTasks).join('')) +
+            (sec.body ? sec.body(H) : sec.cards.map(withTasks).join('')) +
             (sec.block ? sec.block() : '') + '</div>').join('') +
-          '<span class="pilen">' + esc(g.note(wants)) + '</span></div>';
+          '<span class="pilen">' + esc(g.note(wants)) + '</span>' +
+          // **the starting text is a task beside the text proper** (Ed,
+          // 2026-08-18): a zero-height anchor at the band's end, its 📄 tab
+          // hanging in the gutter beside the first block of the prose that
+          // follows
+          (g.textAnchor ? g.textAnchor(H) : '') + '</div>';
       }
       const holds = g.cards.some((c) => ctx.open === c.k);
       if (holds) return '<div class="setrow open" id="pile-' + g.key + '">' + cardFor(g) + '</div>';
