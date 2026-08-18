@@ -493,16 +493,11 @@
     headFor: (c) => {
       if (!(c && c.own === 'founder' && !c.isGate && c.k !== 'text' &&
         !needsOk(c) && !motionOn(c))) return null;
-      const rule = DECIDED[c.k] || value(c);
-      // a radio-composed setting's head is its incumbent: it wears the
-      // lane-bar, Preferred while no draft stands against it (the quick
-      // card's own grammar — the head has a lane exactly when keeping the
-      // clause is one of the answers)
-      if (!CURRENT[c.k] || !PROPOSE[c.k]) return rule;
-      const pressed = !(S.draft && S.draft.k === c.k && S.draft.to);
-      return rule + '<div class="lanebar"><button class="lanepick" aria-pressed="' + pressed + '"' +
-        ' data-mval="' + esc(CURRENT[c.k]) + '"><span class="dot"></span>' +
-        '<span class="off">Prefer this</span><span class="on">Preferred</span></button></div>';
+      // the head is **reference only**, as on the decision cards (Ed,
+      // 2026-08-18): the blocks below are the alternatives, and keeping
+      // what stands is preferring none of them — a pressed Preferred
+      // toggles off, which is what greys the 🏛️ again
+      return DECIDED[c.k] || value(c);
     },
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
@@ -999,7 +994,9 @@
     const mo = ev.target.closest('[data-motion]');
     if (mo) { S.mAns[S.open] = mo.dataset.motion; return render(); }
     const mv = ev.target.closest('[data-mval]');
-    if (mv) { if (CURRENT[S.open] === mv.dataset.mval) { S.draft = null; return render(); }
+    if (mv) { if (S.draft && S.draft.k === S.open && S.draft.to === mv.dataset.mval) {
+        S.draft = null; return render(); }
+      if (CURRENT[S.open] === mv.dataset.mval) { S.draft = null; return render(); }
       if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
       S.draft.to = mv.dataset.mval; return render(); }
     const mj = ev.target.closest('[data-mjoinbtn]');
