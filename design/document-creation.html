@@ -151,7 +151,7 @@
       grant: null, drip: null },
     barBy: 'roster', tClose: 78, shape: 'ramp', tStart: 55,
     quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
-    joinBy: 'invite',
+    joinBy: 'invite', rosterBy: 'roster',
     lapse: 'roster', lapseDays: 90,
     authorship: 'roster', signing: 'roster', judgments: 'roster',
     authorshipSet: 'anonymous', signingSet: 'nobody', judgmentsSet: 'never',
@@ -491,6 +491,7 @@
     // and says who is still only invited
     roster: () => arrived() + (arrived() === 1 ? ' member' : ' members') +
       (S.joinBy === 'apply' ? ' · applications open' : S.joinBy === 'open' ? ' · open to join' : '') +
+      (S.rosterBy === 'convenor' ? ' · 👑 reserved' : '') +
       (members().length > arrived() ? ' · ' + (members().length - arrived()) + ' invited' : '') +
       (iDraft() ? '' : ' — you are the clerk, and not one of them'),
     ending: () => (perpetual() ? 'Never — it runs until it is frozen'
@@ -590,7 +591,7 @@
     const line = (g, t, v) => '<span class="cline" title="' + esc(t) + '">' +
       '<span class="cg">' + g + '</span><span><b>' + v + '</b></span></span>';
     return '<div class="constlist">' +
-      line('🎩', 'Convenor', esc(S.myname || (iDraft() ? 'Unnamed' : 'Anonymous')) + (iDraft() ? '' : ' · clerk')) +
+      line('🎩', 'Convenor', esc(S.myname || (iDraft() ? 'Unnamed' : 'Anonymous')) + (iDraft() ? '' : ' · clerk') + (S.rosterBy === 'convenor' ? ' · 👑' : '')) +
       line('⏱️', 'Constituted', canJudge() ? 'constituted — judging is open'
         : 'not yet constituted — it happens when judging opens') +
       // summary(), not value(): a delegated setting states "the members
@@ -609,7 +610,7 @@
       : c.ansFor ? KIND[c.kind] + ' · yours to answer, as a member'
       : c.kind === 'personal' ? 'Yours alone'
       : KIND[c.kind || 'ordinary'] + ' · ' +
-        (isRoom(c) ? 'the members decide' : 'the convenor sets this')),
+        (isRoom(c) ? 'the members decide' : 'reserved by the convenor')),
   };
 
   // ---- the rail ----------------------------------------------------------
@@ -704,6 +705,18 @@
       '<p class="why">An invitation <b>is the link</b>, sent by email — there are no passwords — which is why nobody could be invited before the link existed. It is an invitation <b>to become a member</b>: until somebody opens the document they are listed as <i>invited</i> and count toward nothing. Until judging opens you may invite and uninvite freely — nothing has been decided yet, so nothing is being changed. After that, both directions are constitutional motions — you included: your own row above is <b>pre-checked</b>, and you may untick it and be the clerk, who administers without writing, but after judging starts you join the way anybody joins. A joiner starts with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</p>' +
       '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1">' +
       '<button class="btn" data-act="add">Invite</button></div></div>' +
+      // **Who holds it** (Ed, 2026-08-18): delegated — the members' — by
+      // default, like every constitutional setting. A convenor may **reserve**
+      // it instead (reserved is the word for not-delegated, Ed), and a
+      // document with a reserved membership is a 👑: the convenor keeps
+      // unilateral invite-and-remove past the start. What keeps a crown from
+      // being immortal is the lapse rule: it applies to the crown as to any
+      // member, and a lapsed crown passes to the members.
+      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Who holds it</div>' +
+      '<div class="choice" role="radiogroup" aria-label="Who holds the membership">' +
+      opt(S, 'rosterBy', 'roster', 'The members', 'After the start, joining and leaving are the members’ to decide — invitations by everyone’s consent, applications at the bar.') +
+      opt(S, 'rosterBy', 'convenor', 'Reserved — I hold it', 'This document is a 👑: you keep invite-and-remove for its life. A crown lapses like a member — go quiet past the lapse rule and the membership becomes the members’.') +
+      '</div>' +
       // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
       // the gate the Apply card hangs off. An application becomes an
       // ordinary proposal to grant membership, judged like any other.

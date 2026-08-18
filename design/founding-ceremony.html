@@ -166,6 +166,7 @@
       // 🎩 folded in (Ed, 2026-08-18): whether the convenor is a member is
       // their own row in this list, pre-checked when the document was made
       setBy: 'Invited by Wren Ashby — themselves included, their own row pre-checked',
+      readNote: 'The membership here is the members’ — joining and leaving are theirs to decide. Had Wren <b>reserved</b> it, this document would be a 👑, with invite-and-remove staying in one hand; a crown lapses like a member, and a lapsed crown passes to the members.',
 
       readNote: 'Anybody else who can read this is not a member — nothing is known about them, they have a link and nothing else. That is the 🔭 setting, not this one.' },
     // One card, two routes to change it — see the ⏰ entry in document-creation.
@@ -344,7 +345,7 @@
     // is what tells you what could ever be done about it
     bandLabel: (c) => (c.kind === 'personal' ? 'Yours alone'
       : KIND[c.kind || 'ordinary'] + ' · ' +
-        (c.own === 'convenor' ? 'set by the convenor' : 'the members decide')),
+        (c.own === 'convenor' ? 'reserved by the convenor' : 'the members decide')),
   };
 
   // ---- the rail ----------------------------------------------------------
