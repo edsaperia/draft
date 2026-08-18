@@ -62,13 +62,20 @@ only*).
  └─(the title is first because it is the first fact that exists)
 
 🔗 Link (the document now exists)
- ├─⇒ 🪪 Membership         an invitation IS the link
+ ├─⇒ 🤝 Applications       an invitation IS the link, and the door is decided
+ │                          before anyone is invited through it (Ed: "I need
+ │                          to decide Applications before I can do Membership.
+ │                          And I need to do Link before those.")
  ├─⋯ ✋ Your Name           pacing: nothing about a name needs the link
  ├─⋯ 🖼️ Your Picture       pacing
  └─⋯ 📄 Starting Text      pacing
 
+🤝 Applications
+ └─⇒ 🪪 Membership         the door before the room: inviting is governed by
+                            the join policy, and who holds the register is
+                            part of what Applications settles
+
 🪪 Membership (a roster now exists)
- ├─⇒ 🤝 Applications       who holds the register; how anyone joins later
  ├─⇒ ⏰ When Does It End?  delegable — "the members decide" needs members
  ├─⇒ 👥 Quorum             delegable, and counted against the roster
  ├─⇒ 👤 ✍️ 👁️ 🌍 💤 🤖 🪙   delegable — same reason

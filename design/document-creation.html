@@ -284,14 +284,14 @@
     // 🎩 folded into 🪪 (Ed, 2026-08-18): whether the convenor is a
     // member is just whether they invite themselves, asked as their own
     // pre-checked row in the membership card.
-    { k: 'roster', g: '🪪', t: 'Membership', kind: 'constitutional', dep: ['slug'], ready: () => members().length >= 1, changeable: true },
+    { k: 'roster', g: '🪪', t: 'Membership', kind: 'constitutional', dep: ['policy'], ready: () => members().length >= 1, changeable: true },
     // **The register and the door are two decisions** (Ed, 2026-08-18: *We
     // should separate "Membership" which is the register of people who are
     // members from "Membership Policy" which is how people become members
     // after the ceremony*). The one-card test agrees: who is in the room
     // now, and how anybody gets in later, can be answered differently and
     // on their own.
-    { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', dep: ['roster'], changeable: true },
+    { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', dep: ['slug'], changeable: true },
     // optional for a clerk (Ed, 2026-08-18): an anonymous convenor is a
     // perfectly ordinary thing — they can simply not set a name or picture
     { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you', dep: ['slug'], ready: () => (iDraft() ? !!S.myname.trim() : true), changeable: true },
