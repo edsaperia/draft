@@ -68,7 +68,7 @@ only*).
  └─⋯ 📄 Starting Text      pacing
 
 🪪 Membership (a roster now exists)
- ├─⇒ 🚪 Membership Policy  who holds the register; how anyone joins later
+ ├─⇒ 🤝 Applications       who holds the register; how anyone joins later
  ├─⇒ ⏰ When Does It End?  delegable — "the members decide" needs members
  ├─⇒ 👥 Quorum             delegable, and counted against the roster
  ├─⇒ 👤 ✍️ 👁️ 🌍 💤 🤖 🪙   delegable — same reason
