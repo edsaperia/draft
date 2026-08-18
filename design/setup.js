@@ -98,8 +98,14 @@ window.SETUP = (function () {
   };
   /* The ✔ is drawn rather than an emoji plate for the session-view's own
      reason: one function draws it, so the columns cannot drift. */
-  const markOf = (c, ctx) => {
+  const markOf = (c, ctx, tab) => {
     const st = stateOf(c, ctx);
+    // **A retired tab keeps its subject glyph** (Ed, 2026-08-18): the piles
+    // stand in one place, hold the whole constitution, and most of what is
+    // in them can still be acted on — they are a menu, and a menu of ✔s
+    // names nothing. The grey wash still says settled; only the rail entry
+    // retires to the drawn ✔, because an entry is leaving, not filing.
+    if (tab && st === 'done') return c.g;
     return st === 'ask' ? c.g : st === 'wait' ? '⏳' : st === 'yours' ? '✏️' : TICK;
   };
 
@@ -137,7 +143,7 @@ window.SETUP = (function () {
       : st === 'ask' ? ' — waiting on you' : st === 'wait' ? ' — waiting on others'
       : st === 'news' ? ' — decided; it waits for your OK'
       : st === 'yours' ? ' — yours, being judged' : ' — settled')) + '"') +
-    '><span aria-hidden="true">' + markOf(c, ctx) + '</span>' +
+    '><span aria-hidden="true">' + markOf(c, ctx, true) + '</span>' +
     (o.inert ? '' : '<span class="sr">' + esc(c.t) + '</span>') + '</span>';
   };
 

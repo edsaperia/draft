@@ -21,7 +21,7 @@ custom emoji and just become ✔s*. Five states, implemented once in
 | **wait** | ⏳ | grey `--lc-closed` | yes (its fill is the watching UI) — except gates, which wait as pile tabs only | your part is done or there is no part for you: the room is answering, the inbox holds the next move, a gate's blockers stand above it |
 | **news** | drawn ✔ | green `--lc-changed` | yes, pinned until OK | a decision arrived: the room's number came back, a rule you never chose binds you, a gate opened. The unacknowledged-decision rule, arriving from the live rail |
 | **yours** | ✏️ | blue `--lc-yours` | yes | a thing of your own in flight (a submitted application); fill = how far judging has got |
-| **done** | drawn ✔ | grey | **no** — it leaves the rail | settled. The tab stays in the pile (a settled setting is the rule, not history); the constitution block is where it is found by name, and its lines are buttons that open the card |
+| **done** | rail: drawn ✔ · tab: **its own glyph** | grey | **no** — it leaves the rail | settled. The tab stays in the pile wearing its subject glyph (Ed, 2026-08-18: the piles stand in one place, most of their contents can still be acted on — *it's basically a menu*); the grey wash says settled. The constitution block's lines are buttons too |
 
 Rules carried over whole from session-view: grey means nothing is being asked
 of you; hot for actions, cold for information; the ✔ is drawn (one function),
