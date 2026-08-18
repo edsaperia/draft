@@ -324,6 +324,14 @@
      roster under Membership. It is what turns the band at the head of the
      document from a list of settings into the room itself, and it costs nothing
      because both piles were already named after a holder. */
+  /* the constitution, stated: one line per constitutional setting, the glyph
+     doing the naming the tabs already taught */
+  .setrow .constlist { display: flex; flex-direction: column; gap: 1px;
+    margin: 4px 0 3px; font-size: var(--t-cap); color: var(--muted); }
+  .setrow .constlist .cline { display: flex; gap: 6px; align-items: baseline; }
+  .setrow .constlist .cg { flex: none; width: 18px; text-align: center; }
+  .setrow .constlist b { color: var(--fg); font-weight: 600; }
+
   .setrow .pilewho { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); margin: 3px 0 2px; }
   .setrow .pilewho .pf { font-size: var(--t-cap); }
   .setrow .pilewho .pf.ghost { color: var(--muted); font-style: italic; }

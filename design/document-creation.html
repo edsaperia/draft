@@ -37,7 +37,7 @@
    cuts the other way twice, on 2026-08-18: *when it ends* swallowed *whether it
    ends*, because **never** is one of the answers to *when*; and the stake stopped
    being a card at all, because it is a flat 1 in the mechanism and a card for it
-   was offering a decision nobody has. Then ✒️ split the other way on Ed’s Q341 rethink — the close bar is consent where the ramp is pacing, two kinds — so seventeen became eighteen.
+   was offering a decision nobody has. Then ✒️ split the other way on Ed’s Q341 rethink — the close bar is consent where the ramp is pacing, two kinds — so seventeen became eighteen — and 💤 *Do memberships lapse?* (Ed, closing Q345) made it nineteen.
 
    What is left in this file is its own fixture and the bodies of the cards a
    convenor fills in. The piles, the strip, the cable, the rail entry, the card
@@ -60,12 +60,25 @@
     white-space: pre-wrap; color: var(--muted); font-size: var(--t-body); line-height: 1.6;
   }
 
-  /* the verification mail, rendered as itself — the mockup's inbox */
-  .mailprev { border: 1px solid var(--border); border-radius: var(--r-md);
-    padding: var(--s3) var(--s4); margin: var(--s3) 0; background: var(--light); }
-  .mailprev .mailhead { font-size: var(--t-cap); color: var(--muted);
-    border-bottom: 1px solid var(--border); padding-bottom: var(--s2); margin-bottom: var(--s2); }
-  .mailprev p { margin: 0 0 var(--s3); }
+  /* The verification mail, as a modal standing for your inbox. Deliberately
+     NOT on the design system — no tokens, Arial, an email client's idea of a
+     page — because this is a preview of another medium, and soon enough it is
+     a real email whose look must owe nothing to this surface (Ed, 2026-08-18). */
+  #mailmodal { position: fixed; inset: 0; z-index: 90; background: rgba(20,20,24,0.4);
+    display: flex; align-items: center; justify-content: center; }
+  .mailwin { background: #fff; width: min(560px, 92vw); border-radius: 6px;
+    font-family: Arial, Helvetica, sans-serif; color: #202124;
+    box-shadow: 0 14px 44px rgba(0,0,0,0.35); overflow: hidden; }
+  .mw-head { display: flex; gap: 12px; align-items: baseline; padding: 12px 16px;
+    background: #f2f2f2; font-size: 12px; color: #5f6368; }
+  .mw-head span:first-child { font-weight: bold; color: #202124; }
+  .mw-head button { margin-left: auto; border: 0; background: none; cursor: pointer;
+    color: #5f6368; font-size: 14px; }
+  .mw-subj { padding: 14px 20px 0; font-size: 17px; font-weight: bold; }
+  .mw-body { padding: 10px 20px 24px; font-size: 14px; line-height: 1.5; }
+  .mw-act { display: inline-block; margin-top: 10px; padding: 10px 18px;
+    background: #1a73e8; color: #fff; border-radius: 4px; cursor: pointer;
+    font-weight: bold; text-decoration: none; }
 
   /* the controls the share box took with it, now on the 🔗 and ✉️ cards */
   .setupcard textarea { width: 100%; font-size: var(--t-ui); padding: var(--s2);
@@ -129,13 +142,14 @@
 
   const S = {
     title: '', slug: '',
-    myname: 'Wren Ashby', mypic: 'c0', myemail: '', emailSent: false, emailVerified: false,
+    myname: 'Wren Ashby', mypic: 'c0', myemail: '', emailSent: false, emailVerified: false, mailOpen: false,
     ending: 'roster', endsAt: '2026-08-20T18:00',
     myAns: { ending: null, bar: null, quorum: null, authorship: null,
       signing: null, judgments: null, chamber: null, machines: null,
       grant: null, drip: null },
     barBy: 'roster', tClose: 78, shape: 'ramp', tStart: 55,
     quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
+    lapse: 'roster', lapseDays: 90,
     authorship: 'roster', signing: 'roster', judgments: 'roster',
     authorshipSet: 'anonymous', signingSet: 'nobody', judgmentsSet: 'never',
     grantBy: 'convenor', grant: 4,
@@ -169,6 +183,16 @@
   const perpetual = () => S.ending === 'perpetual';
   const SLUG_OK = /^[a-z0-9][a-z0-9-]{2,}$/;
   const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // the mail templates — kept as data, because soon enough these are real
+  // emails and the words should not be tangled into a view
+  const MAILS = {
+    verify: (title, to) => ({
+      to, from: 'docs.vote',
+      subject: 'Log in to create “' + title + '”',
+      body: 'You have created a document called <b>' + esc(title) + '</b> on docs.vote.',
+      action: 'Log in to create it',
+    }),
+  };
   // The mockup's stand-in for the real registry check: these slugs exist, so
   // a title that collides gets a short suffix — which is also why the
   // fixture's own link ends in one.
@@ -242,7 +266,7 @@
   // which **pile** a card stands in: taking a setting back moves its tab from
   // the members' pile to the convenor's, in front of you.
   const DELEGABLE = ['ending', 'barBy', 'quorumBy', 'authorship', 'signing',
-    'judgments', 'grantBy', 'dripBy', 'chamber', 'auditor'];
+    'judgments', 'grantBy', 'dripBy', 'chamber', 'auditor', 'lapse'];
   const delegated = (key) => DELEGABLE.includes(key) && S[key] === 'roster';
 
   // **The gates are cards** (Ed, 330b) — see the ceremony surface for the
@@ -288,7 +312,7 @@
 
     // — the rest, together once the hat is on ----------------------------
     { k: 'roster', g: '✉️', t: 'Membership', kind: 'constitutional', dep: ['myrole'], ready: () => members().length >= 1, changeable: true },
-    { k: 'myname', g: '📛', t: 'Your name', kind: 'personal', own: 'you', dep: ['myrole'], ready: () => !!S.myname.trim(), changeable: true },
+    { k: 'myname', g: '✋', t: 'Your name', kind: 'personal', own: 'you', dep: ['myrole'], ready: () => !!S.myname.trim(), changeable: true },
     { k: 'mypic', g: '🖼️', t: 'Your picture', kind: 'personal', own: 'you', dep: ['myrole'], changeable: true },
     // A document may start empty, which is why this is not a blocker on having
     // content but on having *decided*: a page nobody has looked at and a page
@@ -372,6 +396,15 @@
       rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.',
       takes: 'The document takes the most private', result: 'Roster only',
       dist: [5, 8, 1], distTop: 1, distEnds: ['Roster only', 'Public'] },
+    // **Do memberships lapse?** (Ed, 2026-08-18, closing Q345 with the sunset
+    // option.) Constitutional — it is a rule about the roster, and it passes
+    // §9.6's test the honest way round: it re-rates nothing already decided,
+    // and it binds by consent, since everyone stated the shortest spell they
+    // would accept on the way in.
+    { k: 'lapse', g: '💤', t: 'Do memberships lapse?', kind: 'constitutional', gate: 'judge', key: 'lapse', dep: ['roster'], p: 0.29,
+      rule: 'Each member states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all — so nobody is lapsed faster than they accepted.',
+      takes: 'The document takes the longest', result: 'Never',
+      dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
     { k: 'machines', g: '🤖', t: 'Is there a machine member?', kind: 'constitutional', gate: 'judge', key: 'auditor', dep: ['roster'], p: 0.86,
       rule: 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.',
       takes: 'The document takes the most restrictive', result: 'People only',
@@ -429,8 +462,9 @@
   const groups = () => {
     const live = LIVE();
     return [
-      { key: 'convenor', label: 'Convenor', cards: live.filter((c) => pileOf(c) === 'convenor'),
+      { key: 'convenor', label: 'Constitution', cards: live.filter((c) => pileOf(c) === 'convenor'),
         who: () => face(me(), !S.myname.trim()),
+        block: constBlock,
         note: (n) => (n ? n + ' still to confirm' : 'all confirmed') },
       { key: 'room', label: 'Membership', cards: live.filter((c) => pileOf(c) === 'room'),
         // the convenor is in the membership too, if they are a drafter (Ed)
@@ -470,7 +504,18 @@
     drip: () => S.drip + ' back per ' + (perpetual() ? S.dripPer + ' hours' : S.dripPer + '% of the window') +
       ', up to ' + S.cap,
     chamber: () => ({ link: 'Anyone with the link', closed: 'Roster only', public: 'Public' }[S.chamber]),
+    lapse: () =>
+      '<div class="unlocks">Part of the constitution — judging waits on it.</div>' +
+      '<p class="why">Whether a membership lapses after a long quiet spell. A lapsed member leaves the quorum base the way an abstainer does — the room can finish without them — and their judgments keep counting; they are warned by email first, sent the package (the document as it stands, and the record so far) when it happens, and coming back is just logging in. On a perpetual document this is the answer to the member who will neither participate nor leave.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      opt(S, 'lapse', 'days', 'They lapse', 'After a quiet spell you choose.',
+        '<span class="setrow2">' + num(S, 'lapseDays', 'Quiet days', 7, 365) + '</span>') +
+      opt(S, 'lapse', 'never', 'Never', 'A membership holds however long its holder is away.') +
+      theyDecide('lapse', 'Each states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.') +
+      '</div>',
     machines: () => (S.auditor === true ? 'The coherence auditor, ' + S.auditorBudget + ' ✏️s' : 'People only'),
+    lapse: () => (S.lapse === 'never' ? 'Never — however quiet'
+      : 'After ' + S.lapseDays + ' quiet days'),
     canpropose: () => (canPropose() ? 'Open' : 'Waiting on the starting text'),
     canjudge: () => (canJudge() ? 'Open' : 'Waiting on the constitution'),
   };
@@ -483,6 +528,7 @@
     judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
     chamber: (v) => 'You said ' + ({ closed: 'roster only', link: 'anyone with the link', public: 'public' }[v] || v),
     machines: (v) => 'You said ' + (v ? 'a machine member is fine' : 'people only'),
+    lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' quiet days'),
     grant: (v) => 'You said ' + v + ' ✏️s',
     drip: (v) => 'You said ' + v + ' per 10%',
   };
@@ -490,6 +536,7 @@
     ending: 'The latest you will accept', authorship: 'The most you will accept',
     signing: 'The most you will accept', judgments: 'The most you will accept',
     chamber: 'The most you will accept', machines: 'The most you will accept',
+    lapse: 'The shortest you will accept',
     grant: 'The fewest you will accept', drip: 'The slowest you will accept' };
   const value = (c) => (c.ansFor
     ? esc(answered(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
@@ -508,8 +555,37 @@
   const ceremonyRunning = () => ceremony().some((c) => isRoom(c) && (c.in || 0) < E());
   const canJudge = () => ceremony().every(settled) && !ceremonyRunning();
 
+  // the membership list, as the ✉️ card's clause — the current text of the
+  // rule, with the ✕ that edits it, replacing the copy that lived in the body
+  const rosterClause = () =>
+    '<div class="roster clauselist">' + S.roster.map((p, i) =>
+      '<div class="rperson">' + avHtml(p) +
+      '<span><span class="nm">' + esc(p.n) + (p.convenor ? ' <span class="chip convenor">convenor</span>' : '') +
+      '</span><br><span class="em">' + esc(p.e) + '</span></span>' +
+      '<span class="chip' + (p.in ? '' : ' pending') + '">' +
+      (p.role === 'clerk' ? 'clerk' : 'member') + (p.in ? '' : ' · invited') + '</span>' +
+      (p.convenor ? '<span class="xdrop"> </span>' : '<button class="xdrop" data-drop="' + i + '">✕</button>') +
+      '</div>').join('') + '</div>';
+
+  // **The constitution, stated** (Ed, 2026-08-18): who convened it, when it
+  // was constituted — the moment judging opens — and every constitutional
+  // setting's current value, one line each, the glyph doing the naming.
+  const constBlock = () => {
+    const line = (g, t, v) => '<span class="cline" title="' + esc(t) + '">' +
+      '<span class="cg">' + g + '</span><span><b>' + v + '</b></span></span>';
+    return '<div class="constlist">' +
+      line('🎩', 'Convenor', esc(S.myname || 'Unnamed') + (iDraft() ? '' : ' · clerk')) +
+      line('⏱️', 'Constituted', canJudge() ? 'constituted — judging is open'
+        : 'not yet constituted — it happens when judging opens') +
+      // summary(), not value(): a delegated setting states "the members
+      // decide", never the convenor's own draft of a number
+      LIVE().filter((c) => c.kind === 'constitutional' && !c.ansFor && !['myrole'].includes(c.k))
+        .map((c) => line(c.g, c.t, summary(c))).join('') + '</div>';
+  };
+
   const ctx = {
     get open() { return S.open; }, get E() { return E(); },
+    clauseFor: (c) => (c.k === 'roster' ? rosterClause() : ''),
     mustAct, settled, summary, value, isRoom,
     // the head says **what kind of decision this is** and then who holds it,
     // because the kind is what tells you what could ever be done about it
@@ -594,15 +670,13 @@
         '<p class="setnote">Changing it starts verification again — the new address has to prove it works too.</p>'
       : S.emailSent
       ? '<p class="why">Sent to <b>' + esc(S.myemail) + '</b>. Nothing is saved yet, so a typo here still costs nothing — which is exactly why this happens now and not after.</p>' +
-        '<div class="mailprev"><div class="mailhead">docs.vote · to ' + esc(S.myemail) + '</div>' +
-        '<p>You have created a document called <b>' + esc(S.title) + '</b> on docs.vote.</p>' +
-        '<button class="btn btn-approve" data-act="clickmail">Log in to create it</button></div>' +
-        '<p class="setnote">This is the email itself — in the mockup, your inbox is right here. The button is the magic link: clicking it proves the address works and carries you on to the save.</p>' +
-        '<button class="btn" data-act="editemail">Wrong address?</button>'
+        '<div style="margin-top:var(--s3)"><button class="btn" data-act="openmail">Open your inbox</button> ' +
+        '<button class="btn" data-act="editemail">Wrong address?</button></div>' +
+        '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works and carries you on to the save.</p>'
       : '<p class="why">Before anything is saved, this address has to prove it works — because there are no passwords, and it is the only way back in. A document saved under an address with a typo in it would be lost the moment this tab closes.</p>' +
         '<span class="fld"><label>Your email</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>' +
         '<div style="margin-top:var(--s3)"><button class="btn"' + (EMAIL_OK.test(S.myemail) ? '' : ' disabled') + ' data-act="sendverify">Send the link</button></div>' +
-        '<p class="setnote">Yours alone — it appears nowhere in the document, and it is not your name: who you are in the room is the 📛 card, later.</p>'),
+        '<p class="setnote">Yours alone — it appears nowhere in the document, and it is not your name: who you are in the room is the ✋ card, later.</p>'),
     myname: () => nameBody(me()),
     mypic: () => pictureBody(me()),
     // **Whether the convenor is in it is its own question** (Ed, 2026-08-18).
@@ -618,18 +692,11 @@
       '<span class="exp">A member like anybody else: a wallet, judgments, a place in quorum, and the opening questions to answer with the rest of the room.</span></div>' +
       '<div class="pick' + (iDraft() ? '' : ' on') + '"><button class="lanepick" aria-pressed="' + !iDraft() + '" data-me="clerk">' +
       '<span class="dot"></span><span>No</span></button>' +
-      '<span class="exp">You are the <b>clerk</b>: you set it up and keep it running, but the document is not yours to write — no wallet, no judgments, no place in quorum, and no opening questions to answer.</span></div></div>',
+      '<span class="exp">You are the <b>clerk</b>: you set it up and keep it running, but the document is not yours to write — no wallet, no judgments, no place in quorum, and no opening questions to answer.</span></div></div>' +
+      '<p class="setnote">A roster fact, not a role: this only decides whether you are in the <b>opening</b> membership. After judging starts your membership is ordinary membership — it lapses and leaves like anybody’s — and joining again happens the way anybody joins.</p>',
     roster: () =>
       '<p class="why">An invitation <b>is the link</b>, sent by email — there are no passwords — which is why nobody could be invited before the link existed. It is an invitation <b>to become a member</b>: until somebody opens the document they are listed as <i>invited</i> and count toward nothing. Until judging opens you may invite and uninvite freely — nothing has been decided yet, so nothing is being changed (§9.6a). After that, both directions are constitutional motions. A joiner gets the base grant plus the drip accrued so far, and quorum recomputes.</p>' +
-      '<div class="roster">' + S.roster.map((p, i) =>
-        '<div class="rperson">' + avHtml(p) +
-        '<span><span class="nm">' + esc(p.n) + (p.convenor ? ' <span class="chip convenor">convenor</span>' : '') +
-        '</span><br><span class="em">' + esc(p.e) + '</span></span>' +
-        '<span class="chip' + (p.in ? '' : ' pending') + '">' +
-        (p.role === 'clerk' ? 'clerk' : 'member') + (p.in ? '' : ' · invited') + '</span>' +
-        (p.convenor ? '<span class="xdrop"> </span>' : '<button class="xdrop" data-drop="' + i + '">✕</button>') +
-        '</div>').join('') +
-      '<div class="addrow"><input type="email" placeholder="name@example.com" data-add="1">' +
+      '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1">' +
       '<button class="btn" data-act="add">Invite</button></div></div>' +
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
       '<textarea placeholder="Paste addresses here, one per line" data-emails="1"></textarea>' +
@@ -728,6 +795,15 @@
       opt(S, 'chamber', 'link', 'Anyone with the link') +
       opt(S, 'chamber', 'closed', 'Roster only') +
       opt(S, 'chamber', 'public', 'Public', 'Listed and readable by anyone.') + '</div>',
+    lapse: () =>
+      '<div class="unlocks">Part of the constitution — judging waits on it.</div>' +
+      '<p class="why">Whether a membership lapses after a long quiet spell. A lapsed member leaves the quorum base the way an abstainer does — the room can finish without them — and their judgments keep counting; they are warned by email first, sent the package (the document as it stands, and the record so far) when it happens, and coming back is just logging in. On a perpetual document this is the answer to the member who will neither participate nor leave.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      opt(S, 'lapse', 'days', 'They lapse', 'After a quiet spell you choose.',
+        '<span class="setrow2">' + num(S, 'lapseDays', 'Quiet days', 7, 365) + '</span>') +
+      opt(S, 'lapse', 'never', 'Never', 'A membership holds however long its holder is away.') +
+      theyDecide('lapse', 'Each states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.') +
+      '</div>',
     machines: () =>
       '<p class="why">A machine member holds ✏️s like anybody else and competes on the same terms.</p>' +
       '<div class="choice" role="radiogroup">' +
@@ -769,12 +845,25 @@
     if (b && S.open) b.disabled = !ready(card(S.open));
   }
 
+  function renderMail() {
+    let el = document.getElementById('mailmodal');
+    if (!S.mailOpen) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement('div'); el.id = 'mailmodal'; document.body.appendChild(el); }
+    const m = MAILS.verify(S.title, S.myemail);
+    el.innerHTML = '<div class="mailwin" role="dialog" aria-label="Email">' +
+      '<div class="mw-head"><span>' + esc(m.from) + '</span><span>to ' + esc(m.to) + '</span>' +
+      '<button data-mailclose="1" title="Close">✕</button></div>' +
+      '<div class="mw-subj">' + esc(m.subject) + '</div>' +
+      '<div class="mw-body"><p>' + m.body + '</p>' +
+      '<a class="mw-act" data-act="clickmail">' + esc(m.action) + '</a></div></div>';
+  }
+
   const render = () => {
     // the identity cards and the roster are two views of one person, so the
     // convenor's row follows what those cards say rather than holding a copy
     const row = meRow(); if (row) { row.n = S.myname; row.pic = S.mypic; }
     resolveCounts();
-    renderTitle(); renderRail(); renderBand(); drawWire(wires, S.open);
+    renderTitle(); renderRail(); renderBand(); drawWire(wires, S.open); renderMail();
   };
 
   // ---- wiring ------------------------------------------------------------
@@ -838,11 +927,15 @@
       return render(); }
     if (ev.target.closest('button[data-close]')) { S.open = null; return render(); }
     const mv2 = ev.target.closest('[data-act="sendverify"]');
-    if (mv2) { S.emailSent = true; return render(); }
+    if (mv2) { S.emailSent = true; S.mailOpen = true; return render(); }
+    const om = ev.target.closest('[data-act="openmail"]');
+    if (om) { S.mailOpen = true; return render(); }
+    if (ev.target.closest('[data-mailclose]') ||
+        (ev.target.id === 'mailmodal')) { S.mailOpen = false; return render(); }
     const cm = ev.target.closest('[data-act="clickmail"]');
     // clicking the mail's login button IS arriving back, so it settles the
     // card itself — there is no second act of confirming you exist
-    if (cm) { S.emailVerified = true; S.seen.add('myemail'); S.open = 'slug'; return render(); }
+    if (cm) { S.emailVerified = true; S.mailOpen = false; S.seen.add('myemail'); S.open = 'slug'; return render(); }
     const ee = ev.target.closest('[data-act="editemail"]');
     if (ee) { S.emailSent = false; return render(); }
     const an = ev.target.closest('[data-ans]');

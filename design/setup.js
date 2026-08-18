@@ -148,6 +148,10 @@ window.SETUP = (function () {
       return '<div class="setrow" id="pile-' + g.key + '" data-pile="' + g.key + '">' + pileHtml(g.cards, ctx) +
         '<div class="pilelab"><span class="pilehead">' + esc(g.label) + '</span>' +
         (g.who ? '<div class="pilewho">' + g.who() + '</div>' : '') +
+        // the Constitution heading carries a statement of itself — the
+        // constitutional settings' current values, legible without opening
+        // a single tab (Ed, 2026-08-18)
+        (g.block ? g.block() : '') +
         '<span class="pilen">' + esc(g.note(left)) + '</span></div></div>';
     }).join('');
   }
@@ -226,7 +230,13 @@ window.SETUP = (function () {
       '<div class="clausehead">' +
       '<div class="headlab"><span>' + esc(ctx.bandLabel(c)) + '</span></div>' +
       '<div class="headclause">' + stripHtml(siblings || [c], ctx) +
-      '<h2 class="rtext">' + esc(c.t) + '</h2></div></div>' +
+      '<h2 class="rtext">' + esc(c.t) + '</h2>' +
+      // **The clause a setting card opens from can be a thing, not a line**
+      // (Ed, 2026-08-18): the membership card keeps the membership list at
+      // its head, because the list IS the clause — the current text of the
+      // rule being decided about — exactly as a decision card keeps its
+      // paragraph. Any card may supply one through ctx.clauseFor.
+      (ctx.clauseFor ? (ctx.clauseFor(c) || '') : '') + '</div></div>' +
       '<div class="field">' + body + '</div>' +
       '<div class="race-mid commitrow">' + foot + '</div></div>';
   }
@@ -588,6 +598,14 @@ window.SETUP = (function () {
         (A.ending && A.ending !== 'never' ? ' value="' + esc(A.ending) + '"' : '') + '></span>') +
       ansRow(A.ending === 'never', 'ending', 'never', 'Never', 'It runs until it is frozen.') +
       '</div>' + BLINDNOTE,
+    lapse: (A) =>
+      '<p class="why">Whether a membership <b>lapses</b> after a long quiet spell — and if so, how long. A lapsed member leaves the quorum base the way an abstainer does: the room can finish without them, their judgments keep counting, and coming back is as simple as logging in — the rule was consented to, so returning needs nobody’s permission. Warnings go out by email before it happens, and the package — the document as it stands, and the record so far — goes out with the lapse itself.</p>' +
+      '<span class="fld"><label>The shortest quiet spell you will accept</label>' +
+      '<span class="setrow2"><input class="num" type="number" min="7" max="365"' +
+      ' data-ansnum="lapse"' + (typeof A.lapse === 'number' ? ' value="' + A.lapse + '"' : '') + '>' +
+      '<span class="setnote" style="margin:0">days</span></span></span>' +
+      ansRow(A.lapse === 'never', 'lapse', 'never', 'Never', 'Memberships do not lapse, however quiet.') +
+      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>longest</b> anybody asks for — never being the longest of all — so nobody is lapsed faster than they accepted.</p>',
     grant: (A) =>
       '<p class="why">The fewest ✏️s you would accept being given to start with. The charter takes the <b>most generous</b> answer.</p>' +
       '<span class="fld"><label>✏️s to start with</label><input class="num" type="number" min="0" max="40"' +

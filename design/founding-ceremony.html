@@ -91,6 +91,7 @@
     chamber: null, ending: null, machines: null,
     // a motion you are writing, and your answers to the ones in flight
     draft: null, mAns: {},
+    lapse: null,
     seen: new Set(), okd: new Set(), open: null };
   const me = () => ({ n: S.myname, pic: S.mypic });
 
@@ -116,7 +117,7 @@
   // holds it by default (§9.7), because the room can take an ordinary setting
   // back cheaply and cannot take a constitutional one back at all.
   const ROOM = [
-    { k: 'myname', g: '📛', t: 'Your name', kind: 'personal', own: 'you', ready: () => !!S.myname.trim() },
+    { k: 'myname', g: '✋', t: 'Your name', kind: 'personal', own: 'you', ready: () => !!S.myname.trim() },
     { k: 'mypic', g: '🖼️', t: 'Your picture', kind: 'personal', own: 'you' },
     { k: 'quorum', g: '👥', t: 'Quorum', kind: 'constitutional', in: 11,
       rule: 'Each member states the <b>lowest quorum</b> they will accept and the charter takes the highest.',
@@ -142,6 +143,10 @@
       rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.',
       takes: 'The charter takes the most private', result: 'Roster only',
       dist: [5, 8, 1], distTop: 1, distEnds: ['Roster only', 'Public'] },
+    { k: 'lapse', g: '💤', t: 'Do memberships lapse?', kind: 'constitutional', in: 8,
+      rule: 'Each member states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.',
+      takes: 'The document takes the longest', result: 'Never',
+      dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
     { k: 'machines', g: '🤖', t: 'Is there a machine member?', kind: 'constitutional', in: 12,
       rule: 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.',
       takes: 'The charter takes the most restrictive', result: 'People only',
@@ -155,14 +160,11 @@
     { k: 'title', g: '🏷️', t: 'The title', own: 'convenor', kind: 'ordinary', v: 'The Hollow Oak Club — House Charter' },
     { k: 'slug', g: '🔗', t: 'The link', own: 'convenor', kind: 'ordinary', v: 'docs.vote/hollow-oak-4f2a' },
     { k: 'roster', g: '✉️', t: 'Membership', own: 'convenor', kind: 'constitutional', v: 'Fourteen members',
-      // **you should be presented with the roster** (Ed, 2026-08-18): a card
-      // about who is in the room that says only how many is a card you have to
-      // leave to answer the question it raises
-      extra: () => faces(ROSTER, S.myname),
+
       readNote: 'Anybody else who can read this is not a member — nothing is known about them, they have a link and nothing else. That is the 🔭 setting, not this one.' },
     { k: 'myrole', g: '🎩', t: 'Is the convenor a member?', own: 'convenor', kind: 'constitutional', v: 'Yes — Wren Ashby drafts too',
       setBy: 'Chosen by Wren Ashby when they set the charter up',
-      readNote: 'Had the answer been no, Wren would be the <b>clerk</b> — administering without writing, with no wallet, no judgments and no place in quorum.' },
+      readNote: 'Had the answer been no, Wren would be the <b>clerk</b> — administering without writing, with no wallet, no judgments and no place in quorum. A roster fact, not a role: it only put Wren in the opening membership, and since the start their membership has been ordinary membership — it lapses and leaves like anybody’s, and rejoining happens the way anybody joins.' },
     // One card, two routes to change it — see the ⏰ entry in document-creation.
     { k: 'ending', g: '⏰', t: 'When does it end?', own: 'convenor', kind: 'constitutional',
       motionKind: 'ordinary', v: 'Thursday 18:00',
@@ -226,6 +228,7 @@
     quorum: () => S.quorum !== null, bar: () => S.bar !== null,
     authorship: () => !!S.authorship, signing: () => !!S.signing, judgments: () => !!S.judgments,
     chamber: () => !!S.chamber, machines: () => S.machines !== null,
+    lapse: () => S.lapse !== null,
     myname: () => !!S.myname.trim(),
   };
   const ready = (c) => (ANSWERED[c.k] ? ANSWERED[c.k]() : true);
@@ -263,8 +266,22 @@
   const face = (p, ghost) => '<span class="pf' + (ghost ? ' ghost' : '') + '">' +
     avHtml(ghost ? {} : p) + esc(ghost ? 'Not named yet' : p.n) + '</span>';
   const groups = () => [
-    { key: 'convenor', label: 'Convenor', cards: CONVENOR,
+    { key: 'convenor', label: 'Constitution', cards: CONVENOR,
       who: () => face({ n: 'Wren Ashby', pic: 'c0' }),
+      block: () => {
+        const line = (g, t, v) => '<span class="cline" title="' + esc(t) + '">' +
+          '<span class="cg">' + g + '</span><span><b>' + v + '</b></span></span>';
+        return '<div class="constlist">' +
+          line('🎩', 'Convenor', 'Wren Ashby · drafting too') +
+          line('⏱️', 'Constituted', S.state === 'settled' ? 'constituted Tuesday 14:02'
+            : 'not yet constituted — when everyone is ready') +
+          // the block states the DOCUMENT's rule, never your own answer —
+          // a running question shows only how far the room has got
+          CARDS.filter((c) => c.kind === 'constitutional' && c.k !== 'myrole')
+            .map((c) => line(c.g, c.t, c.own === 'convenor' ? value(c)
+              : S.state === 'settled' ? esc(c.result || '—')
+              : 'being answered · ' + Math.min(c.in || 0, E) + ' of ' + E)).join('') + '</div>';
+      },
       note: (n) => (n ? n + ' to acknowledge' : 'settled before you arrived') },
     { key: 'room', label: 'Membership', cards: ROOM.concat(GATES),
       // Wren convened it and is drafting, so they are in the membership too
@@ -296,6 +313,8 @@
       { never: 'never revealed', after: 'revealed after the decision' }[S.judgments]),
     chamber: () => (!S.chamber ? 'The most you will accept' : 'You said ' +
       { closed: 'roster only', link: 'anyone with the link', public: 'public' }[S.chamber]),
+    lapse: () => (S.lapse === null ? 'The shortest you will accept'
+      : S.lapse === 'never' ? 'You said never' : 'You said after ' + S.lapse + ' quiet days'),
     machines: () => (S.machines === null ? 'The most you will accept'
       : 'You said ' + (S.machines ? 'a machine member is fine' : 'people only')),
   };
@@ -305,6 +324,7 @@
 
   const ctx = {
     get open() { return S.open; }, get E() { return E; },
+    clauseFor: (c) => (c.k === 'roster' ? faces(ROSTER, S.myname) : ''),
     mustAct, settled, summary, value, isRoom,
     // the head says **what kind of decision this is** first, because the kind
     // is what tells you what could ever be done about it
@@ -414,6 +434,7 @@
     judgments: () => ANSWER.judgments(S),
     chamber: () => ANSWER.chamber(S),
     machines: () => ANSWER.machines(S),
+    lapse: () => ANSWER.lapse(S),
   };
 
   // A gate card says one thing: what it is waiting for, and whether that has
@@ -460,7 +481,7 @@
           '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
           ' data-ok="' + c.k + '">OK</button>';
       } else if (c.own === 'convenor') {
-        body = readBody(c, ctx) + (c.extra ? c.extra() : '') +
+        body = readBody(c, ctx) +
           (needsOk(c) ? '<p class="setnote">You had no say in this one and it binds you all the same, ' +
             'so it waits here until you have looked at it. <b>OK</b> files it with the rest of the ' +
             'constitution at the head of the charter.</p>' : '');
@@ -502,16 +523,16 @@
 
   // the three states are a fixture switch, so all of them are inspectable
   const COUNTS = { quorum: 11, bar: 9, authorship: 7, signing: 7, judgments: 12,
-    chamber: 6, machines: 12 };
+    chamber: 6, machines: 12, lapse: 8 };
   function setState(k) {
     S.state = k; S.open = null;
     if (k === 'ask') {
-      S.quorum = S.bar = S.machines = null;
+      S.quorum = S.bar = S.machines = null; S.lapse = null;
       S.authorship = S.signing = S.judgments = S.chamber = null;
       S.mypic = ''; S.seen = new Set(); S.okd = new Set(); S.mAns = {}; S.draft = null;
     } else {
       S.quorum = 10; S.bar = 80; S.authorship = 'anonymous'; S.signing = 'nobody';
-      S.judgments = 'never'; S.chamber = 'closed'; S.machines = false;
+      S.judgments = 'never'; S.chamber = 'closed'; S.machines = false; S.lapse = 'never';
       S.mypic = 'c2'; S.seen = new Set(ROOM.map((c) => c.k));
       S.okd = k === 'settled' ? new Set(CONVENOR.map((c) => c.k)) : new Set();
       S.mAns = {}; S.draft = null;
