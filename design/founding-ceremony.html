@@ -510,7 +510,7 @@
     // lives in the pile at the head of the document, which is where you go to
     // look a rule up rather than to be told about it.
     if (S.state === 'applicant') {
-      rail.innerHTML = '<ul><li class="qhead">Membership</li>' +
+      rail.innerHTML = '<ul>' +
         APPCARDS().map((c) => railEntry(c, appCtx)).join('') + '</ul>';
       document.getElementById('mebtn').innerHTML = avHtml({ n: S.app.name || '?', pic: S.app.pic }, 'face');
       return;
@@ -519,7 +519,6 @@
         c.isGate ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done') }))
       .filter((s2) => s2.cards.length);
     rail.innerHTML = '<ul>' + secs.map((s2) =>
-      '<li class="qhead">' + esc(s2.title) + '</li>' +
       s2.cards.map((c) => railEntry(c, ctx)).join('')).join('') + '</ul>';
     document.getElementById('mebtn').innerHTML = avHtml(me(), 'face');
   }

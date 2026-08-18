@@ -376,7 +376,7 @@ window.SETUP = (function () {
       ' style="--washcol: ' + w.col + '; --washbg: ' + w.bg + '; --fill: ' + fill + '">' +
       '<span class="ql"><span class="subj" aria-hidden="true">' + markOf(c, ctx) + '</span>' +
       '<span class="qt">' + esc(c.t) + '</span></span>' +
-      '<span class="qwhy">' + ctx.summary(c) + '</span></button></li>';
+      (ctx.summary(c) ? '<span class="qwhy">' + ctx.summary(c) + '</span>' : '') + '</button></li>';
   }
 
   /* ---- the card shell -----------------------------------------------------

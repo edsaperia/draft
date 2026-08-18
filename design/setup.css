@@ -545,3 +545,15 @@ button.cline:hover b { text-decoration: underline; }
    root so the margin lands — without overflow:hidden's clipping of the
    14px tab overhang. */
 .constsec .cpara.open { display: flow-root; }
+
+/* the rail is a scroll container, and its entries sat flush against its
+   edges — every cast shadow was clipped mid-air (Ed, 2026-08-18: *sidebar
+   cards shadows seem to be broken*). Padding gives the shadows room; the
+   negative margin keeps the column where it stood. */
+.queue.stack { padding: 4px 14px 28px; margin: 0 -14px; }
+
+/* the title card's head is the document title itself (Ed, 2026-08-18:
+   *show me the current state of the title*), at the title's own type;
+   muted while it is still the placeholder */
+.setupcard .clausehead .headrule .headdoct { font-size: var(--t-lead); font-weight: 600; }
+.setupcard .clausehead .headrule .headdoct.ph { color: var(--muted); font-weight: 400; }

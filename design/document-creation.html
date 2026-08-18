@@ -145,7 +145,7 @@
     // render — the rail is never a list of blanks — and stays yellow until it
     // has been opened and committed.
     seen: new Set(), okd: new Set(),
-    open: 'title',
+    open: null,
   };
   const me = () => ({ n: S.myname, pic: S.mypic });
 
@@ -587,7 +587,7 @@
   const value = (c) => (c.ansFor
     ? esc(answered(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
     : esc(VALUE[c.k]()));
-  const summary = (c) => (isRoom(c)
+  const summary = (c) => (c.k === 'title' ? '' : isRoom(c)
     ? (settled(c) ? '<i>The members decide</i> · ' + someIn(c.in || 0, E()) : '<i>The members decide</i>')
     : value(c));
 
@@ -727,6 +727,11 @@
   const ctx = {
     get open() { return S.open; }, get E() { return E(); },
     clauseFor: (c) => (c.k === 'roster' ? rosterClause() : ''),
+    // the title card's head is the document title itself — the clause,
+    // opened — never the word “Title” (Ed, 2026-08-18)
+    headFor: (c) => (c.k === 'title'
+      ? '<span class="headdoct' + (S.title ? '' : ' ph') + '">' + esc(S.title || 'Untitled document') + '</span>'
+      : null),
     mustAct, summary, value, isRoom, waiting, news, tasksFor, decisionLine,
   };
 
@@ -747,7 +752,6 @@
         .flatMap((c) => [c].concat(tasksFor(c)))
         .filter((c) => (c.isGate ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done')) }))
         .filter((s2) => s2.cards.length).map((s2) =>
-        '<li class="qhead">' + esc(s2.title) + '</li>' +
         s2.cards.map((c) => railEntry(c, ctx)).join('')).join('') + '</ul>';
 
     document.getElementById('stat-stage').textContent =
@@ -761,6 +765,9 @@
       el.textContent = S.title || 'Untitled document';
       el.classList.toggle('ph', !S.title);
     }
+    // the open card IS the title, so the heading does not also stand
+    // above it (the decision-card gesture: the clause, opened)
+    d.style.display = S.open === 'title' ? 'none' : '';
   }
 
   // ---- the bodies a founder fills in ------------------------------------
@@ -781,7 +788,6 @@
       '<p class="why">Type or paste it into the page below — the same column it will be edited in once drafting begins. Lines starting with #, ## or ### become sections, and the contents appear on the left as you go.</p>' +
       '<p class="setnote"><b>Or leave it blank.</b> A membership writing something from nothing is a perfectly good way to begin, and an empty page is a real answer to this question. What this card asks is not whether there is text, but whether you have decided.</p>',
     title: () =>
-      '<p class="why">What members read at the top of the screen, and what the invitation says. Unlike almost everything else here it is not fixed at creation — come back to this card and change it whenever you like.</p>' +
       '<div class="lanebox"><div class="lp editlane titlelane' + (S.title ? '' : ' blank') + '"' +
       ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
       ' data-ph="The name of this document">' + esc(S.title) + '</div></div>',
@@ -963,7 +969,7 @@
 
   // ---- the band: two piles, and the card one of them opens into ----------
   function renderBand() {
-    band.innerHTML = bandHtml(groups(), ctx, (g) => {
+    const cardFor = (g) => {
       const c = card(S.open);
       // A card the room owns keeps its own body — choosing to hand it over is
       // the founder's decision and stays editable — and grows a **watching**
@@ -978,22 +984,50 @@
       const body = c.ansFor ? ANSWER[c.ansFor](S.myAns, E(), c.ansFor === 'quorum' ? S.quorumForm : undefined)
         : BODY[c.k]() +
           (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
-      const kindLine = (c.kind === 'personal' || c.ansFor) ? '' :
+      const kindLine = (c.kind === 'personal' || c.ansFor || c.k === 'title') ? '' :
         '<p class="setnote"><b>' + KIND[c.kind] + '.</b> ' + (c.knote || kindNote[c.kind]) + '</p>';
-      const foot = stateOf(c, ctx) === 'news'
+      const foot = c.k === 'title'
+        ? '<button class="btn glyphbtn" data-cleartitle="1"' + (S.title ? '' : ' disabled') +
+          ' title="Clear the title">🗑️</button>' +
+          '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
+          ' data-confirm="1" title="' + (ready(c) ? 'Set it — yours to change any time' : 'Give it a name first') + '">✒️</button>'
+        : stateOf(c, ctx) === 'news'
         ? '<button class="btn" data-close="1">Close</button>' +
           '<button class="btn btn-approve" data-ok="res-' + c.k + '">OK</button>'
         : '<button class="btn" data-close="1">Close</button>' +
         '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
         ' data-confirm="1" title="' + (ready(c) ? 'Confirm' : 'Not answered yet') + '">' + TICK + '</button>';
       return cardHtml(c, ctx, body + kindLine, foot, g.cards);
-    });
+    };
+    // **Before the save there is no constitution** (Ed, 2026-08-18): an
+    // unsaved document is a topbar, an outline, an empty title and its
+    // tasks. The band holds only the open card, in the section geometry
+    // it will keep, with none of the chrome.
+    if (!settled(card('slug'))) {
+      band.innerHTML = S.open
+        ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + cardFor(groups()[0]) + '</div></div></div>'
+        : '';
+      fitBand(band);
+      return;
+    }
+    band.innerHTML = bandHtml(groups(), ctx, cardFor);
     fitBand(band);
   }
 
   function refreshCommit() {
     const b = document.querySelector('[data-confirm]');
     if (b && S.open) b.disabled = !ready(card(S.open));
+    // the title card's other live pieces follow the typing without a
+    // re-render (which would take the caret): the head is the clause and
+    // the clause is what is being typed, and the bin keys on there being
+    // anything to clear
+    const hd = document.querySelector('.setupcard .headrule .headdoct');
+    if (hd && S.open === 'title') {
+      hd.textContent = S.title || 'Untitled document';
+      hd.classList.toggle('ph', !S.title);
+    }
+    const bin = document.querySelector('[data-cleartitle]');
+    if (bin) bin.disabled = !S.title;
   }
 
   const renderMail = () => renderMailModal(S.mailOpen, MAILS.verify(S.title, S.myemail));
@@ -1019,6 +1053,8 @@
       return render(); }
   });
   document.addEventListener('click', (ev) => {
+    const ct = ev.target.closest('[data-cleartitle]');
+    if (ct) { S.title = ''; return render(); }
     const okb = ev.target.closest('[data-ok]');
     if (okb) { S.okd.add(okb.dataset.ok); S.open = null; return render(); }
     const t = ev.target.closest('[data-tab], [data-card]');
