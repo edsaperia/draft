@@ -921,6 +921,7 @@ var CONSTITUTION = (() => {
             route: event.route,
             stake: event.stake,
             openedAtT: event.t,
+            why: event.why ?? null,
             status: "running",
             answers: /* @__PURE__ */ new Map(),
             settledAtT: null
@@ -1394,7 +1395,7 @@ var CONSTITUTION = (() => {
     // -------------------------------------------------------------------------
     // Motions (§9.6, v0.48): the one act by which a settled document changes
     // its own rules. The route is a fact about the setting.
-    openMotion(t, by, payload) {
+    openMotion(t, by, payload, why) {
       if (this.constitutedT === null) {
         throw new Error("before the start nothing is amended — only set (§9.6a)");
       }
@@ -1429,7 +1430,7 @@ var CONSTITUTION = (() => {
         throw new Error("one 🏛️ out per member at a time (§9.6)");
       }
       const id = `mo-${this.nextMotionN}`;
-      this.emit({
+      const e = {
         type: "motion-opened",
         t,
         motion: id,
@@ -1437,7 +1438,9 @@ var CONSTITUTION = (() => {
         payload,
         route,
         stake: route === "ordinary" ? 1 : 0
-      });
+      };
+      if (why !== void 0 && why !== "") e.why = why;
+      this.emit(e);
       return id;
     }
     answerMotion(t, member, motion, answer) {
@@ -1917,6 +1920,7 @@ var CONSTITUTION = (() => {
         id: rec.id,
         route: rec.route,
         payload: rec.payload,
+        why: rec.why,
         status: rec.status,
         mine: rec.by === member,
         answeredCount: rec.route === "constitutional" ? rec.answers.size : 0,

@@ -281,6 +281,7 @@ export class ConstitutionSession {
           route: event.route,
           stake: event.stake,
           openedAtT: event.t,
+          why: event.why ?? null,
           status: 'running',
           answers: new Map(),
           settledAtT: null,
@@ -779,7 +780,7 @@ export class ConstitutionSession {
   // Motions (§9.6, v0.48): the one act by which a settled document changes
   // its own rules. The route is a fact about the setting.
 
-  openMotion(t: number, by: MemberId, payload: MotionPayload): MotionId {
+  openMotion(t: number, by: MemberId, payload: MotionPayload, why?: string): MotionId {
     if (this.constitutedT === null) {
       throw new Error('before the start nothing is amended — only set (§9.6a)');
     }
@@ -815,8 +816,10 @@ export class ConstitutionSession {
       throw new Error('one 🏛️ out per member at a time (§9.6)');
     }
     const id = `mo-${this.nextMotionN}`;
-    this.emit({ type: 'motion-opened', t, motion: id, by, payload, route,
-      stake: route === 'ordinary' ? 1 : 0 });
+    const e: ConstitutionEvent = { type: 'motion-opened', t, motion: id, by,
+      payload, route, stake: route === 'ordinary' ? 1 : 0 };
+    if (why !== undefined && why !== '') (e as { why?: string }).why = why;
+    this.emit(e);
     return id;
   }
 

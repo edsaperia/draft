@@ -48,6 +48,7 @@ export interface MotionView {
   route: MotionRoute;
   /** The amendment itself is public — what is blind is who stands where. */
   payload: MotionPayload;
+  why: string | null;
   status: string;
   mine: boolean;
   answeredCount: number;
@@ -129,6 +130,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       id: rec.id,
       route: rec.route,
       payload: rec.payload,
+      why: rec.why,
       status: rec.status,
       mine: rec.by === member,
       answeredCount: rec.route === 'constitutional' ? rec.answers.size : 0,

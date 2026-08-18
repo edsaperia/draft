@@ -68,7 +68,7 @@ export type ConstitutionEvent =
   | { type: 'ok-given'; t: number; member: MemberId; setting: SettingId }
   /* -- motions (§9.6, v0.48) ---------------------------------------------- */
   | { type: 'motion-opened'; t: number; motion: MotionId; by: MemberId | null;
-      payload: MotionPayload; route: MotionRoute; stake: number }
+      payload: MotionPayload; route: MotionRoute; stake: number; why?: string }
   | { type: 'motion-answer'; t: number; motion: MotionId; member: MemberId;
       answer: MotionAnswer }
   | { type: 'motion-withdrawn'; t: number; motion: MotionId }
@@ -155,6 +155,8 @@ export interface MotionRecord {
   route: MotionRoute;
   stake: number;
   openedAtT: number;
+  /** The rationale, public like the amendment itself (authorship stays sealed). */
+  why: string | null;
   status: MotionStatus;
   answers: Map<MemberId, MotionAnswer>;
   settledAtT: number | null;
