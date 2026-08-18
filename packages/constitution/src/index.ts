@@ -17,3 +17,14 @@ export type {
 } from './catalogue.js';
 export { resolveConsent } from './consent.js';
 export type { ConsentResolution } from './consent.js';
+export * from './types.js';
+export { ConstitutionSession } from './session.js';
+export type { OpenInput } from './session.js';
+export { eOf, inE, quorumBaseOf, motionElectorateOf, quorumCount,
+  adoptionFloorTerm, adoptionFloor } from './populations.js';
+export { barAt, reAnchor, seedAnchors, smoothstep } from './threshold.js';
+export type { ThresholdAnchors } from './threshold.js';
+export { lapseDue, WARN_FRACTION } from './clocks.js';
+export { view, constitutionBlock, roomSettings } from './view.js';
+export type { MemberView, MotionView, QuestionView, ResolutionView,
+  SettingView } from './view.js';

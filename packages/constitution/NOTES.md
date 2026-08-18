@@ -27,6 +27,30 @@ recorded here as they are made, so Ed can flip any of them cheaply.
 - **The quorum form never converts**: resolution refuses answers in the wrong
   form rather than converting count↔share, because the form is the frame the
   question was asked under (§9.0a — delegate the decision, not the field).
+- **The mover answers like everybody** — opening a motion does not auto-record
+  an accept (363a's own logic: choosing and committing are two acts, and
+  putting a question is neither).
+- **A motion carried by pure abstention carries nothing**: at least one
+  standing accept is required, because a motion nobody consented to is not a
+  consent.
+- **A document-abstainer's standing keep leaves with them**: the electorate
+  is live (v0.48), and abstaining the document is "I trust you to finish up"
+  — so a keep from a member who then signs out abstaining stops blocking.
+  Worth Ed's eye: it is the one way a keep dies without being revised.
+- **Convenor direct-change on reserved settings post-start is uniform**,
+  constitutional ones included (Ed's 366; the reservation was consented by
+  everybody on the way in, the crown argument generalised). A member's route
+  is untouched: ordinary → 👑 assent, constitutional → everyone anyway.
+- **On convenor lapse every reserved setting passes to the members**, not
+  only the membership — reservation has no holder left (§9.7 speaks only of
+  the crown; generalised here).
+- **Late pace/ending resolution re-anchors prospectively**: if a non-gate
+  pacing question resolves after constituted, the anchors reseed at that
+  moment — a room-decided ramp can lower the bar from its fixed-interim
+  ceiling, which is the room's explicit decision, unlike a time-added fall.
+- **`memberReturn` emits only when something revives** (lapse, sign-out, a
+  warning); routine activity rides the member's own commands, so the log
+  carries no heartbeats.
 - **`applications.holder` is the convenor's frame, not part of the consent**:
   the delegated question collects the join-policy rung; the holder (the crown
   choice) is consented by joining, the way §9.7 says — so the consent order

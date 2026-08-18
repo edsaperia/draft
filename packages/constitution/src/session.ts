@@ -15,8 +15,8 @@ import type {
 } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf, motionRouteOf, validateFor } from './catalogue.js';
-import type { ApplicationsValue, EndingValue, PaceValue, PercentValue,
-  QuorumValue, SettingValue, SlugValue, TextValue } from './values.js';
+import type { ApplicationsValue, EndingValue, LapseValue, PaceValue,
+  PercentValue, QuorumValue, SettingValue, SlugValue, TextValue } from './values.js';
 import { eqValue } from './values.js';
 import { resolveConsent } from './consent.js';
 import { eOf, inE, motionElectorateOf, quorumBaseOf, quorumCount,
@@ -144,6 +144,7 @@ export class ConstitutionSession {
         break;
       }
       case 'setting-set': {
+        this.touch(this.convenor.id, event.t); // a convenor act moves their clock
         this.foldSet(event.setting, event.value, event.by, event.t);
         if (event.setting === 'quorum') {
           this.quorumFormValue = (event.value as QuorumValue).form;
@@ -285,6 +286,9 @@ export class ConstitutionSession {
           settledAtT: null,
         });
         this.nextMotionN += 1;
+        if (event.payload.kind === 'admit') {
+          this.applicants.get(event.payload.applicant)!.motion = event.motion;
+        }
         if (event.by) this.touch(event.by, event.t);
         break;
       }
@@ -371,9 +375,88 @@ export class ConstitutionSession {
     }
   }
 
-  /** Presence, the freeze, lapsing and applications — folded in a later commit. */
+  /** Presence, the freeze, lapsing and applications (§9.5, §9.5a, §9.7½). */
   private applyPresence(event: ConstitutionEvent): void {
-    throw new Error(`unhandled event '${event.type}'`);
+    switch (event.type) {
+      case 'signed-out': {
+        const m = this.members.get(event.member)!;
+        m.signedOut = event.mode;
+        this.touch(event.member, event.t);
+        break;
+      }
+      case 'member-returned': {
+        const m = this.members.get(event.member)!;
+        m.signedOut = null;
+        m.lapsed = false;
+        m.lapseWarned = false;
+        this.touch(event.member, event.t);
+        break;
+      }
+      case 'lapse-warned': {
+        if (event.member === this.convenor.id && !this.members.has(event.member)) {
+          this.convenor.lapseWarned = true;
+        } else {
+          this.members.get(event.member)!.lapseWarned = true;
+        }
+        break;
+      }
+      case 'member-lapsed': {
+        this.members.get(event.member)!.lapsed = true;
+        break;
+      }
+      case 'frozen': {
+        this.frozenFlag = true;
+        break;
+      }
+      case 'thawed': {
+        this.frozenFlag = false;
+        break;
+      }
+      case 'application-started': {
+        this.applicants.set(event.applicant, {
+          id: event.applicant,
+          email: event.email,
+          status: 'started',
+          name: null, picture: null, words: null,
+          motion: null,
+        });
+        this.nextApplicantN += 1;
+        break;
+      }
+      case 'application-verified': {
+        this.applicants.get(event.applicant)!.status = 'verified';
+        break;
+      }
+      case 'application-submitted': {
+        const a = this.applicants.get(event.applicant)!;
+        a.status = 'submitted';
+        a.name = event.name ?? null;
+        a.picture = event.picture ?? null;
+        a.words = event.words ?? null;
+        break;
+      }
+      case 'application-proposed': {
+        this.applicants.get(event.applicant)!.status = 'proposed';
+        this.touch(event.by, event.t);
+        break;
+      }
+      case 'member-admitted': {
+        const a = this.applicants.get(event.applicant)!;
+        a.status = 'admitted';
+        const rec = this.freshMember(event.member, a.email, event.t, event.t);
+        rec.name = a.name;
+        rec.picture = a.picture;
+        this.members.set(event.member, rec);
+        this.nextMemberN += 1;
+        break;
+      }
+      case 'application-refused': {
+        this.applicants.get(event.applicant)!.status = 'refused';
+        break;
+      }
+      default:
+        throw new Error(`unhandled event '${event.type}'`);
+    }
   }
 
   /** A carried change lands on the setting, keeping who holds it. */
@@ -580,9 +663,7 @@ export class ConstitutionSession {
     if (!m || m.removed) throw new Error(`unknown member '${member}'`);
     if (m.arrivedAtT !== null) { this.touch(member, t); return; }
     this.emit({ type: 'member-arrived', t, member });
-    const owed = this.settledConstitutionalIds()
-      .filter((id) => !this.settings.get(id)!.answers.has(member));
-    if (owed.length > 0) this.emit({ type: 'ok-owed', t, member, settings: owed });
+    this.oweOnJoining(t, member);
     this.afterRosterChange(t, 'arrival', member);
   }
 
@@ -780,6 +861,8 @@ export class ConstitutionSession {
         question: `cq-${this.nextCrownN}`, motion: rec.id });
     } else if (after === 'carried') {
       this.settleCarriedEffects(t, rec, /* everyoneHadSay */ false);
+    } else if (after === 'held') {
+      this.settleHeldEffects(t, rec);
     }
   }
 
@@ -790,6 +873,8 @@ export class ConstitutionSession {
     this.emit({ type: 'crown-question-answered', t, question, outcome });
     if (outcome === 'accept') {
       this.settleCarriedEffects(t, this.motions.get(q.motion)!, false);
+    } else {
+      this.settleHeldEffects(t, this.motions.get(q.motion)!);
     }
   }
 
@@ -855,7 +940,191 @@ export class ConstitutionSession {
         this.emit({ type: 'ok-owed', t, member: m.id, settings: [rec.payload.setting] });
       }
     }
-    // 'admit' effects ride the applications machinery (§9.7½)
+    if (rec.payload.kind === 'admit') {
+      const id = `m-${this.nextMemberN}`;
+      this.emit({ type: 'member-admitted', t, applicant: rec.payload.applicant,
+        member: id });
+      this.oweOnJoining(t, id); // an admitted applicant inherits (§9.6a)
+      this.afterRosterChange(t, 'arrival', id); // and is present
+    }
+  }
+
+  /** A joiner is owed an OK on every constitutional setting they had no say in. */
+  private oweOnJoining(t: number, member: MemberId): void {
+    const owed = this.settledConstitutionalIds()
+      .filter((id) => !this.settings.get(id)!.answers.has(member));
+    if (owed.length > 0) this.emit({ type: 'ok-owed', t, member, settings: owed });
+  }
+
+  /** Follow-ons of a held motion: a refused application is told so (§9.7½). */
+  private settleHeldEffects(t: number, rec: MotionRecord): void {
+    if (rec.payload.kind === 'admit') {
+      this.emit({ type: 'application-refused', t, applicant: rec.payload.applicant });
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Presence, the freeze and the lapse clocks (§9.5, §9.5a)
+
+  signOut(t: number, member: MemberId, mode: 'holding' | 'abstaining'): void {
+    const m = this.members.get(member);
+    if (!m || !inE(m)) throw new Error(`'${member}' is not an arrived member`);
+    this.emit({ type: 'signed-out', t, member, mode });
+    // An abstainer leaves the quorum base: motions can complete, the
+    // document can freeze — plain silence never does either (§9.5).
+    this.maybeSettleMotions(t);
+    this.maybeFreezeOrThaw(t);
+  }
+
+  /**
+   * Revival is just logging in again (§9.5a) — the host calls this on any
+   * authenticated return. Emits only when there is something to revive;
+   * routine activity rides the member's own commands (NOTES.md).
+   */
+  memberReturn(t: number, member: MemberId): void {
+    const m = this.members.get(member);
+    if (!m || m.removed) throw new Error(`unknown member '${member}'`);
+    // nothing to revive → no event, no state: the clock only moves on events
+    if (m.signedOut === null && !m.lapsed && !m.lapseWarned) return;
+    const wasLapsed = m.lapsed;
+    this.emit({ type: 'member-returned', t, member });
+    if (wasLapsed) this.afterRosterChange(t, 'arrival', member); // E grew back
+    else this.maybeSettleMotions(t); // a returned abstainer re-enters the electorate
+    this.maybeFreezeOrThaw(t);
+  }
+
+  /**
+   * All clock-driven events flow through one host-called tick (the package
+   * has no wall clock): lapse warnings, lapses, the crown's own clock, and
+   * the freeze line.
+   */
+  tick(t: number): void {
+    const lapse = this.settings.get('lapse')!.value as LapseValue | null;
+    if (lapse && lapse.afterMs !== null) {
+      for (const m of [...this.members.values()]) {
+        if (!inE(m)) continue;
+        const due = lapseDue(m.lastActivityT, lapse.afterMs)!;
+        if (t >= due.lapseAtT) {
+          this.emit({ type: 'member-lapsed', t, member: m.id });
+          this.afterRosterChange(t, 'departure', m.id);
+        } else if (t >= due.warnAtT && !m.lapseWarned) {
+          this.emit({ type: 'lapse-warned', t, member: m.id });
+        }
+      }
+      // The §9.5a clock runs on the convenor too (§9.7): a quiet crown
+      // lapses, and its reserved settings pass to the members.
+      if (!this.crownLapsedFlag && this.holdsAnythingReserved()) {
+        const due = lapseDue(this.convenor.lastActivityT, lapse.afterMs)!;
+        if (t >= due.lapseAtT) {
+          this.emit({ type: 'crown-lapsed', t });
+          for (const q of [...this.crownQuestions.values()]) {
+            if (q.status !== 'pending') continue;
+            // The assent was the crown's alone; its heirs already passed it.
+            this.emit({ type: 'crown-question-auto-passed', t, question: q.id });
+            this.settleCarriedEffects(t, this.motions.get(q.motion)!, false);
+          }
+        } else if (t >= due.warnAtT && !this.convenor.lapseWarned &&
+          !this.members.has(this.convenor.id)) {
+          this.emit({ type: 'lapse-warned', t, member: this.convenor.id });
+        }
+      }
+    }
+    this.maybeFreezeOrThaw(t);
+  }
+
+  private holdsAnythingReserved(): boolean {
+    if (this.membershipReserved()) return true;
+    for (const st of this.settings.values()) {
+      if (st.holder === 'convenor') return true;
+    }
+    return false;
+  }
+
+  /** The freeze line (§9.5): counted base below quorum parks the document. */
+  private maybeFreezeOrThaw(t: number): void {
+    if (this.constitutedT === null) return;
+    const q = this.settings.get('quorum')!.value as QuorumValue | null;
+    if (!q) return;
+    const E = eOf(this.members.values()).length;
+    const counted = quorumBaseOf(this.members.values()).length;
+    const needed = quorumCount(q, E);
+    if (!this.frozenFlag && counted < needed) {
+      this.emit({ type: 'frozen', t });
+    } else if (this.frozenFlag && counted >= needed) {
+      this.emit({ type: 'thawed', t });
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Applications (§9.7½)
+
+  private joinPolicy(): 'invite' | 'proposed' | 'apply' | 'open' {
+    const apps = this.settings.get('applications')!.value as ApplicationsValue | null;
+    return apps ? apps.joinPolicy : 'invite';
+  }
+
+  startApplication(t: number, email: string): string {
+    if (this.joinPolicy() === 'invite') {
+      throw new Error('this document is invitation-only (§9.7½)');
+    }
+    this.requireEmailFree(email);
+    for (const a of this.applicants.values()) {
+      if (a.email === email && a.status !== 'refused') {
+        throw new Error('an application from that address is already underway');
+      }
+    }
+    const id = `ap-${this.nextApplicantN}`;
+    this.emit({ type: 'application-started', t, applicant: id, email });
+    return id;
+  }
+
+  verifyApplication(t: number, applicant: string): void {
+    const a = this.applicants.get(applicant);
+    if (!a || a.status !== 'started') throw new Error('nothing to verify');
+    this.emit({ type: 'application-verified', t, applicant });
+  }
+
+  /** Nothing is sent before Submit; an empty application is a real application. */
+  submitApplication(t: number, applicant: string,
+    fields: { name?: string; picture?: string; words?: string } = {}): void {
+    const a = this.applicants.get(applicant);
+    if (!a || a.status !== 'verified') {
+      throw new Error('an application is verified by magic link before it can be submitted (§9.7½)');
+    }
+    const e: ConstitutionEvent = { type: 'application-submitted', t, applicant };
+    if (fields.name !== undefined) (e as { name?: string }).name = fields.name;
+    if (fields.picture !== undefined) (e as { picture?: string }).picture = fields.picture;
+    if (fields.words !== undefined) (e as { words?: string }).words = fields.words;
+    this.emit(e);
+    const policy = this.joinPolicy();
+    if (policy === 'open') {
+      // anyone with the link joins on arrival — no motion in the way
+      const id = `m-${this.nextMemberN}`;
+      this.emit({ type: 'member-admitted', t, applicant, member: id });
+      this.oweOnJoining(t, id);
+      this.afterRosterChange(t, 'arrival', id);
+    } else if (policy === 'apply') {
+      // straight to the bar, free — the tasks its price, the bar its filter
+      this.emit({ type: 'motion-opened', t, motion: `mo-${this.nextMotionN}`,
+        by: null, payload: { kind: 'admit', applicant },
+        route: 'ordinary', stake: 0 });
+    }
+    // under 'proposed' the application waits for a member's second
+  }
+
+  /** A second is a proposed application (§9.7½, Q348a): the member stakes the ✏️. */
+  proposeApplicant(t: number, member: MemberId, applicant: string): void {
+    if (this.joinPolicy() !== 'proposed') {
+      throw new Error("this document's applications are not proposed (§9.7½)");
+    }
+    const m = this.members.get(member);
+    if (!m || !inE(m)) throw new Error(`'${member}' is not an arrived member`);
+    const a = this.applicants.get(applicant);
+    if (!a || a.status !== 'submitted') throw new Error('no submitted application to propose');
+    this.emit({ type: 'application-proposed', t, applicant, by: member });
+    this.emit({ type: 'motion-opened', t, motion: `mo-${this.nextMotionN}`,
+      by: member, payload: { kind: 'admit', applicant },
+      route: 'ordinary', stake: 1 });
   }
 
   // -------------------------------------------------------------------------
