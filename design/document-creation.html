@@ -114,7 +114,7 @@
 <script>
 (function () {
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
-    nameBody, pictureBody, drawWire, opt, num, someIn, KIND, kindNote, ANSWER,
+    nameBody, pictureBody, drawWire, opt, num, someIn, KIND, kindNote, ANSWER, stateOf,
     MAILS, renderMailModal } = window.SETUP;
   const prose = document.getElementById('prose');
   const titleEl = document.getElementById('title');
@@ -268,7 +268,7 @@
     // address that saves it — and then everything that lives inside the
     // saved document. Each is born when the one before it settles, so
     // arriving at docs.vote you are asked exactly one thing.
-    { k: 'title', g: '🏷️', t: 'The title', kind: 'ordinary', ready: () => !!S.title, changeable: true },
+    { k: 'title', g: '🏷️', t: 'Title', kind: 'ordinary', ready: () => !!S.title, changeable: true },
     // Pre-filled with a slug generated from the title and checked against the
     // ones that already exist; confirming it is what SAVES the document.
     // **The address is verified before anything is saved** (Ed, 2026-08-18:
@@ -277,23 +277,30 @@
     // in is a magic link — so the first mail is the proof the address works,
     // sent while nothing yet exists and a typo still costs nothing. The mail
     // is the login: clicking it is what carries you on to the save.
-    { k: 'myemail', g: '📧', t: 'Your email', kind: 'personal', own: 'you', dep: ['title'],
+    { k: 'myemail', g: '📧', t: 'Your Email', kind: 'personal', own: 'you', dep: ['title'],
       ready: () => S.emailVerified, changeable: true },
-    { k: 'slug', g: '🔗', t: 'The link', kind: 'ordinary', dep: ['myemail'], ready: () => SLUG_OK.test(S.slug), changeable: true },
+    { k: 'slug', g: '🔗', t: 'Link', kind: 'ordinary', dep: ['myemail'], ready: () => SLUG_OK.test(S.slug), changeable: true },
     // — the rest, together once the document exists ----------------------
     // 🎩 folded into 🪪 (Ed, 2026-08-18): whether the convenor is a
     // member is just whether they invite themselves, asked as their own
     // pre-checked row in the membership card.
     { k: 'roster', g: '🪪', t: 'Membership', kind: 'constitutional', dep: ['slug'], ready: () => members().length >= 1, changeable: true },
+    // **The register and the door are two decisions** (Ed, 2026-08-18: *We
+    // should separate "Membership" which is the register of people who are
+    // members from "Membership Policy" which is how people become members
+    // after the ceremony*). The one-card test agrees: who is in the room
+    // now, and how anybody gets in later, can be answered differently and
+    // on their own.
+    { k: 'policy', g: '🚪', t: 'Membership Policy', kind: 'constitutional', dep: ['roster'], changeable: true },
     // optional for a clerk (Ed, 2026-08-18): an anonymous convenor is a
     // perfectly ordinary thing — they can simply not set a name or picture
-    { k: 'myname', g: '✋', t: 'Your name', kind: 'personal', own: 'you', dep: ['slug'], ready: () => (iDraft() ? !!S.myname.trim() : true), changeable: true },
-    { k: 'mypic', g: '🖼️', t: 'Your picture', kind: 'personal', own: 'you', dep: ['slug'], changeable: true },
+    { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you', dep: ['slug'], ready: () => (iDraft() ? !!S.myname.trim() : true), changeable: true },
+    { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you', dep: ['slug'], changeable: true },
     // A document may start empty, which is why this is not a blocker on having
     // content but on having *decided*: a page nobody has looked at and a page
     // somebody chose to leave blank look identical, and only one of them should
     // let people start proposing.
-    { k: 'text', g: '📄', t: 'The starting text', kind: 'ordinary', dep: ['slug'], gate: 'propose' },
+    { k: 'text', g: '📄', t: 'Starting Text', kind: 'ordinary', dep: ['slug'], gate: 'propose' },
 
     // — the document's shape --------------------------------------------
     // **When it ends and whether it ends are one card** (Ed, 2026-08-18:
@@ -303,7 +310,7 @@
     // **never** is one of the answers to *when*. What made them look like two
     // decisions is that they take different routes to change afterwards, and
     // that is a fact about the motion rather than about the question (Q329).
-    { k: 'ending', g: '⏰', t: 'When does it end?', kind: 'constitutional', motionKind: 'ordinary',
+    { k: 'ending', g: '⏰', t: 'When Does It End?', kind: 'constitutional', motionKind: 'ordinary',
       key: 'ending', dep: ['roster'], p: 0.5,
       // 329(a): *never* is the constitutional answer; any date is ordinary.
       routeOf: (v) => (/never|perpetual|no end/i.test(v) ? 'constitutional' : 'ordinary'),
@@ -320,11 +327,11 @@
     // Q341). Consent is about the bar **at the close**, where an adoption is
     // permanent — one number. How it gets there is *pacing*, ordinary by §9.6's
     // own test, on the next card.
-    { k: 'bar', g: '✒️', t: 'How sure must the room be?', kind: 'constitutional', gate: 'judge', key: 'barBy', dep: ['ending'], p: 0.64,
+    { k: 'bar', g: '✒️', t: 'How Sure Must the Room Be?', kind: 'constitutional', gate: 'judge', key: 'barBy', dep: ['ending'], p: 0.64,
       rule: 'Each member states the <b>lowest bar</b> they will accept — at the close, where an adoption is permanent — and the document takes the highest, so it will never be easier to change than any one of them wanted.',
       takes: 'The document takes the highest', result: '80%',
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
-    { k: 'pace', g: '📈', t: 'How does the bar get there?', kind: 'ordinary', dep: ['ending'], changeable: true },
+    { k: 'pace', g: '📈', t: 'How Does the Bar Get There?', kind: 'ordinary', dep: ['ending'], changeable: true },
     // The number is the room's; the **form** — count or share — is the
     // convenor's wording of the question (Ed, 2026-08-18: *quorum can either be
     // a fixed number or a proportion of membership size*; §9.0a).
@@ -332,15 +339,15 @@
       rule: 'Each member states the <b>lowest quorum</b> they will accept and the document takes the highest.',
       takes: 'The document takes the highest', result: '10 of 14',
       dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', 'all of them'] },
-    { k: 'authorship', g: '👤', t: 'When is a proposer named?', kind: 'constitutional', gate: 'judge', key: 'authorship', dep: ['roster'], p: 0.5,
+    { k: 'authorship', g: '👤', t: 'When Is a Proposer Named?', kind: 'constitutional', gate: 'judge', key: 'authorship', dep: ['roster'], p: 0.5,
       rule: 'A privacy question, so it runs the other way and takes the <b>most private</b> answer: one member who wants to stay unnamed keeps the whole document unnamed.',
       takes: 'The document takes the most private', result: 'Nobody’s name, ever',
       dist: [8, 4, 2], distTop: 0, distEnds: ['No names, ever', 'Names from the start'] },
-    { k: 'signing', g: '✍️', t: 'Who may sign a proposal?', kind: 'constitutional', gate: 'judge', key: 'signing', dep: ['roster'], p: 0.5,
+    { k: 'signing', g: '✍️', t: 'Who May Sign a Proposal?', kind: 'constitutional', gate: 'judge', key: 'signing', dep: ['roster'], p: 0.5,
       rule: 'Also a privacy question, and the <b>most private</b> answer wins.',
       takes: 'The document takes the most private', result: 'Nobody signs',
       dist: [9, 3, 2], distTop: 0, distEnds: ['Nobody signs', 'Everybody signs'] },
-    { k: 'judgments', g: '👁️', t: 'When are judgments revealed?', kind: 'constitutional', gate: 'judge', key: 'judgments', dep: ['roster'], p: 0.86,
+    { k: 'judgments', g: '👁️', t: 'When Are Judgments Revealed?', kind: 'constitutional', gate: 'judge', key: 'judgments', dep: ['roster'], p: 0.86,
       rule: 'Never revealed while a question is live, whichever is chosen. What this settles is only whether they are published with the record.',
       takes: 'The document takes the most private', result: 'Never revealed',
       dist: [11, 3], distTop: 0, distEnds: ['Never', 'After the decision'] },
@@ -354,11 +361,11 @@
     // It is **not three**: the stake is a flat 1 and always was (§13 parameters,
     // §7), so the card that offered to set it was offering a decision the
     // mechanism does not have (Ed, 2026-08-18: *isn’t the stake fixed at 1?*).
-    { k: 'grant', g: '🪙', t: 'How many ✏️s do members start with?', kind: 'ordinary', key: 'grantBy', dep: ['roster'], p: 0.36,
+    { k: 'grant', g: '🪙', t: 'How Many ✏️s Do Members Start With?', kind: 'ordinary', key: 'grantBy', dep: ['roster'], p: 0.36,
       rule: 'Each member states the <b>fewest</b> they would accept being given, and the document takes the most generous answer.',
       takes: 'The document takes the most generous', result: '5 each',
       dist: [1, 2, 4, 3, 2, 1, 1], distTop: 4, distEnds: ['0', '12'] },
-    { k: 'drip', g: '💧', t: 'How fast do ✏️s come back?', kind: 'ordinary', key: 'dripBy', dep: ['ending'], p: 0.36,
+    { k: 'drip', g: '💧', t: 'How Fast Do ✏️s Come Back?', kind: 'ordinary', key: 'dripBy', dep: ['ending'], p: 0.36,
       rule: 'Each member states the <b>slowest</b> return they would accept, and the document takes the fastest.',
       takes: 'The document takes the fastest', result: '1 per 10%, up to 8',
       dist: [2, 3, 5, 2, 1, 1], distTop: 2, distEnds: ['slowest', 'fastest'] },
@@ -367,7 +374,7 @@
     // gate 'judge': constitutional (§9.6 disclosure family), so judging waits
     // on it — the member surface already did, and the two disagreed (review
     // finding, 2026-08-18)
-    { k: 'chamber', g: '🔭', t: 'Who else can see it?', kind: 'constitutional', gate: 'judge', key: 'chamber', dep: ['roster'], p: 0.43,
+    { k: 'chamber', g: '🔭', t: 'Who Else Can See It?', kind: 'constitutional', gate: 'judge', key: 'chamber', dep: ['roster'], p: 0.43,
       rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.',
       takes: 'The document takes the most private', result: 'Members only',
       dist: [5, 8, 1], distTop: 1, distEnds: ['Members only', 'Public'] },
@@ -376,11 +383,11 @@
     // §9.6's test the honest way round: it re-rates nothing already decided,
     // and it binds by consent, since everyone stated the shortest spell they
     // would accept on the way in.
-    { k: 'lapse', g: '💤', t: 'Do memberships lapse?', kind: 'constitutional', gate: 'judge', key: 'lapse', dep: ['roster'], p: 0.29,
+    { k: 'lapse', g: '💤', t: 'Do Memberships Lapse?', kind: 'constitutional', gate: 'judge', key: 'lapse', dep: ['roster'], p: 0.29,
       rule: 'Each member states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all — so nobody is lapsed faster than they accepted.',
       takes: 'The document takes the longest', result: 'Never',
       dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
-    { k: 'machines', g: '🤖', t: 'Is there a machine member?', kind: 'constitutional', gate: 'judge', key: 'auditor', dep: ['roster'], p: 0.86,
+    { k: 'machines', g: '🤖', t: 'Is There a Machine Member?', kind: 'constitutional', gate: 'judge', key: 'auditor', dep: ['roster'], p: 0.86,
       rule: 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.',
       takes: 'The document takes the most restrictive', result: 'People only',
       dist: [9, 5], distTop: 0, distEnds: ['People only', 'A machine is fine'] },
@@ -407,8 +414,14 @@
   const mustAct = (c) => (c.isGate ? (c.open() && !S.okd.has(c.k)) : !settled(c));
   // How far the room has got, against the roster **as it stands** — held as a
   // proportion because a convenor's roster starts at one person and grows.
-  const resolveCounts = () => CARDS.forEach((c) => { if (c.p != null)
-    c.in = Math.min(E(), Math.round(c.p * E()) + (isRoom(c) && iDraft() && answered(c) ? 1 : 0)); });
+  // The fixture's other members answer in proportion, but never the
+  // convenor's own share: a question cannot read as resolved while the one
+  // answer the surface can actually collect is still outstanding.
+  const resolveCounts = () => CARDS.forEach((c) => { if (c.p != null) {
+    const mine = isRoom(c) && iDraft();
+    c.in = Math.min(E() - (mine && !answered(c) ? 1 : 0), Math.round(c.p * E())) +
+      (mine && answered(c) ? 1 : 0);
+  } });
 
   // **A card with a dependency does not appear until its dependency is settled**
   // (Ed, 2026-08-18: *if there are dependencies, just don't show them the next
@@ -460,10 +473,11 @@
     // an invitee is not a member yet (§9.6a): the line counts the arrived,
     // and says who is still only invited
     roster: () => arrived() + (arrived() === 1 ? ' member' : ' members') +
-      (S.joinBy === 'apply' ? ' · applications open' : S.joinBy === 'proposed' ? ' · applications by proposal' : S.joinBy === 'open' ? ' · open to join' : '') +
-      (S.rosterBy === 'convenor' ? ' · 👑 reserved' : '') +
       (members().length > arrived() ? ' · ' + (members().length - arrived()) + ' invited' : '') +
-      (iDraft() ? '' : ' — you are the clerk, and not one of them'),
+      (iDraft() ? '' : ' · you are the clerk'),
+    policy: () => ({ invite: 'Invitation only', proposed: 'Applications by proposal',
+      apply: 'Anyone may apply', open: 'Open' }[S.joinBy]) +
+      (S.rosterBy === 'convenor' ? ' · 👑 reserved' : ''),
     ending: () => (perpetual() ? 'Never — it runs until it is frozen'
       : new Date(S.endsAt).toLocaleString(undefined,
         { weekday: 'short', hour: '2-digit', minute: '2-digit' })),
@@ -480,15 +494,6 @@
     drip: () => S.drip + ' back per ' + (perpetual() ? S.dripPer + ' hours' : S.dripPer + '% of the window') +
       ', up to ' + S.cap,
     chamber: () => ({ link: 'Anyone with the link', closed: 'Members only', public: 'Public' }[S.chamber]),
-    lapse: () =>
-      '<div class="unlocks">Part of the constitution — judging waits on it.</div>' +
-      '<p class="why">Whether a membership lapses after a long quiet spell. A lapsed member leaves the quorum base the way an abstainer does — the room can finish without them — and their judgments keep counting; they are warned by email first, sent the package (the document as it stands, and the record so far) when it happens, and coming back is just logging in. On a perpetual document this is the answer to the member who will neither participate nor leave.</p>' +
-      '<div class="choice" role="radiogroup">' +
-      opt(S, 'lapse', 'days', 'They lapse', 'After a quiet spell you choose.',
-        '<span class="setrow2">' + num(S, 'lapseDays', 'Quiet days', 7, 365) + '</span>') +
-      opt(S, 'lapse', 'never', 'Never', 'A membership holds however long its holder is away.') +
-      theyDecide('lapse', 'Each states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.') +
-      '</div>',
     machines: () => (S.auditor === true ? 'The coherence auditor, ' + S.auditorBudget + ' ✏️s' : 'People only'),
     lapse: () => (S.lapse === 'never' ? 'Never — however quiet'
       : 'After ' + S.lapseDays + ' quiet days'),
@@ -558,8 +563,10 @@
   // was constituted — the moment judging opens — and every constitutional
   // setting's current value, one line each, the glyph doing the naming.
   const constBlock = () => {
-    const line = (g, t, v) => '<span class="cline" title="' + esc(t) + '">' +
-      '<span class="cg">' + g + '</span><span><b>' + v + '</b></span></span>';
+    const line = (g, t, v, k) => '<' + (k ? 'button' : 'span') + ' class="cline"' +
+      ' title="' + esc(t) + '"' + (k ? ' data-card="' + k + '"' : '') + '>' +
+      '<span class="cg">' + g + '</span><span><b>' + v + '</b></span>' +
+      '</' + (k ? 'button' : 'span') + '>';
     return '<div class="constlist">' +
       line('🎩', 'Convenor', esc(S.myname || (iDraft() ? 'Unnamed' : 'Anonymous')) + (iDraft() ? '' : ' · clerk') + (S.rosterBy === 'convenor' ? ' · 👑' : ' · 🏴')) +
       line('⏱️', 'Constituted', canJudge() ? 'constituted — judging is open'
@@ -567,18 +574,37 @@
       // summary(), not value(): a delegated setting states "the members
       // decide", never the convenor's own draft of a number
       LIVE().filter((c) => c.kind === 'constitutional' && !c.ansFor && !['myrole'].includes(c.k))
-        .map((c) => line(c.g, c.t, summary(c))).join('') + '</div>';
+        .map((c) => line(c.g, c.t, summary(c), c.k)).join('') + '</div>';
   };
+
+  // ---- the grammar's other three states (Ed, 2026-08-18) ------------------
+  // wait: the inbox holds the next move, a delegated question is being
+  // answered, your own answer is in and the room's are not, a gate's
+  // blockers are still above it. news: a delegated question resolved — the
+  // number came back, and it pins until your OK, because a reveal you
+  // answered blind into is a decision you are owed; a gate opening takes
+  // the same rule, being exactly the shape of an unacknowledged decision.
+  const waiting = (c) => (c.isGate ? !c.open()
+    : c.k === 'myemail' ? (S.emailSent && !S.emailVerified)
+    : c.ansFor ? (answered(c) && ((card(c.ansFor).in || 0) < E()))
+    : isRoom(c) && settled(c) && (c.in || 0) < E());
+  const news = (c) => (c.isGate ? (c.open() && !S.okd.has(c.k))
+    : !c.ansFor && isRoom(c) && settled(c) && E() > 0 && (c.in || 0) >= E() &&
+      !S.okd.has('res-' + c.k));
 
   const ctx = {
     get open() { return S.open; }, get E() { return E(); },
     clauseFor: (c) => (c.k === 'roster' ? rosterClause() : ''),
-    mustAct, settled, summary, value, isRoom,
+    mustAct, settled, summary, value, isRoom, waiting, news,
     // the head says **what kind of decision this is** and then who holds it,
     // because the kind is what tells you what could ever be done about it
     bandLabel: (c) => (c.isGate ? 'Not a decision · it follows from the others'
       : c.ansFor ? KIND[c.kind] + ' · yours to answer, as a member'
       : c.kind === 'personal' ? 'Yours alone'
+      // the policy card carries the holder question itself, so its label
+      // follows its own radio rather than the delegation list
+      : c.k === 'policy' ? KIND[c.kind] + ' · ' +
+        (S.rosterBy === 'convenor' ? 'reserved by the convenor' : 'the members hold it')
       : KIND[c.kind || 'ordinary'] + ' · ' +
         (isRoom(c) ? 'the members decide' : 'reserved by the convenor')),
   };
@@ -590,11 +616,14 @@
   function renderRail() {
     const gs = groups();
     rail.innerHTML =
-      // A gate is in the rail only while it wants something — the moment it
-      // opens and until you have taken it in. Locked, it is a tab in the pile
-      // and nothing else, because nothing is being asked of you (Ed, 2026-08-18:
-      // *everyone should only see cards they can act on*).
-      '<ul>' + gs.map((g) => ({ ...g, cards: g.cards.filter((c) => !c.isGate || mustAct(c)) }))
+      // What is settled leaves the rail — it is the pile's, and the block's
+      // to name — and a gate shows only as news: the moment it opens, until
+      // its OK. Locked, it is a ⏳ tab in the pile and nothing else, because
+      // nothing is being asked of you (Ed, 2026-08-18: *everyone should only
+      // see cards they can act on*). ⏳ entries stay: they are where the
+      // fill says how far the room has got.
+      '<ul>' + gs.map((g) => ({ ...g, cards: g.cards.filter((c) =>
+        c.isGate ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done') }))
         .filter((g) => g.cards.length).map((g) =>
         '<li class="qhead">' + esc(g.label) + '</li>' +
         g.cards.map((c) => railEntry(c, ctx)).join('')).join('') + '</ul>';
@@ -675,6 +704,17 @@
       '<p class="why">An invitation <b>is the link</b>, sent by email — there are no passwords — which is why nobody could be invited before the link existed. It is an invitation <b>to become a member</b>: until somebody opens the document they are listed as <i>invited</i> and count toward nothing. Until judging opens you may invite and uninvite freely — nothing has been decided yet, so nothing is being changed. After that, both directions are constitutional motions — you included: your own row above is <b>pre-checked</b>, and you may untick it and be the clerk, who administers without writing, but after judging starts you join the way anybody joins. A joiner starts with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</p>' +
       '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1">' +
       '<button class="btn" data-act="add">Invite</button></div></div>' +
+      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
+      '<textarea placeholder="Paste addresses here, one per line" data-emails="1"></textarea>' +
+      '<div style="margin-top:var(--s2)"><button class="btn" data-act="invite">Send invitations</button></div>' +
+      '<p class="setnote">' + arrived() + ' of ' + S.roster.length + ' have opened it so far. ' +
+      'Nobody has to be here for the document to exist — the link works from the first second, and ' +
+      'a joiner gets the base grant plus the drip accrued so far.</p>',
+    // **The door, apart from the register** (Ed, 2026-08-18). The policy is
+    // the constitutional act; each application that arrives through it is
+    // its ordinary consequence.
+    policy: () =>
+      '<p class="why">How people become members <b>after the start</b>. The register is who is in; this is the door.</p>' +
       // **Who holds it** (Ed, 2026-08-18): delegated — the members' — by
       // default, like every constitutional setting. A convenor may **reserve**
       // it instead (reserved is the word for not-delegated, Ed), and a
@@ -696,13 +736,7 @@
       opt(S, 'joinBy', 'proposed', 'Applications must be proposed', 'A reader may apply, but the application waits until a member <b>proposes</b> it — the member stakes the ✏️ as with any proposal, which is what a second is.') +
       opt(S, 'joinBy', 'apply', 'Anyone may apply', 'An application goes straight before the members as an ordinary proposal — free to make, because the tasks are its price and the bar is its filter.') +
       opt(S, 'joinBy', 'open', 'Open', 'Anyone with the link joins on arrival. For documents that are more petition than charter.') +
-      '</div>' +
-      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
-      '<textarea placeholder="Paste addresses here, one per line" data-emails="1"></textarea>' +
-      '<div style="margin-top:var(--s2)"><button class="btn" data-act="invite">Send invitations</button></div>' +
-      '<p class="setnote">' + arrived() + ' of ' + S.roster.length + ' have opened it so far. ' +
-      'Nobody has to be here for the document to exist — the link works from the first second, and ' +
-      'a joiner gets the base grant plus the drip accrued so far.</p>',
+      '</div>',
     ending: () =>
       '<p class="why">The moment this document closes: the close itself, the record, and the top of the approval threshold’s ramp. <b>Never</b> is one of the answers — a perpetual document has no close of its own and a bar that cannot rise, because a ramp needs an endpoint to rise towards, and it ends by <b>freeze</b>, when too few members are still active, rather than by the calendar.</p>' +
       '<div class="choice" role="radiogroup">' +
@@ -788,7 +822,7 @@
         num(S, 'cap', 'Never more than', 1, 99) + '</span>') +
       '</div>',
     chamber: () =>
-      '<p class="why">Who may read it besides the members. Whoever that is, they are <b>not members</b> — nothing is known about them, they have a link and nothing else, and they cannot propose, judge or be counted. What they see is a public window: adoptions as they land, and which questions are stuck. Live standings are never visible to anybody, whatever is chosen here.</p>' +
+      '<p class="why">Who may read it besides the members. Whoever that is, they are <b>not members</b>: nothing is known about them, and they cannot propose, judge or be counted. Live standings are never visible to anybody, whatever is chosen here.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('chamber', 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.') +
       opt(S, 'chamber', 'link', 'Anyone with the link') +
@@ -796,7 +830,7 @@
       opt(S, 'chamber', 'public', 'Public', 'Listed and readable by anyone.') + '</div>',
     lapse: () =>
       '<div class="unlocks">Part of the constitution — judging waits on it.</div>' +
-      '<p class="why">Whether a membership lapses after a long quiet spell. A lapsed member leaves the quorum base the way an abstainer does — the room can finish without them — and their judgments keep counting; they are warned by email first, sent the package (the document as it stands, and the record so far) when it happens, and coming back is just logging in. On a perpetual document this is the answer to the member who will neither participate nor leave.</p>' +
+      '<p class="why">Whether a membership lapses after a long quiet spell. A lapsed member leaves the quorum base like an abstainer, their judgments keep counting, they are warned by email first and sent the document and record when it happens — and coming back is just logging in.</p>' +
       '<div class="choice" role="radiogroup">' +
       opt(S, 'lapse', 'days', 'They lapse', 'After a quiet spell you choose.',
         '<span class="setrow2">' + num(S, 'lapseDays', 'Quiet days', 7, 365) + '</span>') +
@@ -831,7 +865,10 @@
           (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
       const kindLine = (c.kind === 'personal' || c.ansFor) ? '' :
         '<p class="setnote"><b>' + KIND[c.kind] + '.</b> ' + (c.knote || kindNote[c.kind]) + '</p>';
-      const foot = '<button class="btn" data-close="1">Close</button>' +
+      const foot = stateOf(c, ctx) === 'news'
+        ? '<button class="btn" data-close="1">Close</button>' +
+          '<button class="btn btn-approve" data-ok="res-' + c.k + '">OK</button>'
+        : '<button class="btn" data-close="1">Close</button>' +
         '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
         ' data-confirm="1" title="' + (ready(c) ? 'Confirm' : 'Not answered yet') + '">' + TICK + '</button>';
       return cardHtml(c, ctx, body + kindLine, foot, g.cards);

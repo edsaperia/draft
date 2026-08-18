@@ -67,7 +67,7 @@
   const { esc, TICK, avHtml, avatarOptions, bandHtml, fitBand, railEntry, cardHtml, readBody,
     watchBody, nameBody, pictureBody, drawWire, opt, faces, someIn,
     KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor, ANSWER,
-    MAILS, renderMailModal } = window.SETUP;
+    MAILS, renderMailModal, stateOf } = window.SETUP;
   const band = document.getElementById('band');
   const rail = document.getElementById('rail');
   const wires = document.getElementById('wires');
@@ -110,12 +110,13 @@
   }
 
   // ---- the cards ---------------------------------------------------------
-  // **A second alphabet, doing a different job from the first.** The `lifecycle
-  // mark` says *what the document wants from you*, and it works in the live rail
-  // because every card there is a different state of one kind of thing — a
-  // judgment. A setup rail is the other way round: every card is the same state
-  // of a **different kind of thing**, so a state glyph would distinguish
-  // nothing. The live rail marks **state**; this one marks **subject**.
+  // **The subject glyph is the mark only while the question is asking** (Ed,
+  // 2026-08-18, retiring half of the second-alphabet defence that stood here).
+  // The half that survives: a setup rail is many questions in one state, so
+  // while they ask, the informative mark is *which*. The half that went: the
+  // moment a card is not asking, it speaks the session-view's own alphabet —
+  // ⏳ waiting, drawn ✔ decided (green and pinned while it is news, grey once
+  // filed), ✏️ yours. The grammar lives in setup.js.
   //
   // Since the decomposition of 2026-08-18 a member answers nine of these rather
   // than four — *who may be seen* alone is three questions, and a name and a
@@ -123,37 +124,37 @@
   // holds it by default (§9.7), because the room can take an ordinary setting
   // back cheaply and cannot take a constitutional one back at all.
   const ROOM = [
-    { k: 'myname', g: '✋', t: 'Your name', kind: 'personal', own: 'you', ready: () => !!S.myname.trim() },
-    { k: 'mypic', g: '🖼️', t: 'Your picture', kind: 'personal', own: 'you' },
+    { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you', ready: () => !!S.myname.trim() },
+    { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you' },
     { k: 'quorum', g: '👥', t: 'Quorum', kind: 'constitutional', in: 11,
       rule: 'Each member states the <b>lowest quorum</b> they will accept and the charter takes the highest.',
       takes: 'The charter takes the highest', result: '10 of 14',
       dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', 'all of them'] },
-    { k: 'bar', g: '✒️', t: 'How sure must the room be?', kind: 'constitutional', in: 9,
+    { k: 'bar', g: '✒️', t: 'How Sure Must the Room Be?', kind: 'constitutional', in: 9,
       rule: 'Each member states the <b>lowest bar</b> they will accept and the charter takes the highest.',
       takes: 'The charter takes the highest', result: '80%',
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
-    { k: 'authorship', g: '👤', t: 'When is a proposer named?', kind: 'constitutional', in: 7,
+    { k: 'authorship', g: '👤', t: 'When Is a Proposer Named?', kind: 'constitutional', in: 7,
       rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants to stay unnamed keeps the whole charter unnamed.',
       takes: 'The charter takes the most private', result: 'Nobody’s name, ever',
       dist: [8, 4, 2], distTop: 0, distEnds: ['No names, ever', 'Names from the start'] },
-    { k: 'signing', g: '✍️', t: 'Who may sign a proposal?', kind: 'constitutional', in: 7,
+    { k: 'signing', g: '✍️', t: 'Who May Sign a Proposal?', kind: 'constitutional', in: 7,
       rule: 'Also a privacy question, and the <b>most private</b> answer wins.',
       takes: 'The charter takes the most private', result: 'Nobody signs',
       dist: [9, 3, 2], distTop: 0, distEnds: ['Nobody signs', 'Everybody signs'] },
-    { k: 'judgments', g: '👁️', t: 'When are judgments revealed?', kind: 'constitutional', in: 12,
+    { k: 'judgments', g: '👁️', t: 'When Are Judgments Revealed?', kind: 'constitutional', in: 12,
       rule: 'Never revealed while a question is live, whichever is chosen. What this settles is only whether they are published with the record.',
       takes: 'The charter takes the most private', result: 'Never revealed',
       dist: [11, 3], distTop: 0, distEnds: ['Never', 'After the decision'] },
-    { k: 'chamber', g: '🔭', t: 'Who else can see it?', kind: 'constitutional', in: 6,
+    { k: 'chamber', g: '🔭', t: 'Who Else Can See It?', kind: 'constitutional', in: 6,
       rule: 'A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.',
       takes: 'The charter takes the most private', result: 'Members only',
       dist: [5, 8, 1], distTop: 1, distEnds: ['Members only', 'Public'] },
-    { k: 'lapse', g: '💤', t: 'Do memberships lapse?', kind: 'constitutional', in: 8,
+    { k: 'lapse', g: '💤', t: 'Do Memberships Lapse?', kind: 'constitutional', in: 8,
       rule: 'Each member states the <b>shortest quiet spell</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.',
       takes: 'The document takes the longest', result: 'Never',
       dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
-    { k: 'machines', g: '🤖', t: 'Is there a machine member?', kind: 'constitutional', in: 12,
+    { k: 'machines', g: '🤖', t: 'Is There a Machine Member?', kind: 'constitutional', in: 12,
       rule: 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.',
       takes: 'The charter takes the most restrictive', result: 'People only',
       dist: [9, 5], distTop: 0, distEnds: ['People only', 'A machine is fine'] },
@@ -162,18 +163,21 @@
   // Read-only is not the same as hidden — the whole point of a pile at the head
   // of the document is that the constitution is legible to everyone it binds.
   const CONVENOR = [
-    { k: 'text', g: '📄', t: 'The starting text', own: 'convenor', kind: 'ordinary', v: '42 blocks, 9 sections' },
-    { k: 'title', g: '🏷️', t: 'The title', own: 'convenor', kind: 'ordinary', v: 'The Hollow Oak Club — House Charter' },
-    { k: 'slug', g: '🔗', t: 'The link', own: 'convenor', kind: 'ordinary', v: 'docs.vote/hollow-oak-4f2a' },
+    { k: 'text', g: '📄', t: 'Starting Text', own: 'convenor', kind: 'ordinary', v: '42 blocks, 9 sections' },
+    { k: 'title', g: '🏷️', t: 'Title', own: 'convenor', kind: 'ordinary', v: 'The Hollow Oak Club — House Charter' },
+    { k: 'slug', g: '🔗', t: 'Link', own: 'convenor', kind: 'ordinary', v: 'docs.vote/hollow-oak-4f2a' },
     { k: 'roster', g: '🪪', t: 'Membership', own: 'convenor', kind: 'constitutional', v: 'Fourteen members',
       // 🎩 folded in (Ed, 2026-08-18): whether the convenor is a member is
       // their own row in this list, pre-checked when the document was made
       setBy: 'Invited by Wren Ashby — themselves included, their own row pre-checked',
-      readNote: 'The membership here is the members’ — joining and leaving are theirs to decide. Had Wren <b>reserved</b> it, Wren would be a 👑 — the convenor of a document that reserves its membership, invite-and-remove staying in their hand; a crown lapses like a member, and a lapsed crown passes to the members.',
-
       readNote: 'Anybody else who can read this is not a member — nothing is known about them, they have a link and nothing else. That is the 🔭 setting, not this one.' },
+    // **The register and the door are two decisions** (Ed, 2026-08-18). This
+    // card also un-swallows a note the old single card had lost: two readNote
+    // keys on one object, and the reserved one silently overridden.
+    { k: 'policy', g: '🚪', t: 'Membership Policy', own: 'convenor', kind: 'constitutional', v: 'Anyone may apply',
+      readNote: 'The membership here is the members’ — joining and leaving are theirs to decide, and applications go before them as ordinary proposals. Had Wren <b>reserved</b> it, Wren would be a 👑 — the convenor of a document that reserves its membership, invite-and-remove staying in their hand; a crown lapses like a member, and a lapsed crown passes to the members.' },
     // One card, two routes to change it — see the ⏰ entry in document-creation.
-    { k: 'ending', g: '⏰', t: 'When does it end?', own: 'convenor', kind: 'constitutional',
+    { k: 'ending', g: '⏰', t: 'When Does It End?', own: 'convenor', kind: 'constitutional',
       motionKind: 'ordinary', v: 'Thursday 18:00',
       // 329(a): *never* is the constitutional answer; any date is ordinary.
       routeOf: (v) => (/never|perpetual|no end/i.test(v) ? 'constitutional' : 'ordinary'),
@@ -182,10 +186,10 @@
       readNote: 'The approval threshold rises towards that moment, and ✏️s come back paced against it. <b>Never</b> is one of the answers to this question, which is why it is constitutional — a document with no ending has no ramp. The date itself is ordinary, and anybody may propose moving it — and postponing never lowers the bar: it stays where it is and rises more slowly to the same ceiling.' },
     // Pacing, not consent (§9.0, Q341): the close bar is the room's, above in
     // their own pile; how it climbs there is the convenor's, like the drip.
-    { k: 'pace', g: '📈', t: 'How does the bar get there?', own: 'convenor', kind: 'ordinary', v: 'Rising from 55%',
+    { k: 'pace', g: '📈', t: 'How Does the Bar Get There?', own: 'convenor', kind: 'ordinary', v: 'Rising from 55%',
       readNote: 'Every adoption is recorded against the bar as it stood, so re-shaping the ramp re-rates nothing already decided — which is what makes this ordinary while the close bar is constitutional.' },
-    { k: 'grant', g: '🪙', t: 'How many ✏️s do members start with?', own: 'convenor', kind: 'ordinary', v: '4 each' },
-    { k: 'drip', g: '💧', t: 'How fast do ✏️s come back?', own: 'convenor', kind: 'ordinary', v: '1 back per 10% of the window, up to 8',
+    { k: 'grant', g: '🪙', t: 'How Many ✏️s Do Members Start With?', own: 'convenor', kind: 'ordinary', v: '4 each' },
+    { k: 'drip', g: '💧', t: 'How Fast Do ✏️s Come Back?', own: 'convenor', kind: 'ordinary', v: '1 back per 10% of the window, up to 8',
       readNote: 'With the one above, this is the <b>proposal rate</b> — how often anybody may put something to the room. Each proposal also stakes one ✏️, which is a flat one and not a setting: it comes back in full if you withdraw, and in proportion to how well it did if it does not carry.' },
   ];
   // **The gates are cards** (Ed, 330b). Kept out of ROOM, which defines what
@@ -276,8 +280,10 @@
     { key: 'convenor', label: 'Constitution', cards: CONVENOR,
       who: () => face({ n: 'Wren Ashby', pic: 'c0' }),
       block: () => {
-        const line = (g, t, v) => '<span class="cline" title="' + esc(t) + '">' +
-          '<span class="cg">' + g + '</span><span><b>' + v + '</b></span></span>';
+        const line = (g, t, v, k) => '<' + (k ? 'button' : 'span') + ' class="cline"' +
+          ' title="' + esc(t) + '"' + (k ? ' data-card="' + k + '"' : '') + '>' +
+          '<span class="cg">' + g + '</span><span><b>' + v + '</b></span>' +
+          '</' + (k ? 'button' : 'span') + '>';
         return '<div class="constlist">' +
           line('🎩', 'Convenor', 'Wren Ashby · drafting too · 🏴') +
           line('⏱️', 'Constituted', S.state === 'settled' ? 'constituted Tuesday 14:02'
@@ -287,7 +293,7 @@
           CARDS.filter((c) => c.kind === 'constitutional' && c.k !== 'myrole')
             .map((c) => line(c.g, c.t, c.own === 'convenor' ? value(c)
               : S.state === 'settled' ? esc(c.result || '—')
-              : 'being answered · ' + Math.min(c.in || 0, E) + ' of ' + E)).join('') + '</div>';
+              : 'being answered · ' + Math.min(c.in || 0, E) + ' of ' + E, c.k)).join('') + '</div>';
       },
       note: (n) => (n ? n + ' to acknowledge' : 'settled before you arrived') },
     { key: 'room', label: 'Membership', cards: ROOM.concat(GATES),
@@ -340,13 +346,30 @@
   const summary = (c) => (isRoom(c) && settled(c)
     ? value(c) + ' · ' + someIn(c.in || 0, E) : value(c));
 
+  // ---- the grammar's other states (Ed, 2026-08-18) ------------------------
+  // wait: you answered and the room has not, a motion you have judged still
+  // runs, a gate's blockers stand above it. news: a rule you never chose
+  // binds you, a blind question you answered came back with its number, a
+  // gate opened — each pinned until your OK.
+  const waiting = (c) => (c.isGate ? !c.open()
+    : motionOn(c) ? answeredMotion(c)
+    : isRoom(c) && settled(c) && (c.in || 0) < E);
+  const news = (c) => (c.isGate ? (c.open() && !S.okd.has(c.k))
+    : motionOn(c) ? false
+    : c.own === 'convenor' ? (c.kind === 'constitutional' && !S.okd.has(c.k))
+    : isRoom(c) && settled(c) && (c.in || 0) >= E && !S.okd.has('res-' + c.k));
+
   const ctx = {
     get open() { return S.open; }, get E() { return E; },
     clauseFor: (c) => (c.k === 'roster' ? faces(ROSTER, S.myname) : ''),
-    mustAct, settled, summary, value, isRoom,
+    mustAct, settled, summary, value, isRoom, waiting, news,
     // the head says **what kind of decision this is** first, because the kind
     // is what tells you what could ever be done about it
-    bandLabel: (c) => (c.kind === 'personal' ? 'Yours alone'
+    bandLabel: (c) => (c.isGate ? 'Not a decision · it follows from the others'
+      : c.kind === 'personal' ? 'Yours alone'
+      // the policy card's label follows the holder it records: this
+      // fixture's membership is the members' (Wren is a 🏴)
+      : c.k === 'policy' ? KIND[c.kind] + ' · the members hold it'
       : KIND[c.kind || 'ordinary'] + ' · ' +
         (c.own === 'convenor' ? 'reserved by the convenor' : 'the members decide')),
   };
@@ -368,7 +391,8 @@
       return;
     }
     const gs = groups().slice().reverse()
-      .map((g) => ({ ...g, cards: g.cards.filter((c) => mustAct(c) || motionOn(c)) }))
+      .map((g) => ({ ...g, cards: g.cards.filter((c) =>
+        c.isGate ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done') }))
       .filter((g) => g.cards.length);
     rail.innerHTML = '<ul>' + gs.map((g) =>
       '<li class="qhead">' + esc(g.label) + '</li>' +
@@ -479,22 +503,29 @@
      asking for the only three things an application is. */
   const APPCARDS = () => {
     const a = S.app;
-    const base = [{ k: 'apply', g: '🪪', t: 'Apply for membership', own: 'you',
+    const base = [{ k: 'apply', g: '🪪', t: 'Apply for Membership', own: 'you',
       kind: 'personal', done: () => a.submitted }];
     if (!a.started) return base;
     return base.concat([
       // **the email is the identity** (Ed, 2026-08-18): verified by magic
       // link before anything can be submitted, and unique among members
-      { k: 'appmail', g: '📧', t: 'Your email', own: 'you', kind: 'personal', done: () => a.emailVerified },
-      { k: 'appname', g: '✋', t: 'Your name', own: 'you', kind: 'personal', done: () => !!a.name.trim() },
-      { k: 'apppic', g: '🖼️', t: 'Your picture', own: 'you', kind: 'personal', done: () => !!a.pic },
-      { k: 'apptext', g: '📝', t: 'Your application', own: 'you', kind: 'personal', optional: true, done: () => !!a.text.trim() },
+      { k: 'appmail', g: '📧', t: 'Your Email', own: 'you', kind: 'personal', done: () => a.emailVerified },
+      { k: 'appname', g: '✋', t: 'Your Name', own: 'you', kind: 'personal', done: () => !!a.name.trim() },
+      { k: 'apppic', g: '🖼️', t: 'Your Picture', own: 'you', kind: 'personal', done: () => !!a.pic },
+      { k: 'apptext', g: '📝', t: 'Your Application', own: 'you', kind: 'personal', optional: true, done: () => !!a.text.trim() },
     ]);
   };
   const appCtx = {
     get open() { return S.open; }, get E() { return E; },
     mustAct: (c) => !c.done() && !(c.optional && S.app.submitted),
     settled: (c) => c.done() || (c.optional && S.app.submitted),
+    // the submitted application is a proposal of your own in flight — ✏️
+    // blue, its fill how far the judging has got (session-view's `yours`,
+    // kept because it carries the one act nobody else can perform)
+    yours: (c) => c.k === 'apply' && S.app.submitted,
+    waiting: (c) => c.k === 'appmail' && S.app.emailSent && !S.app.emailVerified,
+    fillOf: (c) => (c.k === 'apply' && S.app.submitted
+      ? Math.round(APPLICANT.judged / E * 100) + '%' : '100%'),
     summary: (c) => (c.k === 'apply'
       ? (S.app.submitted ? 'Before the members — an ordinary proposal' : S.app.started ? (['appname','apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
       : c.k === 'appmail' ? (S.app.emailVerified ? S.app.email + ' · verified'
@@ -597,9 +628,8 @@
           ' data-ok="' + c.k + '">OK</button>';
       } else if (c.own === 'convenor') {
         body = readBody(c, ctx) +
-          (needsOk(c) ? '<p class="setnote">You had no say in this one and it binds you all the same, ' +
-            'so it waits here until you have looked at it. <b>OK</b> files it with the rest of the ' +
-            'constitution at the head of the charter.</p>' : '');
+          (needsOk(c) ? '<p class="setnote">You had no say in this and it binds you, ' +
+            'so it waits for your <b>OK</b> — which files it with the rest of the constitution.</p>' : '');
         // **✏️ is how a motion starts**, and it is the same control that starts a
         // proposal anywhere else on the surface: you write from what stands. The
         // right-hand slot is the commit, so it is OK while there is something to
@@ -615,7 +645,10 @@
         // is the same question and neither of you may see more of it than how
         // many have answered until every one of them has.
         body = BODY[c.k]() + (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
-        foot = '<button class="btn" data-close="1">Close</button>' +
+        foot = stateOf(c, ctx) === 'news'
+          ? '<button class="btn" data-close="1">Close</button>' +
+            '<button class="btn btn-approve" data-ok="res-' + c.k + '">OK</button>'
+          : '<button class="btn" data-close="1">Close</button>' +
           '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
           ' data-confirm="1" title="' + (ready(c) ? 'Confirm' : 'Not answered yet') + '">' + TICK + '</button>';
       }
@@ -653,7 +686,8 @@
       // be reading
       S.quorum = 10; S.bar = 80; S.authorship = 'anonymous'; S.signing = 'nobody';
       S.judgments = 'never'; S.chamber = 'link'; S.machines = false; S.lapse = 'never';
-      S.seen = new Set(ROOM.map((c) => c.k)); S.okd = new Set(CONVENOR.map((c) => c.k));
+      S.seen = new Set(ROOM.map((c) => c.k));
+      S.okd = new Set([...CONVENOR.map((c) => c.k), ...ROOM.map((c) => 'res-' + c.k), 'canpropose', 'canjudge']);
       S.mAns = {}; S.draft = null; S.open = 'apply';
       ROOM.forEach((c) => { if (COUNTS[c.k] != null) c.in = E; });
       return;
@@ -666,7 +700,9 @@
       S.quorum = 10; S.bar = 80; S.authorship = 'anonymous'; S.signing = 'nobody';
       S.judgments = 'never'; S.chamber = 'closed'; S.machines = false; S.lapse = 'never';
       S.mypic = 'c2'; S.seen = new Set(ROOM.map((c) => c.k));
-      S.okd = k === 'settled' ? new Set(CONVENOR.map((c) => c.k)) : new Set();
+      S.okd = k === 'settled'
+        ? new Set([...CONVENOR.map((c) => c.k), ...ROOM.map((c) => 'res-' + c.k), 'canpropose', 'canjudge'])
+        : new Set();
       S.mAns = {}; S.draft = null;
     }
     ROOM.forEach((c) => { if (COUNTS[c.k] != null) c.in = k === 'settled' ? E : COUNTS[c.k]; });

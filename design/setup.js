@@ -60,16 +60,47 @@ window.SETUP = (function () {
   }
 
   /* ---- the lifecycle of a setting -----------------------------------------
-     Two states and one rule, and the rule is the palette's own: **grey means
-     nothing is being asked of you**. A card you owe an answer to is yellow; a
-     card somebody else owes, or a card that is finished, is grey — including
-     the convenor's unconfirmed cards seen by a member, which block them and ask
-     them nothing. Blocked is not the same as wanted. */
-  const hueOf = (c, ctx) => (ctx.mustAct(c) ? 'open' : 'closed');
+     **The session-view's own grammar** (Ed, 2026-08-18: a setup task is a task
+     like any on the live surface, so it speaks the same alphabet), with the
+     palette's rule carried over whole: grey means nothing is being asked of
+     you. Five states:
+
+       ask   — the question is open and yours. Yellow, wearing its **subject
+               glyph**: a setup rail is many questions in one state, so while
+               they are asking, the informative mark is *which*.
+       wait  — ⏳ grey: your part is done, or there is no part for you — the
+               room is answering, the inbox holds the next move, a gate is
+               waiting on the cards above it. It runs on without you.
+       news  — a decision arrived: the room's number came back, a rule you
+               never chose binds you, a gate opened. Drawn ✔ on the changed
+               wash, pinned until you press OK — decided-but-unread is still
+               asking for its OK, exactly as a sealed record is.
+       yours — ✏️ blue: a thing of your own in flight — an application being
+               judged. Asking nothing, settled never; you can always act on it.
+       done  — drawn ✔, grey, and the entry leaves the rail. The subject glyph
+               goes with the question (Ed: *they lose their custom emoji and
+               just become ✔s*): all a settled tab has to say is *settled*,
+               and which rule it was is the constitution block's job to name.
+
+     mustAct still says what is being asked; waiting / news / yours are
+     optional ctx predicates, so a surface without such states writes none. */
+  const stateOf = (c, ctx) =>
+    (ctx.yours && ctx.yours(c)) ? 'yours'
+    : (ctx.news && ctx.news(c)) ? 'news'
+    : (ctx.waiting && ctx.waiting(c)) ? 'wait'
+    : ctx.mustAct(c) ? 'ask' : 'done';
+  const HUE = { ask: 'open', wait: 'closed', news: 'changed', yours: 'yours', done: 'closed' };
+  const hueOf = (c, ctx) => HUE[stateOf(c, ctx)];
   const washOf = (c, ctx) => {
     const h = hueOf(c, ctx);
-    return { col: 'rgba(var(--lc-' + h + '), ' + (h === 'open' ? '0.22' : '0.16') + ')',
+    return { col: 'rgba(var(--lc-' + h + '), ' + (h === 'closed' ? '0.16' : '0.22') + ')',
       bg: 'rgba(var(--lc-' + h + '), 0.06)' };
+  };
+  /* The ✔ is drawn rather than an emoji plate for the session-view's own
+     reason: one function draws it, so the columns cannot drift. */
+  const markOf = (c, ctx) => {
+    const st = stateOf(c, ctx);
+    return st === 'ask' ? c.g : st === 'wait' ? '⏳' : st === 'yours' ? '✏️' : TICK;
   };
 
   /* ---- the piles ----------------------------------------------------------
@@ -97,14 +128,18 @@ window.SETUP = (function () {
      document a filed decision leaves, because it is history at that clause; a
      settled setting is not history, it is *the rule*. So it goes grey and stays,
      which is what leaves the head of the document holding the constitution. */
-  const chipHtml = (c, ctx, o) =>
-    '<span class="achip' + (o.active ? ' wmark' : '') + (o.inert ? ' behind' : '') + '"' +
+  const chipHtml = (c, ctx, o) => {
+    const st = stateOf(c, ctx);
+    return '<span class="achip st-' + st + (o.active ? ' wmark' : '') + (o.inert ? ' behind' : '') + '"' +
     (o.inert ? ' aria-hidden="true"' : ' role="button" tabindex="0" data-tab="' + c.k + '"') +
-    ' style="--chiphue: var(--lc-' + hueOf(c, ctx) + ')' + (o.z ? '; z-index:' + o.z : '') + '"' +
+    ' style="--chiphue: var(--lc-' + HUE[st] + ')' + (o.z ? '; z-index:' + o.z : '') + '"' +
     (o.inert ? '' : ' title="' + esc(c.t + (o.active ? ' — close it'
-      : ctx.mustAct(c) ? ' — waiting on you' : ctx.settled(c) ? ' — settled' : '')) + '"') +
-    '><span aria-hidden="true">' + c.g + '</span>' +
+      : st === 'ask' ? ' — waiting on you' : st === 'wait' ? ' — waiting on others'
+      : st === 'news' ? ' — decided; it waits for your OK'
+      : st === 'yours' ? ' — yours, being judged' : ' — settled')) + '"') +
+    '><span aria-hidden="true">' + markOf(c, ctx) + '</span>' +
     (o.inert ? '' : '<span class="sr">' + esc(c.t) + '</span>') + '</span>';
+  };
 
   /* **The front of a pile is what most wants you**, which is deliberately not
      the order the rail uses. The rail ranks by what must not be lost; a stack
@@ -112,8 +147,9 @@ window.SETUP = (function () {
      something that is finished. Stable within each half, so the strip a card
      opens into is the pile expanded and the two never disagree about what sits
      where. */
+  const RANK = { ask: 0, news: 1, yours: 2, wait: 3, done: 4 };
   const stackOrder = (cards, ctx) =>
-    cards.slice().sort((a, b) => (ctx.mustAct(b) ? 1 : 0) - (ctx.mustAct(a) ? 1 : 0));
+    cards.slice().sort((a, b) => RANK[stateOf(a, ctx)] - RANK[stateOf(b, ctx)]);
 
   /* Closed: the pile, in the gutter, standing where the card's strip will be.
      Open: the same tabs lined up down the side of the card. One list, two
@@ -194,26 +230,26 @@ window.SETUP = (function () {
   }
 
   /* ---- the rail entry -----------------------------------------------------
-     The same object session-view's queue draws, with the subject glyph where a
-     lifecycle mark would be. `--fill` is the completion bar: 100% for anything
-     that is only yours to decide, and how far the room has got on anything that
-     is theirs (Ed, 2026-08-18). */
+     The same object session-view's queue draws, and since Ed's grammar pass
+     (2026-08-18) the mark column says the **state** — the subject glyph is the
+     mark only while the question is asking. `--fill` is the completion bar:
+     100% for anything only yours to decide, how far the room has got on
+     anything that is theirs, and how far judging has got on a thing of yours
+     in flight (a surface may override it with ctx.fillOf). */
   function railEntry(c, ctx) {
     const w = washOf(c, ctx);
-    // A card under motion wants you again even though it is settled, so the
-    // class follows `mustAct` and the tick follows both.
-    const done = ctx.settled(c) && !ctx.mustAct(c);
+    const st = stateOf(c, ctx);
     const room = ctx.isRoom(c);
-    const fill = room ? Math.min(100, Math.round((c.in || 0) / ctx.E * 100)) + '%' : '100%';
+    const fill = ctx.fillOf ? ctx.fillOf(c)
+      : room ? Math.min(100, Math.round((c.in || 0) / ctx.E * 100)) + '%' : '100%';
     return '<li class="qitem" data-q="' + c.k + '">' +
-      '<button class="' + (ctx.mustAct(c) ? 'needs' : 'deciding') + '"' +
+      '<button class="' + (st === 'ask' || st === 'news' ? 'needs' : 'deciding') + ' st-' + st + '"' +
       ' data-card="' + c.k + '" data-washkey="set:' + c.k + '"' +
       ' aria-current="' + (ctx.open === c.k) + '"' +
       ' title="' + esc(room ? (c.in || 0) + ' of ' + ctx.E + ' have answered' : c.t) + '"' +
       ' style="--washcol: ' + w.col + '; --washbg: ' + w.bg + '; --fill: ' + fill + '">' +
-      '<span class="ql"><span class="subj" aria-hidden="true">' + c.g + '</span>' +
-      '<span class="qt">' + esc(c.t) + '</span>' +
-      '<span class="setmark">' + (done ? TICK : '') + '</span></span>' +
+      '<span class="ql"><span class="subj" aria-hidden="true">' + markOf(c, ctx) + '</span>' +
+      '<span class="qt">' + esc(c.t) + '</span></span>' +
       '<span class="qwhy">' + ctx.summary(c) + '</span></button></li>';
   }
 
@@ -287,8 +323,7 @@ window.SETUP = (function () {
       h += '<div class="pips">' + Array.from({ length: ctx.E }, (_, i) =>
         '<span class="pip' + (i < inN ? ' in' : '') + '"></span>').join('') + '</div>' +
         '<div class="statline"><span class="k">Answered</span><span class="v">' + inN + ' of ' + ctx.E + '</span></div>' +
-        '<p class="setnote">Nobody sees anybody’s answer until every one of them is in, and that includes you. ' +
-        'A running total is the one thing that can be shown without anchoring the answers still to come.</p>';
+        '<p class="setnote">Nobody sees anybody’s answer until every one is in — you included. Only the count can show without anchoring the rest.</p>';
       return h;
     }
     h += distHtml(c) +
@@ -561,26 +596,26 @@ window.SETUP = (function () {
         ? 'Nothing moves unless every member has weighed in. A charter that cannot change without all of them is a perfectly reasonable thing to want.'
         : asN(v) <= Math.ceil(E / 4) ? 'A small part of the room can carry a change while the rest are elsewhere.'
         : 'Rather more than half the room has to have looked at a question before it can move.');
-      return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in on a question before it can change the charter. A question short of quorum simply waits — nobody’s silence is ever counted as a vote. Asked as a <b>' + (share ? 'share of the membership' : 'count') + '</b> — the convenor’s wording of the question; the number is the room’s.</p>' +
+      return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in before a question can change the charter — short of that it waits; silence is never a vote. Asked as a <b>' + (share ? 'share of the membership' : 'count') + '</b>: the wording is the convenor’s, the number is the room’s.</p>' +
       (share
         ? slider(A, 'quorum', 5, 100, (v) => v + '% — ' + asN(v) + ' of ' + E, mean, 5)
         : slider(A, 'quorum', 1, E, (v) => v + ' of ' + E, mean)) +
-      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> answer given, so it will never be lower than what you say here.</p>';
+      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> given, so it is never lower than yours.</p>';
     },
     bar: (A) =>
-      '<p class="why">How sure the room has to be that a new wording beats the one it would replace, <b>at the close, where an adoption is permanent</b>. A confidence, not a vote share — at 60% a change goes through on a real but slender preference; at 90% only something close to agreement moves anything. Everything before the close can still be challenged, so this one number covers the whole way there; how the bar climbs is the convenor’s pacing.</p>' +
+      '<p class="why">How sure the room must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. A confidence, not a vote share. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the convenor’s pacing.</p>' +
       slider(A, 'bar', 50, 95, (v) => v + '%', (v) =>
         v >= 85 ? 'Only near-agreement changes anything. Expect the charter to move slowly and keep most of what it started with.'
         : v <= 60 ? 'A modest preference is enough. The charter will move quickly, and reverse itself more often.'
         : 'A clear preference is needed, but not agreement.', 5) +
-      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> answer given.</p>',
+      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> given.</p>',
     authorship: (A) =>
-      '<p class="why">Rationales are visible whatever the room settles on. What varies is only whether a name is attached to one. Here the rule runs the other way: the charter takes the <b>most private</b> answer, so one person who wants to stay unnamed keeps the whole charter unnamed.</p>' +
+      '<p class="why">Rationales are always visible; what varies is whether a name is attached. The <b>most private</b> answer wins: one person who wants no names keeps the charter unnamed.</p>' +
       ladder(A, 'authorship', [
         { v: 'anonymous', t: 'Nobody’s name, ever', e: 'Not during the session and not in the closing record.' },
         { v: 'sealed', t: 'Names at the close', e: 'Hidden while the charter is being written; published with the record.' },
         { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' }]) +
-      '<p class="blindnote">Nothing is preselected — anonymity holds unless every single member is content with more.</p>',
+      '<p class="blindnote">Nothing is preselected — anonymity holds unless everyone is content with more.</p>',
     signing: (A) =>
       '<p class="why">Whether an author may put their name to a proposal that is otherwise unattributed.</p>' +
       ladder(A, 'signing', [
@@ -588,18 +623,18 @@ window.SETUP = (function () {
         { v: 'each', t: 'Each author chooses', e: 'An unsigned proposal among signed ones says something.' },
         { v: 'everybody', t: 'Everybody signs', e: 'Uniform in the other direction.' }]) + BLINDNOTE,
     judgments: (A) =>
-      '<p class="why">Never revealed while a question is still being judged, whichever the room settles on — that would make the room read each other instead of the text. What this settles is only whether they are published with the closing record.</p>' +
+      '<p class="why">Never revealed while a question is live, whichever is chosen — a room that can read itself judges itself. This settles only whether they are published with the closing record.</p>' +
       ladder(A, 'judgments', [
         { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
         { v: 'after', t: 'Revealed once the decision is made', e: 'Published with the record, never before it.' }]) + BLINDNOTE,
     chamber: (A) =>
-      '<p class="why">Who may read the charter besides the members. Whoever they are, they are <b>not members</b>: nothing is known about them, they have a link and nothing else, and they cannot propose, judge or be counted. A privacy question, so the <b>most private</b> answer wins: one member who wants the room closed closes it.</p>' +
+      '<p class="why">Who may read the charter besides the members — readers only, never counted. The <b>most private</b> answer wins: one member who wants the room closed closes it.</p>' +
       ladder(A, 'chamber', [
         { v: 'closed', t: 'Members only', e: 'Nobody outside the membership sees anything at all.' },
         { v: 'link', t: 'Anyone with the link', e: 'The chamber view only, to whoever the link reaches.' },
         { v: 'public', t: 'Public', e: 'Listed and readable by anyone.' }]) + BLINDNOTE,
     machines: (A) =>
-      '<p class="why">A machine member — a coherence auditor that patrols for drift and proposes fixes, holding ✏️s like anybody else. The <b>most restrictive</b> answer wins, so if you would rather not draft alongside one, it stays out.</p>' +
+      '<p class="why">A machine member patrols for drift and proposes fixes, holding ✏️s like anybody else. The <b>most restrictive</b> answer wins: if you would rather not draft alongside one, it stays out.</p>' +
       ladder(A, 'machines', [
         { v: false, t: 'People only', e: 'No machine member in this charter.' },
         { v: true, t: 'A machine member is fine', e: 'It competes on the same terms as anybody else and can be out-judged like anybody else.' }]) + BLINDNOTE,
@@ -612,13 +647,13 @@ window.SETUP = (function () {
       ansRow(A.ending === 'never', 'ending', 'never', 'Never', 'It runs until it is frozen.') +
       '</div>' + BLINDNOTE,
     lapse: (A) =>
-      '<p class="why">Whether a membership <b>lapses</b> after a long quiet spell — and if so, how long. A lapsed member leaves the quorum base the way an abstainer does: the room can finish without them, their judgments keep counting, and coming back is as simple as logging in — the rule was consented to, so returning needs nobody’s permission. Warnings go out by email before it happens, and the package — the document as it stands, and the record so far — goes out with the lapse itself.</p>' +
+      '<p class="why">Whether a membership <b>lapses</b> after a quiet spell — and how long. A lapsed member leaves the quorum base like an abstainer: the room can finish without them, their judgments keep counting, and coming back is just logging in. They are warned by email first, and sent the document and record when it happens.</p>' +
       '<span class="fld"><label>The shortest quiet spell you will accept</label>' +
       '<span class="setrow2"><input class="num" type="number" min="7" max="365"' +
       ' data-ansnum="lapse"' + (typeof A.lapse === 'number' ? ' value="' + A.lapse + '"' : '') + '>' +
       '<span class="setnote" style="margin:0">days</span></span></span>' +
       ansRow(A.lapse === 'never', 'lapse', 'never', 'Never', 'Memberships do not lapse, however quiet.') +
-      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>longest</b> anybody asks for — never being the longest of all — so nobody is lapsed faster than they accepted.</p>',
+      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>longest</b> asked for, <b>never</b> the longest of all.</p>',
     grant: (A) =>
       '<p class="why">The fewest ✏️s you would accept being given to start with. The charter takes the <b>most generous</b> answer.</p>' +
       '<span class="fld"><label>✏️s to start with</label><input class="num" type="number" min="0" max="40"' +
@@ -800,7 +835,7 @@ window.SETUP = (function () {
     '<span class="pf' + (p.n === meName ? ' me' : '') + '">' + avHtml(p) +
     esc(p.n) + (p.n === meName ? ' (you)' : '') + '</span>').join('') + '</div>';
 
-  return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, railEntry,
+  return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, stateOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
     nameBody, pictureBody, drawWire, opt, num, faces, someIn,
     KIND, kindNote, motionBody, motionReopen, motionCompose, routeFor,

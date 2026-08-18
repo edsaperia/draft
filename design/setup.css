@@ -392,3 +392,22 @@
 .mw-act { display: inline-block; margin-top: 10px; padding: 10px 18px;
   background: #1a73e8; color: #fff; border-radius: 4px; cursor: pointer;
   font-weight: bold; text-decoration: none; }
+
+/* ---------------------------------------------------------------------------
+   Lifecycle marks (Ed, 2026-08-18: the session-view's own grammar). The
+   subject glyph is the mark only while the question is asking; after that the
+   state speaks — ⏳ waiting, drawn ✔ decided (green while it is news, grey
+   once filed), ✏️ yours. One set of rules for tabs and rail entries, so the
+   two columns cannot disagree about what a state looks like.
+   ------------------------------------------------------------------------ */
+.achip .mkg { width: 15px; height: 15px; stroke-width: 2.2; }
+.achip.st-done, .achip.st-wait { color: rgb(var(--lc-closed)); }
+.achip.st-news { color: var(--ok); }
+.queue .subj .mkg { width: 13px; height: 13px; stroke-width: 2.1; }
+.queue button.st-done .subj, .queue button.st-wait .subj { color: rgb(var(--lc-closed)); }
+.queue button.st-news .subj { color: var(--ok); }
+/* the constitution block's lines are the way to a settled card now that its
+   tab says only ✔ — a button, but drawn as the line it always was */
+button.cline { border: 0; background: none; padding: 0; text-align: left;
+  cursor: pointer; font: inherit; color: inherit; }
+button.cline:hover b { text-decoration: underline; }
