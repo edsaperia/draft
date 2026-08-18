@@ -255,7 +255,7 @@
     lapse: 'roster', lapseDays: 90,
     authorship: 'roster', signing: 'roster', judgments: 'roster',
     rateBy: 'founder', grant: 4, dripMin: 180, cap: 8,
-    chamber: 'roster', auditor: 'roster', auditorBudget: 6,
+    chamber: 'roster', auditor: false, auditorBudget: 6,
     roster: [{ n: '', e: '', role: 'member', founder: true, in: true, ans: {}, okd: new Set(), mid: 'founder' }],
     // **Confirmed, not merely defaulted** (Ed, 2026-08-17). A default nobody
     // read is not a decision, and these are the decisions that cannot be changed
@@ -539,8 +539,11 @@
       takes: 'The document takes the longest', result: 'Never',
       dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
     // **Not a member** (Ed, 2026-08-18): it never judges and counts toward
-    // nothing — it only proposes, so it lives with the proposal settings
-    { k: 'machines', g: '🤖', t: 'AI Proposals', kind: 'constitutional', gate: 'judge', key: 'auditor', dep: ['roster'], p: 0.86,
+    // nothing — it only proposes, so it lives with the proposal settings.
+    // **Ordinary since Q352** (Ed, same day): switching it re-rates nothing
+    // already decided, so it defaults to the founder and judging never
+    // waits on it; delegating it is still the founder's option.
+    { k: 'machines', g: '🤖', t: 'AI Proposals', kind: 'ordinary', key: 'auditor', dep: ['roster'], p: 0.86,
       rule: 'The <b>most restrictive</b> answer wins, so a single member who would rather not draft alongside a machine keeps it out.',
       takes: 'The document takes the most restrictive', result: 'People only',
       dist: [9, 5], distTop: 0, distEnds: ['People only', 'A machine is fine'] },
@@ -851,7 +854,8 @@
   const myHeldOut = () => {
     if (!cs) return null;
     for (const rec of cs.motionRecords().values()) {
-      if (rec.status === 'running' && rec.route === 'constitutional' && rec.by === viewerId()) {
+      if ((rec.status === 'running' || rec.status === 'awaiting-crown') &&
+        rec.route === 'constitutional' && rec.by === viewerId()) {
         return motionTargets(rec);
       }
     }
@@ -1107,7 +1111,11 @@
     '<div class="pick' + (S.mAns.roster === 'yes' ? ' on' : '') + '"><button class="lanepick"' +
     ' aria-pressed="' + (S.mAns.roster === 'yes') + '" data-motion="yes"><span class="dot"></span>' +
     '<span>I accept them joining</span></button>' +
-    '<span class="exp">They start with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</span></div></div>' + BLINDNOTE;
+    '<span class="exp">They start with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</span></div>' +
+    '<div class="pick' + (S.mAns.roster === 'abstain' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns.roster === 'abstain') + '" data-motion="abstain"><span class="dot"></span>' +
+    '<span>Abstain</span></button>' +
+    '<span class="exp">An answer, not a block: they can join without your consent counting either way.</span></div></div>' + BLINDNOTE;
   const consentBody = (c, m) => (m.invite ? inviteBody(m) :
     '<p class="why">Whether <b>' + esc(m.to) + '</b> replaces <i>' + esc(standsOf(c.k)) + '</i>. Nothing is being judged: you state what you will accept, and one refusal keeps what stands.</p>' +
     '<div class="choice" role="radiogroup">' +
@@ -1118,7 +1126,11 @@
     '<div class="pick' + (S.mAns[c.k] === 'yes' ? ' on' : '') + '"><button class="lanepick"' +
     ' aria-pressed="' + (S.mAns[c.k] === 'yes') + '" data-motion="yes"><span class="dot"></span>' +
     '<span>I accept the change</span></button>' +
-    '<span class="exp">It takes every one of the ' + E() + ' accepting.</span></div></div>' + BLINDNOTE);
+    '<span class="exp">It carries once all ' + E() + ' stand at accept — or abstain.</span></div>' +
+    '<div class="pick' + (S.mAns[c.k] === 'abstain' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns[c.k] === 'abstain') + '" data-motion="abstain"><span class="dot"></span>' +
+    '<span>Abstain</span></button>' +
+    '<span class="exp">An answer, not a block: the motion can carry without your consent counting either way.</span></div></div>' + BLINDNOTE);
 
   // dev only (with the dropdown, Ed 362): complete the founding in one press,
   // because motions live on the far side of it and the mock has no persistence
@@ -1775,7 +1787,8 @@
               ' data-motionlane="to" data-ph="The value you are proposing">' + esc(d.to) + '</div></div>') +
           whyLane(d) +
           (route === 'constitutional'
-            ? '<p class="setnote"><b>Free — and one at a time.</b> Each member may have one 🏛️ out at once; withdraw it and it comes back whole. Putting it is a full ten-second hold.</p>'
+            ? '<p class="setnote"><b>Free — and one at a time.</b> Each member may have one 🏛️ out at once; withdraw it and it comes back whole. Putting it is a full ten-second hold.' +
+              (ctx.reserved(c) ? ' Carrying sends it to the founder as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>'
             : '<p class="setnote"><b>Costs one ✏️</b>, returned in full if withdrawn.' +
               (ctx.reserved(c) ? ' Carrying sends it to the founder as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>') +
           (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
@@ -2082,7 +2095,8 @@
             const rec = liveMotionRec(cw);
             if (rec && rec.route === 'constitutional') {
               cs.answerMotion(now(), viewerId(), rec.id,
-                S.mAns[cw.k] === 'yes' ? 'accept' : 'keep');
+                S.mAns[cw.k] === 'yes' ? 'accept'
+                  : S.mAns[cw.k] === 'abstain' ? 'abstain' : 'keep');
               syncFromCs();
             } else if (rec) {
               myMAnsOk().add(cw.k);
@@ -2207,7 +2221,10 @@
       setTimeout(() => s2.classList.add('in'), 80 + i * (HOLD_MS - 800) / seats.length));
     assembly = { el, timers, done: setTimeout(() => {
       el.classList.add('done');
-      try { cs.openMotion(now(), viewerId(), draftPayload(d0), d0.why || undefined); }
+      try { cs.openMotion(now(), viewerId(), draftPayload(d0), d0.why || undefined);
+        // the module auto-answered accept for the mover (§9.6 v0.49) —
+        // the provisional layer agrees, so their own radio reads pressed
+        S.mAns[d0.k] = 'yes'; }
       catch (e) { console.warn('[cs]', e && e.message); }
       S.draft = null; assembly = null;
       setTimeout(() => { el.remove(); render(); }, 420);
