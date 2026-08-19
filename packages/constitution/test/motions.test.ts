@@ -333,7 +333,7 @@ describe('delegation past the start, and the road back (§9.7 v0.52)', () => {
     const { s, bo, cy } = constituted();
     s.delegate(3, 'link');
     expect(() => s.openMotion(4, bo, { kind: 'reserve', setting: 'title' }))
-      .toThrow(/already reserved/);
+      .toThrow(/already the convenor/);
     expect(() => s.openMotion(4, bo, { kind: 'reserve', setting: 'startingText' }))
       .toThrow(/never held/);
     const m = s.openMotion(4, bo, { kind: 'reserve', setting: 'link' });

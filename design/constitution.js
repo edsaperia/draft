@@ -266,8 +266,8 @@ var CONSTITUTION = (() => {
         if (typeof v.enabled !== "boolean") return "machines: enabled must be a boolean";
         return isInt(v.budget) && v.budget >= 0 ? null : "machines: budget must be an integer ≥ 0";
       case "applications":
-        if (v.holder !== "members" && v.holder !== "reserved")
-          return "applications: holder must be 'members' or 'reserved'";
+        if (v.holder !== "members" && v.holder !== "reserved" && v.holder !== "reserved-unilateral" && v.holder !== "reserved-assent")
+          return "applications: holder must be 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent'";
         return v.joinPolicy === "invite" || v.joinPolicy === "proposed" || v.joinPolicy === "apply" || v.joinPolicy === "open" ? null : "applications: joinPolicy must be invite | proposed | apply | open";
       case "register":
         return "membership has no scalar value — the register changes by command (invite, remove)";
@@ -537,7 +537,10 @@ var CONSTITUTION = (() => {
         ask: "the most open join policy you will accept",
         order: (a, b) => {
           const rungs = ["invite", "proposed", "apply", "open"];
-          return rungs.indexOf(b.joinPolicy) - rungs.indexOf(a.joinPolicy);
+          const byPolicy = rungs.indexOf(b.joinPolicy) - rungs.indexOf(a.joinPolicy);
+          if (byPolicy !== 0) return byPolicy;
+          const holds = ["members", "reserved-unilateral", "reserved-assent", "reserved"];
+          return holds.indexOf(b.holder) - holds.indexOf(a.holder);
         }
       },
       deps: [],
@@ -757,6 +760,7 @@ var CONSTITUTION = (() => {
             this.settings.set(id, {
               id,
               holder: delegated ? "members" : "convenor",
+              powers: { unilateral: !delegated, assent: !delegated },
               value: null,
               settledBy: null,
               settledAtT: null,
@@ -800,7 +804,7 @@ var CONSTITUTION = (() => {
         }
         case "setting-delegated": {
           const st = this.settings.get(event.setting);
-          st.holder = "members";
+          this.setPowers(st, { unilateral: false, assent: false });
           st.collecting = true;
           st.value = null;
           st.settledBy = null;
@@ -810,7 +814,7 @@ var CONSTITUTION = (() => {
         }
         case "setting-reclaimed": {
           const st = this.settings.get(event.setting);
-          st.holder = "convenor";
+          this.setPowers(st, { unilateral: true, assent: true });
           st.collecting = false;
           st.answers.clear();
           st.value = null;
@@ -941,6 +945,16 @@ var CONSTITUTION = (() => {
           this.touch(event.member, event.t);
           break;
         }
+        case "power-relinquished": {
+          const st = this.settings.get(event.setting);
+          const powers = { ...st.powers, [event.power]: false };
+          this.setPowers(st, powers);
+          if (!powers.unilateral && !powers.assent && event.setting === "applications" && st.value !== null && st.value.holder !== "members") {
+            st.value = { ...st.value, holder: "members" };
+          }
+          this.touch(this.convenor.id, event.t);
+          break;
+        }
         case "motion-withdrawn": {
           const rec = this.motions.get(event.motion);
           rec.status = "withdrawn";
@@ -955,7 +969,12 @@ var CONSTITUTION = (() => {
             this.applyPayloadSet(rec.payload.setting, rec.payload.value, "motion", event.t);
           }
           if (rec.payload.kind === "reserve") {
-            this.settings.get(rec.payload.setting).holder = "convenor";
+            const st = this.settings.get(rec.payload.setting);
+            const p = rec.payload.power ?? "both";
+            this.setPowers(st, {
+              unilateral: st.powers.unilateral || p !== "assent",
+              assent: st.powers.assent || p !== "unilateral"
+            });
           }
           break;
         }
@@ -1006,8 +1025,8 @@ var CONSTITUTION = (() => {
         }
         case "setting-handed-over": {
           const st = this.settings.get(event.setting);
-          st.holder = "members";
-          if (event.setting === "applications" && st.value !== null && st.value.holder === "reserved") {
+          this.setPowers(st, { unilateral: false, assent: false });
+          if (event.setting === "applications" && st.value !== null && st.value.holder !== "members") {
             st.value = { ...st.value, holder: "members" };
           }
           this.touch(this.convenor.id, event.t);
@@ -1126,14 +1145,21 @@ var CONSTITUTION = (() => {
       }
       this.reseedAnchorsIfLive(t, id);
     }
-    /** Does this motion's target sit behind the crown's assent (§9.7)? */
+    /** Does this motion's target sit behind the crown's assent (§9.7)?
+     *  v0.54: the assent power specifically — a setting held unilateral-only
+     *  applies a carried change with nobody's accept asked. */
     reservedTarget(rec) {
       if (this.crownLapsedFlag) return false;
       if (rec.payload.kind === "set") {
-        return this.settings.get(rec.payload.setting).holder === "convenor";
+        return this.settings.get(rec.payload.setting).powers.assent;
       }
       if (rec.payload.kind === "reserve") return false;
-      return this.membershipReserved();
+      return this.registerPowers().assent;
+    }
+    /** §9.7 v0.54: holder derives from powers — the convenor's iff any is held. */
+    setPowers(st, powers) {
+      st.powers = powers;
+      st.holder = powers.unilateral || powers.assent ? "convenor" : "members";
     }
     freshMember(id, email, invitedAtT, arrivedAtT) {
       return {
@@ -1154,7 +1180,6 @@ var CONSTITUTION = (() => {
     }
     foldSet(id, value, by, t) {
       const st = this.settings.get(id);
-      st.holder = "convenor";
       st.collecting = false;
       st.value = value;
       st.settledBy = by === "crown" ? "crown" : "convenor";
@@ -1218,8 +1243,11 @@ var CONSTITUTION = (() => {
         throw new Error(`'${setting}' is not set this way`);
       }
       const st = this.settings.get(setting);
-      if (st.holder !== "convenor") {
-        throw new Error(this.constitutedT !== null ? `'${setting}' is the members' — not the convenor's to set (§9.7)` : `'${setting}' is delegated — reclaim it first (§9.0a)`);
+      if (!st.powers.unilateral) {
+        if (this.constitutedT !== null) {
+          throw new Error(st.powers.assent ? `'${setting}' — the unilateral power is given up; propose like a member (§9.7 v0.54)` : `'${setting}' is the members' — not the convenor's to set (§9.7)`);
+        }
+        throw new Error(`'${setting}' is delegated — reclaim it first (§9.0a)`);
       }
       const err = validateFor(entry, value);
       if (err) throw new Error(err);
@@ -1282,9 +1310,37 @@ var CONSTITUTION = (() => {
       if (!this.textConfirmedFlag && this.constitutedT === null) {
         throw new Error("delegation opens with proposing — confirm the starting text first (§9.7)");
       }
-      const membershipCrowned = setting === "applications" && this.membershipReserved();
+      const rp = this.registerPowers();
+      const membershipCrowned = setting === "applications" && (rp.unilateral || rp.assent);
       if (st.holder !== "convenor" && !membershipCrowned) return;
       this.emit({ type: "setting-handed-over", t, setting });
+    }
+    /**
+     * Give up one crown power on one setting (§9.7 v0.54): free, separate,
+     * one-way — the road back is the room's reserve motion. Assent may go
+     * from creation; unilateral change only once proposing opens, because
+     * the assent-only state is inert before the start (Ed, 2026-08-19,
+     * corrected the same day: delegation keeps its earlier clock).
+     */
+    relinquish(t, setting, power) {
+      const entry = entryOf(setting);
+      if (entry.kind === "personal") {
+        throw new Error(`'${setting}' is a member's own (§9.0c) — never held`);
+      }
+      if (setting === "startingText") {
+        throw new Error("the text is never held — it is changed by drafting (§9.7)");
+      }
+      if (setting === "membership") {
+        throw new Error("the register's powers live in the applications value — change that (§9.7½)");
+      }
+      const st = this.settings.get(setting);
+      if (!st.powers[power]) {
+        throw new Error(`the ${power} power on '${setting}' is not held`);
+      }
+      if (power === "unilateral" && !this.textConfirmedFlag && this.constitutedT === null) {
+        throw new Error("giving up unilateral change waits until proposing opens (§9.7 v0.54)");
+      }
+      this.emit({ type: "power-relinquished", t, setting, power });
     }
     reclaim(t, setting) {
       this.requirePreStart("reclaiming");
@@ -1311,7 +1367,7 @@ var CONSTITUTION = (() => {
     // -------------------------------------------------------------------------
     // The roster (§9.6a)
     invite(t, email) {
-      if (this.constitutedT !== null && !this.membershipReserved()) {
+      if (this.constitutedT !== null && !(this.registerPowers().unilateral && !this.crownLapsedFlag)) {
         throw new Error("after the start an invitation is a constitutional motion (§9.6a)");
       }
       this.requireEmailFree(email);
@@ -1471,8 +1527,11 @@ var CONSTITUTION = (() => {
         if (payload.setting === "membership" || payload.setting === "applications") {
           throw new Error("the membership's crown lives in the applications value — move that instead (§9.7½)");
         }
-        if (this.settings.get(payload.setting).holder === "convenor") {
-          throw new Error(`'${payload.setting}' is already reserved`);
+        const rst = this.settings.get(payload.setting);
+        const want = payload.power ?? "both";
+        const already = want === "both" ? rst.powers.unilateral && rst.powers.assent : rst.powers[want];
+        if (already) {
+          throw new Error(`'${payload.setting}' — ${want === "both" ? "both powers are" : `the ${want} power is`} already the convenor's`);
         }
         route = "constitutional";
       } else if (payload.kind === "invite") {
@@ -1724,7 +1783,8 @@ var CONSTITUTION = (() => {
       this.maybeFreezeOrThaw(t);
     }
     holdsAnythingReserved() {
-      if (this.membershipReserved()) return true;
+      const rp = this.registerPowers();
+      if (rp.unilateral || rp.assent) return true;
       for (const st of this.settings.values()) {
         if (st.holder === "convenor") return true;
       }
@@ -1820,9 +1880,20 @@ var CONSTITUTION = (() => {
     }
     // -------------------------------------------------------------------------
     // Reads used by projections (view.ts owns the member-facing surface)
-    membershipReserved() {
+    /** The register's crown as the two powers (§9.7 v0.54), lapse ignored —
+     *  a sleeping crown still holds; callers check the lapse where it bites. */
+    registerPowers() {
       const apps = this.settings.get("applications").value;
-      return apps !== null && apps.holder === "reserved" && !this.crownLapsedFlag;
+      const h = apps === null ? "members" : apps.holder;
+      return {
+        unilateral: h === "reserved" || h === "reserved-unilateral",
+        assent: h === "reserved" || h === "reserved-assent"
+      };
+    }
+    /** Any register power held and the crown awake — the direct-invite gate. */
+    membershipReserved() {
+      const rp = this.registerPowers();
+      return (rp.unilateral || rp.assent) && !this.crownLapsedFlag;
     }
     /**
      * 👑 by any reservation (Ed, 2026-08-18, Q379 wide): the mark reads what
@@ -1833,7 +1904,7 @@ var CONSTITUTION = (() => {
      */
     crowned() {
       const apps = this.settings.get("applications").value;
-      if (apps !== null && apps.holder === "reserved") return true;
+      if (apps !== null && apps.holder !== "members") return true;
       for (const [id, st] of this.settings) {
         if (id === "startingText") continue;
         if (st.holder === "convenor") return true;
@@ -1979,6 +2050,7 @@ var CONSTITUTION = (() => {
         glyph: entry.glyph,
         kind: entry.kind,
         holder: st.holder,
+        powers: { ...st.powers },
         value: st.value,
         settledBy: st.settledBy,
         settledAtT: st.settledAtT,

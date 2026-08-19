@@ -19,14 +19,24 @@ export type CrownQuestionId = string;
 
 export type MotionAnswer = 'accept' | 'keep' | 'abstain';
 
+/**
+ * The two crown powers (§9.7 v0.54), held and relinquished separately:
+ * 'unilateral' — the convenor may change the setting directly, no motion;
+ * 'assent' — a change the members carry waits on the convenor's accept
+ * (the 👑 question). Reservation-as-it-stood is both at once.
+ */
+export type Power = 'unilateral' | 'assent';
+export interface Powers { unilateral: boolean; assent: boolean }
+
 /** What a motion proposes. Membership changes ride motions as actions, never as a scalar. */
 export type MotionPayload =
   | { kind: 'set'; setting: SettingId; value: SettingValue }
   | { kind: 'invite'; email: string }
   | { kind: 'remove'; member: MemberId }
   | { kind: 'admit'; applicant: ApplicantId }
-  // returning a delegated setting to the convenor's reserve (§9.7 v0.52)
-  | { kind: 'reserve'; setting: SettingId };
+  // returning powers to the convenor's reserve (§9.7 v0.52; v0.54 names
+  // which — omitted means both, the pre-v0.54 behaviour; Q394)
+  | { kind: 'reserve'; setting: SettingId; power?: Power | 'both' };
 
 export interface ConvenorInput {
   id: MemberId;
@@ -45,6 +55,8 @@ export type ConstitutionEvent =
       by: 'convenor' | 'crown' }
   | { type: 'setting-delegated'; t: number; setting: SettingId }
   | { type: 'setting-reclaimed'; t: number; setting: SettingId }
+  /** One crown power given up — free, separate, one-way (§9.7 v0.54). */
+  | { type: 'power-relinquished'; t: number; setting: SettingId; power: Power }
   | { type: 'starting-text-confirmed'; t: number; text: string }
   /** The form is the convenor's even when the number is the room's (§9.0a). */
   | { type: 'quorum-form-set'; t: number; form: 'count' | 'share' }
@@ -139,8 +151,10 @@ export type SettledBy = 'convenor' | 'ceremony' | 'motion' | 'crown';
 
 export interface SettingState {
   id: SettingId;
-  /** Who holds it now — reserved means the convenor (§9.7). */
+  /** Derived from powers: the convenor's iff any power is held (§9.7 v0.54). */
   holder: 'convenor' | 'members';
+  /** The crown powers held on this setting (§9.7 v0.54). */
+  powers: Powers;
   value: SettingValue | null;
   settledBy: SettledBy | null;
   settledAtT: number | null;

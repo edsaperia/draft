@@ -227,8 +227,15 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
       ask: 'the most open join policy you will accept',
       order: (a, b) => {
         const rungs = ['invite', 'proposed', 'apply', 'open'];
-        return rungs.indexOf((b as ApplicationsValue).joinPolicy) -
+        const byPolicy = rungs.indexOf((b as ApplicationsValue).joinPolicy) -
           rungs.indexOf((a as ApplicationsValue).joinPolicy);
+        if (byPolicy !== 0) return byPolicy;
+        // Tiebreak on the register's crown, most restrictive first (§9.7
+        // v0.54, Q395): assent restricts the members, unilateral only adds
+        // a founder power, so both > assent-only > unilateral-only > members.
+        const holds = ['members', 'reserved-unilateral', 'reserved-assent', 'reserved'];
+        return holds.indexOf((b as ApplicationsValue).holder) -
+          holds.indexOf((a as ApplicationsValue).holder);
       },
     },
     deps: [], judgeGate: false },

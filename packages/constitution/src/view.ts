@@ -37,6 +37,8 @@ export interface SettingView {
   glyph: string;
   kind: 'ordinary' | 'constitutional';
   holder: 'convenor' | 'members';
+  /** The crown powers held on this setting (§9.7 v0.54). */
+  powers: { unilateral: boolean; assent: boolean };
   value: SettingValue | null;
   settledBy: 'convenor' | 'ceremony' | 'motion' | 'crown' | null;
   settledAtT: number | null;
@@ -88,6 +90,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       glyph: entry.glyph,
       kind: entry.kind as 'ordinary' | 'constitutional',
       holder: st.holder,
+      powers: { ...st.powers },
       value: st.value,
       settledBy: st.settledBy,
       settledAtT: st.settledAtT,

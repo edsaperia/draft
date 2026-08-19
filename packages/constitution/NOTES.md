@@ -100,3 +100,15 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   disagree with the engine's glide while a ramp is live. The engine is the
   adjudicating authority (adoption tests against engine.adoptionThreshold);
   cs.bar() is display. Reconcile if a surface ever draws both.
+- **The two powers ride the settings; the register's ride its value** (v0.54).
+  A setting's crown is `SettingState.powers` and changes by relinquish /
+  delegate / reclaim / the reserve motion; the register's crown stays inside
+  the applications value (four holder states) and changes by changing that
+  value. One corner deliberately left: a founder holding assent-only on the
+  applications setting cannot rewrite its value directly, so they cannot
+  soften the register's own powers by hand — the room can, by motion, and
+  delegation of the applications setting still un-crowns the register whole.
+- **Q395 order** (v0.54): the applications consent tiebreak ranks holders
+  both > assent-only > unilateral-only > members, on the reasoning that
+  assent restricts the members while unilateral only adds a founder power.
+  Wants Ed's eye; the primary key (join policy) is unchanged.

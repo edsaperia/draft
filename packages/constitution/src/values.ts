@@ -29,7 +29,10 @@ export type LapseValue = { afterMs: number | null };
 export type MachinesValue = { enabled: boolean; budget: number };
 /** 🤝 — who holds the membership after the start, and the join policy (§9.7½). */
 export type ApplicationsValue = {
-  holder: 'members' | 'reserved';
+  /** The register's crown, carrying the two powers (§9.7 v0.54): 'reserved'
+   * is both, 'reserved-unilateral' invite-and-remove without assent (Ed's
+   * example), 'reserved-assent' assent without direct change. */
+  holder: 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent';
   joinPolicy: 'invite' | 'proposed' | 'apply' | 'open';
 };
 
@@ -121,8 +124,9 @@ export function validateValue(type: ValueTypeName, v: unknown): string | null {
         ? null
         : 'machines: budget must be an integer ≥ 0';
     case 'applications':
-      if (v.holder !== 'members' && v.holder !== 'reserved')
-        return "applications: holder must be 'members' or 'reserved'";
+      if (v.holder !== 'members' && v.holder !== 'reserved' &&
+          v.holder !== 'reserved-unilateral' && v.holder !== 'reserved-assent')
+        return "applications: holder must be 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent'";
       return v.joinPolicy === 'invite' || v.joinPolicy === 'proposed' ||
         v.joinPolicy === 'apply' || v.joinPolicy === 'open'
         ? null
