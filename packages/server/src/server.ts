@@ -256,6 +256,17 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
           slug: currentSlug(doc.cs),
           constitutedAtT: doc.cs.constitutedAtT,
           seq: doc.cs.logEntries().length,
+          textConfirmed: doc.cs.textConfirmed,
+          text: doc.cs.text,
+          quorumForm: doc.cs.quorumForm,
+          electorateSize: doc.cs.motionElectorate().length,
+          membershipReserved: doc.cs.membershipReserved(),
+          crowned: doc.cs.crowned(),
+          convenor: { id: doc.cs.convenorRecord().id,
+            isMember: doc.cs.convenorRecord().isMember,
+            email: doc.cs.convenorRecord().email,
+            name: doc.cs.convenorRecord().name,
+            picture: doc.cs.convenorRecord().picture },
           // the unconfirmed starting text (§9.7a v0.55): readable by any
           // member — the charter is what the founding questions are about
           provisionalText: doc.cs.textConfirmed ? null : doc.provisional,
@@ -323,8 +334,8 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       return;
     }
     if (req.method === 'GET' && path === '/') {
-      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
-      res.end('draft — POST /api/docs {title, email} to begin\n');
+      // arriving at docs.vote presents a brand-new unsaved document (§9.7a)
+      serveFile(res, join(cfg.designDir, 'setup.html'));
       return;
     }
 

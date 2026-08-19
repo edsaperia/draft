@@ -53,6 +53,10 @@ const HANDLERS: Record<string, Handler> = {
     founderOnly(a);
     cs.confirmStartingText(t, str(args, 'text'));
   },
+  'set-convenor-membership': (cs, a, t, args) => {
+    founderOnly(a);
+    cs.setConvenorMembership(t, args.isMember === true);
+  },
   'set-quorum-form': (cs, a, t, args) => {
     founderOnly(a);
     cs.setQuorumForm(t, str(args, 'form') as 'count' | 'share');

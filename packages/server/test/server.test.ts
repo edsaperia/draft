@@ -149,19 +149,28 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     for (const [setting, value] of [
       ['ending', { endsAtMs: ends }],
       ['bar', { pct: 66 }],
-      ['chamber', { rung: 'link' }],
     ] as const) {
       for (const cookie of [ada, bo, cy]) {
         await cmd(cookie, 'answer', { setting, value });
       }
     }
+    // -- blindness held on the wire: while a question runs, cy (who has
+    // not answered) sees a count and their own null — never the values
+    // the others committed (§9.0a)
+    await cmd(ada, 'answer', { setting: 'chamber', value: { rung: 'link' } });
+    await cmd(bo, 'answer', { setting: 'chamber', value: { rung: 'link' } });
+    const blind = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: cy } })).json() as {
+        view: { questions: Array<{ setting: string; answeredCount: number;
+          myAnswer: unknown }> };
+      };
+    const chamberQ = blind.view.questions.find((q) => q.setting === 'chamber')!;
+    expect(chamberQ.answeredCount).toBe(2);
+    expect(chamberQ.myAnswer).toBeNull();
+    expect(JSON.stringify(blind.view)).not.toContain('"rung":"link"');
+    await cmd(cy, 'answer', { setting: 'chamber', value: { rung: 'link' } });
     const after = await viewOf(ada);
     expect(after.constitutedAtT).not.toBeNull();
-
-    // -- blindness held on the wire: a running question served counts only
-    // (the settled ones carry distributions; nothing ever carried names)
-    const raw = JSON.stringify(after.view);
-    expect(raw).not.toContain('bo@example.org'); // emails are identity, not display
 
     // -- a motion over HTTP races in the engine (Q391) --------------------
     const motion = await cmd(bo, 'open-motion', {

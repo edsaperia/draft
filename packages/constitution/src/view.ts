@@ -58,11 +58,29 @@ export interface MotionView {
   myAnswer: 'accept' | 'keep' | 'abstain' | null;
 }
 
+/**
+ * A membership row (Q391): the roster is on the screen while you answer
+ * (§9.0a) and the pile headings are the people, so the register — names,
+ * pictures, who has arrived and who is only invited — is readable by
+ * every member. Emails are included: they are how invitees are listed
+ * before a name exists, and a small room knows its own addresses.
+ */
+export interface MemberRowView {
+  id: MemberId;
+  email: string;
+  name: string | null;
+  picture: string | null;
+  arrived: boolean;
+  lapsed: boolean;
+  isConvenor: boolean;
+}
+
 export interface MemberView {
   gates: { reading: true; proposing: boolean; judging: boolean };
   questions: QuestionView[];
   resolutions: ResolutionView[];
   settings: SettingView[];
+  members: MemberRowView[];
   owedOks: SettingId[];
   motions: MotionView[];
   myHeldMotion: string | null;
@@ -143,6 +161,21 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     });
   }
 
+  const convenorId = s.convenorRecord().id;
+  const members: MemberRowView[] = [];
+  for (const rec of s.memberRecords().values()) {
+    if (rec.removed) continue;
+    members.push({
+      id: rec.id,
+      email: rec.email,
+      name: rec.name,
+      picture: rec.picture,
+      arrived: rec.arrivedAtT !== null,
+      lapsed: rec.lapsed,
+      isConvenor: rec.id === convenorId,
+    });
+  }
+
   return {
     gates: {
       reading: true,
@@ -152,6 +185,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     questions,
     resolutions,
     settings,
+    members,
     owedOks: me ? [...me.okOwed] : [],
     motions,
     myHeldMotion,

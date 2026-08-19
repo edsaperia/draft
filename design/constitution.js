@@ -2100,6 +2100,20 @@ var CONSTITUTION = (() => {
         myAnswer: rec.answers.get(member) ?? null
       });
     }
+    const convenorId = s.convenorRecord().id;
+    const members = [];
+    for (const rec of s.memberRecords().values()) {
+      if (rec.removed) continue;
+      members.push({
+        id: rec.id,
+        email: rec.email,
+        name: rec.name,
+        picture: rec.picture,
+        arrived: rec.arrivedAtT !== null,
+        lapsed: rec.lapsed,
+        isConvenor: rec.id === convenorId
+      });
+    }
     return {
       gates: {
         reading: true,
@@ -2109,6 +2123,7 @@ var CONSTITUTION = (() => {
       questions,
       resolutions,
       settings,
+      members,
       owedOks: me ? [...me.okOwed] : [],
       motions,
       myHeldMotion,
