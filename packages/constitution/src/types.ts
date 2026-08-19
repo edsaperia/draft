@@ -25,7 +25,7 @@ export type MotionPayload =
   | { kind: 'invite'; email: string }
   | { kind: 'remove'; member: MemberId }
   | { kind: 'admit'; applicant: ApplicantId }
-  // returning an unreserved setting to the convenor's reserve (§9.7 v0.51)
+  // returning a delegated setting to the convenor's reserve (§9.7 v0.52)
   | { kind: 'reserve'; setting: SettingId };
 
 export interface ConvenorInput {
@@ -85,7 +85,7 @@ export type ConstitutionEvent =
   | { type: 'crown-question-answered'; t: number; question: CrownQuestionId;
       outcome: 'accept' | 'reject' }
   | { type: 'crown-question-auto-passed'; t: number; question: CrownQuestionId }
-  | { type: 'setting-unreserved'; t: number; setting: SettingId }
+  | { type: 'setting-handed-over'; t: number; setting: SettingId }
   | { type: 'crown-lapsed'; t: number }
   | { type: 'crown-returned'; t: number }
   /* -- presence and the freeze (§9.5, §9.5a) ------------------------------ */

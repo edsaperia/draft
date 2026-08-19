@@ -226,7 +226,10 @@
   // which page field carries a setting's delegation radio ('roster' = the members')
   const DKEY = { ending: 'ending', bar: 'barBy', quorum: 'quorumBy',
     authorship: 'authorship', signing: 'signing', judgments: 'judgments',
-    chamber: 'chamber', rate: 'rateBy', lapse: 'lapse', machines: 'auditor' };
+    chamber: 'chamber', rate: 'rateBy', lapse: 'lapse', machines: 'auditor',
+    // v0.52: these three only ever read 'roster' once their options render
+    // (title/link after the text confirms, policy after the start)
+    title: 'titleBy', slug: 'slugBy', policy: 'policyBy' };
   const wantsDelegate = (k) => { const dk = DKEY[k]; return !!dk && S[dk] === 'roster'; };
   // ✒️ on a setting card: the confirm is a module command (delegate, or
   // reclaim-and-set). Post-start this is the crown's direct change on a
@@ -244,6 +247,7 @@
 
   const S = {
     title: '', slug: '',
+    titleBy: 'founder', slugBy: 'founder', policyBy: 'founder',
     emailSent: false, emailVerified: false, mailOpen: false,
     viewer: 0,
     app: { started: false, email: '', emailSent: false, emailVerified: false,
@@ -556,11 +560,19 @@
   const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
     GATES.find((c) => c.k === k);
   const isRoom = (c) => !!(c.key && delegated(c.key));
-  // who holds it, title and link included (§9.7 v0.51): the founder may
-  // unreserve either, after which they compose like any member
-  const membersHold = (c) => isRoom(c) ||
-    (!!cs && (c.k === 'title' || c.k === 'slug') &&
-      csState(midOf(c.k)) && csState(midOf(c.k)).holder === 'members');
+  // who holds it (§9.7 v0.52): any setting the founder has delegated —
+  // pre-start into its founding question, post-start as a hand-over — is
+  // the members', and the founder composes on it like any member
+  // committed truth first (363a: choosing and committing are two acts —
+  // the radio is provisional, and it must not re-render the card as the
+  // members' before the ✒️ commits the hand-over); isRoom's provisional
+  // read survives only where the module holds no state for the key
+  const membersHold = (c) => { const st = csState(c.k);
+    return st ? st.holder === 'members' : isRoom(c); };
+  // the watch-half only where a blind question actually ran (or is running):
+  // a post-start hand-over asks the room nothing, so there is nothing to watch
+  const wasAsked = (c) => { const st = csState(c.k);
+    return st ? (!!st.collecting || st.distribution !== null) : isRoom(c); };
   // **Your own answer is a separate card in the membership pile** (Ed,
   // 2026-08-18, revising the both-halves-on-one-card build of the same
   // morning): delegating is one act and answering is another, done later and
@@ -825,8 +837,8 @@
   const motionDisplay = (rec) => {
     const p = rec.payload;
     if (p.kind === 'reserve') {
-      return 'Returns ' + (p.setting === 'link' ? 'the link' : 'the title') +
-        ' to the founder’s reserve';
+      const rc = card(pkeyOf(p.setting));
+      return 'Returns ' + (rc ? '“' + rc.t + '”' : p.setting) + ' to the founder’s reserve';
     }
     if (p.kind === 'invite') return p.email.split('@')[0] + ' joins the membership';
     if (p.kind === 'remove') return nameOfMember(p.member) + ' leaves the membership';
@@ -1451,15 +1463,42 @@
   // the founder costs them nothing. A constitutional one cannot — changing it
   // needs everybody — so it has to be theirs from the start or it is not
   // really theirs at all.
-  const theyDecide = (key, note) => opt(S, key, 'roster', 'The members decide',
-    'Asked of everyone before drafting begins, blind — you among them, if you are on the roster. ' + note);
+  // §9.7 v0.52 (Ed, 2026-08-19): the verb is **delegate**, and it is never
+  // a button — "The [setting] is delegated to the members" is a
+  // constitutional sentence among the setting's own options; the founder
+  // prefers it and ✒️. Post-start the same radio is a hand-over: the rule
+  // stands as it is, only the holder changes. One-way — the road back is a
+  // constitutional motion.
+  const POSTLABEL = {
+    ending: 'The ending is delegated to the members',
+    barBy: 'The approval threshold is delegated to the members',
+    quorumBy: 'Quorum is delegated to the members',
+    authorship: 'Proposer naming is delegated to the members',
+    signing: 'Signing is delegated to the members',
+    judgments: 'Judgment reveal is delegated to the members',
+    rateBy: 'The proposal rate is delegated to the members',
+    chamber: 'Visibility is delegated to the members',
+    lapse: 'Membership lapse is delegated to the members',
+    auditor: 'AI proposals are delegated to the members',
+    titleBy: 'The title is delegated to the members',
+    slugBy: 'The link is delegated to the members',
+    policyBy: 'Applications are delegated to the members',
+  };
+  const POSTNOTE = 'The rule stands as it is; from here changing it is the members’ — you propose like anybody, and nothing comes to you for assent. One way: taking it back would take everyone.';
+  const theyDecide = (key, note) => (cs && cs.constitutedAtT !== null)
+    ? opt(S, key, 'roster', POSTLABEL[key], POSTNOTE)
+    : opt(S, key, 'roster', 'The members decide',
+        'Asked of everyone before drafting begins, blind — you among them, if you are on the roster. ' + note);
 
-  // §9.7 v0.51 (Ed, 2026-08-19): the founder decides whether the title and
-  // link are reserved — the option opens with proposing, on the cards
-  // themselves, one-way: the road back is a constitutional motion.
-  const unreserveBlock = (k) => (!cs || !cs.textConfirmed ? '' :
-    '<p class="setnote"><b>Reserved — yours.</b> A member’s proposal that carries comes to you as a 👑 question. You may hand it to the members instead — one way: taking it back would take everyone.</p>' +
-    '<button class="btn" data-unreserve="' + k + '">Unreserve — hand it to the members</button>');
+  // the title and link never take a founding question (no most-protective
+  // title for maxima to find), so their choice appears with proposing
+  const holdChoice = (k) => (!cs || !cs.textConfirmed ? '' :
+    '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Who holds it</div>' +
+    '<div class="choice" role="radiogroup" aria-label="Who holds it">' +
+    opt(S, k + 'By', 'founder', 'Reserved — yours',
+      'Yours to change directly; a member’s proposal that carries comes to you as a 👑 question.') +
+    opt(S, k + 'By', 'roster', POSTLABEL[k + 'By'], POSTNOTE) +
+    '</div>');
   const BODY = {
     text: () =>
       '<div class="unlocks">Confirming this lets everyone start <b>proposing</b>. They will not be able to judge until the constitution is settled.</div>' +
@@ -1469,7 +1508,7 @@
       '<div class="lanebox"><div class="lp editlane titlelane' + (S.title ? '' : ' blank') + '"' +
       ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
       ' data-ph="Name this document">' + esc(S.title) + '</div></div>' +
-      unreserveBlock('title'),
+      holdChoice('title'),
     slug: () =>
       '<div class="unlocks">Confirming this <b>saves the document</b> — until the link exists, nothing does, anywhere. Invitations wait on it, because an invitation <i>is</i> this link.</div>' +
       (S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> already exists, so a short suffix was added. Change it to anything free.</p>'
@@ -1487,7 +1526,7 @@
       // fourteen people — so a change that broke the old one would make this
       // the one ordinary setting with a cost for using it as intended.
       '<p class="setnote">Every link this document has ever had keeps working: changing it leaves a redirect behind, so an invitation somebody was sent weeks ago still opens the right document.</p>' +
-      unreserveBlock('slug'),
+      holdChoice('slug'),
     myemail: () => (S.emailVerified
       ? '<div class="lockline">' + TICK + '<span>Verified — <b>' + esc(S.myemail) + '</b> can get back in.</span></div>' +
         '<span class="fld"><label>Change it</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" style="width:20rem"></span>' +
@@ -1544,7 +1583,17 @@
       opt(S, 'joinBy', 'proposed', 'Applications must be proposed', 'A reader may apply, but the application waits until a member <b>proposes</b> it — the member stakes the ✏️ as with any proposal, which is what a second is.') +
       opt(S, 'joinBy', 'apply', 'Anyone may apply', 'An application goes straight before the members as a proposal (✏️) — free to make, because the tasks are its price and the bar is its filter.') +
       opt(S, 'joinBy', 'open', 'Open', 'Anyone with the link joins on arrival. For documents that are more petition than charter.') +
-      '</div>',
+      '</div>' +
+      // §9.7 v0.52: past the start the founder may hand the whole card over —
+      // both holds at once, the register's crown living in this value (§9.7½)
+      (cs && cs.constitutedAtT !== null && csState('policy') &&
+        (csState('policy').holder === 'convenor' || cs.membershipReserved())
+        ? '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Or hand it over</div>' +
+          '<div class="choice" role="radiogroup" aria-label="Hand applications to the members">' +
+          opt(S, 'policyBy', 'roster', POSTLABEL.policyBy,
+            'Both halves at once — who holds the membership and who may join become the members’. ' + POSTNOTE) +
+          '</div>'
+        : ''),
     ending: () =>
       '<p class="why">The moment this document closes: the close itself, the record, and the top of the approval threshold’s ramp. <b>Never</b> is one of the answers — a perpetual document has no close of its own and a bar that cannot rise, because a ramp needs an endpoint to rise towards, and it ends by <b>freeze</b>, when too few members are still active, rather than by the calendar.</p>' +
       '<div class="choice" role="radiogroup">' +
@@ -1821,7 +1870,7 @@
               (ctx.reserved(c) ? ' Carrying sends it to the founder as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>'
             : '<p class="setnote"><b>Costs one ✏️</b>, returned in full if withdrawn.' +
               (ctx.reserved(c) ? ' Carrying sends it to the founder as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>') +
-          (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
+          (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
         return cardHtml(c, ctx, body2,
           '<button class="btn glyphbtn" data-dropmotion="1"' +
           (S.draft && S.draft.k === c.k ? '' : ' disabled') + ' title="Discard this motion">🗑️</button>' +
@@ -1831,9 +1880,9 @@
         // a card that is not yours to answer reads as the rule it is —
         // the founder's settings are read-only from any other chair
         : (!amFounder() && c.own !== 'you')
-        ? readBody(c, ctx) + (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '')
+        ? readBody(c, ctx) + (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '')
         : BODY[c.k]() +
-          (isRoom(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
+          (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
       const kindLine = (c.kind === 'personal' || c.ansFor || c.k === 'title') ? '' :
         '<p class="setnote"><b>' + KIND[c.kind] + '.</b> ' + (c.knote || kindNote[c.kind]) + '</p>';
       const clearable = { myname: S.myname, mypic: S.mypic };
@@ -2090,12 +2139,6 @@
         } catch (e) { console.warn('[cs]', e && e.message); }
       }
       return render(); }
-    const unr = ev.target.closest('[data-unreserve]');
-    if (unr) {
-      try { cs.unreserve(now(), midOf(unr.dataset.unreserve)); }
-      catch (e) { console.warn('[cs]', e && e.message); }
-      return render();
-    }
     const cq = ev.target.closest('[data-crownq]');
     if (cq) return closeThen(() => {
       const rec = liveMotionRec(card(S.open));
@@ -2152,6 +2195,10 @@
             return;
           }
           if (!cs) return;
+          // §9.7 v0.52: the delegation sentence preferred + ✒️ is the
+          // hand-over — never a button
+          if ((was === 'title' || was === 'slug') && wantsDelegate(was)) {
+            cs.delegate(now(), midOf(was)); return; }
           if (was === 'title' && S.title !== cs.titleOf) {
             cs.setSetting(now(), 'title', { text: S.title }); return; }
           if (was === 'slug' && S.slug !== cs.slug) {

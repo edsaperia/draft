@@ -61,6 +61,17 @@ recorded here as they are made, so Ed can flip any of them cheaply.
 - **`memberReturn` emits only when something revives** (lapse, sign-out, a
   warning); routine activity rides the member's own commands, so the log
   carries no heartbeats.
+- **Delegating 'applications' releases both holds at once** (v0.52): the
+  membership's crown lives in the applications *value* (§9.7½), so the
+  hand-over event flips the setting's holder and, if the value says
+  'reserved', rewrites it to 'members' — "delegate anything" must not
+  leave the register crowned behind a members-held policy. Q389 records
+  the one-sentence reading this commits to.
+- **The reserve payload excludes the text, the register, applications and
+  personal settings**: the text is never held (changed by drafting, §9.7),
+  the register is held through applications, and the membership's road
+  back is a constitutional *set* motion on the applications value — the
+  holder is part of the value there.
 - **A reservation returned to a lapsed founder sleeps from the next tick**:
   the reserve motion applies immediately (holder → convenor), and the
   crown-lapse event — with its auto-assent mode — fires at the next tick,

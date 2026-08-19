@@ -240,7 +240,7 @@ describe('owed OKs (§9.6a): inheritance as unacknowledged decisions', () => {
 });
 
 describe('📯 is reachable (§9.7 v0.51)', () => {
-  it('delegate the ordinary defaults, resolve by ceremony, unreserve title and link', () => {
+  it('delegate the ordinary defaults, resolve by ceremony, then delegate title and link', () => {
     const s = openDoc();
     s.delegate(0, 'rate');
     s.delegate(0, 'machines');
@@ -262,8 +262,8 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
     }
     expect(s.constitutedAtT).toBe(2); // every gate resolved by the room
     expect(s.crowned()).toBe(true);   // title and link are still ada's
-    s.unreserve(3, 'title');
-    s.unreserve(3, 'link');
+    s.delegate(3, 'title');
+    s.delegate(3, 'link');
     expect(s.crowned()).toBe(false);  // 📯 — a name in the record
   });
 });
@@ -274,7 +274,11 @@ describe('constituted (§9.6a): the moment judging opens', () => {
     settleAllReserved(s, 1, ['applications']); // applications is not a gate
     expect(s.constitutedAtT).toBe(1);
     expect(s.canJudge()).toBe(true);
-    expect(() => s.delegate(2, 'bar')).toThrow(/pre-start/);
+    // v0.52: delegation survives the start as the hand-over — what dies
+    // with the founding is the free reclaim, not the giving
+    s.delegate(2, 'bar');
+    expect(s.settingState('bar').holder).toBe('members');
+    expect(() => s.reclaim(2, 'bar')).toThrow(/pre-start/);
     expect(() => s.uninvite(2, 'ada')).toThrow(/pre-start/);
     expect(() => s.invite(2, 'new@example.org')).toThrow(/constitutional motion/);
     expect(() => s.confirmStartingText(2, 'x')).toThrow(/proposing in the document/);

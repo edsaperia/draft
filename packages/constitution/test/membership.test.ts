@@ -84,6 +84,18 @@ describe('the 👑 marks any reservation (Q379 wide)', () => {
   });
 });
 
+describe('delegating applications releases both holds (§9.7 v0.52)', () => {
+  it('the membership crown goes with the policy, and inviting turns constitutional', () => {
+    const { s } = buildConstituted({ applications: { holder: 'reserved', joinPolicy: 'invite' } });
+    expect(s.membershipReserved()).toBe(true);
+    s.invite(3, 'dee@example.org'); // the crown invites unilaterally (§9.7)
+    s.delegate(4, 'applications');
+    expect(s.membershipReserved()).toBe(false);
+    expect(s.settingState('applications').holder).toBe('members');
+    expect(() => s.invite(5, 'em@example.org')).toThrow(/constitutional motion/);
+  });
+});
+
 describe('the crown lapses like a member (§9.7 v0.49): automatic assent', () => {
   it('a quiet clerk-crown lapses; pending 👑 questions pass; nothing changes hands; return revives', () => {
     const { s, bo, cy } = buildConstituted({ clerk: true, lapse: { afterMs: 10_000 } });

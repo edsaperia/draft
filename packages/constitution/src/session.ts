@@ -313,9 +313,9 @@ export class ConstitutionSession {
           this.applyPayloadSet(rec.payload.setting, rec.payload.value, 'motion', event.t);
         }
         if (rec.payload.kind === 'reserve') {
-          // The room crowned the convenor — willing or lapsed (§9.7 v0.51,
+          // The room crowned the convenor — willing or lapsed (§9.7 v0.52,
           // Ed: a lapsed one is a constitutional monarchy, powers held and
-          // auto-abstained). An unwilling crown's release is unreserve,
+          // auto-abstained). An unwilling crown's release is delegation,
           // which stays the convenor's own free act.
           this.settings.get(rec.payload.setting)!.holder = 'convenor';
         }
@@ -374,8 +374,16 @@ export class ConstitutionSession {
         }
         break;
       }
-      case 'setting-unreserved': {
-        this.settings.get(event.setting)!.holder = 'members';
+      case 'setting-handed-over': {
+        const st = this.settings.get(event.setting)!;
+        st.holder = 'members';
+        // the membership's own crown lives in the applications value (§9.7½):
+        // delegating "anything" must not leave the register crowned behind
+        // a members-held policy
+        if (event.setting === 'applications' && st.value !== null &&
+            (st.value as ApplicationsValue).holder === 'reserved') {
+          st.value = { ...(st.value as ApplicationsValue), holder: 'members' };
+        }
         this.touch(this.convenor.id, event.t);
         break;
       }
@@ -505,7 +513,7 @@ export class ConstitutionSession {
       return this.settings.get(rec.payload.setting)!.holder === 'convenor';
     }
     // a reserve motion's target is the members' by construction — it lands
-    // without assent, the crown's release being unreserve (§9.7 v0.51)
+    // without assent, the crown's release being delegation (§9.7 v0.52)
     if (rec.payload.kind === 'reserve') return false;
     return this.membershipReserved();
   }
@@ -611,25 +619,6 @@ export class ConstitutionSession {
     this.maybeConstitute(t);
   }
 
-  /**
-   * The founder decides whether the title and link are reserved (§9.7
-   * v0.51, Ed 2026-08-19): unreserving is their own free act, offered from
-   * the moment proposing opens (text confirmed), one-way — the road back is
-   * a constitutional motion (the reserve payload), because taking a
-   * decision from the room needs everyone.
-   */
-  unreserve(t: number, setting: SettingId): void {
-    if (setting !== 'title' && setting !== 'link') {
-      throw new Error(`'${setting}' is not unreserved this way (title and link only, Q381)`);
-    }
-    if (!this.textConfirmedFlag) {
-      throw new Error('unreserving opens with proposing — confirm the starting text first (§9.7)');
-    }
-    const st = this.settings.get(setting)!;
-    if (st.holder !== 'convenor') return; // already the members' — nothing to give
-    this.emit({ type: 'setting-unreserved', t, setting });
-  }
-
   setQuorumForm(t: number, form: 'count' | 'share'): void {
     this.requirePreStart('re-framing the quorum question');
     if (this.quorumFormValue === form) return;
@@ -643,13 +632,42 @@ export class ConstitutionSession {
     this.emit({ type: 'quorum-form-set', t, form });
   }
 
+  /**
+   * Delegation — the one verb for handing a setting to the members (§9.7
+   * v0.52, Ed 2026-08-19: the founder may delegate anything as soon as
+   * proposing opens). Before the start a delegable setting delegates into
+   * its founding question (§9.0a). Past that — and for the title and link,
+   * which no blind question can collect (there is no most-protective title
+   * for maxima to find) — the same verb is a hand-over: the settled value
+   * stands and only the holder changes. One-way, the founder's own free
+   * act; the road back is a constitutional motion (the reserve payload).
+   */
   delegate(t: number, setting: SettingId): void {
-    this.requirePreStart('delegation');
     const entry = entryOf(setting);
-    if (!entry.delegable) throw new Error(`'${setting}' is not delegable`);
+    if (entry.kind === 'personal') {
+      throw new Error(`'${setting}' is a member's own (§9.0c) — never held, never delegated`);
+    }
+    if (setting === 'startingText') {
+      throw new Error('the text is delegated as soon as proposing opens — changed by drafting, never held (§9.7)');
+    }
+    if (setting === 'membership') {
+      throw new Error("the register is held through 'applications' — delegate that (§9.7½)");
+    }
     const st = this.settings.get(setting)!;
-    if (st.holder === 'members') return;
-    this.emit({ type: 'setting-delegated', t, setting });
+    if (this.constitutedT === null && entry.delegable) {
+      if (st.holder === 'members') return;
+      this.emit({ type: 'setting-delegated', t, setting });
+      return;
+    }
+    // available from whichever comes first: proposing opening (text
+    // confirmed) or the constitution settling — a constituted document
+    // whose text never confirmed must not hold its settings hostage
+    if (!this.textConfirmedFlag && this.constitutedT === null) {
+      throw new Error('delegation opens with proposing — confirm the starting text first (§9.7)');
+    }
+    const membershipCrowned = setting === 'applications' && this.membershipReserved();
+    if (st.holder !== 'convenor' && !membershipCrowned) return; // already the members'
+    this.emit({ type: 'setting-handed-over', t, setting });
   }
 
   reclaim(t: number, setting: SettingId): void {
@@ -848,13 +866,17 @@ export class ConstitutionSession {
       }
       route = motionRouteOf(entry, payload.value, st.value);
     } else if (payload.kind === 'reserve') {
-      if (payload.setting !== 'title' && payload.setting !== 'link') {
-        throw new Error(`'${payload.setting}' is not reserved this way (title and link only, Q381)`);
+      const re = entryOf(payload.setting);
+      if (re.kind === 'personal' || payload.setting === 'startingText') {
+        throw new Error(`'${payload.setting}' is never held, so it cannot be reserved (§9.7)`);
+      }
+      if (payload.setting === 'membership' || payload.setting === 'applications') {
+        throw new Error("the membership's crown lives in the applications value — move that instead (§9.7½)");
       }
       if (this.settings.get(payload.setting)!.holder === 'convenor') {
         throw new Error(`'${payload.setting}' is already reserved`);
       }
-      route = 'constitutional'; // returning a decision to one hand needs everyone (§9.7 v0.51)
+      route = 'constitutional'; // returning a decision to one hand needs everyone (§9.7 v0.52)
     } else if (payload.kind === 'invite') {
       this.requireEmailFree(payload.email);
       route = 'constitutional'; // membership's own kind — reservation adds assent, never a route (§9.7 v0.49)

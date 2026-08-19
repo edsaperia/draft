@@ -309,14 +309,15 @@ describe('the crown (§9.7 v0.49): reserved is assent, at the end of either rout
   });
 });
 
-describe('unreserve and the road back (§9.7 v0.51)', () => {
+describe('delegation past the start, and the road back (§9.7 v0.52)', () => {
   it('the founder hands the title over; their direct hand dies with it; motions land at the bar', () => {
     const raw = ConstitutionSession.open({ title: 'T', slug: 't',
       convenor: { id: 'ada', email: 'a@x.org', isMember: true } }, 0);
-    expect(() => raw.unreserve(1, 'title')).toThrow(/starting text/);
+    expect(() => raw.delegate(1, 'title')).toThrow(/starting text/);
     const { s, bo } = constituted();
-    expect(() => s.unreserve(3, 'rate')).toThrow(/title and link only/);
-    s.unreserve(3, 'title');
+    s.delegate(3, 'rate'); // v0.52: anything the founder holds, not just title/link
+    expect(s.settingState('rate').holder).toBe('members');
+    s.delegate(3, 'title');
     expect(s.settingState('title').holder).toBe('members');
     expect(s.crowned()).toBe(true); // the link is still ada's
     expect(() => s.setSetting(4, 'title', { text: 'X' })).toThrow(/the members'/);
@@ -330,14 +331,16 @@ describe('unreserve and the road back (§9.7 v0.51)', () => {
 
   it('re-reserving takes a constitutional motion, and lands without the founder’s assent', () => {
     const { s, bo, cy } = constituted();
-    s.unreserve(3, 'link');
+    s.delegate(3, 'link');
     expect(() => s.openMotion(4, bo, { kind: 'reserve', setting: 'title' }))
       .toThrow(/already reserved/);
+    expect(() => s.openMotion(4, bo, { kind: 'reserve', setting: 'startingText' }))
+      .toThrow(/never held/);
     const m = s.openMotion(4, bo, { kind: 'reserve', setting: 'link' });
     expect(s.motionRecords().get(m)!.route).toBe('constitutional');
     s.answerMotion(5, 'ada', m, 'accept');
     s.answerMotion(6, cy, m, 'accept'); // bo stood at accept from the open
-    // no assent step: the release from an unwanted crown is unreserve,
+    // no assent step: the release from an unwanted crown is delegation,
     // which stays the founder's own free act — so a lapsed founder can be
     // crowned too (Ed: a constitutional monarchy)
     expect(s.motionRecords().get(m)!.status).toBe('carried');
