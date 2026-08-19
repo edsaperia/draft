@@ -79,7 +79,9 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // this hash identically, so the gate-silent invariant the test exists to
   // defend is untouched
   // (was bab3663b562f08bcda18234689824515f44c333c3131da0c386709e0ea5bbbc0).
-  const PINNED = '19c295976d1fc5a5b8cbe639d1370ca1b58fd16bd946ce085fe616a11870aee9';
+  // Re-pinned 2026-08-19 (367b): the genesis event hashes the constitution,
+  // which gained quorum and traded tokenDripPerTenth for tokenDripMinutes.
+  const PINNED = 'e8fe607a479ec4fc80ea4311132013868816183cac61d537f134a329ff996556';
 
   const run = (withGate: boolean) =>
     runSession({

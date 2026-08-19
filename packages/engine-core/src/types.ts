@@ -43,7 +43,13 @@ export interface Constitution {
   /** Informed redrafts before a position carries to the backlog. */
   redraftLimit: number;
   tokenGrant: number;
-  tokenDripPerTenth: number;
+  /**
+   * The drip runs on real minutes everywhere (SPEC §7, Q353, v0.48): one
+   * token lands every this-many minutes from the window's start, windowed
+   * and perpetual documents alike — moving the close touches nobody's
+   * wallet. Non-positive or non-finite disables the drip.
+   */
+  tokenDripMinutes: number;
   tokenCap: number;
   stake: number;
   rationaleMaxChars: number;

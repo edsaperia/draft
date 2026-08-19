@@ -36,8 +36,8 @@ interface St {
 
 export function auditTokens(session: Session, snapshotTimes: number[] = []): TokenAudit {
   const c = session.constitution;
-  const windowMs = c.windowEndMs - c.windowStartMs;
-  const tickTime = (k: number): number => c.windowStartMs + (k * windowMs) / 10;
+  const intervalMs = c.tokenDripMinutes * 60_000;
+  const dripping = Number.isFinite(intervalMs) && intervalMs > 0;
   const parts = new Map<string, St>();
   const authorOf = new Map<string, string>();
   const snaps = [...snapshotTimes].sort((a, b) => a - b);
@@ -45,16 +45,13 @@ export function auditTokens(session: Session, snapshotTimes: number[] = []): Tok
 
   // Materialize one tick at a time through engine-core's materialize, so
   // cap behavior is the engine's own; the delta measures wasted drip.
+  // Real minutes since 367b (Q353): one token per interval, no tick cap.
   const advance = (st: St, t: number): void => {
-    const due = Math.max(
-      0,
-      Math.min(10, Math.floor(((t - c.windowStartMs) * 10) / windowMs)),
-    );
-    while (st.ledger.ticksMaterialized < due) {
-      const k = st.ledger.ticksMaterialized + 1;
+    while (dripping && st.ledger.nextDripT <= t) {
+      const tickT = st.ledger.nextDripT;
       const before = st.ledger.balance;
-      materialize(st.ledger, c, tickTime(k));
-      st.audit.wastedDrip += c.tokenDripPerTenth - (st.ledger.balance - before);
+      materialize(st.ledger, c, tickT);
+      st.audit.wastedDrip += 1 - (st.ledger.balance - before);
     }
   };
 
@@ -62,7 +59,10 @@ export function auditTokens(session: Session, snapshotTimes: number[] = []): Tok
     // openLedger's arithmetic, tracked: base grant, then accrued drip to
     // date with the cap applied per tick (SPEC §9.3).
     const st: St = {
-      ledger: { balance: Math.min(c.tokenGrant, c.tokenCap), ticksMaterialized: 0 },
+      ledger: {
+        balance: Math.min(c.tokenGrant, c.tokenCap),
+        nextDripT: c.windowStartMs + intervalMs,
+      },
       audit: {
         joinedAtMs: t,
         balanceAtJoin: 0,

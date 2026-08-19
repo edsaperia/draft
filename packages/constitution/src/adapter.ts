@@ -4,8 +4,6 @@
  * modifying engine-core in this task. Type-only import — erased at runtime,
  * so the browser bundle carries nothing of engine-core.
  *
- * Quarantined here (NOTES.md): the lossy dripMinutes → tokenDripPerTenth
- * conversion, until engine-core adopts the real-minutes drip (v0.48/Q353).
  */
 
 import type { Constitution } from '../../engine-core/src/types.js';
@@ -75,12 +73,9 @@ export function toEngineConstitution(
 
   const grant = rate ? rate.grant : 4;
   const cap = rate ? rate.cap : 8;
+  // Real minutes straight through (Q353, engine-side since 367b): the
+  // sentence's unit is the mechanism's own.
   const dripMinutes = rate ? rate.dripMinutes : 240;
-  // LOSSY (quarantined): engine v0.12 drips per tenth of window. Real
-  // minutes → tokens per tenth only converts where a window exists.
-  const tokenDripPerTenth = endsAtMs === null
-    ? 1
-    : Math.max(0, ((windowEndMs - windowStartMs) / 10) / (dripMinutes * 60_000));
 
   const constitution = {
     adoptionThresholdStart: startPct / 100,
@@ -91,7 +86,7 @@ export function toEngineConstitution(
     cooldownMs: tuning.cooldownMs,
     redraftLimit: tuning.redraftLimit,
     tokenGrant: grant,
-    tokenDripPerTenth,
+    tokenDripMinutes: dripMinutes,
     tokenCap: cap,
     stake: 1, // flat, non-configurable (§13/Q335)
     rationaleMaxChars: tuning.rationaleMaxChars,

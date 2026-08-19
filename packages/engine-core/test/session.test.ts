@@ -20,6 +20,9 @@ function openSession(overrides: Record<string, unknown> = {}, size = 5): Session
     windowStartMs: 0,
     windowEndMs: 10 * HOUR,
     rngSeed: 'test-seed',
+    // Real-minutes drip (Q353, 367b): hourly, matching this file's HOUR-based
+    // expectations from the per-tenth era.
+    tokenDripMinutes: 60,
     cooldownMs: 0,
     ...overrides,
   });
@@ -314,7 +317,7 @@ describe('session lifecycle', () => {
     expect(() =>
       s.submitCandidate(2000, { author: 'p1', patch: rewrite(0, 1, 'Z.'), rationale: 'r' }),
     ).toThrow(/insufficient tokens/);
-    // After 10% of the window drips one token, one more stake fits.
+    // After one drip interval lands a token, one more stake fits.
     expect(
       s.submitCandidate(HOUR + 1, { author: 'p1', patch: rewrite(0, 1, 'Z.'), rationale: 'r' })
         .id,

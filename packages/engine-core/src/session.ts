@@ -54,7 +54,7 @@ export const DEFAULT_CONSTITUTION: Omit<
   cooldownMs: 5 * 60 * 1000,
   redraftLimit: 2,
   tokenGrant: 4,
-  tokenDripPerTenth: 1,
+  tokenDripMinutes: 240,
   tokenCap: 8,
   stake: 1,
   rationaleMaxChars: 300,

@@ -8,11 +8,12 @@ import {
 } from '../src/tokens.js';
 import { makeConstitution } from '../src/session.js';
 
-// 10-hour window: one drip tick per hour.
+// 10-hour window; the drip is real minutes (Q353) — one tick per hour here.
 const HOUR = 3600_000;
 const constitution = makeConstitution({
   windowStartMs: 0,
   windowEndMs: 10 * HOUR,
+  tokenDripMinutes: 60,
   rngSeed: 's',
 });
 
@@ -22,7 +23,7 @@ describe('token economy (SPEC §7, §9.3)', () => {
     expect(balanceAt(l, constitution, 0)).toBe(4);
   });
 
-  it('drips 1 per 10% of window up to the cap', () => {
+  it('drips one token per interval of real minutes, up to the cap', () => {
     const l = openLedger(constitution, 0);
     expect(balanceAt(l, constitution, 1 * HOUR)).toBe(5);
     expect(balanceAt(l, constitution, 4 * HOUR)).toBe(8);
@@ -60,6 +61,28 @@ describe('token economy (SPEC §7, §9.3)', () => {
     balanceAt(l, constitution, 4 * HOUR); // at cap 8
     credit(l, constitution, 4 * HOUR, 1.5);
     expect(balanceAt(l, constitution, 4 * HOUR)).toBe(9.5);
+  });
+
+  it('a perpetual document drips on the same clock (Q353)', () => {
+    const perpetual = makeConstitution({
+      windowStartMs: 0,
+      windowEndMs: 0, // perpetual: zero-span window, drip unaffected
+      tokenDripMinutes: 60,
+      rngSeed: 's',
+    });
+    const l = openLedger(perpetual, 0);
+    expect(balanceAt(l, perpetual, 3 * HOUR)).toBe(7);
+  });
+
+  it('a non-finite interval disables the drip', () => {
+    const still = makeConstitution({
+      windowStartMs: 0,
+      windowEndMs: 10 * HOUR,
+      tokenDripMinutes: Infinity,
+      rngSeed: 's',
+    });
+    const l = openLedger(still, 0);
+    expect(balanceAt(l, still, 9 * HOUR)).toBe(4);
   });
 
   it('performance refund follows stake × min(w/0.5, 1.5)', () => {

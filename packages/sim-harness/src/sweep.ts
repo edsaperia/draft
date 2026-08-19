@@ -33,7 +33,8 @@ const KNOBS: KnobSpec[] = [
   { knob: 'adoptionThresholdStart', values: [0.6, 0.5, 0.7, 0.8] },
   { knob: 'adoptionThresholdEnd', values: [0.95, 0.85, 0.9, 0.99] },
   { knob: 'tokenGrant', values: [4, 2, 6, 8] },
-  { knob: 'tokenDripPerTenth', values: [1, 0, 2] },
+  // Real minutes since 367b (Q353): default, effectively-none, fast.
+  { knob: 'tokenDripMinutes', values: [240, 1_000_000_000, 48] },
   { knob: 'tokenCap', values: [8, 4, 16] },
   { knob: 'cooldownMs', values: [5 * 60_000, 0, 15 * 60_000, 30 * 60_000] },
   { knob: 'hotSetSize', values: [6, 3, 10] },
