@@ -117,7 +117,8 @@ const HANDLERS: Record<string, Handler> = {
     bridge.judge(t, a.memberId, str(args, 'a'), str(args, 'b'), outcome);
   },
   'propose-applicant': (cs, a, t, args, bridge) => {
-    const why = str(args, 'why');
+    const why = typeof args.why === 'string' && args.why.trim() !== ''
+      ? args.why : undefined;
     if (bridge !== null) {
       bridge.proposeApplicant(t, a.memberId, str(args, 'applicant'), why);
     } else {

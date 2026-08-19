@@ -78,6 +78,10 @@
   .setupcard .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch; }
   .setupcard .setnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
   .setupcard .body { border-top: 1px solid var(--border); padding-top: var(--s3); margin-top: var(--s3); }
+  /* the hairline between the constitution and the document proper, and the
+     title standing again as the charter's own heading (Ed, 2026-08-19) */
+  .cpara.docsep { border-top: 1px solid var(--border); margin: var(--s5) 0 var(--s4); padding: 0; }
+  .textanchor .dochead { margin: 0 0 var(--s3); }
   .unlocks { font-size: var(--t-cap); color: var(--primary-emphasis); background: var(--primary-subtle);
     border-radius: var(--r-sm); padding: var(--s2) var(--s3); margin: 0 0 var(--s4); }
   .lockline { font-size: var(--t-cap); color: var(--muted); margin: 0 0 var(--s4);

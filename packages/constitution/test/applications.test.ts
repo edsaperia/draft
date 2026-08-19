@@ -52,8 +52,6 @@ describe('applications (§9.7½): four rungs, one identity rule', () => {
     s.verifyApplication(4, ap);
     s.submitApplication(5, ap);
     expect(s.applicantRecords().get(ap)!.motion).toBeNull(); // waiting for a second
-    expect(() => s.proposeApplicant(6, bo, ap))
-      .toThrow(/rationale is required/); // a second is a case for a person (v0.56)
     s.proposeApplicant(6, bo, ap, 'dee ran the sister club for two years');
     const rec = s.applicantRecords().get(ap)!;
     expect(s.motionRecords().get(rec.motion!)!.why)

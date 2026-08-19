@@ -206,7 +206,7 @@ export class EngineBridge {
   }
 
   /** A second stakes the ✏️ (§9.7½): priced at the door like any entry. */
-  proposeApplicant(t: number, by: MemberId, applicant: string, why: string): void {
+  proposeApplicant(t: number, by: MemberId, applicant: string, why?: string): void {
     this.sync(t);
     if (this.engine.balance(by, t) < this.engine.constitution.stake) {
       throw new Error('insufficient ✏️ for the stake (§7)');

@@ -57,7 +57,8 @@
   membership as it stands, members judge it on their served race cards,
   and adoption admits. A seconder's propose-applicant is priced through
   the bridge (the ✏️ stake refused at the door if the wallet is short)
-  and carries the required rationale.
+  and carries the seconder's rationale where one was written (blank is
+  fine, v0.57).
 - **The dev inbox is an endpoint** (Ed, 2026-08-19): GET /api/dev/outbox
   serves the tail of outbox.jsonl — links intact — so the page can put
   the magic-link mails in a modal instead of asking QA to tail a file.

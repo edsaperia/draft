@@ -213,12 +213,11 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(s.E()).toBe(3);
   });
 
-  it('an invitation is proposed with its reasons — no rationale, no motion (v0.56)', () => {
+  it('a blank rationale is a real proposal (v0.57) — the lane is offered, never demanded', () => {
     const { s, bo } = constituted();
-    expect(() => s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' }))
-      .toThrow(/owed the case/);
-    expect(() => s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' }, '  '))
-      .toThrow(/owed the case/);
+    const m = s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' });
+    expect(s.motionRecords().get(m)!.status).toBe('running');
+    expect(s.motionRecords().get(m)!.why).toBeNull();
   });
 
   it('an invitation is a constitutional motion; the invitee still counts toward nothing', () => {

@@ -1539,9 +1539,6 @@ var CONSTITUTION = (() => {
         route = "constitutional";
       } else if (payload.kind === "invite") {
         this.requireEmailFree(payload.email);
-        if (why === void 0 || why.trim() === "") {
-          throw new Error("an invitation is proposed with its reasons — the members deciding on a person are owed the case for them (§9.7½ v0.56)");
-        }
         route = "constitutional";
       } else if (payload.kind === "remove") {
         const target = this.members.get(payload.member);
@@ -1864,8 +1861,9 @@ var CONSTITUTION = (() => {
         });
       }
     }
-    /** A second is a proposed application (§9.7½, Q348a): the member stakes the ✏️
-     *  and writes the case (v0.56: the members deciding on a person are owed it). */
+    /** A second is a proposed application (§9.7½, Q348a): the member stakes the ✏️.
+     *  The rationale is theirs to write or leave blank (v0.57) — the lane is
+     *  offered by the surface, never demanded by the mechanism. */
     proposeApplicant(t, member, applicant, why) {
       if (this.joinPolicy() !== "proposed") {
         throw new Error("this document's applications are not proposed (§9.7½)");
@@ -1874,20 +1872,18 @@ var CONSTITUTION = (() => {
       if (!m || !inE(m)) throw new Error(`'${member}' is not an arrived member`);
       const a = this.applicants.get(applicant);
       if (!a || a.status !== "submitted") throw new Error("no submitted application to propose");
-      if (why === void 0 || why.trim() === "") {
-        throw new Error("a second is proposed with its reasons — the rationale is required (§9.7½ v0.56)");
-      }
       this.emit({ type: "application-proposed", t, applicant, by: member });
-      this.emit({
+      const e = {
         type: "motion-opened",
         t,
         motion: `mo-${this.nextMotionN}`,
         by: member,
         payload: { kind: "admit", applicant },
         route: "ordinary",
-        stake: 1,
-        why
-      });
+        stake: 1
+      };
+      if (why !== void 0 && why.trim() !== "") e.why = why;
+      this.emit(e);
     }
     // -------------------------------------------------------------------------
     // Reads used by projections (view.ts owns the member-facing surface)
@@ -2108,6 +2104,11 @@ var CONSTITUTION = (() => {
         myAnswer: rec.answers.get(member) ?? null
       });
     }
+    const rp = s.registerPowers();
+    const register = {
+      holder: rp.unilateral || rp.assent ? "convenor" : "members",
+      powers: rp
+    };
     const applicants = [];
     for (const a of s.applicantRecords().values()) {
       if (a.status === "started") continue;
@@ -2145,6 +2146,7 @@ var CONSTITUTION = (() => {
       resolutions,
       settings,
       members,
+      register,
       applicants,
       owedOks: me ? [...me.okOwed] : [],
       motions,

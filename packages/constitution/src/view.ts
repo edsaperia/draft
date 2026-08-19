@@ -86,12 +86,18 @@ export interface ApplicantRowView {
   motion: string | null;
 }
 
+export interface RegisterView {
+  holder: 'convenor' | 'members';
+  powers: { unilateral: boolean; assent: boolean };
+}
+
 export interface MemberView {
   gates: { reading: true; proposing: boolean; judging: boolean };
   questions: QuestionView[];
   resolutions: ResolutionView[];
   settings: SettingView[];
   members: MemberRowView[];
+  register: RegisterView;
   applicants: ApplicantRowView[];
   owedOks: SettingId[];
   motions: MotionView[];
@@ -173,6 +179,12 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     });
   }
 
+  const rp = s.registerPowers();
+  const register: RegisterView = {
+    holder: rp.unilateral || rp.assent ? 'convenor' : 'members',
+    powers: rp,
+  };
+
   const applicants: ApplicantRowView[] = [];
   for (const a of s.applicantRecords().values()) {
     if (a.status === 'started') continue; // an unverified address is nobody's business yet
@@ -205,6 +217,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     resolutions,
     settings,
     members,
+    register,
     applicants,
     owedOks: me ? [...me.okOwed] : [],
     motions,
