@@ -37,52 +37,21 @@
  */
 
 import { Session as EngineSession } from '../../engine-core/src/session.js';
-import type { ConstitutionAmendment, LogEntry as EngineLogEntry } from '../../engine-core/src/types.js';
+import type { ConstitutionAmendment, Event as EngineEvent,
+  LogEntry as EngineLogEntry } from '../../engine-core/src/types.js';
 import type { Outcome } from '../../engine-core/src/ranking/types.js';
 import { stableStringify } from './hash.js';
 import { CATALOGUE, entryOf, motionRouteOf } from './catalogue.js';
 import type { SettingId } from './catalogue.js';
 import type { ConstitutionSession } from './session.js';
 import { inE } from './populations.js';
-import { DEFAULT_TUNING, toEngineConstitution, type EngineTuning } from './adapter.js';
+import { DEFAULT_TUNING, engineFieldsFor, toEngineConstitution,
+  type EngineTuning } from './adapter.js';
 import type { MemberId, MotionId } from './types.js';
 import type { SettingValue } from './values.js';
 
 /** Settings that never carry a raceable standing value. */
 const UNRACED: ReadonlySet<string> = new Set(['membership', 'startingText']);
-
-/** The engine constitution fields a settled value implies (§9.6/Q328). */
-function engineChangesFor(
-  id: SettingId,
-  value: SettingValue,
-  t: number,
-): ConstitutionAmendment {
-  switch (id) {
-    case 'bar':
-      return { adoptionThresholdEnd: (value as { pct: number }).pct / 100 };
-    case 'ending': {
-      const ends = (value as { endsAtMs: number | null }).endsAtMs;
-      // Perpetual: a zero-span window from here pins the ramp at its end
-      // value — the fixed bar §9.0 requires, same convention as the adapter.
-      return { windowEndMs: ends ?? t };
-    }
-    case 'quorum': {
-      const q = value as { form: 'count' | 'share'; n: number };
-      return { quorum: { form: q.form, n: q.n } };
-    }
-    case 'rate': {
-      const r = value as { grant: number; cap: number; dripMinutes: number };
-      return { tokenGrant: r.grant, tokenCap: r.cap, tokenDripMinutes: r.dripMinutes };
-    }
-    case 'authorship':
-      return {
-        authorshipVisibility: (value as { rung: string }).rung as
-          'public' | 'sealed' | 'anonymous',
-      };
-    default:
-      return {};
-  }
-}
 
 /**
  * What a host must keep beside the engine log to resume a bridge: the
@@ -166,10 +135,10 @@ export class EngineBridge {
   ): { motion: MotionId; route: 'ordinary' | 'constitutional'; candidate?: string } {
     this.sync(t);
     const standing = this.cs.settingState(setting).value;
-    const route =
-      standing === null
-        ? 'constitutional'
-        : motionRouteOf(entryOf(setting), value, standing);
+    // A null standing routes constitutionally (the session will refuse the
+    // motion; the route only gates the stake check here) — motionRouteOf's
+    // own null case, the same rule openMotion derives rec.route by.
+    const route = motionRouteOf(entryOf(setting), value, standing);
     if (
       route === 'ordinary' &&
       this.engine.balance(by, t) < this.engine.constitution.stake
@@ -195,13 +164,7 @@ export class EngineBridge {
    * applied, or parked behind a 👑 — flows back via sync().
    */
   judge(t: number, who: MemberId, aId: string, bId: string, outcome: Outcome): void {
-    const events = this.engine.judge(t, who, aId, bId, outcome);
-    for (const e of events) {
-      if (e.type !== 'adopted') continue;
-      const motion = this.motionOfCandidate.get(e.candidateId);
-      if (motion === undefined) continue; // a text race adopting
-      this.cs.adjudicateOrdinaryMotion(t, motion, 'carried');
-    }
+    this.reportAdoptions(t, this.engine.judge(t, who, aId, bId, outcome));
     this.sync(t);
   }
 
@@ -213,13 +176,18 @@ export class EngineBridge {
    */
   tick(t: number): void {
     this.sync(t); // the sweep runs under the current ground
-    for (const e of this.engine.tick(t)) {
+    this.reportAdoptions(t, this.engine.tick(t));
+    this.sync(t); // relay what carried (the ground shift)
+  }
+
+  /** Every setting race among the adoptions reports 'carried' through the seam. */
+  private reportAdoptions(t: number, events: EngineEvent[]): void {
+    for (const e of events) {
       if (e.type !== 'adopted') continue;
       const motion = this.motionOfCandidate.get(e.candidateId);
       if (motion === undefined) continue; // a text race adopting
       this.cs.adjudicateOrdinaryMotion(t, motion, 'carried');
     }
-    this.sync(t); // relay what carried (the ground shift)
   }
 
   /** A second stakes the ✏️ (§9.7½): priced at the door like any entry. */
@@ -266,6 +234,33 @@ export class EngineBridge {
   }
 
   /**
+   * A membership motion is its own one-candidate race against the
+   * membership as it stands (§9.7½ v0.56, Q397/Q401a): a synthetic
+   * per-member setting, so it can never be raced against anything else.
+   */
+  private enterMembershipRace(
+    t: number,
+    motion: MotionId,
+    settingId: string,
+    standing: { member: boolean },
+    proposed: { member: boolean },
+    author: MemberId,
+    rationale: string,
+  ): void {
+    if (this.candidateOfMotion.has(motion)) return;
+    if (this.engine.standing(settingId) === undefined) {
+      this.engine.setStanding(t, settingId, standing);
+    }
+    const { id } = this.engine.submitCandidate(t, {
+      author,
+      setting: { settingId, value: proposed },
+      rationale,
+    });
+    this.candidateOfMotion.set(motion, id);
+    this.motionOfCandidate.set(id, motion);
+  }
+
+  /**
    * An admit motion is its own race (§9.7½ v0.56, Q397): one candidate
    * against the membership as it stands, never another applicant.
    */
@@ -278,10 +273,6 @@ export class EngineBridge {
   ): void {
     if (this.candidateOfMotion.has(motion)) return;
     const a = this.cs.applicantRecords().get(applicant);
-    const settingId = `admit:${applicant}`;
-    if (this.engine.standing(settingId) === undefined) {
-      this.engine.setStanding(t, settingId, { member: false });
-    }
     let author = by;
     let transientVoice = false;
     if (author === null) {
@@ -294,14 +285,9 @@ export class EngineBridge {
         transientVoice = true;
       }
     }
-    const { id } = this.engine.submitCandidate(t, {
-      author,
-      setting: { settingId, value: { member: true } },
-      rationale: why ?? a?.words ?? '',
-    });
+    this.enterMembershipRace(t, motion, `admit:${applicant}`,
+      { member: false }, { member: true }, author, why ?? a?.words ?? '');
     if (transientVoice) this.engine.suspendParticipant(t, applicant);
-    this.candidateOfMotion.set(motion, id);
-    this.motionOfCandidate.set(id, motion);
   }
 
   /**
@@ -316,18 +302,8 @@ export class EngineBridge {
     by: MemberId,
     why: string | undefined,
   ): void {
-    if (this.candidateOfMotion.has(motion)) return;
-    const settingId = `remove:${member}`;
-    if (this.engine.standing(settingId) === undefined) {
-      this.engine.setStanding(t, settingId, { member: true });
-    }
-    const { id } = this.engine.submitCandidate(t, {
-      author: by,
-      setting: { settingId, value: { member: false } },
-      rationale: why ?? '',
-    });
-    this.candidateOfMotion.set(motion, id);
-    this.motionOfCandidate.set(id, motion);
+    this.enterMembershipRace(t, motion, `remove:${member}`,
+      { member: true }, { member: false }, by, why ?? '');
   }
 
   /**
@@ -388,7 +364,7 @@ export class EngineBridge {
         continue;
       }
       this.engine.setStanding(t, entry.id, st.value);
-      Object.assign(changes, engineChangesFor(entry.id, st.value, t));
+      Object.assign(changes, engineFieldsFor(entry.id, st.value, t));
     }
     if (Object.keys(changes).length > 0) this.engine.amend(t, changes);
   }

@@ -13,6 +13,7 @@ import type {
   LogEntry, MemberId, MemberRecord, MotionAnswer, MotionId, MotionPayload,
   MotionRecord, Power, Powers, SettingState,
 } from './types.js';
+import { holderOf } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf, motionRouteOf, validateFor } from './catalogue.js';
 import type { ApplicationsValue, EndingValue, LadderValue, LapseValue, PaceValue,
@@ -552,7 +553,7 @@ export class ConstitutionSession {
   /** §9.7 v0.54: holder derives from powers — the convenor's iff any is held. */
   private setPowers(st: SettingState, powers: Powers): void {
     st.powers = powers;
-    st.holder = powers.unilateral || powers.assent ? 'convenor' : 'members';
+    st.holder = holderOf(powers);
   }
 
   private freshMember(id: MemberId, email: string, invitedAtT: number,

@@ -7,46 +7,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
-import type { ApplicationsValue } from '../src/values.js';
-
-/** A constituted three-member document: ada (convenor-member), bo, cy. */
-const constituted = (apps: ApplicationsValue = { holder: 'members', joinPolicy: 'invite' }) => {
-  const s = ConstitutionSession.open({
-    title: 'Hollow Oak Club Charter',
-    slug: 'hollow-oak',
-    convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
-  }, 0);
-  const bo = s.invite(1, 'bo@example.org');
-  const cy = s.invite(1, 'cy@example.org');
-  s.arrive(1, bo);
-  s.arrive(1, cy);
-  for (const q of ['ending', 'bar', 'chamber'] as const) {
-    for (const m of ['ada', bo, cy]) {
-      s.answer(1, m, q,
-        q === 'ending' ? { endsAtMs: 1_000_000 }
-          : q === 'bar' ? { pct: 66 } : { rung: 'link' });
-    }
-  }
-  const values = {
-    pace: { shape: 'fixed' },
-    quorum: { form: 'share', n: 60 },
-    authorship: { rung: 'sealed' },
-    signing: { rung: 'each' },
-    judgments: { rung: 'after' },
-    applications: apps,
-    machines: { enabled: false, budget: 0 },
-    lapse: { afterMs: null },
-  } as const;
-  s.confirmStartingText(2, 'The clubhouse shall be kept open.');
-  // rate stays reserved (ordinary default): ada holds both powers on it
-  s.setSetting(2, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
-  for (const [id, v] of Object.entries(values)) {
-    s.reclaim(2, id as never);
-    s.setSetting(2, id as never, v as never);
-  }
-  expect(s.constitutedAtT).toBe(2);
-  return { s, bo, cy };
-};
+import { buildConstituted } from './helpers.js';
 
 const crownQuestionFor = (s: ConstitutionSession, motion: string) =>
   (s.logEntries().map((e) => e.event)
@@ -73,7 +34,7 @@ describe('pre-start, powers are as revisable as values (§9.6a)', () => {
   });
 
   it('post-start, reclaim is refused — relinquishment has become one-way', () => {
-    const { s } = constituted();
+    const { s } = buildConstituted();
     s.relinquish(3, 'rate', 'assent');
     expect(() => s.reclaim(4, 'rate')).toThrow();
   });
@@ -90,7 +51,7 @@ describe('giving up assent alone (available from creation)', () => {
     expect(s.settingState('rate').powers).toEqual({ unilateral: true, assent: false });
     expect(s.settingState('rate').holder).toBe('convenor'); // still held
 
-    const { s: cs, bo, cy } = constituted();
+    const { s: cs, bo, cy } = buildConstituted();
     cs.relinquish(3, 'rate', 'assent');
     const m = cs.openMotion(10, bo, {
       kind: 'set', setting: 'rate', value: { grant: 6, cap: 8, dripMinutes: 240 },
@@ -116,7 +77,7 @@ describe('giving up unilateral change (waits until proposing opens)', () => {
     expect(() => s.relinquish(0, 'rate', 'unilateral'))
       .toThrow(/waits until proposing opens/);
 
-    const { s: cs, bo } = constituted();
+    const { s: cs, bo } = buildConstituted();
     cs.relinquish(3, 'rate', 'unilateral');
     expect(cs.settingState('rate').powers).toEqual({ unilateral: false, assent: true });
     // the founder can no longer move it alone…
@@ -135,7 +96,7 @@ describe('giving up unilateral change (waits until proposing opens)', () => {
   });
 
   it('giving up the last power is a hand-over', () => {
-    const { s, bo } = constituted();
+    const { s, bo } = buildConstituted();
     s.relinquish(3, 'rate', 'assent');
     s.relinquish(4, 'rate', 'unilateral');
     expect(s.settingState('rate').holder).toBe('members');
@@ -151,7 +112,7 @@ describe('giving up unilateral change (waits until proposing opens)', () => {
 
 describe('the road back may restore one power (Q394)', () => {
   it('a reserve motion naming assent crowns assent alone', () => {
-    const { s, bo, cy } = constituted();
+    const { s, bo, cy } = buildConstituted();
     s.delegate(3, 'title'); // hand-over: the value stands, the holder flips
     expect(s.settingState('title').holder).toBe('members');
     const m = s.openMotion(10, bo, { kind: 'reserve', setting: 'title', power: 'assent' });
@@ -167,7 +128,7 @@ describe('the road back may restore one power (Q394)', () => {
   });
 
   it('a reserve motion for a power already held is refused', () => {
-    const { s, bo } = constituted();
+    const { s, bo } = buildConstituted();
     expect(() => s.openMotion(10, bo, { kind: 'reserve', setting: 'rate', power: 'assent' }))
       .toThrow(/already the convenor's/);
   });
@@ -175,7 +136,9 @@ describe('the road back may restore one power (Q394)', () => {
 
 describe("the register's powers (Ed's own example, §9.7½ v0.54)", () => {
   it('reserved-unilateral: the founder invites directly, carried motions need no accept', () => {
-    const { s, bo, cy } = constituted({ holder: 'reserved-unilateral', joinPolicy: 'invite' });
+    const { s, bo, cy } = buildConstituted({
+      applications: { holder: 'reserved-unilateral', joinPolicy: 'invite' },
+    });
     const dee = s.invite(10, 'dee@example.org'); // unilateral invite, post-start
     expect(typeof dee).toBe('string');
     const m = s.openMotion(20, bo, { kind: 'invite', email: 'eve@example.org' }, 'eve chairs the sister club');
@@ -186,7 +149,9 @@ describe("the register's powers (Ed's own example, §9.7½ v0.54)", () => {
   });
 
   it('reserved-assent: no direct invite, and a carried invitation waits on the crown', () => {
-    const { s, bo, cy } = constituted({ holder: 'reserved-assent', joinPolicy: 'invite' });
+    const { s, bo, cy } = buildConstituted({
+      applications: { holder: 'reserved-assent', joinPolicy: 'invite' },
+    });
     expect(() => s.invite(10, 'dee@example.org'))
       .toThrow(/constitutional motion/);
     const m = s.openMotion(20, bo, { kind: 'invite', email: 'eve@example.org' }, 'eve chairs the sister club');
@@ -202,7 +167,7 @@ describe("the register's powers (Ed's own example, §9.7½ v0.54)", () => {
 
 describe('replay (§11)', () => {
   it('reproduces a session with power events bit-identically', () => {
-    const { s, bo } = constituted();
+    const { s, bo } = buildConstituted();
     s.relinquish(3, 'rate', 'assent');
     s.delegate(4, 'title');
     const m = s.openMotion(10, bo, { kind: 'reserve', setting: 'title', power: 'unilateral' });
@@ -243,7 +208,7 @@ describe('delegation is the state of holding no powers (Q403, Ed 2026-08-19)', (
   });
 
   it('post-start, giving up the second power hands the settled value over', () => {
-    const { s } = constituted();
+    const { s } = buildConstituted();
     s.relinquish(3, 'rate', 'assent');
     s.relinquish(4, 'rate', 'unilateral');
     const st = s.settingState('rate');

@@ -10,7 +10,7 @@
  */
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ConstitutionSession } from '../../constitution/src/index.js';
+import { ConstitutionSession, slugify } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
 import type { OpenInput } from '../../constitution/src/index.js';
 
@@ -103,18 +103,7 @@ export class DocStore {
   }
 }
 
-/** A slug from a title, docs.vote style; caller uniquifies. */
-export function slugify(title: string): string {
-  const base = title
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .trim()
-    .replace(/[\s-]+/g, '-')
-    .slice(0, 48)
-    .replace(/^-+|-+$/g, '');
-  return base.length > 0 ? base : 'untitled';
-}
+export { slugify };
 
 /** A collision takes a short suffix (SPEC §9.7a). */
 export function uniqueSlug(title: string, taken: (slug: string) => boolean): string {

@@ -116,3 +116,16 @@ applicant:
 
 Where the grammar could have gone another way, and which way it went — see
 QUESTIONS.md 350 for the calls awaiting Ed.
+
+## The empty members list (407a, Ed 2026-08-19)
+
+A membership of one renders a placeholder row — *Nobody else yet.* — where
+the other members would stand, full width, muted, no avatar (a face would
+claim a person who does not exist). It leaves with the first invitee. Two
+reasons, one visible and one geometric: a members list showing nobody while
+the room has a member read as broken; and founder-alone the you-row stood so
+high that its ✋🖼️📧 pile collided with the 🪪 pile above it — two stacks
+twelve pixels apart inside one 42px clause, under the Q308 floor (a pile
+cannot shrink below its 30px front tab; fitBand squeezed the peek to 0.0 and
+still overlapped by 18px). The placeholder gives the you-row a row's
+clearance, and the piles clear by measurement (5px at the default peek).

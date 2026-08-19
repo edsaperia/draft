@@ -477,14 +477,20 @@ window.SETUP = (function () {
     // fitStacks makes: a stacked pile shrinks its peek until it reaches no
     // further than the next mark below it in the same gutter column (the
     // 🪪 pile grew to four tabs, 2026-08-19, and stood on the me-row's ✋).
-    band.querySelectorAll('.cpara .chipcol.stack').forEach((col) => {
-      col.style.removeProperty('--peek');
+    // Three phases — clear every peek, snapshot every mark's box once, then
+    // assign — so the pass reads layout once rather than re-measuring the
+    // whole gutter per stack with a write between every read.
+    const stacks = [...band.querySelectorAll('.cpara .chipcol.stack')];
+    stacks.forEach((col) => col.style.removeProperty('--peek'));
+    const marks = stacks.length === 0 ? [] : [...band.querySelectorAll('.achip')]
+      .map((a2) => ({ el: a2, box: a2.getBoundingClientRect() }));
+    stacks.forEach((col) => {
       const chips = col.querySelectorAll('.achip');
       if (chips.length < 2) return;
       const r = col.getBoundingClientRect();
-      const next = [...band.querySelectorAll('.achip')]
-        .filter((a2) => !col.contains(a2))
-        .map((a2) => a2.getBoundingClientRect())
+      const next = marks
+        .filter((m2) => !col.contains(m2.el))
+        .map((m2) => m2.box)
         .filter((b2) => b2.top > r.top + 1 && Math.abs(b2.left - r.left) < 20)
         .reduce((m, b2) => (m === null || b2.top < m ? b2.top : m), null);
       if (next === null) return;

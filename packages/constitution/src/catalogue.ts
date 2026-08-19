@@ -291,12 +291,18 @@ export function validateFor(entry: CatalogueEntry, v: unknown): string | null {
   return null;
 }
 
-/** The route a motion on this setting takes, given the typed values (§9.6). */
+/**
+ * The route a motion on this setting takes, given the typed values (§9.6).
+ * A null current (no settled value to move against) routes constitutionally:
+ * the session refuses such a motion outright, so the null case exists only
+ * for callers deriving the route before opening (the bridge's stake gate).
+ */
 export function motionRouteOf(
   entry: CatalogueEntry,
   proposed: SettingValue,
-  current: SettingValue,
+  current: SettingValue | null,
 ): MotionRoute {
+  if (current === null) return 'constitutional';
   if (entry.routeOf) return entry.routeOf(proposed, current);
   if (entry.kind === 'personal') throw new Error(`${entry.id} is personal — no motion route`);
   return entry.kind === 'constitutional' ? 'constitutional' : 'ordinary';

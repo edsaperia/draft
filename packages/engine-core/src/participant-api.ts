@@ -8,12 +8,19 @@
  * public. Authorship appears only under the `public` visibility setting.
  */
 
+import { INC_PREFIX } from './session.js';
 import type { JudgmentView, Session } from './session.js';
 import type { EdgeSubtype } from './types.js';
 import type { PatchSet, Span } from './text/types.js';
 
 export interface OptionView {
   id: string;
+  /**
+   * Present (true) exactly when this option is the incumbent — the
+   * current text or standing value — so clients need not string-match
+   * the incumbent id prefix.
+   */
+  incumbent?: boolean;
   /**
    * Per-hunk before/after against the current document. The incumbent
    * option renders as before === after ("keep as is"). Empty on a
@@ -51,8 +58,6 @@ export interface GazetteEntry {
   candidateId: string;
   rationale: string;
 }
-
-const INC_PREFIX = 'inc:';
 
 export class ParticipantApi {
   constructor(
@@ -188,6 +193,7 @@ export class ParticipantApi {
         // The standing value is the incumbent (Q390).
         return {
           id,
+          incumbent: true,
           changes: [],
           setting: { settingId: race.settingId, value: this.session.standing(race.settingId) },
           rationale: '',
@@ -196,6 +202,7 @@ export class ParticipantApi {
       const spans: Span[] = race ? race.contested : [];
       return {
         id,
+        incumbent: true,
         changes: spans.map((s) => {
           const text = lines.slice(s.start, s.end).join('\n');
           return { before: text, after: text };

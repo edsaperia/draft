@@ -47,10 +47,21 @@ export class Auth {
   }
 
   mintToken(rec: Omit<TokenRecord, 'expMs'>, nowMs: number): string {
+    const token = this.mintDeferred(rec, nowMs);
+    this.save(nowMs);
+    return token;
+  }
+
+  /** Mint without persisting — a caller minting a batch calls flush() once. */
+  mintDeferred(rec: Omit<TokenRecord, 'expMs'>, nowMs: number): string {
     const token = randomBytes(24).toString('base64url');
     this.tokens.set(sha256Hex(token), { ...rec, expMs: nowMs + TOKEN_TTL_MS });
-    this.save();
     return token;
+  }
+
+  /** Persist deferred mints (one write for a whole batch). */
+  flush(nowMs: number): void {
+    this.save(nowMs);
   }
 
   /** Single use: a token that verifies is deleted in the act. */
@@ -59,7 +70,7 @@ export class Auth {
     const rec = this.tokens.get(key);
     if (!rec) return null;
     this.tokens.delete(key);
-    this.save();
+    this.save(nowMs);
     return rec.expMs >= nowMs ? rec : null;
   }
 
@@ -86,7 +97,11 @@ export class Auth {
     return createHmac('sha256', this.secret).update(body).digest('base64url');
   }
 
-  private save(): void {
+  /** Every write sweeps: expired-but-unused tokens must not accrete. */
+  private save(nowMs: number): void {
+    for (const [key, rec] of this.tokens) {
+      if (rec.expMs < nowMs) this.tokens.delete(key);
+    }
     writeFileSync(this.tokensPath,
       JSON.stringify(Object.fromEntries(this.tokens), null, 2), 'utf8');
   }

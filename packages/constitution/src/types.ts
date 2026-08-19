@@ -28,6 +28,11 @@ export type MotionAnswer = 'accept' | 'keep' | 'abstain';
 export type Power = 'unilateral' | 'assent';
 export interface Powers { unilateral: boolean; assent: boolean }
 
+/** §9.7 v0.54: holder derives from powers — the convenor's iff any is held. */
+export function holderOf(powers: Powers): 'convenor' | 'members' {
+  return powers.unilateral || powers.assent ? 'convenor' : 'members';
+}
+
 /** What a motion proposes. Membership changes ride motions as actions, never as a scalar. */
 export type MotionPayload =
   | { kind: 'set'; setting: SettingId; value: SettingValue }

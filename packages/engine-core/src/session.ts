@@ -155,7 +155,7 @@ interface RosterEntry {
   lastActionT: number | null;
 }
 
-const INC_PREFIX = 'inc:';
+export const INC_PREFIX = 'inc:';
 
 function candidateNum(id: string): number {
   return Number(id.slice(1));
@@ -1299,7 +1299,8 @@ export class Session {
           // old one-race trigger enforced this structurally (adoption fired
           // only from a judgment in the race). Same doctrine as the refund:
           // the author's own preference is counted but is not the room.
-          this.usableComparisons(r.members, r.incumbentId).some((c) => !c.derived),
+          // `comparisons` is the view's own measured (non-derived) count.
+          r.comparisons > 0,
       )
       .map((r) => ({ leaderId: r.leaderId as string, p: r.leaderP as number }));
     for (const { leaderId, p } of ready) {
@@ -1391,10 +1392,14 @@ export class Session {
 
   salienceWeights(): Map<string, number> {
     const races = this.races();
+    return this.salienceWeightsOver(races, this.salienceFitOver(races));
+  }
+
+  /** salienceWeights over a fit already in hand (feed runs the fit once). */
+  private salienceWeightsOver(races: RaceView[], fit: Fit | null): Map<string, number> {
     const ids = races.map((r) => r.id);
     const weights = new Map<string, number>();
     if (ids.length === 0) return weights;
-    const fit = this.salienceFitOver(races);
     if (fit === null) {
       for (const id of ids) weights.set(id, 1);
       return weights;
@@ -1669,7 +1674,10 @@ export class Session {
     const liveQuestions = allRaces.length;
     const audienceGateOpen = E > 0 && liveQuestions >= E;
     const streamOpen = E > 0 && liveQuestions >= 2 * E;
-    const weights = this.salienceWeights();
+    // One salience fit per feed call: the weights and every diagonal in
+    // this call price against the same (deterministic) fit.
+    const salienceFit = this.salienceFitOver(allRaces);
+    const weights = this.salienceWeightsOver(allRaces, salienceFit);
     const threshold = this.adoptionThreshold(t);
     const floor = this.adoptionFloor();
     const judgedRaces = new Set<string>();
@@ -1711,7 +1719,7 @@ export class Session {
     // never asked more than three in a row, counting ones already judged.
     let idleBudget = 0;
     if (audienceGateOpen &&
-        this.nothingElseToJudge(participantId, races, cheap)) {
+        this.nothingElseToJudge(participantId, allRaces, races, cheap)) {
       idleBudget = Math.max(0, 3 - this.trailingDiagonalRun(participantId));
     }
     for (let slot = 1; cards.length < n && slot <= n * 4; slot++) {
@@ -1724,12 +1732,12 @@ export class Session {
       const pSalience = 1 / this.constitutionValue.salienceEvery;
       const pExplore = 1 / this.constitutionValue.explorationEvery;
       if (roll < pSalience) {
-        if (streamOpen) card = this.diagonalCard(allRaces, participantId, served);
+        if (streamOpen) card = this.diagonalCard(allRaces, salienceFit, participantId, served);
       } else if (cheap && roll < pSalience + pExplore) {
         card = this.explorationCard(races, participantId);
       }
       if (card === null && idleBudget > 0) {
-        card = this.diagonalCard(allRaces, participantId, served);
+        card = this.diagonalCard(allRaces, salienceFit, participantId, served);
         if (card !== null) idleBudget--;
       }
       if (card === null && hot.length > 0) {
@@ -1786,12 +1794,12 @@ export class Session {
    */
   private diagonalCard(
     allRaces: RaceView[],
+    fit: Fit | null,
     participantId: string,
     exclude: ReadonlySet<string>,
   ): Card | null {
     const withLeaders = allRaces.filter((r) => r.leaderId !== null);
     if (withLeaders.length < 2) return null;
-    const fit = this.salienceFitOver(allRaces);
     let best: { a: RaceView; b: RaceView; value: number } | null = null;
     for (let i = 0; i < withLeaders.length; i++) {
       for (let j = i + 1; j < withLeaders.length; j++) {
@@ -1829,10 +1837,11 @@ export class Session {
    */
   private nothingElseToJudge(
     participantId: string,
+    allRaces: RaceView[],
     races: RaceView[],
     cheap: boolean,
   ): boolean {
-    for (const r of this.races()) {
+    for (const r of allRaces) {
       if (!r.deadlocked) continue;
       const usable = this.usableComparisons(r.members, r.incumbentId);
       if (!usable.some((c) => c.participantId === participantId)) return false;

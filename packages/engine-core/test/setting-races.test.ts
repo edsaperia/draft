@@ -9,13 +9,9 @@
 import { describe, expect, it } from 'vitest';
 import { Session, makeConstitution } from '../src/session.js';
 import { ParticipantApi } from '../src/participant-api.js';
+import { TEXT, roster } from './helpers.js';
 
 const HOUR = 3600_000;
-const TEXT = 'The club meets on Tuesdays.\n';
-
-function roster(n: number) {
-  return Array.from({ length: n }, (_, i) => ({ id: `p${i + 1}`, handle: `P${i + 1}` }));
-}
 
 function openWithSettings(overrides: Record<string, unknown> = {}): Session {
   return Session.open(

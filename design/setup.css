@@ -512,6 +512,10 @@ button.cline:hover b { text-decoration: underline; }
 .memrow .av { width: 22px; height: 22px; font-size: 8px; flex: none; }
 /* the identity tabs are regular gutter clause tabs: a pile at your row */
 .memrow .chipcol { top: -3px; }
+/* nobody else yet (407a): a full-width muted row where the members would
+   stand — list furniture, not a clause, so it speaks quietly; it also gives
+   the you-row a row's clearance from the 🪪 pile above (the Q308 floor) */
+.memrow.nobody { flex-basis: 100%; color: var(--muted); min-height: 22px; }
 .memrow.meRow { margin-top: var(--s3); min-height: 30px; }
 .memrow .chip { font-size: var(--t-micro); }
 

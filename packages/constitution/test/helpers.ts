@@ -14,6 +14,8 @@ export function buildConstituted(opts: {
   applications?: ApplicationsValue;
   quorum?: { form: 'count' | 'share'; n: number };
   removal?: { rung: 'everyone' | 'others' | 'ordinary' };
+  /** The resolved bar (every member answers it); default resolves to 66. */
+  bar?: number;
 } = {}) {
   const s = ConstitutionSession.open({
     title: 'Hollow Oak Club Charter',
@@ -28,9 +30,9 @@ export function buildConstituted(opts: {
   s.answer(1, bo, 'ending', { endsAtMs: 1_000_000 });
   s.answer(1, cy, 'ending', { endsAtMs: 800_000 });
   if (!opts.clerk) s.answer(1, 'ada', 'ending', { endsAtMs: 500_000 });
-  s.answer(1, bo, 'bar', { pct: 66 });
-  s.answer(1, cy, 'bar', { pct: 55 });
-  if (!opts.clerk) s.answer(1, 'ada', 'bar', { pct: 60 });
+  s.answer(1, bo, 'bar', { pct: opts.bar ?? 66 });
+  s.answer(1, cy, 'bar', { pct: opts.bar ?? 55 });
+  if (!opts.clerk) s.answer(1, 'ada', 'bar', { pct: opts.bar ?? 60 });
   s.answer(1, bo, 'chamber', { rung: 'link' });
   s.answer(1, cy, 'chamber', { rung: 'public' });
   if (!opts.clerk) s.answer(1, 'ada', 'chamber', { rung: 'public' });

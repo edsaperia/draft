@@ -15,20 +15,30 @@ import type {
 export interface Actor {
   memberId: string;
   isFounder: boolean;
+  /** Set when the cookie names an applicant seat (`app:<id>`), not a member. */
+  applicantId: string | null;
 }
 
 type Args = Record<string, unknown>;
 type Handler = (cs: ConstitutionSession, actor: Actor, t: number, args: Args,
   bridge: EngineBridge | null) => unknown;
 
-const str = (args: Args, key: string): string => {
+/** The one string validator (server.ts wraps it with allowEmpty=false). */
+export const str = (args: Args, key: string, allowEmpty = true): string => {
   const v = args[key];
-  if (typeof v !== 'string') throw new Error(`'${key}' must be a string`);
+  if (typeof v !== 'string' || (!allowEmpty && v.length === 0)) {
+    throw new Error(`'${key}' must be a ${allowEmpty ? '' : 'non-empty '}string`);
+  }
   return v;
 };
 
 function founderOnly(actor: Actor): void {
   if (!actor.isFounder) throw new Error('only the founder may do that');
+}
+
+function applicantOnly(actor: Actor): string {
+  if (actor.applicantId === null) throw new Error('only an applicant may do that');
+  return actor.applicantId;
 }
 
 const HANDLERS: Record<string, Handler> = {
@@ -127,6 +137,15 @@ const HANDLERS: Record<string, Handler> = {
   },
   'sign-out': (cs, a, t, args) => {
     cs.signOut(t, a.memberId, str(args, 'mode') as 'holding' | 'abstaining');
+  },
+  /* -- an applicant's one act (§9.7½): submit — nothing else speaks for them */
+  'submit-application': (cs, a, t, args) => {
+    const applicant = applicantOnly(a);
+    const fields: { name?: string; picture?: string; words?: string } = {};
+    if (typeof args.name === 'string') fields.name = args.name;
+    if (typeof args.picture === 'string') fields.picture = args.picture;
+    if (typeof args.words === 'string') fields.words = args.words;
+    cs.submitApplication(t, applicant, fields);
   },
 };
 

@@ -4,53 +4,12 @@
  * 👑); what stands flows back as ground; amendments bind races in flight.
  */
 import { describe, expect, it } from 'vitest';
-import { ConstitutionSession } from '../src/session.js';
 import { EngineBridge } from '../src/engine-bridge.js';
-
-/** A constituted three-member document: ada (convenor-member), bo, cy. */
-const constituted = () => {
-  const s = ConstitutionSession.open({
-    title: 'Hollow Oak Club Charter',
-    slug: 'hollow-oak',
-    convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
-  }, 0);
-  const bo = s.invite(1, 'bo@example.org');
-  const cy = s.invite(1, 'cy@example.org');
-  s.arrive(1, bo);
-  s.arrive(1, cy);
-  s.answer(1, 'ada', 'ending', { endsAtMs: 1_000_000 });
-  s.answer(1, bo, 'ending', { endsAtMs: 1_000_000 });
-  s.answer(1, cy, 'ending', { endsAtMs: 800_000 });
-  s.answer(1, 'ada', 'bar', { pct: 66 });
-  s.answer(1, bo, 'bar', { pct: 60 });
-  s.answer(1, cy, 'bar', { pct: 55 });
-  s.answer(1, 'ada', 'chamber', { rung: 'link' });
-  s.answer(1, bo, 'chamber', { rung: 'link' });
-  s.answer(1, cy, 'chamber', { rung: 'link' });
-  const values = {
-    pace: { shape: 'fixed' },
-    quorum: { form: 'share', n: 60 },
-    authorship: { rung: 'sealed' },
-    signing: { rung: 'each' },
-    judgments: { rung: 'after' },
-    applications: { holder: 'members', joinPolicy: 'invite' },
-    machines: { enabled: false, budget: 0 },
-    lapse: { afterMs: null },
-  } as const;
-  s.confirmStartingText(2, 'The clubhouse shall be kept open.');
-  // rate stays reserved (ordinary default): ada is crowned over it (§9.7)
-  s.setSetting(2, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
-  for (const [id, v] of Object.entries(values)) {
-    s.reclaim(2, id as never);
-    s.setSetting(2, id as never, v as never);
-  }
-  expect(s.constitutedAtT).toBe(2);
-  return { s, bo, cy };
-};
+import { buildConstituted } from './helpers.js';
 
 describe('an ordinary motion, raced end to end', () => {
   it('races the value, adjudicates carried at the bar, applies, and relays the new ground', () => {
-    const { s, bo, cy } = constituted();
+    const { s, bo, cy } = buildConstituted();
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'bridge-walk' });
     expect(bridge.engine.document()).toBe('The clubhouse shall be kept open.');
 
@@ -75,7 +34,7 @@ describe('an ordinary motion, raced end to end', () => {
   });
 
   it('withdrawal returns the stake whole on both ledgers (§3.3a)', () => {
-    const { s, bo } = constituted();
+    const { s, bo } = buildConstituted();
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'withdraw' });
     const { motion } = bridge.openSetMotion(10, bo, 'ending', { endsAtMs: 3_000_000 });
     expect(bridge.engine.balance(bo, 10)).toBe(3);
@@ -87,7 +46,7 @@ describe('an ordinary motion, raced end to end', () => {
 
 describe('a reserved setting: the verdict waits on the crown (§9.7)', () => {
   it('carries at the bar, parks behind the 👑, and the ground moves only on accept', () => {
-    const { s, bo, cy } = constituted();
+    const { s, bo, cy } = buildConstituted();
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'crown' });
     const { motion, candidate } = bridge.openSetMotion(
       10, bo, 'rate', { grant: 6, cap: 8, dripMinutes: 240 }, 'more to start');
@@ -112,7 +71,7 @@ describe('a reserved setting: the verdict waits on the crown (§9.7)', () => {
 
 describe('a carried amendment binds a race in flight (§9.6/Q328)', () => {
   it('a constitutional carry ground-shifts the raced motion and re-anchors the engine', () => {
-    const { s, bo, cy } = constituted();
+    const { s, bo, cy } = buildConstituted();
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'amendment' });
     const { motion, candidate } = bridge.openSetMotion(
       10, bo, 'ending', { endsAtMs: 3_000_000 }, 'more time');
@@ -148,7 +107,7 @@ describe('a carried amendment binds a race in flight (§9.6/Q328)', () => {
 
 describe('the close (Q390: winners carry, the rest are held)', () => {
   it('adjudicates every raced motion at the close', () => {
-    const { s, bo } = constituted();
+    const { s, bo } = buildConstituted();
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'close' });
     const { motion } = bridge.openSetMotion(10, bo, 'ending', { endsAtMs: 3_000_000 });
     // Nobody judged: short of the floor, so the value stands at the close.
@@ -161,7 +120,7 @@ describe('the close (Q390: winners carry, the rest are held)', () => {
 
 describe('roster truth flows cs → engine', () => {
   it('a lapse suspends (out of E), revival resumes', () => {
-    const { s, bo } = constituted();
+    const { s, bo } = buildConstituted();
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'roster' });
     expect(bridge.engine.adoptionFloor()).toBe(2);
     // Lapse bo by hand-rolled clock: the cs emits member-lapsed via tick
@@ -179,42 +138,12 @@ describe('roster truth flows cs → engine', () => {
 
 describe('an admit motion is its own race (§9.7½ v0.56, Q397)', () => {
   /** The constituted room, re-set to a given join policy pre-start. */
-  const withPolicy = (joinPolicy: 'apply' | 'proposed') => {
-    const made = constituted2(joinPolicy);
-    return made;
-  };
-  const constituted2 = (joinPolicy: 'apply' | 'proposed') => {
-    const s2 = ConstitutionSession.open({
-      title: 'Hollow Oak Club Charter',
-      slug: 'hollow-oak-adm',
-      convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
-    }, 0);
-    const bo = s2.invite(1, 'bo@example.org');
-    const cy = s2.invite(1, 'cy@example.org');
-    s2.arrive(1, bo);
-    s2.arrive(1, cy);
-    for (const who of ['ada', bo, cy]) s2.answer(1, who, 'ending', { endsAtMs: 1_000_000 });
-    for (const who of ['ada', bo, cy]) s2.answer(1, who, 'bar', { pct: 55 });
-    for (const who of ['ada', bo, cy]) s2.answer(1, who, 'chamber', { rung: 'link' });
-    const values = {
-      pace: { shape: 'fixed' },
+  const withPolicy = (joinPolicy: 'apply' | 'proposed') =>
+    buildConstituted({
+      bar: 55,
       quorum: { form: 'count', n: 2 },
-      authorship: { rung: 'sealed' },
-      signing: { rung: 'each' },
-      judgments: { rung: 'after' },
       applications: { holder: 'members', joinPolicy },
-      machines: { enabled: false, budget: 0 },
-      lapse: { afterMs: null },
-    } as const;
-    s2.confirmStartingText(2, 'The clubhouse shall be kept open.');
-    s2.setSetting(2, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
-    for (const [id, v] of Object.entries(values)) {
-      s2.reclaim(2, id as never);
-      s2.setSetting(2, id as never, v as never);
-    }
-    expect(s2.constitutedAtT).toBe(2);
-    return { s: s2, bo, cy };
-  };
+    });
 
   it("apply: the applicant authors their own race and never joins another applicant's", () => {
     const { s, bo, cy } = withPolicy('apply');

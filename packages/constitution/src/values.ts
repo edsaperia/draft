@@ -136,6 +136,19 @@ export function validateValue(type: ValueTypeName, v: unknown): string | null {
   }
 }
 
+/** A slug from a title, docs.vote style; caller uniquifies (SPEC §9.7a). */
+export function slugify(title: string): string {
+  const base = title
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/[\s-]+/g, '-')
+    .slice(0, 48)
+    .replace(/^-+|-+$/g, '');
+  return base.length > 0 ? base : 'untitled';
+}
+
 /** Value equality via canonical serialization — the same canon the log hashes use. */
 export function eqValue(a: SettingValue, b: SettingValue): boolean {
   return stableStringify(a) === stableStringify(b);

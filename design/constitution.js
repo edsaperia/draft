@@ -37,6 +37,7 @@ var CONSTITUTION = (() => {
     eOf: () => eOf,
     entryOf: () => entryOf,
     eqValue: () => eqValue,
+    holderOf: () => holderOf,
     inE: () => inE,
     lapseDue: () => lapseDue,
     motionElectorateOf: () => motionElectorateOf,
@@ -48,6 +49,7 @@ var CONSTITUTION = (() => {
     roomSettings: () => roomSettings,
     seedAnchors: () => seedAnchors,
     sha256Hex: () => sha256Hex,
+    slugify: () => slugify,
     smoothstep: () => smoothstep,
     stableStringify: () => stableStringify,
     validateFor: () => validateFor,
@@ -272,6 +274,10 @@ var CONSTITUTION = (() => {
       case "register":
         return "membership has no scalar value — the register changes by command (invite, remove)";
     }
+  }
+  function slugify(title) {
+    const base = title.toLowerCase().normalize("NFKD").replace(/[^a-z0-9\s-]/g, "").trim().replace(/[\s-]+/g, "-").slice(0, 48).replace(/^-+|-+$/g, "");
+    return base.length > 0 ? base : "untitled";
   }
   function eqValue(a, b) {
     return stableStringify(a) === stableStringify(b);
@@ -610,6 +616,7 @@ var CONSTITUTION = (() => {
     return null;
   }
   function motionRouteOf(entry, proposed, current) {
+    if (current === null) return "constitutional";
     if (entry.routeOf) return entry.routeOf(proposed, current);
     if (entry.kind === "personal") throw new Error(`${entry.id} is personal — no motion route`);
     return entry.kind === "constitutional" ? "constitutional" : "ordinary";
@@ -626,6 +633,11 @@ var CONSTITUTION = (() => {
       return stableStringify(a) < stableStringify(b) ? -1 : 1;
     });
     return { value: distribution[0], distribution };
+  }
+
+  // src/types.ts
+  function holderOf(powers) {
+    return powers.unilateral || powers.assent ? "convenor" : "members";
   }
 
   // src/populations.ts
@@ -1187,7 +1199,7 @@ var CONSTITUTION = (() => {
     /** §9.7 v0.54: holder derives from powers — the convenor's iff any is held. */
     setPowers(st, powers) {
       st.powers = powers;
-      st.holder = powers.unilateral || powers.assent ? "convenor" : "members";
+      st.holder = holderOf(powers);
     }
     freshMember(id, email, invitedAtT, arrivedAtT) {
       return {
@@ -2154,7 +2166,7 @@ var CONSTITUTION = (() => {
     }
     const rp = s.registerPowers();
     const register = {
-      holder: rp.unilateral || rp.assent ? "convenor" : "members",
+      holder: holderOf(rp),
       powers: rp
     };
     const applicants = [];

@@ -13,7 +13,7 @@ import { randomBytes } from 'node:crypto';
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { ConstitutionSession, sha256Hex, view } from '../../constitution/src/index.js';
-import type { LogEntry, TextValue } from '../../constitution/src/index.js';
+import type { LogEntry } from '../../constitution/src/index.js';
 import { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
 import { DocStore, uniqueSlug } from './store.js';
@@ -23,7 +23,7 @@ import { MAILS, makeMailer } from './mailer.js';
 import { asEngineDoc, driveBridge, resumeBridge } from './engine-host.js';
 import { ParticipantApi } from '../../engine-core/src/participant-api.js';
 import type { Mail, Mailer } from './mailer.js';
-import { runCommand } from './commands.js';
+import { runCommand, str } from './commands.js';
 
 const COOKIE = 'draft_session';
 
@@ -55,12 +55,6 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
   const mailer = makeMailer(cfg);
   const stash = new Stash(cfg.dataDir);
 
-  const titleOf = (cs: ConstitutionSession): string =>
-    (cs.settingState('title').value as TextValue | null)?.text ?? 'Untitled';
-
-  const currentSlug = (cs: ConstitutionSession): string =>
-    cs.slugs[cs.slugs.length - 1]!;
-
   /** Non-decreasing time per document (the module requires it). */
   const tOf = (cs: ConstitutionSession, nowMs: number): number => {
     const log = cs.logEntries();
@@ -71,9 +65,10 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
   /** Mail follows the fold: relay what freshly-persisted events imply. */
   const relay = (doc: LoadedDoc, fresh: readonly LogEntry[], nowMs: number): void => {
     const cs = doc.cs;
-    const title = titleOf(cs);
+    const title = cs.titleOf;
     const loginLink = (memberId: string, email: string): string => {
-      const token = auth.mintToken(
+      // deferred: one relay pass rewrites tokens.json once, not per mail
+      const token = auth.mintDeferred(
         { kind: 'login', email, docId: doc.id, memberId }, nowMs);
       return `${cfg.baseUrl}/auth/login?token=${token}`;
     };
@@ -92,6 +87,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         }
       }
     }
+    if (queue.length > 0) auth.flush(nowMs); // every queued mail minted a token
     for (const mail of queue) void mailer.send(mail).catch((e) => {
       console.error(`mail to ${mail.to} failed:`, e);
     });
@@ -126,6 +122,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
   };
 
   const tick = (nowMs: number = Date.now()): void => {
+    for (const [key, b] of BUCKET) if (b.resetMs < nowMs) BUCKET.delete(key);
     for (const doc of store.all()) {
       if (doc.cs.constitutedAtT === null) continue;
       doc.cs.tick(tOf(doc.cs, nowMs));
@@ -146,6 +143,18 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
     const path = url.pathname;
     const seg = path.split('/').filter((s) => s.length > 0);
 
+    /** 404 for a document that isn't there; hand back whatever is. */
+    const docOr404 = (doc: LoadedDoc | null): LoadedDoc | null => {
+      if (doc === null) json(res, 404, { error: 'no such document' });
+      return doc;
+    };
+    /** 429 a mail-minting door when its per-address bucket overflows. */
+    const tooMany = (route: string): boolean => {
+      if (!rateLimited(`${route}:${ipOf(req)}`, nowMs)) return false;
+      json(res, 429, { error: 'too many requests — try again shortly' });
+      return true;
+    };
+
     /* -- creation (§9.7a: the mail is the save) -------------------------- */
     if (req.method === 'GET' && path === '/api/dev/outbox') {
       if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
@@ -160,10 +169,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
     }
 
     if (req.method === 'POST' && path === '/api/docs') {
-      if (rateLimited('docs:' + ipOf(req), nowMs)) {
-        json(res, 429, { error: 'too many requests — try again shortly' });
-        return;
-      }
+      if (tooMany('docs')) return;
       const body = await readJson(req);
       const title = expectString(body, 'title');
       const email = expectString(body, 'email');
@@ -226,12 +232,9 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
     /* -- login ----------------------------------------------------------- */
     if (req.method === 'POST' && seg[0] === 'api' && seg[1] === 'd' &&
         seg[3] === 'login' && seg.length === 4) {
-      const doc = store.bySlug(seg[2]!);
-      if (!doc) { json(res, 404, { error: 'no such document' }); return; }
-      if (rateLimited('login:' + ipOf(req), nowMs)) {
-        json(res, 429, { error: 'too many requests — try again shortly' });
-        return;
-      }
+      const doc = docOr404(store.bySlug(seg[2]!));
+      if (!doc) return;
+      if (tooMany('login')) return;
       const body = await readJson(req);
       const email = expectString(body, 'email');
       const memberId = memberIdByEmail(doc.cs, email);
@@ -244,7 +247,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       const token = auth.mintToken(
         { kind: 'login', email, docId: doc.id, memberId }, nowMs);
       const link = `${cfg.baseUrl}/auth/login?token=${token}`;
-      await mailer.send({ to: email, ...MAILS.login(titleOf(doc.cs), link) });
+      await mailer.send({ to: email, ...MAILS.login(doc.cs.titleOf, link) });
       json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
       return;
     }
@@ -252,12 +255,9 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
     /* -- applicants (§9.7½): the email is the identity ------------------ */
     if (req.method === 'POST' && seg[0] === 'api' && seg[1] === 'd' &&
         seg[3] === 'apply' && seg.length === 4) {
-      const doc = store.bySlug(seg[2]!);
-      if (!doc) { json(res, 404, { error: 'no such document' }); return; }
-      if (rateLimited('apply:' + ipOf(req), nowMs)) {
-        json(res, 429, { error: 'too many requests — try again shortly' });
-        return;
-      }
+      const doc = docOr404(store.bySlug(seg[2]!));
+      if (!doc) return;
+      if (tooMany('apply')) return;
       const body = await readJson(req);
       const email = expectString(body, 'email');
       const t = tOf(doc.cs, nowMs);
@@ -269,7 +269,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         { kind: 'apply', email, docId: doc.id, applicantId: applicant }, nowMs);
       const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
       await mailer.send({ to: email,
-        ...MAILS.applyVerify(titleOf(doc.cs), link) });
+        ...MAILS.applyVerify(doc.cs.titleOf, link) });
       json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
       return;
     }
@@ -281,12 +281,12 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         json(res, 400, { error: 'that link has been used or has expired' });
         return;
       }
-      const doc = store.byId(rec.docId);
-      if (!doc) { json(res, 404, { error: 'no such document' }); return; }
+      const doc = docOr404(store.byId(rec.docId));
+      if (!doc) return;
       doc.cs.verifyApplication(tOf(doc.cs, nowMs), rec.applicantId);
       commit(doc, nowMs);
       setCookie(res, auth.cookieFor(doc.id, `app:${rec.applicantId}`, nowMs));
-      redirect(res, `/d/${currentSlug(doc.cs)}`);
+      redirect(res, `/d/${doc.cs.slug}`);
       return;
     }
 
@@ -297,8 +297,8 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         json(res, 400, { error: 'that link has been used or has expired' });
         return;
       }
-      const doc = store.byId(rec.docId);
-      if (!doc) { json(res, 404, { error: 'no such document' }); return; }
+      const doc = docOr404(store.byId(rec.docId));
+      if (!doc) return;
       const t = tOf(doc.cs, nowMs);
       const m = doc.cs.memberRecords().get(rec.memberId);
       // membership begins at first arrival (§9.6a); revival is logging in
@@ -306,32 +306,44 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       else if (m && m.lapsed) doc.cs.memberReturn(t, rec.memberId);
       commit(doc, nowMs);
       setCookie(res, auth.cookieFor(doc.id, rec.memberId, nowMs));
-      redirect(res, `/d/${currentSlug(doc.cs)}`);
+      redirect(res, `/d/${doc.cs.slug}`);
       return;
     }
 
     /* -- the member surface (view is the only read, §3.5/NOTES) ---------- */
     if (seg[0] === 'api' && seg[1] === 'd' && seg.length === 4 &&
         (seg[3] === 'view' || seg[3] === 'cmd')) {
-      const doc = store.bySlug(seg[2]!);
-      if (!doc) { json(res, 404, { error: 'no such document' }); return; }
+      const doc = docOr404(store.bySlug(seg[2]!));
+      if (!doc) return;
       const session = cookieSession(req, doc.id);
       if (session === null) { json(res, 401, { error: 'log in first' }); return; }
-      const { memberId } = session;
+      const { memberId, applicantId } = session;
       const isFounder = memberId === doc.cs.convenorRecord().id;
       if (req.method === 'GET' && seg[3] === 'view') {
-        const app = memberId.startsWith('app:')
-          ? doc.cs.applicantRecords().get(memberId.slice(4)) ?? null : null;
+        const seq = doc.cs.logEntries().length;
+        // race cards ride the engine's own log, which judge-race moves
+        // without touching the document log — freshness is both lengths
+        const engineDoc = asEngineDoc(doc);
+        const eseq = engineDoc.bridge === null ? 0 : engineDoc.bridge.engine.log.length;
+        // the page polls (4s): when it says what it has seen and nothing
+        // moved in either log, answer with the seqs alone and build no view
+        if (url.searchParams.get('since') === seq + '.' + eseq) {
+          json(res, 200, { seq, eseq });
+          return;
+        }
+        const app = applicantId !== null
+          ? doc.cs.applicantRecords().get(applicantId) ?? null : null;
         json(res, 200, {
           me: memberId,
           isFounder,
           devMail: mailer.dev,
           ...(app !== null ? { applicant: { id: app.id, status: app.status,
             name: app.name, motion: app.motion } } : {}),
-          title: titleOf(doc.cs),
-          slug: currentSlug(doc.cs),
+          title: doc.cs.titleOf,
+          slug: doc.cs.slug,
           constitutedAtT: doc.cs.constitutedAtT,
-          seq: doc.cs.logEntries().length,
+          seq,
+          eseq,
           textConfirmed: doc.cs.textConfirmed,
           text: doc.cs.text,
           quorumForm: doc.cs.quorumForm,
@@ -356,25 +368,15 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         const cmd = expectString(body, 'cmd');
         const args = (body.args ?? {}) as Record<string, unknown>;
         const t = tOf(doc.cs, nowMs);
-        if (memberId.startsWith('app:')) {
-          // an applicant's one act: submit — nothing else speaks for them
-          if (cmd !== 'submit-application') {
-            json(res, 403, { error: 'applicants may only submit their application' });
-            return;
-          }
-          const fields: { name?: string; picture?: string; words?: string } = {};
-          if (typeof args.name === 'string') fields.name = args.name;
-          if (typeof args.picture === 'string') fields.picture = args.picture;
-          if (typeof args.words === 'string') fields.words = args.words;
-          doc.cs.submitApplication(t, memberId.slice(4), fields);
-          const seq = commit(doc, nowMs);
-          json(res, 200, { ok: true, seq });
+        // an applicant's one act: submit — nothing else speaks for them
+        if (applicantId !== null && cmd !== 'submit-application') {
+          json(res, 403, { error: 'applicants may only submit their application' });
           return;
         }
         const me = doc.cs.memberRecords().get(memberId);
         if (me?.lapsed) doc.cs.memberReturn(t, memberId); // any act revives
-        const result = runCommand(doc.cs, { memberId, isFounder }, t, cmd, args,
-          asEngineDoc(doc).bridge);
+        const result = runCommand(doc.cs, { memberId, isFounder, applicantId },
+          t, cmd, args, asEngineDoc(doc).bridge);
         // confirming the starting text supersedes the provisional draft
         if (doc.cs.textConfirmed && doc.provisional !== null) {
           store.setProvisional(doc, null);
@@ -388,8 +390,8 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
     /* the founder's draft text after the save, before the confirm (§9.7a) */
     if (req.method === 'POST' && seg[0] === 'api' && seg[1] === 'd' &&
         seg[3] === 'stash' && seg.length === 4) {
-      const doc = store.bySlug(seg[2]!);
-      if (!doc) { json(res, 404, { error: 'no such document' }); return; }
+      const doc = docOr404(store.bySlug(seg[2]!));
+      if (!doc) return;
       const session = cookieSession(req, doc.id);
       if (session === null) { json(res, 401, { error: 'log in first' }); return; }
       if (session.memberId !== doc.cs.convenorRecord().id) {
@@ -418,10 +420,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       return;
     }
     if (req.method === 'GET' && seg[0] === 'd' && seg.length === 2) {
-      if (store.bySlug(seg[1]!) === null) {
-        json(res, 404, { error: 'no such document' });
-        return;
-      }
+      if (docOr404(store.bySlug(seg[1]!)) === null) return;
       serveFile(res, join(cfg.designDir, 'setup.html'));
       return;
     }
@@ -443,15 +442,18 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
     json(res, 404, { error: 'not found' });
   }
 
+  /** The actor's kind is parsed here, once: an `app:` seat is an applicant. */
   function cookieSession(req: IncomingMessage, docId: string):
-    { memberId: string } | null {
+    { memberId: string; applicantId: string | null } | null {
     const header = req.headers.cookie ?? '';
     const pair = header.split(';').map((s) => s.trim())
       .find((s) => s.startsWith(`${COOKIE}=`));
     if (!pair) return null;
     const parsed = auth.verifyCookie(pair.slice(COOKIE.length + 1), Date.now());
     if (parsed === null || parsed.docId !== docId) return null;
-    return { memberId: parsed.memberId };
+    const { memberId } = parsed;
+    return { memberId,
+      applicantId: memberId.startsWith('app:') ? memberId.slice(4) : null };
   }
 
   return { server, store, auth, mailer, tick };
@@ -483,12 +485,9 @@ async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> 
   return parsed as Record<string, unknown>;
 }
 
+/** commands.ts's `str`, with the wire's stricter no-empty rule. */
 function expectString(body: Record<string, unknown>, key: string): string {
-  const v = body[key];
-  if (typeof v !== 'string' || v.length === 0) {
-    throw new Error(`'${key}' must be a non-empty string`);
-  }
-  return v;
+  return str(body, key, false);
 }
 
 function ipOf(req: IncomingMessage): string {

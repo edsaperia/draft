@@ -404,6 +404,14 @@ window.CARDS = (function () {
       : '<div class="said none">No reason given.</div>') +
     '</div>';
 
+  // The fold triangle — one control on every surface (2026-08-19, lifted
+  // from session-view when setup grew its own copy). Fold state lives with
+  // each page, so `open` arrives as a fact rather than being read here.
+  const secToggleHtml = (key, open, cls) =>
+    '<button class="sectoggle' + (cls ? ' ' + cls : '') + '" data-sec-toggle="' + esc(String(key)) + '"' +
+    ' aria-expanded="' + open + '" title="' + (open ? 'Fold this section away' : 'Unfold this section') +
+    '"><span class="tri">▸</span></button>';
+
   // The field label names the band and, where there is more than one candidate,
   // says how many — which is a fact about this card rather than a standing, so
   // §8.3 has nothing to say about it.
@@ -912,7 +920,7 @@ window.CARDS = (function () {
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
-    laneSeed, laneProposeHtml, speakerHtml, fieldHtml, fieldOf, groundNote,
+    laneSeed, laneProposeHtml, speakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
     make,
   };

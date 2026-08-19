@@ -10,15 +10,7 @@
 import {
   ConstitutionSession, view, constitutionBlock,
 } from '../../constitution/src/index.js';
-
-let failures = 0;
-const say = (msg: string) => console.log(msg);
-const check = (cond: boolean, msg: string) => {
-  if (cond) { console.log(`     ✓ ${msg}`); }
-  else { failures += 1; console.error(`     ✗ FAILED: ${msg}`); }
-};
-const eq = (a: unknown, b: unknown, msg: string) =>
-  check(JSON.stringify(a) === JSON.stringify(b), `${msg} (${JSON.stringify(a)})`);
+import { say, check, eq, finish } from './evidence-log.js';
 
 /* ========================================================================= */
 say('\n== founding-8: a staggered ceremony with a never holdout ==============');
@@ -358,8 +350,4 @@ function threeRoom(opts: { lapse?: { afterMs: number | null } } = {}) {
 }
 
 /* ========================================================================= */
-if (failures > 0) {
-  console.error(`\n${failures} check(s) FAILED`);
-  process.exit(1);
-}
-say('\nAll checks passed.');
+finish();

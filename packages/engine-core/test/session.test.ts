@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Session, makeConstitution } from '../src/session.js';
-import type { Event, Participant } from '../src/types.js';
+import type { Event } from '../src/types.js';
+import { roster } from './helpers.js';
 
 const HOUR = 3600_000;
 
@@ -10,10 +11,6 @@ const DOC = [
   'Decisions are made by consensus.',
   'Meetings happen when someone calls one.',
 ].join('\n');
-
-function roster(n: number): Participant[] {
-  return Array.from({ length: n }, (_, i) => ({ id: `p${i + 1}`, handle: `P${i + 1}` }));
-}
 
 function openSession(overrides: Record<string, unknown> = {}, size = 5): Session {
   const constitution = makeConstitution({

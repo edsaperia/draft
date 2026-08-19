@@ -1098,10 +1098,7 @@
   }
 
   function toggleHtml(n, cls) {
-    const open = !collapsed.has(n);
-    return '<button class="sectoggle' + (cls ? ' ' + cls : '') + '" data-sec-toggle="' + n + '"' +
-      ' aria-expanded="' + open + '" title="' + (open ? 'Fold this section away' : 'Unfold this section') +
-      '"><span class="tri">▸</span></button>';
+    return window.CARDS.secToggleHtml(n, !collapsed.has(n), cls);
   }
 
   function suggFor(key) {

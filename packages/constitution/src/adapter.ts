@@ -6,10 +6,11 @@
  *
  */
 
-import type { Constitution } from '../../engine-core/src/types.js';
+import type { Constitution, ConstitutionAmendment } from '../../engine-core/src/types.js';
 import type { ConstitutionSession } from './session.js';
-import type { EndingValue, LapseValue, PaceValue, PercentValue, QuorumValue,
-  RateValue } from './values.js';
+import type { SettingId } from './catalogue.js';
+import type { EndingValue, LadderValue, LapseValue, PaceValue, PercentValue,
+  QuorumValue, RateValue, SettingValue } from './values.js';
 import { adoptionFloor, quorumCount } from './populations.js';
 
 export interface EngineTuning {
@@ -41,6 +42,42 @@ export const DEFAULT_TUNING: EngineTuning = {
   rivalGateMinComparisons: 6,
 };
 
+/**
+ * The engine constitution fields one settled value implies (§9.6/Q328):
+ * folded over the settings at open (below), and amended through by the
+ * bridge when a standing changes — one mapper, so the two conventions
+ * cannot drift. `perpetualPinMs`: a perpetual ending pins the engine's
+ * ramp with a zero-span window ending here — the fixed bar §9.0 requires
+ * (at open the window start; on an amendment the moment of the change).
+ */
+export function engineFieldsFor(
+  id: SettingId,
+  value: SettingValue,
+  perpetualPinMs: number,
+): ConstitutionAmendment {
+  switch (id) {
+    case 'bar':
+      return { adoptionThresholdEnd: (value as PercentValue).pct / 100 };
+    case 'ending':
+      return { windowEndMs: (value as EndingValue).endsAtMs ?? perpetualPinMs };
+    case 'quorum': {
+      const q = value as QuorumValue;
+      return { quorum: { form: q.form, n: q.n } };
+    }
+    case 'rate': {
+      const r = value as RateValue;
+      return { tokenGrant: r.grant, tokenCap: r.cap, tokenDripMinutes: r.dripMinutes };
+    }
+    case 'authorship':
+      return {
+        authorshipVisibility: (value as LadderValue).rung as
+          Constitution['authorshipVisibility'],
+      };
+    default:
+      return {};
+  }
+}
+
 export interface EngineConstitutionOut {
   constitution: Constitution;
   quorumN: number;
@@ -65,9 +102,6 @@ export function toEngineConstitution(
 
   const windowStartMs = s.constitutedAtT;
   const endsAtMs = ending ? ending.endsAtMs : null;
-  // Perpetual: a zero-span window pins the engine's ramp at its end value,
-  // which is the fixed bar §9.0 requires.
-  const windowEndMs = endsAtMs ?? windowStartMs;
   const ramping = endsAtMs !== null && pace?.shape === 'ramp';
   const startPct = ramping ? (pace as { shape: 'ramp'; startPct: number }).startPct : bar.pct;
 
@@ -77,17 +111,28 @@ export function toEngineConstitution(
   // sentence's unit is the mechanism's own.
   const dripMinutes = rate ? rate.dripMinutes : 240;
 
+  // Fold the per-setting mapper over the settled values (nulls take the
+  // defaults above). The perpetual zero-span-window convention lives in
+  // the mapper, shared with the bridge's amendments.
+  const fields = {
+    ...engineFieldsFor('bar', bar, windowStartMs),
+    ...engineFieldsFor('ending', ending ?? { endsAtMs: null }, windowStartMs),
+    ...engineFieldsFor('quorum', quorum, windowStartMs),
+    ...engineFieldsFor('rate', { grant, cap, dripMinutes }, windowStartMs),
+    ...engineFieldsFor('authorship', authorship, windowStartMs),
+  } as Required<ConstitutionAmendment>;
+
   const constitution = {
     adoptionThresholdStart: startPct / 100,
-    adoptionThresholdEnd: bar.pct / 100,
+    adoptionThresholdEnd: fields.adoptionThresholdEnd,
     adoptionFloorMax: tuning.adoptionFloorMax,
     deadlockMinComparisons: tuning.deadlockMinComparisons,
     deadlockEpsilon: tuning.deadlockEpsilon,
     cooldownMs: tuning.cooldownMs,
     redraftLimit: tuning.redraftLimit,
-    tokenGrant: grant,
-    tokenDripMinutes: dripMinutes,
-    tokenCap: cap,
+    tokenGrant: fields.tokenGrant,
+    tokenDripMinutes: fields.tokenDripMinutes,
+    tokenCap: fields.tokenCap,
     stake: 1, // flat, non-configurable (§13/Q335)
     rationaleMaxChars: tuning.rationaleMaxChars,
     boutGapMs: tuning.boutGapMs,
@@ -95,12 +140,12 @@ export function toEngineConstitution(
     explorationEvery: tuning.explorationEvery,
     salienceEvery: Number.MAX_SAFE_INTEGER, // §8.3a gate replaced the rate (Q335 deletes this)
     windowStartMs,
-    windowEndMs,
-    authorshipVisibility: authorship.rung as Constitution['authorshipVisibility'],
+    windowEndMs: fields.windowEndMs,
+    authorshipVisibility: fields.authorshipVisibility,
     // §4.2 (367b): the engine computes F = max(Q, min(⌈E/3⌉, F_max)) itself
     // now — the floor closure below survives for hosts that want the number
     // without a Session.
-    quorum: { form: quorum.form, n: quorum.n },
+    quorum: fields.quorum,
     rngSeed,
     rivalGateProb: tuning.rivalGateProb,
     rivalGateMinComparisons: tuning.rivalGateMinComparisons,

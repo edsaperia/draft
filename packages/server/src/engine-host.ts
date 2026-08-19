@@ -23,6 +23,8 @@ interface EngineLogEntry { seq: number; hash: string; prevHash: string; event: {
 export interface EngineDoc extends LoadedDoc {
   bridge: EngineBridge | null;
   enginePersisted: number;
+  /** The bridge state as last written to bridge.json — unchanged means no rewrite. */
+  bridgeSerialized: string | null;
 }
 
 const enginePath = (docsDir: string, id: string) => join(docsDir, id, 'engine.jsonl');
@@ -30,7 +32,9 @@ const bridgePath = (docsDir: string, id: string) => join(docsDir, id, 'bridge.js
 
 export function asEngineDoc(doc: LoadedDoc): EngineDoc {
   const d = doc as EngineDoc;
-  if (d.bridge === undefined) { d.bridge = null; d.enginePersisted = 0; }
+  if (d.bridge === undefined) {
+    d.bridge = null; d.enginePersisted = 0; d.bridgeSerialized = null;
+  }
   return d;
 }
 
@@ -41,12 +45,14 @@ export function resumeBridge(docsDir: string, doc: LoadedDoc): void {
   if (d.bridge !== null || !existsSync(ep)) return;
   const log = readFileSync(ep, 'utf8').split('\n').filter((l) => l.length > 0)
     .map((l) => JSON.parse(l) as EngineLogEntry);
-  const state = JSON.parse(readFileSync(bridgePath(docsDir, doc.id), 'utf8')) as BridgeState;
+  const raw = readFileSync(bridgePath(docsDir, doc.id), 'utf8');
+  const state = JSON.parse(raw) as BridgeState;
   d.bridge = new EngineBridge(doc.cs, {
     t: doc.cs.constitutedAtT!, rngSeed: doc.id,
     resume: { log: log as never, ...state },
   });
   d.enginePersisted = log.length;
+  d.bridgeSerialized = raw;
 }
 
 /**
@@ -85,6 +91,9 @@ function persistEngine(docsDir: string, d: EngineDoc): void {
       fresh.map((e) => JSON.stringify(e)).join('\n') + '\n', 'utf8');
     d.enginePersisted = log.length;
   }
-  writeFileSync(bridgePath(docsDir, d.id),
-    JSON.stringify(d.bridge.state()), 'utf8');
+  const state = JSON.stringify(d.bridge.state());
+  if (state !== d.bridgeSerialized) {
+    writeFileSync(bridgePath(docsDir, d.id), state, 'utf8');
+    d.bridgeSerialized = state;
+  }
 }

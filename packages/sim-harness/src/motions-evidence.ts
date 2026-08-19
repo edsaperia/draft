@@ -10,15 +10,7 @@
 
 import { ConstitutionSession } from '../../constitution/src/index.js';
 import { EngineBridge } from '../../constitution/src/engine-bridge.js';
-
-let failures = 0;
-const say = (msg: string) => console.log(msg);
-const check = (cond: boolean, msg: string) => {
-  if (cond) { console.log(`     ✓ ${msg}`); }
-  else { failures += 1; console.error(`     ✗ FAILED: ${msg}`); }
-};
-const eq = (a: unknown, b: unknown, msg: string) =>
-  check(JSON.stringify(a) === JSON.stringify(b), `${msg} (${JSON.stringify(a)})`);
+import { say, check, eq, finish } from './evidence-log.js';
 
 /** A constituted five-member charter: ada (convenor-member), bo…eve. */
 function fixture(): { s: ConstitutionSession; bo: string; cy: string; dee: string; eve: string } {
@@ -175,8 +167,4 @@ say('\n== an amendment binds a race in flight (§9.6/Q328) =====================
 }
 
 /* ========================================================================= */
-if (failures > 0) {
-  console.error(`\n${failures} check(s) FAILED`);
-  process.exit(1);
-}
-say('\nAll checks passed.');
+finish();

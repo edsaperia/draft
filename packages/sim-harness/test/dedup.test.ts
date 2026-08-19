@@ -87,7 +87,13 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // differs throughout. Both runs below produced this hash identically, so
   // the gate-silent invariant the test exists to defend is untouched
   // (was e8fe607a479ec4fc80ea4311132013868816183cac61d537f134a329ff996556).
-  const PINNED = 'e4d17eaf4501f9d518f9df301b12e9acd2b44a4a476d1f926a50b3206dd10dd1';
+  // Re-pinned 2026-08-19 (Q399, §4.2 v0.58): adoptions batch on the cooldown
+  // metronome, so adoption timing — and every event after the first batch —
+  // legitimately differs. The Q399 commit moved the sibling pins and missed
+  // this one; bisection against a pristine tree confirmed the new hash is
+  // v0.58's own, byte-identical with and without the same-day refactors
+  // (was e4d17eaf4501f9d518f9df301b12e9acd2b44a4a476d1f926a50b3206dd10dd1).
+  const PINNED = '61cddb50bb7cfb381f51edb96c78c42d9f2074cf2f7bd535f2ec9085c17be969';
 
   const run = (withGate: boolean) =>
     runSession({

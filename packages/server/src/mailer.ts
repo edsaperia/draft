@@ -2,8 +2,9 @@
  * Mail out of docs.vote via Resend (Ed, 2026-08-18: the sending domain was
  * the hosting decision), or — without an API key — the dev outbox: every
  * mail lands in data/outbox.jsonl and on the console, links intact, so a
- * developer's inbox is a tail of one file. Templates mirror setup.html's
- * MAILS object: one substitution away from what the mockup previews.
+ * developer's inbox is a tail of one file. These templates are the real
+ * copy; design/setup.js's MAILS is fixture-only preview text and the two
+ * are free to differ.
  */
 import { appendFileSync } from 'node:fs';
 import { join } from 'node:path';

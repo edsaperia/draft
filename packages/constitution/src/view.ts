@@ -9,6 +9,7 @@
 
 import type { ConstitutionSession } from './session.js';
 import type { MemberId, MotionPayload } from './types.js';
+import { holderOf } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf } from './catalogue.js';
 import type { SettingValue } from './values.js';
@@ -181,7 +182,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
 
   const rp = s.registerPowers();
   const register: RegisterView = {
-    holder: rp.unilateral || rp.assent ? 'convenor' : 'members',
+    holder: holderOf(rp),
     powers: rp,
   };
 
