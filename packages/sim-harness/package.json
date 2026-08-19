@@ -10,7 +10,8 @@
     "sweep": "tsx src/sweep.ts",
     "evidence": "tsx src/deferred-evidence.ts",
     "score": "tsx src/score.ts",
-    "founding": "tsx src/founding-evidence.ts"
+    "founding": "tsx src/founding-evidence.ts",
+    "motions": "tsx src/motions-evidence.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.231",
