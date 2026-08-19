@@ -37,8 +37,9 @@
   (`max(Date.now(), last event t)`); `tick()` runs the lapse/freeze clocks
   once a minute on constituted documents.
 - **Slugs never break**: every slug a document has worn routes to it
-  (cs.slugs is the registry, §9.7). /d/:slug serves setup.html — the page
-  still runs its own fixture; wiring it to this API is Q391's work.
+  (cs.slugs is the registry, §9.7). /d/:slug serves setup.html live
+  (Q391): the page detects its address and renders the real document
+  through the blind view; '/' serves the same page as the §9.7a birth.
 - **The engine rides every commit** (Q391): engine-host.ts attaches an
   EngineBridge the moment a document constitutes, persists the engine's
   own hash-chained log as engine.jsonl and the bridge's pairing state as
