@@ -821,12 +821,10 @@ export class Session {
     this.fitCache.clear();
     if (kind === 'edge') {
       // peakW was already updated by apply(); only adoption (which emits
-      // new events and so must never run during replay) stays here.
-      const raceId = this.raceIdOfEndpoint(aId) ?? this.raceIdOfEndpoint(bId);
-      if (raceId) {
-        const race = this.races().find((r) => r.id === raceId);
-        if (race) this.maybeAdopt(t, race);
-      }
+      // new events and so must never run during replay) stays here. The
+      // sweep is field-wide (Ed, 2026-08-19): a judgment anywhere can
+      // release a batch another race was waiting on.
+      this.sweepAdoptions(t);
     }
     return this.log.slice(before).map((e) => e.event);
   }
@@ -1267,7 +1265,19 @@ export class Session {
   // -------------------------------------------------------------------------
   // Adoption (SPEC §4.2)
 
-  private maybeAdopt(t: number, race: RaceView): void {
+  /**
+   * The adoption sweep (SPEC §4.2, Ed 2026-08-19): when the cooldown from
+   * the last batch has elapsed, EVERY race whose leader clears bar and
+   * floor adopts at once — the document changes at most once per cooldown,
+   * by as much as the room has decided. Two rules keep the batch honest:
+   * the ready set is snapshotted before any adoption lands, so it is one
+   * decision per race per batch (a race's runner-up stays live after its
+   * winner adopts, and must not ride the same batch on evidence gathered
+   * against the old text); and adoptions land oldest race first, each
+   * rebasing the field for the next, a leader whose ground shifted
+   * mid-batch (rebase-pending) simply skipped to wait like anybody.
+   */
+  private sweepAdoptions(t: number): void {
     if (this.closedFlag) return;
     if (
       this.lastAdoptionT !== null &&
@@ -1275,11 +1285,38 @@ export class Session {
     ) {
       return;
     }
-    if (race.distinctMovers < this.adoptionFloor()) return;
-    if (race.leaderId === null || race.leaderP === null) return;
     const threshold = this.adoptionThreshold(t);
-    if (race.leaderP <= threshold) return;
-    this.adopt(t, race.leaderId, race.leaderP, threshold);
+    const floor = this.adoptionFloor();
+    const ready = this.races()
+      .filter(
+        (r) =>
+          r.distinctMovers >= floor &&
+          r.leaderId !== null &&
+          r.leaderP !== null &&
+          r.leaderP > threshold &&
+          // The room must have spoken here at least once: two rival authors
+          // meet a floor of 2 on derived self-preferences alone, and the
+          // old one-race trigger enforced this structurally (adoption fired
+          // only from a judgment in the race). Same doctrine as the refund:
+          // the author's own preference is counted but is not the room.
+          this.usableComparisons(r.members, r.incumbentId).some((c) => !c.derived),
+      )
+      .map((r) => ({ leaderId: r.leaderId as string, p: r.leaderP as number }));
+    for (const { leaderId, p } of ready) {
+      if (this.candidate(leaderId).state !== 'live') continue;
+      this.adopt(t, leaderId, p, threshold);
+    }
+  }
+
+  /**
+   * The host's clock (Ed, 2026-08-19): release any adoption batch the
+   * cooldown has made due, without waiting for a judgment to serve as
+   * the timer. No-op while nothing clears, and on a closed session.
+   */
+  tick(t: number): Event[] {
+    const before = this.log.length;
+    this.sweepAdoptions(t);
+    return this.log.slice(before).map((e) => e.event);
   }
 
   private adopt(t: number, candidateId: string, p: number, threshold: number): void {

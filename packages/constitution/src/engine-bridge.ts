@@ -205,6 +205,23 @@ export class EngineBridge {
     this.sync(t);
   }
 
+  /**
+   * The host's minute tick (SPEC §4.2, Ed 2026-08-19): release any
+   * adoption batch the cooldown has made due, without waiting for a
+   * judgment to serve as the timer. Setting verdicts go through the
+   * seam exactly as a judgment-triggered adoption's would.
+   */
+  tick(t: number): void {
+    this.sync(t); // the sweep runs under the current ground
+    for (const e of this.engine.tick(t)) {
+      if (e.type !== 'adopted') continue;
+      const motion = this.motionOfCandidate.get(e.candidateId);
+      if (motion === undefined) continue; // a text race adopting
+      this.cs.adjudicateOrdinaryMotion(t, motion, 'carried');
+    }
+    this.sync(t); // relay what carried (the ground shift)
+  }
+
   /** A second stakes the ✏️ (§9.7½): priced at the door like any entry. */
   proposeApplicant(t: number, by: MemberId, applicant: string, why?: string): void {
     this.sync(t);

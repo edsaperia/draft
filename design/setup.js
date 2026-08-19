@@ -48,6 +48,17 @@ window.SETUP = (function () {
     '👩‍🦲', '👨‍🦲', '🧑‍🦲', '👩‍🦳', '👨‍🦳', '🧑‍🦳',
     '👱‍♀️', '👱‍♂️', '👱', '👳‍♀️', '👳‍♂️', '👳',
     '🧔', '🧔‍♂️', '🧔‍♀️'];
+  const FACE_TONES = ['', '\u{1F3FB}', '\u{1F3FC}', '\u{1F3FD}', '\u{1F3FE}', '\u{1F3FF}'];
+  let FACE_TONE = '';
+  const setFaceTone = (v) => { FACE_TONE = v; };
+  const faceToned = (f) => {
+    const cps = [...f];
+    return cps[0] + FACE_TONE + cps.slice(1).join('');
+  };
+  const faceToneRow = () =>
+    '<div class="avpick">' + FACE_TONES.map((tn) =>
+      '<button class="avopt" data-tone="' + tn + '" aria-pressed="' + (FACE_TONE === tn) + '"' +
+      ' title="Skin tone"><span class="av big emoji">\u270B' + tn + '</span></button>').join('') + '</div>';
   const avatarOptions = () =>
     [{ id: '' }].concat(GROUNDS.map((g, i) => ({ id: 'c' + i })), MARKS.map((m, i) => ({ id: 'm' + i })));
 
@@ -566,9 +577,10 @@ window.SETUP = (function () {
       ' title="' + (o.id ? 'A ground for your initials' : 'Plain') + '">' +
       avHtml({ n: me.n, pic: o.id }, 'big') + '</button>').join('') + '</div>' +
     '<div class="eyebrow fieldlab">Or a face</div>' +
-    '<div class="avpick">' + FACE_EMOJI.map((f2) =>
+    faceToneRow() +
+    '<div class="avpick">' + FACE_EMOJI.map((f0) => { const f2 = faceToned(f0); return (
       '<button class="avopt" data-pic="' + 'e' + f2 + '" aria-pressed="' + ((me.pic || '') === 'e' + f2) + '"' +
-      ' title="An emoji face">' + avHtml({ n: me.n, pic: 'e' + f2 }, 'big') + '</button>').join('') + '</div>' +
+      ' title="An emoji face">' + avHtml({ n: me.n, pic: 'e' + f2 }, 'big') + '</button>'); }).join('') + '</div>' +
     '<p class="setnote">Initials are a real answer, not a placeholder — most rooms run on them. Whichever you choose is how you appear in the room, and it is not authorship: whether your name sits beside a <i>proposal</i> is the disclosure rule, not this.</p>';
 
   /* ---- ordinary and constitutional ----------------------------------------
@@ -1047,6 +1059,7 @@ window.SETUP = (function () {
   return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, stateOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
     nameBody, pictureBody, drawWire, opt, num, faces, someIn, FACE_EMOJI,
+    FACE_TONES, faceToneRow, faceToned, setFaceTone,
     KIND, kindNote, motionBody, motionReopen, routeFor, motionCommitHtml,
     slider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal };
 })();

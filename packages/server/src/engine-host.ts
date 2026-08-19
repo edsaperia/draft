@@ -64,7 +64,9 @@ export function driveBridge(docsDir: string, doc: LoadedDoc, t: number,
       ...(tuning ? { tuning: { ...DEFAULT_TUNING, ...tuning } } : {}) });
     d.enginePersisted = 0;
   } else if (!d.bridge.engine.closed) {
-    d.bridge.sync(t);
+    // tick, not bare sync (Ed, 2026-08-19): the minute timer is the
+    // adoption metronome — a due batch lands even in a quiet room.
+    d.bridge.tick(t);
   }
   const ending = doc.cs.settingState('ending').value as { endsAtMs: number | null } | null;
   if (ending !== null && ending.endsAtMs !== null && t >= ending.endsAtMs &&

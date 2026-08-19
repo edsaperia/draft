@@ -248,6 +248,83 @@ describe('session lifecycle', () => {
     expect(events.some((e) => e.type === 'adopted')).toBe(true);
   });
 
+  it('adopts every cleared race in one batch at the tick (Ed, 2026-08-19)', () => {
+    // The cooldown paces how often the document changes, never how many
+    // decisions land: once it elapses, everything outstanding adopts at
+    // once — released here by the host's tick, with no judgment as timer.
+    const s = openSession({ cooldownMs: 5 * 60_000 });
+    const submit = (author: string, line: number, text: string) =>
+      s.submitCandidate(1000, { author, patch: rewrite(0, line, text), rationale: 'r' });
+    const { id: c0 } = submit('p1', 1, 'A.');
+    const { id: c1 } = submit('p2', 2, 'B.');
+    const { id: c2 } = submit('p3', 3, 'C.');
+    // c0 adopts and starts the cooldown.
+    let t = 10_000;
+    let adoptedAt = 0;
+    for (const judge of ['p2', 'p3', 'p4', 'p5']) {
+      const events = s.judge((t += 1000), judge, c0, s.raceOf(c0).incumbentId, 'a');
+      if (events.some((e) => e.type === 'adopted')) {
+        adoptedAt = t;
+        break;
+      }
+    }
+    expect(adoptedAt).toBeGreaterThan(0);
+    // c1 and c2 both gather clearing support inside the cooldown: blocked.
+    for (const [cand, judges] of [
+      [c1, ['p1', 'p3', 'p4', 'p5']],
+      [c2, ['p1', 'p2', 'p4', 'p5']],
+    ] as const) {
+      const inc = s.raceOf(cand).incumbentId;
+      for (const judge of judges) {
+        const events = s.judge((t += 1000), judge, cand, inc, 'a');
+        expect(events.some((e) => e.type === 'adopted')).toBe(false);
+      }
+    }
+    // The tick releases both in one batch, oldest race first.
+    const batch = s.tick(adoptedAt + 5 * 60_000 + 1);
+    const adopted = batch.filter((e) => e.type === 'adopted');
+    expect(adopted.map((e) => e.type === 'adopted' && e.candidateId)).toEqual([c1, c2]);
+    expect(s.getCandidate(c1).state).toBe('adopted');
+    expect(s.getCandidate(c2).state).toBe('adopted');
+    // A batch replays bit-identically like anything else.
+    const replayed = Session.replay(s.log);
+    expect(replayed.document()).toBe(s.document());
+    expect(replayed.rollingHash()).toBe(s.rollingHash());
+  });
+
+  it('lands one decision per race per batch: the runner-up never rides along', () => {
+    // A race's losers stay live after its winner adopts, and their evidence
+    // was gathered against the old text — the ready set is snapshotted
+    // before anything lands, so a race contributes one adoption per tick.
+    const s = openSession({ cooldownMs: 5 * 60_000 });
+    const submit = (author: string, line: number, text: string) =>
+      s.submitCandidate(1000, { author, patch: rewrite(0, line, text), rationale: 'r' });
+    const { id: c0 } = submit('p1', 3, 'A.');
+    const { id: c1 } = submit('p2', 1, 'B.');
+    const { id: c2 } = submit('p3', 1, 'C.'); // rival: same line as c1
+    let t = 10_000;
+    let adoptedAt = 0;
+    for (const judge of ['p2', 'p3', 'p4', 'p5']) {
+      const events = s.judge((t += 1000), judge, c0, s.raceOf(c0).incumbentId, 'a');
+      if (events.some((e) => e.type === 'adopted')) {
+        adoptedAt = t;
+        break;
+      }
+    }
+    expect(adoptedAt).toBeGreaterThan(0);
+    // Both rivals beat the incumbent; c1 leads the pair.
+    const inc = s.raceOf(c1).incumbentId;
+    for (const judge of ['p1', 'p4', 'p5']) {
+      s.judge((t += 1000), judge, c1, inc, 'a');
+      s.judge((t += 1000), judge, c2, inc, 'a');
+      s.judge((t += 1000), judge, c1, c2, 'a');
+    }
+    const batch = s.tick(adoptedAt + 5 * 60_000 + 1);
+    const adopted = batch.filter((e) => e.type === 'adopted');
+    expect(adopted.map((e) => e.type === 'adopted' && e.candidateId)).toEqual([c1]);
+    expect(s.getCandidate(c2).state).not.toBe('adopted');
+  });
+
   it('raises the bar over the window: identical evidence adopts early, not late', () => {
     const judgeTwice = (s: Session, c: string, t0: number): boolean => {
       const inc = s.raceOf(c).incumbentId;

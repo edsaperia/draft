@@ -2121,9 +2121,10 @@
       '<div class="avpick">' + avatarOptions().map((o) =>
         '<button class="avopt" data-apppic="' + o.id + '" aria-pressed="' + (S.app.pic === o.id) + '">' +
         avHtml({ n: S.app.name || '?', pic: o.id }, 'big') + '</button>').join('') + '</div>' +
-      '<div class="avpick" style="margin-top:var(--s2)">' + window.SETUP.FACE_EMOJI.map((f2) =>
+      '<div style="margin-top:var(--s2)">' + window.SETUP.faceToneRow() + '</div>' +
+      '<div class="avpick">' + window.SETUP.FACE_EMOJI.map((f0) => { const f2 = window.SETUP.faceToned(f0); return (
         '<button class="avopt" data-apppic="' + 'e' + f2 + '" aria-pressed="' + (S.app.pic === 'e' + f2) + '">' +
-        avHtml({ n: S.app.name || '?', pic: 'e' + f2 }, 'big') + '</button>').join('') + '</div>',
+        avHtml({ n: S.app.name || '?', pic: 'e' + f2 }, 'big') + '</button>'); }).join('') + '</div>',
     apptext: () => '<p class="why">A few words to the members, if you want them — who you are, why this document. Optional: an empty application is a real application.</p>' +
       '<div class="lanebox"><div class="lp editlane' + (S.app.text ? '' : ' blank') + '" contenteditable="plaintext-only"' +
       ' spellcheck="false" data-apptext="1" data-ph="To the members…">' + esc(S.app.text) + '</div></div>',
@@ -2463,6 +2464,8 @@
         { name: S.app.name || undefined, picture: S.app.pic || undefined,
           words: S.app.text || undefined }); } catch (e) { console.warn('[cs]', e && e.message); } }
       return render(); }
+    const tn0 = ev.target.closest('[data-tone]');
+    if (tn0) { window.SETUP.setFaceTone(tn0.getAttribute('data-tone')); return render(); }
     const ap2 = ev.target.closest('[data-apppic]');
     if (ap2) { S.app.pic = ap2.dataset.apppic; return render(); }
     const adp = ev.target.closest('[data-admitpick]');

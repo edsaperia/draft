@@ -267,8 +267,8 @@
     display: inline-grid; place-items: center; flex: none; overflow: hidden; }
   .av.big { width: 44px; height: 44px; font-size: var(--t-cap); }
   .av.set { border-color: transparent; color: #fff; }
-  .av.emoji { background: var(--light); border-color: var(--border); font-size: 14px; }
-  .av.big.emoji { font-size: 27px; }
+  span.av.emoji { background: var(--light); border-color: var(--border); font-size: 15px; line-height: 1; }
+  span.av.big.emoji { font-size: 32px; }
   /* invited, but they have not opened it yet */
   .av.pending { opacity: 0.45; border-style: dashed; }
   .av svg { width: 100%; height: 100%; display: block; }
