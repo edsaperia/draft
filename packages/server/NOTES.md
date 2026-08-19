@@ -1,0 +1,37 @@
+# @draft/server — author calls (Q368)
+
+- **The log is the only persistence.** One JSONL of the ConstitutionSession's
+  own hash-chained LogEntry per document; loading is `replay` (chain
+  verified), persisting is appending what a command emitted. No database, no
+  snapshot, no second source of truth — the §11 property made operational.
+  Consequence to hold in mind: the log carries answers in plaintext (the
+  package's documented blindness design — projection withholds, storage does
+  not), so the data directory is as sensitive as the room. `view()` is the
+  only read the API serves; there is deliberately no log endpoint.
+- **The cookie is the actor.** No request body ever names who is acting; the
+  whitelist in commands.ts shapes calls onto the module with the
+  authenticated member injected. Founder-ness is `memberId ===
+  convenorRecord().id`, checked per request, never stored.
+- **Sessions are stateless HMAC cookies** over (docId, memberId, expiry) —
+  restart logs nobody out and there is no session table to leak. Tokens
+  (create/login) are single-use, expiring, stored sha256-hashed.
+- **Mail rides the fold.** After every persist the fresh events are scanned:
+  member-invited sends the invitation (with a login token minted then),
+  lapse-warned/member-lapsed send theirs. The server never composes a
+  notification the log does not imply. Without RESEND_API_KEY everything
+  lands in data/outbox.jsonl and on the console — the dev inbox.
+- **Arrival is the link** (§9.6a): following an invitation logs you in and
+  arrives you in one act; revival (§9.5a) is the same — any authenticated
+  command by a lapsed member calls memberReturn first.
+- **Time** is the server clock clamped non-decreasing per document
+  (`max(Date.now(), last event t)`); `tick()` runs the lapse/freeze clocks
+  once a minute on constituted documents.
+- **Slugs never break**: every slug a document has worn routes to it
+  (cs.slugs is the registry, §9.7). /d/:slug serves setup.html — the page
+  still runs its own fixture; wiring it to this API is Q391's work.
+- **Not in this slice**, each deliberate: the applicant flow (§9.7½ — needs
+  its own verify-before-submit token dance; the module is ready), the
+  engine-bridge (ordinary motions open and record over HTTP but nothing
+  races server-side until Q391 decides where the engine session lives),
+  rate limiting / abuse controls (Q346 territory), HTTPS and deployment
+  (Ed's call — nothing here deploys itself).

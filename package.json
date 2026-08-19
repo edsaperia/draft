@@ -7,7 +7,8 @@
   "scripts": {
     "test": "npm run test --workspaces",
     "typecheck": "npm run typecheck --workspaces",
-    "bundle": "npm run bundle -w @draft/constitution"
+    "bundle": "npm run bundle -w @draft/constitution",
+    "server": "npm run start -w @draft/server"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

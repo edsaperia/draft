@@ -1,0 +1,17 @@
+{
+  "name": "@draft/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@draft/constitution": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.5"
+  }
+}

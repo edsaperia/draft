@@ -1,0 +1,95 @@
+/**
+ * Mail out of docs.vote via Resend (Ed, 2026-08-18: the sending domain was
+ * the hosting decision), or — without an API key — the dev outbox: every
+ * mail lands in data/outbox.jsonl and on the console, links intact, so a
+ * developer's inbox is a tail of one file. Templates mirror setup.html's
+ * MAILS object: one substitution away from what the mockup previews.
+ */
+import { appendFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+export interface Mail {
+  to: string;
+  subject: string;
+  text: string;
+  /** The magic link, called out so the dev outbox is easy to drive. */
+  link?: string;
+}
+
+export interface Mailer {
+  readonly dev: boolean;
+  send(mail: Mail): Promise<void>;
+}
+
+export function makeMailer(opts: {
+  resendApiKey: string | null;
+  mailFrom: string;
+  dataDir: string;
+}): Mailer {
+  if (opts.resendApiKey === null) {
+    const outbox = join(opts.dataDir, 'outbox.jsonl');
+    return {
+      dev: true,
+      send: async (mail) => {
+        appendFileSync(outbox, JSON.stringify({ at: Date.now(), ...mail }) + '\n', 'utf8');
+        console.log(`[mail→${mail.to}] ${mail.subject}${mail.link ? ` :: ${mail.link}` : ''}`);
+      },
+    };
+  }
+  const key = opts.resendApiKey;
+  return {
+    dev: false,
+    send: async (mail) => {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: opts.mailFrom,
+          to: [mail.to],
+          subject: mail.subject,
+          text: mail.text,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(`resend refused (${res.status}): ${await res.text()}`);
+      }
+    },
+  };
+}
+
+export const MAILS = {
+  create: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `Create “${title}”`,
+    text: `You have created a document called “${title}”.\n\n` +
+      `Log in to create it:\n${link}\n\n` +
+      `Until you do, nothing exists anywhere — this address is the only way back in.`,
+    link,
+  }),
+  invite: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `You are invited to “${title}”`,
+    text: `You have been invited to become a member of “${title}”.\n\n` +
+      `Open your invitation:\n${link}\n\n` +
+      `Membership begins when you arrive; until then you count toward nothing.`,
+    link,
+  }),
+  login: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `Log in to “${title}”`,
+    text: `Here is your login link for “${title}”:\n${link}`,
+    link,
+  }),
+  lapseWarning: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `Your membership of “${title}” is about to lapse`,
+    text: `You have been inactive long enough that your membership of ` +
+      `“${title}” is about to lapse. Logging in is all it takes to stay:\n${link}`,
+    link,
+  }),
+  lapsed: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `Your membership of “${title}” has lapsed`,
+    text: `Your membership of “${title}” has lapsed. Your judgments still ` +
+      `count; you have simply left the quorum base. Reviving is logging in:\n${link}`,
+    link,
+  }),
+} as const;
