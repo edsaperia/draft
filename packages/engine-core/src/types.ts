@@ -191,6 +191,20 @@ export type Event =
   | { type: 'participant-added'; t: number; participant: Participant }
   | { type: 'participant-removed'; t: number; participantId: string }
   | {
+      /**
+       * Lapse, engine-side (SPEC §9.5a, §8.2): a suspended participant
+       * leaves E — the floor, a share-quorum and the freeze base stop
+       * counting them — and cannot act, but every judgment they cast
+       * keeps counting and their wallet keeps dripping. Revival is
+       * `participant-resumed`; the host calls it on any authenticated
+       * act.
+       */
+      type: 'participant-suspended';
+      t: number;
+      participantId: string;
+    }
+  | { type: 'participant-resumed'; t: number; participantId: string }
+  | {
       type: 'candidate-submitted';
       t: number;
       id: string;

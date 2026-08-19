@@ -757,3 +757,36 @@ describe('quorum in the adoption floor (SPEC §4.2, 367b)', () => {
     expect(s.adoptionFloor()).toBe(2); // min(ceil(5/3), F_max) still governs
   });
 });
+
+describe('suspension — lapse engine-side (SPEC §9.5a, §8.2, 367b)', () => {
+  it('a suspended participant leaves E, cannot act, and their cast judgments stand', () => {
+    const s = openSession({ quorum: { form: 'share', n: 60 } });
+    const { id: c1 } = s.submitCandidate(1000, {
+      author: 'p1',
+      patch: rewrite(0, 1, 'A.'),
+      rationale: 'r',
+    });
+    const inc = s.raceOf(c1).incumbentId;
+    s.judge(2000, 'p2', c1, inc, 'a');
+    expect(s.adoptionFloor()).toBe(3); // ceil(0.6 × 5)
+    s.suspendParticipant(3000, 'p2');
+    s.suspendParticipant(3000, 'p3');
+    expect(s.adoptionFloor()).toBe(2); // E = 3: max(ceil(1.8), ceil(3/3))
+    // The judgment already cast keeps counting (§9.5a).
+    expect(s.raceOf(c1).distinctMovers).toBe(2);
+    // But a suspended member cannot act until they return.
+    expect(() => s.judge(4000, 'p2', c1, inc, 'a')).toThrow(/suspended/);
+    s.resumeParticipant(5000, 'p2');
+    expect(s.judge(6000, 'p2', c1, inc, 'b')).toBeDefined();
+    expect(s.adoptionFloor()).toBe(3); // E = 4 → max(ceil(2.4), 2)
+  });
+
+  it('a suspended participant can still be removed, and replay agrees', () => {
+    const s = openSession();
+    s.suspendParticipant(1000, 'p4');
+    s.removeParticipant(2000, 'p4');
+    const r = Session.replay(s.log.slice());
+    expect(r.adoptionFloor()).toBe(s.adoptionFloor());
+    expect(r.rollingHash()).toBe(s.rollingHash());
+  });
+});

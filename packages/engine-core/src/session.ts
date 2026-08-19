@@ -147,6 +147,8 @@ export interface JudgmentView {
 interface RosterEntry {
   participant: Participant;
   removed: boolean;
+  /** Lapsed (SPEC §9.5a): out of E, cannot act, judgments cast stand. */
+  suspended: boolean;
   ledger: Ledger;
   /** Response-time samples within bouts, for c_p (SPEC §8.1). */
   latencies: number[];
@@ -258,6 +260,7 @@ export class Session {
           this.roster.set(p.id, {
             participant: p,
             removed: false,
+            suspended: false,
             ledger: openLedger(event.constitution, event.t),
             latencies: [],
             lastActionT: null,
@@ -269,6 +272,7 @@ export class Session {
         this.roster.set(event.participant.id, {
           participant: event.participant,
           removed: false,
+          suspended: false,
           ledger: openLedger(this.constitutionValue, event.t),
           latencies: [],
           lastActionT: null,
@@ -278,6 +282,16 @@ export class Session {
       case 'participant-removed': {
         const entry = this.roster.get(event.participantId);
         if (entry) entry.removed = true;
+        break;
+      }
+      case 'participant-suspended': {
+        const entry = this.roster.get(event.participantId);
+        if (entry) entry.suspended = true;
+        break;
+      }
+      case 'participant-resumed': {
+        const entry = this.roster.get(event.participantId);
+        if (entry) entry.suspended = false;
         break;
       }
       case 'candidate-submitted': {
@@ -534,6 +548,9 @@ export class Session {
   private activeParticipant(id: string): RosterEntry {
     const entry = this.rosterEntry(id);
     if (entry.removed) throw new Error(`participant ${id} was removed`);
+    if (entry.suspended) {
+      throw new Error(`participant ${id} is suspended (lapsed, §9.5a) — resume first`);
+    }
     return entry;
   }
 
@@ -590,9 +607,9 @@ export class Session {
     return Math.max(quorumN, Math.min(Math.ceil(e / 3), this.constitutionValue.adoptionFloorMax));
   }
 
-  /** E (SPEC §8.2): the countable membership, engine-side. */
+  /** E (SPEC §8.2): arrived, non-removed, non-lapsed — engine-side. */
   private eCount(): number {
-    return [...this.roster.values()].filter((r) => !r.removed).length;
+    return [...this.roster.values()].filter((r) => !r.removed && !r.suspended).length;
   }
 
   balance(participantId: string, t: number): number {
@@ -675,8 +692,27 @@ export class Session {
 
   removeParticipant(t: number, participantId: string): void {
     this.assertOpen();
-    this.activeParticipant(participantId);
+    const entry = this.rosterEntry(participantId);
+    if (entry.removed) throw new Error(`participant ${participantId} was removed`);
     this.emit({ type: 'participant-removed', t, participantId });
+  }
+
+  /** Lapse (SPEC §9.5a): out of E, still counted where already cast. */
+  suspendParticipant(t: number, participantId: string): void {
+    this.assertOpen();
+    const entry = this.rosterEntry(participantId);
+    if (entry.removed) throw new Error(`participant ${participantId} was removed`);
+    if (entry.suspended) return;
+    this.emit({ type: 'participant-suspended', t, participantId });
+  }
+
+  /** Revival (SPEC §9.5a): just logging in — any authenticated act. */
+  resumeParticipant(t: number, participantId: string): void {
+    this.assertOpen();
+    const entry = this.rosterEntry(participantId);
+    if (entry.removed) throw new Error(`participant ${participantId} was removed`);
+    if (!entry.suspended) return;
+    this.emit({ type: 'participant-resumed', t, participantId });
   }
 
   submitCandidate(
@@ -1514,7 +1550,7 @@ export class Session {
     const hot = valued.slice(0, this.constitutionValue.hotSetSize);
 
     const costs = [...this.roster.values()]
-      .filter((r) => !r.removed && r.latencies.length > 0)
+      .filter((r) => !r.removed && !r.suspended && r.latencies.length > 0)
       .map((r) => r.latencies.reduce((a, b) => a + b, 0) / r.latencies.length)
       .sort((a, b) => a - b);
     const myCost = this.judgmentCost(participantId);
