@@ -172,6 +172,8 @@ Marking the field green (Ed, 2026-08-17) took most of the weight off both of the
 
 389. **The applications card's two holds read as one** (raised 2026-08-19, from the v0.52 build). The 🤝 card holds the membership's crown (in its value) and the policy setting itself (its holder); v0.52 delegates both with one sentence — "Applications are delegated to the members" — on the reading that a half-delegated door is not a state anybody wants. If a founder should be able to hand over the join policy while keeping invite-and-remove (or vice versa), the card needs two sentences, and the register's crown probably becomes its own setting rather than a field of this one.
 
+391. **The setup surface's ordinary-motion judging, once real races exist** (raised 2026-08-19, from the 367(b) build). setup.html adjudicates ordinary motions through a dev seam — every member judges, majority carries — because the mock had no engine. With 367(b) the engine races typed setting values (Q390) and the `engine-bridge` adjudicates through the same `adjudicateOrdinaryMotion` seam, so the seam's *caller* is now real; what the mock lacks is the **surface**: an ordinary motion should be served as a pairwise race card (standing value vs proposed, rivals joining the field), not as an everyone-votes tally. That is a design task in session-view's card grammar — the lanes hold values via `motion-controls`, the composer already exists — and it wants Ed's QA, not a mechanical swap. Recommendation: build it as part of wiring the browser engine into setup.html (the engine is browser-loadable since 367(b)'s pure-sha256 move), after the thin server question (Q368) settles where the engine session actually runs.
+
 ## Backlog (provisioned, build later)
 
 315. **The ranking model as a document-creation setting: approval · Bradley–Terry · Crowd-BT** (Ed, 2026-08-17, parked as a note for later). *There are situations where each is appropriate and I think much of our machinery still applies for each.* Crowd-BT is Chen, Bennett, Collins-Thompson & Horvitz, *Pairwise Ranking Aggregation in a Crowdsourced Setting*, WSDM 2013 (10.1145/2433396.2433420) — Bradley–Terry with a **per-judge reliability parameter** estimated jointly with the item scores, plus an active-learning scheme that chooses which pair to serve *and whom to serve it to*. Details want checking against the paper before anything is built on them.
@@ -209,7 +211,7 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-Next unused number: **390**. Never reuse a spent number.
+Next unused number: **392**. Never reuse a spent number. (390 was consumed in chat 2026-08-19 — ordinary motion races, folded into SPEC §9.6 v0.53; 391 is above.)
 
 *Tidied 2026-08-16 (housekeeping pass): items sorted numerically within each section; 158 and 163 deleted as fully resolved; 70 and 92 rewritten to their surviving halves, since the questions they originally asked no longer exist.*
 
