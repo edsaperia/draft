@@ -161,7 +161,9 @@
   // the save (§9.7a: until the link exists, nothing does, anywhere).
   const M = window.CONSTITUTION;
   let cs = null;
-  let T = 0;                       // the logical clock every command stamps
+  // based at load time so a stamp renders as today, not 1970 — commands
+  // still advance it by one, and the module only ever reads differences
+  let T = Date.now();               // the logical clock every command stamps
   const now = () => ++T;
   const FOUNDER = 'founder';
   // ---- live mode (Q391b): the page served by the product server ---------
@@ -327,6 +329,7 @@
 
   const S = {
     title: '', slug: '',
+    folded: new Set(),  // folded headings: 'cs-<section>' and 'ph:<prose heading>'
     titleBy: 'founder', slugBy: 'founder', policyBy: 'founder',
     emailSent: false, emailVerified: false, mailOpen: false,
     viewer: 0,
@@ -436,6 +439,41 @@
     prose.classList.toggle('empty', prose.textContent.trim() === '');
     renderToc(); render();
   }
+  // **Headings fold with ▸s, mirrored in the table of contents** (Ed,
+  // 2026-08-19). The control is session-view's own sectoggle; in the prose
+  // the triangles live on an overlay rail, because a button inside a
+  // contenteditable region would become text the harvest reads.
+  const secToggleHtml = (key) => {
+    const open = !S.folded.has(key);
+    return '<button class="sectoggle" data-sec-toggle="' + esc(key) + '" aria-expanded="' + open + '"' +
+      ' title="' + (open ? 'Fold this section away' : 'Unfold this section') + '"><span class="tri">▸</span></button>';
+  };
+  function applyProseFolds() {
+    let hideLvl = null;
+    for (const b of [...prose.children]) {
+      const isH = b.dataset.h !== undefined;
+      const lvl = isH ? +((b.className.match(/lvl(\d)/) || [0, 9])[1]) : 9;
+      if (isH && hideLvl !== null && lvl <= hideLvl) hideLvl = null;
+      const hidden = hideLvl !== null;
+      b.classList.toggle('pfolded', hidden);
+      if (isH && !hidden && S.folded.has('ph:' + b.dataset.h)) hideLvl = lvl;
+    }
+    positionProseToggles();
+  }
+  function positionProseToggles() {
+    let rail = document.getElementById('prosefolds');
+    if (!rail) {
+      rail = document.createElement('div'); rail.id = 'prosefolds';
+      prose.parentElement.insertBefore(rail, prose);
+    }
+    const hs = [...prose.children].filter((b) => b.dataset.h !== undefined && !b.classList.contains('pfolded'));
+    // measured, not offsetTop: the rail and the blocks answer to different
+    // offset parents, and a rect delta is true whatever the ancestry
+    const rTop = rail.getBoundingClientRect().top;
+    rail.innerHTML = hs.map((b) =>
+      '<span style="top:' + (b.getBoundingClientRect().top - rTop).toFixed(1) + 'px">' +
+      secToggleHtml('ph:' + b.dataset.h) + '</span>').join('');
+  }
   function renderToc() {
     const hs = [...prose.children].filter((b) => b.dataset.h !== undefined);
     // the constitution's sections lead the table of contents (Ed,
@@ -446,13 +484,14 @@
       (!settled(card('slug')) ? '' :
       '<li class="lvl1"><a href="#cs-constitution">Constitution</a></li>' +
       secLive().filter((s2) => !s2.railOnly).map((s2) =>
-        '<li class="lvl2"><a href="#cs-' + s2.key + '">' + esc(s2.title) + '</a></li>').join('') +
+        '<li class="lvl2">' + secToggleHtml('cs-' + s2.key) + '<a href="#cs-' + s2.key + '">' + esc(s2.title) + '</a></li>').join('') +
       '<li class="lvl1"><a href="#dochead">' + esc(S.title || 'Untitled document') + '</a></li>') +
       hs.map((b, i) => {
       b.id = 'h' + i;
       const lvl = (b.className.match(/lvl(\d)/) || [0, 2])[1];
-      return '<li class="lvl' + lvl + '"><a href="#h' + i + '">' + esc(b.dataset.h) + '</a></li>';
+      return '<li class="lvl' + lvl + '">' + secToggleHtml('ph:' + b.dataset.h) + '<a href="#h' + i + '">' + esc(b.dataset.h) + '</a></li>';
     }).join('');
+    applyProseFolds();
   }
   prose.addEventListener('paste', (ev) => {
     ev.preventDefault();
@@ -517,6 +556,9 @@
     // inDoc: the document's own heading IS the title (Ed, 2026-08-18) — no
     // paragraph restates it; the heading opens the card
     { k: 'title', g: HOMEPLATE, t: 'Title', kind: 'ordinary', inDoc: true, ready: () => !!S.title, changeable: true },
+    { k: 'titlegov', g: '🗝️', t: 'Who May Change the Title?', kind: 'constitutional', dep: ['slug'], ready: () => true, changeable: true,
+      setBy: 'How the title is held was set when the document was made',
+      readNote: 'Delegating is the founder’s to do at any time, one way — the road back is a constitutional motion, the members’ to move.' },
     // Pre-filled with a slug generated from the title and checked against the
     // ones that already exist; confirming it is what SAVES the document.
     // **The address is verified before anything is saved** (Ed, 2026-08-18:
@@ -528,11 +570,22 @@
     { k: 'myemail', g: '📧', t: 'Your Email', kind: 'personal', own: 'you', dep: ['title'],
       hide: () => !amFounder(), ready: () => S.emailVerified, changeable: true },
     { k: 'slug', g: '🔗', t: 'Link', kind: 'ordinary', dep: ['myemail'], ready: () => SLUG_OK.test(S.slug), changeable: true },
+    { k: 'sluggov', g: '🗝️', t: 'Who May Change the Link?', kind: 'constitutional', dep: ['slug'], ready: () => true, changeable: true,
+      setBy: 'How the link is held was set when the document was made',
+      readNote: 'Delegating is the founder’s to do at any time, one way — the road back is a constitutional motion, the members’ to move.' },
     // — the rest, together once the document exists ----------------------
     // 🎩 folded into 🪪 (Ed, 2026-08-18): whether the founder is a
     // member is just whether they invite themselves, asked as their own
     // pre-checked row in the membership card.
     { k: 'roster', g: '🪪', t: 'Membership', kind: 'constitutional', dep: ['policy'], ready: () => members().length >= 1, changeable: true },
+    // **Inviting and removing are their own cards** (Ed, 2026-08-19, 400a:
+    // ✉️ and ❌): doors, not decisions — they compose the membership
+    // motions, stand in the 🪪 stack, and exist only once judging opens
+    // (before that the 🪪 card's own invitation box is the door).
+    { k: 'invite', g: '✉️', t: 'Invite a Member', kind: 'constitutional', dep: ['roster'],
+      hide: () => !motionsLive(), ready: () => true },
+    { k: 'remove', g: '❌', t: 'Remove a Member', kind: 'constitutional', dep: ['roster'],
+      hide: () => !motionsLive(), ready: () => true },
     { k: 'hat', g: '🎩', t: 'Is the Founder a member?', kind: 'personal', ready: () => true, changeable: true },
     // **The register and the door are two decisions** (Ed, 2026-08-18: *We
     // should separate "Membership" which is the register of people who are
@@ -655,7 +708,7 @@
   // members' before the ✒️ commits the hand-over); isRoom's provisional
   // read survives only where the module holds no state for the key
   const membersHold = (c) => {
-    if (c.k === 'roster') return regHolder() === 'members';
+    if (c.k === 'roster' || c.k === 'invite' || c.k === 'remove') return regHolder() === 'members';
     const st = csState(c.k);
     return st ? st.holder === 'members' : isRoom(c); };
   // the watch-half only where a blind question actually ran (or is running):
@@ -686,6 +739,8 @@
   const ready = (c) => (c.ansFor ? filled(c) : c.ready ? c.ready() : true);
   const settled = (c) => {
     if (c.k === 'hat') return true; // always answered — member by default
+    if (c.k === 'titlegov' || c.k === 'sluggov') return true; // a holder always exists
+    if (c.k === 'invite' || c.k === 'remove') return true;     // doors, not decisions
     if (c.isGate) return S.okd.has(c.k);
     if (c.ansFor) return answered(c);
     if (!S.seen.has(c.k) || !ready(c)) return false; // confirmed, not defaulted
@@ -740,7 +795,7 @@
     // no intro line (Ed, 2026-08-18) — the sentences are the section
     { key: 'members', title: 'Membership',
       text: '',
-      keys: ['roster', 'policy', 'lapse', 'myemail', 'myname', 'mypic'],
+      keys: ['roster', 'invite', 'remove', 'policy', 'lapse', 'myemail', 'myname', 'mypic'],
       // **Members and Applications are subsections** (Ed, 2026-08-18):
       // Members IS the list — 🪪, the tab for invitations, stands beside
       // it, and the bottom row is your own membership wearing the ✋ and
@@ -763,11 +818,13 @@
         return (visible(card('policy')) ? h.para(card('policy')) : '') +
           (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
           '<h2 class="docline lvl3">Members</h2>' +
-          (S.open === 'roster' || S.open === 'hat'
-            ? h.paraWith(card(S.open), [card('roster'), card('hat')])
+          (() => { const pileCards = ['roster', 'invite', 'remove', 'hat']
+            .map(card).filter((c) => c && visible(c));
+          return (pileCards.some((c) => S.open === c.k)
+            ? h.paraWith(card(S.open), pileCards)
             : visible(card('roster'))
-            ? '<div class="cpara"><span class="chipcol">' + h.pile([card('roster'), card('hat')]) + '</span>' + list + '</div>'
-            : '') +
+            ? '<div class="cpara">' + h.pile(pileCards) + list + '</div>'
+            : ''); })() +
           (openId ? h.paraWith(openId, my) : '') +
           rest.map((c) => h.para(c) + h.tasks(c)).join('');
       } },
@@ -779,12 +836,12 @@
       text: 'How a change carries: how many must weigh in, how sure the room must be, and when the document ends.',
       keys: ['ending', 'quorum', 'bar', 'pace'] },
     { key: 'privacy', title: 'Privacy',
-      text: 'Who is seen doing what — proposing, signing, judging — and who may read the document at all.',
-      keys: ['authorship', 'signing', 'judgments', 'chamber'] },
+      text: 'Who is seen doing what — proposing, signing, and judging.',
+      keys: ['authorship', 'signing', 'judgments'] },
     // rail-only: the title is the heading, the link leads the constitution,
     // and the starting text anchors the prose (Ed, 2026-08-18)
     { key: 'doc', title: 'The Document', railOnly: true,
-      text: '', keys: ['title', 'slug', 'text'] },
+      text: '', keys: ['title', 'titlegov', 'slug', 'sluggov', 'chamber', 'text'] },
   ];
   const secLive = () => SEC.map((s2) => ({ ...s2,
     cards: s2.keys.map(card).filter((c) => c && visible(c)) }))
@@ -804,17 +861,20 @@
       sections: secLive(),
       // Founded by [avatar] [name] — only once the founder has a name; the
       // founding time is never known before the start (Ed)
-      lead: (h) => (visible(card('slug')) ? h.para(card('slug')) : '') +
+      lead: (h) => (visible(card('titlegov')) ? h.para(card('titlegov')) : '') +
+        (visible(card('slug')) ? h.para(card('slug')) : '') +
+        (visible(card('sluggov')) ? h.para(card('sluggov')) : '') +
+        // 🌍 is about the document, not member privacy — the penultimate
+        // clause of the opening section (Ed, 2026-08-19)
+        (visible(card('chamber')) ? h.para(card('chamber')) + h.tasks(card('chamber')) : '') +
         (S.myname.trim()
           ? '<div class="cpara notab"><p class="cpv founded">Founded by ' +
             avHtml(me()) + ' ' + esc(S.myname) +
             // 👑 by any reservation (Ed, Q379 wide); 📯 = holds nothing.
-            // Today the title and link cannot be handed over, so every
-            // founder is a 👑 until Q381's exit lands — drawn honestly.
             ' <span title="' + (founderCrowned()
               ? 'Part of the constitution is reserved: changing it needs the founder’s assent'
               : 'The founder reserves nothing — no special part in the document') + '">' +
-            (founderCrowned() ? '👑' : '📯') + '</span>.</p></div>' : ''),
+            (founderCrowned() ? '👑' : '📯') + '</span>' + esc(foundedAt()) + '.</p></div>' : ''),
       textAnchor: (h) => (!visible(card('text')) ? ''
         : '<div class="cpara notab docsep"></div>' +
           (S.open === 'text' ? h.para(card('text'))
@@ -828,6 +888,10 @@
       return n ? n + ' blocks' : (S.seen.has('text') ? 'Starts empty — the room writes it' : 'Nothing yet'); },
     title: () => S.title || 'Not named yet',
     slug: () => 'docs.vote/' + (S.slug || '…'),
+    titlegov: () => govValue('title'),
+    sluggov: () => govValue('slug'),
+    invite: () => 'By everyone’s consent',
+    remove: () => 'By everyone’s consent — theirs included',
     myemail: () => (S.emailVerified ? S.myemail + ' · verified'
       : S.emailSent ? 'Check your inbox' : 'Not given yet'),
     myname: () => S.myname || 'Not given yet',
@@ -923,7 +987,9 @@
   const PKEY = { link: 'slug', startingText: 'text', applications: 'policy', membership: 'roster' };
   const pkeyOf = (mid2) => PKEY[mid2] || mid2;
   const motionTargets = (rec) =>
-    pkeyOf(rec.payload.kind === 'set' || rec.payload.kind === 'reserve'
+    rec.payload.kind === 'invite' ? 'invite'
+    : rec.payload.kind === 'remove' ? 'remove'
+    : pkeyOf(rec.payload.kind === 'set' || rec.payload.kind === 'reserve'
       ? rec.payload.setting : 'membership');
   const nameOfMember = (mid2) => {
     const row = S.roster.find((r) => (r.mid || 'founder') === mid2);
@@ -1010,7 +1076,7 @@
   // the typed value rides along as the draft is composed (d.val); the two
   // membership sentences parse at commit, where the row is at hand
   function draftPayload(d) {
-    if (d.k === 'roster') {
+    if (d.k === 'roster' || d.k === 'invite' || d.k === 'remove') {
       if (/ leaves the membership$/.test(d.to)) {
         const nm = d.to.replace(/ leaves the membership$/, '');
         const row = S.roster.find((r) => (r.n || r.e) === nm);
@@ -1042,7 +1108,7 @@
       return jp ? { holder: cur ? cur.holder : regHolder(),
         joinPolicy: jp } : null;
     }
-    if (k === 'roster') return null;
+    if (k === 'roster' || k === 'invite' || k === 'remove') return null;
     return (MVAL[k] || {})[disp] || null;
   };
   // **The settled card is the composer** (Ed, 2026-08-18) — for any member,
@@ -1053,12 +1119,15 @@
   // §9.7 v0.54: the founder's direct hand IS the unilateral power — where
   // it is given up (assent-only state) the founder composes like a member
   const founderDirect = (c) => {
-    if (c.k === 'roster') return regHolder() === 'reserved' || regHolder() === 'reserved-unilateral';
+    // direct removal is not built (the removal-policy setting will decide
+    // its routes) — the founder composes a removal like any member
+    if (c.k === 'remove') return false;
+    if (c.k === 'roster' || c.k === 'invite') return regHolder() === 'reserved' || regHolder() === 'reserved-unilateral';
     const st = csState(c.k);
     return !st || st.powers.unilateral; };
   // the 👑 question exists exactly where the assent power is held
   const crownWaits = (c) => {
-    if (c.k === 'roster') return regHolder() === 'reserved' || regHolder() === 'reserved-assent';
+    if (c.k === 'roster' || c.k === 'invite' || c.k === 'remove') return regHolder() === 'reserved' || regHolder() === 'reserved-assent';
     const st = csState(c.k);
     return st ? st.holder === 'convenor' && st.powers.assent : !membersHold(c); };
   // The register counts as settled here (Ed's QA, 2026-08-19: *I can't seem
@@ -1066,7 +1135,10 @@
   // is, it always is — without this the membership card never composed, and
   // invitations and removals had no door.
   const composerOn = (c) => motionsLive() && viewerIsMember() && !c.isGate && !c.ansFor &&
-    c.kind !== 'personal' && c.k !== 'text' && (settled(c) || c.k === 'roster') && !motionOn(c) &&
+    // governance cards compose nowhere: delegating is the founder's, and
+    // the road back is the constitutional reserve motion (Ed, 2026-08-19)
+    c.k !== 'titlegov' && c.k !== 'sluggov' &&
+    c.kind !== 'personal' && c.k !== 'text' && c.k !== 'roster' && settled(c) && !motionOn(c) &&
     !(amFounder() && !membersHold(c) && founderDirect(c));
   const commitFor = (c) => motionCommitHtml(c,
     (S.draft && S.draft.k === c.k) ? S.draft.to : '',
@@ -1228,9 +1300,15 @@
     policy: (d) => POLICY_TEXTS.filter(([val]) => !currentOf('policy').startsWith(val))
       .map(([val, text]) => laneBlock(d, val, text)).join('') +
       '<p class="setnote">One motion proposes one rule; what you do not touch stands.</p>',
-    // the membership, in front of you, with an ✕ beside each and a field at
-    // the bottom — which is what “propose a change to the membership” means
-    roster: (d) =>
+    // ✉️: whom to bring in — the invite half of what was one roster
+    // composer (Ed, 2026-08-19, 400a)
+    invite: (d) =>
+      '<div class="roster"><div class="addrow"><input placeholder="Somebody to invite" data-mjoin="1">' +
+      '<button class="btn" data-mjoinbtn="1">Invite</button></div></div>' +
+      '<p class="setnote">An invitation is constitutional, because who is in the room is what quorum is a fraction of: everyone consents, and one member who says no keeps them out.</p>',
+    // ❌: the membership, in front of you, with an ✕ beside each — which
+    // is what “propose a removal” means
+    remove: (d) =>
       '<div class="roster">' + S.roster.map((p, i) =>
         '<div class="rperson' + (d.to === (p.n || p.e) + ' leaves the membership' ? ' picked' : '') + '">' +
         avHtml(p) + '<span><span class="nm">' + esc(p.n || p.e || '—') +
@@ -1238,10 +1316,8 @@
         (i === S.viewer ? '<span class="xdrop"> </span>'
           : '<button class="xdrop" data-mval="' + esc((p.n || p.e) + ' leaves the membership') + '"' +
             ' title="Propose that they leave">✕</button>') +
-        '</div>').join('') +
-      '<div class="addrow"><input placeholder="Somebody to invite" data-mjoin="1">' +
-      '<button class="btn" data-mjoinbtn="1">Invite</button></div></div>' +
-      '<p class="setnote">Either way it is one motion and it is constitutional, because who is in the room is what quorum is a fraction of. One member who says no settles it.</p>',
+        '</div>').join('') + '</div>' +
+      '<p class="setnote">Removing a member is constitutional, and their own answer counts among everyone’s — nobody is removed while they refuse.</p>',
   };
 
   // A constitutional motion re-opens consent: what is proposed, what stands,
@@ -1250,19 +1326,37 @@
   const inviteBody = (m) =>
     '<p class="why">Whether <b>' + esc(m.invite) + '</b> joins the membership. Adding a member changes what quorum is a fraction of, so it is constitutional: the most restrictive answer wins, and one member who says no keeps them out.</p>' +
     '<div class="choice" role="radiogroup">' +
-    '<div class="pick' + (S.mAns.roster === 'no' ? ' on' : '') + '"><button class="lanepick"' +
-    ' aria-pressed="' + (S.mAns.roster === 'no') + '" data-motion="no"><span class="dot"></span>' +
+    '<div class="pick' + (S.mAns.invite === 'no' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns.invite === 'no') + '" data-motion="no"><span class="dot"></span>' +
     '<span>I would rather they did not</span></button>' +
     '<span class="exp">They stay out. Nobody is told who said so.</span></div>' +
-    '<div class="pick' + (S.mAns.roster === 'yes' ? ' on' : '') + '"><button class="lanepick"' +
-    ' aria-pressed="' + (S.mAns.roster === 'yes') + '" data-motion="yes"><span class="dot"></span>' +
+    '<div class="pick' + (S.mAns.invite === 'yes' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns.invite === 'yes') + '" data-motion="yes"><span class="dot"></span>' +
     '<span>I accept them joining</span></button>' +
     '<span class="exp">They start with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</span></div>' +
-    '<div class="pick' + (S.mAns.roster === 'abstain' ? ' on' : '') + '"><button class="lanepick"' +
-    ' aria-pressed="' + (S.mAns.roster === 'abstain') + '" data-motion="abstain"><span class="dot"></span>' +
+    '<div class="pick' + (S.mAns.invite === 'abstain' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns.invite === 'abstain') + '" data-motion="abstain"><span class="dot"></span>' +
     '<span>Abstain</span></button>' +
     '<span class="exp">An answer, not a block: they can join without your consent counting either way.</span></div></div>' + BLINDNOTE;
-  const consentBody = (c, m) => (m.invite ? inviteBody(m) :
+  const removeBody = (m) => {
+    const nm = String(m.to || '').replace(/ leaves the membership$/, '');
+    return '<p class="why">Whether <b>' + esc(nm) + '</b> leaves the membership. Removing a member changes what quorum is a fraction of, so it is constitutional — and their own answer counts among everyone’s.</p>' +
+    '<div class="choice" role="radiogroup">' +
+    '<div class="pick' + (S.mAns.remove === 'no' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns.remove === 'no') + '" data-motion="no"><span class="dot"></span>' +
+    '<span>They stay</span></button>' +
+    '<span class="exp">Nobody is told who said so.</span></div>' +
+    '<div class="pick' + (S.mAns.remove === 'yes' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns.remove === 'yes') + '" data-motion="yes"><span class="dot"></span>' +
+    '<span>I accept their leaving</span></button>' +
+    '<span class="exp">Their judgments already cast keep counting; quorum recomputes.</span></div>' +
+    '<div class="pick' + (S.mAns.remove === 'abstain' ? ' on' : '') + '"><button class="lanepick"' +
+    ' aria-pressed="' + (S.mAns.remove === 'abstain') + '" data-motion="abstain"><span class="dot"></span>' +
+    '<span>Abstain</span></button>' +
+    '<span class="exp">An answer, not a block.</span></div></div>' + BLINDNOTE;
+  };
+  const consentBody = (c, m) => (m.invite ? inviteBody(m)
+    : / leaves the membership$/.test(String(m.to || '')) ? removeBody(m) :
     '<p class="why">Whether <b>' + esc(m.to) + '</b> replaces <i>' + esc(standsOf(c.k)) + '</i>. Nothing is being judged: you state what you will accept, and one refusal keeps what stands.</p>' +
     '<div class="choice" role="radiogroup">' +
     '<div class="pick' + (S.mAns[c.k] === 'no' ? ' on' : '') + '"><button class="lanepick"' +
@@ -1402,6 +1496,8 @@
     rate: 'how often members may propose',
     policy: 'how people become members',
     slug: 'the document’s address',
+    titlegov: 'who may change the title',
+    sluggov: 'who may change the link',
     text: 'the text the document starts from',
   };
   const endFmt = () => new Date((endingVal() !== 'never' && endingVal()) || S.endsAt)
@@ -1455,6 +1551,10 @@
         open: 'Anyone with the link joins on arrival.' })[v ? v.joinPolicy : S.joinBy] +
         regLine(v ? v.holder : regHolder()); },
     slug: () => 'The document lives at docs.vote/' + S.slug + '.',
+    titlegov: () => 'The document title (“' + (S.title || 'Untitled document') + '”) may be changed by ' + mayBy('title'),
+    sluggov: () => 'The link may be changed by ' + mayBy('slug'),
+    invite: () => 'Anyone may be proposed for membership — an invitation is constitutional, and one refusal keeps them out.',
+    remove: () => 'A member may be proposed for removal — constitutional, and their own answer counts among everyone’s.',
     text: () => { const n = [...prose.children].filter((b) => b.textContent.trim()).length;
       return n ? 'The document starts from ' + n + ' blocks of text.'
         : 'The document starts empty — the room writes it.'; },
@@ -1464,7 +1564,8 @@
   // third-person sentence, the four alternatives standing where rules are
   // read rather than where they are set
   const holderLine = (k) => {
-    if (!cs || !DKEY[k] || k === 'policy') return '';
+    // title and link: their governance is its own line now (Ed, 2026-08-19)
+    if (!cs || !DKEY[k] || k === 'policy' || k === 'title' || k === 'slug') return '';
     const st = csState(k);
     if (!st) return '';
     if (st.holder === 'members') return ' It is the members’ to change.';
@@ -1529,6 +1630,11 @@
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
     reserved: (c) => !c.isGate && !c.ansFor && c.kind !== 'personal' && !membersHold(c),
+    // a section never folds while it holds the open card or its tasks
+    foldedSec: (sec) => S.folded.has('cs-' + sec.key) &&
+      !sec.cards.some((c) => S.open === c.k ||
+        (tasksFor(c) || []).some((t2) => S.open === t2.k)),
+    secToggle: (sec) => secToggleHtml('cs-' + sec.key),
     mustAct, summary, value, isRoom, waiting, news, tasksFor, decisionLine,
   };
 
@@ -1675,6 +1781,35 @@
   }
   // the title and link never take a founding question (no most-protective
   // title for maxima to find), so their choice appears with proposing
+  // Ed, 2026-08-19: the constitution opens by saying who may change the
+  // title and the link — the governance, stated apart from the value
+  const mayBy = (k) => {
+    if (csDelegated(k)) return 'the members — anyone may propose a change, and it carries at the approval threshold.';
+    if (!cs || !cs.textConfirmed) return 'the Founder while the document is being set up.';
+    const cur = pwCur(k);
+    if (cur === 'unilateral') return 'the Founder directly, and by the members without the Founder’s OK.';
+    if (cur === 'assent') return 'the members — each change comes to the Founder as a 👑 question; the Founder no longer changes it directly.';
+    return 'the Founder directly; a change the members carry comes to the Founder as a 👑 question.';
+  };
+  const govValue = (k) => (csDelegated(k) ? 'The members'
+    : (cs && cs.textConfirmed && pwCur(k) === 'unilateral') ? 'The Founder — and members without the Founder’s OK'
+    : (cs && cs.textConfirmed && pwCur(k) === 'assent') ? 'The members, with the Founder’s OK'
+    : 'The Founder');
+  const govBody = (k, note) => '<p class="why">' + note + '</p>' +
+    (csDelegated(k)
+      ? '<p class="setnote"><b>Delegated to the members.</b> One way — the road back is a constitutional motion, theirs to move.</p>'
+      : (!cs || !cs.textConfirmed)
+      ? '<p class="setnote">Yours while the document is being set up. Handing it to the members opens once the starting text is confirmed.</p>'
+      : holdChoice(k) + powerTail(k));
+  // Founded by [avatar] [name] at [time] on [date] (Ed, 2026-08-19) —
+  // the time is the start (§9.6a), never known before it
+  const foundedAt = () => {
+    if (!cs || cs.constitutedAtT === null) return '';
+    const d0 = new Date(cs.constitutedAtT);
+    const p2 = (x) => String(x).padStart(2, '0');
+    return ' at ' + p2(d0.getHours()) + ':' + p2(d0.getMinutes()) + ' on ' +
+      d0.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  };
   const holdChoice = (k) => (!cs || !cs.textConfirmed ? '' :
     '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Who holds it</div>' +
     '<div class="choice" role="radiogroup" aria-label="Who holds it">' +
@@ -1715,8 +1850,7 @@
     title: () =>
       '<div class="lanebox"><div class="lp editlane titlelane' + (S.title ? '' : ' blank') + '"' +
       ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
-      ' data-ph="Name this document">' + esc(S.title) + '</div></div>' +
-      holdChoice('title'),
+      ' data-ph="Name this document">' + esc(S.title) + '</div></div>',
     slug: () =>
       '<div class="unlocks">Confirming this <b>saves the document</b> — until the link exists, nothing does, anywhere. Invitations wait on it, because an invitation <i>is</i> this link.</div>' +
       (S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> already exists, so a short suffix was added. Change it to anything free.</p>'
@@ -1733,8 +1867,14 @@
       // changeable and it is also the thing that has already been sent to
       // fourteen people — so a change that broke the old one would make this
       // the one ordinary setting with a cost for using it as intended.
-      '<p class="setnote">Every link this document has ever had keeps working: changing it leaves a redirect behind, so an invitation somebody was sent weeks ago still opens the right document.</p>' +
-      holdChoice('slug'),
+      '<p class="setnote">Every link this document has ever had keeps working: changing it leaves a redirect behind, so an invitation somebody was sent weeks ago still opens the right document.</p>',
+    titlegov: () => govBody('title', 'Who may change the title is a rule of its own, apart from what the title is — the title itself is changed at the head of the document.'),
+    sluggov: () => govBody('slug', 'Who may change the link is a rule of its own, apart from what the link is — the link itself is changed on its own line above.'),
+    invite: () =>
+      '<p class="why">The membership is yours: you invite directly, and an invitation <b>is the link</b>, sent by email. A joiner starts with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</p>' +
+      '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1">' +
+      '<button class="btn" data-act="add">Invite</button></div></div>',
+    remove: () => '',
     myemail: () => (S.emailVerified
       ? '<div class="lockline">' + TICK + '<span>Verified — <b>' + esc(S.myemail) + '</b> can get back in.</span></div>' +
         '<span class="fld"><label>Change it</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" style="width:20rem"></span>' +
@@ -1755,8 +1895,9 @@
     // one person a preamble to a list of everybody — and the founder is a hat
     // worn over a role rather than a role itself (SPEC §9.0a), so the hat and
     // the roster are two things.
-    roster: () =>
-      '<p class="why">An invitation <b>is the link</b>, sent by email — there are no passwords — which is why nobody could be invited before the link existed. It is an invitation <b>to become a member</b>: until somebody opens the document they are listed as <i>invited</i> and count toward nothing. Until judging opens you may invite and uninvite freely — nothing has been decided yet, so nothing is being changed. After that, both directions are constitutional motions — you included: your own row above is <b>pre-checked</b>, and you may untick it and be the clerk, who administers without writing, but after judging starts you join the way anybody joins. A joiner starts with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</p>' +
+    roster: () => (cs && cs.constitutedAtT !== null && regHolder() === 'members'
+      ? '<p class="why">The register — who is in. Bringing somebody in, or proposing a removal, is the ✉️ and ❌ tabs beside this list.</p>'
+      : '<p class="why">An invitation <b>is the link</b>, sent by email — there are no passwords — which is why nobody could be invited before the link existed. It is an invitation <b>to become a member</b>: until somebody opens the document they are listed as <i>invited</i> and count toward nothing. Until judging opens you may invite and uninvite freely — nothing has been decided yet, so nothing is being changed. After that, both directions are constitutional motions — you included: your own row above is <b>pre-checked</b>, and you may untick it and be the clerk, who administers without writing, but after judging starts you join the way anybody joins. A joiner starts with the ✏️s everyone got, plus what the drip has added since, and quorum recomputes.</p>' +
       '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1">' +
       '<button class="btn" data-act="add">Invite</button></div></div>' +
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
@@ -1764,7 +1905,7 @@
       '<div style="margin-top:var(--s2)"><button class="btn" data-act="invite">Send invitations</button></div>' +
       '<p class="setnote">' + arrived() + ' of ' + S.roster.length + ' have opened it so far. ' +
       'Nobody has to be here for the document to exist — the link works from the first second, and ' +
-      'a joiner gets the base grant plus the drip accrued so far.</p>',
+      'a joiner gets the base grant plus the drip accrued so far.</p>'),
     // **The door, apart from the register** (Ed, 2026-08-18). The policy is
     // the constitutional act; each application that arrives through it is
     // its ordinary consequence.
@@ -1979,7 +2120,10 @@
     apppic: () => '<p class="why">The shape they will recognise you by.</p>' +
       '<div class="avpick">' + avatarOptions().map((o) =>
         '<button class="avopt" data-apppic="' + o.id + '" aria-pressed="' + (S.app.pic === o.id) + '">' +
-        avHtml({ n: S.app.name || '?', pic: o.id }, 'big') + '</button>').join('') + '</div>',
+        avHtml({ n: S.app.name || '?', pic: o.id }, 'big') + '</button>').join('') + '</div>' +
+      '<div class="avpick" style="margin-top:var(--s2)">' + window.SETUP.FACE_EMOJI.map((f2) =>
+        '<button class="avopt" data-apppic="' + 'e' + f2 + '" aria-pressed="' + (S.app.pic === 'e' + f2) + '">' +
+        avHtml({ n: S.app.name || '?', pic: 'e' + f2 }, 'big') + '</button>').join('') + '</div>',
     apptext: () => '<p class="why">A few words to the members, if you want them — who you are, why this document. Optional: an empty application is a real application.</p>' +
       '<div class="lanebox"><div class="lp editlane' + (S.app.text ? '' : ' blank') + '" contenteditable="plaintext-only"' +
       ' spellcheck="false" data-apptext="1" data-ph="To the members…">' + esc(S.app.text) + '</div></div>',
@@ -2090,9 +2234,9 @@
         // the founder's settings are read-only from any other chair
         : (!amFounder() && c.own !== 'you')
         ? readBody(c, ctx) + (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '')
-        : BODY[c.k]() + powerTail(c.k) +
+        : BODY[c.k]() + (c.k === 'title' || c.k === 'slug' ? '' : powerTail(c.k)) +
           (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
-      const kindLine = (c.kind === 'personal' || c.ansFor || c.k === 'title') ? '' :
+      const kindLine = (c.kind === 'personal' || c.ansFor || c.k === 'title' || c.k === 'titlegov' || c.k === 'sluggov') ? '' :
         '<p class="setnote"><b>' + KIND[c.kind] + '.</b> ' + (c.knote || kindNote[c.kind]) + '</p>';
       const clearable = { myname: S.myname, mypic: S.mypic };
       const newsKey = isRoom(c) ? 'res-' + c.k : 'set-' + c.k;
@@ -2383,6 +2527,10 @@
       if (cs && kk.startsWith('set-') && viewerId()) {
         try { cs.giveOk(now(), viewerId(), midOf(kk.slice(4))); } catch (e) {}
       } });
+    const stg = ev.target.closest('[data-sec-toggle]');
+    if (stg) { const k2 = stg.getAttribute('data-sec-toggle');
+      if (S.folded.has(k2)) S.folded.delete(k2); else S.folded.add(k2);
+      return render(); }
     const t = ev.target.closest('[data-tab], [data-card]');
     if (t) { const k = t.dataset.tab || t.dataset.card;
       if (S.open === k) return closeThen(() => { S.open = null; });
@@ -2427,14 +2575,19 @@
           if (!cs) return;
           // §9.7 v0.52: the delegation sentence preferred + ✒️ is the
           // hand-over — never a button
-          if ((was === 'title' || was === 'slug') && wantsDelegate(was)) {
-            cs.delegate(now(), midOf(was)); return; }
+          // the governance of the title and the link are their own cards
+          // (Ed, 2026-08-19): the value cards commit values, these commit
+          // who holds them
+          if (was === 'titlegov' || was === 'sluggov') {
+            const kk = was === 'titlegov' ? 'title' : 'slug';
+            if (wantsDelegate(kk)) { cs.delegate(now(), midOf(kk)); return; }
+            syncPowers(kk); return; }
           if (was === 'title') {
             if (S.title !== cs.titleOf) cs.setSetting(now(), 'title', { text: S.title });
-            syncPowers('title'); return; }
+            return; }
           if (was === 'slug') {
             if (S.slug !== cs.slug) cs.setSetting(now(), 'link', { slug: S.slug });
-            syncPowers('slug'); return; }
+            return; }
           if (was === 'text') { cs.confirmStartingText(now(), proseText()); return; }
           if (was === 'myname') { cs.setIdentity(now(), viewerId(), { name: S.myname || null }); return; }
           if (was === 'mypic') { cs.setIdentity(now(), viewerId(), { picture: S.mypic || null }); return; }

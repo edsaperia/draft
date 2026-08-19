@@ -768,7 +768,7 @@ window.CARDS = (function () {
       const para = env.root().querySelector('.prose p');
       const endMB = para ? getComputedStyle(para).marginBottom : cs.marginBottom;
 
-      el.style.overflow = 'hidden';
+      el.style.clipPath = 'inset(-60px -100px 0px -100px)';
       el.style.height = h + 'px';
       void el.offsetHeight;
       const ease = COLLAPSE_MS + 'ms cubic-bezier(.32, .72, 0, 1)';
@@ -808,7 +808,7 @@ window.CARDS = (function () {
       const h = el.offsetHeight;
       const start = Math.min(headOnlyHeight(el), h);
       const body = cardBody(el);
-      el.style.overflow = 'hidden';
+      el.style.clipPath = 'inset(-60px -100px 0px -100px)';
       el.style.height = start + 'px';
       body.forEach((c) => { c.style.opacity = '0'; });
       void el.offsetHeight;
@@ -822,7 +822,7 @@ window.CARDS = (function () {
         c.style.opacity = '1';
       });
       setTimeout(() => {
-        el.style.height = ''; el.style.overflow = ''; el.style.transition = '';
+        el.style.height = ''; el.style.clipPath = ''; el.style.transition = '';
         body.forEach((c) => { c.style.opacity = ''; c.style.transition = ''; });
         env.onExpand();
         done();

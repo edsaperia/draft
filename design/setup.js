@@ -43,6 +43,11 @@ window.SETUP = (function () {
     ['#1098ad', '<path d="M8 30 L22 10 L36 30 Z" fill="#fff"/>'],
     ['#5c940d', '<rect x="10" y="10" width="10" height="10" fill="#fff"/><rect x="24" y="10" width="10" height="10" fill="#fff"/><rect x="10" y="24" width="10" height="10" fill="#fff"/><rect x="24" y="24" width="10" height="10" fill="#fff"/>'],
   ];
+  const FACE_EMOJI = ['👩', '👨', '🧑', '👧', '👦', '🧒', '👶', '👵', '👴', '🧓',
+    '👩‍🦰', '👨‍🦰', '🧑‍🦰', '👩‍🦱', '👨‍🦱', '🧑‍🦱',
+    '👩‍🦲', '👨‍🦲', '🧑‍🦲', '👩‍🦳', '👨‍🦳', '🧑‍🦳',
+    '👱‍♀️', '👱‍♂️', '👱', '👳‍♀️', '👳‍♂️', '👳',
+    '🧔', '🧔‍♂️', '🧔‍♀️'];
   const avatarOptions = () =>
     [{ id: '' }].concat(GROUNDS.map((g, i) => ({ id: 'c' + i })), MARKS.map((m, i) => ({ id: 'm' + i })));
 
@@ -58,6 +63,9 @@ window.SETUP = (function () {
     if (pic && pic[0] === 'c') {
       return '<span class="' + c + '" style="background:' + GROUNDS[+pic.slice(1)] + '">' +
         esc(initials(person.n)) + '</span>';
+    }
+    if (pic && pic[0] === 'e') {
+      return '<span class="' + c + ' emoji">' + esc(pic.slice(1)) + '</span>';
     }
     if (pic && pic[0] === 'm') {
       const m = MARKS[+pic.slice(1)];
@@ -259,12 +267,20 @@ window.SETUP = (function () {
           // document's own (Ed, 2026-08-18): sections at lvl2, subsections
           // at lvl3, state lines plain paragraphs — only avatars and names
           // keep their compact dress
-          g.sections.filter((sec) => !sec.railOnly).map((sec) => '<div class="csec">' +
-            '<h2 class="docline lvl2" id="cs-' + sec.key + '">' + esc(sec.title) + '</h2>' +
+          // **Headings fold** (Ed, 2026-08-19): the ▸ is session-view's own
+          // sectoggle; a folded section keeps its heading and gives up its
+          // body. The surface decides (ctx.foldedSec) so an open card can
+          // never be folded out from under its own tab.
+          g.sections.filter((sec) => !sec.railOnly).map((sec) => {
+            const fold = ctx.foldedSec && ctx.foldedSec(sec);
+            return '<div class="csec">' +
+            '<h2 class="docline lvl2" id="cs-' + sec.key + '">' +
+            (ctx.secToggle ? ctx.secToggle(sec) : '') + esc(sec.title) + '</h2>' +
+            (fold ? '' :
             (sec.text ? '<p class="csintro">' + sec.text + '</p>' : '') +
             (sec.who ? '<div class="pilewho">' + sec.who() + '</div>' : '') +
             (sec.body ? sec.body(H) : sec.cards.map(withTasks).join('')) +
-            (sec.block ? sec.block() : '') + '</div>').join('') +
+            (sec.block ? sec.block() : '')) + '</div>'; }).join('') +
           '<span class="pilen">' + esc(g.note(wants)) + '</span>' +
           // **the starting text is a task beside the text proper** (Ed,
           // 2026-08-18): a zero-height anchor at the band's end, its 📄 tab
@@ -353,6 +369,24 @@ window.SETUP = (function () {
       const r = card.getBoundingClientRect();
       const need = col.getBoundingClientRect().bottom - r.top + 14;
       if (need > r.height) card.style.minHeight = Math.ceil(need) + 'px';
+    });
+    // **The pile is fitted, not fixed** — the same move session-view's
+    // fitStacks makes: a stacked pile shrinks its peek until it reaches no
+    // further than the next mark below it in the same gutter column (the
+    // 🪪 pile grew to four tabs, 2026-08-19, and stood on the me-row's ✋).
+    band.querySelectorAll('.cpara .chipcol.stack').forEach((col) => {
+      col.style.removeProperty('--peek');
+      const chips = col.querySelectorAll('.achip');
+      if (chips.length < 2) return;
+      const r = col.getBoundingClientRect();
+      const next = [...band.querySelectorAll('.achip')]
+        .filter((a2) => !col.contains(a2))
+        .map((a2) => a2.getBoundingClientRect())
+        .filter((b2) => b2.top > r.top + 1 && Math.abs(b2.left - r.left) < 20)
+        .reduce((m, b2) => (m === null || b2.top < m ? b2.top : m), null);
+      if (next === null) return;
+      const peek = Math.max(0, Math.min(4, (next - 3 - r.top - 30) / (chips.length - 1)));
+      if (peek < 4) col.style.setProperty('--peek', peek.toFixed(1) + 'px');
     });
   }
 
@@ -531,6 +565,10 @@ window.SETUP = (function () {
       '<button class="avopt" data-pic="' + o.id + '" aria-pressed="' + ((me.pic || '') === o.id) + '"' +
       ' title="' + (o.id ? 'A ground for your initials' : 'Plain') + '">' +
       avHtml({ n: me.n, pic: o.id }, 'big') + '</button>').join('') + '</div>' +
+    '<div class="eyebrow fieldlab">Or a face</div>' +
+    '<div class="avpick">' + FACE_EMOJI.map((f2) =>
+      '<button class="avopt" data-pic="' + 'e' + f2 + '" aria-pressed="' + ((me.pic || '') === 'e' + f2) + '"' +
+      ' title="An emoji face">' + avHtml({ n: me.n, pic: 'e' + f2 }, 'big') + '</button>').join('') + '</div>' +
     '<p class="setnote">Initials are a real answer, not a placeholder — most rooms run on them. Whichever you choose is how you appear in the room, and it is not authorship: whether your name sits beside a <i>proposal</i> is the disclosure rule, not this.</p>';
 
   /* ---- ordinary and constitutional ----------------------------------------
@@ -1008,7 +1046,7 @@ window.SETUP = (function () {
 
   return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, stateOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
-    nameBody, pictureBody, drawWire, opt, num, faces, someIn,
+    nameBody, pictureBody, drawWire, opt, num, faces, someIn, FACE_EMOJI,
     KIND, kindNote, motionBody, motionReopen, routeFor, motionCommitHtml,
     slider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal };
 })();

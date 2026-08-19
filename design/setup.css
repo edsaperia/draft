@@ -81,7 +81,6 @@
   /* the hairline between the constitution and the document proper, and the
      title standing again as the charter's own heading (Ed, 2026-08-19) */
   .cpara.docsep { border-top: 1px solid var(--border); margin: var(--s5) 0 var(--s4); padding: 0; }
-  .textanchor .dochead { margin: 0 0 var(--s3); }
   .unlocks { font-size: var(--t-cap); color: var(--primary-emphasis); background: var(--primary-subtle);
     border-radius: var(--r-sm); padding: var(--s2) var(--s3); margin: 0 0 var(--s4); }
   .lockline { font-size: var(--t-cap); color: var(--muted); margin: 0 0 var(--s4);
@@ -263,11 +262,13 @@
   .faces { display: flex; flex-wrap: wrap; gap: var(--s2); }
   .pf { display: flex; align-items: center; gap: var(--s1); font-size: var(--t-cap); }
   .pf.me { font-weight: 600; }
-  .av { width: 22px; height: 22px; border-radius: 50%; background: var(--light);
+  .av { width: 22px; height: 22px; border-radius: 50%; background: var(--light); vertical-align: middle;
     border: 1px solid var(--border); color: var(--muted); font-size: 8px; font-weight: 700;
     display: inline-grid; place-items: center; flex: none; overflow: hidden; }
   .av.big { width: 44px; height: 44px; font-size: var(--t-cap); }
   .av.set { border-color: transparent; color: #fff; }
+  .av.emoji { background: var(--light); border-color: var(--border); font-size: 14px; }
+  .av.big.emoji { font-size: 27px; }
   /* invited, but they have not opened it yet */
   .av.pending { opacity: 0.45; border-style: dashed; }
   .av svg { width: 100%; height: 100%; display: block; }
@@ -505,7 +506,7 @@ button.cline:hover b { text-decoration: underline; }
 .memrow .av { width: 22px; height: 22px; font-size: 8px; flex: none; }
 /* the identity tabs are regular gutter clause tabs: a pile at your row */
 .memrow .chipcol { top: -3px; }
-.memrow.meRow { margin-top: 3px; min-height: 30px; }
+.memrow.meRow { margin-top: var(--s3); min-height: 30px; }
 .memrow .chip { font-size: var(--t-micro); }
 
 /* **The card overhangs the text axis** (Ed's QA, 2026-08-18: the tabs were
@@ -519,7 +520,8 @@ button.cline:hover b { text-decoration: underline; }
 /* the starting-text task anchors the prose itself (Ed, 2026-08-18): a
    zero-height row at the band's end whose 📄 tab hangs in the gutter beside
    the first block of the document text below */
-.cpara.textanchor { height: 0; min-height: 0; margin: 0; }
+.cpara.textanchor { min-height: 0; margin: 0; }
+.cpara.textanchor .dochead { margin: 0 0 var(--s3); padding-left: 0; }
 .cpara.textanchor .chipcol { top: 10px; }
 
 /* the composer's rationale wears your avatar (Ed, 2026-08-18) — the same
@@ -533,9 +535,18 @@ button.cline:hover b { text-decoration: underline; }
    headclause and must not move with it, so the compensation is on the text */
 .constsec .cpara.open .setupcard .clausehead .rtext { margin-left: calc(14px - var(--s5)); }
 
+/* headings fold (Ed, 2026-08-19): hidden prose blocks, and the overlay rail
+   that carries the prose triangles — outside the contenteditable region, so
+   the ▸ never becomes text the harvest reads */
+.prose > .pfolded { display: none; }
+#prosefolds { position: relative; height: 0; overflow: visible; }
+#prosefolds > span { position: absolute; left: -26px; }
+#prosefolds .sectoggle[aria-expanded="true"] { opacity: 0; }
+#prosefolds .sectoggle:hover, #prosefolds .sectoggle:focus-visible { opacity: 1; }
+
 /* Founded by [avatar] [name] (at [time]) — the avatar rides in the line */
 .cpv.founded .av { width: 20px; height: 20px; font-size: 7px;
-  display: inline-flex; vertical-align: -5px; margin: 0 2px; }
+  display: inline-flex; margin: 0 2px; position: relative; top: -2px; }
 
 /* a rule standing as a card's head is the clause, not a title: document size
    and colour, exactly as it stood on the page (Ed's QA, 2026-08-18) */
