@@ -24,7 +24,7 @@ import { applyPatch, footprint, footprintsConflict, validateHunks } from './text
 import { splitLines, joinLines } from './text/diff.js';
 import { rebaseHunks } from './text/rebase.js';
 import { fitDavidson } from './ranking/davidson.js';
-import { chainHash, sha256Hex } from './hash.js';
+import { chainHash, sha256Hex, stableStringify } from './hash.js';
 import { makeRng, type Rng } from './rng.js';
 import { adoptionThreshold, smoothstep } from './adoption-threshold.js';
 import {
@@ -295,13 +295,14 @@ export class Session {
         break;
       }
       case 'candidate-submitted': {
-        const hunks = event.patch.hunks;
         this.candidates.set(event.id, {
           id: event.id,
           author: event.author,
           rationale: event.rationale,
-          patch: event.patch,
-          footprint: footprint(hunks),
+          ...(event.patch
+            ? { patch: event.patch, footprint: footprint(event.patch.hunks) }
+            : { footprint: [] }),
+          ...(event.setting ? { setting: event.setting } : {}),
           state: 'live',
           stakePaid: this.constitutionValue.stake,
           peakW: 0,
@@ -389,8 +390,14 @@ export class Session {
       }
       case 'adopted': {
         const winner = this.candidate(event.candidateId);
-        const newLines = applyPatch(this.currentLines(), winner.patch.hunks);
-        this.versions.push(newLines);
+        if (winner.patch) {
+          // A text adoption changes the document. A setting adoption is
+          // the room's verdict only: the value is applied by the host via
+          // standing-set once any §9.7 assent is given (Q390), which is
+          // what lets rivals keep racing against the old standing while
+          // assent is pending.
+          this.versions.push(applyPatch(this.currentLines(), winner.patch.hunks));
+        }
         winner.state = 'adopted';
         const refund = performanceRefund(winner.stakePaid, winner.peakW);
         winner.exit = { t: event.t, cause: 'adopted', refund };
@@ -719,25 +726,54 @@ export class Session {
     t: number,
     input: {
       author: string;
-      patch: PatchSet;
       rationale: string;
       machineAuthored?: boolean;
+      /** A text proposal (SPEC §2.1) — exactly one of patch/setting. */
+      patch?: PatchSet;
+      /** An ordinary motion's proposed value (SPEC §9.6, Q390). */
+      setting?: { settingId: string; value: unknown };
     },
   ): { id: string; raceId: string } {
     this.assertOpen();
     const entry = this.activeParticipant(input.author);
+    if ((input.patch === undefined) === (input.setting === undefined)) {
+      throw new Error('a candidate is a patch or a setting value — exactly one');
+    }
     if (input.rationale.length > this.constitutionValue.rationaleMaxChars) {
       throw new Error(
         `rationale exceeds ${this.constitutionValue.rationaleMaxChars} chars`,
       );
     }
-    if (input.patch.baseVersion !== this.currentVersion()) {
-      throw new Error(
-        `patch targets version ${input.patch.baseVersion}; current is ${this.currentVersion()}`,
-      );
+    if (input.patch) {
+      if (input.patch.baseVersion !== this.currentVersion()) {
+        throw new Error(
+          `patch targets version ${input.patch.baseVersion}; current is ${this.currentVersion()}`,
+        );
+      }
+      if (input.patch.hunks.length === 0) throw new Error('empty patch');
+      validateHunks(this.currentLines().length, input.patch.hunks);
+    } else if (input.setting) {
+      // Q390: values are simpler than prose in exactly one way — equality
+      // is decidable — so §5's dedup gate collapses to it (SPEC v0.53).
+      if (!this.settingsMap.has(input.setting.settingId)) {
+        throw new Error(
+          `unknown setting '${input.setting.settingId}' — set its standing first`,
+        );
+      }
+      const proposed = stableStringify(input.setting.value);
+      if (proposed === stableStringify(this.settingsMap.get(input.setting.settingId))) {
+        throw new Error('proposes what already stands (§9.6)');
+      }
+      for (const c of this.candidates.values()) {
+        if (
+          c.state === 'live' &&
+          c.setting?.settingId === input.setting.settingId &&
+          stableStringify(c.setting.value) === proposed
+        ) {
+          throw new Error(`an identical value is already live (${c.id}) — co-sign it (§5)`);
+        }
+      }
     }
-    if (input.patch.hunks.length === 0) throw new Error('empty patch');
-    validateHunks(this.currentLines().length, input.patch.hunks);
     if (balanceAt(entry.ledger, this.constitutionValue, t) < this.constitutionValue.stake) {
       throw new Error('insufficient tokens for stake');
     }
@@ -747,7 +783,8 @@ export class Session {
       t,
       id,
       author: input.author,
-      patch: input.patch,
+      ...(input.patch ? { patch: input.patch } : {}),
+      ...(input.setting ? { setting: input.setting } : {}),
       rationale: input.rationale,
       ...(input.machineAuthored ? { machineAuthored: true } : {}),
     });
@@ -909,8 +946,9 @@ export class Session {
   // Races (derived state, SPEC §2.3)
 
   races(): RaceView[] {
-    const live = [...this.candidates.values()].filter((c) => c.state === 'live');
-    // Union-find over footprint conflicts.
+    const liveAll = [...this.candidates.values()].filter((c) => c.state === 'live');
+    const live = liveAll.filter((c) => !c.setting);
+    // Union-find over footprint conflicts (text candidates).
     const parent = new Map<string, string>(live.map((c) => [c.id, c.id]));
     const find = (x: string): string => {
       let root = x;
@@ -937,15 +975,31 @@ export class Session {
       members.sort((a, b) => candidateNum(a) - candidateNum(b));
       views.push(this.buildRaceView(members));
     }
+    // Setting races (SPEC §9.6, Q390): all live values on one setting are
+    // one race — rivalry needs no footprint test, the setting is the site.
+    const bySetting = new Map<string, string[]>();
+    for (const c of liveAll) {
+      if (!c.setting) continue;
+      const g = bySetting.get(c.setting.settingId);
+      if (g) g.push(c.id);
+      else bySetting.set(c.setting.settingId, [c.id]);
+    }
+    for (const members of bySetting.values()) {
+      members.sort((a, b) => candidateNum(a) - candidateNum(b));
+      views.push(this.buildRaceView(members));
+    }
     views.sort((a, b) => candidateNum(a.id.slice(2)) - candidateNum(b.id.slice(2)));
     return views;
   }
 
   private buildRaceView(members: string[]): RaceView {
-    const contested = mergeSpans(
-      members.flatMap((id) => this.candidate(id).footprint),
-    );
-    const incumbentId = this.incumbentIdFor(contested);
+    const setting = this.candidate(members[0]!).setting;
+    const contested = setting
+      ? []
+      : mergeSpans(members.flatMap((id) => this.candidate(id).footprint));
+    const incumbentId = setting
+      ? this.incumbentIdForSetting(setting.settingId)
+      : this.incumbentIdFor(contested);
     const id = `r:${members[0]!}`;
     const fit = this.fitRaceMembers(members, incumbentId);
     const usable = this.usableComparisons(members, incumbentId);
@@ -988,6 +1042,7 @@ export class Session {
       certification,
       deadlocked,
       rivalGateOpen,
+      ...(setting ? { settingId: setting.settingId } : {}),
     };
   }
 
@@ -1048,6 +1103,17 @@ export class Session {
     const lines = this.currentLines();
     const parts = contested.map((s) => lines.slice(s.start, s.end).join('\n'));
     return INC_PREFIX + sha256Hex(parts.join('\u0000')).slice(0, 16);
+  }
+
+  /**
+   * A setting race's incumbent is the standing value (SPEC §9.6, Q390):
+   * its identity hashes the value, so evidence goes stale exactly when
+   * the standing it was judged against stops being what stands — a
+   * standing-set is a ground shift by construction (§4.4).
+   */
+  private incumbentIdForSetting(settingId: string): string {
+    const standing = stableStringify(this.settingsMap.get(settingId));
+    return INC_PREFIX + sha256Hex(`setting:${settingId}\u0000${standing}`).slice(0, 16);
   }
 
   private classifyPair(aId: string, bId: string): PairKind {
@@ -1218,15 +1284,30 @@ export class Session {
 
   private adopt(t: number, candidateId: string, p: number, threshold: number): void {
     const winner = this.candidate(candidateId);
+    if (!winner.patch) {
+      // A setting race carried (Q390): the verdict is recorded and the
+      // stake refunded; the value lands via setStanding, host-called,
+      // once any §9.7 assent is given. No version bump, no rebase.
+      this.emit({
+        type: 'adopted',
+        t,
+        candidateId,
+        newVersion: this.currentVersion(),
+        p,
+        threshold,
+      });
+      return;
+    }
     const adoptedHunks = winner.patch.hunks;
     const newVersion = this.currentVersion() + 1;
     this.emit({ type: 'adopted', t, candidateId, newVersion, p, threshold });
     // Rebase every other live patch onto the new text (SPEC §2.4).
+    // Setting candidates have no text ground and are untouched (Q390).
     const others = [...this.candidates.values()].filter(
-      (c) => c.state === 'live' && c.id !== candidateId,
+      (c) => c.state === 'live' && c.id !== candidateId && c.patch !== undefined,
     );
     for (const c of others) {
-      const result = rebaseHunks(c.patch.hunks, adoptedHunks);
+      const result = rebaseHunks(c.patch!.hunks, adoptedHunks);
       if (result.ok) {
         this.emit({
           type: 'candidate-rebased',
@@ -1348,15 +1429,25 @@ export class Session {
    * floor-satisfying candidates; ties and ordering break by hash.
    * Uses the last event's time (normally the close) for the threshold.
    */
-  finalRender(): { text: string; applied: string[] } {
+  finalRender(): {
+    text: string;
+    applied: string[];
+    /** Setting races whose leader cleared bar and floor at the close (Q390) — reported for the host to apply, never applied here. */
+    appliedSettings: Array<{ settingId: string; candidateId: string }>;
+  } {
     const races = this.races();
     const threshold = this.adoptionThreshold();
     const floor = this.adoptionFloor();
     const winners: Candidate[] = [];
+    const appliedSettings: Array<{ settingId: string; candidateId: string }> = [];
     for (const r of races) {
       if (r.leaderId === null || r.leaderP === null) continue;
       if (r.leaderP <= threshold) continue;
       if (r.distinctMovers < floor) continue;
+      if (r.settingId !== undefined) {
+        appliedSettings.push({ settingId: r.settingId, candidateId: r.leaderId });
+        continue;
+      }
       winners.push(this.candidate(r.leaderId));
     }
     winners.sort((a, b) =>
@@ -1373,12 +1464,12 @@ export class Session {
     for (const w of winners) {
       if (footprintsConflict(claimed, w.footprint)) continue; // defensive
       claimed = [...claimed, ...w.footprint];
-      batch.push(...w.patch.hunks);
+      batch.push(...w.patch!.hunks);
       applied.push(w.id);
     }
     batch.sort((a, b) => a.start - b.start || a.end - b.end);
     const lines = applyPatch(this.currentLines(), batch);
-    return { text: joinLines(lines), applied };
+    return { text: joinLines(lines), applied, appliedSettings };
   }
 
   // -------------------------------------------------------------------------

@@ -70,7 +70,7 @@ export function computeMetrics(
       // Attribute by line number, not by matching text against the alternatives
       // menu — LLM drafts are almost always off-menu, which left adoptions
       // unattributed and reported overturns as 0 on runs that had several.
-      const hunk = session.getCandidate(e.candidateId).patch.hunks[0];
+      const hunk = session.getCandidate(e.candidateId).patch?.hunks[0];
       const issue = hunk
         ? scenario.issues.find((i) => i.line === hunk.start)
         : undefined;

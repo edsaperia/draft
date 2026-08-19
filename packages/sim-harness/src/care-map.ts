@@ -66,7 +66,7 @@ export function computeCareMap(session: Session, scenario: Scenario): CareMapIss
   for (const entry of session.log) {
     const e = entry.event;
     if (e.type === 'candidate-submitted') {
-      const line = e.patch.hunks[0]?.start;
+      const line = e.patch?.hunks[0]?.start;
       const key = line === undefined ? undefined : issueOfLine.get(line);
       if (key !== undefined) issueOfCandidate.set(e.id, key);
     } else if (e.type === 'comparison' && e.kind === 'edge') {

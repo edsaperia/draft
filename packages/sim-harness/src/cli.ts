@@ -171,7 +171,7 @@ async function main(): Promise<void> {
       // author, fate, and words.
       console.log('candidates:');
       for (const c of result.session.allCandidates()) {
-        const text = c.patch.hunks[0]?.lines.join(' / ') ?? '';
+        const text = c.patch?.hunks[0]?.lines.join(' / ') ?? '';
         console.log(`  ${c.id} [${c.state}] ${c.author}: "${text}" — ${c.rationale}`);
       }
     }

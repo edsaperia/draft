@@ -128,7 +128,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
         const c = session.getCandidate(e.candidateId);
         config.onProgress?.(
           `[${fmt(e.t)}] *** ADOPTED (p=${e.p.toFixed(2)} > bar ${e.threshold.toFixed(2)}): ` +
-            `"${c.patch.hunks[0]?.lines.join(' / ') ?? ''}"`,
+            `"${c.patch?.hunks[0]?.lines.join(' / ') ?? ''}"`,
         );
       } else if (e.type === 'rebase-failed') {
         config.onProgress?.(
@@ -198,7 +198,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
               .filter((c) => c.state === 'live')
               .map((c) => ({
                 id: c.id,
-                text: c.patch.hunks.map((h) => h.lines.join('\n')).join('\n'),
+                text: (c.patch?.hunks ?? []).map((h) => h.lines.join('\n')).join('\n'),
                 rationale: c.rationale,
               }));
             try {

@@ -123,8 +123,16 @@ export interface Candidate {
   id: string;
   author: string;
   rationale: string;
-  patch: PatchSet;
-  /** Footprint on the version the patch currently targets. */
+  /** A text proposal's patch — absent on a setting candidate (Q390). */
+  patch?: PatchSet;
+  /**
+   * An ordinary motion's proposed value (SPEC §9.6, Q390): opaque to the
+   * engine — hashed for identity and dedup, never interpreted. A setting
+   * candidate races in the race of its setting; a text candidate in the
+   * race of its footprint. Exactly one of patch/setting is present.
+   */
+  setting?: { settingId: string; value: unknown };
+  /** Footprint on the version the patch currently targets; [] for settings. */
   footprint: Span[];
   state: CandidateState;
   stakePaid: number;
@@ -165,6 +173,12 @@ export interface RaceView {
    * rival-vs-rival pairs for ordinary value-based sampling.
    */
   rivalGateOpen: boolean;
+  /**
+   * Present on a setting race (SPEC §9.6, Q390): the race is over this
+   * setting's standing value rather than over contested text, and
+   * `contested` is empty.
+   */
+  settingId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -209,7 +223,9 @@ export type Event =
       t: number;
       id: string;
       author: string;
-      patch: PatchSet;
+      /** Exactly one of patch/setting (Q390). */
+      patch?: PatchSet;
+      setting?: { settingId: string; value: unknown };
       rationale: string;
       machineAuthored?: boolean;
     }

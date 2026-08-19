@@ -16,9 +16,17 @@ export interface OptionView {
   id: string;
   /**
    * Per-hunk before/after against the current document. The incumbent
-   * option renders as before === after ("keep as is").
+   * option renders as before === after ("keep as is"). Empty on a
+   * setting option, whose content is `setting` instead.
    */
   changes: Array<{ before: string; after: string }>;
+  /**
+   * A setting race's option (SPEC §9.6, Q390): the setting and the value
+   * this option stands for — for the incumbent, the value as it stands.
+   * The client renders the value in the room's own vocabulary; the
+   * engine never interprets it.
+   */
+  setting?: { settingId: string; value: unknown };
   rationale: string;
   /** Present only when the constitution sets authorship to `public`. */
   author?: string;
@@ -95,11 +103,16 @@ export class ParticipantApi {
 
   submit(
     now: number,
-    input: { patch: PatchSet; rationale: string },
+    input: {
+      patch?: PatchSet;
+      setting?: { settingId: string; value: unknown };
+      rationale: string;
+    },
   ): { id: string } {
     const { id } = this.session.submitCandidate(now, {
       author: this.participantId,
-      patch: input.patch,
+      ...(input.patch ? { patch: input.patch } : {}),
+      ...(input.setting ? { setting: input.setting } : {}),
       rationale: input.rationale,
     });
     return { id };
@@ -171,6 +184,15 @@ export class ParticipantApi {
       const race = this.session
         .races()
         .find((r) => r.incumbentId === id);
+      if (race?.settingId !== undefined) {
+        // The standing value is the incumbent (Q390).
+        return {
+          id,
+          changes: [],
+          setting: { settingId: race.settingId, value: this.session.standing(race.settingId) },
+          rationale: '',
+        };
+      }
       const spans: Span[] = race ? race.contested : [];
       return {
         id,
@@ -184,10 +206,11 @@ export class ParticipantApi {
     const candidate = this.session.getCandidate(id);
     const view: OptionView = {
       id,
-      changes: candidate.patch.hunks.map((h) => ({
+      changes: (candidate.patch?.hunks ?? []).map((h) => ({
         before: lines.slice(h.start, h.end).join('\n'),
         after: h.lines.join('\n'),
       })),
+      ...(candidate.setting ? { setting: candidate.setting } : {}),
       rationale: candidate.rationale,
     };
     if (this.session.constitution.authorshipVisibility === 'public') {
