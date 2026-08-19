@@ -1,10 +1,12 @@
 /**
- * Hash-chained log support (SPEC §11). SHA-256 via node:crypto —
- * a platform builtin, not a dependency. Serialization is key-sorted
- * JSON so hashes are stable across engines and replays.
+ * Hash-chained log support (SPEC §11). SHA-256 in pure TypeScript since
+ * 367b (sha256.ts), so the engine carries no platform imports and loads
+ * in a browser. Serialization is key-sorted JSON so hashes are stable
+ * across engines and replays.
  */
 
-import { createHash } from 'node:crypto';
+import { sha256Hex } from './sha256.js';
+export { sha256Hex } from './sha256.js';
 
 export function stableStringify(value: unknown): string {
   return JSON.stringify(sortValue(value));
@@ -21,10 +23,6 @@ function sortValue(value: unknown): unknown {
     return out;
   }
   return value;
-}
-
-export function sha256Hex(input: string): string {
-  return createHash('sha256').update(input, 'utf8').digest('hex');
 }
 
 /** Rolling hash: H(prevHash + stableJson(event)). Genesis prevHash is ''. */

@@ -58,3 +58,20 @@ describe('seeded rng', () => {
     expect(rng.fork('a').next()).not.toBe(rng.fork('b').next());
   });
 });
+
+describe('the pure sha256 matches node:crypto (367b: the engine goes node-free)', () => {
+  it('agrees byte for byte, lone surrogates included', async () => {
+    const { createHash } = await import('node:crypto');
+    const nodeHash = (s: string) =>
+      createHash('sha256').update(s, 'utf8').digest('hex');
+    const cases = [
+      '',
+      'abc',
+      'The club meets on Tuesdays.\n',
+      'ветер по морю гуляет 🌊',
+      'lone surrogate: \ud800 and pair: 😀',
+      'x'.repeat(1000),
+    ];
+    for (const c of cases) expect(sha256Hex(c)).toBe(nodeHash(c));
+  });
+});
