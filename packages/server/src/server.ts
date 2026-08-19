@@ -316,6 +316,16 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
     }
 
     /* -- the surface ------------------------------------------------------ */
+    // the page references its assets relatively (fixture mode serves them
+    // from one directory), so they resolve to /x.js at the root and to
+    // /d/x.js under a document — serve both from the design dir. Basename
+    // only: no separators survive seg splitting, so no traversal.
+    const last = seg.length > 0 ? seg[seg.length - 1]! : '';
+    if (req.method === 'GET' && /\.(js|css|svg|png|woff2?)$/.test(last) &&
+        (seg.length === 1 || (seg[0] === 'd' && seg.length === 2))) {
+      serveFile(res, join(cfg.designDir, last));
+      return;
+    }
     if (req.method === 'GET' && seg[0] === 'd' && seg.length === 2) {
       if (store.bySlug(seg[1]!) === null) {
         json(res, 404, { error: 'no such document' });

@@ -164,6 +164,46 @@
   let T = 0;                       // the logical clock every command stamps
   const now = () => ++T;
   const FOUNDER = 'founder';
+  // ---- live mode (Q391b): the page served by the product server ---------
+  // /d/:slug is a real document: identity is the cookie, view() is the only
+  // read, commands are POSTs (serialized, so the server folds them in the
+  // order they were made), and the page keeps only the provisional layer.
+  // '/' is birth mode (§9.7a): a brand-new unsaved document — the email
+  // step mints the creation mail, pasted text syncs to the pending stash
+  // (v0.55), and the save is following the mailed link. Anywhere else
+  // (localhost:8137/setup.html, file) the fixture runs as before.
+  const LIVEMODE = location.pathname.startsWith('/d/');
+  const BIRTH = location.pathname === '/';
+  const LIVESLUG = LIVEMODE ? decodeURIComponent(location.pathname.split('/')[2] || '') : null;
+  const api = {
+    chain: Promise.resolve(),
+    birth: null, // {pendingId, devLink, slug} once the creation mail is sent
+    post(path, body) {
+      return fetch(path, { method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body || {}) }).then((r) => r.json());
+    },
+    cmd(name, args) {
+      this.chain = this.chain
+        .then(() => this.post('/api/d/' + LIVESLUG + '/cmd', { cmd: name, args: args || {} }))
+        .then((res) => { if (res && res.error) console.warn('[live]', name, res.error); })
+        .catch((e) => console.warn('[live]', name, e && e.message))
+        .then(() => this.refresh());
+      return this.chain;
+    },
+    refresh() {
+      return fetch('/api/d/' + LIVESLUG + '/view')
+        .then((r) => (r.status === 401 ? null : r.json()))
+        .then((data) => {
+          if (!data || !cs || !cs.isRemote) return;
+          const moved = data.seq !== cs.v.seq ||
+            JSON.stringify(data.raceCards) !== JSON.stringify(cs.v.raceCards);
+          cs.v = data;
+          if (moved) { syncFromCs(); hydrateValues(S.open); render(); }
+        })
+        .catch((e) => console.warn('[live] view', e && e.message));
+    },
+  };
   // page key ↔ module setting id — the page keeps its own vocabulary
   const MID = { slug: 'link', text: 'startingText', policy: 'applications', roster: 'membership' };
   const midOf = (k) => MID[k] || k;
@@ -662,6 +702,7 @@
     const st = csState(c.k);
     if (!st) { c.in = 0; return; }
     if (st.settledBy === 'ceremony') { c.in = E(); return; }
+    if (st.answeredCount !== undefined) { c.in = st.answeredCount; return; }
     const eIds = cs.motionElectorate();
     c.in = eIds.filter((id) => st.answers.has(id)).length;
   } });
@@ -940,6 +981,7 @@
   // proposal out-polls what stands ('either' counts to neither side).
   // Post-368 the caller of adjudicateOrdinaryMotion is a real race (§9.6).
   function maybeAdjudicate(rec, k) {
+    if (cs && cs.isRemote) return; // the engine adjudicates (Q391a)
     const rows = S.roster.filter((r) => r.role !== 'clerk' && r.in);
     if (!rows.every((r) => r.mAnsOk && r.mAnsOk.has(k))) return;
     const votes = rows.map((r) => (r.mAns || {})[k]);
@@ -2287,6 +2329,8 @@
                 S.mAns[cw.k] === 'yes' ? 'accept'
                   : S.mAns[cw.k] === 'abstain' ? 'abstain' : 'keep');
               syncFromCs();
+            } else if (rec && cs.isRemote) {
+              liveJudge(cw); myMAnsOk().add(cw.k);
             } else if (rec) {
               myMAnsOk().add(cw.k);
               maybeAdjudicate(rec, cw.k);
@@ -2328,6 +2372,11 @@
       if (cs) { try { cs.setConvenorMembership(now(), m.role !== 'clerk'); } catch (e) {} } }
       return render(); }
     const mv2 = ev.target.closest('[data-act="sendverify"]');
+    if (mv2 && BIRTH && S.viewer !== 'applicant') {
+      api.post('/api/docs', { title: S.title || 'Untitled', email: S.myemail })
+        .then((res) => { api.birth = res; if (res.slug) S.slug = res.slug; })
+        .catch((e) => console.warn('[birth]', e && e.message));
+      S.emailSent = true; S.mailOpen = true; return render(); }
     if (mv2) { S.emailSent = true; S.mailOpen = true; return render(); }
     const om = ev.target.closest('[data-act="openmail"]');
     if (om) { S.mailOpen = true; return render(); }
@@ -2339,6 +2388,10 @@
     if (cm && S.viewer === 'applicant') { S.app.emailVerified = true; S.app.mailOpen = false;
       if (cs && S.app.csId) { try { cs.verifyApplication(now(), S.app.csId); } catch (e) {} }
       return render(); }
+    if (cm && BIRTH) {
+      if (api.birth && api.birth.devLink) { location.href = api.birth.devLink; return; }
+      console.warn('[birth] the real mail is in your inbox — this preview cannot log you in');
+      S.mailOpen = false; return render(); }
     if (cm) { S.emailVerified = true; S.mailOpen = false; S.seen.add('myemail'); S.open = 'slug'; return render(); }
     const ee = ev.target.closest('[data-act="editemail"]');
     if (ee) { S.emailSent = false; return render(); }
@@ -2371,6 +2424,7 @@
   });
   function invite(em) {
     if (S.roster.some((p) => p.e === em)) return;
+    if (cs && cs.isRemote) { api.cmd('invite', { email: em }); return; }
     let mid = null;
     if (cs) { try { mid = cs.invite(now(), em); } catch (e) { return; } }
     S.roster.push({ n: em.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (x) => x.toUpperCase()),
@@ -2510,6 +2564,290 @@
   addEventListener('resize', () => { fitBand(band); drawWire(wires, S.open); });
   addEventListener('scroll', () => drawWire(wires, S.open), true);
 
-  relabel(); render();
+  // ---- the live layer (Q391b) -------------------------------------------
+  // A ConstitutionSession lookalike over the last-fetched view: the page's
+  // predicates render a real document through the same `cs` they render
+  // the fixture through. Reads come from the blind projection — a member's
+  // client never holds the log (§3.5/§9.0a on the wire) — and every
+  // command is a POST the server folds as the cookie's member.
+  function remoteCS(v0) {
+    const self = {
+      isRemote: true, v: v0,
+      get textConfirmed() { return self.v.textConfirmed; },
+      get constitutedAtT() { return self.v.constitutedAtT; },
+      get titleOf() { return self.v.title; },
+      get slug() { return self.v.slug; },
+      get quorumForm() { return self.v.quorumForm; },
+      get text() { return self.v.text; },
+      E: () => self.v.electorateSize,
+      motionElectorate: () => [],
+      membershipReserved: () => self.v.membershipReserved,
+      crowned: () => self.v.crowned,
+      canPropose: () => self.v.view.gates.proposing,
+      canJudge: () => self.v.view.gates.judging,
+      settingState: (mid) => {
+        const st = self.v.view.settings.find((x) => x.setting === mid);
+        if (!st) return null;
+        const q = self.v.view.questions.find((x) => x.setting === mid);
+        const res = self.v.view.resolutions.find((x) => x.setting === mid);
+        const mine = q ? q.myAnswer !== null : false;
+        return { holder: st.holder, powers: st.powers, value: st.value,
+          settledBy: st.settledBy, settledAtT: st.settledAtT,
+          collecting: st.collecting,
+          distribution: res ? res.distribution : null,
+          answeredCount: q ? q.answeredCount
+            : (st.settledBy === 'ceremony' ? self.v.electorateSize : 0),
+          answers: { has: (id) => id === self.v.me && mine } };
+      },
+      memberRecords: () => {
+        const m = new Map();
+        for (const r of self.v.view.members) {
+          m.set(r.id, { id: r.id, email: r.email, name: r.name,
+            picture: r.picture, arrivedAtT: r.arrived ? 1 : null,
+            lapsed: r.lapsed, removed: false,
+            okOwed: r.id === self.v.me ? self.v.view.owedOks : [] });
+        }
+        return m;
+      },
+      convenorRecord: () => self.v.convenor,
+      motionRecords: () => {
+        const m = new Map();
+        for (const rec of self.v.view.motions) {
+          m.set(rec.id, { id: rec.id, route: rec.route, payload: rec.payload,
+            why: rec.why, status: rec.status,
+            by: rec.mine ? self.v.me : '(sealed)',
+            answers: { has: (id) => id === self.v.me && rec.myAnswer !== null,
+              get: (id) => (id === self.v.me ? rec.myAnswer : undefined),
+              size: rec.answeredCount } });
+        }
+        return m;
+      },
+      crownQuestionRecords: () => {
+        const m = new Map();
+        for (const q of self.v.view.crownTasks) {
+          m.set(q.id, { id: q.id, motion: q.motion, status: 'pending' });
+        }
+        return m;
+      },
+      applicantRecords: () => new Map(),
+      setSetting: (t, mid, value) => api.cmd('set-setting', { setting: mid, value }),
+      delegate: (t, mid) => api.cmd('delegate', { setting: mid }),
+      reclaim: (t, mid) => api.cmd('reclaim', { setting: mid }),
+      relinquish: (t, mid, power) => api.cmd('relinquish', { setting: mid, power }),
+      setQuorumForm: (t, form) => api.cmd('set-quorum-form', { form }),
+      confirmStartingText: (t, text) => api.cmd('confirm-starting-text', { text }),
+      invite: (t, email) => { api.cmd('invite', { email }); return null; },
+      uninvite: (t, member) => api.cmd('uninvite', { member }),
+      arrive: () => {}, // arrival is the invitation link (§9.6a), never a page act
+      setIdentity: (t, member, identity) => api.cmd('set-identity', identity),
+      answer: (t, member, setting, value) => api.cmd('answer', { setting, value }),
+      giveOk: (t, member, setting) => api.cmd('give-ok', { setting }),
+      openMotion: (t, by, payload, why) => api.cmd('open-motion', { payload, why }),
+      answerMotion: (t, member, motion, answer) => api.cmd('answer-motion', { motion, answer }),
+      withdrawMotion: (t, member, motion) => api.cmd('withdraw-motion', { motion }),
+      answerCrownQuestion: (t, question, outcome) => api.cmd('answer-crown-question', { question, outcome }),
+      setConvenorMembership: (t, isMember) => api.cmd('set-convenor-membership', { isMember }),
+      adjudicateOrdinaryMotion: () => {}, // the engine's job now (Q391a)
+      startApplication: () => { throw new Error('applications go live with Q346'); },
+      verifyApplication: () => {}, submitApplication: () => {}, tick: () => {},
+    };
+    return self;
+  }
+
+  // an ordinary motion's judgment is a real pairwise judgment (Q391c): the
+  // served race card carries the two option ids; keep prefers the standing
+  // side, the proposal prefers the candidate side, abstain is indifference
+  function liveJudge(cw) {
+    const mid = midOf(cw.k);
+    const rc = (cs.v.raceCards || []).find((x) =>
+      (x.a.setting && x.a.setting.settingId === mid) ||
+      (x.b.setting && x.b.setting.settingId === mid));
+    if (!rc) { console.warn('[live] no race card served for', mid); return; }
+    const incSide = String(rc.a.id).indexOf('inc:') === 0 ? 'a'
+      : String(rc.b.id).indexOf('inc:') === 0 ? 'b' : null;
+    const pick = S.mAns[cw.k]; // 'stands' | 'proposed' | 'either'
+    const outcome = (pick === 'either' || pick === 'abstain') ? 'tie'
+      : (pick === 'stands' || pick === 'no') ? (incSide || 'tie')
+      : (incSide === 'a' ? 'b' : 'a');
+    api.cmd('judge-race', { a: rc.a.id, b: rc.b.id, outcome });
+  }
+
+  // the document column, filled from the server's text (confirmed, or the
+  // founder's provisional draft riding the §9.7a stash)
+  function setProse(text) {
+    const lines = String(text).split(/\n/).filter((l) => l.trim());
+    prose.innerHTML = lines.map((l) => '<div>' + esc(l) + '</div>').join('');
+    prose.classList.toggle('empty', lines.length === 0);
+    relabel();
+  }
+
+  // the value half of hydration, re-run on every refresh: what stands is
+  // the server's; the card you have open keeps your provisional hand
+  function hydrateValues(skipKey) {
+    const v = cs.v;
+    if (skipKey !== 'title') S.title = v.title;
+    if (skipKey !== 'slug') S.slug = v.slug;
+    const val2 = (mid) => { const st = cs.settingState(mid); return st && st.value; };
+    const MAPV = {
+      ending: (x) => { S.ending = x.endsAtMs === null ? 'perpetual' : 'ends';
+        if (x.endsAtMs !== null) S.endsAt = msToLocal(x.endsAtMs); },
+      bar: (x) => { S.tClose = x.pct; },
+      pace: (x) => { S.shape = x.shape; if (x.startPct) S.tStart = x.startPct; },
+      quorum: (x) => { if (x.form === 'share') S.quorumPct = x.n; else S.quorumN = x.n; },
+      authorship: (x) => { S.authorship = x.rung; },
+      signing: (x) => { S.signing = x.rung; },
+      judgments: (x) => { S.judgments = x.rung; },
+      chamber: (x) => { S.chamber = x.rung; },
+      rate: (x) => { S.grant = x.grant; S.cap = x.cap; S.dripMin = x.dripMinutes; },
+      lapse: (x) => { S.lapse = x.afterMs === null ? 'never' : String(Math.round(x.afterMs / 86400000)); },
+      machines: (x) => { S.auditor = x.enabled; if (x.enabled) S.auditorBudget = x.budget; },
+      applications: (x) => { S.joinBy = x.joinPolicy;
+        S.rosterBy = x.holder === 'members' ? 'roster' : 'founder';
+        S['pw:policy'] = x.holder === 'reserved-unilateral' ? 'unilateral'
+          : x.holder === 'reserved-assent' ? 'assent' : 'both'; },
+    };
+    for (const mid of Object.keys(MAPV)) {
+      const k = mid === 'applications' ? 'policy' : mid;
+      if (k === skipKey) continue;
+      const x = val2(mid);
+      const st = cs.settingState(mid);
+      if (x && st && st.settledBy !== null) MAPV[mid](x);
+    }
+  }
+
+  // the provisional radio layer, hydrated once from what the server holds
+  function hydrateS() {
+    const v = cs.v;
+    S.title = v.title; S.slug = v.slug;
+    const meRow2 = v.view.members.find((r) => r.id === v.me);
+    S.myemail = (meRow2 ? meRow2.email : v.convenor.email) || '';
+    S.emailSent = true; S.emailVerified = true;
+    S.myname = v.view.identity.name || '';
+    S.mypic = v.view.identity.picture || '';
+    const val = (mid) => { const st = cs.settingState(mid); return st && st.value; };
+    const del = (mid) => { const st = cs.settingState(mid); return !!st && st.holder === 'members'; };
+    const ev2 = val('ending');
+    if (del('ending') && !ev2) S.ending = 'roster';
+    else if (ev2) { S.ending = ev2.endsAtMs === null ? 'perpetual' : 'ends';
+      if (ev2.endsAtMs !== null) S.endsAt = msToLocal(ev2.endsAtMs); }
+    S.barBy = del('bar') ? 'roster' : 'founder';
+    const bv = val('bar'); if (bv) S.tClose = bv.pct;
+    const pv = val('pace'); if (pv) { S.shape = pv.shape; if (pv.startPct) S.tStart = pv.startPct; }
+    S.quorumBy = del('quorum') ? 'roster' : 'founder';
+    S.quorumForm = v.quorumForm;
+    const qv = val('quorum'); if (qv) { if (qv.form === 'share') S.quorumPct = qv.n; else S.quorumN = qv.n; }
+    for (const k of ['authorship', 'signing', 'judgments', 'chamber']) {
+      const lv = val(k);
+      S[k] = (del(k) && !lv) ? 'roster' : (lv ? lv.rung : S[k]);
+    }
+    S.rateBy = del('rate') ? 'roster' : 'founder';
+    const rv = val('rate'); if (rv) { S.grant = rv.grant; S.cap = rv.cap; S.dripMin = rv.dripMinutes; }
+    const lv2 = val('lapse');
+    S.lapse = (del('lapse') && !lv2) ? 'roster'
+      : (lv2 ? (lv2.afterMs === null ? 'never' : String(Math.round(lv2.afterMs / 86400000))) : S.lapse);
+    const mv = val('machines');
+    S.auditor = (del('machines') && !mv) ? 'roster' : (mv ? mv.enabled : S.auditor);
+    if (mv && mv.enabled) S.auditorBudget = mv.budget;
+    const av = val('applications');
+    if (av) { S.joinBy = av.joinPolicy;
+      S.rosterBy = av.holder === 'members' ? 'roster' : 'founder';
+      S['pw:policy'] = av.holder === 'reserved-unilateral' ? 'unilateral'
+        : av.holder === 'reserved-assent' ? 'assent' : 'both'; }
+    S.policyBy = del('applications') ? 'roster' : 'founder';
+    // my committed answers, back in the page's own vocabulary
+    for (const q of v.view.questions) {
+      if (q.myAnswer === null) continue;
+      const k = q.setting === 'applications' ? 'policy' : q.setting;
+      S.myAns[k] = PAGEVAL[k] ? PAGEVAL[k](q.myAnswer) : q.myAnswer;
+    }
+    // settled means confirmed here (the server's record IS the confirm),
+    // and acknowledged means not owed (§9.0b)
+    const owed = new Set(v.view.owedOks);
+    CARDS.forEach((c) => {
+      if (c.isGate || c.ansFor) return;
+      if (c.k === 'title' || c.k === 'slug' || c.k === 'myemail' || c.k === 'roster') { S.seen.add(c.k); return; }
+      if (c.k === 'text') { if (v.textConfirmed) S.seen.add(c.k); return; }
+      if (c.k === 'myname' || c.k === 'mypic') { S.seen.add(c.k); return; }
+      const st = csState(c.k);
+      if (st && (st.settledBy !== null || st.holder === 'members')) {
+        S.seen.add(c.k);
+        if (st.settledBy !== null && !owed.has(midOf(c.k))) {
+          S.okd.add('set-' + c.k); S.okd.add('res-' + c.k);
+        }
+      }
+    });
+  }
+
+  function liveLogin() {
+    document.body.innerHTML = '<div style="font-family:ui-monospace,monospace;max-width:26rem;margin:18vh auto;border:1px dashed #999;padding:1.2rem">' +
+      '<div style="font-weight:600;margin-bottom:.4rem">Log in</div>' +
+      '<div style="margin-bottom:.6rem">Enter the address this membership knows you by, and follow the link it sends.</div>' +
+      '<input id="lemail" type="email" style="width:100%;padding:.45rem" placeholder="you@example.com">' +
+      '<button id="lgo" style="margin-top:.5rem;padding:.45rem .9rem">Send the link</button>' +
+      '<div id="lmsg" style="margin-top:.6rem"></div></div>';
+    document.getElementById('lgo').onclick = () => {
+      api.post('/api/d/' + LIVESLUG + '/login',
+        { email: document.getElementById('lemail').value.trim() })
+        .then((res) => {
+          document.getElementById('lmsg').innerHTML = res.devLink
+            ? '<a href="' + res.devLink + '">dev · follow the magic link</a>'
+            : 'If that address is on the membership, a link is on its way.';
+        });
+    };
+  }
+
+  function liveBoot() {
+    const dev = document.querySelector('.devswitch');
+    if (dev) dev.style.display = 'none';
+    fetch('/api/d/' + LIVESLUG + '/view').then((r) => {
+      if (r.status === 401) { liveLogin(); return null; }
+      return r.json();
+    }).then((data) => {
+      if (!data) return;
+      cs = remoteCS(data);
+      syncFromCs();
+      const at = S.roster.findIndex((row) => (row.mid || FOUNDER) === data.me);
+      if (at >= 0) S.viewer = at;
+      const f = S.roster[0];
+      if (f && data.convenor) { f.e = data.convenor.email;
+        f.role = data.convenor.isMember ? 'member' : 'clerk';
+        f.n = (data.me === data.convenor.id ? data.view.identity.name : data.convenor.name) || f.n || ''; }
+      hydrateS();
+      if (data.text) setProse(data.text);
+      else if (data.provisionalText) setProse(data.provisionalText);
+      render();
+      setInterval(() => api.refresh(), 4000);
+      // the founder's unconfirmed draft rides the stash (§9.7a v0.55)
+      let deb = null;
+      prose.addEventListener('input', () => {
+        if (cs.textConfirmed || !amFounder()) return;
+        clearTimeout(deb);
+        deb = setTimeout(() => {
+          api.post('/api/d/' + LIVESLUG + '/stash', { text: proseText() })
+            .catch(() => {}); }, 800);
+      });
+    }).catch((e) => console.warn('[live] boot', e && e.message));
+  }
+
+  function birthBoot() {
+    const dev = document.querySelector('.devswitch');
+    if (dev) dev.style.display = 'none';
+    // pasted text syncs against the pending creation (§9.7a v0.55)
+    let deb = null;
+    prose.addEventListener('input', () => {
+      if (!api.birth || !api.birth.pendingId) return;
+      clearTimeout(deb);
+      deb = setTimeout(() => {
+        api.post('/api/docs/pending',
+          { pendingId: api.birth.pendingId, text: proseText() })
+          .catch(() => {}); }, 800);
+    });
+  }
+
+  if (LIVEMODE) { liveBoot(); }
+  else {
+    if (BIRTH) birthBoot();
+    relabel(); render();
+  }
 })();
 </script>

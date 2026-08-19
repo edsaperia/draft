@@ -39,9 +39,15 @@
 - **Slugs never break**: every slug a document has worn routes to it
   (cs.slugs is the registry, §9.7). /d/:slug serves setup.html — the page
   still runs its own fixture; wiring it to this API is Q391's work.
+- **The engine rides every commit** (Q391): engine-host.ts attaches an
+  EngineBridge the moment a document constitutes, persists the engine's
+  own hash-chained log as engine.jsonl and the bridge's pairing state as
+  bridge.json beside log.jsonl, resumes both by replay, syncs on every
+  command, and closes the races when a windowed ending passes. Ordinary
+  set-motions stake and race; judge-race is in the whitelist; the view
+  serves each member their race cards and wallet.
 - **Not in this slice**, each deliberate: the applicant flow (§9.7½ — needs
-  its own verify-before-submit token dance; the module is ready), the
-  engine-bridge (ordinary motions open and record over HTTP but nothing
-  races server-side until Q391 decides where the engine session lives),
-  rate limiting / abuse controls (Q346 territory), HTTPS and deployment
-  (Ed's call — nothing here deploys itself).
+  its own verify-before-submit token dance; the module is ready), reading
+  a public/link chamber without a membership cookie (every view requires
+  login today), rate limiting / abuse controls (Q346 territory), HTTPS and
+  deployment (Ed's call — nothing here deploys itself).
