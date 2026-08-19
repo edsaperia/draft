@@ -48,6 +48,7 @@ export const DEFAULT_CONSTITUTION: Omit<
   adoptionThresholdStart: 0.6,
   adoptionThresholdEnd: 0.95,
   adoptionFloorMax: 12,
+  quorum: null,
   deadlockMinComparisons: 20,
   deadlockEpsilon: 0.02,
   cooldownMs: 5 * 60 * 1000,
@@ -518,9 +519,22 @@ export class Session {
     return adoptionThreshold(this.constitutionValue, t);
   }
 
+  /**
+   * F = max(Q, min(ceil(E/3), F_max)) — SPEC §4.2: the room's quorum
+   * riding on the statistical minimum. A share-quorum is re-derived from
+   * current E on every call, so it tracks the roster (§9.3).
+   */
   adoptionFloor(): number {
-    const e = [...this.roster.values()].filter((r) => !r.removed).length;
-    return Math.min(Math.ceil(e / 3), this.constitutionValue.adoptionFloorMax);
+    const e = this.eCount();
+    const q = this.constitutionValue.quorum;
+    const quorumN =
+      q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n / 100) * e);
+    return Math.max(quorumN, Math.min(Math.ceil(e / 3), this.constitutionValue.adoptionFloorMax));
+  }
+
+  /** E (SPEC §8.2): the countable membership, engine-side. */
+  private eCount(): number {
+    return [...this.roster.values()].filter((r) => !r.removed).length;
   }
 
   balance(participantId: string, t: number): number {

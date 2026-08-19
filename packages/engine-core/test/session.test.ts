@@ -734,3 +734,23 @@ describe('rival-pair gating (SPEC §8.3, Q48)', () => {
     expect(mine.every((j) => !j.locked && !j.superseded)).toBe(true);
   });
 });
+
+describe('quorum in the adoption floor (SPEC §4.2, 367b)', () => {
+  it('a count quorum raises the floor above the statistical minimum', () => {
+    const s = openSession({ quorum: { form: 'count', n: 4 } });
+    // ceil(5/3) = 2; the room asked for 4 — the room's number governs.
+    expect(s.adoptionFloor()).toBe(4);
+  });
+
+  it('a share quorum tracks E as the roster changes', () => {
+    const s = openSession({ quorum: { form: 'share', n: 60 } });
+    expect(s.adoptionFloor()).toBe(3); // ceil(0.6 × 5)
+    s.addParticipant(1, { id: 'p6', handle: 'F' });
+    expect(s.adoptionFloor()).toBe(4); // ceil(0.6 × 6)
+  });
+
+  it('a quorum below the statistical minimum never lowers the floor', () => {
+    const s = openSession({ quorum: { form: 'count', n: 1 } });
+    expect(s.adoptionFloor()).toBe(2); // min(ceil(5/3), F_max) still governs
+  });
+});

@@ -102,6 +102,10 @@ export function toEngineConstitution(
     windowStartMs,
     windowEndMs,
     authorshipVisibility: authorship.rung as Constitution['authorshipVisibility'],
+    // §4.2 (367b): the engine computes F = max(Q, min(⌈E/3⌉, F_max)) itself
+    // now — the floor closure below survives for hosts that want the number
+    // without a Session.
+    quorum: { form: quorum.form, n: quorum.n },
     rngSeed,
     rivalGateProb: tuning.rivalGateProb,
     rivalGateMinComparisons: tuning.rivalGateMinComparisons,

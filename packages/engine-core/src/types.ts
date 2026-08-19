@@ -21,8 +21,19 @@ export interface Constitution {
    */
   adoptionThresholdStart: number;
   adoptionThresholdEnd: number;
-  /** F = min(ceil(E/3), adoptionFloorMax) distinct movers per race. */
+  /**
+   * F = max(Q, min(ceil(E/3), adoptionFloorMax)) distinct movers per race
+   * (SPEC §4.2, v0.48): the statistical minimum, which the room's quorum
+   * can raise but never lower.
+   */
   adoptionFloorMax: number;
+  /**
+   * The room's settled quorum (SPEC §4.2, §9.0a): a fixed count, or a
+   * share of E (share × E, rounded up), re-derived from current E so a
+   * share-quorum tracks the roster. null = no quorum settled (Q = 0),
+   * which leaves the statistical minimum governing alone.
+   */
+  quorum: { form: 'count' | 'share'; n: number } | null;
   /** Deadlock requires at least this many comparisons in the race. */
   deadlockMinComparisons: number;
   /** Max pair value below which a race counts as deadlocked. */
