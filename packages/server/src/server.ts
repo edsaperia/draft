@@ -27,6 +27,16 @@ import { runCommand } from './commands.js';
 
 const COOKIE = 'draft_session';
 
+/** Q346 territory, minimally: the mail-minting doors are rate-limited
+ *  per address+route — in memory, generous, a brake not a wall. */
+const BUCKET = new Map<string, { n: number; resetMs: number }>();
+function rateLimited(key: string, nowMs: number, max = 20, windowMs = 600_000): boolean {
+  const b = BUCKET.get(key);
+  if (!b || b.resetMs < nowMs) { BUCKET.set(key, { n: 1, resetMs: nowMs + windowMs }); return false; }
+  b.n += 1;
+  return b.n > max;
+}
+
 export interface DraftServer {
   server: Server;
   store: DocStore;
@@ -138,6 +148,10 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
 
     /* -- creation (§9.7a: the mail is the save) -------------------------- */
     if (req.method === 'POST' && path === '/api/docs') {
+      if (rateLimited('docs:' + ipOf(req), nowMs)) {
+        json(res, 429, { error: 'too many requests — try again shortly' });
+        return;
+      }
       const body = await readJson(req);
       const title = expectString(body, 'title');
       const email = expectString(body, 'email');
@@ -202,6 +216,10 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         seg[3] === 'login' && seg.length === 4) {
       const doc = store.bySlug(seg[2]!);
       if (!doc) { json(res, 404, { error: 'no such document' }); return; }
+      if (rateLimited('login:' + ipOf(req), nowMs)) {
+        json(res, 429, { error: 'too many requests — try again shortly' });
+        return;
+      }
       const body = await readJson(req);
       const email = expectString(body, 'email');
       const memberId = memberIdByEmail(doc.cs, email);
@@ -216,6 +234,47 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       const link = `${cfg.baseUrl}/auth/login?token=${token}`;
       await mailer.send({ to: email, ...MAILS.login(titleOf(doc.cs), link) });
       json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
+      return;
+    }
+
+    /* -- applicants (§9.7½): the email is the identity ------------------ */
+    if (req.method === 'POST' && seg[0] === 'api' && seg[1] === 'd' &&
+        seg[3] === 'apply' && seg.length === 4) {
+      const doc = store.bySlug(seg[2]!);
+      if (!doc) { json(res, 404, { error: 'no such document' }); return; }
+      if (rateLimited('apply:' + ipOf(req), nowMs)) {
+        json(res, 429, { error: 'too many requests — try again shortly' });
+        return;
+      }
+      const body = await readJson(req);
+      const email = expectString(body, 'email');
+      const t = tOf(doc.cs, nowMs);
+      // the module refuses invitation-only documents and addresses already
+      // on the membership (told to log in instead — §9.7½)
+      const applicant = doc.cs.startApplication(t, email);
+      commit(doc, nowMs);
+      const token = auth.mintToken(
+        { kind: 'apply', email, docId: doc.id, applicantId: applicant }, nowMs);
+      const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
+      await mailer.send({ to: email,
+        ...MAILS.applyVerify(titleOf(doc.cs), link) });
+      json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
+      return;
+    }
+
+    if (req.method === 'GET' && path === '/auth/apply') {
+      const rec = auth.useToken(url.searchParams.get('token') ?? '', nowMs);
+      if (!rec || rec.kind !== 'apply' || rec.docId === undefined ||
+          rec.applicantId === undefined) {
+        json(res, 400, { error: 'that link has been used or has expired' });
+        return;
+      }
+      const doc = store.byId(rec.docId);
+      if (!doc) { json(res, 404, { error: 'no such document' }); return; }
+      doc.cs.verifyApplication(tOf(doc.cs, nowMs), rec.applicantId);
+      commit(doc, nowMs);
+      setCookie(res, auth.cookieFor(doc.id, `app:${rec.applicantId}`, nowMs));
+      redirect(res, `/d/${currentSlug(doc.cs)}`);
       return;
     }
 
@@ -249,9 +308,13 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       const { memberId } = session;
       const isFounder = memberId === doc.cs.convenorRecord().id;
       if (req.method === 'GET' && seg[3] === 'view') {
+        const app = memberId.startsWith('app:')
+          ? doc.cs.applicantRecords().get(memberId.slice(4)) ?? null : null;
         json(res, 200, {
           me: memberId,
           isFounder,
+          ...(app !== null ? { applicant: { id: app.id, status: app.status,
+            name: app.name, motion: app.motion } } : {}),
           title: titleOf(doc.cs),
           slug: currentSlug(doc.cs),
           constitutedAtT: doc.cs.constitutedAtT,
@@ -280,6 +343,21 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         const cmd = expectString(body, 'cmd');
         const args = (body.args ?? {}) as Record<string, unknown>;
         const t = tOf(doc.cs, nowMs);
+        if (memberId.startsWith('app:')) {
+          // an applicant's one act: submit — nothing else speaks for them
+          if (cmd !== 'submit-application') {
+            json(res, 403, { error: 'applicants may only submit their application' });
+            return;
+          }
+          const fields: { name?: string; picture?: string; words?: string } = {};
+          if (typeof args.name === 'string') fields.name = args.name;
+          if (typeof args.picture === 'string') fields.picture = args.picture;
+          if (typeof args.words === 'string') fields.words = args.words;
+          doc.cs.submitApplication(t, memberId.slice(4), fields);
+          const seq = commit(doc, nowMs);
+          json(res, 200, { ok: true, seq });
+          return;
+        }
         const me = doc.cs.memberRecords().get(memberId);
         if (me?.lapsed) doc.cs.memberReturn(t, memberId); // any act revives
         const result = runCommand(doc.cs, { memberId, isFounder }, t, cmd, args,
@@ -398,6 +476,10 @@ function expectString(body: Record<string, unknown>, key: string): string {
     throw new Error(`'${key}' must be a non-empty string`);
   }
   return v;
+}
+
+function ipOf(req: IncomingMessage): string {
+  return req.socket.remoteAddress ?? 'unknown';
 }
 
 function json(res: ServerResponse, code: number, payload: unknown): void {

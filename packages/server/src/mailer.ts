@@ -75,6 +75,13 @@ export const MAILS = {
       `Membership begins when you arrive; until then you count toward nothing.`,
     link,
   }),
+  applyVerify: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `Your application to “${title}”`,
+    text: `This address is how “${title}” will know you.\n\n` +
+      `Verify it to continue your application:\n${link}\n\n` +
+      `Nothing has been sent to the members yet — nothing is, until you submit.`,
+    link,
+  }),
   login: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Log in to “${title}”`,
     text: `Here is your login link for “${title}”:\n${link}`,

@@ -20,11 +20,12 @@ export interface PendingCreate {
 }
 
 export interface TokenRecord {
-  kind: 'create' | 'login';
+  kind: 'create' | 'login' | 'apply';
   email: string;
   expMs: number;
   docId?: string;
   memberId?: string;
+  applicantId?: string;
   pending?: PendingCreate;
 }
 

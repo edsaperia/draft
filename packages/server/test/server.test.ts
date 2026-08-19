@@ -137,7 +137,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
       authorship: { rung: 'sealed' },
       signing: { rung: 'each' },
       judgments: { rung: 'after' },
-      applications: { holder: 'members', joinPolicy: 'invite' },
+      applications: { holder: 'members', joinPolicy: 'apply' },
       machines: { enabled: false, budget: 0 },
       lapse: { afterMs: null },
     };
@@ -204,6 +204,35 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(live.cs.motionRecords().get(motion)!.status).toBe('carried');
     expect(live.cs.settingState('ending').value)
       .toEqual({ endsAtMs: ends + 3600_000 });
+
+    // -- an applicant at the door (§9.7½): start → verify → submit --------
+    const started = await (await post(base, `/api/d/${created.slug}/apply`,
+      { email: 'dee@example.org' })).json() as { ok: boolean; devLink: string };
+    expect(started.ok).toBe(true);
+    const appRes = await fetch(started.devLink, { redirect: 'manual' });
+    expect(appRes.status).toBe(302);
+    const dee = cookieOf(appRes);
+    // the applicant's one act is submitting; anything else is refused
+    const refused = await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'answer', args: { setting: 'bar', value: { pct: 50 } } }, dee);
+    expect(refused.status).toBe(403);
+    const submitted = await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'submit-application', args: { name: 'Dee' } }, dee);
+    expect(submitted.status).toBe(200);
+    // under 'apply' the application went straight to the bar as an
+    // ordinary admit motion, free (§9.7½)
+    const deeView = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: dee } })).json() as {
+        applicant: { status: string };
+        view: { motions: Array<{ payload: { kind: string } }> };
+      };
+    expect(deeView.applicant.status).toBe('submitted');
+    expect(deeView.view.motions.some((m) => m.payload.kind === 'admit')).toBe(true);
+    // a member's address is told to log in instead (§9.7½)
+    const dupe = await post(base, `/api/d/${created.slug}/apply`,
+      { email: 'bo@example.org' });
+    expect(dupe.status).toBe(400);
+    expect(((await dupe.json()) as { error: string }).error).toContain('log in');
 
     // -- restart: both logs on disk replay to the same state --------------
     const reloaded = new DocStore(dataDir);

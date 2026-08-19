@@ -47,8 +47,18 @@
   command, and closes the races when a windowed ending passes. Ordinary
   set-motions stake and race; judge-race is in the whitelist; the view
   serves each member their race cards and wallet.
-- **Not in this slice**, each deliberate: the applicant flow (§9.7½ — needs
-  its own verify-before-submit token dance; the module is ready), reading
-  a public/link chamber without a membership cookie (every view requires
-  login today), rate limiting / abuse controls (Q346 territory), HTTPS and
-  deployment (Ed's call — nothing here deploys itself).
+- **Applicants speak the same doors** (§9.7½): POST /api/d/:slug/apply
+  starts an application (the module refuses invitation-only documents and
+  member addresses, told to log in instead), the mailed /auth/apply link
+  verifies the address and sets an `app:`-prefixed cookie whose one
+  permitted act is submit-application; under `apply` the submission opens
+  the free ordinary admit motion. **Residual**: admit motions have no
+  engine shape (no scalar to race — bridge NOTES), so they open and wait;
+  their adjudication is the recorded gap.
+- **The mail-minting doors are rate-limited**, minimally (Q346 territory):
+  an in-memory per-IP bucket on create/login/apply, 20 per 10 minutes —
+  a brake on mail floods, not an abuse story. Restart empties it.
+- **Not in this slice**, each deliberate: reading a public/link chamber
+  without a membership cookie (every view requires login today), the
+  admit-motion adjudication above, HTTPS and deployment (Ed's call —
+  nothing here deploys itself).

@@ -116,6 +116,9 @@ const HANDLERS: Record<string, Handler> = {
     }
     bridge.judge(t, a.memberId, str(args, 'a'), str(args, 'b'), outcome);
   },
+  'propose-applicant': (cs, a, t, args) => {
+    cs.proposeApplicant(t, a.memberId, str(args, 'applicant'));
+  },
   'sign-out': (cs, a, t, args) => {
     cs.signOut(t, a.memberId, str(args, 'mode') as 'holding' | 'abstaining');
   },
