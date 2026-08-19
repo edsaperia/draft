@@ -176,3 +176,103 @@ describe('roster truth flows cs → engine', () => {
     expect(bridge.engine.adoptionFloor()).toBe(2);
   });
 });
+
+describe('an admit motion is its own race (§9.7½ v0.56, Q397)', () => {
+  /** The constituted room, re-set to a given join policy pre-start. */
+  const withPolicy = (joinPolicy: 'apply' | 'proposed') => {
+    const made = constituted2(joinPolicy);
+    return made;
+  };
+  const constituted2 = (joinPolicy: 'apply' | 'proposed') => {
+    const s2 = ConstitutionSession.open({
+      title: 'Hollow Oak Club Charter',
+      slug: 'hollow-oak-adm',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+    }, 0);
+    const bo = s2.invite(1, 'bo@example.org');
+    const cy = s2.invite(1, 'cy@example.org');
+    s2.arrive(1, bo);
+    s2.arrive(1, cy);
+    for (const who of ['ada', bo, cy]) s2.answer(1, who, 'ending', { endsAtMs: 1_000_000 });
+    for (const who of ['ada', bo, cy]) s2.answer(1, who, 'bar', { pct: 55 });
+    for (const who of ['ada', bo, cy]) s2.answer(1, who, 'chamber', { rung: 'link' });
+    const values = {
+      pace: { shape: 'fixed' },
+      quorum: { form: 'count', n: 2 },
+      authorship: { rung: 'sealed' },
+      signing: { rung: 'each' },
+      judgments: { rung: 'after' },
+      applications: { holder: 'members', joinPolicy },
+      machines: { enabled: false, budget: 0 },
+      lapse: { afterMs: null },
+    } as const;
+    s2.confirmStartingText(2, 'The clubhouse shall be kept open.');
+    s2.setSetting(2, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
+    for (const [id, v] of Object.entries(values)) {
+      s2.reclaim(2, id as never);
+      s2.setSetting(2, id as never, v as never);
+    }
+    expect(s2.constitutedAtT).toBe(2);
+    return { s: s2, bo, cy };
+  };
+
+  it("apply: the applicant authors their own race and never joins another applicant's", () => {
+    const { s, bo, cy } = withPolicy('apply');
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'admit-apply' });
+    const ap = s.startApplication(10, 'dee@example.org');
+    s.verifyApplication(11, ap);
+    s.submitApplication(12, ap, { name: 'Dee', words: 'I keep minutes.' });
+    bridge.sync(12);
+    const race = bridge.engine.races().find((r) => r.settingId === `admit:${ap}`)!;
+    expect(race).toBeDefined();
+    expect(race.members).toHaveLength(1);
+    const cand = bridge.engine.log.map((e) => e.event).find((e) =>
+      e.type === 'candidate-submitted' && e.id === race.members[0]) as
+      { author: string; rationale: string };
+    expect(cand.author).toBe(ap); // the applicant, a voice for this one act
+    expect(cand.rationale).toBe('I keep minutes.');
+    // ...and suspended in the same breath: E is still the three members.
+    expect(bridge.engine.races().every((r) => r.settingId !== 'membership')).toBe(true);
+
+    // A second applicant is a second race — never the same one (Ed's words).
+    const ap2 = s.startApplication(13, 'eve@example.org');
+    s.verifyApplication(14, ap2);
+    s.submitApplication(15, ap2, { words: 'Me too.' });
+    bridge.sync(15);
+    const race2 = bridge.engine.races().find((r) => r.settingId === `admit:${ap2}`)!;
+    expect(race2).toBeDefined();
+    expect(race2.id).not.toBe(race.id);
+    expect(race2.members).toHaveLength(1);
+
+    // Judged to adoption, the applicant becomes a member (floor 2: dee's
+    // own author-preference is a voice, so one member's judgment can carry).
+    bridge.judge(20, bo, race.members[0]!, race.incumbentId, 'a');
+    if (s.applicantRecords().get(ap)!.status !== 'admitted') {
+      bridge.judge(21, cy, race.members[0]!, race.incumbentId, 'a');
+    }
+    const dee = [...s.memberRecords().values()].find((m) => m.email === 'dee@example.org');
+    expect(dee).toBeDefined();
+    expect(dee!.arrivedAtT).not.toBeNull();
+    expect(s.applicantRecords().get(ap)!.status).toBe('admitted');
+  });
+
+  it('proposed: the seconder authors, stakes, and writes the case', () => {
+    const { s, bo } = withPolicy('proposed');
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'admit-proposed' });
+    const ap = s.startApplication(10, 'dee@example.org');
+    s.verifyApplication(11, ap);
+    s.submitApplication(12, ap, { words: 'I keep minutes.' });
+    bridge.sync(12);
+    // No second yet: no race.
+    expect(bridge.engine.races().some((r) => r.settingId === `admit:${ap}`)).toBe(false);
+
+    bridge.proposeApplicant(13, bo, ap, 'dee ran the sister club for two years');
+    const race = bridge.engine.races().find((r) => r.settingId === `admit:${ap}`)!;
+    const cand = bridge.engine.log.map((e) => e.event).find((e) =>
+      e.type === 'candidate-submitted' && e.id === race.members[0]) as
+      { author: string; rationale: string };
+    expect(cand.author).toBe(bo);
+    expect(cand.rationale).toBe('dee ran the sister club for two years');
+    expect(bridge.engine.balance(bo, 13)).toBe(3); // the ✏️ left the wallet
+  });
+});

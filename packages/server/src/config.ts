@@ -21,6 +21,13 @@ export interface ServerConfig {
   mailFrom: string;
   /** HMAC secret for cookies and tokens at rest. */
   secret: string;
+  /**
+   * Engine tuning overrides (tests and dev only — production runs the
+   * defaults; deliberately not read from the environment). The one known
+   * use is pacing: a test that adopts twice in one second needs
+   * cooldownMs 0, where a room needs the §4.2 cooldown as shipped.
+   */
+  engineTuning?: Partial<import('../../constitution/src/adapter.js').EngineTuning>;
 }
 
 export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfig {

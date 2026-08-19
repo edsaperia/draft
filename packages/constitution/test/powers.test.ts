@@ -178,7 +178,7 @@ describe("the register's powers (Ed's own example, §9.7½ v0.54)", () => {
     const { s, bo, cy } = constituted({ holder: 'reserved-unilateral', joinPolicy: 'invite' });
     const dee = s.invite(10, 'dee@example.org'); // unilateral invite, post-start
     expect(typeof dee).toBe('string');
-    const m = s.openMotion(20, bo, { kind: 'invite', email: 'eve@example.org' });
+    const m = s.openMotion(20, bo, { kind: 'invite', email: 'eve@example.org' }, 'eve chairs the sister club');
     s.answerMotion(21, 'ada', m, 'accept');
     s.answerMotion(22, cy, m, 'accept');
     expect(s.motionRecords().get(m)!.status).toBe('carried');
@@ -189,7 +189,7 @@ describe("the register's powers (Ed's own example, §9.7½ v0.54)", () => {
     const { s, bo, cy } = constituted({ holder: 'reserved-assent', joinPolicy: 'invite' });
     expect(() => s.invite(10, 'dee@example.org'))
       .toThrow(/constitutional motion/);
-    const m = s.openMotion(20, bo, { kind: 'invite', email: 'eve@example.org' });
+    const m = s.openMotion(20, bo, { kind: 'invite', email: 'eve@example.org' }, 'eve chairs the sister club');
     s.answerMotion(21, 'ada', m, 'accept');
     s.answerMotion(22, cy, m, 'accept');
     const q = crownQuestionFor(s, m)!;

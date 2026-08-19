@@ -956,6 +956,9 @@ export class ConstitutionSession {
       route = 'constitutional'; // returning a decision to one hand needs everyone (§9.7 v0.52)
     } else if (payload.kind === 'invite') {
       this.requireEmailFree(payload.email);
+      if (why === undefined || why.trim() === '') {
+        throw new Error('an invitation is proposed with its reasons — the members deciding on a person are owed the case for them (§9.7½ v0.56)');
+      }
       route = 'constitutional'; // membership's own kind — reservation adds assent, never a route (§9.7 v0.49)
     } else if (payload.kind === 'remove') {
       const target = this.members.get(payload.member);
@@ -1298,8 +1301,9 @@ export class ConstitutionSession {
     // under 'proposed' the application waits for a member's second
   }
 
-  /** A second is a proposed application (§9.7½, Q348a): the member stakes the ✏️. */
-  proposeApplicant(t: number, member: MemberId, applicant: string): void {
+  /** A second is a proposed application (§9.7½, Q348a): the member stakes the ✏️
+   *  and writes the case (v0.56: the members deciding on a person are owed it). */
+  proposeApplicant(t: number, member: MemberId, applicant: string, why?: string): void {
     if (this.joinPolicy() !== 'proposed') {
       throw new Error("this document's applications are not proposed (§9.7½)");
     }
@@ -1307,10 +1311,13 @@ export class ConstitutionSession {
     if (!m || !inE(m)) throw new Error(`'${member}' is not an arrived member`);
     const a = this.applicants.get(applicant);
     if (!a || a.status !== 'submitted') throw new Error('no submitted application to propose');
+    if (why === undefined || why.trim() === '') {
+      throw new Error('a second is proposed with its reasons — the rationale is required (§9.7½ v0.56)');
+    }
     this.emit({ type: 'application-proposed', t, applicant, by: member });
     this.emit({ type: 'motion-opened', t, motion: `mo-${this.nextMotionN}`,
       by: member, payload: { kind: 'admit', applicant },
-      route: 'ordinary', stake: 1 });
+      route: 'ordinary', stake: 1, why });
   }
 
   // -------------------------------------------------------------------------

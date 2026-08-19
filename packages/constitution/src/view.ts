@@ -75,12 +75,24 @@ export interface MemberRowView {
   isConvenor: boolean;
 }
 
+export interface ApplicantRowView {
+  id: string;
+  email: string;
+  name: string | null;
+  picture: string | null;
+  words: string | null;
+  status: string;
+  /** The admit motion, once one is open — the page joins it to its race. */
+  motion: string | null;
+}
+
 export interface MemberView {
   gates: { reading: true; proposing: boolean; judging: boolean };
   questions: QuestionView[];
   resolutions: ResolutionView[];
   settings: SettingView[];
   members: MemberRowView[];
+  applicants: ApplicantRowView[];
   owedOks: SettingId[];
   motions: MotionView[];
   myHeldMotion: string | null;
@@ -161,6 +173,13 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     });
   }
 
+  const applicants: ApplicantRowView[] = [];
+  for (const a of s.applicantRecords().values()) {
+    if (a.status === 'started') continue; // an unverified address is nobody's business yet
+    applicants.push({ id: a.id, email: a.email, name: a.name,
+      picture: a.picture, words: a.words, status: a.status, motion: a.motion });
+  }
+
   const convenorId = s.convenorRecord().id;
   const members: MemberRowView[] = [];
   for (const rec of s.memberRecords().values()) {
@@ -186,6 +205,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     resolutions,
     settings,
     members,
+    applicants,
     owedOks: me ? [...me.okOwed] : [],
     motions,
     myHeldMotion,

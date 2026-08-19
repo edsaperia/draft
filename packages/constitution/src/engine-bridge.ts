@@ -1,5 +1,5 @@
 /**
- * The engine-bridge (367b, Q390): marries a ConstitutionSession — §9's
+ * The engine-bridge (367b, Q390, Q397): marries a ConstitutionSession — §9's
  * truth about who may act, what stands and which route a motion takes —
  * to an engine-core Session, which runs the races. The division of labour:
  *
@@ -25,9 +25,15 @@
  * now, the thin server (Q368) later — import it by path, the way
  * sim-harness already imports engine-core.
  *
- * Residual (recorded in NOTES.md): admit-motions (§9.7½) still adjudicate
- * through the seam by the host's hand — an application has no scalar value
- * to race, and its engine shape is part of Q391's design work.
+ * Admit motions (§9.7½ v0.56, Q397): each is its own one-candidate race
+ * against `the membership as it stands` — a synthetic per-applicant
+ * setting (`admit:<id>`, standing {member: false}), which is what makes
+ * two applicants structurally unable to share a race. The author is the
+ * seconder under `proposed` (their ✏️ the stake, their why the rationale)
+ * or the applicant themself under `apply` — added as a voice for exactly
+ * this one act and suspended in the same breath, so they author their own
+ * admission (§3.3's author-preference is truly theirs) while counting
+ * toward no E, no quorum and no floor.
  */
 
 import { Session as EngineSession } from '../../engine-core/src/session.js';
@@ -199,6 +205,16 @@ export class EngineBridge {
     this.sync(t);
   }
 
+  /** A second stakes the ✏️ (§9.7½): priced at the door like any entry. */
+  proposeApplicant(t: number, by: MemberId, applicant: string, why: string): void {
+    this.sync(t);
+    if (this.engine.balance(by, t) < this.engine.constitution.stake) {
+      throw new Error('insufficient ✏️ for the stake (§7)');
+    }
+    this.cs.proposeApplicant(t, by, applicant, why);
+    this.sync(t);
+  }
+
   /** Withdrawal returns the stake whole on both ledgers (§3.3a). */
   withdrawMotion(t: number, by: MemberId, motion: MotionId): void {
     this.cs.withdrawMotion(t, by, motion);
@@ -233,6 +249,45 @@ export class EngineBridge {
   }
 
   /**
+   * An admit motion is its own race (§9.7½ v0.56, Q397): one candidate
+   * against the membership as it stands, never another applicant.
+   */
+  private enterAdmitRace(
+    t: number,
+    motion: MotionId,
+    applicant: string,
+    by: MemberId | null,
+    why: string | undefined,
+  ): void {
+    if (this.candidateOfMotion.has(motion)) return;
+    const a = this.cs.applicantRecords().get(applicant);
+    const settingId = `admit:${applicant}`;
+    if (this.engine.standing(settingId) === undefined) {
+      this.engine.setStanding(t, settingId, { member: false });
+    }
+    let author = by;
+    let transientVoice = false;
+    if (author === null) {
+      // `apply`: the application is the applicant's own proposal — a voice
+      // for exactly this act, suspended in the same breath (out of E).
+      author = applicant;
+      if (!this.known.has(applicant)) {
+        this.engine.addParticipant(t, { id: applicant, handle: a?.name ?? a?.email ?? applicant });
+        this.known.add(applicant);
+        transientVoice = true;
+      }
+    }
+    const { id } = this.engine.submitCandidate(t, {
+      author,
+      setting: { settingId, value: { member: true } },
+      rationale: why ?? a?.words ?? '',
+    });
+    if (transientVoice) this.engine.suspendParticipant(t, applicant);
+    this.candidateOfMotion.set(motion, id);
+    this.motionOfCandidate.set(id, motion);
+  }
+
+  /**
    * Relay the constitution's truth into the engine: roster events since
    * the last sync, then a standing diff — cheap, and immune to *which*
    * route changed a value (a carried motion, a crown's direct change, a
@@ -256,6 +311,11 @@ export class EngineBridge {
           }
           break;
         }
+        case 'motion-opened':
+          if (e.payload.kind === 'admit' && e.route === 'ordinary') {
+            this.enterAdmitRace(t, e.motion, e.payload.applicant, e.by, e.why);
+          }
+          break;
         case 'member-removed':
           if (this.known.has(e.member)) this.engine.removeParticipant(t, e.member);
           break;

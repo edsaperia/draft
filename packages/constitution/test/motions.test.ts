@@ -213,9 +213,17 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(s.E()).toBe(3);
   });
 
+  it('an invitation is proposed with its reasons — no rationale, no motion (v0.56)', () => {
+    const { s, bo } = constituted();
+    expect(() => s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' }))
+      .toThrow(/owed the case/);
+    expect(() => s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' }, '  '))
+      .toThrow(/owed the case/);
+  });
+
   it('an invitation is a constitutional motion; the invitee still counts toward nothing', () => {
     const { s, bo, cy } = constituted();
-    const m = s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' });
+    const m = s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' }, 'dee kept our minutes for a year');
     s.answerMotion(4, 'ada', m, 'accept');
     s.answerMotion(5, bo, m, 'accept');
     s.answerMotion(6, cy, m, 'accept');
@@ -239,7 +247,7 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
   it('those outside the electorate are owed the decision they had no say in', () => {
     const { s, bo, cy } = constituted();
     // dee invited by motion, arrives after a later amendment carries
-    const inv = s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' });
+    const inv = s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' }, 'dee kept our minutes for a year');
     for (const [t, who] of [[4, 'ada'], [5, bo], [6, cy]] as const) {
       s.answerMotion(t, who, inv, 'accept');
     }

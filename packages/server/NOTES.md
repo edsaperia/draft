@@ -52,9 +52,21 @@
   member addresses, told to log in instead), the mailed /auth/apply link
   verifies the address and sets an `app:`-prefixed cookie whose one
   permitted act is submit-application; under `apply` the submission opens
-  the free ordinary admit motion. **Residual**: admit motions have no
-  engine shape (no scalar to race — bridge NOTES), so they open and wait;
-  their adjudication is the recorded gap.
+  the free ordinary admit motion — **which races** (§9.7½ v0.56, Q397):
+  the bridge enters it as its own one-candidate race against the
+  membership as it stands, members judge it on their served race cards,
+  and adoption admits. A seconder's propose-applicant is priced through
+  the bridge (the ✏️ stake refused at the door if the wallet is short)
+  and carries the required rationale.
+- **The dev inbox is an endpoint** (Ed, 2026-08-19): GET /api/dev/outbox
+  serves the tail of outbox.jsonl — links intact — so the page can put
+  the magic-link mails in a modal instead of asking QA to tail a file.
+  Exists only in dev mail mode; in production the route 404s, and the
+  view's `devMail: false` keeps the page from offering it.
+- **Engine tuning is a config field, never an env var** (`engineTuning`):
+  tests that adopt twice in one second pass cooldownMs 0; production
+  constructs its config from the environment, which cannot set it, so a
+  deployed room always runs the §4.2 pacing as shipped.
 - **The mail-minting doors are rate-limited**, minimally (Q346 territory):
   an in-memory per-IP bucket on create/login/apply, 20 per 10 minutes —
   a brake on mail floods, not an abuse story. Restart empties it.

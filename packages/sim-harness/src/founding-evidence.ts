@@ -204,7 +204,7 @@ say('\n== motions, constitutional route: unanimity over the live electorate ==='
   eq(s.settingState('bar').value, { pct: 80 }, 'the amendment applied in the fold');
 
   say('  an arrival mid-motion joins the electorate — no snapshot (v0.48)');
-  const inv = s.openMotion(8, bo, { kind: 'invite', email: 'dee@example.org' });
+  const inv = s.openMotion(8, bo, { kind: 'invite', email: 'dee@example.org' }, 'dee kept our minutes for a year');
   s.answerMotion(9, 'ada', inv, 'accept');
   s.answerMotion(9, bo, inv, 'accept');
   s.answerMotion(9, cy, inv, 'accept');

@@ -116,8 +116,13 @@ const HANDLERS: Record<string, Handler> = {
     }
     bridge.judge(t, a.memberId, str(args, 'a'), str(args, 'b'), outcome);
   },
-  'propose-applicant': (cs, a, t, args) => {
-    cs.proposeApplicant(t, a.memberId, str(args, 'applicant'));
+  'propose-applicant': (cs, a, t, args, bridge) => {
+    const why = str(args, 'why');
+    if (bridge !== null) {
+      bridge.proposeApplicant(t, a.memberId, str(args, 'applicant'), why);
+    } else {
+      cs.proposeApplicant(t, a.memberId, str(args, 'applicant'), why);
+    }
   },
   'sign-out': (cs, a, t, args) => {
     cs.signOut(t, a.memberId, str(args, 'mode') as 'holding' | 'abstaining');

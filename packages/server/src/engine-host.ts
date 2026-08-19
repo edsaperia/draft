@@ -14,6 +14,8 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs
 import { join } from 'node:path';
 import { EngineBridge } from '../../constitution/src/engine-bridge.js';
 import type { BridgeState } from '../../constitution/src/engine-bridge.js';
+import { DEFAULT_TUNING } from '../../constitution/src/adapter.js';
+import type { EngineTuning } from '../../constitution/src/adapter.js';
 import type { LoadedDoc } from './store.js';
 
 interface EngineLogEntry { seq: number; hash: string; prevHash: string; event: { t: number } }
@@ -53,11 +55,13 @@ export function resumeBridge(docsDir: string, doc: LoadedDoc): void {
  * ground shifts, §9.6/Q328), closed when a windowed document's ending
  * passes (the races' close, §4).
  */
-export function driveBridge(docsDir: string, doc: LoadedDoc, t: number): void {
+export function driveBridge(docsDir: string, doc: LoadedDoc, t: number,
+  tuning?: Partial<EngineTuning>): void {
   const d = asEngineDoc(doc);
   if (doc.cs.constitutedAtT === null) return;
   if (d.bridge === null) {
-    d.bridge = new EngineBridge(doc.cs, { t, rngSeed: doc.id });
+    d.bridge = new EngineBridge(doc.cs, { t, rngSeed: doc.id,
+      ...(tuning ? { tuning: { ...DEFAULT_TUNING, ...tuning } } : {}) });
     d.enginePersisted = 0;
   } else if (!d.bridge.engine.closed) {
     d.bridge.sync(t);

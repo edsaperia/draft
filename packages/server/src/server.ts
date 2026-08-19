@@ -10,7 +10,7 @@
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { randomBytes } from 'node:crypto';
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { ConstitutionSession, sha256Hex, view } from '../../constitution/src/index.js';
 import type { LogEntry, TextValue } from '../../constitution/src/index.js';
@@ -100,7 +100,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
   const commit = (doc: LoadedDoc, nowMs: number): number => {
     // the engine rides every commit (Q391): born at constitute, synced with
     // roster truth and ground shifts, closed when the ending passes
-    driveBridge(docsDir, doc, tOf(doc.cs, nowMs));
+    driveBridge(docsDir, doc, tOf(doc.cs, nowMs), cfg.engineTuning);
     const fresh = store.persist(doc);
     if (fresh.length > 0) relay(doc, fresh, nowMs);
     return doc.cs.logEntries().length;
@@ -147,6 +147,18 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
     const seg = path.split('/').filter((s) => s.length > 0);
 
     /* -- creation (§9.7a: the mail is the save) -------------------------- */
+    if (req.method === 'GET' && path === '/api/dev/outbox') {
+      if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
+      const p = join(cfg.dataDir, 'outbox.jsonl');
+      const mails = existsSync(p)
+        ? readFileSync(p, 'utf8').split('\n').filter(Boolean).slice(-30)
+            .map((l) => { try { return JSON.parse(l) as unknown; } catch { return null; } })
+            .filter((m) => m !== null).reverse()
+        : [];
+      json(res, 200, { mails });
+      return;
+    }
+
     if (req.method === 'POST' && path === '/api/docs') {
       if (rateLimited('docs:' + ipOf(req), nowMs)) {
         json(res, 429, { error: 'too many requests — try again shortly' });
@@ -313,6 +325,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         json(res, 200, {
           me: memberId,
           isFounder,
+          devMail: mailer.dev,
           ...(app !== null ? { applicant: { id: app.id, status: app.status,
             name: app.name, motion: app.motion } } : {}),
           title: titleOf(doc.cs),

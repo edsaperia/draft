@@ -1045,8 +1045,13 @@
   const composerOn = (c) => motionsLive() && viewerIsMember() && !c.isGate && !c.ansFor &&
     c.kind !== 'personal' && c.k !== 'text' && settled(c) && !motionOn(c) &&
     !(amFounder() && !membersHold(c) && founderDirect(c));
+  const inviteNeedsWhy = (c) => {
+    const d = (S.draft && S.draft.k === c.k) ? S.draft : null;
+    return !!(d && c.k === 'roster' && / joins the membership$/.test(d.to || '') &&
+      !(d.why || '').trim());
+  };
   const commitFor = (c) => motionCommitHtml(c,
-    (S.draft && S.draft.k === c.k) ? S.draft.to : '',
+    (S.draft && S.draft.k === c.k && !inviteNeedsWhy(c)) ? S.draft.to : '',
     !!myHeldOut() && myHeldOut() !== c.k);
 
   /* **A motion is composed with the setting's own control** (motion-controls),
@@ -1336,7 +1341,7 @@
         : '<span class="chip' + (p.in ? '' : ' pending') + '">' +
           (p.role === 'clerk' ? 'clerk' : 'member') + (p.in ? '' : ' · invited') + '</span>') +
       (p.founder ? '<span class="xdrop"> </span>' : '<button class="xdrop" data-drop="' + i + '">✕</button>') +
-      '</div>').join('') + '</div>';
+      '</div>').join('') + '</div>' + liveApplicantsHtml();
 
   // **The constitution, stated** (Ed, 2026-08-18): who convened it, when it
   // was constituted — the moment judging opens — and every constitutional
@@ -2017,6 +2022,9 @@
             : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
               ' data-motionlane="to" data-ph="The value you are proposing">' + esc(d.to) + '</div></div>') +
           whyLane(d) +
+          (inviteNeedsWhy(c)
+            ? '<p class="setnote"><b>An invitation needs its reasons.</b> Say why they should join — the members deciding on a person are owed the case for them.</p>'
+            : '') +
           (route === 'constitutional'
             ? '<p class="setnote"><b>Free — and one at a time.</b> Each member may have one 🏛️ out at once; withdraw it and it comes back whole. Putting it is a full ten-second hold.' +
               (crownWaits(c) ? ' Carrying sends it to the founder as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>'
@@ -2256,6 +2264,18 @@
       return render(); }
     const ap2 = ev.target.closest('[data-apppic]');
     if (ap2) { S.app.pic = ap2.dataset.apppic; return render(); }
+    const adp = ev.target.closest('[data-admitpick]');
+    if (adp) { S['adm:' + adp.getAttribute('data-admitpick')] = adp.getAttribute('data-v'); return render(); }
+    const adg = ev.target.closest('[data-admitgo]');
+    if (adg && !adg.disabled) { liveJudgeAdmit(adg.getAttribute('data-admitgo')); return; }
+    const apr = ev.target.closest('[data-appropose]');
+    if (apr) {
+      const box = document.querySelector('[data-apwhy="' + apr.getAttribute('data-appropose') + '"]');
+      const why = box ? box.value.trim() : '';
+      if (!why) { if (box) box.focus(); return; } // a second is a case for a person (v0.56)
+      api.cmd('propose-applicant', { applicant: apr.getAttribute('data-appropose'), why });
+      return;
+    }
     const mo2 = ev.target.closest('[data-motion]');
     if (mo2) { S.mAns[S.open] = mo2.dataset.motion; return render(); }
     const mval = ev.target.closest('[data-mval]');
@@ -2629,7 +2649,8 @@
         }
         return m;
       },
-      applicantRecords: () => new Map(),
+      applicantRecords: () => new Map(((self.v.view && self.v.view.applicants) || [])
+        .map((a) => [a.id, a])),
       setSetting: (t, mid, value) => api.cmd('set-setting', { setting: mid, value }),
       delegate: (t, mid) => api.cmd('delegate', { setting: mid }),
       reclaim: (t, mid) => api.cmd('reclaim', { setting: mid }),
@@ -2778,6 +2799,114 @@
     });
   }
 
+  // ---- the live Applicants block (§9.7½ v0.56, Q397) ----------------------
+  // Members see who is asking, in their own words, and judge each admit
+  // motion as the one-candidate race it is: admit them, or keep the
+  // membership as it is. Live only — the fixture has its own applicant
+  // seat and no server to race against.
+  function admitCardOf(apId) {
+    return ((cs && cs.v && cs.v.raceCards) || []).find((x) =>
+      (x.a.setting && x.a.setting.settingId === 'admit:' + apId) ||
+      (x.b.setting && x.b.setting.settingId === 'admit:' + apId));
+  }
+  function liveApplicantsHtml() {
+    if (!cs || !cs.isRemote) return '';
+    const aps = (cs.v.view && cs.v.view.applicants) || [];
+    if (!aps.length) return '';
+    const stp = csState('policy');
+    const policy = (stp && stp.value && stp.value.joinPolicy) || 'invite';
+    const rows = aps.map((ap) => {
+      const nm = ap.name || ap.email;
+      const motion = ap.motion && ((cs.v.view.motions || []).find((m) => m.id === ap.motion) || null);
+      const why = (motion && motion.why) || ap.words || '';
+      const rc = admitCardOf(ap.id);
+      const pick = S['adm:' + ap.id] || null;
+      let tail = '';
+      if (ap.status === 'admitted') tail = '<span class="chip">member</span>';
+      else if (ap.status === 'refused') tail = '<span class="chip pending">not admitted</span>';
+      else if (ap.status === 'submitted' && policy === 'proposed' && !motion) {
+        tail = '<span class="chip pending">waiting for a member to propose them</span>' +
+          (viewerIsMember()
+            ? '<div style="display:flex;gap:.4rem;margin-top:.35rem;align-items:center">' +
+              '<input data-apwhy="' + ap.id + '" placeholder="Why should they join?" style="flex:1;min-width:10rem">' +
+              '<button class="btn" data-appropose="' + ap.id + '" title="Costs one ✏️, returned in full if withdrawn">✏️ Propose them</button></div>'
+            : '');
+      } else if (motion && motion.status === 'running') {
+        tail = rc
+          ? '<div style="display:flex;gap:.4rem;margin-top:.35rem;flex-wrap:wrap;align-items:center">' +
+            '<button class="lanepick" aria-pressed="' + (pick === 'admit') + '" data-admitpick="' + ap.id + '" data-v="admit"><span class="dot"></span><span>Admit</span></button>' +
+            '<button class="lanepick" aria-pressed="' + (pick === 'stands') + '" data-admitpick="' + ap.id + '" data-v="stands"><span class="dot"></span><span>Keep the membership as it is</span></button>' +
+            '<button class="lanepick" aria-pressed="' + (pick === 'either') + '" data-admitpick="' + ap.id + '" data-v="either"><span class="dot"></span><span>Indifferent</span></button>' +
+            '<button class="btn btn-approve glyphbtn" data-admitgo="' + ap.id + '"' + (pick ? '' : ' disabled') + '>' + TICK + '</button></div>'
+          : '<span class="chip">before the members — you have judged it</span>';
+      }
+      return '<div class="rperson" style="display:block"><span class="nm">' + esc(nm) +
+        ' <span class="chip pending">applicant</span></span><br>' +
+        '<span class="em">' + esc(ap.email) + (why ? ' · <i>' + esc(why) + '</i>' : '') + '</span>' +
+        (tail ? '<div style="margin-top:.3rem">' + tail + '</div>' : '') + '</div>';
+    }).join('');
+    return '<div class="roster clauselist" style="margin-top:.5rem">' +
+      '<div class="rechead">Applicants</div>' + rows + '</div>';
+  }
+  // The admit judgment is the same pairwise act as any ordinary motion's
+  // (liveJudge): admit prefers the candidate side, keep the incumbent.
+  function liveJudgeAdmit(apId) {
+    const rc = admitCardOf(apId);
+    if (!rc) { console.warn('[live] no admit card served for', apId); return; }
+    const pick = S['adm:' + apId];
+    if (!pick) return;
+    const incSide = String(rc.a.id).indexOf('inc:') === 0 ? 'a'
+      : String(rc.b.id).indexOf('inc:') === 0 ? 'b' : null;
+    const outcome = pick === 'either' ? 'tie'
+      : pick === 'stands' ? (incSide || 'tie')
+      : (incSide === 'a' ? 'b' : 'a');
+    delete S['adm:' + apId];
+    api.cmd('judge-race', { a: rc.a.id, b: rc.b.id, outcome });
+  }
+
+  // ---- the dev inbox as a modal (Ed, 2026-08-19) --------------------------
+  // QA plays every seat, so the magic links belong on the screen, not in a
+  // console. Off the design system on purpose, like the dev dropdown: a
+  // stagehand, not a member of the cast. The button appears only where
+  // /api/dev/outbox exists — dev mail mode on a live server — so neither
+  // production nor the static fixture ever shows it.
+  function devInboxButton() {
+    fetch('/api/dev/outbox').then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (!d || document.getElementById('devmailbtn')) return;
+      const b = document.createElement('button');
+      b.id = 'devmailbtn';
+      b.textContent = '📬 outbox';
+      b.style.cssText = 'position:fixed;top:64px;left:10px;z-index:60;font:12px ui-monospace,monospace;border:1px dashed #999;background:#fff;padding:.3rem .6rem;cursor:pointer';
+      b.onclick = openDevInbox;
+      document.body.appendChild(b);
+    }).catch(() => {});
+  }
+  function openDevInbox() {
+    fetch('/api/dev/outbox').then((r) => r.json()).then((d) => {
+      const old = document.getElementById('devoutbox');
+      if (old) old.remove();
+      const wrap = document.createElement('div');
+      wrap.id = 'devoutbox';
+      wrap.style.cssText = 'position:fixed;inset:0;background:rgba(20,20,20,.45);z-index:70;overflow:auto;padding:6vh 1rem';
+      const mails = ((d && d.mails) || []).map((m) =>
+        '<div style="border-bottom:1px solid #ddd;padding:.7rem 0">' +
+        '<div style="color:#666;font-size:12px">' + esc(new Date(m.at).toLocaleTimeString()) + ' · to ' + esc(m.to) + '</div>' +
+        '<div style="font-weight:700;margin:.15rem 0">' + esc(m.subject) + '</div>' +
+        '<div style="white-space:pre-wrap;font-size:13px;color:#333">' + esc(m.text) + '</div>' +
+        (m.link ? '<a href="' + esc(m.link) + '" style="display:inline-block;margin-top:.4rem;background:#1a73e8;color:#fff;text-decoration:none;padding:.4rem .8rem;border-radius:3px">Follow the magic link →</a>' : '') +
+        '</div>').join('') || '<div style="color:#666;padding:.7rem 0">The outbox is empty — nothing has been sent yet.</div>';
+      wrap.innerHTML = '<div style="max-width:38rem;margin:0 auto;background:#fff;font-family:Arial,Helvetica,sans-serif;padding:1rem 1.2rem;border-radius:4px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">' +
+        '<b style="font-family:ui-monospace,monospace">📬 dev outbox — every mail this server would have sent</b>' +
+        '<button id="devoutclose" style="border:1px dashed #999;background:#fff;cursor:pointer;padding:.2rem .5rem">✕</button></div>' +
+        mails + '</div>';
+      wrap.addEventListener('click', (e) => {
+        if (e.target === wrap || e.target.id === 'devoutclose') wrap.remove();
+      });
+      document.body.appendChild(wrap);
+    }).catch(() => {});
+  }
+
   function liveLogin() {
     document.body.innerHTML = '<div style="font-family:ui-monospace,monospace;max-width:26rem;margin:18vh auto;border:1px dashed #999;padding:1.2rem">' +
       '<div style="font-weight:600;margin-bottom:.4rem">Log in</div>' +
@@ -2785,6 +2914,7 @@
       '<input id="lemail" type="email" style="width:100%;padding:.45rem" placeholder="you@example.com">' +
       '<button id="lgo" style="margin-top:.5rem;padding:.45rem .9rem">Send the link</button>' +
       '<div id="lmsg" style="margin-top:.6rem"></div></div>';
+    devInboxButton(); // the login screen is where the link is needed most
     document.getElementById('lgo').onclick = () => {
       api.post('/api/d/' + LIVESLUG + '/login',
         { email: document.getElementById('lemail').value.trim() })
@@ -2799,6 +2929,7 @@
   function liveBoot() {
     const dev = document.querySelector('.devswitch');
     if (dev) dev.style.display = 'none';
+    devInboxButton();
     fetch('/api/d/' + LIVESLUG + '/view').then((r) => {
       if (r.status === 401) { liveLogin(); return null; }
       return r.json();
@@ -2832,6 +2963,7 @@
   function birthBoot() {
     const dev = document.querySelector('.devswitch');
     if (dev) dev.style.display = 'none';
+    devInboxButton();
     // pasted text syncs against the pending creation (§9.7a v0.55)
     let deb = null;
     prose.addEventListener('input', () => {

@@ -1539,6 +1539,9 @@ var CONSTITUTION = (() => {
         route = "constitutional";
       } else if (payload.kind === "invite") {
         this.requireEmailFree(payload.email);
+        if (why === void 0 || why.trim() === "") {
+          throw new Error("an invitation is proposed with its reasons — the members deciding on a person are owed the case for them (§9.7½ v0.56)");
+        }
         route = "constitutional";
       } else if (payload.kind === "remove") {
         const target = this.members.get(payload.member);
@@ -1861,8 +1864,9 @@ var CONSTITUTION = (() => {
         });
       }
     }
-    /** A second is a proposed application (§9.7½, Q348a): the member stakes the ✏️. */
-    proposeApplicant(t, member, applicant) {
+    /** A second is a proposed application (§9.7½, Q348a): the member stakes the ✏️
+     *  and writes the case (v0.56: the members deciding on a person are owed it). */
+    proposeApplicant(t, member, applicant, why) {
       if (this.joinPolicy() !== "proposed") {
         throw new Error("this document's applications are not proposed (§9.7½)");
       }
@@ -1870,6 +1874,9 @@ var CONSTITUTION = (() => {
       if (!m || !inE(m)) throw new Error(`'${member}' is not an arrived member`);
       const a = this.applicants.get(applicant);
       if (!a || a.status !== "submitted") throw new Error("no submitted application to propose");
+      if (why === void 0 || why.trim() === "") {
+        throw new Error("a second is proposed with its reasons — the rationale is required (§9.7½ v0.56)");
+      }
       this.emit({ type: "application-proposed", t, applicant, by: member });
       this.emit({
         type: "motion-opened",
@@ -1878,7 +1885,8 @@ var CONSTITUTION = (() => {
         by: member,
         payload: { kind: "admit", applicant },
         route: "ordinary",
-        stake: 1
+        stake: 1,
+        why
       });
     }
     // -------------------------------------------------------------------------
@@ -2100,6 +2108,19 @@ var CONSTITUTION = (() => {
         myAnswer: rec.answers.get(member) ?? null
       });
     }
+    const applicants = [];
+    for (const a of s.applicantRecords().values()) {
+      if (a.status === "started") continue;
+      applicants.push({
+        id: a.id,
+        email: a.email,
+        name: a.name,
+        picture: a.picture,
+        words: a.words,
+        status: a.status,
+        motion: a.motion
+      });
+    }
     const convenorId = s.convenorRecord().id;
     const members = [];
     for (const rec of s.memberRecords().values()) {
@@ -2124,6 +2145,7 @@ var CONSTITUTION = (() => {
       resolutions,
       settings,
       members,
+      applicants,
       owedOks: me ? [...me.okOwed] : [],
       motions,
       myHeldMotion,

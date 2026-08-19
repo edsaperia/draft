@@ -35,6 +35,8 @@ async function boot(): Promise<Booted> {
     resendApiKey: null,
     mailFrom: 'test <t@example.org>',
     secret: 'test-secret',
+    // the test adopts twice inside one second; a room would be paced
+    engineTuning: { cooldownMs: 0 },
   };
   const draft = createDraftServer(cfg);
   await new Promise<void>((r) => draft.server.listen(0, '127.0.0.1', r));
@@ -228,6 +230,42 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
       };
     expect(deeView.applicant.status).toBe('submitted');
     expect(deeView.view.motions.some((m) => m.payload.kind === 'admit')).toBe(true);
+
+    // -- the admit motion is its own race (§9.7½ v0.56, Q397): one
+    // candidate against the membership as it stands, served to members,
+    // adopted at the bar, and dee is a member -------------------------------
+    const boView = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: bo } })).json() as {
+        view: { applicants: Array<{ email: string; name: string | null }> };
+        raceCards: Array<{ a: { id: string; setting?: { settingId: string } };
+          b: { id: string; setting?: { settingId: string } } }>;
+      };
+    // the members see who is asking, in their own words (v0.56 view)
+    expect(boView.view.applicants.some((a2) => a2.email === 'dee@example.org')).toBe(true);
+    const admitCard = boView.raceCards.find((c) =>
+      (c.a.setting?.settingId ?? '').startsWith('admit:') ||
+      (c.b.setting?.settingId ?? '').startsWith('admit:'));
+    expect(admitCard).toBeTruthy();
+    const admitSide = (admitCard!.a.setting?.settingId ?? '').startsWith('admit:') &&
+      !admitCard!.a.id.startsWith('inc:') ? 'a' : 'b';
+    await cmd(bo, 'judge-race',
+      { a: admitCard!.a.id, b: admitCard!.b.id, outcome: admitSide });
+    const live2 = booted[booted.length - 1]!.draft.store.bySlug(created.slug)!;
+    if (![...live2.cs.memberRecords().values()].some((m) => m.email === 'dee@example.org')) {
+      // the floor may want a second member's judgment
+      const cyView2 = await (await fetch(`${base}/api/d/${created.slug}/view`,
+        { headers: { cookie: cy } })).json() as typeof boView;
+      const c2 = cyView2.raceCards.find((c) =>
+        (c.a.setting?.settingId ?? '').startsWith('admit:') ||
+        (c.b.setting?.settingId ?? '').startsWith('admit:'))!;
+      const s2 = (c2.a.setting?.settingId ?? '').startsWith('admit:') &&
+        !c2.a.id.startsWith('inc:') ? 'a' : 'b';
+      await cmd(cy, 'judge-race', { a: c2.a.id, b: c2.b.id, outcome: s2 });
+    }
+    const deeMember = [...live2.cs.memberRecords().values()]
+      .find((m) => m.email === 'dee@example.org');
+    expect(deeMember).toBeDefined();
+    expect(deeMember!.arrivedAtT).not.toBeNull();
     // a member's address is told to log in instead (§9.7½)
     const dupe = await post(base, `/api/d/${created.slug}/apply`,
       { email: 'bo@example.org' });
