@@ -20,6 +20,8 @@ import { DocStore, uniqueSlug } from './store.js';
 import type { LoadedDoc } from './store.js';
 import { Stash } from './stash.js';
 import { MAILS, makeMailer } from './mailer.js';
+import { asEngineDoc, driveBridge, resumeBridge } from './engine-host.js';
+import { ParticipantApi } from '../../engine-core/src/participant-api.js';
 import type { Mail, Mailer } from './mailer.js';
 import { runCommand } from './commands.js';
 
@@ -37,6 +39,8 @@ export interface DraftServer {
 export function createDraftServer(cfg: ServerConfig): DraftServer {
   const store = new DocStore(cfg.dataDir);
   store.loadAll();
+  const docsDir = join(cfg.dataDir, 'docs');
+  for (const doc of store.all()) resumeBridge(docsDir, doc);
   const auth = new Auth(cfg.secret, cfg.dataDir);
   const mailer = makeMailer(cfg);
   const stash = new Stash(cfg.dataDir);
@@ -84,9 +88,31 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
   };
 
   const commit = (doc: LoadedDoc, nowMs: number): number => {
+    // the engine rides every commit (Q391): born at constitute, synced with
+    // roster truth and ground shifts, closed when the ending passes
+    driveBridge(docsDir, doc, tOf(doc.cs, nowMs));
     const fresh = store.persist(doc);
     if (fresh.length > 0) relay(doc, fresh, nowMs);
     return doc.cs.logEntries().length;
+  };
+
+  /** The member's race cards and wallet (Q391) — empty until races run. */
+  const raceView = (doc: LoadedDoc, memberId: string, nowMs: number):
+    { raceCards: unknown[]; wallet: number | null } => {
+    const ed = asEngineDoc(doc);
+    if (ed.bridge === null || ed.bridge.engine.closed) {
+      return { raceCards: [], wallet: null };
+    }
+    try {
+      const t = tOf(doc.cs, nowMs);
+      const api = new ParticipantApi(ed.bridge.engine, memberId);
+      return {
+        raceCards: api.nextCards(3, t),
+        wallet: ed.bridge.engine.balance(memberId, t),
+      };
+    } catch {
+      return { raceCards: [], wallet: null }; // a clerk, or a seat out of E
+    }
   };
 
   const tick = (nowMs: number = Date.now()): void => {
@@ -233,6 +259,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
           // the unconfirmed starting text (§9.7a v0.55): readable by any
           // member — the charter is what the founding questions are about
           provisionalText: doc.cs.textConfirmed ? null : doc.provisional,
+          ...raceView(doc, memberId, nowMs),
           view: view(doc.cs, memberId),
         });
         return;
@@ -244,7 +271,8 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         const t = tOf(doc.cs, nowMs);
         const me = doc.cs.memberRecords().get(memberId);
         if (me?.lapsed) doc.cs.memberReturn(t, memberId); // any act revives
-        const result = runCommand(doc.cs, { memberId, isFounder }, t, cmd, args);
+        const result = runCommand(doc.cs, { memberId, isFounder }, t, cmd, args,
+          asEngineDoc(doc).bridge);
         // confirming the starting text supersedes the provisional draft
         if (doc.cs.textConfirmed && doc.provisional !== null) {
           store.setProvisional(doc, null);

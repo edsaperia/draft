@@ -7,6 +7,7 @@
  * call and says who may make it.
  */
 import type { ConstitutionSession } from '../../constitution/src/index.js';
+import type { EngineBridge } from '../../constitution/src/engine-bridge.js';
 import type {
   MotionAnswer, MotionPayload, Power, SettingId, SettingValue,
 } from '../../constitution/src/index.js';
@@ -17,7 +18,8 @@ export interface Actor {
 }
 
 type Args = Record<string, unknown>;
-type Handler = (cs: ConstitutionSession, actor: Actor, t: number, args: Args) => unknown;
+type Handler = (cs: ConstitutionSession, actor: Actor, t: number, args: Args,
+  bridge: EngineBridge | null) => unknown;
 
 const str = (args: Args, key: string): string => {
   const v = args[key];
@@ -82,16 +84,33 @@ const HANDLERS: Record<string, Handler> = {
   'give-ok': (cs, a, t, args) => {
     cs.giveOk(t, a.memberId, str(args, 'setting') as SettingId);
   },
-  'open-motion': (cs, a, t, args) => {
+  'open-motion': (cs, a, t, args, bridge) => {
     const why = typeof args.why === 'string' ? args.why : undefined;
-    return cs.openMotion(t, a.memberId, args.payload as MotionPayload, why);
+    const payload = args.payload as MotionPayload;
+    // a live document's set-motions go through the bridge (Q391): an
+    // ordinary route stakes and races in the engine; a constitutional one
+    // opens the unanimity vote exactly as before
+    if (bridge !== null && payload.kind === 'set') {
+      return bridge.openSetMotion(t, a.memberId, payload.setting, payload.value, why).motion;
+    }
+    return cs.openMotion(t, a.memberId, payload, why);
   },
   'answer-motion': (cs, a, t, args) => {
     cs.answerMotion(t, a.memberId, str(args, 'motion'),
       str(args, 'answer') as MotionAnswer);
   },
-  'withdraw-motion': (cs, a, t, args) => {
-    cs.withdrawMotion(t, a.memberId, str(args, 'motion'));
+  'withdraw-motion': (cs, a, t, args, bridge) => {
+    if (bridge !== null) bridge.withdrawMotion(t, a.memberId, str(args, 'motion'));
+    else cs.withdrawMotion(t, a.memberId, str(args, 'motion'));
+  },
+  /* -- judging a served race card (Q391): ids come from the view's cards - */
+  'judge-race': (cs, a, t, args, bridge) => {
+    if (bridge === null) throw new Error('nothing is racing yet');
+    const outcome = str(args, 'outcome');
+    if (outcome !== 'a' && outcome !== 'b' && outcome !== 'tie') {
+      throw new Error("outcome must be 'a', 'b' or 'tie'");
+    }
+    bridge.judge(t, a.memberId, str(args, 'a'), str(args, 'b'), outcome);
   },
   'sign-out': (cs, a, t, args) => {
     cs.signOut(t, a.memberId, str(args, 'mode') as 'holding' | 'abstaining');
@@ -104,8 +123,9 @@ export function runCommand(
   t: number,
   cmd: string,
   args: Args,
+  bridge: EngineBridge | null = null,
 ): unknown {
   const handler = HANDLERS[cmd];
   if (!handler) throw new Error(`unknown command '${cmd}'`);
-  return handler(cs, actor, t, args);
+  return handler(cs, actor, t, args, bridge);
 }

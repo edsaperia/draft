@@ -13,6 +13,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 import { DocStore } from '../src/store.js';
+import { asEngineDoc, resumeBridge } from '../src/engine-host.js';
 
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
 
@@ -162,21 +163,51 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     const raw = JSON.stringify(after.view);
     expect(raw).not.toContain('bo@example.org'); // emails are identity, not display
 
-    // -- a motion over HTTP ----------------------------------------------
+    // -- a motion over HTTP races in the engine (Q391) --------------------
     const motion = await cmd(bo, 'open-motion', {
       payload: { kind: 'set', setting: 'ending', value: { endsAtMs: ends + 3600_000 } },
       why: 'a little longer',
     }) as string;
     expect(typeof motion).toBe('string');
 
-    // -- restart: the log on disk replays to the same document ------------
+    // cy is served the race as a card: the standing value against bo's
+    const cyView = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: cy } })).json() as {
+        wallet: number | null;
+        raceCards: Array<{ kind: string;
+          a: { id: string; setting?: { settingId: string; value: { endsAtMs: number } } };
+          b: { id: string; setting?: { settingId: string; value: { endsAtMs: number } } };
+        }>;
+      };
+    expect(cyView.wallet).not.toBeNull();
+    const card = cyView.raceCards.find((c) =>
+      c.a.setting?.settingId === 'ending' || c.b.setting?.settingId === 'ending');
+    expect(card).toBeTruthy();
+    const proposedSide =
+      card!.a.setting?.value.endsAtMs === ends + 3600_000 ? 'a' : 'b';
+
+    // cy prefers the proposed value: with bo's own preference that clears
+    // the floor (F = 2 of 3), the race adopts, the seam adjudicates, and
+    // the constitution applies the value — the setting actually moved
+    await cmd(cy, 'judge-race',
+      { a: card!.a.id, b: card!.b.id, outcome: proposedSide });
     const live = booted[booted.length - 1]!.draft.store.bySlug(created.slug)!;
+    expect(live.cs.motionRecords().get(motion)!.status).toBe('carried');
+    expect(live.cs.settingState('ending').value)
+      .toEqual({ endsAtMs: ends + 3600_000 });
+
+    // -- restart: both logs on disk replay to the same state --------------
     const reloaded = new DocStore(dataDir);
     reloaded.loadAll();
     const doc = reloaded.bySlug(created.slug);
     expect(doc).not.toBeNull();
     expect(doc!.cs.rollingHash()).toBe(live.cs.rollingHash());
     expect(doc!.cs.constitutedAtT).not.toBeNull();
+    resumeBridge(join(dataDir, 'docs'), doc!);
+    const liveBridge = asEngineDoc(live).bridge!;
+    const backBridge = asEngineDoc(doc!).bridge!;
+    expect(backBridge.engine.rollingHash()).toBe(liveBridge.engine.rollingHash());
+    expect(backBridge.engine.standing('ending')).toEqual({ endsAtMs: ends + 3600_000 });
   }, 30_000);
 });
 

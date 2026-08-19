@@ -31,7 +31,7 @@
  */
 
 import { Session as EngineSession } from '../../engine-core/src/session.js';
-import type { ConstitutionAmendment } from '../../engine-core/src/types.js';
+import type { ConstitutionAmendment, LogEntry as EngineLogEntry } from '../../engine-core/src/types.js';
 import type { Outcome } from '../../engine-core/src/ranking/types.js';
 import { stableStringify } from './hash.js';
 import { CATALOGUE, entryOf, motionRouteOf } from './catalogue.js';
@@ -78,6 +78,17 @@ function engineChangesFor(
   }
 }
 
+/**
+ * What a host must keep beside the engine log to resume a bridge: the
+ * cs-log cursor sync() has consumed to, and the motion ↔ candidate
+ * pairing (which lives in no log — the engine does not know motions and
+ * the constitution does not know candidates).
+ */
+export interface BridgeState {
+  cursor: number;
+  motionCandidates: Record<string, string>;
+}
+
 export class EngineBridge {
   readonly engine: EngineSession;
   private readonly cs: ConstitutionSession;
@@ -88,12 +99,30 @@ export class EngineBridge {
 
   constructor(
     cs: ConstitutionSession,
-    opts: { t: number; rngSeed: string; tuning?: EngineTuning },
+    opts: {
+      t: number; rngSeed: string; tuning?: EngineTuning;
+      /** Resume from a persisted engine log + bridge state (Q391). */
+      resume?: { log: EngineLogEntry[] } & BridgeState;
+    },
   ) {
     if (cs.constitutedAtT === null) {
       throw new Error('the engine starts where the constitution is settled (§9.0b)');
     }
     this.cs = cs;
+    if (opts.resume !== undefined) {
+      this.engine = EngineSession.replay([...opts.resume.log]);
+      for (const entry of opts.resume.log) {
+        const e = entry.event;
+        if (e.type === 'opened') for (const p of e.roster) this.known.add(p.id);
+        else if (e.type === 'participant-added') this.known.add(e.participant.id);
+      }
+      for (const [m, c] of Object.entries(opts.resume.motionCandidates)) {
+        this.candidateOfMotion.set(m, c);
+        this.motionOfCandidate.set(c, m);
+      }
+      this.cursor = opts.resume.cursor;
+      return;
+    }
     const { constitution } = toEngineConstitution(
       cs,
       opts.tuning ?? DEFAULT_TUNING,
@@ -193,6 +222,14 @@ export class EngineBridge {
       this.cs.adjudicateOrdinaryMotion(t, motion, carried.has(cand) ? 'carried' : 'held');
     }
     return render;
+  }
+
+  /** What to persist beside the engine log (see BridgeState). */
+  state(): BridgeState {
+    return {
+      cursor: this.cursor,
+      motionCandidates: Object.fromEntries(this.candidateOfMotion),
+    };
   }
 
   /**
