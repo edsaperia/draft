@@ -1340,8 +1340,14 @@ var CONSTITUTION = (() => {
       if (!st.powers[power]) {
         throw new Error(`the ${power} power on '${setting}' is not held`);
       }
-      if (power === "unilateral" && !this.textConfirmedFlag && this.constitutedT === null) {
-        throw new Error("giving up unilateral change waits until proposing opens (§9.7 v0.54)");
+      if (power === "unilateral" && this.constitutedT === null) {
+        if (!st.powers.assent && entry.delegable) {
+          this.emit({ type: "setting-delegated", t, setting });
+          return;
+        }
+        if (!this.textConfirmedFlag) {
+          throw new Error("giving up unilateral change waits until proposing opens (§9.7 v0.54)");
+        }
       }
       this.emit({ type: "power-relinquished", t, setting, power });
     }

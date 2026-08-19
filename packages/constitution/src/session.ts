@@ -734,8 +734,20 @@ export class ConstitutionSession {
     if (!st.powers[power]) {
       throw new Error(`the ${power} power on '${setting}' is not held`);
     }
-    if (power === 'unilateral' && !this.textConfirmedFlag && this.constitutedT === null) {
-      throw new Error('giving up unilateral change waits until proposing opens (§9.7 v0.54)');
+    if (power === 'unilateral' && this.constitutedT === null) {
+      // Q403 (Ed, 2026-08-19): delegation IS the state of holding no
+      // powers, so pre-start, giving up the second power on a delegable
+      // setting is delegation — it opens the blind founding question like
+      // the verb always did. Giving up unilateral change *alone* stays
+      // barred until proposing opens (the assent-only state is inert
+      // before the start, §9.7 v0.54).
+      if (!st.powers.assent && entry.delegable) {
+        this.emit({ type: 'setting-delegated', t, setting });
+        return;
+      }
+      if (!this.textConfirmedFlag) {
+        throw new Error('giving up unilateral change waits until proposing opens (§9.7 v0.54)');
+      }
     }
     this.emit({ type: 'power-relinquished', t, setting, power });
   }

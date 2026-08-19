@@ -59,6 +59,73 @@ window.SETUP = (function () {
     '<div class="avpick">' + FACE_TONES.map((tn) =>
       '<button class="avopt" data-tone="' + tn + '" aria-pressed="' + (FACE_TONE === tn) + '"' +
       ' title="Skin tone"><span class="av big emoji">\u270B' + tn + '</span></button>').join('') + '</div>';
+  // Any emoji may be a face EXCEPT the surface's own vocabulary (Ed,
+  // 2026-08-19): a member whose face is ✏️ would turn every wallet and
+  // compose button into a possible mention of them. SURFACE_EMOJI is a scan
+  // of setup.html + setup.js + cards.js + session-view.html for pictographic
+  // characters (variation selectors stripped; re-run the scan from the
+  // 2026-08-19 commit when the furniture changes), plus 🔧/⚙ arriving with
+  // the governance tabs; the reserved set is that minus the offered faces.
+  // Tones are stripped before the test, so ✋🏽 is as reserved as ✋.
+  const SURFACE_EMOJI = ('↔ ⏩ ⏰ ⏱ ⏳ ☑ ⚔ ⚖ ✅ ✉ ✋ ✍ ✏ ✒ ✔ ✖ ❄ ❌ ❎ ❓ ' +
+    '🌍 🌶 🎩 🏛 🏷 👁 👍 👑 👤 👥 💡 💤 📄 📈 📝 📧 📬 📯 🔄 🔗 ' +
+    '🔥 🔧 ⚙ 🖼 🗑 🗝 🤖 🤝 🪪 ' +
+    '👦 👧 👨 👩 👱 👳 👴 👵 👶 🧑 🧒 🧓 🧔').split(' ');
+  const normEmoji = (s) => s.replace(/[\u{FE0F}\u{FE0E}\u{1F3FB}-\u{1F3FF}]/gu, '');
+  const RESERVED_EMOJI = new Set(SURFACE_EMOJI.filter((g) =>
+    !FACE_EMOJI.some((f) => normEmoji(f) === g)));
+  // Two members cannot wear one emoji — first come, first served (Ed,
+  // 2026-08-19). Who already wears what is page state, so the test is a
+  // hook the page installs (the wirePicDrop pattern): ('e'+emoji) → the
+  // holder's name, or null. Exact match on the stored string — 👩🏻 and
+  // 👩🏽 are visibly different people and both claimable.
+  let FACE_TAKEN = () => null;
+  const setFaceTaken = (fn) => { FACE_TAKEN = fn; };
+  const faceTakenBy = (e2) => FACE_TAKEN(e2);
+  // one grapheme, pictographic, not furniture — or 'reserved', or null
+  const emojiFaceOf = (raw) => {
+    const s = raw.trim();
+    if (!s) return null;
+    const segs = typeof Intl !== 'undefined' && Intl.Segmenter
+      ? [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(s)].map((x) => x.segment)
+      : [s];
+    if (segs.length !== 1) return null;
+    const g = segs[0];
+    if (!/\p{Extended_Pictographic}/u.test(g)) return null;
+    if (RESERVED_EMOJI.has(normEmoji(g))) return 'reserved';
+    return g;
+  };
+  const anyEmojiRow = (attr) =>
+    '<div class="eyebrow fieldlab">Or any emoji</div>' +
+    '<div class="freemoji"><input class="emojin" ' + attr + '="1" maxlength="20"' +
+    ' placeholder="🦉 🌵 🫖…">' +
+    '<span class="emojinote"></span></div>';
+  const faceBtn = (f2, ownPic, dataAttr, n) => {
+    const own = (ownPic || '') === 'e' + f2;
+    const hol = own ? null : FACE_TAKEN('e' + f2);
+    return hol
+      ? '<button class="avopt taken" disabled title="Taken — ' + esc(hol) + ' got there first">' +
+        avHtml({ n, pic: 'e' + f2 }, 'big') + '</button>'
+      : '<button class="avopt" ' + dataAttr + '="' + 'e' + f2 + '" aria-pressed="' + own + '"' +
+        ' title="An emoji face">' + avHtml({ n, pic: 'e' + f2 }, 'big') + '</button>';
+  };
+  // Mirrors wirePicDrop: the machinery lives here, where the picked value
+  // lands stays the caller's.
+  const wireFreeEmoji = (attr, onPick) => {
+    document.addEventListener('input', (ev) => {
+      if (!ev.target.matches || !ev.target.matches('[' + attr + ']')) return;
+      const box = ev.target.closest('.freemoji');
+      const note = box && box.querySelector('.emojinote');
+      const g = emojiFaceOf(ev.target.value);
+      const holder = g && g !== 'reserved' ? FACE_TAKEN('e' + g) : null;
+      const msg = g === 'reserved'
+        ? 'That one is part of the furniture — the marks docs.vote itself uses are reserved.'
+        : holder ? 'Taken — ' + holder + ' got there first.' : '';
+      if (note) note.textContent = msg;
+      if (box) box.classList.toggle('bad', msg !== '');
+      if (g && g !== 'reserved' && !holder) onPick(g);
+    });
+  };
   const avatarOptions = () =>
     [{ id: '' }].concat(GROUNDS.map((g, i) => ({ id: 'c' + i })), MARKS.map((m, i) => ({ id: 'm' + i })));
 
@@ -239,12 +306,22 @@ window.SETUP = (function () {
         // heading — the rail keeps the question titles; the document
         // states rules — and ctx.decisionLine supplies the sentence from
         // its reader's side of the table.
-        const para = (c) => (ctx.open === c.k
-          ? '<div class="cpara open">' + cardFor({ ...g, cards: [c] }) + '</div>'
-          : c.inDoc ? ''  // the document displays this itself (the title heading)
-          : '<div class="cpara"><span class="chipcol">' + chipHtml(c, ctx, {}) + '</span>' +
-            '<div class="cptext"><p class="cpv">' +
-            (ctx.decisionLine ? ctx.decisionLine(c) : ctx.summary(c)) + '</p></div></div>');
+        // **The governance tab group** (403, Ed 2026-08-19): a setting may
+        // carry more than its own tab — ctx.chipsFor names the pile (the
+        // value in front, the power tabs beneath), and opening any of them
+        // opens its card at the setting's own paragraph with the whole
+        // group as the strip.
+        const para = (c) => {
+          const chips = ctx.chipsFor ? ctx.chipsFor(c) : [c];
+          const openHere = ctx.open === c.k || chips.some((x) => x.k === ctx.open);
+          return openHere
+            ? '<div class="cpara open">' + cardFor({ ...g, cards: chips }) + '</div>'
+            : c.inDoc ? ''  // the document displays this itself (the title heading)
+            : '<div class="cpara">' + (chips.length > 1 ? pileHtml(chips, ctx)
+              : '<span class="chipcol">' + chipHtml(c, ctx, {}) + '</span>') +
+              '<div class="cptext"><p class="cpv">' +
+              (ctx.decisionLine ? ctx.decisionLine(c) : ctx.summary(c)) + '</p></div></div>';
+        };
         const withTasks = (c) => para(c) +
           (ctx.tasksFor ? ctx.tasksFor(c).map(para).join('') : '');
         const H = { para, chip: (c) => chipHtml(c, ctx, {}),
@@ -578,9 +655,9 @@ window.SETUP = (function () {
       avHtml({ n: me.n, pic: o.id }, 'big') + '</button>').join('') + '</div>' +
     '<div class="eyebrow fieldlab">Or a face</div>' +
     faceToneRow() +
-    '<div class="avpick">' + FACE_EMOJI.map((f0) => { const f2 = faceToned(f0); return (
-      '<button class="avopt" data-pic="' + 'e' + f2 + '" aria-pressed="' + ((me.pic || '') === 'e' + f2) + '"' +
-      ' title="An emoji face">' + avHtml({ n: me.n, pic: 'e' + f2 }, 'big') + '</button>'); }).join('') + '</div>' +
+    '<div class="avpick">' + FACE_EMOJI.map((f0) =>
+      faceBtn(faceToned(f0), me.pic, 'data-pic', me.n)).join('') + '</div>' +
+    anyEmojiRow('data-picfree') +
     '<p class="setnote">Initials are a real answer, not a placeholder — most rooms run on them. Whichever you choose is how you appear in the room, and it is not authorship: whether your name sits beside a <i>proposal</i> is the disclosure rule, not this.</p>';
 
   /* ---- ordinary and constitutional ----------------------------------------
@@ -1060,6 +1137,7 @@ window.SETUP = (function () {
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
     nameBody, pictureBody, drawWire, opt, num, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
+    anyEmojiRow, wireFreeEmoji, emojiFaceOf, setFaceTaken, faceTakenBy, faceBtn,
     KIND, kindNote, motionBody, motionReopen, routeFor, motionCommitHtml,
     slider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal };
 })();

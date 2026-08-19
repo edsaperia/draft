@@ -213,3 +213,43 @@ describe('replay (§11)', () => {
     expect(r.settingState('title').powers).toEqual(s.settingState('title').powers);
   });
 });
+
+describe('delegation is the state of holding no powers (Q403, Ed 2026-08-19)', () => {
+  it('pre-start, giving up the second power on a delegable setting IS delegation', () => {
+    const s = ConstitutionSession.open({
+      title: 'T', slug: 't',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+    }, 0);
+    s.setSetting(1, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
+    s.relinquish(2, 'rate', 'assent');
+    // the second power going pre-start opens the blind founding question,
+    // exactly as the delegate verb always did — one state, one meaning
+    s.relinquish(3, 'rate', 'unilateral');
+    const st = s.settingState('rate');
+    expect(st.holder).toBe('members');
+    expect(st.powers).toEqual({ unilateral: false, assent: false });
+    expect(st.collecting).toBe(true);
+    expect(st.value).toBeNull();
+  });
+
+  it('pre-start, unilateral alone still waits — the assent-only state is inert', () => {
+    const s = ConstitutionSession.open({
+      title: 'T', slug: 't',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+    }, 0);
+    // assent still held: not a delegation, and proposing has not opened
+    expect(() => s.relinquish(1, 'rate', 'unilateral'))
+      .toThrow(/waits until proposing opens/);
+  });
+
+  it('post-start, giving up the second power hands the settled value over', () => {
+    const { s } = constituted();
+    s.relinquish(3, 'rate', 'assent');
+    s.relinquish(4, 'rate', 'unilateral');
+    const st = s.settingState('rate');
+    expect(st.holder).toBe('members');
+    // no question to open past the start: the value stands, only the
+    // holder changed — the same hand-over the delegate verb performs
+    expect(st.value).toEqual({ grant: 4, cap: 8, dripMinutes: 240 });
+  });
+});
