@@ -174,6 +174,10 @@ Marking the field green (Ed, 2026-08-17) took most of the weight off both of the
 
 391. **The setup surface's ordinary-motion judging, once real races exist** (raised 2026-08-19, from the 367(b) build). setup.html adjudicates ordinary motions through a dev seam — every member judges, majority carries — because the mock had no engine. With 367(b) the engine races typed setting values (Q390) and the `engine-bridge` adjudicates through the same `adjudicateOrdinaryMotion` seam, so the seam's *caller* is now real; what the mock lacks is the **surface**: an ordinary motion should be served as a pairwise race card (standing value vs proposed, rivals joining the field), not as an everyone-votes tally. That is a design task in session-view's card grammar — the lanes hold values via `motion-controls`, the composer already exists — and it wants Ed's QA, not a mechanical swap. Recommendation: build it as part of wiring the browser engine into setup.html (the engine is browser-loadable since 367(b)'s pure-sha256 move), after the thin server question (Q368) settles where the engine session actually runs.
 
+392. **A reading to confirm** (raised 2026-08-19, in the message that closed Q390). Ed's endorsement read *"constitutional motions are just a kind of proposal and work the same way"* — built as: **ordinary** motions ride the race machinery (what 390 asked and recommended), while the **constitutional** route keeps v0.47/v0.48 unanimity, which Ed set and reaffirmed three times. If he meant it literally — constitutional motions racing at a bar too — that reverses §9.6's unanimity and is a different mechanism; say so and v0.54 changes it.
+
+393. **Does §8.3a's diagonal gate come before the server?** (raised 2026-08-19, the one engine item 367(b) left unbuilt.) The engine still serves salience diagonals at the flat ~1-in-10 (`salienceEvery`), which §8.3a replaced on paper with the volume/audience/2E-stream gate; Q335's split would delete the knob. Options: (a) build the gate as a small engine block before Q368; (b) fold it into the Q335 split whenever that lands; (c) leave until sim evidence shows the flat rate hurting. Recommendation: (b) — nothing downstream consumes it yet, and the split touches the same struct.
+
 ## Backlog (provisioned, build later)
 
 315. **The ranking model as a document-creation setting: approval · Bradley–Terry · Crowd-BT** (Ed, 2026-08-17, parked as a note for later). *There are situations where each is appropriate and I think much of our machinery still applies for each.* Crowd-BT is Chen, Bennett, Collins-Thompson & Horvitz, *Pairwise Ranking Aggregation in a Crowdsourced Setting*, WSDM 2013 (10.1145/2433396.2433420) — Bradley–Terry with a **per-judge reliability parameter** estimated jointly with the item scores, plus an active-learning scheme that chooses which pair to serve *and whom to serve it to*. Details want checking against the paper before anything is built on them.
@@ -211,7 +215,7 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-Next unused number: **392**. Never reuse a spent number. (390 was consumed in chat 2026-08-19 — ordinary motion races, folded into SPEC §9.6 v0.53; 391 is above.)
+Next unused number: **394**. Never reuse a spent number. (390 was consumed in chat 2026-08-19 — ordinary motion races, folded into SPEC §9.6 v0.53; 391 is above.)
 
 *Tidied 2026-08-16 (housekeeping pass): items sorted numerically within each section; 158 and 163 deleted as fully resolved; 70 and 92 rewritten to their surviving halves, since the questions they originally asked no longer exist.*
 
