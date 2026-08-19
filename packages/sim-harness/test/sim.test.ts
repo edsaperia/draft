@@ -40,9 +40,13 @@ describe('scripted simulation', () => {
     expect(c.session.rollingHash()).not.toBe(a.session.rollingHash());
   }, 60_000);
 
-  it('collects diagonal (salience) judgments alongside edges', async () => {
+  it('serves no diagonals below the volume gate (SPEC §8.3a, Q393)', async () => {
+    // The charter scenario holds five issues over a fourteen-member roster,
+    // so the document never reaches E live questions and prioritisation has
+    // no work to do — the gate keeps every diagonal out of every feed.
+    // Positive serving coverage lives in engine-core's diagonal-gate tests.
     const { metrics } = await run('salience');
-    expect(metrics.diagonalComparisons).toBeGreaterThan(0);
+    expect(metrics.diagonalComparisons).toBe(0);
   }, 30_000);
 
   it('respects the token economy: drafting is bounded by grants', async () => {

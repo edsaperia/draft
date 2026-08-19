@@ -1329,8 +1329,8 @@ export class Session {
    * currently containing the candidate; comparisons whose endpoints have
    * left play (or converged into one race) are dropped.
    */
-  salienceWeights(): Map<string, number> {
-    const races = this.races();
+  /** The race-level fit behind the salience model, or null if unmeasured. */
+  private salienceFitOver(races: RaceView[]): Fit | null {
     const raceOf = new Map<string, string>();
     for (const r of races) for (const m of r.members) raceOf.set(m, r.id);
     // Supersession (SPEC §4.4): latest per participant per pair. Ground
@@ -1348,14 +1348,20 @@ export class Session {
       if (!ra || !rb || ra === rb) continue;
       comps.push({ a: ra, b: rb, outcome: c.outcome });
     }
+    if (comps.length === 0) return null;
+    return fitDavidson(races.map((r) => r.id), comps);
+  }
+
+  salienceWeights(): Map<string, number> {
+    const races = this.races();
     const ids = races.map((r) => r.id);
     const weights = new Map<string, number>();
     if (ids.length === 0) return weights;
-    if (comps.length === 0) {
+    const fit = this.salienceFitOver(races);
+    if (fit === null) {
       for (const id of ids) weights.set(id, 1);
       return weights;
     }
-    const fit = fitDavidson(ids, comps);
     for (const id of ids) {
       weights.set(id, Math.exp(fit.strengths.get(id) ?? 0));
     }
@@ -1608,13 +1614,24 @@ export class Session {
   /**
    * A participant's feed (SPEC §8.3): hot-set edges by value, ~1 in
    * `explorationEvery` slots explores under-measured candidates (only for
-   * abundant/cheap judges), ~1 in `salienceEvery` serves a diagonal.
-   * Pure: same state and time, same feed.
+   * abundant/cheap judges). Salience diagonals are NOT a rate (§8.3a):
+   * none below E live questions (a race counts once, deadlocked included —
+   * an open dispute is an open dispute); from E, served only to a
+   * participant with nothing else to judge; from 2E the old ~1-in-
+   * `salienceEvery` stream returns for everybody. The idle serving
+   * terminates — only while a pair would still move the salience ranking
+   * (the same active-sampling rule races use), and never more than three
+   * in a row per participant. Pure: same state and time, same feed.
    */
   feed(participantId: string, n: number, t: number = this.lastT): Card[] {
     this.activeParticipant(participantId);
-    const races = this.races().filter((r) => !r.deadlocked);
-    if (races.length === 0) return [];
+    const allRaces = this.races();
+    const races = allRaces.filter((r) => !r.deadlocked);
+    if (allRaces.length === 0) return [];
+    const E = this.eCount();
+    const liveQuestions = allRaces.length;
+    const audienceGateOpen = E > 0 && liveQuestions >= E;
+    const streamOpen = E > 0 && liveQuestions >= 2 * E;
     const weights = this.salienceWeights();
     const threshold = this.adoptionThreshold(t);
     const floor = this.adoptionFloor();
@@ -1652,18 +1669,31 @@ export class Session {
     const cards: Card[] = [];
     const served = new Set<string>();
     let hotIndex = 0;
+    // §8.3a idle serving: with the audience gate open and nothing else to
+    // judge, the diagonal simply arrives — capped so the participant is
+    // never asked more than three in a row, counting ones already judged.
+    let idleBudget = 0;
+    if (audienceGateOpen &&
+        this.nothingElseToJudge(participantId, races, cheap)) {
+      idleBudget = Math.max(0, 3 - this.trailingDiagonalRun(participantId));
+    }
     for (let slot = 1; cards.length < n && slot <= n * 4; slot++) {
       let card: Card | null = null;
-      // Seeded per-slot roll: ~1 in salienceEvery serves a diagonal, ~1 in
-      // explorationEvery explores (SPEC §8.3). A roll rather than a slot
-      // index so the mix holds even for clients fetching one card at a time.
+      // Seeded per-slot roll: ~1 in salienceEvery serves a diagonal (only
+      // at saturation, §8.3a), ~1 in explorationEvery explores (SPEC
+      // §8.3). A roll rather than a slot index so the mix holds even for
+      // clients fetching one card at a time.
       const roll = rng.next();
       const pSalience = 1 / this.constitutionValue.salienceEvery;
       const pExplore = 1 / this.constitutionValue.explorationEvery;
       if (roll < pSalience) {
-        card = this.diagonalCard(races, weights, rng, participantId);
+        if (streamOpen) card = this.diagonalCard(allRaces, participantId, served);
       } else if (cheap && roll < pSalience + pExplore) {
         card = this.explorationCard(races, participantId);
+      }
+      if (card === null && idleBudget > 0) {
+        card = this.diagonalCard(allRaces, participantId, served);
+        if (card !== null) idleBudget--;
       }
       if (card === null && hot.length > 0) {
         for (let tries = 0; tries < hot.length && card === null; tries++) {
@@ -1709,30 +1739,88 @@ export class Session {
     );
   }
 
+  /**
+   * The next diagonal for a participant (§8.3a): active pair selection
+   * over the race-level salience fit — the pair that would most move the
+   * ranking, leader vs leader (§4.1: a weak draft must not make its
+   * question look unimportant). Serves nothing once no unjudged pair
+   * clears the same epsilon races stop sampling at: prioritisations
+   * terminate, and past the limit the queue is simply empty.
+   */
   private diagonalCard(
-    races: RaceView[],
-    weights: Map<string, number>,
-    rng: Rng,
+    allRaces: RaceView[],
     participantId: string,
+    exclude: ReadonlySet<string>,
   ): Card | null {
-    const withLeaders = races.filter((r) => r.leaderId !== null);
+    const withLeaders = allRaces.filter((r) => r.leaderId !== null);
     if (withLeaders.length < 2) return null;
-    const i = rng.int(withLeaders.length);
-    let j = rng.int(withLeaders.length - 1);
-    if (j >= i) j++;
-    const ra = withLeaders[i]!;
-    const rb = withLeaders[j]!;
-    if (this.servedOut(participantId, pairKey(ra.leaderId!, rb.leaderId!))) {
-      return null;
+    const fit = this.salienceFitOver(allRaces);
+    let best: { a: RaceView; b: RaceView; value: number } | null = null;
+    for (let i = 0; i < withLeaders.length; i++) {
+      for (let j = i + 1; j < withLeaders.length; j++) {
+        const ra = withLeaders[i]!;
+        const rb = withLeaders[j]!;
+        const key = pairKey(ra.leaderId!, rb.leaderId!);
+        if (exclude.has(key)) continue;
+        if (this.servedOut(participantId, key)) continue;
+        // An unmeasured ranking is always moved by a pair (value 1); a
+        // fitted one prices the pair like any active sample.
+        const v = fit === null ? 1 : pairValue(fit, ra.id, rb.id);
+        if (best === null || v > best.value) best = { a: ra, b: rb, value: v };
+      }
+    }
+    if (best === null) return null;
+    if (fit !== null && best.value < this.constitutionValue.deadlockEpsilon) {
+      return null; // the remaining pairs are already ordered confidently
     }
     return {
       kind: 'diagonal',
-      aId: ra.leaderId!,
-      bId: rb.leaderId!,
-      raceId: ra.id,
-      raceIdB: rb.id,
-      value: (weights.get(ra.id) ?? 1) + (weights.get(rb.id) ?? 1),
+      aId: best.a.leaderId!,
+      bId: best.b.leaderId!,
+      raceId: best.a.id,
+      raceIdB: best.b.id,
+      value: best.value,
     };
+  }
+
+  /**
+   * §8.3a's audience gate: nothing else to judge means no edge pair left
+   * in any live race, no exploration card (for a judge who would be
+   * served one), and no deadlocked race this participant has not judged —
+   * §8.3b: an unjudged deadlocked race counts as work to do and defers
+   * the diagonal.
+   */
+  private nothingElseToJudge(
+    participantId: string,
+    races: RaceView[],
+    cheap: boolean,
+  ): boolean {
+    for (const r of this.races()) {
+      if (!r.deadlocked) continue;
+      const usable = this.usableComparisons(r.members, r.incumbentId);
+      if (!usable.some((c) => c.participantId === participantId)) return false;
+    }
+    for (const r of races) {
+      const fit = this.fitRaceMembers(r.members, r.incumbentId);
+      if (this.bestPairFor(fit, r.members, r.incumbentId, participantId,
+        r.rivalGateOpen) !== null) {
+        return false;
+      }
+    }
+    if (cheap && this.explorationCard(races, participantId) !== null) return false;
+    return true;
+  }
+
+  /** Consecutive diagonal judgments at the tail of a participant's history. */
+  private trailingDiagonalRun(participantId: string): number {
+    let run = 0;
+    for (let i = this.comparisons.length - 1; i >= 0 && run < 3; i--) {
+      const c = this.comparisons[i]!;
+      if (c.participantId !== participantId) continue;
+      if (c.kind !== 'diagonal') break;
+      run++;
+    }
+    return run;
   }
 
   private explorationCard(races: RaceView[], participantId: string): Card | null {

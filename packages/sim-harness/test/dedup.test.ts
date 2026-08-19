@@ -81,7 +81,13 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // (was bab3663b562f08bcda18234689824515f44c333c3131da0c386709e0ea5bbbc0).
   // Re-pinned 2026-08-19 (367b): the genesis event hashes the constitution,
   // which gained quorum and traded tokenDripPerTenth for tokenDripMinutes.
-  const PINNED = 'e8fe607a479ec4fc80ea4311132013868816183cac61d537f134a329ff996556';
+  // Re-pinned 2026-08-19 (Q393, §8.3a): the diagonal gate replaced the flat
+  // 1-in-10 — the charter scenario runs below E live questions, so personas
+  // are served (and judge) no diagonals, and the event stream legitimately
+  // differs throughout. Both runs below produced this hash identically, so
+  // the gate-silent invariant the test exists to defend is untouched
+  // (was e8fe607a479ec4fc80ea4311132013868816183cac61d537f134a329ff996556).
+  const PINNED = 'e4d17eaf4501f9d518f9df301b12e9acd2b44a4a476d1f926a50b3206dd10dd1';
 
   const run = (withGate: boolean) =>
     runSession({
