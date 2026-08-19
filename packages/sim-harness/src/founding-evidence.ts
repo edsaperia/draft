@@ -102,6 +102,7 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
     s.answer(9, m, 'lapse', { afterMs: m === gus ? null : 90 * 86_400_000 });
     s.answer(9, m, 'machines', { enabled: false, budget: 0 });
     s.answer(9, m, 'applications', { holder: 'members', joinPolicy: 'invite' });
+    s.answer(9, m, 'removal', { rung: m === dee ? 'everyone' : 'others' });
     s.answer(9, m, 'pace', { shape: 'fixed' });
     s.answer(9, m, 'rate', { grant: m === bo ? 6 : 4, cap: 8, dripMinutes: 240 });
   }
@@ -111,6 +112,8 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
     'the bar: hex needed 82, so 82 it is');
   eq(s.settingState('lapse').value, { afterMs: null },
     'lapse: never is the longest quiet spell of all');
+  eq(s.settingState('removal').value, { rung: 'everyone' },
+    "removal (🚪 Q401a): one member who wants their own say keeps everyone's answer counted");
   eq(s.settingState('rate').value, { grant: 6, cap: 8, dripMinutes: 240 },
     'rate: the most generous grant wins (§9.0)');
   check(s.constitutedAtT === 9, 'the document constituted when the last gate resolved');
@@ -144,7 +147,8 @@ say('\n== clerk variant: an anonymous convenor who administers and never writes 
     authorship: { rung: 'sealed' }, signing: { rung: 'each' },
     judgments: { rung: 'after' }, chamber: { rung: 'link' },
     applications: { holder: 'members', joinPolicy: 'invite' },
-    machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    machines: { enabled: false, budget: 0 }, removal: { rung: 'everyone' },
+    lapse: { afterMs: null },
   })) {
     s.reclaim(2, id as never);
     s.setSetting(2, id as never, v as never);

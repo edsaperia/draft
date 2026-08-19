@@ -8,9 +8,9 @@ import type { SettingValue } from '../src/values.js';
 import { eqValue, validateValue } from '../src/values.js';
 
 describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
-  it('holds the eighteen settings, ids unique, email deliberately absent', () => {
-    expect(CATALOGUE.length).toBe(18);
-    expect(new Set(CATALOGUE.map((e) => e.id)).size).toBe(18);
+  it('holds the nineteen settings, ids unique, email deliberately absent', () => {
+    expect(CATALOGUE.length).toBe(19);
+    expect(new Set(CATALOGUE.map((e) => e.id)).size).toBe(19);
     expect(CATALOGUE_BY_ID.has('email' as SettingId)).toBe(false);
   });
 

@@ -15,7 +15,7 @@ import type {
 } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf, motionRouteOf, validateFor } from './catalogue.js';
-import type { ApplicationsValue, EndingValue, LapseValue, PaceValue,
+import type { ApplicationsValue, EndingValue, LadderValue, LapseValue, PaceValue,
   PercentValue, QuorumValue, SettingValue, SlugValue, TextValue } from './values.js';
 import { eqValue } from './values.js';
 import { resolveConsent } from './consent.js';
@@ -972,7 +972,10 @@ export class ConstitutionSession {
     } else if (payload.kind === 'remove') {
       const target = this.members.get(payload.member);
       if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
-      route = 'constitutional'; // membership's own kind — reservation adds assent, never a route (§9.7 v0.49)
+      // The route is the 🚪 removal setting's (Q401, Ed 2026-08-19):
+      // 'ordinary' races at the bar; 'others' and 'everyone' are consent —
+      // the difference lives in the settle check, not the route.
+      route = this.removalRung() === 'ordinary' ? 'ordinary' : 'constitutional';
     } else {
       // admit rides submitApplication/proposeApplicant (§9.7½)
       route = 'ordinary';
@@ -1005,6 +1008,9 @@ export class ConstitutionSession {
     const m = this.members.get(member);
     if (!m || !motionElectorateOf([m]).length) {
       throw new Error(`'${member}' is not in the motion's electorate`);
+    }
+    if (this.motionExcludes(rec) === member) {
+      throw new Error('the subject of a removal is not asked on this route (🚪 Q401a) — they see it, and it settles without them');
     }
     this.emit({ type: 'motion-answer', t, motion, member, answer });
     this.maybeSettleMotions(t);
@@ -1056,6 +1062,22 @@ export class ConstitutionSession {
     }
   }
 
+  /** 🚪 (Q401): the removal rung as it stands — unset reads as today's rule,
+   *  everyone's consent with the subject's own answer counted. */
+  private removalRung(): 'everyone' | 'others' | 'ordinary' {
+    const st = this.settings.get('removal');
+    const v = st ? (st.value as LadderValue | null) : null;
+    return (v?.rung as 'everyone' | 'others' | 'ordinary' | undefined) ?? 'everyone';
+  }
+
+  /** Under 'others', the subject of a removal stands outside its electorate
+   *  (Q401a) — they see the motion, and it settles without them. Read live,
+   *  like the electorate itself: a rung change mid-motion is a ground shift. */
+  private motionExcludes(rec: MotionRecord): MemberId | null {
+    return rec.payload.kind === 'remove' && this.removalRung() === 'others'
+      ? rec.payload.member : null;
+  }
+
   private heldOutBy(member: MemberId): boolean {
     for (const rec of this.motions.values()) {
       if (rec.by === member && rec.route === 'constitutional' &&
@@ -1078,7 +1100,11 @@ export class ConstitutionSession {
       settled = false;
       for (const rec of this.motions.values()) {
         if (rec.status !== 'running' || rec.route !== 'constitutional') continue;
-        const electorate = motionElectorateOf(this.members.values());
+        // 🏛️ without [avatar] (Q401a): a removal under 'others' settles by
+        // the live electorate minus its subject — everyone but them.
+        const excl = this.motionExcludes(rec);
+        const electorate = motionElectorateOf(this.members.values())
+          .filter((m2) => m2.id !== excl);
         if (electorate.length === 0) continue;
         const answers = electorate.map((m) => rec.answers.get(m.id));
         if (answers.some((a) => a === undefined || a === 'keep')) continue;

@@ -290,7 +290,7 @@ var CONSTITUTION = (() => {
   var CATALOGUE = [
     {
       id: "title",
-      glyph: "🏷️",
+      glyph: "🪶",
       kind: "ordinary",
       holderDefault: "convenor",
       delegable: false,
@@ -300,7 +300,7 @@ var CONSTITUTION = (() => {
     },
     {
       id: "link",
-      glyph: "🔗",
+      glyph: "📍",
       kind: "ordinary",
       holderDefault: "convenor",
       delegable: false,
@@ -486,6 +486,31 @@ var CONSTITUTION = (() => {
       },
       deps: [],
       judgeGate: true
+    },
+    // **How a member is removed** (Q401, Ed 2026-08-19). Three rungs, and the
+    // middle one is a decision class of its own — unanimity excluding the
+    // subject (the live-electorate settle check minus one member), which is
+    // what real constitutions mostly do (partnerships expel by unanimity of
+    // the others). 'everyone' includes the subject's own answer, which makes
+    // it effectively a no-expulsion rule — the most protective, and today's
+    // default. The subject always *sees* a motion running against them (Ed's
+    // ruling); whether they may judge their own *ordinary* removal race is
+    // open (Q401b). Not judge-gated: like the join policy, it touches no
+    // recorded judgment.
+    {
+      id: "removal",
+      glyph: "🚪",
+      kind: "constitutional",
+      holderDefault: "members",
+      delegable: true,
+      valueType: "ladder",
+      rungs: ["everyone", "others", "ordinary"],
+      consent: {
+        ask: "the easiest removal of a member you will accept",
+        order: ladderOrder(["everyone", "others", "ordinary"])
+      },
+      deps: [],
+      judgeGate: false
     },
     // Ordinary (Q352, Ed 2026-08-18): the auditor is not a member — it judges
     // nothing and counts toward no quorum, so switching it re-rates nothing
@@ -1549,7 +1574,7 @@ var CONSTITUTION = (() => {
       } else if (payload.kind === "remove") {
         const target = this.members.get(payload.member);
         if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
-        route = "constitutional";
+        route = this.removalRung() === "ordinary" ? "ordinary" : "constitutional";
       } else {
         route = "ordinary";
       }
@@ -1583,6 +1608,9 @@ var CONSTITUTION = (() => {
       const m = this.members.get(member);
       if (!m || !motionElectorateOf([m]).length) {
         throw new Error(`'${member}' is not in the motion's electorate`);
+      }
+      if (this.motionExcludes(rec) === member) {
+        throw new Error("the subject of a removal is not asked on this route (🚪 Q401a) — they see it, and it settles without them");
       }
       this.emit({ type: "motion-answer", t, motion, member, answer });
       this.maybeSettleMotions(t);
@@ -1636,6 +1664,19 @@ var CONSTITUTION = (() => {
         this.settleHeldEffects(t, rec);
       }
     }
+    /** 🚪 (Q401): the removal rung as it stands — unset reads as today's rule,
+     *  everyone's consent with the subject's own answer counted. */
+    removalRung() {
+      const st = this.settings.get("removal");
+      const v = st ? st.value : null;
+      return v?.rung ?? "everyone";
+    }
+    /** Under 'others', the subject of a removal stands outside its electorate
+     *  (Q401a) — they see the motion, and it settles without them. Read live,
+     *  like the electorate itself: a rung change mid-motion is a ground shift. */
+    motionExcludes(rec) {
+      return rec.payload.kind === "remove" && this.removalRung() === "others" ? rec.payload.member : null;
+    }
     heldOutBy(member) {
       for (const rec of this.motions.values()) {
         if (rec.by === member && rec.route === "constitutional" && (rec.status === "running" || rec.status === "awaiting-crown")) {
@@ -1656,7 +1697,8 @@ var CONSTITUTION = (() => {
         settled = false;
         for (const rec of this.motions.values()) {
           if (rec.status !== "running" || rec.route !== "constitutional") continue;
-          const electorate = motionElectorateOf(this.members.values());
+          const excl = this.motionExcludes(rec);
+          const electorate = motionElectorateOf(this.members.values()).filter((m2) => m2.id !== excl);
           if (electorate.length === 0) continue;
           const answers = electorate.map((m) => rec.answers.get(m.id));
           if (answers.some((a) => a === void 0 || a === "keep")) continue;

@@ -23,7 +23,7 @@ export type SettingId =
   | 'title' | 'link' | 'startingText'
   | 'ending' | 'bar' | 'pace' | 'quorum'
   | 'authorship' | 'signing' | 'judgments' | 'chamber'
-  | 'rate' | 'lapse' | 'machines'
+  | 'rate' | 'lapse' | 'machines' | 'removal'
   | 'membership' | 'applications'
   | 'displayName' | 'picture';
 
@@ -74,10 +74,10 @@ const neverIsHighest = (of: (v: SettingValue) => number | null) =>
   };
 
 export const CATALOGUE: readonly CatalogueEntry[] = [
-  { id: 'title', glyph: '🏷️', kind: 'ordinary', holderDefault: 'convenor',
+  { id: 'title', glyph: '🪶', kind: 'ordinary', holderDefault: 'convenor',
     delegable: false, valueType: 'text', deps: [], judgeGate: false },
 
-  { id: 'link', glyph: '🔗', kind: 'ordinary', holderDefault: 'convenor',
+  { id: 'link', glyph: '📍', kind: 'ordinary', holderDefault: 'convenor',
     delegable: false, valueType: 'slug', deps: [], judgeGate: false },
 
   // Confirmed, may be empty (§9.0b); changed post-start by proposing in the
@@ -194,6 +194,25 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
       order: neverIsHighest((v) => (v as LapseValue).afterMs),
     },
     deps: [], judgeGate: true },
+
+  // **How a member is removed** (Q401, Ed 2026-08-19). Three rungs, and the
+  // middle one is a decision class of its own — unanimity excluding the
+  // subject (the live-electorate settle check minus one member), which is
+  // what real constitutions mostly do (partnerships expel by unanimity of
+  // the others). 'everyone' includes the subject's own answer, which makes
+  // it effectively a no-expulsion rule — the most protective, and today's
+  // default. The subject always *sees* a motion running against them (Ed's
+  // ruling); whether they may judge their own *ordinary* removal race is
+  // open (Q401b). Not judge-gated: like the join policy, it touches no
+  // recorded judgment.
+  { id: 'removal', glyph: '🚪', kind: 'constitutional', holderDefault: 'members',
+    delegable: true, valueType: 'ladder',
+    rungs: ['everyone', 'others', 'ordinary'],
+    consent: {
+      ask: 'the easiest removal of a member you will accept',
+      order: ladderOrder(['everyone', 'others', 'ordinary']),
+    },
+    deps: [], judgeGate: false },
 
   // Ordinary (Q352, Ed 2026-08-18): the auditor is not a member — it judges
   // nothing and counts toward no quorum, so switching it re-rates nothing

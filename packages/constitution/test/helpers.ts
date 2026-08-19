@@ -13,6 +13,7 @@ export function buildConstituted(opts: {
   lapse?: LapseValue;
   applications?: ApplicationsValue;
   quorum?: { form: 'count' | 'share'; n: number };
+  removal?: { rung: 'everyone' | 'others' | 'ordinary' };
 } = {}) {
   const s = ConstitutionSession.open({
     title: 'Hollow Oak Club Charter',
@@ -44,6 +45,7 @@ export function buildConstituted(opts: {
     signing: { rung: 'each' },
     judgments: { rung: 'after' },
     applications: opts.applications ?? { holder: 'members', joinPolicy: 'invite' },
+    removal: opts.removal ?? { rung: 'everyone' },
     machines: { enabled: false, budget: 0 },
     lapse: opts.lapse ?? { afterMs: null },
   } as const;

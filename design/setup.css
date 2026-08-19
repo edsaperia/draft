@@ -392,10 +392,11 @@
      title is written, and a second way in would be a second answer to a
      question this surface has already settled. */
   /* type comes from system.css's own .doctitle rule (--t-lead, 600) — the
-     literal 1.5rem was drift (2026-08-18); only the box is ours, because
-     this title sits outside .prose and centres itself */
-  .doc .doctitle { max-width: calc(70ch + 2 * var(--s5) + 3px); margin: 0 auto var(--s5);
-    padding: 0 var(--s5); text-wrap: balance; }
+     literal 1.5rem was drift (2026-08-18); only the box is ours. It sits on
+     the document's own left edge (Ed's QA, 2026-08-19: it was indented —
+     the s5 side padding and auto-centring were the indent). */
+  .doc .doctitle { max-width: 70ch; margin: 0 0 var(--s5);
+    padding: 0; text-wrap: balance; }
   .doc .doctitle.ph { color: var(--muted); font-weight: 400; }
 
 /* ===========================================================================
@@ -575,5 +576,26 @@ button.cline:hover b { text-decoration: underline; }
 /* the title card's head is the document title itself (Ed, 2026-08-18:
    *show me the current state of the title*), at the title's own type;
    muted while it is still the placeholder */
-.setupcard .clausehead .headrule .headdoct { font-size: var(--t-lead); font-weight: 600; }
+/* at the birth the title card's head IS the big heading; post-save it opens
+   at its own clause and the title sits inside the sentence at document size
+   (Ed, 2026-08-19) */
+#titlepara .setupcard .clausehead .headrule .headdoct { font-size: var(--t-lead); }
+.setupcard .clausehead .headrule .headdoct { font-weight: 600; }
 .setupcard .clausehead .headrule .headdoct.ph { color: var(--muted); font-weight: 400; }
+
+/* links in the constitution are real links (Ed, 2026-08-19): ink-coloured,
+   underlined, the underline waking on hover */
+.cpv a.doclink, .headrule a.doclink { color: inherit; text-decoration: underline;
+  text-decoration-thickness: 1px; text-underline-offset: 2.5px;
+  text-decoration-color: var(--muted); }
+.cpv a.doclink:hover, .headrule a.doclink:hover {
+  text-decoration-color: currentColor; text-decoration-thickness: 1.5px; }
+
+/* clicking a heading's text folds it (Ed, 2026-08-19) — the constitution's
+   headings are not editable, so they may say so with the cursor; prose
+   headings keep the text cursor, since they are still editable */
+.constsec h2.docline[id^="cs-"], .constsec .pilehead { cursor: pointer; }
+.constsec .pilehead { position: relative; }
+.constsec .pilehead .sectoggle { position: absolute; right: 100%;
+  margin-right: var(--s3); top: 4px; }
+.constsec .pilelab:hover .sectoggle[aria-expanded="true"] { opacity: 1; }

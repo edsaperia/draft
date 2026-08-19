@@ -305,6 +305,32 @@ export class EngineBridge {
   }
 
   /**
+   * A removal under the 🚪 'ordinary' rung is the admit race's mirror
+   * (Q401a): one candidate — this member leaves — against the membership
+   * as it stands, never raced against anything else.
+   */
+  private enterRemovalRace(
+    t: number,
+    motion: MotionId,
+    member: string,
+    by: MemberId,
+    why: string | undefined,
+  ): void {
+    if (this.candidateOfMotion.has(motion)) return;
+    const settingId = `remove:${member}`;
+    if (this.engine.standing(settingId) === undefined) {
+      this.engine.setStanding(t, settingId, { member: true });
+    }
+    const { id } = this.engine.submitCandidate(t, {
+      author: by,
+      setting: { settingId, value: { member: false } },
+      rationale: why ?? '',
+    });
+    this.candidateOfMotion.set(motion, id);
+    this.motionOfCandidate.set(id, motion);
+  }
+
+  /**
    * Relay the constitution's truth into the engine: roster events since
    * the last sync, then a standing diff — cheap, and immune to *which*
    * route changed a value (a carried motion, a crown's direct change, a
@@ -331,6 +357,8 @@ export class EngineBridge {
         case 'motion-opened':
           if (e.payload.kind === 'admit' && e.route === 'ordinary') {
             this.enterAdmitRace(t, e.motion, e.payload.applicant, e.by, e.why);
+          } else if (e.payload.kind === 'remove' && e.route === 'ordinary' && e.by) {
+            this.enterRemovalRace(t, e.motion, e.payload.member, e.by, e.why);
           }
           break;
         case 'member-removed':

@@ -33,6 +33,7 @@ const settleAllReserved = (s: ConstitutionSession, t: number,
     applications: { holder: 'members', joinPolicy: 'invite' },
     rate: { grant: 4, cap: 8, dripMinutes: 240 },
     machines: { enabled: false, budget: 0 },
+    removal: { rung: 'everyone' },
     lapse: { afterMs: null },
   } as const;
   for (const [id, v] of Object.entries(values)) {

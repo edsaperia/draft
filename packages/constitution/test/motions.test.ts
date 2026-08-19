@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import type { ConstitutionEvent } from '../src/types.js';
+import { buildConstituted } from './helpers.js';
 
 /**
  * Motions (SPEC §9.6–§9.7, v0.49): the ordinary route through the
@@ -377,5 +378,60 @@ describe('guards', () => {
     expect(r.rollingHash()).toBe(s.rollingHash());
     expect(r.settingState('bar').value).toEqual({ pct: 80 });
     expect(r.motionRecords().get(m)!.status).toBe('carried');
+  });
+});
+
+describe('the 🚪 removal setting (Q401a, v0.60): three rungs, one new decision class', () => {
+  it("'everyone' is today's rule — the default when nothing was set", () => {
+    const { s, bo, cy } = buildConstituted(); // helpers set removal: everyone
+    const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
+    expect(s.motionRecords().get(m)!.route).toBe('constitutional');
+    s.answerMotion(4, 'ada', m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('running'); // cy's own answer is owed
+    s.answerMotion(5, cy, m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+  });
+
+  it("'others': unanimity minus the subject — they see it, cannot answer, and it settles without them", () => {
+    const { s, bo, cy } = buildConstituted({ removal: { rung: 'others' } });
+    const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
+    expect(s.motionRecords().get(m)!.route).toBe('constitutional');
+    expect(() => s.answerMotion(4, cy, m, 'keep')).toThrow(/not asked on this route/);
+    expect(s.motionRecords().get(m)!.status).toBe('running'); // ada still owes
+    s.answerMotion(5, 'ada', m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    expect(s.E()).toBe(2);
+  });
+
+  it("'ordinary': a removal races at the bar through the adjudicator seam, staking the ✏️", () => {
+    const { s, bo, cy } = buildConstituted({ removal: { rung: 'ordinary' } });
+    const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
+    const rec = s.motionRecords().get(m)!;
+    expect(rec.route).toBe('ordinary');
+    expect(rec.stake).toBe(1);
+    s.adjudicateOrdinaryMotion(4, m, 'carried');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    expect(s.E()).toBe(2);
+  });
+
+  it('a rung change mid-motion is a ground shift — the electorate is read live', () => {
+    const { s, bo, cy } = buildConstituted({ removal: { rung: 'others' } });
+    const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
+    expect(() => s.answerMotion(4, cy, m, 'keep')).toThrow(); // outside, for now
+    // the room hands removal back to unanimity-including: cy's answer is owed
+    const m2 = s.openMotion(5, 'ada', { kind: 'set', setting: 'removal', value: { rung: 'everyone' } });
+    s.answerMotion(6, bo, m2, 'accept');
+    s.answerMotion(7, cy, m2, 'accept');
+    // removal is convenor-held in this fixture, so the carried change waits
+    // on ada's assent (§9.7) — the 👑 question, accepted here
+    const q = [...s.crownQuestionRecords().values()]
+      .find((x) => x.motion === m2 && x.status === 'pending')!;
+    s.answerCrownQuestion(8, q.id, 'accept');
+    expect(s.motionRecords().get(m2)!.status).toBe('carried');
+    expect(s.motionRecords().get(m)!.status).toBe('running');
+    s.answerMotion(8, cy, m, 'accept');   // now asked — and ada still owes
+    expect(s.motionRecords().get(m)!.status).toBe('running');
+    s.answerMotion(9, 'ada', m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
   });
 });

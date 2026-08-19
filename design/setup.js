@@ -68,8 +68,8 @@ window.SETUP = (function () {
   // the governance tabs; the reserved set is that minus the offered faces.
   // Tones are stripped before the test, so ✋🏽 is as reserved as ✋.
   const SURFACE_EMOJI = ('↔ ⏩ ⏰ ⏱ ⏳ ☑ ⚔ ⚖ ✅ ✉ ✋ ✍ ✏ ✒ ✔ ✖ ❄ ❌ ❎ ❓ ' +
-    '🌍 🌶 🎩 🏛 🏷 👁 👍 👑 👤 👥 💡 💤 📄 📈 📝 📧 📬 📯 🔄 🔗 ' +
-    '🔥 🔧 ⚙ 🖼 🗑 🗝 🤖 🤝 🪪 ' +
+    '🌍 🌶 🎩 🏛 🏷 👁 👍 👑 👤 👥 💡 💤 📄 📈 📌 📍 📝 📧 📬 📯 🔄 🔗 ' +
+    '🔥 🔧 ⚙ 🖼 🗑 🗝 🚪 🤖 🤝 🪪 🪶 ' +
     '👦 👧 👨 👩 👱 👳 👴 👵 👶 🧑 🧒 🧓 🧔').split(' ');
   const normEmoji = (s) => s.replace(/[\u{FE0F}\u{FE0E}\u{1F3FB}-\u{1F3FF}]/gu, '');
   const RESERVED_EMOJI = new Set(SURFACE_EMOJI.filter((g) =>
@@ -332,8 +332,20 @@ window.SETUP = (function () {
         const wants = g.sections.reduce((n, sec) => n + sec.cards
           .reduce((m, c) => m + (ctx.mustAct(c) ? 1 : 0) +
             (ctx.tasksFor ? ctx.tasksFor(c).filter((t) => ctx.mustAct(t)).length : 0), 0), 0);
+        // **the whole constitution folds** (Ed, 2026-08-19): its heading is
+        // a heading like any other — folded, it keeps the heading and the
+        // document text below; the surface decides (ctx.foldedGroup), so an
+        // open card is never folded out from under its own tab
+        const gFold = ctx.foldedGroup && ctx.foldedGroup(g);
+        if (gFold) {
+          return '<div class="setrow constsec" id="pile-' + g.key + '">' +
+            '<div class="pilelab"><span class="pilehead" id="cs-constitution">' +
+            (ctx.groupToggle ? ctx.groupToggle(g) : '') + esc(g.label) + '</span></div>' +
+            (g.textAnchor ? g.textAnchor(H) : '') + '</div>';
+        }
         return '<div class="setrow constsec" id="pile-' + g.key + '">' +
-          '<div class="pilelab"><span class="pilehead" id="cs-constitution">' + esc(g.label) + '</span>' +
+          '<div class="pilelab"><span class="pilehead" id="cs-constitution">' +
+          (ctx.groupToggle ? ctx.groupToggle(g) : '') + esc(g.label) + '</span>' +
           (g.intro ? g.intro() : '') + '</div>' +
           // **the link stands right at the top, under the Constitution
           // heading** (Ed, 2026-08-18) — the document's address is the
@@ -366,6 +378,9 @@ window.SETUP = (function () {
             (ctx.secToggle ? ctx.secToggle(sec) : '') + esc(sec.title) + '</h2>' +
             (fold ? '' :
             (sec.text ? '<p class="csintro">' + sec.text + '</p>' : '') +
+            // a section's own opening paragraph (the Proposals preamble,
+            // Ed 2026-08-19) — constitution text, not an intro line
+            (sec.lead ? sec.lead(H) : '') +
             (sec.who ? '<div class="pilewho">' + sec.who() + '</div>' : '') +
             (sec.body ? sec.body(H) : sec.cards.map(withTasks).join('')) +
             (sec.block ? sec.block() : '')) + '</div>'; }).join('') +
@@ -935,6 +950,12 @@ window.SETUP = (function () {
         { v: 'closed', t: 'Members only', e: 'Nobody outside the membership sees anything at all.' },
         { v: 'link', t: 'Anyone with the link', e: 'The chamber view only, to whoever the link reaches.' },
         { v: 'public', t: 'Public', e: 'Listed and readable by anyone.' }]) + BLINDNOTE,
+    removal: (A) =>
+      '<p class="why">How this room may remove a member. Whichever is chosen, the member always sees a removal proposed against them. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
+      ladder(A, 'removal', [
+        { v: 'everyone', t: 'Everyone must consent — theirs included', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
+        { v: 'others', t: 'Everyone but them must consent', e: 'The whole room, minus the member in question, must agree.' },
+        { v: 'ordinary', t: 'An ordinary proposal ✏️', e: 'Judged at the approval threshold like any change, with quorum.' }]) + BLINDNOTE,
     machines: (A) =>
       '<p class="why">An AI that patrols the document for drift and proposes fixes — it never judges, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
       ladder(A, 'machines', [

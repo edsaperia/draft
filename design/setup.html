@@ -70,7 +70,7 @@
   }
 
 
-  /* the controls the share box took with it, now on the 🔗 and 🪪 cards */
+  /* the controls the share box took with it, now on the 📍 and 🪪 cards */
   .setupcard textarea { width: 100%; font-size: var(--t-ui); padding: var(--s2);
     resize: vertical; min-height: 60px; }
   .setupcard .btn:not(.glyphbtn) { font: inherit; font-size: var(--t-cap); padding: var(--s1) var(--s3);
@@ -211,7 +211,7 @@
   const midOf = (k) => MID[k] || k;
   const MANAGED_KEYS = ['title', 'slug', 'ending', 'bar', 'pace', 'quorum',
     'authorship', 'signing', 'judgments', 'chamber', 'rate', 'lapse',
-    'machines', 'policy'];
+    'removal', 'machines', 'policy'];
   const csState = (k) => (cs && MANAGED_KEYS.includes(k) ? cs.settingState(midOf(k)) : null);
   const csSettled = (k) => { const st = csState(k); return !!st && st.settledBy !== null; };
   const csDelegated = (k) => { const st = csState(k); return !!st && st.holder === 'members'; };
@@ -262,6 +262,7 @@
     chamber: () => ({ rung: S.chamber }),
     rate: () => ({ grant: +S.grant, cap: Math.max(+S.cap, +S.grant), dripMinutes: +S.dripMin }),
     lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: +S.lapseDays * 86400000 }),
+    removal: () => ({ rung: S.removal }),
     machines: () => (S.auditor === true ? { enabled: true, budget: +S.auditorBudget } : { enabled: false, budget: 0 }),
     policy: () => ({ holder: regHolder(), joinPolicy: S.joinBy }),
   };
@@ -274,6 +275,7 @@
     signing: (v) => ({ rung: v }),
     judgments: (v) => ({ rung: v }),
     chamber: (v) => ({ rung: v }),
+    removal: (v) => ({ rung: v }),
     machines: (v) => (v === true ? { enabled: true, budget: +S.auditorBudget || 4 } : { enabled: false, budget: 0 }),
     lapse: (v) => (v === 'never' ? { afterMs: null } : { afterMs: +v * 86400000 }),
     rate: (v) => ({ grant: +v, cap: Math.max(+v, +S.cap || 8), dripMinutes: +S.dripMin || 240 }),
@@ -286,6 +288,7 @@
     machines: (v) => v.enabled,
     authorship: (v) => v.rung, signing: (v) => v.rung,
     judgments: (v) => v.rung, chamber: (v) => v.rung,
+    removal: (v) => v.rung,
     policy: (v) => v.joinPolicy,
   };
   const viewerId = () => (S.viewer === 'applicant' ? null : (viewerRow().mid || FOUNDER));
@@ -293,7 +296,8 @@
   // which page field carries a setting's delegation radio ('roster' = the members')
   const DKEY = { ending: 'ending', bar: 'barBy', quorum: 'quorumBy',
     authorship: 'authorship', signing: 'signing', judgments: 'judgments',
-    chamber: 'chamber', rate: 'rateBy', lapse: 'lapse', machines: 'auditor',
+    chamber: 'chamber', rate: 'rateBy', lapse: 'lapse', removal: 'removal',
+    machines: 'auditor',
     // v0.52: these three only ever read 'roster' once their options render
     // (title/link after the text confirms, policy after the start)
     title: 'titleBy', slug: 'slugBy', policy: 'policyBy' };
@@ -333,7 +337,7 @@
     title: '', slug: '',
     folded: new Set(),  // folded headings: 'cs-<section>' and 'ph:<prose heading>'
     titleBy: 'founder', slugBy: 'founder', policyBy: 'founder',
-    emailSent: false, emailVerified: false, mailOpen: false,
+    mailOpen: false,
     viewer: 0,
     app: { started: false, email: '', emailSent: false, emailVerified: false,
       mailOpen: false, name: '', pic: '', text: '', submitted: false, csId: null },
@@ -342,6 +346,7 @@
     quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
     joinBy: 'invite', rosterBy: 'roster',
     lapse: 'roster', lapseDays: 90,
+    removal: 'roster',
     authorship: 'roster', signing: 'roster', judgments: 'roster',
     rateBy: 'founder', grant: 4, dripMin: 180, cap: 8,
     chamber: 'roster', auditor: false, auditorBudget: 6,
@@ -375,6 +380,17 @@
   Object.defineProperty(S, 'okd', { get: () => (viewerRow().okd || (viewerRow().okd = new Set())) });
   // a motion draft and your consent answers are yours, not the room's
   Object.defineProperty(S, 'mAns', { get: () => (viewerRow().mAns || (viewerRow().mAns = {})) });
+  // **Everyone logged in has an email** (Ed, 2026-08-19): the 📧 card is
+  // any member's, in their own You stack. Verification is per seat, and an
+  // arrived member's address is verified by construction — the invitation
+  // link WAS the login — so only the founder at the birth, or anybody who
+  // has just changed their address, is ever asked.
+  Object.defineProperty(S, 'emailSent', {
+    get: () => !!viewerRow().eSent, set: (v) => { viewerRow().eSent = v; } });
+  Object.defineProperty(S, 'emailVerified', {
+    get: () => { const r = viewerRow();
+      return r.eVerified !== undefined ? r.eVerified : !!(cs && r.in); },
+    set: (v) => { viewerRow().eVerified = v; } });
   Object.defineProperty(S, 'draft', { get: () => viewerRow().draft || null,
     set: (v) => { viewerRow().draft = v; } });
   const me = () => ({ n: S.myname, pic: S.mypic });
@@ -484,7 +500,7 @@
     // constitution to point at (Ed, 2026-08-18)
     document.getElementById('toc').innerHTML =
       (!settled(card('slug')) ? '' :
-      '<li class="lvl1"><a href="#cs-constitution">Constitution</a></li>' +
+      '<li class="lvl1">' + secToggleHtml('cs-constitution') + '<a href="#cs-constitution">Constitution</a></li>' +
       secLive().filter((s2) => !s2.railOnly).map((s2) =>
         '<li class="lvl2">' + secToggleHtml('cs-' + s2.key) + '<a href="#cs-' + s2.key + '">' + esc(s2.title) + '</a></li>').join('') +
       '<li class="lvl1"><a href="#dochead">' + esc(S.title || 'Untitled document') + '</a></li>') +
@@ -521,7 +537,7 @@
   // which **pile** a card stands in: taking a setting back moves its tab from
   // the members' pile to the founder's, in front of you.
   const DELEGABLE = ['ending', 'barBy', 'quorumBy', 'authorship', 'signing',
-    'judgments', 'rateBy', 'chamber', 'auditor', 'lapse'];
+    'judgments', 'rateBy', 'chamber', 'auditor', 'lapse', 'removal'];
   const delegated = (key) => DELEGABLE.includes(key) && S[key] === 'roster';
 
   // **The gates are cards** (Ed, 330b) — see the ceremony surface for the
@@ -529,7 +545,7 @@
   // room, and they stand in the members' pile because what they gate is what
   // the members will be able to do.
   const GATES = [
-    { k: 'canpropose', g: '✏️', t: 'Proposing', own: 'you', isGate: true,
+    { k: 'canpropose', g: '💡', t: 'Proposing', own: 'you', isGate: true,
       open: () => !!cs && !!viewerId() && cs.canPropose(viewerId()),
       why: 'Members can read a document from the first second, and they cannot propose against a text that is not there yet — nor should you be able to act on a document whose rules you have not yet said what you will accept of — so your own outstanding answers wait here too.',
       waiting: 'Waiting on the starting text, and on your own answers.',
@@ -543,11 +559,8 @@
       blockers: () => ceremony().filter((c) => !settled(c) || (isRoom(c) && (c.in || 0) < E())) },
   ];
 
-  // 🏷️ read as a label; Ed wants **home plate** (2026-08-19) — the title is
-  // where the document lives, and you come home to it. No code point draws
-  // a point-down pentagon, so it is drawn like the ✔ and ✖: the same .mkg
-  // stroke, taking the ink colour of wherever it stands.
-  const HOMEPLATE = '<svg class="mkg" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.1 1.9 H9.9 V6.3 L6 10.6 L2.1 6.3 Z"/></svg>';
+  // 🪶 (Ed, 2026-08-19) — the quill, retiring the drawn home plate of the
+  // same morning: the title is the document's first act of writing.
   const CARDS = [
     // — the opening order is Ed's, card by card (2026-08-18): **title →
     // email (verified) → link → the rest**. The first three are the order
@@ -557,7 +570,7 @@
     // arriving at docs.vote you are asked exactly one thing.
     // inDoc: the document's own heading IS the title (Ed, 2026-08-18) — no
     // paragraph restates it; the heading opens the card
-    { k: 'title', g: HOMEPLATE, t: 'Title', kind: 'ordinary', inDoc: true, ready: () => !!S.title, changeable: true },
+    { k: 'title', g: '🪶', t: 'Title', kind: 'ordinary', inDoc: true, ready: () => !!S.title, changeable: true },
     // Pre-filled with a slug generated from the title and checked against the
     // ones that already exist; confirming it is what SAVES the document.
     // **The address is verified before anything is saved** (Ed, 2026-08-18:
@@ -566,9 +579,11 @@
     // in is a magic link — so the first mail is the proof the address works,
     // sent while nothing yet exists and a typo still costs nothing. The mail
     // is the login: clicking it is what carries you on to the save.
+    // everyone logged in has one (Ed, 2026-08-19) — it stands in the You
+    // stack beside ✋ and 🖼️, to be changed or re-verified from any seat
     { k: 'myemail', g: '📧', t: 'Your Email', kind: 'personal', own: 'you', dep: ['title'],
-      hide: () => !amFounder(), ready: () => S.emailVerified, changeable: true },
-    { k: 'slug', g: '🔗', t: 'Link', kind: 'ordinary', dep: ['myemail'], ready: () => SLUG_OK.test(S.slug), changeable: true },
+      hide: () => S.viewer === 'applicant', ready: () => S.emailVerified, changeable: true },
+    { k: 'slug', g: '📍', t: 'Link', kind: 'ordinary', dep: ['myemail'], ready: () => SLUG_OK.test(S.slug), changeable: true },
     // — the rest, together once the document exists ----------------------
     // 🎩 folded into 🪪 (Ed, 2026-08-18): whether the founder is a
     // member is just whether they invite themselves, asked as their own
@@ -580,7 +595,10 @@
     // (before that the 🪪 card's own invitation box is the door).
     { k: 'invite', g: '✉️', t: 'Invite a Member', kind: 'constitutional', dep: ['roster'],
       hide: () => !motionsLive(), ready: () => true },
+    // the door composes by whatever route the 🚪 setting decides (Q401):
+    // ordinary races at the bar, either consent rung is constitutional
     { k: 'remove', g: '❌', t: 'Remove a Member', kind: 'constitutional', dep: ['roster'],
+      routeOf: () => (removalRung() === 'ordinary' ? 'ordinary' : 'constitutional'),
       hide: () => !motionsLive(), ready: () => true },
     { k: 'hat', g: '🎩', t: 'Is the Founder a member?', kind: 'personal', ready: () => true, changeable: true },
     // **The register and the door are two decisions** (Ed, 2026-08-18: *We
@@ -679,6 +697,12 @@
     // §9.6's test the honest way round: it re-rates nothing already decided,
     // and it binds by consent, since everyone stated the shortest spell they
     // would accept on the way in.
+    // **How is a member removed?** (Q401a, Ed 2026-08-19: *perfect*) —
+    // three routes, the middle one a decision class of its own: everyone's
+    // consent minus the subject. The subject always sees a removal proposed
+    // against them, whichever route holds.
+    { k: 'removal', g: '🚪', t: 'How Is a Member Removed?', kind: 'constitutional', key: 'removal', dep: ['roster'], p: 0.24,
+      rule: 'Each member states the <b>easiest removal</b> they would accept, and the document takes the most protective — one member who wants everyone asked keeps everyone asked.' },
     { k: 'lapse', g: '💤', t: 'Do Memberships Lapse?', kind: 'constitutional', gate: 'judge', key: 'lapse', dep: ['roster'], p: 0.29,
       rule: 'Each member states the <b>shortest period of inactivity</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all — so nobody is lapsed faster than they accepted.',
       takes: 'The document takes the longest', result: 'Never',
@@ -704,7 +728,7 @@
   // value — it is what the tabs say when both are given up. 🔧 is Ed’s
   // pick over ⚙️: the founder is there to get things going, then step back.
   const Q = "’", LD = "“", RD = "”";
-  const PW_KEYS = ['title', 'slug', 'ending', 'bar', 'pace', 'quorum',
+  const PW_KEYS = ['title', 'slug', 'ending', 'bar', 'pace', 'quorum', 'removal',
     'authorship', 'signing', 'judgments', 'chamber', 'rate', 'lapse', 'machines'];
   const isDelegable = (k) => PW_KEYS.includes(k) && k !== 'title' && k !== 'slug';
   const PWCACHE = {};
@@ -808,24 +832,27 @@
     }
     S[key] = undefined;
   }
-  // 404 (Ed, 2026-08-19): the defaults stated once, at the top — each
-  // clause below states only its deviations, so a fully delegated rule
-  // needs no governance sentence at all
+  // 404 (Ed, 2026-08-19): the defaults stated once — each clause states
+  // only its deviations, so a fully delegated rule needs no governance
+  // sentence at all. It opens the **Proposals** section now (Ed, same
+  // day: proposing is what the defaults are about), in his wording, with
+  // the deviation baseline kept as its last sentence.
   const preamblePara = () =>
-    '<div class="cpara notab"><p class="cpv">Anyone here may propose changing any rule below: ✏️ rules carry at the approval threshold, and 🏛️ rules need everyone' + Q + 's consent. Nobody changes a rule directly, and no carried change waits on anyone' + Q + 's OK, unless a rule says so.</p></div>';
-  // The title’s governance clause (403/404): the old 🗝️ paragraph wearing
-  // the two power tabs — no value tab, because the value IS the heading at
-  // the head of the text. Fully delegated it says nothing (the preamble
-  // covers it), and the paragraph leaves with its last power.
+    '<div class="cpara notab"><p class="cpv">Members may propose changes to rules. Ordinary proposals ✏️ pass when they meet the approval threshold. Constitutional proposals 🏛️ need everyone' + Q + 's consent. Nobody changes a rule directly, and no carried change waits on anyone' + Q + 's OK, unless a rule says so.</p></div>';
+  // The title's clause (403/404, revised Ed 2026-08-19: *move title tab to
+  // the first clause once that clause appears*): the 🪶 value tab stands in
+  // front of the two power tabs — the governance tab group proper — so once
+  // the document exists the way into the title card is its own paragraph,
+  // not the heading's gutter. The paragraph therefore always renders while
+  // the constitution does: the tab needs a home even when the powers say
+  // nothing.
   const titleGovPara = (h) => {
     if (!cs) return '';
-    const tU = card('pw:u:title');
-    const tA = card('pw:a:title');
-    if (S.open === tU.k || S.open === tA.k) return h.paraWith(card(S.open), [tU, tA]);
-    const line = holderLine('title');
-    if (!line) return '';
-    return '<div class="cpara">' + h.pile([tU, tA]) +
-      '<div class="cptext"><p class="cpv">The document is titled ' + LD + esc(S.title || 'Untitled document') + RD + '.' + line + '</p></div></div>';
+    const chips = [card('title'), card('pw:u:title'), card('pw:a:title')];
+    const openHere = chips.find((c) => S.open === c.k);
+    if (openHere) return h.paraWith(openHere, chips);
+    return '<div class="cpara">' + h.pile(chips) +
+      '<div class="cptext"><p class="cpv">The document is titled ' + LD + esc(S.title || 'Untitled document') + RD + '.' + (holderLine('title') || '') + '</p></div></div>';
   };
   const isRoom = (c) => !!(c.key && delegated(c.key));
   // who holds it (§9.7 v0.52): any setting the founder has delegated —
@@ -867,6 +894,9 @@
   const ready = (c) => (c.ansFor ? filled(c) : c.ready ? c.ready() : true);
   const settled = (c) => {
     if (c.k === 'hat') return true; // always answered — member by default
+    // verified is the whole of what this card asks (a member's address is
+    // verified by arrival; changing it un-verifies and asks again)
+    if (c.k === 'myemail') return S.emailVerified;
     if (c.k === 'invite' || c.k === 'remove') return true;     // doors, not decisions
     if (c.isGate) return S.okd.has(c.k);
     if (c.ansFor) return answered(c);
@@ -879,7 +909,12 @@
   };
   // nothing on a founder-held card is asked of anybody else: a member sees
   // it waiting (⏳) until it settles, then as news to acknowledge
-  const mustAct = (c) => (motionOn(c) ? (viewerIsMember() && !answeredMotion(c))
+  // the subject of a removal under 'others' is shown the motion, never
+  // asked by it (Q401a)
+  const motionExcludesMe = (c) => { const rec = liveMotionRec(c);
+    return !!(rec && rec.payload && rec.payload.kind === 'remove' &&
+      removalRung() === 'others' && rec.payload.member === viewerId()); };
+  const mustAct = (c) => (motionOn(c) ? (viewerIsMember() && !answeredMotion(c) && !motionExcludesMe(c))
     : c.isGate ? (c.open() && !S.okd.has(c.k))
     : c.ansFor || c.own === 'you' || amFounder() ? !settled(c)
     : false);
@@ -922,14 +957,16 @@
     // no intro line (Ed, 2026-08-18) — the sentences are the section
     { key: 'members', title: 'Membership',
       text: '',
-      keys: ['roster', 'invite', 'remove', 'policy', 'lapse', 'myemail', 'myname', 'mypic'],
+      keys: ['roster', 'invite', 'remove', 'policy', 'lapse', 'removal', 'myemail', 'myname', 'mypic'],
       // **Members and Applications are subsections** (Ed, 2026-08-18):
       // Members IS the list — 🪪, the tab for invitations, stands beside
       // it, and the bottom row is your own membership wearing the ✋ and
       // 🖼️ tabs. Applications is the 🤝 decision (its Applicants list
       // arrives with the first applicant, after the start).
       body: (h) => {
-        const my = ['myname', 'mypic'].map(card).filter((c) => c && visible(c));
+        // the You stack: name, picture, email (Ed, 2026-08-19 — everyone
+        // logged in has an address they may want to change or re-send)
+        const my = ['myname', 'mypic', 'myemail'].map(card).filter((c) => c && visible(c));
         const others = S.roster.filter((p) => !p.founder);
         const list = '<div class="memlist">' +
           others.map((p) => '<div class="memrow">' + avHtml(p) +
@@ -939,11 +976,11 @@
           '<span class="mn">' + esc(S.myname || 'Anonymous') + ' <span class="chip founder">founder</span> <span class="chip">you</span>' +
           (iDraft() ? '' : ' <span class="chip">clerk</span>') + '</span></div></div>';
         const openId = my.find((c) => S.open === c.k);
-        const rest = ['myemail']
-          .map(card).filter((c) => c && visible(c));
-        // policy first, lapse under it, then the Members list (Ed)
+        // policy first, lapse under it, removal under that (Q401: "a new
+        // paragraph under 💤 Lapse"), then the Members list (Ed)
         return (visible(card('policy')) ? h.para(card('policy')) : '') +
           (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
+          (visible(card('removal')) ? h.para(card('removal')) + h.tasks(card('removal')) : '') +
           '<h2 class="docline lvl3">Members</h2>' +
           (() => { const pileCards = ['roster', 'invite', 'remove', 'hat']
             .map(card).filter((c) => c && visible(c));
@@ -952,18 +989,23 @@
             : visible(card('roster'))
             ? '<div class="cpara">' + h.pile(pileCards) + list + '</div>'
             : ''); })() +
-          (openId ? h.paraWith(openId, my) : '') +
-          rest.map((c) => h.para(c) + h.tasks(c)).join('');
+          (openId ? h.paraWith(openId, my) : '');
       } },
-    // the gates lead the Proposals section (Ed, 2026-08-18)
+    // the gates lead the Proposals section (Ed, 2026-08-18); the preamble
+    // opens it (Ed, 2026-08-19 — moved from the head of the constitution,
+    // redrafted in his words); no intro lines — the sections are not big
+    // enough to need explanations, and the clauses ought to be
+    // self-explanatory (Ed, 2026-08-19)
     { key: 'rate', title: 'Proposals',
-      text: 'How often anybody may put something to the room, and whether an AI drafts proposals alongside them.',
+      text: '',
+      lead: () => (cs ? preamblePara() : ''),
       keys: ['canpropose', 'canjudge', 'rate', 'machines'] },
     { key: 'deciding', title: 'Decisions',
-      text: 'How a change carries: how many must weigh in, how sure the room must be, and when the document ends.',
+      text: '',
       keys: ['ending', 'quorum', 'bar', 'pace'] },
-    { key: 'privacy', title: 'Privacy',
-      text: 'Who is seen doing what — proposing, signing, and judging.',
+    // "Anonymity" (Ed, 2026-08-19), not "Privacy"
+    { key: 'privacy', title: 'Anonymity',
+      text: '',
       keys: ['authorship', 'signing', 'judgments'] },
     // rail-only: the title is the heading, the link leads the constitution,
     // and the starting text anchors the prose (Ed, 2026-08-18)
@@ -988,7 +1030,7 @@
       sections: secLive(),
       // Founded by [avatar] [name] — only once the founder has a name; the
       // founding time is never known before the start (Ed)
-      lead: (h) => (cs ? preamblePara() : '') + titleGovPara(h) +
+      lead: (h) => titleGovPara(h) +
         (visible(card('slug')) ? h.para(card('slug')) : '') +
         // 🌍 is about the document, not member privacy — the penultimate
         // clause of the opening section (Ed, 2026-08-19)
@@ -1056,6 +1098,9 @@
       return (on ? 'The coherence auditor, ' + (tv && tv.enabled ? tv.budget : S.auditorBudget) + ' ✏️s' : 'People only'); },
     lapse: () => (S.lapse === 'never' ? 'Never — however long inactive'
       : 'After ' + S.lapseDays + ' days of inactivity'),
+    removal: () => ({ everyone: 'Everyone consents — theirs included',
+      others: 'Everyone but them consents', ordinary: 'An ordinary proposal ✏️' }[
+      takenOf('removal') || (S.removal === 'roster' ? 'everyone' : S.removal)]),
     canpropose: () => (canPropose() ? 'Open' : 'Waiting on the starting text'),
     canjudge: () => (canJudge() ? 'Open' : 'Waiting on the constitution'),
   };
@@ -1071,6 +1116,8 @@
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
     machines: (v) => 'You said ' + (v ? 'AI proposals are fine' : 'no AI proposals'),
     lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days of inactivity'),
+    removal: (v) => 'You said ' + ({ everyone: 'everyone consents, theirs included',
+      others: 'everyone but them', ordinary: 'an ordinary proposal ✏️' }[v] || v),
     rate: (v) => 'You said ' + v,
   };
   const ANSASK = { quorum: 'The lowest you will accept', bar: 'The lowest you will accept',
@@ -1078,6 +1125,7 @@
     signing: 'The most you will accept', judgments: 'The most you will accept',
     chamber: 'The most you will accept', machines: 'The most you will accept',
     lapse: 'The shortest you will accept',
+    removal: 'The easiest you will accept',
     rate: 'The most generous you will accept' };
   const value = (c) => (c.ansFor
     ? esc(filled(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
@@ -1142,7 +1190,8 @@
   };
   const pageMotion = (rec) => ({ id: rec.id, kind: rec.route, by: rec.by,
     why: rec.why || '', to: motionDisplay(rec), status: rec.status,
-    invite: rec.payload.kind === 'invite' ? rec.payload.email.split('@')[0] : undefined });
+    invite: rec.payload.kind === 'invite' ? rec.payload.email.split('@')[0] : undefined,
+    removee: rec.payload.kind === 'remove' ? rec.payload.member : undefined });
   const liveMotionRec = (c) => {
     if (!cs || !c || c.isGate || c.ansFor || !motionsLive()) return null;
     for (const rec of cs.motionRecords().values()) {
@@ -1218,6 +1267,9 @@
     pace: { 'The close bar throughout': { shape: 'fixed' } },
     ending: { 'Never — it runs until it is frozen': { endsAtMs: null } },
     lapse: { 'Never — however long inactive': { afterMs: null } },
+    removal: { 'Everyone must consent — theirs included': { rung: 'everyone' },
+      'Everyone but them must consent': { rung: 'others' },
+      'An ordinary proposal ✏️': { rung: 'ordinary' } },
     machines: { 'People only': { enabled: false, budget: 0 } },
     chamber: { 'Members only': { rung: 'closed' }, 'Anyone with the link': { rung: 'link' }, 'Public': { rung: 'public' } },
     authorship: { 'Nobody’s name, ever': { rung: 'anonymous' }, 'Names at the close': { rung: 'sealed' }, 'Names from the start': { rung: 'public' } },
@@ -1325,6 +1377,9 @@
     signing: (v) => ({ nobody: 'Nobody signs', each: 'Each author chooses', everybody: 'Everybody signs' })[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed after the decision' })[v],
     lapse: (v) => (v === 'never' ? 'Never — however long inactive' : 'After ' + v + ' days of inactivity'),
+    removal: (v) => ({ everyone: 'Everyone must consent — theirs included',
+      others: 'Everyone but them must consent',
+      ordinary: 'An ordinary proposal ✏️' })[v],
     machines: (v) => (v ? 'The coherence auditor drafts here' : 'People only'),
     quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership' : v + '% of the membership'),
     bar: (v) => v + '% sure at the close',
@@ -1394,6 +1449,10 @@
         esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '"> of the membership.')
       : inputBlock('Quorum is <input class="num" type="number" min="1" max="100" data-mnum="% of the membership" value="' +
         esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct) + '">% of the membership.')),
+    removal: (d) => lanesFor(d, [
+      ['Everyone must consent — theirs included', 'Removing a member needs everyone’s consent, their own answer counted among everyone’s.'],
+      ['Everyone but them must consent', 'Removing a member needs the consent of everyone but them.'],
+      ['An ordinary proposal ✏️', 'A member is removed by ordinary proposal, judged at the approval threshold.']], 'removal'),
     lapse: (d) => lanesFor(d, [['Never — however long inactive',
         'A membership never lapses, however long inactive.']], 'lapse') +
       inputBlock('A membership lapses after ' +
@@ -1461,7 +1520,17 @@
     '<span class="exp">An answer, not a block: they can join without your consent counting either way.</span></div></div>' + BLINDNOTE;
   const removeBody = (m) => {
     const nm = String(m.to || '').replace(/ leaves the membership$/, '');
-    return '<p class="why">Whether <b>' + esc(nm) + '</b> leaves the membership. Removing a member changes what quorum is a fraction of, so it is constitutional — and their own answer counts among everyone’s.</p>' +
+    // 🏛️ without [avatar] (Q401a): under 'others' the subject sees the
+    // motion running against them — ruled, Ed 2026-08-19 — and is asked
+    // nothing; it settles without them.
+    if (removalRung() === 'others' && m.removee && m.removee === viewerId()) {
+      return '<p class="why">Whether <b>you</b> leave the membership. Under this document’s rule that is decided by <b>everyone but you</b> — you see it running, and your answer is not asked.</p>' +
+        '<p class="setnote">' + (m.judged || 0) + ' of ' + Math.max(E() - 1, 0) + ' have answered. One refusal keeps you in.</p>';
+    }
+    return '<p class="why">Whether <b>' + esc(nm) + '</b> leaves the membership. Removing a member changes what quorum is a fraction of, so it is constitutional — ' +
+    (removalRung() === 'others'
+      ? 'decided by everyone but them; they see it running.'
+      : 'and their own answer counts among everyone’s.') + '</p>' +
     '<div class="choice" role="radiogroup">' +
     '<div class="pick' + (S.mAns.remove === 'no' ? ' on' : '') + '"><button class="lanepick"' +
     ' aria-pressed="' + (S.mAns.remove === 'no') + '" data-motion="no"><span class="dot"></span>' +
@@ -1530,7 +1599,7 @@
         quorum: (S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
         bar: S.tClose, authorship: 'anonymous', signing: 'nobody',
         judgments: 'never', chamber: 'closed', machines: false,
-        lapse: 'never', rate: S.grant };
+        lapse: 'never', removal: 'everyone', rate: S.grant };
       for (const k of Object.keys(FILL)) {
         const st = csState(k);
         if (!st || !st.collecting) continue;
@@ -1613,12 +1682,16 @@
     judgments: 'whether judgments are revealed with the record',
     chamber: 'who may read the document',
     lapse: 'whether an inactive membership lapses',
+    removal: 'how a member is removed',
     machines: 'whether an AI makes proposals',
     rate: 'how often members may propose',
     policy: 'how people become members',
     slug: 'the document’s address',
     text: 'the text the document starts from',
   };
+  // the 🚪 rung as it stands (Q401) — unset reads as today's rule
+  const removalRung = () => takenOf('removal') ||
+    (S.removal === 'roster' ? 'everyone' : S.removal);
   const endFmt = () => new Date((endingVal() !== 'never' && endingVal()) || S.endsAt)
     .toLocaleString(undefined,
       { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).replace(' ', ' at ');
@@ -1670,8 +1743,18 @@
         open: 'Anyone with the link joins on arrival.' })[v ? v.joinPolicy : S.joinBy] +
         regLine(v ? v.holder : regHolder()); },
     slug: () => 'The document lives at docs.vote/' + S.slug + '.',
+    removal: () => ({
+      everyone: 'Removing a member needs everyone’s consent — their own answer counted among everyone’s.',
+      others: 'Removing a member needs the consent of everyone but them — they see the proposal, and it settles without them.',
+      ordinary: 'A member is removed by ordinary proposal ✏️ — judged at the approval threshold, with quorum.',
+    })[removalRung()],
     invite: () => 'Anyone may be proposed for membership — an invitation is constitutional, and one refusal keeps them out.',
-    remove: () => 'A member may be proposed for removal — constitutional, and their own answer counts among everyone’s.',
+    // the ❌ door states whatever route the 🚪 setting decides (Q401)
+    remove: () => ({
+      everyone: 'A member may be proposed for removal — constitutional, and their own answer counts among everyone’s.',
+      others: 'A member may be proposed for removal — constitutional, decided by everyone but them.',
+      ordinary: 'A member may be proposed for removal — an ordinary proposal ✏️, judged at the approval threshold.',
+    })[removalRung()],
     text: () => { const n = [...prose.children].filter((b) => b.textContent.trim()).length;
       return n ? 'The document starts from ' + n + ' blocks of text.'
         : 'The document starts empty — the room writes it.'; },
@@ -1687,6 +1770,11 @@
     return (p.unilateral ? ' The Founder may change this directly.' : '') +
       (p.assent ? ' A change the members carry comes to the Founder as a 👑 question.' : '');
   };
+  // **Links in the constitution are real links** (Ed, 2026-08-19):
+  // underlined, ink-coloured (.doclink), applied after escaping so a
+  // sentence can never smuggle markup in
+  const linkify = (s) => String(s).replace(/\bdocs\.vote\/[a-z0-9][a-z0-9-]*/g,
+    (m2) => '<a class="doclink" href="https://' + m2 + '" target="_blank" rel="noopener">' + m2 + '</a>');
   const decisionLine = (c) => {
     if (c.ansFor) return answered(c)
       ? 'The Founder has answered as a member.'
@@ -1699,9 +1787,9 @@
     if (c.k === 'canjudge') return canJudge()
       ? 'Members may judge proposals.'
       : 'Members may begin judging proposals when the whole constitution has been decided.';
-    if (c.k === 'myemail') return S.emailVerified ? 'The Founder’s address is verified.'
-      : S.emailSent ? 'The Founder’s address is awaiting verification.'
-      : 'The Founder’s address is not yet given.';
+    if (c.k === 'myemail') return S.emailVerified ? 'Your address is verified.'
+      : S.emailSent ? 'Your address is awaiting verification.'
+      : 'Your address is not yet given.';
     if (c.kind === 'personal') return summary(c);
     if (isRoom(c)) {
       const st = csState(c.k);
@@ -1723,8 +1811,12 @@
     inDocOpenSlot: false,
     headFor: (c) => {
       if (c.power) return esc(powerHeadLine(c));
-      if (c.k === 'title') return '<span class="headdoct' + (S.title ? '' : ' ph') + '">' +
-        esc(S.title || 'Untitled document') + '</span>';
+      // post-save the title card opens at its own clause, so its head is
+      // the clause sentence (the headdoct span stays: refreshCommit types
+      // into it live); at the birth it is still the big heading itself
+      if (c.k === 'title') return (cs ? 'The document is titled ' + LD : '') +
+        '<span class="headdoct' + (S.title ? '' : ' ph') + '">' +
+        esc(S.title || 'Untitled document') + '</span>' + (cs ? RD + '.' : '');
       const m = motionOn(c);
       // an ordinary motion's head is the value as it stands, wearing the
       // keep-lane; a constitutional one re-opens the question, title head.
@@ -1737,9 +1829,9 @@
       // itself) — and open questions, which their title names better than
       // a rule that does not exist yet.
       if (c.k === 'text' || c.k === 'roster') return null;
-      if (c.isGate) return esc(decisionLine(c));
+      if (c.isGate) return linkify(esc(decisionLine(c)));
       if (c.ansFor || c.kind === 'personal') return null;
-      if (settled(c)) return esc(decisionLine(c));
+      if (settled(c)) return linkify(esc(decisionLine(c)));
       if (composerOn(c)) return esc(standsOf(c.k));
       return null;
     },
@@ -1751,13 +1843,17 @@
       !sec.cards.some((c) => S.open === c.k ||
         (tasksFor(c) || []).some((t2) => S.open === t2.k)),
     secToggle: (sec) => secToggleHtml('cs-' + sec.key),
+    // the whole constitution folds under its own heading (Ed, 2026-08-19);
+    // never while any card is open — a fold must not swallow the open card
+    foldedGroup: () => S.folded.has('cs-constitution') && !S.open,
+    groupToggle: () => secToggleHtml('cs-constitution'),
     // power tabs (403): synthetic cards — never asks, never tasks; their
     // decision line is the power's own rule sentence
     mustAct: (c) => (c.power ? false : mustAct(c)),
     waiting: (c) => (c.power ? false : waiting(c)),
     news: (c) => (c.power ? false : news(c)),
     tasksFor: (c) => (c.power ? [] : tasksFor(c)),
-    decisionLine: (c) => (c.power ? powerHeadLine(c) : decisionLine(c)),
+    decisionLine: (c) => linkify(c.power ? powerHeadLine(c) : decisionLine(c)),
     chipsFor: (c) => (cs && !c.power && !c.ansFor && PW_KEYS.includes(c.k)
       ? [c, card('pw:u:' + c.k), card('pw:a:' + c.k)] : [c]),
     summary, value, isRoom,
@@ -1810,12 +1906,15 @@
       el.textContent = S.title || 'Untitled document';
       el.classList.toggle('ph', !S.title);
     }
-    // the open card IS the title, so the heading does not also stand
-    // above it (the decision-card gesture: the clause, opened); closed,
-    // the tab beside it is the door, and the heading is just a heading
-    d.style.display = S.open === 'title' ? 'none' : '';
+    // At the birth the open card IS the title, so the heading does not also
+    // stand above it (the decision-card gesture: the clause, opened) and
+    // the tab stands beside the heading. Once the document exists the tab
+    // lives on the "The document is titled…" clause instead (Ed,
+    // 2026-08-19), the heading is just a heading, and it stays put while
+    // the card opens down at its clause.
+    d.style.display = (!cs && S.open === 'title') ? 'none' : '';
     document.getElementById('titlechip').innerHTML =
-      S.open === 'title' ? '' : pileHtml([card('title')], ctx);
+      (cs || S.open === 'title') ? '' : pileHtml([card('title')], ctx);
     prose.classList.toggle('pasteready', visible(card('text')));
   }
 
@@ -1844,6 +1943,7 @@
     rateBy: 'The proposal rate is delegated to the members',
     chamber: 'Visibility is delegated to the members',
     lapse: 'Membership lapse is delegated to the members',
+    removal: 'Removal is delegated to the members',
     auditor: 'AI proposals are delegated to the members',
     titleBy: 'The title is delegated to the members',
     slugBy: 'The link is delegated to the members',
@@ -1959,14 +2059,19 @@
         '<span class="fld"><label>Change it</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" style="width:20rem"></span>' +
         '<p class="setnote">Changing it starts verification again — the new address has to prove it works too.</p>'
       : S.emailSent
-      ? '<p class="why">Sent to <b>' + esc(S.myemail) + '</b>. Nothing is saved yet, so a typo here still costs nothing — which is exactly why this happens now and not after.</p>' +
+      ? '<p class="why">Sent to <b>' + esc(S.myemail) + '</b>. ' + (cs
+          ? 'The mail is the login: clicking its link is what proves the address works.'
+          : 'Nothing is saved yet, so a typo here still costs nothing — which is exactly why this happens now and not after.') + '</p>' +
         '<div style="margin-top:var(--s3)"><button class="btn" data-act="openmail">Open your inbox</button> ' +
+        '<button class="btn" data-act="sendverify">Resend the link</button> ' +
         '<button class="btn" data-act="editemail">Wrong address?</button></div>' +
-        '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works and carries you on to the save.</p>'
-      : '<p class="why">Before anything is saved, this address has to prove it works — because there are no passwords, and it is the only way back in. A document saved under an address with a typo in it would be lost the moment this tab closes.</p>' +
+        '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works' + (cs ? '.' : ' and carries you on to the save.') + '</p>'
+      : '<p class="why">' + (cs
+          ? 'Your address is the only way back in — there are no passwords — so a new one has to prove it works before it replaces the old.'
+          : 'Before anything is saved, this address has to prove it works — because there are no passwords, and it is the only way back in. A document saved under an address with a typo in it would be lost the moment this tab closes.') + '</p>' +
         '<span class="fld"><label>Your email</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>' +
         '<div style="margin-top:var(--s3)"><button class="btn"' + (EMAIL_OK.test(S.myemail) ? '' : ' disabled') + ' data-act="sendverify">Send the link</button></div>' +
-        '<p class="setnote">Yours alone — it appears nowhere in the document, and it is not your name: who you are in the room is the ✋ card, later.</p>'),
+        '<p class="setnote">Yours alone — it appears nowhere in the document, and it is not your name: who you are in the room is the ✋ card' + (cs ? '' : ', later') + '.</p>'),
     myname: () => nameBody(me(), { optional: !iDraft() }),
     mypic: () => pictureBody(me()),
     // **Whether the founder is in it is its own question** (Ed, 2026-08-18).
@@ -2115,6 +2220,15 @@
         '<span class="setrow2">' + num(S, 'lapseDays', 'Days of inactivity', 7, 365) + '</span>') +
       opt(S, 'lapse', 'never', 'Never', 'A membership holds however long its holder is away.') +
       theyDecide('lapse', 'Each states the <b>shortest period of inactivity</b> they would accept being lapsed after, and the document takes the longest — <b>never</b> being the longest of all.') +
+      '</div>',
+    removal: () =>
+      '<div class="unlocks">Part of the constitution.</div>' +
+      '<p class="why">How the room may remove a member. Whichever route holds, the member sees a removal proposed against them — nobody is removed in secret.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      theyDecide('removal', 'Each states the <b>easiest removal</b> they would accept, and the document takes the most protective — one member who wants everyone asked keeps everyone asked.') +
+      opt(S, 'removal', 'everyone', 'Everyone must consent — theirs included', 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.') +
+      opt(S, 'removal', 'others', 'Everyone but them must consent', 'The room may remove a member who objects — but only the whole room, minus them.') +
+      opt(S, 'removal', 'ordinary', 'An ordinary proposal ✏️', 'A removal is judged at the approval threshold like any change, with quorum.') +
       '</div>',
     machines: () =>
       '<p class="why">An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.</p>' +
@@ -2367,9 +2481,11 @@
     // the title card opens in the title's own paragraph, whatever else
     // the band is doing — the clause, opened, with its tab in its strip
     const tp = document.getElementById('titlepara');
-    tp.classList.toggle('open', S.open === 'title');
+    // only at the birth: post-save the title opens at its own clause in
+    // the constitution (titleGovPara), never over the heading
+    tp.classList.toggle('open', !cs && S.open === 'title');
     tp.querySelectorAll('.setupcard').forEach((el) => el.remove());
-    if (S.open === 'title') tp.insertAdjacentHTML('beforeend', cardFor(groups()[0]));
+    if (!cs && S.open === 'title') tp.insertAdjacentHTML('beforeend', cardFor(groups()[0]));
     // **Before the save there is no constitution** (Ed, 2026-08-18): an
     // unsaved document is a topbar, an outline, an empty title and its
     // tasks. The band holds only the open card, in the section geometry
@@ -2402,7 +2518,7 @@
   const textRect = (el) => { const r = document.createRange();
     r.selectNodeContents(el); const rs = r.getClientRects(); return rs.length ? rs[0] : null; };
   function fitTitleCard() {
-    if (S.open !== 'title') return;
+    if (S.open !== 'title' || cs) return; // post-save fitBand owns the card
     const cardEl = document.querySelector('#titlepara > .setupcard');
     const hd = cardEl && cardEl.querySelector('.headdoct');
     const d = document.getElementById('doctitle');
@@ -2632,6 +2748,23 @@
     if (stg) { const k2 = stg.getAttribute('data-sec-toggle');
       if (S.folded.has(k2)) S.folded.delete(k2); else S.folded.add(k2);
       return render(); }
+    // **Clicking a heading's text folds it** (Ed, 2026-08-19). A plain
+    // click only: a drag-selection or shift-click is editing/selecting and
+    // must survive, so anything that leaves a real selection is let be —
+    // which is also what keeps prose headings editable (highlight, then
+    // type). Double-click still selects a word: its two clicks fold and
+    // unfold, net nothing.
+    if (getSelection().isCollapsed && !ev.shiftKey && !ev.target.closest('a, button, input')) {
+      const hSec = ev.target.closest('h2.docline[id^="cs-"], .pilehead#cs-constitution');
+      if (hSec) { const k2 = hSec.id;
+        if (S.folded.has(k2)) S.folded.delete(k2); else S.folded.add(k2);
+        return render(); }
+      const hProse = ev.target.closest('[data-h]');
+      if (hProse && prose.contains(hProse)) {
+        const k2 = 'ph:' + hProse.dataset.h;
+        if (S.folded.has(k2)) S.folded.delete(k2); else S.folded.add(k2);
+        renderToc(); return; }
+    }
     const t = ev.target.closest('[data-tab], [data-card]');
     if (t) { const k = t.dataset.tab || t.dataset.card;
       if (S.open === k) return closeThen(() => { S.open = null; });
@@ -2723,7 +2856,10 @@
       if (api.birth && api.birth.devLink) { location.href = api.birth.devLink; return; }
       console.warn('[birth] the real mail is in your inbox — this preview cannot log you in');
       S.mailOpen = false; return render(); }
-    if (cm) { S.emailVerified = true; S.mailOpen = false; S.seen.add('myemail'); S.open = 'slug'; return render(); }
+    // at the birth the verified address carries you on to the save; on a
+    // living document it simply settles the card (Ed, 2026-08-19)
+    if (cm) { S.emailVerified = true; S.mailOpen = false; S.seen.add('myemail');
+      S.open = cs ? null : 'slug'; return render(); }
     const ee = ev.target.closest('[data-act="editemail"]');
     if (ee) { S.emailSent = false; return render(); }
     const an = ev.target.closest('[data-ans]');
@@ -3040,6 +3176,7 @@
       chamber: (x) => { S.chamber = x.rung; },
       rate: (x) => { S.grant = x.grant; S.cap = x.cap; S.dripMin = x.dripMinutes; },
       lapse: (x) => { S.lapse = x.afterMs === null ? 'never' : String(Math.round(x.afterMs / 86400000)); },
+      removal: (x) => { S.removal = x.rung; },
       machines: (x) => { S.auditor = x.enabled; if (x.enabled) S.auditorBudget = x.budget; },
       applications: (x) => { S.joinBy = x.joinPolicy;
         S.rosterBy = x.holder === 'members' ? 'roster' : 'founder';
@@ -3076,7 +3213,7 @@
     S.quorumBy = del('quorum') ? 'roster' : 'founder';
     S.quorumForm = v.quorumForm;
     const qv = val('quorum'); if (qv) { if (qv.form === 'share') S.quorumPct = qv.n; else S.quorumN = qv.n; }
-    for (const k of ['authorship', 'signing', 'judgments', 'chamber']) {
+    for (const k of ['authorship', 'signing', 'judgments', 'chamber', 'removal']) {
       const lv = val(k);
       S[k] = (del(k) && !lv) ? 'roster' : (lv ? lv.rung : S[k]);
     }
