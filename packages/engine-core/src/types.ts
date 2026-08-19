@@ -81,6 +81,23 @@ export interface Constitution {
   reopenedBoost: number;
 }
 
+/**
+ * The fields a carried amendment may change mid-session (SPEC §9.6, Q328:
+ * a carried amendment binds races in flight — a race is always evaluated
+ * against the constitution as it stands; past adoptions keep their
+ * recorded bar). Everything else in the Constitution is engine tuning or
+ * fixed at open (§9.0), and stake stays flat (§13).
+ */
+export interface ConstitutionAmendment {
+  adoptionThresholdEnd?: number;
+  windowEndMs?: number;
+  tokenGrant?: number;
+  tokenDripMinutes?: number;
+  tokenCap?: number;
+  authorshipVisibility?: Constitution['authorshipVisibility'];
+  quorum?: Constitution['quorum'];
+}
+
 export interface Participant {
   id: string;
   /** Display / contact handle; the engine never interprets it. */
@@ -163,6 +180,13 @@ export type Event =
       /** LF-normalized starting document. */
       text: string;
       roster: Participant[];
+      /**
+       * Initial standing values for settings the session may hold races
+       * over (SPEC §9.6, Q390): opaque to the engine — hashed for ground
+       * identity, never interpreted. Absent = no setting races possible
+       * until standings are set.
+       */
+      settings?: Record<string, unknown>;
     }
   | { type: 'participant-added'; t: number; participant: Participant }
   | { type: 'participant-removed'; t: number; participantId: string }
@@ -235,6 +259,29 @@ export type Event =
       t: number;
       id: string;
       patch: PatchSet;
+    }
+  | {
+      /**
+       * A carried amendment (SPEC §9.6, Q328): the constitution as it
+       * stands changes from here forward. The threshold never jumps
+       * because timings changed (§4.3): a windowEnd or ceiling change
+       * re-anchors the ramp at its current value.
+       */
+      type: 'constitution-amended';
+      t: number;
+      changes: ConstitutionAmendment;
+    }
+  | {
+      /**
+       * The standing value of a setting changed — by a carried motion the
+       * host applied, or a constitutional amendment (SPEC §9.6). For any
+       * setting race in flight this is a ground shift (§4.4): the
+       * incumbent id is a hash of the standing value.
+       */
+      type: 'standing-set';
+      t: number;
+      settingId: string;
+      value: unknown;
     }
   | { type: 'closed'; t: number };
 

@@ -11,6 +11,7 @@ import type {
   Candidate,
   Card,
   Constitution,
+  ConstitutionAmendment,
   Event,
   LogEntry,
   PairKind,
@@ -25,12 +26,15 @@ import { rebaseHunks } from './text/rebase.js';
 import { fitDavidson } from './ranking/davidson.js';
 import { chainHash, sha256Hex } from './hash.js';
 import { makeRng, type Rng } from './rng.js';
-import { adoptionThreshold } from './adoption-threshold.js';
+import { adoptionThreshold, smoothstep } from './adoption-threshold.js';
 import {
   balanceAt,
   credit,
+  dripIntervalMs,
+  materialize,
   openLedger,
   performanceRefund,
+  rephaseDrip,
   spend,
   type Ledger,
 } from './tokens.js';
@@ -39,6 +43,8 @@ export interface OpenInput {
   text: string;
   roster: Participant[];
   constitution: Constitution;
+  /** Initial standing values for settings (SPEC §9.6, Q390) — see types.ts. */
+  settings?: Record<string, unknown>;
 }
 
 export const DEFAULT_CONSTITUTION: Omit<
@@ -175,6 +181,15 @@ export class Session {
   private closedFlag = false;
   private lastT = -Infinity;
   private candidateCounter = 0;
+  /**
+   * The threshold ramp's current anchor (SPEC §4.3): where the live
+   * segment starts. Re-anchored by amendments to the close or the
+   * ceiling — keep the current value, ride to the ceiling over the new
+   * remainder — so a bar never jumps because timings changed.
+   */
+  private thresholdAnchor!: { t: number; value: number };
+  /** Standing values for settings (SPEC §9.6, Q390): opaque, hash-only. */
+  private settingsMap = new Map<string, unknown>();
   private fitCache = new Map<string, { key: string; fit: Fit }>();
 
   private constructor() {}
@@ -193,6 +208,7 @@ export class Session {
       constitution: input.constitution,
       text: input.text.replace(/\r\n?/g, '\n'),
       roster: input.roster,
+      ...(input.settings ? { settings: input.settings } : {}),
     });
     return s;
   }
@@ -230,6 +246,13 @@ export class Session {
     switch (event.type) {
       case 'opened': {
         this.constitutionValue = event.constitution;
+        this.thresholdAnchor = {
+          t: event.constitution.windowStartMs,
+          value: event.constitution.adoptionThresholdStart,
+        };
+        if (event.settings) {
+          for (const [k, v] of Object.entries(event.settings)) this.settingsMap.set(k, v);
+        }
         this.versions = [splitLines(event.text)];
         for (const p of event.roster) {
           this.roster.set(p.id, {
@@ -385,6 +408,34 @@ export class Session {
         this.fitCache.clear();
         break;
       }
+      case 'constitution-amended': {
+        const changes = event.changes;
+        // Drip re-phase first, under the old interval (§7): ticks accrued
+        // stand, the next lands one new interval after the amendment.
+        if (changes.tokenDripMinutes !== undefined) {
+          for (const entry of this.roster.values()) {
+            materialize(entry.ledger, this.constitutionValue, event.t);
+            rephaseDrip(entry.ledger, event.t, changes.tokenDripMinutes * 60_000);
+          }
+        }
+        // The bar as it stands at this moment, before the merge —
+        // re-anchoring keeps it (§4.3: a bar never jumps because timings
+        // changed; a new ceiling is glided to, in either direction).
+        const barBefore = this.adoptionThreshold(event.t);
+        this.constitutionValue = { ...this.constitutionValue, ...changes };
+        if (changes.windowEndMs !== undefined || changes.adoptionThresholdEnd !== undefined) {
+          this.thresholdAnchor = { t: event.t, value: barBefore };
+        }
+        break;
+      }
+      case 'standing-set': {
+        // For a setting race in flight this is the ground shift (§4.4):
+        // the race's incumbent id hashes this value, so judgments cast
+        // against the old standing lock and pairs re-open fresh.
+        this.settingsMap.set(event.settingId, event.value);
+        this.fitCache.clear();
+        break;
+      }
       case 'closed': {
         this.closedFlag = true;
         break;
@@ -513,10 +564,17 @@ export class Session {
   /**
    * The adoption threshold at time t (SPEC §4.3, session clock). Defaults
    * to the time of the last event, which keeps log replays and post-close
-   * queries exact; live callers should pass their current time.
+   * queries exact; live callers should pass their current time. Anchor-
+   * based since 367b: amendments to the close or the ceiling re-anchor
+   * the ramp at its current value (never a jump), so the plain pure
+   * function only matches while no amendment has landed.
    */
   adoptionThreshold(t: number = this.lastT): number {
-    return adoptionThreshold(this.constitutionValue, t);
+    const { adoptionThresholdEnd, windowEndMs } = this.constitutionValue;
+    const a = this.thresholdAnchor;
+    const span = windowEndMs - a.t;
+    const x = span <= 0 ? 1 : (t - a.t) / span;
+    return a.value + (adoptionThresholdEnd - a.value) * smoothstep(x);
   }
 
   /**
@@ -776,6 +834,34 @@ export class Session {
     if (patch.hunks.length === 0) throw new Error('empty patch');
     validateHunks(this.currentLines().length, patch.hunks);
     this.emit({ type: 'candidate-confirmed', t, id: candidateId, patch });
+  }
+
+  /**
+   * A carried amendment lands (SPEC §9.6, Q328): the host — the bridge
+   * from the constitution layer, or a sim — reports the room's decision;
+   * races in flight run under the constitution as it stands from here.
+   */
+  amend(t: number, changes: ConstitutionAmendment): void {
+    this.assertOpen();
+    if (Object.keys(changes).length === 0) throw new Error('empty amendment');
+    this.emit({ type: 'constitution-amended', t, changes });
+  }
+
+  /**
+   * The standing value of a setting changed (SPEC §9.6, Q390). The engine
+   * never applies a setting race's outcome itself — the host applies it
+   * here once any assent it needs (§9.7's crown) has been given, which is
+   * also what lets rivals keep racing against the old standing while
+   * assent is pending.
+   */
+  setStanding(t: number, settingId: string, value: unknown): void {
+    this.assertOpen();
+    this.emit({ type: 'standing-set', t, settingId, value });
+  }
+
+  /** The standing value of a setting, as the host last reported it. */
+  standing(settingId: string): unknown {
+    return this.settingsMap.get(settingId);
   }
 
   close(t: number): void {
