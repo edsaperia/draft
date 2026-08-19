@@ -53,6 +53,32 @@ const crownQuestionFor = (s: ConstitutionSession, motion: string) =>
     .find((e) => e.type === 'crown-question-opened' &&
       (e as { motion: string }).motion === motion) as { question: string } | undefined);
 
+describe('pre-start, powers are as revisable as values (§9.6a)', () => {
+  it('reclaim restores a relinquished power without touching the set value', () => {
+    const s = ConstitutionSession.open({
+      title: 'T', slug: 't',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+    }, 0);
+    s.setSetting(1, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
+    s.relinquish(2, 'rate', 'assent');
+    expect(s.settingState('rate').powers).toEqual({ unilateral: true, assent: false });
+    // the founder changes their mind before anything has started
+    s.reclaim(3, 'rate');
+    const st = s.settingState('rate');
+    expect(st.powers).toEqual({ unilateral: true, assent: true });
+    expect(st.holder).toBe('convenor');
+    // the value the founder set is untouched — only the power came back
+    expect(st.value).toEqual({ grant: 4, cap: 8, dripMinutes: 240 });
+    expect(st.settledBy).toBe('convenor');
+  });
+
+  it('post-start, reclaim is refused — relinquishment has become one-way', () => {
+    const { s } = constituted();
+    s.relinquish(3, 'rate', 'assent');
+    expect(() => s.reclaim(4, 'rate')).toThrow();
+  });
+});
+
 describe('giving up assent alone (available from creation)', () => {
   it('a carried motion on a unilateral-only setting applies with nobody asked', () => {
     const s = ConstitutionSession.open({

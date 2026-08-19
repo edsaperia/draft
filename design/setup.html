@@ -173,6 +173,31 @@
   const csState = (k) => (cs && MANAGED_KEYS.includes(k) ? cs.settingState(midOf(k)) : null);
   const csSettled = (k) => { const st = csState(k); return !!st && st.settledBy !== null; };
   const csDelegated = (k) => { const st = csState(k); return !!st && st.holder === 'members'; };
+  // §9.7 v0.54 / 396c: a reservation is two powers — unilateral change and
+  // assent — and the "and afterwards" pair on a held setting picks between
+  // their states. The provisional selection lives page-side under 'pw:'+k;
+  // what stands derives from the module (or, for the register, its value).
+  const pwCur = (k) => {
+    if (k === 'policy') { const st = csState('policy');
+      const h = st && st.value ? st.value.holder : null;
+      return h === 'reserved-unilateral' ? 'unilateral'
+        : h === 'reserved-assent' ? 'assent' : 'both'; }
+    const st = csState(k);
+    if (!st || st.holder !== 'convenor') return 'both';
+    return st.powers.assent ? (st.powers.unilateral ? 'both' : 'assent')
+      : (st.powers.unilateral ? 'unilateral' : 'both');
+  };
+  const pwOf = (k) => S['pw:' + k] || pwCur(k);
+  // the register's powers live inside the applications value (§9.7½)
+  const regHolder = () => (S.rosterBy === 'founder'
+    ? ({ both: 'reserved', unilateral: 'reserved-unilateral', assent: 'reserved-assent' })[pwOf('policy')]
+    : 'members');
+  // 396c: the constitution states the register's state in precise language
+  const regLine = (h) => ({
+    reserved: ' The membership is the Founder’s: the Founder invites and removes directly, and an application the members carry comes to the Founder as a 👑 question.',
+    'reserved-unilateral': ' The Founder invites and removes directly; an application the members carry needs nobody’s OK.',
+    'reserved-assent': ' The Founder no longer invites directly: an application the members carry comes to the Founder as a 👑 question.',
+  }[h] || '');
   const msToLocal = (ms) => {
     const d2 = new Date(ms);
     const p2 = (x) => String(x).padStart(2, '0');
@@ -196,7 +221,7 @@
     rate: () => ({ grant: +S.grant, cap: Math.max(+S.cap, +S.grant), dripMinutes: +S.dripMin }),
     lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: +S.lapseDays * 86400000 }),
     machines: () => (S.auditor === true ? { enabled: true, budget: +S.auditorBudget } : { enabled: false, budget: 0 }),
-    policy: () => ({ holder: S.rosterBy === 'founder' ? 'reserved' : 'members', joinPolicy: S.joinBy }),
+    policy: () => ({ holder: regHolder(), joinPolicy: S.joinBy }),
   };
   // a member's page-vocabulary answer → typed, and back — one place each way
   const ANSTYPED = {
@@ -243,6 +268,21 @@
     if (wantsDelegate(k)) { cs.delegate(now(), mid); return; }
     if (csDelegated(k)) cs.reclaim(now(), mid);
     cs.setSetting(now(), mid, TYPED[k]());
+    syncPowers(k);
+  }
+  // the "and afterwards" pair commits here — value first, then powers,
+  // because a dropped unilateral forbids setSetting (§9.7 v0.54). Pre-start
+  // a flip back is reclaim (§9.6a: powers are as revisable as values until
+  // judging opens); post-start the surface only offers the one-way moves.
+  function syncPowers(k) {
+    if (k === 'policy') return; // the register's pair rides its value
+    const st = csState(k);
+    if (!st || st.holder !== 'convenor') return;
+    const want = pwOf(k), have = pwCur(k);
+    if (want === have) return;
+    if (have === 'both' && want === 'unilateral') cs.relinquish(now(), midOf(k), 'assent');
+    else if (have === 'both' && want === 'assent') cs.relinquish(now(), midOf(k), 'unilateral');
+    else if (want === 'both') cs.reclaim(now(), midOf(k));
   }
 
   const S = {
@@ -746,7 +786,7 @@
     policy: () => { const v = takenValOf('policy');
       return ({ invite: 'Invitation only', proposed: 'Applications by proposal',
         apply: 'Anyone may apply', open: 'Open' }[v ? v.joinPolicy : S.joinBy]) +
-        ((v ? v.holder === 'reserved' : S.rosterBy === 'founder') ? ' · 👑 reserved' : ''); },
+        ((v ? v.holder !== 'members' : S.rosterBy === 'founder') ? ' · 👑 reserved' : ''); },
     ending: () => (perpetual() ? 'Never — it runs until it is frozen'
       : new Date(endingVal() || S.endsAt).toLocaleString(undefined,
         { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
@@ -942,7 +982,7 @@
       const jp = { 'Invitation only': 'invite', 'Applications by proposal': 'proposed',
         'Anyone may apply': 'apply', 'Open': 'open' }[disp];
       const cur = csState('policy') && csState('policy').value;
-      return jp ? { holder: cur ? cur.holder : (S.rosterBy === 'founder' ? 'reserved' : 'members'),
+      return jp ? { holder: cur ? cur.holder : regHolder(),
         joinPolicy: jp } : null;
     }
     if (k === 'roster') return null;
@@ -953,9 +993,16 @@
   // one exception on the settings they reserved: their control there is
   // unilateral (the 👑 rule, consented on the way in), so they keep the
   // setting body itself rather than a composer.
+  // §9.7 v0.54: the founder's direct hand IS the unilateral power — where
+  // it is given up (assent-only state) the founder composes like a member
+  const founderDirect = (c) => { const st = csState(c.k);
+    return !st || st.powers.unilateral; };
+  // the 👑 question exists exactly where the assent power is held
+  const crownWaits = (c) => { const st = csState(c.k);
+    return st ? st.holder === 'convenor' && st.powers.assent : !membersHold(c); };
   const composerOn = (c) => motionsLive() && viewerIsMember() && !c.isGate && !c.ansFor &&
     c.kind !== 'personal' && c.k !== 'text' && settled(c) && !motionOn(c) &&
-    !(amFounder() && !membersHold(c));
+    !(amFounder() && !membersHold(c) && founderDirect(c));
   const commitFor = (c) => motionCommitHtml(c,
     (S.draft && S.draft.k === c.k) ? S.draft.to : '',
     !!myHeldOut() && myHeldOut() !== c.k);
@@ -1342,12 +1389,25 @@
         proposed: 'Anyone may apply, but an application must be proposed by a member.',
         apply: 'Anyone may apply to join.',
         open: 'Anyone with the link joins on arrival.' })[v ? v.joinPolicy : S.joinBy] +
-        ((v ? v.holder === 'reserved' : S.rosterBy === 'founder')
-          ? ' The membership is reserved — this document has a 👑.' : ''); },
+        regLine(v ? v.holder : regHolder()); },
     slug: () => 'The document lives at docs.vote/' + S.slug + '.',
     text: () => { const n = [...prose.children].filter((b) => b.textContent.trim()).length;
       return n ? 'The document starts from ' + n + ' blocks of text.'
         : 'The document starts empty — the room writes it.'; },
+  };
+  // 396c (Ed, 2026-08-19): *write the constitution in precise language* —
+  // the settled paragraph states the holder's power-state in one
+  // third-person sentence, the four alternatives standing where rules are
+  // read rather than where they are set
+  const holderLine = (k) => {
+    if (!cs || !DKEY[k] || k === 'policy') return '';
+    const st = csState(k);
+    if (!st) return '';
+    if (st.holder === 'members') return ' It is the members’ to change.';
+    const p = st.powers;
+    if (p.unilateral && p.assent) return ' The Founder holds it: the Founder may change it directly, and a change the members carry comes to the Founder as a 👑 question.';
+    if (p.unilateral) return ' The Founder may change it directly, and the members may change it without the Founder’s OK.';
+    return ' The Founder no longer changes it directly: a change the members carry comes to the Founder as a 👑 question.';
   };
   const decisionLine = (c) => {
     if (c.ansFor) return answered(c)
@@ -1367,11 +1427,11 @@
     if (c.kind === 'personal') return summary(c);
     if (isRoom(c)) {
       return (c.in || 0) >= E() && E() > 0
-        ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c))
+        ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c)) + holderLine(c.k)
         : 'The Founder has delegated to members to decide ' + (WHAT[c.k] || 'this') + ' — ' +
           Math.min(c.in || 0, E()) + ' of ' + E() + ' have answered.';
     }
-    return settled(c) ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c))
+    return settled(c) ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c)) + holderLine(c.k)
       : 'The Founder is deciding ' + (WHAT[c.k] || 'this') + '.';
   };
 
@@ -1490,6 +1550,55 @@
     : opt(S, key, 'roster', 'The members decide',
         'Asked of everyone before drafting begins, blind — you among them, if you are on the roster. ' + note);
 
+  // 396c (Ed, 2026-08-19): *make it easy for the founder to decide* — the
+  // "and afterwards" pair under a kept value picks between the two crown
+  // powers' states, and the third state (assent without unilateral) is
+  // offered only once the document is live, because it is unreachable
+  // before then (§9.7 v0.54). Post-start the moves are one-way.
+  const pw = (k, val, ttl, exp) => opt({ ['pw:' + k]: pwOf(k) }, 'pw:' + k, val, ttl, exp);
+  function powerTail(k) {
+    if (!cs || !DKEY[k] || k === 'policy') return '';
+    if ((k === 'title' || k === 'slug') && !cs.textConfirmed) return '';
+    if (wantsDelegate(k) || csDelegated(k)) return '';
+    const live = cs.constitutedAtT !== null;
+    const cur = pwCur(k);
+    if (live && cur === 'unilateral') {
+      return '<p class="setnote">You gave up the need for your OK: members may change this without you, and you may still change it directly. One way — taking it back would take everyone.</p>';
+    }
+    if (live && cur === 'assent') {
+      return '<p class="setnote">You no longer change this directly: members carry changes, and each comes to you as a 👑 question.</p>';
+    }
+    return '<div class="eyebrow fieldlab" style="margin-top:var(--s4)">And afterwards</div>' +
+      '<div class="choice" role="radiogroup" aria-label="And afterwards">' +
+      pw(k, 'both', 'Changes the members carry need your OK',
+        'You may also change it directly. A change the members pass comes to you as a 👑 question — yours to accept or reject.') +
+      pw(k, 'unilateral', 'Members may change it without you',
+        'You keep changing it directly; a change the members carry applies by itself.' + (live ? ' One way — taking it back would take everyone.' : '')) +
+      (live ? pw(k, 'assent', 'Stop changing it directly',
+        'From here the members carry changes, and each comes to you as a 👑 question. One way — the road back is theirs to give.') : '') +
+      '</div>';
+  }
+  // the register's pair (Ed's own example, §9.7½): rides the applications
+  // value rather than the setting's powers, same gesture either way
+  function registerTail() {
+    const live = cs && cs.constitutedAtT !== null;
+    const cur = pwCur('policy');
+    if (live && cur === 'unilateral') {
+      return '<p class="setnote">You gave up the need for your OK on applications: members decide them without you, and you still invite directly.</p>';
+    }
+    if (live && cur === 'assent') {
+      return '<p class="setnote">You no longer invite directly: members carry applications, and each comes to you as a 👑 question.</p>';
+    }
+    return '<div class="eyebrow fieldlab" style="margin-top:var(--s4)">And afterwards</div>' +
+      '<div class="choice" role="radiogroup" aria-label="And afterwards">' +
+      pw('policy', 'both', 'Applications the members carry need your OK',
+        'And you invite and remove directly. A carried application comes to you as a 👑 question — yours to accept or reject.') +
+      pw('policy', 'unilateral', 'Members decide applications without you',
+        'You keep inviting directly; an application the members carry needs nobody’s OK.') +
+      (live ? pw('policy', 'assent', 'Stop inviting directly',
+        'From here the members carry applications, and each comes to you as a 👑 question. One way — the road back is theirs to give.') : '') +
+      '</div>';
+  }
   // the title and link never take a founding question (no most-protective
   // title for maxima to find), so their choice appears with proposing
   const holdChoice = (k) => (!cs || !cs.textConfirmed ? '' :
@@ -1574,6 +1683,7 @@
       opt(S, 'rosterBy', 'roster', 'The members', 'After the start, joining and leaving are the members’ to decide — invitations by everyone’s consent, applications at the bar.') +
       opt(S, 'rosterBy', 'founder', 'Reserved — I hold it', 'Reserving anything makes you a 👑 — this one keeps invite-and-remove for the document’s life. A crown lapses like a member: go inactive past the lapse rule and changes pass without your assent until you log back in.') +
       '</div>' +
+      (S.rosterBy === 'founder' ? registerTail() : '') +
       // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
       // the gate the Apply card hangs off. An application becomes an
       // ordinary proposal to grant membership, judged like any other.
@@ -1867,9 +1977,9 @@
           whyLane(d) +
           (route === 'constitutional'
             ? '<p class="setnote"><b>Free — and one at a time.</b> Each member may have one 🏛️ out at once; withdraw it and it comes back whole. Putting it is a full ten-second hold.' +
-              (ctx.reserved(c) ? ' Carrying sends it to the founder as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>'
+              (crownWaits(c) ? ' Carrying sends it to the founder as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>'
             : '<p class="setnote"><b>Costs one ✏️</b>, returned in full if withdrawn.' +
-              (ctx.reserved(c) ? ' Carrying sends it to the founder as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>') +
+              (crownWaits(c) ? ' Carrying sends it to the founder as a <b>👑 question</b> — theirs to accept or reject.' : '') + '</p>') +
           (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
         return cardHtml(c, ctx, body2,
           '<button class="btn glyphbtn" data-dropmotion="1"' +
@@ -1881,7 +1991,7 @@
         // the founder's settings are read-only from any other chair
         : (!amFounder() && c.own !== 'you')
         ? readBody(c, ctx) + (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '')
-        : BODY[c.k]() +
+        : BODY[c.k]() + powerTail(c.k) +
           (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
       const kindLine = (c.kind === 'personal' || c.ansFor || c.k === 'title') ? '' :
         '<p class="setnote"><b>' + KIND[c.kind] + '.</b> ' + (c.knote || kindNote[c.kind]) + '</p>';
@@ -2199,10 +2309,12 @@
           // hand-over — never a button
           if ((was === 'title' || was === 'slug') && wantsDelegate(was)) {
             cs.delegate(now(), midOf(was)); return; }
-          if (was === 'title' && S.title !== cs.titleOf) {
-            cs.setSetting(now(), 'title', { text: S.title }); return; }
-          if (was === 'slug' && S.slug !== cs.slug) {
-            cs.setSetting(now(), 'link', { slug: S.slug }); return; }
+          if (was === 'title') {
+            if (S.title !== cs.titleOf) cs.setSetting(now(), 'title', { text: S.title });
+            syncPowers('title'); return; }
+          if (was === 'slug') {
+            if (S.slug !== cs.slug) cs.setSetting(now(), 'link', { slug: S.slug });
+            syncPowers('slug'); return; }
           if (was === 'text') { cs.confirmStartingText(now(), proseText()); return; }
           if (was === 'myname') { cs.setIdentity(now(), viewerId(), { name: S.myname || null }); return; }
           if (was === 'mypic') { cs.setIdentity(now(), viewerId(), { picture: S.mypic || null }); return; }

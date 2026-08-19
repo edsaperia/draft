@@ -172,13 +172,20 @@ export class ConstitutionSession {
       }
       case 'setting-reclaimed': {
         const st = this.settings.get(event.setting)!;
+        // reclaiming a delegation withdraws the question; reclaiming a
+        // relinquished power on a still-held setting (§9.6a: pre-start the
+        // founder's powers are as revisable as their values) must not touch
+        // the value the founder has already set
+        const wasDelegated = st.holder === 'members';
         this.setPowers(st, { unilateral: true, assent: true });
-        st.collecting = false;
-        st.answers.clear();
-        st.value = null;
-        st.settledBy = null;
-        st.settledAtT = null;
-        st.distribution = null;
+        if (wasDelegated) {
+          st.collecting = false;
+          st.answers.clear();
+          st.value = null;
+          st.settledBy = null;
+          st.settledAtT = null;
+          st.distribution = null;
+        }
         break;
       }
       case 'starting-text-confirmed': {
@@ -737,7 +744,8 @@ export class ConstitutionSession {
     this.requirePreStart('reclaiming');
     const st = this.settings.get(setting);
     if (!st) throw new Error(`'${setting}' is not a delegable setting`);
-    if (st.holder === 'convenor') return;
+    // nothing to take back: held, with both powers intact
+    if (st.holder === 'convenor' && st.powers.unilateral && st.powers.assent) return;
     this.emit({ type: 'setting-reclaimed', t, setting });
   }
 

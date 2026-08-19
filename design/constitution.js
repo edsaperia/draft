@@ -814,13 +814,16 @@ var CONSTITUTION = (() => {
         }
         case "setting-reclaimed": {
           const st = this.settings.get(event.setting);
+          const wasDelegated = st.holder === "members";
           this.setPowers(st, { unilateral: true, assent: true });
-          st.collecting = false;
-          st.answers.clear();
-          st.value = null;
-          st.settledBy = null;
-          st.settledAtT = null;
-          st.distribution = null;
+          if (wasDelegated) {
+            st.collecting = false;
+            st.answers.clear();
+            st.value = null;
+            st.settledBy = null;
+            st.settledAtT = null;
+            st.distribution = null;
+          }
           break;
         }
         case "starting-text-confirmed": {
@@ -1346,7 +1349,7 @@ var CONSTITUTION = (() => {
       this.requirePreStart("reclaiming");
       const st = this.settings.get(setting);
       if (!st) throw new Error(`'${setting}' is not a delegable setting`);
-      if (st.holder === "convenor") return;
+      if (st.holder === "convenor" && st.powers.unilateral && st.powers.assent) return;
       this.emit({ type: "setting-reclaimed", t, setting });
     }
     confirmStartingText(t, text) {
