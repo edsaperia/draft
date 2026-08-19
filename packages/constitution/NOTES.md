@@ -81,3 +81,22 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   the delegated question collects the join-policy rung; the holder (the crown
   choice) is consented by joining, the way §9.7 says — so the consent order
   compares rungs only.
+- **The engine-bridge's standing diff** (367b). sync() relays what stands by
+  diffing every raceable setting's cs value against the engine's standings
+  map, rather than by pattern-matching the events that could have changed
+  one (a carried motion, a crown's direct change, a 👑 acceptance, a
+  constitutional amendment, a hand-over) — the diff is immune to new routes
+  being added and cannot double-apply. Roster events are relayed
+  event-by-event because they have no value to diff.
+- **Admit-motions still adjudicate by the host's hand** (367b residual). An
+  application (§9.7½) is an ordinary motion with no scalar value to race,
+  so the bridge does not enter it in the engine; its engine shape is part
+  of Q391's design work. The seam stays open for it.
+- **Bar amendments: the engine glides, the cs display re-seeds** (367b).
+  engine-core re-anchors on any ceiling or close change — keep the current
+  value, ride to the (new) ceiling over the remainder, §4.3's "a bar never
+  jumps" applied uniformly. The cs's own anchors re-seed from startPct on a
+  bar/pace change (threshold.ts, prospective application), which can
+  disagree with the engine's glide while a ramp is live. The engine is the
+  adjudicating authority (adoption tests against engine.adoptionThreshold);
+  cs.bar() is display. Reconcile if a surface ever draws both.
