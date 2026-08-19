@@ -12,12 +12,13 @@ import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
-import { ConstitutionSession, view } from '../../constitution/src/index.js';
+import { ConstitutionSession, sha256Hex, view } from '../../constitution/src/index.js';
 import type { LogEntry, TextValue } from '../../constitution/src/index.js';
 import { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
 import { DocStore, uniqueSlug } from './store.js';
 import type { LoadedDoc } from './store.js';
+import { Stash } from './stash.js';
 import { MAILS, makeMailer } from './mailer.js';
 import type { Mail, Mailer } from './mailer.js';
 import { runCommand } from './commands.js';
@@ -38,6 +39,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
   store.loadAll();
   const auth = new Auth(cfg.secret, cfg.dataDir);
   const mailer = makeMailer(cfg);
+  const stash = new Stash(cfg.dataDir);
 
   const titleOf = (cs: ConstitutionSession): string =>
     (cs.settingState('title').value as TextValue | null)?.text ?? 'Untitled';
@@ -115,11 +117,30 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       const email = expectString(body, 'email');
       const isMember = body.isMember !== false;
       const slug = uniqueSlug(title, (s) => store.slugTaken(s));
+      // the pre-save text stash (§9.7a v0.55): pasted text syncs against
+      // this id while the founder is off following the mail
+      const pendingId = randomBytes(18).toString('base64url');
+      const stashKey = sha256Hex(pendingId);
+      stash.open(stashKey, nowMs + 7 * 24 * 3600_000);
       const token = auth.mintToken(
-        { kind: 'create', email, pending: { title, slug, email, isMember } }, nowMs);
+        { kind: 'create', email, pending: { title, slug, email, isMember, stashKey } }, nowMs);
       const link = `${cfg.baseUrl}/auth/create?token=${token}`;
       await mailer.send({ to: email, ...MAILS.create(title, link) });
-      json(res, 200, { ok: true, slug, ...(mailer.dev ? { devLink: link } : {}) });
+      json(res, 200, { ok: true, slug, pendingId,
+        ...(mailer.dev ? { devLink: link } : {}) });
+      return;
+    }
+
+    /* text pasted before the save survives it (§9.7a v0.55) */
+    if (req.method === 'POST' && path === '/api/docs/pending') {
+      const body = await readJson(req);
+      const pendingId = expectString(body, 'pendingId');
+      const text = expectString(body, 'text');
+      if (!stash.update(sha256Hex(pendingId), text, nowMs)) {
+        json(res, 404, { error: 'that draft has expired' });
+        return;
+      }
+      json(res, 200, { ok: true });
       return;
     }
 
@@ -138,6 +159,12 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         slug,
         convenor: { id: 'founder', email: p.email, isMember: p.isMember },
       }, nowMs);
+      // the pasted text is waiting in the saved document (§9.7a v0.55) —
+      // waiting, not decided: confirming the starting text stays its own act
+      if (p.stashKey !== undefined) {
+        const text = stash.take(p.stashKey, nowMs);
+        if (text.length > 0) store.setProvisional(doc, text);
+      }
       commit(doc, nowMs);
       setCookie(res, auth.cookieFor(id, 'founder', nowMs));
       redirect(res, `/d/${slug}`);
@@ -203,6 +230,9 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
           slug: currentSlug(doc.cs),
           constitutedAtT: doc.cs.constitutedAtT,
           seq: doc.cs.logEntries().length,
+          // the unconfirmed starting text (§9.7a v0.55): readable by any
+          // member — the charter is what the founding questions are about
+          provisionalText: doc.cs.textConfirmed ? null : doc.provisional,
           view: view(doc.cs, memberId),
         });
         return;
@@ -215,10 +245,35 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         const me = doc.cs.memberRecords().get(memberId);
         if (me?.lapsed) doc.cs.memberReturn(t, memberId); // any act revives
         const result = runCommand(doc.cs, { memberId, isFounder }, t, cmd, args);
+        // confirming the starting text supersedes the provisional draft
+        if (doc.cs.textConfirmed && doc.provisional !== null) {
+          store.setProvisional(doc, null);
+        }
         const seq = commit(doc, nowMs);
         json(res, 200, { ok: true, seq, ...(result !== undefined ? { result } : {}) });
         return;
       }
+    }
+
+    /* the founder's draft text after the save, before the confirm (§9.7a) */
+    if (req.method === 'POST' && seg[0] === 'api' && seg[1] === 'd' &&
+        seg[3] === 'stash' && seg.length === 4) {
+      const doc = store.bySlug(seg[2]!);
+      if (!doc) { json(res, 404, { error: 'no such document' }); return; }
+      const session = cookieSession(req, doc.id);
+      if (session === null) { json(res, 401, { error: 'log in first' }); return; }
+      if (session.memberId !== doc.cs.convenorRecord().id) {
+        json(res, 403, { error: 'only the founder holds the starting text' });
+        return;
+      }
+      if (doc.cs.textConfirmed) {
+        json(res, 400, { error: 'the starting text is decided — changes are proposed in the document' });
+        return;
+      }
+      const body = await readJson(req);
+      store.setProvisional(doc, expectString(body, 'text'));
+      json(res, 200, { ok: true });
+      return;
     }
 
     /* -- the surface ------------------------------------------------------ */

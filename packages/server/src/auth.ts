@@ -15,6 +15,8 @@ export interface PendingCreate {
   slug: string;
   email: string;
   isMember: boolean;
+  /** Hash of the pre-save text stash's capability id (§9.7a v0.55). */
+  stashKey?: string;
 }
 
 export interface TokenRecord {

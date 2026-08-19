@@ -180,6 +180,66 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
   }, 30_000);
 });
 
+describe('the pre-save text stash (§9.7a v0.55)', () => {
+  it('text pasted before the magic link is followed is waiting after the save', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Stash', email: 'stash@example.org',
+    })).json() as { devLink: string; slug: string; pendingId: string };
+    expect(created.pendingId).toBeTruthy();
+
+    // paste while the mail is in flight — last write wins
+    await post(base, '/api/docs/pending',
+      { pendingId: created.pendingId, text: 'First paste.' });
+    const synced = await post(base, '/api/docs/pending',
+      { pendingId: created.pendingId, text: 'The clubhouse shall be kept open.' });
+    expect(synced.status).toBe(200);
+
+    // a wrong id is told the draft expired, nothing else
+    const wrong = await post(base, '/api/docs/pending',
+      { pendingId: 'not-a-real-id', text: 'x' });
+    expect(wrong.status).toBe(404);
+
+    // follow the link: the text is waiting, unconfirmed, in the document
+    const saved = await fetch(created.devLink, { redirect: 'manual' });
+    const founder = cookieOf(saved);
+    const viewOf = async (cookie: string) =>
+      (await (await fetch(`${base}/api/d/${created.slug}/view`,
+        { headers: { cookie } })).json()) as { provisionalText: string | null };
+    expect((await viewOf(founder)).provisionalText)
+      .toBe('The clubhouse shall be kept open.');
+
+    // the founder keeps drafting after the save through the doc stash
+    await post(base, `/api/d/${created.slug}/stash`,
+      { text: 'The clubhouse shall be kept open at all hours.' }, founder);
+    expect((await viewOf(founder)).provisionalText)
+      .toBe('The clubhouse shall be kept open at all hours.');
+
+    // a member reads it (the charter is what the questions are about) but
+    // cannot write it
+    await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'invite', args: { email: 'reader@example.org' } }, founder);
+    const reader = await (async () => {
+      const mail = lastMailTo(dataDir, 'reader@example.org');
+      return cookieOf(await fetch(mail.link!, { redirect: 'manual' }));
+    })();
+    expect((await viewOf(reader)).provisionalText)
+      .toBe('The clubhouse shall be kept open at all hours.');
+    const denied = await post(base, `/api/d/${created.slug}/stash`,
+      { text: 'mine now' }, reader);
+    expect(denied.status).toBe(403);
+
+    // confirming the starting text supersedes the draft
+    await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'confirm-starting-text',
+        args: { text: 'The clubhouse shall be kept open at all hours.' } }, founder);
+    expect((await viewOf(founder)).provisionalText).toBeNull();
+    const after = await post(base, `/api/d/${created.slug}/stash`,
+      { text: 'too late' }, founder);
+    expect(after.status).toBe(400);
+  });
+});
+
 describe('auth discipline', () => {
   it('commands and views need a cookie; a foreign cookie does not carry', async () => {
     const { base } = await boot();

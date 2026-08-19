@@ -2,10 +2,13 @@
  * Document persistence (Q368): one append-only JSONL of hash-chained
  * LogEntry per document — the ConstitutionSession's own log, verbatim.
  * Loading is replay (chain verified by the module); persisting a command
- * is appending the entries it emitted. There is no other state on disk,
+ * is appending the entries it emitted. One deliberate sidecar sits beside
+ * the log: provisional.json, the founder's not-yet-confirmed starting
+ * text (§9.7a v0.55) — exactly the state the log must NOT hold, because
+ * nothing about it has been decided. Everything decided is in the log,
  * which is the §11 property made operational: the log IS the document.
  */
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ConstitutionSession } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
@@ -16,6 +19,8 @@ export interface LoadedDoc {
   cs: ConstitutionSession;
   /** How many log entries are already on disk. */
   persisted: number;
+  /** The founder's unconfirmed starting text (§9.7a v0.55), or null. */
+  provisional: string | null;
 }
 
 export class DocStore {
@@ -36,7 +41,11 @@ export class DocStore {
       const lines = readFileSync(logPath, 'utf8').split('\n').filter((l) => l.length > 0);
       const log = lines.map((l) => JSON.parse(l) as LogEntry);
       const cs = ConstitutionSession.replay(log);
-      this.register({ id, cs, persisted: log.length });
+      const provPath = join(this.docsDir, id, 'provisional.json');
+      const provisional = existsSync(provPath)
+        ? (JSON.parse(readFileSync(provPath, 'utf8')) as { text: string }).text
+        : null;
+      this.register({ id, cs, persisted: log.length, provisional });
     }
   }
 
@@ -44,10 +53,18 @@ export class DocStore {
     if (this.docs.has(id)) throw new Error(`document '${id}' already exists`);
     mkdirSync(join(this.docsDir, id), { recursive: true });
     const cs = ConstitutionSession.open(input, t);
-    const doc: LoadedDoc = { id, cs, persisted: 0 };
+    const doc: LoadedDoc = { id, cs, persisted: 0, provisional: null };
     this.register(doc);
     this.persist(doc);
     return doc;
+  }
+
+  /** Set or clear the provisional starting text (§9.7a v0.55). */
+  setProvisional(doc: LoadedDoc, text: string | null): void {
+    const path = join(this.docsDir, doc.id, 'provisional.json');
+    doc.provisional = text !== null && text.length > 0 ? text : null;
+    if (doc.provisional === null) rmSync(path, { force: true });
+    else writeFileSync(path, JSON.stringify({ text: doc.provisional }), 'utf8');
   }
 
   byId(id: string): LoadedDoc | null {

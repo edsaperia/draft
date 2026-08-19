@@ -8,6 +8,16 @@
   package's documented blindness design — projection withholds, storage does
   not), so the data directory is as sensitive as the room. `view()` is the
   only read the API serves; there is deliberately no log endpoint.
+- **Text pasted before the save survives it** (§9.7a v0.55, Ed's own
+  workflow: copy, paste, then do the tasks). Pre-save it syncs against a
+  capability id minted with the creation mail (stored hashed, expiring
+  with the token, in pending.json); the save consumes it into the one
+  deliberate sidecar beside the log, provisional.json — deliberately NOT
+  a log event, because nothing about it has been decided: it is the
+  founder's draft of an answer, superseded the moment the starting text
+  confirms. Readable by any member in view() (the charter is what the
+  founding questions are about); writable by the founder alone. As
+  sensitive as the log itself: it is somebody's draft charter.
 - **The cookie is the actor.** No request body ever names who is acting; the
   whitelist in commands.ts shapes calls onto the module with the
   authenticated member injected. Founder-ness is `memberId ===
