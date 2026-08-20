@@ -2233,10 +2233,13 @@
       ? '<p class="why">Sent to <b>' + esc(S.myemail) + '</b>. ' + (cs
           ? 'The mail is the login: clicking its link is what proves the address works.'
           : 'Nothing is saved yet, so a typo here still costs nothing — which is exactly why this happens now and not after.') + '</p>' +
-        '<div style="margin-top:var(--s3)"><button class="btn" data-act="openmail">Open your inbox</button> ' +
+        '<div style="margin-top:var(--s3)">' +
+        (BIRTH ? '' : '<button class="btn" data-act="openmail">Open your inbox</button> ') +
         '<button class="btn" data-act="sendverify">Resend the link</button> ' +
         '<button class="btn" data-act="editemail">Wrong address?</button></div>' +
-        '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works' + (cs ? '.' : ' and carries you on to the save.') + '</p>'
+        (BIRTH
+          ? '<p class="setnote">Following the link in the mail is what saves the document and carries you to it.</p>'
+          : '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works' + (cs ? '.' : ' and carries you on to the save.') + '</p>')
       // the send button and the two explanatory blocks left on Ed's word
       // (2026-08-19): ✒️ sends it, and the card is a field with a title over
       // it — which is the whole of what it has ever been asking for
@@ -3108,7 +3111,11 @@
         .then((res) => { api.birth = res; if (res.slug) S.slug = res.slug; })
         .catch((e) => console.warn('[birth]', e && e.message));
     }
-    S.emailSent = true; S.mailOpen = true; return render();
+    // the pretend inbox is fixture furniture: at the live birth a real
+    // mail just went out, and a modal over it read as the page play-acting
+    // the send (Ed's QA, 2026-08-20) — the card's sent state says where
+    // the mail actually is
+    S.emailSent = true; S.mailOpen = !BIRTH; return render();
   }
 
   function invite(em) {
@@ -3642,15 +3649,10 @@
 
   if (LIVEMODE) { liveBoot(); }
   else {
-    if (BIRTH) {
-      birthBoot();
-      // the title card is open on arrival (§9.7a; Ed's QA, 2026-08-20):
-      // the title is the first question, and a brand-new page holding one
-      // small rail entry reads as an empty room, not as an ask. E11's
-      // arriving-is-arriving rule keeps its force everywhere else — this
-      // is its stated exception, the one move the surface makes itself.
-      S.open = 'title';
-    }
+    // nothing opens itself, arrival included (Ed, 2026-08-20, reversing
+    // the same morning's auto-open): the surface teaches by being clicked,
+    // and the title task standing alone in the rail IS the first question
+    if (BIRTH) birthBoot();
     relabel(); render();
   }
 })();
