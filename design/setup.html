@@ -2243,7 +2243,10 @@
       // the send button and the two explanatory blocks left on Ed's word
       // (2026-08-19): ✒️ sends it, and the card is a field with a title over
       // it — which is the whole of what it has ever been asking for
-      : (cs
+      : (S.emailErr
+          ? '<p class="why"><b>' + esc(S.emailErr) + '</b></p>'
+          : '') +
+        (cs
           ? '<p class="why">Your address is the only way back in — there are no passwords — so a new one has to prove it works before it replaces the old.</p>'
           : '') +
         '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>'),
@@ -3107,9 +3110,21 @@
   // server-side (§9.7a), in the mockup it opens the pretend inbox
   function sendVerify() {
     if (BIRTH && S.viewer !== 'applicant') {
+      S.emailErr = null;
       api.post('/api/docs', { title: S.title || 'Untitled', email: S.myemail })
-        .then((res) => { api.birth = res; if (res.slug) S.slug = res.slug; })
-        .catch((e) => console.warn('[birth]', e && e.message));
+        .then((res) => {
+          // api.post resolves the error JSON rather than throwing, so a
+          // refused send must be caught here — a card that says "Sent"
+          // over a mail that never went is the one lie this step can tell
+          if (res && res.error) {
+            S.emailErr = res.error; S.emailSent = false; return render();
+          }
+          api.birth = res; if (res.slug) S.slug = res.slug;
+        })
+        .catch(() => {
+          S.emailErr = 'The mail could not be sent — check the connection and press ✒️ again.';
+          S.emailSent = false; render();
+        });
     }
     // the pretend inbox is fixture furniture: at the live birth a real
     // mail just went out, and a modal over it read as the page play-acting
