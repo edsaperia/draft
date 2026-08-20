@@ -49,9 +49,15 @@ follows it by design, stage 16 is calendar time.
   standing "no pushes without Ed's say-so" **for this run only**.
 - **493 — Ed provisions the Render Postgres.** Precise ask, so it can be done
   without a conversation: a managed Postgres, **version 17** (the local
-  container is 17.11 — say so if Render gives a different major), in the same
-  region as the `draft-x290` web service, then `DATABASE_URL` added to the web
-  service's environment from that database's internal connection string.
+  container is 17.11 — leave a note in the running log if Render gives a
+  different major), in **frankfurt**, which is the region `render.yaml` puts
+  the web service in and therefore the only region whose *internal*
+  connection string will work. Then `DATABASE_URL` on the web service, from
+  that database's **internal** connection string. **Not a paid-tier
+  question to duck**: a free Postgres on Render expires, and an expired
+  database holding somebody's constitution is a data-loss event with a
+  calendar for a trigger. The disk remains the source of truth until the
+  restore drill passes, which is the only reason this is survivable at all.
 - **494 — subagents allowed**, under the safety rules below.
 - **495 — placeholders are fine** in the privacy and ToS drafts. Nobody is
   using the site for real yet. They are drafts for Ed's review, never legal
@@ -62,12 +68,31 @@ follows it by design, stage 16 is calendar time.
   `resend._domainkey.mail.docs.vote`, MX and SPF at `send.mail.docs.vote`
   (eu-west-1). See stage 9's note below for what is actually left.
 
-**The safety property that survives pushing freely.** Build the storage swap
-so that **`DATABASE_URL` absent means the JSONL file store**, exactly as
-today. Then every push all night is safe by construction — the deployed
-service keeps its current storage until Ed sets one variable, which is the
-cutover, and is his to time. This is what makes 491(b) and (c) the same thing
-in practice, and it is not optional.
+**The safety property that survives pushing freely — and the cutover is two
+variables, not one.** The obvious design, *`DATABASE_URL` present means use
+Postgres*, is wrong, and Ed's question about how to set it is what exposed
+it: a fresh managed database is **empty**, so the first deploy carrying that
+variable would serve an empty service while every real document sat on the
+disk beside it. Nothing would be lost, and it would look exactly like
+everything being lost, which at 3am is the same thing.
+
+So there are two switches and they are set at different times:
+
+- **`DATABASE_URL`** — where the database *is*. Safe to set at any point,
+  including before the code that uses it exists. On its own it changes
+  nothing about how the service stores anything.
+- **`DRAFT_STORE`** — `file` (the default, and the meaning of *absent*) or
+  `pg`. **This one is the cutover**, and it is only ever set after the
+  importer has run and its hash assertions have passed.
+
+Which makes the cutover a sequence with a rollback at every step: set
+`DATABASE_URL` → deploy (still serving from the disk) → run the importer
+against the live disk → it asserts every rolling hash identical → set
+`DRAFT_STORE=pg` → restart → verify → and if anything is wrong, **unset
+`DRAFT_STORE` and the service is back on the disk it never stopped writing
+to**. Build the importer to be re-runnable and idempotent for the same
+reason. Every push all night stays safe by construction, and both switches
+are Ed's to time.
 
 **Guardrails.**
 
@@ -436,11 +461,17 @@ Two things remain, and neither is a build:
    invitation reaches an inbox and its link works exactly once. Until that
    happens, "mail works" is a claim about DNS records rather than about mail.
 
-Worth knowing before touching any config: **`DRAFT_MAIL_FROM` may not need
-setting at all.** The code's default is already
-`docs.vote <invitations@mail.docs.vote>` (`config.ts`), so an unset variable
-is the correct value. Check what Render actually has before changing it — the
-failure mode here is overriding a right answer with a wrong one.
+**`DRAFT_MAIL_FROM` almost certainly does need changing, and the earlier
+note here was wrong.** The code's default is already
+`docs.vote <invitations@mail.docs.vote>` (`config.ts`), which is why an
+*unset* variable would be correct — but `render.yaml` declares it
+`sync: false`, meaning it is set in the dashboard, and stage 4 set it to
+Resend's **sandbox sender**, which delivers only to the Resend account's own
+address. That is exactly the state where an invitation to a friend silently
+goes nowhere. So: read the dashboard value first, and either clear it (the
+code default takes over) or set it to
+`docs.vote <invitations@mail.docs.vote>`. Clearing is the tidier of the two,
+because it leaves one place where the sending identity is written down.
 
 ## Stage 6 — Postgres, hybrid
 
