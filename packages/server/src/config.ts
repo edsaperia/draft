@@ -35,6 +35,12 @@ export interface ServerConfig {
   /** HMAC secret for cookies and tokens at rest. */
   secret: string;
   /**
+   * Operator notification: every document birth (the §9.7a save — the
+   * founder's verified link, never the unverified request) is mailed
+   * here. DRAFT_NOTIFY_EMAIL overrides; set it empty to switch off.
+   */
+  notifyEmail: string | null;
+  /**
    * The commit this process was built from, served as `x-build` when
    * known. It exists because CI could not otherwise tell *which* bytes
    * it had just verified: a deploy takes minutes to build while the old
@@ -102,6 +108,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     // the sending domain is mail.docs.vote (decision 433): a subdomain
     // keeps deliverability reputation off the domain the product lives on
     mailFrom: env.DRAFT_MAIL_FROM ?? 'docs.vote <invitations@mail.docs.vote>',
+    notifyEmail: (env.DRAFT_NOTIFY_EMAIL ?? 'edsaperia@gmail.com') || null,
     secret: env.DRAFT_SECRET ?? persistedSecret(dataDir),
     trustProxy: env.DRAFT_TRUST_PROXY !== undefined
       ? env.DRAFT_TRUST_PROXY === '1' : PROD_BUILD,

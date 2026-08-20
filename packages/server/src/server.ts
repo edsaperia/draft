@@ -316,6 +316,13 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
         if (text.length > 0) await store.setProvisional(doc, text);
       }
       await commit(doc, nowMs);
+      // the operator hears about every birth (Ed, 2026-08-20) — fired and
+      // forgotten: the save must never fail, or wait, on this mail
+      if (cfg.notifyEmail !== null) {
+        void mailer.send({ to: cfg.notifyEmail,
+          ...MAILS.newDocument(p.title, `${cfg.baseUrl}/d/${slug}`, p.email) })
+          .catch((e) => console.error('new-document notification failed:', e));
+      }
       setCookie(res, auth.cookieFor(id, 'founder', nowMs), httpsOn);
       redirect(res, `/d/${slug}`);
       return;

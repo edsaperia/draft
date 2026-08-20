@@ -26,7 +26,8 @@ interface Booted {
 
 const booted: Booted[] = [];
 
-async function boot(over: { trustProxy?: boolean; proxyHops?: number } = {}): Promise<Booted> {
+async function boot(over: { trustProxy?: boolean; proxyHops?: number;
+  notifyEmail?: string | null } = {}): Promise<Booted> {
   const dataDir = mkdtempSync(join(tmpdir(), 'draft-server-'));
   const cfg = {
     port: 0,
@@ -38,6 +39,7 @@ async function boot(over: { trustProxy?: boolean; proxyHops?: number } = {}): Pr
     secret: 'test-secret',
     trustProxy: false,
     buildSha: null,
+    notifyEmail: null,
     // the test adopts twice inside one second; a room would be paced
     engineTuning: { cooldownMs: 0 },
     ...over,
@@ -563,5 +565,40 @@ describe('rate limiting reads the client the proxy states', () => {
       'x-forwarded-for': `10.0.0.${i}, 198.51.102.9`,
     }));
     expect(limited).toBe(61);
+  });
+});
+
+describe('the operator notification (Ed, 2026-08-20)', () => {
+  const toOps = (dataDir: string) =>
+    readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
+      .split('\n').filter((l) => l.length > 0)
+      .map((l) => JSON.parse(l) as { to: string; subject: string; text: string; link?: string })
+      .filter((m) => m.to === 'ops@example.org');
+
+  it('mails the notify address at the verified save, never at the request', async () => {
+    const { base, dataDir } = await boot({ notifyEmail: 'ops@example.org' });
+    const created = await (await post(base, '/api/docs', {
+      title: 'Night Watch Rota', email: 'nina@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    expect(created.ok).toBe(true);
+    // asking to create is not creating: nothing exists, nothing is announced
+    expect(toOps(dataDir).length).toBe(0);
+
+    expect((await consume(created.devLink)).status).toBe(302);
+    const mails = toOps(dataDir);
+    expect(mails.length).toBe(1);
+    // the three facts Ed asked for: title, URL, the founder's address
+    expect(mails[0]!.subject).toContain('Night Watch Rota');
+    expect(mails[0]!.text).toContain('nina@example.org');
+    expect(mails[0]!.link).toBe(`${base}/d/${created.slug}`);
+  });
+
+  it('stays silent when switched off', async () => {
+    const { base, dataDir } = await boot({ notifyEmail: null });
+    const created = await (await post(base, '/api/docs', {
+      title: 'Quiet Birth', email: 'quinn@example.org',
+    })).json() as { ok: boolean; devLink: string };
+    expect((await consume(created.devLink)).status).toBe(302);
+    expect(toOps(dataDir).length).toBe(0);
   });
 });

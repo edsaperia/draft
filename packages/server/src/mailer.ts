@@ -103,6 +103,14 @@ export const MAILS = {
       `“${title}” is about to lapse. Logging in is all it takes to stay:\n${link}`,
     link,
   }),
+  /** To the operator (cfg.notifyEmail), never to a member. */
+  newDocument: (title: string, url: string, founder: string): Omit<Mail, 'to'> => ({
+    subject: `New document: “${title}”`,
+    text: `“${title}” has just been created by ${founder}.
+
+${url}`,
+    link: url,
+  }),
   lapsed: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Your membership of “${title}” has lapsed`,
     text: `Your membership of “${title}” has lapsed. Your judgments still ` +
