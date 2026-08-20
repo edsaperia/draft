@@ -187,3 +187,36 @@ describe('stage 7: the two cutover switches, read inertly', () => {
     expect(landed).toEqual(['b', 'a', 'a2']);
   });
 });
+
+describe('stage 11: the torn-tail repair tool', () => {
+  it('names a torn last line, refuses a torn middle, and writes only on --write', async () => {
+    const { inspectTail, main } = await import('../src/tools.js');
+    const { appendFileSync, readFileSync: read, writeFileSync: write, readdirSync } = await import('node:fs');
+    const dataDir = tmp();
+    const store = new DocStore(new FilePersistence(dataDir));
+    const doc = await store.create('d-1', { title: 'T', slug: 't',
+      convenor: { id: 'founder', email: 'f@example.org', isMember: true } }, 1);
+    doc.cs.invite(2, 'a@example.org');
+    await store.persist(doc);
+    const path = join(dataDir, 'docs', 'd-1', 'log.jsonl');
+    const intact = read(path, 'utf8');
+    expect(inspectTail(path).torn).toBeNull();
+    appendFileSync(path, '{"seq":2,"hash":"abc","prevHa'); // the crash
+    const r = inspectTail(path);
+    expect(r.torn).toContain('"seq":2');
+    expect(r.prefixOk).toBe(true);
+    expect(r.prefix).toBe(intact);
+    // dry run changes nothing
+    expect(await main(['repair-tail', dataDir, 'd-1'])).toBe(0);
+    expect(read(path, 'utf8')).not.toBe(intact);
+    // --write keeps the original aside and restores the intact prefix
+    expect(await main(['repair-tail', dataDir, 'd-1', '--write'])).toBe(0);
+    expect(read(path, 'utf8')).toBe(intact);
+    const aside = readdirSync(join(dataDir, 'docs', 'd-1')).find((f) => f.startsWith('log.jsonl.torn-'));
+    expect(aside).toBeTruthy();
+    expect(read(join(dataDir, 'docs', 'd-1', aside!), 'utf8')).toBe(intact + '{"seq":2,"hash":"abc","prevHa');
+    // a torn middle is not a tail
+    write(path, 'not json\n' + intact);
+    expect(() => inspectTail(path)).toThrow(/not the last/);
+  });
+});

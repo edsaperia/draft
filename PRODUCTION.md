@@ -175,6 +175,16 @@ service container, or the migration is tested only on this machine.
   still open); `person_id`/`people` (436 — an event-shape change with hash
   consequences, a design judgment for a supervised session); review #2.
   Runbook: `docs/runbooks/postgres-cutover.md`.
+- 22:45 — **stage 11 landed locally** (commit follows, unpushed with the
+  rest). The drill *is* `draft-tools drill` (disk → throwaway schema →
+  throwaway directory → verified against the original, dropped after); the
+  backup *is* the file layout, which boots directly and which `export`
+  writes from Postgres re-runnably. New: `repair-tail` for finding 11's
+  second half — dry run by default, the original kept byte for byte under
+  `log.jsonl.torn-<time>`, a torn middle or a non-replaying prefix refused
+  as corruption rather than "repaired". **Not automated: off-site copies** —
+  a destination and a credential are Ed's to choose; Render's own Postgres
+  backups stand in. Runbook: `docs/runbooks/backup-and-restore.md`.
 
 ## Decisions
 

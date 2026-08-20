@@ -13,6 +13,16 @@
  *                                        throwaway schema, export it to a
  *                                        throwaway directory, verify the
  *                                        copy disk-against-disk, drop both
+ *   repair-tail <dataDir> <docId> [--write]
+ *                                        a log whose last line is half
+ *                                        written (a crash mid-append, before
+ *                                        stage 7's drain) is quarantined at
+ *                                        boot; this names the torn line and,
+ *                                        only with --write, moves the whole
+ *                                        file aside untouched and writes the
+ *                                        intact prefix in its place. Nothing
+ *                                        is deleted: the original keeps its
+ *                                        bytes under log.jsonl.torn-<time>.
  *
  * The oracle everywhere is copy-store.ts's: every rolling hash identical,
  * and the destination replaying to the source's last hash. The process
@@ -20,9 +30,11 @@
  *
  *   node dist/draft-tools.mjs import /var/data "$DATABASE_URL"
  */
-import { mkdtempSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { ConstitutionSession } from '../../constitution/src/index.js';
+import type { LogEntry } from '../../constitution/src/index.js';
 import { FilePersistence } from './persistence.js';
 import { PgPersistence } from './pg-persistence.js';
 import { copyStore, verifyStores } from './copy-store.js';
@@ -32,7 +44,8 @@ const USAGE = `usage:
   draft-tools import <dataDir> <databaseUrl>
   draft-tools export <databaseUrl> <dataDir>
   draft-tools verify <dataDir> <databaseUrl>
-  draft-tools drill  <dataDir> <databaseUrl>`;
+  draft-tools drill  <dataDir> <databaseUrl>
+  draft-tools repair-tail <dataDir> <docId> [--write]`;
 
 const say = (line: string): void => console.log(line);
 
@@ -43,6 +56,35 @@ function summarise(verb: string, r: CopyReport): void {
     'every hash identical');
 }
 
+/**
+ * Inspect a document log for a torn tail. Every line but the last must
+ * parse; the last may be a partial write. The intact prefix must still
+ * replay (so a torn *middle* is not "repaired" into a shorter history —
+ * that is corruption, and the tool says so). Returns what it found.
+ */
+export function inspectTail(path: string): {
+  lines: number; torn: string | null; prefixOk: boolean; prefix: string;
+} {
+  const raw = readFileSync(path, 'utf8');
+  const lines = raw.split('\n');
+  if (lines[lines.length - 1] === '') lines.pop(); // the trailing newline
+  let torn: string | null = null;
+  const parsed: LogEntry[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    try {
+      parsed.push(JSON.parse(lines[i]!) as LogEntry);
+    } catch {
+      if (i === lines.length - 1) { torn = lines[i]!; break; }
+      throw new Error(`line ${i + 1} of ${lines.length} does not parse and is not the ` +
+        'last — this is not a torn tail, and no tool here will shorten a history');
+    }
+  }
+  let prefixOk = true;
+  try { ConstitutionSession.replay(parsed); } catch { prefixOk = false; }
+  return { lines: lines.length, torn, prefixOk,
+    prefix: parsed.map((e) => JSON.stringify(e)).join('\n') + (parsed.length > 0 ? '\n' : '') };
+}
+
 export async function main(argv: readonly string[]): Promise<number> {
   const [verb, a, b] = argv;
   if (verb === undefined || a === undefined || b === undefined) {
@@ -50,6 +92,31 @@ export async function main(argv: readonly string[]): Promise<number> {
     return 2;
   }
   switch (verb) {
+    case 'repair-tail': {
+      const path = join(a, 'docs', b, 'log.jsonl');
+      if (!existsSync(path)) { console.error(`no log at ${path}`); return 2; }
+      const r = inspectTail(path);
+      if (r.torn === null) {
+        say(`${b}: ${r.lines} lines, every one parses — nothing to repair` +
+          (r.prefixOk ? '' : ' (but the chain does not replay: this is not a torn tail)'));
+        return r.prefixOk ? 0 : 1;
+      }
+      say(`${b}: line ${r.lines} is torn (${r.torn.length} bytes: ${JSON.stringify(r.torn.slice(0, 60))}…)`);
+      if (!r.prefixOk) {
+        console.error('the intact prefix does not replay — refusing: this is not a torn tail');
+        return 1;
+      }
+      say(`the first ${r.lines - 1} lines replay cleanly`);
+      if (!argv.includes('--write')) {
+        say('dry run — pass --write to move the original aside and keep the intact prefix');
+        return 0;
+      }
+      const aside = `${path}.torn-${Date.now()}`;
+      copyFileSync(path, aside);
+      writeFileSync(path, r.prefix, 'utf8');
+      say(`original kept byte for byte at ${aside}; log.jsonl now holds the ${r.lines - 1} intact lines`);
+      return 0;
+    }
     case 'import': {
       const pg = await PgPersistence.open(b);
       try {
