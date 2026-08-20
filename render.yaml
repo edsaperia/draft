@@ -15,6 +15,7 @@ services:
     name: draft
     runtime: node
     plan: starter
+    region: frankfurt
     buildCommand: npm ci && npm run build
     startCommand: node dist/server.mjs
     healthCheckPath: /
@@ -37,4 +38,9 @@ services:
       # set in the dashboard, from Resend (stage 9; sending domain
       # mail.docs.vote, decision 433)
       - key: RESEND_API_KEY
+        sync: false
+      # staging sends from Resend's sandbox sender (delivers only to the
+      # Resend account's own address); stage 9 replaces it with
+      # invitations@mail.docs.vote once the domain verifies
+      - key: DRAFT_MAIL_FROM
         sync: false
