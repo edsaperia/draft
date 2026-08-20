@@ -284,6 +284,7 @@ service container, or the migration is tested only on this machine.
   config and created only by what writes to it (file store, dev outbox,
   persisted dev secret). Ed: delete `DRAFT_DATA_DIR` from the service's
   Environment, so the variable matches the blueprint.
+- 00:15 — `9d89a3a` live and verified 10/10; the run is closed for real.
 
 ## Decisions
 
