@@ -267,6 +267,13 @@ service container, or the migration is tested only on this machine.
   next push; Ed detaches it in the dashboard after. **The disk was never
   deleted by this run**: its bytes are in Postgres, proven, and Render's
   Postgres backups are the backup (499a).
+- 23:45 — **Disk deleted by Ed; the service is stateless apart from
+  Postgres.** `/healthz` → `pg`, 2 documents, on build `80428c2`. The
+  mandate is closed: 7, 6, 11, 15 (first pass), 12 (drafts) built and live;
+  9 done by Ed; the cutover executed, drilled on the live database, and the
+  disk retired; 498 and 499 decided and applied. Open: Q500. Owed by a
+  later session: the list at 23:03. Housekeeping pass updated OPERATING.md,
+  the runbooks, CLAUDE.md and README to the post-cutover truth.
 
 ## Decisions
 
@@ -287,16 +294,17 @@ service container, or the migration is tested only on this machine.
 | 476 | **Auto-deploy on green during alpha**: CI deploys and then verifies the live environment, failing the build if what came back is wrong. | decided 2026-08-20 |
 | 480 | Schema version **on the log envelope**, outside the hash; absent means 1, read through `versionOf`. Both logs carry their own number. | decided 2026-08-20 |
 | 437 | `/api/dev/outbox` **deleted from the production build**, not flag-gated — half the defect is that the app can boot into a dangerous mode. | adopted on recommendation |
-| 498 | **Retire the persistent disk after the Postgres cutover** (b): the service becomes stateless apart from Postgres, Render can start the new instance before stopping the old, and the file layout survives only as the backup/export format. Sequence: cutover → drill passes → a final export kept off the disk → remove the disk in the blueprint and the dashboard. | decided 2026-08-20 |
+| 498 | **Retire the persistent disk after the Postgres cutover** (b): the service becomes stateless apart from Postgres, Render can start the new instance before stopping the old, and the file layout survives only as the backup/export format. Sequence: cutover → drill passes → a final export kept off the disk → remove the disk in the blueprint and the dashboard. **Done 2026-08-20 23:40.** | decided 2026-08-20 |
 | 499 | **Off-site backups are Render's managed Postgres backups** (a); nothing further is automated. Consequence accepted: disk, database and backup share one provider account. | decided 2026-08-20 |
 
 ## Hosting: Render (432)
 
-A persistent-disk web service plus managed Postgres. The app is stateful and
-single-instance *by construction* — every document is replayed into memory and
-never evicted; the rate limiter and token store are in-process; there is no
-locking anywhere — so a disk that pins it to one instance is the property we
-want, not one we tolerate. Native GitHub deploys, managed TLS, and a second
+A web service plus managed Postgres — **and since 2026-08-20 23:40, no disk**
+(498b; the paragraph below describes the original shape). The app is
+stateful and single-instance *by construction* — every document is replayed
+into memory and never evicted; the rate limiter and token store are
+in-process; there is no locking anywhere — so a disk that pins it to one
+instance is the property we want, not one we tolerate. Native GitHub deploys, managed TLS, and a second
 service is a five-minute staging environment. **Auto-deploy off** — CI calls
 the deploy hook after tests pass, so there is one gate. Fly.io is the named
 alternative (cheaper always-on, more DIY). Not Vercel/Netlify/Workers: this is
@@ -410,12 +418,12 @@ a big-bang first deploy.
 | 3 | ✅ 2026-08-20 — **Security fixes** + **security review #1** (19 findings, 14 fixed same night — residuals below) | done | safe to be reachable |
 | 4 | ✅ 2026-08-20 — Staging live on Render, verified (two defects found — below); deploy-on-green **wired and firing** (Q476 — a push to `main` is a deploy) | done | proxy / TLS / cookie truth, early |
 | 5 | ✅ 2026-08-20 — Schema versioning (480a) + golden-log test + both homed residuals | done | safe to change the engine, ever |
-| 6 | ✅ 2026-08-20 — Postgres backend + importer with the hash oracle + CI over both stores (projection tables and **review #2** still owed — see the running log) | done | durable, concurrent, backup-able |
+| 6 | ✅ 2026-08-20 — Postgres backend + importer with the hash oracle + CI over both stores; **cut over and drilled on the live database the same night, disk deleted** (projection tables and review #2's second pass still owed — see the running log) | done | durable, concurrent, backup-able |
 | 7 | ✅ 2026-08-20 — `/healthz`, request log, graceful SIGTERM, the two cutover switches | done | deploys are visible |
 | 8 | **Surface merge (Q418)** + `design/STYLE.md` audit — supervised | 1–2w | one surface to secure, style, cache, test |
 | 9 | Resend domain + deliverability (433) — **DNS live, see below**; what is left is verification and one real send | hours, not days | the product actually works |
 | 10 | ✅ 2026-08-20 — **docs.vote is live** (481a: one service, the alpha home), verified 10/10 on the real host; security review #2 still owed | mostly done | docs.vote is live |
-| 11 | Backups + a restore **drill** | 1–2d | the data is safe |
+| 11 | ✅ 2026-08-20 — the drill is `draft-tools drill`, passed on the live database; backups are Render's (499a); `repair-tail` for torn files | done | the data is safe |
 | 12 | Privacy, ToS, retention, erasure | 3–5d | legal to collect a friend's address |
 | 13 | **Accessibility** | 4–6d | usable by everyone invited |
 | 14 | Performance, caching, **stress tests** | 4–5d | known limits, proven crash recovery |

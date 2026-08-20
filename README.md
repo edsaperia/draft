@@ -61,6 +61,6 @@ The mechanism holds up in practice:
 - **Calibration sweep** (2026-08): 575+ runs over nine constitution knobs. Robust everywhere (0.94–0.99); a smaller hot set (3) beat the old default and is now the spec default; long post-adoption cooldowns measurably starve resolution and are now doctrinally capped (§4.2).
 - **Live LLM runs**: full sessions with fourteen Sonnet-powered personas speaking the same participant API as humans, no sim backdoor. Emergent bridge-drafting, factional skirmishes, and overturns consistent with the spec's self-correction story. Two real engine bugs (router slot starvation, replay divergence) were found by simulation before any UI existed.
 
-Next: the operational envelope, in the order PRODUCTION.md sets out — Postgres, observability, the surface merge, deliverable mail, backups, and the privacy work that has to be done before anybody else's address is collected. P3 (the LLM layer of the engine itself: semantic composition gates, dedup, surgery, briefings, machine participants) waits behind it.
+Next, in the order PRODUCTION.md sets out: the surface merge (a constituted document has no drafting surface yet), accessibility, performance and stress tests, and the privacy policy and terms (drafted, not in force). Postgres, observability, backups and deliverable mail landed on 2026-08-20. P3 (the LLM layer of the engine itself: semantic composition gates, dedup, surgery, briefings, machine participants) waits behind it.
 
 Run logs and sweep CSVs land in `packages/sim-harness/runs/` (git-ignored).

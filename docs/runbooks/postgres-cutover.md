@@ -1,5 +1,12 @@
 # Runbook — the Postgres cutover, and the way back (stage 6)
 
+> **Executed 2026-08-20 23:30.** docs.vote serves from Postgres; the drill
+> passed on the live database (2 documents, 16 entries, every hash
+> identical) and the disk was deleted the same night (498b). Kept as the
+> record of the procedure, and for the production service of 481(a) when it
+> is created. `/var/data` below was the disk's mount path; on a service with
+> no disk, use a directory under `/tmp` for imports and exports.
+
 Written 2026-08-20 as stage 6 landed. The design it executes is in
 PRODUCTION.md ("the cutover is two variables"); this is the procedure.
 

@@ -16,20 +16,22 @@ runbook tells you what to type.
 | Piece | Where | Notes |
 |---|---|---|
 | The app | **Render** web service `draft`, region **frankfurt**, plan `starter`, node runtime | One instance, by construction — see below |
-| Its bytes | A Render **persistent disk** `draft-data`, 1 GB, mounted at **`/var/data`** | `DRAFT_DATA_DIR` points the app at it |
+| Its bytes | **Managed Postgres**, version 17, frankfurt — `DRAFT_STORE=pg`, `DATABASE_URL` the internal connection string | Since the cutover of 2026-08-20 23:30. The persistent disk `draft-data` was deleted the same night (498b); the service holds nothing between deploys |
 | TLS and edge | **Cloudflare**, in front of every Render service | Which is why the client IP is read from `cf-connecting-ip` |
 | Domain and DNS | **Namecheap**, on its own nameservers (`dns1`/`dns2.registrar-servers.com`) | `docs.vote` and `www.docs.vote` are **CNAMEs** to `draft-x290.onrender.com` |
 | Mail | **Resend**, sending from **`mail.docs.vote`** | DKIM at `resend._domainkey.mail.docs.vote`; SPF TXT and MX (`feedback-smtp.eu-west-1.amazonses.com`) at `send.mail.docs.vote`; `_dmarc.docs.vote` carries `v=DMARC1; p=none;` |
 | CI and deploys | **GitHub Actions** (`.github/workflows/ci.yml`) | Auto-deploy is **off** at Render; the workflow is the only gate |
-| Postgres | A managed Postgres, **version 17**, **frankfurt** | Provisioned but not yet the store — see §7 |
+| Backups | Render's managed Postgres backups | Decision 499(a): nothing further is automated; `draft-tools export` writes a restore point in the file layout when one is wanted |
 
 **The service is single-instance on purpose.** Every document is replayed
 into memory and never evicted, the rate limiter and the token cache are
-in-process, and there is no locking anywhere. The persistent disk pins the
-service to one instance, which is the property the design wants rather than
-one it tolerates. Do not scale it out.
+in-process, and there is no locking anywhere; two instances would each
+hold their own copy of a document and Postgres's primary key would refuse
+the second writer rather than merge them. Do not scale it out.
 
-**A deploy costs about 30 seconds of downtime.** That is accepted at alpha
+**A deploy no longer has to stop the old instance first** (498b): with no
+disk, Render can start the new one and hand over. Before that, a deploy
+cost about 25 seconds of downtime. That was accepted at alpha
 size, not a defect to chase.
 
 ## 2. Environment variables
@@ -144,8 +146,12 @@ drown it.
 
 ## 5. The data directory
 
-Under `DRAFT_DATA_DIR` (`/var/data` in production, `packages/server/data`
-under `npm run server`):
+**Production no longer has one** — the store is Postgres (§7) and
+`DRAFT_DATA_DIR` is unset there, so the app makes an empty `data/` under
+its working directory that nothing important lands in. The layout below is
+what `npm run server` writes locally (`packages/server/data`), what
+`draft-tools export` writes as a backup, and what `draft-tools import`
+reads. Under `DRAFT_DATA_DIR`:
 
 ```
 docs/<documentId>/
@@ -209,6 +215,12 @@ browser bundle `design/constitution.js`, whose byte-freshness the test suite
 checks.
 
 ## 7. The Postgres cutover, and why it is two variables
+
+**Executed 2026-08-20, 23:30** — the service has served from Postgres since,
+and the disk is gone. What follows is kept because the two-variable design
+is still how the service is configured, and `unset DRAFT_STORE` still means
+"the disk" (which would now be an empty directory — so it is no longer a
+rollback, only a refusal to boot into an empty service by accident).
 
 `DATABASE_URL` and `DRAFT_STORE` are two switches set at **different times**,
 and the separation is the whole safety property.

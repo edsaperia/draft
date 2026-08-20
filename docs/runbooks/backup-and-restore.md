@@ -20,16 +20,13 @@ fallback until the restore drill has passed against the database.
 
 ## Taking a backup
 
-While the service serves from the disk (`/healthz` says `"store":"file"`):
+The service serves from Postgres (since 2026-08-20; there is no disk). A
+restore point in the file layout, from the Render shell:
 
-    # the data directory *is* the backup; copy it somewhere independent
-    tar -czf draft-$(date +%F).tgz -C /var/data .
+    node dist/draft-tools.mjs export "$DATABASE_URL" /tmp/backup-$(date +%F)
 
-Once it serves from Postgres (`"store":"pg"`):
-
-    node dist/draft-tools.mjs export "$DATABASE_URL" /var/data/backup-$(date +%F)
-
-then copy that directory off the machine. `export` is re-runnable into
+`/tmp` does not survive a deploy, so copy it off the machine if it matters
+(`tar -czf - -C /tmp backup-$(date +%F) | base64` and paste). `export` is re-runnable into
 the same directory: documents already complete are left alone, longer
 ones are finished, a diverged one is refused.
 
@@ -37,9 +34,10 @@ ones are finished, a diverged one is refused.
 
 ## The restore drill
 
-    node dist/draft-tools.mjs drill /var/data "$DATABASE_URL"
+    node dist/draft-tools.mjs export "$DATABASE_URL" /tmp/drill-src
+    node dist/draft-tools.mjs drill /tmp/drill-src "$DATABASE_URL"
 
-Imports the disk into a throwaway schema in the same database, exports
+Exports the live database to a directory, then imports that directory into a throwaway schema in the same database, exports
 that schema to a throwaway directory, verifies the directory against the
 original disk (every hash, both logs, replay from genesis, sidecars), and
 drops both. Touches no live table, deletes nothing it did not create.
@@ -55,13 +53,7 @@ directory instead of `/var/data`.
 
 ## Restoring
 
-From a backup directory, onto the disk:
-
-    # stop the service first (Render: suspend), then
-    cp -r backup-2026-08-20/. /var/data/
-    # unset DRAFT_STORE, resume; /healthz must report the document count
-
-Into Postgres:
+Into Postgres (the only live store now):
 
     node dist/draft-tools.mjs import backup-2026-08-20 "$DATABASE_URL"
     node dist/draft-tools.mjs verify backup-2026-08-20 "$DATABASE_URL"
@@ -78,8 +70,11 @@ unlikely after — leaves a half-written last line. The document is then
 **quarantined at boot** (it 404s, everything else serves, the log says
 `failed to load — quarantined`). Nothing rewrites it automatically.
 
-    node dist/draft-tools.mjs repair-tail /var/data <docId>            # dry run
-    node dist/draft-tools.mjs repair-tail /var/data <docId> --write    # repair
+    node dist/draft-tools.mjs repair-tail <dataDir> <docId>            # dry run
+    node dist/draft-tools.mjs repair-tail <dataDir> <docId> --write    # repair
+
+(A file-store concern: a backup directory, or a local `npm run server`.
+Postgres appends a batch in one transaction, so it cannot tear.)
 
 The dry run names the torn line and confirms the intact prefix replays.
 `--write` copies the original file aside as `log.jsonl.torn-<time>` —
