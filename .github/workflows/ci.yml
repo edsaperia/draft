@@ -1,8 +1,11 @@
 # The one gate (PRODUCTION.md stage 1): everything that lands on main has
 # linted, typechecked, tested, built, and booted. The test suite includes the
 # constitution browser bundle's byte-freshness check, so a stale
-# design/constitution.js fails here too. Deploys (stage 4+) hang off this
-# workflow later via a deploy hook — auto-deploy stays off at the platform.
+# design/constitution.js fails here too. Auto-deploy stays off at the
+# platform, because the deploy hangs off the end of this workflow instead
+# (decision 476): the hook and the base URL are both configured, so a push
+# to main deploys docs.vote and then verifies the live host. Pushing is
+# deploying — there is no second gate behind this one.
 name: CI
 on:
   push:

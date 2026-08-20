@@ -30,6 +30,13 @@
   lapse-warned/member-lapsed send theirs. The server never composes a
   notification the log does not imply. Without RESEND_API_KEY everything
   lands in data/outbox.jsonl and on the console — the dev inbox.
+- **The operator hears about every birth** (Ed, 2026-08-20): the §9.7a
+  save mails `cfg.notifyEmail` the title, the founder's address and the
+  URL — the one mail the server sends to somebody who is not a member,
+  and the one it sends outside the fold, since a birth is a save rather
+  than an event anybody in the room is owed. Fired and forgotten: the
+  save must never fail, or wait, on it. DRAFT_NOTIFY_EMAIL overrides;
+  empty switches it off.
 - **Arrival is the link** (§9.6a): following an invitation logs you in and
   arrives you in one act; revival (§9.5a) is the same — any authenticated
   command by a lapsed member calls memberReturn first.
@@ -62,8 +69,11 @@
 - **The dev inbox is an endpoint** (Ed, 2026-08-19): GET /api/dev/outbox
   serves the tail of outbox.jsonl — links intact — so the page can put
   the magic-link mails in a modal instead of asking QA to tail a file.
-  Exists only in dev mail mode; in production the route 404s, and the
-  view's `devMail: false` keeps the page from offering it.
+  Exists only in dev mail mode, and **not at all in the production
+  artifact**: the route sits under a DEV label the build drops bodily
+  (PRODUCTION.md stage 3, decision 437), so no misconfiguration can
+  serve magic links — the code is not there. The view's `devMail:
+  false` keeps the page from offering it.
 - **Engine tuning is a config field, never an env var** (`engineTuning`):
   tests that adopt twice in one second pass cooldownMs 0; production
   constructs its config from the environment, which cannot set it, so a
@@ -72,6 +82,9 @@
   an in-memory per-IP bucket on create/login/apply, 20 per 10 minutes —
   a brake on mail floods, not an abuse story. Restart empties it.
 - **Not in this slice**, each deliberate: reading a public/link chamber
-  without a membership cookie (every view requires login today), the
-  admit-motion adjudication above, HTTPS and deployment (Ed's call —
-  nothing here deploys itself).
+  without a membership cookie (every view requires login today), and
+  what PRODUCTION.md still has staged — Postgres, deliverable mail from
+  mail.docs.vote, the surface merge. HTTPS and deployment are no longer
+  among them: docs.vote is live in alpha on Render, CI deploys it on
+  green (decision 476) and verifies the live host afterwards with
+  `npm run verify`.

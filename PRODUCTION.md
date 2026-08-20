@@ -115,6 +115,32 @@ Two truths learned in the last half hour, both worth keeping:
   keys on the base URL. That is the correct behaviour and worth knowing
   before somebody bookmarks the wrong address.
 
+### The loop is closed: a push to `main` is a deploy (housekeeping, 2026-08-20)
+
+Decision 476 is fully wired and no longer waiting on anything.
+`RENDER_DEPLOY_HOOK` exists as a repository secret and `DRAFT_BASE_URL` as
+a repository variable (`https://docs.vote`), so CI's last step fires the
+hook, waits for `x-build` to become the pushed SHA, and then runs
+`verify-deploy.mjs` against the live host. Checked rather than assumed:
+the last five runs are green and `https://docs.vote` answers with exactly
+`origin/main`'s commit.
+
+**The operational consequence is the one to hold in mind: there is no
+separate deploy step any more, so pushing is deploying.** Work can be
+committed freely; a push is a decision to put those bytes in front of
+whoever is using the alpha. (The second, production service — decision
+481(a)'s deferred half — is what eventually restores the distinction.)
+
+### The operator hears about every birth (Ed, 2026-08-20)
+
+The §9.7a save mails `cfg.notifyEmail` the title, the founder's address
+and the URL — the alpha's whole analytics story, and the right size for
+it: at five users a mail per document is a complete picture and needs no
+infrastructure. It is fired and forgotten, so a save can never fail or
+wait on it, and `DRAFT_NOTIFY_EMAIL` overrides (empty switches it off).
+The default address is compiled in rather than configured, which is
+deliberate — the feature works without touching Render — and is Q482.
+
 **Mail is the remaining gap before anybody is invited** — see stage 9.
 Until `mail.docs.vote` is verified in Resend and `DRAFT_MAIL_FROM` points
 at it, the sandbox sender delivers only to the Resend account's own
@@ -138,7 +164,7 @@ a big-bang first deploy.
 | 1 | ✅ 2026-08-20 — Toolchain: build, lint, CI, push (430) | done | everything else lands safely |
 | 2 | ✅ 2026-08-20 — Server refactor + unit tests + **review #1** | done | the storage swap becomes a substitution |
 | 3 | ✅ 2026-08-20 — **Security fixes** + **security review #1** (19 findings, 14 fixed same night — residuals below) | done | safe to be reachable |
-| 4 | ✅ 2026-08-20 — Staging live on Render, verified (two defects found — below); deploy-on-green awaits one secret (Q476) | done | proxy / TLS / cookie truth, early |
+| 4 | ✅ 2026-08-20 — Staging live on Render, verified (two defects found — below); deploy-on-green **wired and firing** (Q476 — a push to `main` is a deploy) | done | proxy / TLS / cookie truth, early |
 | 5 | ✅ 2026-08-20 — Schema versioning (480a) + golden-log test + both homed residuals | done | safe to change the engine, ever |
 | 6 | Postgres (hybrid) + import + **review #2** | 2–3w | durable, concurrent, backup-able |
 | 7 | Config, secrets, observability, shutdown | 3–4d | deploys are visible |
