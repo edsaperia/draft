@@ -3,3 +3,11 @@ dist/
 coverage/
 *.tsbuildinfo
 .env
+
+# server runtime state: plaintext member emails, magic-link tokens, HMAC secret.
+# A public repo must never be one careless `git add` away from these.
+packages/server/data/
+data/
+secret.txt
+tokens.json
+outbox.jsonl
