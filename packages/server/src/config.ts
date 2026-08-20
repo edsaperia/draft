@@ -38,7 +38,13 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     port,
     dataDir,
     baseUrl: env.DRAFT_BASE_URL ?? `http://localhost:${port}`,
-    designDir: env.DRAFT_DESIGN_DIR ?? join(process.cwd(), '..', '..', 'design'),
+    // dev runs from packages/server (../../design); the built bundle runs
+    // from the repo root (./design). Whichever exists wins; DRAFT_DESIGN_DIR
+    // overrides both.
+    designDir: env.DRAFT_DESIGN_DIR ?? [
+      join(process.cwd(), 'design'),
+      join(process.cwd(), '..', '..', 'design'),
+    ].find(existsSync) ?? join(process.cwd(), 'design'),
     resendApiKey: env.RESEND_API_KEY ?? null,
     mailFrom: env.DRAFT_MAIL_FROM ?? 'docs.vote <invitations@docs.vote>',
     secret: env.DRAFT_SECRET ?? persistedSecret(dataDir),

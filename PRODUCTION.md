@@ -35,16 +35,16 @@ Two facts found at step zero that the original plan did not know:
 | — | Public reads at launch (🌍 offers them; the server has no unauthenticated read path yet). | decided |
 | — | Deploy: GitHub → hosting; mail via Resend; domain docs.vote. | decided |
 | — | Surface merge (Q418) is its own supervised session — see stage 8 note. | decided |
-| 430 | Push to the public GitHub repo (or flip private first)? | **open** |
-| 431 | How far the first unsupervised run goes (recommended: stages 1–3). | **open** |
-| 432 | Hosting: Render (recommended) or Fly. | **open** |
-| 433 | Sending domain: `mail.docs.vote` (recommended) or the apex. | open — bites at stage 9 |
+| 430 | Push to the public GitHub repo. | decided 2026-08-20 |
+| 431 | The first unsupervised run is stages 1–3. | decided 2026-08-20 |
+| 432 | Hosting: **Render**. | decided 2026-08-20 |
+| 433 | Sending domain: **mail.docs.vote**. | decided 2026-08-20 |
 | 434 | ESLint only, **no Prettier** — it would reflow ten thousand lines of hand-wrapped prose comments and destroy the authorial voice. | adopted on recommendation |
 | 435 | Build: **esbuild bundle** (already pinned, 0.28.2) rather than tsc project references. | adopted on recommendation |
 | 436 | PII behind a `person_id` in a deletable `people` table **from the first schema** — nearly free now, structurally impossible later (see stage 12). | adopted on recommendation |
 | 437 | `/api/dev/outbox` **deleted from the production build**, not flag-gated — half the defect is that the app can boot into a dangerous mode. | adopted on recommendation |
 
-## Hosting: Render (pending 432)
+## Hosting: Render (432)
 
 A persistent-disk web service plus managed Postgres. The app is stateful and
 single-instance *by construction* — every document is replayed into memory and

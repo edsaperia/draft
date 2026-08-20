@@ -4,16 +4,24 @@
   "workspaces": [
     "packages/*"
   ],
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "test": "npm run test --workspaces",
     "typecheck": "npm run typecheck --workspaces",
+    "lint": "eslint .",
     "bundle": "npm run bundle -w @draft/constitution",
-    "server": "npm run start -w @draft/server"
+    "server": "npm run start -w @draft/server",
+    "build": "esbuild packages/server/src/main.ts --bundle --platform=node --format=esm --target=node24 --outfile=dist/server.mjs",
+    "start": "node dist/server.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
     "esbuild": "0.28.2",
+    "eslint": "^10.8.1",
     "typescript": "^5.9.2",
+    "typescript-eslint": "^8.67.0",
     "vitest": "^3.2.4"
   }
 }

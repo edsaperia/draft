@@ -1,0 +1,31 @@
+# The one gate (PRODUCTION.md stage 1): everything that lands on main has
+# linted, typechecked, tested, built, and booted. The test suite includes the
+# constitution browser bundle's byte-freshness check, so a stale
+# design/constitution.js fails here too. Deploys (stage 4+) hang off this
+# workflow later via a deploy hook — auto-deploy stays off at the platform.
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: boot smoke — the artifact must serve
+        run: |
+          DRAFT_DATA_DIR="$RUNNER_TEMP/data" PORT=8199 node dist/server.mjs &
+          sleep 2
+          curl -fsS -o /dev/null http://localhost:8199/
+          curl -fsS -o /dev/null http://localhost:8199/setup.js

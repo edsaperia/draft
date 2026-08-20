@@ -26,11 +26,10 @@ import { rebaseHunks } from './text/rebase.js';
 import { fitDavidson } from './ranking/davidson.js';
 import { chainHash, sha256Hex, stableStringify } from './hash.js';
 import { makeRng, type Rng } from './rng.js';
-import { adoptionThreshold, smoothstep } from './adoption-threshold.js';
+import { smoothstep } from './adoption-threshold.js';
 import {
   balanceAt,
-  credit,
-  dripIntervalMs,
+  credit,
   materialize,
   openLedger,
   performanceRefund,
