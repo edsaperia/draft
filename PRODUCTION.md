@@ -247,6 +247,19 @@ service container, or the migration is tested only on this machine.
   second pass on the surface; the sim-harness sweep baseline
   (`hotSetSize` first value is 6, engine default is 3 — the sweep measures
   its old default as baseline).
+- 23:15 — **Q498 answered by the Render logs** (Ed pasted them): the 21:25
+  deploy ran an instance of the *previous* build while the blueprint sync
+  had already moved the health check to `/healthz`, which that build did
+  not serve; Render waited its full fifteen minutes ("Timed Out" 21:40:25)
+  and only then built and ran `1829889`, live 49 s later. Every deploy
+  since: SIGTERM → `closed cleanly` → live in **20–25 s**. So: a
+  self-inflicted ordering mistake — **never change the health-check path
+  in the same push as the route it points at; land the route first** —
+  not the architecture. 498(b) stands for zero-downtime, no longer urgent.
+  Also seen: the drain works in production on every deploy; Render probes
+  `HEAD /`, answered 404 — harmless, to be answered like GET. Ed has done
+  1 (health path), 2 (Postgres + `DATABASE_URL`) and 5 (Resend verified,
+  sender cleared); the import is in progress in the Render shell.
 
 ## Decisions
 
