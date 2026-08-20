@@ -33,12 +33,7 @@ then copy that directory off the machine. `export` is re-runnable into
 the same directory: documents already complete are left alone, longer
 ones are finished, a diverged one is refused.
 
-**Independent storage is not yet automated** — it needs a destination and
-a credential (an object store, or a scheduled copy to a machine Ed owns),
-which is Ed's decision. Render's managed Postgres keeps its own daily
-backups on paid plans, and that is what stands in until then; an
-exported directory on the service disk is a restore point, not an
-off-site backup, because the disk and the database share one provider.
+**Off-site copies are Render's managed Postgres backups** (Ed, decision 499a, 2026-08-20): nothing further is automated, and the consequence — disk, database and backup under one provider account — is accepted. An exported directory on the service disk is a restore point for a bad migration, not a backup. Once the disk is retired (decision 498b) the export goes to a local machine instead.
 
 ## The restore drill
 
@@ -95,7 +90,7 @@ shortens a history. Restart the service after a repair.
 
 ## What is deliberately not here
 
-- Automated off-site copies (needs a destination and a credential — Ed).
+- Automated off-site copies (decision 499a: Render's own backups suffice).
 - Point-in-time recovery (the log is append-only and hash-chained; any
   prefix is a consistent state, so "restore to before seq N" is truncating
   a copy of the log, which is a deliberate act to do by hand with the

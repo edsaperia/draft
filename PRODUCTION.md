@@ -226,6 +226,8 @@ service container, or the migration is tested only on this machine.
 | 476 | **Auto-deploy on green during alpha**: CI deploys and then verifies the live environment, failing the build if what came back is wrong. | decided 2026-08-20 |
 | 480 | Schema version **on the log envelope**, outside the hash; absent means 1, read through `versionOf`. Both logs carry their own number. | decided 2026-08-20 |
 | 437 | `/api/dev/outbox` **deleted from the production build**, not flag-gated — half the defect is that the app can boot into a dangerous mode. | adopted on recommendation |
+| 498 | **Retire the persistent disk after the Postgres cutover** (b): the service becomes stateless apart from Postgres, Render can start the new instance before stopping the old, and the file layout survives only as the backup/export format. Sequence: cutover → drill passes → a final export kept off the disk → remove the disk in the blueprint and the dashboard. | decided 2026-08-20 |
+| 499 | **Off-site backups are Render's managed Postgres backups** (a); nothing further is automated. Consequence accepted: disk, database and backup share one provider account. | decided 2026-08-20 |
 
 ## Hosting: Render (432)
 
@@ -597,7 +599,7 @@ receiving a test event · `/api/dev/outbox` absent from the artifact and
 `design/*.notes.md` unreachable · headers, cert, HSTS, redirect verified live ·
 test mail to Gmail/Outlook/iCloud lands in the inbox and the link works
 exactly once · privacy policy and ToS linked · `DRAFT_SECRET` in the platform
-store, no `secret.txt` on disk · backup present in independent storage · a
+store, no `secret.txt` on disk · Render's Postgres backups enabled and one restore from them drilled (499a) · a
 full walk on production with a throwaway address, then delete it and verify
 the deletion · mail kill-switch and maintenance mode tested, then off.
 
