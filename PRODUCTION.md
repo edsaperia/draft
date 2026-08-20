@@ -229,6 +229,24 @@ service container, or the migration is tested only on this machine.
   store); migrations carry no checksum; `documents.created_at` is import
   time, not birth time. The stage-6 text's claim that mail moved to an
   outbox is corrected in place — it has not.
+- 23:03 — **run complete.** Live build `c8a732d`, verified 10/10, serving
+  from the disk; `DRAFT_STORE=pg` available and unset. Order followed as
+  mandated (7 → 6 → 11 → 15 → 12-drafts), stage 9 confirmed by DNS query
+  and otherwise Ed's dashboard. Four deploys tonight: 14½ min / 75 s /
+  90 s / 90 s. Test count 374 → 442 in the server package's share. **Ed's
+  next moves, in order**: (1) Render: Health Check Path → `/healthz`; read
+  the stage-7 deploy timeline for Q498's cause. (2) Provision Postgres 17
+  in frankfurt, set `DATABASE_URL` (493). (3) Follow
+  `docs/runbooks/postgres-cutover.md` — import, verify, `DRAFT_STORE=pg`,
+  restart, verify; `unset` is the rollback. (4) After the drill passes on
+  the live database: retire the disk (498b). (5) Resend: verify
+  `mail.docs.vote`, clear `DRAFT_MAIL_FROM`, one real send (stage 9).
+  (6) Q500's eight legal decisions. **Owed by a later session**: the mail
+  outbox + sender loop (finding 15); projection tables if a consumer
+  appears; `person_id`/`people` (436, an event-shape change); review #2's
+  second pass on the surface; the sim-harness sweep baseline
+  (`hotSetSize` first value is 6, engine default is 3 — the sweep measures
+  its old default as baseline).
 
 ## Decisions
 
