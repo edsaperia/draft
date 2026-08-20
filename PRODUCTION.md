@@ -26,6 +26,89 @@ Two facts found at step zero that the original plan did not know:
   path. Production runs a compiled artifact: the bytes CI tested are the bytes
   that serve. That is stage 1's real deliverable.
 
+## Tonight's autonomous run — the mandate (2026-08-20, 22:10)
+
+**Read this first.** Ed set an unsupervised run going after this was written,
+having compacted the session and switched models, so this section — not any
+conversation — is the brief. Keep the running log at the bottom of it current
+as each stage lands: **a compaction mid-run will take everything that is not
+in a file.**
+
+**The order** (his 492): **7 → 6 → 11 → 15 → 12-drafts**, then whatever of 9
+is reachable. Stage 7 first because it is small and makes everything after it
+observable; 6 is the night's main work; 11's restore drill immediately after,
+because the drill is what makes 6 believable; 15 and 12 are independent of
+both and are the delegation candidates. **Not tonight, and not for want of
+time**: stage 8 (the surface merge) is supervised design work, stage 13
+follows it by design, stage 16 is calendar time.
+
+**Decisions taken at the outset**, all Ed's, 2026-08-20:
+
+- **491(b) — push freely.** Each stage deploys to docs.vote as it lands; CI
+  is the gate and verifies the live host afterwards. This reverses the
+  standing "no pushes without Ed's say-so" **for this run only**.
+- **493 — Ed provisions the Render Postgres.** Precise ask, so it can be done
+  without a conversation: a managed Postgres, **version 17** (the local
+  container is 17.11 — say so if Render gives a different major), in the same
+  region as the `draft-x290` web service, then `DATABASE_URL` added to the web
+  service's environment from that database's internal connection string.
+- **494 — subagents allowed**, under the safety rules below.
+- **495 — placeholders are fine** in the privacy and ToS drafts. Nobody is
+  using the site for real yet. They are drafts for Ed's review, never legal
+  advice, and every placeholder must be visibly marked as one.
+- **496 — the second session is parked**, so nothing else is writing to this
+  repo tonight.
+- **497 — the Resend DNS is done**, and confirmed live from here: DKIM at
+  `resend._domainkey.mail.docs.vote`, MX and SPF at `send.mail.docs.vote`
+  (eu-west-1). See stage 9's note below for what is actually left.
+
+**The safety property that survives pushing freely.** Build the storage swap
+so that **`DATABASE_URL` absent means the JSONL file store**, exactly as
+today. Then every push all night is safe by construction — the deployed
+service keeps its current storage until Ed sets one variable, which is the
+cutover, and is his to time. This is what makes 491(b) and (c) the same thing
+in practice, and it is not optional.
+
+**Guardrails.**
+
+- Lint, typecheck, tests and build green **before** any commit; CI green
+  before moving to the next stage.
+- The importer asserts **every rolling hash is identical before and after**.
+  If that assertion fails, stop — never relax the assertion. It is the one
+  oracle that says the migration preserved the log's meaning.
+- **No JSONL log is ever deleted.** The file store stays the live fallback
+  until the restore drill has passed.
+- Each stage is its own commit, with its **runbook written as it lands** (the
+  plan's own rule — runbooks are never retrospective).
+- If a deploy's live verification fails: revert the commit, push the revert,
+  confirm the live host is healthy, then stop and write it up.
+
+**Stop and write a report** — do not guess — on any of: something needing
+Ed's credentials (Render, Resend, Namecheap); a design judgment (that is
+stage 8's territory and it is supervised); CI red twice on the same cause;
+the hash assertion failing; or anything that would delete or rewrite data a
+real document depends on.
+
+**Subagent rules (494's "safely").** Delegate only work whose file set is
+**disjoint** from what is being edited in the main line — stage 15's runbooks
+and stage 12's drafts qualify while stage 6 is in `packages/server/src`; two
+agents in one file do not. Subagents write files; **the main line reviews
+every diff and does every commit**, and no subagent pushes. Best available
+model, per Ed's standing preference.
+
+**The local database.** A pinned container is already running and proven:
+`postgres:17-alpine`, container `draft-pg`, on `127.0.0.1:5433`, user /
+password / database all `draft`. Recreate with `docker run -d --name draft-pg
+-e POSTGRES_PASSWORD=draft -e POSTGRES_USER=draft -e POSTGRES_DB=draft -p
+5433:5432 postgres:17-alpine`. **Port 5433, not 55432** — Windows reserves
+ranges that make the higher port unbindable. CI needs the same database as a
+service container, or the migration is tested only on this machine.
+
+### Running log — keep this current
+
+- 22:10 — prep complete: environment proven, mandate written, decisions
+  recorded. Nothing of stages 6–16 started.
+
 ## Decisions
 
 | # | Decision | State |
@@ -169,7 +252,7 @@ a big-bang first deploy.
 | 6 | Postgres (hybrid) + import + **review #2** | 2–3w | durable, concurrent, backup-able |
 | 7 | Config, secrets, observability, shutdown | 3–4d | deploys are visible |
 | 8 | **Surface merge (Q418)** + `design/STYLE.md` audit — supervised | 1–2w | one surface to secure, style, cache, test |
-| 9 | Resend domain + deliverability (433) | 2–3d + propagation | the product actually works |
+| 9 | Resend domain + deliverability (433) — **DNS live, see below**; what is left is verification and one real send | hours, not days | the product actually works |
 | 10 | ✅ 2026-08-20 — **docs.vote is live** (481a: one service, the alpha home), verified 10/10 on the real host; security review #2 still owed | mostly done | docs.vote is live |
 | 11 | Backups + a restore **drill** | 1–2d | the data is safe |
 | 12 | Privacy, ToS, retention, erasure | 3–5d | legal to collect a friend's address |
@@ -337,6 +420,27 @@ remains, deliberately:
   200 as every other branch, so nothing is disclosed by trying. Proper
   user accounts, which would retire the question, remain a later thing.
 
+
+## Stage 9 — what is actually left (checked 2026-08-20, 22:05)
+
+The DNS half is **done and confirmed by query**, not by report: DKIM answers
+at `resend._domainkey.mail.docs.vote`, and `send.mail.docs.vote` carries both
+the SPF TXT and an MX to `feedback-smtp.eu-west-1.amazonses.com`. Nothing at
+the apex, which is right — the apex is a CNAME and can hold nothing else.
+
+Two things remain, and neither is a build:
+
+1. **Resend must show the domain Verified**, which is Ed's dashboard and
+   nobody else's. Propagation is the only clock.
+2. **One real end-to-end send**, to a non-Resend address, proving an
+   invitation reaches an inbox and its link works exactly once. Until that
+   happens, "mail works" is a claim about DNS records rather than about mail.
+
+Worth knowing before touching any config: **`DRAFT_MAIL_FROM` may not need
+setting at all.** The code's default is already
+`docs.vote <invitations@mail.docs.vote>` (`config.ts`), so an unset variable
+is the correct value. Check what Render actually has before changing it — the
+failure mode here is overriding a right answer with a wrong one.
 
 ## Stage 6 — Postgres, hybrid
 
