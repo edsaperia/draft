@@ -74,10 +74,10 @@ a big-bang first deploy.
 | # | Stage | Size | The gate it opens |
 |---|---|---|---|
 | 0 | ✅ Step zero: QA batch committed, data/ gitignored | done | — |
-| 1 | Toolchain: build, lint, CI, push (430) | 2–3d | everything else lands safely |
-| 2 | Server refactor + unit tests + **review #1** | 4–6d | the storage swap becomes a substitution |
-| 3 | **Security fixes** + **security review #1** | 4–6d | safe to be reachable |
-| 4 | Staging deploy on Render — needs Ed's account | 2–3d | proxy / TLS / cookie truth, early |
+| 1 | ✅ 2026-08-20 — Toolchain: build, lint, CI, push (430) | done | everything else lands safely |
+| 2 | ✅ 2026-08-20 — Server refactor + unit tests + **review #1** | done | the storage swap becomes a substitution |
+| 3 | ✅ 2026-08-20 — **Security fixes** + **security review #1** (19 findings, 14 fixed same night — residuals below) | done | safe to be reachable |
+| 4 | Staging deploy on Render — `render.yaml` written; needs Ed's account (Q438) | 2–3d | proxy / TLS / cookie truth, early |
 | 5 | Schema versioning + golden-log test | 3–4d | safe to change the engine, ever |
 | 6 | Postgres (hybrid) + import + **review #2** | 2–3w | durable, concurrent, backup-able |
 | 7 | Config, secrets, observability, shutdown | 3–4d | deploys are visible |
@@ -169,6 +169,35 @@ Roughly 10–13 weeks solo. Stages 1 and 9–10 partly overlap with waiting time
 9. Non-constant-time HMAC compare; internal error strings returned to
    clients; no security headers at all (CSP included — the served page needs
    only `self` plus Google Fonts); fail-fast config validation missing.
+
+### Review #1 residuals (2026-08-20), each with a home
+
+The adversarial review of stages 2–3 returned 19 findings; the three HIGH
+and eleven others were fixed the same night (commit `3ccc78a`). What
+remains, deliberately:
+
+- **The bridge emits the motion before the engine accepts the candidate**
+  (finding 6a): a refused race leaves an orphaned cs motion. Mitigated —
+  a refused command now commits whatever was emitted, so memory and disk
+  agree — but the real fix is bridge-side ordering. Do with stage 5's
+  schema work, where the bridge is open anyway.
+- **One cookie for all documents** (finding 13): logging into one document
+  logs you out of another, and the login-CSRF story leans on the Origin
+  check. Per-document cookie naming belongs to stage 8 (the merge decides
+  what the page expects) or earlier if it bites.
+- **Mail failure is silent** (finding 15): a transient Resend failure
+  loses an invitation the log says was sent. Already stage 6's outbox
+  table with a sender loop — this is the concrete case for it.
+- **Emoji reservation and one-face-one-member are client-side only**
+  (finding 19): a member can claim ✏️ or another member's face via the
+  API. Needs the reserved-glyph scan server-side; small, stage 8
+  territory (it is a page-vocabulary fact).
+- **Torn-log tail repair** (finding 11's second half): a corrupt document
+  now quarantines loudly instead of stopping the world, but repair
+  tooling is stage 11's (backups and the restore drill).
+- **An applicant who loses their cookie is locked out** — apply says
+  nothing (deliberately, the oracle fix) and login says nothing (they are
+  not a member). Q439.
 
 ## Stage 6 — Postgres, hybrid
 
