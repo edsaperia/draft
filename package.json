@@ -14,7 +14,8 @@
     "bundle": "npm run bundle -w @draft/constitution",
     "server": "npm run start -w @draft/server",
     "build": "node scripts/build-server.mjs",
-    "start": "node dist/server.mjs"
+    "start": "node dist/server.mjs",
+    "verify": "node scripts/verify-deploy.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

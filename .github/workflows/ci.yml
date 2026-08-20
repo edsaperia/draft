@@ -36,3 +36,31 @@ jobs:
           curl -fsS -o /dev/null http://localhost:8199/setup.js
           curl -fsS -D - -o /dev/null http://localhost:8199/ | grep -qi 'x-content-type-options: nosniff'
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8199/api/dev/outbox)" = 404
+
+      # Deploy on green (stage 4, decision 432): auto-deploy is off at the
+      # platform, so this workflow is the single gate — nothing reaches the
+      # service that has not linted, typechecked, tested, built and booted.
+      # Inert until the secret exists: no hook, no deploy, no failure. The
+      # URL variable turns on the post-deploy verification, which is the
+      # same script stage 10 runs against docs.vote.
+      - name: deploy to Render, then verify the live environment
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          BASE: ${{ vars.DRAFT_BASE_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "no RENDER_DEPLOY_HOOK secret — skipping deploy"; exit 0
+          fi
+          curl -fsS -X POST "$HOOK" -o /dev/null
+          echo "deploy triggered; waiting for the service to come back"
+          if [ -z "$BASE" ]; then
+            echo "no DRAFT_BASE_URL variable — deployed, not verified"; exit 0
+          fi
+          for i in $(seq 1 40); do
+            sleep 15
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/" || true)
+            echo "  attempt $i: $code"
+            if [ "$code" = "200" ]; then break; fi
+          done
+          node scripts/verify-deploy.mjs "$BASE"

@@ -41,6 +41,16 @@ export interface ServerConfig {
    */
   trustProxy: boolean;
   /**
+   * How many proxies append to x-forwarded-for on the way in, which is
+   * how far from the right the client's own entry sits. Only consulted
+   * when the proxy states the client no other way — on Render,
+   * Cloudflare's own header answers first (see `ipOf`). Default 1;
+   * DRAFT_PROXY_HOPS overrides. Never guess this upward "to be safe": a
+   * hop count larger than the real chain reads an entry the client
+   * supplied, which is the spoof the count exists to prevent.
+   */
+  proxyHops?: number;
+  /**
    * Engine tuning overrides (tests and dev only — production runs the
    * defaults; deliberately not read from the environment). The one known
    * use is pacing: a test that adopts twice in one second needs
@@ -84,6 +94,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     secret: env.DRAFT_SECRET ?? persistedSecret(dataDir),
     trustProxy: env.DRAFT_TRUST_PROXY !== undefined
       ? env.DRAFT_TRUST_PROXY === '1' : PROD_BUILD,
+    proxyHops: env.DRAFT_PROXY_HOPS ? Math.max(1, Number(env.DRAFT_PROXY_HOPS)) : 1,
   };
 }
 

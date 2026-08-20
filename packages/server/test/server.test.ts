@@ -26,7 +26,7 @@ interface Booted {
 
 const booted: Booted[] = [];
 
-async function boot(): Promise<Booted> {
+async function boot(over: { trustProxy?: boolean; proxyHops?: number } = {}): Promise<Booted> {
   const dataDir = mkdtempSync(join(tmpdir(), 'draft-server-'));
   const cfg = {
     port: 0,
@@ -39,6 +39,7 @@ async function boot(): Promise<Booted> {
     trustProxy: false,
     // the test adopts twice inside one second; a room would be paced
     engineTuning: { cooldownMs: 0 },
+    ...over,
   };
   const draft = await createDraftServer(cfg);
   await new Promise<void>((r) => draft.server.listen(0, '127.0.0.1', r));
@@ -484,5 +485,62 @@ describe('the surface is served', () => {
     expect(js.status).toBe(200);
     const sneaky = await fetch(`${base}/design/..%2fSPEC.md`);
     expect(sneaky.status).toBe(404);
+  });
+
+  it('serves the top of the design tree only — no notes, references or tooling', async () => {
+    const { base } = await boot();
+    for (const path of ['/design/setup.notes.md', '/design/tools/session-probe.js',
+                        '/design/reference/system.css',
+                        '/design/reference/setup-pre-constitution/setup.js']) {
+      expect((await fetch(base + path)).status, path).toBe(404);
+    }
+  });
+});
+
+/**
+ * The limiter behind a proxy (defect 3, re-fixed after staging caught the
+ * first answer being wrong on 2026-08-20). What must hold is one sentence:
+ * a client cannot change which bucket it lands in by sending headers.
+ * /auth/login is the door to hammer — its limiter runs before anything
+ * else, and a bad token neither mails nor writes to a log.
+ */
+describe('rate limiting reads the client the proxy states', () => {
+  const flood = async (base: string,
+                       headers: (i: number) => Record<string, string>, n = 62) => {
+    let limited = 0;
+    for (let i = 0; i < n && limited === 0; i++) {
+      const res = await fetch(`${base}/auth/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...headers(i) },
+        body: JSON.stringify({ token: 'no' }),
+      });
+      if (res.status === 429) limited = i + 1;
+    }
+    return limited;
+  };
+
+  it('buckets on cloudflare\'s stated client, whatever x-forwarded-for says', async () => {
+    const { base } = await boot({ trustProxy: true });
+    // the shape staging actually serves: a rotating edge address on the
+    // right, the client's own claim on the left, both ignored
+    const limited = await flood(base, (i) => ({
+      'cf-connecting-ip': '198.51.100.7',
+      'x-forwarded-for': `203.0.113.${i}, 198.51.100.7, 10.7.${i}.${i}`,
+    }));
+    expect(limited).toBe(61);
+  });
+
+  it('gives two clients two buckets', async () => {
+    const { base } = await boot({ trustProxy: true });
+    const limited = await flood(base, (i) => ({ 'cf-connecting-ip': `198.51.101.${i}` }));
+    expect(limited).toBe(0);
+  });
+
+  it('counts from the right without cloudflare, so a prepended entry cannot evade it', async () => {
+    const { base } = await boot({ trustProxy: true });
+    const limited = await flood(base, (i) => ({
+      'x-forwarded-for': `10.0.0.${i}, 198.51.102.9`,
+    }));
+    expect(limited).toBe(61);
   });
 });

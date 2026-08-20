@@ -211,7 +211,7 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
     };
     /** 429 a mail-minting door when its per-IP bucket overflows. */
     const tooMany = (route: string, max = 20): boolean => {
-      if (!rateLimited(`${route}:${ipOf(req, cfg.trustProxy)}`, nowMs, max)) return false;
+      if (!rateLimited(`${route}:${ipOf(req, cfg)}`, nowMs, max)) return false;
       json(res, 429, { error: 'too many requests — try again shortly' });
       return true;
     };
@@ -589,10 +589,15 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
     }
     if (req.method === 'GET' && seg[0] === 'design') {
       const rel = normalize(seg.slice(1).join('/'));
-      // assets only: the design tree also holds notes, frozen references
-      // and probe tooling, none of which is this server's to serve
-      if (rel.startsWith('..') || rel.includes('..') ||
-          !/\.(js|css|svg|png|woff2?)$/.test(rel)) {
+      // Assets only, and only the ones at the top of the tree: design/
+      // also holds notes, the byte-frozen reference copies and the probe
+      // tooling, none of which is this server's to serve. The filter was
+      // by extension alone until staging showed the comment was untrue —
+      // design/tools/session-probe.js and the whole of design/reference
+      // answered 200 (Q478, fixed 2026-08-20). No separator survives, so
+      // this is also a second lock on traversal.
+      if (rel.includes('/') || rel.includes('\\') || rel.startsWith('..') ||
+          rel.includes('..') || !/\.(js|css|svg|png|woff2?)$/.test(rel)) {
         json(res, 404, { error: 'not found' });
         return;
       }
@@ -702,16 +707,37 @@ function expectString(body: Record<string, unknown>, key: string): string {
   return str(body, key, false);
 }
 
-function ipOf(req: IncomingMessage, trustProxy: boolean): string {
+function ipOf(req: IncomingMessage, cfg: ServerConfig): string {
   // Behind Render every socket shares the proxy's address, which would
   // make the limiter one global bucket — a one-person denial of service
-  // (stage 3, defect 3). With one trusted proxy the client is the
-  // rightmost x-forwarded-for entry: the one hop we know appended it.
-  if (trustProxy) {
+  // (stage 3, defect 3).
+  //
+  // Stage 3 answered that with "the client is the rightmost
+  // x-forwarded-for entry: the one hop we know appended it", and staging
+  // proved it wrong on 2026-08-20 — the first defect the deploy caught
+  // that no source review could. Render fronts every service with
+  // Cloudflare, so *two* hops append, and the rightmost entry is a
+  // Cloudflare edge address that rotates request to request. Every
+  // request therefore got its own bucket: 135 in a row, none limited,
+  // spoofed or not. A limiter that never limits is worse than none,
+  // because the defect list says it is fixed.
+  //
+  // The client's true address is the one Cloudflare states, and it
+  // overwrites any copy the client sends, so it cannot be spoofed by
+  // anybody arriving the way everybody arrives. Falling back to a hop
+  // count keeps this honest on a host without Cloudflare: counting from
+  // the right is the only spoof-resistant way to read the header, since
+  // a client may prepend entries but never append them.
+  if (cfg.trustProxy) {
+    const cf = req.headers['cf-connecting-ip'];
+    const stated = Array.isArray(cf) ? cf[0] : cf;
+    if (stated !== undefined && stated.trim() !== '') return stated.trim();
     const xff = req.headers['x-forwarded-for'];
     const list = (Array.isArray(xff) ? xff.join(',') : xff ?? '')
       .split(',').map((s) => s.trim()).filter((s) => s.length > 0);
-    if (list.length > 0) return list[list.length - 1]!;
+    if (list.length > 0) {
+      return list[Math.max(0, list.length - (cfg.proxyHops ?? 1))]!;
+    }
   }
   return req.socket.remoteAddress ?? 'unknown';
 }

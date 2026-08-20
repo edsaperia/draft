@@ -77,7 +77,7 @@ a big-bang first deploy.
 | 1 | ✅ 2026-08-20 — Toolchain: build, lint, CI, push (430) | done | everything else lands safely |
 | 2 | ✅ 2026-08-20 — Server refactor + unit tests + **review #1** | done | the storage swap becomes a substitution |
 | 3 | ✅ 2026-08-20 — **Security fixes** + **security review #1** (19 findings, 14 fixed same night — residuals below) | done | safe to be reachable |
-| 4 | Staging deploy on Render — `render.yaml` written; needs Ed's account (Q438) | 2–3d | proxy / TLS / cookie truth, early |
+| 4 | ✅ 2026-08-20 — Staging live on Render, verified (two defects found — below); deploy-on-green awaits one secret (Q476) | done | proxy / TLS / cookie truth, early |
 | 5 | Schema versioning + golden-log test | 3–4d | safe to change the engine, ever |
 | 6 | Postgres (hybrid) + import + **review #2** | 2–3w | durable, concurrent, backup-able |
 | 7 | Config, secrets, observability, shutdown | 3–4d | deploys are visible |
@@ -169,6 +169,48 @@ Roughly 10–13 weeks solo. Stages 1 and 9–10 partly overlap with waiting time
 9. Non-constant-time HMAC compare; internal error strings returned to
    clients; no security headers at all (CSP included — the served page needs
    only `self` plus Google Fonts); fail-fast config validation missing.
+
+## Stage 4 — what staging taught (2026-08-20)
+
+Ed created the Render service, followed a real magic link into a real
+document, and confirmed the two truths a script cannot reach: **a document
+survives a redeploy** on the persistent disk, and **a magic link works
+exactly once** (Q477a/b). `scripts/verify-deploy.mjs` (`npm run verify
+<url>`) is the rest of the live-environment checklist as a re-runnable
+script — the same one stage 10 points at docs.vote, and the one CI runs
+after each deploy. Nine checks passed first time against the staging URL:
+TLS, HSTS a year with `includeSubDomains`, http 301'd and never answered,
+nosniff, `no-referrer`, the three CSP directives, `no-store` on API
+responses, the dev outbox absent from the artifact, an unknown document
+404ing without internals in the error, and a cross-origin auth POST
+refused. HSTS being present also proves cookies are issued `Secure`,
+since both hang off one `httpsOn` condition.
+
+Two defects it found, both fixed the same day, both invisible to every
+test that came before because both are facts about the *environment*:
+
+1. **The rate limiter was keyed on a value that changes per request, so
+   it never limited anything** — 135 requests in a row, none refused,
+   spoofed or not. Stage 3's fix for defect 3 assumed one proxy appends
+   to `x-forwarded-for` and read the rightmost entry; Render fronts every
+   service with Cloudflare, so *two* append, and the rightmost is a
+   Cloudflare edge address that rotates. Every request got its own
+   bucket. `ipOf` now reads the client Cloudflare states
+   (`cf-connecting-ip`, which it overwrites and a client cannot forge on
+   the way in), falling back to a configurable hop count
+   (`DRAFT_PROXY_HOPS`, default 1) counted **from the right**, since a
+   client may prepend entries but never append them. Three tests pin the
+   behaviour end to end: one bucket per stated client whatever
+   `x-forwarded-for` claims, two clients two buckets, and a prepended
+   entry failing to evade the count. **A limiter that never limits is
+   worse than none, because the defect list says it is fixed** — which
+   is the general argument for stage 4 sitting where it does.
+2. **The whole of `design/tools/` and `design/reference/` was public**
+   (Q478): the `/design` route filtered by file extension, so the probe
+   tooling and the byte-frozen reference copies answered 200 while the
+   comment beside the filter claimed they were "none of this server's to
+   serve". Now top-level assets only — no path separator survives, which
+   is also a second lock on traversal.
 
 ### Review #1 residuals (2026-08-20), each with a home
 
