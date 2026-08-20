@@ -1,0 +1,187 @@
+{
+  "entries": 74,
+  "rollingHash": "7c7dc4b22774191694ea4f4f86fd4a24f1768747a4c65f887955a63e71a8e112",
+  "chainVerifies": true,
+  "constitutedAtT": 8,
+  "E": 3,
+  "quorumBase": 3,
+  "members": [
+    {
+      "id": "ada",
+      "email": "ada@example.org",
+      "arrivedAtT": 0,
+      "removed": false,
+      "lapsed": false,
+      "signedOut": null,
+      "name": "Ada",
+      "picture": "e🦉"
+    },
+    {
+      "id": "m-1",
+      "email": "bo@example.org",
+      "arrivedAtT": 2,
+      "removed": false,
+      "lapsed": false,
+      "signedOut": null,
+      "name": "Bo",
+      "picture": "e🦊"
+    },
+    {
+      "id": "m-2",
+      "email": "cy@example.org",
+      "arrivedAtT": 2,
+      "removed": false,
+      "lapsed": false,
+      "signedOut": null,
+      "name": "Cy",
+      "picture": null
+    },
+    {
+      "id": "m-3",
+      "email": "dee@example.org",
+      "arrivedAtT": null,
+      "removed": true,
+      "lapsed": false,
+      "signedOut": null,
+      "name": null,
+      "picture": null
+    }
+  ],
+  "settings": {
+    "ending": {
+      "value": {
+        "endsAtMs": 1000000
+      },
+      "holder": "members",
+      "powers": {
+        "unilateral": false,
+        "assent": false
+      }
+    },
+    "bar": {
+      "value": {
+        "pct": 75
+      },
+      "holder": "members",
+      "powers": {
+        "unilateral": false,
+        "assent": false
+      }
+    },
+    "chamber": {
+      "value": {
+        "rung": "link"
+      },
+      "holder": "members",
+      "powers": {
+        "unilateral": false,
+        "assent": false
+      }
+    },
+    "rate": {
+      "value": {
+        "grant": 4,
+        "cap": 8,
+        "dripMinutes": 240
+      },
+      "holder": "convenor",
+      "powers": {
+        "unilateral": true,
+        "assent": true
+      }
+    },
+    "pace": {
+      "value": {
+        "shape": "fixed"
+      },
+      "holder": "convenor",
+      "powers": {
+        "unilateral": true,
+        "assent": true
+      }
+    },
+    "quorum": {
+      "value": {
+        "form": "share",
+        "n": 60
+      },
+      "holder": "convenor",
+      "powers": {
+        "unilateral": true,
+        "assent": true
+      }
+    },
+    "authorship": {
+      "value": {
+        "rung": "sealed"
+      },
+      "holder": "convenor",
+      "powers": {
+        "unilateral": true,
+        "assent": true
+      }
+    },
+    "signing": {
+      "value": {
+        "rung": "each"
+      },
+      "holder": "convenor",
+      "powers": {
+        "unilateral": true,
+        "assent": true
+      }
+    },
+    "judgments": {
+      "value": {
+        "rung": "after"
+      },
+      "holder": "convenor",
+      "powers": {
+        "unilateral": true,
+        "assent": true
+      }
+    },
+    "applications": {
+      "value": {
+        "holder": "members",
+        "joinPolicy": "apply"
+      },
+      "holder": "convenor",
+      "powers": {
+        "unilateral": true,
+        "assent": true
+      }
+    },
+    "removal": {
+      "value": {
+        "rung": "everyone"
+      },
+      "holder": "convenor",
+      "powers": {
+        "unilateral": true,
+        "assent": true
+      }
+    },
+    "machines": {
+      "value": {
+        "enabled": false,
+        "budget": 0
+      },
+      "holder": "convenor",
+      "powers": {
+        "unilateral": true,
+        "assent": true
+      }
+    },
+    "lapse": {
+      "value": {
+        "afterMs": null
+      },
+      "holder": "convenor",
+      "powers": {
+        "unilateral": true,
+        "assent": true
+      }
+    }
+  }
+}

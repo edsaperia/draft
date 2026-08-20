@@ -78,7 +78,7 @@ a big-bang first deploy.
 | 2 | ✅ 2026-08-20 — Server refactor + unit tests + **review #1** | done | the storage swap becomes a substitution |
 | 3 | ✅ 2026-08-20 — **Security fixes** + **security review #1** (19 findings, 14 fixed same night — residuals below) | done | safe to be reachable |
 | 4 | ✅ 2026-08-20 — Staging live on Render, verified (two defects found — below); deploy-on-green awaits one secret (Q476) | done | proxy / TLS / cookie truth, early |
-| 5 | Schema versioning + golden-log test | 3–4d | safe to change the engine, ever |
+| 5 | Schema versioning + golden-log test — **golden landed 2026-08-20**; the version's home is Q480, the two homed residuals still to do | 3–4d | safe to change the engine, ever |
 | 6 | Postgres (hybrid) + import + **review #2** | 2–3w | durable, concurrent, backup-able |
 | 7 | Config, secrets, observability, shutdown | 3–4d | deploys are visible |
 | 8 | **Surface merge (Q418)** + `design/STYLE.md` audit — supervised | 1–2w | one surface to secure, style, cache, test |
