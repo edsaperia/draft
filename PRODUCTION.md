@@ -260,6 +260,13 @@ service container, or the migration is tested only on this machine.
   `HEAD /`, answered 404 — harmless, to be answered like GET. Ed has done
   1 (health path), 2 (Postgres + `DATABASE_URL`) and 5 (Resend verified,
   sender cleared); the import is in progress in the Render shell.
+- 23:30 — **Cut over.** `/healthz` → `store: pg`, 2 documents. Ed ran the
+  drill on the live database: 2 documents, 16 entries, 8 tokens, 8
+  stashes, every hash identical through disk → Postgres → disk; `verify`
+  agrees exactly. The blueprint stops declaring the disk (498b) in the
+  next push; Ed detaches it in the dashboard after. **The disk was never
+  deleted by this run**: its bytes are in Postgres, proven, and Render's
+  Postgres backups are the backup (499a).
 
 ## Decisions
 
