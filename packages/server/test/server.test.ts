@@ -79,9 +79,16 @@ const consume = async (link: string): Promise<Response> => {
   const page = await fetch(link);
   expect(page.status).toBe(200);
   expect(page.headers.get('content-type')).toContain('text/html');
+  // the interstitial must not carry no-referrer, or a real browser's form
+  // POST sends Origin: null (fetch spec) and the check below refuses it
+  expect(page.headers.get('referrer-policy')).toBe('same-origin');
   return fetch(u.origin + u.pathname, {
     method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      // what a browser actually sends from the interstitial
+      origin: u.origin,
+    },
     body: new URLSearchParams({ token: u.searchParams.get('token') ?? '' }).toString(),
     redirect: 'manual',
   });
@@ -433,6 +440,14 @@ describe('review #1 hardening', () => {
         args: { setting: 'title', value: { text: 'A'.repeat(5000) } } }, g);
     expect(big.status).toBe(400);
     expect(((await big.json()) as { error: string }).error).toContain('too large');
+
+    // a null or foreign Origin on an auth consume is refused (finding 13)
+    const nul = await fetch(`${base}/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: 'null' },
+      body: 'token=x',
+    });
+    expect(nul.status).toBe(403);
 
     // a revoked seat is a dead cookie (finding 1): the uninvited member's
     // ninety-day cookie stops reading the room the moment they leave it

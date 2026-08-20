@@ -276,6 +276,14 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
         (path === '/auth/create' || path === '/auth/login' || path === '/auth/apply')) {
       const token = url.searchParams.get('token') ?? '';
       if (token === '') { json(res, 400, { error: 'missing token' }); return; }
+      // same-origin, overriding the global no-referrer (found on staging,
+      // 2026-08-20): the fetch spec serializes a POST's Origin as *null*
+      // when the submitting page's referrer policy is no-referrer, so the
+      // interstitial's own form tripped the cross-site check — the two
+      // stage-3 hardenings fighting each other. Same-origin keeps the
+      // token-bearing Referer inside this origin and gives the POST a
+      // real Origin to verify.
+      res.setHeader('referrer-policy', 'same-origin');
       html(res, interstitial(path, token));
       return;
     }
