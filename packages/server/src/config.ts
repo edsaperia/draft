@@ -35,6 +35,17 @@ export interface ServerConfig {
   /** HMAC secret for cookies and tokens at rest. */
   secret: string;
   /**
+   * The commit this process was built from, served as `x-build` when
+   * known. It exists because CI could not otherwise tell *which* bytes
+   * it had just verified: a deploy takes minutes to build while the old
+   * instance keeps answering 200, so a check that waits for "the service
+   * is up" verifies the build it was meant to replace. Render states it
+   * as RENDER_GIT_COMMIT; DRAFT_BUILD_SHA covers anywhere else. Public
+   * by design — the repository is public, and knowing which commit is
+   * deployed is exactly what an operator (and a bug report) needs.
+   */
+  buildSha: string | null;
+  /**
    * Behind a TLS-terminating proxy (Render): trust x-forwarded-* for the
    * client IP and the original protocol. Defaults on in the prod build,
    * off in dev; DRAFT_TRUST_PROXY=1/0 overrides either way.
@@ -95,6 +106,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     trustProxy: env.DRAFT_TRUST_PROXY !== undefined
       ? env.DRAFT_TRUST_PROXY === '1' : PROD_BUILD,
     proxyHops: env.DRAFT_PROXY_HOPS ? Math.max(1, Number(env.DRAFT_PROXY_HOPS)) : 1,
+    buildSha: env.RENDER_GIT_COMMIT ?? env.DRAFT_BUILD_SHA ?? null,
   };
 }
 

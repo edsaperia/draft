@@ -37,6 +37,7 @@ async function boot(over: { trustProxy?: boolean; proxyHops?: number } = {}): Pr
     mailFrom: 'test <t@example.org>',
     secret: 'test-secret',
     trustProxy: false,
+    buildSha: null,
     // the test adopts twice inside one second; a room would be paced
     engineTuning: { cooldownMs: 0 },
     ...over,

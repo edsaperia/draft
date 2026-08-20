@@ -53,14 +53,24 @@ jobs:
             echo "no RENDER_DEPLOY_HOOK secret — skipping deploy"; exit 0
           fi
           curl -fsS -X POST "$HOOK" -o /dev/null
-          echo "deploy triggered; waiting for the service to come back"
+          echo "deploy triggered; waiting for $GITHUB_SHA to be the build that answers"
           if [ -z "$BASE" ]; then
             echo "no DRAFT_BASE_URL variable — deployed, not verified"; exit 0
           fi
-          for i in $(seq 1 40); do
+          # Wait for the *new* build, not merely for a live service: the
+          # old instance keeps answering 200 for the minutes a deploy takes
+          # to build, so "it is up" would verify the build we just replaced.
+          # The service states its commit in x-build (see config.buildSha).
+          for i in $(seq 1 60); do
             sleep 15
-            code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/" || true)
-            echo "  attempt $i: $code"
-            if [ "$code" = "200" ]; then break; fi
+            live=$(curl -s -D - -o /dev/null "$BASE/" | tr -d '\r' \
+              | awk 'tolower($1)=="x-build:"{print $2}')
+            echo "  attempt $i: ${live:-none}"
+            if [ "$live" = "$GITHUB_SHA" ]; then deployed=1; break; fi
           done
+          if [ -z "$deployed" ]; then
+            echo "the deployed build never became $GITHUB_SHA — refusing to"
+            echo "report a verification of bytes we did not deploy"
+            exit 1
+          fi
           node scripts/verify-deploy.mjs "$BASE"

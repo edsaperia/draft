@@ -57,7 +57,21 @@
   /* dev chrome, deliberately off the design system: dashed, monospace, and
      since Ed 2026-08-19 **bottom-left** — a stagehand stands in the wings,
      and the top-left corner is where the document's own first clause begins */
-  .devswitch { position: fixed; bottom: 10px; left: 10px; z-index: 60;
+  /* the alpha flag (Ed, 2026-08-20): docs.vote is a real address people
+     are being invited to, and a document drafted in an alpha is a
+     document whose room deserves to know. Bottom-left, quiet, and out of
+     the way of everything: it asks nothing of you, so by the palette's
+     own rule it takes no hot colour and no glyph — a permanent banner
+     that shouted would fight every card on the surface for the whole
+     session. pointer-events: none, because it stands over the document's
+     own margin and must never eat a click meant for the text. */
+  .alphaflag { position: fixed; bottom: 10px; left: 10px; z-index: 55;
+    font-size: var(--t-small); color: var(--muted); background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--r-sm);
+    padding: 3px 8px; pointer-events: none; }
+  .alphaflag b { font-weight: 600; color: var(--fg); }
+  /* the stagehand stands above the flag rather than on it */
+  .devswitch { position: fixed; bottom: 47px; left: 10px; z-index: 60;
     font: 11px/1.4 ui-monospace, Consolas, monospace; color: var(--muted);
     background: var(--bg); border: 1px dashed var(--border); border-radius: 6px;
     padding: 4px 8px; opacity: 0.85; }
@@ -107,6 +121,7 @@
   </div>
 </header>
 <div class="devswitch" title="Dev only — not part of the product"><label for="devwho">dev · viewing as</label> <select id="devwho"></select> <button id="devff" title="Dev only — complete the founding: invite two members, answer everything, open the gates">⏩ settle the founding</button></div>
+<div class="alphaflag"><b>Warning:</b> docs.vote is in alpha!</div>
 <div class="wrap">
   <div class="layout">
     <nav class="toc"><ul id="toc"></ul></nav>

@@ -176,6 +176,9 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
     // ships large inline scripts, so a script CSP waits for the asset
     // pipeline — these directives bite without breaking it
     res.setHeader('x-content-type-options', 'nosniff');
+    // which bytes are answering (see cfg.buildSha): CI polls this after a
+    // deploy so that "verified" is a statement about the new build
+    if (cfg.buildSha !== null) res.setHeader('x-build', cfg.buildSha);
     // tokens, views and interstitials must never sit in a cache
     // (review #1, finding 10)
     if (seg[0] === 'api' || seg[0] === 'auth') {
