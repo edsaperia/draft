@@ -1,5 +1,6 @@
 <meta charset="utf-8">
-<title>Document creation</title>
+<title>docs.vote</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪶</text></svg>">
 <link rel="stylesheet" href="system.css">
 <link rel="stylesheet" href="setup.css">
 <style>
@@ -2077,6 +2078,10 @@
       el.textContent = S.title || 'Untitled';
       el.classList.toggle('ph', !S.title);
     }
+    // The browser tab: the homepage is docs.vote, any other page is the
+    // document's title (Ed, 2026-08-20). The birth stays "docs.vote" even
+    // once titled — until the save it is still the homepage.
+    document.title = (BIRTH || !S.title) ? 'docs.vote' : S.title;
     // At the birth the open card IS the title, so the heading does not also
     // stand above it (the decision-card gesture: the clause, opened) and
     // the tab stands beside the heading. Once the document exists the tab
