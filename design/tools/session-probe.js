@@ -2,8 +2,9 @@
  *
  * Injected into session-view (live or the frozen /reference/ copy) in the
  * page's MAIN world — e.g. by appending a <script src="/tools/session-probe.js">
- * element — so it can reach the page's script-global lexicals (SUGGS, toggle,
- * openId are visible to later classic scripts).
+ * element — so it can reach the page's machinery: window.SESSION since stage 8
+ * (session.js), or the script-global lexicals (SUGGS, toggle) on the frozen
+ * reference copy.
  *
  * What it does, on load:
  *   1. Stubs motion: wraps matchMedia so prefers-reduced-motion reports true
@@ -40,8 +41,16 @@
     }
     return mmReal(q);
   };
-  try { smoothScrollBy = (dy, done) => { window.scrollBy(0, dy); if (done) done(); }; }
-  catch (e) { /* const on some future version: tab must be foregrounded */ }
+  // Since stage 8 the machinery lives in session.js behind window.SESSION (the
+  // frozen reference still has script-global lexicals), so the probe reads
+  // whichever the page offers.
+  const S = window.SESSION || null;
+  const jump = (dy, done) => { window.scrollBy(0, dy); if (done) done(); };
+  if (S) S.smoothScrollBy = jump;
+  else { try { smoothScrollBy = jump; } catch (e) { /* const on some future version: tab must be foregrounded */ } }
+  const suggIds = () => S ? S.SUGGS.map((s) => s.id) : (typeof SUGGS !== 'undefined') ? SUGGS.map((s) => s.id) : [];
+  const toggleCard = (id) => S ? S.toggle(id, false) : toggle(id, false);
+  const keysOf = (id) => S ? S.clauseKeysOf(id) : (typeof clauseKeysOf === 'function') ? clauseKeysOf(id) : [];
 
   /* ---- helpers ------------------------------------------------------------ */
   const R2 = (x) => Math.round(x * 100) / 100;
@@ -67,7 +76,7 @@
 
   /* ---- 2/3. the walk ------------------------------------------------------ */
   function measureClosedFor(id) {
-    const keys = (typeof clauseKeysOf === 'function') ? clauseKeysOf(id) : [];
+    const keys = keysOf(id);
     return {
       keys,
       anch: keys.map((k) => rect(docEl.querySelector('.anch[data-key="' + k + '"], [data-key="' + k + '"]'))),
@@ -107,10 +116,10 @@
     });
     payload.doc.toc = rects(document.querySelectorAll('#toc a, .toc a, nav a'));
 
-    const ids = (typeof SUGGS !== 'undefined') ? SUGGS.map((s) => s.id) : [];
+    const ids = suggIds();
     for (const id of ids) {
       const entry = { closed: measureClosedFor(id) };
-      try { toggle(id, false); } catch (e) { entry.err = String(e); }
+      try { toggleCard(id); } catch (e) { entry.err = String(e); }
       const open = measureOpenFor(id);
       if (open) {
         entry.open = open.map(({ html, ...rest }) => rest);
@@ -123,7 +132,7 @@
         if (c0 && c1) entry.chipTravel = [R2(c1[0] - c0[0]), R2(c1[1] - c0[1])];
         const a0 = entry.closed.anch[0], t1 = open[0].rtext;
         if (a0 && t1) entry.textTravel = [R2(t1[0] - a0[0]), R2(t1[1] - a0[1])];
-        try { toggle(id, false); } catch (e) { entry.errClose = String(e); }
+        try { toggleCard(id); } catch (e) { entry.errClose = String(e); }
       } else {
         entry.noopen = true;
       }
