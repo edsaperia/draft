@@ -1,9 +1,9 @@
 # Render Blueprint (PRODUCTION.md stage 4, decision 432).
 #
-# One stateful web service on a persistent disk: the app replays every
-# document into memory and keeps in-process state, so single-instance is
-# by construction — the disk pins it there, which is the property we
-# want. Auto-deploy is off: CI is the one gate, and a deploy hook gets
+# One web service, stateless apart from Postgres since 498(b): the app
+# replays every document into memory at boot and keeps in-process state,
+# so it still runs as a single instance — but nothing lives on the
+# instance any more, and a deploy no longer has to stop it first. Auto-deploy is off: CI is the one gate, and a deploy hook gets
 # called from the workflow once stage 4 wires it.
 #
 # The build runs `npm ci` (devDependencies included — esbuild does the
@@ -23,15 +23,13 @@ services:
     # does not re-sync a service created from an earlier one
     healthCheckPath: /healthz
     autoDeploy: false
-    disk:
-      name: draft-data
-      mountPath: /var/data
-      sizeGB: 1
+    # No disk since decision 498(b), 2026-08-20: the store is Postgres
+    # (DRAFT_STORE=pg), the service holds nothing between deploys, and
+    # Render can start the new instance before stopping the old. The file
+    # layout survives as the backup/export format (docs/runbooks/).
     envVars:
       - key: NODE_VERSION
         value: '24'
-      - key: DRAFT_DATA_DIR
-        value: /var/data
       - key: DRAFT_SECRET
         generateValue: true
       # set in the dashboard: the public origin (staging first, then

@@ -643,6 +643,8 @@ describe('the operator notification (Ed, 2026-08-20)', () => {
 describe('stage 7: health and graceful shutdown', () => {
   it('/healthz states the store and the document count, uncached', async () => {
     const { base } = await boot();
+    expect((await fetch(base + '/', { method: 'HEAD' })).status).toBe(200);
+    expect((await fetch(base + '/healthz', { method: 'HEAD' })).status).toBe(200);
     const r = await fetch(base + '/healthz');
     expect(r.status).toBe(200);
     expect(r.headers.get('cache-control')).toBe('no-store');

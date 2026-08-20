@@ -273,6 +273,14 @@ export async function createDraftServer(cfg: ServerConfig,
     // Public by the same argument as x-build: the repository is public and
     // none of this is about a person. The document count is what lets an
     // operator read "the restore brought everything back" from one curl.
+    // the platform probes HEAD / (seen in the logs, 2026-08-20); answer it
+    // as a GET would, without the body, rather than a misleading 404
+    if (req.method === 'HEAD' && (path === '/' || path === '/healthz')) {
+      res.writeHead(200, { 'content-type': path === '/' ? 'text/html; charset=utf-8'
+        : 'application/json; charset=utf-8' });
+      res.end();
+      return;
+    }
     if (req.method === 'GET' && path === '/healthz') {
       res.setHeader('cache-control', 'no-store');
       json(res, 200, {
