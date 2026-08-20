@@ -3642,7 +3642,15 @@
 
   if (LIVEMODE) { liveBoot(); }
   else {
-    if (BIRTH) birthBoot();
+    if (BIRTH) {
+      birthBoot();
+      // the title card is open on arrival (§9.7a; Ed's QA, 2026-08-20):
+      // the title is the first question, and a brand-new page holding one
+      // small rail entry reads as an empty room, not as an ask. E11's
+      // arriving-is-arriving rule keeps its force everywhere else — this
+      // is its stated exception, the one move the surface makes itself.
+      S.open = 'title';
+    }
     relabel(); render();
   }
 })();
