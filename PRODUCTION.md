@@ -185,6 +185,18 @@ service container, or the migration is tested only on this machine.
   as corruption rather than "repaired". **Not automated: off-site copies** —
   a destination and a credential are Ed's to choose; Render's own Postgres
   backups stand in. Runbook: `docs/runbooks/backup-and-restore.md`.
+- 22:42 — **the stage-7 deploy verified: 10/10 against docs.vote**, but the
+  deploy itself took ~14½ minutes from hook to the new build answering
+  (CI's poll got it at attempt 58 of 60), and **docs.vote answered 502 for
+  roughly nine of those minutes** — the old instance was stopped long
+  before the new one was healthy. Not a crash (the new build is up and
+  verified) and not visible from here why; **Ed: the deploy's event
+  timeline in Render will say whether that was build time, a slow health
+  check, or the disk hand-off**. Stage 4 budgeted ~30s of downtime per
+  deploy; nine minutes is a different thing, and with a push being a
+  deploy it happens on every push. CI's poll widened to 25 minutes so a
+  slow deploy is not reported as a failed one. Pushing stages 6, 11, 12,
+  15 now — expect the same window.
 
 ## Decisions
 
