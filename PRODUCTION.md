@@ -197,7 +197,13 @@ remains, deliberately:
   tooling is stage 11's (backups and the restore drill).
 - **An applicant who loses their cookie is locked out** — apply says
   nothing (deliberately, the oracle fix) and login says nothing (they are
-  not a member). Q439.
+  not a member). **Answered by Ed 2026-08-20 as (a)**: the apply door
+  re-sends the verification mail when an application from that address is
+  already underway. The response is the same plain 200 either way, so no
+  oracle; the mail itself is the re-entry. Proper user accounts, which
+  would retire the whole question, are a later thing (Ed). Build with
+  stage 5.
+
 
 ## Stage 6 — Postgres, hybrid
 
