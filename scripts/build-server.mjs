@@ -47,5 +47,8 @@ await build({
   ...common,
   entryPoints: ['packages/server/src/tools.ts'],
   outfile: 'dist/draft-tools.mjs',
+  // the same guarantee as the server's (437): no DEV code in anything
+  // that ships, even though today's import graph reaches none
+  dropLabels: ['DEV'],
 });
 console.log('dist/draft-tools.mjs built (store tools)');

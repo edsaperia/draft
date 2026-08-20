@@ -206,6 +206,29 @@ service container, or the migration is tested only on this machine.
   obvious candidate). Live: `/healthz` → `store: file`, 2 documents.
   `DRAFT_STORE=pg` is now available on the live build and **still unset**;
   the cutover remains Ed's, per the runbook.
+- 23:00 — **review #2, first pass**: an adversarial read of the stage 6/7/11
+  code returned 16 findings; 14 fixed in one commit, same night. The two
+  HIGHs were real and predate nothing — **a half-written `bridge.json`
+  would have put the server in a restart loop with every document down**
+  (resume now quarantines that document's engine, and the file is written
+  temp-then-rename), and **the commit persisted the engine's cursor before
+  the document log it points into** (a crash between left the cursor
+  ahead, and the entries between were never fed to the engine; the order
+  is now log first, so a crash leaves the cursor behind, which resume
+  catches up). Also fixed: `repair-tail` could empty a log whose only line
+  was torn and call it a repair; the oracle ignored `schemaVersion` and
+  would have dropped a sixth envelope field silently (whole-envelope
+  compare + a byte-for-byte round-trip test); shutdown awaited stalled
+  requests before draining; NUL accepted by files, refused by Postgres
+  (now refused by `cap` for both); `dropSchemaAndClose` could drop
+  `public`; single-key advisory locks shared one namespace; migrate
+  assumed read committed; pool had no timeouts; the tools guard was
+  unanchored; the tools artifact lacked `dropLabels`; `tick()` kept
+  enqueuing during a drain. **Not fixed, recorded**: the copier takes no
+  lock on its destination (documented: never run it against the live
+  store); migrations carry no checksum; `documents.created_at` is import
+  time, not birth time. The stage-6 text's claim that mail moved to an
+  outbox is corrected in place — it has not.
 
 ## Decisions
 
@@ -562,7 +585,9 @@ Two latent defects this fixes: `tokens.json` is rewritten *in full* on every
 mint, and mail is sent *inside* the commit path with a
 `void … .catch(console.error)` — a failed invitation is lost forever while the
 log records it as sent. Mail moves to an outbox table with a sender loop,
-after commit.
+after commit. *(Not yet — the stage-6 commit of 2026-08-20 fixed
+`tokens.json` by construction and left the outbox for a later session; see
+the running log.)*
 
 `pg` becomes **the project's first runtime dependency**. The zero-dependency
 property is a real asset; spend it deliberately and only here.

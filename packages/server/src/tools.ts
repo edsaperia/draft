@@ -1,7 +1,10 @@
 /**
  * The operator's store tools (PRODUCTION.md stages 6 and 11), built to
- * dist/draft-tools.mjs beside the server. Four verbs, every one of them
- * safe to run beside a live service and none of them deleting anything:
+ * dist/draft-tools.mjs beside the server. Five verbs, none of them
+ * deleting anything, and each safe while the service serves from the
+ * *other* store (import beside a file-served service, export beside a
+ * Postgres-served one): the copier takes no lock on its destination, so
+ * never run it against the store that is live.
  *
  *   import  <dataDir> <databaseUrl>     disk → Postgres, hash-asserted,
  *                                        re-runnable (finishes a partial
@@ -33,6 +36,7 @@
 import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { ConstitutionSession } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
 import { FilePersistence } from './persistence.js';
@@ -102,9 +106,17 @@ export async function main(argv: readonly string[]): Promise<number> {
         return r.prefixOk ? 0 : 1;
       }
       say(`${b}: line ${r.lines} is torn (${r.torn.length} bytes: ${JSON.stringify(r.torn.slice(0, 60))}…)`);
-      if (!r.prefixOk) {
-        console.error('the intact prefix does not replay — refusing: this is not a torn tail');
+      if (!r.prefixOk || r.lines < 2) {
+        // an empty prefix "replays" (to nothing); a log whose only line is
+        // torn lost its genesis, and no tool here writes a document with
+        // no birth (review #2, finding 3)
+        console.error('the intact prefix does not replay, or there is none — refusing: this is not a torn tail');
         return 1;
+      }
+      if (existsSync(join(a, 'docs', b, 'engine.jsonl'))) {
+        say('note: an engine log stands beside this document; its bridge cursor may now point ' +
+          'past the shortened log — resume catches a cursor *behind* the log, not ahead, so ' +
+          'move engine.jsonl and bridge.json aside too and let the engine be reborn');
       }
       say(`the first ${r.lines - 1} lines replay cleanly`);
       if (!argv.includes('--write')) {
@@ -168,7 +180,7 @@ export async function main(argv: readonly string[]): Promise<number> {
 }
 
 // built as its own entry point; never imported by the server
-if (process.argv[1] !== undefined && /draft-tools|tools\.(ts|mjs|js)$/.test(process.argv[1])) {
+if (process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === import.meta.url) {
   main(process.argv.slice(2)).then(
     (code) => process.exit(code),
     (e: unknown) => {

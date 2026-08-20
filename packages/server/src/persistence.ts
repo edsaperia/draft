@@ -18,8 +18,8 @@
  * Postgres: DELETE … RETURNING).
  */
 import {
-  appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync,
-  writeFileSync,
+  appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync,
+  rmSync, writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
 import type { LogEntry } from '../../constitution/src/index.js';
@@ -146,7 +146,11 @@ export class FilePersistence implements Persistence {
   }
 
   async writeBridgeState(id: string, serialized: string): Promise<void> {
-    writeFileSync(join(this.docsDir, id, 'bridge.json'), serialized, 'utf8');
+    // temp-then-rename: a crash mid-write must not leave a half-written
+    // file that fails to parse at the next boot (review #2, finding 1)
+    const path = join(this.docsDir, id, 'bridge.json');
+    writeFileSync(path + '.tmp', serialized, 'utf8');
+    renameSync(path + '.tmp', path);
   }
 
   /* -- tokens -------------------------------------------------------------- */

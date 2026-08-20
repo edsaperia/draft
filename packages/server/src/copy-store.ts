@@ -24,7 +24,7 @@ import { ConstitutionSession } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
 import type { Persistence } from './persistence.js';
 
-interface Chained { seq: number; hash: string; prevHash: string; event: unknown }
+interface Chained { seq: number; hash: string; prevHash: string; event: unknown; schemaVersion?: number }
 
 export interface CopyReport {
   documents: number;
@@ -45,8 +45,12 @@ export interface CopyOptions {
   log?: (line: string) => void;
 }
 
+// the whole envelope, not only what the hash covers: schemaVersion sits
+// outside the hash by design (stage 5), so the oracle must compare it
+// itself (review #2, finding 4)
 const same = (a: Chained, b: Chained): boolean =>
   a.seq === b.seq && a.hash === b.hash && a.prevHash === b.prevHash &&
+  a.schemaVersion === b.schemaVersion &&
   JSON.stringify(a.event) === JSON.stringify(b.event);
 
 /** Compare a destination prefix against the source; throw on the first

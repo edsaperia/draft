@@ -73,10 +73,21 @@ export async function openPersistence(cfg: ServerConfig): Promise<Persistence> {
 export async function createDraftServer(cfg: ServerConfig,
   injected?: Persistence): Promise<DraftServer> {
   const bootedAtMs = Date.now();
+  let closing: Promise<void> | null = null;
   const persistence = injected ?? await openPersistence(cfg);
   const store = new DocStore(persistence);
   await store.loadAll();
-  for (const doc of store.all()) await resumeBridge(persistence, doc);
+  for (const doc of store.all()) {
+    try {
+      await resumeBridge(persistence, doc);
+    } catch (e) {
+      // review #2, finding 1: a half-written bridge state or engine log
+      // must quarantine this document's engine, never the whole server —
+      // the document itself still serves, as loadAll already ensures
+      console.error(`document '${doc.id}': engine state failed to load — engine quarantined:`, e);
+      asEngineDoc(doc).engineQuarantined = true;
+    }
+  }
   const auth = new Auth(cfg.secret, persistence);
   const mailer = makeMailer(cfg);
   const stash = new Stash(persistence);
@@ -136,8 +147,13 @@ export async function createDraftServer(cfg: ServerConfig,
       // the engine rides every commit (Q391): born at constitute, synced
       // with roster truth and ground shifts, closed when the ending passes
       driveBridge(doc, tOf(doc.cs, nowMs), cfg.engineTuning);
-      await persistEngine(persistence, doc);
+      // the document log first — it is the source of truth, and the
+      // bridge's persisted cursor points into it (review #2, finding 2):
+      // a crash after this and before the engine persist leaves a cursor
+      // *behind* the log, which resume's sync simply catches up; the other
+      // order leaves it ahead, and the entries in between are never fed
       const fresh = await store.persist(doc);
+      await persistEngine(persistence, doc);
       if (fresh.length > 0) await relay(doc, fresh, nowMs);
       return doc.cs.logEntries().length;
     });
@@ -164,6 +180,7 @@ export async function createDraftServer(cfg: ServerConfig,
   const tick = async (nowMs: number = Date.now()): Promise<void> => {
     for (const [key, b] of BUCKET) if (b.resetMs < nowMs) BUCKET.delete(key);
     for (const doc of store.all()) {
+      if (closing !== null) return; // shutting down: no new commits join the drain
       if (doc.cs.constitutedAtT === null) continue;
       doc.cs.tick(tOf(doc.cs, nowMs));
       await commit(doc, nowMs);
@@ -704,13 +721,18 @@ export async function createDraftServer(cfg: ServerConfig,
       applicantId: memberId.startsWith('app:') ? memberId.slice(4) : null };
   }
 
-  let closing: Promise<void> | null = null;
   const close = (): Promise<void> => {
     closing ??= (async () => {
-      // stop accepting first, so nothing new joins a chain we are draining
-      await new Promise<void>((resolve) => server.close(() => resolve()));
+      // stop accepting, drop idle keep-alives, and give requests in flight
+      // a moment to finish — but never wait on them indefinitely (review
+      // #2, finding 5): one stalled POST must not stop the drain, the store
+      // close and the clean exit that the 10s limit would otherwise cut
+      const closed = new Promise<void>((resolve) => server.close(() => resolve()));
+      server.closeIdleConnections();
+      await Promise.race([closed, new Promise<void>((r) => setTimeout(r, 3_000).unref())]);
       await commits.drain();
       server.closeAllConnections();
+      await closed;
       await persistence.close?.();
     })();
     return closing;

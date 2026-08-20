@@ -45,6 +45,10 @@ export const LIMITS = {
 
 export const cap = (value: string, max: number, what: string): string => {
   if (value.length > max) throw new Error(`${what} is too long (${max} characters at most)`);
+  // a NUL byte is accepted by a file and refused by Postgres (review #2,
+  // finding 6); the two stores must see the same bytes, and no text a
+  // member means to write contains one
+  if (value.includes('\u0000')) throw new Error(`${what} contains a NUL character`);
   return value;
 };
 
