@@ -13,10 +13,13 @@
  *
  * --limits additionally hammers the one rate-limited door that neither
  * sends mail nor writes to a log (/api/docs/pending, which 404s on an
- * unknown id), with a *spoofed* x-forwarded-for on every request: the
- * limiter takes the rightmost entry — the hop we know the proxy appended —
- * so a client that invents left-hand entries must still be limited.
- * Skipped by default because it leaves a 429 in the platform's logs.
+ * unknown id), with a *spoofed* x-forwarded-for on every request. The
+ * limiter reads the client Cloudflare states (cf-connecting-ip, which it
+ * overwrites on the way in) and falls back to a hop count from the right
+ * (stage 4), so a client that invents x-forwarded-for entries must still
+ * be limited — behind Cloudflare the spoof is simply ignored; on a bare
+ * proxy it is counted past. Skipped by default because it leaves a 429
+ * in the platform's logs.
  */
 
 const base = (process.argv[2] ?? '').replace(/\/$/, '');
