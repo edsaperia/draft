@@ -47,3 +47,13 @@ services:
       # invitations@mail.docs.vote once the domain verifies
       - key: DRAFT_MAIL_FROM
         sync: false
+      # Stage 6 — the cutover is two variables (PRODUCTION.md). DATABASE_URL
+      # is where Postgres is (the managed database's *internal* connection
+      # string, same region) and is safe to set at any time; DRAFT_STORE is
+      # the cutover — absent or 'file' serves from the disk, 'pg' from the
+      # database — and is set only after the importer has run and its hash
+      # assertions have passed. Unsetting DRAFT_STORE is the rollback.
+      - key: DATABASE_URL
+        sync: false
+      - key: DRAFT_STORE
+        sync: false

@@ -24,6 +24,7 @@ import { DocStore, uniqueSlug } from './store.js';
 import type { LoadedDoc } from './store.js';
 import { FilePersistence, WriteChain } from './persistence.js';
 import type { Persistence } from './persistence.js';
+import { PgPersistence } from './pg-persistence.js';
 import { Stash } from './stash.js';
 import { MAILS, makeMailer } from './mailer.js';
 import { asEngineDoc, driveBridge, persistEngine, resumeBridge } from './engine-host.js';
@@ -58,19 +59,21 @@ export interface DraftServer {
   close(): Promise<void>;
 }
 
-/** The storage backend the configuration names (stage 6's two switches). */
-function openPersistence(cfg: ServerConfig): Persistence {
+/** The storage backend the configuration names (stage 6's two switches):
+ *  `pg` connects and migrates; `file` is the JSONL layout under dataDir.
+ *  Neither falls back to the other. */
+export async function openPersistence(cfg: ServerConfig): Promise<Persistence> {
   if (cfg.store === 'pg') {
-    // the cutover switch refuses rather than falling back: stage 6
-    // replaces this line with the Postgres backend
-    throw new Error('DRAFT_STORE=pg is not available in this build');
+    if (cfg.databaseUrl === null) throw new Error('DRAFT_STORE=pg requires DATABASE_URL');
+    return PgPersistence.open(cfg.databaseUrl);
   }
   return new FilePersistence(cfg.dataDir);
 }
 
-export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer> {
+export async function createDraftServer(cfg: ServerConfig,
+  injected?: Persistence): Promise<DraftServer> {
   const bootedAtMs = Date.now();
-  const persistence = openPersistence(cfg);
+  const persistence = injected ?? await openPersistence(cfg);
   const store = new DocStore(persistence);
   await store.loadAll();
   for (const doc of store.all()) await resumeBridge(persistence, doc);

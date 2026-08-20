@@ -14,6 +14,8 @@ import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 import { DocStore } from '../src/store.js';
 import { FilePersistence } from '../src/persistence.js';
+import type { Persistence } from '../src/persistence.js';
+import { PgPersistence } from '../src/pg-persistence.js';
 import { asEngineDoc, resumeBridge } from '../src/engine-host.js';
 
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
@@ -22,7 +24,22 @@ interface Booted {
   base: string;
   draft: DraftServer;
   dataDir: string;
+  /** A second handle on the same store, as a restart would open. */
+  reopen: () => Promise<Persistence>;
+  /** The pg schema this boot lives in, dropped at the end; null on file. */
+  schema: PgPersistence | null;
 }
+
+// The same walk over either backend (stage 6): DRAFT_TEST_STORE=pg with
+// DRAFT_TEST_DATABASE_URL runs every test here against Postgres, each
+// boot in a private schema dropped afterwards. The storage swap must be a
+// substitution, and this is the test that says so.
+const PG_URL = process.env.DRAFT_TEST_DATABASE_URL ?? null;
+const STORE = process.env.DRAFT_TEST_STORE === 'pg' ? 'pg' : 'file';
+if (STORE === 'pg' && PG_URL === null) {
+  throw new Error('DRAFT_TEST_STORE=pg needs DRAFT_TEST_DATABASE_URL');
+}
+const schemaName = () => 't_' + Math.random().toString(36).slice(2, 10);
 
 const booted: Booted[] = [];
 
@@ -37,7 +54,7 @@ async function boot(over: { trustProxy?: boolean; proxyHops?: number;
     resendApiKey: null,
     mailFrom: 'test <t@example.org>',
     secret: 'test-secret',
-    store: 'file' as const,
+    store: STORE as 'file' | 'pg',
     databaseUrl: null,
     trustProxy: false,
     buildSha: null,
@@ -46,11 +63,25 @@ async function boot(over: { trustProxy?: boolean; proxyHops?: number;
     engineTuning: { cooldownMs: 0 },
     ...over,
   };
-  const draft = await createDraftServer(cfg);
+  let persistence: Persistence;
+  let schema: PgPersistence | null = null;
+  let reopen: () => Promise<Persistence>;
+  if (STORE === 'pg') {
+    const name = schemaName();
+    schema = await PgPersistence.open(PG_URL!, { schema: name });
+    persistence = schema;
+    reopen = () => PgPersistence.open(PG_URL!, { schema: name });
+  } else {
+    persistence = new FilePersistence(dataDir);
+    reopen = async () => new FilePersistence(dataDir);
+  }
+  // the same object the server holds: listen() picks the port, and the
+  // baseUrl the server mints links from is patched in place below
+  const draft = await createDraftServer(cfg, persistence);
   await new Promise<void>((r) => draft.server.listen(0, '127.0.0.1', r));
   const port = (draft.server.address() as AddressInfo).port;
   cfg.baseUrl = `http://127.0.0.1:${port}`;
-  const b = { base: cfg.baseUrl, draft, dataDir };
+  const b = { base: cfg.baseUrl, draft, dataDir, reopen, schema };
   booted.push(b);
   return b;
 }
@@ -58,6 +89,10 @@ async function boot(over: { trustProxy?: boolean; proxyHops?: number;
 afterAll(async () => {
   for (const b of booted) {
     await b.draft.close();
+    if (b.schema !== null) {
+      // close() ended this pool; a fresh handle drops the schema
+      await (await b.reopen() as PgPersistence).dropSchemaAndClose();
+    }
   }
 });
 
@@ -111,7 +146,7 @@ const lastMailTo = (dataDir: string, to: string): { link?: string } => {
 
 describe('the whole road: create, invite, arrive, answer, constitute', () => {
   it('walks a three-member founding over HTTP and survives a restart', async () => {
-    const { base, dataDir } = await boot();
+    const { base, dataDir, reopen } = await boot();
 
     // -- creation: nothing exists until the mailed link is followed -------
     const created = await (await post(base, '/api/docs', {
@@ -337,7 +372,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(lastMailTo(dataDir, 'bo@example.org').link).toContain('/auth/login');
 
     // -- restart: both logs on disk replay to the same state --------------
-    const reopened = new FilePersistence(dataDir);
+    const reopened = await reopen();
     const reloaded = new DocStore(reopened);
     await reloaded.loadAll();
     const doc = reloaded.bySlug(created.slug);
@@ -612,14 +647,14 @@ describe('stage 7: health and graceful shutdown', () => {
     expect(r.status).toBe(200);
     expect(r.headers.get('cache-control')).toBe('no-store');
     const body = await r.json() as { ok: boolean; store: string; documents: number; build: null };
-    expect(body).toMatchObject({ ok: true, store: 'file', documents: 0, build: null });
+    expect(body).toMatchObject({ ok: true, store: STORE, documents: 0, build: null });
     await post(base, '/api/docs', { title: 'Counted', email: 'c@example.org' });
     // a request, not a save: the count moves only at the verified save
     expect(((await (await fetch(base + '/healthz')).json()) as { documents: number }).documents).toBe(0);
   });
 
   it('close() lets an in-flight commit land, then refuses new connections', async () => {
-    const { base, draft, dataDir } = await boot();
+    const { base, draft, reopen } = await boot();
     const created = await (await post(base, '/api/docs', {
       title: 'Last Words', email: 'z@example.org',
     })).json() as { devLink: string };
@@ -637,7 +672,7 @@ describe('stage 7: health and graceful shutdown', () => {
     expect((await saving).status).toBe(302);
     await closing;
     await expect(fetch(base + '/healthz')).rejects.toThrow();
-    const reopened = new DocStore(new FilePersistence(dataDir));
+    const reopened = new DocStore(await reopen());
     await reopened.loadAll();
     expect([...reopened.all()]).toHaveLength(1);
   });

@@ -196,6 +196,16 @@ export class FilePersistence implements Persistence {
     if (dropped) this.saveStashes();
   }
 
+  /* -- enumeration for the copier (copy-store.ts), never for the server -- */
+
+  async dumpTokens(): Promise<Array<readonly [string, TokenRecord]>> {
+    return [...this.tokens.entries()];
+  }
+
+  async dumpStashes(): Promise<Array<readonly [string, StashRecord]>> {
+    return [...this.stashes.entries()];
+  }
+
   private saveTokens(): void {
     writeFileSync(this.tokensPath,
       JSON.stringify(Object.fromEntries(this.tokens), null, 2), 'utf8');

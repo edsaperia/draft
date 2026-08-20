@@ -9,7 +9,7 @@ disagree, fix whichever is wrong. Decisions carry their QUESTIONS.md numbers.
 
 One command (`npm run server`) boots a real multi-tenant service: magic-link
 auth, live documents, the engine racing motions, mail. It is well tested at
-the happy path (374 tests green as of step zero). **What is missing is the
+the happy path (374 tests green as of step zero; 399 by stage 5, 440 by stage 6). **What is missing is the
 entire operational envelope** — no packaging, no CI, no deploy target, no TLS,
 no backups, no schema versioning, no observability, no lint — plus a handful
 of security defects that matter the moment it is reachable.
@@ -146,6 +146,35 @@ service container, or the migration is tested only on this machine.
   Path), since a blueprint edit does not re-sync an existing service.
   Subagents running on stage 12 drafts (`docs/legal/`) and stage 15 review
   (README + `docs/OPERATING.md`).
+- 22:40 — **stage 6 built and rehearsed locally** (commit follows; pushed
+  only once the stage-7 deploy question below is resolved). `PgPersistence`
+  behind the unchanged seam: one row per log entry in `document_log` /
+  `engine_log`, PK `(document_id, seq)` as the cross-process guard plus a
+  per-document advisory lock per batch; sidecars as rows; tokens taken by
+  `DELETE … RETURNING`; migrations at boot under a lock, a newer schema
+  refused. **Deviation from the plan's `event jsonb`: the column is
+  `text`** — the hash is over key-sorted JSON so order would survive, but
+  jsonb rejects NUL and lone surrogates, which member free text can carry,
+  and an insert error there fails the document's commit; `event::jsonb`
+  stays available to projections. `schema_version` is nullable so absent
+  stays absent and an export is byte-identical. The copier
+  (`copy-store.ts`) is one function in both directions with the oracle
+  (every hash, both logs, replay-from-genesis, sidecars equal), re-runnable
+  and refusing divergence; `dist/draft-tools.mjs` exposes import / export /
+  verify / **drill**. Tested: 13 pg tests, and **the whole 14-test server
+  walk runs a second time over Postgres** (locally and in CI via a
+  `postgres:17-alpine` service container). Rehearsed on the built artifact
+  against the local container: drill, import, idempotent re-import, verify,
+  boot over pg serving the imported document, refusal without a URL. One
+  defect the rehearsal caught that no test could: `pg` is CommonJS and the
+  ESM bundle's `require` shim threw on boot — fixed with a `createRequire`
+  banner in the build. **Not done from the stage's text, deliberately**:
+  projection tables (the server replays into memory and reads nothing from
+  them — a table nobody queries, with a rebuild test guarding a consumer
+  that does not exist); the mail outbox table + sender loop (finding 15,
+  still open); `person_id`/`people` (436 — an event-shape change with hash
+  consequences, a design judgment for a supervised session); review #2.
+  Runbook: `docs/runbooks/postgres-cutover.md`.
 
 ## Decisions
 
@@ -287,8 +316,8 @@ a big-bang first deploy.
 | 3 | ✅ 2026-08-20 — **Security fixes** + **security review #1** (19 findings, 14 fixed same night — residuals below) | done | safe to be reachable |
 | 4 | ✅ 2026-08-20 — Staging live on Render, verified (two defects found — below); deploy-on-green **wired and firing** (Q476 — a push to `main` is a deploy) | done | proxy / TLS / cookie truth, early |
 | 5 | ✅ 2026-08-20 — Schema versioning (480a) + golden-log test + both homed residuals | done | safe to change the engine, ever |
-| 6 | Postgres (hybrid) + import + **review #2** | 2–3w | durable, concurrent, backup-able |
-| 7 | Config, secrets, observability, shutdown | 3–4d | deploys are visible |
+| 6 | ✅ 2026-08-20 — Postgres backend + importer with the hash oracle + CI over both stores (projection tables and **review #2** still owed — see the running log) | done | durable, concurrent, backup-able |
+| 7 | ✅ 2026-08-20 — `/healthz`, request log, graceful SIGTERM, the two cutover switches | done | deploys are visible |
 | 8 | **Surface merge (Q418)** + `design/STYLE.md` audit — supervised | 1–2w | one surface to secure, style, cache, test |
 | 9 | Resend domain + deliverability (433) — **DNS live, see below**; what is left is verification and one real send | hours, not days | the product actually works |
 | 10 | ✅ 2026-08-20 — **docs.vote is live** (481a: one service, the alpha home), verified 10/10 on the real host; security review #2 still owed | mostly done | docs.vote is live |
@@ -335,9 +364,9 @@ Roughly 10–13 weeks solo. Stages 1 and 9–10 partly overlap with waiting time
 ## Stage 1 — toolchain
 
 - **Build**: esbuild (435) bundles `packages/server/src/main.ts` →
-  `dist/server.js`, platform node, zero external deps (the server's only
+  `dist/server.mjs`, platform node, zero external deps (the server's only
   dependency is the workspace-internal constitution package, which bundles).
-  `node dist/server.js` boots it. The dev path (`tsx`) survives as
+  `node dist/server.mjs` boots it. The dev path (`tsx`) survives as
   `npm run server`.
 - **Lint**: ESLint flat config, typescript-eslint recommended, **no stylistic
   rules** (434) — the config must never touch comment prose. Fix real

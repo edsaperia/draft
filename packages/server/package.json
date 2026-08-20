@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@draft/constitution": "*"
+    "@draft/constitution": "*",
+    "pg": "^8.23.0"
   },
   "devDependencies": {
     "tsx": "^4.20.5"

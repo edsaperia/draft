@@ -15,6 +15,22 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    # Stage 6: the Postgres backend is tested against the same major the
+    # local container pins (17), or the migration is tested only on one
+    # machine. The server's whole HTTP walk runs a second time over it.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: draft
+          POSTGRES_PASSWORD: draft
+          POSTGRES_DB: draft
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U draft"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DRAFT_TEST_DATABASE_URL: postgres://draft:draft@127.0.0.1:5433/draft
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,6 +41,8 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - name: the server walk again, over Postgres (stage 6)
+        run: DRAFT_TEST_STORE=pg npm test -w @draft/server
       - run: npm run build
       - name: boot smoke — refuse half-configured, serve configured, no dev routes
         run: |

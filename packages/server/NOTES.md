@@ -2,8 +2,12 @@
 
 - **The log is the only persistence.** One JSONL of the ConstitutionSession's
   own hash-chained LogEntry per document; loading is `replay` (chain
-  verified), persisting is appending what a command emitted. No database, no
-  snapshot, no second source of truth — the §11 property made operational.
+  verified), persisting is appending what a command emitted. No snapshot, no
+  second source of truth — the §11 property made operational. Since
+  PRODUCTION.md stage 6 the log may live in Postgres (`pg-persistence.ts`,
+  one row per entry, `DRAFT_STORE=pg`) instead of JSONL; it is the same log
+  behind the same `Persistence` seam, and `copy-store.ts` moves it between
+  the two with every rolling hash asserted identical.
   Consequence to hold in mind: the log carries answers in plaintext (the
   package's documented blindness design — projection withholds, storage does
   not), so the data directory is as sensitive as the room. `view()` is the
