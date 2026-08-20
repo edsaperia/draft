@@ -864,3 +864,29 @@ describe('suspension — lapse engine-side (SPEC §9.5a, §8.2, 367b)', () => {
     expect(r.rollingHash()).toBe(s.rollingHash());
   });
 });
+
+describe('ParticipantApi.outcomes (stage 8): resolutions are public, nothing else is', () => {
+  it('lists adoptions with their p and threshold, and retirements, oldest first', async () => {
+    const s = openSession();
+    const { id: c1 } = s.submitCandidate(1000, {
+      author: 'p1', patch: rewrite(0, 1, 'Membership needs a sponsor.'), rationale: 'a',
+    });
+    const { id: c3 } = s.submitCandidate(1500, {
+      author: 'p3', patch: rewrite(0, 3, 'Meetings happen fortnightly.'), rationale: 'c',
+    });
+    s.retire(2000, c3);
+    const inc = s.raceOf(c1).incumbentId;
+    let t = 10_000;
+    for (const judge of ['p2', 'p3', 'p4', 'p5']) {
+      if (s.getCandidate(c1).state === 'adopted') break;
+      s.judge((t += 1000), judge, c1, inc, 'a');
+    }
+    expect(s.getCandidate(c1).state).toBe('adopted');
+    const { ParticipantApi } = await import('../src/participant-api.js');
+    const out = new ParticipantApi(s, 'p5').outcomes();
+    expect(out.map((o) => [o.candidateId, o.outcome])).toEqual([[c3, 'retired'], [c1, 'adopted']]);
+    expect(out[1]!.p).toBeGreaterThan(0.5);
+    expect(out[1]!.threshold).toBeGreaterThan(0);
+    expect(JSON.stringify(out)).not.toContain('refund');
+  });
+});

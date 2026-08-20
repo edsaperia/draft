@@ -32,7 +32,15 @@ import { ParticipantApi } from '../../engine-core/src/participant-api.js';
 import type { Mail, Mailer } from './mailer.js';
 import { LIMITS, cap, emailOk, runCommand, str } from './commands.js';
 
-const COOKIE = 'draft_session';
+/**
+ * One cookie per document (review #1, finding 13): a single name meant
+ * logging into one document logged you out of every other. The document
+ * id is a hex string, cookie-name-safe by construction; the legacy name
+ * is still read, for its own document only, until those cookies expire.
+ */
+const LEGACY_COOKIE = 'draft_session';
+const cookieName = (docId: string): string =>
+  `draft_session_${docId.replace(/[^A-Za-z0-9_-]/g, '')}`;
 
 /** Q346 territory, minimally: the mail-minting doors are rate-limited
  *  per address+route — in memory, generous, a brake not a wall. */
@@ -158,22 +166,68 @@ export async function createDraftServer(cfg: ServerConfig,
       return doc.cs.logEntries().length;
     });
 
-  /** The member's race cards and wallet (Q391) — empty until races run. */
-  const raceView = (doc: LoadedDoc, memberId: string, nowMs: number):
-    { raceCards: unknown[]; wallet: number | null } => {
+  /**
+   * The member's side of the engine (Q391, stage 8): the document as it
+   * stands — the engine's once races run, the starting text before — the
+   * text races over it, what is theirs, the record so far, their cards
+   * and their wallet. Blind throughout (§3.5): wordings, rationales, the
+   * member's own judgments and resolved outcomes; never standings, never
+   * anybody else's judgments, never an author.
+   */
+  const raceView = (doc: LoadedDoc, memberId: string, nowMs: number): {
+    text: string; textVersion: number; clauses: unknown[]; mine: unknown[];
+    records: unknown[]; raceCards: unknown[]; wallet: number | null;
+  } => {
     const ed = asEngineDoc(doc);
-    if (ed.bridge === null || ed.bridge.engine.closed) {
-      return { raceCards: [], wallet: null };
-    }
+    const idle = { clauses: [], mine: [], records: [], raceCards: [], wallet: null };
+    if (ed.bridge === null) return { text: doc.cs.text ?? '', textVersion: 0, ...idle };
+    const engine = ed.bridge.engine;
+    const api = new ParticipantApi(engine, memberId);
+    const myJ = api.myJudgments();
+    const touches = (ids: Set<string>) => (j: { aId: string; bId: string }) =>
+      ids.has(j.aId) || ids.has(j.bId);
+    const clauses = engine.races().filter((r) => r.settingId === undefined).map((r) => {
+      const ids = new Set([...r.members, r.incumbentId]);
+      const here = myJ.filter(touches(ids));
+      const standing = here.some((j) => !j.superseded && !j.locked);
+      return {
+        id: r.id,
+        contested: r.contested,
+        incumbentId: r.incumbentId,
+        deadlocked: r.deadlocked,
+        candidates: r.members.map((id) => {
+          const c = engine.getCandidate(id);
+          return { id, hunks: c.patch?.hunks ?? [], rationale: c.rationale,
+            mine: c.author === memberId };
+        }),
+        judged: standing,
+        // a judgment of mine locked by a ground shift, with nothing of mine
+        // standing since: the race will ask me again (↻)
+        shifted: !standing && here.some((j) => j.locked && !j.superseded),
+      };
+    });
+    const mine = api.myCandidates().flatMap((m) => {
+      const c = engine.getCandidate(m.id);
+      if (c.patch === undefined) return []; // motions have their own records
+      return [{ id: m.id, state: m.state, rationale: m.rationale,
+        patch: c.patch, footprint: c.footprint }];
+    });
+    const records = api.outcomes().flatMap((o) => {
+      const c = engine.getCandidate(o.candidateId);
+      if (c.patch === undefined) return [];
+      return [{ candidateId: o.candidateId, outcome: o.outcome, when: o.t,
+        p: o.p ?? null, threshold: o.threshold ?? null,
+        hunks: c.patch.hunks, footprint: c.footprint, rationale: c.rationale,
+        judgedByMe: myJ.some((j) => j.aId === o.candidateId || j.bId === o.candidateId) }];
+    }).slice(-50);
+    const base = { text: engine.document(), textVersion: engine.currentVersion(),
+      clauses, mine, records };
+    if (engine.closed) return { ...base, raceCards: [], wallet: null };
     try {
       const t = tOf(doc.cs, nowMs);
-      const api = new ParticipantApi(ed.bridge.engine, memberId);
-      return {
-        raceCards: api.nextCards(3, t),
-        wallet: ed.bridge.engine.balance(memberId, t),
-      };
+      return { ...base, raceCards: api.nextCards(10, t), wallet: engine.balance(memberId, t) };
     } catch {
-      return { raceCards: [], wallet: null }; // a clerk, or a seat out of E
+      return { ...base, raceCards: [], wallet: null }; // a clerk, or a seat out of E
     }
   };
 
@@ -397,7 +451,7 @@ export async function createDraftServer(cfg: ServerConfig,
           ...MAILS.newDocument(p.title, `${cfg.baseUrl}/d/${slug}`, p.email) })
           .catch((e) => console.error('new-document notification failed:', e));
       }
-      setCookie(res, auth.cookieFor(id, 'founder', nowMs), httpsOn);
+      setCookie(res, id, auth.cookieFor(id, 'founder', nowMs), httpsOn);
       redirect(res, `/d/${slug}`);
       return;
     }
@@ -504,7 +558,7 @@ export async function createDraftServer(cfg: ServerConfig,
         doc.cs.verifyApplication(t, applicantId);
       }
       await commit(doc, nowMs);
-      setCookie(res, auth.cookieFor(doc.id, `app:${applicantId}`, nowMs), httpsOn);
+      setCookie(res, doc.id, auth.cookieFor(doc.id, `app:${applicantId}`, nowMs), httpsOn);
       redirect(res, `/d/${doc.cs.slug}`);
       return;
     }
@@ -525,7 +579,7 @@ export async function createDraftServer(cfg: ServerConfig,
       if (m && m.arrivedAtT === null) doc.cs.arrive(t, rec.memberId);
       else if (m && m.lapsed) doc.cs.memberReturn(t, rec.memberId);
       await commit(doc, nowMs);
-      setCookie(res, auth.cookieFor(doc.id, rec.memberId, nowMs), httpsOn);
+      setCookie(res, doc.id, auth.cookieFor(doc.id, rec.memberId, nowMs), httpsOn);
       redirect(res, `/d/${doc.cs.slug}`);
       return;
     }
@@ -583,7 +637,7 @@ export async function createDraftServer(cfg: ServerConfig,
             seq,
             eseq,
             textConfirmed: doc.cs.textConfirmed,
-            text: mayRead ? doc.cs.text : null,
+            text: mayRead ? raceView(doc, memberId, nowMs).text : null,
             raceCards: [],
             wallet: null,
           });
@@ -599,7 +653,6 @@ export async function createDraftServer(cfg: ServerConfig,
           seq,
           eseq,
           textConfirmed: doc.cs.textConfirmed,
-          text: doc.cs.text,
           quorumForm: doc.cs.quorumForm,
           electorateSize: doc.cs.motionElectorate().length,
           membershipReserved: doc.cs.membershipReserved(),
@@ -719,10 +772,12 @@ export async function createDraftServer(cfg: ServerConfig,
   function cookieSession(req: IncomingMessage, docId: string):
     { memberId: string; applicantId: string | null } | null {
     const header = req.headers.cookie ?? '';
-    const pair = header.split(';').map((s) => s.trim())
-      .find((s) => s.startsWith(`${COOKIE}=`));
+    const pairs = header.split(';').map((s) => s.trim());
+    const own = cookieName(docId);
+    const pair = pairs.find((s) => s.startsWith(`${own}=`)) ??
+      pairs.find((s) => s.startsWith(`${LEGACY_COOKIE}=`));
     if (!pair) return null;
-    const parsed = auth.verifyCookie(pair.slice(COOKIE.length + 1), Date.now());
+    const parsed = auth.verifyCookie(pair.slice(pair.indexOf('=') + 1), Date.now());
     if (parsed === null || parsed.docId !== docId) return null;
     const { memberId } = parsed;
     return { memberId,
@@ -871,9 +926,9 @@ function redirect(res: ServerResponse, to: string): void {
   res.end();
 }
 
-function setCookie(res: ServerResponse, value: string, secure: boolean): void {
+function setCookie(res: ServerResponse, docId: string, value: string, secure: boolean): void {
   res.setHeader('set-cookie',
-    `${COOKIE}=${value}; Path=/; HttpOnly; SameSite=Lax` +
+    `${cookieName(docId)}=${value}; Path=/; HttpOnly; SameSite=Lax` +
     `${secure ? '; Secure' : ''}; Max-Age=${90 * 24 * 3600}`);
 }
 

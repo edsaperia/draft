@@ -40,6 +40,7 @@ import { Session as EngineSession } from '../../engine-core/src/session.js';
 import type { ConstitutionAmendment, Event as EngineEvent,
   LogEntry as EngineLogEntry } from '../../engine-core/src/types.js';
 import type { Outcome } from '../../engine-core/src/ranking/types.js';
+import type { PatchSet } from '../../engine-core/src/text/types.js';
 import { stableStringify } from './hash.js';
 import { CATALOGUE, entryOf, motionRouteOf } from './catalogue.js';
 import type { SettingId } from './catalogue.js';
@@ -220,6 +221,33 @@ export class EngineBridge {
     this.cs.withdrawMotion(t, by, motion);
     const cand = this.candidateOfMotion.get(motion);
     if (cand !== undefined) this.engine.withdraw(t, cand);
+    this.sync(t);
+  }
+
+  /**
+   * A text proposal (stage 8, Q418): a patch against the document as it
+   * stands, raced in the engine like any candidate — the footprint finds
+   * its race, the stake leaves the engine wallet, adoption rewrites the
+   * engine's document. The constitution is not told: it knows the text
+   * only as the starting text (§9.7a), and the live text is the engine's.
+   */
+  proposeText(t: number, by: MemberId, patch: PatchSet, why: string):
+    { id: string; raceId: string } {
+    this.sync(t);
+    if (this.engine.balance(by, t) < this.engine.constitution.stake) {
+      throw new Error('insufficient ✏️ for the stake (§7)');
+    }
+    const out = this.engine.submitCandidate(t, { author: by, patch, rationale: why });
+    this.sync(t);
+    return out;
+  }
+
+  /** Withdrawing a text proposal: the author's alone, refunded whole (§3.3a). */
+  withdrawText(t: number, by: MemberId, candidateId: string): void {
+    const c = this.engine.getCandidate(candidateId);
+    if (c.author !== by) throw new Error('only the proposer may withdraw it');
+    if (c.patch === undefined) throw new Error('that is a motion, not a text proposal');
+    this.engine.withdraw(t, candidateId);
     this.sync(t);
   }
 

@@ -11,6 +11,8 @@ import type { EngineBridge } from '../../constitution/src/engine-bridge.js';
 import type {
   MotionAnswer, MotionPayload, Power, SettingId, SettingValue,
 } from '../../constitution/src/index.js';
+import type { PatchSet } from '../../engine-core/src/text/types.js';
+import { emojiFaceOf } from './faces.js';
 
 export interface Actor {
   memberId: string;
@@ -91,12 +93,78 @@ export const validPicture = (pic: string): string => {
   cap(pic, LIMITS.picture, 'the picture');
   // the ranges are the page's own arrays (setup.js GROUNDS ×6, MARKS ×3):
   // an index past the end threw inside every member's render (finding 2)
+  if (pic.startsWith('e')) {
+    // the page's own rule (setup.js emojiFaceOf, finding 19): one grapheme,
+    // pictographic, and never the surface's furniture — ✏️ is not a face
+    if (pic.length > 33 || /[<>"'&\\]/.test(pic)) throw new Error('unrecognised picture format');
+    const face = emojiFaceOf(pic.slice(1));
+    if (face === null) throw new Error('a face is one emoji');
+    if (face === 'reserved') throw new Error('that emoji is part of the furniture');
+    return pic;
+  }
   const ok = /^c[0-5]$/.test(pic) || /^m[0-2]$/.test(pic) ||
-    (pic.startsWith('e') && pic.length >= 2 && pic.length <= 33 && !/[<>"'&\\]/.test(pic)) ||
     /^udata:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(pic);
   if (!ok) throw new Error('unrecognised picture format');
   return pic;
 };
+
+/**
+ * One emoji, one member, first come first served (finding 19): the page
+ * greys a taken face; the server refuses it, with the same words, so the
+ * API cannot claim what the picker will not offer. Exact match on the
+ * stored string — 👩🏻 and 👩🏽 are both claimable.
+ */
+export function faceTakenBy(cs: ConstitutionSession, pic: string, self: string): string | null {
+  if (!pic.startsWith('e')) return null;
+  const conv = cs.convenorRecord();
+  if (conv.id !== self && conv.picture === pic) return conv.name ?? 'Somebody';
+  for (const m of cs.memberRecords().values()) {
+    if (m.id === self || m.removed) continue;
+    if (m.picture === pic) return m.name ?? 'Somebody';
+  }
+  for (const a of cs.applicantRecords().values()) {
+    if (a.id === self || a.status === 'refused' || a.status === 'admitted') continue;
+    if (a.picture === pic) return a.name ?? 'Somebody';
+  }
+  return null;
+}
+
+const refuseTaken = (cs: ConstitutionSession, pic: string, self: string): string => {
+  const holder = faceTakenBy(cs, pic, self);
+  if (holder !== null) throw new Error(`Taken — ${holder} got there first.`);
+  return pic;
+};
+
+/** A patch as the page sends it: line hunks against a stated version. */
+function patchOf(args: Args): PatchSet {
+  const baseVersion = args.baseVersion;
+  if (typeof baseVersion !== 'number' || !Number.isInteger(baseVersion) || baseVersion < 0) {
+    throw new Error("'baseVersion' must be a non-negative integer");
+  }
+  if (!Array.isArray(args.hunks) || args.hunks.length === 0 || args.hunks.length > 200) {
+    throw new Error("'hunks' must be a non-empty list");
+  }
+  let total = 0;
+  const hunks = args.hunks.map((h: unknown) => {
+    if (h === null || typeof h !== 'object') throw new Error('a hunk is an object');
+    const { start, end, lines } = h as Record<string, unknown>;
+    if (typeof start !== 'number' || typeof end !== 'number' ||
+        !Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start) {
+      throw new Error('a hunk needs integer start ≤ end, both ≥ 0');
+    }
+    if (!Array.isArray(lines) || !lines.every((l) => typeof l === 'string')) {
+      throw new Error("a hunk's lines are strings");
+    }
+    for (const l of lines as string[]) {
+      cap(l, LIMITS.text, 'the text');
+      if (l.includes('\n')) throw new Error('a line holds no newline');
+      total += l.length + 1;
+    }
+    if (total > LIMITS.text) throw new Error(`the text is too long (${LIMITS.text} characters at most)`);
+    return { start, end, lines: lines as string[] };
+  });
+  return { baseVersion, hunks };
+}
 
 function founderOnly(actor: Actor): void {
   if (!actor.isFounder) throw new Error('only the founder may do that');
@@ -160,7 +228,7 @@ const HANDLERS: Record<string, Handler> = {
     }
     if ('picture' in args) {
       identity.picture = args.picture === null ? null
-        : validPicture(str(args, 'picture'));
+        : refuseTaken(cs, validPicture(str(args, 'picture')), a.memberId);
     }
     cs.setIdentity(t, a.memberId, identity);
   },
@@ -202,6 +270,17 @@ const HANDLERS: Record<string, Handler> = {
     }
     bridge.judge(t, a.memberId, str(args, 'a'), str(args, 'b'), outcome);
   },
+  /* -- a text proposal (stage 8, Q418): a patch over the document's lines,
+     raced in the engine like any candidate; the stake is the engine's ---- */
+  'propose-text': (cs, a, t, args, bridge) => {
+    if (bridge === null) throw new Error('the document has not begun');
+    const why = typeof args.why === 'string' ? cap(args.why, LIMITS.why, 'the rationale') : '';
+    return bridge.proposeText(t, a.memberId, patchOf(args), why);
+  },
+  'withdraw-text': (cs, a, t, args, bridge) => {
+    if (bridge === null) throw new Error('the document has not begun');
+    bridge.withdrawText(t, a.memberId, str(args, 'candidate'));
+  },
   'propose-applicant': (cs, a, t, args, bridge) => {
     const why = typeof args.why === 'string' && args.why.trim() !== ''
       ? cap(args.why, LIMITS.why, 'the rationale') : undefined;
@@ -219,7 +298,9 @@ const HANDLERS: Record<string, Handler> = {
     const applicant = applicantOnly(a);
     const fields: { name?: string; picture?: string; words?: string } = {};
     if (typeof args.name === 'string') fields.name = cap(args.name, LIMITS.name, 'the name');
-    if (typeof args.picture === 'string') fields.picture = validPicture(args.picture);
+    if (typeof args.picture === 'string') {
+      fields.picture = refuseTaken(cs, validPicture(args.picture), applicant);
+    }
     if (typeof args.words === 'string') fields.words = cap(args.words, LIMITS.words, 'the words');
     cs.submitApplication(t, applicant, fields);
   },

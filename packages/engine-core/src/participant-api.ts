@@ -59,6 +59,20 @@ export interface GazetteEntry {
   rationale: string;
 }
 
+/**
+ * A resolved question (SPEC §3.5: outcomes are public the moment they
+ * happen): a candidate adopted — with the confidence it carried at and
+ * the threshold it cleared, the record's own numbers — or retired, the
+ * incumbent having held. Withdrawals are the author's act, not an outcome.
+ */
+export interface OutcomeEntry {
+  t: number;
+  candidateId: string;
+  outcome: 'adopted' | 'retired';
+  p?: number;
+  threshold?: number;
+}
+
 export class ParticipantApi {
   constructor(
     private readonly session: Session,
@@ -179,6 +193,21 @@ export class ParticipantApi {
           rationale: this.session.getCandidate(event.candidateId).rationale,
         };
       });
+  }
+
+  /** Every resolution so far, oldest first — adopted and retired alike. */
+  outcomes(): OutcomeEntry[] {
+    const out: OutcomeEntry[] = [];
+    for (const e of this.session.log) {
+      const ev = e.event;
+      if (ev.type === 'adopted') {
+        out.push({ t: ev.t, candidateId: ev.candidateId, outcome: 'adopted',
+          p: ev.p, threshold: ev.threshold });
+      } else if (ev.type === 'candidate-retired') {
+        out.push({ t: ev.t, candidateId: ev.id, outcome: 'retired' });
+      }
+    }
+    return out;
   }
 
   // -------------------------------------------------------------------------

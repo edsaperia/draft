@@ -273,6 +273,80 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(live.cs.settingState('ending').value)
       .toEqual({ endsAtMs: ends + 3600_000 });
 
+    // -- a text proposal over HTTP (stage 8, Q418): bo patches the one
+    // clause, cy is served it as a clause race and a card, judges it, and
+    // the document every member reads changes ---------------------------
+    type TextView = {
+      text: string; textVersion: number; wallet: number | null;
+      clauses: Array<{ id: string; contested: Array<{ start: number; end: number }>;
+        incumbentId: string; judged: boolean; shifted: boolean;
+        candidates: Array<{ id: string; mine: boolean; rationale: string;
+          hunks: Array<{ start: number; end: number; lines: string[] }> }> }>;
+      mine: Array<{ id: string; state: string }>;
+      records: Array<{ candidateId: string; outcome: string; p: number | null;
+        threshold: number | null; judgedByMe: boolean; hunks: unknown[] }>;
+      raceCards: Array<{ a: { id: string }; b: { id: string } }>;
+    };
+    const textView = async (cookie: string) =>
+      (await (await fetch(`${base}/api/d/${created.slug}/view`,
+        { headers: { cookie } })).json()) as TextView;
+    const before = await textView(bo);
+    expect(before.text).toBe('The clubhouse shall be kept open.');
+    expect(before.textVersion).toBe(0);
+    const walletBefore = before.wallet!;
+    const proposed = await cmd(bo, 'propose-text', {
+      baseVersion: 0,
+      hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open all week.'] }],
+      why: 'weekends too',
+    }) as { id: string; raceId: string };
+    expect(proposed.id).toBeTruthy();
+    // the stake left bo's wallet; the proposal is theirs in their own view
+    const boAfter = await textView(bo);
+    expect(boAfter.wallet).toBe(walletBefore - 1);
+    expect(boAfter.mine.map((m) => [m.id, m.state])).toEqual([[proposed.id, 'live']]);
+    expect(boAfter.clauses[0]!.candidates[0]!.mine).toBe(true);
+    // cy sees the race at its clause — blind: no author, no standing
+    const cyText = await textView(cy);
+    expect(cyText.clauses).toHaveLength(1);
+    const clause = cyText.clauses[0]!;
+    expect(clause.contested).toEqual([{ start: 0, end: 1 }]);
+    expect(clause.judged).toBe(false);
+    expect(clause.candidates[0]).toMatchObject({ id: proposed.id, mine: false,
+      rationale: 'weekends too' });
+    expect(JSON.stringify(cyText.clauses)).not.toMatch(/leaderP|certification|author/);
+    const textCard = cyText.raceCards.find((c) =>
+      c.a.id === proposed.id || c.b.id === proposed.id);
+    expect(textCard).toBeTruthy();
+    // a stale base is refused — the page re-fetches and rebases
+    const stale = await post(base, `/api/d/${created.slug}/cmd`, { cmd: 'propose-text',
+      args: { baseVersion: 7, hunks: [{ start: 0, end: 1, lines: ['x'] }] } }, cy);
+    expect(stale.status).toBe(400);
+    expect(((await stale.json()) as { error: string }).error).toMatch(/targets version 7/);
+    // cy prefers the proposal: with bo's own that clears F = 2 of 3
+    await cmd(cy, 'judge-race', { a: textCard!.a.id, b: textCard!.b.id,
+      outcome: textCard!.a.id === proposed.id ? 'a' : 'b' });
+    const adopted = await textView(ada);
+    expect(adopted.text).toBe('The clubhouse shall be kept open all week.');
+    expect(adopted.textVersion).toBe(1);
+    expect(adopted.clauses).toHaveLength(0);
+    expect(adopted.records).toHaveLength(1);
+    expect(adopted.records[0]).toMatchObject({ candidateId: proposed.id, outcome: 'adopted',
+      judgedByMe: false });
+    expect(adopted.records[0]!.p).toBeGreaterThan(0.5);
+    expect((await textView(cy)).records[0]!.judgedByMe).toBe(true);
+    // withdrawing hands the stake back whole (§3.3a), and only to its author
+    const second = await cmd(cy, 'propose-text', { baseVersion: 1,
+      hunks: [{ start: 0, end: 1, lines: ['Closed.'] }] }) as { id: string };
+    const cyWallet = (await textView(cy)).wallet!;
+    const notYours = await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'withdraw-text', args: { candidate: second.id } }, bo);
+    expect(notYours.status).toBe(400);
+    await cmd(cy, 'withdraw-text', { candidate: second.id });
+    const cyDone = await textView(cy);
+    expect(cyDone.wallet).toBe(cyWallet + 1);
+    expect(cyDone.clauses).toHaveLength(0);
+    expect(cyDone.mine.find((m) => m.id === second.id)!.state).toBe('withdrawn');
+
     // -- an applicant at the door (§9.7½): start → verify → submit --------
     const preApply = booted[booted.length - 1]!.draft.store
       .bySlug(created.slug)!.cs.logEntries().length;
@@ -460,6 +534,34 @@ describe('auth discipline', () => {
     const forged = await fetch(`${base}/api/d/${created.slug}/view`,
       { headers: { cookie: 'draft_session=ZG9j.Zm91bmRlcg.99999999999999.bad' } });
     expect(forged.status).toBe(401);
+  });
+
+  it('one cookie per document: logging into a second does not log you out of the first', async () => {
+    const { base } = await boot();
+    const mk = async (title: string, email: string) => {
+      const c = await (await post(base, '/api/docs', { title, email })).json() as
+        { devLink: string; slug: string };
+      const cookie = cookieOf(await consume(c.devLink));
+      return { slug: c.slug, cookie };
+    };
+    const a = await mk('Alpha', 'alpha@example.org');
+    const b = await mk('Beta', 'beta@example.org');
+    expect(a.cookie.split('=')[0]).not.toBe(b.cookie.split('=')[0]);
+    // a browser holds both; each document reads its own
+    const jar = `${a.cookie}; ${b.cookie}`;
+    const va = await fetch(`${base}/api/d/${a.slug}/view`, { headers: { cookie: jar } });
+    const vb = await fetch(`${base}/api/d/${b.slug}/view`, { headers: { cookie: jar } });
+    expect(va.status).toBe(200);
+    expect(vb.status).toBe(200);
+    expect(((await va.json()) as { me: string }).me).toBe('founder');
+    expect(((await vb.json()) as { isFounder: boolean }).isFounder).toBe(true);
+    // the other document's cookie alone does not carry (a foreign seat)
+    const cross = await fetch(`${base}/api/d/${a.slug}/view`, { headers: { cookie: b.cookie } });
+    expect(cross.status).toBe(401);
+    // the legacy name still reads, for its own document only
+    const legacy = 'draft_session=' + a.cookie.split('=')[1];
+    expect((await fetch(`${base}/api/d/${a.slug}/view`, { headers: { cookie: legacy } })).status).toBe(200);
+    expect((await fetch(`${base}/api/d/${b.slug}/view`, { headers: { cookie: legacy } })).status).toBe(401);
   });
 
   it('an unknown login email is told nothing', async () => {

@@ -234,3 +234,66 @@ describe('an admit motion is its own race (§9.7½ v0.56, Q397)', () => {
     expect(bridge.engine.balance(bo, 13)).toBe(3); // the ✏️ left the wallet
   });
 });
+
+describe('a text proposal races in the engine (stage 8, Q418)', () => {
+  const patch = (baseVersion: number, lines: string[]) =>
+    ({ baseVersion, hunks: [{ start: 0, end: 1, lines }] });
+
+  it('stakes, races against the incumbent text, adopts at the bar, and the document changes', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'text-walk' });
+    const v0 = bridge.engine.currentVersion();
+    const { id, raceId } = bridge.proposeText(10, bo,
+      patch(v0, ['The clubhouse shall be kept open every day.']), 'nights too');
+    expect(bridge.engine.balance(bo, 10)).toBe(3);
+    const race = bridge.engine.races().find((r) => r.id === raceId)!;
+    expect(race.settingId).toBeUndefined();
+    expect(race.members).toEqual([id]);
+    expect(race.contested).toEqual([{ start: 0, end: 1 }]);
+    // the constitution's log did not move: the text is the engine's
+    const logBefore = s.logEntries().length;
+    bridge.judge(20, cy, id, race.incumbentId, 'a');
+    expect(bridge.engine.document()).toBe('The clubhouse shall be kept open every day.');
+    expect(bridge.engine.currentVersion()).toBe(v0 + 1);
+    expect(bridge.engine.getCandidate(id).state).toBe('adopted');
+    expect(s.logEntries().length).toBe(logBefore);
+    expect(s.text).toBe('The clubhouse shall be kept open.'); // the starting text, immutable
+  });
+
+  it('a rival on the same lines joins the race and is left behind by the adoption', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'text-rival' });
+    const v0 = bridge.engine.currentVersion();
+    const a = bridge.proposeText(10, bo, patch(v0, ['Open always.']), '');
+    const b = bridge.proposeText(11, cy, patch(v0, ['Open on Sundays.']), '');
+    expect(a.raceId).toBe(b.raceId);
+    const race = bridge.engine.races().find((r) => r.id === a.raceId)!;
+    expect(race.members.sort()).toEqual([a.id, b.id].sort());
+    // ada prefers bo's over the incumbent; with bo's own that clears F=2
+    bridge.judge(20, 'ada', a.id, race.incumbentId, 'a');
+    expect(bridge.engine.document()).toBe('Open always.');
+    const rival = bridge.engine.getCandidate(b.id);
+    expect(rival.state).not.toBe('live');
+    expect(['retired', 'displaced', 'rebase-pending', 'withdrawn']).toContain(rival.state);
+  });
+
+  it('withdrawal refunds the stake whole, and only the proposer may do it', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'text-withdraw' });
+    const { id } = bridge.proposeText(10, bo,
+      patch(bridge.engine.currentVersion(), ['Closed.']), '');
+    expect(bridge.engine.balance(bo, 10)).toBe(3);
+    expect(() => bridge.withdrawText(11, cy, id)).toThrow('only the proposer');
+    bridge.withdrawText(12, bo, id);
+    expect(bridge.engine.getCandidate(id).state).toBe('withdrawn');
+    expect(bridge.engine.balance(bo, 12)).toBe(4);
+  });
+
+  it('a stale base version is refused before anything is staked', () => {
+    const { s, bo } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'text-stale' });
+    expect(() => bridge.proposeText(10, bo, patch(99, ['x']), ''))
+      .toThrow(/targets version 99/);
+    expect(bridge.engine.balance(bo, 10)).toBe(4);
+  });
+});
