@@ -91,6 +91,35 @@ observations, from querying it rather than being told:
   Resend asks for one, the answer is to verify the subdomain, not to
   reach for the apex.
 
+### Live, 2026-08-20 (Q481 answered (a))
+
+`https://docs.vote` serves the product: certificate issued, `www` 301ing to
+the apex, http 301ing to https, and `verify-deploy.mjs` passing **10/10**
+against the real host, limiter included. One service, which is the alpha
+home — decision 481(a), with the second (production) service arriving at
+the point there is something to lose.
+
+Two truths learned in the last half hour, both worth keeping:
+
+- **`DRAFT_BASE_URL` is not cosmetic, and the CSRF check is what tells you
+  it is wrong.** Saving it in Render is not enough — the process must
+  restart with it. While the service still believed it lived at the
+  onrender hostname, an auth POST carrying `Origin: https://docs.vote`
+  was refused 403 while the onrender origin was accepted: the stage-3
+  origin check doing exactly its job against the wrong origin, which
+  would have refused every real login through the domain. The test for
+  "did the base URL take" is that inversion flipping — docs.vote → 400
+  (bad token, accepted), onrender → 403 — and it costs one curl.
+- **The onrender hostname is now secondary by construction.** It still
+  serves pages, but its auth POSTs are refused, because the origin check
+  keys on the base URL. That is the correct behaviour and worth knowing
+  before somebody bookmarks the wrong address.
+
+**Mail is the remaining gap before anybody is invited** — see stage 9.
+Until `mail.docs.vote` is verified in Resend and `DRAFT_MAIL_FROM` points
+at it, the sandbox sender delivers only to the Resend account's own
+address, so an invitation to a friend goes nowhere. Everything else works.
+
 ## The stages
 
 Reordered from the original plan: the merge moved from stage 2 to stage 8.
@@ -115,7 +144,7 @@ a big-bang first deploy.
 | 7 | Config, secrets, observability, shutdown | 3–4d | deploys are visible |
 | 8 | **Surface merge (Q418)** + `design/STYLE.md` audit — supervised | 1–2w | one surface to secure, style, cache, test |
 | 9 | Resend domain + deliverability (433) | 2–3d + propagation | the product actually works |
-| 10 | DNS, TLS, production + **security review #2** | 1d | docs.vote is live |
+| 10 | ✅ 2026-08-20 — **docs.vote is live** (481a: one service, the alpha home), verified 10/10 on the real host; security review #2 still owed | mostly done | docs.vote is live |
 | 11 | Backups + a restore **drill** | 1–2d | the data is safe |
 | 12 | Privacy, ToS, retention, erasure | 3–5d | legal to collect a friend's address |
 | 13 | **Accessibility** | 4–6d | usable by everyone invited |
