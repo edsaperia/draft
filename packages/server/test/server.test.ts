@@ -37,6 +37,8 @@ async function boot(over: { trustProxy?: boolean; proxyHops?: number;
     resendApiKey: null,
     mailFrom: 'test <t@example.org>',
     secret: 'test-secret',
+    store: 'file' as const,
+    databaseUrl: null,
     trustProxy: false,
     buildSha: null,
     notifyEmail: null,
@@ -55,7 +57,7 @@ async function boot(over: { trustProxy?: boolean; proxyHops?: number;
 
 afterAll(async () => {
   for (const b of booted) {
-    await new Promise((r) => b.draft.server.close(r));
+    await b.draft.close();
   }
 });
 
@@ -600,5 +602,43 @@ describe('the operator notification (Ed, 2026-08-20)', () => {
     })).json() as { ok: boolean; devLink: string };
     expect((await consume(created.devLink)).status).toBe(302);
     expect(toOps(dataDir).length).toBe(0);
+  });
+});
+
+describe('stage 7: health and graceful shutdown', () => {
+  it('/healthz states the store and the document count, uncached', async () => {
+    const { base } = await boot();
+    const r = await fetch(base + '/healthz');
+    expect(r.status).toBe(200);
+    expect(r.headers.get('cache-control')).toBe('no-store');
+    const body = await r.json() as { ok: boolean; store: string; documents: number; build: null };
+    expect(body).toMatchObject({ ok: true, store: 'file', documents: 0, build: null });
+    await post(base, '/api/docs', { title: 'Counted', email: 'c@example.org' });
+    // a request, not a save: the count moves only at the verified save
+    expect(((await (await fetch(base + '/healthz')).json()) as { documents: number }).documents).toBe(0);
+  });
+
+  it('close() lets an in-flight commit land, then refuses new connections', async () => {
+    const { base, draft, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Last Words', email: 'z@example.org',
+    })).json() as { devLink: string };
+    // the save is the first commit on this document's chain; close while
+    // it is in flight and it must still be durable afterwards
+    const u = new URL(created.devLink);
+    await fetch(created.devLink); // the interstitial; the POST below consumes
+    const saving = fetch(u.origin + u.pathname, {
+      method: 'POST', redirect: 'manual',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: u.origin },
+      body: new URLSearchParams({ token: u.searchParams.get('token') ?? '' }).toString(),
+    });
+    await new Promise((r) => setTimeout(r, 25)); // accepted, in flight
+    const closing = draft.close();
+    expect((await saving).status).toBe(302);
+    await closing;
+    await expect(fetch(base + '/healthz')).rejects.toThrow();
+    const reopened = new DocStore(new FilePersistence(dataDir));
+    await reopened.loadAll();
+    expect([...reopened.all()]).toHaveLength(1);
   });
 });

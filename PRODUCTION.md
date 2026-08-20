@@ -133,6 +133,19 @@ service container, or the migration is tested only on this machine.
 
 - 22:10 — prep complete: environment proven, mandate written, decisions
   recorded. Nothing of stages 6–16 started.
+- 22:30 — **stage 7 landed** (commit follows): `/healthz` (build · store ·
+  document count · uptime), one request line per response (no query
+  strings, no health pings), graceful SIGTERM (stop clock → stop listening →
+  drain write chains → close store → exit 0, 10s limit), loud exit on
+  unhandled errors, and the two cutover switches read **inertly** —
+  `DRAFT_STORE` absent = `file`, `pg` refused until stage 6 carries the
+  backend, anything else refused. Runbook:
+  `docs/runbooks/deploy-health-shutdown.md`. CI smoke now SIGTERMs the
+  artifact and expects `closed cleanly`; render.yaml health path is
+  `/healthz` — **Ed: set the same on the service** (Settings → Health Check
+  Path), since a blueprint edit does not re-sync an existing service.
+  Subagents running on stage 12 drafts (`docs/legal/`) and stage 15 review
+  (README + `docs/OPERATING.md`).
 
 ## Decisions
 

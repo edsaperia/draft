@@ -33,12 +33,18 @@ jobs:
           # configured, it serves — with headers, and without the dev outbox
           DRAFT_DATA_DIR="$RUNNER_TEMP/data" PORT=8199 \
             DRAFT_SECRET=ci-smoke DRAFT_BASE_URL=https://smoke.invalid \
-            RESEND_API_KEY=ci-smoke DRAFT_TRUST_PROXY=0 node dist/server.mjs &
+            RESEND_API_KEY=ci-smoke DRAFT_TRUST_PROXY=0 node dist/server.mjs > smoke.log 2>&1 &
+          SMOKE_PID=$!
           sleep 2
           curl -fsS -o /dev/null http://localhost:8199/
           curl -fsS -o /dev/null http://localhost:8199/setup.js
+          curl -fsS http://localhost:8199/healthz | grep -q '"store":"file"'
           curl -fsS -D - -o /dev/null http://localhost:8199/ | grep -qi 'x-content-type-options: nosniff'
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8199/api/dev/outbox)" = 404
+          # stage 7: SIGTERM ends the process cleanly, not mid-append
+          kill -TERM "$SMOKE_PID"
+          wait "$SMOKE_PID" || true
+          grep -q "closed cleanly" smoke.log
 
       # Deploy on green (stage 4, decision 432): auto-deploy is off at the
       # platform, so this workflow is the single gate — nothing reaches the

@@ -48,6 +48,17 @@ await check('GET / serves the surface', async () => {
   return `${r.status} html`;
 });
 
+await check('/healthz says which build and store are answering (stage 7)', async () => {
+  const r = await get('/healthz');
+  expect(r.status === 200, `status ${r.status}`);
+  expect(r.headers.get('cache-control') === 'no-store', 'health is cacheable');
+  const body = await r.json();
+  expect(body.ok === true, 'not ok');
+  expect(body.store === 'file' || body.store === 'pg', `store ${body.store}`);
+  expect(typeof body.documents === 'number', 'no document count');
+  return `store ${body.store} · ${body.documents} documents · build ${String(body.build ?? 'unknown').slice(0, 12)}`;
+});
+
 await check('security headers (defects 2/9)', async () => {
   const h = (await get('/')).headers;
   expect(h.get('x-content-type-options') === 'nosniff', 'no nosniff');

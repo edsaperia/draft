@@ -25,6 +25,22 @@ export interface ServerConfig {
   port: number;
   /** Document logs, tokens, outbox, secret. */
   dataDir: string;
+  /**
+   * Where the bytes live (PRODUCTION.md stage 6 — "the cutover is two
+   * variables"). `file` is the JSONL layout under dataDir and the meaning
+   * of an absent DRAFT_STORE; `pg` is Postgres at databaseUrl. Two
+   * switches because a fresh managed database is *empty*: a single
+   * "DATABASE_URL present means Postgres" rule would have the first
+   * deploy carrying the URL serve an empty service while every real
+   * document sat on the disk beside it. So DATABASE_URL says where the
+   * database is and may be set at any time; DRAFT_STORE=pg is the
+   * cutover, set only after the importer has run and its hash assertions
+   * have passed — and unsetting it is the rollback, onto the disk the
+   * service never stopped writing to.
+   */
+  store: 'file' | 'pg';
+  /** The Postgres connection string; required when store is `pg`. */
+  databaseUrl: string | null;
   /** Absolute origin used in mailed links, e.g. https://docs.vote */
   baseUrl: string;
   /** The static surface (design/) served at /design and /d/:slug. */
@@ -93,9 +109,21 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
   const dataDir = env.DRAFT_DATA_DIR ?? join(process.cwd(), 'data');
   mkdirSync(dataDir, { recursive: true });
   const port = env.PORT ? Number(env.PORT) : 8140;
+  // the cutover switch must never fail open: an unrecognised value is a
+  // refusal, not a fallback to the disk
+  const storeRaw = env.DRAFT_STORE ?? 'file';
+  if (storeRaw !== 'file' && storeRaw !== 'pg') {
+    throw new Error(`DRAFT_STORE must be 'file' or 'pg' (got '${storeRaw}')`);
+  }
+  const databaseUrl = env.DATABASE_URL ?? null;
+  if (storeRaw === 'pg' && databaseUrl === null) {
+    throw new Error('DRAFT_STORE=pg requires DATABASE_URL');
+  }
   return {
     port,
     dataDir,
+    store: storeRaw,
+    databaseUrl,
     baseUrl: env.DRAFT_BASE_URL ?? `http://localhost:${port}`,
     // dev runs from packages/server (../../design); the built bundle runs
     // from the repo root (./design). Whichever exists wins; DRAFT_DESIGN_DIR

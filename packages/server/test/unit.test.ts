@@ -164,3 +164,26 @@ describe('DocStore', () => {
     expect(back.bySlug('charter')!.cs.rollingHash()).toBe(doc.cs.rollingHash());
   });
 });
+
+describe('stage 7: the two cutover switches, read inertly', () => {
+  it('absent DRAFT_STORE means file; pg needs a URL; anything else refuses', async () => {
+    const { configFromEnv } = await import('../src/config.js');
+    const env = { DRAFT_DATA_DIR: tmp() };
+    expect(configFromEnv(env).store).toBe('file');
+    expect(configFromEnv({ ...env, DATABASE_URL: 'postgres://x' }).store).toBe('file');
+    expect(configFromEnv({ ...env, DRAFT_STORE: 'pg', DATABASE_URL: 'postgres://x' }))
+      .toMatchObject({ store: 'pg', databaseUrl: 'postgres://x' });
+    expect(() => configFromEnv({ ...env, DRAFT_STORE: 'pg' })).toThrow(/DATABASE_URL/);
+    expect(() => configFromEnv({ ...env, DRAFT_STORE: 'sqlite' })).toThrow(/DRAFT_STORE/);
+  });
+
+  it('drain resolves once every chain has settled', async () => {
+    const chain = new WriteChain();
+    const landed: string[] = [];
+    void chain.run('a', async () => { await new Promise((r) => setTimeout(r, 30)); landed.push('a'); });
+    void chain.run('b', async () => { await new Promise((r) => setTimeout(r, 10)); landed.push('b'); });
+    void chain.run('a', async () => { landed.push('a2'); });
+    await chain.drain();
+    expect(landed).toEqual(['b', 'a', 'a2']);
+  });
+});

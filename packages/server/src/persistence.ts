@@ -76,6 +76,11 @@ export interface Persistence {
   getStash(key: string): Promise<StashRecord | null>;
   deleteStash(key: string): Promise<void>;
   sweepStashes(nowMs: number): Promise<void>;
+
+  /* -- lifecycle ---------------------------------------------------------- */
+  /** Release what the backend holds (a connection pool); called once at
+   *  shutdown after every commit has drained. Optional: files need none. */
+  close?(): Promise<void>;
 }
 
 export class FilePersistence implements Persistence {
@@ -239,5 +244,13 @@ export class WriteChain {
     const next = tail.then(fn, fn);
     this.tails.set(key, next.catch(() => undefined));
     return next;
+  }
+
+  /** Resolve once every chain's current tail has settled (PRODUCTION.md
+   *  stage 7): shutdown waits on this before closing the store, so a
+   *  deploy's SIGTERM never tears an append. Links enqueued after the
+   *  call are not waited for — the caller stops accepting first. */
+  async drain(): Promise<void> {
+    await Promise.all([...this.tails.values()]);
   }
 }

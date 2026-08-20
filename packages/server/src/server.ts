@@ -23,6 +23,7 @@ import type { ServerConfig } from './config.js';
 import { DocStore, uniqueSlug } from './store.js';
 import type { LoadedDoc } from './store.js';
 import { FilePersistence, WriteChain } from './persistence.js';
+import type { Persistence } from './persistence.js';
 import { Stash } from './stash.js';
 import { MAILS, makeMailer } from './mailer.js';
 import { asEngineDoc, driveBridge, persistEngine, resumeBridge } from './engine-host.js';
@@ -49,10 +50,27 @@ export interface DraftServer {
   mailer: Mailer;
   /** Drive the clocks (§9.5/§9.5a): call periodically; safe to call any time. */
   tick(nowMs?: number): Promise<void>;
+  /**
+   * Graceful shutdown (PRODUCTION.md stage 7): stop accepting, let every
+   * in-flight commit land, close idle connections, release the store.
+   * A deploy's SIGTERM must never tear an append.
+   */
+  close(): Promise<void>;
+}
+
+/** The storage backend the configuration names (stage 6's two switches). */
+function openPersistence(cfg: ServerConfig): Persistence {
+  if (cfg.store === 'pg') {
+    // the cutover switch refuses rather than falling back: stage 6
+    // replaces this line with the Postgres backend
+    throw new Error('DRAFT_STORE=pg is not available in this build');
+  }
+  return new FilePersistence(cfg.dataDir);
 }
 
 export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer> {
-  const persistence = new FilePersistence(cfg.dataDir);
+  const bootedAtMs = Date.now();
+  const persistence = openPersistence(cfg);
   const store = new DocStore(persistence);
   await store.loadAll();
   for (const doc of store.all()) await resumeBridge(persistence, doc);
@@ -150,6 +168,18 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
   };
 
   const server = createServer((req, res) => {
+    // one line per response (stage 7): method, path, status, duration.
+    // The query string is dropped on purpose — magic-link tokens travel
+    // there — and the health check is silent, or the platform's pings
+    // would be most of the log.
+    const startedMs = Date.now();
+    const pathOnly = (req.url ?? '/').split('?')[0]!;
+    if (pathOnly !== '/healthz') {
+      res.on('finish', () => {
+        console.log(`${req.method ?? '-'} ${pathOnly} ${res.statusCode} ` +
+          `${Date.now() - startedMs}ms`);
+      });
+    }
     void route(req, res).catch((e: unknown) => {
       // module and validation errors are written for members and pass
       // through; anything carrying a system code (fs, net) is internal
@@ -218,6 +248,22 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
       json(res, 429, { error: 'too many requests — try again shortly' });
       return true;
     };
+
+    /* -- health (stage 7): which bytes, which store, how much is loaded -- */
+    // Public by the same argument as x-build: the repository is public and
+    // none of this is about a person. The document count is what lets an
+    // operator read "the restore brought everything back" from one curl.
+    if (req.method === 'GET' && path === '/healthz') {
+      res.setHeader('cache-control', 'no-store');
+      json(res, 200, {
+        ok: true,
+        build: cfg.buildSha,
+        store: cfg.store,
+        documents: [...store.all()].length,
+        uptimeSeconds: Math.floor((nowMs - bootedAtMs) / 1000),
+      });
+      return;
+    }
 
     /* -- creation (§9.7a: the mail is the save) -------------------------- */
     // Deleted from the production artifact, not flag-gated (stage 3,
@@ -655,7 +701,19 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
       applicantId: memberId.startsWith('app:') ? memberId.slice(4) : null };
   }
 
-  return { server, store, auth, mailer, tick };
+  let closing: Promise<void> | null = null;
+  const close = (): Promise<void> => {
+    closing ??= (async () => {
+      // stop accepting first, so nothing new joins a chain we are draining
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      await commits.drain();
+      server.closeAllConnections();
+      await persistence.close?.();
+    })();
+    return closing;
+  };
+
+  return { server, store, auth, mailer, tick, close };
 }
 
 /* -------------------------------------------------------------------------- */

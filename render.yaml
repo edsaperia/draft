@@ -18,7 +18,10 @@ services:
     region: frankfurt
     buildCommand: npm ci && npm run build
     startCommand: node dist/server.mjs
-    healthCheckPath: /
+    # stage 7: a real health route (build, store, document count) rather
+    # than the front page — set on the service too, since a blueprint edit
+    # does not re-sync a service created from an earlier one
+    healthCheckPath: /healthz
     autoDeploy: false
     disk:
       name: draft-data
