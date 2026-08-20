@@ -22,7 +22,15 @@
 window.CARDS = (function () {
   'use strict';
 
-  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  // Full five-character escaping (PRODUCTION.md stage 3, defect 4): esc'd
+  // strings land in attribute values as well as text (a lane's valAttr
+  // carries member-proposed setting values on the live page), and an
+  // unescaped quote there is an injection, not a rendering quirk. For text
+  // nodes the extra entities parse back to the identical DOM.
+  function esc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
 
   // Decision cards show the text as it would *stand*, not a redline: the struck
   // words come out and only what is new stays lit. The fixture keeps the full

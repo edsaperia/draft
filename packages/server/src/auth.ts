@@ -9,7 +9,7 @@
  * seam's business; this class keeps the semantics — hashing, single use,
  * expiry, the deferred batch — and the cookie signing, which is pure.
  */
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { sha256Hex } from '../../constitution/src/index.js';
 import type { Persistence, TokenRecord } from './persistence.js';
 
@@ -65,7 +65,10 @@ export class Auth {
     const parts = value.split('.');
     if (parts.length !== 4) return null;
     const body = parts.slice(0, 3).join('.');
-    if (this.sign(body) !== parts[3]) return null;
+    // constant-time: a signature check must not leak how far it matched
+    const expected = Buffer.from(this.sign(body), 'utf8');
+    const given = Buffer.from(parts[3]!, 'utf8');
+    if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
     if (Number(parts[2]) < nowMs) return null;
     try {
       return { docId: unb64(parts[0]!), memberId: unb64(parts[1]!) };

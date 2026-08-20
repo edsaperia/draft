@@ -32,6 +32,44 @@ export const str = (args: Args, key: string, allowEmpty = true): string => {
   return v;
 };
 
+/**
+ * Length caps (PRODUCTION.md stage 3, defect 5): every string accepted
+ * here is written permanently into an append-only log, so nothing
+ * unbounded may pass. The caps are generous — they exist to stop abuse,
+ * never prose.
+ */
+export const LIMITS = {
+  email: 254, name: 80, title: 200, why: 5_000, words: 2_000,
+  text: 500_000, picture: 150_000,
+} as const;
+
+export const cap = (value: string, max: number, what: string): string => {
+  if (value.length > max) throw new Error(`${what} is too long (${max} characters at most)`);
+  return value;
+};
+
+export const emailOk = (email: string): string => {
+  if (email.length > LIMITS.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error('that does not look like an email address');
+  }
+  return email;
+};
+
+/**
+ * A picture is one of the page's own stored formats and nothing else
+ * (defect 4: avHtml interpolates it into a style attribute, so the store
+ * must never hold a string that could read as markup or CSS): a ground
+ * index, a mark index, one emoji grapheme, or an uploaded data-URI image.
+ */
+export const validPicture = (pic: string): string => {
+  cap(pic, LIMITS.picture, 'the picture');
+  const ok = /^c\d{1,2}$/.test(pic) || /^m\d{1,2}$/.test(pic) ||
+    (pic.startsWith('e') && pic.length >= 2 && pic.length <= 33 && !/[<>"'&\\]/.test(pic)) ||
+    /^udata:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(pic);
+  if (!ok) throw new Error('unrecognised picture format');
+  return pic;
+};
+
 function founderOnly(actor: Actor): void {
   if (!actor.isFounder) throw new Error('only the founder may do that');
 }
@@ -61,7 +99,7 @@ const HANDLERS: Record<string, Handler> = {
   },
   'confirm-starting-text': (cs, a, t, args) => {
     founderOnly(a);
-    cs.confirmStartingText(t, str(args, 'text'));
+    cs.confirmStartingText(t, cap(str(args, 'text'), LIMITS.text, 'the text'));
   },
   'set-convenor-membership': (cs, a, t, args) => {
     founderOnly(a);
@@ -73,7 +111,7 @@ const HANDLERS: Record<string, Handler> = {
   },
   'invite': (cs, a, t, args) => {
     founderOnly(a);
-    return cs.invite(t, str(args, 'email'));
+    return cs.invite(t, emailOk(str(args, 'email')));
   },
   'uninvite': (cs, a, t, args) => {
     founderOnly(a);
@@ -87,8 +125,14 @@ const HANDLERS: Record<string, Handler> = {
   /* -- any authenticated seat (self-scoped by construction) ------------- */
   'set-identity': (cs, a, t, args) => {
     const identity: { name?: string | null; picture?: string | null } = {};
-    if ('name' in args) identity.name = args.name as string | null;
-    if ('picture' in args) identity.picture = args.picture as string | null;
+    if ('name' in args) {
+      identity.name = args.name === null ? null
+        : cap(str(args, 'name'), LIMITS.name, 'the name');
+    }
+    if ('picture' in args) {
+      identity.picture = args.picture === null ? null
+        : validPicture(str(args, 'picture'));
+    }
     cs.setIdentity(t, a.memberId, identity);
   },
   'answer': (cs, a, t, args) => {
@@ -99,8 +143,11 @@ const HANDLERS: Record<string, Handler> = {
     cs.giveOk(t, a.memberId, str(args, 'setting') as SettingId);
   },
   'open-motion': (cs, a, t, args, bridge) => {
-    const why = typeof args.why === 'string' ? args.why : undefined;
+    const why = typeof args.why === 'string'
+      ? cap(args.why, LIMITS.why, 'the rationale') : undefined;
     const payload = args.payload as MotionPayload;
+    if (payload !== null && typeof payload === 'object' &&
+        payload.kind === 'invite') emailOk(str(payload as never, 'email'));
     // a live document's set-motions go through the bridge (Q391): an
     // ordinary route stakes and races in the engine; a constitutional one
     // opens the unanimity vote exactly as before
@@ -128,7 +175,7 @@ const HANDLERS: Record<string, Handler> = {
   },
   'propose-applicant': (cs, a, t, args, bridge) => {
     const why = typeof args.why === 'string' && args.why.trim() !== ''
-      ? args.why : undefined;
+      ? cap(args.why, LIMITS.why, 'the rationale') : undefined;
     if (bridge !== null) {
       bridge.proposeApplicant(t, a.memberId, str(args, 'applicant'), why);
     } else {
@@ -142,9 +189,9 @@ const HANDLERS: Record<string, Handler> = {
   'submit-application': (cs, a, t, args) => {
     const applicant = applicantOnly(a);
     const fields: { name?: string; picture?: string; words?: string } = {};
-    if (typeof args.name === 'string') fields.name = args.name;
-    if (typeof args.picture === 'string') fields.picture = args.picture;
-    if (typeof args.words === 'string') fields.words = args.words;
+    if (typeof args.name === 'string') fields.name = cap(args.name, LIMITS.name, 'the name');
+    if (typeof args.picture === 'string') fields.picture = validPicture(args.picture);
+    if (typeof args.words === 'string') fields.words = cap(args.words, LIMITS.words, 'the words');
     cs.submitApplication(t, applicant, fields);
   },
 };

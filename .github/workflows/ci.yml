@@ -23,9 +23,16 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: boot smoke — the artifact must serve
+      - name: boot smoke — refuse half-configured, serve configured, no dev routes
         run: |
-          DRAFT_DATA_DIR="$RUNNER_TEMP/data" PORT=8199 node dist/server.mjs &
+          # the prod artifact refuses to boot without its secrets (defect 9)
+          ( node dist/server.mjs || true ) 2>&1 | grep -q 'refuses to boot'
+          # configured, it serves — with headers, and without the dev outbox
+          DRAFT_DATA_DIR="$RUNNER_TEMP/data" PORT=8199 \
+            DRAFT_SECRET=ci-smoke DRAFT_BASE_URL=https://smoke.invalid \
+            RESEND_API_KEY=ci-smoke DRAFT_TRUST_PROXY=0 node dist/server.mjs &
           sleep 2
           curl -fsS -o /dev/null http://localhost:8199/
           curl -fsS -o /dev/null http://localhost:8199/setup.js
+          curl -fsS -D - -o /dev/null http://localhost:8199/ | grep -qi 'x-content-type-options: nosniff'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8199/api/dev/outbox)" = 404

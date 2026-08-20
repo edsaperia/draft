@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "bundle": "npm run bundle -w @draft/constitution",
     "server": "npm run start -w @draft/server",
-    "build": "esbuild packages/server/src/main.ts --bundle --platform=node --format=esm --target=node24 --outfile=dist/server.mjs",
+    "build": "node scripts/build-server.mjs",
     "start": "node dist/server.mjs"
   },
   "devDependencies": {

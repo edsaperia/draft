@@ -36,6 +36,7 @@ async function boot(): Promise<Booted> {
     resendApiKey: null,
     mailFrom: 'test <t@example.org>',
     secret: 'test-secret',
+    trustProxy: false,
     // the test adopts twice inside one second; a room would be paced
     engineTuning: { cooldownMs: 0 },
   };
@@ -70,6 +71,22 @@ const post = (base: string, path: string, body: unknown, cookie?: string) =>
     body: JSON.stringify(body),
   });
 
+/** Follow a magic link the way a browser does: GET the interstitial,
+ *  then POST the token — the POST is what consumes (stage 3, defect 6),
+ *  so a scanner's GET burns nothing. */
+const consume = async (link: string): Promise<Response> => {
+  const u = new URL(link);
+  const page = await fetch(link);
+  expect(page.status).toBe(200);
+  expect(page.headers.get('content-type')).toContain('text/html');
+  return fetch(u.origin + u.pathname, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ token: u.searchParams.get('token') ?? '' }).toString(),
+    redirect: 'manual',
+  });
+};
+
 const lastMailTo = (dataDir: string, to: string): { link?: string } => {
   const lines = readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
     .split('\n').filter((l) => l.length > 0)
@@ -90,13 +107,13 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(created.ok).toBe(true);
     expect(created.slug).toBe('hollow-oak-club-charter');
 
-    const saved = await fetch(created.devLink, { redirect: 'manual' });
+    const saved = await consume(created.devLink);
     expect(saved.status).toBe(302);
     expect(saved.headers.get('location')).toBe(`/d/${created.slug}`);
     const ada = cookieOf(saved);
 
     // the same creation link a second time is dead (single use)
-    expect((await fetch(created.devLink, { redirect: 'manual' })).status).toBe(400);
+    expect((await consume(created.devLink)).status).toBe(400);
 
     // -- the founder's hand ----------------------------------------------
     const cmd = async (cookie: string, name: string, args: unknown) => {
@@ -114,7 +131,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     const follow = async (email: string): Promise<string> => {
       const mail = lastMailTo(dataDir, email);
       expect(mail.link).toBeTruthy();
-      const res = await fetch(mail.link!, { redirect: 'manual' });
+      const res = await consume(mail.link!);
       expect(res.status).toBe(302);
       return cookieOf(res);
     };
@@ -209,10 +226,15 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
       .toEqual({ endsAtMs: ends + 3600_000 });
 
     // -- an applicant at the door (§9.7½): start → verify → submit --------
+    const preApply = booted[booted.length - 1]!.draft.store
+      .bySlug(created.slug)!.cs.logEntries().length;
     const started = await (await post(base, `/api/d/${created.slug}/apply`,
       { email: 'dee@example.org' })).json() as { ok: boolean; devLink: string };
     expect(started.ok).toBe(true);
-    const appRes = await fetch(started.devLink, { redirect: 'manual' });
+    // an unauthenticated POST wrote nothing to the log (stage 3, defect 8)
+    expect(booted[booted.length - 1]!.draft.store
+      .bySlug(created.slug)!.cs.logEntries().length).toBe(preApply);
+    const appRes = await consume(started.devLink);
     expect(appRes.status).toBe(302);
     const dee = cookieOf(appRes);
     // the applicant's one act is submitting; anything else is refused
@@ -226,11 +248,14 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     // ordinary admit motion, free (§9.7½)
     const deeView = await (await fetch(`${base}/api/d/${created.slug}/view`,
       { headers: { cookie: dee } })).json() as {
-        applicant: { status: string };
-        view: { motions: Array<{ payload: { kind: string } }> };
+        applicant: { status: string; motion: string | null };
       };
     expect(deeView.applicant.status).toBe('submitted');
-    expect(deeView.view.motions.some((m) => m.payload.kind === 'admit')).toBe(true);
+    expect(deeView.applicant.motion).toBeTruthy();
+    // an applicant is never served the members' emails (stage 3, defect 7)
+    const deeRaw = JSON.stringify(deeView);
+    expect(deeRaw).not.toContain('bo@example.org');
+    expect(deeRaw).not.toContain('ada@example.org');
 
     // -- the admit motion is its own race (§9.7½ v0.56, Q397): one
     // candidate against the membership as it stands, served to members,
@@ -310,7 +335,7 @@ describe('the pre-save text stash (§9.7a v0.55)', () => {
     expect(wrong.status).toBe(404);
 
     // follow the link: the text is waiting, unconfirmed, in the document
-    const saved = await fetch(created.devLink, { redirect: 'manual' });
+    const saved = await consume(created.devLink);
     const founder = cookieOf(saved);
     const viewOf = async (cookie: string) =>
       (await (await fetch(`${base}/api/d/${created.slug}/view`,
@@ -330,7 +355,7 @@ describe('the pre-save text stash (§9.7a v0.55)', () => {
       { cmd: 'invite', args: { email: 'reader@example.org' } }, founder);
     const reader = await (async () => {
       const mail = lastMailTo(dataDir, 'reader@example.org');
-      return cookieOf(await fetch(mail.link!, { redirect: 'manual' }));
+      return cookieOf(await consume(mail.link!));
     })();
     expect((await viewOf(reader)).provisionalText)
       .toBe('The clubhouse shall be kept open at all hours.');
@@ -355,7 +380,7 @@ describe('auth discipline', () => {
     const created = await (await post(base, '/api/docs', {
       title: 'One', email: 'one@example.org',
     })).json() as { devLink: string; slug: string };
-    await fetch(created.devLink, { redirect: 'manual' });
+    await consume(created.devLink);
 
     const bare = await fetch(`${base}/api/d/${created.slug}/view`);
     expect(bare.status).toBe(401);
@@ -369,7 +394,7 @@ describe('auth discipline', () => {
     const created = await (await post(base, '/api/docs', {
       title: 'Two', email: 'two@example.org',
     })).json() as { devLink: string; slug: string };
-    await fetch(created.devLink, { redirect: 'manual' });
+    await consume(created.devLink);
     const res = await post(base, `/api/d/${created.slug}/login`,
       { email: 'stranger@example.org' });
     const body = await res.json() as Record<string, unknown>;
@@ -383,7 +408,7 @@ describe('the surface is served', () => {
     const created = await (await post(base, '/api/docs', {
       title: 'Three', email: 'three@example.org',
     })).json() as { devLink: string; slug: string };
-    await fetch(created.devLink, { redirect: 'manual' });
+    await consume(created.devLink);
     const page = await fetch(`${base}/d/${created.slug}`);
     expect(page.status).toBe(200);
     expect(page.headers.get('content-type')).toContain('text/html');

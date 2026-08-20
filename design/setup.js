@@ -24,7 +24,12 @@ window.SETUP = (function () {
     pickOf: (m) => (m ? m.pick : null),
     speakerTitle: 'A member wrote this. Who, is sealed until the closing record.',
   });
-  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  // Full five-character escaping (PRODUCTION.md stage 3, defect 4): esc'd
+  // strings land in attribute values (titles, tooltips, data-*) as well as
+  // text, and an unescaped quote in an attribute is an injection. For text
+  // nodes the extra entities parse back to the identical DOM.
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const TICK = '<svg class="mkg" viewBox="0 0 12 12"><path d="M2 6.4 L4.7 9.2 L10 2.9"/></svg>';
   const initials = (n) => String(n).trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
@@ -157,7 +162,16 @@ window.SETUP = (function () {
     // the browser, which is what lets a mockup have a real uploader in it
     // without inventing a face for anybody (Ed, 2026-08-18).
     if (pic && pic[0] === 'u') {
-      return '<span class="' + c + ' photo" style="background-image:url(' + pic.slice(1) + ')"></span>';
+      // Only a data-URI image may enter a style attribute (PRODUCTION.md
+      // stage 3, defect 4): the server whitelists this shape at
+      // set-identity, and the page enforces it again at the sink, because
+      // the sink is what survives a data path nobody audited. Anything
+      // else stored here renders as nobody — never as markup.
+      const u = pic.slice(1);
+      if (/^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(u)) {
+        return '<span class="' + c + ' photo" style="background-image:url(' + u + ')"></span>';
+      }
+      return '<span class="' + c + ' anon">' + PERSON + '</span>';
     }
     if (pic && pic[0] === 'c') {
       return '<span class="' + c + '" style="background:' + GROUNDS[+pic.slice(1)] + '">' +

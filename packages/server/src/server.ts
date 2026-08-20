@@ -28,7 +28,7 @@ import { MAILS, makeMailer } from './mailer.js';
 import { asEngineDoc, driveBridge, persistEngine, resumeBridge } from './engine-host.js';
 import { ParticipantApi } from '../../engine-core/src/participant-api.js';
 import type { Mail, Mailer } from './mailer.js';
-import { runCommand, str } from './commands.js';
+import { LIMITS, cap, emailOk, runCommand, str } from './commands.js';
 
 const COOKIE = 'draft_session';
 
@@ -142,10 +142,20 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
 
   const server = createServer((req, res) => {
     void route(req, res).catch((e: unknown) => {
+      // module and validation errors are written for members and pass
+      // through; anything carrying a system code (fs, net) is internal
+      // and says nothing about itself (stage 3, defect 9)
+      const internal = typeof (e as { code?: unknown }).code === 'string';
+      if (internal) console.error('internal error:', e);
       const message = e instanceof Error ? e.message : String(e);
-      if (!res.headersSent) json(res, 400, { error: message });
+      if (!res.headersSent) {
+        if (internal) json(res, 500, { error: 'something went wrong' });
+        else json(res, 400, { error: message });
+      }
     });
   });
+
+  const httpsOn = cfg.baseUrl.startsWith('https://');
 
   async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const nowMs = Date.now();
@@ -153,20 +163,41 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
     const path = url.pathname;
     const seg = path.split('/').filter((s) => s.length > 0);
 
+    // security headers on everything (stage 3, defects 2/9); the page
+    // ships large inline scripts, so a script CSP waits for the asset
+    // pipeline — these directives bite without breaking it
+    res.setHeader('x-content-type-options', 'nosniff');
+    res.setHeader('referrer-policy', 'no-referrer');
+    res.setHeader('content-security-policy',
+      "frame-ancestors 'none'; object-src 'none'; base-uri 'none'");
+    if (httpsOn) {
+      res.setHeader('strict-transport-security', 'max-age=31536000; includeSubDomains');
+      // behind the proxy, honour the original protocol: http gets one answer
+      if (cfg.trustProxy && req.headers['x-forwarded-proto'] === 'http') {
+        res.writeHead(301, { location: cfg.baseUrl + (req.url ?? '/') });
+        res.end();
+        return;
+      }
+    }
+
     /** 404 for a document that isn't there; hand back whatever is. */
     const docOr404 = (doc: LoadedDoc | null): LoadedDoc | null => {
       if (doc === null) json(res, 404, { error: 'no such document' });
       return doc;
     };
-    /** 429 a mail-minting door when its per-address bucket overflows. */
-    const tooMany = (route: string): boolean => {
-      if (!rateLimited(`${route}:${ipOf(req)}`, nowMs)) return false;
+    /** 429 a mail-minting door when its per-IP bucket overflows. */
+    const tooMany = (route: string, max = 20): boolean => {
+      if (!rateLimited(`${route}:${ipOf(req, cfg.trustProxy)}`, nowMs, max)) return false;
       json(res, 429, { error: 'too many requests — try again shortly' });
       return true;
     };
 
     /* -- creation (§9.7a: the mail is the save) -------------------------- */
-    if (req.method === 'GET' && path === '/api/dev/outbox') {
+    // Deleted from the production artifact, not flag-gated (stage 3,
+    // defects 1/9 and decision 437): the DEV label is dropped bodily by
+    // the build ('npm run build' passes --drop-labels=DEV), so no
+    // misconfiguration can serve magic links — the code is not there.
+    DEV: if (req.method === 'GET' && path === '/api/dev/outbox') {
       if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
       const p = join(cfg.dataDir, 'outbox.jsonl');
       const mails = existsSync(p)
@@ -181,8 +212,8 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
     if (req.method === 'POST' && path === '/api/docs') {
       if (tooMany('docs')) return;
       const body = await readJson(req);
-      const title = expectString(body, 'title');
-      const email = expectString(body, 'email');
+      const title = cap(expectString(body, 'title'), LIMITS.title, 'the title');
+      const email = emailOk(expectString(body, 'email'));
       const isMember = body.isMember !== false;
       const slug = uniqueSlug(title, (s) => store.slugTaken(s));
       // the pre-save text stash (§9.7a v0.55): pasted text syncs against
@@ -201,9 +232,10 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
 
     /* text pasted before the save survives it (§9.7a v0.55) */
     if (req.method === 'POST' && path === '/api/docs/pending') {
+      if (tooMany('pending', 120)) return;
       const body = await readJson(req);
       const pendingId = expectString(body, 'pendingId');
-      const text = expectString(body, 'text');
+      const text = cap(expectString(body, 'text'), LIMITS.text, 'the text');
       if (!(await stash.update(sha256Hex(pendingId), text, nowMs))) {
         json(res, 404, { error: 'that draft has expired' });
         return;
@@ -212,8 +244,21 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
       return;
     }
 
-    if (req.method === 'GET' && path === '/auth/create') {
-      const rec = await auth.useToken(url.searchParams.get('token') ?? '', nowMs);
+    /* magic links are GETs, and a GET must not consume a single-use
+       token — mail scanners prefetch links and would burn them (stage 3,
+       defect 6). The GET serves a page that POSTs the token on arrival
+       (or on a click, without JavaScript); the POST is what consumes. */
+    if (req.method === 'GET' &&
+        (path === '/auth/create' || path === '/auth/login' || path === '/auth/apply')) {
+      const token = url.searchParams.get('token') ?? '';
+      if (token === '') { json(res, 400, { error: 'missing token' }); return; }
+      html(res, interstitial(path, token));
+      return;
+    }
+
+    if (req.method === 'POST' && path === '/auth/create') {
+      if (tooMany('auth', 60)) return;
+      const rec = await auth.useToken(await readTokenBody(req), nowMs);
       if (!rec || rec.kind !== 'create' || !rec.pending) {
         json(res, 400, { error: 'that link has been used or has expired' });
         return;
@@ -234,7 +279,7 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
         if (text.length > 0) await store.setProvisional(doc, text);
       }
       await commit(doc, nowMs);
-      setCookie(res, auth.cookieFor(id, 'founder', nowMs));
+      setCookie(res, auth.cookieFor(id, 'founder', nowMs), httpsOn);
       redirect(res, `/d/${slug}`);
       return;
     }
@@ -246,7 +291,7 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
       if (!doc) return;
       if (tooMany('login')) return;
       const body = await readJson(req);
-      const email = expectString(body, 'email');
+      const email = emailOk(expectString(body, 'email'));
       const memberId = memberIdByEmail(doc.cs, email);
       if (memberId === null) {
         // an unknown address is told nothing (the roster is not readable
@@ -269,14 +314,29 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
       if (!doc) return;
       if (tooMany('apply')) return;
       const body = await readJson(req);
-      const email = expectString(body, 'email');
-      const t = tOf(doc.cs, nowMs);
-      // the module refuses invitation-only documents and addresses already
-      // on the membership (told to log in instead — §9.7½)
-      const applicant = doc.cs.startApplication(t, email);
-      await commit(doc, nowMs);
-      const token = await auth.mintToken(
-        { kind: 'apply', email, docId: doc.id, applicantId: applicant }, nowMs);
+      const email = emailOk(expectString(body, 'email'));
+      // the same refusals the module makes at startApplication, made
+      // read-only (stage 3, defect 8): an unauthenticated POST writes
+      // nothing to the log — the write moved to POST /auth/apply, where
+      // the address has proved it works
+      const apps = doc.cs.settingState('applications').value as
+        { joinPolicy?: 'invite' | 'proposed' | 'apply' | 'open' } | null;
+      if ((apps?.joinPolicy ?? 'invite') === 'invite') {
+        json(res, 400, { error: 'this document is invitation-only (§9.7½)' });
+        return;
+      }
+      if (memberIdByEmail(doc.cs, email) !== null) {
+        json(res, 400,
+          { error: 'that address is already on the membership — log in instead (§9.7½)' });
+        return;
+      }
+      for (const under of doc.cs.applicantRecords().values()) {
+        if (under.email === email && under.status !== 'refused') {
+          json(res, 400, { error: 'an application from that address is already underway' });
+          return;
+        }
+      }
+      const token = await auth.mintToken({ kind: 'apply', email, docId: doc.id }, nowMs);
       const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
       await mailer.send({ to: email,
         ...MAILS.applyVerify(doc.cs.titleOf, link) });
@@ -284,24 +344,30 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
       return;
     }
 
-    if (req.method === 'GET' && path === '/auth/apply') {
-      const rec = await auth.useToken(url.searchParams.get('token') ?? '', nowMs);
-      if (!rec || rec.kind !== 'apply' || rec.docId === undefined ||
-          rec.applicantId === undefined) {
+    if (req.method === 'POST' && path === '/auth/apply') {
+      if (tooMany('auth', 60)) return;
+      const rec = await auth.useToken(await readTokenBody(req), nowMs);
+      if (!rec || rec.kind !== 'apply' || rec.docId === undefined) {
         json(res, 400, { error: 'that link has been used or has expired' });
         return;
       }
       const doc = docOr404(store.byId(rec.docId));
       if (!doc) return;
-      doc.cs.verifyApplication(tOf(doc.cs, nowMs), rec.applicantId);
+      const t = tOf(doc.cs, nowMs);
+      // the log's first applicant entry lands here, after the address has
+      // proved it works (stage 3, defect 8); the module re-checks policy
+      // and membership, so a world that changed since the mail refuses
+      const applicantId = rec.applicantId ?? doc.cs.startApplication(t, rec.email);
+      doc.cs.verifyApplication(t, applicantId);
       await commit(doc, nowMs);
-      setCookie(res, auth.cookieFor(doc.id, `app:${rec.applicantId}`, nowMs));
+      setCookie(res, auth.cookieFor(doc.id, `app:${applicantId}`, nowMs), httpsOn);
       redirect(res, `/d/${doc.cs.slug}`);
       return;
     }
 
-    if (req.method === 'GET' && path === '/auth/login') {
-      const rec = await auth.useToken(url.searchParams.get('token') ?? '', nowMs);
+    if (req.method === 'POST' && path === '/auth/login') {
+      if (tooMany('auth', 60)) return;
+      const rec = await auth.useToken(await readTokenBody(req), nowMs);
       if (!rec || rec.kind !== 'login' || rec.docId === undefined ||
           rec.memberId === undefined) {
         json(res, 400, { error: 'that link has been used or has expired' });
@@ -315,7 +381,7 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
       if (m && m.arrivedAtT === null) doc.cs.arrive(t, rec.memberId);
       else if (m && m.lapsed) doc.cs.memberReturn(t, rec.memberId);
       await commit(doc, nowMs);
-      setCookie(res, auth.cookieFor(doc.id, rec.memberId, nowMs));
+      setCookie(res, auth.cookieFor(doc.id, rec.memberId, nowMs), httpsOn);
       redirect(res, `/d/${doc.cs.slug}`);
       return;
     }
@@ -341,14 +407,34 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
           json(res, 200, { seq, eseq });
           return;
         }
-        const app = applicantId !== null
-          ? doc.cs.applicantRecords().get(applicantId) ?? null : null;
+        // an applicant is served their own application and the document's
+        // face — never the members' emails, the questions, or anybody's
+        // answers (stage 3, defect 7)
+        if (applicantId !== null) {
+          const app = doc.cs.applicantRecords().get(applicantId) ?? null;
+          json(res, 200, {
+            me: memberId,
+            isFounder: false,
+            devMail: mailer.dev,
+            applicant: app === null ? null : { id: app.id, status: app.status,
+              name: app.name, picture: app.picture, words: app.words,
+              motion: app.motion },
+            title: doc.cs.titleOf,
+            slug: doc.cs.slug,
+            constitutedAtT: doc.cs.constitutedAtT,
+            seq,
+            eseq,
+            textConfirmed: doc.cs.textConfirmed,
+            text: doc.cs.text,
+            raceCards: [],
+            wallet: null,
+          });
+          return;
+        }
         json(res, 200, {
           me: memberId,
           isFounder,
           devMail: mailer.dev,
-          ...(app !== null ? { applicant: { id: app.id, status: app.status,
-            name: app.name, motion: app.motion } } : {}),
           title: doc.cs.titleOf,
           slug: doc.cs.slug,
           constitutedAtT: doc.cs.constitutedAtT,
@@ -471,6 +557,41 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
 
 /* -------------------------------------------------------------------------- */
 
+/** The magic-link interstitial (stage 3, defect 6) — deliberately off the
+ *  design system, like the mail it came from: it exists for milliseconds. */
+function interstitial(action: string, token: string): string {
+  const e = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return '<!doctype html><meta charset="utf-8"><title>docs.vote</title>' +
+    '<body style="font-family: system-ui, sans-serif; padding: 2rem">' +
+    '<form method="post" action="' + e(action) + '">' +
+    '<input type="hidden" name="token" value="' + e(token) + '">' +
+    '<noscript><button type="submit">Continue</button></noscript></form>' +
+    '<script>document.forms[0].submit()</script>';
+}
+
+/** The token from an interstitial form (urlencoded) or a JSON body. */
+async function readTokenBody(req: IncomingMessage): Promise<string> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += (chunk as Buffer).length;
+    if (size > 10_000) throw new Error('request too large');
+    chunks.push(chunk as Buffer);
+  }
+  const text = Buffer.concat(chunks).toString('utf8');
+  const ct = req.headers['content-type'] ?? '';
+  if (ct.includes('application/json')) {
+    return String((JSON.parse(text) as { token?: unknown }).token ?? '');
+  }
+  return new URLSearchParams(text).get('token') ?? '';
+}
+
+function html(res: ServerResponse, body: string): void {
+  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+  res.end(body);
+}
+
 function memberIdByEmail(cs: ConstitutionSession, email: string): string | null {
   for (const m of cs.memberRecords().values()) {
     if (!m.removed && m.email === email) return m.id;
@@ -479,6 +600,12 @@ function memberIdByEmail(cs: ConstitutionSession, email: string): string | null 
 }
 
 async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
+  // a cross-origin form cannot send application/json without a preflight,
+  // so this plus SameSite=Lax is the CSRF story until tokens are needed
+  const ct = req.headers['content-type'] ?? '';
+  if (!ct.includes('application/json')) {
+    throw new Error('content-type must be application/json');
+  }
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of req) {
@@ -500,7 +627,17 @@ function expectString(body: Record<string, unknown>, key: string): string {
   return str(body, key, false);
 }
 
-function ipOf(req: IncomingMessage): string {
+function ipOf(req: IncomingMessage, trustProxy: boolean): string {
+  // Behind Render every socket shares the proxy's address, which would
+  // make the limiter one global bucket — a one-person denial of service
+  // (stage 3, defect 3). With one trusted proxy the client is the
+  // rightmost x-forwarded-for entry: the one hop we know appended it.
+  if (trustProxy) {
+    const xff = req.headers['x-forwarded-for'];
+    const list = (Array.isArray(xff) ? xff.join(',') : xff ?? '')
+      .split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+    if (list.length > 0) return list[list.length - 1]!;
+  }
   return req.socket.remoteAddress ?? 'unknown';
 }
 
@@ -514,9 +651,10 @@ function redirect(res: ServerResponse, to: string): void {
   res.end();
 }
 
-function setCookie(res: ServerResponse, value: string): void {
+function setCookie(res: ServerResponse, value: string, secure: boolean): void {
   res.setHeader('set-cookie',
-    `${COOKIE}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${90 * 24 * 3600}`);
+    `${COOKIE}=${value}; Path=/; HttpOnly; SameSite=Lax` +
+    `${secure ? '; Secure' : ''}; Max-Age=${90 * 24 * 3600}`);
 }
 
 const MIME: Record<string, string> = {
