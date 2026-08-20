@@ -2008,7 +2008,10 @@
     waiting: (c) => (c.power ? false : waiting(c)),
     news: (c) => (c.power ? false : news(c)),
     tasksFor: (c) => (c.power ? [] : tasksFor(c)),
-    decisionLine: (c) => linkify(c.power ? powerHeadLine(c) : decisionLine(c)),
+    // esc before linkify, like the head path (review #1, finding 20): the
+    // sentence carries the title, which is member text — unescaped it was
+    // stored XSS into the constitution paragraph
+    decisionLine: (c) => linkify(esc(c.power ? powerHeadLine(c) : decisionLine(c))),
     chipsFor: (c) => (cs && !c.power && !c.ansFor && PW_KEYS.includes(c.k)
       ? [c, card('pw:u:' + c.k), card('pw:a:' + c.k)] : [c]),
     summary, value, isRoom,

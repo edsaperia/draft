@@ -35,10 +35,17 @@ export class DocStore {
 
   async loadAll(): Promise<void> {
     for (const id of await this.persistence.listDocIds()) {
-      const log = await this.persistence.readDocLog(id);
-      const cs = ConstitutionSession.replay(log);
-      const provisional = await this.persistence.readProvisional(id);
-      this.register({ id, cs, persisted: log.length, provisional });
+      try {
+        const log = await this.persistence.readDocLog(id);
+        const cs = ConstitutionSession.replay(log);
+        const provisional = await this.persistence.readProvisional(id);
+        this.register({ id, cs, persisted: log.length, provisional });
+      } catch (e) {
+        // one corrupt log must not stop every other document serving
+        // (review #1, finding 11): quarantine loudly — the document 404s
+        // until its log is repaired, and nothing here ever rewrites it
+        console.error(`document '${id}' failed to load — quarantined:`, e);
+      }
     }
   }
 

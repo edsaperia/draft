@@ -83,6 +83,15 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
       if (event.type === 'member-invited') {
         queue.push({ to: event.email,
           ...MAILS.invite(title, loginLink(event.member, event.email)) });
+      } else if (event.type === 'member-admitted') {
+        // without this, an admitted applicant is stranded: their applicant
+        // cookie can only submit, and nothing tells them they are in
+        // (review #1, finding 7)
+        const m = cs.memberRecords().get(event.member);
+        if (m !== undefined && m.email.length > 0) {
+          queue.push({ to: m.email,
+            ...MAILS.admitted(title, loginLink(event.member, m.email)) });
+        }
       } else if (event.type === 'lapse-warned' || event.type === 'member-lapsed') {
         const m = cs.memberRecords().get(event.member);
         const email = m?.email ?? (event.member === cs.convenorRecord().id
@@ -167,6 +176,21 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
     // ships large inline scripts, so a script CSP waits for the asset
     // pipeline — these directives bite without breaking it
     res.setHeader('x-content-type-options', 'nosniff');
+    // tokens, views and interstitials must never sit in a cache
+    // (review #1, finding 10)
+    if (seg[0] === 'api' || seg[0] === 'auth') {
+      res.setHeader('cache-control', 'no-store');
+    }
+    // a cross-site form must not consume tokens or clobber the session
+    // (review #1, finding 13): the interstitial posts same-origin, and a
+    // browser that sends Origin at all must agree with us
+    if (req.method === 'POST' && seg[0] === 'auth') {
+      const origin = req.headers.origin;
+      if (origin !== undefined && origin !== new URL(cfg.baseUrl).origin) {
+        json(res, 403, { error: 'cross-site request refused' });
+        return;
+      }
+    }
     res.setHeader('referrer-policy', 'no-referrer');
     res.setHeader('content-security-policy',
       "frame-ancestors 'none'; object-src 'none'; base-uri 'none'");
@@ -267,11 +291,13 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
       const slug = store.slugTaken(p.slug)
         ? uniqueSlug(p.title, (s) => store.slugTaken(s)) : p.slug;
       const id = `d-${randomBytes(5).toString('hex')}`;
-      const doc = await store.create(id, {
+      // on the chain (review #1, finding 9): the birth's persist must not
+      // interleave with a first command's commit
+      const doc = await commits.run(id, () => store.create(id, {
         title: p.title,
         slug,
         convenor: { id: 'founder', email: p.email, isMember: p.isMember },
-      }, nowMs);
+      }, nowMs));
       // the pasted text is waiting in the saved document (§9.7a v0.55) —
       // waiting, not decided: confirming the starting text stays its own act
       if (p.stashKey !== undefined) {
@@ -325,16 +351,24 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
         json(res, 400, { error: 'this document is invitation-only (§9.7½)' });
         return;
       }
-      if (memberIdByEmail(doc.cs, email) !== null) {
-        json(res, 400,
-          { error: 'that address is already on the membership — log in instead (§9.7½)' });
+      // the door must not be a membership oracle (review #1, finding 8):
+      // the login route deliberately tells an unknown address nothing, so
+      // this route must not tell a stranger who is a member. A member's
+      // address gets a login mail and the same 200 as anybody; an
+      // application already underway gets the same 200 and no new mail.
+      const already = memberIdByEmail(doc.cs, email);
+      if (already !== null) {
+        const token = await auth.mintToken(
+          { kind: 'login', email, docId: doc.id, memberId: already }, nowMs);
+        const link = `${cfg.baseUrl}/auth/login?token=${token}`;
+        await mailer.send({ to: email, ...MAILS.login(doc.cs.titleOf, link) });
+        json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
         return;
       }
-      for (const under of doc.cs.applicantRecords().values()) {
-        if (under.email === email && under.status !== 'refused') {
-          json(res, 400, { error: 'an application from that address is already underway' });
-          return;
-        }
+      if ([...doc.cs.applicantRecords().values()]
+          .some((under) => under.email === email && under.status !== 'refused')) {
+        json(res, 200, { ok: true });
+        return;
       }
       const token = await auth.mintToken({ kind: 'apply', email, docId: doc.id }, nowMs);
       const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
@@ -394,6 +428,14 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
       const session = cookieSession(req, doc.id);
       if (session === null) { json(res, 401, { error: 'log in first' }); return; }
       const { memberId, applicantId } = session;
+      // a cookie is not a seat (review #1, finding 1): sessions are
+      // stateless, so removal has to be checked here — otherwise a
+      // removed or uninvited member's cookie is ninety days of full
+      // member read under a constitution that says members only
+      if (!seatAlive(doc.cs, memberId, applicantId)) {
+        json(res, 401, { error: 'log in first' });
+        return;
+      }
       const isFounder = memberId === doc.cs.convenorRecord().id;
       if (req.method === 'GET' && seg[3] === 'view') {
         const seq = doc.cs.logEntries().length;
@@ -412,6 +454,12 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
         // answers (stage 3, defect 7)
         if (applicantId !== null) {
           const app = doc.cs.applicantRecords().get(applicantId) ?? null;
+          // the text read follows the 🌍 setting (review #1, finding 12):
+          // an applicant holds the link, so 'closed' — members only —
+          // keeps the charter from them
+          const chamber = doc.cs.settingState('chamber').value as
+            { rung?: string } | null;
+          const mayRead = chamber !== null && chamber.rung !== 'closed';
           json(res, 200, {
             me: memberId,
             isFounder: false,
@@ -425,7 +473,7 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
             seq,
             eseq,
             textConfirmed: doc.cs.textConfirmed,
-            text: doc.cs.text,
+            text: mayRead ? doc.cs.text : null,
             raceCards: [],
             wallet: null,
           });
@@ -471,8 +519,18 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
         }
         const me = doc.cs.memberRecords().get(memberId);
         if (me?.lapsed) doc.cs.memberReturn(t, memberId); // any act revives
-        const result = runCommand(doc.cs, { memberId, isFounder, applicantId },
-          t, cmd, args, asEngineDoc(doc).bridge);
+        let result: unknown;
+        try {
+          result = runCommand(doc.cs, { memberId, isFounder, applicantId },
+            t, cmd, args, asEngineDoc(doc).bridge);
+        } catch (e) {
+          // whatever the module emitted before the refusal — a revival, a
+          // motion whose engine race then refused — is real, and must not
+          // sit in memory waiting to ride an unrelated commit (review #1,
+          // finding 6): memory and disk never diverge, even on a 400
+          await commit(doc, nowMs);
+          throw e;
+        }
         // confirming the starting text supersedes the provisional draft
         if (doc.cs.textConfirmed && doc.provisional !== null) {
           await store.setProvisional(doc, null);
@@ -499,7 +557,8 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
         return;
       }
       const body = await readJson(req);
-      await store.setProvisional(doc, expectString(body, 'text'));
+      await store.setProvisional(doc,
+        cap(expectString(body, 'text'), LIMITS.text, 'the text'));
       json(res, 200, { ok: true });
       return;
     }
@@ -522,7 +581,10 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
     }
     if (req.method === 'GET' && seg[0] === 'design') {
       const rel = normalize(seg.slice(1).join('/'));
-      if (rel.startsWith('..') || rel.includes('..')) {
+      // assets only: the design tree also holds notes, frozen references
+      // and probe tooling, none of which is this server's to serve
+      if (rel.startsWith('..') || rel.includes('..') ||
+          !/\.(js|css|svg|png|woff2?)$/.test(rel)) {
         json(res, 404, { error: 'not found' });
         return;
       }
@@ -593,10 +655,15 @@ function html(res: ServerResponse, body: string): void {
 }
 
 function memberIdByEmail(cs: ConstitutionSession, email: string): string | null {
+  // case-blind (review #1, finding 18): older logs hold addresses as they
+  // were typed, and an invitee who capitalizes differently at login must
+  // not get the silent-nothing response forever
+  const want = email.toLowerCase();
   for (const m of cs.memberRecords().values()) {
-    if (!m.removed && m.email === email) return m.id;
+    if (!m.removed && m.email.toLowerCase() === want) return m.id;
   }
-  return cs.convenorRecord().email === email ? cs.convenorRecord().id : null;
+  return cs.convenorRecord().email.toLowerCase() === want
+    ? cs.convenorRecord().id : null;
 }
 
 async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
@@ -674,8 +741,23 @@ function serveFile(res: ServerResponse, filePath: string): void {
     json(res, 404, { error: 'not found' });
     return;
   }
+  const stream = createReadStream(filePath);
+  // a file deleted between stat and read, or fd pressure, is a dropped
+  // response — never a dead process (review #1, finding 14)
+  stream.on('error', (e) => { console.error('serveFile:', e); res.destroy(); });
   res.writeHead(200, {
     'content-type': MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream',
   });
-  createReadStream(filePath).pipe(res);
+  stream.pipe(res);
+}
+
+/** A cookie names a seat; this says whether the seat still exists
+ *  (review #1, finding 1). The convenor always does; a member must be
+ *  unremoved; an applicant must still be on the applicant list. */
+function seatAlive(cs: ConstitutionSession, memberId: string,
+  applicantId: string | null): boolean {
+  if (applicantId !== null) return cs.applicantRecords().has(applicantId);
+  if (memberId === cs.convenorRecord().id) return true;
+  const m = cs.memberRecords().get(memberId);
+  return m !== undefined && !m.removed;
 }

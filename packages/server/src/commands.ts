@@ -52,7 +52,29 @@ export const emailOk = (email: string): string => {
   if (email.length > LIMITS.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error('that does not look like an email address');
   }
-  return email;
+  // one address, one member (§9.7½) only holds if case cannot mint two
+  // seats (review #1, finding 18); comparisons lowercase too
+  return email.toLowerCase();
+};
+
+/**
+ * A setting value or motion payload is a small structured thing (review
+ * #1, finding 3): every string inside is bounded, and the whole is
+ * bounded, because it is written permanently into the log and shipped in
+ * every member's view on every poll.
+ */
+export const capValue = <T>(value: T, what: string): T => {
+  if (JSON.stringify(value ?? null).length > 2_000) {
+    throw new Error(`${what} is too large`);
+  }
+  const walk = (v: unknown): void => {
+    if (typeof v === 'string') { cap(v, LIMITS.email, what); return; }
+    if (v !== null && typeof v === 'object') {
+      for (const inner of Object.values(v)) walk(inner);
+    }
+  };
+  walk(value);
+  return value;
 };
 
 /**
@@ -63,7 +85,9 @@ export const emailOk = (email: string): string => {
  */
 export const validPicture = (pic: string): string => {
   cap(pic, LIMITS.picture, 'the picture');
-  const ok = /^c\d{1,2}$/.test(pic) || /^m\d{1,2}$/.test(pic) ||
+  // the ranges are the page's own arrays (setup.js GROUNDS ×6, MARKS ×3):
+  // an index past the end threw inside every member's render (finding 2)
+  const ok = /^c[0-5]$/.test(pic) || /^m[0-2]$/.test(pic) ||
     (pic.startsWith('e') && pic.length >= 2 && pic.length <= 33 && !/[<>"'&\\]/.test(pic)) ||
     /^udata:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(pic);
   if (!ok) throw new Error('unrecognised picture format');
@@ -83,7 +107,8 @@ const HANDLERS: Record<string, Handler> = {
   /* -- the founder's hand (the module enforces powers and timing) -------- */
   'set-setting': (cs, a, t, args) => {
     founderOnly(a);
-    cs.setSetting(t, str(args, 'setting') as SettingId, args.value as SettingValue);
+    cs.setSetting(t, str(args, 'setting') as SettingId,
+      capValue(args.value as SettingValue, 'that value'));
   },
   'delegate': (cs, a, t, args) => {
     founderOnly(a);
@@ -137,7 +162,7 @@ const HANDLERS: Record<string, Handler> = {
   },
   'answer': (cs, a, t, args) => {
     cs.answer(t, a.memberId, str(args, 'setting') as SettingId,
-      args.value as SettingValue);
+      capValue(args.value as SettingValue, 'that answer'));
   },
   'give-ok': (cs, a, t, args) => {
     cs.giveOk(t, a.memberId, str(args, 'setting') as SettingId);
@@ -145,7 +170,7 @@ const HANDLERS: Record<string, Handler> = {
   'open-motion': (cs, a, t, args, bridge) => {
     const why = typeof args.why === 'string'
       ? cap(args.why, LIMITS.why, 'the rationale') : undefined;
-    const payload = args.payload as MotionPayload;
+    const payload = capValue(args.payload as MotionPayload, 'that proposal');
     if (payload !== null && typeof payload === 'object' &&
         payload.kind === 'invite') emailOk(str(payload as never, 'email'));
     // a live document's set-motions go through the bridge (Q391): an

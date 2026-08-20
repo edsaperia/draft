@@ -55,7 +55,10 @@ export function makeMailer(opts: {
         }),
       });
       if (!res.ok) {
-        throw new Error(`resend refused (${res.status}): ${await res.text()}`);
+        // the provider's body is for the log, never the requester
+        // (review #1, finding 16)
+        console.error(`resend refused (${res.status}):`, await res.text());
+        throw new Error('the mail could not be sent — try again shortly');
       }
     },
   };
@@ -81,6 +84,12 @@ export const MAILS = {
     text: `This address is how “${title}” will know you.\n\n` +
       `Verify it to continue your application:\n${link}\n\n` +
       `Nothing has been sent to the members yet — nothing is, until you submit.`,
+    link,
+  }),
+  admitted: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `You are a member of “${title}”`,
+    text: `The members of “${title}” have admitted you.\n\n` +
+      `Log in to take your seat:\n${link}`,
     link,
   }),
   login: (title: string, link: string): Omit<Mail, 'to'> => ({

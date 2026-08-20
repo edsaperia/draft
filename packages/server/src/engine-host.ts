@@ -24,6 +24,10 @@ interface EngineLogEntry { seq: number; hash: string; prevHash: string; event: {
 
 export interface EngineDoc extends LoadedDoc {
   bridge: EngineBridge | null;
+  /** Set when the persisted engine state is unusable (an orphaned log with
+   *  no bridge state): the document serves, the engine stays off, and the
+   *  condition is logged loudly — never silently re-birthed over. */
+  engineQuarantined?: boolean;
   enginePersisted: number;
   /** The bridge state as last persisted — unchanged means no rewrite. */
   bridgeSerialized: string | null;
@@ -44,7 +48,15 @@ export async function resumeBridge(persistence: Persistence, doc: LoadedDoc): Pr
   const log = await persistence.readEngineLog(doc.id) as EngineLogEntry[];
   if (log.length === 0) return;
   const raw = await persistence.readBridgeState(doc.id);
-  if (raw === null) return;
+  if (raw === null) {
+    // an engine log with no bridge state is a torn first persist (review
+    // #1, finding 5): birthing a new bridge would append a second genesis
+    // after the orphaned entries — a mixed, unreplayable file
+    console.error(`document '${doc.id}': engine log exists with no bridge ` +
+      'state — engine quarantined; the document serves without races');
+    d.engineQuarantined = true;
+    return;
+  }
   const state = JSON.parse(raw) as BridgeState;
   d.bridge = new EngineBridge(doc.cs, {
     t: doc.cs.constitutedAtT!, rngSeed: doc.id,
@@ -63,7 +75,7 @@ export async function resumeBridge(persistence: Persistence, doc: LoadedDoc): Pr
 export function driveBridge(doc: LoadedDoc, t: number,
   tuning?: Partial<EngineTuning>): void {
   const d = asEngineDoc(doc);
-  if (doc.cs.constitutedAtT === null) return;
+  if (doc.cs.constitutedAtT === null || d.engineQuarantined) return;
   if (d.bridge === null) {
     d.bridge = new EngineBridge(doc.cs, { t, rngSeed: doc.id,
       ...(tuning ? { tuning: { ...DEFAULT_TUNING, ...tuning } } : {}) });
@@ -86,11 +98,21 @@ export async function persistEngine(persistence: Persistence, doc: LoadedDoc): P
   if (d.bridge === null) return;
   const log = d.bridge.engine.log as unknown as EngineLogEntry[];
   const fresh = log.slice(d.enginePersisted);
+  const state = JSON.stringify(d.bridge.state());
+  // first persist writes the state BEFORE the log (review #1, finding 5):
+  // a crash between the two then leaves state-without-log, which resume
+  // treats as nothing (fresh birth overwrites it) — where log-without-
+  // state is a torn genesis nothing can replay
+  if (d.enginePersisted === 0 && fresh.length > 0 && state !== d.bridgeSerialized) {
+    await persistence.writeBridgeState(d.id, state);
+    d.bridgeSerialized = state;
+  }
   if (fresh.length > 0) {
     await persistence.appendEngineLog(d.id, fresh);
-    d.enginePersisted = log.length;
+    // measured from what was actually written, never from the live array
+    // (finding 4): a judgment landing during the await must not be skipped
+    d.enginePersisted += fresh.length;
   }
-  const state = JSON.stringify(d.bridge.state());
   if (state !== d.bridgeSerialized) {
     await persistence.writeBridgeState(d.id, state);
     d.bridgeSerialized = state;

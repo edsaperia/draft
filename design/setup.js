@@ -174,7 +174,12 @@ window.SETUP = (function () {
       return '<span class="' + c + ' anon">' + PERSON + '</span>';
     }
     if (pic && pic[0] === 'c') {
-      return '<span class="' + c + '" style="background:' + GROUNDS[+pic.slice(1)] + '">' +
+      // a missing index renders as nobody, never as a throw inside the
+      // wholesale render (review #1, finding 2 — the sink survives what
+      // no audit saw)
+      const g = GROUNDS[+pic.slice(1)];
+      if (!g) return '<span class="' + c + ' anon">' + PERSON + '</span>';
+      return '<span class="' + c + '" style="background:' + g + '">' +
         (person.n ? esc(initials(person.n)) : PERSON) + '</span>';
     }
     if (pic && pic[0] === 'e') {
@@ -182,6 +187,7 @@ window.SETUP = (function () {
     }
     if (pic && pic[0] === 'm') {
       const m = MARKS[+pic.slice(1)];
+      if (!m) return '<span class="' + c + ' anon">' + PERSON + '</span>';
       return '<span class="' + c + '" style="background:' + m[0] + '">' +
         '<svg viewBox="0 0 44 44" aria-hidden="true">' + m[1] + '</svg></span>';
     }

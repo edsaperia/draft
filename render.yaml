@@ -1,0 +1,40 @@
+# Render Blueprint (PRODUCTION.md stage 4, decision 432).
+#
+# One stateful web service on a persistent disk: the app replays every
+# document into memory and keeps in-process state, so single-instance is
+# by construction — the disk pins it there, which is the property we
+# want. Auto-deploy is off: CI is the one gate, and a deploy hook gets
+# called from the workflow once stage 4 wires it.
+#
+# The build runs `npm ci` (devDependencies included — esbuild does the
+# building) and produces dist/server.mjs, the production artifact: it
+# refuses to boot without the env vars below, so a half-configured
+# service crashes at deploy time instead of serving magic links.
+services:
+  - type: web
+    name: draft
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/server.mjs
+    healthCheckPath: /
+    autoDeploy: false
+    disk:
+      name: draft-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: DRAFT_DATA_DIR
+        value: /var/data
+      - key: DRAFT_SECRET
+        generateValue: true
+      # set in the dashboard: the public origin (staging first, then
+      # https://docs.vote at stage 10)
+      - key: DRAFT_BASE_URL
+        sync: false
+      # set in the dashboard, from Resend (stage 9; sending domain
+      # mail.docs.vote, decision 433)
+      - key: RESEND_API_KEY
+        sync: false

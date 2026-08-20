@@ -291,12 +291,17 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     const deeMember = [...live2.cs.memberRecords().values()]
       .find((m) => m.email === 'dee@example.org');
     expect(deeMember).toBeDefined();
+    // the admitted member was mailed their seat (review #1, finding 7)
+    expect(lastMailTo(dataDir, 'dee@example.org').link).toContain('/auth/login');
     expect(deeMember!.arrivedAtT).not.toBeNull();
-    // a member's address is told to log in instead (§9.7½)
+    // a member's address gets the same 200 as anybody — the apply door
+    // is not a membership oracle (review #1, finding 8) — and a login
+    // mail goes out instead of a refusal
     const dupe = await post(base, `/api/d/${created.slug}/apply`,
       { email: 'bo@example.org' });
-    expect(dupe.status).toBe(400);
-    expect(((await dupe.json()) as { error: string }).error).toContain('log in');
+    expect(dupe.status).toBe(200);
+    expect(((await dupe.json()) as { ok: boolean }).ok).toBe(true);
+    expect(lastMailTo(dataDir, 'bo@example.org').link).toContain('/auth/login');
 
     // -- restart: both logs on disk replay to the same state --------------
     const reopened = new FilePersistence(dataDir);
@@ -399,6 +404,54 @@ describe('auth discipline', () => {
       { email: 'stranger@example.org' });
     const body = await res.json() as Record<string, unknown>;
     expect(body).toEqual({ ok: true }); // no devLink, no hint
+  });
+});
+
+describe('review #1 hardening', () => {
+  it('revoked seats die, caps hold, and stateful responses are no-store', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Guard', email: 'guard@example.org',
+    })).json() as { devLink: string; slug: string };
+    const g = cookieOf(await consume(created.devLink));
+
+    // stateful responses never sit in a cache (finding 10)
+    const v = await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: g } });
+    expect(v.headers.get('cache-control')).toBe('no-store');
+
+    // an out-of-range mark index is refused at the door (finding 2):
+    // it used to pass the whitelist and throw inside every render
+    const pic = await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'set-identity', args: { picture: 'm9' } }, g);
+    expect(pic.status).toBe(400);
+
+    // an oversized setting value is refused before it can enter the log
+    // (finding 3)
+    const big = await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'set-setting',
+        args: { setting: 'title', value: { text: 'A'.repeat(5000) } } }, g);
+    expect(big.status).toBe(400);
+    expect(((await big.json()) as { error: string }).error).toContain('too large');
+
+    // a revoked seat is a dead cookie (finding 1): the uninvited member's
+    // ninety-day cookie stops reading the room the moment they leave it
+    await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'invite', args: { email: 'leaver@example.org' } }, g);
+    const leaver = cookieOf(await consume(
+      lastMailTo(dataDir, 'leaver@example.org').link!));
+    const before = await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: leaver } });
+    expect(before.status).toBe(200);
+    const gv = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: g } })).json() as {
+        view: { members: Array<{ id: string; email: string }> } };
+    const leaverId = gv.view.members.find((m) => m.email === 'leaver@example.org')!.id;
+    await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'uninvite', args: { member: leaverId } }, g);
+    const after = await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: leaver } });
+    expect(after.status).toBe(401);
   });
 });
 
