@@ -315,11 +315,30 @@ export type Event =
     }
   | { type: 'closed'; t: number };
 
+/**
+ * The event format this build writes (Q480(a), PRODUCTION.md stage 5).
+ * The engine keeps its own number: the two logs sit side by side in the
+ * stage-6 schema and change for entirely different reasons, and one
+ * version covering both would be bumped by every change to either.
+ */
+export const SCHEMA_VERSION = 1;
+
 export interface LogEntry {
   seq: number;
   hash: string;
   prevHash: string;
   event: Event;
+  /**
+   * The format `event` was written in; **absent means 1**, and the hash
+   * covers the event alone, so adding this broke no chain. Read it with
+   * `versionOf` rather than directly.
+   */
+  schemaVersion?: number;
+}
+
+/** The format an entry was written in; absent means 1 (Q480). */
+export function versionOf(entry: Pick<LogEntry, 'schemaVersion'>): number {
+  return entry.schemaVersion ?? 1;
 }
 
 // ---------------------------------------------------------------------------

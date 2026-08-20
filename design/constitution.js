@@ -28,6 +28,7 @@ var CONSTITUTION = (() => {
     CATALOGUE_BY_ID: () => CATALOGUE_BY_ID,
     ConstitutionSession: () => ConstitutionSession,
     JUDGE_GATES: () => JUDGE_GATES,
+    SCHEMA_VERSION: () => SCHEMA_VERSION,
     WARN_FRACTION: () => WARN_FRACTION,
     adoptionFloor: () => adoptionFloor,
     adoptionFloorTerm: () => adoptionFloorTerm,
@@ -54,6 +55,7 @@ var CONSTITUTION = (() => {
     stableStringify: () => stableStringify,
     validateFor: () => validateFor,
     validateValue: () => validateValue,
+    versionOf: () => versionOf,
     view: () => view
   });
 
@@ -644,6 +646,10 @@ var CONSTITUTION = (() => {
   function holderOf(powers) {
     return powers.unilateral || powers.assent ? "convenor" : "members";
   }
+  var SCHEMA_VERSION = 1;
+  function versionOf(entry) {
+    return entry.schemaVersion ?? 1;
+  }
 
   // src/populations.ts
   function inE(m) {
@@ -780,7 +786,7 @@ var CONSTITUTION = (() => {
       const prevHash = this.log.length > 0 ? this.log[this.log.length - 1].hash : "";
       const seq = this.log.length;
       const hash = chainHash(prevHash, event);
-      this.log.push({ seq, hash, prevHash, event });
+      this.log.push({ seq, hash, prevHash, event, schemaVersion: SCHEMA_VERSION });
       this.apply(event, seq);
     }
     apply(event, _seq) {

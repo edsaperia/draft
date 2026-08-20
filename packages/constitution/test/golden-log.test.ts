@@ -19,6 +19,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import type { LogEntry } from '../src/types.js';
+import { SCHEMA_VERSION, versionOf } from '../src/types.js';
 import { goldenWalk, snapshotOf } from './golden/walk.js';
 
 const dir = join(import.meta.dirname, 'golden');
@@ -44,6 +45,32 @@ describe('the golden log', () => {
     expect(s.rollingHash()).toBe(frozenState.rollingHash);
     expect(snapshotOf(s)).toEqual(JSON.parse(
       readFileSync(join(dir, 'founding.state.json'), 'utf8')));
+  });
+
+  it('reads a log written before versioning existed (Q480)', () => {
+    // founding-v0.jsonl is this same walk as the code wrote it on the
+    // morning of 2026-08-20, before entries carried schemaVersion — the
+    // shape every document on staging is written in. It is frozen forever:
+    // the claim that "absent means 1" is worth nothing without a log that
+    // actually lacks the field.
+    const old = readFileSync(join(dir, 'founding-v0.jsonl'), 'utf8')
+      .split('\n').filter((l) => l.length > 0)
+      .map((l) => JSON.parse(l) as LogEntry);
+    expect(old.every((e) => e.schemaVersion === undefined)).toBe(true);
+    expect(old.every((e) => versionOf(e) === 1)).toBe(true);
+
+    const s = ConstitutionSession.replay(old);
+    expect(s.verifyChain()).toBe(true);
+    // the version rides outside the hash, so the two logs — one with the
+    // field, one without — chain to the same place
+    expect(s.rollingHash()).toBe(frozenState.rollingHash);
+    expect(snapshotOf(s)).toEqual(JSON.parse(
+      readFileSync(join(dir, 'founding.state.json'), 'utf8')));
+  });
+
+  it('stamps what this build writes', () => {
+    const written = goldenWalk().logEntries();
+    expect(written.every((e) => e.schemaVersion === SCHEMA_VERSION)).toBe(true);
   });
 
   it('is long enough to be worth freezing', () => {

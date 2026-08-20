@@ -18,6 +18,7 @@ import type {
   Participant,
   RaceView,
 } from './types.js';
+import { SCHEMA_VERSION } from './types.js';
 import type { Hunk, PatchSet, Span } from './text/types.js';
 import type { Comparison, Fit, Outcome } from './ranking/types.js';
 import { applyPatch, footprint, footprintsConflict, validateHunks } from './text/patch.js';
@@ -237,7 +238,8 @@ export class Session {
     const prevHash = this.log.length > 0 ? this.log[this.log.length - 1]!.hash : '';
     const seq = this.log.length;
     const hash = chainHash(prevHash, event);
-    this.log.push({ seq, hash, prevHash, event });
+    // the version rides the envelope, never the hash (Q480(a))
+    this.log.push({ seq, hash, prevHash, event, schemaVersion: SCHEMA_VERSION });
     this.apply(event, seq);
   }
 

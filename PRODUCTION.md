@@ -42,6 +42,8 @@ Two facts found at step zero that the original plan did not know:
 | 434 | ESLint only, **no Prettier** — it would reflow ten thousand lines of hand-wrapped prose comments and destroy the authorial voice. | adopted on recommendation |
 | 435 | Build: **esbuild bundle** (already pinned, 0.28.2) rather than tsc project references. | adopted on recommendation |
 | 436 | PII behind a `person_id` in a deletable `people` table **from the first schema** — nearly free now, structurally impossible later (see stage 12). | adopted on recommendation |
+| 476 | **Auto-deploy on green during alpha**: CI deploys and then verifies the live environment, failing the build if what came back is wrong. | decided 2026-08-20 |
+| 480 | Schema version **on the log envelope**, outside the hash; absent means 1, read through `versionOf`. Both logs carry their own number. | decided 2026-08-20 |
 | 437 | `/api/dev/outbox` **deleted from the production build**, not flag-gated — half the defect is that the app can boot into a dangerous mode. | adopted on recommendation |
 
 ## Hosting: Render (432)
@@ -58,6 +60,36 @@ a long-lived stateful process with a one-minute tick.
 
 Accept ~30s downtime per deploy. At five users that is correct, not a
 compromise.
+
+## The domain (Q473, answered 2026-08-20)
+
+`docs.vote` is registered and its DNS is set, on **Namecheap's own
+nameservers** (`dns1`/`dns2.registrar-servers.com`). Both `docs.vote` and
+`www.docs.vote` are **CNAMEs to `draft-x290.onrender.com`**, and
+`_dmarc.docs.vote` already carries `v=DMARC1; p=none;`. Three
+observations, from querying it rather than being told:
+
+- **Render does not serve it yet.** `http://docs.vote` gets Render's edge
+  404 — the request arrives and no service claims the hostname — and
+  `https://docs.vote` does not answer at all, because no certificate has
+  been issued. The missing step is adding the custom domain **on the
+  service** (Render → Settings → Custom Domains), which is what triggers
+  verification and the cert. DNS first, service second; the DNS half is
+  done.
+- **`DRAFT_BASE_URL` moves with it.** Magic links are minted from that
+  variable, so the moment docs.vote is the address people use, it must be
+  `https://docs.vote` in Render *and* in the repository variable, or
+  every mailed link points at the onrender hostname. Changing it is also
+  what turns on the app's own http→https redirect for the new origin.
+- **The apex is a CNAME, so nothing else can live at the apex.** A name
+  with a CNAME can hold no other record type — which is why the MX and
+  TXT queries return the CNAME chain rather than records. It costs
+  nothing here: the sending domain is the subdomain `mail.docs.vote`
+  (decision 433, and it does not exist yet — stage 9 creates it), and
+  DKIM, SPF and DMARC all hang off subdomains. But **an apex TXT for
+  domain verification would be impossible** while this stands, so if
+  Resend asks for one, the answer is to verify the subdomain, not to
+  reach for the apex.
 
 ## The stages
 

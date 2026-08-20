@@ -126,11 +126,40 @@ export type ConstitutionEvent =
   /** Clock-driven bookkeeping rides through one host-called tick (no wall clock here). */
   | { type: 'tick'; t: number };
 
+/**
+ * The event format this build writes. Bump it when an event's *shape*
+ * changes in a way a reader must know about — a field gaining a meaning,
+ * a value changing units — never for a new event type, which old readers
+ * simply do not encounter, and never for a change confined to the fold.
+ */
+export const SCHEMA_VERSION = 1;
+
 export interface LogEntry {
   seq: number;
   hash: string;
   prevHash: string;
   event: ConstitutionEvent;
+  /**
+   * The format `event` was written in (Q480(a), PRODUCTION.md stage 5).
+   * On the envelope rather than inside the event, which is what the
+   * stage-6 schema stores it as (a column beside `event jsonb`) and what
+   * lets an entry written before versioning existed stay valid: the hash
+   * covers the event alone, so adding this broke no chain, and **absent
+   * means 1** — `versionOf` is the only sanctioned way to read it.
+   *
+   * The cost, stated plainly because it is the reason (b) was offered:
+   * being outside the hash, this field is not tamper-evident. Anyone who
+   * could rewrite it could rewrite the projection beside it, so it buys
+   * nothing an attacker does not already have; an event whose shape truly
+   * changes may still carry its own version *inside* the hashed payload,
+   * and versioned and unversioned events sit in one chain quite happily.
+   */
+  schemaVersion?: number;
+}
+
+/** The format an entry was written in; absent means 1 (Q480). */
+export function versionOf(entry: Pick<LogEntry, 'schemaVersion'>): number {
+  return entry.schemaVersion ?? 1;
 }
 
 /* -- fold state records (exposed read-only through projections) ----------- */

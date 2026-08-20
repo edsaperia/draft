@@ -13,7 +13,7 @@ import type {
   LogEntry, MemberId, MemberRecord, MotionAnswer, MotionId, MotionPayload,
   MotionRecord, Power, Powers, SettingState,
 } from './types.js';
-import { holderOf } from './types.js';
+import { holderOf, SCHEMA_VERSION } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf, motionRouteOf, validateFor } from './catalogue.js';
 import type { ApplicationsValue, EndingValue, LadderValue, LapseValue, PaceValue,
@@ -103,7 +103,9 @@ export class ConstitutionSession {
     const prevHash = this.log.length > 0 ? this.log[this.log.length - 1]!.hash : '';
     const seq = this.log.length;
     const hash = chainHash(prevHash, event);
-    this.log.push({ seq, hash, prevHash, event });
+    // the version rides the envelope and never the hash (Q480(a)): an
+    // entry written before this field existed is still a valid entry
+    this.log.push({ seq, hash, prevHash, event, schemaVersion: SCHEMA_VERSION });
     this.apply(event, seq);
   }
 
