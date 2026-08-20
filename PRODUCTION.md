@@ -197,6 +197,15 @@ service container, or the migration is tested only on this machine.
   deploy it happens on every push. CI's poll widened to 25 minutes so a
   slow deploy is not reported as a failed one. Pushing stages 6, 11, 12,
   15 now — expect the same window.
+- 22:45 — **stages 6, 11, 12-drafts, 15 deployed and verified, 10/10** —
+  and this deploy took **75 seconds** hook-to-answer with no 502 observed.
+  So the fourteen minutes were the exception, not the rule: Q498's shape
+  (b) stays right for its own reasons, but the urgency is lower, and the
+  first thing to check in the Render timeline is what was different about
+  the stage-7 deploy (the blueprint's health-check path changing is the
+  obvious candidate). Live: `/healthz` → `store: file`, 2 documents.
+  `DRAFT_STORE=pg` is now available on the live build and **still unset**;
+  the cutover remains Ed's, per the runbook.
 
 ## Decisions
 
