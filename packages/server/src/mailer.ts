@@ -6,7 +6,7 @@
  * copy; design/setup.js's MAILS is fixture-only preview text and the two
  * are free to differ.
  */
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 export interface Mail {
@@ -29,6 +29,7 @@ export function makeMailer(opts: {
 }): Mailer {
   if (opts.resendApiKey === null) {
     const outbox = join(opts.dataDir, 'outbox.jsonl');
+    mkdirSync(opts.dataDir, { recursive: true });
     return {
       dev: true,
       send: async (mail) => {

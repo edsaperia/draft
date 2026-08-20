@@ -175,6 +175,13 @@ describe('stage 7: the two cutover switches, read inertly', () => {
       .toMatchObject({ store: 'pg', databaseUrl: 'postgres://x' });
     expect(() => configFromEnv({ ...env, DRAFT_STORE: 'pg' })).toThrow(/DATABASE_URL/);
     expect(() => configFromEnv({ ...env, DRAFT_STORE: 'sqlite' })).toThrow(/DRAFT_STORE/);
+    // the data directory is named, never created, by config: on Postgres
+    // with a platform secret nothing needs it (and on 2026-08-20 it was an
+    // unwritable path left over from a deleted disk)
+    const { existsSync } = await import('node:fs');
+    const ghost = join(tmp(), 'never-made');
+    configFromEnv({ DRAFT_DATA_DIR: ghost, DRAFT_SECRET: 's', DRAFT_STORE: 'pg', DATABASE_URL: 'postgres://x' });
+    expect(existsSync(ghost)).toBe(false);
   });
 
   it('drain resolves once every chain has settled', async () => {

@@ -106,8 +106,12 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
       throw new Error('production build requires an https DRAFT_BASE_URL');
     }
   }
+  // Named here, created only by whatever writes to it (the file store, the
+  // dev outbox, a persisted dev secret). On Postgres with real mail and a
+  // platform secret nothing does — and on 2026-08-20 the disk was gone
+  // while DRAFT_DATA_DIR still said /var/data, so an eager mkdir here
+  // crash-looped every boot for a directory nothing would have used.
   const dataDir = env.DRAFT_DATA_DIR ?? join(process.cwd(), 'data');
-  mkdirSync(dataDir, { recursive: true });
   const port = env.PORT ? Number(env.PORT) : 8140;
   // the cutover switch must never fail open: an unrecognised value is a
   // refusal, not a fallback to the disk
@@ -149,6 +153,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
 function persistedSecret(dataDir: string): string {
   const path = join(dataDir, 'secret.txt');
   if (existsSync(path)) return readFileSync(path, 'utf8').trim();
+  mkdirSync(dataDir, { recursive: true });
   const secret = randomBytes(32).toString('base64url');
   writeFileSync(path, secret, 'utf8');
   return secret;

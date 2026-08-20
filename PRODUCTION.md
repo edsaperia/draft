@@ -274,6 +274,16 @@ service container, or the migration is tested only on this machine.
   disk retired; 498 and 499 decided and applied. Open: Q500. Owed by a
   later session: the list at 23:03. Housekeeping pass updated OPERATING.md,
   the runbooks, CLAUDE.md and README to the post-cutover truth.
+- 00:05 — **First no-disk deploy crash-looped, and nobody noticed from
+  outside**: the dashboard still carried `DRAFT_DATA_DIR=/var/data` (a
+  blueprint edit removes nothing already on the service), the mount was
+  gone, and `configFromEnv` did an eager `mkdirSync` on a directory
+  nothing would use → `EACCES` at every boot. **Render kept the old
+  instance serving throughout — 180 polls, all 200 — which is 498(b)
+  delivering on its first night.** Fix: the data directory is named by
+  config and created only by what writes to it (file store, dev outbox,
+  persisted dev secret). Ed: delete `DRAFT_DATA_DIR` from the service's
+  Environment, so the variable matches the blueprint.
 
 ## Decisions
 
