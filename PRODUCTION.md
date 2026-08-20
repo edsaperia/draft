@@ -110,7 +110,7 @@ a big-bang first deploy.
 | 2 | ✅ 2026-08-20 — Server refactor + unit tests + **review #1** | done | the storage swap becomes a substitution |
 | 3 | ✅ 2026-08-20 — **Security fixes** + **security review #1** (19 findings, 14 fixed same night — residuals below) | done | safe to be reachable |
 | 4 | ✅ 2026-08-20 — Staging live on Render, verified (two defects found — below); deploy-on-green awaits one secret (Q476) | done | proxy / TLS / cookie truth, early |
-| 5 | Schema versioning + golden-log test — **golden landed 2026-08-20**; the version's home is Q480, the two homed residuals still to do | 3–4d | safe to change the engine, ever |
+| 5 | ✅ 2026-08-20 — Schema versioning (480a) + golden-log test + both homed residuals | done | safe to change the engine, ever |
 | 6 | Postgres (hybrid) + import + **review #2** | 2–3w | durable, concurrent, backup-able |
 | 7 | Config, secrets, observability, shutdown | 3–4d | deploys are visible |
 | 8 | **Surface merge (Q418)** + `design/STYLE.md` audit — supervised | 1–2w | one surface to secure, style, cache, test |
@@ -250,11 +250,13 @@ The adversarial review of stages 2–3 returned 19 findings; the three HIGH
 and eleven others were fixed the same night (commit `3ccc78a`). What
 remains, deliberately:
 
-- **The bridge emits the motion before the engine accepts the candidate**
-  (finding 6a): a refused race leaves an orphaned cs motion. Mitigated —
-  a refused command now commits whatever was emitted, so memory and disk
-  agree — but the real fix is bridge-side ordering. Do with stage 5's
-  schema work, where the bridge is open anyway.
+- ✅ **The bridge emits the motion before the engine accepts the candidate**
+  (finding 6a) — fixed 2026-08-20 with stage 5. Not by reordering, which
+  only moves the orphan to the other log: two append-only logs cannot be
+  written in one act, so the cure is a **compensating event**. A candidate
+  the engine refuses now withdraws the motion the constitution had already
+  opened, returning the stake and the seat whole (§3.3a), and the log says
+  what happened rather than hiding it. The mover simply tries again.
 - **One cookie for all documents** (finding 13): logging into one document
   logs you out of another, and the login-CSRF story leans on the Origin
   check. Per-document cookie naming belongs to stage 8 (the merge decides
@@ -269,14 +271,16 @@ remains, deliberately:
 - **Torn-log tail repair** (finding 11's second half): a corrupt document
   now quarantines loudly instead of stopping the world, but repair
   tooling is stage 11's (backups and the restore drill).
-- **An applicant who loses their cookie is locked out** — apply says
-  nothing (deliberately, the oracle fix) and login says nothing (they are
-  not a member). **Answered by Ed 2026-08-20 as (a)**: the apply door
-  re-sends the verification mail when an application from that address is
-  already underway. The response is the same plain 200 either way, so no
-  oracle; the mail itself is the re-entry. Proper user accounts, which
-  would retire the whole question, are a later thing (Ed). Build with
-  stage 5.
+- ✅ **An applicant who loses their cookie is locked out** — apply said
+  nothing (deliberately, the oracle fix) and login said nothing (they are
+  not a member), so there was no door left to knock on. **Answered by Ed
+  2026-08-20 as (a)** and built the same day: the apply door **re-sends
+  the verification mail** when an application from that address is already
+  underway, carrying the seat that exists rather than starting a second
+  one, and the landing route tolerates an applicant already verified —
+  the link's whole job there is the cookie. The response is the same plain
+  200 as every other branch, so nothing is disclosed by trying. Proper
+  user accounts, which would retire the question, remain a later thing.
 
 
 ## Stage 6 — Postgres, hybrid

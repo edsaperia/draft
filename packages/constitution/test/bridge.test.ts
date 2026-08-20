@@ -44,6 +44,35 @@ describe('an ordinary motion, raced end to end', () => {
   });
 });
 
+describe('a candidate the engine refuses leaves nothing behind (finding 6a)', () => {
+  it('withdraws the motion it had already opened, and returns the stake', () => {
+    const { s, bo } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'bridge-refuse' });
+    const before = bridge.engine.balance(bo, 10);
+
+    // whatever the engine's reason — a duplicate, a closed race — the
+    // bridge's job is to leave the constitution as it found it
+    const real = bridge.engine.submitCandidate.bind(bridge.engine);
+    bridge.engine.submitCandidate = () => { throw new Error('refused'); };
+    expect(() => bridge.openSetMotion(10, bo, 'ending', { endsAtMs: 2_000_000 }))
+      .toThrow('refused');
+    bridge.engine.submitCandidate = real;
+
+    // the motion exists in the log — it happened — but it is withdrawn,
+    // not left standing with nothing racing behind it
+    const opened = [...s.motionRecords().values()];
+    expect(opened.length).toBe(1);
+    expect(opened[0]!.status).toBe('withdrawn');
+    expect(bridge.engine.balance(bo, 10)).toBe(before);
+
+    // and the mover can simply try again
+    const { route } = bridge.openSetMotion(11, bo, 'ending', { endsAtMs: 2_000_000 });
+    expect(route).toBe('ordinary');
+    expect([...s.motionRecords().values()].filter((m) => m.status === 'running').length)
+      .toBe(1);
+  });
+});
+
 describe('a reserved setting: the verdict waits on the crown (§9.7)', () => {
   it('carries at the bar, parks behind the 👑, and the ground moves only on accept', () => {
     const { s, bo, cy } = buildConstituted();

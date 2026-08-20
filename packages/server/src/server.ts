@@ -373,9 +373,22 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
         json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
         return;
       }
-      if ([...doc.cs.applicantRecords().values()]
-          .some((under) => under.email === email && under.status !== 'refused')) {
-        json(res, 200, { ok: true });
+      // An application already underway re-sends the verification mail
+      // (Q439(a), Ed 2026-08-20) carrying the seat that already exists.
+      // Without it an applicant who lost their cookie was simply locked
+      // out: the door says nothing (deliberately — it must not be an
+      // oracle) and login says nothing either, since they are not a
+      // member, so there was no door left to knock on. The mail is the
+      // re-entry, and the response is the same plain 200 as every other
+      // branch here, so nothing is disclosed by trying.
+      const underway = [...doc.cs.applicantRecords().values()]
+        .find((a) => a.email === email && a.status !== 'refused');
+      if (underway !== undefined) {
+        const token = await auth.mintToken(
+          { kind: 'apply', email, docId: doc.id, applicantId: underway.id }, nowMs);
+        const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
+        await mailer.send({ to: email, ...MAILS.applyVerify(doc.cs.titleOf, link) });
+        json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
         return;
       }
       const token = await auth.mintToken({ kind: 'apply', email, docId: doc.id }, nowMs);
@@ -400,7 +413,12 @@ export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer>
       // proved it works (stage 3, defect 8); the module re-checks policy
       // and membership, so a world that changed since the mail refuses
       const applicantId = rec.applicantId ?? doc.cs.startApplication(t, rec.email);
-      doc.cs.verifyApplication(t, applicantId);
+      // a re-entry link (Q439(a)) lands on a seat that is already verified,
+      // or has an application sitting with the room: there is nothing to
+      // verify and nothing to write — the link's whole job is the cookie
+      if (doc.cs.applicantRecords().get(applicantId)?.status === 'started') {
+        doc.cs.verifyApplication(t, applicantId);
+      }
       await commit(doc, nowMs);
       setCookie(res, auth.cookieFor(doc.id, `app:${applicantId}`, nowMs), httpsOn);
       redirect(res, `/d/${doc.cs.slug}`);

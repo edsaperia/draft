@@ -244,7 +244,27 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
       .bySlug(created.slug)!.cs.logEntries().length).toBe(preApply);
     const appRes = await consume(started.devLink);
     expect(appRes.status).toBe(302);
-    const dee = cookieOf(appRes);
+    let dee = cookieOf(appRes);
+
+    // the applicant loses their cookie and knocks again (Q439(a)): the
+    // door re-sends the verification mail rather than saying nothing, so
+    // the mail is the way back in — and it must not start a second
+    // application or write anything the first time round
+    const beforeRe = booted[booted.length - 1]!.draft.store
+      .bySlug(created.slug)!.cs.logEntries().length;
+    const again = await (await post(base, `/api/d/${created.slug}/apply`,
+      { email: 'dee@example.org' })).json() as { ok: boolean; devLink: string };
+    expect(again.ok).toBe(true);
+    expect(lastMailTo(dataDir, 'dee@example.org').link).toContain('/auth/apply');
+    expect(booted[booted.length - 1]!.draft.store
+      .bySlug(created.slug)!.cs.logEntries().length).toBe(beforeRe);
+    const reEntry = await consume(again.devLink);
+    expect(reEntry.status).toBe(302);
+    dee = cookieOf(reEntry);
+    // one applicant, not two — the seat was re-seated, not recreated
+    expect([...booted[booted.length - 1]!.draft.store.bySlug(created.slug)!
+      .cs.applicantRecords().values()]
+      .filter((a) => a.email === 'dee@example.org').length).toBe(1);
     // the applicant's one act is submitting; anything else is refused
     const refused = await post(base, `/api/d/${created.slug}/cmd`,
       { cmd: 'answer', args: { setting: 'bar', value: { pct: 50 } } }, dee);

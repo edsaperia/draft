@@ -148,11 +148,26 @@ export class EngineBridge {
     const motion = this.cs.openMotion(t, by, { kind: 'set', setting, value }, why);
     const rec = this.cs.motionRecords().get(motion)!;
     if (rec.route !== 'ordinary') return { motion, route: rec.route };
-    const { id } = this.engine.submitCandidate(t, {
-      author: by,
-      setting: { settingId: setting, value },
-      rationale: why ?? '',
-    });
+    // Two append-only logs cannot be written in one act, so a candidate
+    // the engine refuses — a duplicate, an exhausted wallet, a race that
+    // has since closed — used to leave a motion standing in the
+    // constitution with nothing racing behind it: unjudgeable, and
+    // unwithdrawable by anybody but its mover (review #1, finding 6a).
+    // The cure in an event-sourced design is not a rollback, which does
+    // not exist, but a **compensating event**: the withdrawal is written,
+    // the stake and the seat come back whole (§3.3a), and the log tells
+    // the truth about what happened rather than hiding it.
+    let id: string;
+    try {
+      ({ id } = this.engine.submitCandidate(t, {
+        author: by,
+        setting: { settingId: setting, value },
+        rationale: why ?? '',
+      }));
+    } catch (e) {
+      this.cs.withdrawMotion(t, by, motion);
+      throw e;
+    }
     this.candidateOfMotion.set(motion, id);
     this.motionOfCandidate.set(id, motion);
     return { motion, route: 'ordinary', candidate: id };
