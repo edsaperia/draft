@@ -7,64 +7,55 @@
  * text (§9.7a v0.55) — exactly the state the log must NOT hold, because
  * nothing about it has been decided. Everything decided is in the log,
  * which is the §11 property made operational: the log IS the document.
+ *
+ * Since PRODUCTION.md stage 2 this class is storage-agnostic: where the
+ * bytes live is the Persistence seam's business, and this file keeps only
+ * the logic — replay, the slug index, the fresh-entry slice.
  */
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { ConstitutionSession, slugify } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
 import type { OpenInput } from '../../constitution/src/index.js';
+import type { Persistence } from './persistence.js';
 
 export interface LoadedDoc {
   id: string;
   cs: ConstitutionSession;
-  /** How many log entries are already on disk. */
+  /** How many log entries are already persisted. */
   persisted: number;
   /** The founder's unconfirmed starting text (§9.7a v0.55), or null. */
   provisional: string | null;
 }
 
 export class DocStore {
-  private readonly docsDir: string;
   private readonly docs = new Map<string, LoadedDoc>();
   /** Every slug a document has ever worn routes to it (§9.7: no link breaks). */
   private readonly slugIndex = new Map<string, string>();
 
-  constructor(dataDir: string) {
-    this.docsDir = join(dataDir, 'docs');
-    mkdirSync(this.docsDir, { recursive: true });
-  }
+  constructor(private readonly persistence: Persistence) {}
 
-  loadAll(): void {
-    for (const id of readdirSync(this.docsDir)) {
-      const logPath = join(this.docsDir, id, 'log.jsonl');
-      if (!existsSync(logPath)) continue;
-      const lines = readFileSync(logPath, 'utf8').split('\n').filter((l) => l.length > 0);
-      const log = lines.map((l) => JSON.parse(l) as LogEntry);
+  async loadAll(): Promise<void> {
+    for (const id of await this.persistence.listDocIds()) {
+      const log = await this.persistence.readDocLog(id);
       const cs = ConstitutionSession.replay(log);
-      const provPath = join(this.docsDir, id, 'provisional.json');
-      const provisional = existsSync(provPath)
-        ? (JSON.parse(readFileSync(provPath, 'utf8')) as { text: string }).text
-        : null;
+      const provisional = await this.persistence.readProvisional(id);
       this.register({ id, cs, persisted: log.length, provisional });
     }
   }
 
-  create(id: string, input: OpenInput, t: number): LoadedDoc {
+  async create(id: string, input: OpenInput, t: number): Promise<LoadedDoc> {
     if (this.docs.has(id)) throw new Error(`document '${id}' already exists`);
-    mkdirSync(join(this.docsDir, id), { recursive: true });
+    await this.persistence.createDoc(id);
     const cs = ConstitutionSession.open(input, t);
     const doc: LoadedDoc = { id, cs, persisted: 0, provisional: null };
     this.register(doc);
-    this.persist(doc);
+    await this.persist(doc);
     return doc;
   }
 
   /** Set or clear the provisional starting text (§9.7a v0.55). */
-  setProvisional(doc: LoadedDoc, text: string | null): void {
-    const path = join(this.docsDir, doc.id, 'provisional.json');
+  async setProvisional(doc: LoadedDoc, text: string | null): Promise<void> {
     doc.provisional = text !== null && text.length > 0 ? text : null;
-    if (doc.provisional === null) rmSync(path, { force: true });
-    else writeFileSync(path, JSON.stringify({ text: doc.provisional }), 'utf8');
+    await this.persistence.writeProvisional(doc.id, doc.provisional);
   }
 
   byId(id: string): LoadedDoc | null {
@@ -85,12 +76,11 @@ export class DocStore {
   }
 
   /** Append everything emitted since the last persist; re-index slugs. */
-  persist(doc: LoadedDoc): LogEntry[] {
+  async persist(doc: LoadedDoc): Promise<LogEntry[]> {
     const log = doc.cs.logEntries();
     const fresh = log.slice(doc.persisted);
     if (fresh.length > 0) {
-      const lines = fresh.map((e) => JSON.stringify(e)).join('\n') + '\n';
-      appendFileSync(join(this.docsDir, doc.id, 'log.jsonl'), lines, 'utf8');
+      await this.persistence.appendDocLog(doc.id, fresh);
       doc.persisted = log.length;
       for (const slug of doc.cs.slugs) this.slugIndex.set(slug, doc.id);
     }

@@ -1,76 +1,57 @@
 /**
  * Magic-link auth (Q368, SPEC §9.7a/§9.7½): the email is the identity, the
  * link is the login. Tokens are single-use, expiring, and stored hashed —
- * a copy of tokens.json alone mints nothing. Sessions are stateless HMAC
- * cookies over (docId, memberId, expiry); the server keeps no session
+ * a copy of the token store alone mints nothing. Sessions are stateless
+ * HMAC cookies over (docId, memberId, expiry); the server keeps no session
  * table, so a restart logs nobody out.
+ *
+ * Since PRODUCTION.md stage 2, where tokens live is the Persistence
+ * seam's business; this class keeps the semantics — hashing, single use,
+ * expiry, the deferred batch — and the cookie signing, which is pure.
  */
 import { createHmac, randomBytes } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { sha256Hex } from '../../constitution/src/index.js';
+import type { Persistence, TokenRecord } from './persistence.js';
 
-export interface PendingCreate {
-  title: string;
-  slug: string;
-  email: string;
-  isMember: boolean;
-  /** Hash of the pre-save text stash's capability id (§9.7a v0.55). */
-  stashKey?: string;
-}
-
-export interface TokenRecord {
-  kind: 'create' | 'login' | 'apply';
-  email: string;
-  expMs: number;
-  docId?: string;
-  memberId?: string;
-  applicantId?: string;
-  pending?: PendingCreate;
-}
+export type { PendingCreate, TokenRecord } from './persistence.js';
 
 const TOKEN_TTL_MS = 7 * 24 * 3600_000;
 const COOKIE_TTL_MS = 90 * 24 * 3600_000;
 
 export class Auth {
-  private readonly tokensPath: string;
-  private readonly tokens: Map<string, TokenRecord>;
+  /** Deferred mints: a relay pass writes the store once, not per mail. */
+  private pending: Array<readonly [string, TokenRecord]> = [];
 
-  constructor(private readonly secret: string, dataDir: string) {
-    this.tokensPath = join(dataDir, 'tokens.json');
-    this.tokens = new Map(
-      existsSync(this.tokensPath)
-        ? Object.entries(JSON.parse(readFileSync(this.tokensPath, 'utf8')) as
-            Record<string, TokenRecord>)
-        : [],
-    );
-  }
+  constructor(
+    private readonly secret: string,
+    private readonly persistence: Persistence,
+  ) {}
 
-  mintToken(rec: Omit<TokenRecord, 'expMs'>, nowMs: number): string {
+  async mintToken(rec: Omit<TokenRecord, 'expMs'>, nowMs: number): Promise<string> {
     const token = this.mintDeferred(rec, nowMs);
-    this.save(nowMs);
+    await this.flush(nowMs);
     return token;
   }
 
   /** Mint without persisting — a caller minting a batch calls flush() once. */
   mintDeferred(rec: Omit<TokenRecord, 'expMs'>, nowMs: number): string {
     const token = randomBytes(24).toString('base64url');
-    this.tokens.set(sha256Hex(token), { ...rec, expMs: nowMs + TOKEN_TTL_MS });
+    this.pending.push([sha256Hex(token), { ...rec, expMs: nowMs + TOKEN_TTL_MS }]);
     return token;
   }
 
-  /** Persist deferred mints (one write for a whole batch). */
-  flush(nowMs: number): void {
-    this.save(nowMs);
+  /** Persist deferred mints (one write for a whole batch), sweeping expired. */
+  async flush(nowMs: number): Promise<void> {
+    const batch = this.pending;
+    this.pending = [];
+    await this.persistence.sweepTokens(nowMs);
+    if (batch.length > 0) await this.persistence.putTokens(batch);
   }
 
   /** Single use: a token that verifies is deleted in the act. */
-  useToken(token: string, nowMs: number): TokenRecord | null {
-    const key = sha256Hex(token);
-    const rec = this.tokens.get(key);
-    if (!rec) return null;
-    this.tokens.delete(key);
-    this.save(nowMs);
+  async useToken(token: string, nowMs: number): Promise<TokenRecord | null> {
+    const rec = await this.persistence.takeToken(sha256Hex(token));
+    if (rec === null) return null;
     return rec.expMs >= nowMs ? rec : null;
   }
 
@@ -95,15 +76,6 @@ export class Auth {
 
   private sign(body: string): string {
     return createHmac('sha256', this.secret).update(body).digest('base64url');
-  }
-
-  /** Every write sweeps: expired-but-unused tokens must not accrete. */
-  private save(nowMs: number): void {
-    for (const [key, rec] of this.tokens) {
-      if (rec.expMs < nowMs) this.tokens.delete(key);
-    }
-    writeFileSync(this.tokensPath,
-      JSON.stringify(Object.fromEntries(this.tokens), null, 2), 'utf8');
   }
 }
 

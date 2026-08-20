@@ -13,6 +13,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 import { DocStore } from '../src/store.js';
+import { FilePersistence } from '../src/persistence.js';
 import { asEngineDoc, resumeBridge } from '../src/engine-host.js';
 
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
@@ -38,7 +39,7 @@ async function boot(): Promise<Booted> {
     // the test adopts twice inside one second; a room would be paced
     engineTuning: { cooldownMs: 0 },
   };
-  const draft = createDraftServer(cfg);
+  const draft = await createDraftServer(cfg);
   await new Promise<void>((r) => draft.server.listen(0, '127.0.0.1', r));
   const port = (draft.server.address() as AddressInfo).port;
   cfg.baseUrl = `http://127.0.0.1:${port}`;
@@ -273,13 +274,14 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(((await dupe.json()) as { error: string }).error).toContain('log in');
 
     // -- restart: both logs on disk replay to the same state --------------
-    const reloaded = new DocStore(dataDir);
-    reloaded.loadAll();
+    const reopened = new FilePersistence(dataDir);
+    const reloaded = new DocStore(reopened);
+    await reloaded.loadAll();
     const doc = reloaded.bySlug(created.slug);
     expect(doc).not.toBeNull();
     expect(doc!.cs.rollingHash()).toBe(live.cs.rollingHash());
     expect(doc!.cs.constitutedAtT).not.toBeNull();
-    resumeBridge(join(dataDir, 'docs'), doc!);
+    await resumeBridge(reopened, doc!);
     const liveBridge = asEngineDoc(live).bridge!;
     const backBridge = asEngineDoc(doc!).bridge!;
     expect(backBridge.engine.rollingHash()).toBe(liveBridge.engine.rollingHash());

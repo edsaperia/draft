@@ -6,6 +6,10 @@
  * event log — invitations, lapse warnings and the lapse package are sent
  * by watching what the fold emitted, so a host renders notifications and
  * never invents them.
+ *
+ * Since PRODUCTION.md stage 2 storage sits behind the Persistence seam
+ * and every commit runs on a per-document WriteChain: a 200 means the
+ * entries are durable, and two commits to one document cannot interleave.
  */
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
@@ -18,9 +22,10 @@ import { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
 import { DocStore, uniqueSlug } from './store.js';
 import type { LoadedDoc } from './store.js';
+import { FilePersistence, WriteChain } from './persistence.js';
 import { Stash } from './stash.js';
 import { MAILS, makeMailer } from './mailer.js';
-import { asEngineDoc, driveBridge, resumeBridge } from './engine-host.js';
+import { asEngineDoc, driveBridge, persistEngine, resumeBridge } from './engine-host.js';
 import { ParticipantApi } from '../../engine-core/src/participant-api.js';
 import type { Mail, Mailer } from './mailer.js';
 import { runCommand, str } from './commands.js';
@@ -43,17 +48,18 @@ export interface DraftServer {
   auth: Auth;
   mailer: Mailer;
   /** Drive the clocks (§9.5/§9.5a): call periodically; safe to call any time. */
-  tick(nowMs?: number): void;
+  tick(nowMs?: number): Promise<void>;
 }
 
-export function createDraftServer(cfg: ServerConfig): DraftServer {
-  const store = new DocStore(cfg.dataDir);
-  store.loadAll();
-  const docsDir = join(cfg.dataDir, 'docs');
-  for (const doc of store.all()) resumeBridge(docsDir, doc);
-  const auth = new Auth(cfg.secret, cfg.dataDir);
+export async function createDraftServer(cfg: ServerConfig): Promise<DraftServer> {
+  const persistence = new FilePersistence(cfg.dataDir);
+  const store = new DocStore(persistence);
+  await store.loadAll();
+  for (const doc of store.all()) await resumeBridge(persistence, doc);
+  const auth = new Auth(cfg.secret, persistence);
   const mailer = makeMailer(cfg);
-  const stash = new Stash(cfg.dataDir);
+  const stash = new Stash(persistence);
+  const commits = new WriteChain();
 
   /** Non-decreasing time per document (the module requires it). */
   const tOf = (cs: ConstitutionSession, nowMs: number): number => {
@@ -63,11 +69,11 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
   };
 
   /** Mail follows the fold: relay what freshly-persisted events imply. */
-  const relay = (doc: LoadedDoc, fresh: readonly LogEntry[], nowMs: number): void => {
+  const relay = async (doc: LoadedDoc, fresh: readonly LogEntry[], nowMs: number): Promise<void> => {
     const cs = doc.cs;
     const title = cs.titleOf;
     const loginLink = (memberId: string, email: string): string => {
-      // deferred: one relay pass rewrites tokens.json once, not per mail
+      // deferred: one relay pass persists the token batch once, not per mail
       const token = auth.mintDeferred(
         { kind: 'login', email, docId: doc.id, memberId }, nowMs);
       return `${cfg.baseUrl}/auth/login?token=${token}`;
@@ -87,20 +93,24 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         }
       }
     }
-    if (queue.length > 0) auth.flush(nowMs); // every queued mail minted a token
+    if (queue.length > 0) await auth.flush(nowMs); // every queued mail minted a token
     for (const mail of queue) void mailer.send(mail).catch((e) => {
       console.error(`mail to ${mail.to} failed:`, e);
     });
   };
 
-  const commit = (doc: LoadedDoc, nowMs: number): number => {
-    // the engine rides every commit (Q391): born at constitute, synced with
-    // roster truth and ground shifts, closed when the ending passes
-    driveBridge(docsDir, doc, tOf(doc.cs, nowMs), cfg.engineTuning);
-    const fresh = store.persist(doc);
-    if (fresh.length > 0) relay(doc, fresh, nowMs);
-    return doc.cs.logEntries().length;
-  };
+  /** Persist a document's fresh entries, durably, in order. A 200 means
+   *  this resolved; the WriteChain is what makes "in order" true. */
+  const commit = (doc: LoadedDoc, nowMs: number): Promise<number> =>
+    commits.run(doc.id, async () => {
+      // the engine rides every commit (Q391): born at constitute, synced
+      // with roster truth and ground shifts, closed when the ending passes
+      driveBridge(doc, tOf(doc.cs, nowMs), cfg.engineTuning);
+      await persistEngine(persistence, doc);
+      const fresh = await store.persist(doc);
+      if (fresh.length > 0) await relay(doc, fresh, nowMs);
+      return doc.cs.logEntries().length;
+    });
 
   /** The member's race cards and wallet (Q391) — empty until races run. */
   const raceView = (doc: LoadedDoc, memberId: string, nowMs: number):
@@ -121,12 +131,12 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
     }
   };
 
-  const tick = (nowMs: number = Date.now()): void => {
+  const tick = async (nowMs: number = Date.now()): Promise<void> => {
     for (const [key, b] of BUCKET) if (b.resetMs < nowMs) BUCKET.delete(key);
     for (const doc of store.all()) {
       if (doc.cs.constitutedAtT === null) continue;
       doc.cs.tick(tOf(doc.cs, nowMs));
-      commit(doc, nowMs);
+      await commit(doc, nowMs);
     }
   };
 
@@ -179,8 +189,8 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       // this id while the founder is off following the mail
       const pendingId = randomBytes(18).toString('base64url');
       const stashKey = sha256Hex(pendingId);
-      stash.open(stashKey, nowMs + 7 * 24 * 3600_000);
-      const token = auth.mintToken(
+      await stash.open(stashKey, nowMs + 7 * 24 * 3600_000);
+      const token = await auth.mintToken(
         { kind: 'create', email, pending: { title, slug, email, isMember, stashKey } }, nowMs);
       const link = `${cfg.baseUrl}/auth/create?token=${token}`;
       await mailer.send({ to: email, ...MAILS.create(title, link) });
@@ -194,7 +204,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       const body = await readJson(req);
       const pendingId = expectString(body, 'pendingId');
       const text = expectString(body, 'text');
-      if (!stash.update(sha256Hex(pendingId), text, nowMs)) {
+      if (!(await stash.update(sha256Hex(pendingId), text, nowMs))) {
         json(res, 404, { error: 'that draft has expired' });
         return;
       }
@@ -203,7 +213,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
     }
 
     if (req.method === 'GET' && path === '/auth/create') {
-      const rec = auth.useToken(url.searchParams.get('token') ?? '', nowMs);
+      const rec = await auth.useToken(url.searchParams.get('token') ?? '', nowMs);
       if (!rec || rec.kind !== 'create' || !rec.pending) {
         json(res, 400, { error: 'that link has been used or has expired' });
         return;
@@ -212,7 +222,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       const slug = store.slugTaken(p.slug)
         ? uniqueSlug(p.title, (s) => store.slugTaken(s)) : p.slug;
       const id = `d-${randomBytes(5).toString('hex')}`;
-      const doc = store.create(id, {
+      const doc = await store.create(id, {
         title: p.title,
         slug,
         convenor: { id: 'founder', email: p.email, isMember: p.isMember },
@@ -220,10 +230,10 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       // the pasted text is waiting in the saved document (§9.7a v0.55) —
       // waiting, not decided: confirming the starting text stays its own act
       if (p.stashKey !== undefined) {
-        const text = stash.take(p.stashKey, nowMs);
-        if (text.length > 0) store.setProvisional(doc, text);
+        const text = await stash.take(p.stashKey, nowMs);
+        if (text.length > 0) await store.setProvisional(doc, text);
       }
-      commit(doc, nowMs);
+      await commit(doc, nowMs);
       setCookie(res, auth.cookieFor(id, 'founder', nowMs));
       redirect(res, `/d/${slug}`);
       return;
@@ -244,7 +254,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         json(res, 200, { ok: true });
         return;
       }
-      const token = auth.mintToken(
+      const token = await auth.mintToken(
         { kind: 'login', email, docId: doc.id, memberId }, nowMs);
       const link = `${cfg.baseUrl}/auth/login?token=${token}`;
       await mailer.send({ to: email, ...MAILS.login(doc.cs.titleOf, link) });
@@ -264,8 +274,8 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       // the module refuses invitation-only documents and addresses already
       // on the membership (told to log in instead — §9.7½)
       const applicant = doc.cs.startApplication(t, email);
-      commit(doc, nowMs);
-      const token = auth.mintToken(
+      await commit(doc, nowMs);
+      const token = await auth.mintToken(
         { kind: 'apply', email, docId: doc.id, applicantId: applicant }, nowMs);
       const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
       await mailer.send({ to: email,
@@ -275,7 +285,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
     }
 
     if (req.method === 'GET' && path === '/auth/apply') {
-      const rec = auth.useToken(url.searchParams.get('token') ?? '', nowMs);
+      const rec = await auth.useToken(url.searchParams.get('token') ?? '', nowMs);
       if (!rec || rec.kind !== 'apply' || rec.docId === undefined ||
           rec.applicantId === undefined) {
         json(res, 400, { error: 'that link has been used or has expired' });
@@ -284,14 +294,14 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       const doc = docOr404(store.byId(rec.docId));
       if (!doc) return;
       doc.cs.verifyApplication(tOf(doc.cs, nowMs), rec.applicantId);
-      commit(doc, nowMs);
+      await commit(doc, nowMs);
       setCookie(res, auth.cookieFor(doc.id, `app:${rec.applicantId}`, nowMs));
       redirect(res, `/d/${doc.cs.slug}`);
       return;
     }
 
     if (req.method === 'GET' && path === '/auth/login') {
-      const rec = auth.useToken(url.searchParams.get('token') ?? '', nowMs);
+      const rec = await auth.useToken(url.searchParams.get('token') ?? '', nowMs);
       if (!rec || rec.kind !== 'login' || rec.docId === undefined ||
           rec.memberId === undefined) {
         json(res, 400, { error: 'that link has been used or has expired' });
@@ -304,7 +314,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
       // membership begins at first arrival (§9.6a); revival is logging in
       if (m && m.arrivedAtT === null) doc.cs.arrive(t, rec.memberId);
       else if (m && m.lapsed) doc.cs.memberReturn(t, rec.memberId);
-      commit(doc, nowMs);
+      await commit(doc, nowMs);
       setCookie(res, auth.cookieFor(doc.id, rec.memberId, nowMs));
       redirect(res, `/d/${doc.cs.slug}`);
       return;
@@ -379,9 +389,9 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
           t, cmd, args, asEngineDoc(doc).bridge);
         // confirming the starting text supersedes the provisional draft
         if (doc.cs.textConfirmed && doc.provisional !== null) {
-          store.setProvisional(doc, null);
+          await store.setProvisional(doc, null);
         }
-        const seq = commit(doc, nowMs);
+        const seq = await commit(doc, nowMs);
         json(res, 200, { ok: true, seq, ...(result !== undefined ? { result } : {}) });
         return;
       }
@@ -403,7 +413,7 @@ export function createDraftServer(cfg: ServerConfig): DraftServer {
         return;
       }
       const body = await readJson(req);
-      store.setProvisional(doc, expectString(body, 'text'));
+      await store.setProvisional(doc, expectString(body, 'text'));
       json(res, 200, { ok: true });
       return;
     }

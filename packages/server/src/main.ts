@@ -8,11 +8,13 @@ import { configFromEnv } from './config.js';
 import { createDraftServer } from './server.js';
 
 const cfg = configFromEnv();
-const draft = createDraftServer(cfg);
+const draft = await createDraftServer(cfg);
 
 draft.server.listen(cfg.port, () => {
   console.log(`draft server on ${cfg.baseUrl} (data: ${cfg.dataDir}, ` +
     `mail: ${draft.mailer.dev ? 'dev outbox' : 'resend'})`);
 });
 
-setInterval(() => draft.tick(), 60_000);
+setInterval(() => {
+  void draft.tick().catch((e: unknown) => console.error('tick failed:', e));
+}, 60_000);

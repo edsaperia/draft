@@ -6,62 +6,34 @@
  * page syncs the pasted text here against a capability id minted with
  * the creation mail, and the save folds it into the new document's
  * provisional sidecar. Stashes are keyed by the hash of the id (the
- * file alone reveals which id nothing), expire with the creation token,
+ * store alone reveals which id nothing), expire with the creation token,
  * and are as sensitive as the room: they are somebody's draft charter.
+ *
+ * Since PRODUCTION.md stage 2 the bytes live behind the Persistence seam;
+ * this class keeps the semantics — open, expiry, take-consumes.
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-
-interface StashRecord {
-  text: string;
-  expMs: number;
-}
+import type { Persistence } from './persistence.js';
 
 export class Stash {
-  private readonly path: string;
-  private readonly stashes: Map<string, StashRecord>;
+  constructor(private readonly persistence: Persistence) {}
 
-  constructor(dataDir: string) {
-    this.path = join(dataDir, 'pending.json');
-    this.stashes = new Map(
-      existsSync(this.path)
-        ? Object.entries(JSON.parse(readFileSync(this.path, 'utf8')) as
-            Record<string, StashRecord>)
-        : [],
-    );
-  }
-
-  open(key: string, expMs: number): void {
-    this.stashes.set(key, { text: '', expMs });
-    this.save();
+  async open(key: string, expMs: number): Promise<void> {
+    await this.persistence.putStash(key, { text: '', expMs });
   }
 
   /** Update an open stash; false if it never existed or has expired. */
-  update(key: string, text: string, nowMs: number): boolean {
-    const rec = this.stashes.get(key);
-    if (!rec || rec.expMs < nowMs) return false;
-    rec.text = text;
-    this.save();
+  async update(key: string, text: string, nowMs: number): Promise<boolean> {
+    const rec = await this.persistence.getStash(key);
+    if (rec === null || rec.expMs < nowMs) return false;
+    await this.persistence.putStash(key, { text, expMs: rec.expMs });
     return true;
   }
 
   /** Take the text and delete the stash (the save consumes it). */
-  take(key: string, nowMs: number): string {
-    const rec = this.stashes.get(key);
-    this.stashes.delete(key);
-    this.sweep(nowMs);
-    this.save();
-    return rec && rec.expMs >= nowMs ? rec.text : '';
-  }
-
-  private sweep(nowMs: number): void {
-    for (const [k, rec] of this.stashes) {
-      if (rec.expMs < nowMs) this.stashes.delete(k);
-    }
-  }
-
-  private save(): void {
-    writeFileSync(this.path,
-      JSON.stringify(Object.fromEntries(this.stashes), null, 2), 'utf8');
+  async take(key: string, nowMs: number): Promise<string> {
+    const rec = await this.persistence.getStash(key);
+    await this.persistence.deleteStash(key);
+    await this.persistence.sweepStashes(nowMs);
+    return rec !== null && rec.expMs >= nowMs ? rec.text : '';
   }
 }

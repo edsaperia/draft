@@ -5,30 +5,29 @@
  * verdict through the adjudication seam, the new standing back as ground.
  *
  * Persistence follows the document's own pattern: the engine's
- * hash-chained log appends to engine.jsonl beside log.jsonl, and the one
- * thing neither log holds — the motion ↔ candidate pairing and the
- * bridge's cs-log cursor — is bridge.json, rewritten whole. Loading is
- * replay on both logs.
+ * hash-chained log appends beside the document log, and the one thing
+ * neither log holds — the motion ↔ candidate pairing and the bridge's
+ * cs-log cursor — is the bridge state, rewritten whole. Loading is
+ * replay on both logs. Since PRODUCTION.md stage 2 the bytes live behind
+ * the Persistence seam; driving the bridge (mutation) and persisting it
+ * are two acts, because the first is synchronous and the second is the
+ * commit chain's business.
  */
-import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { EngineBridge } from '../../constitution/src/engine-bridge.js';
 import type { BridgeState } from '../../constitution/src/engine-bridge.js';
 import { DEFAULT_TUNING } from '../../constitution/src/adapter.js';
 import type { EngineTuning } from '../../constitution/src/adapter.js';
 import type { LoadedDoc } from './store.js';
+import type { Persistence } from './persistence.js';
 
 interface EngineLogEntry { seq: number; hash: string; prevHash: string; event: { t: number } }
 
 export interface EngineDoc extends LoadedDoc {
   bridge: EngineBridge | null;
   enginePersisted: number;
-  /** The bridge state as last written to bridge.json — unchanged means no rewrite. */
+  /** The bridge state as last persisted — unchanged means no rewrite. */
   bridgeSerialized: string | null;
 }
-
-const enginePath = (docsDir: string, id: string) => join(docsDir, id, 'engine.jsonl');
-const bridgePath = (docsDir: string, id: string) => join(docsDir, id, 'bridge.json');
 
 export function asEngineDoc(doc: LoadedDoc): EngineDoc {
   const d = doc as EngineDoc;
@@ -39,13 +38,13 @@ export function asEngineDoc(doc: LoadedDoc): EngineDoc {
 }
 
 /** Resume a persisted bridge; called once per document at load. */
-export function resumeBridge(docsDir: string, doc: LoadedDoc): void {
+export async function resumeBridge(persistence: Persistence, doc: LoadedDoc): Promise<void> {
   const d = asEngineDoc(doc);
-  const ep = enginePath(docsDir, doc.id);
-  if (d.bridge !== null || !existsSync(ep)) return;
-  const log = readFileSync(ep, 'utf8').split('\n').filter((l) => l.length > 0)
-    .map((l) => JSON.parse(l) as EngineLogEntry);
-  const raw = readFileSync(bridgePath(docsDir, doc.id), 'utf8');
+  if (d.bridge !== null) return;
+  const log = await persistence.readEngineLog(doc.id) as EngineLogEntry[];
+  if (log.length === 0) return;
+  const raw = await persistence.readBridgeState(doc.id);
+  if (raw === null) return;
   const state = JSON.parse(raw) as BridgeState;
   d.bridge = new EngineBridge(doc.cs, {
     t: doc.cs.constitutedAtT!, rngSeed: doc.id,
@@ -59,9 +58,9 @@ export function resumeBridge(docsDir: string, doc: LoadedDoc): void {
  * Keep the bridge abreast of the document: born the moment the
  * constitution settles, synced after every command (roster truth and
  * ground shifts, §9.6/Q328), closed when a windowed document's ending
- * passes (the races' close, §4).
+ * passes (the races' close, §4). Mutation only — persistEngine writes.
  */
-export function driveBridge(docsDir: string, doc: LoadedDoc, t: number,
+export function driveBridge(doc: LoadedDoc, t: number,
   tuning?: Partial<EngineTuning>): void {
   const d = asEngineDoc(doc);
   if (doc.cs.constitutedAtT === null) return;
@@ -79,21 +78,21 @@ export function driveBridge(docsDir: string, doc: LoadedDoc, t: number,
       !d.bridge.engine.closed) {
     d.bridge.close(t);
   }
-  persistEngine(docsDir, d);
 }
 
-function persistEngine(docsDir: string, d: EngineDoc): void {
+/** Append what the engine emitted since the last persist; save the bridge. */
+export async function persistEngine(persistence: Persistence, doc: LoadedDoc): Promise<void> {
+  const d = asEngineDoc(doc);
   if (d.bridge === null) return;
   const log = d.bridge.engine.log as unknown as EngineLogEntry[];
   const fresh = log.slice(d.enginePersisted);
   if (fresh.length > 0) {
-    appendFileSync(enginePath(docsDir, d.id),
-      fresh.map((e) => JSON.stringify(e)).join('\n') + '\n', 'utf8');
+    await persistence.appendEngineLog(d.id, fresh);
     d.enginePersisted = log.length;
   }
   const state = JSON.stringify(d.bridge.state());
   if (state !== d.bridgeSerialized) {
-    writeFileSync(bridgePath(docsDir, d.id), state, 'utf8');
+    await persistence.writeBridgeState(d.id, state);
     d.bridgeSerialized = state;
   }
 }
