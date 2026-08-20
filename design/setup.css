@@ -603,3 +603,58 @@ button.cline:hover b { text-decoration: underline; }
 .constsec .pilehead .sectoggle { position: absolute; right: 100%;
   margin-right: var(--s3); top: 4px; }
 .constsec .pilelab:hover .sectoggle[aria-expanded="true"] { opacity: 1; }
+
+/* **An emoji needs a quiet ground** (Ed, 2026-08-19: *icon button
+   backgrounds shouldn't be very saturated; there's at least one ✒️ on a dark
+   blue*). An emoji glyph is a coloured object in its own right, so a solid
+   fill under it fights the glyph for the same pixels and muddies both — where
+   the drawn ✔ is one stroke in currentColor and stays the one solid green
+   thing on a card. Which also splits the two commits by hue rather than by
+   accident: ✒️, a set of your own, wears the accent this surface already
+   uses for your own work; ✓, an answer to a shared question, keeps the green
+   that means decided. :not([disabled]) so system.css's greyed-out rule, at
+   the same specificity, still wins where it should. */
+.btn.btn-approve.glyphbtn.emojibtn:not([disabled]) {
+  background: var(--primary-subtle); border-color: var(--primary);
+  color: var(--primary-emphasis);
+}
+.btn.btn-approve.glyphbtn.emojibtn:not([disabled]):hover {
+  background: var(--light); border-color: var(--primary-hover);
+}
+
+/* the emoji picker (Ed, 2026-08-19): a normal picker rather than a row of
+   faces, so it scrolls inside itself instead of pushing the card's own
+   controls off the screen. Reserved and taken options are the .taken state
+   the face row already had. */
+.emojibox { max-height: 15rem; overflow-y: auto; padding-right: var(--s2);
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  padding: var(--s2) var(--s3) var(--s3); }
+.emojibox .emojilab { margin-top: var(--s3); }
+.emojibox .emojilab:first-child { margin-top: 0; }
+/* the anonymous person: a disc with somebody in it, before there is a name
+   to make initials of */
+.av .anonav { width: 62%; height: 62%; color: #fff; opacity: 0.9; }
+.av.anon { background: var(--light); }
+.av.anon .anonav { color: var(--muted); }
+
+/* **One left edge** (Ed's QA, 2026-08-19: on the 📍 card *tab and title and
+   text are misaligned*). The head's text was pulled back onto the document's
+   own axis while the body kept the card's own padding, so every card had its
+   clause ten pixels left of its field — visible on 📍 because that card is
+   nearly all field. The card's padding is now the document overhang itself,
+   and the head needs no compensation to sit where a paragraph sits. */
+.constsec .cpara.open > .setupcard > *:not(.clausehead):not(.chipcol) {
+  margin-left: calc(14px - var(--s5)); }
+
+/* **An emoji is an emoji wherever it sits** (Ed, 2026-08-19: *the ✒️ button
+   in the initial titling is correct for emoji buttons, the rest are too
+   colourful*). The quiet ground was scoped to glyph-only buttons, which left
+   🏛️ and ✏️ Propose — labelled buttons carrying a glyph — on the full
+   accent. Same treatment, whatever else is in the label. */
+.btn.btn-approve.emojibtn:not([disabled]) {
+  background: var(--primary-subtle); border-color: var(--primary);
+  color: var(--primary-emphasis); font-weight: 600;
+}
+.btn.btn-approve.emojibtn:not([disabled]):hover {
+  background: var(--light); border-color: var(--primary-hover);
+}

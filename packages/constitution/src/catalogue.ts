@@ -106,12 +106,17 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
     },
     deps: ['ending'], judgeGate: true },
 
-  // Ordinary by §9.6's test (pacing re-rates nothing), but held by the
-  // members — Ed's override of the §9.7 default, 2026-08-18 ("we can
-  // change this later"). Most cautious answer wins: fixed beats ramp,
-  // a higher start beats a lower.
-  { id: 'pace', glyph: '📈', kind: 'ordinary', holderDefault: 'members',
-    delegable: true, valueType: 'pace',
+  // Ordinary by §9.6's test (pacing re-rates nothing) and **the founder's,
+  // not delegable** (Ed, 2026-08-19, closing Q415 — reverting his own
+  // 2026-08-18 override, which was made with "we can change this later"
+  // attached). Q341's ruling is the reason: the bar at the close is consent
+  // and the ramp that reaches it is *pacing*, which stays with the founder.
+  // Nothing was collecting an answer for it either — no surface ever grew a
+  // founding question for a {shape, startPct}. The members can still take it
+  // over after the start, by the reserve route, where no blind question is
+  // needed. The consent order survives for exactly that case.
+  { id: 'pace', glyph: '📈', kind: 'ordinary', holderDefault: 'convenor',
+    delegable: false, valueType: 'pace',
     consent: {
       ask: 'the most gradual arrival at the close bar you will accept',
       order: (a, b) => {

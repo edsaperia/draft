@@ -160,7 +160,6 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
       convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
     }, 0);
     const bo = s.invite(1, 'bo@example.org');
-    const dee = s.invite(1, 'dee@example.org'); // invited, never arrives (yet)
     s.arrive(1, bo);
     s.answer(1, 'ada', 'ending', { endsAtMs: 1_000_000 });
     s.answer(1, bo, 'ending', { endsAtMs: 800_000 }); // resolved — bar may follow
@@ -171,13 +170,16 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
       quorum: { form: 'share', n: 60 }, authorship: { rung: 'sealed' },
       signing: { rung: 'each' }, judgments: { rung: 'after' },
       chamber: { rung: 'link' },
-      applications: { holder: 'members', joinPolicy: 'invite' },
+      applications: { holder: 'reserved-unilateral', joinPolicy: 'invite' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
     } as const;
     for (const [id, v] of Object.entries(values)) {
       s.reclaim(2, id as never);
       s.setSetting(2, id as never, v as never);
     }
+    // Q413(b): a blind question does not resolve while an invitation is
+    // outstanding, so the third member is invited *after* the start
+    const dee = s.invite(3, 'dee@example.org');
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
     s.arrive(4, dee); // the electorate grew under the motion — no snapshot
     s.answerMotion(5, 'ada', m, 'accept');

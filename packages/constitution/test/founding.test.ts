@@ -51,8 +51,9 @@ describe('creation and the pre-start free hand (§9.6a, §9.7a)', () => {
     expect(s.settingState('bar').holder).toBe('members');
     expect(s.settingState('bar').collecting).toBe(true);
     expect(s.settingState('rate').holder).toBe('convenor');
-    // pace is ordinary but the members hold it — Ed's override
-    expect(s.settingState('pace').holder).toBe('members');
+    // pacing is the founder's and not delegable pre-start (Q415)
+    expect(s.settingState('pace').holder).toBe('convenor');
+    expect(s.settingState('pace').collecting).toBe(false);
     expect(s.constitutedAtT).toBeNull();
   });
 
@@ -171,12 +172,19 @@ describe('blind collection and the consent rule live (§9.0a)', () => {
     s.answer(2, 'ada', 'quorum', { form: 'count', n: 2 });
   });
 
-  it('a ramp answer is refused once the room has settled on perpetual', () => {
+  // Q415 (Ed, 2026-08-19): pacing is never a founding question — no surface
+  // ever grew one for a {shape, startPct}, and Q341 put the ramp with the
+  // founder. Delegating it pre-start is therefore a hand-over like the
+  // title's, not a blind collection, so 📯 stays reachable.
+  it('pacing is never a founding question, and hands over rather than collects', () => {
     const s = openDoc();
-    s.reclaim(1, 'ending');
-    s.setSetting(1, 'ending', { endsAtMs: null });
-    expect(() => s.answer(2, 'ada', 'pace', { shape: 'ramp', startPct: 55 }))
-      .toThrow(/perpetual/);
+    expect(s.settingState('pace').collecting).toBe(false);
+    expect(() => s.answer(2, 'ada', 'pace', { shape: 'fixed' }))
+      .toThrow(/not collecting/);
+    s.confirmStartingText(2, 'x');
+    s.delegate(3, 'pace');
+    expect(s.settingState('pace').holder).toBe('members');
+    expect(s.settingState('pace').collecting).toBe(false);
   });
 });
 
@@ -200,11 +208,27 @@ describe('ground shifts (§9.6a): the roster is the ground of every answer', () 
   it('a departure can complete a question (live electorate)', () => {
     const s = openDoc();
     const bo = s.invite(1, 'bo@example.org');
+    const cy = s.invite(1, 'cy@example.org');
     s.arrive(1, bo);
+    s.arrive(1, cy);
+    s.answer(2, 'ada', 'ending', { endsAtMs: 500_000 });
+    s.answer(2, bo, 'ending', { endsAtMs: 400_000 });
+    expect(s.settingState('ending').collecting).toBe(true);   // cy still owes
+    s.uninvite(3, cy);
+    expect(s.settingState('ending').collecting).toBe(false);
+    expect(s.settingState('ending').value).toEqual({ endsAtMs: 500_000 });
+  });
+
+  // Q413 (Ed, 2026-08-19): a consent rule computed over one answer is that
+  // answer, so a delegated question does not resolve on a membership of one
+  it('never resolves on one voice', () => {
+    const s = openDoc();
     s.answer(2, 'ada', 'ending', { endsAtMs: 500_000 });
     expect(s.settingState('ending').collecting).toBe(true);
-    s.uninvite(3, bo);
-    expect(s.settingState('ending').collecting).toBe(false);
+    expect(s.settingState('ending').value).toBeNull();
+    const bo = s.invite(3, 'bo@example.org');
+    s.arrive(3, bo);
+    s.answer(3, bo, 'ending', { endsAtMs: 400_000 });
     expect(s.settingState('ending').value).toEqual({ endsAtMs: 500_000 });
   });
 });
@@ -250,7 +274,7 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
     s.confirmStartingText(1, 'x');
     const answers = {
       ending: { endsAtMs: 1_000_000 }, bar: { pct: 66 },
-      pace: { shape: 'fixed' }, quorum: { form: 'share', n: 60 },
+      quorum: { form: 'share', n: 60 },
       authorship: { rung: 'sealed' }, signing: { rung: 'each' },
       judgments: { rung: 'after' }, chamber: { rung: 'link' },
       applications: { holder: 'members', joinPolicy: 'invite' },
@@ -265,6 +289,7 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
     expect(s.crowned()).toBe(true);   // title and link are still ada's
     s.delegate(3, 'title');
     s.delegate(3, 'link');
+    s.delegate(3, 'pace');  // the founder's by default since Q415
     expect(s.crowned()).toBe(false);  // 📯 — a name in the record
   });
 });

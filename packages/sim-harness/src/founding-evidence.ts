@@ -22,8 +22,8 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
   say('  t=0   ada creates the document and is its first member');
   check(s.settingState('bar').holder === 'members',
     'constitutional settings default to the members (§9.7)');
-  check(s.settingState('pace').holder === 'members',
-    "pace is the members' too (Ed's override)");
+  check(s.settingState('pace').holder === 'convenor',
+    'pacing is the founder’s and never a founding question (Q415)');
   check(s.settingState('rate').holder === 'convenor',
     'ordinary settings default to the convenor');
   s.delegate(0, 'rate');
@@ -87,7 +87,7 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
   eq(s.settingState('chamber').value, { rung: 'closed' },
     'chamber: one closed keeps it closed');
 
-  say('  t=9   quorum (share), the bar, lapse, machines, applications, pace, rate');
+  say('  t=9   quorum (share), the bar, lapse, machines, applications, rate');
   for (const m of everybody) {
     s.answer(9, m, 'quorum', { form: 'share', n: m === fay ? 75 : 50 });
     s.answer(9, m, 'bar', { pct: m === hex ? 82 : 66 });
@@ -95,7 +95,6 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
     s.answer(9, m, 'machines', { enabled: false, budget: 0 });
     s.answer(9, m, 'applications', { holder: 'members', joinPolicy: 'invite' });
     s.answer(9, m, 'removal', { rung: m === dee ? 'everyone' : 'others' });
-    s.answer(9, m, 'pace', { shape: 'fixed' });
     s.answer(9, m, 'rate', { grant: m === bo ? 6 : 4, cap: 8, dripMinutes: 240 });
   }
   eq(s.settingState('quorum').value, { form: 'share', n: 75 },

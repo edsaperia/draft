@@ -870,8 +870,28 @@ export class ConstitutionSession {
       const depSt = this.settings.get(dep);
       if (depSt && depSt.settledBy === null) return;
     }
+    // **A blind question does not resolve while invitations are in flight**
+    // (Ed, 2026-08-19, closing Q413 as (b)). The electorate is the *arrived*
+    // membership, so resolving while invitations are outstanding settles the
+    // room's rule on the voices of whoever happened to open their email
+    // first — and in the limit on the founder's alone, which is not a
+    // delegation at all: *a founder obviously does not intend to delegate to
+    // themselves, nor would they use this tool if they were writing a
+    // document on their own — more members are coming.* Answers stand and
+    // stay revisable while it waits; only the resolution is held.
+    //
+    // §9.6a warned that a rule like this hands one unopened email a veto
+    // over the whole start. It does, and the remedy is the founder's and
+    // already exists: until judging opens the roster is theirs to re-shape,
+    // so an invitation that will never be opened can simply be withdrawn.
+    if ([...this.members.values()].some((m) => m.arrivedAtT === null && !m.removed)) return;
     const electorate = eOf(this.members.values());
-    if (electorate.length === 0) return;
+    // **and never on one voice**, which is the other half of the same reason:
+    // a consent rule computed over a single answer is that answer, so a
+    // delegated question with a membership of one has not been delegated to
+    // anybody. The founder's remedy is either half of the choice they already
+    // have — invite somebody, or take the setting back and set it.
+    if (electorate.length < 2) return;
     if (!electorate.every((m) => st.answers.has(m.id))) return;
     const answers = electorate.map((m) => st.answers.get(m.id)!);
     const { value, distribution } = resolveConsent(entry, answers);

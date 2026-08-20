@@ -84,8 +84,9 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
     expect(motionRouteOf(ending, { endsAtMs: 100 }, { endsAtMs: null })).toBe('constitutional');
     expect(motionRouteOf(entryOf('title'), { text: 'x' }, { text: 'y' })).toBe('ordinary');
     expect(motionRouteOf(entryOf('bar'), { pct: 80 }, { pct: 66 })).toBe('constitutional');
-    // pace is ordinary by the test even though the members hold it (Ed's override)
-    expect(entryOf('pace').holderDefault).toBe('members');
+    // pace is ordinary by the test, and the founder's — not delegable (Q415)
+    expect(entryOf('pace').holderDefault).toBe('convenor');
+    expect(entryOf('pace').delegable).toBe(false);
     expect(motionRouteOf(entryOf('pace'), { shape: 'fixed' }, { shape: 'ramp', startPct: 55 }))
       .toBe('ordinary');
     expect(() => motionRouteOf(entryOf('displayName'), { text: 'a' }, { text: 'b' })).toThrow();
