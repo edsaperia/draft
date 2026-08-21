@@ -65,6 +65,13 @@
      that shouted would fight every card on the surface for the whole
      session. pointer-events: none, because it stands over the document's
      own margin and must never eat a click meant for the text. */
+  /* once the text is confirmed the founder's editor gives way to the charter
+     column session.js renders (#charter); both are in the markup, one shows */
+  .doc.begun #prose, .doc.begun #prosefolds { display: none; }
+  /* ?fixture=session runs the Hollow Oak charter with the constitution out of
+     the way, so its geometry is the frozen session-view's to the pixel (the
+     session-probe's gate); add &band=1 to see the whole composition */
+  .doc.fixsession .titlerow, .doc.fixsession #band { display: none; }
   .alphaflag { position: fixed; bottom: 10px; left: 10px; z-index: 55;
     font-size: var(--t-small); color: var(--muted); background: var(--bg);
     border: 1px solid var(--border); border-radius: var(--r-sm);
@@ -114,8 +121,12 @@
   <div class="wrap">
     <p class="brand ph" id="title">Untitled</p>
     <div class="stats">
+      <!-- room-pulse: one content-free beat per action by anybody (session-view's) -->
+      <span class="pulse" id="pulse" aria-hidden="true"
+            title="The room is working — this blinks when anybody judges or proposes anything. It never says who, what, or which way."></span>
       <span id="stat-stage">reading only</span>
       <span id="stat-who">1 in the room</span>
+      <span class="wallet" id="wallet"></span>
       <button class="me" id="mebtn" title="You, and the founder of this document."></button>
     </div>
   </div>
@@ -134,10 +145,14 @@
           <h1 class="doctitle ph" id="doctitle">Untitled</h1>
         </div></div></div>
         <div class="setupband" id="band"></div>
+        <!-- the charter: session.js renders the confirmed text here as clauses,
+             every one wearing a caret and a gutter; until then the founder
+             writes in #prose below and this stands empty -->
+        <div id="charter"></div>
         <div class="prose empty" id="prose" contenteditable="true" spellcheck="false"></div>
       </div>
     </main>
-    <aside class="queue stack"><div id="rail"></div></aside>
+    <aside class="queue stack"><ul id="rail"></ul></aside>
   </div>
 </div>
 <svg id="wires" aria-hidden="true"></svg>
@@ -145,10 +160,11 @@
 <script src="constitution.js"></script>
 <script src="cards.js"></script>
 <script src="setup.js"></script>
+<script src="session.js"></script>
 <script>
 (function () {
   const { esc, TICK, avHtml, avatarOptions, bandHtml, fitBand, railEntry, cardHtml, watchBody,
-    nameBody, pictureBody, drawWire, opt, num, someIn, ANSWER, stateOf,
+    nameBody, pictureBody, opt, num, someIn, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, readBody,
     motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE } = window.SETUP;
   // **A setup card opens and closes like a decision card** (Ed, 2026-08-18:
@@ -156,11 +172,13 @@
   // this stuff*): cards.js own expandCard/collapseCard, which have been
   // sitting in the shared module since the lift — the card grows out of its
   // own head, and every way of leaving it rolls it back into its paragraph.
-  const CC = window.CARDS.make({ onExpand: () => drawWire(wires, S.open) });
+  const CC = window.CARDS.make({ onExpand: () => SESSION.drawWires() });
   // one rendering of stored text as document lines — the settled 📄 card
   // and the live document column must escape and wrap identically
   const textDivs = (text) => String(text).split(/\n/).filter((l) => l.trim())
-    .map((l) => '<div>' + esc(l) + '</div>').join('');
+    .map((l) => { const m = l.match(/^(#{1,3})\s+(.*)$/);
+      return m ? '<div class="docline lvl' + m[1].length + '" data-h="' + esc(m[2]) + '">' + esc(m[2]) + '</div>'
+        : '<div>' + esc(l) + '</div>'; }).join('');
   let lastOpen = null;
   // run the close animation, then the state change it was closing for
   const closeThen = (fn) => {
@@ -197,14 +215,13 @@
     setTimeout(() => {
       el.style.height = ''; el.style.clipPath = ''; el.style.transition = '';
       parts.forEach((c) => { c.style.opacity = ''; c.style.transition = ''; });
-      drawWire(wires, S.open);
+      SESSION.drawWires();
     }, MORPH_MS + 10);
   };
   const prose = document.getElementById('prose');
   const titleEl = document.getElementById('title');
   const band = document.getElementById('band');
   const rail = document.getElementById('rail');
-  const wires = document.getElementById('wires');
 
   // ---- the module keeps truth (plan 367a): @draft/constitution ----------
   // The page keeps rendering, its copy, and the provisional layer — radio
@@ -214,6 +231,26 @@
   // the save (§9.7a: until the link exists, nothing does, anywhere).
   const M = window.CONSTITUTION;
   let cs = null;
+  // ---- the charter column (stage 8) --------------------------------------
+  // Confirmed text renders as clauses through session.js; the founder's
+  // editor (#prose) is for the text before it exists. FIX is the Hollow Oak
+  // session fixture when the page runs as ?fixture=session.
+  let FIX = null;
+  let charterKey = null;
+  const charterOn = () => !!(cs && cs.textConfirmed);
+  function syncCharter() {
+    const on = charterOn();
+    const key = !on ? '' : FIX ? '\u0000fixture' : cs.text;
+    if (key !== charterKey) {
+      charterKey = key;
+      SESSION.setData({
+        DOC: !on ? [] : FIX ? FIX.DOC : blocksOf(cs.text),
+        SUGGS: !on ? [] : LIVE_HOOKS.items ? LIVE_HOOKS.items() : FIX ? FIX.SUGGS : [],
+      });
+    } else {
+      SESSION.refreshRail();
+    }
+  }
   // based at load time so a stamp renders as today, not 1970 — commands
   // still advance it by one, and the module only ever reads differences
   let T = Date.now();               // the logical clock every command stamps
@@ -355,7 +392,14 @@
   const cs_titleNow = () => (cs ? cs.titleOf : S.title);
   const titlePending = () => (S.titleDraft !== null ? S.titleDraft : cs_titleNow());
   const viewerId = () => (S.viewer === 'applicant' ? null : (viewerRow().mid || FOUNDER));
-  const proseText = () => [...prose.children].map((b) => b.textContent).join('\n').trim();
+  // **A heading on the screen is a heading in the text**: the editor keeps
+  // the '# ' as a class while you type (relabel), so it is put back when the
+  // text is read out — the stored text is the document, and the charter
+  // column reads its headings from it (stage 8)
+  const proseText = () => [...prose.children].map((b) => {
+    const m = b.className.match(/lvl(\d)/);
+    return (m ? '#'.repeat(+m[1]) + ' ' : '') + b.textContent;
+  }).join('\n').trim();
   // which page field carries a setting's delegation radio ('roster' = the members')
   const DKEY = { ending: 'ending', bar: 'barBy', quorum: 'quorumBy',
     authorship: 'authorship', signing: 'signing', judgments: 'judgments',
@@ -573,14 +617,16 @@
       '<span style="top:' + (b.getBoundingClientRect().top - rTop).toFixed(1) + 'px">' +
       secToggleHtml('ph:' + b.dataset.h) + '</span>').join('');
   }
-  function renderToc() {
-    const hs = [...prose.children].filter((b) => b.dataset.h !== undefined);
+  // The constitution's sections lead the table of contents, then the title;
+  // the charter's own headings follow — from #prose while the founder is
+  // still writing, from session.js's DOC once the text is confirmed.
+  function tocLead() {
+    const hs = charterOn() ? [] : [...prose.children].filter((b) => b.dataset.h !== undefined);
     // the constitution's sections lead the table of contents (Ed,
     // 2026-08-18); on this surface they appear as their cards do
     // the outline lists only what exists: before the save there is no
     // constitution to point at (Ed, 2026-08-18)
-    document.getElementById('toc').innerHTML =
-      (!settled(card('slug')) ? '' :
+    return (!settled(card('slug')) ? '' :
       '<li class="lvl1">' + secToggleHtml('cs-constitution') + '<a href="#cs-constitution">Constitution</a></li>' +
       secLive().filter((s2) => !s2.railOnly).map((s2) =>
         '<li class="lvl2">' + secToggleHtml('cs-' + s2.key) + '<a href="#cs-' + s2.key + '">' + esc(s2.title) + '</a></li>').join('') +
@@ -590,8 +636,8 @@
       const lvl = (b.className.match(/lvl(\d)/) || [0, 2])[1];
       return '<li class="lvl' + lvl + '">' + secToggleHtml('ph:' + b.dataset.h) + '<a href="#h' + i + '">' + esc(b.dataset.h) + '</a></li>';
     }).join('');
-    applyProseFolds();
   }
+  function renderToc() { SESSION.renderToc(); }
   prose.addEventListener('paste', (ev) => {
     ev.preventDefault();
     const txt = (ev.clipboardData || window.clipboardData).getData('text');
@@ -2037,6 +2083,39 @@
   // Grouped by pile and in pile order, so the two columns agree and nothing
   // jumps when you confirm something (Q320). Your own pile first: on this
   // screen that is the founder's, on the ceremony it is the members'.
+  // ---- the setup tasks as session entries (stage 8) ----------------------
+  // railEntry's markup, unchanged, wearing session.js's wash attributes so it
+  // fades between colours like every other entry; and the margin-index meta
+  // the layout needs: where it stands, whether it pins, how it ranks.
+  // ask pins (it is the question you are being asked), news pins (a decision
+  // you are owed), yours pins and is force-kept (a proposal of your own);
+  // wait flows beside its paragraph. Ranks follow the tab stack's order
+  // (urgent · … · adopted · … · propose · deciding); u is judgment leverage.
+  let railEntries = [];
+  const RAIL_RANK = { ask: 0, news: 4, yours: 6, wait: 7, done: 9 };
+  const RAIL_U = { ask: 0.95, news: 0.5, yours: 0.5, wait: 0.2, done: 0 };
+  const anchorOf = (k) => {
+    const tab = document.querySelector('#band .achip[data-tab="' + k + '"], #titlepara .achip[data-tab="' + k + '"]');
+    return document.querySelector('.setupcard[data-setupcard="' + k + '"]')
+      || document.querySelector('.cpara[data-para="' + k + '"]')
+      || (tab && tab.closest('.cpara'))
+      || document.getElementById('titlepara');
+  };
+  function entryOf(c, cx) {
+    const st = stateOf(c, cx);
+    const html = railEntry(c, cx)
+      .replace(/ data-washkey="[^"]*"/, '')
+      .replace(/ style="--washcol: ([^;]+); --washbg: [^;]+; --fill: ([^"]+)"/,
+        (m, col, fill) => SESSION.washAttrs('set:' + c.k, col, fill));
+    return { id: c.k, html, pinned: st !== 'wait' && st !== 'done', rank: RAIL_RANK[st],
+      u: RAIL_U[st], mine: st === 'yours', anchor: () => anchorOf(c.k) };
+  }
+  // birthPass sees only the setup tasks: the charter's own entries arrive
+  // by session.js's rules, not by being reborn on every render
+  const setupRail = () => ({ querySelectorAll: (sel) => {
+    const ids = new Set(railEntries.map((e) => e.id));
+    return [...rail.querySelectorAll(sel)].filter((el) => ids.has(el.dataset.q)); } });
+
   function renderRail() {
     if (S.viewer === 'applicant') {
       // **The applicant's seat follows the 🤝 rule as it stands** (pacing
@@ -2048,28 +2127,30 @@
       // applying is a real act.
       const applying = (S.joinBy === 'proposed' || S.joinBy === 'apply');
       const now2 = applying && canJudge();
-      rail.innerHTML = now2
-        ? '<ul>' + APPCARDS().map((c) => railEntry(c, appCtx)).join('') + '</ul>' : '';
+      railEntries = now2 ? APPCARDS().map((c) => entryOf(c, appCtx)) : [];
       document.getElementById('stat-stage').textContent = 'reading only · ' +
         (!applying ? (S.joinBy === 'open' ? 'anyone with the link may join' : 'membership is by invitation')
           : now2 ? 'applications open' : 'applications open when the document begins');
       document.getElementById('stat-who').textContent = arrived() + ' in the room';
       return;
     }
-    const gs = groups();
-    rail.innerHTML =
+    // **The rail is session.js's margin index now** (stage 8): each task is
+    // an entry anchored to its own band paragraph, laid out by layoutQueue
+    // with every charter entry — ask, news and yours pin, wait flows. This
+    // only decides *which* entries; SESSION.refreshRail draws them.
+    railEntries =
       // What is settled leaves the rail — it is the pile's, and the block's
       // to name — and a gate shows only as news: the moment it opens, until
       // its OK. Locked, it is a ⏳ tab in the pile and nothing else, because
       // nothing is being asked of you (Ed, 2026-08-18: *everyone should only
       // see cards they can act on*). ⏳ entries stay: they are where the
       // fill says how far the room has got.
-      '<ul>' + secLive().map((s2) => ({ ...s2, cards: s2.cards
+      secLive().map((s2) => ({ ...s2, cards: s2.cards
         .flatMap((c) => [c].concat(tasksFor(c)))
         .filter((c) => !owesOwnAnswer(c))
         .filter((c) => (c.isGate ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done')) }))
-        .filter((s2) => s2.cards.length).map((s2) =>
-        s2.cards.map((c) => railEntry(c, ctx)).join('')).join('') + '</ul>';
+        .filter((s2) => s2.cards.length).flatMap((s2) =>
+        s2.cards.map((c) => entryOf(c, ctx)));
 
     document.getElementById('stat-stage').textContent =
       canJudge() ? 'open' : canPropose() ? 'proposals open' : 'reading only';
@@ -2117,6 +2198,12 @@
     // founder's own seat.
     prose.contentEditable = String(!(cs && cs.textConfirmed) &&
       S.viewer !== 'applicant' && amFounder());
+    document.getElementById('doc').classList.toggle('begun', charterOn());
+    // the wallet is drafting furniture: shown once proposing is open; the
+    // pulse beats on the fixture's timer, so only the fixture shows it (B2b
+    // drives both from the view)
+    document.getElementById('wallet').style.display = (charterOn() && canPropose()) ? '' : 'none';
+    document.getElementById('pulse').style.display = FIX ? '' : 'none';
   }
 
   // ---- the bodies a founder fills in ------------------------------------
@@ -2801,7 +2888,7 @@
     // bin puts the card back to what stands rather than to what was on screen
     if (snapFor !== S.open) { S.titleDraft = null; takeSnap(); snapFor = S.open; }
     renderDev();
-    renderTitle(); renderRail(); renderBand(); renderToc(); drawWire(wires, S.open); renderMail();
+    renderTitle(); renderRail(); renderBand(); syncCharter(); renderMail();
     document.getElementById('mebtn').innerHTML = avHtml(
       S.viewer === 'applicant' ? { n: S.app.name || '?', pic: S.app.pic } : me(), 'face');
     if (S.open && S.open !== lastOpen) {
@@ -2811,7 +2898,7 @@
     lastOpen = S.open;
     // what is born arrives (setup.js birthPass): a stagehand act — seat
     // switch, ⏩ — mutes the entrances rather than replaying fifteen at once
-    window.SETUP.birthPass(band, rail, birthsMuted, () => drawWire(wires, S.open));
+    window.SETUP.birthPass(band, setupRail(), birthsMuted, () => SESSION.drawWires());
     birthsMuted = false;
   };
   let birthsMuted = false;
@@ -2878,6 +2965,7 @@
     }
   });
   document.addEventListener('click', (ev) => {
+    if (ev.target.closest('#charter')) return;   // the charter's controls are session.js's own
     const ct = ev.target.closest('[data-cleartitle]');
     if (ct) { S.titleDraft = null; return render(); }
     const cv = ev.target.closest('[data-clearval]');
@@ -2990,6 +3078,7 @@
     const t = ev.target.closest('[data-tab], [data-card]');
     if (t) { const k = t.dataset.tab || t.dataset.card;
       if (S.open === k) return closeThen(() => { S.open = null; });
+      if (SESSION.openId != null) SESSION.closeCard();   // one open card on the surface
       // **Switching cards is a morph, not a teardown** (Ed, 2026-08-19: the
       // transition between tabs in a stack was jerky). Within one strip the
       // card's box survives — its height glides from the old card's to the
@@ -3224,6 +3313,7 @@
   ['pointerup', 'pointercancel'].forEach((t) => document.addEventListener(t, disperseAssembly));
 
   document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && SESSION.openId != null) SESSION.closeCard();
     if (ev.key === 'Escape' && S.open) { S.open = null; return render(); }
     if (ev.key === 'Enter' && ev.target.closest('[data-titlelane]')) ev.preventDefault();
     if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.closest('[data-tab]')) {
@@ -3262,8 +3352,8 @@
       const dr = document.querySelector('[data-dropmotion]');
       if (dr) dr.disabled = false;
       return; }
-    if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); renderRail(); refreshCommit(); return; }
-    if (t.dataset.txt === 'myname') { S.myname = t.value; renderRail(); refreshCommit(); return; }
+    if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
+    if (t.dataset.txt === 'myname') { S.myname = t.value; renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (t.dataset.txt === 'myemail') { S.myemail = t.value.trim();
       S.emailSent = false; S.emailVerified = false; S.seen.delete('myemail');
       const m = meRow(); if (m) m.e = S.myemail;
@@ -3271,9 +3361,9 @@
       // rebuild the card under the caret
       const sv = document.querySelector('[data-act="sendverify"]');
       if (sv) sv.disabled = !EMAIL_OK.test(S.myemail);
-      renderRail(); refreshCommit(); return; }
-    if (t.dataset.txt) { S[t.dataset.txt] = t.value; renderRail(); }
-    if (t.dataset.num) { S[t.dataset.num] = +t.value; renderRail(); }
+      renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
+    if (t.dataset.txt) { S[t.dataset.txt] = t.value; renderRail(); SESSION.refreshRail(); }
+    if (t.dataset.num) { S[t.dataset.num] = +t.value; renderRail(); SESSION.refreshRail(); }
   });
   document.getElementById('devwho').addEventListener('change', (ev) => {
     const v = ev.target.value;
@@ -3287,14 +3377,14 @@
           row.in = true; } catch (e) {}
       }
     }
-    S.open = null; lastOpen = null; birthsMuted = true;
+    S.open = null; lastOpen = null; birthsMuted = true; SESSION.closeCard();
     render();
   });
   document.getElementById('devff').addEventListener('click', () => {
-    devFastForward(); S.open = null; lastOpen = null; birthsMuted = true; render();
+    devFastForward(); S.open = null; lastOpen = null; birthsMuted = true; SESSION.closeCard(); render();
   });
-  addEventListener('resize', () => { fitBand(band); drawWire(wires, S.open); });
-  addEventListener('scroll', () => drawWire(wires, S.open), true);
+  addEventListener('resize', () => { fitBand(band); });
+  // the wire and the rail follow the scroll through session.js's own listener
 
   // ---- the live layer (Q391b) -------------------------------------------
   // A ConstitutionSession lookalike over the last-fetched view: the page's
@@ -3682,13 +3772,76 @@
     });
   }
 
-  if (LIVEMODE) { liveBoot(); }
-  else {
+  // ---- the session machinery (stage 8: one surface) ----------------------
+  // session.js renders the charter column, the whole rail and the wire; this
+  // page renders the constitution band and hands session.js its tasks as
+  // entries (extra), the contents rail's lead, and the open-card arbitration.
+  //
+  // **The document model is one block per line**: the stored text is one
+  // line per block (a leading '# ' … '### ' marks a heading), and the engine's
+  // document is the same lines — so a clause key is its line index and a
+  // proposal on a block is one hunk over that line.
+  const blocksOf = (text) => String(text || '').split(/\n/).flatMap((l, i) => {
+    if (!l.trim()) return [];                      // a blank line is a line the engine counts, and nothing to read
+    const m = l.match(/^(#{1,3})\s+(.*)$/);
+    return [m ? { t: 'h', level: m[1].length, x: m[2], key: 'L' + i } : { t: 'p', x: l, key: 'L' + i }];
+  });
+  // the fixture's DOC as the text the document would store
+  const fixtureText = (DOC) => DOC.filter((l) => l.t !== 'title')
+    .map((l) => (l.t === 'h' ? '#'.repeat(l.level || 1) + ' ' : '') + l.x).join('\n');
+  // **B2b's seam**: the live wiring lands here — items() derives SUGGS from
+  // the view, and each hook posts the command. Null means the fixture's own
+  // behaviour (session.js's default path).
+  const LIVE_HOOKS = { items: null, judge: null, propose: null, withdraw: null,
+    seen: null, chill: null, textChanged: null };
+  const hookProxy = Object.fromEntries(['judge', 'propose', 'withdraw', 'seen', 'chill', 'textChanged']
+    .map((n) => [n, (...a) => (LIVE_HOOKS[n] ? LIVE_HOOKS[n](...a) : undefined)]));
+  const extra = {
+    entries: () => railEntries,
+    isOpen: (id) => S.open === id,
+    openId: () => S.open,
+    closeOthers: () => { if (S.open) closeThen(() => { S.open = null; }); },
+    tocLead,
+    afterToc: () => { if (!charterOn()) applyProseFolds(); },
+  };
+  const sessionEnv = (fix) => ({
+    DOC: [], SUGGS: [],
+    ...(fix ? { ROSTER: fix.ROSTER, FLOOR: fix.FLOOR, EDIT_RULES: fix.EDIT_RULES,
+      SESSION_MINUTES: fix.SESSION_MINUTES, editsHeld: fix.editsHeld, editsToNext: fix.editsToNext } : {}),
+    mounts: { doc: document.getElementById('charter'), queue: rail,
+      toc: document.getElementById('toc'), wires: document.getElementById('wires'),
+      wallet: document.getElementById('wallet'), pulse: document.getElementById('pulse') },
+    extra, hooks: hookProxy,
+  });
+  const FIXTURE = new URLSearchParams(location.search).get('fixture');
+  const boot = () => {
+    if (LIVEMODE) { liveBoot(); return; }
     // nothing opens itself, arrival included (Ed, 2026-08-20, reversing
     // the same morning's auto-open): the surface teaches by being clicked,
     // and the title task standing alone in the rail IS the first question
     if (BIRTH) birthBoot();
     relabel(); render();
+  };
+  if (FIXTURE === 'session' && !LIVEMODE && !BIRTH) {
+    // ?fixture=session — the Hollow Oak session: the founding settled by ⏩,
+    // the constitution folded, and the fixture's charter with its 42 items.
+    // The fixture file is loaded only here, so the served page never carries it.
+    const sc = document.createElement('script');
+    sc.src = 'fixture-session.js';
+    sc.onload = () => {
+      FIX = window.FIXTURE_SESSION;
+      SESSION.init(sessionEnv(FIX));
+      setProse(fixtureText(FIX.DOC));
+      devFastForward();
+      S.folded.add('cs-constitution');
+      if (!new URLSearchParams(location.search).get('band')) document.getElementById('doc').classList.add('fixsession');
+      S.open = null; lastOpen = null; birthsMuted = true;
+      render();
+    };
+    document.head.appendChild(sc);
+  } else {
+    SESSION.init(sessionEnv(null));
+    boot();
   }
 })();
 </script>

@@ -39,6 +39,21 @@
     'founding:confirm-membership:band',
     'founding:confirm-membership:rail',
   ];
+  /* Stage 8 (the merge, 2026-08-21) — intentional, by pattern:
+   *   - geo.rail everywhere: the setup tasks are entries in session.js's
+   *     margin index now, absolutely positioned beside their own band
+   *     paragraphs (the frozen page laid them out in flow). Entry CONTENT is
+   *     still compared — see the rail region below, hashed with the layout's
+   *     own attributes stripped.
+   *   - toc once the text is confirmed (founding: fast-forward onward, every
+   *     motions step): the charter's headings come from session.js's DOC
+   *     (#sec-N, fold toggles, lifecycle marks) rather than from #prose. */
+  const ALLOW_RE = [
+    /:geo\.rail$/,
+    /^founding:(fast-forward|seat-bo|seat-founder):toc$/,
+    /^motions:[^:]+:toc$/,
+  ];
+  const allowed = (k) => ALLOWLIST.includes(k) || ALLOW_RE.some((re) => re.test(k));
 
   /* ---- determinism stubs -------------------------------------------------- */
   const mmReal = window.matchMedia.bind(window);
@@ -92,9 +107,16 @@
       const el = document.querySelector(REGIONS[k]);
       snap[k] = el ? hash(norm(el.outerHTML)) : 'MISSING';
     }
+    // the rail's entries by content: the margin index writes its layout onto
+    // them (top, the wash fade's data-wash/data-fill, pinned/offclause), and
+    // the frozen page wrapped them in a <ul>; neither is what the guard is for
+    snap.rail = hash(Array.from(document.querySelectorAll('#rail .qitem')).map((li) => norm(li.outerHTML
+      .replace(/ style="[^"]*"/g, '')
+      .replace(/ data-(wash|fill|washkey)="[^"]*"/g, '')
+      .replace(/<li class="[^"]*"/, '<li'))).join(''));
     snap.geo.cards = Array.from(document.querySelectorAll('.setupcard')).map(rect);
     snap.geo.cparas = Array.from(document.querySelectorAll('.cpara')).map(rect);
-    snap.geo.rail = Array.from((document.getElementById('rail') || { children: [] }).children).map(rect);
+    snap.geo.rail = Array.from(document.querySelectorAll('#rail .qitem')).map(rect);
     snap.geo.chips = Array.from(document.querySelectorAll('.achip')).map(rect);
     return snap;
   }
@@ -192,7 +214,10 @@
   const SCENARIOS = [['founding', founding], ['motions', motions]];
 
   /* ---- run, store, compare ------------------------------------------------ */
-  const SIDE = /\/reference\//.test(location.pathname) ? 'ref' : 'live';
+  // a working copy of HEAD served under /_head/ (git show HEAD:design/* into
+  // design/_head/, gitignored) counts as the reference too: the frozen
+  // pre-constitution copy was the swap's baseline; HEAD is any later change's
+  const SIDE = /\/(reference|_head)\//.test(location.pathname) ? 'ref' : 'live';
   const KEY = 'setup-probe:';
   const run = {};
   for (const [scName, steps] of SCENARIOS) {
@@ -230,7 +255,7 @@
         const keyOf = (region) => scName + ':' + stName + ':' + region;
         const note = (region, detail) => {
           const k = keyOf(region);
-          (ALLOWLIST.includes(k) ? report.allowed : report.diffs).push(k + ' — ' + detail);
+          (allowed(k) ? report.allowed : report.diffs).push(k + ' — ' + detail);
         };
         if (!sa || !sb) { note('step', 'present on one side only'); continue; }
         if ((sa.err || null) !== (sb.err || null)) note('err', sa.err + ' vs ' + sb.err);

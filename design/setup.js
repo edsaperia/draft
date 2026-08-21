@@ -1085,119 +1085,11 @@ window.SETUP = (function () {
   }
 
   /* ---- the cable ----------------------------------------------------------
-     `queue-wire`, lifted from session-view with its rules intact: 6px, opaque,
-     exactly the colour of its own queue card (the wash composited over white,
-     painted on a white cable of the same weight), a 10px cap at the document
-     end only, lifted to the cards' own height by a hand-drawn shadow clipped so
-     that every card on the surface is punched out of it.
-
-     Only the open card draws one. Its existence is what says *this is the open
-     one*, which is the whole job the accent used to do.  */
-  const SVGNS = 'http://www.w3.org/2000/svg';
-  const GROUND_A = 0.06;
-  const prevWire = new Map();
-
-  function wireColor(el) {
-    const host = !el ? null : (el.dataset && el.dataset.washkey ? el : el.querySelector('[data-washkey]'));
-    const raw = host ? getComputedStyle(host).getPropertyValue('--washcol').trim() : '';
-    const m = raw.match(/^rgba\((.+?),\s*([\d.]+)\s*\)$/);
-    if (!m) return { rgb: 'rgb(var(--lc-closed))', a: 0.16 };
-    const a = +m[2];
-    return { rgb: 'rgb(' + m[1] + ')', a: +(a + GROUND_A * (1 - a)).toFixed(3) };
-  }
-
-  function drawWire(wiresEl, key) {
-    if (!wiresEl) return;
-    while (wiresEl.firstChild) wiresEl.removeChild(wiresEl.firstChild);
-    if (!key) return;
-    const start = document.querySelector('.queue [data-card="' + key + '"]');
-    const target = document.querySelector('[data-setupcard="' + key + '"]');
-    const mainEl = document.querySelector('main');
-    if (!start || !target || !mainEl) return;
-
-    const b = start.getBoundingClientRect(), r = target.getBoundingClientRect();
-    const mainR = mainEl.getBoundingClientRect();
-    const railX = (start.closest('.qitem') || start).getBoundingClientRect().left;
-    const gx = (mainR.right + railX) / 2;
-    const sx = b.left, sy = b.top + Math.min(b.height / 2, 18);
-    const tx = r.right;
-    const ty = Math.min(Math.max(sy, r.top + 8), Math.max(r.top + 8, r.bottom - 8));
-    const down = ty > sy;
-    const rad = Math.max(0, Math.min(8, Math.abs(ty - sy) / 2, (sx - gx) / 2, (gx - tx) / 2));
-    const d = 'M ' + sx + ' ' + sy + ' H ' + (gx + rad) +
-      ' Q ' + gx + ' ' + sy + ' ' + gx + ' ' + (sy + (down ? rad : -rad)) +
-      ' V ' + (ty + (down ? -rad : rad)) +
-      ' Q ' + gx + ' ' + ty + ' ' + (gx - rad) + ' ' + ty + ' H ' + tx;
-
-    const shapes = (g, col) => {
-      const p = document.createElementNS(SVGNS, 'path');
-      p.setAttribute('d', d); p.setAttribute('stroke', col); g.appendChild(p);
-      const c = document.createElementNS(SVGNS, 'circle');
-      c.setAttribute('class', 'cap'); c.setAttribute('cx', tx); c.setAttribute('cy', ty);
-      c.setAttribute('r', 7); c.setAttribute('fill', col); g.appendChild(c);
-    };
-    const paint = (col, alpha) => {
-      const g = document.createElementNS(SVGNS, 'g');
-      if (alpha != null) { g.setAttribute('class', 'ink'); g.setAttribute('opacity', alpha); }
-      shapes(g, col); wiresEl.appendChild(g); return g;
-    };
-    // A thing does not shadow its own layer, so every card, tab and rail entry
-    // is punched out. Overlapping holes have to be **merged**: the clip is one
-    // `evenodd` path, so two rectangles that overlap XOR back to solid.
-    const boxes = [...document.querySelectorAll('.sugg, .achip, .queue button')]
-      .map((e) => e.getBoundingClientRect()).filter((x) => x.width && x.height);
-    const merged = [];
-    for (const x of boxes) {
-      let cur = { left: x.left, top: x.top, right: x.right, bottom: x.bottom };
-      for (let i = merged.length - 1; i >= 0; i--) {
-        const m = merged[i];
-        if (cur.left < m.right && m.left < cur.right && cur.top < m.bottom && m.top < cur.bottom) {
-          cur = { left: Math.min(cur.left, m.left), top: Math.min(cur.top, m.top),
-            right: Math.max(cur.right, m.right), bottom: Math.max(cur.bottom, m.bottom) };
-          merged.splice(i, 1);
-        }
-      }
-      merged.push(cur);
-    }
-    const defs = document.createElementNS(SVGNS, 'defs');
-    let path = 'M0 0H' + innerWidth + 'V' + innerHeight + 'H0Z';
-    for (const m of merged) path += 'M' + m.left + ' ' + m.top + 'H' + m.right + 'V' + m.bottom + 'H' + m.left + 'Z';
-    const cp = document.createElementNS(SVGNS, 'clipPath');
-    cp.setAttribute('id', 'wire-not-cards'); cp.setAttribute('clipPathUnits', 'userSpaceOnUse');
-    const cpp = document.createElementNS(SVGNS, 'path');
-    cpp.setAttribute('d', path); cpp.setAttribute('clip-rule', 'evenodd');
-    cp.appendChild(cpp); defs.appendChild(cp);
-    for (const bl of [1, 3]) {
-      const f = document.createElementNS(SVGNS, 'filter');
-      f.setAttribute('id', 'wire-blur-' + bl);
-      const fe = document.createElementNS(SVGNS, 'feGaussianBlur');
-      fe.setAttribute('stdDeviation', bl); f.appendChild(fe); defs.appendChild(f);
-    }
-    wiresEl.appendChild(defs);
-    // two nested groups: clip on the outer, offset on the inner — a clip-path
-    // resolves *after* the referencing element's own transform
-    const shadow = (dy, blur, alpha) => {
-      const outer = document.createElementNS(SVGNS, 'g');
-      outer.setAttribute('clip-path', 'url(#wire-not-cards)');
-      outer.setAttribute('opacity', alpha);
-      const g = document.createElementNS(SVGNS, 'g');
-      g.setAttribute('filter', 'url(#wire-blur-' + blur + ')');
-      g.setAttribute('transform', 'translate(0 ' + dy + ')');
-      shapes(g, '#000'); outer.appendChild(g); wiresEl.appendChild(outer);
-    };
-    shadow(1, 1, 0.13); shadow(3, 3, 0.20);
-    paint('#FFFFFF', null);
-    const color = wireColor(start);
-    const from = prevWire.get(key) || color;
-    const ink = paint(from.rgb, from.a);
-    if (from.rgb !== color.rgb || from.a !== color.a) {
-      void wiresEl.getBoundingClientRect();
-      ink.setAttribute('opacity', color.a);
-      ink.querySelectorAll('path').forEach((p) => p.setAttribute('stroke', color.rgb));
-      ink.querySelectorAll('circle').forEach((cc) => cc.setAttribute('fill', color.rgb));
-    }
-    prevWire.set(key, color);
-  }
+     Retired from this file at the merge (stage 8, 2026-08-21): the queue-wire
+     is drawn once, by session.js's drawWires, for whichever card is open —
+     a setup card included. Its rules (6px, opaque, the card's own colour, a
+     cap at the document end only, the shadow punched out of every card) live
+     there; the frozen reference copy keeps the old drawWire for the probe. */
 
   /* ---- small shared builders ----------------------------------------------
      `opt` draws the session-view's own `.lanepick` radio (Ed, 2026-08-18). The
@@ -1320,7 +1212,7 @@ window.SETUP = (function () {
 
   return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, stateOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
-    nameBody, pictureBody, drawWire, opt, num, faces, someIn, FACE_EMOJI,
+    nameBody, pictureBody, opt, num, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     anyEmojiRow, wireFreeEmoji, emojiFaceOf, setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     motionBody, motionReopen, routeFor, motionCommitHtml,

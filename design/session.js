@@ -18,6 +18,14 @@
   let doc, queueEl, tocEl, wiresEl, walletEl, pulseEl;
   // the host's seams; every one optional
   let hooks = {};
+  // **A host's own rail entries** (stage 8, the merge): the setup tasks are
+  // entries in this rail, laid out by the same margin-index rules as every
+  // other. The host hands them in as {id, html, anchor(), pinned, rank, u,
+  // mine}; renderQueue appends them and layoutQueue/drawWires read their
+  // meta here instead of from SUGGS. With no host (the fixture page) the map
+  // stays empty and nothing below changes.
+  let extra = null;
+  let extraMeta = new Map();
 
   const lineOf = (key) => DOC.find((l) => l.key === key);
 
@@ -405,6 +413,7 @@
     if (!els.length) return;
     void document.body.offsetHeight;        // one reflow, so the "from" value is painted
     for (const el of els) {
+      if (el.dataset.wash == null) continue;
       el.style.setProperty('--washcol', el.dataset.wash);
       el.style.setProperty('--washbg', groundOf(el.dataset.wash));
       if (el.dataset.fill != null) el.style.setProperty('--fill', el.dataset.fill);
@@ -741,6 +750,10 @@
             teasersFor(g, e).map((t) => '<span class="qwhy">' + esc(t) + '</span>').join('')) +
         '</button></li>';
     }
+    extraMeta = new Map();
+    if (extra && extra.entries) {
+      for (const x of extra.entries()) { extraMeta.set(x.id, x); html += x.html; }
+    }
     queueEl.innerHTML = html;
     justArrived = null;
     // Everything in the rail opens, sealed dots included (Ed, 112): a locked
@@ -764,10 +777,12 @@
 
   // A rail entry may stand for several judgments — a row of sealed dots — so
   // "is this the open one" is a question about the buttons inside it.
-  const holdsFocus = (el) => !!focusId() && !!el.querySelector('button[data-q="' + focusId() + '"]');
+  const holdsFocus = (el) => (!!focusId() && !!el.querySelector('button[data-q="' + focusId() + '"]')) ||
+    (!!extra && !!extra.isOpen && extraMeta.has(el.dataset.q) && extra.isOpen(el.dataset.q));
 
   function anchorForEntry(id, siteKey) {
     const g = SUGGS.find((x) => x.id === id);
+    if (!g && extraMeta.has(id)) return extraMeta.get(id).anchor() || null;
     if (!g) return null;
     if (g.insertAfterKey) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"]');
     const k = siteKey || (g.keys ?? [])[0] || (g.pair && g.pair[0].key);
@@ -828,6 +843,15 @@
       if (!a) { el.style.display = 'none'; continue; }
       el.style.display = '';
       const g = SUGGS.find((x) => x.id === el.dataset.q);
+      if (!g && extraMeta.has(el.dataset.q)) {
+        const x = extraMeta.get(el.dataset.q);
+        const ay0 = a.getBoundingClientRect().top;
+        el.classList.toggle('offclause', ay0 < BAND_TOP || ay0 > innerHeight - BAND_BOT);
+        const row = { el, want: (a.getBoundingClientRect().top + scrollY) - railTop, h: el.offsetHeight,
+          mine: !!x.mine, u: x.u ?? 0, rank: x.rank ?? 0 };
+        ((x.pinned || holdsFocus(el)) ? pinned : flow).push(row);
+        continue;
+      }
       // Is this entry on screen **in its own right** — that is, would it be here
       // even if it were not pinned? It would exactly when its clause is inside
       // the band the rail lays out in. Only the flame reads this (see the teaser
@@ -1122,7 +1146,7 @@
       : (el.dataset && el.dataset.washkey ? el : el.querySelector('[data-washkey]'));
     const raw = host ? getComputedStyle(host).getPropertyValue('--washcol').trim() : '';
     const m = raw.match(/^rgba\((.+?),\s*([\d.]+)\s*\)$/);
-    if (!m) return { rgb: 'rgb(var(--lc-' + (anchHue(g) || 'closed') + '))', a: 0.16 };
+    if (!m) return { rgb: 'rgb(var(--lc-' + ((g && anchHue(g)) || 'closed') + '))', a: 0.16 };
     const a = +m[2];
     return { rgb: 'rgb(' + m[1] + ')', a: +(a + GROUND_A * (1 - a)).toFixed(3) };
   };
@@ -1162,9 +1186,10 @@
   function drawWires() {
     if (!wiresEl) return;
     while (wiresEl.firstChild) wiresEl.removeChild(wiresEl.firstChild);
-    const id = openId ?? pendingId;
+    const id = openId ?? pendingId ?? (extra && extra.openId ? extra.openId() : null);
     if (!id) return;
-    const s = SUGGS.find((x) => x.id === id);
+    const s = SUGGS.find((x) => x.id === id) || (extraMeta.has(id) ? null : undefined);
+    if (s === undefined) return;
     // Where the wires leave from. A sealed dot shares its row with its
     // neighbours (Ed, 106) and the row carries only the *first* dot's id, so
     // looking for rows alone found nothing for any dot but the lead — click the
@@ -1178,7 +1203,7 @@
       if (dots.length) { for (const d of dots) starts.push({ el: d, site: d.dataset.site }); continue; }
       if (row.dataset.q === id) starts.push({ el: row, site: row.dataset.site });
     }
-    if (!s || !starts.length) return;
+    if (!starts.length) return;
 
     const mainR = document.querySelector('main').getBoundingClientRect();
     const color = wireColor(s, starts[0].el);
@@ -1277,8 +1302,8 @@
       // cards alone left the new cable shadowing every tab it ran between —
       // including the two it joins.
       const boxes = [
-        ...doc.querySelectorAll('.sugg[data-card]'),
-        ...doc.querySelectorAll('.achip'),
+        ...document.querySelectorAll('.sugg'),
+        ...document.querySelectorAll('.achip'),
         ...queueEl.querySelectorAll('button'),
       ].map((e) => e.getBoundingClientRect()).filter((r) => r.width && r.height);
       // **Overlapping holes have to be merged, not stacked.** The clip is one
@@ -3171,6 +3196,7 @@
     const closing = openId;
     const next = openId === id ? null : id;
     if (!closing && !next) return;
+    if (next && extra && extra.closeOthers) extra.closeOthers();
     // **The pile shuts when the stack does** (Ed, 2026-08-17). Opening a
     // tab-stack always starts from the same place, filed decisions piled,
     // because being piled is a *posture of the closed stack* rather than a
@@ -3543,14 +3569,15 @@
 
   function renderToc() {
     const heads = DOC.filter((l) => l.t === 'h');
-    tocEl.innerHTML = heads
+    tocEl.innerHTML = (extra && extra.tocLead ? extra.tocLead() : '') + heads
       .map((h, i) => buriedBy(i) ? '' :        // a folded part closes its branch of the rail too
         '<li class="lvl' + (h.level ?? 1) + '">' + toggleHtml(i) +
         '<a href="#sec-' + i + '" data-toc="' + i + '">' + esc(h.x) + '</a>' + tocMarksHtml(i) + '</li>')
       .join('');
-    tocEl.querySelectorAll('[data-sec-toggle]').forEach((b) =>
-      b.addEventListener('click', (ev) => { ev.preventDefault(); toggleSection(+b.dataset.secToggle); })
-    );
+    tocEl.querySelectorAll('[data-sec-toggle]').forEach((b) => {
+      if (!/^\d+$/.test(b.dataset.secToggle)) return;   // the host's own fold keys are its business
+      b.addEventListener('click', (ev) => { ev.preventDefault(); toggleSection(+b.dataset.secToggle); });
+    });
     tocEl.querySelectorAll('[data-toc]').forEach((a) =>
       a.addEventListener('click', (ev) => {
         ev.preventDefault();
@@ -3566,6 +3593,7 @@
         if (el) smoothScrollBy(el.getBoundingClientRect().top - 72, () => markCurrentSection());
       })
     );
+    if (extra && extra.afterToc) extra.afterToc();
   }
 
   // The rail follows the reader: the last heading to have crossed the top.
@@ -3836,6 +3864,7 @@
   function init(env) {
     env = env || {};
     hooks = env.hooks || {};
+    extra = env.extra || null;
     const m = env.mounts || {};
     doc = m.doc || document.getElementById('doc');
     queueEl = m.queue || document.getElementById('queue');
@@ -3910,6 +3939,14 @@
     if (textChanged && hooks.textChanged) hooks.textChanged();
   }
 
+  // everything renderAll does except the charter itself — a host whose band
+  // changed (a setup card opened, a task settled) re-lays the rail and redraws
+  // the wire without rebuilding the document column
+  function refreshRail() {
+    settleTopUrgent(); renderQueue(); renderToc();
+    markCurrentSection(); settleWashes(); layoutQueue(); drawWires();
+  }
+
   function closeCard() {
     const id = openId;
     if (id == null) return;
@@ -3925,6 +3962,7 @@
   window.SESSION = {
     init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet,
     arcFrames, renderWallet, beat, act,
+    refreshRail, renderToc, layoutQueue, drawWires, washAttrs,
     get DOC() { return DOC; },
     get SUGGS() { return SUGGS; },
     get openId() { return openId; },

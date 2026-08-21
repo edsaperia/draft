@@ -87,21 +87,16 @@
     display: flex; align-items: center; gap: var(--s2); }
 
 /* ---------------------------------------------------------------------------
-   THE RAIL — same rail, laid out by hand, and pinned.
+   THE RAIL — one rail, the session's own margin index.
 
-   `system.css` positions `.qitem` **absolutely**, because in a live session
-   `layoutQueue` stands every entry beside its own clause. A setting belongs to
-   no clause, so they go back into normal flow — and the whole column is sticky,
-   which is what pinning means for this set. It reaches the live rail's rule
-   from the other end: there, four kinds of entry pin because they are the ones
-   about *you* rather than about a clause; here every card is one of those.
+   Until the merge (stage 8, 2026-08-21) this block put the setup tasks back
+   into normal flow under a sticky column, on the reasoning that a setting
+   belongs to no clause. Since the merge every setup task is an entry in
+   session.js's rail, anchored to its own band paragraph and laid out by
+   layoutQueue like everything else — ask, news and yours pin, wait flows —
+   so system.css's absolute .qitem applies here unchanged and nothing is
+   overridden.
    --------------------------------------------------------------------------- */
-  .queue.stack { position: sticky; top: calc(var(--nav-h) + var(--s5)); align-self: start;
-    max-height: calc(100vh - var(--nav-h) - var(--s5)); overflow-y: auto;
-    scrollbar-width: none; -ms-overflow-style: none; }
-  .queue.stack::-webkit-scrollbar { width: 0; }
-  .queue.stack ul, .queue.stack > div { display: flex; flex-direction: column; gap: var(--s2); }
-  .queue.stack .qitem { position: static; list-style: none; }
   .queue .qhead { font-size: var(--t-cap); color: var(--muted); margin: var(--s3) 0 0; padding: 0 10px; }
   .queue .qhead:first-child { margin-top: 0; }
   .queue .setmark { margin-left: auto; display: inline-flex; align-items: center; }
@@ -395,9 +390,11 @@
      literal 1.5rem was drift (2026-08-18); only the box is ours. It sits on
      the document's own left edge (Ed's QA, 2026-08-19: it was indented —
      the s5 side padding and auto-centring were the indent). */
-  .doc .doctitle { max-width: 70ch; margin: 0 0 var(--s5);
+  /* the headings only: the fixture charter's own div.doctitle (session.js)
+     keeps system.css's box, as it did on its own page */
+  .doc h1.doctitle, .doc h2.doctitle { max-width: 70ch; margin: 0 0 var(--s5);
     padding: 0; text-wrap: balance; }
-  .doc .doctitle.ph { color: var(--muted); font-weight: 400; }
+  .doc h1.doctitle.ph { color: var(--muted); font-weight: 400; }
 
 /* ===========================================================================
    NOT THE DESIGN SYSTEM. The mail modal stands for the reader's inbox: it

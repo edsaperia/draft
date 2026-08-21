@@ -31,3 +31,30 @@ only) runs on the live page and on
 snapshotting per step; diffs fail unless allowlisted per
 scenario:step:region. Its commit-8 self-proof ran live-vs-frozen with the
 live page untouched and an empty allowlist: 34 steps, identical.
+
+## Running the probes since the merge (stage 8, 2026-08-21)
+
+One surface now: `setup.html` is the page, `session-view.html` a redirect to
+`setup.html?fixture=session`, and the session's machinery is `session.js`.
+
+- **session-probe**: reference `/reference/session-view.html`, live
+  `/setup.html?fixture=session`. In that mode the constitution band is hidden
+  (`.doc.fixsession`) so the charter's geometry is the frozen page's to the
+  pixel — pinned rail entries clamp to the *viewport* edge, so a band above
+  the charter cannot be normalised away. `&band=1` shows the whole
+  composition (not a probe target). Measurements take y from the charter's
+  `.prose` top and the contents rail's charter headings from the first of
+  them. Gate unchanged: IDENTICAL.
+- **setup-probe**: the frozen `setup-pre-constitution/` copy is the
+  constitution swap's baseline and now differs from HEAD by design (200
+  diffs at 2026-08-21). For any later change the reference is **HEAD
+  itself**: `git show HEAD:design/<f> > design/_head/<f>` for setup.html,
+  setup.js, setup.css, cards.js, system.css, constitution.js (the directory
+  is gitignored; a path containing `/_head/` counts as the reference side).
+  Intentional diffs since the merge are allowlisted by pattern: `geo.rail`
+  at every step (the tasks are entries in the session's margin index,
+  absolutely positioned) and `toc` once the text is confirmed (the
+  charter's headings come from session.js). Rail entries are still compared
+  by content, with the layout's own attributes stripped. The *Founded at
+  [time]* line is stamped from the load-time clock: run both sides inside
+  one minute or the band hashes differ after ⏩.

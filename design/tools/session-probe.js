@@ -54,12 +54,16 @@
 
   /* ---- helpers ------------------------------------------------------------ */
   const R2 = (x) => Math.round(x * 100) / 100;
-  const rect = (el) => {
+  // Since the merge (stage 8) the live charter stands under the constitution
+  // band inside the one surface, so every y is taken from the top of the
+  // charter's own .prose — the same origin the frozen page has at its top.
+  let oy = 0;
+  const rect = (el, oyy) => {
     if (!el) return null;
     const r = el.getBoundingClientRect();
-    return [R2(r.left + window.scrollX), R2(r.top + window.scrollY), R2(r.width), R2(r.height)];
+    return [R2(r.left + window.scrollX), R2(r.top + window.scrollY - (oyy === undefined ? oy : oyy)), R2(r.width), R2(r.height)];
   };
-  const rects = (els) => Array.from(els).map(rect);
+  const rects = (els) => Array.from(els).map((el) => rect(el));   // not .map(rect): the index would read as an origin
   const norm = (s) => s.replace(/\s+/g, ' ').replace(/> </g, '><').trim();
   const hash = (s) => {
     let h1 = 5381, h2 = 52711;
@@ -71,7 +75,11 @@
     return h1.toString(16) + '-' + h2.toString(16);
   };
 
-  const docEl = document.getElementById('doc') || document.querySelector('.doc');
+  const docEl = document.getElementById('charter') || document.getElementById('doc') || document.querySelector('.doc');
+  const setOrigin = () => {
+    const prose = docEl.querySelector('.prose');
+    oy = prose ? prose.getBoundingClientRect().top + window.scrollY : 0;
+  };
   const label = /\/reference\//.test(location.pathname) ? 'ref' : 'live';
 
   /* ---- 2/3. the walk ------------------------------------------------------ */
@@ -105,6 +113,7 @@
   function run() {
     const payload = { meta: { label, w: window.innerWidth, h: window.innerHeight },
                       rail: [], doc: {}, cards: {} };
+    setOrigin();
 
     payload.doc.anchs = rects(docEl.querySelectorAll('.anch'));
     payload.doc.chips = rects(docEl.querySelectorAll('.achip'));
@@ -114,7 +123,11 @@
       return { r: rect(q), wash: cs ? cs.getPropertyValue('--washcol').trim() : '',
                fill: cs ? cs.getPropertyValue('--fill').trim() : '' };
     });
-    payload.doc.toc = rects(document.querySelectorAll('#toc a, .toc a, nav a'));
+    // the charter's own headings only (the merged page's contents rail leads
+    // with the constitution), measured from the first of them
+    const tocAs = Array.from(document.querySelectorAll('#toc a[data-toc]'));
+    const toy = tocAs.length ? tocAs[0].getBoundingClientRect().top + window.scrollY : 0;
+    payload.doc.toc = tocAs.map((a) => rect(a, toy));
 
     const ids = suggIds();
     for (const id of ids) {
