@@ -58,3 +58,16 @@ export function buildConstituted(opts: {
   expect(s.constitutedAtT).toBe(2);
   return { s, bo, cy };
 }
+
+/**
+ * After the start the founder holds nothing on the Text (CLAUDE.md `🍾 Begin`:
+ * the start lays down ✒️ and 🛡️ on it). The road to a held shield is the
+ * design's own: a constitutional `reserve` motion, landing without assent.
+ */
+export function reserveTextShield(s: ConstitutionSession, mover: string,
+  others: string[], t: number): void {
+  const m = s.openMotion(t, mover, { kind: 'reserve', setting: 'startingText', power: 'assent' });
+  for (const o of others) s.answerMotion(t, o, m, 'accept');
+  expect(s.motionRecords().get(m)!.status).toBe('carried');
+  expect(s.settingState('startingText').powers.assent).toBe(true);
+}

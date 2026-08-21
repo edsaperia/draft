@@ -158,6 +158,19 @@ interface RosterEntry {
 
 export const INC_PREFIX = 'inc:';
 
+/**
+ * The polite refusal (SPEC §4.6): a judgment or submission arriving after
+ * T=0. Typed so a host can show it as a sentence rather than a failure.
+ */
+export class DocumentClosedError extends Error {
+  readonly closedAt: number;
+  constructor(closedAt: number) {
+    super(`the document closed at ${closedAt}`);
+    this.name = 'DocumentClosedError';
+    this.closedAt = closedAt;
+  }
+}
+
 function candidateNum(id: string): number {
   return Number(id.slice(1));
 }
@@ -182,6 +195,8 @@ export class Session {
   private edgeCount = 0;
   private lastAdoptionT: number | null = null;
   private closedFlag = false;
+  /** T=0 as the log recorded it (SPEC §4.6); null while open. */
+  private closedT: number | null = null;
   private lastT = -Infinity;
   private candidateCounter = 0;
   /**
@@ -459,8 +474,13 @@ export class Session {
         this.fitCache.clear();
         break;
       }
+      case 'candidate-undecided': {
+        this.exitCandidate(event.id, 'undecided', event.t, 'undecided', event.refund);
+        break;
+      }
       case 'closed': {
         this.closedFlag = true;
+        this.closedT = event.t;
         break;
       }
     }
@@ -539,12 +559,56 @@ export class Session {
     return this.closedFlag;
   }
 
+  /** When the document closed (SPEC §4.6), or null while it is open. */
+  get closedAt(): number | null {
+    return this.closedT;
+  }
+
+  /**
+   * A windowed document has an end to cross. A perpetual one is pinned
+   * with a zero-span window (the adapter's convention for a fixed bar),
+   * and the clock never closes it — only a host's explicit `close` does.
+   */
+  private windowed(): boolean {
+    const { windowStartMs, windowEndMs } = this.constitutionValue;
+    return windowEndMs > windowStartMs;
+  }
+
+  /**
+   * The close is due (SPEC §4.6): a windowed document whose end the clock
+   * has reached. The engine does not act on this itself — the host drives
+   * the close through `tick`/`close` the way it drives freeze and lapse
+   * (the constitution's own clock crosses the ending in the same beat) —
+   * so an act carrying an arbitrary later timestamp is never a close.
+   */
+  dueToClose(t: number): boolean {
+    return !this.closedFlag && this.windowed() && t >= this.constitutionValue.windowEndMs;
+  }
+
+  /**
+   * T=0 (SPEC §4.6): a final adoption batch regardless of cooldown phase,
+   * the ready set snapshotted here; then every race still live records
+   * the third outcome, *undecided* — setting races included, whose motions
+   * the host then holds — with the refund 0, since tokens are worthless at
+   * the close (§7); then `closed`.
+   */
+  private runClose(t: number): void {
+    this.sweepAdoptions(t, /* final */ true);
+    for (const r of this.races()) {
+      for (const id of r.members) {
+        if (this.candidate(id).state !== 'live') continue;
+        this.emit({ type: 'candidate-undecided', t, id, raceId: r.id, refund: 0 });
+      }
+    }
+    this.emit({ type: 'closed', t });
+  }
+
   get totalEdgeComparisons(): number {
     return this.edgeCount;
   }
 
   private assertOpen(): void {
-    if (this.closedFlag) throw new Error('session is closed');
+    if (this.closedFlag) throw new DocumentClosedError(this.closedT ?? this.lastT);
     if (this.log.length === 0) throw new Error('session not opened');
   }
 
@@ -960,9 +1024,13 @@ export class Session {
     return this.settingsMap.get(settingId);
   }
 
+  /**
+   * The host's explicit close (a sim's end, a perpetual document's freeze
+   * turned final): the same T=0 sequence the clock runs (SPEC §4.6).
+   */
   close(t: number): void {
     this.assertOpen();
-    this.emit({ type: 'closed', t });
+    this.runClose(t);
   }
 
   // -------------------------------------------------------------------------
@@ -1311,9 +1379,11 @@ export class Session {
    * rebasing the field for the next, a leader whose ground shifted
    * mid-batch (rebase-pending) simply skipped to wait like anybody.
    */
-  private sweepAdoptions(t: number): void {
+  private sweepAdoptions(t: number, final = false): void {
     if (this.closedFlag) return;
+    // T=0 runs the batch regardless of cooldown phase (SPEC §4.6)
     if (
+      !final &&
       this.lastAdoptionT !== null &&
       t - this.lastAdoptionT < this.constitutionValue.cooldownMs
     ) {
@@ -1350,7 +1420,8 @@ export class Session {
    */
   tick(t: number): Event[] {
     const before = this.log.length;
-    this.sweepAdoptions(t);
+    if (this.dueToClose(t)) this.runClose(this.constitutionValue.windowEndMs);
+    else this.sweepAdoptions(t);
     return this.log.slice(before).map((e) => e.event);
   }
 
@@ -1484,20 +1555,30 @@ export class Session {
       .sort((a, b) => b.score - a.score || a.raceId.localeCompare(b.raceId));
   }
 
-  /** Unresolved positions ranked by closeness × salience (SPEC §1). */
+  /**
+   * Unresolved positions ranked by closeness × salience (SPEC §1). Live
+   * while the document is open; after the close (SPEC §4.6) the backlog is
+   * the *undecided* set — the races that never resolved — read from the
+   * verdicts the close recorded, since `races()` is then empty.
+   */
   backlog(t: number = this.lastT): Array<{ candidateId: string; raceId: string; score: number }> {
     const weights = this.salienceWeights();
-    const races = this.races();
+    const threshold = this.adoptionThreshold(t);
     const out: Array<{ candidateId: string; raceId: string; score: number }> = [];
-    for (const r of races) {
-      for (const m of r.members) {
-        const c = this.candidate(m);
-        const closeness = Math.min(c.peakW / this.adoptionThreshold(t), 1);
-        out.push({
-          candidateId: m,
-          raceId: r.id,
-          score: closeness * (weights.get(r.id) ?? 1),
-        });
+    if (this.closedFlag) {
+      for (const e of this.log) {
+        if (e.event.type !== 'candidate-undecided') continue;
+        const c = this.candidate(e.event.id);
+        const closeness = Math.min(c.peakW / threshold, 1);
+        out.push({ candidateId: e.event.id, raceId: e.event.raceId,
+          score: closeness * (weights.get(e.event.raceId) ?? 1) });
+      }
+    } else {
+      for (const r of this.races()) {
+        for (const m of r.members) {
+          const closeness = Math.min(this.candidate(m).peakW / threshold, 1);
+          out.push({ candidateId: m, raceId: r.id, score: closeness * (weights.get(r.id) ?? 1) });
+        }
       }
     }
     return out.sort(
@@ -1519,6 +1600,20 @@ export class Session {
     /** Setting races whose leader cleared bar and floor at the close (Q390) — reported for the host to apply, never applied here. */
     appliedSettings: Array<{ settingId: string; candidateId: string }>;
   } {
+    // After the close (SPEC §4.6) the final batch already ran: the document
+    // holds it and the log records what adopted at T=0. Report from there —
+    // `races()` is empty now, and re-deriving would find nothing.
+    if (this.closedFlag) {
+      const applied: string[] = [];
+      const appliedSettings: Array<{ settingId: string; candidateId: string }> = [];
+      for (const e of this.log) {
+        if (e.event.type !== 'adopted' || e.event.t !== this.closedT) continue;
+        const c = this.candidate(e.event.candidateId);
+        if (c.setting) appliedSettings.push({ settingId: c.setting.settingId, candidateId: c.id });
+        else applied.push(c.id);
+      }
+      return { text: this.document(), applied, appliedSettings };
+    }
     const races = this.races();
     const threshold = this.adoptionThreshold();
     const floor = this.adoptionFloor();

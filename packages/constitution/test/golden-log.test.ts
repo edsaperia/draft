@@ -23,6 +23,8 @@ import { SCHEMA_VERSION, versionOf } from '../src/types.js';
 import { goldenWalk, snapshotOf } from './golden/walk.js';
 
 const dir = join(import.meta.dirname, 'golden');
+/** founding-v0.jsonl's own rolling hash, as the code of 2026-08-20 wrote and read it. */
+const V0_ROLLING_HASH = '7c7dc4b22774191694ea4f4f86fd4a24f1768747a4c65f887955a63e71a8e112';
 const frozenLines = readFileSync(join(dir, 'founding.jsonl'), 'utf8')
   .split('\n').filter((l) => l.length > 0);
 const frozenState = JSON.parse(readFileSync(join(dir, 'founding.state.json'), 'utf8')) as
@@ -61,11 +63,22 @@ describe('the golden log', () => {
 
     const s = ConstitutionSession.replay(old);
     expect(s.verifyChain()).toBe(true);
-    // the version rides outside the hash, so the two logs — one with the
-    // field, one without — chain to the same place
-    expect(s.rollingHash()).toBe(frozenState.rollingHash);
-    expect(snapshotOf(s)).toEqual(JSON.parse(
-      readFileSync(join(dir, 'founding.state.json'), 'utf8')));
+    // The version rides outside the hash, so this log chains to exactly
+    // where it did the morning it was written — and to today's golden: the
+    // start's lay-down of the Text's powers is derived at the fold, never
+    // emitted, so a log written before 2026-08-21 replays the same state.
+    expect(s.rollingHash()).toBe(V0_ROLLING_HASH);
+    const today = JSON.parse(readFileSync(join(dir, 'founding.state.json'), 'utf8')) as
+      { entries: number; rollingHash: string; settings: Record<string, unknown> };
+    expect(today.rollingHash).toBe(V0_ROLLING_HASH);
+    expect(s.settingState('startingText').powers).toEqual({ unilateral: false, assent: false });
+    // (the snapshot lists a setting only once an event names it, so the old
+    // log's snapshot has no Text row at all — compare everything else)
+    const strip = (x: typeof today) => {
+      const { startingText: _t, ...settings } = x.settings;
+      return { ...x, entries: 0, rollingHash: '', settings };
+    };
+    expect(strip(snapshotOf(s) as typeof today)).toEqual(strip(today));
   });
 
   it('stamps what this build writes', () => {

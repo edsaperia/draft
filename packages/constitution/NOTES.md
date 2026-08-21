@@ -143,3 +143,38 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   the applications entry of `founding.state.json` moved). The Q395 holder
   tiebreak in the consent order went with the field: the blind question
   collects the policy, the powers are the founder's to give up (Q341).
+
+## The close (SPEC §4.6, Q467)
+
+`tick(t)` closes the document when the ending date is crossed (tested before
+the lapse/freeze clocks, which stop at T=0): `closed`, then every running
+**constitutional** motion is `motion-kept-at-close` (what stands stands, the
+mover's 🏛️ returns via `myHeldMotion` clearing), every pending 👑 question is
+`crown-failed-closed` (carried-but-unassented — crown-lapse auto-pass does not
+fire, because the close is everybody's deadline, not one absence), and every
+outstanding invitation is `invitation-expired` (`arrive` then refuses: *nothing
+left to join, only to read*). After the close every mutator is refused
+(`requireOpen`) except **`acknowledgeClose(t, member, comment)`** — the OK on
+the 🥂 card, per member once, blank allowed: `close-acknowledged` **is** the
+signature, the comment its rationale. `closingSignatures()` orders them by
+signing time, names per the ✍️ setting (`nobody` anonymises). `view()` serves
+`closed: { at, mySignature, signatures }`.
+
+**The bridge relays the close engine-first** (`engine-bridge.close` /
+`finishClose`): the engine's final batch runs, `reportAdoptions` turns each
+verdict into the constitution's language while it is still open — a carried
+setting motion, or (Q440) a **text adoption under the Text's shield** opening a
+👑 question — then the ordinary motions the batch did not carry are held, and
+the constitution closes, which fails those just-opened 👑 questions closed. A
+text adoption needing assent at T=0 therefore lands as carried-but-unassented:
+the engine applied it to its own document, but the room never assented, so
+`closeRecord()` lists it under `carriedButUnassented`. The shield is held
+only when the room has handed it back by a `reserve` motion: **the start lays
+the founder's hand off the Text** (CLAUDE.md `🍾 Begin`) — `maybeConstitute`
+emits `power-relinquished` for each power still held, so post-start the
+default is neither, and `reportAdoptions` opens a 👑 question only under a
+reserved shield. **Migration note**: a log constituted before 2026-08-21 holds
+no such events, so on replay its founder still holds both powers on the Text
+(the golden v0 test pins this) — the two live documents on docs.vote
+included; a text adoption there waits on the founder's 🛡️ until they lay
+it down or the page performs 🍾's batch for them.

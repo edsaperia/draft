@@ -192,16 +192,32 @@ export class EngineBridge {
    */
   tick(t: number): void {
     this.sync(t); // the sweep runs under the current ground
-    this.reportAdoptions(t, this.engine.tick(t));
+    this.reportAdoptions(t, this.engine.tick(t)); // may run the engine's own close
     this.sync(t); // relay what carried (the ground shift)
+    if (this.engine.closed && !this.cs.closed) this.finishClose();
   }
 
-  /** Every setting race among the adoptions reports 'carried' through the seam. */
+  /**
+   * Every setting race among the adoptions reports 'carried' through the
+   * seam; a text race adopting under the Text's shield (Q440) opens a 👑
+   * question instead of standing — assent over the drafting mechanism
+   * itself (SPEC §9.7). A text race without the shield just stands: the
+   * engine has applied it and the served text is the engine's document.
+   */
   private reportAdoptions(t: number, events: EngineEvent[]): void {
     for (const e of events) {
       if (e.type !== 'adopted') continue;
       const motion = this.motionOfCandidate.get(e.candidateId);
-      if (motion === undefined) continue; // a text race adopting
+      if (motion === undefined) {
+        // a text race adopting
+        if (this.cs.textAdoptionNeedsAssent() && !this.cs.closed) {
+          this.cs.openTextCrownQuestion(t, {
+            candidateId: e.candidateId,
+            summary: this.textSummary(e.candidateId),
+          });
+        }
+        continue;
+      }
       this.cs.adjudicateOrdinaryMotion(t, motion, 'carried');
     }
   }
@@ -252,20 +268,86 @@ export class EngineBridge {
   }
 
   /**
-   * The close: setting races whose leader clears bar and floor carry;
-   * every other raced motion is held (the value stood).
+   * The close (SPEC §4.6), engine first then constitution. The engine runs
+   * its final batch — text and setting races clearing bar and floor adopt,
+   * everything else is recorded *undecided* — and `reportAdoptions` turns
+   * those verdicts into the constitution's language (a carried setting
+   * motion, a text-shield 👑 question) while the constitution is still
+   * open. Then `finishClose` holds every ordinary motion the batch did not
+   * carry and closes the constitution, which keeps the constitutional
+   * motions, fails the pending 👑 questions closed, and expires the
+   * invitations. The two ends meet at one T=0.
    */
   close(t: number): ReturnType<EngineSession['finalRender']> {
     this.sync(t);
+    const before = this.engine.log.length;
     this.engine.close(t);
+    const closedAt = this.engine.closedAt ?? t;
+    this.reportAdoptions(closedAt, this.engine.log.slice(before).map((e) => e.event));
     const render = this.engine.finalRender();
-    const carried = new Set(render.appliedSettings.map((a) => a.candidateId));
-    for (const [cand, motion] of this.motionOfCandidate) {
-      const rec = this.cs.motionRecords().get(motion)!;
-      if (rec.status !== 'running') continue;
-      this.cs.adjudicateOrdinaryMotion(t, motion, carried.has(cand) ? 'carried' : 'held');
-    }
+    if (!this.cs.closed) this.finishClose();
     return render;
+  }
+
+  /**
+   * With the engine already closed: hold every ordinary motion whose
+   * candidate did not carry in the final batch (the value stood), relay
+   * the ground, and close the constitution at the engine's own T=0.
+   */
+  private finishClose(): void {
+    const at = this.engine.closedAt!;
+    const carried = new Set(this.engine.finalRender().appliedSettings.map((a) => a.candidateId));
+    for (const [cand, motion] of this.motionOfCandidate) {
+      const rec = this.cs.motionRecords().get(motion);
+      if (!rec || rec.status !== 'running') continue;
+      this.cs.adjudicateOrdinaryMotion(at, motion, carried.has(cand) ? 'carried' : 'held');
+    }
+    this.sync(at);
+    if (!this.cs.closed) this.cs.close(at);
+  }
+
+  /** A short, blind summary of an adopted text candidate for the 👑 question. */
+  private textSummary(candidateId: string): string {
+    const c = this.engine.getCandidate(candidateId);
+    const lines = (c.patch?.hunks ?? []).flatMap((h) => h.lines);
+    const s = lines.join(' ').trim();
+    return s.length > 80 ? `${s.slice(0, 77)}…` : s;
+  }
+
+  /**
+   * The record the close produces (SPEC §4.6, the shape `record-builder`
+   * will render): the final text, what adopted, the backlog of undecided
+   * races, the changes carried-but-unassented (the 👑 questions that failed
+   * closed), and the signatures. Blind by the same rule as everything
+   * else — no standings, no author on a sealed document beyond the
+   * anonymity ladder the signatures already obey.
+   */
+  closeRecord(): {
+    closedAt: number | null;
+    text: string;
+    undecided: Array<{ candidateId: string; raceId: string }>;
+    carriedButUnassented: Array<{ candidateId: string; summary: string }>;
+    signatures: Array<{ member: MemberId; name: string | null; comment: string; t: number }>;
+  } {
+    const undecided: Array<{ candidateId: string; raceId: string }> = [];
+    const carriedButUnassented: Array<{ candidateId: string; summary: string }> = [];
+    for (const e of this.engine.log) {
+      if (e.event.type === 'candidate-undecided') {
+        undecided.push({ candidateId: e.event.id, raceId: e.event.raceId });
+      }
+    }
+    for (const q of this.cs.crownQuestionRecords().values()) {
+      if (q.status === 'failed-closed' && q.text) {
+        carriedButUnassented.push({ candidateId: q.text.candidateId, summary: q.text.summary });
+      }
+    }
+    return {
+      closedAt: this.cs.closedAt,
+      text: this.engine.document(),
+      undecided,
+      carriedButUnassented,
+      signatures: this.cs.closingSignatures(),
+    };
   }
 
   /** What to persist beside the engine log (see BridgeState). */

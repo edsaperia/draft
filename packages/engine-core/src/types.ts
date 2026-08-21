@@ -117,7 +117,9 @@ export type CandidateState =
   | 'withdrawn'
   /** Displaced incumbent or rebase-failure limbo: not live, kept for the model. */
   | 'displaced'
-  | 'rebase-pending';
+  | 'rebase-pending'
+  /** Unresolved at the close (SPEC §4.6): the incumbent stood, but this is not *kept*. */
+  | 'undecided';
 
 export interface Candidate {
   id: string;
@@ -266,6 +268,20 @@ export type Event =
   | { type: 'candidate-withdrawn'; t: number; id: string; refund: number }
   | { type: 'candidate-retired'; t: number; id: string; refund: number; raceId?: string }
   | {
+      /**
+       * The third outcome (SPEC §4.6): live at the close, neither adopted nor
+       * beaten. The incumbent stands, but the record keeps *undecided* apart
+       * from *kept* — the minority map and the backlog's stake-waived
+       * re-entry both live on the difference. Tokens are worthless at the
+       * close (§7), so the refund is 0 and recorded as such.
+       */
+      type: 'candidate-undecided';
+      t: number;
+      id: string;
+      raceId: string;
+      refund: number;
+    }
+  | {
       /** Author folds their support into an existing candidate (SPEC §5.1). */
       type: 'co-signed';
       t: number;
@@ -326,7 +342,16 @@ export type Event =
       settingId: string;
       value: unknown;
     }
-  | { type: 'closed'; t: number };
+  | {
+      /**
+       * T=0 (SPEC §4.6). Emitted by the engine itself when a tick or an act
+       * crosses the window's end — after the final adoption batch and the
+       * undecided verdicts — or by the host's explicit `close`. An event in
+       * the log, never a wall-clock inference at load.
+       */
+      type: 'closed';
+      t: number;
+    };
 
 /**
  * The event format this build writes (Q480(a), PRODUCTION.md stage 5).

@@ -108,6 +108,12 @@ export interface MemberView {
   identity: { name: string | null; picture: string | null };
   lapseWarned: boolean;
   frozen: boolean;
+  /** The close (SPEC §4.6): null while open; once closed, when, my own signature, the block. */
+  closed: {
+    at: number;
+    mySignature: { t: number; comment: string } | null;
+    signatures: Array<{ member: MemberId; name: string | null; comment: string; t: number }>;
+  } | null;
 }
 
 const MANAGED = CATALOGUE.filter((e) =>
@@ -244,6 +250,13 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
         : { name: null, picture: null },
     lapseWarned: me ? me.lapseWarned : isConvenor ? s.convenorRecord().lapseWarned : false,
     frozen: s.frozen,
+    closed: s.closed
+      ? {
+          at: s.closedAt!,
+          mySignature: me && me.closingAck ? me.closingAck : null,
+          signatures: s.closingSignatures(),
+        }
+      : null,
   };
 }
 

@@ -739,6 +739,8 @@ var CONSTITUTION = (() => {
       __publicField(this, "textConfirmedFlag", false);
       __publicField(this, "slugHistory", []);
       __publicField(this, "constitutedT", null);
+      __publicField(this, "closedFlag", false);
+      __publicField(this, "closedT", null);
       __publicField(this, "anchors", null);
       __publicField(this, "frozenFlag", false);
       __publicField(this, "motions", /* @__PURE__ */ new Map());
@@ -944,6 +946,7 @@ var CONSTITUTION = (() => {
         case "constituted": {
           this.constitutedT = event.t;
           this.anchors = this.computeAnchors(event.t);
+          this.setPowers(this.settings.get("startingText"), { unilateral: false, assent: false });
           break;
         }
         case "ok-owed": {
@@ -1133,6 +1136,36 @@ var CONSTITUTION = (() => {
           this.frozenFlag = false;
           break;
         }
+        case "closed": {
+          this.closedFlag = true;
+          this.closedT = event.t;
+          break;
+        }
+        case "motion-kept-at-close": {
+          const rec = this.motions.get(event.motion);
+          rec.status = "kept-at-close";
+          rec.settledAtT = event.t;
+          break;
+        }
+        case "crown-failed-closed": {
+          const q = this.crownQuestions.get(event.question);
+          q.status = "failed-closed";
+          if (q.motion !== null) {
+            const rec = this.motions.get(q.motion);
+            rec.status = "held";
+            rec.settledAtT = event.t;
+          }
+          break;
+        }
+        case "invitation-expired": {
+          this.members.get(event.member).invitationExpired = true;
+          break;
+        }
+        case "close-acknowledged": {
+          const m = this.members.get(event.member);
+          if (m) m.closingAck = { t: event.t, comment: event.comment };
+          break;
+        }
         case "application-started": {
           this.applicants.set(event.applicant, {
             id: event.applicant,
@@ -1226,7 +1259,9 @@ var CONSTITUTION = (() => {
         picture: null,
         lastActivityT: arrivedAtT ?? invitedAtT,
         okOwed: /* @__PURE__ */ new Set(),
-        okGiven: /* @__PURE__ */ new Set()
+        okGiven: /* @__PURE__ */ new Set(),
+        invitationExpired: false,
+        closingAck: null
       };
     }
     foldSet(id, value, by, t) {
@@ -1299,6 +1334,10 @@ var CONSTITUTION = (() => {
       if (this.constitutedT !== null) {
         throw new Error(`${what} is pre-start only — after the start it is a motion (§9.6a)`);
       }
+    }
+    /** After the close nothing changes but the signing (SPEC §4.6). */
+    requireOpen(what) {
+      if (this.closedFlag) throw new Error(`the document has closed — ${what} is over (§4.6)`);
     }
     setConvenorMembership(t, isMember) {
       this.requirePreStart("re-ticking the convenor row");
@@ -1458,6 +1497,7 @@ var CONSTITUTION = (() => {
       if (wasInE) this.afterRosterChange(t, "departure", member);
     }
     arrive(t, member) {
+      if (this.closedFlag) throw new Error("the document has closed; there is nothing left to join, only to read (§4.6)");
       const m = this.members.get(member);
       if (!m || m.removed) throw new Error(`unknown member '${member}'`);
       if (m.arrivedAtT !== null) {
@@ -1471,6 +1511,7 @@ var CONSTITUTION = (() => {
     // -------------------------------------------------------------------------
     // The ceremony (§9.0a)
     answer(t, member, setting, value) {
+      this.requireOpen("answering");
       const m = this.members.get(member);
       if (!m || !inE(m)) throw new Error(`'${member}' is not an arrived member`);
       const st = this.settings.get(setting);
@@ -1500,6 +1541,7 @@ var CONSTITUTION = (() => {
       this.maybeConstitute(t);
     }
     giveOk(t, member, setting) {
+      this.requireOpen("acknowledging");
       const m = this.members.get(member);
       if (!m) throw new Error(`unknown member '${member}'`);
       if (!m.okOwed.has(setting)) return;
@@ -1571,6 +1613,7 @@ var CONSTITUTION = (() => {
     // Motions (§9.6, v0.48): the one act by which a settled document changes
     // its own rules. The route is a fact about the setting.
     openMotion(t, by, payload, why) {
+      this.requireOpen("a motion");
       if (this.constitutedT === null) {
         throw new Error("before the start nothing is amended — only set (§9.6a)");
       }
@@ -1638,6 +1681,7 @@ var CONSTITUTION = (() => {
       return id;
     }
     answerMotion(t, member, motion, answer) {
+      this.requireOpen("answering a motion");
       const rec = this.motions.get(motion);
       if (!rec || rec.status !== "running") throw new Error("the motion is not running");
       if (rec.route !== "constitutional") {
@@ -1654,6 +1698,7 @@ var CONSTITUTION = (() => {
       this.maybeSettleMotions(t);
     }
     withdrawMotion(t, member, motion) {
+      this.requireOpen("withdrawing");
       const rec = this.motions.get(motion);
       if (!rec || rec.status !== "running") throw new Error("the motion is not running");
       if (rec.by !== member) throw new Error("only the mover withdraws a motion");
@@ -1665,6 +1710,7 @@ var CONSTITUTION = (() => {
      * outcome here; post-368 the caller is an engine-core race over the value.
      */
     adjudicateOrdinaryMotion(t, motion, outcome) {
+      this.requireOpen("a motion");
       const rec = this.motions.get(motion);
       if (!rec || rec.status !== "running") throw new Error("the motion is not running");
       if (rec.route !== "ordinary") {
@@ -1810,6 +1856,7 @@ var CONSTITUTION = (() => {
     // -------------------------------------------------------------------------
     // Presence, the freeze and the lapse clocks (§9.5, §9.5a)
     signOut(t, member, mode) {
+      this.requireOpen("signing out");
       const m = this.members.get(member);
       if (!m || !inE(m)) throw new Error(`'${member}' is not an arrived member`);
       this.emit({ type: "signed-out", t, member, mode });
@@ -1843,6 +1890,14 @@ var CONSTITUTION = (() => {
      * the freeze line.
      */
     tick(t) {
+      if (this.constitutedT !== null && !this.closedFlag) {
+        const ending = this.settings.get("ending").value;
+        if (ending && ending.endsAtMs !== null && t >= ending.endsAtMs) {
+          this.runClose(ending.endsAtMs);
+          return;
+        }
+      }
+      if (this.closedFlag) return;
       const lapse = this.settings.get("lapse").value;
       if (lapse && lapse.afterMs !== null) {
         for (const m of [...this.members.values()]) {
@@ -1880,6 +1935,57 @@ var CONSTITUTION = (() => {
       }
       return false;
     }
+    /**
+     * The host's explicit close (SPEC §4.6) — a perpetual document's freeze
+     * made final, or a caller standing in for the clock. The windowed close
+     * runs itself from `tick` when the ending is crossed.
+     */
+    close(t) {
+      if (this.constitutedT === null) throw new Error("nothing to close before the start");
+      if (this.closedFlag) return;
+      this.runClose(t);
+    }
+    /**
+     * T=0 (SPEC §4.6): the closing act already happened when the close was
+     * set, so this is the room's own decision executing. A constitutional
+     * motion still running resolves *kept* (what stands stands, the mover's
+     * 🏛️ returns); a 👑 question pending fails closed (carried-but-
+     * unassented — lapse auto-pass does not fire, because the close is
+     * everybody's deadline, not one absence); an invitation outstanding
+     * expires. Ordinary motions are the engine's races — the bridge holds
+     * them at the close and reports through `adjudicateOrdinaryMotion`.
+     */
+    runClose(t) {
+      this.emit({ type: "closed", t });
+      for (const rec of [...this.motions.values()]) {
+        if (rec.status === "running" && rec.route === "constitutional") {
+          this.emit({ type: "motion-kept-at-close", t, motion: rec.id });
+        }
+      }
+      for (const q of [...this.crownQuestions.values()]) {
+        if (q.status === "pending") {
+          this.emit({ type: "crown-failed-closed", t, question: q.id });
+        }
+      }
+      for (const m of [...this.members.values()]) {
+        if (!m.removed && m.arrivedAtT === null && !m.invitationExpired) {
+          this.emit({ type: "invitation-expired", t, member: m.id });
+        }
+      }
+    }
+    /**
+     * A member acknowledges the close (SPEC §4.6): OK on the 🥂 card. The
+     * acknowledgment *is* the signature, and the comment — freely blank,
+     * dissent as welcome as praise — is the signing rationale. Per member,
+     * once, on their own clock; a clerk who was never a member cannot sign.
+     */
+    acknowledgeClose(t, member, comment) {
+      if (!this.closedFlag) throw new Error("the document has not closed");
+      const m = this.members.get(member);
+      if (!m || m.removed) throw new Error(`'${member}' is not a member`);
+      if (m.closingAck !== null) throw new Error("already signed");
+      this.emit({ type: "close-acknowledged", t, member, comment });
+    }
     /** The freeze line (§9.5): counted base below quorum parks the document. */
     maybeFreezeOrThaw(t) {
       if (this.constitutedT === null) return;
@@ -1901,6 +2007,7 @@ var CONSTITUTION = (() => {
       return apps ? apps.joinPolicy : "invite";
     }
     startApplication(t, email) {
+      this.requireOpen("applying");
       if (this.joinPolicy() === "invite") {
         throw new Error("this document is invitation-only (§9.7½)");
       }
@@ -1921,6 +2028,7 @@ var CONSTITUTION = (() => {
     }
     /** Nothing is sent before Submit; an empty application is a real application. */
     submitApplication(t, applicant, fields = {}) {
+      this.requireOpen("applying");
       const a = this.applicants.get(applicant);
       if (!a || a.status !== "verified") {
         throw new Error("an application is verified by magic link before it can be submitted (§9.7½)");
@@ -1952,6 +2060,7 @@ var CONSTITUTION = (() => {
      *  The rationale is theirs to write or leave blank (v0.57) — the lane is
      *  offered by the surface, never demanded by the mechanism. */
     proposeApplicant(t, member, applicant, why) {
+      this.requireOpen("proposing");
       if (this.joinPolicy() !== "proposed") {
         throw new Error("this document's applications are not proposed (§9.7½)");
       }
@@ -2051,6 +2160,34 @@ var CONSTITUTION = (() => {
     }
     get frozen() {
       return this.frozenFlag;
+    }
+    get closed() {
+      return this.closedFlag;
+    }
+    get closedAt() {
+      return this.closedT;
+    }
+    /**
+     * The signatures block (SPEC §4.6): who has acknowledged the close, in the
+     * order they signed, each with their comment. Names follow the ✍️ signing
+     * setting — `nobody` anonymises every signature, `each` lets the signer's
+     * own name stand, `everybody` names all. The comment is always shown; it
+     * is the rationale, and blank is a real signature.
+     */
+    closingSignatures() {
+      const signing = this.settings.get("signing").value;
+      const rung = signing?.rung ?? "each";
+      const out = [];
+      for (const m of this.members.values()) {
+        if (m.closingAck === null) continue;
+        out.push({
+          member: m.id,
+          name: rung === "nobody" ? null : m.name,
+          comment: m.closingAck.comment,
+          t: m.closingAck.t
+        });
+      }
+      return out.sort((a, b) => a.t - b.t);
     }
     get textConfirmed() {
       return this.textConfirmedFlag;
@@ -2272,7 +2409,12 @@ var CONSTITUTION = (() => {
       crownTasks: isConvenor ? [...s.crownQuestionRecords().values()].filter((q) => q.status === "pending").map((q) => ({ id: q.id, motion: q.motion, ...q.text ? { text: q.text } : {} })) : [],
       identity: me ? { name: me.name, picture: me.picture } : isConvenor ? { name: s.convenorRecord().name, picture: s.convenorRecord().picture } : { name: null, picture: null },
       lapseWarned: me ? me.lapseWarned : isConvenor ? s.convenorRecord().lapseWarned : false,
-      frozen: s.frozen
+      frozen: s.frozen,
+      closed: s.closed ? {
+        at: s.closedAt,
+        mySignature: me && me.closingAck ? me.closingAck : null,
+        signatures: s.closingSignatures()
+      } : null
     };
   }
   function constitutionBlock(s) {

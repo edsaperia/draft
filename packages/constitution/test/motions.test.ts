@@ -344,10 +344,13 @@ describe('delegation past the start, and the road back (§9.7 v0.52)', () => {
     s.delegate(3, 'link');
     expect(() => s.openMotion(4, bo, { kind: 'reserve', setting: 'title' }))
       .toThrow(/already the convenor/);
-    // Q440: the Text is held like anything else -- both powers are the
-    // founder's by default, so there is nothing to give back yet
-    expect(() => s.openMotion(4, bo, { kind: 'reserve', setting: 'startingText' }))
-      .toThrow(/already the convenor/);
+    // Q440 + 🍾: the start laid both powers on the Text down, so the Text is
+    // exactly what a reserve motion can give back — and it lands like any other
+    const mt = s.openMotion(4, cy, { kind: 'reserve', setting: 'startingText', power: 'assent' });
+    expect(s.motionRecords().get(mt)!.route).toBe('constitutional');
+    s.answerMotion(4, 'ada', mt, 'accept');
+    s.answerMotion(4, bo, mt, 'accept');
+    expect(s.settingState('startingText').powers).toEqual({ unilateral: false, assent: true });
     expect(() => s.openMotion(4, bo, { kind: 'reserve', setting: 'displayName' }))
       .toThrow(/never held/);
     const m = s.openMotion(4, bo, { kind: 'reserve', setting: 'link' });

@@ -98,7 +98,12 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // chain after the first — hashes differently. Both variants of this test
   // still agree with each other, which is the invariant it defends
   // (was 61cddb50bb7cfb381f51edb96c78c42d9f2074cf2f7bd535f2ec9085c17be969).
-  const PINNED = 'a0e8813425676539adfb2096a79bed27ea8f1d75a92e32e3818cd31d7c6a3523';
+  // Re-pinned 2026-08-21 (Q467, the close, SPEC §4.6): a windowed session now
+  // closes when the clock reaches its end — the sim's final tick emits the
+  // close and the undecided verdicts, so the chain's tail hashes differently.
+  // Both variants still agree, which is the invariant this test defends
+  // (was a0e8813425676539adfb2096a79bed27ea8f1d75a92e32e3818cd31d7c6a3523).
+  const PINNED = '2bfc2e2a50bb690e34bdcddb936d53002c3419481678b32263c5d3a053638150';
 
   const run = (withGate: boolean) =>
     runSession({

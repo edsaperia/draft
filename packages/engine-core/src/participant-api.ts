@@ -77,7 +77,8 @@ export interface GazetteEntry {
 export interface OutcomeEntry {
   t: number;
   candidateId: string;
-  outcome: 'adopted' | 'retired';
+  /** `undecided` is the close's third outcome (SPEC §4.6): the incumbent stood, unbeaten. */
+  outcome: 'adopted' | 'retired' | 'undecided';
   p?: number;
   threshold?: number;
   /** The race it resolved in (older logs: derived as r:<candidateId>). */
@@ -232,6 +233,10 @@ export class ParticipantApi {
         const c = this.session.getCandidate(ev.id);
         out.push({ t: ev.t, candidateId: ev.id, outcome: 'retired',
           raceId: ev.raceId ?? `r:${ev.id}`, version: c.patch?.baseVersion ?? this.session.currentVersion() });
+      } else if (ev.type === 'candidate-undecided') {
+        const c = this.session.getCandidate(ev.id);
+        out.push({ t: ev.t, candidateId: ev.id, outcome: 'undecided',
+          raceId: ev.raceId, version: c.patch?.baseVersion ?? this.session.currentVersion() });
       }
     }
     return out;

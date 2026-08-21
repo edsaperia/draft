@@ -107,3 +107,21 @@ phases.
 `session.ts` (`feed`, `bountyBoard`, `backlog`) · `oracle.ts`
 (SemanticOracle contract; implementations live outside the engine) ·
 `dedup-gate.ts` (advisory async dedup-gate, outside the Session).
+
+## The close (SPEC §4.6, Q467)
+
+`Session.tick(t)` runs the close when the clock reaches the window's end
+(`dueToClose(t)`): a **final adoption batch regardless of cooldown phase**
+(`sweepAdoptions(t, final)` snapshots the ready set at T=0), then every race
+still live records the third outcome **`candidate-undecided`** (raceId + refund
+0 — tokens are worthless at close, §7), then **`closed`**. `closedAt` reads
+T=0; a later act meets `assertOpen`, which throws the typed `DocumentClosedError`
+(`the document closed at N`). The close is an event, never a wall-clock
+inference at load — replay is bit-identical across it. The engine does **not**
+close on an arbitrary act carrying a past-window timestamp (tests use such
+timestamps freely); only the clock — `tick` — closes, the way freeze and lapse
+are host-driven. `finalRender` and `backlog` read the log after the close
+(races() is then empty): `finalRender` reports the adopted-at-T=0 set and the
+document as it stands; `backlog` is the undecided set, ranked. `outcomes()`
+serves `undecided` alongside `adopted`/`retired`. The host's explicit `close(t)`
+(a sim's end, a perpetual freeze made final) runs the same sequence.

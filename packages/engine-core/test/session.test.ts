@@ -976,3 +976,59 @@ describe('stage 8 follow-up: closeness, urgency, the record and the wallet clock
     expect(w2.nextDripInMs).toBe(Infinity);
   });
 });
+
+describe('the close (SPEC §4.6)', () => {
+  it('the clock closes the document at the window end, running one last batch', () => {
+    // The ramp is high early and low at the end: two clean wins clear the
+    // bar only once the window has run, so the candidate is still live when
+    // the clock reaches the close — which is where the final batch adopts it.
+    const s = openSession({ adoptionThresholdStart: 0.999, adoptionThresholdEnd: 0.55 });
+    const { id } = s.submitCandidate(1000, { author: 'p1', patch: rewrite(0, 0, 'Open.'),
+      rationale: 'r' });
+    const inc = s.raceOf(id).incumbentId;
+    s.judge(2000, 'p2', id, inc, 'a');
+    s.judge(3000, 'p3', id, inc, 'a');
+    expect(s.getCandidate(id).state).toBe('live'); // the early bar held it back
+    expect(s.dueToClose(10 * 3600_000)).toBe(true);
+    s.tick(10 * 3600_000); // the clock reaches the end
+    expect(s.closed).toBe(true);
+    expect(s.closedAt).toBe(10 * 3600_000);
+    expect(s.getCandidate(id).state).toBe('adopted');
+    expect(s.document()).toContain('Open.');
+    // and a second tick past the end does nothing new
+    expect(s.tick(11 * 3600_000)).toEqual([]);
+  });
+
+  it('records the undecided third outcome, and refuses moves afterwards', async () => {
+    const s = openHeld(); // bar ≈ 0.999, nothing clears
+    const { id } = s.submitCandidate(1000, { author: 'p1', patch: rewrite(0, 0, 'X.'),
+      rationale: 'r' });
+    const inc = s.raceOf(id).incumbentId;
+    s.judge(2000, 'p2', id, inc, 'a');
+    s.close(5000);
+    expect(s.closed).toBe(true);
+    const { ParticipantApi } = await import('../src/participant-api.js');
+    const undecided = new ParticipantApi(s, 'p2').outcomes().filter((o) => o.outcome === 'undecided');
+    expect(undecided.map((o) => o.candidateId)).toContain(id);
+    // it is the backlog, ranked, after the close
+    expect(s.backlog().some((b) => b.candidateId === id)).toBe(true);
+    // and the incumbent stood
+    expect(s.finalRender().applied).toEqual([]);
+    expect(() => s.judge(6000, 'p3', id, inc, 'a')).toThrow(/closed/);
+    expect(() => s.submitCandidate(6000, { author: 'p4', patch: rewrite(0, 0, 'Y.'),
+      rationale: 'r' })).toThrow(/closed/);
+  });
+
+  it('replays bit-identically across the close', () => {
+    const s = openSession({ adoptionThresholdStart: 0.55, adoptionThresholdEnd: 0.55 });
+    const { id } = s.submitCandidate(1000, { author: 'p1', patch: rewrite(0, 0, 'Z.'),
+      rationale: 'r' });
+    const inc = s.raceOf(id).incumbentId;
+    s.judge(2000, 'p2', id, inc, 'a');
+    s.close(10 * 3600_000);
+    const replayed = Session.replay(s.log);
+    expect(replayed.rollingHash()).toBe(s.rollingHash());
+    expect(replayed.document()).toBe(s.document());
+    expect(replayed.closedAt).toBe(s.closedAt);
+  });
+});

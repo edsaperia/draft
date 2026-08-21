@@ -127,6 +127,16 @@ export type ConstitutionEvent =
   | { type: 'application-proposed'; t: number; applicant: ApplicantId; by: MemberId }
   | { type: 'member-admitted'; t: number; applicant: ApplicantId; member: MemberId }
   | { type: 'application-refused'; t: number; applicant: ApplicantId }
+  /** The close (SPEC §4.6): the clock reached the ending; nobody pressed anything. */
+  | { type: 'closed'; t: number }
+  /** A constitutional motion unresolved at T=0: what stands stands (SPEC §4.6). */
+  | { type: 'motion-kept-at-close'; t: number; motion: MotionId }
+  /** A 👑 question pending at T=0 fails closed — carried-but-unassented (SPEC §4.6). */
+  | { type: 'crown-failed-closed'; t: number; question: CrownQuestionId }
+  /** An invitation outstanding at T=0: nothing left to join, only to read (SPEC §4.6). */
+  | { type: 'invitation-expired'; t: number; member: MemberId }
+  /** The closing acknowledgment IS the signature; the comment is its rationale (SPEC §4.6). */
+  | { type: 'close-acknowledged'; t: number; member: MemberId; comment: string }
   /** Clock-driven bookkeeping rides through one host-called tick (no wall clock here). */
   | { type: 'tick'; t: number };
 
@@ -183,6 +193,10 @@ export interface MemberRecord {
   /** Settings this member has been told they are owed an OK on, minus OKs given. */
   okOwed: Set<SettingId>;
   okGiven: Set<SettingId>;
+  /** An invitation that expired unopened at the close (SPEC §4.6). */
+  invitationExpired: boolean;
+  /** The member's closing acknowledgment — signature and comment (SPEC §4.6). */
+  closingAck: { t: number; comment: string } | null;
 }
 
 export type SettledBy = 'convenor' | 'ceremony' | 'motion' | 'crown';
@@ -202,7 +216,9 @@ export interface SettingState {
   distribution: SettingValue[] | null;
 }
 
-export type MotionStatus = 'running' | 'carried' | 'held' | 'withdrawn' | 'awaiting-crown';
+export type MotionStatus = 'running' | 'carried' | 'held' | 'withdrawn' | 'awaiting-crown'
+  /** Unresolved at the close (SPEC §4.6): what stands stands, the mover's 🏛️ returns. */
+  | 'kept-at-close';
 
 export interface MotionRecord {
   id: MotionId;
@@ -225,7 +241,8 @@ export interface CrownQuestionRecord {
   /** Set on a text question: which engine candidate adopted, and a summary for the card. */
   text?: { candidateId: string; summary: string };
   openedAtT: number;
-  status: 'pending' | 'accepted' | 'rejected' | 'auto-passed';
+  /** `failed-closed`: pending at T=0 (SPEC §4.6) — carried-but-unassented, into the backlog. */
+  status: 'pending' | 'accepted' | 'rejected' | 'auto-passed' | 'failed-closed';
 }
 
 export type ApplicationStatus =
