@@ -17,6 +17,7 @@ import { FilePersistence } from '../src/persistence.js';
 import type { Persistence } from '../src/persistence.js';
 import { PgPersistence } from '../src/pg-persistence.js';
 import { asEngineDoc, resumeBridge } from '../src/engine-host.js';
+import { LIMITS } from '../src/commands.js';
 
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
 
@@ -891,5 +892,122 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
     const legacy = await (await post(base, '/api/docs',
       { title: 'Hollow Oak', email: 'dee@example.org' })).json() as { slug: string };
     expect(legacy.slug).toBe('hollow-oak-2');
+  });
+});
+
+describe('the clock closes the document (SPEC §4.6, Q467)', () => {
+  it('closes by tick with nobody online, records the undecided, signs on OK, mails everybody once', async () => {
+    const { base, dataDir, draft } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Night Watch Rota', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const send = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      return await res.json() as { ok?: boolean; error?: string; result?: unknown };
+    };
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await send(cookie, name, args);
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as {
+        constitutedAtT: number | null;
+        records: Array<{ raceId: string; outcome: string; field: unknown[] }>;
+        record: null | { closedAt: number; text: string;
+          adopted: unknown[]; undecided: Array<{ raceId: string; outcome: string;
+            field: Array<{ author?: { id: string; name: string | null } }>; displaced: string[] }>;
+          carriedButUnassented: unknown[];
+          signatures: Array<{ member: string; name: string | null; comment: string }> };
+        view: { closed: null | { at: number; mySignature: { comment: string } | null;
+          signatures: unknown[] }; frozen: boolean; mustReturn: number | null };
+      };
+
+    await cmd(ada, 'confirm-starting-text', { text: 'The watch is kept from dusk.\nThe rota is posted weekly.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    await cmd(ada, 'invite', { email: 'cy@example.org' });
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume(lastMailTo(dataDir, email).link!));
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+    await cmd(ada, 'set-identity', { name: 'Ada' });
+    await cmd(bo, 'set-identity', { name: 'Bo' });
+    await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      pace: { shape: 'fixed' }, quorum: { form: 'count', n: 2 },
+      authorship: { rung: 'sealed' }, signing: { rung: 'each' },
+      judgments: { rung: 'after' }, applications: { joinPolicy: 'invite' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    const ends = Date.now() + 3600_000;
+    for (const [setting, value] of [
+      ['ending', { endsAtMs: ends }], ['bar', { pct: 66 }], ['chamber', { rung: 'link' }],
+    ] as const) {
+      for (const cookie of [ada, bo, cy]) await cmd(cookie, 'answer', { setting, value });
+    }
+    expect((await viewOf(ada)).constitutedAtT).not.toBeNull();
+
+    // a proposal nobody judges: the close will leave it undecided
+    await cmd(bo, 'propose-text', { baseVersion: 0,
+      hunks: [{ start: 1, end: 2, lines: ['The rota is posted daily.'] }], why: 'weekly is too slow' });
+    // before the close there is nothing to sign
+    expect((await send(bo, 'acknowledge-close', { comment: 'early' })).error)
+      .toContain('has not closed');
+    expect((await viewOf(bo)).record).toBeNull();
+
+    // -- T=0 arrives on the minute tick, with nobody online --------------
+    await draft.tick(ends + 1_000);
+    const closed = await viewOf(bo);
+    expect(closed.view.closed).not.toBeNull();
+    expect(closed.view.closed!.at).toBe(ends);
+    expect(closed.view.frozen).toBe(false);
+    expect(closed.view.mustReturn).toBeNull();
+    // the third outcome, with its field and the text that stood
+    expect(closed.records.some((r) => r.outcome === 'undecided')).toBe(true);
+    const rec = closed.record!;
+    expect(rec.closedAt).toBe(ends);
+    expect(rec.text).toBe('The watch is kept from dusk.\nThe rota is posted weekly.');
+    expect(rec.adopted).toEqual([]);
+    expect(rec.undecided).toHaveLength(1);
+    expect(rec.undecided[0]!.displaced).toEqual(['The rota is posted weekly.']);
+    // sealed authorship unseals at the record (§3.5a): the field names its author
+    expect(rec.undecided[0]!.field[0]!.author).toEqual(expect.objectContaining({ name: 'Bo' }));
+    expect(rec.carriedButUnassented).toEqual([]);
+    expect(rec.signatures).toEqual([]);
+
+    // -- after the close nothing moves but the signing --------------------
+    expect((await send(cy, 'propose-text', { baseVersion: 1,
+      hunks: [{ start: 0, end: 1, lines: ['x'] }], why: '' })).error).toContain('closed');
+    expect((await send(ada, 'set-setting', { setting: 'rate',
+      value: { grant: 1, cap: 1, dripMinutes: 1 } })).error).toContain('closed');
+    expect((await send(cy, 'judge-race', { a: 'c1', b: 'inc:x', outcome: 'a' })).error)
+      .toContain('closed');
+    await cmd(bo, 'acknowledge-close', { comment: 'I still think daily.' });
+    expect((await send(bo, 'acknowledge-close', { comment: 'again' })).error)
+      .toContain('already signed');
+    await cmd(cy, 'acknowledge-close', {}); // blank is a real signature
+    const long = 'x'.repeat(LIMITS.why + 1);
+    expect((await send(ada, 'acknowledge-close', { comment: long })).error).toBeTruthy();
+    const signed = await viewOf(bo);
+    expect(signed.view.closed!.mySignature).toEqual(expect.objectContaining({ comment: 'I still think daily.' }));
+    expect(signed.record!.signatures.map((s) => [s.name, s.comment]))
+      .toEqual([['Bo', 'I still think daily.'], [null, '']]);
+
+    // -- the mail: every member and invitee, once, and not again next minute
+    const closedMails = () => readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
+      .split('\n').filter((l) => l.length > 0)
+      .map((l) => JSON.parse(l) as { to: string; subject: string; link?: string })
+      .filter((m) => m.subject === '“Night Watch Rota” has closed');
+    expect(closedMails().map((m) => m.to).sort())
+      .toEqual(['ada@example.org', 'bo@example.org', 'cy@example.org']);
+    expect(closedMails()[0]!.link).toBe(`${base}/d/${slug}`);
+    await draft.tick(ends + 61_000);
+    expect(closedMails()).toHaveLength(3);
   });
 });

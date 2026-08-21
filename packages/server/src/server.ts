@@ -135,6 +135,18 @@ export async function createDraftServer(cfg: ServerConfig,
           queue.push({ to: m.email,
             ...MAILS.admitted(title, loginLink(event.member, m.email)) });
         }
+      } else if (event.type === 'closed') {
+        // the close (SPEC §4.6): every member and invitee is told, once — the
+        // close is one event in the log, and only fresh entries relay
+        const link = `${cfg.baseUrl}/d/${cs.slug}`;
+        const seen = new Set<string>();
+        const tell = (email: string | null | undefined): void => {
+          if (!email || seen.has(email)) return;
+          seen.add(email);
+          queue.push({ to: email, ...MAILS.closed(title, link) });
+        };
+        tell(cs.convenorRecord().email);
+        for (const m of cs.memberRecords().values()) if (!m.removed) tell(m.email);
       } else if (event.type === 'lapse-warned' || event.type === 'member-lapsed') {
         const m = cs.memberRecords().get(event.member);
         const email = m?.email ?? (event.member === cs.convenorRecord().id
@@ -183,7 +195,7 @@ export async function createDraftServer(cfg: ServerConfig,
     walletInfo: unknown; floor: number;
   } => {
     const ed = asEngineDoc(doc);
-    const idle = { clauses: [], mine: [], records: [], raceCards: [], wallet: null,
+    const idle = { clauses: [], mine: [], records: [], raceCards: [], wallet: null, record: null,
       walletInfo: null, floor: 0 };
     if (ed.bridge === null) return { text: doc.cs.text ?? '', textVersion: 0, ...idle };
     const engine = ed.bridge.engine;
@@ -271,8 +283,33 @@ export async function createDraftServer(cfg: ServerConfig,
         ...(authorsOf.get(rec.raceId) ?? [])]).size;
     }
     const records = [...byRace.values()].sort((a, b) => a.when - b.when).slice(-50);
+    // **The record** (SPEC §4.6, the shape record-builder renders), once closed:
+    // the final text, what adopted, the backlog of undecided races each with
+    // its field and the text that stood, the changes carried-but-unassented,
+    // the signatures. Authorship reveals here as the 👤 ladder says (§3.5a):
+    // `sealed` unseals at the record, `public` already was, `anonymous` never.
+    const record = !engine.closed ? null : (() => {
+      const r = ed.bridge!.closeRecord();
+      const rung = (doc.cs.settingState('authorship').value as { rung?: string } | null)?.rung ?? 'sealed';
+      const nameOf = (id: string): string | null => {
+        if (id === doc.cs.convenorRecord().id) return doc.cs.convenorRecord().name ?? null;
+        return doc.cs.memberRecords().get(id)?.name ?? null;
+      };
+      const withAuthors = (field: Rec['field']) => field.map((f) => rung === 'anonymous' ? f
+        : { ...f, author: { id: engine.getCandidate(f.candidateId).author,
+          name: nameOf(engine.getCandidate(f.candidateId).author) } });
+      const all = [...byRace.values()].sort((a, b) => a.when - b.when)
+        .map((x) => ({ ...x, field: withAuthors(x.field) }));
+      return {
+        closedAt: r.closedAt, text: r.text,
+        adopted: all.filter((x) => x.outcome === 'adopted'),
+        undecided: all.filter((x) => x.outcome === 'undecided'),
+        carriedButUnassented: r.carriedButUnassented,
+        signatures: r.signatures,
+      };
+    })();
     const base = { text: engine.document(), textVersion: engine.currentVersion(),
-      clauses, mine, records, floor };
+      clauses, mine, records, floor, record };
     if (engine.closed) return { ...base, raceCards: [], wallet: null, walletInfo: null };
     try {
       const t = tOf(doc.cs, nowMs);
@@ -292,6 +329,11 @@ export async function createDraftServer(cfg: ServerConfig,
     for (const doc of store.all()) {
       if (closing !== null) return; // shutting down: no new commits join the drain
       if (doc.cs.constitutedAtT === null) continue;
+      // engine first (SPEC §4.6): the final adoption batch must run before
+      // the constitution closes, or a carried motion has nowhere to land —
+      // driveBridge closes the engine at the ending and finishes the
+      // constitution's close itself; cs.tick then finds it closed
+      driveBridge(doc, tOf(doc.cs, nowMs), cfg.engineTuning);
       doc.cs.tick(tOf(doc.cs, nowMs));
       await commit(doc, nowMs);
     }

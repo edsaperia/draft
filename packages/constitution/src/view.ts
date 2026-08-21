@@ -108,6 +108,8 @@ export interface MemberView {
   identity: { name: string | null; picture: string | null };
   lapseWarned: boolean;
   frozen: boolean;
+  /** The freeze's shortfall (§9.5): how many must return to thaw; null while not frozen. */
+  mustReturn: number | null;
   /** The close (SPEC §4.6): null while open; once closed, when, my own signature, the block. */
   closed: {
     at: number;
@@ -250,6 +252,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
         : { name: null, picture: null },
     lapseWarned: me ? me.lapseWarned : isConvenor ? s.convenorRecord().lapseWarned : false,
     frozen: s.frozen,
+    mustReturn: s.mustReturn(),
     closed: s.closed
       ? {
           at: s.closedAt!,

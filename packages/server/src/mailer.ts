@@ -114,6 +114,18 @@ export const MAILS = {
 ${url}`,
     link: url,
   }),
+  /** The close (SPEC §4.6): every member and invitee, once, with a link to the record. */
+  closed: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `“${title}” has closed`,
+    text: `“${title}” has closed. The document is final, and the record of how it ` +
+      `got there is published with it:
+${link}
+
+` +
+      `Members may add a closing comment — dissent as welcome as praise — which ` +
+      `signs the document.`,
+    link,
+  }),
   lapsed: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Your membership of “${title}” has lapsed`,
     text: `Your membership of “${title}” has lapsed. Your judgments still ` +

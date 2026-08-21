@@ -1340,6 +1340,7 @@ var CONSTITUTION = (() => {
       if (this.closedFlag) throw new Error(`the document has closed — ${what} is over (§4.6)`);
     }
     setConvenorMembership(t, isMember) {
+      this.requireOpen("the founder's membership");
       this.requirePreStart("re-ticking the convenor row");
       const current = this.members.has(this.convenor.id);
       if (current === isMember) return;
@@ -1347,6 +1348,7 @@ var CONSTITUTION = (() => {
       this.afterRosterChange(t, isMember ? "arrival" : "departure", this.convenor.id);
     }
     setSetting(t, setting, value) {
+      this.requireOpen("setting");
       const entry = entryOf(setting);
       if (setting === "startingText") {
         throw new Error("the text is confirmed once, then changed by drafting (Q440)");
@@ -1381,6 +1383,7 @@ var CONSTITUTION = (() => {
       this.maybeConstitute(t);
     }
     setQuorumForm(t, form) {
+      this.requireOpen("the quorum's form");
       this.requirePreStart("re-framing the quorum question");
       if (this.quorumFormValue === form) return;
       const st = this.settings.get("quorum");
@@ -1403,6 +1406,7 @@ var CONSTITUTION = (() => {
      * act; the road back is a constitutional motion (the reserve payload).
      */
     delegate(t, setting) {
+      this.requireOpen("delegating");
       const entry = entryOf(setting);
       if (entry.kind === "personal") {
         throw new Error(`'${setting}' is a member's own (§9.0c) — never held, never delegated`);
@@ -1430,6 +1434,7 @@ var CONSTITUTION = (() => {
      * corrected the same day: delegation keeps its earlier clock).
      */
     relinquish(t, setting, power) {
+      this.requireOpen("giving up a power");
       const entry = entryOf(setting);
       if (entry.kind === "personal") {
         throw new Error(`'${setting}' is a member's own (§9.0c) — never held`);
@@ -1453,6 +1458,7 @@ var CONSTITUTION = (() => {
       this.emit({ type: "power-relinquished", t, setting, power });
     }
     reclaim(t, setting) {
+      this.requireOpen("reclaiming");
       this.requirePreStart("reclaiming");
       const st = this.settings.get(setting);
       if (!st) throw new Error(`'${setting}' is not a delegable setting`);
@@ -1460,12 +1466,14 @@ var CONSTITUTION = (() => {
       this.emit({ type: "setting-reclaimed", t, setting });
     }
     confirmStartingText(t, text) {
+      this.requireOpen("the text");
       if (this.constitutedT !== null) {
         throw new Error("after the start the text changes by proposing in the document itself");
       }
       this.emit({ type: "starting-text-confirmed", t, text });
     }
     setIdentity(t, member, identity) {
+      this.requireOpen("a name or picture");
       if (member !== this.convenor.id && !this.members.has(member)) {
         throw new Error(`unknown member '${member}'`);
       }
@@ -1477,6 +1485,7 @@ var CONSTITUTION = (() => {
     // -------------------------------------------------------------------------
     // The roster (§9.6a)
     invite(t, email) {
+      this.requireOpen("inviting");
       if (this.constitutedT !== null && !(this.registerPowers().unilateral && !this.crownLapsedFlag)) {
         throw new Error("after the start an invitation is a constitutional motion (§9.6a)");
       }
@@ -1486,6 +1495,7 @@ var CONSTITUTION = (() => {
       return id;
     }
     uninvite(t, member) {
+      this.requireOpen("uninviting");
       this.requirePreStart("uninviting");
       const m = this.members.get(member);
       if (!m || m.removed) throw new Error(`unknown member '${member}'`);
@@ -1737,6 +1747,7 @@ var CONSTITUTION = (() => {
       }
     }
     answerCrownQuestion(t, question, outcome) {
+      this.requireOpen("the 👑 question");
       const q = this.crownQuestions.get(question);
       if (!q || q.status !== "pending") throw new Error("no such pending 👑 question");
       if (this.crownLapsedFlag) throw new Error("the crown has lapsed — the question passes by itself");
@@ -2022,6 +2033,7 @@ var CONSTITUTION = (() => {
       return id;
     }
     verifyApplication(t, applicant) {
+      this.requireOpen("applying");
       const a = this.applicants.get(applicant);
       if (!a || a.status !== "started") throw new Error("nothing to verify");
       this.emit({ type: "application-verified", t, applicant });
@@ -2118,6 +2130,7 @@ var CONSTITUTION = (() => {
     /** Open the 👑 question for one adopted candidate; the host reads its
      *  record (`crownQuestionRecords`) to learn accept / reject / auto-pass. */
     openTextCrownQuestion(t, text) {
+      this.requireOpen("the 👑 question");
       if (this.constitutedT === null) throw new Error("nothing adopts before the start");
       if (!this.textAdoptionNeedsAssent()) {
         throw new Error("the Text carries no assent -- the adoption stands by itself");
@@ -2166,6 +2179,15 @@ var CONSTITUTION = (() => {
     }
     get closedAt() {
       return this.closedT;
+    }
+    /** How many must return to thaw (§9.5): the quorum shortfall while frozen, null otherwise. */
+    mustReturn() {
+      if (!this.frozenFlag) return null;
+      const q = this.settings.get("quorum").value;
+      if (!q) return null;
+      const E = eOf(this.members.values()).length;
+      const counted = quorumBaseOf(this.members.values()).length;
+      return Math.max(0, quorumCount(q, E) - counted);
     }
     /**
      * The signatures block (SPEC §4.6): who has acknowledged the close, in the
@@ -2410,6 +2432,7 @@ var CONSTITUTION = (() => {
       identity: me ? { name: me.name, picture: me.picture } : isConvenor ? { name: s.convenorRecord().name, picture: s.convenorRecord().picture } : { name: null, picture: null },
       lapseWarned: me ? me.lapseWarned : isConvenor ? s.convenorRecord().lapseWarned : false,
       frozen: s.frozen,
+      mustReturn: s.mustReturn(),
       closed: s.closed ? {
         at: s.closedAt,
         mySignature: me && me.closingAck ? me.closingAck : null,

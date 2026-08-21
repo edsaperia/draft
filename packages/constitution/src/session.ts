@@ -688,6 +688,7 @@ export class ConstitutionSession {
   }
 
   setConvenorMembership(t: number, isMember: boolean): void {
+    this.requireOpen("the founder's membership");
     this.requirePreStart('re-ticking the convenor row');
     const current = this.members.has(this.convenor.id);
     if (current === isMember) return;
@@ -696,6 +697,7 @@ export class ConstitutionSession {
   }
 
   setSetting(t: number, setting: SettingId, value: SettingValue): void {
+    this.requireOpen('setting');
     const entry = entryOf(setting);
     if (setting === 'startingText') {
       throw new Error('the text is confirmed once, then changed by drafting (Q440)');
@@ -730,6 +732,7 @@ export class ConstitutionSession {
   }
 
   setQuorumForm(t: number, form: 'count' | 'share'): void {
+    this.requireOpen("the quorum's form");
     this.requirePreStart('re-framing the quorum question');
     if (this.quorumFormValue === form) return;
     const st = this.settings.get('quorum')!;
@@ -753,6 +756,7 @@ export class ConstitutionSession {
    * act; the road back is a constitutional motion (the reserve payload).
    */
   delegate(t: number, setting: SettingId): void {
+    this.requireOpen('delegating');
     const entry = entryOf(setting);
     if (entry.kind === 'personal') {
       throw new Error(`'${setting}' is a member's own (§9.0c) — never held, never delegated`);
@@ -784,6 +788,7 @@ export class ConstitutionSession {
    * corrected the same day: delegation keeps its earlier clock).
    */
   relinquish(t: number, setting: SettingId, power: Power): void {
+    this.requireOpen('giving up a power');
     const entry = entryOf(setting);
     if (entry.kind === 'personal') {
       throw new Error(`'${setting}' is a member's own (§9.0c) — never held`);
@@ -814,6 +819,7 @@ export class ConstitutionSession {
   }
 
   reclaim(t: number, setting: SettingId): void {
+    this.requireOpen('reclaiming');
     this.requirePreStart('reclaiming');
     const st = this.settings.get(setting);
     if (!st) throw new Error(`'${setting}' is not a delegable setting`);
@@ -823,6 +829,7 @@ export class ConstitutionSession {
   }
 
   confirmStartingText(t: number, text: string): void {
+    this.requireOpen('the text');
     if (this.constitutedT !== null) {
       throw new Error('after the start the text changes by proposing in the document itself');
     }
@@ -831,6 +838,7 @@ export class ConstitutionSession {
 
   setIdentity(t: number, member: MemberId,
     identity: { name?: string | null; picture?: string | null }): void {
+    this.requireOpen('a name or picture');
     if (member !== this.convenor.id && !this.members.has(member)) {
       throw new Error(`unknown member '${member}'`);
     }
@@ -844,6 +852,7 @@ export class ConstitutionSession {
   // The roster (§9.6a)
 
   invite(t: number, email: string): MemberId {
+    this.requireOpen('inviting');
     if (this.constitutedT !== null &&
         !(this.registerPowers().unilateral && !this.crownLapsedFlag)) {
       throw new Error('after the start an invitation is a constitutional motion (§9.6a)');
@@ -857,6 +866,7 @@ export class ConstitutionSession {
   }
 
   uninvite(t: number, member: MemberId): void {
+    this.requireOpen('uninviting');
     this.requirePreStart('uninviting');
     const m = this.members.get(member);
     if (!m || m.removed) throw new Error(`unknown member '${member}'`);
@@ -1136,6 +1146,7 @@ export class ConstitutionSession {
   }
 
   answerCrownQuestion(t: number, question: string, outcome: 'accept' | 'reject'): void {
+    this.requireOpen('the 👑 question');
     const q = this.crownQuestions.get(question);
     if (!q || q.status !== 'pending') throw new Error('no such pending 👑 question');
     if (this.crownLapsedFlag) throw new Error('the crown has lapsed — the question passes by itself');
@@ -1458,6 +1469,7 @@ export class ConstitutionSession {
   }
 
   verifyApplication(t: number, applicant: string): void {
+    this.requireOpen('applying');
     const a = this.applicants.get(applicant);
     if (!a || a.status !== 'started') throw new Error('nothing to verify');
     this.emit({ type: 'application-verified', t, applicant });
@@ -1554,6 +1566,7 @@ export class ConstitutionSession {
   /** Open the 👑 question for one adopted candidate; the host reads its
    *  record (`crownQuestionRecords`) to learn accept / reject / auto-pass. */
   openTextCrownQuestion(t: number, text: { candidateId: string; summary: string }): CrownQuestionId {
+    this.requireOpen('the 👑 question');
     if (this.constitutedT === null) throw new Error('nothing adopts before the start');
     if (!this.textAdoptionNeedsAssent()) {
       throw new Error('the Text carries no assent -- the adoption stands by itself');
@@ -1593,6 +1606,16 @@ export class ConstitutionSession {
   get frozen(): boolean { return this.frozenFlag; }
   get closed(): boolean { return this.closedFlag; }
   get closedAt(): number | null { return this.closedT; }
+
+  /** How many must return to thaw (§9.5): the quorum shortfall while frozen, null otherwise. */
+  mustReturn(): number | null {
+    if (!this.frozenFlag) return null;
+    const q = this.settings.get('quorum')!.value as QuorumValue | null;
+    if (!q) return null;
+    const E = eOf(this.members.values()).length;
+    const counted = quorumBaseOf(this.members.values()).length;
+    return Math.max(0, quorumCount(q, E) - counted);
+  }
 
   /**
    * The signatures block (SPEC §4.6): who has acknowledged the close, in the

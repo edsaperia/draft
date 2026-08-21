@@ -290,6 +290,13 @@ const HANDLERS: Record<string, Handler> = {
       cs.proposeApplicant(t, a.memberId, str(args, 'applicant'), why);
     }
   },
+  /* -- the close (SPEC §4.6): OK on the 🥂 card is the signature, the
+     comment its rationale — freely blank, once, on the member's own clock */
+  'acknowledge-close': (cs, a, t, args) => {
+    const comment = typeof args.comment === 'string'
+      ? cap(args.comment, LIMITS.why, 'the closing comment') : '';
+    cs.acknowledgeClose(t, a.memberId, comment);
+  },
   'sign-out': (cs, a, t, args) => {
     cs.signOut(t, a.memberId, str(args, 'mode') as 'holding' | 'abstaining');
   },
