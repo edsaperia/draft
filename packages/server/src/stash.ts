@@ -23,6 +23,27 @@ export class Stash {
     await this.persistence.putStash(key, { text: '', expMs, ...(slug === undefined ? {} : { slug }) });
   }
 
+  /** Is this stash still open? The save consumes it, so a second link
+   *  against the same pending creation is spent by this answer. */
+  async alive(key: string, nowMs: number): Promise<boolean> {
+    const rec = await this.persistence.getStash(key);
+    return rec !== null && rec.expMs >= nowMs;
+  }
+
+  /** Re-send: the same pending creation speaking again (Ed's QA, 2026-08-21
+   *  — *when I click 📨 I'm taken back to link*). A resend must not be a
+   *  second creation, so the stash it already opened is kept — with whatever
+   *  text has been pasted into it — while its reservation moves to the
+   *  address now asked for and its life is renewed against the new link's.
+   *  False if the stash never existed or has expired, in which case the
+   *  caller opens a fresh one. */
+  async renew(key: string, expMs: number, slug: string, nowMs: number): Promise<boolean> {
+    const rec = await this.persistence.getStash(key);
+    if (rec === null || rec.expMs < nowMs) return false;
+    await this.persistence.putStash(key, { ...rec, expMs, slug });
+    return true;
+  }
+
   /** The stash key holding a live reservation on this slug, or null. */
   async reservedBy(slug: string, nowMs: number): Promise<string | null> {
     const key = await this.persistence.findStashBySlug(slug);

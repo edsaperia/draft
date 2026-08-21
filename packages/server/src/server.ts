@@ -497,6 +497,19 @@ export async function createDraftServer(cfg: ServerConfig,
       const title = cap(expectString(body, 'title'), LIMITS.title, 'the title');
       const email = emailOk(expectString(body, 'email'));
       const isMember = body.isMember !== false;
+      /* 📨 is a resend, not a rival (Ed's QA, 2026-08-21: *when I click 📨
+         I'm taken back to link*). The first send reserves the address for
+         the pending creation (Q462b) — so a second send of the same
+         creation asked for an address its own reservation held, was told
+         truthfully that it was taken, and the page did the right thing with
+         the wrong news and walked the founder back to 📍. The pendingId the
+         first send returned is the capability that says *this reservation is
+         mine*: with it, the address is free to this caller and no second
+         creation is opened. Without it (a first send, an older client)
+         nothing changes. */
+      const givenId = typeof body.pendingId === 'string' && body.pendingId !== ''
+        ? body.pendingId : null;
+      const mine = givenId === null ? null : sha256Hex(givenId);
       // the founder chooses the address before the email (Q460); absent
       // (older clients, the tests' shorthand) it is suggested from the title
       let slug: string;
@@ -506,7 +519,8 @@ export async function createDraftServer(cfg: ServerConfig,
           json(res, 400, { error: 'the address must be lower case, digits and hyphens, three characters or more' });
           return;
         }
-        if (!(await slugFree(slug))) {
+        const heldByMe = mine !== null && (await stash.reservedBy(slug, nowMs)) === mine;
+        if (!heldByMe && !(await slugFree(slug))) {
           // 462b: told "taken", and offered the nearest free one
           json(res, 409, { error: 'that address is taken',
             suggestion: await uniqueSlugAsync(slug) });
@@ -519,9 +533,17 @@ export async function createDraftServer(cfg: ServerConfig,
       // this id while the founder is off following the mail — and since
       // Q462b it is also the reservation on the address: the slug is held
       // exactly as long as the stash lives, and take() releases it
-      const pendingId = randomBytes(18).toString('base64url');
+      const expMs = nowMs + 7 * 24 * 3600_000;
+      // a resend keeps its own stash — with whatever has been pasted into it
+      // — and moves its reservation onto the address now asked for; only a
+      // first send opens one. renew() is the truth of it, so a stash swept
+      // between the check and here still falls back to a fresh creation.
+      const renewed = givenId !== null && mine !== null &&
+        await stash.renew(mine, expMs, slug, nowMs);
+      const pendingId = renewed && givenId !== null
+        ? givenId : randomBytes(18).toString('base64url');
       const stashKey = sha256Hex(pendingId);
-      await stash.open(stashKey, nowMs + 7 * 24 * 3600_000, slug);
+      if (!renewed) await stash.open(stashKey, expMs, slug);
       const token = await auth.mintToken(
         { kind: 'create', email, pending: { title, slug, email, isMember, stashKey } }, nowMs);
       const link = `${cfg.baseUrl}/auth/create?token=${token}`;
@@ -573,6 +595,29 @@ export async function createDraftServer(cfg: ServerConfig,
         return;
       }
       const p = rec.pending;
+      /* One creation, however many links (the 📨 resend, Ed's QA 2026-08-21):
+         a resend mints a second link against the same pending creation, so
+         whichever is clicked first creates the document and the other must
+         not make a twin at a suffixed address. The mail *is* the login — so
+         a create link whose promised address already holds a document this
+         very founder made simply logs them into it. Narrow on purpose: only
+         where the address is held by a document founded by the address the
+         link was mailed to, which is the twin and nothing else. */
+      const twin = store.bySlug(p.slug);
+      if (twin && twin.cs.convenorRecord().email.toLowerCase() === p.email.toLowerCase()) {
+        setCookie(res, twin.id, auth.cookieFor(twin.id, twin.cs.convenorRecord().id, nowMs), httpsOn);
+        redirect(res, `/d/${p.slug}`);
+        return;
+      }
+      /* …and where the address moved between the two links, the older one
+         promises a name the document does not wear, so there is nothing to
+         log in to. The stash is the creation, and the save consumed it: the
+         link is spent, and says so, rather than founding an empty twin at
+         the abandoned address. */
+      if (p.stashKey !== undefined && !(await stash.alive(p.stashKey, nowMs))) {
+        json(res, 400, { error: 'that link has been used or has expired' });
+        return;
+      }
       const slug = store.slugTaken(p.slug)
         ? uniqueSlug(p.title, (s) => store.slugTaken(s)) : p.slug;
       const id = `d-${randomBytes(5).toString('hex')}`;

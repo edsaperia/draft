@@ -3283,6 +3283,17 @@
       const kindLine = c.knote ? '<p class="setnote">' + c.knote + '</p>' : '';
       const clearable = { myname: S.myname, mypic: S.mypic };
       const newsKey = isRoom(c) ? 'res-' + c.k : 'set-' + c.k;
+      // **The ground belongs to the glyph, never to the card's kind** (Ed's
+      // QA, 2026-08-21: *the buttons during the birth are many different
+      // colours*). Two rules chose the commit's look and they were keyed on
+      // different things: the *glyph* on whether the document exists yet (at
+      // the birth every commit is the 🪶, whoever the card is about), the
+      // *quiet ground* on the card's kind. On 📧 — a personal card, so ✓ by
+      // kind — they disagreed, and the third feather of the birth stood on
+      // the solid green the drawn ✓ owns, between two on the accent-subtle.
+      // One expression now decides both: an emoji needs a quiet ground
+      // wherever it sits, and the ✓ stays the one solid green thing.
+      const commitGlyph = !cs ? '🪶' : (c.ansFor || c.kind === 'personal') ? TICK : '✒️';
       const foot = (!amFounder() && c.own !== 'you' && !c.ansFor)
         ? (stateOf(c, ctx) === 'news'
           ? '<button class="btn" data-close="1">Close</button>' +
@@ -3335,9 +3346,9 @@
         // document. Q449 (Ed, 2026-08-20): an answer to a shared question
         // and a setting about yourself — your name, picture, email — bind
         // nobody (§9.0c), so they commit with ✓, never the pen.
-        '<button class="btn btn-approve glyphbtn' + (c.ansFor || c.kind === 'personal' ? '' : ' emojibtn') + '"' +
+        '<button class="btn btn-approve glyphbtn' + (commitGlyph === TICK ? '' : ' emojibtn') + '"' +
         (ready(c) ? '' : ' disabled') +
-        ' data-confirm="1" title="' + commitTitle(c) + '">' + (!cs ? '🪶' : c.ansFor || c.kind === 'personal' ? TICK : '✒️') + '</button>';
+        ' data-confirm="1" title="' + commitTitle(c) + '">' + commitGlyph + '</button>';
       return cardHtml(c, ctx, body + kindLine, foot, g.cards);
     };
     // the title card opens in the title's own paragraph, whatever else
@@ -3862,8 +3873,14 @@
     S.sentAddr = S.myemail;
     if (BIRTH && S.viewer !== 'applicant') {
       S.emailErr = null;
+      // 📨 is this creation speaking again, not a rival one (Ed's QA,
+      // 2026-08-21): the pendingId the first send returned is what says the
+      // address it reserved is its own, so a resend keeps the address, the
+      // stash and anything already pasted into it. On a first send there is
+      // none, and the server mints one.
       api.post('/api/docs', { title: S.title || 'Untitled', slug: S.slug, email: S.myemail,
-        isMember: S.roster[0].role !== 'clerk' })
+        isMember: S.roster[0].role !== 'clerk',
+        ...(api.birth && api.birth.pendingId ? { pendingId: api.birth.pendingId } : {}) })
         .then((res) => {
           // api.post resolves the error JSON rather than throwing, so a
           // refused send must be caught here — a card that says "Sent"

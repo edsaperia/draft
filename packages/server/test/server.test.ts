@@ -942,6 +942,80 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
       { title: 'Hollow Oak', email: 'dee@example.org' })).json() as { slug: string };
     expect(legacy.slug).toBe('hollow-oak-2');
   });
+
+  it('📨 re-sends the same creation: its own reservation, its own stash, no twin', async () => {
+    // a bucket of its own: the creation limiter is keyed by client and this
+    // file already spends most of one, so the walk states its own address
+    // rather than thinning everybody else's budget
+    const { base, dataDir } = await boot({ trustProxy: true });
+    const send = async (body: unknown) => {
+      const res = await fetch(base + '/api/docs', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'cf-connecting-ip': '198.51.103.4' },
+        body: JSON.stringify(body),
+      });
+      return { status: res.status, body: await res.json() as
+        { slug?: string; pendingId?: string; devLink?: string; error?: string; suggestion?: string } };
+    };
+
+    const first = await send({ title: 'The Hollow Oak Club', slug: 'hollow-oak',
+      email: 'ada@example.org' });
+    expect(first.status).toBe(200);
+    const pendingId = first.body.pendingId!;
+
+    // text pasted while the founder is off to their inbox
+    expect((await post(base, '/api/docs/pending',
+      { pendingId, text: '# Charter\n\nOne.' })).status).toBe(200);
+
+    // 📨: the same creation asking again. Without the pendingId this is the
+    // bug Ed hit — the founder's own reservation refusing them, and the page
+    // walking them back to 📍 with a suggestion.
+    const naive = await send({ title: 'The Hollow Oak Club', slug: 'hollow-oak',
+      email: 'ada@example.org' });
+    expect(naive.status).toBe(409);
+    expect(naive.body.suggestion).toBe('hollow-oak-2');
+
+    const again = await send({ title: 'The Hollow Oak Club', slug: 'hollow-oak',
+      email: 'ada@example.org', pendingId });
+    expect(again.status).toBe(200);
+    expect(again.body.slug).toBe('hollow-oak');
+    // the same stash, so the pasted text is still syncing against it
+    expect(again.body.pendingId).toBe(pendingId);
+    expect((await post(base, '/api/docs/pending',
+      { pendingId, text: '# Charter\n\nOne. Two.' })).status).toBe(200);
+    // and still reserved against everybody else
+    expect((await send({ title: 'Another Oak', slug: 'hollow-oak',
+      email: 'bo@example.org' })).status).toBe(409);
+
+    // the address may still be changed on a resend: the reservation moves
+    const moved = await send({ title: 'The Hollow Oak Club', slug: 'oak-club',
+      email: 'ada@example.org', pendingId });
+    expect(moved.status).toBe(200);
+    expect(moved.body.slug).toBe('oak-club');
+    const back = await send({ title: 'The Hollow Oak Club', slug: 'hollow-oak',
+      email: 'ada@example.org', pendingId });
+    expect(back.status).toBe(200);
+
+    // the last link creates the document at the address promised, with the
+    // text that was pasted against the stash the resends kept
+    const saved = await consume(back.body.devLink!);
+    expect(saved.status).toBe(302);
+    expect(saved.headers.get('location')).toBe('/d/hollow-oak');
+
+    // …and the earlier link, still in the inbox, is a login rather than a
+    // twin at a suffixed address
+    const older = await consume(first.body.devLink!);
+    expect(older.status).toBe(302);
+    expect(older.headers.get('location')).toBe('/d/hollow-oak');
+    expect((await (await fetch(`${base}/api/slug/hollow-oak-2`)).json() as
+      { available: boolean }).available).toBe(true);
+    // the one that promised the abandoned address is spent, not a founding
+    const abandoned = await consume(moved.body.devLink!);
+    expect(abandoned.status).toBe(400);
+    expect((await (await fetch(`${base}/api/slug/oak-club`)).json() as
+      { available: boolean }).available).toBe(true);
+    expect(lastMailTo(dataDir, 'ada@example.org').link).toBeTruthy();
+  });
 });
 
 describe('the clock closes the document (SPEC §4.6, Q467)', () => {
