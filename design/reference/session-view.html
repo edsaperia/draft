@@ -693,6 +693,43 @@
   // the pen *somewhere* is what puts it in your topbar
   const holdsPenAnywhere = () => !!cs && PW_KEYS.some((k) => pwPair(k).u);
   const penLocks = () => (cs ? PW_KEYS.filter((k) => pwPair(k).u).length : 0);
+  // **An acknowledgment covers this holding, not the fact for ever** (Q526,
+  // Ed 2026-08-21: (b) — re-ask whenever a power goes from not-held to held,
+  // however it got there). Without this a founder who lays down every pen and
+  // is later re-crowned by a carried `reserve` motion gets it back in silence:
+  // the OK persists per document and seat, so *no power arrives without
+  // acknowledgment* had quietly become *no power arrives twice*.
+  //
+  // **It watches a transition, it never reads an absolute.** Before the module
+  // has hydrated every gate reports shut — so a rule of the form "gate closed,
+  // therefore drop the OK" would wipe your acknowledgments on every single
+  // page load, and hand back powers you had already accepted. So the first
+  // sighting of a key only *records*; a drop needs this page to have seen the
+  // power held and then not held, in that order. The false→true direction
+  // needs no clause: `mustAct` already makes an unacknowledged open gate a
+  // task.
+  //
+  // Keyed by seat as well as by grant, because the dev dropdown changes who
+  // is sitting here and a seat change is not a transition. Known gap, the
+  // same one the OK itself has: the module holds no grant-OK state, so a
+  // power relinquished in another browser is not seen here — this is a
+  // per-device approximation of a per-member fact.
+  const grantSeen = new Map();
+  const syncGrantAcks = () => {
+    const seat = (viewerId() || S.viewer || '?') + '|';
+    for (const k of ACK_KEYS) {
+      const c = card(k);
+      if (!c || !c.open) continue;
+      let open = false;
+      try { open = !!c.open(); } catch (e) { continue; }
+      const key = seat + k;
+      if (grantSeen.get(key) === true && !open && S.okd.has(k)) {
+        S.okd.delete(k);
+        saveGrants();
+      }
+      grantSeen.set(key, open);
+    }
+  };
   // the keys a grant's OK is remembered under (live: per document and seat).
   // GRANT_KEYS are the three that *fly* — each has an object and a wallet to
   // land in. ACK_KEYS is what is **remembered**, which is a wider set: since
@@ -3707,6 +3744,7 @@
     // follow the module's register first
     syncFromCs();
     resolveCounts();
+    syncGrantAcks();
     // one snapshot per opening — after the module has had its say, so the
     // bin puts the card back to what stands rather than to what was on screen
     // **What you have typed survives a close** (Ed, 2026-08-21: *my inputs
