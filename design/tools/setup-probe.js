@@ -189,7 +189,9 @@
     ['confirm-applications', () => click('.setupcard [data-confirm]')],
     ['open-hat', () => openTab('hat')],
     ['choose-hat', () => click('.setupcard [data-set="hatPick"][data-val="member"]')],
-    ['confirm-hat', () => click('.setupcard [data-hatgo]')],
+    // 🎩 commits through the one commit control like every other setting
+    // (Q522, 2026-08-21); it used to carry a data-hatgo of its own
+    ['confirm-hat', () => click('.setupcard [data-confirm]')],
     ['open-name', () => openTab('myname')],
     ['type-name', () => typeInto('.setupcard input[data-txt="myname"]', 'Ada Lovell')],
     ['confirm-name', () => click('.setupcard [data-confirm]')],
@@ -212,7 +214,9 @@
     ['pick-answer-cy', () => click('.setupcard [data-motion]')],
     ['commit-answer-cy', () => click('.setupcard [data-confirm]')],
     ['reopen-bar', () => openTab('bar')],
-    ['close-card', () => click('.setupcard [data-close]')],
+    // *Close* left the surface with Q521(a); a card is closed by its own
+    // mark, which is the one way in and out of every card there has ever been
+    ['close-card', () => click('.setupcard .chipcol .achip')],
     ['seat-founder-final', () => setSeat('0')],
   ];
 

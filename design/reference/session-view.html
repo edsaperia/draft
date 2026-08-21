@@ -523,7 +523,11 @@
   // only moves when the card is committed, so that is when the snapshot is
   // dropped and the next opening takes a fresh one.
   const snaps = Object.create(null);
-  const takeSnap = (k) => { const s = {}; REVERTKEYS().forEach((kk) => { s[kk] = S[kk]; }); snaps[k] = s; };
+  // the blind answers ride the snapshot too, as their own `ans:` keys — an
+  // answer is one more provisional value, and the bin that puts a card back
+  // should not need to know which kind of card it is standing on
+  const takeSnap = (k) => { const s = { __ans: Object.assign({}, S.myAns) };
+    REVERTKEYS().forEach((kk) => { s[kk] = S[kk]; }); snaps[k] = s; };
   const dropSnap = (k) => { delete snaps[k]; };
   // **The bin puts back its own card, not the whole surface.** The snapshot
   // covers every revertable key, but a card may only undo the ones it can
@@ -540,17 +544,25 @@
     el.querySelectorAll('[data-set]').forEach((b) => ks.add(b.dataset.set));
     el.querySelectorAll('[data-txt]').forEach((b) => ks.add(b.dataset.txt));
     el.querySelectorAll('[data-num]').forEach((b) => ks.add(b.dataset.num));
+    el.querySelectorAll('[data-ans]').forEach((b) => ks.add('ans:' + b.dataset.ans));
     if (el.querySelector('[data-titlelane]')) ks.add('titleDraft');
     if (el.querySelector('[data-pic]')) ks.add('mypic');
-    return ks.size ? [...ks] : null;
+    if (el.querySelector('[data-slide]')) {
+      el.querySelectorAll('[data-slide]').forEach((b) => ks.add('ans:' + b.dataset.slide));
+    }
+    return ks.size ? [...ks] : [];
   };
+  // A card that names no field puts nothing back — it simply closes. The old
+  // fallback was "restore everything", which was safe only while a snapshot
+  // could not outlive one opening; now that it can, a card with no fields of
+  // its own must never reach across the surface and undo another card's work.
   const revertSnap = (only) => { const s = snaps[S.open];
-    if (s) (only && only.length ? only : REVERTKEYS()).forEach((k) => { if (k in s) S[k] = s[k]; }); };
-  // the cards whose changes are not held by the card: the register commits
-  // row by row as you invite, and the starting text lives in the document
-  // column itself — there is nothing on either to throw away, so they keep
-  // Close
-  const NOREVERT = ['roster', 'text', 'invite', 'remove'];
+    if (!s) return;
+    (only || []).forEach((k) => {
+      if (k.startsWith('ans:')) { const a = k.slice(4);
+        if (s.__ans) S.myAns[a] = a in s.__ans ? s.__ans[a] : null; return; }
+      if (k in s) S[k] = s[k];
+    }); };
   // **🗑️ is always live** (Ed, 2026-08-21: *the bin should still close the
   // card even if the fields are empty*). It used to grey out when there was
   // nothing to put back, which made the one control that leaves a card
@@ -3156,16 +3168,16 @@
     const a = S.app;
     let foot;
     if (c.k === 'apply') {
-      foot = a.submitted ? '<button class="btn" data-close="1">Close</button>'
+      foot = a.submitted ? binBtn()
         : !a.started ? '<button class="btn btn-approve" data-appstart="1">Begin</button>'
         // a word, not 🏛️: an application becomes an ordinary motion, and
         // the 🏛️ glyph belongs to the assembly-press hold — a plain click
         // wearing it claimed the constitutional route it does not take
-        : '<button class="btn" data-close="1">Close</button>' +
+        : binBtn() +
           '<button class="btn btn-approve"' + (a.name.trim() && a.pic ? '' : ' disabled') +
           ' data-appsubmit="1" title="Your application goes before the members">Submit</button>';
     } else {
-      foot = '<button class="btn" data-close="1">Close</button>' +
+      foot = binBtn() +
         '<button class="btn btn-approve glyphbtn"' + (c.done() || c.optional ? '' : ' disabled') + ' data-close="1">' + TICK + '</button>';
     }
     return cardHtml(c, appCtx, APPBODY[c.k](), foot, [c]);
@@ -3204,8 +3216,8 @@
         const rd = readinessOf();
         const can = !constituted() && amFounder() && (!rd || rd.ready);
         return cardHtml(c, ctx, beginBody(c, rd),
-          constituted() ? '<button class="btn" data-close="1">Close</button>'
-            : '<button class="btn" data-close="1">Close</button>' +
+          constituted() ? binBtn()
+            : binBtn() +
               '<button class="btn btn-approve emojibtn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
               ' title="' + (can ? 'Hold to begin the document' : 'The document cannot begin yet') + '">🍾 Begin</button>',
           g.cards);
@@ -3214,14 +3226,14 @@
         const signed = signedClose();
         return cardHtml(c, ctx, closingBody(c),
           signed || !viewerIsMember()
-            ? '<button class="btn" data-close="1">Close</button>'
-            : '<button class="btn" data-close="1">Close</button>' +
+            ? binBtn()
+            : binBtn() +
               '<button class="btn btn-approve" data-sign="1" title="OK signs the document; your comment goes on the record">OK</button>',
           g.cards);
       }
       if (c.isGate) {
         return cardHtml(c, ctx, gateBody(c) + grantNote(c),
-          '<button class="btn" data-close="1">Close</button>' +
+          binBtn() +
           '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
           ' data-ok="' + c.k + '">OK</button>', g.cards);
       }
@@ -3237,7 +3249,7 @@
           (editable ? binBtn() +
             '<button class="btn btn-approve glyphbtn emojibtn" data-confirm="1"' +
             ' title="Set it">✒️</button>'
-            : '<button class="btn" data-close="1">Close</button>'),
+            : binBtn()),
           g.cards);
       }
       const m = motionOn(c);
@@ -3251,7 +3263,7 @@
           (amFounder()
             ? '<button class="btn" data-crownq="reject">Refuse</button>' +
               '<button class="btn btn-approve" data-crownq="accept">Accept</button>'
-            : '<button class="btn" data-close="1">Close</button>'), g.cards);
+            : binBtn()), g.cards);
       }
       // a live motion takes the route its own value asks for (329a)
       if (m && routeOfM(m, c) === 'ordinary') {
@@ -3274,7 +3286,7 @@
           motionReopen(c, ctx, { ...m, judged: motionJudged(c.k) }) + consentBody(c, m),
           (m.by === viewerId()
             ? '<button class="btn" data-withdrawmotion="' + c.k + '" title="Withdrawing hands your 🏛️ back">🗑️ Withdraw</button>'
-            : '<button class="btn" data-close="1">Close</button>') +
+            : binBtn()) +
           '<button class="btn btn-approve glyphbtn"' + (motionPicked(c) ? '' : ' disabled') +
           ' data-confirm="1">' + TICK + '</button>', g.cards);
       }
@@ -3333,12 +3345,20 @@
       const commitGlyph = !cs ? '🪶' : (c.ansFor || c.kind === 'personal') ? TICK : '✒️';
       const foot = (!amFounder() && c.own !== 'you' && !c.ansFor)
         ? (stateOf(c, ctx) === 'news'
-          ? '<button class="btn" data-close="1">Close</button>' +
+          ? binBtn() +
             '<button class="btn btn-approve" data-ok="' + newsKey + '">OK</button>'
-          : '<button class="btn" data-close="1">Close</button>')
+          : binBtn())
         : (c.k === 'myname' || c.k === 'mypic')
-        ? '<button class="btn glyphbtn" data-clearval="' + c.k + '"' +
-          ' title="' + (c.k === 'myname' ? 'Clear the name' : 'Remove the picture') + '">🗑️</button>' +
+        // **The bin clears un-actioned input and never touches what is set**
+        // (Q520, Ed 2026-08-21). ✋ and 🖼️ were the two bins whose act was to
+        // *delete* the value rather than put the card back, which was
+        // survivable while a bin greyed out unless there was something to
+        // throw away — and a trap once the bin became always live and also
+        // the way out of a card. They take the shared bin: it restores what
+        // stands, so a name that has been saved is safe from it. Emptying a
+        // saved name is still a thing you can do — by emptying the field, the
+        // way you set it — and a picture is removed by choosing initials.
+        ? binBtn() +
           // Q449 (Ed, 2026-08-20): a name or a picture binds nobody (§9.0c),
           // so it commits with ✓ — the pen is for sets that bind the document
           '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
@@ -3362,7 +3382,7 @@
         // it has everywhere else: put back the address the link went to.
         : c.k === 'myemail' && S.emailSent && !S.emailVerified
         ? binBtn() +
-          '<button class="btn btn-approve glyphbtn emojibtn" data-act="sendverify"' +
+          '<button class="btn btn-approve glyphbtn emojibtn" data-resend="1"' +
           (EMAIL_OK.test(S.myemail) ? '' : ' disabled') +
           ' title="' + resendTitle() + '">📨</button>'
         : c.k === 'hat'
@@ -3371,17 +3391,16 @@
               !(cs && cs.constitutedAtT !== null);
             return binBtn() +
               '<button class="btn btn-approve glyphbtn emojibtn"' + (dirty ? '' : ' disabled') +
-              ' data-hatgo="1" title="Set it">✒️</button>'; })()
+              ' data-confirm="1" title="Set it">✒️</button>'; })()
         : stateOf(c, ctx) === 'news'
-        ? '<button class="btn" data-close="1">Close</button>' +
+        ? binBtn() +
           '<button class="btn btn-approve" data-ok="' + newsKey + '">OK</button>'
-        : (c.ansFor
-          // an answer is provisional until the ✓ (363a), so the bin throws
-          // away an answer you have not sent rather than one you have
-          ? '<button class="btn glyphbtn" data-ansdrop="' + ansKey(c) + '"' +
-            ' title="Clear your answer">🗑️</button>'
-          : NOREVERT.includes(c.k) ? '<button class="btn" data-close="1">Close</button>'
-          : binBtn()) +
+        // …and one bin under all of them (Q521(a), Ed 2026-08-21). An answer
+        // is a provisional value like any other — it rides the snapshot as
+        // its own `ans:` key — and a card whose value lives elsewhere (the
+        // register, the text) simply has nothing to put back, so the bin
+        // there is the close it always was under another name.
+        : binBtn() +
         // ✒️ is the founder's pen (Ed, 360): a set of a setting binds the
         // document. Q449 (Ed, 2026-08-20): an answer to a shared question
         // and a setting about yourself — your name, picture, email — bind
@@ -3623,9 +3642,7 @@
     // halves of the surface that disagreed: ✋ 🖼️ and a motion's draft closed
     // on the bin, while 🪶 the title, every settings card, a delegated answer
     // and 🎩 stayed open). The discard is a finished act and the close is its
-    // receipt — the same shape as the send on 📧. One rule, six bins.
-    const cv = ev.target.closest('[data-clearval]');
-    if (cv) return closeThen(() => { S[cv.dataset.clearval === 'myname' ? 'myname' : 'mypic'] = ''; S.open = null; });
+    // receipt — the same shape as the send on 📧. One rule, one bin.
     const ams = ev.target.closest('[data-appmailsend]');
     if (ams) { S.app.emailSent = true; S.app.mailOpen = true;
       // the address is the identity (§9.7½) — the module holds it from here
@@ -3841,6 +3858,17 @@
           if (was === 'myname') { cs.setIdentity(now(), viewerId(), { name: S.myname || null }); return; }
           if (was === 'mypic') { cs.setIdentity(now(), viewerId(), { picture: S.mypic || null }); return; }
           if (was === 'roster') return; // the register commits row by row
+          // 🎩 commits here like every other setting (Q522, Ed 2026-08-21).
+          // It used to carry a commit control of its own, which is how it
+          // came to be the one card that did not close on being set.
+          if (was === 'hat') {
+            const m = meRow(); const want = S.hatPick;
+            if (m && want) {
+              m.role = want === 'clerk' ? 'clerk' : 'member';
+              cs.setConvenorMembership(now(), want !== 'clerk');
+            }
+            S.hatPick = null;
+            return; }
           if (MANAGED_KEYS.includes(was) && amFounder()) commitSetting(was);
         } catch (e) { console.warn('[cs]', e && e.message); }
       }); }
@@ -3851,21 +3879,8 @@
       const own = cardKeys();
       return closeThen(() => { revertSnap(own); S.open = null; });
     }
-    const ansBin = ev.target.closest('[data-ansdrop]');
-    if (ansBin) return closeThen(() => { S.myAns[ansBin.dataset.ansdrop] = null; S.open = null; });
-    // 🎩 commits like any other setting, so it closes like one (Ed,
-    // 2026-08-21, asking whether there is a rule): it had its own commit
-    // control and so never went through the closing path, which is the whole
-    // of why it looked inconsistent.
-    if (ev.target.closest('[data-hatgo]')) {
-      return closeThen(() => {
-        const m = meRow(); const want = S.hatPick;
-        if (m && want) { m.role = want === 'clerk' ? 'clerk' : 'member'; S.seen.add('hat');
-          if (cs) { try { cs.setConvenorMembership(now(), want !== 'clerk'); }
-            catch (e) { console.warn('[cs]', e && e.message); } } }
-        S.hatPick = null; S.open = null; dropSnap('hat');
-      }); }
-    if (ev.target.closest('[data-act="sendverify"]')) return sendAndClose();
+    // 📨 names its own act like every other control on a commit row (Q522)
+    if (ev.target.closest('[data-resend]')) return sendAndClose();
     const om = ev.target.closest('[data-act="openmail"]');
     if (om) { S.mailOpen = true; return render(); }
     if (ev.target.closest('[data-mailclose]') ||
@@ -4115,7 +4130,7 @@
       const m = meRow(); if (m) m.e = S.myemail;
       // the send button tracks validity in place — a full render would
       // rebuild the card under the caret
-      const sv = document.querySelector('[data-act="sendverify"]');
+      const sv = document.querySelector('[data-resend="1"]');
       if (sv) { sv.disabled = !EMAIL_OK.test(S.myemail); sv.title = resendTitle(); }
       renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (t.dataset.txt) { S[t.dataset.txt] = t.value;
@@ -4256,7 +4271,7 @@
     const c = card(S.open);
     if (!c || !g.cards.some((x) => x.k === c.k)) return '';
     const body = c.k === 'text' ? strangerTextBody() : strangerReadBody(c);
-    return cardHtml(c, strCtx, body, '<button class="btn" data-close="1">Close</button>', g.cards);
+    return cardHtml(c, strCtx, body, binBtn(), g.cards);
   };
   const strangerTextBody = () => {
     const p = strPayload();
@@ -4360,7 +4375,7 @@
             'Members log in by email: enter the address the membership knows you by, and follow the link it sends. Nothing here says whether an address is a member’s.') + '</p>' +
         '<span class="fld"><label>Your email</label><input type="email" data-stremail="1" value="' + esc(STRS.email) + '" placeholder="you@example.com" style="width:20rem"></span>' +
         '<div style="margin-top:var(--s3)"><button class="btn"' + (okAddr ? '' : ' disabled') + ' data-strsend="' + c.k + '">Send the link</button></div>';
-    const foot = '<button class="btn" data-close="1">Close</button>';
+    const foot = binBtn();
     return cardHtml(c, strRailCtx, body, foot, [c]);
   }
   document.addEventListener('input', (ev) => {

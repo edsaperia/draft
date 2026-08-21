@@ -49,6 +49,12 @@ export interface StashRecord {
   /** The address promised at the birth (Q460/462b): reserved while the
    *  pending creation lives, released when it is claimed or expires. */
   slug?: string;
+  /** The document this pending creation became (Q519). A re-send mints a
+   *  second link against one creation, and every link stays live: the first
+   *  one followed creates the document and records it here, and the rest
+   *  forward to it rather than founding a twin. Set at the save, so a stash
+   *  carrying it is spent; swept with the rest at expiry. */
+  docId?: string;
 }
 
 export interface Persistence {

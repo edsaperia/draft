@@ -1009,9 +1009,14 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
     expect(older.headers.get('location')).toBe('/d/hollow-oak');
     expect((await (await fetch(`${base}/api/slug/hollow-oak-2`)).json() as
       { available: boolean }).available).toBe(true);
-    // the one that promised the abandoned address is spent, not a founding
+    // …and so does the one that promised the address the founder moved off:
+    // every link stays live and forwards to what was created (Q519), however
+    // the address moved in between
     const abandoned = await consume(moved.body.devLink!);
-    expect(abandoned.status).toBe(400);
+    expect(abandoned.status).toBe(302);
+    expect(abandoned.headers.get('location')).toBe('/d/hollow-oak');
+    // the address the founder moved off is free again: the reservation moved
+    // with them rather than being left behind on a name nobody is using
     expect((await (await fetch(`${base}/api/slug/oak-club`)).json() as
       { available: boolean }).available).toBe(true);
     expect(lastMailTo(dataDir, 'ada@example.org').link).toBeTruthy();

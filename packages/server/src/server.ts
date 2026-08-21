@@ -595,27 +595,28 @@ export async function createDraftServer(cfg: ServerConfig,
         return;
       }
       const p = rec.pending;
-      /* One creation, however many links (the 📨 resend, Ed's QA 2026-08-21):
-         a resend mints a second link against the same pending creation, so
-         whichever is clicked first creates the document and the other must
-         not make a twin at a suffixed address. The mail *is* the login — so
-         a create link whose promised address already holds a document this
-         very founder made simply logs them into it. Narrow on purpose: only
-         where the address is held by a document founded by the address the
-         link was mailed to, which is the twin and nothing else. */
+      /* **One creation, however many links** (Q519, Ed 2026-08-21: *they all
+         stay live, first one creates and the rest forward to what was
+         created*). A re-send mints a second link against the same pending
+         creation, so the first one followed creates the document and records
+         itself in the stash — and every later one reads that and forwards to
+         the document, logging the founder in. This holds however the address
+         moved in between, because the claim is on the creation rather than
+         on a name. */
+      const madeId = p.stashKey === undefined ? null : await stash.claimedBy(p.stashKey, nowMs);
+      const made = madeId === null ? null : store.byId(madeId);
+      if (made) {
+        setCookie(res, made.id, auth.cookieFor(made.id, made.cs.convenorRecord().id, nowMs), httpsOn);
+        redirect(res, `/d/${made.cs.slug}`);
+        return;
+      }
+      /* …and the same for a link minted before the stash carried its claim:
+         the address it promised already holds a document this very founder
+         made, so it forwards there rather than founding a twin beside it. */
       const twin = store.bySlug(p.slug);
       if (twin && twin.cs.convenorRecord().email.toLowerCase() === p.email.toLowerCase()) {
         setCookie(res, twin.id, auth.cookieFor(twin.id, twin.cs.convenorRecord().id, nowMs), httpsOn);
         redirect(res, `/d/${p.slug}`);
-        return;
-      }
-      /* …and where the address moved between the two links, the older one
-         promises a name the document does not wear, so there is nothing to
-         log in to. The stash is the creation, and the save consumed it: the
-         link is spent, and says so, rather than founding an empty twin at
-         the abandoned address. */
-      if (p.stashKey !== undefined && !(await stash.alive(p.stashKey, nowMs))) {
-        json(res, 400, { error: 'that link has been used or has expired' });
         return;
       }
       const slug = store.slugTaken(p.slug)
@@ -631,7 +632,7 @@ export async function createDraftServer(cfg: ServerConfig,
       // the pasted text is waiting in the saved document (§9.7a v0.55) —
       // waiting, not decided: confirming the starting text stays its own act
       if (p.stashKey !== undefined) {
-        const text = await stash.take(p.stashKey, nowMs);
+        const text = await stash.take(p.stashKey, nowMs, id);
         if (text.length > 0) await store.setProvisional(doc, text);
       }
       await commit(doc, nowMs);

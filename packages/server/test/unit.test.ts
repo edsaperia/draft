@@ -137,8 +137,12 @@ describe('Stash over the seam', () => {
     expect(await stash.update('k', 'draft', 500)).toBe(true);
     expect(await stash.update('missing', 'x', 500)).toBe(false);
     expect(await stash.update('k', 'late', 2000)).toBe(false); // expired
-    expect(await stash.take('k', 500)).toBe('draft');
-    expect(await stash.take('k', 500)).toBe(''); // consumed
+    expect(await stash.take('k', 500, 'd-1')).toBe('draft');
+    expect(await stash.take('k', 500, 'd-1')).toBe(''); // the text is spent
+    // …but the claim stays, so every other link to this creation can find
+    // the document it became (Q519), and nothing may paste into it again
+    expect(await stash.claimedBy('k', 500)).toBe('d-1');
+    expect(await stash.update('k', 'after the save', 500)).toBe(false);
   });
 });
 
@@ -245,8 +249,10 @@ describe('the slug reservation rides the stash (Q462b)', () => {
     // and a restart reads the same reservation back from disk
     const again = new Stash(new FilePersistence(dir));
     expect(await again.reservedBy('oak', t0)).toBe('k1');
-    // the save consumes the stash and with it the hold
-    expect(await again.take('k1', t0)).toBe('pasted text');
+    // the save takes the text and with it the hold: from here the document
+    // holds the address, and the stash keeps only its claim (Q519)
+    expect(await again.take('k1', t0, 'd-oak')).toBe('pasted text');
     expect(await again.reservedBy('oak', t0)).toBeNull();
+    expect(await again.claimedBy('k1', t0)).toBe('d-oak');
   });
 });

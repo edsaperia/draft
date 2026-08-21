@@ -23,13 +23,6 @@ export class Stash {
     await this.persistence.putStash(key, { text: '', expMs, ...(slug === undefined ? {} : { slug }) });
   }
 
-  /** Is this stash still open? The save consumes it, so a second link
-   *  against the same pending creation is spent by this answer. */
-  async alive(key: string, nowMs: number): Promise<boolean> {
-    const rec = await this.persistence.getStash(key);
-    return rec !== null && rec.expMs >= nowMs;
-  }
-
   /** Re-send: the same pending creation speaking again (Ed's QA, 2026-08-21
    *  — *when I click 📨 I'm taken back to link*). A resend must not be a
    *  second creation, so the stash it already opened is kept — with whatever
@@ -39,32 +32,48 @@ export class Stash {
    *  caller opens a fresh one. */
   async renew(key: string, expMs: number, slug: string, nowMs: number): Promise<boolean> {
     const rec = await this.persistence.getStash(key);
-    if (rec === null || rec.expMs < nowMs) return false;
+    if (rec === null || rec.expMs < nowMs || rec.docId !== undefined) return false;
     await this.persistence.putStash(key, { ...rec, expMs, slug });
     return true;
   }
 
-  /** The stash key holding a live reservation on this slug, or null. */
+  /** The stash key holding a live reservation on this slug, or null. A
+   *  claimed stash holds none: from the save the *document* holds the
+   *  address, and a reservation that outlived it would let the creation that
+   *  made it walk past the taken-address check. */
   async reservedBy(slug: string, nowMs: number): Promise<string | null> {
     const key = await this.persistence.findStashBySlug(slug);
     if (key === null) return null;
     const rec = await this.persistence.getStash(key);
-    return rec !== null && rec.expMs >= nowMs ? key : null;
+    return rec !== null && rec.expMs >= nowMs && rec.docId === undefined ? key : null;
   }
 
-  /** Update an open stash; false if it never existed or has expired. */
+  /** Update an open stash; false if it never existed, has expired, or has
+   *  already become a document — past the save the text lives there. */
   async update(key: string, text: string, nowMs: number): Promise<boolean> {
     const rec = await this.persistence.getStash(key);
-    if (rec === null || rec.expMs < nowMs) return false;
+    if (rec === null || rec.expMs < nowMs || rec.docId !== undefined) return false;
     await this.persistence.putStash(key, { ...rec, text });
     return true;
   }
 
-  /** Take the text and delete the stash (the save consumes it). */
-  async take(key: string, nowMs: number): Promise<string> {
+  /** Take the text and claim the stash for the document it became (Q519).
+   *  The stash is not deleted: every link minted against this creation stays
+   *  live, and the ones followed later read the document id from here and
+   *  forward to it. The text is dropped in the act — it has been folded into
+   *  the document — so what is left is the claim alone, and the address stays
+   *  reserved by a stash whose document now holds it. Expiry sweeps it. */
+  async take(key: string, nowMs: number, docId: string): Promise<string> {
     const rec = await this.persistence.getStash(key);
-    await this.persistence.deleteStash(key);
+    if (rec === null) return '';
+    await this.persistence.putStash(key, { ...rec, text: '', docId });
     await this.persistence.sweepStashes(nowMs);
-    return rec !== null && rec.expMs >= nowMs ? rec.text : '';
+    return rec.expMs >= nowMs ? rec.text : '';
+  }
+
+  /** The document a pending creation became, or null while it is unclaimed. */
+  async claimedBy(key: string, nowMs: number): Promise<string | null> {
+    const rec = await this.persistence.getStash(key);
+    return rec !== null && rec.expMs >= nowMs && rec.docId !== undefined ? rec.docId : null;
   }
 }
