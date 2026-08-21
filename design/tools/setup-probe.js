@@ -157,25 +157,32 @@
   const openTab = (k) =>
     click('#rail [data-card="' + k + '"], #rail [data-tab="' + k + '"], ' +
       '#doc [data-card="' + k + '"], #doc [data-tab="' + k + '"]');
+  /* Re-derived 2026-08-21 (Q504(a)), against the founding as it now runs: the
+   * birth is 🪶 → 📍 → 📧 and the ✒️/🪶 commit IS the send (there is no
+   * separate sendverify control any more, which is what had been missing on
+   * both sides since the commit-row grammar landed); the settings then arrive
+   * one at a time in the constitution's own order, so a step can only reach
+   * the card the one before it opened. Nothing is pre-answered, so every
+   * choice here is a real click. */
   const founding = [
     ['arrive', () => null],
     ['open-title', () => openTab('title')],
     ['type-title', () => typeInto('.setupcard [data-titlelane]', 'Hollow Oak Club Charter')],
     ['confirm-title', () => click('.setupcard [data-confirm]')],
+    ['open-link', () => openTab('slug')],
+    ['confirm-link', () => click('.setupcard [data-confirm]')],
     ['open-email', () => openTab('myemail')],
     ['type-email', () => typeInto('.setupcard input[type="email"]', 'ada@example.org')],
-    ['send-verify', () => click('[data-act="sendverify"]')],
+    ['send-verify', () => click('.setupcard [data-confirm]')],
     ['click-magic-link', () => click('[data-act="clickmail"]')],
-    ['confirm-link', () => click('.setupcard [data-confirm]')],
-    ['open-policy', () => openTab('policy')],
-    ['choose-holder', () => click('.setupcard [data-set="rosterBy"][data-val="roster"]')],
+    ['open-the-pen', () => openTab('grant-pen')],
+    ['ok-the-pen', () => click('.setupcard [data-ok]')],
+    ['open-visibility', () => openTab('chamber')],
+    ['choose-visibility', () => click('.setupcard [data-set="chamber"][data-val="closed"]')],
+    ['confirm-visibility', () => click('.setupcard [data-confirm]')],
+    ['open-applications', () => openTab('policy')],
     ['choose-join', () => click('.setupcard [data-set="joinBy"][data-val="invite"]')],
-    ['confirm-policy', () => click('.setupcard [data-confirm]')],
-    ['open-membership', () => openTab('roster')],
-    ['paste-invites', () => typeInto('.setupcard [data-emails]',
-      'bo@example.org\ncy@example.org')],
-    ['send-invites', () => click('.setupcard [data-act="invite"]')],
-    ['confirm-membership', () => click('.setupcard [data-confirm]')],
+    ['confirm-applications', () => click('.setupcard [data-confirm]')],
     ['fast-forward', () => click('#devff')],
     ['seat-bo', () => setSeat('1')],
     ['seat-founder', () => setSeat('0')],
@@ -194,6 +201,7 @@
     ['open-bar-cy', () => openTab('bar')],
     ['pick-answer-cy', () => click('.setupcard [data-motion]')],
     ['commit-answer-cy', () => click('.setupcard [data-confirm]')],
+    ['reopen-bar', () => openTab('bar')],
     ['close-card', () => click('.setupcard [data-close]')],
     ['seat-founder-final', () => setSeat('0')],
   ];

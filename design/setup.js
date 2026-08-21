@@ -699,7 +699,9 @@ window.SETUP = (function () {
     '<input id="myname" data-txt="myname" value="' + esc(me.n || '') + '" placeholder="Your name"></span></div>' +
     ((opts && opts.optional)
       ? '<p class="setnote">You are not a member, so this is <b>optional</b> — leave it blank and the constitution simply shows no name.</p>'
-      : '');
+      // a blank name is a real answer (§9.0c), and since the card can be
+      // saved empty it has to say what saving it empty does
+      : '<p class="setnote">Leave it blank and you appear as <b>Anonymous</b>. You can set it later from any seat.</p>');
 
   /* **It is an uploader** (Ed, 2026-08-18). The card had offered a ground for
      your initials or a drawn mark, on the reasoning that a mockup has no

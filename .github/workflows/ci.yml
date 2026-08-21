@@ -107,9 +107,10 @@ jobs:
   # before the merge noticed. This job serves design/ and walks both probes
   # against the frozen reference in a headless Chromium at one viewport.
   # ADVISORY until it has run green for a week (continue-on-error): it does
-  # not gate the deploy, which hangs off the `ci` job above. Dead steps
-  # (targets missing on the live side — the founding scenario is dead from
-  # step 6, Q504(a)) are printed as warnings; add --strict once (a) lands.
+  # not gate the deploy, which hangs off the `ci` job above. --strict since
+  # 2026-08-21: the setup-probe's founding scenario was re-derived against
+  # the one-at-a-time founding (Q504(a)) and no step is dead any more, so a
+  # step whose target goes missing is a failure rather than a warning.
   probe:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -132,4 +133,4 @@ jobs:
         run: npx playwright install --with-deps chromium
       - if: steps.browser.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
-      - run: npm run probe
+      - run: npm run probe -- --strict

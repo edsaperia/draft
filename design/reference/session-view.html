@@ -452,6 +452,8 @@
     // (title/link after the text confirms, policy after the start)
     title: 'titleBy', slug: 'slugBy', policy: 'policyBy' };
   const wantsDelegate = (k) => { const dk = DKEY[k]; return !!dk && S[dk] === 'roster'; };
+  // a radio's value comes off the DOM as a string; two settings hold booleans
+  const setVal = (v) => (v === 'true' ? true : v === 'false' ? false : v);
   // ✒️ on a setting card: the confirm is a module command (delegate, or
   // reclaim-and-set). Post-start this is the crown's direct change on a
   // reserved setting; the module refuses anything else and the page keeps
@@ -508,20 +510,28 @@
     // else's — dropped whenever the open card changes.
     title: '', titleDraft: null, slug: '',
     folded: new Set(),  // folded headings: 'cs-<section>' and 'ph:<prose heading>'
-    titleBy: 'founder', slugBy: 'founder', policyBy: 'roster',
+    // **No defaults** (Ed, 2026-08-21: *we should remove the defaults, each
+    // should start as “The Founder is deciding [parameter]”*). Every setting
+    // starts with nothing chosen — not the value, not the number, and not
+    // who holds it — so a clause states the question until the founder has
+    // answered it, and no rule can be arrived at by not reading it. Note
+    // what this retires: constitutional settings used to arrive delegated to
+    // the members, which stated an answer the founder had not given.
+    titleBy: 'founder', slugBy: 'founder', policyBy: '',
     mailOpen: false,
     viewer: 0,
     app: { started: false, email: '', emailSent: false, emailVerified: false,
       mailOpen: false, name: '', pic: '', text: '', submitted: false, csId: null },
-    ending: 'roster', endsAt: '2026-08-20T18:00',
-    barBy: 'roster', tClose: 78, shape: 'ramp', tStart: 55,
-    quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
-    joinBy: 'invite',
-    lapse: 'roster', lapseDays: 90,
-    removal: 'roster',
-    authorship: 'roster', signing: 'roster', judgments: 'roster',
-    rateBy: 'founder', grant: 4, dripMin: 180, cap: 8,
-    chamber: 'roster', auditor: false, auditorBudget: 6,
+    ending: '', endsAt: '',
+    barBy: '', tClose: '', shape: '', tStart: '',
+    quorumBy: '', quorumForm: '', quorumPct: '', quorumN: '',
+    joinBy: '',
+    lapse: '', lapseDays: '',
+    removal: '',
+    authorship: '', signing: '', judgments: '',
+    rateBy: '', grant: '', dripMin: '', cap: '',
+    chamber: '', auditor: null, auditorBudget: '',
+    hatPick: null,
     roster: [{ n: '', e: '', role: 'member', founder: true, in: true, ans: {}, okd: new Set(), mid: 'founder' }],
     // **Confirmed, not merely defaulted** (Ed, 2026-08-17). A default nobody
     // read is not a decision, and these are the decisions that cannot be changed
@@ -865,7 +875,7 @@
     { k: 'remove', g: '❌', t: 'Remove a Member', kind: 'constitutional', dep: ['roster'],
       routeOf: () => (removalRung() === 'ordinary' ? 'ordinary' : 'constitutional'),
       hide: () => !motionsLive(), ready: () => true, reg: true, door: true },
-    { k: 'hat', g: '🎩', t: 'Is the Founder a member?', kind: 'personal', ready: () => true, changeable: true },
+    { k: 'hat', g: '🎩', t: 'Is the Founder a Member?', kind: 'personal', changeable: true },
     // **The register and the door are two decisions** (Ed, 2026-08-18: *We
     // should separate "Membership" which is the register of people who are
     // members from "Membership Policy" which is how people become members
@@ -875,7 +885,10 @@
     { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', key: 'policyBy', dep: ['myemail'], p: 0.41, changeable: true },
     // optional for a clerk (Ed, 2026-08-18): an anonymous founder is a
     // perfectly ordinary thing — they can simply not set a name or picture
-    { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you', dep: ['myemail'], ready: () => (iDraft() ? !!S.myname.trim() : true), changeable: true },
+    { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you', dep: ['myemail'],       // a blank name is Anonymous (§9.0c), so this card always has something
+      // to commit — and with the founding running in single file, a task
+      // that cannot be committed is a task nothing can get past
+      ready: () => true, changeable: true },
     { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you', dep: ['myemail'], changeable: true },
     // A document may start empty, which is why this is not a blocker on having
     // content but on having *decided*: a page nobody has looked at and a page
@@ -897,7 +910,9 @@
       routeOf: (v) => (/never|perpetual|no end/i.test(v) ? 'constitutional' : 'ordinary'),
       routeNote: 'What this takes depends on what you write. A different date is a proposal ✏️ like any other. <b>Never</b> — no end date at all — needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.',
 
-      ready: () => S.ending !== 'ends' || !!S.endsAt,
+      // (no `ready` of its own: *never*, or a date — CHOSEN.ending. The old
+      // predicate read true on an empty field, which was harmless only
+      // while the field arrived with a date already in it.)
       knote: 'Moving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.',
       rule: 'Each member says when they want it to end, and the document takes the <b>latest</b> answer — <b>never</b> being later than any date — so nobody is cut off before they were ready.',
       takes: 'The document takes the latest', result: 'Saturday 18:00',
@@ -1208,14 +1223,42 @@
   const answered = (c) => { const st = csState(ansKey(c));
     return !!st && st.answers.has(viewerId()); };
   const owesAnswer = (c) => !!c.ansFor && viewerIsMember() && !answered(c);
-  const ready = (c) => (c.ansFor ? filled(c) : c.ready ? c.ready() : true);
+  // With no defaults, the commit has to know what *answered* means for each
+  // setting — a rung picked, a number typed, or the whole thing handed to
+  // the members (which is an answer to who decides, and settles the clause
+  // the same way). A setting with no entry here asks for nothing beyond
+  // being opened.
+  const isNum = (v) => v !== '' && v !== null && v !== undefined && isFinite(+v);
+  const CHOSEN = {
+    chamber: () => !!S.chamber,
+    policy: () => !!S.joinBy,
+    removal: () => !!S.removal,
+    authorship: () => !!S.authorship,
+    signing: () => !!S.signing,
+    judgments: () => !!S.judgments,
+    lapse: () => S.lapse === 'never' || (!!S.lapse && isNum(S.lapseDays)),
+    ending: () => S.ending === 'perpetual' || (!!S.ending && !!S.endsAt),
+    bar: () => isNum(S.tClose),
+    pace: () => S.shape === 'fixed' || (S.shape === 'ramp' && isNum(S.tStart)),
+    quorum: () => !!S.quorumForm && isNum(S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
+    // the cap cannot be below the grant: the module quietly raises it, so a
+    // cap of 2 beside a grant of 5 would print a rule the document does not have
+    rate: () => isNum(S.grant) && isNum(S.cap) && isNum(S.dripMin) && +S.cap >= +S.grant,
+    machines: () => S.auditor === false || (S.auditor === true && isNum(S.auditorBudget)),
+    hat: () => !!S.hatPick,
+  };
+  const chosen = (k) => wantsDelegate(k) || !CHOSEN[k] || CHOSEN[k]();
+  const ready = (c) => (c.ansFor ? filled(c) : c.ready ? c.ready() : chosen(c.k));
   // what the commit control asks: is there something here to commit? The
   // same as `ready` everywhere except the title, whose lane is provisional
   const commitReady = (c) => (c.k === 'title'
     ? (!!titlePending() && titlePending() !== cs_titleNow())
     : ready(c));
   const settled = (c) => {
-    if (c.k === 'hat') return true; // always answered — member by default
+    // 🎩 used to be *always answered — member by default*, which is why it
+    // never appeared as a task: the founder was made a member by a default
+    // nobody read (Ed, 2026-08-21). It is a question like any other now.
+    if (c.k === 'hat') return S.seen.has('hat');
     // verified is the whole of what this card asks (a member's address is
     // verified by arrival; changing it un-verifies and asks again)
     if (c.k === 'myemail') return S.emailVerified;
@@ -1307,10 +1350,33 @@
     });
   };
   const ansWaveReady = (c) => ansGate(c.ansFor);
+  // **One task at a time, in the constitution's own order** (Ed, 2026-08-21:
+  // *the founder should have to consider each task one at a time in the order
+  // they appear in the constitution, from the top to the bottom*). The
+  // founding used to be paced in waves — a dependency graph, which let a
+  // whole rank of questions through at once and made the rail a list to
+  // triage rather than a question to answer. It runs as a single file now:
+  // the birth (🪶 → 📍 → 📧), then each setting as its clause is reached,
+  // born when the one before it settles. Two consequences worth knowing:
+  // 🌍 is asked early, because it is the penultimate clause of the opening
+  // run, and 📄 the text is asked last, because the charter follows the
+  // whole constitution — you set the rules, then you write the thing.
+  const ORDER = ['title', 'slug', 'myemail', 'chamber',
+    'policy', 'lapse', 'removal', 'roster', 'hat', 'myname', 'mypic',
+    'rate', 'machines', 'ending', 'quorum', 'bar', 'pace',
+    'authorship', 'signing', 'judgments', 'text'];
+  // a card in the order waits for everything above it and nothing else: the
+  // ORDER *is* the dependency list, so a card's own `dep` (which paced the
+  // waves) is not consulted for the ones it covers
+  const orderReady = (c) => {
+    const i = ORDER.indexOf(c.k);
+    return i < 0 ? (c.dep || []).every((k) => settled(card(k)))
+      : ORDER.slice(0, i).every((k) => settled(card(k)));
+  };
   const visible = (c) => (isStranger() && (c.isGate || c.kind === 'personal' || c.ansFor) ? false : c.ansFor
     ? viewerIsMember() && ansDue() && ansWaveReady(c) &&
       isRoom(card(c.ansFor)) && visible(card(c.ansFor))
-    : !(c.hide && c.hide()) && (c.dep || []).every((k) => settled(card(k))));
+    : !(c.hide && c.hide()) && orderReady(c));
   // One question card per delegable setting, born when its setting is handed
   // over and gone if it is taken back. Same glyph, same title — it is the
   // same question — told apart by whose pile it stands in.
@@ -1336,7 +1402,7 @@
     // no intro line (Ed, 2026-08-18) — the sentences are the section
     { key: 'members', title: 'Membership',
       text: '',
-      keys: ['roster', 'invite', 'remove', 'policy', 'lapse', 'removal', 'myemail', 'myname', 'mypic'],
+      keys: ['roster', 'invite', 'remove', 'hat', 'policy', 'lapse', 'removal', 'myemail', 'myname', 'mypic'],
       // **Members and Applications are subsections** (Ed, 2026-08-18):
       // Members IS the list — 🪪, the tab for invitations, stands beside
       // it, and the bottom row is your own membership wearing the ✋ and
@@ -1355,14 +1421,20 @@
         // No avatar: a face here would claim a person who does not exist.
         // a stranger reads how many, never who (Q508 — shipped private)
         const list = isStranger() ? '<div class="memlist"><div class="memrow nobody">' + strMembersLine() + '</div></div>'
+          // **You are at the top** (Ed, 2026-08-21). A membership starts as
+          // one person, and that person is reading this: the list opens with
+          // your own row — the only one wearing your ✋🖼️ tabs — and says
+          // plainly that there is nobody else yet. (It used to end with you,
+          // under a room that had not been invited.)
           : '<div class="memlist">' +
-          (others.length === 0 ? '<div class="memrow nobody">Nobody else yet.</div>' : '') +
+          '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
+          '<span class="mn">' + esc(S.myname || 'Anonymous') + ' <span class="chip founder">founder</span> <span class="chip">you</span>' +
+          (iDraft() ? '' : ' <span class="chip">clerk</span>') + '</span></div>' +
+          (others.length === 0 ? '<div class="memrow nobody">(nobody else here yet)</div>' : '') +
           others.map((p) => '<div class="memrow">' + avHtml(p) +
             '<span class="mn">' + esc(p.n || (!p.in && p.e) || 'Anonymous') +
             (p.in ? '' : ' <span class="chip pending">invited</span>') + '</span></div>').join('') +
-          '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
-          '<span class="mn">' + esc(S.myname || 'Anonymous') + ' <span class="chip founder">founder</span> <span class="chip">you</span>' +
-          (iDraft() ? '' : ' <span class="chip">clerk</span>') + '</span></div></div>';
+          '</div>';
         const openId = my.find((c) => S.open === c.k);
         // policy first, lapse under it, removal under that (Q401: "a new
         // paragraph under 💤 Lapse"), then the Members list (Ed)
@@ -1981,6 +2053,22 @@
           cs.setIdentity(now(), r.mid, { name: r.n }); } catch (e) {} } } });
       if (!cs.textConfirmed) { try { cs.confirmStartingText(now(), proseText()); } catch (e) {} }
       CARDS.forEach((c) => S.seen.add(c.k));
+      // **The stagehand fills the founder's hand.** Since the surface itself
+      // starts with nothing chosen (Ed, 2026-08-21), ⏩ has to make the
+      // choices a founder would — and it makes the ones the defaults used to
+      // make, so the fixture still settles into the document every sentence
+      // in the mockup describes. This literal is the old default set, and
+      // the only place it survives.
+      const SEED = { ending: 'roster', endsAt: '2026-08-20T18:00',
+        barBy: 'roster', tClose: 78, shape: 'ramp', tStart: 55,
+        quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
+        joinBy: 'invite', policyBy: 'roster', lapse: 'roster', lapseDays: 90,
+        removal: 'roster', authorship: 'roster', signing: 'roster', judgments: 'roster',
+        rateBy: 'founder', grant: 4, dripMin: 180, cap: 8,
+        chamber: 'roster', auditor: false, auditorBudget: 6 };
+      for (const k of Object.keys(SEED)) {
+        if (S[k] === '' || S[k] === null || S[k] === undefined) S[k] = SEED[k];
+      }
       // the founder's confirms: delegate what the radios delegate, set the rest
       for (const k of MANAGED_KEYS) {
         if (k === 'title' || k === 'slug') continue;
@@ -2555,7 +2643,8 @@
       const started = !!(cs && cs.constitutedAtT !== null);
       // the radio is the session-view's own opt(), over the derived current
       // (the pw() pattern): the generic data-set handler lands S.hatPick
-      const o = { hatPick: S.hatPick || (iDraft() ? 'member' : 'clerk') };
+      // nothing is preselected until it has been answered once
+      const o = { hatPick: S.hatPick || (S.seen.has('hat') ? (iDraft() ? 'member' : 'clerk') : null) };
       return '<p class="why">Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.</p>' +
         '<div class="choice" role="radiogroup">' +
         opt(o, 'hatPick', 'member', 'Member — drafting too',
@@ -2679,7 +2768,7 @@
         '<span class="setrow2">' + num(S, 'tClose', 'At the end', 50, 99, '%') + '</span>') +
       '</div>',
     pace: () =>
-      '<p class="why">Whether the number on the last card applies the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily, while there is still time for somebody to challenge them.</p>' +
+      '<p class="why">Whether the approval threshold applies the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily, while there is still time for somebody to challenge them.</p>' +
       '<div class="choice" role="radiogroup">' +
       opt(S, 'shape', 'ramp', 'Rising', 'Starts lower when people begin judging and climbs to the number at the end.',
         '<span class="setrow2">' + num(S, 'tStart', 'When judging opens', 50, 99, '%') + '</span>', perpetual()) +
@@ -3043,9 +3132,9 @@
           ((S.titleDraft !== null && S.titleDraft !== cs_titleNow()) ? '' : ' disabled') +
           ' title="Put it back as it stands">🗑️</button>' +
           '<button class="btn btn-approve glyphbtn emojibtn"' + (commitReady(c) ? '' : ' disabled') +
-          ' data-confirm="1" title="' + (commitReady(c) ? (cs ? 'Set it — yours to change any time' : 'Name it') : 'Give it a name first') + '">' + (cs ? '✒️' : '🪶') + '</button>'
+          ' data-confirm="1" title="' + commitTitle(c) + '">' + (cs ? '✒️' : '🪶') + '</button>'
         : c.k === 'hat'
-        ? (() => { const cur = iDraft() ? 'member' : 'clerk';
+        ? (() => { const cur = S.seen.has('hat') ? (iDraft() ? 'member' : 'clerk') : null;
             const dirty = !!S.hatPick && S.hatPick !== cur &&
               !(cs && cs.constitutedAtT !== null);
             return '<button class="btn glyphbtn" data-hatdrop="1"' + (dirty ? '' : ' disabled') +
@@ -3069,7 +3158,7 @@
         // nobody (§9.0c), so they commit with ✓, never the pen.
         '<button class="btn btn-approve glyphbtn' + (c.ansFor || c.kind === 'personal' ? '' : ' emojibtn') + '"' +
         (ready(c) ? '' : ' disabled') +
-        ' data-confirm="1" title="' + (ready(c) ? (c.ansFor ? 'Answer' : c.kind === 'personal' ? 'Save' : 'Set it') : 'Not answered yet') + '">' + (!cs ? '🪶' : c.ansFor || c.kind === 'personal' ? TICK : '✒️') + '</button>';
+        ' data-confirm="1" title="' + commitTitle(c) + '">' + (!cs ? '🪶' : c.ansFor || c.kind === 'personal' ? TICK : '✒️') + '</button>';
       return cardHtml(c, ctx, body + kindLine, foot, g.cards);
     };
     // the title card opens in the title's own paragraph, whatever else
@@ -3149,9 +3238,19 @@
     }
   }
 
+  // what the commit says it will do — one expression, because the button is
+  // written by the render and corrected live by refreshCommit, and a title
+  // that only the render knows how to write goes stale the moment a number
+  // wakes the button
+  const commitTitle = (c) => (c.k === 'title'
+    // 🪶's own wording: the title card is the one that is typed into, so it
+    // says what is missing rather than that nothing has been answered
+    ? (commitReady(c) ? (cs ? 'Set it — yours to change any time' : 'Name it') : 'Give it a name first')
+    : ready(c) ? (c.ansFor ? 'Answer' : c.kind === 'personal' ? 'Save' : 'Set it')
+    : 'Not answered yet');
   function refreshCommit() {
     const b = document.querySelector('[data-confirm]');
-    if (b && S.open) b.disabled = !commitReady(card(S.open));
+    if (b && S.open) { b.disabled = !commitReady(card(S.open)); b.title = commitTitle(card(S.open)); }
     // the title card's other live pieces follow the typing without a
     // re-render (which would take the caret). The head is NOT one of them:
     // it says what the document is called *now*, and that does not move
@@ -3411,7 +3510,6 @@
     // ✒️ on 📧, before it is verified, IS the send (Ed, 2026-08-19) — and it
     // leaves the card standing, because the inbox opens over it and what you
     // come back to is the card you were on
-    if (ev.target.closest('[data-confirm]') && !cs) featherFlight(ev.target.closest('[data-confirm]'));
     if (ev.target.closest('[data-confirm]') && S.open === 'myemail' && !S.emailVerified) {
       return sendVerify();
     }
@@ -3481,7 +3579,7 @@
     if (ev.target.closest('[data-hatdrop]')) { S.hatPick = null; return render(); }
     if (ev.target.closest('[data-hatgo]')) {
       const m = meRow(); const want = S.hatPick;
-      if (m && want) { m.role = want === 'clerk' ? 'clerk' : 'member';
+      if (m && want) { m.role = want === 'clerk' ? 'clerk' : 'member'; S.seen.add('hat');
         if (cs) { try { cs.setConvenorMembership(now(), want !== 'clerk'); }
           catch (e) { console.warn('[cs]', e && e.message); } } }
       S.hatPick = null; return render(); }
@@ -3525,8 +3623,7 @@
         : v;
       return render(); }
     const o = ev.target.closest('[data-set]');
-    if (o) { const v = o.dataset.val;
-      S[o.dataset.set] = (v === 'true') ? true : (v === 'false') ? false : v;
+    if (o) { S[o.dataset.set] = setVal(o.dataset.val);
       if (perpetual() && S.shape === 'ramp') S.shape = 'fixed';
       return render(); }
     const pic = ev.target.closest('[data-pic]');
@@ -3666,6 +3763,21 @@
       const again = document.querySelector('[data-slide="' + sl.dataset.slide + '"]');
       if (again) again.focus(); return; }
     const t = ev.target;
+    // **Typing into a rung's field is choosing that rung.** The field only
+    // exists inside its own option — the days inside *They lapse*, the date
+    // inside *At a set time*, the number inside *I set it* — so a value
+    // typed with the radio still dark is a state nobody means. It was
+    // unreachable while every field arrived pre-filled; with the defaults
+    // gone it is the first thing a founder does (Ed, 2026-08-21).
+    const rungOf = t.closest && t.closest('.pick');
+    const rung = rungOf && rungOf.querySelector('[data-set][data-val]');
+    if (rung && S[rung.dataset.set] !== setVal(rung.dataset.val)) {
+      S[rung.dataset.set] = setVal(rung.dataset.val);
+      rungOf.classList.add('on');
+      const others = rungOf.parentElement ? rungOf.parentElement.querySelectorAll('.pick') : [];
+      others.forEach((p) => { const b = p.querySelector('[data-set="' + rung.dataset.set + '"]');
+        if (b && b !== rung) p.classList.remove('on'); });
+    }
     const lane = t.closest && t.closest('[data-titlelane]');
     if (lane) { S.titleDraft = lane.textContent.trim();
       lane.classList.toggle('blank', !S.titleDraft);
@@ -3701,8 +3813,13 @@
       const sv = document.querySelector('[data-act="sendverify"]');
       if (sv) sv.disabled = !EMAIL_OK.test(S.myemail);
       renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
-    if (t.dataset.txt) { S[t.dataset.txt] = t.value; renderRail(); SESSION.refreshRail(); }
-    if (t.dataset.num) { S[t.dataset.num] = +t.value; renderRail(); SESSION.refreshRail(); }
+    if (t.dataset.txt) { S[t.dataset.txt] = t.value;
+      renderRail(); SESSION.refreshRail(); refreshCommit(); }
+    // refreshCommit too: with no defaults a number IS the answer, so the
+    // commit wakes on the typing (the txt branch above has always done this;
+    // the num branch never needed to while every number arrived pre-filled)
+    if (t.dataset.num) { S[t.dataset.num] = t.value === '' ? '' : +t.value;
+      renderRail(); SESSION.refreshRail(); refreshCommit(); }
   });
   document.getElementById('devwho').addEventListener('change', (ev) => {
     const v = ev.target.value;
@@ -4825,30 +4942,40 @@
   }
   // a feather spent on a founding act flies from the wallet to the button —
   // a click, not a hold: only 🪶 happens at the speed of thought (Q444)
-  function featherFlight(btn) {
-    const f = [...document.querySelectorAll('#quill i')].pop();
-    if (!f || !btn) return;
-    SESSION.flyGlyph('🪶', f.getBoundingClientRect(), btn.getBoundingClientRect(), 480, { r0: -20, r1: 20 });
-  }
-  // **The hold ladder** (Q445c): ✒️ is a one-second hold — the pen flies from
-  // the wallet to the button and the set lands when it arrives; let go early
-  // and it flies home with nothing set. A click with no pointer behind it (a
-  // key, a script) sets at once.
+  // **The hold ladder** (Q445c; Ed, 2026-08-21: 🪶 joins ✒️). A commit that
+  // spends something out of a wallet is a **one-second hold**: the glyph
+  // flies from the wallet to the button and the act lands when it arrives;
+  // let go early and it flies home with nothing spent. The feather used to
+  // fly on the click, which taught the animation without teaching the
+  // gesture — and the birth is where a founder first learns that an act
+  // costs something, so it is the last place the lesson should be optional.
+  // A click with no pointer behind it (a key, a script) still acts at once.
   const PEN_HOLD_MS = 1000;
+  // which wallet a commit spends from — the quill before the save, the pen
+  // after it. Nothing else on the surface commits out of a wallet.
+  const holdWallet = (b) => {
+    if (!b || !b.matches('[data-confirm]') || b.disabled) return null;
+    if (!cs && /🪶/.test(b.textContent) && document.querySelector('#quill i')) return { g: '🪶', sel: '#quill i' };
+    if (cs && /✒️/.test(b.textContent) && document.querySelector('#penwallet i')) return { g: '✒️', sel: '#penwallet i' };
+    return null;
+  };
   let penHold = null, penHoldFired = false, penPointerDown = false, penSwallowUntil = 0;
-  const isPenCommit = (b) => !!b && !!cs && b.matches('[data-confirm]') &&
-    /✒️/.test(b.textContent) && !b.disabled && !!document.querySelector('#penwallet i');
+  const isPenCommit = (b) => !!holdWallet(b);
   document.addEventListener('pointerdown', (ev) => {
     const b = ev.target.closest && ev.target.closest('[data-confirm]');
-    if (!isPenCommit(b) || ev.button !== 0) return;
+    const w = holdWallet(b);
+    if (!w || ev.button !== 0) return;
     penPointerDown = true;
-    const from = document.querySelector('#penwallet i').getBoundingClientRect();
+    // the feather leaves from the last one in the row, as it always has
+    const from = [...document.querySelectorAll(w.sel)].pop().getBoundingClientRect();
     const to = b.getBoundingClientRect();
-    b.classList.add('penholding'); penGhost = true; renderPowerWallets();
-    const flight = SESSION.flyGlyph('✒️', from, to, PEN_HOLD_MS, { r0: -30, r1: 0, easing: 'linear' });
-    penHold = { b, flight, timer: setTimeout(() => {
+    b.classList.add('penholding');
+    if (w.g === '🪶') quillGhost = true; else penGhost = true;
+    renderPowerWallets();
+    const flight = SESSION.flyGlyph(w.g, from, to, PEN_HOLD_MS, { r0: -30, r1: 0, easing: 'linear' });
+    penHold = { b, w, flight, timer: setTimeout(() => {
       penHold = null; penHoldFired = true;
-      b.classList.remove('penholding'); penGhost = false;
+      b.classList.remove('penholding'); penGhost = false; quillGhost = false;
       try { b.click(); } finally { penHoldFired = false; penPointerDown = false; penSwallowUntil = Date.now() + 700; }
       renderPowerWallets();
     }, PEN_HOLD_MS) };
@@ -4856,7 +4983,8 @@
   const penRelease = () => {
     if (!penHold) return;
     clearTimeout(penHold.timer); penHold.flight.cancel();
-    penHold.b.classList.remove('penholding'); penHold = null; penGhost = false; renderPowerWallets();
+    penHold.b.classList.remove('penholding'); penHold = null;
+    penGhost = false; quillGhost = false; renderPowerWallets();
   };
   document.addEventListener('pointerup', penRelease);
   document.addEventListener('pointercancel', penRelease);

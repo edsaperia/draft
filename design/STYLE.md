@@ -51,8 +51,9 @@ founder-is-member 🎩, proposing gate 💡, judging gate ⚖️, crown 👑, ho
   blindness intact.
 - **"You" belongs to tasks and cards**: a card asks you; a clause tells
   everybody.
-- One sanctioned exception: in the members list *you* stand at the bottom on
-  your own line.
+- One sanctioned exception: in the members list *you* stand at the **top** on
+  your own line, with *(nobody else here yet)* under you until somebody
+  arrives (Ed, 2026-08-21).
 
 ## 4. Titles and labels
 
@@ -124,3 +125,12 @@ Scanned: every string literal in `session.js`, `setup.js` and the page, comments
 16. **Fixed** — *0 of 7 have answered* at the door, whatever the room had done: the door serves no counts by rule, so the sentence carried a number it could not know. It says *the members are answering.*
 17. **Fixed** — under an open join policy the card was titled *Join* and promised *the link it sends is the login*, and no link was ever sent (Q509). It states the policy and offers the login it can do.
 18. **Fixed** — the Founded clause vanished for a founder who set no name, taking the founding moment with it; a blank name is *Anonymous* (§9.0c), and the clause now waits on the start rather than on the name.
+
+**Fifth pass (the founder's walk, 2026-08-21)** — every task from a blank arrival to a settled constitution, read in the order the founder now meets them (`node scripts/founding-walk.mjs`, which drives the whole founding headless and prints each card's strings).
+
+19. **Fixed** — 🎩 was titled *Is the Founder a member?*, the one question title not in Title Case (§4).
+20. **Fixed** — 📈 described its neighbour as *the number on the last card*: a body naming another card by its position, which the new pacing could have made false and which said nothing to a reader who had not just been there. It names the approval threshold (§5).
+21. **Fixed** — ✋ *Your Name* can now be saved empty (a blank name is Anonymous, §9.0c, and in a single-file founding a task that cannot be committed is a task nothing gets past), so the card had to say what saving it empty does (§5: the meaning is stated once, at the act).
+22. **Fixed** — the commit's tooltip went stale the moment a typed number woke the button, so it said *Not answered yet* over a live control. One expression (`commitTitle`) now writes it from both the render and the live refresh, the title card's own wording included.
+23. **Passed by reading** — the eighteen task bodies and their option labels against §§1–6: no banned vocabulary, no §-numbers, no raw values, second person only where a card asks, third person in every clause. The clause a settled card produces states the rule and appends only its deviations.
+24. **Noted, not surface** — with nothing pre-answered, three cards (⏱️ ✒️ 👥) open on a lone *I set it* rung with its fields beside it and no visible alternative, because delegation lives on the ✒️/🛡️ tabs by design. Legible once chosen; **Q511** asks whether the founder should meet a delegation default at all.
