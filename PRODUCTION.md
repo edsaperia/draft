@@ -322,6 +322,11 @@ service container, or the migration is tested only on this machine.
   than its count says. 413 tests, build and lint clean, local birth and
   `/d/:slug` verified. Q501–504 filed. **Not pushed** — the push is the
   deploy and Ed's call; `npm run verify` after.
+- 03:05 — **Pushed and live**: CI green (tests, build, deploy, verify);
+  `/healthz` → build `aaf057b`, `pg`, 2 documents. `/` 200, `/session.js`
+  200, `/setup.html` 404 (the server serves only the page it names — the
+  redirect file is for the static design server), reference paths 404.
+  Open for Ed: Q501–504.
 
 ## Decisions
 
