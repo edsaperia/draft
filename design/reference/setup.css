@@ -519,7 +519,16 @@ button.cline:hover b { text-decoration: underline; }
    stand — list furniture, not a clause, so it speaks quietly; it also gives
    the you-row a row's clearance from the 🪪 pile above (the Q308 floor) */
 .memrow.nobody { flex-basis: 100%; color: var(--muted); min-height: 22px; }
-.memrow.meRow { margin-top: var(--s3); min-height: 30px; }
+/* **Your own row clears the paragraph's own tab** (Ed, 2026-08-21: *membership
+   tab and your name tab overlap*). The Members block is one paragraph carrying
+   two tab columns in one gutter — 🪪 (with ✉️ ❌ 🎩) at the paragraph's head,
+   and your ✋🖼️📧 riding the first list row, which is yours since you moved to
+   the top of the list. At 12px they collided by 18px. `fitStacks` cannot help:
+   it shrinks a *pile's* peek and bails under two tabs, and a lone tab is 30px
+   and cannot shrink (Q308's stated residual). So the row is spaced to clear a
+   full tab instead — 42px is the tallest the head pile gets (38px stacked) plus
+   the gutter's own 4px. */
+.memrow.meRow { margin-top: 42px; min-height: 30px; }
 .memrow .chip { font-size: var(--t-micro); }
 
 /* **The card overhangs the text axis** (Ed's QA, 2026-08-18: the tabs were
