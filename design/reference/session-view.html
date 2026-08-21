@@ -335,7 +335,12 @@
           if (!data || !cs || !cs.isRemote) return;
           if (!data.view) return; // unchanged — the short answer has no view
           // the stranger's payload is reshaped to what the predicates read
-          if (data.stranger) { STR = data; data = strangerAsView(data); }
+          // a seat can die mid-session (removal, §9.5a): the door is what
+          // the poll starts serving, so the viewer moves to it — the boot
+          // path does the same, and without this the member surface would
+          // re-render over an empty view with nothing to say why
+          if (data.stranger) { STR = data; data = strangerAsView(data); S.viewer = 'stranger'; }
+          else if (S.viewer === 'stranger') { STR = null; S.viewer = 0; }
           // the engine's seq moves on every judgment, proposal and adoption,
           // so it is the cheap fingerprint for the charter's side of the view
           const moved = data.seq !== cs.v.seq || (data.eseq || 0) !== (cs.v.eseq || 0) ||
@@ -428,7 +433,8 @@
   // what the document is called now, and what the lane is proposing
   const cs_titleNow = () => (cs ? cs.titleOf : S.title);
   const titlePending = () => (S.titleDraft !== null ? S.titleDraft : cs_titleNow());
-  const viewerId = () => (S.viewer === 'applicant' ? null : (viewerRow().mid || FOUNDER));
+  const viewerId = () => (S.viewer === 'applicant' || S.viewer === 'stranger'
+    ? null : (viewerRow().mid || FOUNDER));
   // **A heading on the screen is a heading in the text**: the editor keeps
   // the '# ' as a class while you type (relabel), so it is put back when the
   // text is read out — the stored text is the document, and the charter
@@ -1415,16 +1421,17 @@
   const groups = () => [
     { key: 'constitution', label: 'Constitution',
       sections: secLive(),
-      // Founded by [avatar] [name] — only once the founder has a name; the
-      // founding time is never known before the start (Ed)
+      // Founded by [avatar] [name] — only once the document has begun, since
+      // the founding time is never known before the start (§9.6a); a founder
+      // who set no name is Anonymous like anybody else (§9.0c)
       lead: (h) => titleGovPara(h) +
         (visible(card('slug')) ? h.para(card('slug')) + h.tasks(card('slug')) : '') +
         // 🌍 is about the document, not member privacy — the penultimate
         // clause of the opening section (Ed, 2026-08-19)
         (visible(card('chamber')) ? h.para(card('chamber')) + h.tasks(card('chamber')) : '') +
-        (founderInfo().n.trim()
+        (foundedAt()
           ? '<div class="cpara notab"><p class="cpv founded">Founded by ' +
-            avHtml(founderInfo()) + ' ' + esc(founderInfo().n) +
+            avHtml(founderInfo()) + ' ' + esc(founderInfo().n.trim() || 'Anonymous') +
             // 👑 by any reservation (Ed, Q379 wide); 📯 = holds nothing.
             ' <span title="' + (founderCrowned()
               ? 'Part of the constitution is reserved: changing it needs the founder’s assent'
@@ -1460,6 +1467,8 @@
       return ({ invite: 'Invitation only', proposed: 'Applications by proposal',
         apply: 'Anyone may apply', open: 'Open' }[v ? v.joinPolicy : S.joinBy]) +
         ((cs && (regPair().u || regPair().a)) ? ' · 👑 reserved' : ''); },
+    chamber: () => ({ link: 'Anyone with the link', closed: 'Members only',
+      public: 'Public' }[takenOf('chamber') || S.chamber]),
     ending: () => (perpetual() ? 'Never — it runs until too few members are active'
       : new Date(endingVal() || S.endsAt).toLocaleString(undefined,
         { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
@@ -1481,8 +1490,8 @@
     rate: () => { const v = takenValOf('rate');
       return (v ? v.grant : S.grant) + ' each · +1 every ' + (v ? v.dripMinutes : S.dripMin) +
         ' min · cap ' + (v ? v.cap : S.cap); },
-    chamber: () => ({ link: 'Anyone with the link', closed: 'Members only', public: 'Public' }[S.chamber]),
-    policy: () => ({ invite: 'Invitation only', proposed: 'Applications by proposal', apply: 'Anyone may apply', open: 'Open' }[S.joinBy]),
+    // (🌍 and 🤝 are stated once, above, module-first like every neighbour:
+    // a second entry here used to override them and read S alone)
     machines: () => { const tv = takenValOf('machines');
       const on = tv ? tv.enabled : S.auditor === true;
       return (on ? 'The coherence auditor, ' + (tv && tv.enabled ? tv.budget : S.auditorBudget) + ' ✏️s' : 'People only'); },
@@ -2231,7 +2240,8 @@
         // answer count would be counting the founder alone (pacing pass,
         // 2026-08-19) — the honest tail is that the question waits for a room
         : 'The Founder has delegated to members to decide ' + (WHAT[c.k] || 'this') + ' — ' +
-          (roomExists() ? Math.min(c.in || 0, E()) + ' of ' + E() + ' have answered.'
+          (isStranger() ? 'the members are answering.'
+            : roomExists() ? Math.min(c.in || 0, E()) + ' of ' + E() + ' have answered.'
             : 'waiting for members.');
     }
     return settled(c) ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c)) + holderLine(c.k)
@@ -3723,9 +3733,9 @@
   let STR = null;   // the server's stranger payload (live); the fixture derives its own
   const HOLDING = {
     drafting: () => 'The constitution is being drafted.',
-    'founder-deciding': (f) => 'The founder ' + (f ? esc(f) + ' ' : '') + 'is deciding if you can see this document.',
+    'founder-deciding': (f) => 'The founder ' + (f ? f + ' ' : '') + 'is deciding if you can see this document.',
     'members-deciding': () => 'The members are deciding if you can see this document.',
-    'members-only': (f, by) => (by === 'members' ? 'The members decided' : 'The founder ' + (f ? esc(f) + ' ' : '') + 'decided') +
+    'members-only': (f, by) => (by === 'members' ? 'The members decided' : 'The founder ' + (f ? f + ' ' : '') + 'decided') +
       ' this document is visible to members only.',
     open: () => '',
   };
@@ -3736,19 +3746,20 @@
     const ch = cs ? cs.settingState('chamber') : null;
     const rung = ch && ch.value ? ch.value.rung : null;
     const kind = !cs || !cs.textConfirmed ? 'drafting'
-      : rung === 'link' || rung === 'public' ? 'open'
-      : rung === 'closed' ? 'members-only'
-      : ch && ch.holder === 'members' ? 'members-deciding' : 'founder-deciding';
+      : !ch || ch.settledBy === null
+        ? (ch && ch.holder === 'members' ? 'members-deciding' : 'founder-deciding')
+      : rung === 'link' || rung === 'public' ? 'open' : 'members-only';
     const canRead = kind === 'open';
     const pol = cs ? cs.settingState('applications') : null;
     const jp = pol && pol.value ? pol.value.joinPolicy : 'invite';
     const begun = !!(cs && cs.constitutedAtT !== null);
     return { stranger: true, title: S.title, slug: S.slug,
-      holding: { kind, sentence: HOLDING[kind](f.n, ch && ch.settledBy === 'ceremony' ? 'members' : 'founder') },
+      holding: { kind, sentence: HOLDING[kind](f.n, ch && ch.settledBy === 'convenor' ? 'founder' : 'members') },
       founder: { name: f.n || null, picture: f.pic || null },
       canRead, text: canRead && cs ? cs.text : null,
       textShape: cs && cs.text ? shapeOf(cs.text) : [],
-      joinPolicy: jp, applyOpen: begun && (jp === 'proposed' || jp === 'apply'), joinOpen: begun && jp === 'open',
+      joinPolicy: jp, applyOpen: begun && !cs.closed && (jp === 'proposed' || jp === 'apply'),
+      joinOpen: begun && !cs.closed && jp === 'open',
       members: { arrived: cs ? cs.E() : 0 } };
   };
   const strPayload = () => (LIVEMODE ? STR : fixtureStrangerPayload());
@@ -3785,22 +3796,49 @@
     // is the rule's own state — settled grey, or ⏳ while the room decides
     mustAct: { value: () => false },
     news: { value: () => false },
+    // a value the room settled is not "set by the founder": the shared body
+    // takes its sentence from whoever is calling it (STYLE 5)
+    lockline: { value: (c) => {
+      const st = csState(c.k);
+      return st && st.settledBy && st.settledBy !== 'convenor'
+        ? 'Decided by the members.'
+        : 'Set by the founder when the document was made.';
+    } },
   });
+  // An undecided rule has no value to print and nobody to attribute it to,
+  // so the card says who is deciding it — the paragraph's own sentence.
+  const strangerReadBody = (c) => {
+    const st = csState(c.k);
+    if (st && st.settledBy === null) {
+      return '<p class="why">' + esc(st.holder === 'members'
+        ? 'The members are deciding this.'
+        : 'The founder is deciding this.') + '</p>';
+    }
+    return readBody(c, strCtx);
+  };
   const strangerReadCard = (g) => {
     const c = card(S.open);
     if (!c || !g.cards.some((x) => x.k === c.k)) return '';
-    const body = c.k === 'text' ? strangerTextBody() : readBody(c, strCtx);
+    const body = c.k === 'text' ? strangerTextBody() : strangerReadBody(c);
     return cardHtml(c, strCtx, body, '<button class="btn" data-close="1">Close</button>', g.cards);
   };
   const strangerTextBody = () => {
     const p = strPayload();
-    return '<p class="why">' + (p && p.holding.sentence ? p.holding.sentence : 'The text is readable.') + '</p>' +
+    // the sentence is plain text in the payload (its other consumer sets it
+    // with textContent, and the founder's name is a member's own string):
+    // it is escaped here, at the one place it becomes markup
+    return '<p class="why">' + esc(p && p.holding.sentence ? p.holding.sentence : 'The text is readable.') + '</p>' +
       (p && p.canRead ? '<div class="doctext">' + textDivs(p.text || '') + '</div>' : '');
   };
   // the charter column: the text where 🌍 permits (read-only — typing opens
   // nothing), else its shape as bars
   function syncStrangerCharter() {
     const p = strPayload();
+    // the door prints what the module holds and nothing else: there is no
+    // provisional layer behind a stranger, so the page fields are filled
+    // from the settings the payload carries (the same mapping the member
+    // surface uses — a second copy of it would be a second truth)
+    if (cs) hydrateFromModule();
     const hold = document.getElementById('holding'), red = document.getElementById('redacted');
     const sentence = p ? p.holding.sentence : '';
     hold.textContent = sentence;
@@ -3850,7 +3888,10 @@
   // the rail's one card
   const STRCARDS = () => {
     const p = strPayload() || {};
-    const login = { k: 'strlogin', g: '📧', t: p.joinOpen ? 'Join' : 'Log In', kind: 'personal', own: 'you',
+    // Under an open join policy the act the word Join names — arriving IS
+    // joining — is not built (Q509), and /login mails a non-member nothing:
+    // the door states the policy and offers the login it can actually do.
+    const login = { k: 'strlogin', g: '📧', t: 'Log In', kind: 'personal', own: 'you',
       done: () => false };
     const apply = { k: 'strapply', g: '🪪', t: 'Apply for Membership', kind: 'personal', own: 'you', done: () => false };
     return p.applyOpen ? [login, apply] : [login];
@@ -3870,7 +3911,7 @@
   function strangerCardHtml() {
     const c = STRCARDS().find((x) => x.k === S.open);
     if (!c) return '';
-    const okAddr = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email);
+    const okAddr = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email.trim());
     const p = strPayload() || {};
     const body = STRS.sent === c.k
       ? '<p class="why">Sent to <b>' + esc(STRS.sentTo) + '</b>. ' +
@@ -3879,8 +3920,8 @@
         '<div style="margin-top:var(--s3)"><button class="btn" data-stredit="1">Wrong address?</button></div>'
       : '<p class="why">' + (c.k === 'strapply'
           ? 'Membership is by application. Your email is your identity here — the link it sends is the login, and the answer arrives on it.'
-          : p.joinOpen ? 'Anyone with the link may join. Your email is your identity here — the link it sends is the login.'
-          : 'Members log in by email: enter the address the membership knows you by, and follow the link it sends. Nothing here says whether an address is a member’s.') + '</p>' +
+          : (p.joinOpen ? 'Anyone with the link may join. ' : '') +
+            'Members log in by email: enter the address the membership knows you by, and follow the link it sends. Nothing here says whether an address is a member’s.') + '</p>' +
         '<span class="fld"><label>Your email</label><input type="email" data-stremail="1" value="' + esc(STRS.email) + '" placeholder="you@example.com" style="width:20rem"></span>' +
         '<div style="margin-top:var(--s3)"><button class="btn"' + (okAddr ? '' : ' disabled') + ' data-strsend="' + c.k + '">Send the link</button></div>';
     const foot = '<button class="btn" data-close="1">Close</button>';
@@ -3891,7 +3932,7 @@
     if (!t) return;
     STRS.email = t.value;
     const b = document.querySelector('[data-strsend]');
-    if (b) b.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email);
+    if (b) b.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email.trim());
   });
   document.addEventListener('click', (ev) => {
     const send = ev.target.closest('[data-strsend]');
@@ -4057,6 +4098,12 @@
     const v = cs.v;
     if (skipKey !== 'title') S.title = v.title;
     if (skipKey !== 'slug') S.slug = v.slug;
+    hydrateFromModule(skipKey);
+  }
+  // the value half alone: the door has no provisional layer of its own, so
+  // what it prints must come from the module — the same mapping the member
+  // surface hydrates through, never a second copy of it
+  function hydrateFromModule(skipKey) {
     const val2 = (mid) => { const st = cs.settingState(mid); return st && st.value; };
     const MAPV = {
       ending: (x) => { S.ending = x.endsAtMs === null ? 'perpetual' : 'ends';

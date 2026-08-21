@@ -394,6 +394,20 @@ last, being the one irreversible thing):
 - 10:40 — **Pushed `5a3f019`; CI green (ci + probe); live** — `/healthz` → build
   `5a3f019`, `pg`, 3 documents (migration 2 applied on boot); `/` 200. The
   design day is on docs.vote.
+- 11:20 — **Review #2 (`/code-review`) over the stranger's door, worked through.**
+  Ten findings, nine real; two more found walking the door in a browser. The one
+  that mattered: the founder's name reached an unauthenticated visitor's page
+  through `innerHTML` unescaped — **stored XSS at the public door**, live since
+  the door shipped this morning. Fixed at the markup site, contract pinned by a
+  server test. The rest were the door telling small lies (page defaults printed
+  as the document's rules, *Set to undefined*, *0 of 7 have answered* whatever
+  the room had done, a *Join* card that mails nothing, the Founded clause
+  vanishing for an unnamed founder) plus two structural ones: a seat that dies
+  mid-session degraded into a blank member page instead of falling back to the
+  door, and a **duplicate key in the page's `VALUE` map** whose second,
+  module-blind copy had silently overridden 🌍 and 🤝. 447 tests + the new one,
+  typecheck, lint, build, both probes (session IDENTICAL, setup 0 diffs).
+  Not deployed — Ed's call.
 
 ## Decisions
 

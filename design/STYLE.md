@@ -116,3 +116,11 @@ Scanned: every string literal in `session.js`, `setup.js` and the page, comments
 12. **Open** — the clock says *Frozen* without *— N must return* until the module serves the count (close, server half).
 
 **Third pass (10:20)** — over the strings of items 4–7 (wallets and grants, 🍾, 🥂, the closed page, the stranger's door): the scan for §1's banned words and §2's addresses is clean. Passed by reading: the grant whys, the 🍾 batch lines, the 🥂 card (*Dissent is as welcome as praise — or nothing at all.*), the closed page's *Undecided at the close · the text that stands*, the door's holding sentences and *If that address is on the membership, a link is on its way* (no oracle in the copy either). 13. **Fixed in passing** — the Founded line named the viewer, not the founder. 12 is closed: the clock reads *Frozen — N must return* from `mustReturn`.
+
+**Fourth pass (review #2, 2026-08-21)** — the strings the stranger's door prints, read against what the module actually holds rather than against each other:
+
+14. **Fixed** — the door printed the page's own defaults as the document's rules: an undecided setting showed a built-in value as if it had been set, and a settled one read *Set to undefined* where the page had no field for it. The door now hydrates from the module through the member surface's own mapping, and an undecided rule says who is deciding it instead of naming a value (§2's *a count, never a direction* has a sibling: **a value, never a guess**).
+15. **Fixed** — *Set by the founder when the document was made.* on every rule, including the ones the room decided. The shared body now takes its sentence from the caller (§5), and the door says *Decided by the members.* Whether the member surface follows is **Q510**.
+16. **Fixed** — *0 of 7 have answered* at the door, whatever the room had done: the door serves no counts by rule, so the sentence carried a number it could not know. It says *the members are answering.*
+17. **Fixed** — under an open join policy the card was titled *Join* and promised *the link it sends is the login*, and no link was ever sent (Q509). It states the policy and offers the login it can do.
+18. **Fixed** — the Founded clause vanished for a founder who set no name, taking the founding moment with it; a blank name is *Anonymous* (§9.0c), and the clause now waits on the start rather than on the name.

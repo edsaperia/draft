@@ -1063,7 +1063,7 @@ type StrangerPayload = {
   joinPolicy: string; applyOpen: boolean; joinOpen: boolean;
   members: { arrived: number };
   view: { settings: Array<{ setting: string; kind: string; value: unknown; settledBy: string | null;
-    holder: string; powers: { unilateral: boolean; assent: boolean } }>;
+    holder: string; collecting: boolean; powers: { unilateral: boolean; assent: boolean } }>;
     gates: { proposing: boolean; judging: boolean }; crowned: boolean };
 };
 
@@ -1126,6 +1126,25 @@ describe("the stranger's door (Q452/455/456)", () => {
     k = await knock();
     expect(k.body.holding.sentence).toBe('The founder Ada Lovell is deciding if you can see this document.');
     expect(k.body.founder.name).toBe('Ada Lovell');
+
+    // The sentence is TEXT, and a name is a member's own string: the door
+    // carries it raw and every consumer escapes at the point it becomes
+    // markup (review #2 — the page dropped it into innerHTML, which made a
+    // founder's name executable in an unauthenticated visitor's browser).
+    // Escaping here instead would double-escape the consumer that sets it
+    // with textContent, so the contract is pinned rather than moved.
+    await cmd(ada, 'set-identity', { name: '<img src=x onerror=alert(1)> & Co' });
+    k = await knock();
+    expect(k.body.holding.sentence)
+      .toBe('The founder <img src=x onerror=alert(1)> & Co is deciding if you can see this document.');
+    expect(k.body.founder.name).toBe('<img src=x onerror=alert(1)> & Co');
+    await cmd(ada, 'set-identity', { name: 'Ada Lovell' });
+
+    // whether a rule is still being collected is the module's own flag: the
+    // door states rules, and a count would be a standings read (§9.0b)
+    k = await knock();
+    expect(k.body.view.settings.find((x) => x.setting === 'lapse')!.collecting).toBe(true);
+    expect(k.raw).not.toMatch(/"answeredCount"/);
 
     // members only: who decided, what they decided
     await cmd(ada, 'set-setting', { setting: 'chamber', value: { rung: 'closed' } });

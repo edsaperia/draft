@@ -802,7 +802,8 @@ export async function createDraftServer(cfg: ServerConfig,
         settings: CATALOGUE.filter((e) => e.kind !== 'personal' && e.id !== 'membership').map((e) => {
           const st = cs.settingState(e.id);
           return { setting: e.id, glyph: e.glyph, kind: e.kind, value: st.value,
-            settledBy: st.settledBy, holder: st.holder, powers: { ...st.powers } };
+            settledBy: st.settledBy, holder: st.holder, collecting: st.collecting,
+            powers: { ...st.powers } };
         }),
         gates: { proposing: begun, judging: begun && !cs.frozen && !cs.closed },
         crowned: cs.crowned(),
