@@ -845,3 +845,45 @@ describe('stage 7: health and graceful shutdown', () => {
     expect([...reopened.all()]).toHaveLength(1);
   });
 });
+
+describe('the address is chosen before the email, and reserved on send (Q460/462b)', () => {
+  it('checks availability, reserves the promised slug, and tells a second founder "taken"', async () => {
+    const { base } = await boot();
+    const ask = async (slug: string) =>
+      (await (await fetch(`${base}/api/slug/${slug}`)).json()) as { available: boolean; legal: boolean };
+
+    expect(await ask('hollow-oak')).toEqual({ available: true, legal: true });
+    expect((await ask('No Caps')).legal).toBe(false);
+
+    // the founder names the address; the mail promises it
+    const first = await post(base, '/api/docs',
+      { title: 'The Hollow Oak Club', slug: 'hollow-oak', email: 'ada@example.org' });
+    expect(first.status).toBe(200);
+    const created = await first.json() as { slug: string; devLink: string };
+    expect(created.slug).toBe('hollow-oak');
+
+    // reserved while the creation is pending: a second founder is refused
+    // and offered the nearest free address
+    expect((await ask('hollow-oak')).available).toBe(false);
+    const second = await post(base, '/api/docs',
+      { title: 'Another Oak', slug: 'hollow-oak', email: 'bo@example.org' });
+    expect(second.status).toBe(409);
+    expect(await second.json()).toEqual({ error: 'that address is taken', suggestion: 'hollow-oak-2' });
+
+    // an illegal address is refused outright
+    expect((await post(base, '/api/docs',
+      { title: 'x', slug: 'Bad Slug', email: 'cy@example.org' })).status).toBe(400);
+
+    // the click creates the document at exactly the address promised
+    const saved = await consume(created.devLink);
+    expect(saved.status).toBe(302);
+    expect(saved.headers.get('location')).toBe('/d/hollow-oak');
+    // …and now a document holds it
+    expect((await ask('hollow-oak')).available).toBe(false);
+
+    // older clients that send no slug still get one suggested from the title
+    const legacy = await (await post(base, '/api/docs',
+      { title: 'Hollow Oak', email: 'dee@example.org' })).json() as { slug: string };
+    expect(legacy.slug).toBe('hollow-oak-2');
+  });
+});

@@ -69,6 +69,11 @@ window.CARDS = (function () {
   // colour them.
   const TICK = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2 6.4 L4.7 9.2 L10 2.9\"/></svg>";
   const CROSS = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2.9 2.9 L9.1 9.1 M9.1 2.9 L2.9 9.1\"/></svg>";
+  // **The third filed mark** (Ed, Q469, 2026-08-20: *⏸️ it is! — but draw
+  // your own to match ✔️*). A race unresolved at the close is *undecided*,
+  // distinct from kept (SPEC §4.6): two vertical bars at the tick and
+  // cross's own stroke width, spanning the cross's height, in currentColor.
+  const PAUSE = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M4.3 2.9 L4.3 9.1 M7.7 2.9 L7.7 9.1\"/></svg>";
   const VS16 = "︎";
   const MARK = {
     // A rail entry is somebody's proposal, not a question the system invented,
@@ -138,10 +143,11 @@ window.CARDS = (function () {
     // and grey is exactly what this surface uses to say that.
     filedYes: TICK,  // filed, and the charter changed
     filedNo: CROSS,  // filed, and the incumbent held
+    filedUndecided: PAUSE, // filed at the close, nothing decided: the incumbent stands, undecided
   };
   // Which of the four drawn marks this is, so CSS can colour it. Only they
   // need it: every other mark is an emoji and brings its own colour with it.
-  const DRAWN = ['adopted', 'retired', 'filedYes', 'filedNo', 'shifted'];
+  const DRAWN = ['adopted', 'retired', 'filedYes', 'filedNo', 'filedUndecided', 'shifted'];
   // The glyph, wrapped so it can be coloured wherever it is drawn — the queue,
   // the contents rail, the gutter tab and a card's head all show the same mark
   // and must show it the same way.
@@ -924,7 +930,7 @@ window.CARDS = (function () {
 
   return {
     esc, resultOnly, stripTags, pct, plainLabel,
-    TICK, CROSS, VS16, MARK, DRAWN, mkHtml, markHtml,
+    TICK, CROSS, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,

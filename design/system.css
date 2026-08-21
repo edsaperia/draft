@@ -383,7 +383,7 @@
      wants anything from you is the colour, which is the rule the whole palette
      runs on. */
   .mk-adopted, .mk-retired { color: var(--ok); }
-  .mk-filedYes, .mk-filedNo { color: var(--muted); font-weight: 500; }
+  .mk-filedYes, .mk-filedNo, .mk-filedUndecided { color: var(--muted); font-weight: 500; }
   .mk-shifted { color: var(--primary); }
   /* a drawn glyph has no plate to give it width, so at the two small sizes it
      needs a little of its own or the marks sit on top of each other */

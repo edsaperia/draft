@@ -227,3 +227,26 @@ describe('stage 11: the torn-tail repair tool', () => {
     expect(() => inspectTail(path)).toThrow(/not the last/);
   });
 });
+
+describe('the slug reservation rides the stash (Q462b)', () => {
+  it('holds the address while the stash lives, releases it on take and at expiry', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'draft-stash-'));
+    const stash = new Stash(new FilePersistence(dir));
+    const t0 = 1_000_000;
+    await stash.open('k1', t0 + 1000, 'oak');
+    await stash.open('k2', t0 + 1000);           // a stash with no address reserves nothing
+    expect(await stash.reservedBy('oak', t0)).toBe('k1');
+    expect(await stash.reservedBy('elm', t0)).toBeNull();
+    // an update keeps the reservation
+    await stash.update('k1', 'pasted text', t0);
+    expect(await stash.reservedBy('oak', t0)).toBe('k1');
+    // expired: the reservation is gone even before a sweep
+    expect(await stash.reservedBy('oak', t0 + 2000)).toBeNull();
+    // and a restart reads the same reservation back from disk
+    const again = new Stash(new FilePersistence(dir));
+    expect(await again.reservedBy('oak', t0)).toBe('k1');
+    // the save consumes the stash and with it the hold
+    expect(await again.take('k1', t0)).toBe('pasted text');
+    expect(await again.reservedBy('oak', t0)).toBeNull();
+  });
+});

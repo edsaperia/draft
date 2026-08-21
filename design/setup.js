@@ -1059,11 +1059,12 @@ window.SETUP = (function () {
      Its styles live in setup.css behind a NOT-DESIGN-SYSTEM fence: the mail
      previews another medium, and its look must owe nothing to this surface. */
   const MAILS = {
-    verify: (title, to) => ({
+    // Q460: the click is the creation — the address was chosen first
+    verify: (title, to, slug) => ({
       to, from: 'docs.vote',
-      subject: 'Log in to create “' + title + '”',
-      body: 'You have created a document called <b>' + esc(title) + '</b> on docs.vote.',
-      action: 'Log in to create it',
+      subject: 'Create “' + title + '”',
+      body: 'You have named a document <b>' + esc(title) + '</b> and chosen its address, <b>docs.vote/' + esc(slug || '…') + '</b>.',
+      action: 'Open the link to create it there',
     }),
     applyVerify: (title, to) => ({
       to, from: 'docs.vote',

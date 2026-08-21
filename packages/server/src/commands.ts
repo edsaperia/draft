@@ -42,7 +42,7 @@ export const str = (args: Args, key: string, allowEmpty = true): string => {
  */
 export const LIMITS = {
   email: 254, name: 80, title: 200, why: 5_000, words: 2_000,
-  text: 500_000, picture: 150_000,
+  text: 500_000, picture: 150_000, slug: 80,
 } as const;
 
 export const cap = (value: string, max: number, what: string): string => {

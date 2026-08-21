@@ -66,10 +66,12 @@ export function makeMailer(opts: {
 }
 
 export const MAILS = {
-  create: (title: string, link: string): Omit<Mail, 'to'> => ({
+  // Q460: clicking the link IS the creation — the document comes into
+  // being at the address promised, and not before
+  create: (title: string, slug: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Create “${title}”`,
-    text: `You have created a document called “${title}”.\n\n` +
-      `Log in to create it:\n${link}\n\n` +
+    text: `You have named a document “${title}” and chosen its address, docs.vote/${slug}.\n\n` +
+      `Open this link to create it there:\n${link}\n\n` +
       `Until you do, nothing exists anywhere — this address is the only way back in.`,
     link,
   }),

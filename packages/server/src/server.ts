@@ -20,7 +20,7 @@ import { ConstitutionSession, sha256Hex, view } from '../../constitution/src/ind
 import type { LogEntry } from '../../constitution/src/index.js';
 import { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
-import { DocStore, uniqueSlug } from './store.js';
+import { DocStore, slugify, uniqueSlug } from './store.js';
 import type { LoadedDoc } from './store.js';
 import { FilePersistence, WriteChain } from './persistence.js';
 import type { Persistence } from './persistence.js';
@@ -38,6 +38,9 @@ import { LIMITS, cap, emailOk, runCommand, str } from './commands.js';
  * id is a hex string, cookie-name-safe by construction; the legacy name
  * is still read, for its own document only, until those cookies expire.
  */
+/** The address grammar the page shares (Q460): lower case, digits,
+ *  hyphens, three characters or more. */
+const SLUG_OK = /^[a-z0-9][a-z0-9-]{2,}$/;
 const LEGACY_COOKIE = 'draft_session';
 const cookieName = (docId: string): string =>
   `draft_session_${docId.replace(/[^A-Za-z0-9_-]/g, '')}`;
@@ -365,6 +368,19 @@ export async function createDraftServer(cfg: ServerConfig,
     }
 
     /** 404 for a document that isn't there; hand back whatever is. */
+    /** Free if no document holds it and no live pending creation has
+     *  reserved it (Q462b). */
+    const slugFree = async (slug: string): Promise<boolean> =>
+      !store.slugTaken(slug) && (await stash.reservedBy(slug, nowMs)) === null;
+    /** uniqueSlug over both kinds of taken-ness. */
+    const uniqueSlugAsync = async (base: string): Promise<string> => {
+      if (await slugFree(base)) return base;
+      for (let n = 2; ; n++) {
+        const candidate = `${base}-${n}`;
+        if (await slugFree(candidate)) return candidate;
+      }
+    };
+
     const docOr404 = (doc: LoadedDoc | null): LoadedDoc | null => {
       if (doc === null) json(res, 404, { error: 'no such document' });
       return doc;
@@ -417,22 +433,57 @@ export async function createDraftServer(cfg: ServerConfig,
       return;
     }
 
+    /* the address, asked before the email (Q460): is it free? A document
+       holds it, or a pending creation has reserved it (Q462b) — the one
+       small oracle on pending documents, the price of promising an
+       address. No personal data: a slug is a public name by design. */
+    if (req.method === 'GET' && seg[0] === 'api' && seg[1] === 'slug' && seg.length === 3) {
+      if (tooMany('slug', 120)) return;
+      const slug = decodeURIComponent(seg[2]!);
+      if (!SLUG_OK.test(slug) || slug.length > LIMITS.slug) {
+        json(res, 200, { available: false, legal: false });
+        return;
+      }
+      res.setHeader('cache-control', 'no-store');
+      json(res, 200, { available: await slugFree(slug), legal: true });
+      return;
+    }
+
     if (req.method === 'POST' && path === '/api/docs') {
       if (tooMany('docs')) return;
       const body = await readJson(req);
       const title = cap(expectString(body, 'title'), LIMITS.title, 'the title');
       const email = emailOk(expectString(body, 'email'));
       const isMember = body.isMember !== false;
-      const slug = uniqueSlug(title, (s) => store.slugTaken(s));
+      // the founder chooses the address before the email (Q460); absent
+      // (older clients, the tests' shorthand) it is suggested from the title
+      let slug: string;
+      if (typeof body.slug === 'string') {
+        slug = body.slug.trim().toLowerCase();
+        if (!SLUG_OK.test(slug) || slug.length > LIMITS.slug) {
+          json(res, 400, { error: 'the address must be lower case, digits and hyphens, three characters or more' });
+          return;
+        }
+        if (!(await slugFree(slug))) {
+          // 462b: told "taken", and offered the nearest free one
+          json(res, 409, { error: 'that address is taken',
+            suggestion: await uniqueSlugAsync(slug) });
+          return;
+        }
+      } else {
+        slug = await uniqueSlugAsync(slugify(title));
+      }
       // the pre-save text stash (§9.7a v0.55): pasted text syncs against
-      // this id while the founder is off following the mail
+      // this id while the founder is off following the mail — and since
+      // Q462b it is also the reservation on the address: the slug is held
+      // exactly as long as the stash lives, and take() releases it
       const pendingId = randomBytes(18).toString('base64url');
       const stashKey = sha256Hex(pendingId);
-      await stash.open(stashKey, nowMs + 7 * 24 * 3600_000);
+      await stash.open(stashKey, nowMs + 7 * 24 * 3600_000, slug);
       const token = await auth.mintToken(
         { kind: 'create', email, pending: { title, slug, email, isMember, stashKey } }, nowMs);
       const link = `${cfg.baseUrl}/auth/create?token=${token}`;
-      await mailer.send({ to: email, ...MAILS.create(title, link) });
+      await mailer.send({ to: email, ...MAILS.create(title, slug, link) });
       json(res, 200, { ok: true, slug, pendingId,
         ...(mailer.dev ? { devLink: link } : {}) });
       return;

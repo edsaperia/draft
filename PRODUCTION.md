@@ -346,6 +346,13 @@ last, being the one irreversible thing):
 8. Q463–465 come back as questions (record surface, notifications).
 
 - 04:10 — Q504(b) landed (`9a11d6b`). Q501/503 building; Q460 next.
+- 04:55 — Q501/503 landed (`e3a3c2a`): urgency = the spec's v over the
+  feed's max; closeness = |2p−1|/(2θ−1), mirror-symmetric; wallet clock;
+  judge counts; records one per race with the displaced text. 429 tests.
+  Item 2's module half landed (`3acc379`): the Text held, 🤝 in the pattern.
+  Running in parallel: item 1 (Q460/462, page + server) and item 6's
+  mechanism half (Q467, engine + constitution). **Nothing pushed since
+  `aaf057b`** — the next push carries the whole run; Ed's call.
 
 ## Decisions
 

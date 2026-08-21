@@ -46,6 +46,9 @@ export interface TokenRecord {
 export interface StashRecord {
   text: string;
   expMs: number;
+  /** The address promised at the birth (Q460/462b): reserved while the
+   *  pending creation lives, released when it is claimed or expires. */
+  slug?: string;
 }
 
 export interface Persistence {
@@ -76,6 +79,8 @@ export interface Persistence {
   getStash(key: string): Promise<StashRecord | null>;
   deleteStash(key: string): Promise<void>;
   sweepStashes(nowMs: number): Promise<void>;
+  /** The key of the live stash holding this slug, or null (Q462b). */
+  findStashBySlug(slug: string): Promise<string | null>;
 
   /* -- lifecycle ---------------------------------------------------------- */
   /** Release what the backend holds (a connection pool); called once at
@@ -190,6 +195,11 @@ export class FilePersistence implements Persistence {
 
   async deleteStash(key: string): Promise<void> {
     if (this.stashes.delete(key)) this.saveStashes();
+  }
+
+  async findStashBySlug(slug: string): Promise<string | null> {
+    for (const [key, rec] of this.stashes) if (rec.slug === slug) return key;
+    return null;
   }
 
   async sweepStashes(nowMs: number): Promise<void> {

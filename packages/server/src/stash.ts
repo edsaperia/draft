@@ -17,15 +17,25 @@ import type { Persistence } from './persistence.js';
 export class Stash {
   constructor(private readonly persistence: Persistence) {}
 
-  async open(key: string, expMs: number): Promise<void> {
-    await this.persistence.putStash(key, { text: '', expMs });
+  /** Open a stash; with a slug it also reserves that address (Q460/462b)
+   *  for as long as the stash lives — claimed by take(), swept at expiry. */
+  async open(key: string, expMs: number, slug?: string): Promise<void> {
+    await this.persistence.putStash(key, { text: '', expMs, ...(slug === undefined ? {} : { slug }) });
+  }
+
+  /** The stash key holding a live reservation on this slug, or null. */
+  async reservedBy(slug: string, nowMs: number): Promise<string | null> {
+    const key = await this.persistence.findStashBySlug(slug);
+    if (key === null) return null;
+    const rec = await this.persistence.getStash(key);
+    return rec !== null && rec.expMs >= nowMs ? key : null;
   }
 
   /** Update an open stash; false if it never existed or has expired. */
   async update(key: string, text: string, nowMs: number): Promise<boolean> {
     const rec = await this.persistence.getStash(key);
     if (rec === null || rec.expMs < nowMs) return false;
-    await this.persistence.putStash(key, { text, expMs: rec.expMs });
+    await this.persistence.putStash(key, { ...rec, text });
     return true;
   }
 

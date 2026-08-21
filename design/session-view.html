@@ -576,6 +576,33 @@
   // deterministic, so the mockup behaves the same on every load
   const suffix = (t) => Math.abs([...t].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 7))
     .toString(16).slice(0, 4);
+  // Q460/462b: the address is asked before the email and checked live —
+  // {slug, available, suggestion} for the last address the server was asked
+  // about. The fixture keeps its TAKEN set; the birth asks /api/slug/:slug.
+  // the verdict is swapped in place while you type — a re-render would
+  // throw the caret out of the field
+  const slugNoteHtml = () => (slugRefused()
+    ? '<p class="setnote"><b>docs.vote/' + esc(S.slug) + '</b> is taken.' +
+      (S.slugFree.suggestion ? ' <b>docs.vote/' + esc(S.slugFree.suggestion) + '</b> is free.' : '') + '</p>'
+    : S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> already exists, so a short suffix was added.</p>' : '');
+  const refreshSlugNote = () => {
+    const n = document.querySelector('[data-slugnote]');
+    if (n) n.innerHTML = slugNoteHtml();
+    refreshCommit();
+  };
+  const slugRefused = () => !!(S.slugFree && S.slugFree.slug === S.slug && !S.slugFree.available);
+  let slugCheckT = null;
+  const checkSlug = (slug) => {
+    if (!BIRTH) { S.slugFree = TAKEN.has(slug) ? { slug, available: false, suggestion: slug + '-' + suffix(S.title || slug) } : null; refreshSlugNote(); return; }
+    clearTimeout(slugCheckT);
+    slugCheckT = setTimeout(() => {
+      fetch('/api/slug/' + encodeURIComponent(slug)).then((r) => r.json()).then((res) => {
+        if (S.slug !== slug) return;
+        S.slugFree = res.available ? null : { slug, available: false, suggestion: null };
+        refreshSlugNote();
+      }).catch(() => {});
+    }, 250);
+  };
   const suggestSlug = (title) => {
     const base = slugify(title);
     if (!base || base.length < 3) return { slug: 'untitled-' + suffix(title || 'x'), taken: null };
@@ -644,7 +671,7 @@
     // 2026-08-18); on this surface they appear as their cards do
     // the outline lists only what exists: before the save there is no
     // constitution to point at (Ed, 2026-08-18)
-    return (!settled(card('slug')) ? '' :
+    return (!settled(card('myemail')) ? '' :
       '<li class="lvl1">' + secToggleHtml('cs-constitution') + '<a href="#cs-constitution">Constitution</a></li>' +
       secLive().filter((s2) => !s2.railOnly).map((s2) =>
         '<li class="lvl2">' + secToggleHtml('cs-' + s2.key) + '<a href="#cs-' + s2.key + '">' + esc(s2.title) + '</a></li>').join('') +
@@ -717,8 +744,13 @@
     // paragraph restates it; the heading opens the card
     { k: 'title', g: '🪶', t: 'Title', kind: 'ordinary', inDoc: true, changeable: true,
       ready: () => !!S.title },
-    // Pre-filled with a slug generated from the title and checked against the
-    // ones that already exist; confirming it is what SAVES the document.
+    // **The birth is 🪶 → 📍 → 📧** (Q460, Ed 2026-08-20): the link is
+    // pre-filled from the title, checked live against the addresses that
+    // exist or are reserved, and chosen *before* the email — so all three
+    // founding acts are done in one sitting, and the magic link is the
+    // instantiation: following it creates the document at the address
+    // promised (462b reserves it on send, for as long as the pending
+    // creation lives). Nothing is saved until that click.
     // **The address is verified before anything is saved** (Ed, 2026-08-18:
     // *we should do this before saving anything, just in case a founder
     // loses their ability to log in*). There are no passwords — getting back
@@ -731,10 +763,10 @@
     // click ✒️, not ask separately*) — so the card is ready to commit as soon
     // as the address is a real one, and the commit does the sending. Settling
     // still waits for the link to be clicked: that is what verification is.
-    { k: 'myemail', g: '📧', t: 'Your Email', kind: 'personal', own: 'you', dep: ['title'],
+    { k: 'myemail', g: '📧', t: 'Your Email', kind: 'personal', own: 'you', dep: ['slug'],
       hide: () => S.viewer === 'applicant', changeable: true,
       ready: () => S.emailVerified || (!S.emailSent && EMAIL_OK.test(S.myemail)) },
-    { k: 'slug', g: '📍', t: 'Link', kind: 'ordinary', dep: ['myemail'], ready: () => SLUG_OK.test(S.slug), changeable: true },
+    { k: 'slug', g: '📍', t: 'Link', kind: 'ordinary', dep: ['title'], ready: () => SLUG_OK.test(S.slug) && !slugRefused(), changeable: true },
     // — the rest, together once the document exists ----------------------
     // 🎩 folded into 🪪 (Ed, 2026-08-18): whether the founder is a
     // member is just whether they invite themselves, asked as their own
@@ -761,16 +793,16 @@
     // after the ceremony*). The one-card test agrees: who is in the room
     // now, and how anybody gets in later, can be answered differently and
     // on their own.
-    { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', dep: ['slug'], changeable: true },
+    { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', dep: ['myemail'], changeable: true },
     // optional for a clerk (Ed, 2026-08-18): an anonymous founder is a
     // perfectly ordinary thing — they can simply not set a name or picture
-    { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you', dep: ['slug'], ready: () => (iDraft() ? !!S.myname.trim() : true), changeable: true },
-    { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you', dep: ['slug'], changeable: true },
+    { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you', dep: ['myemail'], ready: () => (iDraft() ? !!S.myname.trim() : true), changeable: true },
+    { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you', dep: ['myemail'], changeable: true },
     // A document may start empty, which is why this is not a blocker on having
     // content but on having *decided*: a page nobody has looked at and a page
     // somebody chose to leave blank look identical, and only one of them should
     // let people start proposing.
-    { k: 'text', g: '📄', t: 'Text', kind: 'ordinary', dep: ['slug'], gate: 'propose' },
+    { k: 'text', g: '📄', t: 'Text', kind: 'ordinary', dep: ['myemail'], gate: 'propose' },
 
     // — the document's shape --------------------------------------------
     // **When it ends and whether it ends are one card** (Ed, 2026-08-18:
@@ -2326,7 +2358,7 @@
     // moved your slug, whether what you have typed is legal and free, and
     // that changing it later breaks nothing.
     slug: () =>
-      (S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> already exists, so a short suffix was added.</p>' : '') +
+      '<div data-slugnote>' + slugNoteHtml() + '</div>' +
       '<span class="fld"><span class="setrow2">' +
       '<span class="setnote" style="margin:0">docs.vote/</span>' +
       '<input data-slug="1" value="' + esc(S.slug) + '" spellcheck="false" style="width:16rem">' +
@@ -2358,14 +2390,14 @@
       : S.emailSent
       ? '<p class="why">Sent to <b>' + esc(S.myemail) + '</b>. ' + (cs
           ? 'The mail is the login: clicking its link is what proves the address works.'
-          : 'Nothing is saved yet, so a typo here still costs nothing — which is exactly why this happens now and not after.') + '</p>' +
+          : 'Nothing exists yet, so a typo here still costs nothing.') + '</p>' +
         '<div style="margin-top:var(--s3)">' +
         (BIRTH ? '' : '<button class="btn" data-act="openmail">Open your inbox</button> ') +
         '<button class="btn" data-act="sendverify">Resend the link</button> ' +
         '<button class="btn" data-act="editemail">Wrong address?</button></div>' +
         (BIRTH
-          ? '<p class="setnote">Following the link in the mail is what saves the document and carries you to it.</p>'
-          : '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works' + (cs ? '.' : ' and carries you on to the save.') + '</p>')
+          ? '<p class="setnote">Opening the link in the mail creates the document at <b>docs.vote/' + esc(S.slug) + '</b> and carries you to it.</p>'
+          : '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works' + (cs ? '.' : ' and creates the document at docs.vote/' + esc(S.slug) + '.') + '</p>')
       // the send button and the two explanatory blocks left on Ed's word
       // (2026-08-19): ✒️ sends it, and the card is a field with a title over
       // it — which is the whole of what it has ever been asking for
@@ -2653,7 +2685,7 @@
       tp0.querySelectorAll('.setupcard').forEach((el) => el.remove());
       band.innerHTML = (S.open
         ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + applicantCardHtml() + '</div></div></div>' : '') +
-        (settled(card('slug')) ? bandHtml(groups(), ctx, () => '') : '');
+        (settled(card('myemail')) ? bandHtml(groups(), ctx, () => '') : '');
       fitBand(band);
       return;
     }
@@ -2817,7 +2849,7 @@
     // unsaved document is a topbar, an outline, an empty title and its
     // tasks. The band holds only the open card, in the section geometry
     // it will keep, with none of the chrome.
-    if (!settled(card('slug'))) {
+    if (!settled(card('myemail'))) {
       band.innerHTML = (S.open && S.open !== 'title')
         ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + cardFor(groups()[0]) + '</div></div></div>'
         : '';
@@ -2895,7 +2927,7 @@
 
   const renderMail = () => (S.viewer === 'applicant'
     ? renderMailModal(S.app.mailOpen, MAILS.applyVerify(S.title || 'this document', S.app.email))
-    : renderMailModal(S.mailOpen, MAILS.verify(S.title, S.myemail)));
+    : renderMailModal(S.mailOpen, MAILS.verify(S.title, S.myemail, S.slug)));
 
   const render = () => {
     // the roster rows ARE the people now (per-user state, Ed 362): the
@@ -3145,13 +3177,10 @@
           if (was === 'title' && S.title && !S.slug) {
             const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken;
           }
-          // **the save** (§9.7a): confirming the link is the act of creation
-          if (was === 'slug' && !cs) {
-            cs = window.cs = M.ConstitutionSession.open({ title: S.title, slug: S.slug,
-              convenor: { id: FOUNDER, email: S.myemail, isMember: S.roster[0].role !== 'clerk' } }, now());
-            if (S.myname) cs.setIdentity(now(), FOUNDER, { name: S.myname });
-            return;
-          }
+          // Q460: confirming the link only chooses the address — **the save is
+          // the magic link** (the click is the instantiation), see the
+          // clickmail handler; until then nothing exists anywhere
+          if (was === 'slug' && !cs) return;
           if (!cs) return;
           // §9.7 v0.52: the delegation sentence preferred + ✒️ is the
           // hand-over — never a button
@@ -3204,6 +3233,14 @@
     // the rail, which is where every other thing that wants you stands, and
     // opening it is your click rather than the page's.
     if (cm) { S.emailVerified = true; S.mailOpen = false; S.seen.add('myemail');
+      // **the save** (§9.7a, Q460): following the mail is the act of creation
+      // — the document comes into being at the address promised, and the
+      // founder arrives in it (live: /auth/create does exactly this)
+      if (!cs) {
+        cs = window.cs = M.ConstitutionSession.open({ title: S.title, slug: S.slug,
+          convenor: { id: FOUNDER, email: S.myemail, isMember: S.roster[0].role !== 'clerk' } }, now());
+        if (S.myname) cs.setIdentity(now(), FOUNDER, { name: S.myname });
+      }
       S.open = null; return render(); }
     const ee = ev.target.closest('[data-act="editemail"]');
     if (ee) { S.emailSent = false; return render(); }
@@ -3239,11 +3276,18 @@
   function sendVerify() {
     if (BIRTH && S.viewer !== 'applicant') {
       S.emailErr = null;
-      api.post('/api/docs', { title: S.title || 'Untitled', email: S.myemail })
+      api.post('/api/docs', { title: S.title || 'Untitled', slug: S.slug, email: S.myemail,
+        isMember: S.roster[0].role !== 'clerk' })
         .then((res) => {
           // api.post resolves the error JSON rather than throwing, so a
           // refused send must be caught here — a card that says "Sent"
           // over a mail that never went is the one lie this step can tell
+          if (res && res.suggestion !== undefined) {
+            // 462b: somebody reserved the address between the check and the
+            // send — back to 📍, with the nearest free one offered
+            S.slugFree = { slug: S.slug, available: false, suggestion: res.suggestion };
+            S.emailSent = false; S.open = 'slug'; return render();
+          }
           if (res && res.error) {
             S.emailErr = res.error; S.emailSent = false; return render();
           }
@@ -3371,7 +3415,9 @@
       const dr = document.querySelector('[data-dropmotion]');
       if (dr) dr.disabled = false;
       return; }
-    if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
+    if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); S.slugTaken = null;
+      if (SLUG_OK.test(S.slug)) checkSlug(S.slug); else S.slugFree = null;
+      renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (t.dataset.txt === 'myname') { S.myname = t.value; renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (t.dataset.txt === 'myemail') { S.myemail = t.value.trim();
       S.emailSent = false; S.emailVerified = false; S.seen.delete('myemail');
