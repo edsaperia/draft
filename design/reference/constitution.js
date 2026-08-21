@@ -806,16 +806,14 @@ var CONSTITUTION = (() => {
             lapseWarned: false
           };
           for (const id of HELD) {
-            const entry = entryOf(id);
-            const delegated = entry.delegable && entry.holderDefault === "members";
             this.settings.set(id, {
               id,
-              holder: delegated ? "members" : "convenor",
-              powers: { unilateral: !delegated, assent: !delegated },
+              holder: "convenor",
+              powers: { unilateral: true, assent: true },
               value: null,
               settledBy: null,
               settledAtT: null,
-              collecting: delegated,
+              collecting: false,
               answers: /* @__PURE__ */ new Map(),
               distribution: null
             });

@@ -224,6 +224,36 @@
       return m ? '<div class="docline lvl' + m[1].length + '" data-h="' + esc(m[2]) + '">' + esc(m[2]) + '</div>'
         : '<div>' + esc(l) + '</div>'; }).join('');
   let lastOpen = null;
+  // **An opened card puts the caret in its composer** (Ed, 2026-08-21): if a
+  // card is asking for words, you should be able to type them without first
+  // going to find the box. Three rules keep it from becoming a nuisance.
+  // **Only on the opening** — the surface re-renders wholesale on every
+  // change and on the 4s poll, so focusing anywhere but here would pull the
+  // caret out from under whatever you were typing. **Only onto something you
+  // type into**: the first text-entry control in the card's own DOM order,
+  // never a radio, a date, a button or a bare number. And **preventScroll**,
+  // because the card is mid-expansion and a focus that scrolls fights the
+  // animation it is landing in. The caret goes after any text already there,
+  // so typing extends a draft that survived a close rather than sitting in
+  // front of it (`setSelectionRange` throws on email inputs, hence the try).
+  const COMPOSER_SEL = ['[data-titlelane]', 'textarea:not([disabled])',
+    'input[type="text"]:not([disabled])', 'input[type="email"]:not([disabled])',
+    'input:not([type]):not([disabled])',
+    '[contenteditable=""]', '[contenteditable="true"]'].join(',');
+  const focusComposer = (card) => {
+    if (!card) return;
+    const el = card.querySelector(COMPOSER_SEL);
+    if (!el || el.offsetParent === null) return;
+    try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
+    if (typeof el.value === 'string' && el.setSelectionRange) {
+      try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) { /* email/number */ }
+    } else if (el.isContentEditable) {
+      const r = document.createRange();
+      r.selectNodeContents(el); r.collapse(false);
+      const sel = window.getSelection();
+      if (sel) { sel.removeAllRanges(); sel.addRange(r); }
+    }
+  };
   // run the close animation, then the state change it was closing for
   const closeThen = (fn) => {
     const el = document.querySelector('.setupcard');
@@ -240,6 +270,9 @@
     S.open = k; lastOpen = k;            // the morph is the entrance — no expandCard
     render();
     const el = document.querySelector('.setupcard');
+    // a morph is an opening too — it sets lastOpen itself, so it never
+    // reaches render's open branch and has to put the caret in place here
+    focusComposer(el);
     if (!el || !was) return;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const h1 = el.offsetHeight;
@@ -3612,7 +3645,7 @@
       : isStranger() ? { n: '?', pic: '' } : me(), 'face');
     if (S.open && S.open !== lastOpen) {
       const el = document.querySelector('.setupcard');
-      if (el) CC.expandCard(el, () => {});
+      if (el) { CC.expandCard(el, () => {}); focusComposer(el); }
     }
     lastOpen = S.open;
     // what is born arrives (setup.js birthPass): a stagehand act — seat
@@ -4661,10 +4694,21 @@
       'removal', 'lapse', 'machines']) {
       if (del(mid) && !val(mid)) S[DKEY[pkeyOf(mid)]] = 'roster';
     }
-    S.barBy = del('bar') ? 'roster' : 'founder';
-    S.quorumBy = del('quorum') ? 'roster' : 'founder';
-    S.rateBy = del('rate') ? 'roster' : 'founder';
-    S.policyBy = del('applications') ? 'roster' : 'founder';
+    // **A holder radio reports an act, never a default** (Ed, 2026-08-21).
+    // Since nothing arrives delegated, `holder === 'convenor'` no longer
+    // means *the founder chose to keep it* — it is also what an untouched
+    // setting looks like, and the two must not render alike. Delegated reads
+    // 'roster'; held **and set** reads 'founder'; held and unset is the
+    // undecided '' the page starts every radio at. This line used to read
+    // `del(mid) ? 'roster' : 'founder'`, which stated an answer the founder
+    // had not given — the same defect as arriving delegated, mirrored.
+    const stOf = (mid) => { try { return cs.settingState(mid); } catch (e) { return null; } };
+    const byOf = (mid) => { const st = stOf(mid);
+      return del(mid) ? 'roster' : (st && st.settledBy !== null) ? 'founder' : ''; };
+    S.barBy = byOf('bar');
+    S.quorumBy = byOf('quorum');
+    S.rateBy = byOf('rate');
+    S.policyBy = byOf('applications');
     // my committed answers, back in the page's own vocabulary
     for (const q of v.view.questions) {
       if (q.myAnswer === null) continue;
