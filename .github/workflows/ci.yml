@@ -101,3 +101,35 @@ jobs:
             exit 1
           fi
           node scripts/verify-deploy.mjs "$BASE"
+
+  # The design probes, headless (Q504(b), 2026-08-21). A probe nobody runs
+  # rots silently — the setup reference had drifted 200 diffs from HEAD
+  # before the merge noticed. This job serves design/ and walks both probes
+  # against the frozen reference in a headless Chromium at one viewport.
+  # ADVISORY until it has run green for a week (continue-on-error): it does
+  # not gate the deploy, which hangs off the `ci` job above. Dead steps
+  # (targets missing on the live side — the founding scenario is dead from
+  # step 6, Q504(a)) are printed as warnings; add --strict once (a) lands.
+  probe:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: playwright version, for the browser cache key
+        id: pw
+        run: echo "v=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: browser
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ steps.pw.outputs.v }}
+      - if: steps.browser.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.browser.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - run: npm run probe

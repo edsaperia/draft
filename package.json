@@ -15,13 +15,16 @@
     "server": "npm run start -w @draft/server",
     "build": "node scripts/build-server.mjs",
     "start": "node dist/server.mjs",
-    "verify": "node scripts/verify-deploy.mjs"
+    "verify": "node scripts/verify-deploy.mjs",
+    "probe": "node scripts/probe.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "1.62.1",
     "@types/node": "^26.2.0",
     "@types/pg": "^8.23.1",
     "esbuild": "0.28.2",
     "eslint": "^10.8.1",
+    "playwright": "1.62.1",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.67.0",
     "vitest": "^3.2.4"

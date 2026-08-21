@@ -50,3 +50,17 @@ into `window.__probeReport` and a `#probe-report` `<pre>`.
 
 Re-run the session-probe whenever `cards.js` or `session.js` changes, the
 setup-probe whenever the page, `setup.js` or `setup.css` changes.
+
+## In CI
+
+`npm run probe` (`scripts/probe.mjs`, Q504(b)) does the whole procedure
+headless: it serves `design/` on a free port, opens a Playwright Chromium
+at **1600×1000** (both sides, always), loads the reference then the live
+URL of each probe from scroll 0, injects the probe, and reads its own
+report — the probes stay the authority on what differs. It fails on any
+diff outside a probe's allowlist, retries the setup-probe once when only
+`band` hashes differ (the *Founded at* minute), and prints every step whose
+target was missing on the live side; `--strict` makes those fatal, which
+CI turns on once the founding scenario is re-derived (Q504(a)). The `probe`
+job in `.github/workflows/ci.yml` runs it on every push, advisory
+(`continue-on-error`) until it has been green for a week. About 8 seconds.
