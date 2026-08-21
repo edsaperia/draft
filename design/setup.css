@@ -655,3 +655,17 @@ button.cline:hover b { text-decoration: underline; }
 .btn.btn-approve.emojibtn:not([disabled]):hover {
   background: var(--light); border-color: var(--primary-hover);
 }
+
+/* ---- 🍾 and 🥂, and the closed page (Q443, Q468, Q470 — 2026-08-21) ----- */
+  .setupcard .batch { margin: 0 0 var(--s3); padding-left: 18px; font-size: var(--t-small); color: var(--ink); }
+  .setupcard .batch li { margin: 2px 0; }
+  .setupcard .readiness .fieldlab { margin-top: var(--s3); }
+  .setupcard .readiness .gaterow .rsub { color: var(--muted); font-weight: 400; }
+  .setupcard .setnote.hold { color: var(--ink); }
+  .setupcard .sigs .disc.small { width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; }
+  .setupcard .edit-why[data-signwhy]:empty::before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; }
+  /* the speaker's revealed form: the disc stays, the name stands beside it */
+  .speaker.revealed .who { font-weight: 600; font-size: var(--t-small); margin-right: 6px; }
+  /* the closed page: every clause grey, every tab filed; nothing is asked */
+  .doc.closedpage .prose, .doc.closedpage .cpv, .doc.closedpage .cptext { color: var(--muted); }
+  .doc.closedpage .prose .anch { color: var(--muted); }

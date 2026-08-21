@@ -251,7 +251,9 @@
   const charterOn = () => !!(cs && cs.textConfirmed);
   function syncCharter() {
     const on = charterOn();
-    const key = !on ? '' : FIX ? '\u0000fixture' : cs.text;
+    // the close re-keys the column: the backlog and the signatures are blocks of the closed document, and a new signature is a new block
+    const closeKey = cs && cs.closed ? ' closed:' + closeSignatures().length + ':' + undecidedCount() : '';
+    const key = !on ? '' : (FIX ? ' fixture' : cs.text) + closeKey;
     // live, the items are rebuilt on every movement the poll sees (the
     // text only when it changed) — except under a draft being typed, where a
     // rebuild would take the caret; the rail alone refreshes then
@@ -259,8 +261,8 @@
     if (key !== charterKey) {
       charterKey = key;
       SESSION.setData({
-        DOC: !on ? [] : FIX ? FIX.DOC : blocksOf(cs.text),
-        SUGGS: !on ? [] : LIVE_HOOKS.items ? LIVE_HOOKS.items() : FIX ? FIX.SUGGS : [],
+        DOC: !on ? [] : (FIX ? FIX.DOC : blocksOf(cs.text)).concat(closedBlocks()),
+        SUGGS: !on ? [] : LIVE_HOOKS.items ? LIVE_HOOKS.items() : FIX ? FIX.SUGGS.concat(FIX.CLOSED ? FIX.CLOSED.items : []) : [],
       });
     } else if (on && LIVE_HOOKS.items && !typing) {
       SESSION.setData({ SUGGS: LIVE_HOOKS.items() });
@@ -756,6 +758,25 @@
       waiting: 'Waiting on the save.',
       done: 'You hold the pen.',
       blockers: () => [] },
+    // **🍾 Begin — the founder's explicit act of starting the document**
+    // (Q443, built 2026-08-21). Not a gate — nobody's permission opens; the
+    // founder presses it — but it lives with the gates because it is what
+    // opens them. The card states its whole batch, carries the readiness
+    // readout (per question, per person — informs, never blocks), and is
+    // refused only while a judge-gate question is still being decided. After
+    // the press it is a settled grey tab restating the batch and the moment.
+    { k: 'begin', g: '🍾', t: 'Begin', own: 'you', isGate: true, isBegin: true, dep: ['text'],
+      open: () => constituted(),
+      hide: () => !amFounder() && !constituted(),
+      why: '', waiting: '', done: '', blockers: () => [] },
+    // **🥂 — the close, acknowledged** (Q468, built 2026-08-21): 🍾's mirror,
+    // a news card pinned until OK, one per member on their own clock; OK on
+    // it signs the document, the comment it collects is the signing
+    // rationale, and the wallets fly into it as it goes.
+    { k: 'closing', g: '🥂', t: 'The Close', own: 'you', isGate: true, isClosing: true, dep: ['text'],
+      open: () => !!(cs && cs.closed),
+      hide: () => !(cs && cs.closed),
+      why: '', waiting: '', done: '', blockers: () => [] },
   ];
 
   // 🪶 (Ed, 2026-08-19) — the quill, retiring the drawn home plate of the
@@ -1168,6 +1189,8 @@
     // verified by arrival; changing it un-verifies and asks again)
     if (c.k === 'myemail') return S.emailVerified;
     if (c.door) return true;                                   // doors, not decisions
+    if (c.isBegin) return constituted();                       // 🍾: settled by the press
+    if (c.isClosing) return signedClose();                     // 🥂: settled by your signature
     if (c.isGate) return S.okd.has(c.k);
     if (c.ansFor) return answered(c);
     if (!S.seen.has(c.k) || !ready(c)) return false; // confirmed, not defaulted
@@ -1185,6 +1208,8 @@
     return !!(rec && rec.payload && rec.payload.kind === 'remove' &&
       removalRung() === 'others' && rec.payload.member === viewerId()); };
   const mustAct = (c) => (motionOn(c) ? (viewerIsMember() && !answeredMotion(c) && !motionExcludesMe(c))
+    : c.isBegin ? (amFounder() && !constituted())
+    : c.isClosing ? false
     : c.isGate ? (c.open() && staged(c) && !S.okd.has(c.k))
     : c.ansFor || c.own === 'you' || amFounder() ? !settled(c)
     : false);
@@ -1329,10 +1354,10 @@
     { key: 'rate', title: 'Proposals',
       text: '',
       lead: () => (cs ? preamblePara() : ''),
-      keys: ['canpropose', 'canjudge', 'rate', 'machines'] },
+      keys: ['begin', 'canpropose', 'canjudge', 'rate', 'machines'] },
     { key: 'deciding', title: 'Decisions',
       text: '',
-      keys: ['ending', 'quorum', 'bar', 'pace'] },
+      keys: ['ending', 'closing', 'quorum', 'bar', 'pace'] },
     // "Anonymity" (Ed, 2026-08-19), not "Privacy"
     { key: 'privacy', title: 'Anonymity',
       text: '',
@@ -1440,6 +1465,8 @@
       others: 'Everyone else has to agree', ordinary: 'A proposal ✏️ like any other' }[removalRung()]),
     canpropose: () => (canPropose() ? 'Open' : 'Waiting on the text'),
     'grant-voice': () => 'You hold a voice in every constitutional question',
+    begin: () => (constituted() ? 'Begun' + foundedAt() : 'Not yet begun'),
+    closing: () => (cs && cs.closed ? 'Closed' + closedAtWords() : ''),
     'grant-pen': () => 'You hold the pen',
     canjudge: () => (canJudge() ? 'Open' : 'Waiting on the constitution'),
   };
@@ -1940,10 +1967,13 @@
           try { cs.answer(now(), r.mid || FOUNDER, midOf(k), ANSTYPED[k](r.ans[k])); } catch (e) {}
         });
       }
+      // 🍾 — the module no longer starts itself (Q443): the founder presses
+      if (cs.constitutedAtT === null) { try { cs.begin(now()); } catch (e) { console.warn('[cs devff begin]', e && e.message); } }
       // acknowledgments, page and module agreeing
       S.roster.forEach((r) => {
         if (r.role === 'clerk') return;
         r.okd = r.okd || new Set();
+        r.okd.add('begin');
         CARDS.forEach((c) => { r.okd.add('res-' + c.k); r.okd.add('set-' + c.k); });
         r.okd.add('canpropose'); r.okd.add('canjudge');
         r.okd.add('grant-voice'); if (r.founder) r.okd.add('grant-pen');
@@ -1986,6 +2016,8 @@
   // answered blind into is a decision you are owed; a gate opening takes
   // the same rule, being exactly the shape of an unacknowledged decision.
   const waiting = (c) => (motionOn(c) ? answeredMotion(c)
+    : c.isBegin ? (!amFounder() && !constituted())   // a member sees the start waiting on the founder
+    : c.isClosing ? false
     : c.isGate ? !c.open()
     : c.k === 'myemail' ? (S.emailSent && !S.emailVerified)
     : c.ansFor ? (answered(c) && ((card(c.ansFor).in || 0) < E()))
@@ -1999,7 +2031,22 @@
   // the exception and the proof — a gate opening is not a rule being set, it
   // is a thing that has happened to you.
   const constituted = () => !!(cs && cs.constitutedAtT !== null);
+  // the close, and whether this seat has signed it (the module is the truth:
+  // live, view.closed.mySignature; fixture, the session's own signatures)
+  const mySignature = () => {
+    if (!cs || !cs.closed) return null;
+    if (cs.isRemote) return cs.v.view.closed ? cs.v.view.closed.mySignature : null;
+    const id = viewerId(); if (!id) return null;
+    return cs.closingSignatures().find((sg) => sg.member === id) || null;
+  };
+  const signedClose = () => !!(cs && cs.closed && (!viewerIsMember() || mySignature() !== null));
+  const closeSignatures = () => (!cs || !cs.closed ? []
+    : cs.isRemote ? ((cs.v.view.closed && cs.v.view.closed.signatures) || []) : cs.closingSignatures());
   const news = (c) => (motionOn(c) ? false
+    : c.isBegin ? false
+    // the close is news to every member until they have signed (§4.6: the
+    // acknowledgment IS the signature) — a clerk reads it settled
+    : c.isClosing ? (c.open() && viewerIsMember() && !signedClose())
     : c.isGate ? (c.open() && staged(c) && !S.okd.has(c.k))
     : !constituted() ? false
     : !c.ansFor && isRoom(c) && settled(c) && E() > 0 && (c.in || 0) >= E() &&
@@ -2122,6 +2169,12 @@
   const decisionLine = (c) => {
     // a grant's paragraph states the document's rule (third person, the same
     // for every reader); the card that opens on it is yours
+    if (c.isBegin) return constituted()
+      ? 'The document began' + foundedAt() + '.'
+      : 'The document has not begun.';
+    if (c.isClosing) return 'The document closed' + closedAtWords() + '. ' +
+      (closeSignatures().length === 0 ? 'Nobody has signed it yet.'
+        : closeSignatures().length + (closeSignatures().length === 1 ? ' member has' : ' members have') + ' signed it.');
     if (c.k === 'grant-voice') return 'Each member holds one voice in every constitutional question.';
     if (c.k === 'grant-pen') return holdsPenAnywhere()
       ? 'The Founder holds the pen on ' + penLocks() + (penLocks() === 1 ? ' setting.' : ' settings.')
@@ -2285,7 +2338,10 @@
       secLive().map((s2) => ({ ...s2, cards: s2.cards
         .flatMap((c) => [c].concat(tasksFor(c)))
         .filter((c) => !owesOwnAnswer(c))
-        .filter((c) => (c.isGate ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done')) }))
+        .filter((c) => ((c.isGate && !c.isBegin && !c.isClosing) ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done'))
+        // the closed page asks nothing but the signature (Q470): a grant or
+        // a question outstanding at the close is moot, and leaves the rail
+        .filter((c) => !(cs && cs.closed) || c.isClosing) }))
         .filter((s2) => s2.cards.length).flatMap((s2) =>
         s2.cards.map((c) => entryOf(c, ctx)));
 
@@ -2314,7 +2370,8 @@
   const clockState = () => {
     if (!cs || cs.constitutedAtT === null) return { kind: 'none' };
     if (cs.closed) return { kind: 'closed', atMs: cs.closedAt, todayMs: serverNow() };
-    if (cs.frozen) return { kind: 'frozen' };
+    if (cs.frozen) { const mr = typeof cs.mustReturn === 'function' ? cs.mustReturn() : cs.mustReturn;
+      return { kind: 'frozen', mustReturn: mr == null ? undefined : mr }; }
     const end = endsAtMsOf();
     if (end === null) return { kind: 'none' };
     return { kind: 'left', ms: end - serverNow() };
@@ -2424,6 +2481,14 @@
   const foundedAt = () => {
     if (!cs || cs.constitutedAtT === null) return '';
     const d0 = new Date(cs.constitutedAtT);
+    const p2 = (x) => String(x).padStart(2, '0');
+    return ' at ' + p2(d0.getHours()) + ':' + p2(d0.getMinutes()) + ' on ' +
+      d0.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+  // the close's moment, the same shape as the founding's
+  const closedAtWords = () => {
+    if (!cs || !cs.closed || cs.closedAt == null) return '';
+    const d0 = new Date(cs.closedAt);
     const p2 = (x) => String(x).padStart(2, '0');
     return ' at ' + p2(d0.getHours()) + ':' + p2(d0.getMinutes()) + ' on ' +
       d0.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
@@ -2782,6 +2847,25 @@
       // the founder's decision and stays editable — and grows a **watching**
       // half underneath, which is the whole of what anybody may see of a blind
       // question while it runs.
+      if (c.isBegin) {
+        const rd = readinessOf();
+        const can = !constituted() && amFounder() && (!rd || rd.ready);
+        return cardHtml(c, ctx, beginBody(c, rd),
+          constituted() ? '<button class="btn" data-close="1">Close</button>'
+            : '<button class="btn" data-close="1">Close</button>' +
+              '<button class="btn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
+              ' title="' + (can ? 'Hold to begin the document' : 'The document cannot begin yet') + '">✒️ Begin</button>',
+          g.cards);
+      }
+      if (c.isClosing) {
+        const signed = signedClose();
+        return cardHtml(c, ctx, closingBody(c),
+          signed || !viewerIsMember()
+            ? '<button class="btn" data-close="1">Close</button>'
+            : '<button class="btn" data-close="1">Close</button>' +
+              '<button class="btn btn-approve" data-sign="1" title="OK signs the document; your comment goes on the record">OK</button>',
+          g.cards);
+      }
       if (c.isGate) {
         return cardHtml(c, ctx, gateBody(c) + grantNote(c),
           '<button class="btn" data-close="1">Close</button>' +
@@ -3044,6 +3128,15 @@
     // switch, ⏩ — mutes the entrances rather than replaying fifteen at once
     window.SETUP.birthPass(band, setupRail(), birthsMuted, () => SESSION.drawWires());
     launchGrant();
+    launchFarewell();
+    // the closed page: every clause grey, typing opens nothing, the wallets
+    // gone once the farewell has flown (or at once, for a reader arriving after)
+    const closedNow = !!(cs && cs.closed);
+    document.getElementById('doc').classList.toggle('closedpage', closedNow);
+    const gone = closedNow && (farewellDone || signedClose() || !viewerIsMember());
+    SESSION.setClosed(gone);
+    const pulse = document.getElementById('pulse');
+    if (pulse) pulse.style.display = gone ? 'none' : '';
     birthsMuted = false;
   };
   let birthsMuted = false;
@@ -3195,6 +3288,25 @@
           syncFromCs(); } catch (e) {} }
       }
       S.open = null; });
+    // 🍾 — the founder's press (the ✒️ hold lands here as a click)
+    const bgn = ev.target.closest('[data-begin]');
+    if (bgn && !bgn.disabled) return closeThen(() => {
+      S.okd.add('begin'); S.open = null;
+      try { cs.begin(now()); } catch (e) { console.warn('[begin]', e && e.message); }
+    });
+    // 🥂 — OK signs the document; the comment is the signing rationale,
+    // blank as welcome as a paragraph; the wallets fly into the card as it goes
+    const sgn = ev.target.closest('[data-sign]');
+    if (sgn) {
+      const lane = document.querySelector('.setupcard [data-signwhy]');
+      const comment = lane ? lane.textContent.trim() : '';
+      const to = sgn.getBoundingClientRect();
+      return closeThen(() => {
+        S.open = null;
+        try { cs.acknowledgeClose(now(), viewerId(), comment); } catch (e) { console.warn('[sign]', e && e.message); }
+        pendingFarewell = to;
+      });
+    }
     const okb = ev.target.closest('[data-ok]');
     if (okb) return closeThen(() => { const kk = okb.dataset.ok;
       S.okd.add(kk); S.open = null;
@@ -3580,6 +3692,12 @@
       get frozen() { return !!self.v.view.frozen; },
       get closed() { return !!self.v.view.closed; },
       get closedAt() { return self.v.view.closed ? self.v.view.closed.at : null; },
+      get mustReturn() { return self.v.view.mustReturn == null ? null : self.v.view.mustReturn; },
+      get record() { return self.v.record || null; },
+      readiness: () => self.v.readiness || null,
+      closingSignatures: () => (self.v.view.closed && self.v.view.closed.signatures) || [],
+      begin: () => api.cmd('begin', {}),
+      acknowledgeClose: (t, member, comment) => api.cmd('acknowledge-close', { comment }),
       get titleOf() { return self.v.title; },
       get slug() { return self.v.slug; },
       get quorumForm() { return self.v.quorumForm; },
@@ -3956,6 +4074,73 @@
     const m = l.match(/^(#{1,3})\s+(.*)$/);
     return [m ? { t: 'h', level: m[1].length, x: m[2], key: 'L' + i } : { t: 'p', x: l, key: 'L' + i }];
   });
+  // ---- the closed document is bracketed (Q470) ----------------------------
+  // constitution · charter · **the backlog as ranked document text** · the
+  // signatures. Each undecided race is a paragraph — its best candidate's
+  // wording as the text — wearing the third filed mark, whose tab opens its
+  // record; then a signatures block, a name or the disc, the comment, when.
+  const undecidedRecords = () => {
+    if (!cs || !cs.closed) return [];
+    if (cs.isRemote) return (cs.record && cs.record.undecided) || [];
+    return (FIX && FIX.CLOSED && FIX.CLOSED.undecided) || [];
+  };
+  const undecidedCount = () => undecidedRecords().length;
+  const bestOf = (o) => {
+    const f = (o.field || []).slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1));
+    return f[0] || null;
+  };
+  const closedBlocks = () => {
+    if (!cs || !cs.closed) return [];
+    const out = [];
+    const und = undecidedRecords();
+    if (und.length) {
+      out.push({ t: 'h', level: 1, x: 'Backlog', key: 'U:head' });
+      for (const o of und) {
+        const best = bestOf(o);
+        const text = best ? best.hunks.flatMap((h) => h.lines).map(unhead).join(' ') : (o.displaced || []).join(' ');
+        out.push({ t: 'p', x: text || '(the text stood)', key: 'U:' + (o.raceId || o.candidateId) });
+      }
+    }
+    const sigs = closeSignatures();
+    out.push({ t: 'h', level: 1, x: 'Signatures', key: 'S:head' });
+    if (!sigs.length) out.push({ t: 'p', x: 'Nobody has signed the document yet.', key: 'S:none' });
+    sigs.forEach((sg, i) => out.push({ t: 'p',
+      x: (sg.name || 'A member, unnamed') + (sg.comment ? ' — ' + sg.comment : ' — signed without a comment') +
+        (sg.t ? ' · ' + whenOf(sg.t) : ''), key: 'S:' + i }));
+    return out;
+  };
+  // the closed fixture: two of the Hollow Oak's open races become undecided
+  // records at their backlog paragraphs, the module closes, two members sign
+  function closeFixture() {
+    if (!cs || cs.closed) return;
+    const pick = FIX.SUGGS.filter((g) => g.kind === 'race' && g.state === 'needs' && !g.deadlocked).slice(0, 2);
+    const und = pick.map((g, i) => ({
+      raceId: 'fx-u' + i, outcome: 'undecided', when: Date.now(),
+      field: [g.race.a, g.race.b].map((c, j) => ({ hunks: [{ lines: [c.text] }], rationale: c.rationale,
+        p: c.p ?? (j === 0 ? 0.58 : 0.47), outcome: 'undecided', author: null })),
+      displaced: [String((FIX.DOC.find((l) => l.key === g.keys[0]) || {}).x || '')],
+      threshold: 0.74, judges: 6, judgedByMe: i === 0,
+    }));
+    FIX.CLOSED = { undecided: und, items: und.map((o, i) => {
+      const best = o.field.slice().sort((x, y) => y.p - x.p)[0];
+      return { id: 'rec:' + o.raceId, kind: 'quick', keys: ['U:' + o.raceId], state: 'sealed',
+        qLabel: 'Backlog', urgency: 0, pct: 100, cap: 'undecided at the close — the text stood',
+        decided: { outcome: 'undecided', when: whenOf(o.when), p: best.p, bar: o.threshold, judges: o.judges },
+        undecided: true, won: 'b', optionB: best.hunks[0].lines[0], replaced: o.displaced[0],
+        rationale: best.rationale, verdict: o.judgedByMe ? 'you judged this' : undefined, unread: false,
+        slate: o.field.map((f) => ({ text: f.hunks[0].lines[0], rationale: f.rationale, p: f.p, won: f === best })) };
+    }) };
+    // the two picked races leave the live set: they are filed now
+    const gone = new Set(pick.map((g) => g.id));
+    FIX.SUGGS = FIX.SUGGS.filter((g) => !gone.has(g.id));
+    const who = S.roster.filter((r) => !r.founder && r.mid);
+    // the second signer never gave a name: their signature is the disc
+    try { if (who[1]) cs.setIdentity(now(), who[1].mid, { name: null }); } catch (e) {}
+    S.roster.forEach((r) => { if (r.mid === (who[1] || {}).mid) r.n = ''; });
+    try { cs.close(now()); } catch (e) { console.warn('[fixture close]', e && e.message); }
+    try { if (who[0]) cs.acknowledgeClose(now(), who[0].mid, 'I still think the garden clause goes too far — but it was fairly decided.'); } catch (e) {}
+    try { if (who[1]) cs.acknowledgeClose(now(), who[1].mid, ''); } catch (e) {}
+  }
   // the fixture's DOC as the text the document would store
   const fixtureText = (DOC) => DOC.filter((l) => l.t !== 'title')
     .map((l) => (l.t === 'h' ? '#'.repeat(l.level || 1) + ' ' : '') + l.x).join('\n');
@@ -4024,6 +4209,11 @@
 
   function itemsFromView(v) {
     const lines = String(v.text || '').split(/\n/);
+    // the Text's shield (Q440): a carried change waits on the Founder's OK —
+    // the cards say so while it is held (this binding was lost in the glyph
+    // batch's stash detour; every live race threw on it)
+    let textAssent = false;
+    try { textAssent = !!pwPair('text').a; } catch (e) { textAssent = false; }
     const cards = v.raceCards || [];
     const sideOf = (rc, ids) => (ids.has(rc.a.id) ? 'a' : ids.has(rc.b.id) ? 'b' : null);
     const items = [];
@@ -4088,28 +4278,41 @@
     }
     // one record per race (Q503c): the whole field, the text it displaced
     // as it stood, and how many weighed in
+    const unsealed = new Map();
+    if (v.record) for (const o of (v.record.adopted || []).concat(v.record.undecided || [])) {
+      for (const f of o.field || []) if (f.author && f.author.name) unsealed.set(f.id || f.candidateId, f.author.name);
+    }
     for (const o of v.records || []) {
       const field = o.field || [];
       const hs = field.flatMap((f) => f.hunks);
       const sp = hs.length ? spanOf(hs) : spanOf(o.footprint || o.hunks || []);
-      const keys = keysOfSpan(sp, lines);
       const adopted = o.outcome === 'adopted';
+      // undecided at the close (§4.6): the race files at its backlog
+      // paragraph — its best wording IS the paragraph — under the PAUSE mark,
+      // never pinned (the 🥂 card is the acknowledgment the close asks for)
+      const undecided = o.outcome === 'undecided';
+      const keys = undecided ? ['U:' + (o.raceId || o.candidateId)] : keysOfSpan(sp, lines);
       const textOfF = (f) => f.hunks.flatMap((h) => h.lines).map(unhead).join('\n');
-      const winner = field.find((f) => f.outcome === 'adopted') || field[0] || {};
+      // the seal lifts at the record (§3.5a): `records` stays sealed, the
+      // closed `record` carries the names where the anonymity ladder allows
+      const byName = (f) => (f.author && f.author.name) || unsealed.get(f.id || f.candidateId) || null;
+      const best = field.slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1))[0];
+      const winner = field.find((f) => f.outcome === 'adopted') || (undecided ? best : null) || field[0] || {};
       const replaced = (o.displaced || []).filter((l) => l.trim()).map(unhead).join('\n') || undefined;
       const slate = field.length > 1
-        ? { slate: field.map((f) => ({ text: textOfF(f), rationale: f.rationale,
-            p: f.p == null ? undefined : f.p, won: f.outcome === 'adopted' })) } : {};
+        ? { slate: field.map((f) => ({ text: textOfF(f), rationale: f.rationale, by: byName(f),
+            p: f.p == null ? undefined : f.p, won: f === winner && (adopted || undecided) })) } : {};
       items.push({ id: 'rec:' + (o.raceId || o.candidateId), kind: 'quick', keys, state: 'sealed',
         qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
-        cap: adopted ? 'decided — adopted' : 'decided — the current text stood',
-        decided: { outcome: adopted ? 'adopted' : 'retired — the current text stood',
-          when: whenOf(o.when), p: o.p, bar: o.threshold, judges: o.judges },
-        won: adopted ? 'b' : undefined,
+        cap: adopted ? 'decided — adopted' : undecided ? 'undecided at the close — the text stood' : 'decided — the current text stood',
+        decided: { outcome: adopted ? 'adopted' : undecided ? 'undecided' : 'retired — the current text stood',
+          when: whenOf(o.when), p: o.p == null && best ? best.p : o.p, bar: o.threshold, judges: o.judges },
+        undecided,
+        won: adopted || undecided ? 'b' : undefined,
         optionB: textOfF(winner), replaced,
-        rationale: winner.rationale,
+        rationale: winner.rationale, by: byName(winner),
         verdict: o.judgedByMe ? 'you judged this' : undefined,
-        unread: true, ...slate });
+        unread: !undecided, ...slate });
     }
     // the draft being typed is the page's own, never the view's — it survives
     // every rebind
@@ -4197,7 +4400,10 @@
     q.title = left > 1
       ? 'Your founding feathers — ' + (left - 1) + ' to spend on the birth; the last one is docs.vote, and makes a new document.'
       : 'docs.vote — make a new document';
-    const notApp = S.viewer !== 'applicant';
+    const notApp = S.viewer !== 'applicant' &&
+      // after the farewell the wallets are gone (a reader arriving after the
+      // close, or one who has signed, never sees them)
+      !(cs && cs.closed && (farewellDone || signedClose() || !viewerIsMember()));
     const pen = document.getElementById('penwallet');
     const showPen = notApp && !!cs && amFounder() && holdsPenAnywhere() && S.okd.has('grant-pen');
     pen.innerHTML = showPen ? '<i' + (penGhost ? ' class="gone"' : '') + '>✒️</i>' : '';
@@ -4209,6 +4415,100 @@
     voice.title = out ? 'Your voice is out on a motion — it comes back whole when the question settles or you withdraw it.'
       : 'Your voice in every constitutional question — one motion at a time, returned whole.';
   }
+  // ---- 🍾 and 🥂 --------------------------------------------------------
+  // the founder's readiness readout — live from the view (founder only),
+  // fixture from the module itself; null for anybody else
+  const readinessOf = () => {
+    if (!cs || constituted()) return null;
+    try { return cs.readiness ? cs.readiness() : null; } catch (e) { return null; }
+  };
+  const glyphOfSetting = (mid) => { const c = card(pkeyOf(mid)); return c ? c.g + ' ' : ''; };
+  const BEGIN_BATCH = [
+    'The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.',
+    'Members gain ✏️s on it, at the proposal rate.',
+    'Judging opens, and the approval threshold begins its course.',
+    'The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.',
+  ];
+  const beginBody = (c, rd) => {
+    const batch = '<div class="unlocks"><b>' + (constituted() ? 'What beginning did.' : 'What beginning does, all at once.') + '</b></div>' +
+      '<ul class="batch">' + BEGIN_BATCH.map((l) => '<li>' + l + '</li>').join('') + '</ul>';
+    if (constituted()) return batch;   // the head already says when
+    if (!rd) return batch + '<p class="setnote">Only the Founder can begin the document.</p>';
+    // informs, never blocks — except the questions judging cannot do without
+    const hold = rd.waiting && rd.waiting.length
+      ? '<p class="setnote hold">The document cannot begin while ' +
+        rd.waiting.map((mid) => glyphOfSetting(mid) + esc(card(pkeyOf(mid)) ? card(pkeyOf(mid)).t : mid)).join(' and ') +
+        (rd.waiting.length === 1 ? ' is' : ' are') + ' still being decided.</p>' : '';
+    const qs = (rd.questions || []).map((q) => '<span class="gaterow">' +
+      '<span class="gg">' + glyphOfSetting(q.setting) + '</span>' +
+      esc(card(pkeyOf(q.setting)) ? card(pkeyOf(q.setting)).t : q.setting) +
+      '<span class="rsub"> · ' + (q.settled ? 'settled' : q.collecting
+        ? (q.answered + ' of ' + q.electorate + ' have answered') : 'still being decided') + '</span></span>').join('');
+    const ms = (rd.members || []).map((m) => '<span class="gaterow">' +
+      esc(m.name || 'Anonymous') + '<span class="rsub"> · ' +
+      (!m.arrived ? 'invited, not yet arrived' : m.owed === 0 ? 'nothing owed'
+        : m.answered >= m.owed ? 'answered everything' : m.answered + ' of ' + m.owed + ' answered') + '</span></span>').join('');
+    return batch + hold +
+      '<div class="readiness"><div class="fieldlab">The questions</div><div class="gatelist">' + qs + '</div>' +
+      '<div class="fieldlab">The people</div><div class="gatelist">' + ms + '</div></div>' +
+      '<p class="setnote">' + (rd.ready
+        ? 'Nobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin.'
+        : 'It comes back to you the moment the questions stand.') + '</p>';
+  };
+  // what the close did, in one card: final as of when, what adopted, what
+  // carried, what was left undecided, whose names the record reveals
+  const closingBody = (c) => {
+    const rec = cs && cs.isRemote ? cs.record : null;
+    const adopted = rec ? rec.adopted.length : (FIX ? SESSION.SUGGS.filter((g) => g.state === 'sealed' && g.won).length : 0);
+    const undecided = rec ? rec.undecided.length : SESSION.SUGGS.filter((g) => g.undecided).length;
+    const carried = cs ? [...cs.motionRecords().values()].filter((m) => m.status === 'carried').length : 0;
+    const unassented = rec ? rec.carriedButUnassented.length : 0;
+    const auth = csState('authorship');
+    const reveal = auth && auth.value ? auth.value.rung || auth.value : null;
+    const names = reveal === 'anonymous' ? 'Authorship stays sealed: the record names nobody.'
+      : reveal === 'public' ? 'Authorship was public throughout.'
+      : 'Authorship is unsealed: the record names who proposed what.';
+    const sigs = closeSignatures();
+    const sigList = sigs.length ? '<div class="gatelist sigs">' + sigs.map((sg) =>
+      '<span class="gaterow">' + (sg.name ? esc(sg.name) : '<span class="disc small" aria-hidden="true"></span>a member') +
+      (sg.comment ? '<span class="rsub"> · ' + esc(sg.comment) + '</span>' : '') + '</span>').join('') + '</div>' : '';
+    const mine = mySignature();
+    const n = (k, one, many) => k + ' ' + (k === 1 ? one : many);
+    return '<div class="unlocks"><b>The document is final as of' + esc(closedAtWords().replace(/^ at /, ' ')) + '.</b></div>' +
+      '<ul class="batch">' +
+      '<li>' + n(adopted, 'proposal was adopted', 'proposals were adopted') + ' into the text.</li>' +
+      '<li>' + n(carried, 'motion carried', 'motions carried') + (unassented ? '; ' + n(unassented, 'carried change waited', 'carried changes waited') + ' on an assent that never came, and goes to the backlog' : '') + '.</li>' +
+      '<li>' + n(undecided, 'question was', 'questions were') + ' left undecided — the text stands, and ' +
+        (undecided === 1 ? 'it is' : 'they are') + ' filed below the charter as its backlog.</li>' +
+      '<li>' + names + '</li>' +
+      '<li>The record is published with the document, at this address.</li></ul>' +
+      (viewerIsMember() && !mine
+        ? '<div class="fieldlab">Your closing comment</div>' +
+          '<div class="speaker"><span class="disc" aria-hidden="true"></span>' +
+          '<div class="said edit-why" contenteditable="plaintext-only" data-signwhy="1" data-placeholder="Dissent is as welcome as praise — or nothing at all."></div></div>' +
+          '<p class="setnote"><b>OK</b> signs the document. Your comment, or its absence, goes on the record beside your name.</p>'
+        : mine ? '<p class="setnote">You signed' + (mine.comment ? ': <i>' + esc(mine.comment) + '</i>' : ' without a comment') + '.</p>' : '') +
+      (sigs.length ? '<div class="fieldlab">Signed</div>' + sigList : '');
+  };
+  // the wallet farewell (Q468): from the OK that signed, the ✏️s and the 🏛️
+  // fly into the card — the storm inverted — and the Founder's ✒️ leaves the
+  // same way; the wallets are gone after
+  let pendingFarewell = null;
+  function launchFarewell() {
+    if (!pendingFarewell) return;
+    const to = pendingFarewell; pendingFarewell = null;
+    const w = document.getElementById('wallet');
+    if (w && w.offsetParent) {
+      const n = cs && cs.isRemote && cs.v ? Math.floor(cs.v.wallet || 0) : (SESSION.editsHeld || 0);
+      SESSION.pencilStorm(w.getBoundingClientRect(), to, Math.max(n, 2), () => {});
+    }
+    for (const [id, glyph] of [['voicewallet', '🏛️'], ['penwallet', '✒️']]) {
+      const el = document.querySelector('#' + id + ' i');
+      if (el) SESSION.flyGlyph(glyph, el.getBoundingClientRect(), to, 640, { r0: 0, r1: 25 });
+    }
+    setTimeout(() => { farewellDone = true; renderPowerWallets(); SESSION.renderWallet(); }, 700);
+  }
+  let farewellDone = false;
   // the card's own ✏️ grant line (Q461a: the 💡 card is the grant card)
   const grantNote = (c) => {
     if (c.k !== 'canpropose' || !c.open() || !viewerIsMember()) return '';
@@ -4347,6 +4647,10 @@
       devFastForward();
       S.folded.add('cs-constitution');
       if (!new URLSearchParams(location.search).get('band')) document.getElementById('doc').classList.add('fixsession');
+      // ?fixture=session&closed=1 — the Hollow Oak session, closed (Q470):
+      // two races left undecided, two signatures (one anonymous), the
+      // founder's seat still to sign — for looking at, not probed
+      if (new URLSearchParams(location.search).get('closed')) closeFixture();
       S.open = null; lastOpen = null; birthsMuted = true;
       render();
     };

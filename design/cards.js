@@ -410,9 +410,13 @@ window.CARDS = (function () {
   // `title` is optional (2026-08-18): the setup surfaces carry an audited
   // copy of the seal tooltip with no spec citation in it; absent, the
   // session-view's own wording stands, byte for byte.
-  const speakerHtml = (why, title) =>
-    '<div class="speaker">' +
-    '<span class="disc" aria-hidden="true" title="' + (title || 'A member of the roster wrote this. Who, is sealed until the record (SPEC §3.4).') + '"></span>' +
+  // `who` (the close, 2026-08-21): at the record the seal lifts where the
+  // anonymity ladder says so — the disc stays, and the name stands beside it.
+  // Absent, the markup is what it always was, byte for byte.
+  const speakerHtml = (why, title, who) =>
+    '<div class="speaker' + (who ? ' revealed' : '') + '">' +
+    '<span class="disc" aria-hidden="true" title="' + (title || (who ? esc(who) + ' wrote this.' : 'A member of the roster wrote this. Who, is sealed until the record (SPEC §3.4).')) + '"></span>' +
+    (who ? '<span class="who">' + esc(who) + '</span>' : '') +
     (why
       ? '<div class="said">' + esc(why) + '</div>'
       : '<div class="said none">No reason given.</div>') +
@@ -442,14 +446,15 @@ window.CARDS = (function () {
   // either (Ed, 197) — a field of five reads 1..5, and a lone proposal is
   // named by what it is.
   function fieldOf(s) {
-    if (s.slate) return s.slate.map((c) => ({ label: '', text: c.text, why: c.rationale, p: c.p, won: !!c.won }));
+    // `by` rides only where a record has unsealed an author (the close)
+    if (s.slate) return s.slate.map((c) => ({ label: '', text: c.text, why: c.rationale, p: c.p, won: !!c.won, by: c.by || null }));
     if (s.kind === 'race') return [
-      { label: '', text: s.race.a.text, why: s.race.a.rationale, p: s.race.a.p, won: s.won === 'a' },
-      { label: '', text: s.race.b.text, why: s.race.b.rationale, p: s.race.b.p, won: s.won === 'b' },
+      { label: '', text: s.race.a.text, why: s.race.a.rationale, p: s.race.a.p, won: s.won === 'a', by: s.race.a.by || null },
+      { label: '', text: s.race.b.text, why: s.race.b.rationale, p: s.race.b.p, won: s.won === 'b', by: s.race.b.by || null },
     ];
     // no label: the band above already says "what was proposed", and printing
     // it again on the only thing in the band said it twice
-    return [{ label: '', text: s.optionB, why: s.rationale, p: (s.decided || {}).p, won: s.won === 'b' }];
+    return [{ label: '', text: s.optionB, why: s.rationale, p: (s.decided || {}).p, won: s.won === 'b', by: s.by || null }];
   }
 
   const groundNote = (s) => (!s.shifted || !s.wasGround ? ''
