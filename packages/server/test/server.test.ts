@@ -239,6 +239,12 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     await cmd(cy, 'answer', { setting: 'chamber', value: { rung: 'link' } });
     const after = await viewOf(ada);
     expect(after.constitutedAtT).not.toBeNull();
+    // the session-clock (Q466): the view says what time the server thinks it
+    // is, and whether the document is frozen or closed — never the threshold
+    expect(typeof after.serverNowMs).toBe('number');
+    expect(Math.abs(after.serverNowMs - Date.now())).toBeLessThan(60_000);
+    expect(after.view.frozen).toBe(false);
+    expect(after.view.closed).toBeNull();
 
     // -- a motion over HTTP races in the engine (Q391) --------------------
     const motion = await cmd(bo, 'open-motion', {

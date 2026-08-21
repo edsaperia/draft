@@ -124,8 +124,10 @@
       <!-- room-pulse: one content-free beat per action by anybody (session-view's) -->
       <span class="pulse" id="pulse" aria-hidden="true"
             title="The room is working — this blinks when anybody judges or proposes anything. It never says who, what, or which way."></span>
-      <span id="stat-stage">reading only</span>
-      <span id="stat-who">1 in the room</span>
+      <!-- `session-clock` (Q466/Q471): the topbar reads the document · the
+           room · you. The middle is one plain line — pulse, clock, quorum —
+           cold at every distance; the clock is the door to ⏰. -->
+      <span class="room"><button class="clock" id="clock" type="button" data-card="ending" disabled></button><span id="quorum">1 in the room</span></span>
       <span class="wallet" id="wallet"></span>
       <button class="me" id="mebtn" title="You, and the founder of this document."></button>
     </div>
@@ -308,6 +310,7 @@
           const moved = data.seq !== cs.v.seq || (data.eseq || 0) !== (cs.v.eseq || 0) ||
             data.textVersion !== cs.v.textVersion ||
             JSON.stringify(data.raceCards) !== JSON.stringify(cs.v.raceCards);
+          data.receivedAtMs = Date.now();
           cs.v = data;
           if (moved) {
             // `room-pulse`: one beat per movement by anybody, yourself
@@ -2208,10 +2211,10 @@
       const applying = (S.joinBy === 'proposed' || S.joinBy === 'apply');
       const now2 = applying && canJudge();
       railEntries = now2 ? APPCARDS().map((c) => entryOf(c, appCtx)) : [];
-      document.getElementById('stat-stage').textContent = 'reading only · ' +
+      stageWords = 'reading only · ' +
         (!applying ? (S.joinBy === 'open' ? 'anyone with the link may join' : 'membership is by invitation')
           : now2 ? 'applications open' : 'applications open when the document begins');
-      document.getElementById('stat-who').textContent = arrived() + ' in the room';
+      renderClock();
       return;
     }
     // **The rail is session.js's margin index now** (stage 8): each task is
@@ -2232,11 +2235,54 @@
         .filter((s2) => s2.cards.length).flatMap((s2) =>
         s2.cards.map((c) => entryOf(c, ctx)));
 
-    document.getElementById('stat-stage').textContent =
-      canJudge() ? 'open' : canPropose() ? 'proposals open' : 'reading only';
-    document.getElementById('stat-who').textContent = arrived() + ' in the room';
+    stageWords = canJudge() ? 'open' : canPropose() ? 'proposals open' : 'reading only';
+    renderClock();
     document.getElementById('mebtn').innerHTML = avHtml(me(), 'face');
   }
+  // ---- `session-clock` (Q466/Q471) ----------------------------------------
+  // The topbar middle reads the room: pulse · clock · quorum. Before the
+  // start the line keeps the founding's stage words and the head count;
+  // from the start it is where the document is in its life — the countdown
+  // at the ladder (empty on a perpetual document), Frozen, or Closed [date]
+  // forever — and *quorum N of E*. The countdown runs on the server's clock:
+  // the view carries serverNowMs and the page offsets by when it arrived.
+  let stageWords = 'reading only';
+  const serverNow = () => (cs && cs.isRemote && cs.v.serverNowMs)
+    ? cs.v.serverNowMs + (Date.now() - (cs.v.receivedAtMs || Date.now())) : Date.now();
+  // the ending as it stands, in ms — the module's typed value, never the
+  // founder's field once something is settled
+  const endsAtMsOf = () => {
+    const st = csState('ending');
+    if (st && st.value) return st.value.endsAtMs;           // null = never
+    if (S.ending === 'perpetual') return null;
+    const ms = Date.parse(S.endsAt); return Number.isFinite(ms) ? ms : null;
+  };
+  const clockState = () => {
+    if (!cs || cs.constitutedAtT === null) return { kind: 'none' };
+    if (cs.closed) return { kind: 'closed', atMs: cs.closedAt, todayMs: serverNow() };
+    if (cs.frozen) return { kind: 'frozen' };
+    const end = endsAtMsOf();
+    if (end === null) return { kind: 'none' };
+    return { kind: 'left', ms: end - serverNow() };
+  };
+  function renderClock() {
+    const clock = document.getElementById('clock'), quorum = document.getElementById('quorum');
+    const begun = !!(cs && cs.constitutedAtT !== null);
+    const st = clockState();
+    const text = begun ? SESSION.clockText(st) : stageWords;
+    if (clock.textContent !== text) clock.textContent = text;
+    // the clock is the door to moving the close: live only while there is
+    // a close to move
+    clock.disabled = !(begun && st.kind === 'left');
+    clock.title = clock.disabled ? '' : 'When does it end? — open the ⏰ card';
+    const q = begun
+      ? 'quorum ' + ((cs.isRemote && cs.v.floor) || quorumCount()) + ' of ' + arrived()
+      : arrived() + ' in the room';
+    if (quorum.textContent !== q) quorum.textContent = q;
+  }
+  // the ladder sharpens on its own: the coarsest step is ten minutes, so a
+  // half-minute tick is never late by a visible amount
+  setInterval(() => { if (cs) renderClock(); }, 30_000);
   // the dev dropdown of actual users (Ed, 362) — rebuilt only when it
   // changes, so an open dropdown is not snapped shut under the pointer
   function renderDev() {
@@ -3447,6 +3493,7 @@
   // client never holds the log (§3.5/§9.0a on the wire) — and every
   // command is a POST the server folds as the cookie's member.
   function remoteCS(v0) {
+    v0.receivedAtMs = Date.now();       // the clock offsets from when the view arrived
     // the page's predicates call settingState and the record maps per card
     // per render, over data that only changes when a new view lands — so
     // the fetched view is indexed once per assignment, not per call
@@ -3463,6 +3510,9 @@
       set v(nv) { v = nv; ix = null; },
       get textConfirmed() { return self.v.textConfirmed; },
       get constitutedAtT() { return self.v.constitutedAtT; },
+      get frozen() { return !!self.v.view.frozen; },
+      get closed() { return !!self.v.view.closed; },
+      get closedAt() { return self.v.view.closed ? self.v.view.closed.at : null; },
       get titleOf() { return self.v.title; },
       get slug() { return self.v.slug; },
       get quorumForm() { return self.v.quorumForm; },
@@ -4112,6 +4162,11 @@
       FIX = window.FIXTURE_SESSION;
       SESSION.init(sessionEnv(FIX));
       setProse(fixtureText(FIX.DOC));
+      // the fixture's clock: the Hollow Oak session has 2h 11m left (its old
+      // hard-coded stat), which the ladder renders at the 20-minute step
+      const left = new Date(Date.now() + 131 * 60_000);
+      const p2 = (n) => String(n).padStart(2, '0');
+      S.endsAt = left.getFullYear() + '-' + p2(left.getMonth() + 1) + '-' + p2(left.getDate()) + 'T' + p2(left.getHours()) + ':' + p2(left.getMinutes());
       devFastForward();
       S.folded.add('cs-constitution');
       if (!new URLSearchParams(location.search).get('band')) document.getElementById('doc').classList.add('fixsession');

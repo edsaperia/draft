@@ -353,6 +353,17 @@ last, being the one irreversible thing):
   Running in parallel: item 1 (Q460/462, page + server) and item 6's
   mechanism half (Q467, engine + constitution). **Nothing pushed since
   `aaf057b`** — the next push carries the whole run; Ed's call.
+- 05:25 — Q460/462 landed (`019bede`): 🪶 → 📍 → 📧, the address
+  collected, reserved (Postgres migration 2), honoured at the click; PAUSE
+  drawn (Q469). Running: the glyph batch (Q454, Q506 page, Q440 page, Q449)
+  and Q467 (the close, engine + module).
+- 06:40 — Glyph batch landed (`0811b70`): ✒️/🛡️ on every held-able
+  setting, 🤝 and 📄 included; identity commits ✓. Q467 built in engine +
+  module, its tests being repointed at the start's lay-down of the Text's
+  powers. Running: item 3 (session-clock).
+- 07:10 — Q467 landed (`ca2d7b4`): the close in engine, module and bridge;
+  the Text's powers lay down at the constituted fold, so the two live
+  documents migrate by replay (golden unchanged, 74 entries). 159/217/31.
 
 ## Decisions
 
