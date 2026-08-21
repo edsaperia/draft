@@ -4003,7 +4003,21 @@
   // them in here; the page is rebuilt wholesale, as after any render.
   function setData(next) {
     const textChanged = !!(next && next.DOC && next.DOC !== DOC);
-    bindData((next && next.DOC) || DOC, (next && next.SUGGS) || SUGGS);
+    // **An unproposed draft is local, and has to survive a data swap** (Ed,
+    // 2026-08-21: *when I ✒️ any constitutional question the text
+    // disappears*). Live, SUGGS is rebuilt from the server on every render
+    // and every 4s poll, and a draft you have not proposed yet exists
+    // nowhere but in this array — so opening any other card destroyed what
+    // you had typed. The host's own guard only holds while the draft card
+    // is the open one; this holds whatever is open, which is the case that
+    // was losing work. It is the same rule the surface already keeps for
+    // every other provisional value: closing a card is not discarding.
+    let suggs = (next && next.SUGGS) || SUGGS;
+    if (next && next.SUGGS) {
+      const mine = SUGGS.find((x) => x.id === DRAFT_ID && x.unproposed);
+      if (mine && !suggs.some((x) => x.id === DRAFT_ID)) suggs = suggs.concat([mine]);
+    }
+    bindData((next && next.DOC) || DOC, suggs);
     renderAll();
     if (textChanged && hooks.textChanged) hooks.textChanged();
   }

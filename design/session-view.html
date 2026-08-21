@@ -1388,7 +1388,15 @@
     // 🎩 used to be *always answered — member by default*, which is why it
     // never appeared as a task: the founder was made a member by a default
     // nobody read (Ed, 2026-08-21). It is a question like any other now.
-    if (c.k === 'hat') return S.seen.has('hat');
+    // 🎩 is **locked once the document begins** (§9.6a: the right to re-tick
+    // yourself dies with the start), and a locked card is settled. It has to
+    // say so here rather than only in `S.seen`, because 🎩 is not a catalogue
+    // setting — `csState('hat')` is null, so `hydrateS` can reconstruct it
+    // from nothing and a reloaded live document had it standing unanswered
+    // for ever. Harmless until the gates joined ORDER, at which point
+    // everything below 🎩 — 💡, ⚖️, 🪪 — waited on a question that could not
+    // settle, so no gate could be acknowledged and no ✏️ wallet ever arrived.
+    if (c.k === 'hat') return S.seen.has('hat') || constituted();
     // verified is the whole of what this card asks (a member's address is
     // verified by arrival; changing it un-verifies and asks again)
     if (c.k === 'myemail') return S.emailVerified;
