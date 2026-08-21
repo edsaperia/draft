@@ -3,7 +3,10 @@
 Byte-copies of the merged page and everything it loads, as they stood at
 the end of stage 8 (2026-08-21) — `session-view.html`, `session.js`,
 `fixture-session.js`, `setup.js`, `setup.css`, `cards.js`, `system.css`,
-`constitution.js`. The git tag `post-merge`, re-frozen at `refs-2026-08-21` after the design-day builds and again after review #2's door fixes, marks the same commit and is
+`constitution.js`. The git tag `post-merge`, re-frozen at `refs-2026-08-21`
+after the design-day builds and again after review #2's door fixes, and at
+`refs-birth-2026-08-21` after the constitution's section order was restored
+and the birth was given its own layout, marks the same commit and is
 authoritative if EOL normalisation ever makes a copy differ byte-wise.
 
 - **Never edit these files.** When the surface changes intentionally,
@@ -42,7 +45,7 @@ into `window.__probeReport` and a `#probe-report` `<pre>`.
   a rerun (a settle-timing flake, never a card diff).
 - **setup-probe** (`tools/setup-probe.js`): reference
   `/reference/session-view.html`, live `/session-view.html`. Drives the
-  founding and a motion — 34 steps — through public DOM only, snapshotting
+  founding and a motion — 42 steps — through public DOM only, snapshotting
   regions and rects after each. Diffs fail unless their
   `scenario:step:region` key is allowlisted (empty since the freeze). The
   *Founded at [time]* line is stamped from the load-time clock, so run both
