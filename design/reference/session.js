@@ -3834,7 +3834,7 @@
     // eight call sites removes the whole class of bug. It is idempotent, so the
     // sites that still call it explicitly are harmless.
     settleTopUrgent(); renderDoc(); renderQueue(); renderToc();
-    markCurrentSection(); renderWallet(); settleWashes(); layoutQueue(); drawWires();
+    markCurrentSection(); renderWallet(); settleWashes(); settleLift(); layoutQueue(); drawWires();
   }
 
   // The drip runs. Seconds in the countdown only mean anything if they move, so
@@ -4013,7 +4013,28 @@
   // the wire without rebuilding the document column
   function refreshRail() {
     settleTopUrgent(); renderQueue(); renderToc();
-    markCurrentSection(); settleWashes(); layoutQueue(); drawWires();
+    markCurrentSection(); settleWashes(); settleLift(); layoutQueue(); drawWires();
+  }
+
+  // **The open entry lifts, it does not jump** (Ed, 2026-08-21: *when I click
+  // on a queue card it jerks up into its raised state*). The rail is rebuilt
+  // wholesale on every render, so the entry you just clicked is a **new**
+  // element born already wearing the open shadow — and a transition cannot
+  // run from a value the element never had. Same fix as the washes above:
+  // paint it at rest, force one reflow, then hand it the lift, so the
+  // 220ms box-shadow transition has something to travel from. Only the entry
+  // that has just become the open one is handled; one already open is left
+  // alone, or it would re-lift on every unrelated render.
+  let liftedId = null;
+  function settleLift() {
+    const el = queueEl && queueEl.querySelector('button[aria-current="true"]');
+    const id = el ? el.dataset.q : null;
+    if (id !== liftedId && el) {
+      el.setAttribute('aria-current', 'false');
+      void el.offsetHeight;
+      el.setAttribute('aria-current', 'true');
+    }
+    liftedId = id;
   }
 
   function closeCard() {

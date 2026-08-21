@@ -47,9 +47,10 @@ const snap = () => page.evaluate(() => {
     sub: txt(li.querySelector('.qwhy')),
     all: txt(li),
   }));
-  const paras = [...document.querySelectorAll('#band [data-para]')].map((p) => ({
-    k: p.dataset.para, text: txt(p.querySelector('.cpv')),
-  }));
+  const paras = [...document.querySelectorAll('#band .cpara')].map((p) => ({
+    k: p.dataset.para || (p.querySelector('[data-tab]') || { dataset: {} }).dataset.tab || '?',
+    text: txt(p.querySelector('.cpv')),
+  })).filter((p) => p.text);
   const c = document.querySelector('.setupcard');
   const card = c ? {
     eyebrow: txt(c.querySelector('.headlab')),
@@ -163,7 +164,7 @@ for (let i = 0; i < 40; i++) {
   await page.evaluate(() => {
     document.querySelectorAll('.setupcard input, .setupcard textarea').forEach((i) => {
       if (i.value || /^(email|radio|checkbox|file|hidden|range|color)$/.test(i.type)) return;
-      if (i.type === 'number') i.value = i.min && +i.min > 0 ? String(+i.min + 1) : '5';
+      if (i.type === 'number') i.value = String(Math.max(+i.min || 1, 5));
       else if (i.type === 'datetime-local') i.value = '2026-09-18T18:00';
       else i.value = 'Ada Lovell';
       i.dispatchEvent(new Event('input', { bubbles: true }));

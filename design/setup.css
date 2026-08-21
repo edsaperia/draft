@@ -394,7 +394,7 @@
      keeps system.css's box, as it did on its own page */
   .doc h1.doctitle, .doc h2.doctitle { max-width: 70ch; margin: 0 0 var(--s5);
     padding: 0; text-wrap: balance; }
-  .doc h1.doctitle.ph { color: var(--muted); font-weight: 400; }
+  .doc h1.doctitle.ph { color: var(--muted); font-weight: 400; min-height: 1.15em; }
 
 /* ===========================================================================
    NOT THE DESIGN SYSTEM. The mail modal stands for the reader's inbox: it
@@ -525,11 +525,16 @@ button.cline:hover b { text-decoration: underline; }
 .constsec .cpara.open > .setupcard { margin-left: -14px; }
 
 /* the starting-text task anchors the prose itself (Ed, 2026-08-18): a
-   zero-height row at the band's end whose 📄 tab hangs in the gutter beside
-   the first block of the document text below */
+   row at the band's end carrying the document's own name, its 📄 tab beside
+   it. **The tab lines up with the title** (Ed, 2026-08-21), and the offset
+   is a measurement rather than a taste: a tab is 30px and the title's line
+   box is 30px, so flush tops centre one on the other. It had been `top:10px`,
+   from when this row was empty and the tab hung beside the first block of
+   prose below it — the title moved in and the constant stayed. Everywhere
+   else the gutter's own -3px does the same job against a 24px line. */
 .cpara.textanchor { min-height: 0; margin: 0; }
 .cpara.textanchor .dochead { margin: 0 0 var(--s3); padding-left: 0; }
-.cpara.textanchor .chipcol { top: 10px; }
+.cpara.textanchor .chipcol { top: 0; }   /* see the note above: 30px tab, 30px title line */
 
 /* the composer's rationale wears your avatar (Ed, 2026-08-18) — the same
    speaker slot the editing card gives a rationale, with you as the speaker */
@@ -651,6 +656,20 @@ button.cline:hover b { text-decoration: underline; }
 .btn.btn-approve.emojibtn:not([disabled]) {
   background: var(--primary-subtle); border-color: var(--primary);
   color: var(--primary-emphasis); font-weight: 600;
+}
+/* **A disabled commit is flat, and there is one flat** (Ed, 2026-08-21,
+   asking for the card buttons to be consistent). Three grounds had grown on
+   the same row: 🗑️ stayed white (it is not an approve, so no rule reached
+   it), ✒️ went grey (the approve+glyph rule), and a labelled approve —
+   🏛️ Hold to ask everyone, ✏️ Propose, ✒️ Begin — kept the **full accent**,
+   because nothing had ever written a disabled rule for a commit with words
+   on it. A dead button wearing a live button's colour is the worst of the
+   three. This is the whole commit row, whatever the control: grey ground,
+   grey border, muted ink, no lift. The pressed-and-disabled states that mean
+   something (a submitted ✏️, a cast ✓) carry more classes and still win. */
+.commitrow .btn[disabled], .race-mid .btn[disabled] {
+  background: var(--light); border-color: var(--border); color: var(--muted);
+  opacity: 1; box-shadow: none;
 }
 .btn.btn-approve.emojibtn:not([disabled]):hover {
   background: var(--light); border-color: var(--primary-hover);

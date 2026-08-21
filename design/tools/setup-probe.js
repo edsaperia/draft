@@ -180,9 +180,14 @@
     ['open-visibility', () => openTab('chamber')],
     ['choose-visibility', () => click('.setupcard [data-set="chamber"][data-val="closed"]')],
     ['confirm-visibility', () => click('.setupcard [data-confirm]')],
-    ['open-applications', () => openTab('policy')],
-    ['choose-join', () => click('.setupcard [data-set="joinBy"][data-val="invite"]')],
-    ['confirm-applications', () => click('.setupcard [data-confirm]')],
+    // 🎩 follows 🌍 in the constitution's order: the Membership section
+    // opens with the people (Ed, 2026-08-21), so this is the next card born
+    ['open-hat', () => openTab('hat')],
+    ['choose-hat', () => click('.setupcard [data-set="hatPick"][data-val="member"]')],
+    ['confirm-hat', () => click('.setupcard [data-hatgo]')],
+    ['open-name', () => openTab('myname')],
+    ['type-name', () => typeInto('.setupcard input[data-txt="myname"]', 'Ada Lovell')],
+    ['confirm-name', () => click('.setupcard [data-confirm]')],
     ['fast-forward', () => click('#devff')],
     ['seat-bo', () => setSeat('1')],
     ['seat-founder', () => setSeat('0')],

@@ -109,15 +109,19 @@
   /* the controls the share box took with it, now on the 📍 and 🪪 cards */
   .setupcard textarea { width: 100%; font-size: var(--t-ui); padding: var(--s2);
     resize: vertical; min-height: 60px; }
+  /* **The shape of a labelled card button here; its ground belongs to what
+     the button IS.** This used to set the ground too, which tied with
+     system.css's `.btn.btn-approve` and won on order — leaving white on
+     white — so the approve look was restated at this scope to beat it. That
+     restatement is what kept a *disabled* commit wearing the live accent:
+     three files described one button and the last one loaded won, and the
+     disabled rules all lived in the two that lost. Shape here, ground in the
+     design system (system.css for an approve, setup.css for an emoji commit
+     and for every disabled one), and no rule states a colour twice. */
   .setupcard .btn:not(.glyphbtn) { font: inherit; font-size: var(--t-cap); padding: var(--s1) var(--s3);
-    cursor: pointer; border: 1px solid var(--border); background: var(--bg);
-    border-radius: var(--r-sm); }
-  .setupcard .btn:hover { border-color: var(--primary); color: var(--primary-emphasis); }
-  /* the page's .setupcard .btn ground ties with system.css's .btn.btn-approve
-     and wins on order, leaving white-on-white — restate the approve look at
-     the same scope so the mail's login button reads as one */
-  .setupcard .btn.btn-approve { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
-  .setupcard .btn.btn-approve:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+    cursor: pointer; border-width: 1px; border-style: solid; border-radius: var(--r-sm); }
+  .setupcard .btn:not(.glyphbtn):not(.btn-approve) { background: var(--bg); border-color: var(--border); }
+  .setupcard .btn:not(.btn-approve):hover { border-color: var(--primary); color: var(--primary-emphasis); }
   .pf.waiting { color: var(--muted); }
 
   /* ---- what is unlocked, and what is waiting ----------------------------- */
@@ -519,6 +523,7 @@
     // the members, which stated an answer the founder had not given.
     titleBy: 'founder', slugBy: 'founder', policyBy: '',
     mailOpen: false,
+    sentAddr: '', inviteOne: '', inviteMany: '',
     viewer: 0,
     app: { started: false, email: '', emailSent: false, emailVerified: false,
       mailOpen: false, name: '', pic: '', text: '', submitted: false, csId: null },
@@ -1179,12 +1184,18 @@
   // the constitution does: the tab needs a home even when the powers say
   // nothing.
   const titleGovPara = (h) => {
-    if (!cs) return '';
-    const chips = [card('title'), card('pw:u:title'), card('pw:a:title')];
-    const openHere = chips.find((c) => S.open === c.k);
+    // **The clause arrives with the answer** (Ed, 2026-08-21): at the birth,
+    // the moment the title is set its sentence fades onto the page — the
+    // first line of a constitution writing itself, and the first sight of
+    // what a settled rule looks like. Before that there is nothing to state.
+    // Pre-save the *card* still opens beside the big heading rather than
+    // here, so the clause stands on its own while it is open.
+    if (!cs && !settled(card('title'))) return '';
+    const chips = cs ? [card('title'), card('pw:u:title'), card('pw:a:title')] : [card('title')];
+    const openHere = cs && chips.find((c) => S.open === c.k);
     if (openHere) return h.paraWith(openHere, chips);
     return '<div class="cpara">' + h.pile(chips) +
-      '<div class="cptext"><p class="cpv">The document is titled ' + LD + esc(S.title || 'Untitled') + RD + '.' + (holderLine('title') || '') + '</p></div></div>';
+      '<div class="cptext"><p class="cpv">The document is titled ' + LD + esc(S.title) + RD + '.' + (holderLine('title') || '') + '</p></div></div>';
   };
   const isRoom = (c) => !!(c.key && delegated(c.key));
   // who holds it (§9.7 v0.52): any setting the founder has delegated —
@@ -1362,8 +1373,8 @@
   // run, and 📄 the text is asked last, because the charter follows the
   // whole constitution — you set the rules, then you write the thing.
   const ORDER = ['title', 'slug', 'myemail', 'chamber',
-    'policy', 'lapse', 'removal', 'roster', 'hat', 'myname', 'mypic',
-    'rate', 'machines', 'ending', 'quorum', 'bar', 'pace',
+    'hat', 'myname', 'mypic', 'roster', 'policy', 'lapse', 'removal',
+    'rate', 'machines', 'ending', 'bar', 'pace', 'quorum',
     'authorship', 'signing', 'judgments', 'text'];
   // a card in the order waits for everything above it and nothing else: the
   // ORDER *is* the dependency list, so a card's own `dep` (which paced the
@@ -1376,7 +1387,10 @@
   const visible = (c) => (isStranger() && (c.isGate || c.kind === 'personal' || c.ansFor) ? false : c.ansFor
     ? viewerIsMember() && ansDue() && ansWaveReady(c) &&
       isRoom(card(c.ansFor)) && visible(card(c.ansFor))
-    : !(c.hide && c.hide()) && orderReady(c));
+    // a gate or a grant belongs to a document that exists: before the save
+    // there is nothing to gate and no pen to be given, and its paragraph
+    // would otherwise stand in the birth's own band saying so
+    : !(c.hide && c.hide()) && (!c.isGate || !!cs) && orderReady(c));
   // One question card per delegable setting, born when its setting is handed
   // over and gone if it is taken back. Same glyph, same title — it is the
   // same question — told apart by whose pile it stands in.
@@ -1436,20 +1450,27 @@
             (p.in ? '' : ' <span class="chip pending">invited</span>') + '</span></div>').join('') +
           '</div>';
         const openId = my.find((c) => S.open === c.k);
-        // policy first, lapse under it, removal under that (Q401: "a new
-        // paragraph under 💤 Lapse"), then the Members list (Ed)
-        return (visible(card('policy')) ? h.para(card('policy')) : '') +
-          (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
-          (visible(card('removal')) ? h.para(card('removal')) + h.tasks(card('removal')) : '') +
-          '<h2 class="docline lvl3">Members</h2>' +
+        // **The people, then the rules about them** (Ed, 2026-08-21, having
+        // delegated the ordering): a Membership section that opens with how
+        // applications work and reaches the list of members third reads
+        // backwards — a register is the fact, and the rest are rules about
+        // it. The founding follows the document, so this also puts 🎩 *are
+        // you a member* and your own name and picture before you invite
+        // anybody, which is the order somebody actually does it in.
+        return '<h2 class="docline lvl3">Members</h2>' +
           (() => { const pileCards = ['roster', 'invite', 'remove', 'hat']
             .map(card).filter((c) => c && visible(c));
+          // the list stands as soon as any of its tabs does — 🎩 arrives
+          // before 🪪 now, and a tab with no paragraph has nowhere to live
           return (pileCards.some((c) => S.open === c.k)
             ? h.paraWith(card(S.open), pileCards)
-            : visible(card('roster'))
+            : pileCards.length
             ? '<div class="cpara">' + h.pile(pileCards) + list + '</div>'
             : ''); })() +
-          (openId ? h.paraWith(openId, my) : '');
+          (openId ? h.paraWith(openId, my) : '') +
+          (visible(card('policy')) ? h.para(card('policy')) + h.tasks(card('policy')) : '') +
+          (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
+          (visible(card('removal')) ? h.para(card('removal')) + h.tasks(card('removal')) : '');
       } },
     // the gates lead the Proposals section (Ed, 2026-08-18); the preamble
     // opens it (Ed, 2026-08-19 — moved from the head of the constitution,
@@ -1462,7 +1483,11 @@
       keys: ['begin', 'canpropose', 'canjudge', 'rate', 'machines'] },
     { key: 'deciding', title: 'Decisions',
       text: '',
-      keys: ['ending', 'closing', 'quorum', 'bar', 'pace'] },
+      // ⏰ when it ends, ✒️ how sure the room must be at that point, 📈 how
+      // that number gets there, 👥 how many must have judged. The threshold
+      // and its pacing are one thought on two cards, so they are adjacent;
+      // quorum is a different kind of number and reads last (Ed, 2026-08-21).
+      keys: ['ending', 'closing', 'bar', 'pace', 'quorum'] },
     // "Anonymity" (Ed, 2026-08-19), not "Privacy"
     { key: 'privacy', title: 'Anonymity',
       text: '',
@@ -2278,13 +2303,22 @@
   // 404 (Ed, 2026-08-19): the preamble states the defaults once; a clause
   // states only its deviations, in 396c's precise third person. Delegated
   // ⇒ silence — the defaults are the whole of the rule.
+  // The first Membership question. Until one is decided the document has no
+  // membership to speak of, so no clause says what decisions from one take
+  // (Ed, 2026-08-21) — which is also what keeps the birth's first sentences
+  // to the one fact that is true at the birth: the founder holds this.
+  const membershipDecided = () =>
+    ['hat', 'roster', 'policy', 'lapse', 'removal'].some((k) => settled(card(k)));
   const holderLine = (k) => {
-    if (!cs || !PW_KEYS.includes(k)) return '';
+    if (!PW_KEYS.includes(k)) return '';
+    // at the birth the founder holds everything by construction — there is no
+    // module yet, and nobody else to hold anything
+    if (!cs) return ' ' + pwLine(k, 'u', true);
     const st = pwState(k);
     if (!st || st.holder === 'members') return '';
     const p = st.powers;
     return (p.unilateral ? ' ' + pwLine(k, 'u', true) : '') +
-      (p.assent ? ' ' + pwLine(k, 'a', true) : '');
+      (p.assent && membershipDecided() ? ' ' + pwLine(k, 'a', true) : '');
   };
   // **Links in the constitution are real links** (Ed, 2026-08-19):
   // underlined, ink-coloured (.doclink), applied after escaping so a
@@ -2349,7 +2383,7 @@
       // into it live); at the birth it is still the big heading itself
       if (c.k === 'title') return (cs ? 'The document is titled ' + LD : '') +
         '<span class="headdoct' + (S.title ? '' : ' ph') + '">' +
-        esc(S.title || 'Untitled') + '</span>' + (cs ? RD + '.' : '');
+        esc(S.title) + '</span>' + (cs ? RD + '.' : '');
       const m = motionOn(c);
       // an ordinary motion's head is the value as it stands, wearing the
       // keep-lane; a constitutional one re-opens the question, title head.
@@ -2543,7 +2577,11 @@
   function renderTitle() {
     const d = document.getElementById('doctitle');
     for (const el of [titleEl, d]) {
-      el.textContent = S.title || 'Untitled';
+      // **Blank until it is named** (Ed, 2026-08-21). *Untitled* was helper
+      // text standing where the answer goes, which is the one place this
+      // surface never puts a suggestion — the lane's own placeholder asks
+      // for the title, and the heading simply waits for it.
+      el.textContent = S.title;
       el.classList.toggle('ph', !S.title);
     }
     // The browser tab: the homepage is docs.vote, any other page is the
@@ -2600,6 +2638,26 @@
   // delegation is the state of holding neither power, said by the ✒️ and
   // 👑 tabs. On a delegated setting the value card explains, and picking
   // a value is the taking-back.
+  // **Delegation is an option on the card** (Q511, Ed 2026-08-21: *delegation
+  // should be an option on the decision card … which is essentially the same
+  // as “skip this and go to the next one”, because it means “don't decide
+  // now”*). It stands apart from the values, after them, because it is not
+  // one of them: the others answer the question, this one hands it over. It
+  // is the same act the ✒️/🛡️ tabs perform — holding neither power — said
+  // where a founder walking the constitution will meet it, and in a single-
+  // file founding it is also the only way past a question you are not ready
+  // to answer. Rendered once, for whatever card is open, so no body can
+  // forget it and none of the settings that cannot be delegated can get it.
+  const delegateRung = (c) => {
+    const dk = DKEY[c.k];
+    if (!dk || !DELEGABLE.includes(dk)) return '';
+    if (!cs || cs.constitutedAtT !== null) return '';   // one-way after the start
+    return '<div class="choice delegrung" role="radiogroup">' +
+      opt(S, dk, 'roster', 'Delegate to the membership',
+        'Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. ' +
+        (c.rule ? String(c.rule).replace(/<[/]?b>/g, '') : '')) +
+      '</div>';
+  };
   const theyDecide = (key, note) => (wantsDelegate(key)
     ? '<p class="setnote">' +
       (cs && cs.constitutedAtT !== null
@@ -2657,7 +2715,7 @@
     title: () =>
       '<div class="lanebox"><div class="lp editlane titlelane' + (titlePending() ? '' : ' blank') + '"' +
       ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
-      ' data-ph="Name this document">' + esc(titlePending()) + '</div></div>',
+      ' data-ph="Give this document a title">' + esc(titlePending()) + '</div></div>',
     // Stripped to the field on Ed's word (2026-08-19): the unlocks line, the
     // suggested-from-the-title note, "what people paste to each other", the
     // label and the Copy button all went. The card is titled Link and holds a
@@ -2688,7 +2746,7 @@
       (cs ? '<p class="setnote">Every link this document has ever had keeps working: changing it leaves a redirect behind, so an invitation somebody was sent weeks ago still opens the right document.</p>' : ''),
     invite: () =>
       '<p class="why">You invite people yourself. An invitation is just the link, sent by email, and whoever arrives starts with the same ✏️s as everybody else.</p>' +
-      '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1">' +
+      '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1" value="' + esc(S.inviteOne) + '">' +
       '<button class="btn" data-act="add">Invite</button></div></div>',
     remove: () => '<p class="why">Propose that somebody stops being a member. It follows whatever the 🚪 rule says, and they always see it.</p>',
     myemail: () => (S.emailVerified
@@ -2699,10 +2757,12 @@
       ? '<p class="why">Sent to <b>' + esc(S.myemail) + '</b>. ' + (cs
           ? 'The mail is the login: clicking its link is what proves the address works.'
           : 'Nothing exists yet, so a typo here still costs nothing.') + '</p>' +
-        '<div style="margin-top:var(--s3)">' +
-        (BIRTH ? '' : '<button class="btn" data-act="openmail">Open your inbox</button> ') +
-        '<button class="btn" data-act="sendverify">Resend the link</button> ' +
-        '<button class="btn" data-act="editemail">Wrong address?</button></div>' +
+        // **The composer is simply there** (Ed, 2026-08-21). *Wrong address?*
+        // was a button whose whole job was to put the field back — so the
+        // field stays, and typing in it is the correction. Resending moved to
+        // the commit row, where every other act on this surface lives.
+        '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>' +
+        (BIRTH ? '' : '<div style="margin-top:var(--s3)"><button class="btn" data-act="openmail">Open your inbox</button></div>') +
         (BIRTH
           ? '<p class="setnote">Opening the link in the mail creates the document at <b>docs.vote/' + esc(S.slug) + '</b> and carries you to it.</p>'
           : '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works' + (cs ? '.' : ' and creates the document at docs.vote/' + esc(S.slug) + '.') + '</p>')
@@ -2726,10 +2786,13 @@
     roster: () => (cs && cs.constitutedAtT !== null && !(regPair().u || regPair().a)
       ? '<p class="why">Who is a member. Bringing somebody in, or proposing that somebody leaves, is the ✉️ and ❌ tabs beside this list.</p>'
       : '<p class="why">An invitation is just the link, sent by email — there are no passwords. Somebody becomes a member when they open it; until then they are listed as <i>invited</i> and count towards nothing. For now you can invite and uninvite freely, because nothing has been decided yet. Once people start judging, bringing somebody in or taking them out is a decision of its own — the ✉️ and ❌ tabs beside this list.</p>' +
-      '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1">' +
+      '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1" value="' + esc(S.inviteOne) + '">' +
       '<button class="btn" data-act="add">Invite</button></div></div>' +
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
-      '<textarea placeholder="Paste addresses here, one per line" data-emails="1"></textarea>' +
+            // the boxes keep what is in them across a close, like every other
+      // field here: a pasted list of addresses is the most expensive thing
+      // anybody types on this card (Ed, 2026-08-21)
+      '<textarea placeholder="Paste addresses here, one per line" data-emails="1">' + esc(S.inviteMany) + '</textarea>' +
       '<div style="margin-top:var(--s2)"><button class="btn" data-act="invite">Send invitations</button></div>' +
       '<p class="setnote">' + arrived() + ' of ' + S.roster.length + ' have opened it so far. ' +
       'Nobody has to be here for the document to exist, and anybody who arrives later ' +
@@ -2825,7 +2888,12 @@
         '<span class="setrow2">' + num(S, 'grant', '✏️ to start with', 0, 40) +
         num(S, 'cap', 'up to a maximum of', 1, 99) +
         num(S, 'dripMin', 'an additional ✏️ every N minutes', 5, 2880) + '</span>') +
-      '</div>',
+      '</div>' +
+      // the commit waits on all three numbers, and on the maximum being a
+      // maximum: without this the button just stays dark and says nothing
+      // about why (found walking the founding, 2026-08-21)
+      (isNum(S.grant) && isNum(S.cap) && +S.cap < +S.grant
+        ? '<p class="setnote">The maximum cannot be lower than the number they start with.</p>' : ''),
     chamber: () =>
       '<p class="why">Who else can read the document. Readers are <b>not members</b>: they cannot propose or judge, and nothing about them is known. Nobody, member or not, can see how a question is going while it is still open.</p>' +
       '<div class="choice" role="radiogroup">' +
@@ -3000,7 +3068,7 @@
         return cardHtml(c, ctx, beginBody(c, rd),
           constituted() ? '<button class="btn" data-close="1">Close</button>'
             : '<button class="btn" data-close="1">Close</button>' +
-              '<button class="btn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
+              '<button class="btn btn-approve emojibtn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
               ' title="' + (can ? 'Hold to begin the document' : 'The document cannot begin yet') + '">✒️ Begin</button>',
           g.cards);
       }
@@ -3102,7 +3170,7 @@
         // the founder's settings are read-only from any other chair
         : (!amFounder() && c.own !== 'you')
         ? readBody(c, ctx) + (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '')
-        : BODY[c.k]() +
+        : BODY[c.k]() + delegateRung(c) +
           (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
       // **The route left the card bodies** (Ed's copy pass, 2026-08-19,
       // finishing what the kind-eyebrow removal started): every card carried
@@ -3133,6 +3201,14 @@
           ' title="Put it back as it stands">🗑️</button>' +
           '<button class="btn btn-approve glyphbtn emojibtn"' + (commitReady(c) ? '' : ' disabled') +
           ' data-confirm="1" title="' + commitTitle(c) + '">' + (cs ? '✒️' : '🪶') + '</button>'
+        // 📧 in flight: the act is resending, and it spends nothing, so it is
+        // a click rather than a hold (the ladder is for what comes out of a
+        // wallet). The first send is still the 🪶 commit below.
+        : c.k === 'myemail' && S.emailSent && !S.emailVerified
+        ? binBtn(false) +
+          '<button class="btn btn-approve emojibtn" data-act="sendverify"' +
+          (EMAIL_OK.test(S.myemail) ? '' : ' disabled') +
+          ' title="Send the link again">' + resendLabel() + '</button>'
         : c.k === 'hat'
         ? (() => { const cur = S.seen.has('hat') ? (iDraft() ? 'member' : 'clerk') : null;
             const dirty = !!S.hatPick && S.hatPick !== cur &&
@@ -3169,12 +3245,17 @@
     tp.classList.toggle('open', !cs && S.open === 'title');
     tp.querySelectorAll('.setupcard').forEach((el) => el.remove());
     if (!cs && S.open === 'title') tp.insertAdjacentHTML('beforeend', cardFor(groups()[0]));
-    // **Before the save there is no constitution** (Ed, 2026-08-18): an
-    // unsaved document is a topbar, an outline, an empty title and its
-    // tasks. The band holds only the open card, in the section geometry
-    // it will keep, with none of the chrome.
+    // **The constitution starts writing itself at the birth** (Ed,
+    // 2026-08-21, amending *before the save there is no constitution*): each
+    // answer lands as its own clause and fades onto the page, so the founder
+    // sees the document forming, is shown that their answer was received,
+    // and learns the fading-clause mechanic before there is a document to
+    // use it on. Until the first answer there is still nothing to state, and
+    // the open card alone stands in the band's own geometry.
     if (!settled(card('myemail'))) {
-      band.innerHTML = (S.open && S.open !== 'title')
+      band.innerHTML = settled(card('title'))
+        ? bandHtml(groups(), ctx, cardFor)
+        : (S.open && S.open !== 'title')
         ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + cardFor(groups()[0]) + '</div></div></div>'
         : '';
     } else {
@@ -3242,6 +3323,10 @@
   // written by the render and corrected live by refreshCommit, and a title
   // that only the render knows how to write goes stale the moment a number
   // wakes the button
+  // 📨 says which act it is: a resend to the address that was written to, or
+  // a first send to one that has been edited since. Typing does not re-render
+  // the card (it would take the caret), so the label is corrected in place.
+  const resendLabel = () => (S.myemail === S.sentAddr ? '📨 Resend' : '📨 Send');
   const commitTitle = (c) => (c.k === 'title'
     // 🪶's own wording: the title card is the one that is typed into, so it
     // says what is missing rather than that nothing has been answered
@@ -3272,7 +3357,14 @@
     resolveCounts();
     // one snapshot per opening — after the module has had its say, so the
     // bin puts the card back to what stands rather than to what was on screen
-    if (snapFor !== S.open) { S.titleDraft = null; takeSnap(); snapFor = S.open; }
+    // **What you have typed survives a close** (Ed, 2026-08-21: *my inputs
+    // are lost … they should remain unless I press 🗑️*). The title lane used
+    // to be dropped whenever the open card changed, which made it the one
+    // control on the surface where closing a card threw work away — every
+    // other provisional value (a radio, a number, a motion's draft) already
+    // lives in S until the bin takes it. The snapshot the bin restores to is
+    // still taken once per opening.
+    if (snapFor !== S.open) { takeSnap(); snapFor = S.open; }
     renderDev();
     renderTitle(); renderRail(); renderBand(); syncCharter(); renderMail(); renderPowerWallets();
     document.getElementById('mebtn').innerHTML = avHtml(
@@ -3614,8 +3706,6 @@
         if (S.myname) cs.setIdentity(now(), FOUNDER, { name: S.myname });
       }
       S.open = null; return render(); }
-    const ee = ev.target.closest('[data-act="editemail"]');
-    if (ee) { S.emailSent = false; return render(); }
     const an = ev.target.closest('[data-ans]');
     if (an) { const v = an.dataset.ansval;
       S.myAns[an.dataset.ans] = (v === 'true') ? true : (v === 'false') ? false
@@ -3635,16 +3725,19 @@
     if (ev.target.closest('[data-act="add"]')) {
       const f = document.querySelector('[data-add]');
       if (f && f.value.trim()) invite(f.value.trim());
+      S.inviteOne = '';
       return render(); }
     if (ev.target.closest('[data-act="invite"]')) {
       const box = document.querySelector('[data-emails]');
-      if (box) { box.value.split(/[\s,;]+/).filter((x) => x.includes('@')).forEach(invite); box.value = ''; }
+      if (box) { box.value.split(/[\s,;]+/).filter((x) => x.includes('@')).forEach(invite); }
+      S.inviteMany = '';
       return render();
     }
   });
   // sending the verification mail: at the birth it mints the real document
   // server-side (§9.7a), in the mockup it opens the pretend inbox
   function sendVerify() {
+    S.sentAddr = S.myemail;
     if (BIRTH && S.viewer !== 'applicant') {
       S.emailErr = null;
       api.post('/api/docs', { title: S.title || 'Untitled', slug: S.slug, email: S.myemail,
@@ -3804,6 +3897,10 @@
     if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); S.slugTaken = null;
       if (SLUG_OK.test(S.slug)) checkSlug(S.slug); else S.slugFree = null;
       renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
+    // the invitation boxes are backed by S, so what is typed into them
+    // outlives a re-render and a close (Ed, 2026-08-21)
+    if (t.matches && t.matches('[data-add]')) { S.inviteOne = t.value; return; }
+    if (t.matches && t.matches('[data-emails]')) { S.inviteMany = t.value; return; }
     if (t.dataset.txt === 'myname') { S.myname = t.value; renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (t.dataset.txt === 'myemail') { S.myemail = t.value.trim();
       S.emailSent = false; S.emailVerified = false; S.seen.delete('myemail');
@@ -3811,7 +3908,7 @@
       // the send button tracks validity in place — a full render would
       // rebuild the card under the caret
       const sv = document.querySelector('[data-act="sendverify"]');
-      if (sv) sv.disabled = !EMAIL_OK.test(S.myemail);
+      if (sv) { sv.disabled = !EMAIL_OK.test(S.myemail); sv.textContent = resendLabel(); }
       renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (t.dataset.txt) { S[t.dataset.txt] = t.value;
       renderRail(); SESSION.refreshRail(); refreshCommit(); }

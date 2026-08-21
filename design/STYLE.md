@@ -134,3 +134,11 @@ Scanned: every string literal in `session.js`, `setup.js` and the page, comments
 22. **Fixed** — the commit's tooltip went stale the moment a typed number woke the button, so it said *Not answered yet* over a live control. One expression (`commitTitle`) now writes it from both the render and the live refresh, the title card's own wording included.
 23. **Passed by reading** — the eighteen task bodies and their option labels against §§1–6: no banned vocabulary, no §-numbers, no raw values, second person only where a card asks, third person in every clause. The clause a settled card produces states the rule and appends only its deviations.
 24. **Noted, not surface** — with nothing pre-answered, three cards (⏱️ ✒️ 👥) open on a lone *I set it* rung with its fields beside it and no visible alternative, because delegation lives on the ✒️/🛡️ tabs by design. Legible once chosen; **Q511** asks whether the founder should meet a delegation default at all.
+
+**Sixth pass (the pacing rework, 2026-08-21)** — the strings the birth's fading clauses, the delegation rung, the 📧 rework and the button pass added or changed.
+
+25. **Fixed** — the title arrived as *Untitled*, helper text standing where the answer goes: the heading is blank until it is named, and the lane asks *Give this document a title* (was *Name this document*).
+26. **Fixed** — ⏱️'s commit stayed dark with no reason given when the maximum was below the number members start with. The card says so.
+27. **Passed** — the birth's clauses (*The document is titled “X”. The Founder may change this at will.*): third person about the document, the pen stated because at the birth it is true by construction, and no sentence about decisions from a membership that does not exist yet.
+28. **Passed** — *Delegate to the membership* (Q511) and its note: it says what delegating does and when the room answers, and never the word *ordinary*.
+29. **Passed** — 📨 *Resend* on the 📧 commit row, and *📨 Send* where the address has been edited since: a resend to a new address is not a resend, and the label says which act it is.
