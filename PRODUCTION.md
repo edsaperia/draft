@@ -391,6 +391,9 @@ last, being the one irreversible thing):
   is built**: items 1–7 of the backlog; 463–465 remain as questions,
   plus Q504(a), 507–509. References re-frozen; probes IDENTICAL / 0 diffs;
   the four checks run before the push that repairs CI.
+- 10:40 — **Pushed `5a3f019`; CI green (ci + probe); live** — `/healthz` → build
+  `5a3f019`, `pg`, 3 documents (migration 2 applied on boot); `/` 200. The
+  design day is on docs.vote.
 
 ## Decisions
 
