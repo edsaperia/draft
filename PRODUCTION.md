@@ -408,6 +408,12 @@ last, being the one irreversible thing):
   module-blind copy had silently overridden 🌍 and 🤝. 447 tests + the new one,
   typecheck, lint, build, both probes (session IDENTICAL, setup 0 diffs).
   Not deployed — Ed's call.
+- 09:22 — **Pushed `083d95e` (carrying `4ebd153`); CI green on both jobs; live.**
+  `/healthz` → build `083d95e`, `pg`, 4 documents; `/` 200, unknown slug 404,
+  the dev outbox 404 in the production artifact, and the served page carries
+  the single-file founding order. The XSS repair at the stranger's door is
+  live. The probe job ran `--strict` for the first time and passed (36 steps,
+  0 diffs, no dead steps) — Q504(a) closed.
 
 ## Decisions
 
