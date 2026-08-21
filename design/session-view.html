@@ -509,19 +509,57 @@
     'quorumForm', 'quorumPct', 'quorumN', 'joinBy', 'policyBy', 'titleBy', 'slugBy',
     'lapse', 'lapseDays', 'removal', 'authorship', 'signing', 'judgments',
     'grant', 'dripMin', 'cap', 'chamber', 'auditor', 'auditorBudget',
-    'barBy', 'quorumBy', 'rateBy', 'myname', 'mypic', 'myemail', 'hatPick']
+    'barBy', 'quorumBy', 'rateBy', 'myname', 'mypic', 'myemail', 'hatPick',
+    // the title's provisional lane rides the snapshot like every other
+    // provisional value, so 🪶 needs no bin of its own (2026-08-21)
+    'titleDraft']
     .concat(PW_KEYS.flatMap((k) => ['pw:u:' + k, 'pw:a:' + k]));
-  let snap = null, snapFor;
-  const takeSnap = () => { snap = {}; REVERTKEYS().forEach((k) => { snap[k] = S[k]; }); };
-  const snapDirty = () => !!snap && REVERTKEYS().some((k) => S[k] !== snap[k]);
-  const revertSnap = () => { if (snap) REVERTKEYS().forEach((k) => { S[k] = snap[k]; }); };
+  // **The snapshot is per card, and it lives until that card commits** (Ed's
+  // QA, 2026-08-21). It used to be taken once per *opening*, which was true
+  // until *what you have typed survives a close* landed the same day: type an
+  // address, close the card, open it again, and the snapshot was retaken from
+  // the value you had typed — so the bin had nothing to put back and went
+  // dead, stranding the very change it exists to undo. What a card stands as
+  // only moves when the card is committed, so that is when the snapshot is
+  // dropped and the next opening takes a fresh one.
+  const snaps = Object.create(null);
+  const takeSnap = (k) => { const s = {}; REVERTKEYS().forEach((kk) => { s[kk] = S[kk]; }); snaps[k] = s; };
+  const dropSnap = (k) => { delete snaps[k]; };
+  // **The bin puts back its own card, not the whole surface.** The snapshot
+  // covers every revertable key, but a card may only undo the ones it can
+  // write — otherwise a snapshot taken at one opening could roll back a draft
+  // made on a *different* card in between. Every control names the field it
+  // writes (opt()'s data-set, the text and number fields' own data-txt and
+  // data-num), so the card's keys are read off the open card rather than kept
+  // in a hand-maintained list that would rot silently. A card naming none
+  // falls back to the whole set, which is what every bin did before.
+  const cardKeys = () => {
+    const el = document.querySelector('.setupcard');
+    if (!el) return null;
+    const ks = new Set();
+    el.querySelectorAll('[data-set]').forEach((b) => ks.add(b.dataset.set));
+    el.querySelectorAll('[data-txt]').forEach((b) => ks.add(b.dataset.txt));
+    el.querySelectorAll('[data-num]').forEach((b) => ks.add(b.dataset.num));
+    if (el.querySelector('[data-titlelane]')) ks.add('titleDraft');
+    if (el.querySelector('[data-pic]')) ks.add('mypic');
+    return ks.size ? [...ks] : null;
+  };
+  const revertSnap = (only) => { const s = snaps[S.open];
+    if (s) (only && only.length ? only : REVERTKEYS()).forEach((k) => { if (k in s) S[k] = s[k]; }); };
   // the cards whose changes are not held by the card: the register commits
   // row by row as you invite, and the starting text lives in the document
   // column itself — there is nothing on either to throw away, so they keep
   // Close
   const NOREVERT = ['roster', 'text', 'invite', 'remove'];
-  const binBtn = (dirty) => '<button class="btn glyphbtn" data-revert="1"' +
-    (dirty ? '' : ' disabled') + ' title="Put it back as it stands">🗑️</button>';
+  // **🗑️ is always live** (Ed, 2026-08-21: *the bin should still close the
+  // card even if the fields are empty*). It used to grey out when there was
+  // nothing to put back, which made the one control that leaves a card
+  // unpressable exactly when a reader most wanted out of it — and left them
+  // pressing a dead button. So the act is *put it back as it stands, and
+  // close*, and with nothing to put back it is simply the close. That also
+  // retires the dirty predicates the row was keeping in three places.
+  const binBtn = () => '<button class="btn glyphbtn" data-revert="1"' +
+    ' title="Put it back as it stands">🗑️</button>';
 
   const S = {
     // **Nothing in the document changes until ✒️** (Ed's QA, 2026-08-19: the
@@ -3196,7 +3234,7 @@
         // and ✒️ is the pen every unilateral set on this surface commits
         // with — the ✓ is reserved for answering a shared question
         return cardHtml(c, ctx, powerBody(c),
-          (editable ? binBtn(snapDirty()) +
+          (editable ? binBtn() +
             '<button class="btn btn-approve glyphbtn emojibtn" data-confirm="1"' +
             ' title="Set it">✒️</button>'
             : '<button class="btn" data-close="1">Close</button>'),
@@ -3262,7 +3300,7 @@
           (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
         return cardHtml(c, ctx, body2,
           '<button class="btn glyphbtn" data-dropmotion="1"' +
-          (S.draft && S.draft.k === c.k ? '' : ' disabled') + ' title="Discard this motion">🗑️</button>' +
+          ' title="Discard this motion">🗑️</button>' +
           commitFor(c), g.cards);
       }
       const body = c.ansFor ? ANSWER[c.ansFor](S.myAns, E(), c.ansFor === 'quorum' ? S.quorumForm : undefined)
@@ -3281,7 +3319,6 @@
       // whether/when split, where the constitutional line falls inside a
       // single setting.
       const kindLine = c.knote ? '<p class="setnote">' + c.knote + '</p>' : '';
-      const clearable = { myname: S.myname, mypic: S.mypic };
       const newsKey = isRoom(c) ? 'res-' + c.k : 'set-' + c.k;
       // **The ground belongs to the glyph, never to the card's kind** (Ed's
       // QA, 2026-08-21: *the buttons during the birth are many different
@@ -3300,16 +3337,16 @@
             '<button class="btn btn-approve" data-ok="' + newsKey + '">OK</button>'
           : '<button class="btn" data-close="1">Close</button>')
         : (c.k === 'myname' || c.k === 'mypic')
-        ? '<button class="btn glyphbtn" data-clearval="' + c.k + '"' + (clearable[c.k] ? '' : ' disabled') +
+        ? '<button class="btn glyphbtn" data-clearval="' + c.k + '"' +
           ' title="' + (c.k === 'myname' ? 'Clear the name' : 'Remove the picture') + '">🗑️</button>' +
           // Q449 (Ed, 2026-08-20): a name or a picture binds nobody (§9.0c),
           // so it commits with ✓ — the pen is for sets that bind the document
           '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
           ' data-confirm="1" title="Save">' + TICK + '</button>'
         : c.k === 'title'
-        ? '<button class="btn glyphbtn" data-cleartitle="1"' +
-          ((S.titleDraft !== null && S.titleDraft !== cs_titleNow()) ? '' : ' disabled') +
-          ' title="Put it back as it stands">🗑️</button>' +
+        // the title's lane rides the snapshot like every other provisional
+        // value now, so this card keeps the shared bin (2026-08-21)
+        ? binBtn() +
           '<button class="btn btn-approve glyphbtn emojibtn"' + (commitReady(c) ? '' : ' disabled') +
           ' data-confirm="1" title="' + commitTitle(c) + '">' + (cs ? '✒️' : '🪶') + '</button>'
         // 📧 in flight: the act is resending, and it spends nothing, so it is
@@ -3318,8 +3355,13 @@
         // 📨 says it by itself (Ed, 2026-08-21) — the word was doing nothing
         // the glyph and the tooltip were not already doing, and it is the
         // same 52px glyph button every other commit row uses
+        // …and its 🗑️ is the ordinary one (Ed, 2026-08-21). It had been
+        // hard-wired off, on the reading that a sent address has nothing to
+        // put back — but the field is live here on purpose (typing in it is
+        // how a wrong address is corrected), so the bin has exactly the job
+        // it has everywhere else: put back the address the link went to.
         : c.k === 'myemail' && S.emailSent && !S.emailVerified
-        ? binBtn(false) +
+        ? binBtn() +
           '<button class="btn btn-approve glyphbtn emojibtn" data-act="sendverify"' +
           (EMAIL_OK.test(S.myemail) ? '' : ' disabled') +
           ' title="' + resendTitle() + '">📨</button>'
@@ -3327,8 +3369,7 @@
         ? (() => { const cur = S.seen.has('hat') ? (iDraft() ? 'member' : 'clerk') : null;
             const dirty = !!S.hatPick && S.hatPick !== cur &&
               !(cs && cs.constitutedAtT !== null);
-            return '<button class="btn glyphbtn" data-hatdrop="1"' + (dirty ? '' : ' disabled') +
-              ' title="Put it back as it stands">🗑️</button>' +
+            return binBtn() +
               '<button class="btn btn-approve glyphbtn emojibtn"' + (dirty ? '' : ' disabled') +
               ' data-hatgo="1" title="Set it">✒️</button>'; })()
         : stateOf(c, ctx) === 'news'
@@ -3338,10 +3379,9 @@
           // an answer is provisional until the ✓ (363a), so the bin throws
           // away an answer you have not sent rather than one you have
           ? '<button class="btn glyphbtn" data-ansdrop="' + ansKey(c) + '"' +
-            (filled(c) && !answered(c) ? '' : ' disabled') +
             ' title="Clear your answer">🗑️</button>'
           : NOREVERT.includes(c.k) ? '<button class="btn" data-close="1">Close</button>'
-          : binBtn(snapDirty())) +
+          : binBtn()) +
         // ✒️ is the founder's pen (Ed, 360): a set of a setting binds the
         // document. Q449 (Ed, 2026-08-20): an answer to a shared question
         // and a setting about yourself — your name, picture, email — bind
@@ -3449,15 +3489,23 @@
     ? (commitReady(c) ? (cs ? 'Set it — yours to change any time' : 'Name it') : 'Give it a name first')
     : ready(c) ? (c.ansFor ? 'Answer' : c.kind === 'personal' ? 'Save' : 'Set it')
     : 'Not answered yet');
+  // **The whole commit row follows the typing** (Ed, 2026-08-21: *the 🗑️
+  // button on "Your Email" doesn't work — check the other cards also*).
+  // Typing deliberately does not re-render, because a render would take the
+  // caret, so everything on the row whose state depends on what has been
+  // typed must be corrected in place. Only the commit and the title card's
+  // own bin ever were — which left every 🗑️ on a card you *type* into (the
+  // address, the numbers, the dates, a motion's draft) wearing whatever the
+  // render drew before the first keystroke, and that is always disabled. A
+  // bin woke only where the change was a radio, because a radio re-renders.
+  // Each line below states exactly the predicate its own render states.
   function refreshCommit() {
+    const c = S.open ? card(S.open) : null;
     const b = document.querySelector('[data-confirm]');
-    if (b && S.open) { b.disabled = !commitReady(card(S.open)); b.title = commitTitle(card(S.open)); }
-    // the title card's other live pieces follow the typing without a
-    // re-render (which would take the caret). The head is NOT one of them:
-    // it says what the document is called *now*, and that does not move
-    // until the ✒️ moves it (Ed's QA, 2026-08-19).
-    const bin = document.querySelector('[data-cleartitle]');
-    if (bin) bin.disabled = S.titleDraft === null || S.titleDraft === cs_titleNow();
+    if (b && c) { b.disabled = !commitReady(c); b.title = commitTitle(c); }
+    // …and nothing else on the row has a live state to correct: since the
+    // bin is always pressable there is no dirty predicate left to keep in
+    // step, which is four fewer copies of "what this card stands as".
   }
 
   const renderMail = () => (isStranger() ? renderMailModal(false, MAILS.verify(S.title, '', S.slug))
@@ -3480,7 +3528,7 @@
     // other provisional value (a radio, a number, a motion's draft) already
     // lives in S until the bin takes it. The snapshot the bin restores to is
     // still taken once per opening.
-    if (snapFor !== S.open) { takeSnap(); snapFor = S.open; }
+    if (S.open && !snaps[S.open]) takeSnap(S.open);
     renderDev();
     renderTitle(); renderRail(); renderBand(); syncCharter(); renderMail(); renderPowerWallets();
     document.getElementById('mebtn').innerHTML = avHtml(
@@ -3571,8 +3619,11 @@
   });
   document.addEventListener('click', (ev) => {
     if (ev.target.closest('#charter')) return;   // the charter's controls are session.js's own
-    const ct = ev.target.closest('[data-cleartitle]');
-    if (ct) { S.titleDraft = null; return render(); }
+    // **🗑️ discards and closes** (Ed, 2026-08-21, choosing between the two
+    // halves of the surface that disagreed: ✋ 🖼️ and a motion's draft closed
+    // on the bin, while 🪶 the title, every settings card, a delegated answer
+    // and 🎩 stayed open). The discard is a finished act and the close is its
+    // receipt — the same shape as the send on 📧. One rule, six bins.
     const cv = ev.target.closest('[data-clearval]');
     if (cv) return closeThen(() => { S[cv.dataset.clearval === 'myname' ? 'myname' : 'mypic'] = ''; S.open = null; });
     const ams = ev.target.closest('[data-appmailsend]');
@@ -3735,11 +3786,13 @@
     }
     if (held) penPointerDown = false;
     if (ev.target.closest('[data-confirm]') && S.open === 'myemail' && !S.emailVerified) {
-      return sendVerify();
+      return sendAndClose();
     }
     if (ev.target.closest('[data-confirm]')) {
       return closeThen(() => {
-        const was = S.open; S.seen.add(was); S.open = null;
+        // committing is what moves what the card stands as, so the bin's
+        // snapshot of it is dropped here and retaken at the next opening
+        const was = S.open; S.seen.add(was); S.open = null; dropSnap(was);
         const cw = card(was);
         try {
           // the ✓ is the act (363a): the commit is a module command
@@ -3792,10 +3845,14 @@
         } catch (e) { console.warn('[cs]', e && e.message); }
       }); }
     if (ev.target.closest('button[data-close]')) return closeThen(() => { S.open = null; });
-    if (ev.target.closest('[data-revert]')) { revertSnap(); return render(); }
+    // the shared bin, under the one rule above: put this card back, then
+    // close. The keys are read before the card collapses out from under it.
+    if (ev.target.closest('[data-revert]')) {
+      const own = cardKeys();
+      return closeThen(() => { revertSnap(own); S.open = null; });
+    }
     const ansBin = ev.target.closest('[data-ansdrop]');
-    if (ansBin) { S.myAns[ansBin.dataset.ansdrop] = null; return render(); }
-    if (ev.target.closest('[data-hatdrop]')) { S.hatPick = null; return render(); }
+    if (ansBin) return closeThen(() => { S.myAns[ansBin.dataset.ansdrop] = null; S.open = null; });
     // 🎩 commits like any other setting, so it closes like one (Ed,
     // 2026-08-21, asking whether there is a rule): it had its own commit
     // control and so never went through the closing path, which is the whole
@@ -3806,9 +3863,9 @@
         if (m && want) { m.role = want === 'clerk' ? 'clerk' : 'member'; S.seen.add('hat');
           if (cs) { try { cs.setConvenorMembership(now(), want !== 'clerk'); }
             catch (e) { console.warn('[cs]', e && e.message); } } }
-        S.hatPick = null; S.open = null;
+        S.hatPick = null; S.open = null; dropSnap('hat');
       }); }
-    if (ev.target.closest('[data-act="sendverify"]')) return sendVerify();
+    if (ev.target.closest('[data-act="sendverify"]')) return sendAndClose();
     const om = ev.target.closest('[data-act="openmail"]');
     if (om) { S.mailOpen = true; return render(); }
     if (ev.target.closest('[data-mailclose]') ||
@@ -3867,6 +3924,17 @@
       return render();
     }
   });
+  // **Sending closes the card** (Ed, 2026-08-21: *the "Your Email" card
+  // should close … when you press it the first time*). 📧 had been an
+  // exception to *a card closes when the answer becomes the document's*, on
+  // the argument that what happens next — the mail, the link — belongs to
+  // that card and the inbox opens over it. It does not: the inbox is the
+  // founder's own, in another window, and a card left open after its one act
+  // gives the press no receipt at all. So the send is the act and the close
+  // is the receipt, first press and resend alike; what the card was showing
+  // — *Check your inbox* — is what the clause below it now says, and the
+  // task waits in the rail as ⏳ until the link is followed.
+  const sendAndClose = () => closeThen(() => { S.open = null; dropSnap('myemail'); sendVerify(); });
   // sending the verification mail: at the birth it mints the real document
   // server-side (§9.7a), in the mockup it opens the pretend inbox
   function sendVerify() {
@@ -3892,13 +3960,16 @@
             S.emailSent = false; S.open = 'slug'; return render();
           }
           if (res && res.error) {
-            S.emailErr = res.error; S.emailSent = false; return render();
+            // the card is closed by the time an answer comes back, and a
+            // refusal has nowhere else to be read: it re-opens the card it
+            // is about, which is also where the address is corrected
+            S.emailErr = res.error; S.emailSent = false; S.open = 'myemail'; return render();
           }
           api.birth = res; if (res.slug) S.slug = res.slug;
         })
         .catch(() => {
-          S.emailErr = 'The mail could not be sent — check the connection and press ✒️ again.';
-          S.emailSent = false; render();
+          S.emailErr = 'The mail could not be sent — check the connection and press 🪶 again.';
+          S.emailSent = false; S.open = 'myemail'; render();
         });
     }
     // the pretend inbox is fixture furniture: at the live birth a real
@@ -4030,8 +4101,6 @@
       // swapped in place, because a re-render would throw the caret out
       const slot = document.querySelector('[data-putmotion], [data-holdmotion]');
       if (slot && S.draft) slot.outerHTML = commitFor(card(S.draft.k));
-      const dr = document.querySelector('[data-dropmotion]');
-      if (dr) dr.disabled = false;
       return; }
     if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); S.slugTaken = null;
       if (SLUG_OK.test(S.slug)) checkSlug(S.slug); else S.slugFree = null;
