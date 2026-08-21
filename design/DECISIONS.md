@@ -170,6 +170,12 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 - `scripted-persona` / `llm-persona` — deterministic utility-model participants (regression + welfare ground truth) vs claude-haiku-4-5 participants (realism).
 - `welfare-ratio` — sim metric: (achieved − incumbent) / (optimal − incumbent) summed utility over the roster; 1.0 = utilitarian-best text found.
 
+## Reversals worth keeping (2026-08-21)
+
+- **"Untitled" in the birth heading, restored the evening it was removed.** That morning the heading was blanked until a title was set, on the argument that *Untitled* was helper text standing where the answer goes — the one place this surface never puts a suggestion. That evening Ed watched a user tester **type the document's title into the prose column underneath the empty heading**, and asked for it back. The argument had misidentified the object: the answer goes on the 🪶 card, and the heading is where the *result* appears, so "Untitled" is an honest statement of the result so far rather than a suggestion competing with a lane. A heading with nothing in it gives the eye nothing to fix on, and the eye goes looking for the nearest writable thing. Kept as a reversal rather than folded silently, because the losing argument is a good argument that a single observation beat — which is the whole case for testing surfaces on people.
+
+- **Acknowledgment gates the power, not the receipt.** The grant tasks (Q448/453) were built so that no power arrives without acknowledgment, but the acknowledgment reached only three `style.display` lines — the ✏️ ✒️ 🏛️ wallets. Everything a power actually *does* was gated on the module's own `can*` predicates, which go true at 🍾. So between the press and the OK a member held every power with no wallet to show for it: the receipt was hidden and the power ran. Ed's rule (*I should not be able to do actions until I have acknowledged that I have been given the right to do them*) makes the OK the conferring act rather than a notification about one. What made this cheap to get wrong: the wallet is the visible half, so gating it *looks* like gating the power, and every fixture walk presses the OKs in order and never observes the window in between.
+
 ## Conventions
 
 - Windows machine, PowerShell 5.1 — see global CLAUDE.md traps (no Get-Content/Set-Content rewrites, use Bash tool for gh/multi-line git).

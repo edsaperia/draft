@@ -87,11 +87,20 @@
     laneSeed, laneProposeHtml, speakerHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
   } = window.CARDS;
+  // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
+  // The host says whether this reader may propose and may judge; both default
+  // open, so a surface that never sets them behaves exactly as before. They
+  // are read at call time, never captured — the answer changes the moment an
+  // OK is pressed, with no reload and no remount.
+  let MAY_PROPOSE = () => true;
+  let MAY_JUDGE = () => true;
   const {
     laneBarHtml, clauseHeadHtml, proposalHtml, commitRowHtml, reviseNote,
     laneBoxHtml, collapseCard, expandCard, openCardEls, runOnCards,
     collapseCards, expandCards, stillRef, restoreStill, keepStill,
   } = window.CARDS.make({
+    mayPropose: () => MAY_PROPOSE(),
+    lockedOf: (s) => !!s.locked || !MAY_JUDGE(),
     pickOf: (s) => pickOf(s),
     stateOf: (s) => stateOf(s),
     isCast: (s) => isCast(s),
@@ -125,7 +134,14 @@
   // children, and it is safe for the same reason it always was: **every**
   // beforeinput is refused, so the browser never modifies the charter whatever
   // it thinks it is allowed to do.
-  const PROSE = '<div class="prose" contenteditable="true" spellcheck="false">';
+  // A function rather than a constant since 2026-08-21: **you are not shown an
+  // act you cannot take**, and a caret is the offer of one. A reader who may
+  // not propose — before the 💡 grant is acknowledged, or on a document whose
+  // rules they have not yet accepted — gets prose they can read and select but
+  // not type into. The `beforeinput` refusal below stays as the second lock:
+  // `contenteditable` is a hint to the browser, never a permission model.
+  const PROSE = () => '<div class="prose" contenteditable="' + (MAY_PROPOSE() ? 'true' : 'false') +
+    '" spellcheck="false">';
 
   // The text a suggestion is arguing against, for the quick card's yellow band.
   function currentTextFor(key) {
@@ -459,6 +475,14 @@
   function queueEntries() {
     const out = [];
     for (const g of SUGGS) {
+      // **You are not shown a task you have not been given the right to do**
+      // (Ed, 2026-08-21). The line falls exactly where the palette already
+      // draws it: **hot for actions, cold for information**. A 💡 or 🔥 entry
+      // wants a judgment, so it waits until ⚖️ has been acknowledged; a ⏳,
+      // a filed ✔✖ or a draft of your own reports where things stand and is
+      // owed to you whatever you hold. ⚔️ and 🌶️ cannot arise unless you have
+      // already judged, so they need no clause of their own here.
+      if (stateOf(g) === 'needs' && !MAY_JUDGE()) continue;
       // a patch's entry is titled by the section it stands in, not by the patch
       // as a whole (Ed, 183) — in a margin, the local name is the useful one
       if (g.kind === 'patch') g.sites.forEach((site, i) =>
@@ -2432,23 +2456,31 @@
         '<div class="propblock">' +
         '<div class="rtext">' + wordingHtml(cur, c.text, true) + '</div>' +
         (c.why ? speakerHtml(c.why) : '') +
-        '<div class="lanebar solo">' + laneProposeHtml(s, 'slate:' + i, key) + '</div>' +
+        (MAY_PROPOSE()
+          ? '<div class="lanebar solo">' + laneProposeHtml(s, 'slate:' + i, key) + '</div>' : '') +
         '</div>').join('') + '</div>' +
-      '<div class="field bridgedesk"><div class="fieldlab">' +
-      '✏️ propose something everyone can agree on</div>' +
-      '<div class="propblock">' + laneBoxHtml(d, site, site ? null : key) + '</div></div>' +
+      // **The desk is an offer, so it goes rather than greys** (Ed,
+      // 2026-08-21). A reader who may not yet propose keeps the whole reading
+      // room — the wordings, the rationales, what they said — and simply is
+      // not handed a pen. The ask on this card is a draft, and a card cannot
+      // ask for one from somebody who cannot give it.
+      (MAY_PROPOSE()
+        ? '<div class="field bridgedesk"><div class="fieldlab">' +
+          '✏️ propose something everyone can agree on</div>' +
+          '<div class="propblock">' + laneBoxHtml(d, site, site ? null : key) + '</div></div>' +
       // The same row as the editing card's, and it stays the same row: 🗑️ at
       // the very left for the whole of a proposal's life, the commit control at
       // the very right. Both greyed until there is something to act on, which is
       // what gives an untouched desk its shape — the argument the ✓ won on.
-      '<div class="race-mid commitrow">' +
-      '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
-      (site ? '' : ' disabled') +
-      ' title="Discard this draft — nothing has been spent on it yet">🗑️</button>' +
-      '<button class="btn btn-propose glyphbtn" data-act="draft-propose"' +
-      (site && !broke ? '' : ' disabled') +
-      ' title="Hold to propose this — one edit leaves your wallet to pay for it">✏️</button>' +
-      '</div>' +
+          '<div class="race-mid commitrow">' +
+          '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
+          (site ? '' : ' disabled') +
+          ' title="Discard this draft — nothing has been spent on it yet">🗑️</button>' +
+          '<button class="btn btn-propose glyphbtn" data-act="draft-propose"' +
+          (site && !broke ? '' : ' disabled') +
+          ' title="Hold to propose this — one edit leaves your wallet to pay for it">✏️</button>' +
+          '</div>'
+        : '') +
       '</div>'
     );
   }
@@ -2595,7 +2627,7 @@
   }
 
   function renderDoc() {
-    let html = PROSE;
+    let html = PROSE();
     let cardDone = false;
     let headIdx = 0;
     // The draft being written, if the composer is open on it. `pendingId`
@@ -2625,7 +2657,7 @@
       if (writing && siteFor(writing, line.key)) {
         const site = siteFor(writing, line.key);
         if (site.keys[0] === line.key) {
-          html += '</div>' + editCardHtml(writing, site) + PROSE;
+          html += '</div>' + editCardHtml(writing, site) + PROSE();
         }
         continue;
       }
@@ -2668,13 +2700,13 @@
         // clause had nothing live on it.
         const openFiled = filedFor(line.key).find((x) => x.id === openId);
         if (openFiled && !cardDone) {
-          html += '</div>' + suggCardHtml(openFiled) + PROSE;
+          html += '</div>' + suggCardHtml(openFiled) + PROSE();
           cardDone = swallowed = true;
         } else if (openSugg) {
           if (openSugg.kind === 'patch') {
             // a card at *every* place a patch touches (Ed, 181)
             if (openSugg.sites.some((x) => x.key === line.key)) {
-              html += '</div>' + suggCardHtml(openSugg, line.key) + PROSE;
+              html += '</div>' + suggCardHtml(openSugg, line.key) + PROSE();
               cardDone = swallowed = true;
             }
           } else if (openSugg.kind === 'draft') {
@@ -2683,7 +2715,7 @@
               // a site is a run of clauses; the card stands where the run began
               // and the rest of the run is inside it
               if (site.keys[0] === line.key) {
-                html += '</div>' + suggCardHtml(openSugg, line.key) + PROSE;
+                html += '</div>' + suggCardHtml(openSugg, line.key) + PROSE();
                 cardDone = true;
               }
               swallowed = true;
@@ -2691,7 +2723,7 @@
           } else if (!cardDone) {
             // the key matters to a diagonal, which spans two clauses and needs
             // to say which of them it is standing in
-            html += '</div>' + suggCardHtml(openSugg, line.key) + PROSE;
+            html += '</div>' + suggCardHtml(openSugg, line.key) + PROSE();
             cardDone = swallowed = true;
           }
         }
@@ -2741,7 +2773,7 @@
         // the clause, so leaving the paragraph above it would print it twice
         const swallowed = wasResolved && openId === wasResolved.id && !cardDone;
         if (swallowed) {
-          html += '</div>' + suggCardHtml(wasResolved) + PROSE;
+          html += '</div>' + suggCardHtml(wasResolved) + PROSE();
           cardDone = true;
         } else {
           html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + '"' +
@@ -2765,7 +2797,7 @@
           anchWash(ins, openId === ins.id) + '>' +
           '<span class="chipcol"><span class="achip"' + chipStyle(ins) + ' data-anchor="' + ins.id + '">' +
           markOf(ins) + '</span></span></div>';
-        if (openId === ins.id) html += '</div>' + suggCardHtml(ins) + PROSE;
+        if (openId === ins.id) html += '</div>' + suggCardHtml(ins) + PROSE();
       }
     }
     html += '</div>';
@@ -3939,6 +3971,8 @@
     pulseEl = m.pulse || document.getElementById('pulse');
     ROSTER = env.ROSTER ?? 14; FLOOR = env.FLOOR ?? 5;
     EDIT_RULES = env.EDIT_RULES || { grant: 4, cap: 8, stake: 1 };
+    if (env.mayPropose) MAY_PROPOSE = env.mayPropose;
+    if (env.mayJudge) MAY_JUDGE = env.mayJudge;
     SESSION_MINUTES = env.SESSION_MINUTES ?? 8 * 60;
     editsHeld = env.editsHeld ?? 5; editsToNext = env.editsToNext ?? 0.6;
     bindData(env.DOC || [], env.SUGGS || []);
@@ -3956,6 +3990,11 @@
       if (!t || t.closest('.sugg')) return;      // the composer's own fields are real editors
       // the closed page (Q470): a caret in a closed document opens nothing
       if (closedMode) { ev.preventDefault(); return; }
+      // nor does one in a document you may not yet propose to (Ed, 2026-08-21).
+      // `contenteditable` is off in that state, but a paste, a drag-drop or an
+      // IME can still raise beforeinput, and a refusal here is the lock that
+      // actually holds.
+      if (!MAY_PROPOSE()) { ev.preventDefault(); return; }
       // The host is the whole prose column now, so the block being typed in comes
       // from the *selection* rather than from the event's target — the target is
       // the column itself.

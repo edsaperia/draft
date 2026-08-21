@@ -510,6 +510,16 @@ window.CARDS = (function () {
       readLine: () => 150,
       reduced: () => matchMedia('(prefers-reduced-motion: reduce)').matches,
       onExpand: () => {},
+      // **You are not shown an act you cannot take** (Ed, 2026-08-21). Two
+      // seams, both permissive by default so a caller that sets neither
+      // renders exactly what it always did:
+      //   mayPropose — may this reader propose at all? A lane's ✏️ is an
+      //     *offer*, so it disappears rather than greying.
+      //   lockedOf   — is this card locked to this reader? A race is a
+      //     *question put to you*, so it stays visible and inert; that is
+      //     the state the commit row already draws.
+      mayPropose: () => true,
+      lockedOf: (s) => !!s.locked,
     }, env0 || {});
 
     // The pick control. Two labels rather than one rewritten in JS, so the
@@ -519,11 +529,11 @@ window.CARDS = (function () {
       const o = opts || {};
       return '<div class="lanebar">' +
         '<button class="lanepick" type="button" ' + env.valAttr + '="' + esc(String(v)) + '"' +
-        ' aria-pressed="' + (env.pickOf(s) === v) + '"' + (s.locked ? ' disabled' : '') +
+        ' aria-pressed="' + (env.pickOf(s) === v) + '"' + (env.lockedOf(s) ? ' disabled' : '') +
         ' title="Say you prefer this proposal — nothing leaves the card until you submit">' +
         '<i class="dot" aria-hidden="true"></i>' +
         '<span class="off">Prefer this</span><span class="on">Preferred</span></button>' +
-        (o.edit === false ? '' : laneProposeHtml(s, o.lane || v, o.key)) +
+        (o.edit === false || !env.mayPropose() ? '' : laneProposeHtml(s, o.lane || v, o.key)) +
         '</div>';
     }
 
@@ -628,7 +638,7 @@ window.CARDS = (function () {
       // exactly the card that most needs to look like the ones they can.
       return '<div class="race-mid commitrow">' +
         '<button class="lanepick vin" type="button" ' + env.valAttr + '="indifferent"' +
-        ' aria-pressed="' + (pick === 'indifferent') + '"' + (s.locked ? ' disabled' : '') +
+        ' aria-pressed="' + (pick === 'indifferent') + '"' + (env.lockedOf(s) ? ' disabled' : '') +
         ' title="' + (s.kind === 'diagonal' ? 'They matter equally' : 'I can’t split them') + '">' +
         '<i class="dot" aria-hidden="true"></i>' +
         '<span class="off">Indifferent</span><span class="on">Indifferent</span></button>' +
@@ -645,7 +655,7 @@ window.CARDS = (function () {
               ? 'Cooled — this one will not be put at the front of your queue. Press again to allow it.'
               : 'Not this one, not now — it stays open and stops being the most urgent') + '">❄️</button>'
           : '') +
-        (s.locked ? '' : '<button class="btn btn-approve glyphbtn"' +
+        (env.lockedOf(s) ? '' : '<button class="btn btn-approve glyphbtn"' +
           (pick ? '' : ' disabled') +
           ' data-act="submit" aria-pressed="' + env.isCast(s) + '" title="' +
           (env.isCast(s) ? 'Recorded — choose again to change it'

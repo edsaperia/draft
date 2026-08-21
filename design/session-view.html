@@ -260,6 +260,28 @@
     if (!el) { fn(); return render(); }
     CC.collapseCard(el, () => { fn(); render(); });
   };
+  // **Clicking a rail entry travels to its card** (Ed, 2026-08-21). The
+  // charter's rail has done this for as long as it has existed — session.js's
+  // `bringIntoView`, aimed at the reading line — but the constitution's rail
+  // never did: it set the open card and re-rendered, so a task whose clause
+  // sat below the fold opened somewhere the reader could not see and the
+  // press looked like it had done nothing.
+  //
+  // **Only from the rail.** A tab in the band is already where you are
+  // looking, and *the tab you click does not move* is the one geometric
+  // promise this surface makes; scrolling on a tab press would break it.
+  // The same two rules as the charter's: leave the page alone if the card is
+  // already sitting comfortably, and aim at the reading line rather than the
+  // top of the viewport. It borrows session.js's own scroll so the probes'
+  // instant-jump seam applies here too.
+  const scrollToCard = (k) => requestAnimationFrame(() => {
+    const el = document.querySelector('.setupcard') ||
+      document.querySelector('#band [data-para="' + k + '"]');
+    if (!el) return;
+    const y = el.getBoundingClientRect().top;
+    if (y >= 100 && y <= 300) return;
+    SESSION.smoothScrollBy(y - 150, () => { SESSION.layoutQueue(); SESSION.drawWires(); });
+  });
   // switch the open card in place: the box's height glides from the old
   // card's to the new card's while the contents crossfade — the strip in the
   // gutter belongs to both, so it never moves and never blinks
@@ -320,7 +342,8 @@
     const on = charterOn();
     // the close re-keys the column: the backlog and the signatures are blocks of the closed document, and a new signature is a new block
     const closeKey = cs && cs.closed ? ' closed:' + closeSignatures().length + ':' + undecidedCount() : '';
-    const key = !on ? '' : (FIX ? ' fixture' : cs.text) + closeKey;
+    const key = !on ? '' : (FIX ? ' fixture' : cs.text) + closeKey +
+      (mayPropose() ? ' P' : '') + (mayJudge() ? ' J' : '');
     // live, the items are rebuilt on every movement the poll sees (the
     // text only when it changed) — except under a draft being typed, where a
     // rebuild would take the caret; the rail alone refreshes then
@@ -670,8 +693,13 @@
   // the pen *somewhere* is what puts it in your topbar
   const holdsPenAnywhere = () => !!cs && PW_KEYS.some((k) => pwPair(k).u);
   const penLocks = () => (cs ? PW_KEYS.filter((k) => pwPair(k).u).length : 0);
-  // the keys a grant's OK is remembered under (live: per document and seat)
+  // the keys a grant's OK is remembered under (live: per document and seat).
+  // GRANT_KEYS are the three that *fly* — each has an object and a wallet to
+  // land in. ACK_KEYS is what is **remembered**, which is a wider set: since
+  // an unacknowledged ⚖️ now withholds judging itself, its OK has to survive
+  // a reload too, or a refresh would quietly take judging away again.
   const GRANT_KEYS = ['canpropose', 'grant-pen', 'grant-voice'];
+  const ACK_KEYS = GRANT_KEYS.concat(['canjudge']);
   // grants stage behind the constitutional OKs (Q453c): a gate or grant
   // asks nothing of you while a decision you are owed still waits
   const owedNews = () => CARDS.some((c) => !c.isGate && visible(c) && news(c));
@@ -1840,6 +1868,41 @@
   const ceremony = () => CARDS.filter((c) => c.gate === 'judge');
   const canJudge = () => !!cs && cs.canJudge();
 
+  // **A power is not held until it has been acknowledged** (Ed, 2026-08-21:
+  // *I should not be able to do actions until I have acknowledged that I have
+  // been given the right to do them. I shouldn't be shown actions that I
+  // can't do.*)
+  //
+  // The grant *is* the conferring act, so the OK on it is not a receipt for
+  // something already true — it is the moment the thing becomes true. Until
+  // then the act is refused **and never offered**. Acknowledgment had gated
+  // exactly three `style.display` lines (the ✏️ ✒️ 🏛️ wallets) and nothing
+  // else, which is the rule inside out: the receipt was hidden while the
+  // power ran. `may*` is therefore the only thing any control may ask;
+  // `can*` stays what the *document* permits, which is what the grant card
+  // itself reads to know whether it has opened.
+  //
+  // Where the distinction lands on the surface: an **offer** disappears (the
+  // caret in the charter, ✏️ propose edit, a motion composer, the ✒️
+  // commit) — you are not shown an act you cannot take. A **question put to
+  // you** stays visible and goes `locked` (a race card), because it still
+  // has to be readable; that is the state cards.js already draws for a card
+  // whose reader may not judge it.
+  const acked = (k) => S.okd.has(k);
+  const mayPropose = () => canPropose() && viewerIsMember() && acked('canpropose');
+  const mayJudge = () => canJudge() && viewerIsMember() && acked('canjudge');
+  const mayVoice = () => !!cs && viewerIsMember() && !!viewerRow().in && acked('grant-voice');
+  const mayPen = () => !!cs && amFounder() && holdsPenAnywhere() && acked('grant-pen');
+  // A commit that spends out of a wallet needs that wallet to have arrived.
+  // The pen is the one this bites for: `holdWallet` reads ✒️ as a **hold**
+  // only while the glyph is in the topbar, so before the grant was
+  // acknowledged a pen commit quietly degraded into a plain click — the hold
+  // discipline disappearing exactly where the founder is being taught it.
+  // Gates hold a position in the founding order without blocking it, so a
+  // settings card really can arrive before ✒️ has been accepted.
+  const penOkFor = (glyph) => glyph !== '✒️' || mayPen();
+  const penWaitTitle = 'Your pen is waiting in your tasks — accept it and this turns.';
+
   // ---- motions (stage D of the merge, Ed 361) ---------------------------
   // A motion is the act of changing a **settled** document's rules (§9.6a):
   // before judging opens there are no past decisions for a change to re-rate,
@@ -2818,11 +2881,15 @@
   function renderTitle() {
     const d = document.getElementById('doctitle');
     for (const el of [titleEl, d]) {
-      // **Blank until it is named** (Ed, 2026-08-21). *Untitled* was helper
-      // text standing where the answer goes, which is the one place this
-      // surface never puts a suggestion — the lane's own placeholder asks
-      // for the title, and the heading simply waits for it.
-      el.textContent = S.title;
+      // **A nameless document says "Untitled"** (Ed, 2026-08-21, restoring
+      // it after watching a user tester type the title into the prose
+      // column below). It had been blanked that morning on the argument
+      // that *Untitled* was helper text standing where the answer goes —
+      // but the answer goes on the 🪶 card, and this is where the *result*
+      // appears, so the word is an honest statement of the result so far.
+      // A heading with nothing in it gives the eye nothing, and the eye
+      // goes looking for the nearest thing it can write in.
+      el.textContent = S.title || 'Untitled';
       el.classList.toggle('ph', !S.title);
     }
     // The browser tab: the homepage is docs.vote, any other page is the
@@ -2859,8 +2926,8 @@
     // the wallet is drafting furniture: shown once proposing is open; the
     // pulse beats on the fixture's timer, so only the fixture shows it (B2b
     // drives both from the view)
-    document.getElementById('wallet').style.display = (charterOn() && canPropose() && viewerIsMember() &&
-      S.okd.has('canpropose') && !stormHolding) ? '' : 'none';
+    document.getElementById('wallet').style.display = (charterOn() && mayPropose() &&
+      !stormHolding) ? '' : 'none';
     document.getElementById('pulse').style.display = (FIX || (LIVEMODE && charterOn())) ? '' : 'none';
     syncWallet();
   }
@@ -3330,7 +3397,7 @@
           g.cards);
       }
       if (c.isGate) {
-        return cardHtml(c, ctx, gateBody(c) + grantNote(c),
+        return cardHtml(c, ctx, grantProv(c) + gateBody(c) + grantNote(c),
           binBtn() +
           '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
           ' data-ok="' + c.k + '">OK</button>', g.cards);
@@ -3465,8 +3532,10 @@
         // the title's lane rides the snapshot like every other provisional
         // value now, so this card keeps the shared bin (2026-08-21)
         ? binBtn() +
-          '<button class="btn btn-approve glyphbtn emojibtn"' + (commitReady(c) ? '' : ' disabled') +
-          ' data-confirm="1" title="' + commitTitle(c) + '">' + (cs ? '✒️' : '🪶') + '</button>'
+          '<button class="btn btn-approve glyphbtn emojibtn"' +
+          (commitReady(c) && (!cs || mayPen()) ? '' : ' disabled') +
+          ' data-confirm="1" title="' + (!cs || mayPen() ? commitTitle(c) : penWaitTitle) + '">' +
+          (cs ? '✒️' : '🪶') + '</button>'
         // 📧 in flight: the act is resending, and it spends nothing, so it is
         // a click rather than a hold (the ladder is for what comes out of a
         // wallet). The first send is still the 🪶 commit below.
@@ -3488,8 +3557,9 @@
             const dirty = !!S.hatPick && S.hatPick !== cur &&
               !(cs && cs.constitutedAtT !== null);
             return binBtn() +
-              '<button class="btn btn-approve glyphbtn emojibtn"' + (dirty ? '' : ' disabled') +
-              ' data-confirm="1" title="Set it">✒️</button>'; })()
+              '<button class="btn btn-approve glyphbtn emojibtn"' +
+              (dirty && mayPen() ? '' : ' disabled') +
+              ' data-confirm="1" title="' + (mayPen() ? 'Set it' : penWaitTitle) + '">✒️</button>'; })()
         : stateOf(c, ctx) === 'news'
         ? binBtn() +
           '<button class="btn btn-approve" data-ok="' + newsKey + '">OK</button>'
@@ -3504,8 +3574,9 @@
         // and a setting about yourself — your name, picture, email — bind
         // nobody (§9.0c), so they commit with ✓, never the pen.
         '<button class="btn btn-approve glyphbtn' + (commitGlyph === TICK ? '' : ' emojibtn') + '"' +
-        (ready(c) ? '' : ' disabled') +
-        ' data-confirm="1" title="' + commitTitle(c) + '">' + commitGlyph + '</button>';
+        (ready(c) && penOkFor(commitGlyph) ? '' : ' disabled') +
+        ' data-confirm="1" title="' +
+        (penOkFor(commitGlyph) ? commitTitle(c) : penWaitTitle) + '">' + commitGlyph + '</button>';
       return cardHtml(c, ctx, body + kindLine, foot, g.cards);
     };
     // the title card opens in the title's own paragraph, whatever else
@@ -3843,8 +3914,11 @@
     const okb = ev.target.closest('[data-ok]');
     if (okb) return closeThen(() => { const kk = okb.dataset.ok;
       S.okd.add(kk); S.open = null;
-      // the grant's object flies into your wallet from this press (Q448)
-      if (GRANT_KEYS.includes(kk)) { pendingGrant = { k: kk, from: okb.getBoundingClientRect() }; saveGrants(); }
+      // the grant's object flies into your wallet from this press (Q448) —
+      // only the three that *have* an object; every acknowledgment that
+      // confers a power is remembered, flight or no flight
+      if (GRANT_KEYS.includes(kk)) pendingGrant = { k: kk, from: okb.getBoundingClientRect() };
+      if (ACK_KEYS.includes(kk)) saveGrants();
       if (cs && kk.startsWith('set-') && viewerId()) {
         try { cs.giveOk(now(), viewerId(), midOf(kk.slice(4))); } catch (e) {}
       } });
@@ -3877,10 +3951,11 @@
       // new card's while head and body crossfade, so the strip and the
       // document below never jump. From anywhere else the old card first
       // closes into its own paragraph, then the new one opens out of its.
+      const fromRail = !!t.closest('#rail');
       const cur = document.querySelector('.setupcard');
       if (cur && t.closest('.setupcard') === cur) return morphTo(k, cur);
-      if (cur) return closeThen(() => { S.open = k; });
-      S.open = k; return render(); }
+      if (cur) return closeThen(() => { S.open = k; if (fromRail) scrollToCard(k); });
+      S.open = k; render(); if (fromRail) scrollToCard(k); return; }
     // ✒️ on 📧, before it is verified, IS the send (Ed, 2026-08-19) — and it
     // leaves the card standing, because the inbox opens over it and what you
     // come back to is the card you were on
@@ -4079,6 +4154,18 @@
             S.emailErr = res.error; S.emailSent = false; S.open = 'myemail'; return render();
           }
           api.birth = res; if (res.slug) S.slug = res.slug;
+          // **What the founder typed before the mail went out is theirs**
+          // (Ed, 2026-08-21). The stash listener in birthBoot bails until
+          // a pendingId exists, and one does not exist until this very
+          // response — so anything already in the column had never been
+          // stashed, and following the magic link dropped it. Flush it the
+          // moment there is somewhere to put it. Same rule as everywhere
+          // else on this surface: saving is not discarding.
+          const pre = proseText();
+          if (res.pendingId && pre) {
+            api.post('/api/docs/pending', { pendingId: res.pendingId, text: pre })
+              .catch(() => {});
+          }
         })
         .catch(() => {
           S.emailErr = 'The mail could not be sent — check the connection and press 🪶 again.';
@@ -5249,12 +5336,12 @@
       // close, or one who has signed, never sees them)
       !(cs && cs.closed && (farewellDone || signedClose() || !viewerIsMember()));
     const pen = document.getElementById('penwallet');
-    const showPen = notApp && !!cs && amFounder() && holdsPenAnywhere() && S.okd.has('grant-pen');
+    const showPen = notApp && mayPen();
     pen.innerHTML = showPen ? '<i' + (penGhost ? ' class="gone"' : '') + '>✒️</i>' : '';
     pen.title = 'Your pen — it turns on ' + penLocks() + ' of the settings; each ✒️ tab says where. Hold to set.';
     const voice = document.getElementById('voicewallet');
     const out = heldMotion();
-    const showVoice = notApp && !!cs && viewerIsMember() && !!viewerRow().in && S.okd.has('grant-voice');
+    const showVoice = notApp && mayVoice();
     voice.innerHTML = showVoice ? '<i' + (out || voiceGhost ? ' class="gone"' : '') + '>🏛️</i>' : '';
     voice.title = out ? 'Your voice is out on a motion — it comes back whole when the question settles or you withdraw it.'
       : 'Your voice in every constitutional question — one motion at a time, returned whole.';
@@ -5353,6 +5440,48 @@
     setTimeout(() => { farewellDone = true; renderPowerWallets(); SESSION.renderWallet(); }, 700);
   }
   let farewellDone = false;
+  // **A grant says who gave it** (Ed, 2026-08-21: *when I get a power, the
+  // acknowledgement card should say who gave it to me*). A power arriving
+  // unattributed reads as weather — something that happened to you — when in
+  // fact somebody performed an act that conferred it, and knowing whose act
+  // it was is most of what tells you whether it can be taken back.
+  //
+  // The sentence is in the constitution's own register: **third person, and
+  // the office rather than the name**. Every other clause on this surface
+  // says *The Founder*, the role is what acted, and it sidesteps §9.0c's
+  // Anonymous — which is a rule about how a person appears in the membership,
+  // not about how an office is named in a sentence.
+  const grantedBy = (c) => {
+    if (!c.open()) return '';                    // nothing has been conferred yet
+    if (c.k === 'grant-pen') {
+      // the pen is the founder's by construction at the birth; the only other
+      // road to it is the membership restoring it by a reserve motion (Q394)
+      return amFounder() && !constituted()
+        ? 'You founded this document, and the pen came with it.'
+        : 'The membership returned the pen to you.';
+    }
+    if (c.k === 'grant-voice') {
+      if (amFounder()) return 'You founded this document, and every member holds a voice in it.';
+      return (cs && cs.settingState && (() => { try {
+        const st = cs.settingState('membership'); return !!st && st.holder === 'members';
+      } catch (e) { return false; } })()
+        ? 'The membership admitted you, and gave you a voice in every constitutional question.'
+        : 'The Founder brought you into the membership, and a voice in every constitutional question came with it.');
+    }
+    // 💡 and ⚖️ both open at 🍾, which is always the founder's own press
+    if (c.k === 'canpropose') return 'The Founder began the document, granting every member the right to propose changes to it.';
+    if (c.k === 'canjudge') return 'The Founder began the document, granting every member the right to judge what is proposed.';
+    return '';
+  };
+  // The provenance goes **first on the card**, above the explanation of what
+  // the power is: what happened, then what it means, then what to do about
+  // it. Below `gateBody` it landed after *OK files it and it leaves your
+  // queue*, so the card gave its closing instruction and then said something
+  // the reader still had to take in.
+  const grantProv = (c) => {
+    const from = grantedBy(c);
+    return from ? '<p class="setnote grantline">' + esc(from) + '</p>' : '';
+  };
   // the card's own ✏️ grant line (Q461a: the 💡 card is the grant card)
   const grantNote = (c) => {
     if (c.k !== 'canpropose' || !c.open() || !viewerIsMember()) return '';
@@ -5447,7 +5576,7 @@
   const grantsKey = () => 'draft:grants:' + LIVESLUG + ':' + ((cs && cs.v && cs.v.me) || '');
   const loadGrants = () => { try { return JSON.parse(localStorage.getItem(grantsKey()) || '[]'); } catch (e) { return []; } };
   const saveGrants = () => { if (!LIVEMODE) return;
-    try { localStorage.setItem(grantsKey(), JSON.stringify([...S.okd].filter((k) => GRANT_KEYS.includes(k)))); } catch (e) { /* private mode */ } };
+    try { localStorage.setItem(grantsKey(), JSON.stringify([...S.okd].filter((k) => ACK_KEYS.includes(k)))); } catch (e) { /* private mode */ } };
   // what the wallet holds, from the view — the rules from the rate setting
   function syncWallet() {
     if (!LIVEMODE || !cs || !cs.v) return;
@@ -5485,6 +5614,11 @@
     mounts: { doc: document.getElementById('charter'), queue: rail,
       toc: document.getElementById('toc'), wires: document.getElementById('wires'),
       wallet: document.getElementById('wallet'), pulse: document.getElementById('pulse') },
+    // the two capabilities the charter half needs to know about: read at
+    // call time, so pressing OK on a grant takes effect on the next render
+    // with no remount (**a power is not held until it is acknowledged**)
+    mayPropose: () => mayPropose(),
+    mayJudge: () => mayJudge(),
     extra, hooks: hookProxy,
   });
   const FIXTURE = new URLSearchParams(location.search).get('fixture');
