@@ -16,7 +16,7 @@ import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
-import { ConstitutionSession, sha256Hex, view } from '../../constitution/src/index.js';
+import { CATALOGUE, ConstitutionSession, sha256Hex, view } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
 import { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
@@ -730,22 +730,117 @@ export async function createDraftServer(cfg: ServerConfig,
       return;
     }
 
+  /**
+   * The stranger's door (Q455/456/452, 2026-08-21): there is no login
+   * screen. Whoever holds a real slug and no seat gets the three columns
+   * like everybody else — the title, the rules read plainly, the text
+   * redacted to its shape, and one holding sentence saying who decided
+   * what and what they may do about it. Per field, the rule is: **the
+   * constitution is public while the text is private** — standing values,
+   * holders and powers (the by-deviation governance) are served; members'
+   * names and addresses, the blind questions' answers and counts, motions
+   * in flight and anything about any individual member are not. The
+   * founder's name and picture are served (Q455's sentence names them if
+   * they chose a name; an unnamed founder is "the founder", never
+   * "Anonymous"). The text's shape — per block, heading level and
+   * character count — is served so the redaction can stand at real
+   * metrics; the words only where 🌍 says link or public.
+   */
+  const strangerView = (doc: LoadedDoc, nowMs: number): Record<string, unknown> => {
+    const cs = doc.cs;
+    const ed = asEngineDoc(doc);
+    const text = ed.bridge !== null ? ed.bridge.engine.document() : (cs.text ?? '');
+    const chamber = cs.settingState('chamber');
+    const rung = (chamber.value as { rung?: string } | null)?.rung ?? null;
+    const canRead = rung === 'link' || rung === 'public';
+    const convenor = cs.convenorRecord();
+    const founderName = cs.memberRecords().get(convenor.id)?.name ?? convenor.name ?? null;
+    const founderPicture = cs.memberRecords().get(convenor.id)?.picture ?? convenor.picture ?? null;
+    const founder = founderName === null ? 'The founder' : `The founder ${founderName}`;
+    // one changing sentence: who decided, what they decided, what you may
+    // do about it — the last is the rail's business (📧 or Apply)
+    let holding: { kind: string; sentence: string | null };
+    if (!cs.textConfirmed) {
+      holding = { kind: 'drafting', sentence: 'The constitution is being drafted.' };
+    } else if (chamber.settledBy === null) {
+      holding = chamber.holder === 'convenor'
+        ? { kind: 'founder-deciding', sentence: `${founder} is deciding if you can see this document.` }
+        : { kind: 'members-deciding', sentence: 'The members are deciding if you can see this document.' };
+    } else if (!canRead) {
+      holding = chamber.settledBy === 'convenor'
+        ? { kind: 'members-only', sentence: `${founder} decided this document is visible to members only.` }
+        : { kind: 'members-only', sentence: 'The members decided this document is visible to members only.' };
+    } else {
+      holding = { kind: 'open', sentence: null };
+    }
+    const apps = cs.settingState('applications').value as { joinPolicy?: string } | null;
+    const joinPolicy = apps?.joinPolicy ?? 'invite';
+    const begun = cs.constitutedAtT !== null;
+    const lines = text.length === 0 ? [] : text.split('\n');
+    return {
+      stranger: true,
+      title: cs.titleOf,
+      slug: cs.slug,
+      constitutedAtT: cs.constitutedAtT,
+      closed: cs.closed ? { at: cs.closedAt } : null,
+      frozen: cs.frozen,
+      serverNowMs: nowMs,
+      textConfirmed: cs.textConfirmed,
+      holding,
+      founder: { name: founderName, picture: founderPicture },
+      canRead,
+      text: canRead ? text : null,
+      textShape: lines.map((l) => {
+        const m = l.match(/^(#{1,3})\s+/);
+        return { heading: m ? m[1]!.length : 0, chars: m ? l.length - m[0].length : l.length };
+      }),
+      joinPolicy,
+      applyOpen: begun && !cs.closed && (joinPolicy === 'proposed' || joinPolicy === 'apply'),
+      joinOpen: begun && !cs.closed && joinPolicy === 'open',
+      members: { arrived: cs.E() },
+      view: {
+        settings: CATALOGUE.filter((e) => e.kind !== 'personal' && e.id !== 'membership').map((e) => {
+          const st = cs.settingState(e.id);
+          return { setting: e.id, glyph: e.glyph, kind: e.kind, value: st.value,
+            settledBy: st.settledBy, holder: st.holder, powers: { ...st.powers } };
+        }),
+        gates: { proposing: begun, judging: begun && !cs.frozen && !cs.closed },
+        crowned: cs.crowned(),
+      },
+    };
+  };
+
     /* -- the member surface (view is the only read, §3.5/NOTES) ---------- */
     if (seg[0] === 'api' && seg[1] === 'd' && seg.length === 4 &&
         (seg[3] === 'view' || seg[3] === 'cmd')) {
       const doc = docOr404(store.bySlug(seg[2]!));
       if (!doc) return;
       const session = cookieSession(req, doc.id);
-      if (session === null) { json(res, 401, { error: 'log in first' }); return; }
+      // no seat, or a seat that has since died (review #1, finding 1 — a
+      // removed member's cookie is ninety days of nothing): a GET is the
+      // stranger's door, open to anybody with the slug (Q456); a command
+      // still needs a seat
+      if (session === null || !seatAlive(doc.cs, session.memberId, session.applicantId)) {
+        if (req.method === 'GET' && seg[3] === 'view') {
+          if (tooMany('stranger', 240)) return;
+          const seq = doc.cs.logEntries().length;
+          const engineDoc0 = asEngineDoc(doc);
+          const eseq = engineDoc0.bridge === null ? 0 : engineDoc0.bridge.engine.log.length;
+          if (url.searchParams.get('since') === seq + '.' + eseq) {
+            json(res, 200, { seq, eseq });
+            return;
+          }
+          json(res, 200, { seq, eseq, devMail: mailer.dev, ...strangerView(doc, nowMs) });
+          return;
+        }
+        json(res, 401, { error: 'log in first' });
+        return;
+      }
       const { memberId, applicantId } = session;
       // a cookie is not a seat (review #1, finding 1): sessions are
       // stateless, so removal has to be checked here — otherwise a
       // removed or uninvited member's cookie is ninety days of full
       // member read under a constitution that says members only
-      if (!seatAlive(doc.cs, memberId, applicantId)) {
-        json(res, 401, { error: 'log in first' });
-        return;
-      }
       const isFounder = memberId === doc.cs.convenorRecord().id;
       if (req.method === 'GET' && seg[3] === 'view') {
         // presence is presence (Q459a): a read refreshes the member's

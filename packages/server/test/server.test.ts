@@ -641,11 +641,16 @@ describe('auth discipline', () => {
     })).json() as { devLink: string; slug: string };
     await consume(created.devLink);
 
+    // a read without a seat is the stranger's door (Q456): the redacted
+    // payload, never a seat — and a command still needs one
     const bare = await fetch(`${base}/api/d/${created.slug}/view`);
-    expect(bare.status).toBe(401);
+    expect(bare.status).toBe(200);
+    expect(await bare.json()).toMatchObject({ stranger: true });
     const forged = await fetch(`${base}/api/d/${created.slug}/view`,
       { headers: { cookie: 'draft_session=ZG9j.Zm91bmRlcg.99999999999999.bad' } });
-    expect(forged.status).toBe(401);
+    expect(await forged.json()).toMatchObject({ stranger: true });
+    expect((await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'set-identity', args: { name: 'x' } })).status).toBe(401);
   });
 
   it('one cookie per document: logging into a second does not log you out of the first', async () => {
@@ -669,11 +674,12 @@ describe('auth discipline', () => {
     expect(((await vb.json()) as { isFounder: boolean }).isFounder).toBe(true);
     // the other document's cookie alone does not carry (a foreign seat)
     const cross = await fetch(`${base}/api/d/${a.slug}/view`, { headers: { cookie: b.cookie } });
-    expect(cross.status).toBe(401);
+    expect(await cross.json()).toMatchObject({ stranger: true }); // a stranger here
     // the legacy name still reads, for its own document only
     const legacy = 'draft_session=' + a.cookie.split('=')[1];
     expect((await fetch(`${base}/api/d/${a.slug}/view`, { headers: { cookie: legacy } })).status).toBe(200);
-    expect((await fetch(`${base}/api/d/${b.slug}/view`, { headers: { cookie: legacy } })).status).toBe(401);
+    expect(await (await fetch(`${base}/api/d/${b.slug}/view`, { headers: { cookie: legacy } })).json())
+      .toMatchObject({ stranger: true });
   });
 
   it('an unknown login email is told nothing', async () => {
@@ -740,7 +746,10 @@ describe('review #1 hardening', () => {
       { cmd: 'uninvite', args: { member: leaverId } }, g);
     const after = await fetch(`${base}/api/d/${created.slug}/view`,
       { headers: { cookie: leaver } });
-    expect(after.status).toBe(401);
+    // a revoked seat reads as a stranger: the door, not the room
+    expect(await after.json()).toMatchObject({ stranger: true });
+    expect(JSON.stringify(await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: leaver } })).json())).not.toContain('.org');
   });
 });
 
@@ -1040,5 +1049,114 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     expect(closedMails()[0]!.link).toBe(`${base}/d/${slug}`);
     await draft.tick(ends + 61_000);
     expect(closedMails()).toHaveLength(3);
+  });
+});
+
+type StrangerPayload = {
+  stranger: true; seq: number; eseq: number; devMail: boolean; title: string; slug: string;
+  constitutedAtT: number | null; closed: { at: number } | null; frozen: boolean;
+  serverNowMs: number; textConfirmed: boolean;
+  holding: { kind: string; sentence: string | null };
+  founder: { name: string | null; picture: string | null };
+  canRead: boolean; text: string | null;
+  textShape: Array<{ heading: number; chars: number }>;
+  joinPolicy: string; applyOpen: boolean; joinOpen: boolean;
+  members: { arrived: number };
+  view: { settings: Array<{ setting: string; kind: string; value: unknown; settledBy: string | null;
+    holder: string; powers: { unilateral: boolean; assent: boolean } }>;
+    gates: { proposing: boolean; judging: boolean }; crowned: boolean };
+};
+
+describe("the stranger's door (Q452/455/456)", () => {
+  it('answers a real slug with the rules, the shape of the text and one sentence; an unknown slug 404', async () => {
+    const { base } = await boot();
+    expect((await fetch(`${base}/api/d/no-such-charter/view`)).status).toBe(404);
+    const created = await (await post(base, '/api/docs', {
+      title: 'Orchard Rules', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+    };
+    const knock = async (): Promise<{ status: number; body: StrangerPayload; raw: string }> => {
+      const res = await fetch(`${base}/api/d/${slug}/view`);
+      const raw = await res.text();
+      return { status: res.status, body: JSON.parse(raw) as StrangerPayload, raw };
+    };
+
+    // the birth: the constitution is being drafted, nothing to redact yet
+    let k = await knock();
+    expect(k.status, k.raw).toBe(200);
+    expect(k.body.stranger).toBe(true);
+    expect(k.body.title).toBe('Orchard Rules');
+    expect(k.body.holding).toEqual({ kind: 'drafting', sentence: 'The constitution is being drafted.' });
+    expect(k.body.text).toBeNull();
+    expect(k.body.textShape).toEqual([]);
+    expect(k.body.canRead).toBe(false);
+
+    // text confirmed; 🌍 delegated to the members by default: they are deciding
+    await cmd(ada, 'confirm-starting-text', { text: '# The orchard\nThe apples are shared at harvest.' });
+    k = await knock();
+    expect(k.body.holding.kind).toBe('members-deciding');
+    expect(k.body.holding.sentence).toBe('The members are deciding if you can see this document.');
+    expect(k.body.textShape).toEqual([
+      { heading: 1, chars: 'The orchard'.length },
+      { heading: 0, chars: 'The apples are shared at harvest.'.length },
+    ]);
+    expect(k.raw).not.toMatch(/apples|harvest|The orchard/); // the shape, never the words
+    // nothing about anybody: no addresses, no answers, no motions, no questions
+    expect(k.raw).not.toContain('@example.org');
+    expect(k.raw).not.toMatch(/"answers"|"motions"|"questions"|"myAnswer"|"answeredCount"/);
+    // the rules read plainly: standing values, holders, powers
+    const chamberRow = k.body.view.settings.find((s) => s.setting === 'chamber')!;
+    expect(chamberRow.holder).toBe('members');
+    expect(chamberRow.settledBy).toBeNull();
+
+    // the founder takes 🌍 back pre-start: now the founder is deciding — unnamed, so "The founder"
+    await cmd(ada, 'reclaim', { setting: 'chamber' });
+    k = await knock();
+    expect(k.body.holding).toEqual({ kind: 'founder-deciding',
+      sentence: 'The founder is deciding if you can see this document.' });
+    expect(k.body.founder).toEqual({ name: null, picture: null });
+    // named, the sentence names them (Q455) — never "Anonymous"
+    await cmd(ada, 'set-identity', { name: 'Ada Lovell' });
+    k = await knock();
+    expect(k.body.holding.sentence).toBe('The founder Ada Lovell is deciding if you can see this document.');
+    expect(k.body.founder.name).toBe('Ada Lovell');
+
+    // members only: who decided, what they decided
+    await cmd(ada, 'set-setting', { setting: 'chamber', value: { rung: 'closed' } });
+    k = await knock();
+    expect(k.body.holding).toEqual({ kind: 'members-only',
+      sentence: 'The founder Ada Lovell decided this document is visible to members only.' });
+    expect(k.body.text).toBeNull();
+
+    // the link is enough: the text itself
+    await cmd(ada, 'set-setting', { setting: 'chamber', value: { rung: 'link' } });
+    k = await knock();
+    expect(k.body.holding).toEqual({ kind: 'open', sentence: null });
+    expect(k.body.canRead).toBe(true);
+    expect(k.body.text).toBe('# The orchard\nThe apples are shared at harvest.');
+
+    // the poll's short answer works for a stranger too
+    const quiet = await fetch(`${base}/api/d/${slug}/view?since=${k.body.seq}.${k.body.eseq}`);
+    expect(Object.keys(await quiet.json() as object).sort()).toEqual(['eseq', 'seq']);
+
+    // a command still needs a seat
+    const refused = await post(base, `/api/d/${slug}/cmd`, { cmd: 'set-identity', args: { name: 'x' } });
+    expect(refused.status).toBe(401);
+
+    // the one task: log in — the same answer whoever asks (no membership oracle)
+    const unknown = await (await post(base, `/api/d/${slug}/login`, { email: 'nobody@example.org' })).json();
+    expect(unknown).toEqual({ ok: true });
+    const known = await (await post(base, `/api/d/${slug}/login`, { email: 'ada@example.org' })).json() as
+      { ok: boolean; devLink?: string };
+    expect(known.ok).toBe(true);
+    // applications: closed until the document begins, whatever the policy
+    expect(k.body.applyOpen).toBe(false);
+    expect(k.body.joinPolicy).toBe('invite');
   });
 });

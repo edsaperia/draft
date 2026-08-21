@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
-import { buildConstituted } from './helpers.js';
 
 // 🍾 Begin (Q443, 2026-08-21): the founder's explicit act of starting the
 // document. Readiness informs and never blocks; the gates block, because
