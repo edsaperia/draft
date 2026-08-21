@@ -414,6 +414,14 @@ last, being the one irreversible thing):
   the single-file founding order. The XSS repair at the stranger's door is
   live. The probe job ran `--strict` for the first time and passed (36 steps,
   0 diffs, no dead steps) — Q504(a) closed.
+- 12:49 — **Pushed `6a423f4`; CI green on both jobs; live.** `/healthz` → build
+  `6a423f4`, `pg`, 6 documents; `/` 200, unknown slug 404. Carries the
+  founder's-walk rework (single-file pacing, no defaults, the birth's fading
+  clauses, one hold guard), Ed's vocabulary pass (*pass* not *carry*, the
+  joined power clause), 📈 out of the queue, 🍾 on its own commit, the
+  stranger's door serving the membership under 🌍 (Q508c), and the truthful
+  lockline (Q510a). **Q509(a) answered and not built** — minting a membership
+  from a login link is next session's first job.
 
 ## Decisions
 
