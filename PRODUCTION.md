@@ -375,6 +375,22 @@ last, being the one irreversible thing):
   5. The close's server half landed (`9ced181`): tick closes, signatures,
   record, mail, mustReturn. Ed's power-line rewording applied (Q507 for
   the other halves). Running: item 4 (wallets), item 5 (🍾) + the typecheck.
+- 08:50 — Typecheck fixed and 🍾 built in module + server (`823a1a5`; **not
+  deployable until the page has a 🍾 card** — nothing constitutes itself
+  now). Item 4 landed (`a47e37c`): the wallet family and the grants.
+  Running: the page half of 🍾 / 🥂 / the closed page; the stranger's
+  door server half. Then the four checks, re-freeze, push.
+- 09:10 — Stranger's door server half landed (`f76cf5a`); Q508 filed.
+- 09:45 — 🍾 and 🥂 on the page and the closed page landed (`b4e65be`),
+  walked live through a minute-tick close. **Found: the glyph batch had
+  left an undefined name that threw on every live view with a text race;
+  the CI gate kept that push off docs.vote.** Q440–471's built items
+  retired from QUESTIONS.md. Running: the stranger's door page half — the
+  last build; then the four checks, re-freeze, push.
+- 10:20 — Stranger's door page half landed (`3ae71ad`). **The design day
+  is built**: items 1–7 of the backlog; 463–465 remain as questions,
+  plus Q504(a), 507–509. References re-frozen; probes IDENTICAL / 0 diffs;
+  the four checks run before the push that repairs CI.
 
 ## Decisions
 

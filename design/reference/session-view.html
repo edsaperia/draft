@@ -53,7 +53,7 @@
      confirm, and no way back to it except clicking the words. The bar shows the
      title; the 🏷️ card is where you write it, in the same `.lanebox` the
      `editing-card` writes a clause in. */
-  .navbar .brand.ph { color: var(--muted); font-weight: 400; }
+  .navbar .brand .ph { color: var(--muted); font-weight: 400; }
   /* dev chrome, deliberately off the design system: dashed, monospace, and
      since Ed 2026-08-19 **bottom-left** — a stagehand stands in the wings,
      and the top-left corner is where the document's own first clause begins */
@@ -72,6 +72,19 @@
      the way, so its geometry is the frozen session-view's to the pixel (the
      session-probe's gate); add &band=1 to see the whole composition */
   .doc.fixsession .titlerow, .doc.fixsession #band { display: none; }
+  /* the stranger's door (Q455/456): the holding sentence is the one line that
+     changes — who decided, what they decided, what you may do about it — and
+     the charter stands as bars at real metrics: grey, because grey means
+     nothing is being asked of you; ?bars=black is the experiment Ed asked to
+     look at */
+  /* both stand on the prose's own column (.doc .prose: 70ch, centred) */
+  .doc .holding { font-size: var(--t-body); color: var(--muted); margin: var(--s4) auto var(--s5); max-width: 70ch; font-style: italic; }
+  .redacted { padding-bottom: var(--s5); max-width: 70ch; margin: 0 auto; }
+  .redacted .rblock { margin: 0 0 1em; }
+  .redacted .rblock.h1 { margin: 1.6em 0 .6em; } .redacted .rblock.h2 { margin: 1.4em 0 .5em; } .redacted .rblock.h3 { margin: 1.2em 0 .4em; }
+  .redacted .bar { display: block; height: .72em; border-radius: 3px; background: var(--border); margin: .42em 0; }
+  .redacted .h1 .bar { height: 1.1em; } .redacted .h2 .bar { height: .95em; } .redacted .h3 .bar { height: .85em; }
+  .redacted.black .bar { background: var(--fg); }
   .alphaflag { position: fixed; bottom: 10px; left: 10px; z-index: 55;
     font-size: var(--t-small); color: var(--muted); background: var(--bg);
     border: 1px solid var(--border); border-radius: var(--r-sm);
@@ -119,7 +132,10 @@
 
 <header class="navbar">
   <div class="wrap">
-    <p class="brand ph" id="title">Untitled</p>
+    <!-- `quill-wallet` (Q444b, Q447): four feathers at the birth, three spent
+         on the founding acts, and the one that remains IS the logo — the mark
+         of docs.vote is the act of making a document. -->
+    <p class="brand ph" id="title"><a class="quill" id="quill" href="/" title="docs.vote — make a new document"></a><span id="titletext">Untitled</span></p>
     <div class="stats">
       <!-- room-pulse: one content-free beat per action by anybody (session-view's) -->
       <span class="pulse" id="pulse" aria-hidden="true"
@@ -128,7 +144,13 @@
            room · you. The middle is one plain line — pulse, clock, quorum —
            cold at every distance; the clock is the door to ⏰. -->
       <span class="room"><button class="clock" id="clock" type="button" data-card="ending" disabled></button><span id="quorum">1 in the room</span></span>
+      <!-- the wallets you spend in this document, ✏️ ✒️ 🏛️, beside `me`
+           (Q444b): proposing, drafting, consensus — a member's power is
+           limited in quantity and unlimited in scope; the founder's the
+           reverse. A clerk holds none of them (Q458). -->
       <span class="wallet" id="wallet"></span>
+      <span class="wallet powerwallet" id="penwallet"></span>
+      <span class="wallet powerwallet" id="voicewallet"></span>
       <button class="me" id="mebtn" title="You, and the founder of this document."></button>
     </div>
   </div>
@@ -150,7 +172,11 @@
         <!-- the charter: session.js renders the confirmed text here as clauses,
              every one wearing a caret and a gutter; until then the founder
              writes in #prose below and this stands empty -->
+        <!-- the stranger's door (Q455/456): one sentence at the head of the
+             charter column, and the charter as bars at real metrics -->
+        <p class="holding" id="holding" hidden></p>
         <div id="charter"></div>
+        <div class="redacted" id="redacted" hidden></div>
         <div class="prose empty" id="prose" contenteditable="true" spellcheck="false"></div>
       </div>
     </main>
@@ -221,7 +247,7 @@
     }, MORPH_MS + 10);
   };
   const prose = document.getElementById('prose');
-  const titleEl = document.getElementById('title');
+  const titleEl = document.getElementById('titletext');
   const band = document.getElementById('band');
   const rail = document.getElementById('rail');
 
@@ -241,8 +267,11 @@
   let charterKey = null;
   const charterOn = () => !!(cs && cs.textConfirmed);
   function syncCharter() {
+    if (isStranger()) return syncStrangerCharter();
     const on = charterOn();
-    const key = !on ? '' : FIX ? '\u0000fixture' : cs.text;
+    // the close re-keys the column: the backlog and the signatures are blocks of the closed document, and a new signature is a new block
+    const closeKey = cs && cs.closed ? ' closed:' + closeSignatures().length + ':' + undecidedCount() : '';
+    const key = !on ? '' : (FIX ? ' fixture' : cs.text) + closeKey;
     // live, the items are rebuilt on every movement the poll sees (the
     // text only when it changed) — except under a draft being typed, where a
     // rebuild would take the caret; the rail alone refreshes then
@@ -250,8 +279,8 @@
     if (key !== charterKey) {
       charterKey = key;
       SESSION.setData({
-        DOC: !on ? [] : FIX ? FIX.DOC : blocksOf(cs.text),
-        SUGGS: !on ? [] : LIVE_HOOKS.items ? LIVE_HOOKS.items() : FIX ? FIX.SUGGS : [],
+        DOC: !on ? [] : (FIX ? FIX.DOC : blocksOf(cs.text)).concat(closedBlocks()),
+        SUGGS: !on ? [] : LIVE_HOOKS.items ? LIVE_HOOKS.items() : FIX ? FIX.SUGGS.concat(FIX.CLOSED ? FIX.CLOSED.items : []) : [],
       });
     } else if (on && LIVE_HOOKS.items && !typing) {
       SESSION.setData({ SUGGS: LIVE_HOOKS.items() });
@@ -305,6 +334,8 @@
         .then((data) => {
           if (!data || !cs || !cs.isRemote) return;
           if (!data.view) return; // unchanged — the short answer has no view
+          // the stranger's payload is reshaped to what the predicates read
+          if (data.stranger) { STR = data; data = strangerAsView(data); }
           // the engine's seq moves on every judgment, proposal and adoption,
           // so it is the cheap fingerprint for the charter's side of the view
           const moved = data.seq !== cs.v.seq || (data.eseq || 0) !== (cs.v.eseq || 0) ||
@@ -499,13 +530,28 @@
   // are accessors delegating to whoever is in the chair, so every existing
   // call site reads and writes the current viewer without knowing it.
   const APP_STUB = { n: '', pic: '', role: 'applicant', ans: {}, okd: new Set() };
-  const viewerRow = () => (S.viewer === 'applicant' ? APP_STUB : (S.roster[S.viewer] || S.roster[0]));
+  // the stranger (Q455/456): the fifth seat — nothing about them is known, so
+  // the chair holds nothing
+  const STRANGER_STUB = { n: '', pic: '', role: 'stranger', ans: {}, okd: new Set() };
+  const isStranger = () => S.viewer === 'stranger';
+  const viewerRow = () => (S.viewer === 'applicant' ? APP_STUB
+    : isStranger() ? STRANGER_STUB : (S.roster[S.viewer] || S.roster[0]));
   const amFounder = () => !!viewerRow().founder;
   // any reservation crowns (Q379 wide): the module's read where it exists,
   // the radios' before the save. startingText never counts (no post-start
   // change route); title and link always do, so this is true until Q381.
   const founderCrowned = () => (cs ? cs.crowned() : true);
-  const viewerIsMember = () => S.viewer !== 'applicant' && viewerRow().role !== 'clerk';
+  // Q445: per-setting permission is the lock's, never the wallet's — holding
+  // the pen *somewhere* is what puts it in your topbar
+  const holdsPenAnywhere = () => !!cs && PW_KEYS.some((k) => pwPair(k).u);
+  const penLocks = () => (cs ? PW_KEYS.filter((k) => pwPair(k).u).length : 0);
+  // the keys a grant's OK is remembered under (live: per document and seat)
+  const GRANT_KEYS = ['canpropose', 'grant-pen', 'grant-voice'];
+  // grants stage behind the constitutional OKs (Q453c): a gate or grant
+  // asks nothing of you while a decision you are owed still waits
+  const owedNews = () => CARDS.some((c) => !c.isGate && visible(c) && news(c));
+  const staged = (c) => !c.isGate || !owedNews();
+  const viewerIsMember = () => S.viewer !== 'applicant' && !isStranger() && viewerRow().role !== 'clerk';
   for (const [prop, key] of [['myname', 'n'], ['mypic', 'pic'], ['myemail', 'e']]) {
     Object.defineProperty(S, prop, { get: () => viewerRow()[key] || '',
       set: (v) => { viewerRow()[key] = v; } });
@@ -716,6 +762,46 @@
       waiting: 'Waiting on the constitution.',
       done: 'Open — the constitution is settled.',
       blockers: () => ceremony().filter((c) => !settled(c) || (isRoom(c) && (c.in || 0) < E())) },
+    // **No power arrives without acknowledgment** (Q448/453, 2026-08-21): a
+    // power you were never asked for is the unacknowledged-decision rule
+    // seen from the other side, so each grant is a task — news-green, a drawn
+    // ✔, OK — and the object flies into your wallet from that press, per
+    // member on their own clock. 🪶 takes no task (you are conferred your
+    // feathers by navigating to docs.vote); ✏️'s grant is the 💡 Proposing
+    // card itself (Q461a). Grants stage behind the constitutional OKs
+    // (`staged`): you are told what room you are in before you are handed
+    // the tools. The cards hang off the gates they belong with (tasksFor).
+    { k: 'grant-voice', g: '🏛️', t: 'Your Voice', own: 'you', isGate: true, isGrant: true, dep: ['roster'],
+      open: () => !!cs && viewerIsMember() && !!viewerRow().in,
+      why: 'Every member holds one voice in every constitutional question — the blind founding answers before the document begins, the ask-everyone motions after. One at a time, and it comes back whole when the question settles or you withdraw it.',
+      waiting: 'Waiting on your arrival.',
+      done: 'You hold a voice in every constitutional question.',
+      blockers: () => [] },
+    { k: 'grant-pen', g: '✒️', t: 'Your Pen', own: 'you', isGate: true, isGrant: true, dep: ['slug'],
+      open: () => !!cs && amFounder() && holdsPenAnywhere(),
+      why: 'The pen changes a setting directly, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent. It was issued when the address went live, because that is the moment somebody could first knock.',
+      waiting: 'Waiting on the save.',
+      done: 'You hold the pen.',
+      blockers: () => [] },
+    // **🍾 Begin — the founder's explicit act of starting the document**
+    // (Q443, built 2026-08-21). Not a gate — nobody's permission opens; the
+    // founder presses it — but it lives with the gates because it is what
+    // opens them. The card states its whole batch, carries the readiness
+    // readout (per question, per person — informs, never blocks), and is
+    // refused only while a judge-gate question is still being decided. After
+    // the press it is a settled grey tab restating the batch and the moment.
+    { k: 'begin', g: '🍾', t: 'Begin', own: 'you', isGate: true, isBegin: true, dep: ['text'],
+      open: () => constituted(),
+      hide: () => !amFounder() && !constituted(),
+      why: '', waiting: '', done: '', blockers: () => [] },
+    // **🥂 — the close, acknowledged** (Q468, built 2026-08-21): 🍾's mirror,
+    // a news card pinned until OK, one per member on their own clock; OK on
+    // it signs the document, the comment it collects is the signing
+    // rationale, and the wallets fly into it as it goes.
+    { k: 'closing', g: '🥂', t: 'The Close', own: 'you', isGate: true, isClosing: true, dep: ['text'],
+      open: () => !!(cs && cs.closed),
+      hide: () => !(cs && cs.closed),
+      why: '', waiting: '', done: '', blockers: () => [] },
   ];
 
   // 🪶 (Ed, 2026-08-19) — the quill, retiring the drawn home plate of the
@@ -941,8 +1027,8 @@
   // membership and the Text say what the power actually does there.
   const PW_LINES = {
     '*': {
-      u: ['The Founder may change this directly.', 'The Founder does not change this directly.'],
-      a: ['A change the members carry comes to the Founder as a 👑 question.', 'A change the members carry applies by itself.'],
+      u: ['The Founder may change this at will.', 'The Founder does not change this at will.'],
+      a: ['Decisions from the membership require assent.', 'Decisions from the membership apply by themselves.'],
     },
     policy: {
       u: ['The Founder invites and removes directly.', 'The Founder does not invite directly.'],
@@ -1128,6 +1214,8 @@
     // verified by arrival; changing it un-verifies and asks again)
     if (c.k === 'myemail') return S.emailVerified;
     if (c.door) return true;                                   // doors, not decisions
+    if (c.isBegin) return constituted();                       // 🍾: settled by the press
+    if (c.isClosing) return signedClose();                     // 🥂: settled by your signature
     if (c.isGate) return S.okd.has(c.k);
     if (c.ansFor) return answered(c);
     if (!S.seen.has(c.k) || !ready(c)) return false; // confirmed, not defaulted
@@ -1145,7 +1233,9 @@
     return !!(rec && rec.payload && rec.payload.kind === 'remove' &&
       removalRung() === 'others' && rec.payload.member === viewerId()); };
   const mustAct = (c) => (motionOn(c) ? (viewerIsMember() && !answeredMotion(c) && !motionExcludesMe(c))
-    : c.isGate ? (c.open() && !S.okd.has(c.k))
+    : c.isBegin ? (amFounder() && !constituted())
+    : c.isClosing ? false
+    : c.isGate ? (c.open() && staged(c) && !S.okd.has(c.k))
     : c.ansFor || c.own === 'you' || amFounder() ? !settled(c)
     : false);
   // How far the room has got, against the roster **as it stands** — held as a
@@ -1211,7 +1301,7 @@
     });
   };
   const ansWaveReady = (c) => ansGate(c.ansFor);
-  const visible = (c) => (c.ansFor
+  const visible = (c) => (isStranger() && (c.isGate || c.kind === 'personal' || c.ansFor) ? false : c.ansFor
     ? viewerIsMember() && ansDue() && ansWaveReady(c) &&
       isRoom(card(c.ansFor)) && visible(card(c.ansFor))
     : !(c.hide && c.hide()) && (c.dep || []).every((k) => settled(card(k))));
@@ -1257,7 +1347,9 @@
         // stacks twelve pixels apart in one clause — the Q308 floor). The
         // row says the true thing and gives the you-row a row's clearance.
         // No avatar: a face here would claim a person who does not exist.
-        const list = '<div class="memlist">' +
+        // a stranger reads how many, never who (Q508 — shipped private)
+        const list = isStranger() ? '<div class="memlist"><div class="memrow nobody">' + strMembersLine() + '</div></div>'
+          : '<div class="memlist">' +
           (others.length === 0 ? '<div class="memrow nobody">Nobody else yet.</div>' : '') +
           others.map((p) => '<div class="memrow">' + avHtml(p) +
             '<span class="mn">' + esc(p.n || (!p.in && p.e) || 'Anonymous') +
@@ -1289,10 +1381,10 @@
     { key: 'rate', title: 'Proposals',
       text: '',
       lead: () => (cs ? preamblePara() : ''),
-      keys: ['canpropose', 'canjudge', 'rate', 'machines'] },
+      keys: ['begin', 'canpropose', 'canjudge', 'rate', 'machines'] },
     { key: 'deciding', title: 'Decisions',
       text: '',
-      keys: ['ending', 'quorum', 'bar', 'pace'] },
+      keys: ['ending', 'closing', 'quorum', 'bar', 'pace'] },
     // "Anonymity" (Ed, 2026-08-19), not "Privacy"
     { key: 'privacy', title: 'Anonymity',
       text: '',
@@ -1311,7 +1403,12 @@
   // now states the outcome, and a standing “has answered” line under a
   // decided rule is a task that finished still asking to be read
   const tasksFor = (c) => (c.key && ANSWER[c.k] && (c.in || 0) < E()
-    ? [card('ans-' + c.k)].filter((x) => x && visible(x)) : []);
+    ? [card('ans-' + c.k)].filter((x) => x && visible(x)) : [])
+    // the grants stand as tasks beside the gates they belong with (Q461):
+    // the pen with the 📍 link — issued when the address went live (Q451) —
+    // the voice with ⚖️ Judging
+    .concat(c.k === 'slug' ? [card('grant-pen')].filter(visible)
+      : c.k === 'canjudge' ? [card('grant-voice')].filter(visible) : []);
   // A member who has not opened the document yet is drawn faintly rather than
   // left out: they are on the membership, which is the fact the heading is
   // stating, and whether they have looked at it yet is a different one.
@@ -1321,13 +1418,13 @@
       // Founded by [avatar] [name] — only once the founder has a name; the
       // founding time is never known before the start (Ed)
       lead: (h) => titleGovPara(h) +
-        (visible(card('slug')) ? h.para(card('slug')) : '') +
+        (visible(card('slug')) ? h.para(card('slug')) + h.tasks(card('slug')) : '') +
         // 🌍 is about the document, not member privacy — the penultimate
         // clause of the opening section (Ed, 2026-08-19)
         (visible(card('chamber')) ? h.para(card('chamber')) + h.tasks(card('chamber')) : '') +
-        (S.myname.trim()
+        (founderInfo().n.trim()
           ? '<div class="cpara notab"><p class="cpv founded">Founded by ' +
-            avHtml(me()) + ' ' + esc(S.myname) +
+            avHtml(founderInfo()) + ' ' + esc(founderInfo().n) +
             // 👑 by any reservation (Ed, Q379 wide); 📯 = holds nothing.
             ' <span title="' + (founderCrowned()
               ? 'Part of the constitution is reserved: changing it needs the founder’s assent'
@@ -1394,6 +1491,10 @@
     removal: () => ({ everyone: 'Everyone has to agree, including them',
       others: 'Everyone else has to agree', ordinary: 'A proposal ✏️ like any other' }[removalRung()]),
     canpropose: () => (canPropose() ? 'Open' : 'Waiting on the text'),
+    'grant-voice': () => 'You hold a voice in every constitutional question',
+    begin: () => (constituted() ? 'Begun' + foundedAt() : 'Not yet begun'),
+    closing: () => (cs && cs.closed ? 'Closed' + closedAtWords() : ''),
+    'grant-pen': () => 'You hold the pen',
     canjudge: () => (canJudge() ? 'Open' : 'Waiting on the constitution'),
   };
   const ANSVALUE = {
@@ -1893,12 +1994,16 @@
           try { cs.answer(now(), r.mid || FOUNDER, midOf(k), ANSTYPED[k](r.ans[k])); } catch (e) {}
         });
       }
+      // 🍾 — the module no longer starts itself (Q443): the founder presses
+      if (cs.constitutedAtT === null) { try { cs.begin(now()); } catch (e) { console.warn('[cs devff begin]', e && e.message); } }
       // acknowledgments, page and module agreeing
       S.roster.forEach((r) => {
         if (r.role === 'clerk') return;
         r.okd = r.okd || new Set();
+        r.okd.add('begin');
         CARDS.forEach((c) => { r.okd.add('res-' + c.k); r.okd.add('set-' + c.k); });
         r.okd.add('canpropose'); r.okd.add('canjudge');
+        r.okd.add('grant-voice'); if (r.founder) r.okd.add('grant-pen');
         const rec = cs.memberRecords().get(r.mid || FOUNDER);
         if (rec) for (const sid of [...rec.okOwed]) {
           try { cs.giveOk(now(), r.mid || FOUNDER, sid); } catch (e) {}
@@ -1915,7 +2020,8 @@
   // without writing — and you did not have to be the first member you
   // invited. Only yours to flip until judging starts; after that you join
   // the way anybody joins.
-  const rosterClause = () =>
+  const rosterClause = () => (isStranger()
+    ? '<div class="roster clauselist"><p class="cpv">' + strMembersLine() + '</p></div>' : '') ||
     '<div class="roster clauselist">' + S.roster.map((p, i) =>
       '<div class="rperson">' + avHtml(p) +
       '<span><span class="nm">' + esc(p.n || 'Anonymous') + (p.founder ? ' <span class="chip founder">founder</span>' : '') +
@@ -1938,6 +2044,8 @@
   // answered blind into is a decision you are owed; a gate opening takes
   // the same rule, being exactly the shape of an unacknowledged decision.
   const waiting = (c) => (motionOn(c) ? answeredMotion(c)
+    : c.isBegin ? (!amFounder() && !constituted())   // a member sees the start waiting on the founder
+    : c.isClosing ? false
     : c.isGate ? !c.open()
     : c.k === 'myemail' ? (S.emailSent && !S.emailVerified)
     : c.ansFor ? (answered(c) && ((card(c.ansFor).in || 0) < E()))
@@ -1951,8 +2059,23 @@
   // the exception and the proof — a gate opening is not a rule being set, it
   // is a thing that has happened to you.
   const constituted = () => !!(cs && cs.constitutedAtT !== null);
+  // the close, and whether this seat has signed it (the module is the truth:
+  // live, view.closed.mySignature; fixture, the session's own signatures)
+  const mySignature = () => {
+    if (!cs || !cs.closed) return null;
+    if (cs.isRemote) return cs.v.view.closed ? cs.v.view.closed.mySignature : null;
+    const id = viewerId(); if (!id) return null;
+    return cs.closingSignatures().find((sg) => sg.member === id) || null;
+  };
+  const signedClose = () => !!(cs && cs.closed && (!viewerIsMember() || mySignature() !== null));
+  const closeSignatures = () => (!cs || !cs.closed ? []
+    : cs.isRemote ? ((cs.v.view.closed && cs.v.view.closed.signatures) || []) : cs.closingSignatures());
   const news = (c) => (motionOn(c) ? false
-    : c.isGate ? (c.open() && !S.okd.has(c.k))
+    : c.isBegin ? false
+    // the close is news to every member until they have signed (§4.6: the
+    // acknowledgment IS the signature) — a clerk reads it settled
+    : c.isClosing ? (c.open() && viewerIsMember() && !signedClose())
+    : c.isGate ? (c.open() && staged(c) && !S.okd.has(c.k))
     : !constituted() ? false
     : !c.ansFor && isRoom(c) && settled(c) && E() > 0 && (c.in || 0) >= E() &&
       !S.okd.has('res-' + c.k))
@@ -2072,6 +2195,18 @@
   const linkify = (s) => String(s).replace(/\bdocs\.vote\/[a-z0-9][a-z0-9-]*/g,
     (m2) => '<a class="doclink" href="https://' + m2 + '" target="_blank" rel="noopener">' + m2 + '</a>');
   const decisionLine = (c) => {
+    // a grant's paragraph states the document's rule (third person, the same
+    // for every reader); the card that opens on it is yours
+    if (c.isBegin) return constituted()
+      ? 'The document began' + foundedAt() + '.'
+      : 'The document has not begun.';
+    if (c.isClosing) return 'The document closed' + closedAtWords() + '. ' +
+      (closeSignatures().length === 0 ? 'Nobody has signed it yet.'
+        : closeSignatures().length + (closeSignatures().length === 1 ? ' member has' : ' members have') + ' signed it.');
+    if (c.k === 'grant-voice') return 'Each member holds one voice in every constitutional question.';
+    if (c.k === 'grant-pen') return holdsPenAnywhere()
+      ? 'The Founder holds the pen on ' + penLocks() + (penLocks() === 1 ? ' setting.' : ' settings.')
+      : 'The Founder holds no pen.';
     if (c.ansFor) return answered(c)
       ? 'The Founder has answered as a member.'
       : 'The Founder has not yet answered as a member.';
@@ -2200,6 +2335,14 @@
     return [...rail.querySelectorAll(sel)].filter((el) => ids.has(el.dataset.q)); } });
 
   function renderRail() {
+    if (isStranger()) {
+      // the stranger's rail holds one card: 📧 Log in — or Apply, where the
+      // 🤝 rule allows it (Q456)
+      railEntries = STRCARDS().map((c) => entryOf(c, strRailCtx));
+      stageWords = 'reading only';
+      renderClock();
+      return;
+    }
     if (S.viewer === 'applicant') {
       // **The applicant's seat follows the 🤝 rule as it stands** (pacing
       // pass, 2026-08-19: the topbar said "applications open" whatever the
@@ -2231,7 +2374,10 @@
       secLive().map((s2) => ({ ...s2, cards: s2.cards
         .flatMap((c) => [c].concat(tasksFor(c)))
         .filter((c) => !owesOwnAnswer(c))
-        .filter((c) => (c.isGate ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done')) }))
+        .filter((c) => ((c.isGate && !c.isBegin && !c.isClosing) ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done'))
+        // the closed page asks nothing but the signature (Q470): a grant or
+        // a question outstanding at the close is moot, and leaves the rail
+        .filter((c) => !(cs && cs.closed) || c.isClosing) }))
         .filter((s2) => s2.cards.length).flatMap((s2) =>
         s2.cards.map((c) => entryOf(c, ctx)));
 
@@ -2260,7 +2406,8 @@
   const clockState = () => {
     if (!cs || cs.constitutedAtT === null) return { kind: 'none' };
     if (cs.closed) return { kind: 'closed', atMs: cs.closedAt, todayMs: serverNow() };
-    if (cs.frozen) return { kind: 'frozen' };
+    if (cs.frozen) { const mr = typeof cs.mustReturn === 'function' ? cs.mustReturn() : cs.mustReturn;
+      return { kind: 'frozen', mustReturn: mr == null ? undefined : mr }; }
     const end = endsAtMsOf();
     if (end === null) return { kind: 'none' };
     return { kind: 'left', ms: end - serverNow() };
@@ -2290,7 +2437,8 @@
     const opts = S.roster.map((r, i) => '<option value="' + i + '"' + (S.viewer === i ? ' selected' : '') + '>' +
       esc(r.n || (r.founder ? 'Unnamed founder' : 'Invited · ' + (r.e || '?'))) +
       (r.founder ? ' 🎩' : r.in ? '' : ' (invited)') + '</option>').join('') +
-      '<option value="applicant"' + (S.viewer === 'applicant' ? ' selected' : '') + '>— an applicant</option>';
+      '<option value="applicant"' + (S.viewer === 'applicant' ? ' selected' : '') + '>— an applicant</option>' +
+      '<option value="stranger"' + (isStranger() ? ' selected' : '') + '>— a stranger</option>';
     if (sel.innerHTML !== opts) sel.innerHTML = opts;
   }
 
@@ -2328,7 +2476,8 @@
     // the wallet is drafting furniture: shown once proposing is open; the
     // pulse beats on the fixture's timer, so only the fixture shows it (B2b
     // drives both from the view)
-    document.getElementById('wallet').style.display = (charterOn() && canPropose()) ? '' : 'none';
+    document.getElementById('wallet').style.display = (charterOn() && canPropose() && viewerIsMember() &&
+      S.okd.has('canpropose') && !stormHolding) ? '' : 'none';
     document.getElementById('pulse').style.display = (FIX || (LIVEMODE && charterOn())) ? '' : 'none';
     syncWallet();
   }
@@ -2369,6 +2518,14 @@
   const foundedAt = () => {
     if (!cs || cs.constitutedAtT === null) return '';
     const d0 = new Date(cs.constitutedAtT);
+    const p2 = (x) => String(x).padStart(2, '0');
+    return ' at ' + p2(d0.getHours()) + ':' + p2(d0.getMinutes()) + ' on ' +
+      d0.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+  // the close's moment, the same shape as the founding's
+  const closedAtWords = () => {
+    if (!cs || !cs.closed || cs.closedAt == null) return '';
+    const d0 = new Date(cs.closedAt);
     const p2 = (x) => String(x).padStart(2, '0');
     return ' at ' + p2(d0.getHours()) + ':' + p2(d0.getMinutes()) + ' on ' +
       d0.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
@@ -2711,6 +2868,17 @@
 
   // ---- the band: two piles, and the card one of them opens into ----------
   function renderBand() {
+    if (isStranger()) {
+      const tp0 = document.getElementById('titlepara');
+      tp0.classList.remove('open');
+      tp0.querySelectorAll('.setupcard').forEach((el) => el.remove());
+      const own = STRCARDS().some((c) => c.k === S.open);
+      band.innerHTML = (own
+        ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + strangerCardHtml() + '</div></div></div>' : '') +
+        (cs ? bandHtml(groups(), strCtx, strangerReadCard) : '');
+      fitBand(band);
+      return;
+    }
     if (S.viewer === 'applicant') {
       const tp0 = document.getElementById('titlepara');
       tp0.classList.remove('open');
@@ -2727,8 +2895,27 @@
       // the founder's decision and stays editable — and grows a **watching**
       // half underneath, which is the whole of what anybody may see of a blind
       // question while it runs.
+      if (c.isBegin) {
+        const rd = readinessOf();
+        const can = !constituted() && amFounder() && (!rd || rd.ready);
+        return cardHtml(c, ctx, beginBody(c, rd),
+          constituted() ? '<button class="btn" data-close="1">Close</button>'
+            : '<button class="btn" data-close="1">Close</button>' +
+              '<button class="btn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
+              ' title="' + (can ? 'Hold to begin the document' : 'The document cannot begin yet') + '">✒️ Begin</button>',
+          g.cards);
+      }
+      if (c.isClosing) {
+        const signed = signedClose();
+        return cardHtml(c, ctx, closingBody(c),
+          signed || !viewerIsMember()
+            ? '<button class="btn" data-close="1">Close</button>'
+            : '<button class="btn" data-close="1">Close</button>' +
+              '<button class="btn btn-approve" data-sign="1" title="OK signs the document; your comment goes on the record">OK</button>',
+          g.cards);
+      }
       if (c.isGate) {
-        return cardHtml(c, ctx, gateBody(c),
+        return cardHtml(c, ctx, gateBody(c) + grantNote(c),
           '<button class="btn" data-close="1">Close</button>' +
           '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
           ' data-ok="' + c.k + '">OK</button>', g.cards);
@@ -2786,7 +2973,10 @@
           '<button class="btn btn-approve glyphbtn"' + (motionPicked(c) ? '' : ' disabled') +
           ' data-confirm="1">' + TICK + '</button>', g.cards);
       }
-      if (composerOn(c)) {
+      // — unless it is a decision you are owed: the OK comes before the
+      // motion, since an unacknowledged rule sits in the rail until it is
+      // pressed (the composer returns the moment it is)
+      if (composerOn(c) && stateOf(c, ctx) !== 'news') {
         // **The settled card is the composer** (Ed, 2026-08-18): the rule as
         // it stands at the head, the alternatives as the setting's own
         // controls, session-view's rationale lane, 🗑️ and the route's commit.
@@ -2843,7 +3033,7 @@
           ((S.titleDraft !== null && S.titleDraft !== cs_titleNow()) ? '' : ' disabled') +
           ' title="Put it back as it stands">🗑️</button>' +
           '<button class="btn btn-approve glyphbtn emojibtn"' + (commitReady(c) ? '' : ' disabled') +
-          ' data-confirm="1" title="' + (commitReady(c) ? 'Set it — yours to change any time' : 'Give it a name first') + '">✒️</button>'
+          ' data-confirm="1" title="' + (commitReady(c) ? (cs ? 'Set it — yours to change any time' : 'Name it') : 'Give it a name first') + '">' + (cs ? '✒️' : '🪶') + '</button>'
         : c.k === 'hat'
         ? (() => { const cur = iDraft() ? 'member' : 'clerk';
             const dirty = !!S.hatPick && S.hatPick !== cur &&
@@ -2869,7 +3059,7 @@
         // nobody (§9.0c), so they commit with ✓, never the pen.
         '<button class="btn btn-approve glyphbtn' + (c.ansFor || c.kind === 'personal' ? '' : ' emojibtn') + '"' +
         (ready(c) ? '' : ' disabled') +
-        ' data-confirm="1" title="' + (ready(c) ? (c.ansFor ? 'Answer' : c.kind === 'personal' ? 'Save' : 'Set it') : 'Not answered yet') + '">' + (c.ansFor || c.kind === 'personal' ? TICK : '✒️') + '</button>';
+        ' data-confirm="1" title="' + (ready(c) ? (c.ansFor ? 'Answer' : c.kind === 'personal' ? 'Save' : 'Set it') : 'Not answered yet') + '">' + (!cs ? '🪶' : c.ansFor || c.kind === 'personal' ? TICK : '✒️') + '</button>';
       return cardHtml(c, ctx, body + kindLine, foot, g.cards);
     };
     // the title card opens in the title's own paragraph, whatever else
@@ -2960,7 +3150,8 @@
     if (bin) bin.disabled = S.titleDraft === null || S.titleDraft === cs_titleNow();
   }
 
-  const renderMail = () => (S.viewer === 'applicant'
+  const renderMail = () => (isStranger() ? renderMailModal(false, MAILS.verify(S.title, '', S.slug))
+    : S.viewer === 'applicant'
     ? renderMailModal(S.app.mailOpen, MAILS.applyVerify(S.title || 'this document', S.app.email))
     : renderMailModal(S.mailOpen, MAILS.verify(S.title, S.myemail, S.slug)));
 
@@ -2974,9 +3165,10 @@
     // bin puts the card back to what stands rather than to what was on screen
     if (snapFor !== S.open) { S.titleDraft = null; takeSnap(); snapFor = S.open; }
     renderDev();
-    renderTitle(); renderRail(); renderBand(); syncCharter(); renderMail();
+    renderTitle(); renderRail(); renderBand(); syncCharter(); renderMail(); renderPowerWallets();
     document.getElementById('mebtn').innerHTML = avHtml(
-      S.viewer === 'applicant' ? { n: S.app.name || '?', pic: S.app.pic } : me(), 'face');
+      S.viewer === 'applicant' ? { n: S.app.name || '?', pic: S.app.pic }
+      : isStranger() ? { n: '?', pic: '' } : me(), 'face');
     if (S.open && S.open !== lastOpen) {
       const el = document.querySelector('.setupcard');
       if (el) CC.expandCard(el, () => {});
@@ -2985,6 +3177,16 @@
     // what is born arrives (setup.js birthPass): a stagehand act — seat
     // switch, ⏩ — mutes the entrances rather than replaying fifteen at once
     window.SETUP.birthPass(band, setupRail(), birthsMuted, () => SESSION.drawWires());
+    launchGrant();
+    launchFarewell();
+    // the closed page: every clause grey, typing opens nothing, the wallets
+    // gone once the farewell has flown (or at once, for a reader arriving after)
+    const closedNow = !!(cs && cs.closed);
+    document.getElementById('doc').classList.toggle('closedpage', closedNow);
+    const gone = closedNow && (farewellDone || signedClose() || !viewerIsMember());
+    SESSION.setClosed(gone || isStranger());
+    const pulse = document.getElementById('pulse');
+    if (pulse) pulse.style.display = gone || isStranger() ? 'none' : '';
     birthsMuted = false;
   };
   let birthsMuted = false;
@@ -3136,9 +3338,30 @@
           syncFromCs(); } catch (e) {} }
       }
       S.open = null; });
+    // 🍾 — the founder's press (the ✒️ hold lands here as a click)
+    const bgn = ev.target.closest('[data-begin]');
+    if (bgn && !bgn.disabled) return closeThen(() => {
+      S.okd.add('begin'); S.open = null;
+      try { cs.begin(now()); } catch (e) { console.warn('[begin]', e && e.message); }
+    });
+    // 🥂 — OK signs the document; the comment is the signing rationale,
+    // blank as welcome as a paragraph; the wallets fly into the card as it goes
+    const sgn = ev.target.closest('[data-sign]');
+    if (sgn) {
+      const lane = document.querySelector('.setupcard [data-signwhy]');
+      const comment = lane ? lane.textContent.trim() : '';
+      const to = sgn.getBoundingClientRect();
+      return closeThen(() => {
+        S.open = null;
+        try { cs.acknowledgeClose(now(), viewerId(), comment); } catch (e) { console.warn('[sign]', e && e.message); }
+        pendingFarewell = to;
+      });
+    }
     const okb = ev.target.closest('[data-ok]');
     if (okb) return closeThen(() => { const kk = okb.dataset.ok;
       S.okd.add(kk); S.open = null;
+      // the grant's object flies into your wallet from this press (Q448)
+      if (GRANT_KEYS.includes(kk)) { pendingGrant = { k: kk, from: okb.getBoundingClientRect() }; saveGrants(); }
       if (cs && kk.startsWith('set-') && viewerId()) {
         try { cs.giveOk(now(), viewerId(), midOf(kk.slice(4))); } catch (e) {}
       } });
@@ -3178,10 +3401,16 @@
     // ✒️ on 📧, before it is verified, IS the send (Ed, 2026-08-19) — and it
     // leaves the card standing, because the inbox opens over it and what you
     // come back to is the card you were on
+    if (ev.target.closest('[data-confirm]') && !cs) featherFlight(ev.target.closest('[data-confirm]'));
     if (ev.target.closest('[data-confirm]') && S.open === 'myemail' && !S.emailVerified) {
       return sendVerify();
     }
     if (ev.target.closest('[data-confirm]')) {
+      // the hold ladder (Q444): a ✒️ commit lands when the pen arrives — a
+      // click released early sets nothing; a click with no pointer behind it
+      // (a key, a script) sets at once
+      const pb = ev.target.closest('[data-confirm]');
+      if (isPenCommit(pb)) { const swallow = penPointerDown && !penHoldFired && Date.now() > penSwallowUntil; penPointerDown = false; if (swallow) return; }
       return closeThen(() => {
         const was = S.open; S.seen.add(was); S.open = null;
         const cw = card(was);
@@ -3467,9 +3696,9 @@
   });
   document.getElementById('devwho').addEventListener('change', (ev) => {
     const v = ev.target.value;
-    S.viewer = v === 'applicant' ? 'applicant' : +v;
+    S.viewer = v === 'applicant' ? 'applicant' : v === 'stranger' ? 'stranger' : +v;
     // sitting in an invited seat is that member's first arrival (§9.6a)
-    if (cs && v !== 'applicant') {
+    if (cs && v !== 'applicant' && v !== 'stranger') {
       const row = S.roster[+v];
       if (row && row.mid && !row.in) {
         try { cs.arrive(now(), row.mid);
@@ -3485,6 +3714,200 @@
   });
   addEventListener('resize', () => { fitBand(band); });
   // the wire and the rail follow the scroll through session.js's own listener
+
+  // ---- the stranger's door (Q452/455/456; Q508) ---------------------------
+  // There is no login screen. A stranger arrives at the three columns: the
+  // rules are public while the text is private, the text's *shape* stands
+  // as bars at real metrics, one sentence says who decided, what they
+  // decided and what you may do about it, and the rail holds one card.
+  let STR = null;   // the server's stranger payload (live); the fixture derives its own
+  const HOLDING = {
+    drafting: () => 'The constitution is being drafted.',
+    'founder-deciding': (f) => 'The founder ' + (f ? esc(f) + ' ' : '') + 'is deciding if you can see this document.',
+    'members-deciding': () => 'The members are deciding if you can see this document.',
+    'members-only': (f, by) => (by === 'members' ? 'The members decided' : 'The founder ' + (f ? esc(f) + ' ' : '') + 'decided') +
+      ' this document is visible to members only.',
+    open: () => '',
+  };
+  // the fixture's own door: the payload the server would build, derived from
+  // the fixture's module state, so the stagehand's fifth seat is honest
+  const fixtureStrangerPayload = () => {
+    const f = S.roster[0] || {};
+    const ch = cs ? cs.settingState('chamber') : null;
+    const rung = ch && ch.value ? ch.value.rung : null;
+    const kind = !cs || !cs.textConfirmed ? 'drafting'
+      : rung === 'link' || rung === 'public' ? 'open'
+      : rung === 'closed' ? 'members-only'
+      : ch && ch.holder === 'members' ? 'members-deciding' : 'founder-deciding';
+    const canRead = kind === 'open';
+    const pol = cs ? cs.settingState('applications') : null;
+    const jp = pol && pol.value ? pol.value.joinPolicy : 'invite';
+    const begun = !!(cs && cs.constitutedAtT !== null);
+    return { stranger: true, title: S.title, slug: S.slug,
+      holding: { kind, sentence: HOLDING[kind](f.n, ch && ch.settledBy === 'ceremony' ? 'members' : 'founder') },
+      founder: { name: f.n || null, picture: f.pic || null },
+      canRead, text: canRead && cs ? cs.text : null,
+      textShape: cs && cs.text ? shapeOf(cs.text) : [],
+      joinPolicy: jp, applyOpen: begun && (jp === 'proposed' || jp === 'apply'), joinOpen: begun && jp === 'open',
+      members: { arrived: cs ? cs.E() : 0 } };
+  };
+  const strPayload = () => (LIVEMODE ? STR : fixtureStrangerPayload());
+  // the shape of a text: per block, heading level and character count — the
+  // server's own rule (never a word)
+  const shapeOf = (text) => String(text).split(/\n/).map((l) => {
+    const m = l.match(/^(#{1,3})\s+/);
+    return { heading: m ? m[1].length : 0, chars: (m ? l.slice(m[0].length) : l).length };
+  });
+  // the server's stranger payload, reshaped to the member view the page's
+  // predicates read: no members, no questions, no motions, no identity
+  const strangerAsView = (d) => {
+    const quorum = (d.view.settings.find((x) => x.setting === 'quorum') || {}).value;
+    return { ...d, me: null, electorateSize: d.members.arrived, membershipReserved: false,
+      quorumForm: quorum && quorum.form ? quorum.form : 'count',
+      convenor: { id: FOUNDER, email: '', name: d.founder.name, isMember: true },
+      view: { settings: d.view.settings, gates: d.view.gates, crowned: d.view.crowned,
+        questions: [], resolutions: [], members: [], applicants: [], owedOks: [], motions: [],
+        crownTasks: [], identity: { name: null, picture: null },
+        frozen: d.frozen, closed: d.closed, mustReturn: null } };
+  };
+  const founderInfo = () => (isStranger() && strPayload()
+    ? { n: strPayload().founder.name || '', pic: strPayload().founder.picture || '' }
+    : (S.roster[0] || { n: '', pic: '' }));
+  const strMembersLine = () => {
+    const n = (strPayload() || { members: { arrived: 0 } }).members.arrived;
+    return n === 1 ? 'One member.' : n + ' members.';
+  };
+  // the band, read-only: the rule as it stands, no composer, no radios
+  const strCtx = Object.create(ctx, {
+    clauseFor: { value: (c) => (c.k === 'roster' ? rosterClause() : (ctx.clauseFor ? ctx.clauseFor(c) : '')) },
+    tasksFor: { value: () => [] },
+    // nothing is asked of a stranger and nothing is news to them: every tab
+    // is the rule's own state — settled grey, or ⏳ while the room decides
+    mustAct: { value: () => false },
+    news: { value: () => false },
+  });
+  const strangerReadCard = (g) => {
+    const c = card(S.open);
+    if (!c || !g.cards.some((x) => x.k === c.k)) return '';
+    const body = c.k === 'text' ? strangerTextBody() : readBody(c, strCtx);
+    return cardHtml(c, strCtx, body, '<button class="btn" data-close="1">Close</button>', g.cards);
+  };
+  const strangerTextBody = () => {
+    const p = strPayload();
+    return '<p class="why">' + (p && p.holding.sentence ? p.holding.sentence : 'The text is readable.') + '</p>' +
+      (p && p.canRead ? '<div class="doctext">' + textDivs(p.text || '') + '</div>' : '');
+  };
+  // the charter column: the text where 🌍 permits (read-only — typing opens
+  // nothing), else its shape as bars
+  function syncStrangerCharter() {
+    const p = strPayload();
+    const hold = document.getElementById('holding'), red = document.getElementById('redacted');
+    const sentence = p ? p.holding.sentence : '';
+    hold.textContent = sentence;
+    hold.hidden = !sentence;
+    const key = 'stranger:' + (p ? (p.canRead ? 'read:' + p.text : 'shape:' + JSON.stringify(p.textShape)) : '');
+    if (key !== charterKey) {
+      charterKey = key;
+      SESSION.setData({ DOC: p && p.canRead && p.text ? blocksOf(p.text) : [], SUGGS: [] });
+      const shape = p && !p.canRead ? p.textShape.filter((b) => b.chars > 0) : [];
+      red.classList.toggle('black', new URLSearchParams(location.search).get('bars') === 'black');
+      red.innerHTML = shape.length ? barsHtml(shape, red) : '';
+      red.hidden = !shape.length;
+    } else {
+      SESSION.refreshRail();
+    }
+    SESSION.setClosed(true);
+    document.getElementById('doc').classList.add('begun');
+  }
+  // **Bars at real metrics**: a line is as many characters as the prose
+  // column holds at its own font, measured — not guessed — from a probe
+  // string in that font, so a 340-character paragraph wraps into the same
+  // number of lines the real one would, and a heading is one bar as wide
+  // as its words
+  function barsHtml(shape, host) {
+    const probe = document.createElement('span');
+    probe.textContent = 'abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz ';
+    probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+    host.hidden = false;
+    host.appendChild(probe);
+    const w = host.clientWidth || 600;
+    const cw = (probe.getBoundingClientRect().width || 300) / probe.textContent.length;
+    probe.remove();
+    const hw = { 1: 1.5, 2: 1.3, 3: 1.15 };
+    return shape.map((b) => {
+      if (b.chars === 0) return '';
+      const charW = cw * (hw[b.heading] || 1);
+      const cpl = Math.max(12, Math.floor(w / charW));
+      const lines = Math.max(1, Math.ceil(b.chars / cpl));
+      const bars = [];
+      for (let i = 0; i < lines; i++) {
+        const n = i === lines - 1 ? b.chars - cpl * (lines - 1) : cpl;
+        bars.push('<i class="bar" style="width:' + Math.min(100, (n / cpl) * 100).toFixed(1) + '%"></i>');
+      }
+      return '<div class="rblock' + (b.heading ? ' h' + b.heading : '') + '">' + bars.join('') + '</div>';
+    }).join('');
+  }
+  // the rail's one card
+  const STRCARDS = () => {
+    const p = strPayload() || {};
+    const login = { k: 'strlogin', g: '📧', t: p.joinOpen ? 'Join' : 'Log In', kind: 'personal', own: 'you',
+      done: () => false };
+    const apply = { k: 'strapply', g: '🪪', t: 'Apply for Membership', kind: 'personal', own: 'you', done: () => false };
+    return p.applyOpen ? [login, apply] : [login];
+  };
+  const STRS = { email: '', sent: null, sentTo: '' };   // the stranger's provisional layer
+  const strRailCtx = {
+    get open() { return S.open; }, get E() { return E(); },
+    mustAct: (c) => STRS.sent !== c.k,
+    yours: () => false,
+    waiting: (c) => STRS.sent === c.k,
+    fillOf: () => '100%',
+    summary: (c) => (STRS.sent === c.k ? 'Check your inbox'
+      : c.k === 'strapply' ? 'Membership is by application'
+      : (strPayload() || {}).joinOpen ? 'Anyone with the link may join' : 'Members log in by email'),
+    value: (c) => strRailCtx.summary(c), isRoom: () => false,
+  };
+  function strangerCardHtml() {
+    const c = STRCARDS().find((x) => x.k === S.open);
+    if (!c) return '';
+    const okAddr = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email);
+    const p = strPayload() || {};
+    const body = STRS.sent === c.k
+      ? '<p class="why">Sent to <b>' + esc(STRS.sentTo) + '</b>. ' +
+        (c.k === 'strapply' ? 'Follow the link to begin your application — the address is your identity here.'
+          : 'If that address is on the membership, a link is on its way.') + '</p>' +
+        '<div style="margin-top:var(--s3)"><button class="btn" data-stredit="1">Wrong address?</button></div>'
+      : '<p class="why">' + (c.k === 'strapply'
+          ? 'Membership is by application. Your email is your identity here — the link it sends is the login, and the answer arrives on it.'
+          : p.joinOpen ? 'Anyone with the link may join. Your email is your identity here — the link it sends is the login.'
+          : 'Members log in by email: enter the address the membership knows you by, and follow the link it sends. Nothing here says whether an address is a member’s.') + '</p>' +
+        '<span class="fld"><label>Your email</label><input type="email" data-stremail="1" value="' + esc(STRS.email) + '" placeholder="you@example.com" style="width:20rem"></span>' +
+        '<div style="margin-top:var(--s3)"><button class="btn"' + (okAddr ? '' : ' disabled') + ' data-strsend="' + c.k + '">Send the link</button></div>';
+    const foot = '<button class="btn" data-close="1">Close</button>';
+    return cardHtml(c, strRailCtx, body, foot, [c]);
+  }
+  document.addEventListener('input', (ev) => {
+    const t = ev.target.closest('[data-stremail]');
+    if (!t) return;
+    STRS.email = t.value;
+    const b = document.querySelector('[data-strsend]');
+    if (b) b.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email);
+  });
+  document.addEventListener('click', (ev) => {
+    const send = ev.target.closest('[data-strsend]');
+    if (send) {
+      const k = send.dataset.strsend;
+      STRS.sent = k; STRS.sentTo = STRS.email.trim();
+      if (LIVEMODE) {
+        // the same answer whatever the server says: the door is not an oracle
+        api.post('/api/d/' + LIVESLUG + (k === 'strapply' ? '/apply' : '/login'), { email: STRS.sentTo })
+          .catch(() => {});
+      }
+      return render();
+    }
+    const edit = ev.target.closest('[data-stredit]');
+    if (edit) { STRS.sent = null; return render(); }
+  });
 
   // ---- the live layer (Q391b) -------------------------------------------
   // A ConstitutionSession lookalike over the last-fetched view: the page's
@@ -3513,6 +3936,12 @@
       get frozen() { return !!self.v.view.frozen; },
       get closed() { return !!self.v.view.closed; },
       get closedAt() { return self.v.view.closed ? self.v.view.closed.at : null; },
+      get mustReturn() { return self.v.view.mustReturn == null ? null : self.v.view.mustReturn; },
+      get record() { return self.v.record || null; },
+      readiness: () => self.v.readiness || null,
+      closingSignatures: () => (self.v.view.closed && self.v.view.closed.signatures) || [],
+      begin: () => api.cmd('begin', {}),
+      acknowledgeClose: (t, member, comment) => api.cmd('acknowledge-close', { comment }),
       get titleOf() { return self.v.title; },
       get slug() { return self.v.slug; },
       get quorumForm() { return self.v.quorumForm; },
@@ -3804,34 +4233,27 @@
     }).catch(() => {});
   }
 
-  function liveLogin() {
-    document.body.innerHTML = '<div style="font-family:ui-monospace,monospace;max-width:26rem;margin:18vh auto;border:1px dashed #999;padding:1.2rem">' +
-      '<div style="font-weight:600;margin-bottom:.4rem">Log in</div>' +
-      '<div style="margin-bottom:.6rem">Enter the address this membership knows you by, and follow the link it sends.</div>' +
-      '<input id="lemail" type="email" style="width:100%;padding:.45rem" placeholder="you@example.com">' +
-      '<button id="lgo" style="margin-top:.5rem;padding:.45rem .9rem">Send the link</button>' +
-      '<div id="lmsg" style="margin-top:.6rem"></div></div>';
-    devInboxButton(); // the login screen is where the link is needed most
-    document.getElementById('lgo').onclick = () => {
-      api.post('/api/d/' + LIVESLUG + '/login',
-        { email: document.getElementById('lemail').value.trim() })
-        .then((res) => {
-          document.getElementById('lmsg').innerHTML = res.devLink
-            ? '<a href="' + res.devLink + '">dev · follow the magic link</a>'
-            : 'If that address is on the membership, a link is on its way.';
-        });
-    };
-  }
-
   function liveBoot() {
     const dev = document.querySelector('.devswitch');
     if (dev) dev.style.display = 'none';
     devInboxButton();
     fetch('/api/d/' + LIVESLUG + '/view').then((r) => {
-      if (r.status === 401) { liveLogin(); return null; }
+      if (r.status === 401) { console.warn('[live] no seat and no door'); return null; }
       return r.json();
     }).then((data) => {
       if (!data) return;
+      // **There is no login screen** (Q456): a stranger arrives at the three
+      // columns like everybody else — the rules, the text's shape, one
+      // sentence, and a rail holding the 📧 task
+      if (data.stranger) {
+        STR = data;
+        cs = remoteCS(strangerAsView(data));
+        S.viewer = 'stranger';
+        hydrateS();
+        render();
+        setInterval(() => api.refresh(), 4000);
+        return;
+      }
       cs = remoteCS(data);
       wireLive();
       syncFromCs();
@@ -3842,6 +4264,7 @@
         f.role = data.convenor.isMember ? 'member' : 'clerk';
         f.n = (data.me === data.convenor.id ? data.view.identity.name : data.convenor.name) || f.n || ''; }
       hydrateS();
+      for (const k of loadGrants()) S.okd.add(k);
       if (data.text) setProse(data.text);
       else if (data.provisionalText) setProse(data.provisionalText);
       render();
@@ -3888,6 +4311,73 @@
     const m = l.match(/^(#{1,3})\s+(.*)$/);
     return [m ? { t: 'h', level: m[1].length, x: m[2], key: 'L' + i } : { t: 'p', x: l, key: 'L' + i }];
   });
+  // ---- the closed document is bracketed (Q470) ----------------------------
+  // constitution · charter · **the backlog as ranked document text** · the
+  // signatures. Each undecided race is a paragraph — its best candidate's
+  // wording as the text — wearing the third filed mark, whose tab opens its
+  // record; then a signatures block, a name or the disc, the comment, when.
+  const undecidedRecords = () => {
+    if (!cs || !cs.closed) return [];
+    if (cs.isRemote) return (cs.record && cs.record.undecided) || [];
+    return (FIX && FIX.CLOSED && FIX.CLOSED.undecided) || [];
+  };
+  const undecidedCount = () => undecidedRecords().length;
+  const bestOf = (o) => {
+    const f = (o.field || []).slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1));
+    return f[0] || null;
+  };
+  const closedBlocks = () => {
+    if (!cs || !cs.closed) return [];
+    const out = [];
+    const und = undecidedRecords();
+    if (und.length) {
+      out.push({ t: 'h', level: 1, x: 'Backlog', key: 'U:head' });
+      for (const o of und) {
+        const best = bestOf(o);
+        const text = best ? best.hunks.flatMap((h) => h.lines).map(unhead).join(' ') : (o.displaced || []).join(' ');
+        out.push({ t: 'p', x: text || '(the text stood)', key: 'U:' + (o.raceId || o.candidateId) });
+      }
+    }
+    const sigs = closeSignatures();
+    out.push({ t: 'h', level: 1, x: 'Signatures', key: 'S:head' });
+    if (!sigs.length) out.push({ t: 'p', x: 'Nobody has signed the document yet.', key: 'S:none' });
+    sigs.forEach((sg, i) => out.push({ t: 'p',
+      x: (sg.name || 'A member, unnamed') + (sg.comment ? ' — ' + sg.comment : ' — signed without a comment') +
+        (sg.t ? ' · ' + whenOf(sg.t) : ''), key: 'S:' + i }));
+    return out;
+  };
+  // the closed fixture: two of the Hollow Oak's open races become undecided
+  // records at their backlog paragraphs, the module closes, two members sign
+  function closeFixture() {
+    if (!cs || cs.closed) return;
+    const pick = FIX.SUGGS.filter((g) => g.kind === 'race' && g.state === 'needs' && !g.deadlocked).slice(0, 2);
+    const und = pick.map((g, i) => ({
+      raceId: 'fx-u' + i, outcome: 'undecided', when: Date.now(),
+      field: [g.race.a, g.race.b].map((c, j) => ({ hunks: [{ lines: [c.text] }], rationale: c.rationale,
+        p: c.p ?? (j === 0 ? 0.58 : 0.47), outcome: 'undecided', author: null })),
+      displaced: [String((FIX.DOC.find((l) => l.key === g.keys[0]) || {}).x || '')],
+      threshold: 0.74, judges: 6, judgedByMe: i === 0,
+    }));
+    FIX.CLOSED = { undecided: und, items: und.map((o, i) => {
+      const best = o.field.slice().sort((x, y) => y.p - x.p)[0];
+      return { id: 'rec:' + o.raceId, kind: 'quick', keys: ['U:' + o.raceId], state: 'sealed',
+        qLabel: 'Backlog', urgency: 0, pct: 100, cap: 'undecided at the close — the text stood',
+        decided: { outcome: 'undecided', when: whenOf(o.when), p: best.p, bar: o.threshold, judges: o.judges },
+        undecided: true, won: 'b', optionB: best.hunks[0].lines[0], replaced: o.displaced[0],
+        rationale: best.rationale, verdict: o.judgedByMe ? 'you judged this' : undefined, unread: false,
+        slate: o.field.map((f) => ({ text: f.hunks[0].lines[0], rationale: f.rationale, p: f.p, won: f === best })) };
+    }) };
+    // the two picked races leave the live set: they are filed now
+    const gone = new Set(pick.map((g) => g.id));
+    FIX.SUGGS = FIX.SUGGS.filter((g) => !gone.has(g.id));
+    const who = S.roster.filter((r) => !r.founder && r.mid);
+    // the second signer never gave a name: their signature is the disc
+    try { if (who[1]) cs.setIdentity(now(), who[1].mid, { name: null }); } catch (e) {}
+    S.roster.forEach((r) => { if (r.mid === (who[1] || {}).mid) r.n = ''; });
+    try { cs.close(now()); } catch (e) { console.warn('[fixture close]', e && e.message); }
+    try { if (who[0]) cs.acknowledgeClose(now(), who[0].mid, 'I still think the garden clause goes too far — but it was fairly decided.'); } catch (e) {}
+    try { if (who[1]) cs.acknowledgeClose(now(), who[1].mid, ''); } catch (e) {}
+  }
   // the fixture's DOC as the text the document would store
   const fixtureText = (DOC) => DOC.filter((l) => l.t !== 'title')
     .map((l) => (l.t === 'h' ? '#'.repeat(l.level || 1) + ' ' : '') + l.x).join('\n');
@@ -3956,6 +4446,11 @@
 
   function itemsFromView(v) {
     const lines = String(v.text || '').split(/\n/);
+    // the Text's shield (Q440): a carried change waits on the Founder's OK —
+    // the cards say so while it is held (this binding was lost in the glyph
+    // batch's stash detour; every live race threw on it)
+    let textAssent = false;
+    try { textAssent = !!pwPair('text').a; } catch (e) { textAssent = false; }
     const cards = v.raceCards || [];
     const sideOf = (rc, ids) => (ids.has(rc.a.id) ? 'a' : ids.has(rc.b.id) ? 'b' : null);
     const items = [];
@@ -4020,28 +4515,41 @@
     }
     // one record per race (Q503c): the whole field, the text it displaced
     // as it stood, and how many weighed in
+    const unsealed = new Map();
+    if (v.record) for (const o of (v.record.adopted || []).concat(v.record.undecided || [])) {
+      for (const f of o.field || []) if (f.author && f.author.name) unsealed.set(f.id || f.candidateId, f.author.name);
+    }
     for (const o of v.records || []) {
       const field = o.field || [];
       const hs = field.flatMap((f) => f.hunks);
       const sp = hs.length ? spanOf(hs) : spanOf(o.footprint || o.hunks || []);
-      const keys = keysOfSpan(sp, lines);
       const adopted = o.outcome === 'adopted';
+      // undecided at the close (§4.6): the race files at its backlog
+      // paragraph — its best wording IS the paragraph — under the PAUSE mark,
+      // never pinned (the 🥂 card is the acknowledgment the close asks for)
+      const undecided = o.outcome === 'undecided';
+      const keys = undecided ? ['U:' + (o.raceId || o.candidateId)] : keysOfSpan(sp, lines);
       const textOfF = (f) => f.hunks.flatMap((h) => h.lines).map(unhead).join('\n');
-      const winner = field.find((f) => f.outcome === 'adopted') || field[0] || {};
+      // the seal lifts at the record (§3.5a): `records` stays sealed, the
+      // closed `record` carries the names where the anonymity ladder allows
+      const byName = (f) => (f.author && f.author.name) || unsealed.get(f.id || f.candidateId) || null;
+      const best = field.slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1))[0];
+      const winner = field.find((f) => f.outcome === 'adopted') || (undecided ? best : null) || field[0] || {};
       const replaced = (o.displaced || []).filter((l) => l.trim()).map(unhead).join('\n') || undefined;
       const slate = field.length > 1
-        ? { slate: field.map((f) => ({ text: textOfF(f), rationale: f.rationale,
-            p: f.p == null ? undefined : f.p, won: f.outcome === 'adopted' })) } : {};
+        ? { slate: field.map((f) => ({ text: textOfF(f), rationale: f.rationale, by: byName(f),
+            p: f.p == null ? undefined : f.p, won: f === winner && (adopted || undecided) })) } : {};
       items.push({ id: 'rec:' + (o.raceId || o.candidateId), kind: 'quick', keys, state: 'sealed',
         qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
-        cap: adopted ? 'decided — adopted' : 'decided — the current text stood',
-        decided: { outcome: adopted ? 'adopted' : 'retired — the current text stood',
-          when: whenOf(o.when), p: o.p, bar: o.threshold, judges: o.judges },
-        won: adopted ? 'b' : undefined,
+        cap: adopted ? 'decided — adopted' : undecided ? 'undecided at the close — the text stood' : 'decided — the current text stood',
+        decided: { outcome: adopted ? 'adopted' : undecided ? 'undecided' : 'retired — the current text stood',
+          when: whenOf(o.when), p: o.p == null && best ? best.p : o.p, bar: o.threshold, judges: o.judges },
+        undecided,
+        won: adopted || undecided ? 'b' : undefined,
         optionB: textOfF(winner), replaced,
-        rationale: winner.rationale,
+        rationale: winner.rationale, by: byName(winner),
         verdict: o.judgedByMe ? 'you judged this' : undefined,
-        unread: true, ...slate });
+        unread: !undecided, ...slate });
     }
     // the draft being typed is the page's own, never the view's — it survives
     // every rebind
@@ -4104,6 +4612,212 @@
       api.cmd('withdraw-text', { candidate: s.candidate });
     };
   }
+  // ---- the wallet family (Q444–448, 453, 458, 461; 2026-08-21) -----------
+  // 🪶 top left: four feathers at the birth, one spent per founding act
+  // (title, link, the mail), the fourth permanent and the logo. ✏️ ✒️ 🏛️ on
+  // the right: shown once their grant is acknowledged — a power you were
+  // never asked for arrives by a task, never by itself. A clerk's topbar
+  // holds nothing but 🪶 (Q458: a clerk's only power is to found something
+  // else).
+  let quillGhost = false, penGhost = false, voiceGhost = false, stormHolding = false;
+  let pendingGrant = null;
+  const heldMotion = () => {
+    if (!cs) return false;
+    if (cs.isRemote) return !!(cs.v && cs.v.view && cs.v.view.myHeldMotion);
+    const me2 = viewerId();
+    return [...cs.motionRecords().values()].some((m) => m.by === me2 && m.status === 'running');
+  };
+  function renderPowerWallets() {
+    const q = document.getElementById('quill');
+    const spent = cs ? 3 : (S.seen.has('title') ? 1 : 0) + (S.seen.has('slug') ? 1 : 0) + (S.emailSent ? 1 : 0);
+    const left = 4 - Math.min(3, spent);
+    const qh = Array.from({ length: left }, (_, i) =>
+      '<i' + (quillGhost && i === left - 1 ? ' class="gone"' : '') + '>🪶</i>').join('');
+    if (q.innerHTML !== qh) q.innerHTML = qh;
+    q.title = left > 1
+      ? 'Your founding feathers — ' + (left - 1) + ' to spend on the birth; the last one is docs.vote, and makes a new document.'
+      : 'docs.vote — make a new document';
+    const notApp = S.viewer !== 'applicant' && !isStranger() &&
+      // after the farewell the wallets are gone (a reader arriving after the
+      // close, or one who has signed, never sees them)
+      !(cs && cs.closed && (farewellDone || signedClose() || !viewerIsMember()));
+    const pen = document.getElementById('penwallet');
+    const showPen = notApp && !!cs && amFounder() && holdsPenAnywhere() && S.okd.has('grant-pen');
+    pen.innerHTML = showPen ? '<i' + (penGhost ? ' class="gone"' : '') + '>✒️</i>' : '';
+    pen.title = 'Your pen — it turns on ' + penLocks() + ' of the settings; each ✒️ tab says where. Hold to set.';
+    const voice = document.getElementById('voicewallet');
+    const out = heldMotion();
+    const showVoice = notApp && !!cs && viewerIsMember() && !!viewerRow().in && S.okd.has('grant-voice');
+    voice.innerHTML = showVoice ? '<i' + (out || voiceGhost ? ' class="gone"' : '') + '>🏛️</i>' : '';
+    voice.title = out ? 'Your voice is out on a motion — it comes back whole when the question settles or you withdraw it.'
+      : 'Your voice in every constitutional question — one motion at a time, returned whole.';
+  }
+  // ---- 🍾 and 🥂 --------------------------------------------------------
+  // the founder's readiness readout — live from the view (founder only),
+  // fixture from the module itself; null for anybody else
+  const readinessOf = () => {
+    if (!cs || constituted()) return null;
+    try { return cs.readiness ? cs.readiness() : null; } catch (e) { return null; }
+  };
+  const glyphOfSetting = (mid) => { const c = card(pkeyOf(mid)); return c ? c.g + ' ' : ''; };
+  const BEGIN_BATCH = [
+    'The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.',
+    'Members gain ✏️s on it, at the proposal rate.',
+    'Judging opens, and the approval threshold begins its course.',
+    'The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.',
+  ];
+  const beginBody = (c, rd) => {
+    const batch = '<div class="unlocks"><b>' + (constituted() ? 'What beginning did.' : 'What beginning does, all at once.') + '</b></div>' +
+      '<ul class="batch">' + BEGIN_BATCH.map((l) => '<li>' + l + '</li>').join('') + '</ul>';
+    if (constituted()) return batch;   // the head already says when
+    if (!rd) return batch + '<p class="setnote">Only the Founder can begin the document.</p>';
+    // informs, never blocks — except the questions judging cannot do without
+    const hold = rd.waiting && rd.waiting.length
+      ? '<p class="setnote hold">The document cannot begin while ' +
+        rd.waiting.map((mid) => glyphOfSetting(mid) + esc(card(pkeyOf(mid)) ? card(pkeyOf(mid)).t : mid)).join(' and ') +
+        (rd.waiting.length === 1 ? ' is' : ' are') + ' still being decided.</p>' : '';
+    const qs = (rd.questions || []).map((q) => '<span class="gaterow">' +
+      '<span class="gg">' + glyphOfSetting(q.setting) + '</span>' +
+      esc(card(pkeyOf(q.setting)) ? card(pkeyOf(q.setting)).t : q.setting) +
+      '<span class="rsub"> · ' + (q.settled ? 'settled' : q.collecting
+        ? (q.answered + ' of ' + q.electorate + ' have answered') : 'still being decided') + '</span></span>').join('');
+    const ms = (rd.members || []).map((m) => '<span class="gaterow">' +
+      esc(m.name || 'Anonymous') + '<span class="rsub"> · ' +
+      (!m.arrived ? 'invited, not yet arrived' : m.owed === 0 ? 'nothing owed'
+        : m.answered >= m.owed ? 'answered everything' : m.answered + ' of ' + m.owed + ' answered') + '</span></span>').join('');
+    return batch + hold +
+      '<div class="readiness"><div class="fieldlab">The questions</div><div class="gatelist">' + qs + '</div>' +
+      '<div class="fieldlab">The people</div><div class="gatelist">' + ms + '</div></div>' +
+      '<p class="setnote">' + (rd.ready
+        ? 'Nobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin.'
+        : 'It comes back to you the moment the questions stand.') + '</p>';
+  };
+  // what the close did, in one card: final as of when, what adopted, what
+  // carried, what was left undecided, whose names the record reveals
+  const closingBody = (c) => {
+    const rec = cs && cs.isRemote ? cs.record : null;
+    const adopted = rec ? rec.adopted.length : (FIX ? SESSION.SUGGS.filter((g) => g.state === 'sealed' && g.won).length : 0);
+    const undecided = rec ? rec.undecided.length : SESSION.SUGGS.filter((g) => g.undecided).length;
+    const carried = cs ? [...cs.motionRecords().values()].filter((m) => m.status === 'carried').length : 0;
+    const unassented = rec ? rec.carriedButUnassented.length : 0;
+    const auth = csState('authorship');
+    const reveal = auth && auth.value ? auth.value.rung || auth.value : null;
+    const names = reveal === 'anonymous' ? 'Authorship stays sealed: the record names nobody.'
+      : reveal === 'public' ? 'Authorship was public throughout.'
+      : 'Authorship is unsealed: the record names who proposed what.';
+    const sigs = closeSignatures();
+    const sigList = sigs.length ? '<div class="gatelist sigs">' + sigs.map((sg) =>
+      '<span class="gaterow">' + (sg.name ? esc(sg.name) : '<span class="disc small" aria-hidden="true"></span>a member') +
+      (sg.comment ? '<span class="rsub"> · ' + esc(sg.comment) + '</span>' : '') + '</span>').join('') + '</div>' : '';
+    const mine = mySignature();
+    const n = (k, one, many) => k + ' ' + (k === 1 ? one : many);
+    return '<div class="unlocks"><b>The document is final as of' + esc(closedAtWords().replace(/^ at /, ' ')) + '.</b></div>' +
+      '<ul class="batch">' +
+      '<li>' + n(adopted, 'proposal was adopted', 'proposals were adopted') + ' into the text.</li>' +
+      '<li>' + n(carried, 'motion carried', 'motions carried') + (unassented ? '; ' + n(unassented, 'carried change waited', 'carried changes waited') + ' on an assent that never came, and goes to the backlog' : '') + '.</li>' +
+      '<li>' + n(undecided, 'question was', 'questions were') + ' left undecided — the text stands, and ' +
+        (undecided === 1 ? 'it is' : 'they are') + ' filed below the charter as its backlog.</li>' +
+      '<li>' + names + '</li>' +
+      '<li>The record is published with the document, at this address.</li></ul>' +
+      (viewerIsMember() && !mine
+        ? '<div class="fieldlab">Your closing comment</div>' +
+          '<div class="speaker"><span class="disc" aria-hidden="true"></span>' +
+          '<div class="said edit-why" contenteditable="plaintext-only" data-signwhy="1" data-placeholder="Dissent is as welcome as praise — or nothing at all."></div></div>' +
+          '<p class="setnote"><b>OK</b> signs the document. Your comment, or its absence, goes on the record beside your name.</p>'
+        : mine ? '<p class="setnote">You signed' + (mine.comment ? ': <i>' + esc(mine.comment) + '</i>' : ' without a comment') + '.</p>' : '') +
+      (sigs.length ? '<div class="fieldlab">Signed</div>' + sigList : '');
+  };
+  // the wallet farewell (Q468): from the OK that signed, the ✏️s and the 🏛️
+  // fly into the card — the storm inverted — and the Founder's ✒️ leaves the
+  // same way; the wallets are gone after
+  let pendingFarewell = null;
+  function launchFarewell() {
+    if (!pendingFarewell) return;
+    const to = pendingFarewell; pendingFarewell = null;
+    const w = document.getElementById('wallet');
+    if (w && w.offsetParent) {
+      const n = cs && cs.isRemote && cs.v ? Math.floor(cs.v.wallet || 0) : (SESSION.editsHeld || 0);
+      SESSION.pencilStorm(w.getBoundingClientRect(), to, Math.max(n, 2), () => {});
+    }
+    for (const [id, glyph] of [['voicewallet', '🏛️'], ['penwallet', '✒️']]) {
+      const el = document.querySelector('#' + id + ' i');
+      if (el) SESSION.flyGlyph(glyph, el.getBoundingClientRect(), to, 640, { r0: 0, r1: 25 });
+    }
+    setTimeout(() => { farewellDone = true; renderPowerWallets(); SESSION.renderWallet(); }, 700);
+  }
+  let farewellDone = false;
+  // the card's own ✏️ grant line (Q461a: the 💡 card is the grant card)
+  const grantNote = (c) => {
+    if (c.k !== 'canpropose' || !c.open() || !viewerIsMember()) return '';
+    const nHeld = cs && cs.isRemote && cs.v ? Math.floor(cs.v.wallet || 0) : (SESSION.editsHeld || 0);
+    return '<p class="setnote grantline">You hold <b>' + nHeld + ' ✏️' + (nHeld === 1 ? '' : 's') +
+      '</b> to propose with — <b>OK</b> puts them in your wallet.</p>';
+  };
+  // the grant's flight, after the render that took its card away
+  function launchGrant() {
+    if (!pendingGrant) return;
+    const g = pendingGrant; pendingGrant = null;
+    if (g.k === 'canpropose') {
+      stormHolding = true;
+      const w = document.getElementById('wallet');
+      w.style.display = '';
+      const to = w.getBoundingClientRect();
+      w.style.display = 'none';
+      const n = cs && cs.isRemote && cs.v ? Math.floor(cs.v.wallet || 0) : (SESSION.editsHeld || 0);
+      SESSION.pencilStorm(g.from, to, Math.max(n, 3), () => {
+        stormHolding = false; w.style.display = ''; syncWallet(); SESSION.renderWallet(); });
+      return;
+    }
+    const id = g.k === 'grant-pen' ? 'penwallet' : 'voicewallet';
+    const glyph = g.k === 'grant-pen' ? '✒️' : '🏛️';
+    if (g.k === 'grant-pen') penGhost = true; else voiceGhost = true;
+    renderPowerWallets();
+    const slot = document.querySelector('#' + id + ' i') || document.getElementById(id);
+    SESSION.flyGlyph(glyph, g.from, slot.getBoundingClientRect(), 640, { onLand: () => {
+      if (g.k === 'grant-pen') penGhost = false; else voiceGhost = false; renderPowerWallets(); } });
+  }
+  // a feather spent on a founding act flies from the wallet to the button —
+  // a click, not a hold: only 🪶 happens at the speed of thought (Q444)
+  function featherFlight(btn) {
+    const f = [...document.querySelectorAll('#quill i')].pop();
+    if (!f || !btn) return;
+    SESSION.flyGlyph('🪶', f.getBoundingClientRect(), btn.getBoundingClientRect(), 480, { r0: -20, r1: 20 });
+  }
+  // **The hold ladder** (Q445c): ✒️ is a one-second hold — the pen flies from
+  // the wallet to the button and the set lands when it arrives; let go early
+  // and it flies home with nothing set. A click with no pointer behind it (a
+  // key, a script) sets at once.
+  const PEN_HOLD_MS = 1000;
+  let penHold = null, penHoldFired = false, penPointerDown = false, penSwallowUntil = 0;
+  const isPenCommit = (b) => !!b && !!cs && b.matches('[data-confirm]') &&
+    /✒️/.test(b.textContent) && !b.disabled && !!document.querySelector('#penwallet i');
+  document.addEventListener('pointerdown', (ev) => {
+    const b = ev.target.closest && ev.target.closest('[data-confirm]');
+    if (!isPenCommit(b) || ev.button !== 0) return;
+    penPointerDown = true;
+    const from = document.querySelector('#penwallet i').getBoundingClientRect();
+    const to = b.getBoundingClientRect();
+    b.classList.add('penholding'); penGhost = true; renderPowerWallets();
+    const flight = SESSION.flyGlyph('✒️', from, to, PEN_HOLD_MS, { r0: -30, r1: 0, easing: 'linear' });
+    penHold = { b, flight, timer: setTimeout(() => {
+      penHold = null; penHoldFired = true;
+      b.classList.remove('penholding'); penGhost = false;
+      try { b.click(); } finally { penHoldFired = false; penPointerDown = false; penSwallowUntil = Date.now() + 700; }
+      renderPowerWallets();
+    }, PEN_HOLD_MS) };
+  });
+  const penRelease = () => {
+    if (!penHold) return;
+    clearTimeout(penHold.timer); penHold.flight.cancel();
+    penHold.b.classList.remove('penholding'); penHold = null; penGhost = false; renderPowerWallets();
+  };
+  document.addEventListener('pointerup', penRelease);
+  document.addEventListener('pointercancel', penRelease);
+  // a grant's OK survives a reload: one key per document and seat, like readSeals
+  const grantsKey = () => 'draft:grants:' + LIVESLUG + ':' + ((cs && cs.v && cs.v.me) || '');
+  const loadGrants = () => { try { return JSON.parse(localStorage.getItem(grantsKey()) || '[]'); } catch (e) { return []; } };
+  const saveGrants = () => { if (!LIVEMODE) return;
+    try { localStorage.setItem(grantsKey(), JSON.stringify([...S.okd].filter((k) => GRANT_KEYS.includes(k)))); } catch (e) { /* private mode */ } };
   // what the wallet holds, from the view — the rules from the rate setting
   function syncWallet() {
     if (!LIVEMODE || !cs || !cs.v) return;
@@ -4170,6 +4884,10 @@
       devFastForward();
       S.folded.add('cs-constitution');
       if (!new URLSearchParams(location.search).get('band')) document.getElementById('doc').classList.add('fixsession');
+      // ?fixture=session&closed=1 — the Hollow Oak session, closed (Q470):
+      // two races left undecided, two signatures (one anonymous), the
+      // founder's seat still to sign — for looking at, not probed
+      if (new URLSearchParams(location.search).get('closed')) closeFixture();
       S.open = null; lastOpen = null; birthsMuted = true;
       render();
     };

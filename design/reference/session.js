@@ -18,6 +18,9 @@
   let doc, queueEl, tocEl, wiresEl, walletEl, pulseEl;
   // the host's seams; every one optional
   let hooks = {};
+  // the closed page (Q470): typing opens nothing and the wallet is gone
+  let closedMode = false;
+  const setClosed = (on) => { closedMode = !!on; renderWallet(); };
   // **A host's own rail entries** (stage 8, the merge): the setup tasks are
   // entries in this rail, laid out by the same margin-index rules as every
   // other. The host hands them in as {id, html, anchor(), pinned, rank, u,
@@ -1567,7 +1570,7 @@
     // The eyebrow keeps its two, because there the numbers are the point: what
     // the room came to, and what it had to clear.
     const line = (c) => (c.incumbent
-      ? (held ? '' : '<span class="pline ref">Previous text</span>')
+      ? (held || und ? '' : '<span class="pline ref">Previous text</span>')
       : c.p == null ? '' : '<span class="pline">' + pct(c.p) + '</span>');
     const skey = (s.keys ?? [])[0];
     // Whichever text is the clause at the head does not print itself again: the
@@ -1614,7 +1617,13 @@
     // the field look like a leaderboard, when what a record wants to say is *here
     // is everything that was tried, best first*. The score at the right is the
     // one that carries something the ordering does not: how close each came.
-    const tag = (c) => (c.incumbent && held ? '<span class="rsub">the text that stood</span>' : '');
+    // undecided at the close (Q470): the paragraph at the head is the best
+    // wording, not an adoption, and the text that stood is still the text
+    const und = !!s.undecided;
+    const tag = (c) => (c.incumbent && held ? '<span class="rsub">the text that stood</span>'
+      : c.incumbent && und ? '<span class="rsub">the text that stands</span>' : '');
+    // the record names an author where the anonymity ladder allows it
+    const spk = (c) => (c.why || c.by ? speakerHtml(c.why, undefined, c.by) : '');
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
@@ -1635,14 +1644,17 @@
       '<div class="rechead" title="' +
       esc((d.judges ?? 0) + ' of ' + ROSTER + ' weighed in · quorum was ' + FLOOR +
         ' · ' + (yours ? 'you ' + yours : 'you never judged this')) + '">' +
-      '<span>Decided · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE + ' · ' + pct(best) + JUDG +
-      (best >= (d.bar ?? 0) ? ' &gt; ' : ' &lt; ') + pct(d.bar) + BAR + '</span>' +
+      '<span>' + (und ? 'Undecided at the close' : 'Decided') + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
+      // an undecided race with no reading prints no numbers: 0% > 0% is a
+      // sentence about nothing
+      (und && !(d.bar > 0) ? '' : ' · ' + pct(best) + JUDG +
+        (best >= (d.bar ?? 0) ? ' &gt; ' : ' &lt; ') + pct(d.bar) + BAR) + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
       (top
         ? clauseHeadHtml(s, {
             text: currentTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
             label: null,
-          }) + (top.why ? speakerHtml(top.why) : '')
+          }) + spk(top)
         : '') +
       // No label on the rest of the field (Ed, 2026-08-17): the hairline above it
       // already says *and here is everything else*, and the axis those numbers are
@@ -1655,7 +1667,7 @@
             '<div class="rtext">' + esc(c.text) + '</div>' +
             // the same blank disc a live card gives it: whoever argued for this is
             // still sealed unless the session's visibility setting says otherwise
-            (c.why ? speakerHtml(c.why) : '') + '</div>';
+            spk(c) + '</div>';
           }).join('') + '</div>'
         : '') +
       // The record band is gone (Ed, 2026-08-17): every number in it is in the
@@ -3487,7 +3499,10 @@
   // duplicated ternary that markOf and its colour lookup had each grown.
   const markKindOf = (g) => {
     const st = stateOf(g);
-    return st === 'sealed' ? (isUnread(g) ? (carried(g) ? 'adopted' : 'retired')
+    // the third filed mark (Q469): a race unresolved at the close is
+    // *undecided*, distinct from kept — PAUSE, grey from the start
+    return st === 'sealed' ? (g.undecided ? 'filedUndecided'
+                              : isUnread(g) ? (carried(g) ? 'adopted' : 'retired')
                                           : (carried(g) ? 'filedYes' : 'filedNo'))
       // ✏️ all the way to the seal (Ed, 260). It had been ✏️ while unproposed
       // and then the ordinary 💡, on the reading that a proposal of yours is a
@@ -3693,6 +3708,44 @@
     anim.onfinish = done;
     setTimeout(() => { if (pencil.isConnected) done(); }, REFUND_MS + 60);
   }
+  // **One gesture, four currencies** (Q444, 2026-08-21): every power is an
+  // object you hold, spent by flying it — so a feather, a pen and the
+  // consensus voice travel the same bowed arc the pencil does. `flyGlyph`
+  // is that arc for any glyph, between any two rects; `pencilStorm` is the
+  // grant's flurry (Q442 b.ii): a decorative scatter of pencils from the
+  // card you pressed OK on, resolving into the real count in the wallet.
+  // Reduced motion: fade at the destination, no travel, same duration.
+  function flyGlyph(glyph, from, to, ms, opts) {
+    const o = opts || {};
+    const el = document.createElement('div');
+    el.className = 'flypencil' + (o.cls ? ' ' + o.cls : '');
+    el.textContent = glyph;
+    const start = REDUCED() ? to : from;
+    el.style.left = (start.left + start.width / 2) + 'px';
+    el.style.top = (start.top + start.height / 2) + 'px';
+    document.body.appendChild(el);
+    const anim = REDUCED()
+      ? el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms, fill: 'both' })
+      : el.animate(arcFrames(from, to, o.r0 ?? -24, o.r1 ?? 0),
+          { duration: ms, easing: o.easing || 'cubic-bezier(.3, 0, .2, 1)', fill: 'both', delay: o.delay || 0 });
+    let finished = false;
+    const done = () => { if (finished) return; finished = true; el.remove(); if (o.onLand) o.onLand(); };
+    anim.onfinish = done;
+    setTimeout(() => { if (el.isConnected) done(); }, ms + (o.delay || 0) + 80);
+    return { cancel: () => { try { anim.cancel(); } catch (e) {} el.remove(); } };
+  }
+  const STORM_MS = 900;
+  function pencilStorm(from, to, count, onLand) {
+    const n = Math.max(1, Math.min(12, count));
+    let landed = 0;
+    for (let i = 0; i < n; i++) {
+      // each pencil takes its own arc and its own moment, so the flurry reads
+      // as a scatter rather than a queue
+      flyGlyph('✏️', from, to, STORM_MS - 200 + Math.round(Math.random() * 300),
+        { delay: Math.round(i * 70 + Math.random() * 40), r0: -40 + Math.random() * 80, r1: 0,
+          onLand: () => { landed++; if (landed === n && onLand) onLand(); } });
+    }
+  }
   // **An edit in flight is drawn once.** Both flights hold the wallet at the
   // count that has not happened yet — outbound, the edit is not spent until it
   // lands (let go and it comes home), so the wallet keeps its five and leaves
@@ -3705,6 +3758,7 @@
   //   `walletGhost` — draw the count, but leave the last slot empty (the spend's)
   let walletShow = null, walletGhost = false;
   function renderWallet(showAs) {
+    if (closedMode) { walletEl.className = 'wallet'; walletEl.innerHTML = ''; walletEl.title = ''; return; }
     const held = showAs != null ? showAs : (walletShow != null ? walletShow : editsHeld);
     const full = held >= EDIT_RULES.cap;
     walletEl.className = 'wallet' + (full ? ' full' : '') + (held === 0 ? ' empty' : '');
@@ -3900,6 +3954,8 @@
     doc.addEventListener('beforeinput', (ev) => {
       const t = ev.target && ev.target.closest ? ev.target : null;
       if (!t || t.closest('.sugg')) return;      // the composer's own fields are real editors
+      // the closed page (Q470): a caret in a closed document opens nothing
+      if (closedMode) { ev.preventDefault(); return; }
       // The host is the whole prose column now, so the block being typed in comes
       // from the *selection* rather than from the event's target — the target is
       // the column itself.
@@ -4020,9 +4076,9 @@
   }
 
   window.SESSION = {
-    init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet, setRoom,
+    init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet, setRoom, setClosed,
     clockText, dateWords,
-    arcFrames, renderWallet, beat, act,
+    arcFrames, flyGlyph, pencilStorm, renderWallet, beat, act,
     refreshRail, renderToc, layoutQueue, drawWires, washAttrs,
     get DOC() { return DOC; },
     get SUGGS() { return SUGGS; },
