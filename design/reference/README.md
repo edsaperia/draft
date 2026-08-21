@@ -4,10 +4,12 @@ Byte-copies of the merged page and everything it loads, as they stood at
 the end of stage 8 (2026-08-21) — `session-view.html`, `session.js`,
 `fixture-session.js`, `setup.js`, `setup.css`, `cards.js`, `system.css`,
 `constitution.js`. The git tag `post-merge`, re-frozen at `refs-2026-08-21`
-after the design-day builds and again after review #2's door fixes, and at
+after the design-day builds and again after review #2's door fixes, at
 `refs-birth-2026-08-21` after the constitution's section order was restored
-and the birth was given its own layout, marks the same commit and is
-authoritative if EOL normalisation ever makes a copy differ byte-wise.
+and the birth was given its own layout, at `refs-gates-2026-08-21` after the
+🎩 fix let the gates through, and at `refs-acks-2026-08-21` after a power
+stopped being held until its grant is acknowledged, marks the same commit
+and is authoritative if EOL normalisation ever makes a copy differ byte-wise.
 
 - **Never edit these files.** When the surface changes intentionally,
   re-freeze (new copies, new tag) as its own commit, and empty the probes'
