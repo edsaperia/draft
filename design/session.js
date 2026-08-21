@@ -3693,6 +3693,44 @@
     anim.onfinish = done;
     setTimeout(() => { if (pencil.isConnected) done(); }, REFUND_MS + 60);
   }
+  // **One gesture, four currencies** (Q444, 2026-08-21): every power is an
+  // object you hold, spent by flying it — so a feather, a pen and the
+  // consensus voice travel the same bowed arc the pencil does. `flyGlyph`
+  // is that arc for any glyph, between any two rects; `pencilStorm` is the
+  // grant's flurry (Q442 b.ii): a decorative scatter of pencils from the
+  // card you pressed OK on, resolving into the real count in the wallet.
+  // Reduced motion: fade at the destination, no travel, same duration.
+  function flyGlyph(glyph, from, to, ms, opts) {
+    const o = opts || {};
+    const el = document.createElement('div');
+    el.className = 'flypencil' + (o.cls ? ' ' + o.cls : '');
+    el.textContent = glyph;
+    const start = REDUCED() ? to : from;
+    el.style.left = (start.left + start.width / 2) + 'px';
+    el.style.top = (start.top + start.height / 2) + 'px';
+    document.body.appendChild(el);
+    const anim = REDUCED()
+      ? el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms, fill: 'both' })
+      : el.animate(arcFrames(from, to, o.r0 ?? -24, o.r1 ?? 0),
+          { duration: ms, easing: o.easing || 'cubic-bezier(.3, 0, .2, 1)', fill: 'both', delay: o.delay || 0 });
+    let finished = false;
+    const done = () => { if (finished) return; finished = true; el.remove(); if (o.onLand) o.onLand(); };
+    anim.onfinish = done;
+    setTimeout(() => { if (el.isConnected) done(); }, ms + (o.delay || 0) + 80);
+    return { cancel: () => { try { anim.cancel(); } catch (e) {} el.remove(); } };
+  }
+  const STORM_MS = 900;
+  function pencilStorm(from, to, count, onLand) {
+    const n = Math.max(1, Math.min(12, count));
+    let landed = 0;
+    for (let i = 0; i < n; i++) {
+      // each pencil takes its own arc and its own moment, so the flurry reads
+      // as a scatter rather than a queue
+      flyGlyph('✏️', from, to, STORM_MS - 200 + Math.round(Math.random() * 300),
+        { delay: Math.round(i * 70 + Math.random() * 40), r0: -40 + Math.random() * 80, r1: 0,
+          onLand: () => { landed++; if (landed === n && onLand) onLand(); } });
+    }
+  }
   // **An edit in flight is drawn once.** Both flights hold the wallet at the
   // count that has not happened yet — outbound, the edit is not spent until it
   // lands (let go and it comes home), so the wallet keeps its five and leaves
@@ -4022,7 +4060,7 @@
   window.SESSION = {
     init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet, setRoom,
     clockText, dateWords,
-    arcFrames, renderWallet, beat, act,
+    arcFrames, flyGlyph, pencilStorm, renderWallet, beat, act,
     refreshRail, renderToc, layoutQueue, drawWires, washAttrs,
     get DOC() { return DOC; },
     get SUGGS() { return SUGGS; },

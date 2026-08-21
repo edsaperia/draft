@@ -1623,3 +1623,23 @@
   }
   @media (max-width: 900px) { #wires { display: none; } }
 
+
+  /* ---- the wallet family (Q444, 2026-08-21) ---------------------------------
+     Every power is an object you hold, kept where you can see it, spent by
+     flying it. 🪶 stands top left where the logo goes — four feathers at the
+     birth, one spent per founding act, and the one that remains IS the logo
+     (a link home: the mark of docs.vote is the act of making a document).
+     ✏️ ✒️ 🏛️ stand on the right beside `me`, in that order. Glyph sizes are
+     the one literal the type scale allows: a silhouette tuned to a box. */
+  .navbar .quill { display: inline-flex; align-items: center; gap: 0; margin-right: 8px;
+    text-decoration: none; color: inherit; font-size: 1.125rem; line-height: 1; vertical-align: -2px; }
+  .navbar .quill i { font-style: normal; display: inline-block; transition: opacity 240ms ease; }
+  .navbar .quill i.gone { visibility: hidden; }
+  .navbar .quill:empty { display: none; }
+  .navbar .powerwallet { font-size: var(--t-ui); line-height: 1; }
+  .navbar .powerwallet i { font-style: normal; }
+  .navbar .powerwallet:empty { display: none; }
+  .navbar .powerwallet .gone { visibility: hidden; }
+  /* a held commit: the pen is on its way from the wallet, one second's worth
+     (Q445c — the gravity of an act is the length of its hold) */
+  .btn.emojibtn.penholding { transform: translateY(1px); }
