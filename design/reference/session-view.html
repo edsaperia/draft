@@ -99,6 +99,18 @@
   .devswitch button { font: inherit; color: var(--muted); background: transparent;
     border: 1px dashed var(--border); border-radius: 4px; cursor: pointer; padding: 1px 6px; }
 
+  /* **The column invites you before it asks you** (Q513(c), Ed 2026-08-21).
+     📄 is the constitution's last clause, so the text is the last thing the
+     founding asks for — but the column it will be written in exists from the
+     save, and a founder who came here to write should not have to answer
+     eighteen questions before they may. From the save the well says so, in
+     grey, asking nothing; at 📄's own turn it becomes the paste-well below.
+     The save is the moment because it is the first moment there is anywhere
+     to put the words: before it nothing is stored anywhere. */
+  .prose.empty.writeready::before {
+    content: "Start writing whenever you like.AA The document's own words are the last thing the constitution settles, so nothing here is being asked of you yet.";
+    white-space: pre-wrap; color: var(--muted); font-size: var(--t-body); line-height: 1.6;
+  }
   /* the paste-well: the empty state of the prose column, and nothing more */
   .prose.empty.pasteready::before {
     content: "Paste the text this document starts from, or begin typing it.\A\A Markdown headings become its sections, and the contents appear beside you as you go.";
@@ -932,7 +944,7 @@
       rule: 'Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.',
       takes: 'The document takes the highest', result: '80%',
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
-    { k: 'pace', g: '📈', t: 'Rising Approval Threshold?', kind: 'ordinary', dep: ['ending', 'quorum'], changeable: true },
+    { k: 'pace', g: window.CARDS.RAMP, t: 'Rising Approval Threshold?', kind: 'ordinary', dep: ['ending', 'quorum'], changeable: true },
     // The number is the room's; the **form** — count or share — is the
     // founder's wording of the question (Ed, 2026-08-18: *quorum can either be
     // a fixed number or a proportion of membership size*; §9.0a).
@@ -1056,13 +1068,19 @@
       u: ['The Founder may change this at will.', 'The Founder does not change this at will.'],
       a: ['Decisions from the membership require assent.', 'Decisions from the membership apply by themselves.'],
     },
+    // **One voice, only the object changes** (Q507, Ed 2026-08-21: *at the
+    // very least the language should be consistent and the constitution
+    // should always read clearly as a document*). Every ✒️ line is *the
+    // Founder [does X] at will*; every 🛡️ line is *[what the membership
+    // decides] requires assent*. The per-setting variants name the act
+    // rather than inventing a second grammar for it.
     policy: {
-      u: ['The Founder invites and removes directly.', 'The Founder does not invite directly.'],
-      a: ['An application the members carry comes to the Founder as a 👑 question.', 'An application the members carry needs nobody' + Q + 's OK.'],
+      u: ['The Founder invites and removes members at will.', 'The Founder does not invite or remove members at will.'],
+      a: ['Applications the membership carries require assent.', 'Applications the membership carries apply by themselves.'],
     },
     text: {
-      u: ['The Founder edits the text directly.', 'The Founder does not edit the text directly.'],
-      a: ['A change to the text that carries waits on the Founder' + Q + 's OK before it lands.', 'A change to the text that carries lands by itself.'],
+      u: ['The Founder edits the text at will.', 'The Founder does not edit the text at will.'],
+      a: ['Changes to the text require assent.', 'Changes to the text apply by themselves.'],
     },
   };
   const pwLine = (k, power, held) => (PW_LINES[k] || PW_LINES['*'])[power][held ? 0 : 1];
@@ -1072,15 +1090,15 @@
   };
   const PWWHY = {
     '*': {
-      u: '<p class="why">Whether the Founder may re-set this directly, with no proposal. Anyone may always propose a change — this is only about the Founder' + Q + 's own hand.</p>',
+      u: '<p class="why">Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder' + Q + 's own hand.</p>',
       a: '<p class="why">Whether a change the members carry waits on the Founder' + Q + 's OK — the 👑 question. Anyone may always propose — this is only about what happens when a proposal carries.</p>',
     },
     policy: {
-      u: '<p class="why">Whether the Founder may invite and remove members directly, with nobody' + Q + 's agreement. Anyone may always propose bringing somebody in — this is only about the Founder' + Q + 's own hand.</p>',
+      u: '<p class="why">Whether the Founder may invite and remove members at will, with nobody' + Q + 's agreement. Anyone may always propose bringing somebody in — this is only about the Founder' + Q + 's own hand.</p>',
       a: '<p class="why">Whether an application the members carry waits on the Founder' + Q + 's OK — the 👑 question. This is only about what happens when an application carries.</p>',
     },
     text: {
-      u: '<p class="why">Whether the Founder may edit the text directly, with no proposal. Anyone may always propose a change to the text — this is only about the Founder' + Q + 's own hand.</p>',
+      u: '<p class="why">Whether the Founder may edit the text at will, with no proposal. Anyone may always propose a change to the text — this is only about the Founder' + Q + 's own hand.</p>',
       a: '<p class="why">Whether a change to the text that carries waits on the Founder' + Q + 's OK — the 👑 question — before it lands. Anyone may always propose; this is only about what happens when a proposal carries.</p>',
     },
   };
@@ -1088,21 +1106,21 @@
   // the radio labels, per setting where the generic ones would be untrue
   const PW_OPTS = {
     '*': {
-      u: { held: ['The Founder changes it directly', 'No proposal needed for the Founder' + Q + 's own hand.'],
+      u: { held: ['The Founder changes it at will', 'No proposal needed for the Founder' + Q + 's own hand.'],
            given: ['Only by proposal, like anybody', 'The Founder proposes like a member.'] },
-      a: { held: ['Carried changes need the Founder' + Q + 's OK', 'Each carried change comes as a 👑 question — accept or reject.'],
+      a: { held: ['Carried changes require the Founder' + Q + 's assent', 'Each carried change comes as a 👑 question — accept or reject.'],
            given: ['Carried changes apply by themselves', 'Nothing waits on the Founder.'] },
     },
     policy: {
-      u: { held: ['The Founder invites and removes directly', 'Nobody else has to agree when the Founder brings somebody in.'],
+      u: { held: ['The Founder invites and removes at will', 'Nobody else has to agree when the Founder brings somebody in.'],
            given: ['Only by proposal, like anybody', 'The Founder proposes a member like anybody, and every member has to agree.'] },
-      a: { held: ['Carried applications need the Founder' + Q + 's OK', 'Each application the members carry comes as a 👑 question — accept or reject.'],
+      a: { held: ['Carried applications require the Founder' + Q + 's assent', 'Each application the members carry comes as a 👑 question — accept or reject.'],
            given: ['Members decide applications by themselves', 'An application the members carry needs nobody' + Q + 's OK.'] },
     },
     text: {
-      u: { held: ['The Founder edits the text directly', 'No proposal needed for the Founder' + Q + 's own hand on the text.'],
+      u: { held: ['The Founder edits the text at will', 'No proposal needed for the Founder' + Q + 's own hand on the text.'],
            given: ['Only by proposal, like anybody', 'The Founder proposes a change to the text like a member.'] },
-      a: { held: ['Changes to the text need the Founder' + Q + 's OK', 'A change that carries comes as a 👑 question before it lands — accept or reject.'],
+      a: { held: ['Changes to the text require the Founder' + Q + 's assent', 'A change that carries comes as a 👑 question before it lands — accept or reject.'],
            given: ['Changes to the text land by themselves', 'A change that carries lands in the text at once.'] },
     },
   };
@@ -1487,7 +1505,12 @@
       // that number gets there, 👥 how many must have judged. The threshold
       // and its pacing are one thought on two cards, so they are adjacent;
       // quorum is a different kind of number and reads last (Ed, 2026-08-21).
-      keys: ['ending', 'closing', 'bar', 'pace', 'quorum'] },
+      keys: ['ending', 'closing', 'bar', 'pace', 'quorum'],
+      // 📈 stays in `keys` — it is still a task, with its own rail entry and
+      // its place in the founding order — but it has no clause, so the
+      // section renders every card except it (Q512).
+      body: (h) => ['ending', 'closing', 'bar', 'quorum'].map(card)
+        .filter((c) => c && visible(c)).map((c) => h.para(c) + h.tasks(c)).join('') },
     // "Anonymity" (Ed, 2026-08-19), not "Privacy"
     { key: 'privacy', title: 'Anonymity',
       text: '',
@@ -2243,7 +2266,20 @@
     quorum: () => (S.quorumForm === 'count'
       ? Math.min(takenOf('quorum') || S.quorumN, E()) + ' of the ' + E() + ' members'
       : (takenOf('quorum') || S.quorumPct) + '% of the members') + ' must have judged a question before it can change the document.',
-    bar: () => 'By the end, the members must be ' + (takenOf('bar') || S.tClose) + '% sure a change is better for it to carry.',
+    // **The ramp is part of what the threshold says** (Q512, Ed 2026-08-21:
+    // *if there is no ramp, the clause can just be blank — maybe the ramp can
+    // be in the threshold setting stack, rather than a whole separate
+    // clause*). So 📈 has no clause of its own: a fixed threshold is one
+    // sentence, a rising one is the same sentence saying where it starts.
+    bar: () => { const v = takenValOf('pace');
+      const shape2 = v ? v.shape : S.shape;
+      const start2 = v && v.shape === 'ramp' ? v.startPct : S.tStart;
+      const pct = takenOf('bar') || S.tClose;
+      // a ramp that starts where it ends is not a ramp (Ed: *if there is no
+      // ramp, the clause can just be blank*)
+      return (!perpetual() && shape2 === 'ramp' && isNum(start2) && +start2 < +pct
+        ? 'The members must be ' + pct + '% sure a change is better for it to carry by the end, starting at ' + start2 + '% when judging opens.'
+        : 'The members must be ' + pct + '% sure a change is better for it to carry.'); },
     pace: () => { const v = takenValOf('pace');
       const shape2 = v ? v.shape : S.shape;
       const start2 = v && v.shape === 'ramp' ? v.startPct : S.tStart;
@@ -2424,8 +2460,18 @@
     // sentence carries the title, which is member text — unescaped it was
     // stored XSS into the constitution paragraph
     decisionLine: (c) => linkify(esc(c.power ? powerHeadLine(c) : decisionLine(c))),
-    chipsFor: (c) => (cs && !c.power && !c.ansFor && PW_KEYS.includes(c.k)
-      ? [c, card('pw:u:' + c.k), card('pw:a:' + c.k)] : [c]),
+    // 📈 has no paragraph of its own (Q512): the ramp is part of what the
+    // threshold says, so its tab stands in ✒️'s stack and opening it opens
+    // at ✒️'s own clause — which is also where its rail entry anchors,
+    // since anchorOf falls back to the tab's paragraph.
+    chipsFor: (c) => {
+      const k = c.k === 'pace' ? 'bar' : c.k;
+      if (c.power || c.ansFor) return [c];
+      const base = (k === 'bar' && card('pace') && visible(card('pace')))
+        ? [card('bar'), card('pace')] : [card(k)];
+      return (cs && PW_KEYS.includes(k))
+        ? base.concat([card('pw:u:' + k), card('pw:a:' + k)]) : base;
+    },
     summary, value, isRoom,
   };
 
@@ -2598,6 +2644,8 @@
     document.getElementById('titlechip').innerHTML =
       (cs || S.open === 'title') ? '' : pileHtml([card('title')], ctx);
     prose.classList.toggle('pasteready', visible(card('text')));
+    // from the save until 📄's own turn, the column says you may write in it
+    prose.classList.toggle('writeready', !!cs && !visible(card('text')));
     // **The caret leaves with the founder's hand** (Ed's QA, 2026-08-19: he
     // went looking for how to relinquish direct editing on the text — there
     // is nothing to relinquish, because the text is never held (§9.7): once
@@ -3680,12 +3728,18 @@
     const ansBin = ev.target.closest('[data-ansdrop]');
     if (ansBin) { S.myAns[ansBin.dataset.ansdrop] = null; return render(); }
     if (ev.target.closest('[data-hatdrop]')) { S.hatPick = null; return render(); }
+    // 🎩 commits like any other setting, so it closes like one (Ed,
+    // 2026-08-21, asking whether there is a rule): it had its own commit
+    // control and so never went through the closing path, which is the whole
+    // of why it looked inconsistent.
     if (ev.target.closest('[data-hatgo]')) {
-      const m = meRow(); const want = S.hatPick;
-      if (m && want) { m.role = want === 'clerk' ? 'clerk' : 'member'; S.seen.add('hat');
-        if (cs) { try { cs.setConvenorMembership(now(), want !== 'clerk'); }
-          catch (e) { console.warn('[cs]', e && e.message); } } }
-      S.hatPick = null; return render(); }
+      return closeThen(() => {
+        const m = meRow(); const want = S.hatPick;
+        if (m && want) { m.role = want === 'clerk' ? 'clerk' : 'member'; S.seen.add('hat');
+          if (cs) { try { cs.setConvenorMembership(now(), want !== 'clerk'); }
+            catch (e) { console.warn('[cs]', e && e.message); } } }
+        S.hatPick = null; S.open = null;
+      }); }
     if (ev.target.closest('[data-act="sendverify"]')) return sendVerify();
     const om = ev.target.closest('[data-act="openmail"]');
     if (om) { S.mailOpen = true; return render(); }

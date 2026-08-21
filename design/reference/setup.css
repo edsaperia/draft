@@ -105,6 +105,12 @@
   .queue .mkg, .achip .mkg, .cline .mkg, .constsec .mkg, .setupcard .mkg {
     width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9;
     stroke-linecap: round; stroke-linejoin: round; }
+  /* a drawn mark that is a **shape** rather than a line — the ramp. It has to
+     be restated at this scope: the rules above tie with system.css's own
+     `.mkg.fill` and win on order, which is the same trap the card buttons
+     were in (Ed, 2026-08-21). */
+  .queue .mkg.fill, .achip .mkg.fill, .cline .mkg.fill, .constsec .mkg.fill, .setupcard .mkg.fill {
+    fill: currentColor; stroke: none; }
   /* the **subject** glyph. A live rail marks lifecycle state, because every card
      there is a different state of one kind of thing; a setup rail is the
      reverse — one state, many kinds — so it marks subject instead. The two sets

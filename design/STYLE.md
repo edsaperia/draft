@@ -142,3 +142,9 @@ Scanned: every string literal in `session.js`, `setup.js` and the page, comments
 27. **Passed** — the birth's clauses (*The document is titled “X”. The Founder may change this at will.*): third person about the document, the pen stated because at the birth it is true by construction, and no sentence about decisions from a membership that does not exist yet.
 28. **Passed** — *Delegate to the membership* (Q511) and its note: it says what delegating does and when the room answers, and never the word *ordinary*.
 29. **Passed** — 📨 *Resend* on the 📧 commit row, and *📨 Send* where the address has been edited since: a resend to a new address is not a resend, and the label says which act it is.
+
+**Seventh pass (Ed's answers, 2026-08-21)** — the power lines, the threshold clause and the writing invitation.
+
+30. **Fixed — Q507** — one voice, only the object changing. Every ✒️ line is *the Founder [does X] at will* (was *directly* on the membership and the Text); every 🛡️ line is *[what the membership decides] requires assent* (was *comes to the Founder as a 👑 question* / *waits on the Founder's OK before it lands*). The radio labels and the card whys follow, per §4's *a rename reaches the option labels*.
+31. **Fixed — Q512** — 📈's clause is gone; the ramp is a clause of ✒️'s: *The members must be 78% sure a change is better for it to carry by the end, starting at 55% when judging opens.* A fixed threshold, or a ramp starting where it ends, says nothing extra.
+32. **Passed — Q513(c)** — the writing invitation: *Start writing whenever you like. The document's own words are the last thing the constitution settles, so nothing here is being asked of you yet.* Grey, no glyph, asks nothing (§5).
