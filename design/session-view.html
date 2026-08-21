@@ -1458,17 +1458,35 @@
   // 🌍 is asked early, because it is the penultimate clause of the opening
   // run, and 📄 the text is asked last, because the charter follows the
   // whole constitution — you set the rules, then you write the thing.
-  const ORDER = ['title', 'slug', 'myemail', 'chamber',
+  // **Everything that writes a clause is in the file** (Ed, 2026-08-21). The
+  // gates and the grants used to be left out of ORDER, so they fell through
+  // to their own `dep` — the wave graph this list retired — and three of them
+  // fired together on `roster`, dropping the Proposals preamble, both gate
+  // clauses and the 🏛️ grant into the document in one frame while the founder
+  // was still four questions from that section. The band stopped accreting a
+  // clause at a time and dealt out a section. They take their document
+  // positions here instead.
+  const ORDER = ['title', 'slug', 'myemail', 'grant-pen', 'chamber',
     'policy', 'hat', 'myname', 'mypic', 'roster', 'lapse', 'removal',
-    'rate', 'machines', 'ending', 'bar', 'quorum',
-    'authorship', 'signing', 'judgments', 'text'];
+    'ending', 'bar', 'quorum',
+    'authorship', 'signing', 'judgments',
+    'canpropose', 'canjudge', 'grant-voice', 'rate', 'machines',
+    'text', 'begin'];
   // a card in the order waits for everything above it and nothing else: the
   // ORDER *is* the dependency list, so a card's own `dep` (which paced the
-  // waves) is not consulted for the ones it covers
+  // waves) is not consulted for the ones it covers.
+  // **A gate holds its place without holding the queue.** A gate is settled
+  // only once it has been OK'd, and ⚖️ Judging cannot open until the whole
+  // constitution is decided — so a gate that blocked what stands below it
+  // would stop the constitution being finished at all. It takes a position,
+  // so nothing arrives before its turn, and is skipped as a blocker.
   const orderReady = (c) => {
     const i = ORDER.indexOf(c.k);
     return i < 0 ? (c.dep || []).every((k) => settled(card(k)))
-      : ORDER.slice(0, i).every((k) => settled(card(k)));
+      : ORDER.slice(0, i).every((k) => {
+        const p = card(k);
+        return !p || p.isGate || settled(p);
+      });
   };
   const visible = (c) => (isStranger() && (c.isGate || c.kind === 'personal' || c.ansFor) ? false : c.ansFor
     ? viewerIsMember() && ansDue() && ansWaveReady(c) &&
@@ -1558,15 +1576,6 @@
           (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
           (visible(card('removal')) ? h.para(card('removal')) + h.tasks(card('removal')) : '');
       } },
-    // the gates lead the Proposals section (Ed, 2026-08-18); the preamble
-    // opens it (Ed, 2026-08-19 — moved from the head of the constitution,
-    // redrafted in his words); no intro lines — the sections are not big
-    // enough to need explanations, and the clauses ought to be
-    // self-explanatory (Ed, 2026-08-19)
-    { key: 'rate', title: 'Proposals',
-      text: '',
-      lead: () => (cs ? preamblePara() : ''),
-      keys: ['begin', 'canpropose', 'canjudge', 'rate', 'machines'] },
     { key: 'deciding', title: 'Decisions',
       text: '',
       // ⏰ when it ends, ✒️ how sure the room must be at that point, 📈 how
@@ -1583,6 +1592,20 @@
     { key: 'privacy', title: 'Anonymity',
       text: '',
       keys: ['authorship', 'signing', 'judgments'] },
+    // **Proposals reads fourth** (Ed, 2026-08-21), restoring the order both
+    // CLAUDE.md and design/DECISIONS.md have always carried: Membership ·
+    // Decisions · Anonymity · Proposals · The Document. It had drifted to
+    // second, which put the whole section's arrival directly beneath the
+    // Membership clauses the founder was still working through.
+    // The gates lead it (Ed, 2026-08-18); the preamble opens it
+    // (Ed, 2026-08-19 — moved from the head of the constitution, redrafted
+    // in his words); no intro lines — the sections are not big enough to
+    // need explanations, and the clauses ought to be self-explanatory
+    // (Ed, 2026-08-19)
+    { key: 'rate', title: 'Proposals',
+      text: '',
+      lead: () => (cs ? preamblePara() : ''),
+      keys: ['begin', 'canpropose', 'canjudge', 'rate', 'machines'] },
     // rail-only: the title is the heading, the link leads the constitution,
     // and the starting text anchors the prose (Ed, 2026-08-18)
     { key: 'doc', title: 'The Document', railOnly: true,
@@ -1607,21 +1630,35 @@
   // left out: they are on the membership, which is the fact the heading is
   // stating, and whether they have looked at it yet is a different one.
   const groups = () => [
-    { key: 'constitution', label: 'Constitution',
-      sections: secLive(),
+    // **No Constitution heading during the birth** (Ed, 2026-08-21). Nothing
+    // is being headed yet — the run is three clauses on an unsaved document —
+    // and the table of contents already withholds its Constitution entry
+    // until the save, so a heading here disagreed with the outline beside it.
+    { key: 'constitution', label: cs ? 'Constitution' : '',
+      // **The birth has no sections** (Ed, 2026-08-21: *during the birth we
+      // don't need to see the Membership section*). Before the save there is
+      // no constitution to divide up — the run is the title, the link and
+      // 📧, all three in this group's own `lead`. The band used to take its
+      // sections from whatever had a visible card, and 📧 is a Membership
+      // key, so a *Membership* heading, a *Members* subheading and an empty
+      // list stood on a document that did not exist yet. The rail still
+      // enumerates from `secLive()`, which is what keeps the birth's own
+      // tasks in it.
+      sections: cs ? secLive() : [],
       // Founded by [avatar] [name] — only once the document has begun, since
       // the founding time is never known before the start (§9.6a); a founder
       // who set no name is Anonymous like anybody else (§9.0c)
       lead: (h) => titleGovPara(h) +
         (visible(card('slug')) ? h.para(card('slug')) + h.tasks(card('slug')) : '') +
-        // **The birth's third clause** (Ed, 2026-08-21): while the mail is
-        // out, the document says what is happening and wears the 📧 tab, so
-        // the card does not have to say *Sent to…* and the founder can get
-        // back to their own address from the document itself.
-        (!cs && S.emailSent && !S.emailVerified
-          ? '<div class="cpara" data-para="myemail">' + h.pile([card('myemail')]) +
-            '<div class="cptext"><p class="cpv">The Founder is checking their email for a link.</p></div></div>'
-          : '') +
+        // **The birth's third clause** (Ed, 2026-08-21): the document says
+        // what is happening and wears the 📧 tab, so the card does not have
+        // to say *Sent to…* and the founder can get back to their own
+        // address from the document itself. It stands here for the whole of
+        // the birth — open, unsent, and awaiting the link — because the tab
+        // must not move: it used to be rendered by the Membership section's
+        // own body while the card was open and by this line once the mail
+        // was out, so the paragraph jumped up the page at the send.
+        (!cs && visible(card('myemail')) ? h.para(card('myemail')) : '') +
         // 🌍 is about the document, not member privacy — the penultimate
         // clause of the opening section (Ed, 2026-08-19)
         (visible(card('chamber')) ? h.para(card('chamber')) + h.tasks(card('chamber')) : '') +
@@ -1638,7 +1675,14 @@
           (/^(text|pw:[ua]:text)$/.test(S.open || '') ? h.para(card('text'))
           : '<div class="cpara textanchor">' + h.pile(ctx.chipsFor(card('text'))) +
             '<h2 class="doctitle dochead" id="dochead">' + esc(S.title || 'Untitled') + '</h2></div>')),
-      note: (n) => (n ? n + ' still to confirm or answer' : 'all confirmed') },
+      // **The birth counts its own three** (Ed, 2026-08-21). The note is
+      // derived from the group's sections, and the birth has none — so it
+      // announced *all confirmed* over a document whose address and whose
+      // founder's own email were still to come. The birth is a fixed
+      // three-act run, so before the save it counts the feathers: 🪶 🪶 🪶.
+      note: (n) => { const left = cs ? n
+        : ['title', 'slug', 'myemail'].map(card).filter((c) => c && !settled(c)).length;
+        return left ? left + ' still to confirm or answer' : 'all confirmed'; } },
   ];
 
   const VALUE = {
@@ -2464,7 +2508,20 @@
     if (c.k === 'canjudge') return canJudge()
       ? 'Members may judge proposals.'
       : 'Members may begin judging proposals when the whole constitution has been decided.';
-    if (c.k === 'myemail') return S.emailVerified ? 'Your address is verified.'
+    // **The birth is its own phase** (Ed, 2026-08-21). Before the save the
+    // band is writing a constitution, whose sentences are third person, and
+    // 📧 stands in the opening run beside the title and the link — there is
+    // no Membership yet for it to belong to. After the save the same card
+    // lives on your own member row, where the members list's sanctioned
+    // "you" is the right voice.
+    // Before the mail goes out the clause is **blank** (Ed, 2026-08-21): the
+    // 📧 tab simply stands where its sentence will appear, the way an
+    // `insert-anchor` is a held-open gap with its mark beside it. Nothing
+    // has been decided, and a document does not narrate that somebody is
+    // about to type.
+    if (c.k === 'myemail') return !cs
+      ? (S.emailSent ? 'The Founder is checking their email for a link.' : '')
+      : S.emailVerified ? 'Your address is verified.'
       : S.emailSent ? 'Your address is awaiting verification.'
       : 'Your address is not yet given.';
     if (c.kind === 'personal') return summary(c);

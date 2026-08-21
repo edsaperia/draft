@@ -394,14 +394,19 @@ window.SETUP = (function () {
         const gFold = ctx.foldedGroup && ctx.foldedGroup(g);
         if (gFold) {
           return '<div class="setrow constsec" id="pile-' + g.key + '">' +
-            '<div class="pilelab"><span class="pilehead" id="cs-constitution">' +
-            (ctx.groupToggle ? ctx.groupToggle(g) : '') + esc(g.label) + '</span></div>' +
+            // **A group with no label draws no heading** (Ed, 2026-08-21):
+            // during the birth there is no constitution to head yet, so the
+            // surface passes an empty label rather than this helper knowing
+            // anything about phases. The fold control goes with it — there
+            // is nothing to fold away at the birth.
+            (g.label ? '<div class="pilelab"><span class="pilehead" id="cs-constitution">' +
+              (ctx.groupToggle ? ctx.groupToggle(g) : '') + esc(g.label) + '</span></div>' : '') +
             (g.textAnchor ? g.textAnchor(H) : '') + '</div>';
         }
         return '<div class="setrow constsec" id="pile-' + g.key + '">' +
-          '<div class="pilelab"><span class="pilehead" id="cs-constitution">' +
-          (ctx.groupToggle ? ctx.groupToggle(g) : '') + esc(g.label) + '</span>' +
-          (g.intro ? g.intro() : '') + '</div>' +
+          (g.label ? '<div class="pilelab"><span class="pilehead" id="cs-constitution">' +
+            (ctx.groupToggle ? ctx.groupToggle(g) : '') + esc(g.label) + '</span>' +
+            (g.intro ? g.intro() : '') + '</div>' : '') +
           // **the link stands right at the top, under the Constitution
           // heading** (Ed, 2026-08-18) — the document's address is the
           // first thing the constitution states
@@ -1156,7 +1161,14 @@ window.SETUP = (function () {
   const REDUCED_MQ = matchMedia('(prefers-reduced-motion: reduce)');
   const bornKeys = new Set();
   let bornPrimed = false;
-  const GROW_MS = 240, FADE_MS = 420, STAGGER_MS = 55, STAGGER_MAX = 5;
+  // FADE_MS is the document lane's: a new constitution clause, and a new
+  // section heading, fading onto the page. **Doubled from 420 to 840** (Ed,
+  // 2026-08-21) — a clause arriving in the band is text to be read rather
+  // than a control responding to a press, and it was going by at the pace of
+  // the latter. GROW_MS stays the rail's, where an entry grows from zero
+  // height and its neighbours move with it, so it is paced against the
+  // movement rather than against reading.
+  const GROW_MS = 240, FADE_MS = 840, STAGGER_MS = 55, STAGGER_MAX = 5;
   function birthPass(band, rail, mute, done) {
     const found = [];
     if (rail) rail.querySelectorAll('.qitem[data-q]').forEach((el) =>
