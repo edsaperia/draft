@@ -69,12 +69,13 @@ window.SETUP = (function () {
   // compose button into a possible mention of them. SURFACE_EMOJI is a scan
   // of session-view.html + setup.js + session.js + fixture-session.js + cards.js for pictographic
   // characters (variation selectors stripped; re-run the scan from the
-  // 2026-08-19 commit when the furniture changes), plus 🔧/⚙ arriving with
-  // the governance tabs; the reserved set is that minus the offered faces.
+  // 2026-08-19 commit when the furniture changes); 🛡 arrived with the
+  // governance tabs (Q454, 2026-08-21 — 🔧 and ⚙ left the vocabulary with
+  // it); the reserved set is that minus the offered faces.
   // Tones are stripped before the test, so ✋🏽 is as reserved as ✋.
   const SURFACE_EMOJI = ('↔ ⏩ ⏰ ⏱ ⏳ ☑ ⚔ ⚖ ✅ ✉ ✋ ✍ ✏ ✒ ✔ ✖ ❄ ❌ ❎ ❓ ' +
     '🌍 🌶 🎩 🏛 🏷 👁 👍 👑 👤 👥 💡 💤 📄 📈 📌 📍 📝 📧 📬 📯 🔄 🔗 ' +
-    '🔥 🔧 ⚙ 🖼 🗑 🗝 🚪 🤖 🤝 🪪 🪶 ' +
+    '🔥 🖼 🗑 🗝 🚪 🛡 🤖 🤝 🪪 🪶 ' +
     '👦 👧 👨 👩 👱 👳 👴 👵 👶 🧑 🧒 🧓 🧔').split(' ');
   const normEmoji = (s) => s.replace(/[\u{FE0F}\u{FE0E}\u{1F3FB}-\u{1F3FF}]/gu, '');
   const RESERVED_EMOJI = new Set(SURFACE_EMOJI.filter((g) =>
@@ -1014,6 +1015,13 @@ window.SETUP = (function () {
       ladder(A, 'judgments', [
         { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
         { v: 'after', t: 'Revealed once the decision is made', e: 'Published with the record, never before it.' }]) + BLINDNOTE,
+    policy: (A) =>
+      '<p class="why">How somebody who is not a member can become one. The <b>least open</b> answer wins: one member who wants invitation only keeps it so.</p>' +
+      ladder(A, 'policy', [
+        { v: 'invite', t: 'Invitation only', e: 'Nobody joins unless a member brings them in.' },
+        { v: 'proposed', t: 'Applications must be proposed', e: 'Anybody can apply, but nothing happens until a member takes the application up and proposes it.' },
+        { v: 'apply', t: 'Anyone may apply', e: 'An application goes straight to the members, who judge it like any other proposal.' },
+        { v: 'open', t: 'Open', e: 'Anyone with the link becomes a member the moment they open it.' }]) + BLINDNOTE,
     chamber: (A) =>
       '<p class="why">Who may read the document besides the members — readers only, never counted. The <b>most private</b> answer wins: one member who wants the room closed closes it.</p>' +
       ladder(A, 'chamber', [

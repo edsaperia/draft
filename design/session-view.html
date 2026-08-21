@@ -335,26 +335,10 @@
   const csState = (k) => (cs && MANAGED_KEYS.includes(k) ? cs.settingState(midOf(k)) : null);
   const csSettled = (k) => { const st = csState(k); return !!st && st.settledBy !== null; };
   const csDelegated = (k) => { const st = csState(k); return !!st && st.holder === 'members'; };
-  // §9.7½ / 396c: the register's two crown powers ride the applications
-  // value rather than a SettingState (every other setting's powers travel
-  // through the 🔧/👑 tabs). What stands derives from that value; the
-  // provisional pick lives page-side under 'pw:policy'.
-  const regPowerCur = () => {
-    const st = csState('policy');
-    const h = st && st.value ? st.value.holder : null;
-    return h === 'reserved-unilateral' ? 'unilateral'
-      : h === 'reserved-assent' ? 'assent' : 'both';
-  };
-  const regPower = () => S['pw:policy'] || regPowerCur();
-  const regHolder = () => (S.rosterBy === 'founder'
-    ? ({ both: 'reserved', unilateral: 'reserved-unilateral', assent: 'reserved-assent' })[regPower()]
-    : 'members');
-  // 396c: the constitution states the register's state in precise language
-  const regLine = (h) => ({
-    reserved: ' The membership is the Founder’s: the Founder invites and removes directly, and an application the members carry comes to the Founder as a 👑 question.',
-    'reserved-unilateral': ' The Founder invites and removes directly; an application the members carry needs nobody’s OK.',
-    'reserved-assent': ' The Founder no longer invites directly: an application the members carry comes to the Founder as a 👑 question.',
-  }[h] || '');
+  // Q506 (Ed, 2026-08-21): the register's crown pair is the 🤝 setting's
+  // own powers, read through the same pair every held-able setting has —
+  // nothing rides the applications value but the join policy
+  const regPair = () => pwPair('policy');
   const msToLocal = (ms) => {
     const d2 = new Date(ms);
     const p2 = (x) => String(x).padStart(2, '0');
@@ -379,7 +363,7 @@
     lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: +S.lapseDays * 86400000 }),
     removal: () => ({ rung: S.removal }),
     machines: () => (S.auditor === true ? { enabled: true, budget: +S.auditorBudget } : { enabled: false, budget: 0 }),
-    policy: () => ({ holder: regHolder(), joinPolicy: S.joinBy }),
+    policy: () => ({ joinPolicy: S.joinBy }),
   };
   // a member's page-vocabulary answer → typed, and back — one place each way
   const ANSTYPED = {
@@ -390,6 +374,7 @@
     signing: (v) => ({ rung: v }),
     judgments: (v) => ({ rung: v }),
     chamber: (v) => ({ rung: v }),
+    policy: (v) => ({ joinPolicy: v }),
     removal: (v) => ({ rung: v }),
     machines: (v) => (v === true ? { enabled: true, budget: +S.auditorBudget || 4 } : { enabled: false, budget: 0 }),
     lapse: (v) => (v === 'never' ? { afterMs: null } : { afterMs: +v * 86400000 }),
@@ -402,7 +387,7 @@
     lapse: (v) => (v.afterMs === null ? 'never' : Math.round(v.afterMs / 86400000)),
     machines: (v) => v.enabled,
     authorship: (v) => v.rung, signing: (v) => v.rung,
-    judgments: (v) => v.rung, chamber: (v) => v.rung,
+    judgments: (v) => v.rung, chamber: (v) => v.rung, policy: (v) => v.joinPolicy,
     removal: (v) => v.rung,
     policy: (v) => v.joinPolicy,
   };
@@ -440,7 +425,7 @@
     if (csDelegated(k)) cs.reclaim(now(), mid);
     cs.setSetting(now(), mid, TYPED[k]());
     // taking a value back restores both powers (reclaim) — drop any unsent
-    // tab choices so the 🔧/👑 tabs show what now stands
+    // tab choices so the ✒️/🛡️ tabs show what now stands
     S['pw:u:' + k] = undefined; S['pw:a:' + k] = undefined;
   }
 
@@ -456,10 +441,10 @@
   // taken in render after the module has had its say, and compared to decide
   // whether the bin has anything to throw away.
   const REVERTKEYS = () => ['title', 'slug', 'ending', 'endsAt', 'tClose', 'shape', 'tStart',
-    'quorumForm', 'quorumPct', 'quorumN', 'joinBy', 'rosterBy', 'policyBy', 'titleBy', 'slugBy',
+    'quorumForm', 'quorumPct', 'quorumN', 'joinBy', 'policyBy', 'titleBy', 'slugBy',
     'lapse', 'lapseDays', 'removal', 'authorship', 'signing', 'judgments',
     'grant', 'dripMin', 'cap', 'chamber', 'auditor', 'auditorBudget',
-    'barBy', 'quorumBy', 'rateBy', 'myname', 'mypic', 'myemail', 'hatPick', 'pw:policy']
+    'barBy', 'quorumBy', 'rateBy', 'myname', 'mypic', 'myemail', 'hatPick']
     .concat(PW_KEYS.flatMap((k) => ['pw:u:' + k, 'pw:a:' + k]));
   let snap = null, snapFor;
   const takeSnap = () => { snap = {}; REVERTKEYS().forEach((k) => { snap[k] = S[k]; }); };
@@ -483,7 +468,7 @@
     // else's — dropped whenever the open card changes.
     title: '', titleDraft: null, slug: '',
     folded: new Set(),  // folded headings: 'cs-<section>' and 'ph:<prose heading>'
-    titleBy: 'founder', slugBy: 'founder', policyBy: 'founder',
+    titleBy: 'founder', slugBy: 'founder', policyBy: 'roster',
     mailOpen: false,
     viewer: 0,
     app: { started: false, email: '', emailSent: false, emailVerified: false,
@@ -491,7 +476,7 @@
     ending: 'roster', endsAt: '2026-08-20T18:00',
     barBy: 'roster', tClose: 78, shape: 'ramp', tStart: 55,
     quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
-    joinBy: 'invite', rosterBy: 'roster',
+    joinBy: 'invite',
     lapse: 'roster', lapseDays: 90,
     removal: 'roster',
     authorship: 'roster', signing: 'roster', judgments: 'roster',
@@ -516,8 +501,7 @@
   // any reservation crowns (Q379 wide): the module's read where it exists,
   // the radios' before the save. startingText never counts (no post-start
   // change route); title and link always do, so this is true until Q381.
-  const founderCrowned = () => (cs ? cs.crowned()
-    : DELEGABLE.some((key) => S[key] !== 'roster') || S.rosterBy === 'founder' || true);
+  const founderCrowned = () => (cs ? cs.crowned() : true);
   const viewerIsMember = () => S.viewer !== 'applicant' && viewerRow().role !== 'clerk';
   for (const [prop, key] of [['myname', 'n'], ['mypic', 'pic'], ['myemail', 'e']]) {
     Object.defineProperty(S, prop, { get: () => viewerRow()[key] || '',
@@ -709,7 +693,7 @@
   // which **pile** a card stands in: taking a setting back moves its tab from
   // the members' pile to the founder's, in front of you.
   const DELEGABLE = ['ending', 'barBy', 'quorumBy', 'authorship', 'signing',
-    'judgments', 'rateBy', 'chamber', 'auditor', 'lapse', 'removal'];
+    'judgments', 'rateBy', 'chamber', 'auditor', 'lapse', 'removal', 'policyBy'];
   const delegated = (key) => DELEGABLE.includes(key) && S[key] === 'roster';
 
   // **The gates are cards** (Ed, 330b) — see the ceremony surface for the
@@ -793,7 +777,7 @@
     // after the ceremony*). The one-card test agrees: who is in the room
     // now, and how anybody gets in later, can be answered differently and
     // on their own.
-    { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', dep: ['myemail'], changeable: true },
+    { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', key: 'policyBy', dep: ['myemail'], p: 0.41, changeable: true },
     // optional for a clerk (Ed, 2026-08-18): an anonymous founder is a
     // perfectly ordinary thing — they can simply not set a name or picture
     { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you', dep: ['myemail'], ready: () => (iDraft() ? !!S.myname.trim() : true), changeable: true },
@@ -906,28 +890,36 @@
   const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
     GATES.find((c) => c.k === k) || powerCard(k);
   // **The governance tab group** (403/405, Ed 2026-08-19): every held-able
-  // setting is three questions — the value, 🔧 may-the-Founder-change-it-
-  // directly, 👑 do-carried-changes-need-the-Founder’s-OK — drawn as a
+  // setting is three questions — the value, ✒️ who-has-the-pen, 🛡️ do-carried-changes-need-the-Founder’s-OK — drawn as a
   // pile: the value’s tab in front, the two power tabs beneath. The tabs
   // ARE the governance model: delegation is the state of holding neither
   // power (Q403 unified them), so “The members decide” is no longer a
-  // value — it is what the tabs say when both are given up. 🔧 is Ed’s
-  // pick over ⚙️: the founder is there to get things going, then step back.
+  // value — it is what the tabs say when both are given up. ✒️ and 🛡️ are
+  // Ed’s pair (Q454): a sword and a shield — one writes, one only refuses.
   const Q = "’", LD = "“", RD = "”";
-  // every managed setting wears the 🔧/👑 tabs except the register, whose
-  // powers ride the applications value (§9.7½); delegability is the
-  // catalogue's own flag, not a page-kept exception list
-  const PW_KEYS = MANAGED_KEYS.filter((k) => k !== 'policy');
-  const isDelegable = (k) => PW_KEYS.includes(k) && M.entryOf(midOf(k)).delegable;
+  // **Every held-able setting wears the ✒️/🛡️ tabs** — the register's
+  // pair through 🤝 (Q506: it left the applications value for the
+  // setting's own powers) and the Text's through 📄 (Q440: a founder who
+  // keeps the pen or the shield on the text is a 👑 like anywhere else).
+  // Delegability is the catalogue's own flag, not a page-kept list.
+  const PW_KEYS = MANAGED_KEYS.concat(['text']);
+  // the power state of a held-able setting: the Text's rides its own
+  // module row (value null, never a question), everything else csState's
+  const pwState = (k) => (cs ? (k === 'text' ? cs.settingState('startingText') : csState(k)) : null);
+  const isDelegable = (k) => MANAGED_KEYS.includes(k) && M.entryOf(midOf(k)).delegable;
   const PWCACHE = {};
+  // Q454 (Ed, 2026-08-20): 🔧 becomes ✒️ and the assent half of 👑 becomes
+  // 🛡️ — a sword and a shield, one writes and one only refuses, where 🔧
+  // and 👑 were not opposites at all. 👑 stays the mark beside a *person*
+  // who holds either power anywhere; 📯 the mark of one who holds none.
   const powerCard = (k) => {
     const mm = /^pw:(u|a):(.+)$/.exec(k);
     if (!mm || !PW_KEYS.includes(mm[2])) return undefined;
     if (!PWCACHE[k]) {
       PWCACHE[k] = {
         k, power: mm[1], base: mm[2],
-        g: mm[1] === 'u' ? '🔧' : '👑', kind: 'constitutional',
-        t: mm[1] === 'u' ? 'May the Founder Change This Directly?'
+        g: mm[1] === 'u' ? '✒️' : '🛡️', kind: 'constitutional',
+        t: mm[1] === 'u' ? 'Who Has the Pen?'
           : 'Do Carried Changes Need the Founder' + Q + 's OK?',
       };
     }
@@ -935,28 +927,69 @@
   };
   // the held pair as truth: {u, a} — false/false IS delegated (Q403)
   const pwPair = (k) => {
-    const st = csState(k);
+    const st = pwState(k);
     if (!st) return { u: true, a: true };
     if (st.holder === 'members') return { u: false, a: false };
     return { u: st.powers.unilateral, a: st.powers.assent };
   };
-  // 396c's precise sentences for a held power, stated once — the clause
-  // (holderLine) and the card head that opens from it must agree by
-  // construction, not by copy discipline
-  const PW_HELD = {
-    u: 'The Founder may change this directly.',
-    a: 'A change the members carry comes to the Founder as a 👑 question.',
+  // 396c's precise sentences for each power, held and given, stated once
+  // per setting — the clause (holderLine) and the card head that opens
+  // from it must agree by construction, not by copy discipline. The
+  // membership and the Text say what the power actually does there.
+  const PW_LINES = {
+    '*': {
+      u: ['The Founder may change this directly.', 'The Founder does not change this directly.'],
+      a: ['A change the members carry comes to the Founder as a 👑 question.', 'A change the members carry applies by itself.'],
+    },
+    policy: {
+      u: ['The Founder invites and removes directly.', 'The Founder does not invite directly.'],
+      a: ['An application the members carry comes to the Founder as a 👑 question.', 'An application the members carry needs nobody' + Q + 's OK.'],
+    },
+    text: {
+      u: ['The Founder edits the text directly.', 'The Founder does not edit the text directly.'],
+      a: ['A change to the text that carries waits on the Founder' + Q + 's OK before it lands.', 'A change to the text that carries lands by itself.'],
+    },
   };
+  const pwLine = (k, power, held) => (PW_LINES[k] || PW_LINES['*'])[power][held ? 0 : 1];
   const powerHeadLine = (c) => {
     const p = pwPair(c.base);
-    const held = c.power === 'u' ? p.u : p.a;
-    return c.power === 'u'
-      ? (held ? PW_HELD.u : 'The Founder does not change this directly.')
-      : (held ? PW_HELD.a : 'A change the members carry applies by itself.');
+    return pwLine(c.base, c.power, c.power === 'u' ? p.u : p.a);
   };
   const PWWHY = {
-    u: '<p class="why">Whether the Founder may re-set this directly, with no proposal. Anyone may always propose a change — this is only about the Founder' + Q + 's own hand.</p>',
-    a: '<p class="why">Whether a change the members carry waits on the Founder' + Q + 's OK — the 👑 question. Anyone may always propose — this is only about what happens when a proposal carries.</p>',
+    '*': {
+      u: '<p class="why">Whether the Founder may re-set this directly, with no proposal. Anyone may always propose a change — this is only about the Founder' + Q + 's own hand.</p>',
+      a: '<p class="why">Whether a change the members carry waits on the Founder' + Q + 's OK — the 👑 question. Anyone may always propose — this is only about what happens when a proposal carries.</p>',
+    },
+    policy: {
+      u: '<p class="why">Whether the Founder may invite and remove members directly, with nobody' + Q + 's agreement. Anyone may always propose bringing somebody in — this is only about the Founder' + Q + 's own hand.</p>',
+      a: '<p class="why">Whether an application the members carry waits on the Founder' + Q + 's OK — the 👑 question. This is only about what happens when an application carries.</p>',
+    },
+    text: {
+      u: '<p class="why">Whether the Founder may edit the text directly, with no proposal. Anyone may always propose a change to the text — this is only about the Founder' + Q + 's own hand.</p>',
+      a: '<p class="why">Whether a change to the text that carries waits on the Founder' + Q + 's OK — the 👑 question — before it lands. Anyone may always propose; this is only about what happens when a proposal carries.</p>',
+    },
+  };
+  const pwWhy = (k, power) => (PWWHY[k] || PWWHY['*'])[power];
+  // the radio labels, per setting where the generic ones would be untrue
+  const PW_OPTS = {
+    '*': {
+      u: { held: ['The Founder changes it directly', 'No proposal needed for the Founder' + Q + 's own hand.'],
+           given: ['Only by proposal, like anybody', 'The Founder proposes like a member.'] },
+      a: { held: ['Carried changes need the Founder' + Q + 's OK', 'Each carried change comes as a 👑 question — accept or reject.'],
+           given: ['Carried changes apply by themselves', 'Nothing waits on the Founder.'] },
+    },
+    policy: {
+      u: { held: ['The Founder invites and removes directly', 'Nobody else has to agree when the Founder brings somebody in.'],
+           given: ['Only by proposal, like anybody', 'The Founder proposes a member like anybody, and every member has to agree.'] },
+      a: { held: ['Carried applications need the Founder' + Q + 's OK', 'Each application the members carry comes as a 👑 question — accept or reject.'],
+           given: ['Members decide applications by themselves', 'An application the members carry needs nobody' + Q + 's OK.'] },
+    },
+    text: {
+      u: { held: ['The Founder edits the text directly', 'No proposal needed for the Founder' + Q + 's own hand on the text.'],
+           given: ['Only by proposal, like anybody', 'The Founder proposes a change to the text like a member.'] },
+      a: { held: ['Changes to the text need the Founder' + Q + 's OK', 'A change that carries comes as a 👑 question before it lands — accept or reject.'],
+           given: ['Changes to the text land by themselves', 'A change that carries lands in the text at once.'] },
+    },
   };
   const powerBody = (c) => {
     const k = c.base;
@@ -965,7 +998,8 @@
     const preText = cs && !cs.textConfirmed && !live;
     const held = c.power === 'u' ? p.u : p.a;
     const key = 'pw:' + c.power + ':' + k;
-    const why = PWWHY[c.power];
+    const why = pwWhy(k, c.power);
+    const L = (PW_OPTS[k] || PW_OPTS['*'])[c.power];
     if (!amFounder()) {
       return why + '<p class="setnote">' + (held
         ? 'The Founder holds this. Giving it up is the Founder' + Q + 's, one way; taking a held power from them is a constitutional motion, the members' + Q + ' to move.'
@@ -974,25 +1008,19 @@
     if (live && !held) {
       return why + '<p class="setnote"><b>Given up — one way.</b> The road back is the members' + Q + ' reserve motion.</p>';
     }
-    // 👑-held is unreachable pre-start while 🔧 is given (the
+    // 🛡️-held is unreachable pre-start while ✒️ is given (the
     // assent-only state is inert before the start, §9.7 v0.54); giving up
-    // 🔧 alone waits for proposing unless it completes a delegation
+    // ✒️ alone waits for proposing unless it completes a delegation
     const blockAHeld = c.power === 'a' && !live && !p.u && !held;
     const blockUGive = c.power === 'u' && preText && held && !(!p.a && isDelegable(k));
     return why + '<div class="choice" role="radiogroup">' +
-      opt({ [key]: S[key] || (held ? 'held' : 'given') }, key, 'held',
-        c.power === 'u' ? 'The Founder changes it directly' : 'Carried changes need the Founder' + Q + 's OK',
-        c.power === 'u' ? 'No proposal needed for the Founder' + Q + 's own hand.'
-          : 'Each carried change comes as a 👑 question — accept or reject.',
-        '', blockAHeld) +
-      opt({ [key]: S[key] || (held ? 'held' : 'given') }, key, 'given',
-        c.power === 'u' ? 'Only by proposal, like anybody' : 'Carried changes apply by themselves',
-        (c.power === 'u' ? 'The Founder proposes like a member.' : 'Nothing waits on the Founder.') +
-          (live ? ' One way — the road back is the members' + Q + ' to give.' : ''),
+      opt({ [key]: S[key] || (held ? 'held' : 'given') }, key, 'held', L.held[0], L.held[1], '', blockAHeld) +
+      opt({ [key]: S[key] || (held ? 'held' : 'given') }, key, 'given', L.given[0],
+        L.given[1] + (live ? ' One way — the road back is the members' + Q + ' to give.' : ''),
         '', blockUGive) +
       '</div>' +
-      (blockAHeld ? '<p class="setnote">The Founder' + Q + 's OK can only be required where the Founder still changes it directly — take back the 🔧 first.</p>' : '') +
-      (blockUGive ? '<p class="setnote">Giving up your own hand opens once the starting text is confirmed.</p>' : '') +
+      (blockAHeld ? '<p class="setnote">The Founder' + Q + 's OK can only be required where the Founder still changes it directly — take back the ✒️ first.</p>' : '') +
+      (blockUGive ? '<p class="setnote">Giving up your own hand opens once the text is confirmed.</p>' : '') +
       (!live ? '<p class="setnote">Revisable until the document begins. Giving both up hands the question to the members — delegation is exactly the state of holding neither.</p>' : '');
   };
   function commitPower(key) {
@@ -1057,7 +1085,7 @@
   // members' before the ✒️ commits the hand-over); isRoom's provisional
   // read survives only where the module holds no state for the key
   const membersHold = (c) => {
-    if (c.reg) return regHolder() === 'members';
+    if (c.reg) return !(regPair().u || regPair().a);
     const st = csState(c.k);
     return st ? st.holder === 'members' : isRoom(c); };
   // the watch-half only where a blind question actually ran (or is running):
@@ -1304,8 +1332,8 @@
             (founderCrowned() ? '👑' : '📯') + '</span>' + esc(foundedAt()) + '.</p></div>' : ''),
       textAnchor: (h) => (!visible(card('text')) ? ''
         : '<div class="cpara notab docsep"></div>' +
-          (S.open === 'text' ? h.para(card('text'))
-          : '<div class="cpara textanchor"><span class="chipcol">' + h.chip(card('text')) + '</span>' +
+          (/^(text|pw:[ua]:text)$/.test(S.open || '') ? h.para(card('text'))
+          : '<div class="cpara textanchor">' + h.pile(ctx.chipsFor(card('text'))) +
             '<h2 class="doctitle dochead" id="dochead">' + esc(S.title || 'Untitled') + '</h2></div>')),
       note: (n) => (n ? n + ' still to confirm or answer' : 'all confirmed') },
   ];
@@ -1331,7 +1359,7 @@
     policy: () => { const v = takenValOf('policy');
       return ({ invite: 'Invitation only', proposed: 'Applications by proposal',
         apply: 'Anyone may apply', open: 'Open' }[v ? v.joinPolicy : S.joinBy]) +
-        ((v ? v.holder !== 'members' : S.rosterBy === 'founder') ? ' · 👑 reserved' : ''); },
+        ((cs && (regPair().u || regPair().a)) ? ' · 👑 reserved' : ''); },
     ending: () => (perpetual() ? 'Never — it runs until too few members are active'
       : new Date(endingVal() || S.endsAt).toLocaleString(undefined,
         { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
@@ -1354,6 +1382,7 @@
       return (v ? v.grant : S.grant) + ' each · +1 every ' + (v ? v.dripMinutes : S.dripMin) +
         ' min · cap ' + (v ? v.cap : S.cap); },
     chamber: () => ({ link: 'Anyone with the link', closed: 'Members only', public: 'Public' }[S.chamber]),
+    policy: () => ({ invite: 'Invitation only', proposed: 'Applications by proposal', apply: 'Anyone may apply', open: 'Open' }[S.joinBy]),
     machines: () => { const tv = takenValOf('machines');
       const on = tv ? tv.enabled : S.auditor === true;
       return (on ? 'The coherence auditor, ' + (tv && tv.enabled ? tv.budget : S.auditorBudget) + ' ✏️s' : 'People only'); },
@@ -1374,6 +1403,7 @@
     signing: (v) => 'You said ' + ({ nobody: 'nobody signs', each: 'each author chooses', everybody: 'everybody signs' }[v] || v),
     judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
+    policy: (v) => 'You said ' + ({ invite: 'invitation only', proposed: 'applications by proposal', apply: 'anyone may apply', open: 'open' }[v] || v),
     machines: (v) => 'You said ' + (v ? 'AI proposals are fine' : 'no AI proposals'),
     lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days without logging in'),
     removal: (v) => 'You said ' + ({ everyone: 'everyone has to agree, including them',
@@ -1384,6 +1414,7 @@
     ending: 'The latest you will accept', authorship: 'The most you will accept',
     signing: 'The most you will accept', judgments: 'The most you will accept',
     chamber: 'The most you will accept', machines: 'The most you will accept',
+    policy: 'The most open you will accept',
     lapse: 'The shortest you will accept',
     removal: 'The easiest you will accept',
     rate: 'The most generous you will accept' };
@@ -1545,9 +1576,7 @@
     if (k === 'policy') {
       const jp = { 'Invitation only': 'invite', 'Applications by proposal': 'proposed',
         'Anyone may apply': 'apply', 'Open': 'open' }[disp];
-      const cur = csState('policy') && csState('policy').value;
-      return jp ? { holder: cur ? cur.holder : regHolder(),
-        joinPolicy: jp } : null;
+      return jp ? { joinPolicy: jp } : null;
     }
     if (card(k) && card(k).reg) return null; // membership sentences parse at commit
     return (MVAL[k] || {})[disp] || null;
@@ -1563,12 +1592,12 @@
     // direct removal is not built (the removal-policy setting will decide
     // its routes) — the founder composes a removal like any member
     if (c.k === 'remove') return false;
-    if (c.reg) return regHolder() === 'reserved' || regHolder() === 'reserved-unilateral';
+    if (c.reg) return regPair().u;
     const st = csState(c.k);
     return !st || st.powers.unilateral; };
   // the 👑 question exists exactly where the assent power is held
   const crownWaits = (c) => {
-    if (c.reg) return regHolder() === 'reserved' || regHolder() === 'reserved-assent';
+    if (c.reg) return regPair().a;
     const st = csState(c.k);
     return st ? st.holder === 'convenor' && st.powers.assent : !membersHold(c); };
   // The register counts as settled here (Ed's QA, 2026-08-19: *I can't seem
@@ -1638,6 +1667,7 @@
   // stands filters itself out
   const STANDS = {
     chamber: (v) => ({ closed: 'Members only', link: 'Anyone with the link', public: 'Public' })[v],
+    policy: (v) => ({ invite: 'Invitation only', proposed: 'Applications by proposal', apply: 'Anyone may apply', open: 'Open' })[v],
     authorship: (v) => ({ anonymous: 'Nobody’s name, ever', sealed: 'Names at the close', public: 'Names from the start' })[v],
     signing: (v) => ({ nobody: 'Nobody signs', each: 'Each author chooses', everybody: 'Everybody signs' })[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed after the decision' })[v],
@@ -1848,7 +1878,7 @@
       const FILL = { ending: S.endsAt || '2026-08-20T18:00',
         quorum: (S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
         bar: S.tClose, authorship: 'anonymous', signing: 'nobody',
-        judgments: 'never', chamber: 'closed', machines: false,
+        judgments: 'never', chamber: 'closed', machines: false, policy: 'invite',
         lapse: 'never', removal: 'everyone', rate: S.grant };
       for (const k of Object.keys(FILL)) {
         const st = csState(k);
@@ -1944,6 +1974,7 @@
     signing: 'who may sign a proposal',
     judgments: 'whether judgments are revealed with the record',
     chamber: 'who may read the document',
+    policy: 'how somebody who is not a member becomes one',
     lapse: 'whether an inactive membership lapses',
     removal: 'how a member is removed',
     machines: 'whether an AI makes proposals',
@@ -2003,8 +2034,7 @@
       return ({ invite: 'Membership is by invitation only.',
         proposed: 'Anyone may apply, but nothing happens until a member takes the application up and proposes it ✏️.',
         apply: 'Anyone may apply to join.',
-        open: 'Anyone with the link joins on arrival.' })[v ? v.joinPolicy : S.joinBy] +
-        regLine(v ? v.holder : regHolder()); },
+        open: 'Anyone with the link joins on arrival.' })[v ? v.joinPolicy : S.joinBy]; },
     slug: () => 'The document lives at docs.vote/' + S.slug + '.',
     removal: () => ({
       everyone: 'Removing a member needs every member to agree, including them.',
@@ -2026,12 +2056,12 @@
   // states only its deviations, in 396c's precise third person. Delegated
   // ⇒ silence — the defaults are the whole of the rule.
   const holderLine = (k) => {
-    if (!cs || k === 'policy' || !MANAGED_KEYS.includes(k)) return '';
-    const st = csState(k);
+    if (!cs || !PW_KEYS.includes(k)) return '';
+    const st = pwState(k);
     if (!st || st.holder === 'members') return '';
     const p = st.powers;
-    return (p.unilateral ? ' ' + PW_HELD.u : '') +
-      (p.assent ? ' ' + PW_HELD.a : '');
+    return (p.unilateral ? ' ' + pwLine(k, 'u', true) : '') +
+      (p.assent ? ' ' + pwLine(k, 'a', true) : '');
   };
   // **Links in the constitution are real links** (Ed, 2026-08-19):
   // underlined, ink-coloured (.doclink), applied after escaping so a
@@ -2270,11 +2300,11 @@
   // a button — a constitutional sentence among the setting's own options.
   // Since 403 the sentence survives only on the applications card (whose
   // holder rides its value, so delegation IS one of its values); every
-  // other setting delegates through the 🔧/👑 tabs.
+  // other setting delegates through the ✒️/🛡️ tabs.
   const POSTLABEL = 'Applications are delegated to the members';
   const POSTNOTE = 'The rule stays as it is, but from now on the members change it: you propose like anybody else, and nothing waits for your OK. You cannot take this back on your own — that would need everyone to agree.';
   // 403 (Ed, 2026-08-19): “The members decide” is no longer a value —
-  // delegation is the state of holding neither power, said by the 🔧 and
+  // delegation is the state of holding neither power, said by the ✒️ and
   // 👑 tabs. On a delegated setting the value card explains, and picking
   // a value is the taking-back.
   const theyDecide = (key, note) => (wantsDelegate(key)
@@ -2285,33 +2315,9 @@
       ' Picking a value here takes it back.</p>'
     : '');
 
-  // 396c (Ed, 2026-08-19): *make it easy for the founder to decide* — the
-  // "and afterwards" pair under a kept value picks between the two crown
-  // powers' states, and the third state (assent without unilateral) is
-  // offered only once the document is live, because it is unreachable
-  // before then (§9.7 v0.54). Post-start the moves are one-way.
-  const pw = (val, ttl, exp) => opt({ 'pw:policy': regPower() }, 'pw:policy', val, ttl, exp);
-  // the register's pair (Ed's own example, §9.7½): rides the applications
-  // value rather than the setting's powers, same gesture either way
-  function registerTail() {
-    const live = cs && cs.constitutedAtT !== null;
-    const cur = regPowerCur();
-    if (live && cur === 'unilateral') {
-      return '<p class="setnote">You gave up the need for your OK on applications: members decide them without you, and you still invite directly.</p>';
-    }
-    if (live && cur === 'assent') {
-      return '<p class="setnote">You no longer invite directly: members carry applications, and each comes to you as a 👑 question.</p>';
-    }
-    return '<div class="eyebrow fieldlab" style="margin-top:var(--s4)">And afterwards</div>' +
-      '<div class="choice" role="radiogroup" aria-label="And afterwards">' +
-      pw('both', 'Applications the members carry need your OK',
-        'And you invite and remove directly. A carried application comes to you as a 👑 question — yours to accept or reject.') +
-      pw('unilateral', 'Members decide applications without you',
-        'You keep inviting directly; an application the members carry needs nobody’s OK.') +
-      (live ? pw('assent', 'Stop inviting directly',
-        'From here the members carry applications, and each comes to you as a 👑 question. One way — the road back is theirs to give.') : '') +
-      '</div>';
-  }
+  // Q506: the register's "and afterwards" pair is gone from this card —
+  // the ✒️ and 🛡️ tabs under 🤝 are where the Founder keeps or gives up
+  // inviting directly and the OK on carried applications, like any setting.
   // Founded by [avatar] [name] at [time] on [date] (Ed, 2026-08-19) —
   // the time is the start (§9.6a), never known before it
   const foundedAt = () => {
@@ -2415,7 +2421,7 @@
     // one person a preamble to a list of everybody — and the founder is a hat
     // worn over a role rather than a role itself (SPEC §9.0a), so the hat and
     // the roster are two things.
-    roster: () => (cs && cs.constitutedAtT !== null && regHolder() === 'members'
+    roster: () => (cs && cs.constitutedAtT !== null && !(regPair().u || regPair().a)
       ? '<p class="why">Who is a member. Bringing somebody in, or proposing that somebody leaves, is the ✉️ and ❌ tabs beside this list.</p>'
       : '<p class="why">An invitation is just the link, sent by email — there are no passwords. Somebody becomes a member when they open it; until then they are listed as <i>invited</i> and count towards nothing. For now you can invite and uninvite freely, because nothing has been decided yet. Once people start judging, bringing somebody in or taking them out is a decision of its own — the ✉️ and ❌ tabs beside this list.</p>' +
       '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1">' +
@@ -2430,40 +2436,20 @@
     // the constitutional act; each application that arrives through it is
     // its ordinary consequence.
     policy: () =>
-      '<p class="why">How somebody who is not a member can become one.</p>' +
-      // **Who holds it** (Ed, 2026-08-18): delegated — the members' — by
-      // default, like every constitutional setting. A founder may **reserve**
-      // it instead (reserved is the word for not-delegated, Ed), and a
-      // document with a reserved membership is a 👑: the founder keeps
-      // unilateral invite-and-remove past the start. What keeps a crown from
-      // being immortal is the lapse rule: it applies to the crown as to any
-      // member, and a lapsed crown passes to the members.
-      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Who decides</div>' +
-      '<div class="choice" role="radiogroup" aria-label="Who decides who joins">' +
-      opt(S, 'rosterBy', 'roster', 'The members', 'Bringing somebody in is a proposal every member has to agree to. An application is a proposal the members judge.') +
-      opt(S, 'rosterBy', 'founder', 'The Founder', 'You invite people yourself and nobody else has to agree. Your name carries a 👑 in the constitution so everyone can see it — and if you stop logging in for long enough, the members carry on without you until you come back.') +
-      '</div>' +
-      (S.rosterBy === 'founder' ? registerTail() : '') +
+      '<p class="why">How somebody who is not a member can become one. Whether the Founder invites directly, and whether a carried application needs the Founder' + Q + 's OK, are the ✒️ and 🛡️ tabs beside this one.</p>' +
       // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
       // the gate the Apply card hangs off. An application becomes an
       // ordinary proposal to grant membership, judged like any other.
-      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Who may join</div>' +
+      // Q506: the holder left this card for the power tabs; delegated by
+      // default like every constitutional setting, so the members' option
+      // leads the list the way it does on ⏰ or 🌍.
       '<div class="choice" role="radiogroup" aria-label="Who may join">' +
+      theyDecide('policy', 'Each member says the <b>most open</b> door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.') +
       opt(S, 'joinBy', 'invite', 'Invitation only', 'Nobody joins unless a member brings them in.') +
       opt(S, 'joinBy', 'proposed', 'Applications must be proposed', 'Anybody can apply, but nothing happens until a member takes the application up and proposes it.') +
       opt(S, 'joinBy', 'apply', 'Anyone may apply', 'An application goes straight to the members, who judge it like any other proposal. Applying costs nothing.') +
       opt(S, 'joinBy', 'open', 'Open', 'Anyone with the link becomes a member the moment they open it.') +
-      '</div>' +
-      // §9.7 v0.52: past the start the founder may hand the whole card over —
-      // both holds at once, the register's crown living in this value (§9.7½)
-      (cs && cs.constitutedAtT !== null && csState('policy') &&
-        (csState('policy').holder === 'convenor' || cs.membershipReserved())
-        ? '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Or hand it over</div>' +
-          '<div class="choice" role="radiogroup" aria-label="Hand applications to the members">' +
-          opt(S, 'policyBy', 'roster', POSTLABEL,
-            'Both halves at once: who decides, and who may join. ' + POSTNOTE) +
-          '</div>'
-        : ''),
+      '</div>',
     ending: () =>
       '<p class="why">When drafting stops. At that moment the text is final and the record is published. <b>Never</b> is one of the answers: a document with no end date stops only when too few members are still active.</p>' +
       '<div class="choice" role="radiogroup">' +
@@ -2701,7 +2687,7 @@
           '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
           ' data-ok="' + c.k + '">OK</button>', g.cards);
       }
-      // 403/405 (Ed, 2026-08-19): a power tab, opened — the 🔧 or 👑
+      // 403/405 (Ed, 2026-08-19): a power tab, opened — the ✒️ or 🛡️
       // half of a setting's governance, its head the rule as it stands
       if (c.power) {
         const pHeld = c.power === 'u' ? pwPair(c.base).u : pwPair(c.base).a;
@@ -2802,8 +2788,10 @@
         : (c.k === 'myname' || c.k === 'mypic')
         ? '<button class="btn glyphbtn" data-clearval="' + c.k + '"' + (clearable[c.k] ? '' : ' disabled') +
           ' title="' + (c.k === 'myname' ? 'Clear the name' : 'Remove the picture') + '">🗑️</button>' +
-          '<button class="btn btn-approve glyphbtn emojibtn"' + (ready(c) ? '' : ' disabled') +
-          ' data-confirm="1" title="Set it">✒️</button>'
+          // Q449 (Ed, 2026-08-20): a name or a picture binds nobody (§9.0c),
+          // so it commits with ✓ — the pen is for sets that bind the document
+          '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
+          ' data-confirm="1" title="Save">' + TICK + '</button>'
         : c.k === 'title'
         ? '<button class="btn glyphbtn" data-cleartitle="1"' +
           ((S.titleDraft !== null && S.titleDraft !== cs_titleNow()) ? '' : ' disabled') +
@@ -2829,12 +2817,13 @@
             ' title="Clear your answer">🗑️</button>'
           : NOREVERT.includes(c.k) ? '<button class="btn" data-close="1">Close</button>'
           : binBtn(snapDirty())) +
-        '<button class="btn btn-approve glyphbtn' + (c.ansFor ? '' : ' emojibtn') + '"' +
+        // ✒️ is the founder's pen (Ed, 360): a set of a setting binds the
+        // document. Q449 (Ed, 2026-08-20): an answer to a shared question
+        // and a setting about yourself — your name, picture, email — bind
+        // nobody (§9.0c), so they commit with ✓, never the pen.
+        '<button class="btn btn-approve glyphbtn' + (c.ansFor || c.kind === 'personal' ? '' : ' emojibtn') + '"' +
         (ready(c) ? '' : ' disabled') +
-        // ✒️ is the founder's unilateral pen (Ed, 360): every confirm on
-        // this surface is a unilateral set — except an answer to a shared
-        // question, which is the one act here that is not yours alone
-        ' data-confirm="1" title="' + (ready(c) ? (c.ansFor ? 'Answer' : 'Set it') : 'Not answered yet') + '">' + (c.ansFor ? TICK : '✒️') + '</button>';
+        ' data-confirm="1" title="' + (ready(c) ? (c.ansFor ? 'Answer' : c.kind === 'personal' ? 'Save' : 'Set it') : 'Not answered yet') + '">' + (c.ansFor || c.kind === 'personal' ? TICK : '✒️') + '</button>';
       return cardHtml(c, ctx, body + kindLine, foot, g.cards);
     };
     // the title card opens in the title's own paragraph, whatever else
@@ -3604,10 +3593,7 @@
       lapse: (x) => { S.lapse = x.afterMs === null ? 'never' : String(Math.round(x.afterMs / 86400000)); },
       removal: (x) => { S.removal = x.rung; },
       machines: (x) => { S.auditor = x.enabled; if (x.enabled) S.auditorBudget = x.budget; },
-      applications: (x) => { S.joinBy = x.joinPolicy;
-        S.rosterBy = x.holder === 'members' ? 'roster' : 'founder';
-        S['pw:policy'] = x.holder === 'reserved-unilateral' ? 'unilateral'
-          : x.holder === 'reserved-assent' ? 'assent' : 'both'; },
+      applications: (x) => { S.joinBy = x.joinPolicy; },
     };
     for (const mid of Object.keys(MAPV)) {
       if (pkeyOf(mid) === skipKey) continue;
@@ -3945,6 +3931,7 @@
         judges: r.judges || 0, floor: r.floor,
         cap: r.judged ? 'you have judged this — it is still running' : 'wants your judgment',
         shifted: !!r.shifted, deadlocked: !!r.deadlocked,
+        crownWaits: textAssent,
         // the served pair, for the judgment that goes back
         card: rc ? { a: rc.a.id, b: rc.b.id, inc: rc.a.incumbent ? 'a' : rc.b.incumbent ? 'b' : null } : null,
       };

@@ -2441,6 +2441,10 @@
     );
   }
 
+  // Q440 (2026-08-21): 🛡️ held on the Text — a live item carries crownWaits,
+  // and the card says a carried change waits on the Founder before it lands
+  const crownNote = (s) => (s.crownWaits
+    ? '<p class="setnote">If this carries it goes to the Founder, who can accept or reject it before it lands.</p>' : '');
   function suggCardHtml(s, siteKey) {
     if (stateOf(s) === 'sealed') return sealedCardHtml(s);
     if (stuck(s)) return deadlockCardHtml(s);
@@ -2508,7 +2512,7 @@
         fieldHtml(
           proposalHtml(s, { v: 'a', html: wordingHtml(cur, s.race.a.text), why: s.race.a.rationale }) +
           proposalHtml(s, { v: 'b', html: wordingHtml(cur, s.race.b.text), why: s.race.b.rationale }), 2) +
-        reviseNote(s) +
+        reviseNote(s) + crownNote(s) +
         // The one thing a race card cannot say any other way: neither of its
         // two candidates has an incumbent radio, so nothing on the card votes
         // to keep the clause, and a reader could reasonably think one of them
@@ -2572,7 +2576,7 @@
                           chips: chipsFor(key, s.id) }) +
       groundNote(s) +
       fieldHtml(proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, edit: noEdit })) +
-      reviseNote(s) +
+      reviseNote(s) + crownNote(s) +
       commitRowHtml(s) +
       '</div>'
     );
