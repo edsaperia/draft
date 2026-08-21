@@ -121,7 +121,7 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
   - Naming note: **`draft` already means a candidate patch** everywhere in this project, so the thing this surface makes is a *document* or a *charter*, never a draft.
   - `setup-queue` — the right-hand rail. **Setup tasks speak the session-view's own lifecycle**; five states in `setup.js` (`stateOf`/`markOf`):
     - **ask** — yellow, wearing the subject glyph. The one state where the glyph is the mark, since a setup rail is many questions in one state and the informative mark is *which*.
-    - **wait** — ⏳ grey, in the rail with its fill as the watching UI. Gates wait as pile tabs only.
+    - **wait** — grey. **A constitutional card waiting on the room keeps its own subject glyph and leaves the rail** (Ed, 2026-08-21): ⏳ replaces *which rule it is* with a state nobody can act on — you have either answered it or were never asked — so the tab says the rule and the queue says nothing. It covers the three ways a constitutional card waits: the watcher on a setting handed over, your own question once you have answered it, and a constitutional motion you have answered. **⏳ survives where the wait is about you**: 📧 on your own verification, a gate on its conditions, 🍾 on the founder. Everywhere else a waiting card is ⏳ grey in the rail with its fill as the watching UI; gates wait as pile tabs only.
     - **news** — drawn ✔ on the changed-green wash, pinned until OK.
     - **yours** — ✏️ blue, a submitted application; fill = judging progress.
     - **done** — rail entry: drawn grey ✔, and it leaves. Pile tab: **keeps its subject glyph** on the grey wash, since the band stands in one place and most of its contents can still be acted on.

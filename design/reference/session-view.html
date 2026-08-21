@@ -2553,6 +2553,14 @@
         .flatMap((c) => [c].concat(tasksFor(c)))
         .filter((c) => !owesOwnAnswer(c))
         .filter((c) => ((c.isGate && !c.isBegin && !c.isClosing) ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done'))
+        // **A constitutional question waiting on the room is not a task**
+        // (Ed, 2026-08-21): nothing is being asked of you — you have either
+        // answered it or were never asked — so it keeps its own glyph on the
+        // grey tab in the band and leaves the rail. It covers the three ways
+        // a constitutional card waits: the watcher on a setting you handed
+        // over, your own question once you have answered it, and a
+        // constitutional motion you have answered.
+        .filter((c) => !(c.kind === 'constitutional' && stateOf(c, ctx) === 'wait'))
         // the closed page asks nothing but the signature (Q470): a grant or
         // a question outstanding at the close is moot, and leaves the rail
         .filter((c) => !(cs && cs.closed) || c.isClosing) }))

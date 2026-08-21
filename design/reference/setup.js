@@ -244,6 +244,15 @@ window.SETUP = (function () {
     // names nothing. The grey wash still says settled; only the rail entry
     // retires to the drawn ✔, because an entry is leaving, not filing.
     if (tab && st === 'done') return c.g;
+    // **A constitutional question waiting on the room keeps its own glyph**
+    // (Ed, 2026-08-21). ⏳ replaces the subject with a state, and the state
+    // is one nobody can act on — the room is answering, and the reader is
+    // either not being asked or has already answered. So the tab stays
+    // *which rule it is*, on the grey the wait state already wears, and the
+    // entry leaves the rail entirely (see the rail's own filter). ⏳ survives
+    // where the wait is about **you**: 📧 waiting on your own verification,
+    // a gate waiting on its conditions, 🍾 waiting on the founder.
+    if (st === 'wait' && c.kind === 'constitutional') return c.g;
     return st === 'ask' ? c.g : st === 'wait' ? '⏳' : st === 'yours' ? '✏️' : TICK;
   };
 
