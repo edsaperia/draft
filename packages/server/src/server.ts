@@ -797,7 +797,22 @@ export async function createDraftServer(cfg: ServerConfig,
       joinPolicy,
       applyOpen: begun && !cs.closed && (joinPolicy === 'proposed' || joinPolicy === 'apply'),
       joinOpen: begun && !cs.closed && joinPolicy === 'open',
-      members: { arrived: cs.E() },
+      // **Q508(c)** (Ed, 2026-08-21): the membership rides 🌍. Where a
+      // stranger may read the document they may read who is in the room —
+      // the Members list is a section of the constitution, and at that
+      // setting the constitution is public. Where they may not, the door
+      // says how many have arrived and nothing else: a name is how somebody
+      // appears *in the room*, and a stranger is not in it.
+      members: {
+        arrived: cs.E(),
+        // arrived members only: an invitation is not a membership (§9.6a),
+        // and a removed one is not one either
+        list: canRead
+          ? [...cs.memberRecords().values()]
+            .filter((m) => m.arrivedAtT !== null && !m.removed)
+            .map((m) => ({ name: m.name, picture: m.picture }))
+          : null,
+      },
       view: {
         settings: CATALOGUE.filter((e) => e.kind !== 'personal' && e.id !== 'membership').map((e) => {
           const st = cs.settingState(e.id);

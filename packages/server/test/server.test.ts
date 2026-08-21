@@ -1061,7 +1061,7 @@ type StrangerPayload = {
   canRead: boolean; text: string | null;
   textShape: Array<{ heading: number; chars: number }>;
   joinPolicy: string; applyOpen: boolean; joinOpen: boolean;
-  members: { arrived: number };
+  members: { arrived: number; list: Array<{ name: string | null; picture: string | null }> | null };
   view: { settings: Array<{ setting: string; kind: string; value: unknown; settledBy: string | null;
     holder: string; collecting: boolean; powers: { unilateral: boolean; assent: boolean } }>;
     gates: { proposing: boolean; judging: boolean }; crowned: boolean };
@@ -1153,11 +1153,17 @@ describe("the stranger's door (Q452/455/456)", () => {
       sentence: 'The founder Ada Lovell decided this document is visible to members only.' });
     expect(k.body.text).toBeNull();
 
+    // members-only: the door counts the room and never names it (Q508(c))
+    expect(k.body.members.list).toBeNull();
+
     // the link is enough: the text itself
     await cmd(ada, 'set-setting', { setting: 'chamber', value: { rung: 'link' } });
     k = await knock();
     expect(k.body.holding).toEqual({ kind: 'open', sentence: null });
     expect(k.body.canRead).toBe(true);
+    // and with it the membership: the Members list is a section of the very
+    // constitution the door is showing (Q508(c), Ed 2026-08-21)
+    expect(k.body.members.list).toEqual([{ name: 'Ada Lovell', picture: null }]);
     expect(k.body.text).toBe('# The orchard\nThe apples are shared at harvest.');
 
     // the poll's short answer works for a stranger too

@@ -2456,7 +2456,7 @@
   // Q440 (2026-08-21): 🛡️ held on the Text — a live item carries crownWaits,
   // and the card says a carried change waits on the Founder before it lands
   const crownNote = (s) => (s.crownWaits
-    ? '<p class="setnote">If this carries it goes to the Founder, who can accept or reject it before it lands.</p>' : '');
+    ? '<p class="setnote">If it passes it goes to the Founder, who may assent or refuse before it lands.</p>' : '');
   function suggCardHtml(s, siteKey) {
     if (stateOf(s) === 'sealed') return sealedCardHtml(s);
     if (stuck(s)) return deadlockCardHtml(s);

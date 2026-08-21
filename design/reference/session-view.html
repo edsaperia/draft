@@ -482,6 +482,13 @@
     if (wantsDelegate(k)) { cs.delegate(now(), mid); return; }
     if (csDelegated(k)) cs.reclaim(now(), mid);
     cs.setSetting(now(), mid, TYPED[k]());
+    // 📈 rides ✒️'s commit (Q512): it is not a task of its own, so setting the
+    // threshold sets the pacing with it — at whatever its tab holds, which is
+    // rising from 55% until somebody changes it.
+    if (k === 'bar') {
+      S.seen.add('pace');
+      try { cs.setSetting(now(), midOf('pace'), TYPED.pace()); } catch (e) {}
+    }
     // taking a value back restores both powers (reclaim) — drop any unsent
     // tab choices so the ✒️/🛡️ tabs show what now stands
     S['pw:u:' + k] = undefined; S['pw:a:' + k] = undefined;
@@ -540,7 +547,9 @@
     app: { started: false, email: '', emailSent: false, emailVerified: false,
       mailOpen: false, name: '', pic: '', text: '', submitted: false, csId: null },
     ending: '', endsAt: '',
-    barBy: '', tClose: '', shape: '', tStart: '',
+    // 📈 is the one thing that arrives answered (Q512): rising from 55%,
+    // stated inside the threshold's own clause and changed on its tab
+    barBy: '', tClose: '', shape: 'ramp', tStart: 55,
     quorumBy: '', quorumForm: '', quorumPct: '', quorumN: '',
     joinBy: '',
     lapse: '', lapseDays: '',
@@ -880,7 +889,13 @@
     // reg: the register family — holder and powers ride the applications
     // value (§9.7½); door: always settled, never a decision — it only
     // composes the membership motions
-    { k: 'roster', g: '🪪', t: 'Membership', kind: 'constitutional', dep: ['policy'], ready: () => members().length >= 1, changeable: true, reg: true },
+    // **No minimum** (Ed, 2026-08-21: *I get Membership and cannot skip
+    // unless I make an invitation*). It had asked for one member, which a
+    // founder who has just answered 🎩 *clerk* does not have — and inviting
+    // stays open right up to 🍾 and past it, so nothing is lost by moving on
+    // with an empty room. Whether a document can *begin* with nobody in it is
+    // 🍾's question, and 🍾 has a readout that names what it is waiting for.
+    { k: 'roster', g: '🪪', t: 'Membership', kind: 'constitutional', dep: ['policy'], ready: () => true, changeable: true, reg: true },
     // **Inviting and removing are their own cards** (Ed, 2026-08-19, 400a:
     // ✉️ and ❌): doors, not decisions — they compose the membership
     // motions, stand in the 🪪 stack, and exist only once judging opens
@@ -944,7 +959,13 @@
       rule: 'Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.',
       takes: 'The document takes the highest', result: '80%',
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
-    { k: 'pace', g: window.CARDS.RAMP, t: 'Rising Approval Threshold?', kind: 'ordinary', dep: ['ending', 'quorum'], changeable: true },
+    // **Not a task** (Q512, Ed 2026-08-21: *I don't think it should be in the
+    // queue; just default it to 55%*). It is the one setting that arrives
+    // answered — a deliberate exception to *nothing is pre-answered*, because
+    // the ramp is part of what the threshold says rather than a question of
+    // its own. Its tab stands in ✒️'s stack for anybody who wants to change
+    // it, and ✒️'s own commit sets it.
+    { k: 'pace', g: window.CARDS.RAMP, t: 'Rising Approval Threshold?', kind: 'ordinary', dep: ['bar'], changeable: true },
     // The number is the room's; the **form** — count or share — is the
     // founder's wording of the question (Ed, 2026-08-18: *quorum can either be
     // a fixed number or a proportion of membership size*; §9.0a).
@@ -1063,27 +1084,24 @@
   // per setting — the clause (holderLine) and the card head that opens
   // from it must agree by construction, not by copy discipline. The
   // membership and the Text say what the power actually does there.
-  const PW_LINES = {
-    '*': {
-      u: ['The Founder may change this at will.', 'The Founder does not change this at will.'],
-      a: ['Decisions from the membership require assent.', 'Decisions from the membership apply by themselves.'],
-    },
-    // **One voice, only the object changes** (Q507, Ed 2026-08-21: *at the
-    // very least the language should be consistent and the constitution
-    // should always read clearly as a document*). Every ✒️ line is *the
-    // Founder [does X] at will*; every 🛡️ line is *[what the membership
-    // decides] requires assent*. The per-setting variants name the act
-    // rather than inventing a second grammar for it.
-    policy: {
-      u: ['The Founder invites and removes members at will.', 'The Founder does not invite or remove members at will.'],
-      a: ['Applications the membership carries require assent.', 'Applications the membership carries apply by themselves.'],
-    },
-    text: {
-      u: ['The Founder edits the text at will.', 'The Founder does not edit the text at will.'],
-      a: ['Changes to the text require assent.', 'Changes to the text apply by themselves.'],
-    },
+  // **One sentence, and Ed's own vocabulary** (Q516i, 2026-08-21: *ideally
+  // we should also join them as "The Founder may amend this at will, and
+  // refuse a proposal the membership passes"* — and *a member proposes; the
+  // membership passes and rejects proposals; the founder assents, refuses,
+  // and amends*). So the two powers are **verb phrases** rather than two
+  // sentences: the clause joins whichever the Founder holds into one
+  // sentence, and a power card states its own alone. The negative is the
+  // same phrase under *may not*, which is what makes the pair read as one
+  // grammar rather than two rules that happen to sit together.
+  const PW_PHRASE = {
+    '*': { u: 'amend this at will', a: 'refuse proposals that the membership pass' },
+    policy: { u: 'invite and remove members at will', a: 'refuse applications that the membership pass' },
+    text: { u: 'amend the text at will', a: 'refuse changes to the text that the membership pass' },
   };
-  const pwLine = (k, power, held) => (PW_LINES[k] || PW_LINES['*'])[power][held ? 0 : 1];
+  const pwPhrase = (k, power) => (PW_PHRASE[k] || PW_PHRASE['*'])[power];
+  const founderMay = (parts) => (parts.length ? 'The Founder may ' + parts.join(', and ') + '.' : '');
+  const pwLine = (k, power, held) => (held ? founderMay([pwPhrase(k, power)])
+    : 'The Founder may not ' + pwPhrase(k, power) + '.');
   const powerHeadLine = (c) => {
     const p = pwPair(c.base);
     return pwLine(c.base, c.power, c.power === 'u' ? p.u : p.a);
@@ -1091,15 +1109,15 @@
   const PWWHY = {
     '*': {
       u: '<p class="why">Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder' + Q + 's own hand.</p>',
-      a: '<p class="why">Whether a change the members carry waits on the Founder' + Q + 's OK — the 👑 question. Anyone may always propose — this is only about what happens when a proposal carries.</p>',
+      a: '<p class="why">Whether the Founder may refuse proposals that the membership pass. Anyone may always propose — this is only about what happens once one passes.</p>',
     },
     policy: {
       u: '<p class="why">Whether the Founder may invite and remove members at will, with nobody' + Q + 's agreement. Anyone may always propose bringing somebody in — this is only about the Founder' + Q + 's own hand.</p>',
-      a: '<p class="why">Whether an application the members carry waits on the Founder' + Q + 's OK — the 👑 question. This is only about what happens when an application carries.</p>',
+      a: '<p class="why">Whether the Founder may refuse applications that the membership pass. This is only about what happens once one passes.</p>',
     },
     text: {
       u: '<p class="why">Whether the Founder may edit the text at will, with no proposal. Anyone may always propose a change to the text — this is only about the Founder' + Q + 's own hand.</p>',
-      a: '<p class="why">Whether a change to the text that carries waits on the Founder' + Q + 's OK — the 👑 question — before it lands. Anyone may always propose; this is only about what happens when a proposal carries.</p>',
+      a: '<p class="why">Whether the Founder may refuse changes to the text that the membership pass, before they land. Anyone may always propose; this is only about what happens once one passes.</p>',
     },
   };
   const pwWhy = (k, power) => (PWWHY[k] || PWWHY['*'])[power];
@@ -1108,20 +1126,20 @@
     '*': {
       u: { held: ['The Founder changes it at will', 'No proposal needed for the Founder' + Q + 's own hand.'],
            given: ['Only by proposal, like anybody', 'The Founder proposes like a member.'] },
-      a: { held: ['Carried changes require the Founder' + Q + 's assent', 'Each carried change comes as a 👑 question — accept or reject.'],
-           given: ['Carried changes apply by themselves', 'Nothing waits on the Founder.'] },
+      a: { held: ['The Founder may refuse proposals that the membership pass', 'Each one comes as a 👑 question — assent or refuse.'],
+           given: ['Changes the membership passes apply by themselves', 'Nothing waits on the Founder.'] },
     },
     policy: {
       u: { held: ['The Founder invites and removes at will', 'Nobody else has to agree when the Founder brings somebody in.'],
            given: ['Only by proposal, like anybody', 'The Founder proposes a member like anybody, and every member has to agree.'] },
-      a: { held: ['Carried applications require the Founder' + Q + 's assent', 'Each application the members carry comes as a 👑 question — accept or reject.'],
-           given: ['Members decide applications by themselves', 'An application the members carry needs nobody' + Q + 's OK.'] },
+      a: { held: ['The Founder may refuse applications that the membership pass', 'Each one comes as a 👑 question — assent or refuse.'],
+           given: ['The membership decides applications by itself', 'An application the membership passes needs nobody' + Q + 's assent.'] },
     },
     text: {
       u: { held: ['The Founder edits the text at will', 'No proposal needed for the Founder' + Q + 's own hand on the text.'],
            given: ['Only by proposal, like anybody', 'The Founder proposes a change to the text like a member.'] },
-      a: { held: ['Changes to the text require the Founder' + Q + 's assent', 'A change that carries comes as a 👑 question before it lands — accept or reject.'],
-           given: ['Changes to the text land by themselves', 'A change that carries lands in the text at once.'] },
+      a: { held: ['The Founder may refuse changes that the membership pass', 'Each one comes as a 👑 question before it lands — assent or refuse.'],
+           given: ['Changes to the text land by themselves', 'A change the membership passes lands in the text at once.'] },
     },
   };
   const powerBody = (c) => {
@@ -1210,7 +1228,7 @@
     // here, so the clause stands on its own while it is open.
     if (!cs && !settled(card('title'))) return '';
     const chips = cs ? [card('title'), card('pw:u:title'), card('pw:a:title')] : [card('title')];
-    const openHere = cs && chips.find((c) => S.open === c.k);
+    const openHere = (cs || settled(card('title'))) && chips.find((c) => S.open === c.k);
     if (openHere) return h.paraWith(openHere, chips);
     return '<div class="cpara">' + h.pile(chips) +
       '<div class="cptext"><p class="cpv">The document is titled ' + LD + esc(S.title) + RD + '.' + (holderLine('title') || '') + '</p></div></div>';
@@ -1391,8 +1409,8 @@
   // run, and 📄 the text is asked last, because the charter follows the
   // whole constitution — you set the rules, then you write the thing.
   const ORDER = ['title', 'slug', 'myemail', 'chamber',
-    'hat', 'myname', 'mypic', 'roster', 'policy', 'lapse', 'removal',
-    'rate', 'machines', 'ending', 'bar', 'pace', 'quorum',
+    'policy', 'hat', 'myname', 'mypic', 'roster', 'lapse', 'removal',
+    'rate', 'machines', 'ending', 'bar', 'quorum',
     'authorship', 'signing', 'judgments', 'text'];
   // a card in the order waits for everything above it and nothing else: the
   // ORDER *is* the dependency list, so a card's own `dep` (which paced the
@@ -1452,7 +1470,7 @@
         // row says the true thing and gives the you-row a row's clearance.
         // No avatar: a face here would claim a person who does not exist.
         // a stranger reads how many, never who (Q508 — shipped private)
-        const list = isStranger() ? '<div class="memlist"><div class="memrow nobody">' + strMembersLine() + '</div></div>'
+        const list = isStranger() ? (strMemberList() || '<div class="memlist"><div class="memrow nobody">' + strMembersLine() + '</div></div>')
           // **You are at the top** (Ed, 2026-08-21). A membership starts as
           // one person, and that person is reading this: the list opens with
           // your own row — the only one wearing your ✋🖼️ tabs — and says
@@ -1475,7 +1493,8 @@
         // it. The founding follows the document, so this also puts 🎩 *are
         // you a member* and your own name and picture before you invite
         // anybody, which is the order somebody actually does it in.
-        return '<h2 class="docline lvl3">Members</h2>' +
+        return (visible(card('policy')) ? h.para(card('policy')) + h.tasks(card('policy')) : '') +
+          '<h2 class="docline lvl3">Members</h2>' +
           (() => { const pileCards = ['roster', 'invite', 'remove', 'hat']
             .map(card).filter((c) => c && visible(c));
           // the list stands as soon as any of its tabs does — 🎩 arrives
@@ -1486,7 +1505,6 @@
             ? '<div class="cpara">' + h.pile(pileCards) + list + '</div>'
             : ''); })() +
           (openId ? h.paraWith(openId, my) : '') +
-          (visible(card('policy')) ? h.para(card('policy')) + h.tasks(card('policy')) : '') +
           (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
           (visible(card('removal')) ? h.para(card('removal')) + h.tasks(card('removal')) : '');
       } },
@@ -1505,7 +1523,7 @@
       // that number gets there, 👥 how many must have judged. The threshold
       // and its pacing are one thought on two cards, so they are adjacent;
       // quorum is a different kind of number and reads last (Ed, 2026-08-21).
-      keys: ['ending', 'closing', 'bar', 'pace', 'quorum'],
+      keys: ['ending', 'closing', 'bar', 'quorum'],
       // 📈 stays in `keys` — it is still a task, with its own rail entry and
       // its place in the founding order — but it has no clause, so the
       // section renders every card except it (Q512).
@@ -1546,6 +1564,14 @@
       // who set no name is Anonymous like anybody else (§9.0c)
       lead: (h) => titleGovPara(h) +
         (visible(card('slug')) ? h.para(card('slug')) + h.tasks(card('slug')) : '') +
+        // **The birth's third clause** (Ed, 2026-08-21): while the mail is
+        // out, the document says what is happening and wears the 📧 tab, so
+        // the card does not have to say *Sent to…* and the founder can get
+        // back to their own address from the document itself.
+        (!cs && S.emailSent && !S.emailVerified
+          ? '<div class="cpara" data-para="myemail">' + h.pile([card('myemail')]) +
+            '<div class="cptext"><p class="cpv">The Founder is checking their email for a link.</p></div></div>'
+          : '') +
         // 🌍 is about the document, not member privacy — the penultimate
         // clause of the opening section (Ed, 2026-08-19)
         (visible(card('chamber')) ? h.para(card('chamber')) + h.tasks(card('chamber')) : '') +
@@ -1969,7 +1995,7 @@
           'The drafting process has no set end — it runs until too few members are active.']], 'ending') +
         (never ? '<p class="setnote">Taking the end date away needs everyone to agree — with no end date the approval threshold cannot rise.</p>' : '');
     },
-    bar: (d) => inputBlock('A change carries when the members are ' +
+    bar: (d) => inputBlock('A proposal passes when the members are ' +
       '<input class="num" type="number" min="50" max="99" data-mnum="% sure at the end" value="' +
       esc((d.to.match(/\d+/) || [])[0] || takenOf('bar') || S.tClose) + '">% sure at the end.'),
     quorum: (d) => (S.quorumForm === 'count'
@@ -2071,8 +2097,8 @@
     '<p class="why">Whether <b>' + esc(m.to) + '</b> replaces <i>' + esc(standsOf(c.k)) + '</i>. Nothing is being judged: you state what you will accept, and one refusal keeps what stands.</p>' +
     consentPicks(c.k, [
       ['no', 'Keep what stands', 'Nobody is told who said so.'],
-      ['yes', 'I accept the change', 'It carries once all ' + E() + ' stand at accept — or abstain.'],
-      ['abstain', 'Abstain', 'An answer, not a block: the motion can carry without your consent counting either way.'],
+      ['yes', 'I accept the change', 'It passes once all ' + E() + ' stand at accept — or abstain.'],
+      ['abstain', 'Abstain', 'An answer, not a block: the motion can pass without your consent counting either way.'],
     ]) + BLINDNOTE);
 
   // dev only (with the dropdown, Ed 362): complete the founding in one press,
@@ -2238,7 +2264,7 @@
   // sentence once decided, all in the founder's own frame.
   const WHAT = {
     ending: 'when the drafting process will end',
-    quorum: 'how many members must weigh in before a question can carry',
+    quorum: 'how many members must weigh in before a question can pass',
     bar: 'how sure the room must be at the close',
     pace: 'how the approval threshold climbs to the close',
     authorship: 'when a proposer is named',
@@ -2278,8 +2304,8 @@
       // a ramp that starts where it ends is not a ramp (Ed: *if there is no
       // ramp, the clause can just be blank*)
       return (!perpetual() && shape2 === 'ramp' && isNum(start2) && +start2 < +pct
-        ? 'The members must be ' + pct + '% sure a change is better for it to carry by the end, starting at ' + start2 + '% when judging opens.'
-        : 'The members must be ' + pct + '% sure a change is better for it to carry.'); },
+        ? 'The members must be ' + pct + '% sure a proposal is better for it to pass by the end, starting at ' + start2 + '% when judging opens.'
+        : 'The members must be ' + pct + '% sure a proposal is better for it to pass.'); },
     pace: () => { const v = takenValOf('pace');
       const shape2 = v ? v.shape : S.shape;
       const start2 = v && v.shape === 'ramp' ? v.startPct : S.tStart;
@@ -2313,7 +2339,7 @@
     rate: () => { const v = takenValOf('rate');
       return 'Members start with ' + (v ? v.grant : S.grant) + ' ✏️ each, up to a maximum of ' +
         (v ? v.cap : S.cap) + '. They get an additional ✏️ every ' + (v ? v.dripMinutes : S.dripMin) +
-        ' minutes. A proposal that carries gives its ✏️ back.'; },
+        ' minutes. A proposal that passes gives its ✏️ back.'; },
     policy: () => { const v = takenValOf('policy');
       return ({ invite: 'Membership is by invitation only.',
         proposed: 'Anyone may apply, but nothing happens until a member takes the application up and proposes it ✏️.',
@@ -2349,12 +2375,15 @@
     if (!PW_KEYS.includes(k)) return '';
     // at the birth the founder holds everything by construction — there is no
     // module yet, and nobody else to hold anything
-    if (!cs) return ' ' + pwLine(k, 'u', true);
+    if (!cs) return ' ' + founderMay([pwPhrase(k, 'u')]);
     const st = pwState(k);
     if (!st || st.holder === 'members') return '';
     const p = st.powers;
-    return (p.unilateral ? ' ' + pwLine(k, 'u', true) : '') +
-      (p.assent && membershipDecided() ? ' ' + pwLine(k, 'a', true) : '');
+    // one sentence, joining whichever powers the Founder actually holds
+    const parts = [];
+    if (p.unilateral) parts.push(pwPhrase(k, 'u'));
+    if (p.assent && membershipDecided()) parts.push(pwPhrase(k, 'a'));
+    return parts.length ? ' ' + founderMay(parts) : '';
   };
   // **Links in the constitution are real links** (Ed, 2026-08-19):
   // underlined, ink-coloured (.doclink), applied after escaping so a
@@ -2472,6 +2501,16 @@
       return (cs && PW_KEYS.includes(k))
         ? base.concat([card('pw:u:' + k), card('pw:a:' + k)]) : base;
     },
+    // **The lockline tells the truth about who set it** (Q510(a), Ed
+    // 2026-08-21). It had said *Set by the founder when the document was
+    // made* on every rule, including the ones the room decided by consent —
+    // half-corrected on this surface by the watching half underneath, and
+    // not corrected at all at the stranger's door, which is what forced it
+    // there first. The *when* survives where it is true.
+    lockline: (c) => { const st = csState(c.k);
+      return st && st.settledBy && st.settledBy !== 'convenor'
+        ? 'Decided by the members.'
+        : 'Set by the founder when the document was made.'; },
     summary, value, isRoom,
   };
 
@@ -2648,9 +2687,13 @@
     // lives on the "The document is titled…" clause instead (Ed,
     // 2026-08-19), the heading is just a heading, and it stays put while
     // the card opens down at its clause.
-    d.style.display = (!cs && S.open === 'title') ? 'none' : '';
+    d.style.display = (!cs && S.open === 'title' && !settled(card('title'))) ? 'none' : '';
+    // **One tab, and it is the clause's** (Ed, 2026-08-21: *I see the 🪶 tab
+    // in two places*). The heading carried one because until the birth wrote
+    // its own clauses there was nothing else to carry it. From the moment
+    // the title is set the clause has it, and the heading is just a heading.
     document.getElementById('titlechip').innerHTML =
-      (cs || S.open === 'title') ? '' : pileHtml([card('title')], ctx);
+      (cs || S.open === 'title' || settled(card('title'))) ? '' : pileHtml([card('title')], ctx);
     prose.classList.toggle('pasteready', visible(card('text')));
     // from the save until 📄's own turn, the column says you may write in it
     prose.classList.toggle('writeready', !!cs && !visible(card('text')));
@@ -2810,17 +2853,18 @@
         '<span class="fld"><label>Change it</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" style="width:20rem"></span>' +
         '<p class="setnote">Changing it starts verification again — the new address has to prove it works too.</p>'
       : S.emailSent
-      ? '<p class="why">Sent to <b>' + esc(S.myemail) + '</b>. ' + (cs
-          ? 'The mail is the login: clicking its link is what proves the address works.'
-          : 'Nothing exists yet, so a typo here still costs nothing.') + '</p>' +
+      // **The document says it was sent** (Ed, 2026-08-21): the clause reads
+      // *The Founder is checking their email for a link*, so the card does
+      // not repeat it — and *nothing exists yet, so a typo costs nothing* was
+      // reassurance about a state the reader is not in danger from.
+      ? (cs ? '<p class="why">The mail is the login: clicking its link is what proves the address works.</p>' : '') +
         // **The composer is simply there** (Ed, 2026-08-21). *Wrong address?*
         // was a button whose whole job was to put the field back — so the
         // field stays, and typing in it is the correction. Resending moved to
         // the commit row, where every other act on this surface lives.
         '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>' +
         (BIRTH ? '' : '<div style="margin-top:var(--s3)"><button class="btn" data-act="openmail">Open your inbox</button></div>') +
-        (BIRTH
-          ? '<p class="setnote">Opening the link in the mail creates the document at <b>docs.vote/' + esc(S.slug) + '</b> and carries you to it.</p>'
+        (BIRTH ? ''
           : '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works' + (cs ? '.' : ' and creates the document at docs.vote/' + esc(S.slug) + '.') + '</p>')
       // the send button and the two explanatory blocks left on Ed's word
       // (2026-08-19): ✒️ sends it, and the card is a field with a title over
@@ -2857,7 +2901,7 @@
     // the constitutional act; each application that arrives through it is
     // its ordinary consequence.
     policy: () =>
-      '<p class="why">How somebody who is not a member can become one. Whether the Founder invites directly, and whether a carried application needs the Founder' + Q + 's OK, are the ✒️ and 🛡️ tabs beside this one.</p>' +
+      '<p class="why">How somebody who is not a member can become one. Whether the Founder invites at will, and whether an application the membership passes needs their assent, are the ✒️ and 🛡️ tabs beside this one.</p>' +
       // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
       // the gate the Apply card hangs off. An application becomes an
       // ordinary proposal to grant membership, judged like any other.
@@ -2937,7 +2981,7 @@
       opt(S, 'judgments', 'after', 'Revealed once the decision is made', 'Published with the document at the end, never before.') +
       '</div>',
     rate: () =>
-      '<p class="why">How often a member can propose something. Each proposal costs one ✏️, and you get it back if the proposal carries or if you withdraw it.</p>' +
+      '<p class="why">How often a member can propose something. Each proposal costs one ✏️, and you get it back if the proposal passes or if you withdraw it.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('rate', 'Each member says the <b>most generous</b> they would accept, and the document takes it. Until it is settled everybody gets the standard rate.') +
       opt(S, 'rateBy', 'founder', 'I set it', '',
@@ -3031,7 +3075,7 @@
     apply: () => {
       const a = S.app;
       const ready2 = a.started && a.emailVerified && a.name.trim() && a.pic;
-      return '<p class="why">Your application goes before the members as a proposal (✏️) — it carries if the room is sure enough.</p>' +
+      return '<p class="why">Your application goes before the members as a proposal (✏️) — it passes if the room is sure enough.</p>' +
         (a.submitted
           ? '<div class="lockline">' + TICK + '<span>Submitted. ' + APPLICANT.judged + ' of ' + E() + ' have judged it — you will get an email either way.</span></div>'
           : a.started
@@ -3053,7 +3097,7 @@
           (taken ? '<p class="setnote"><b>Already a member’s address.</b> A member email is one identity — if it is yours, log in with it instead of applying.</p>' : '') +
           '<div style="margin-top:var(--s3)"><button class="btn"' + (okAddr ? '' : ' disabled') + ' data-appmailsend="1">Send the link</button></div>';
     },
-    appname: () => '<p class="why">What the members will call you — in the application, and in the membership if it carries.</p>' +
+    appname: () => '<p class="why">What the members will call you — in the application, and in the membership if it passes.</p>' +
       '<span class="fld"><label>Your name</label><input data-appname="1" value="' + esc(S.app.name) + '" placeholder="Your name" style="width:20rem"></span>',
     // the founder's own picker, three sections in Ed's order — one picker,
     // two seats, so they cannot drift
@@ -3125,7 +3169,7 @@
           constituted() ? '<button class="btn" data-close="1">Close</button>'
             : '<button class="btn" data-close="1">Close</button>' +
               '<button class="btn btn-approve emojibtn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
-              ' title="' + (can ? 'Hold to begin the document' : 'The document cannot begin yet') + '">✒️ Begin</button>',
+              ' title="' + (can ? 'Hold to begin the document' : 'The document cannot begin yet') + '">🍾 Begin</button>',
           g.cards);
       }
       if (c.isClosing) {
@@ -3167,7 +3211,7 @@
           (m.why ? ' — <i>' + esc(m.why) + '</i>' : '') +
           '. The setting is reserved, so the change goes to the founder as a <b>👑 question</b>, theirs to accept or reject. Until then, what stands stands.</div>',
           (amFounder()
-            ? '<button class="btn" data-crownq="reject">Reject</button>' +
+            ? '<button class="btn" data-crownq="reject">Refuse</button>' +
               '<button class="btn btn-approve" data-crownq="accept">Accept</button>'
             : '<button class="btn" data-close="1">Close</button>'), g.cards);
       }
@@ -3210,11 +3254,11 @@
               ' data-motionlane="to" data-ph="The value you are proposing">' + esc(d.to) + '</div></div>') +
           whyLane(d) +
           (route === 'constitutional'
-            ? (crownWaits(c) ? '<p class="setnote">If this carries it goes to the Founder, who can accept or reject it.</p>' : '')
+            ? (crownWaits(c) ? '<p class="setnote">If it passes it goes to the Founder, who may assent or refuse.</p>' : '')
             // the price is not said in words (Ed, 2026-08-19): the pencil
             // flying out of the wallet is what teaches it, and a sentence
             // beside the flight is the surface explaining its own animation
-            : (crownWaits(c) ? '<p class="setnote">If this carries it goes to the Founder, who can accept or reject it.</p>' : '')) +
+            : (crownWaits(c) ? '<p class="setnote">If it passes it goes to the Founder, who may assent or refuse.</p>' : '')) +
           (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
         return cardHtml(c, ctx, body2,
           '<button class="btn glyphbtn" data-dropmotion="1"' +
@@ -3260,11 +3304,14 @@
         // 📧 in flight: the act is resending, and it spends nothing, so it is
         // a click rather than a hold (the ladder is for what comes out of a
         // wallet). The first send is still the 🪶 commit below.
+        // 📨 says it by itself (Ed, 2026-08-21) — the word was doing nothing
+        // the glyph and the tooltip were not already doing, and it is the
+        // same 52px glyph button every other commit row uses
         : c.k === 'myemail' && S.emailSent && !S.emailVerified
         ? binBtn(false) +
-          '<button class="btn btn-approve emojibtn" data-act="sendverify"' +
+          '<button class="btn btn-approve glyphbtn emojibtn" data-act="sendverify"' +
           (EMAIL_OK.test(S.myemail) ? '' : ' disabled') +
-          ' title="Send the link again">' + resendLabel() + '</button>'
+          ' title="' + resendTitle() + '">📨</button>'
         : c.k === 'hat'
         ? (() => { const cur = S.seen.has('hat') ? (iDraft() ? 'member' : 'clerk') : null;
             const dirty = !!S.hatPick && S.hatPick !== cur &&
@@ -3300,7 +3347,7 @@
     // the constitution (titleGovPara), never over the heading
     tp.classList.toggle('open', !cs && S.open === 'title');
     tp.querySelectorAll('.setupcard').forEach((el) => el.remove());
-    if (!cs && S.open === 'title') tp.insertAdjacentHTML('beforeend', cardFor(groups()[0]));
+    if (!cs && S.open === 'title' && !settled(card('title'))) tp.insertAdjacentHTML('beforeend', cardFor(groups()[0]));
     // **The constitution starts writing itself at the birth** (Ed,
     // 2026-08-21, amending *before the save there is no constitution*): each
     // answer lands as its own clause and fades onto the page, so the founder
@@ -3382,7 +3429,9 @@
   // 📨 says which act it is: a resend to the address that was written to, or
   // a first send to one that has been edited since. Typing does not re-render
   // the card (it would take the caret), so the label is corrected in place.
-  const resendLabel = () => (S.myemail === S.sentAddr ? '📨 Resend' : '📨 Send');
+  // which act it is lives in the tooltip now: a send to an address that has
+  // been edited since is not a resend
+  const resendTitle = () => (S.myemail === S.sentAddr ? 'Send the link again' : 'Send the link to this address');
   const commitTitle = (c) => (c.k === 'title'
     // 🪶's own wording: the title card is the one that is typed into, so it
     // says what is missing rather than that nothing has been answered
@@ -3981,7 +4030,7 @@
       // the send button tracks validity in place — a full render would
       // rebuild the card under the caret
       const sv = document.querySelector('[data-act="sendverify"]');
-      if (sv) { sv.disabled = !EMAIL_OK.test(S.myemail); sv.textContent = resendLabel(); }
+      if (sv) { sv.disabled = !EMAIL_OK.test(S.myemail); sv.title = resendTitle(); }
       renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (t.dataset.txt) { S[t.dataset.txt] = t.value;
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
@@ -4047,7 +4096,8 @@
       textShape: cs && cs.text ? shapeOf(cs.text) : [],
       joinPolicy: jp, applyOpen: begun && !cs.closed && (jp === 'proposed' || jp === 'apply'),
       joinOpen: begun && !cs.closed && jp === 'open',
-      members: { arrived: cs ? cs.E() : 0 } };
+      members: { arrived: cs ? cs.E() : 0,
+        list: canRead && cs ? S.roster.filter((r) => r.in).map((r) => ({ name: r.n || null, picture: r.pic || null })) : null } };
   };
   const strPayload = () => (LIVEMODE ? STR : fixtureStrangerPayload());
   // the shape of a text: per block, heading level and character count — the
@@ -4071,9 +4121,22 @@
   const founderInfo = () => (isStranger() && strPayload()
     ? { n: strPayload().founder.name || '', pic: strPayload().founder.picture || '' }
     : (S.roster[0] || { n: '', pic: '' }));
+  // **Q508(c)**: where 🌍 lets a stranger read the document it lets them read
+  // the membership, because the Members list is a section of the very
+  // constitution they are being shown. Where it does not, the door says how
+  // many have arrived and no more.
   const strMembersLine = () => {
     const n = (strPayload() || { members: { arrived: 0 } }).members.arrived;
     return n === 1 ? 'One member.' : n + ' members.';
+  };
+  const strMemberList = () => {
+    const p = strPayload();
+    const list = p && p.members && p.members.list;
+    if (!list) return null;
+    return '<div class="memlist">' + (list.length === 0
+      ? '<div class="memrow nobody">(nobody here yet)</div>'
+      : list.map((m) => '<div class="memrow">' + avHtml({ n: m.name || '', pic: m.picture || '' }) +
+        '<span class="mn">' + esc(m.name || 'Anonymous') + '</span></div>').join('')) + '</div>';
   };
   // the band, read-only: the rule as it stands, no composer, no radios
   const strCtx = Object.create(ctx, {
@@ -5048,7 +5111,7 @@
     return '<div class="unlocks"><b>The document is final as of' + esc(closedAtWords().replace(/^ at /, ' ')) + '.</b></div>' +
       '<ul class="batch">' +
       '<li>' + n(adopted, 'proposal was adopted', 'proposals were adopted') + ' into the text.</li>' +
-      '<li>' + n(carried, 'motion carried', 'motions carried') + (unassented ? '; ' + n(unassented, 'carried change waited', 'carried changes waited') + ' on an assent that never came, and goes to the backlog' : '') + '.</li>' +
+      '<li>' + n(carried, 'motion passed', 'motions passed') + (unassented ? '; ' + n(unassented, 'passed change waited', 'passed changes waited') + ' on an assent that never came, and goes to the backlog' : '') + '.</li>' +
       '<li>' + n(undecided, 'question was', 'questions were') + ' left undecided — the text stands, and ' +
         (undecided === 1 ? 'it is' : 'they are') + ' filed below the charter as its backlog.</li>' +
       '<li>' + names + '</li>' +
@@ -5126,6 +5189,12 @@
   const holdWallet = (b) => {
     if (!b || !b.matches('[data-confirm]') || b.disabled) return null;
     if (!cs && /🪶/.test(b.textContent) && document.querySelector('#quill i')) return { g: '🪶', sel: '#quill i' };
+    // 🍾 has no wallet and never will (Q516: a wallet is a capacity you hold
+    // and spend, and beginning is a moment that happens once) — but it is
+    // held like every consequential act, and the cork flies **out of the
+    // button into the document** rather than out of a balance into the
+    // button. A pop, not a spend.
+    if (cs && /🍾/.test(b.textContent)) return { g: '🍾', sel: null, to: '#doctitle, .doctitle' };
     if (cs && /✒️/.test(b.textContent) && document.querySelector('#penwallet i')) return { g: '✒️', sel: '#penwallet i' };
     return null;
   };
@@ -5136,11 +5205,14 @@
     const w = holdWallet(b);
     if (!w || ev.button !== 0) return;
     penPointerDown = true;
-    // the feather leaves from the last one in the row, as it always has
-    const from = [...document.querySelectorAll(w.sel)].pop().getBoundingClientRect();
-    const to = b.getBoundingClientRect();
+    // the feather leaves from the last one in the row, as it always has; the
+    // cork leaves from the button and lands in the document
+    const src = w.sel ? [...document.querySelectorAll(w.sel)].pop() : b;
+    const dst = w.to ? (document.querySelector(w.to) || b) : b;
+    const from = (src || b).getBoundingClientRect();
+    const to = dst.getBoundingClientRect();
     b.classList.add('penholding');
-    if (w.g === '🪶') quillGhost = true; else penGhost = true;
+    if (w.g === '🪶') quillGhost = true; else if (w.g === '✒️') penGhost = true;
     renderPowerWallets();
     const flight = SESSION.flyGlyph(w.g, from, to, PEN_HOLD_MS, { r0: -30, r1: 0, easing: 'linear' });
     penHold = { b, w, flight, timer: setTimeout(() => {

@@ -182,6 +182,11 @@
     ['confirm-visibility', () => click('.setupcard [data-confirm]')],
     // 🎩 follows 🌍 in the constitution's order: the Membership section
     // opens with the people (Ed, 2026-08-21), so this is the next card born
+    // 🤝 comes before the register now (Ed, 2026-08-21): how people become
+    // members, then who they are
+    ['open-applications', () => openTab('policy')],
+    ['choose-join', () => click('.setupcard [data-set="joinBy"][data-val="invite"]')],
+    ['confirm-applications', () => click('.setupcard [data-confirm]')],
     ['open-hat', () => openTab('hat')],
     ['choose-hat', () => click('.setupcard [data-set="hatPick"][data-val="member"]')],
     ['confirm-hat', () => click('.setupcard [data-hatgo]')],
