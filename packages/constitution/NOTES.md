@@ -112,3 +112,34 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   both > assent-only > unilateral-only > members, on the reasoning that
   assent restricts the members while unilateral only adds a founder power.
   Wants Ed's eye; the primary key (join policy) is unchanged.
+- **The Text is held like anything else** (Q440, 2026-08-21). `startingText`
+  now carries a crown pair (`HELD` = the managed map plus the Text), held
+  by the founder from creation, relinquished on the same clocks as every
+  setting (assent from creation, the pen once proposing opens), reclaimed
+  pre-start, handed over by `delegate`, restored by a `reserve` motion, and
+  counted by `crowned()` — the founder who keeps the pen or the shield on
+  the document itself is a 👑. The founding value is untouched:
+  `confirmStartingText` / `cs.text` stay the pre-start act, `setSetting`
+  refuses the Text, and a `set` motion on it is still *not moved this way*
+  (the text changes by drafting). The shield's meaning is the one seam the
+  bridge will wire: `textAdoptionNeedsAssent()` (shield held, crown awake)
+  and `openTextCrownQuestion(t, {candidateId, summary})`, which opens a 👑
+  question with `motion: null` and a `text` field — the existing
+  `answerCrownQuestion` records accept/reject, crown lapse auto-passes it,
+  and the host reads `crownQuestionRecords()` to decide whether the document
+  it serves follows the engine's adoption. The event gained an optional
+  `text` and a nullable `motion`; absent means a motion question, so older
+  logs read unchanged and `SCHEMA_VERSION` did not move.
+- **🤝's crown pair moved from the value to the setting** (Q506, Ed,
+  2026-08-21: *🤝 also needs ✒️ and 🛡️*). `ApplicationsValue` is the join
+  policy alone; `registerPowers()` reads `settings.get('applications').powers`,
+  so the v0.54 corner above (two pairs on one card) is gone and the reserve
+  motion on `applications` is now ordinary machinery. **Migration in the
+  fold, not the log**: a legacy value carrying `holder` still validates,
+  keeps its bytes, and `foldApplications` maps the holder onto the powers
+  and strips it from what stands — an old log replays to the same state a
+  fresh session reaches the new way (test). The golden state was re-frozen
+  for exactly this derived change (`founding.jsonl` is byte-identical; only
+  the applications entry of `founding.state.json` moved). The Q395 holder
+  tiebreak in the consent order went with the field: the blind question
+  collects the policy, the powers are the founder's to give up (Q341).

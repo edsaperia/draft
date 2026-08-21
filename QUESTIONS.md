@@ -385,6 +385,11 @@ Marking the field green (Ed, 2026-08-17) took most of the weight off both of the
 
 504. **The setup-probe's founding scenario is half dead.** (Found re-freezing the references, 2026-08-21.) Its selector map predates the surface: step 6 looks for `[data-act="sendverify"]`, and the page has sent the verification on the card's ✓ (`[data-confirm]` while 📧 is open) since the commit-row grammar landed — so `click-magic-link`, `open-policy`, `choose-holder`, `choose-join`, `open-membership`, `paste-invites`, `send-invites` and `motions:close-card` all miss, identically on both sides. The guard is real for steps 1–5 and for whatever later steps still find their targets, and empty after that. Fixing it means re-deriving the founding flow (send on ✓, the policy card's birth, the invite box), not swapping selectors. Related: the `pre-constitution` reference had drifted 200 diffs from HEAD before stage 8 noticed, so **a probe that nobody runs rots silently** — worth a CI job that serves `design/` and runs both probes headless (Q-size: a day). **Ed, 2026-08-21: (b) — the CI job. Building; (a) stays open.**
 
+505. *Spent in chat (2026-08-21) on a misreading of Ed's 🪶→📍→📧 note; the matter is Q460. Kept so the sequence stays honest.*
+
+506. **🤝 Applications takes the ✒️/🛡️ power tabs** (Ed, 2026-08-21: *I note that 🤝 also needs ✒️ and 🛡️*). Until now the applications card sat outside the `governance-tabs` pattern, its holder pair riding inside its value (`reserved` / `reserved-unilateral` / `reserved-assent` / `members`, `registerTail`). Decision: it joins the pattern — the value tab in front, the pen and the shield beneath, `SettingState.powers` like any setting — and the value list loses its holder rungs. **Settled; building in the glyph batch (stage 8 follow-up, item 2).**
+
+
 
 
 

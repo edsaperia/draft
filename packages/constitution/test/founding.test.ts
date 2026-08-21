@@ -290,6 +290,7 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
     s.delegate(3, 'title');
     s.delegate(3, 'link');
     s.delegate(3, 'pace');  // the founder's by default since Q415
+    s.delegate(3, 'startingText'); // the Text is held like anything else (Q440)
     expect(s.crowned()).toBe(false);  // 📯 — a name in the record
   });
 });

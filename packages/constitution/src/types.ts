@@ -97,8 +97,12 @@ export type ConstitutionEvent =
   | { type: 'motion-adjudicated'; t: number; motion: MotionId;
       outcome: 'carried' | 'held' }
   /* -- the crown (§9.7) --------------------------------------------------- */
+  /** A 👑 question: on a parked motion, or (Q440, 2026-08-21) on a text
+   *  adoption the engine has already made while the founder holds 🛡️ on
+   *  the Text — then `motion` is null and `text` names the candidate.
+   *  Absent `text` means a motion question, so older logs read unchanged. */
   | { type: 'crown-question-opened'; t: number; question: CrownQuestionId;
-      motion: MotionId }
+      motion: MotionId | null; text?: { candidateId: string; summary: string } }
   | { type: 'crown-question-answered'; t: number; question: CrownQuestionId;
       outcome: 'accept' | 'reject' }
   | { type: 'crown-question-auto-passed'; t: number; question: CrownQuestionId }
@@ -216,7 +220,10 @@ export interface MotionRecord {
 
 export interface CrownQuestionRecord {
   id: CrownQuestionId;
-  motion: MotionId;
+  /** The parked motion, or null for a text adoption awaiting assent (Q440). */
+  motion: MotionId | null;
+  /** Set on a text question: which engine candidate adopted, and a summary for the card. */
+  text?: { candidateId: string; summary: string };
   openedAtT: number;
   status: 'pending' | 'accepted' | 'rejected' | 'auto-passed';
 }

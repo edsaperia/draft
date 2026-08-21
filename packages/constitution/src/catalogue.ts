@@ -254,12 +254,10 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
         const byPolicy = rungs.indexOf((b as ApplicationsValue).joinPolicy) -
           rungs.indexOf((a as ApplicationsValue).joinPolicy);
         if (byPolicy !== 0) return byPolicy;
-        // Tiebreak on the register's crown, most restrictive first (§9.7
-        // v0.54, Q395): assent restricts the members, unilateral only adds
-        // a founder power, so both > assent-only > unilateral-only > members.
-        const holds = ['members', 'reserved-unilateral', 'reserved-assent', 'reserved'];
-        return holds.indexOf((b as ApplicationsValue).holder) -
-          holds.indexOf((a as ApplicationsValue).holder);
+        // Q506 (2026-08-21): the pair left the value, so the policy is the
+        // whole order -- delegate the decision, not the field (Q341). The
+        // old Q395 holder tiebreak went with it.
+        return byPolicy;
       },
     },
     deps: [], judgeGate: false },

@@ -9,7 +9,7 @@
 
 import { chainHash } from './hash.js';
 import type {
-  ApplicantRecord, ConstitutionEvent, ConvenorInput, CrownQuestionRecord,
+  ApplicantRecord, ConstitutionEvent, ConvenorInput, CrownQuestionId, CrownQuestionRecord,
   LogEntry, MemberId, MemberRecord, MotionAnswer, MotionId, MotionPayload,
   MotionRecord, Power, Powers, SettingState,
 } from './types.js';
@@ -36,6 +36,9 @@ export interface OpenInput {
 const MANAGED: readonly SettingId[] = CATALOGUE
   .filter((e) => e.kind !== 'personal' && e.id !== 'membership' && e.id !== 'startingText')
   .map((e) => e.id);
+
+/** Everything that carries a crown pair: the managed map plus the Text (Q440, 2026-08-21). */
+const HELD: readonly SettingId[] = [...MANAGED, 'startingText'];
 
 const CONSTITUTIONAL: ReadonlySet<SettingId> = new Set(
   CATALOGUE.filter((e) => e.kind === 'constitutional' && e.id !== 'membership').map((e) => e.id),
@@ -117,7 +120,7 @@ export class ConstitutionSession {
         const c = event.convenor;
         this.convenor = { ...c, name: c.name ?? null, picture: c.picture ?? null,
           lastActivityT: event.t, lapseWarned: false };
-        for (const id of MANAGED) {
+        for (const id of HELD) {
           const entry = entryOf(id);
           const delegated = entry.delegable && entry.holderDefault === 'members';
           this.settings.set(id, {
@@ -314,14 +317,6 @@ export class ConstitutionSession {
         const st = this.settings.get(event.setting)!;
         const powers: Powers = { ...st.powers, [event.power]: false };
         this.setPowers(st, powers);
-        // giving up the last power is a hand-over (§9.7 v0.54): on
-        // applications it must not leave the register crowned behind a
-        // members-held policy, same rule as setting-handed-over
-        if (!powers.unilateral && !powers.assent &&
-            event.setting === 'applications' && st.value !== null &&
-            (st.value as ApplicationsValue).holder !== 'members') {
-          st.value = { ...(st.value as ApplicationsValue), holder: 'members' };
-        }
         this.touch(this.convenor.id, event.t);
         break;
       }
@@ -376,14 +371,18 @@ export class ConstitutionSession {
         this.crownQuestions.set(event.question, {
           id: event.question,
           motion: event.motion,
+          ...(event.text ? { text: event.text } : {}),
           openedAtT: event.t,
           status: 'pending',
         });
         // Either route parks here (§9.7 v0.49): the change is the members'
-        // and the assent is still owed.
-        const parked = this.motions.get(event.motion)!;
-        parked.status = 'awaiting-crown';
-        parked.settledAtT = null;
+        // and the assent is still owed. A text question (Q440) parks no
+        // motion -- the engine already adopted; the host holds the text.
+        if (event.motion !== null) {
+          const parked = this.motions.get(event.motion)!;
+          parked.status = 'awaiting-crown';
+          parked.settledAtT = null;
+        }
         this.nextCrownN += 1;
         break;
       }
@@ -395,11 +394,13 @@ export class ConstitutionSession {
         q.status = event.type === 'crown-question-auto-passed'
           ? 'auto-passed'
           : accepted ? 'accepted' : 'rejected';
-        const rec = this.motions.get(q.motion)!;
-        rec.status = accepted ? 'carried' : 'held';
-        rec.settledAtT = event.t;
-        if (accepted && rec.payload.kind === 'set') {
-          this.applyPayloadSet(rec.payload.setting, rec.payload.value, 'crown', event.t);
+        if (q.motion !== null) {
+          const rec = this.motions.get(q.motion)!;
+          rec.status = accepted ? 'carried' : 'held';
+          rec.settledAtT = event.t;
+          if (accepted && rec.payload.kind === 'set') {
+            this.applyPayloadSet(rec.payload.setting, rec.payload.value, 'crown', event.t);
+          }
         }
         if (event.type === 'crown-question-answered') {
           this.touch(this.convenor.id, event.t);
@@ -409,13 +410,6 @@ export class ConstitutionSession {
       case 'setting-handed-over': {
         const st = this.settings.get(event.setting)!;
         this.setPowers(st, { unilateral: false, assent: false });
-        // the membership's own crown lives in the applications value (§9.7½):
-        // delegating "anything" must not leave the register crowned behind
-        // a members-held policy
-        if (event.setting === 'applications' && st.value !== null &&
-            (st.value as ApplicationsValue).holder !== 'members') {
-          st.value = { ...(st.value as ApplicationsValue), holder: 'members' };
-        }
         this.touch(this.convenor.id, event.t);
         break;
       }
@@ -530,6 +524,7 @@ export class ConstitutionSession {
     st.settledBy = by;
     st.settledAtT = t;
     st.collecting = false;
+    this.foldApplications(st);
     if (id === 'quorum') this.quorumFormValue = (value as QuorumValue).form;
     if (id === 'link') {
       const slug = (value as SlugValue).slug;
@@ -578,6 +573,26 @@ export class ConstitutionSession {
     st.value = value;
     st.settledBy = by === 'crown' ? 'crown' : 'convenor';
     st.settledAtT = t;
+    this.foldApplications(st);
+  }
+
+  /**
+   * Q506 migration (2026-08-21): a legacy applications value carried the
+   * register's crown as `holder`; the pair now lives on the setting's own
+   * powers like every held-able setting. The event keeps its bytes -- the
+   * fold reads the holder onto the powers and strips it from what stands,
+   * so an old log and a fresh session reach the same state.
+   */
+  private foldApplications(st: SettingState): void {
+    if (st.id !== 'applications' || st.value === null) return;
+    const v = st.value as ApplicationsValue;
+    if (v.holder === undefined) return;
+    const h = v.holder;
+    this.setPowers(st, {
+      unilateral: h === 'reserved' || h === 'reserved-unilateral',
+      assent: h === 'reserved' || h === 'reserved-assent',
+    });
+    st.value = { joinPolicy: v.joinPolicy };
   }
 
   private touch(member: MemberId, t: number): void {
@@ -634,6 +649,9 @@ export class ConstitutionSession {
 
   setSetting(t: number, setting: SettingId, value: SettingValue): void {
     const entry = entryOf(setting);
+    if (setting === 'startingText') {
+      throw new Error('the text is confirmed once, then changed by drafting (Q440)');
+    }
     if (!this.settings.has(setting)) {
       throw new Error(`'${setting}' is not set this way`);
     }
@@ -691,11 +709,8 @@ export class ConstitutionSession {
     if (entry.kind === 'personal') {
       throw new Error(`'${setting}' is a member's own (§9.0c) — never held, never delegated`);
     }
-    if (setting === 'startingText') {
-      throw new Error('the text is delegated as soon as proposing opens — changed by drafting, never held (§9.7)');
-    }
     if (setting === 'membership') {
-      throw new Error("the register is held through 'applications' — delegate that (§9.7½)");
+      throw new Error("the register is held through 'applications' -- delegate that (§9.7½)");
     }
     const st = this.settings.get(setting)!;
     if (this.constitutedT === null && entry.delegable) {
@@ -709,9 +724,7 @@ export class ConstitutionSession {
     if (!this.textConfirmedFlag && this.constitutedT === null) {
       throw new Error('delegation opens with proposing — confirm the starting text first (§9.7)');
     }
-    const rp = this.registerPowers();
-    const membershipCrowned = setting === 'applications' && (rp.unilateral || rp.assent);
-    if (st.holder !== 'convenor' && !membershipCrowned) return; // already the members'
+    if (st.holder !== 'convenor') return; // already the members'
     this.emit({ type: 'setting-handed-over', t, setting });
   }
 
@@ -727,11 +740,8 @@ export class ConstitutionSession {
     if (entry.kind === 'personal') {
       throw new Error(`'${setting}' is a member's own (§9.0c) — never held`);
     }
-    if (setting === 'startingText') {
-      throw new Error('the text is never held — it is changed by drafting (§9.7)');
-    }
     if (setting === 'membership') {
-      throw new Error("the register's powers live in the applications value — change that (§9.7½)");
+      throw new Error("the register's powers are the applications setting's -- relinquish there (§9.7½)");
     }
     const st = this.settings.get(setting)!;
     if (!st.powers[power]) {
@@ -974,11 +984,11 @@ export class ConstitutionSession {
       route = motionRouteOf(entry, payload.value, st.value);
     } else if (payload.kind === 'reserve') {
       const re = entryOf(payload.setting);
-      if (re.kind === 'personal' || payload.setting === 'startingText') {
+      if (re.kind === 'personal') {
         throw new Error(`'${payload.setting}' is never held, so it cannot be reserved (§9.7)`);
       }
-      if (payload.setting === 'membership' || payload.setting === 'applications') {
-        throw new Error("the membership's crown lives in the applications value — move that instead (§9.7½)");
+      if (payload.setting === 'membership') {
+        throw new Error("the register's crown is the applications setting's -- reserve that (§9.7½)");
       }
       const rst = this.settings.get(payload.setting)!;
       const want = payload.power ?? 'both';
@@ -1075,6 +1085,7 @@ export class ConstitutionSession {
     if (!q || q.status !== 'pending') throw new Error('no such pending 👑 question');
     if (this.crownLapsedFlag) throw new Error('the crown has lapsed — the question passes by itself');
     this.emit({ type: 'crown-question-answered', t, question, outcome });
+    if (q.motion === null) return; // a text question: the host reads the record (Q440)
     const rec = this.motions.get(q.motion)!;
     if (outcome === 'accept') {
       // Under unanimity everyone already had their say; under the ordinary
@@ -1266,8 +1277,10 @@ export class ConstitutionSession {
             if (q.status !== 'pending') continue;
             // Lapse is automatic abstention; on an assent, abstaining grants.
             this.emit({ type: 'crown-question-auto-passed', t, question: q.id });
-            const mrec = this.motions.get(q.motion)!;
-            this.settleCarriedEffects(t, mrec, mrec.route === 'constitutional');
+            if (q.motion !== null) {
+              const mrec = this.motions.get(q.motion)!;
+              this.settleCarriedEffects(t, mrec, mrec.route === 'constitutional');
+            }
           }
         } else if (t >= due.warnAtT && !this.convenor.lapseWarned &&
           !this.members.has(this.convenor.id)) {
@@ -1279,8 +1292,6 @@ export class ConstitutionSession {
   }
 
   private holdsAnythingReserved(): boolean {
-    const rp = this.registerPowers();
-    if (rp.unilateral || rp.assent) return true;
     for (const st of this.settings.values()) {
       if (st.holder === 'convenor') return true;
     }
@@ -1384,12 +1395,7 @@ export class ConstitutionSession {
   /** The register's crown as the two powers (§9.7 v0.54), lapse ignored —
    *  a sleeping crown still holds; callers check the lapse where it bites. */
   registerPowers(): Powers {
-    const apps = this.settings.get('applications')!.value as ApplicationsValue | null;
-    const h = apps === null ? 'members' : apps.holder;
-    return {
-      unilateral: h === 'reserved' || h === 'reserved-unilateral',
-      assent: h === 'reserved' || h === 'reserved-assent',
-    };
+    return { ...this.settings.get('applications')!.powers }; // Q506: one pair, on the setting
   }
 
   /** Any register power held and the crown awake — the direct-invite gate. */
@@ -1402,17 +1408,41 @@ export class ConstitutionSession {
    * 👑 by any reservation (Ed, 2026-08-18, Q379 wide): the mark reads what
    * the convenor holds, not the membership alone — and a sleeping crown
    * still holds it (lapse grants assent, it does not transfer anything).
-   * startingText never counts: it has no post-start change route, so
-   * holding it is not a lever.
+   * The Text counts (Q440, 2026-08-21): a founder who keeps the pen or the
+   * shield on the document itself is a crown by the same rule as anywhere.
    */
   crowned(): boolean {
-    const apps = this.settings.get('applications')!.value as ApplicationsValue | null;
-    if (apps !== null && apps.holder !== 'members') return true;
-    for (const [id, st] of this.settings) {
-      if (id === 'startingText') continue;
+    for (const st of this.settings.values()) {
       if (st.holder === 'convenor') return true;
     }
     return false;
+  }
+
+  /**
+   * Q440: the shield on the Text means an **adoption** waits on the
+   * founder's accept -- assent over the drafting mechanism itself. The
+   * engine has already adopted; the host asks here whether the document it
+   * serves may follow, and a sleeping crown grants (lapse is abstention).
+   */
+  textAdoptionNeedsAssent(): boolean {
+    return this.settings.get('startingText')!.powers.assent && !this.crownLapsedFlag;
+  }
+
+  /** Open the 👑 question for one adopted candidate; the host reads its
+   *  record (`crownQuestionRecords`) to learn accept / reject / auto-pass. */
+  openTextCrownQuestion(t: number, text: { candidateId: string; summary: string }): CrownQuestionId {
+    if (this.constitutedT === null) throw new Error('nothing adopts before the start');
+    if (!this.textAdoptionNeedsAssent()) {
+      throw new Error('the Text carries no assent -- the adoption stands by itself');
+    }
+    for (const q of this.crownQuestions.values()) {
+      if (q.status === 'pending' && q.text?.candidateId === text.candidateId) {
+        throw new Error('that adoption already awaits the crown');
+      }
+    }
+    const id = `cq-${this.nextCrownN}`;
+    this.emit({ type: 'crown-question-opened', t, question: id, motion: null, text });
+    return id;
   }
 
   private settledConstitutionalIds(): SettingId[] {

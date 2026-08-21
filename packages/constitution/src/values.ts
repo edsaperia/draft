@@ -27,12 +27,14 @@ export type RateValue = { grant: number; cap: number; dripMinutes: number };
 export type LapseValue = { afterMs: number | null };
 /** 🤖 — the coherence auditor: proposes only, never judges (§10). */
 export type MachinesValue = { enabled: boolean; budget: number };
-/** 🤝 — who holds the membership after the start, and the join policy (§9.7½). */
+/** 🤝 — the join policy (§9.7½). Since Q506 (2026-08-21) the register's
+ * crown no longer rides inside the value: 🤝 is in the governance-tabs
+ * pattern like every held-able setting, its pair on `SettingState.powers`.
+ * `holder` survives only as a **legacy** field that older logs (and the
+ * golden walk) carry; the fold maps it onto the powers and strips it. */
 export type ApplicationsValue = {
-  /** The register's crown, carrying the two powers (§9.7 v0.54): 'reserved'
-   * is both, 'reserved-unilateral' invite-and-remove without assent (Ed's
-   * example), 'reserved-assent' assent without direct change. */
-  holder: 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent';
+  /** @deprecated legacy (pre-Q506) — read by the fold, never written anew. */
+  holder?: 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent';
   joinPolicy: 'invite' | 'proposed' | 'apply' | 'open';
 };
 
@@ -124,9 +126,9 @@ export function validateValue(type: ValueTypeName, v: unknown): string | null {
         ? null
         : 'machines: budget must be an integer ≥ 0';
     case 'applications':
-      if (v.holder !== 'members' && v.holder !== 'reserved' &&
+      if (v.holder !== undefined && v.holder !== 'members' && v.holder !== 'reserved' &&
           v.holder !== 'reserved-unilateral' && v.holder !== 'reserved-assent')
-        return "applications: holder must be 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent'";
+        return "applications: holder (legacy) must be 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent'";
       return v.joinPolicy === 'invite' || v.joinPolicy === 'proposed' ||
         v.joinPolicy === 'apply' || v.joinPolicy === 'open'
         ? null

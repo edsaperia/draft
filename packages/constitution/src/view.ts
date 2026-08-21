@@ -103,7 +103,8 @@ export interface MemberView {
   owedOks: SettingId[];
   motions: MotionView[];
   myHeldMotion: string | null;
-  crownTasks: Array<{ id: string; motion: string }>;
+  /** The founder's 👑 questions: a parked motion, or (Q440) a text adoption with `text`. */
+  crownTasks: Array<{ id: string; motion: string | null; text?: { candidateId: string; summary: string } }>;
   identity: { name: string | null; picture: string | null };
   lapseWarned: boolean;
   frozen: boolean;
@@ -120,6 +121,14 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
   const questions: QuestionView[] = [];
   const resolutions: ResolutionView[] = [];
   const settings: SettingView[] = [];
+  // the Text carries a crown pair like any held-able setting (Q440) but no
+  // managed value: its row serves the powers, and nothing else
+  {
+    const st = s.settingState('startingText');
+    settings.push({ setting: 'startingText', glyph: '📄', kind: 'ordinary',
+      holder: st.holder, powers: { ...st.powers }, value: null, settledBy: null,
+      settledAtT: null, collecting: false });
+  }
   for (const entry of MANAGED) {
     const st = s.settingState(entry.id);
     settings.push({
@@ -226,7 +235,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     crownTasks: isConvenor
       ? [...s.crownQuestionRecords().values()]
           .filter((q) => q.status === 'pending')
-          .map((q) => ({ id: q.id, motion: q.motion }))
+          .map((q) => ({ id: q.id, motion: q.motion, ...(q.text ? { text: q.text } : {}) }))
       : [],
     identity: me
       ? { name: me.name, picture: me.picture }

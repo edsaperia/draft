@@ -270,8 +270,8 @@ var CONSTITUTION = (() => {
         if (typeof v.enabled !== "boolean") return "machines: enabled must be a boolean";
         return isInt(v.budget) && v.budget >= 0 ? null : "machines: budget must be an integer ≥ 0";
       case "applications":
-        if (v.holder !== "members" && v.holder !== "reserved" && v.holder !== "reserved-unilateral" && v.holder !== "reserved-assent")
-          return "applications: holder must be 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent'";
+        if (v.holder !== void 0 && v.holder !== "members" && v.holder !== "reserved" && v.holder !== "reserved-unilateral" && v.holder !== "reserved-assent")
+          return "applications: holder (legacy) must be 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent'";
         return v.joinPolicy === "invite" || v.joinPolicy === "proposed" || v.joinPolicy === "apply" || v.joinPolicy === "open" ? null : "applications: joinPolicy must be invite | proposed | apply | open";
       case "register":
         return "membership has no scalar value — the register changes by command (invite, remove)";
@@ -577,8 +577,7 @@ var CONSTITUTION = (() => {
           const rungs = ["invite", "proposed", "apply", "open"];
           const byPolicy = rungs.indexOf(b.joinPolicy) - rungs.indexOf(a.joinPolicy);
           if (byPolicy !== 0) return byPolicy;
-          const holds = ["members", "reserved-unilateral", "reserved-assent", "reserved"];
-          return holds.indexOf(b.holder) - holds.indexOf(a.holder);
+          return byPolicy;
         }
       },
       deps: [],
@@ -722,6 +721,7 @@ var CONSTITUTION = (() => {
 
   // src/session.ts
   var MANAGED = CATALOGUE.filter((e) => e.kind !== "personal" && e.id !== "membership" && e.id !== "startingText").map((e) => e.id);
+  var HELD = [...MANAGED, "startingText"];
   var CONSTITUTIONAL = new Set(
     CATALOGUE.filter((e) => e.kind === "constitutional" && e.id !== "membership").map((e) => e.id)
   );
@@ -802,7 +802,7 @@ var CONSTITUTION = (() => {
             lastActivityT: event.t,
             lapseWarned: false
           };
-          for (const id of MANAGED) {
+          for (const id of HELD) {
             const entry = entryOf(id);
             const delegated = entry.delegable && entry.holderDefault === "members";
             this.settings.set(id, {
@@ -1000,9 +1000,6 @@ var CONSTITUTION = (() => {
           const st = this.settings.get(event.setting);
           const powers = { ...st.powers, [event.power]: false };
           this.setPowers(st, powers);
-          if (!powers.unilateral && !powers.assent && event.setting === "applications" && st.value !== null && st.value.holder !== "members") {
-            st.value = { ...st.value, holder: "members" };
-          }
           this.touch(this.convenor.id, event.t);
           break;
         }
@@ -1049,12 +1046,15 @@ var CONSTITUTION = (() => {
           this.crownQuestions.set(event.question, {
             id: event.question,
             motion: event.motion,
+            ...event.text ? { text: event.text } : {},
             openedAtT: event.t,
             status: "pending"
           });
-          const parked = this.motions.get(event.motion);
-          parked.status = "awaiting-crown";
-          parked.settledAtT = null;
+          if (event.motion !== null) {
+            const parked = this.motions.get(event.motion);
+            parked.status = "awaiting-crown";
+            parked.settledAtT = null;
+          }
           this.nextCrownN += 1;
           break;
         }
@@ -1063,11 +1063,13 @@ var CONSTITUTION = (() => {
           const q = this.crownQuestions.get(event.question);
           const accepted = event.type === "crown-question-auto-passed" || event.outcome === "accept";
           q.status = event.type === "crown-question-auto-passed" ? "auto-passed" : accepted ? "accepted" : "rejected";
-          const rec = this.motions.get(q.motion);
-          rec.status = accepted ? "carried" : "held";
-          rec.settledAtT = event.t;
-          if (accepted && rec.payload.kind === "set") {
-            this.applyPayloadSet(rec.payload.setting, rec.payload.value, "crown", event.t);
+          if (q.motion !== null) {
+            const rec = this.motions.get(q.motion);
+            rec.status = accepted ? "carried" : "held";
+            rec.settledAtT = event.t;
+            if (accepted && rec.payload.kind === "set") {
+              this.applyPayloadSet(rec.payload.setting, rec.payload.value, "crown", event.t);
+            }
           }
           if (event.type === "crown-question-answered") {
             this.touch(this.convenor.id, event.t);
@@ -1077,9 +1079,6 @@ var CONSTITUTION = (() => {
         case "setting-handed-over": {
           const st = this.settings.get(event.setting);
           this.setPowers(st, { unilateral: false, assent: false });
-          if (event.setting === "applications" && st.value !== null && st.value.holder !== "members") {
-            st.value = { ...st.value, holder: "members" };
-          }
           this.touch(this.convenor.id, event.t);
           break;
         }
@@ -1189,6 +1188,7 @@ var CONSTITUTION = (() => {
       st.settledBy = by;
       st.settledAtT = t;
       st.collecting = false;
+      this.foldApplications(st);
       if (id === "quorum") this.quorumFormValue = value.form;
       if (id === "link") {
         const slug = value.slug;
@@ -1235,6 +1235,25 @@ var CONSTITUTION = (() => {
       st.value = value;
       st.settledBy = by === "crown" ? "crown" : "convenor";
       st.settledAtT = t;
+      this.foldApplications(st);
+    }
+    /**
+     * Q506 migration (2026-08-21): a legacy applications value carried the
+     * register's crown as `holder`; the pair now lives on the setting's own
+     * powers like every held-able setting. The event keeps its bytes -- the
+     * fold reads the holder onto the powers and strips it from what stands,
+     * so an old log and a fresh session reach the same state.
+     */
+    foldApplications(st) {
+      if (st.id !== "applications" || st.value === null) return;
+      const v = st.value;
+      if (v.holder === void 0) return;
+      const h = v.holder;
+      this.setPowers(st, {
+        unilateral: h === "reserved" || h === "reserved-unilateral",
+        assent: h === "reserved" || h === "reserved-assent"
+      });
+      st.value = { joinPolicy: v.joinPolicy };
     }
     touch(member, t) {
       const m = this.members.get(member);
@@ -1290,6 +1309,9 @@ var CONSTITUTION = (() => {
     }
     setSetting(t, setting, value) {
       const entry = entryOf(setting);
+      if (setting === "startingText") {
+        throw new Error("the text is confirmed once, then changed by drafting (Q440)");
+      }
       if (!this.settings.has(setting)) {
         throw new Error(`'${setting}' is not set this way`);
       }
@@ -1346,11 +1368,8 @@ var CONSTITUTION = (() => {
       if (entry.kind === "personal") {
         throw new Error(`'${setting}' is a member's own (§9.0c) — never held, never delegated`);
       }
-      if (setting === "startingText") {
-        throw new Error("the text is delegated as soon as proposing opens — changed by drafting, never held (§9.7)");
-      }
       if (setting === "membership") {
-        throw new Error("the register is held through 'applications' — delegate that (§9.7½)");
+        throw new Error("the register is held through 'applications' -- delegate that (§9.7½)");
       }
       const st = this.settings.get(setting);
       if (this.constitutedT === null && entry.delegable) {
@@ -1361,9 +1380,7 @@ var CONSTITUTION = (() => {
       if (!this.textConfirmedFlag && this.constitutedT === null) {
         throw new Error("delegation opens with proposing — confirm the starting text first (§9.7)");
       }
-      const rp = this.registerPowers();
-      const membershipCrowned = setting === "applications" && (rp.unilateral || rp.assent);
-      if (st.holder !== "convenor" && !membershipCrowned) return;
+      if (st.holder !== "convenor") return;
       this.emit({ type: "setting-handed-over", t, setting });
     }
     /**
@@ -1378,11 +1395,8 @@ var CONSTITUTION = (() => {
       if (entry.kind === "personal") {
         throw new Error(`'${setting}' is a member's own (§9.0c) — never held`);
       }
-      if (setting === "startingText") {
-        throw new Error("the text is never held — it is changed by drafting (§9.7)");
-      }
       if (setting === "membership") {
-        throw new Error("the register's powers live in the applications value — change that (§9.7½)");
+        throw new Error("the register's powers are the applications setting's -- relinquish there (§9.7½)");
       }
       const st = this.settings.get(setting);
       if (!st.powers[power]) {
@@ -1579,11 +1593,11 @@ var CONSTITUTION = (() => {
         route = motionRouteOf(entry, payload.value, st.value);
       } else if (payload.kind === "reserve") {
         const re = entryOf(payload.setting);
-        if (re.kind === "personal" || payload.setting === "startingText") {
+        if (re.kind === "personal") {
           throw new Error(`'${payload.setting}' is never held, so it cannot be reserved (§9.7)`);
         }
-        if (payload.setting === "membership" || payload.setting === "applications") {
-          throw new Error("the membership's crown lives in the applications value — move that instead (§9.7½)");
+        if (payload.setting === "membership") {
+          throw new Error("the register's crown is the applications setting's -- reserve that (§9.7½)");
         }
         const rst = this.settings.get(payload.setting);
         const want = payload.power ?? "both";
@@ -1681,6 +1695,7 @@ var CONSTITUTION = (() => {
       if (!q || q.status !== "pending") throw new Error("no such pending 👑 question");
       if (this.crownLapsedFlag) throw new Error("the crown has lapsed — the question passes by itself");
       this.emit({ type: "crown-question-answered", t, question, outcome });
+      if (q.motion === null) return;
       const rec = this.motions.get(q.motion);
       if (outcome === "accept") {
         this.settleCarriedEffects(t, rec, rec.route === "constitutional");
@@ -1847,8 +1862,10 @@ var CONSTITUTION = (() => {
             for (const q of [...this.crownQuestions.values()]) {
               if (q.status !== "pending") continue;
               this.emit({ type: "crown-question-auto-passed", t, question: q.id });
-              const mrec = this.motions.get(q.motion);
-              this.settleCarriedEffects(t, mrec, mrec.route === "constitutional");
+              if (q.motion !== null) {
+                const mrec = this.motions.get(q.motion);
+                this.settleCarriedEffects(t, mrec, mrec.route === "constitutional");
+              }
             }
           } else if (t >= due.warnAtT && !this.convenor.lapseWarned && !this.members.has(this.convenor.id)) {
             this.emit({ type: "lapse-warned", t, member: this.convenor.id });
@@ -1858,8 +1875,6 @@ var CONSTITUTION = (() => {
       this.maybeFreezeOrThaw(t);
     }
     holdsAnythingReserved() {
-      const rp = this.registerPowers();
-      if (rp.unilateral || rp.assent) return true;
       for (const st of this.settings.values()) {
         if (st.holder === "convenor") return true;
       }
@@ -1962,12 +1977,7 @@ var CONSTITUTION = (() => {
     /** The register's crown as the two powers (§9.7 v0.54), lapse ignored —
      *  a sleeping crown still holds; callers check the lapse where it bites. */
     registerPowers() {
-      const apps = this.settings.get("applications").value;
-      const h = apps === null ? "members" : apps.holder;
-      return {
-        unilateral: h === "reserved" || h === "reserved-unilateral",
-        assent: h === "reserved" || h === "reserved-assent"
-      };
+      return { ...this.settings.get("applications").powers };
     }
     /** Any register power held and the crown awake — the direct-invite gate. */
     membershipReserved() {
@@ -1978,17 +1988,39 @@ var CONSTITUTION = (() => {
      * 👑 by any reservation (Ed, 2026-08-18, Q379 wide): the mark reads what
      * the convenor holds, not the membership alone — and a sleeping crown
      * still holds it (lapse grants assent, it does not transfer anything).
-     * startingText never counts: it has no post-start change route, so
-     * holding it is not a lever.
+     * The Text counts (Q440, 2026-08-21): a founder who keeps the pen or the
+     * shield on the document itself is a crown by the same rule as anywhere.
      */
     crowned() {
-      const apps = this.settings.get("applications").value;
-      if (apps !== null && apps.holder !== "members") return true;
-      for (const [id, st] of this.settings) {
-        if (id === "startingText") continue;
+      for (const st of this.settings.values()) {
         if (st.holder === "convenor") return true;
       }
       return false;
+    }
+    /**
+     * Q440: the shield on the Text means an **adoption** waits on the
+     * founder's accept -- assent over the drafting mechanism itself. The
+     * engine has already adopted; the host asks here whether the document it
+     * serves may follow, and a sleeping crown grants (lapse is abstention).
+     */
+    textAdoptionNeedsAssent() {
+      return this.settings.get("startingText").powers.assent && !this.crownLapsedFlag;
+    }
+    /** Open the 👑 question for one adopted candidate; the host reads its
+     *  record (`crownQuestionRecords`) to learn accept / reject / auto-pass. */
+    openTextCrownQuestion(t, text) {
+      if (this.constitutedT === null) throw new Error("nothing adopts before the start");
+      if (!this.textAdoptionNeedsAssent()) {
+        throw new Error("the Text carries no assent -- the adoption stands by itself");
+      }
+      for (const q of this.crownQuestions.values()) {
+        if (q.status === "pending" && q.text?.candidateId === text.candidateId) {
+          throw new Error("that adoption already awaits the crown");
+        }
+      }
+      const id = `cq-${this.nextCrownN}`;
+      this.emit({ type: "crown-question-opened", t, question: id, motion: null, text });
+      return id;
     }
     settledConstitutionalIds() {
       return [...CONSTITUTIONAL].filter((id) => this.settings.get(id).settledBy !== null);
@@ -2122,6 +2154,20 @@ var CONSTITUTION = (() => {
     const questions = [];
     const resolutions = [];
     const settings = [];
+    {
+      const st = s.settingState("startingText");
+      settings.push({
+        setting: "startingText",
+        glyph: "📄",
+        kind: "ordinary",
+        holder: st.holder,
+        powers: { ...st.powers },
+        value: null,
+        settledBy: null,
+        settledAtT: null,
+        collecting: false
+      });
+    }
     for (const entry of MANAGED2) {
       const st = s.settingState(entry.id);
       settings.push({
@@ -2223,7 +2269,7 @@ var CONSTITUTION = (() => {
       owedOks: me ? [...me.okOwed] : [],
       motions,
       myHeldMotion,
-      crownTasks: isConvenor ? [...s.crownQuestionRecords().values()].filter((q) => q.status === "pending").map((q) => ({ id: q.id, motion: q.motion })) : [],
+      crownTasks: isConvenor ? [...s.crownQuestionRecords().values()].filter((q) => q.status === "pending").map((q) => ({ id: q.id, motion: q.motion, ...q.text ? { text: q.text } : {} })) : [],
       identity: me ? { name: me.name, picture: me.picture } : isConvenor ? { name: s.convenorRecord().name, picture: s.convenorRecord().picture } : { name: null, picture: null },
       lapseWarned: me ? me.lapseWarned : isConvenor ? s.convenorRecord().lapseWarned : false,
       frozen: s.frozen

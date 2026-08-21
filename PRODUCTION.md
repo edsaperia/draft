@@ -328,6 +328,25 @@ service container, or the migration is tested only on this machine.
   redirect file is for the static design server), reference paths 404.
   Open for Ed: Q501–504.
 
+### The design-day backlog (Ed, 2026-08-21: *do all of them*)
+
+Q440–471 were settled on 2026-08-20 and not built, because that evening
+went to stages 1–7. Order, dependency-driven (topbar outward; the close
+last, being the one irreversible thing):
+
+1. Q460/462 — birth order 🪶 → 📍 → 📧, the link collected and reserved.
+2. Glyph batch — Q454 (🔧→✒️, 👑→🛡️, *Who has the pen?*), Q506 (🤝 in
+   the governance-tabs pattern), Q449 (identity commits ✓), Q469 (drawn
+   PAUSE), Q440 (the Text's powers modelled). One re-freeze.
+3. Q466/471 — the session-clock and the topbar middle.
+4. Wallets and acknowledgment — Q444–447, 458; Q448/453/442; Q445.
+5. 🍾 Begin — Q443, with Q441/457 and Q459.
+6. The close — Q467 (engine, §4.6), Q468 🥂, Q470 the closed page.
+7. Stranger's door — Q455/456/452.
+8. Q463–465 come back as questions (record surface, notifications).
+
+- 04:10 — Q504(b) landed (`9a11d6b`). Q501/503 building; Q460 next.
+
 ## Decisions
 
 | # | Decision | State |

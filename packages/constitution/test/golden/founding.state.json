@@ -143,13 +143,12 @@
     },
     "applications": {
       "value": {
-        "holder": "members",
         "joinPolicy": "apply"
       },
-      "holder": "convenor",
+      "holder": "members",
       "powers": {
-        "unilateral": true,
-        "assent": true
+        "unilateral": false,
+        "assent": false
       }
     },
     "removal": {
