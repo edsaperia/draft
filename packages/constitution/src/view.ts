@@ -8,7 +8,7 @@
  */
 
 import type { ConstitutionSession } from './session.js';
-import type { MemberId, MotionPayload } from './types.js';
+import type { Arrival, MemberId, MotionPayload, PowerSource } from './types.js';
 import { holderOf } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf } from './catalogue.js';
@@ -40,6 +40,8 @@ export interface SettingView {
   holder: 'convenor' | 'members';
   /** The crown powers held on this setting (§9.7 v0.54). */
   powers: { unilateral: boolean; assent: boolean };
+  /** Where each held power came from (Q524): the birth, or a reserve motion. */
+  powerFrom: { unilateral: PowerSource | null; assent: PowerSource | null };
   value: SettingValue | null;
   settledBy: 'convenor' | 'ceremony' | 'motion' | 'crown' | null;
   settledAtT: number | null;
@@ -74,6 +76,13 @@ export interface MemberRowView {
   arrived: boolean;
   lapsed: boolean;
   isConvenor: boolean;
+  /**
+   * How this member got in, and whose act it was (Q524). Public like the rest
+   * of the register — a constitution that lists its members can say how each
+   * of them came to be one, and it is what lets a member's own 🏛️ grant name
+   * who conferred it instead of guessing from who holds the roster.
+   */
+  arrival: Arrival;
 }
 
 export interface ApplicantRowView {
@@ -134,7 +143,8 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
   {
     const st = s.settingState('startingText');
     settings.push({ setting: 'startingText', glyph: '📄', kind: 'ordinary',
-      holder: st.holder, powers: { ...st.powers }, value: null, settledBy: null,
+      holder: st.holder, powers: { ...st.powers }, powerFrom: { ...st.powerFrom },
+      value: null, settledBy: null,
       settledAtT: null, collecting: false });
   }
   for (const entry of MANAGED) {
@@ -145,6 +155,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       kind: entry.kind as 'ordinary' | 'constitutional',
       holder: st.holder,
       powers: { ...st.powers },
+      powerFrom: { ...st.powerFrom },
       value: st.value,
       settledBy: st.settledBy,
       settledAtT: st.settledAtT,
@@ -222,6 +233,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       arrived: rec.arrivedAtT !== null,
       lapsed: rec.lapsed,
       isConvenor: rec.id === convenorId,
+      arrival: { ...rec.arrival },
     });
   }
 

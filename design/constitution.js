@@ -810,6 +810,8 @@ var CONSTITUTION = (() => {
               id,
               holder: "convenor",
               powers: { unilateral: true, assent: true },
+              // both powers are the convenor's by construction at the birth
+              powerFrom: { unilateral: "founding", assent: "founding" },
               value: null,
               settledBy: null,
               settledAtT: null,
@@ -821,14 +823,23 @@ var CONSTITUTION = (() => {
           this.foldSet("title", { text: event.title }, "convenor", event.t);
           this.foldSet("link", { slug: event.slug }, "convenor", event.t);
           this.slugHistory.push(event.slug);
-          if (c.isMember) this.members.set(c.id, this.freshMember(c.id, c.email, event.t, event.t));
+          if (c.isMember) this.members.set(
+            c.id,
+            this.freshMember(c.id, c.email, event.t, event.t, { via: "founding", by: null })
+          );
           break;
         }
         case "convenor-membership-set": {
           if (event.isMember) {
             this.members.set(
               this.convenor.id,
-              this.freshMember(this.convenor.id, this.convenor.email, event.t, event.t)
+              this.freshMember(
+                this.convenor.id,
+                this.convenor.email,
+                event.t,
+                event.t,
+                { via: "founding", by: null }
+              )
             );
           } else {
             this.members.delete(this.convenor.id);
@@ -899,7 +910,14 @@ var CONSTITUTION = (() => {
         case "member-invited": {
           this.members.set(
             event.member,
-            this.freshMember(event.member, event.email, event.t, null)
+            this.freshMember(
+              event.member,
+              event.email,
+              event.t,
+              null,
+              // a motion carried it, or the convenor's own drafting power did
+              { via: "invitation", by: event.viaMotion === void 0 ? "convenor" : "members" }
+            )
           );
           this.nextMemberN += 1;
           break;
@@ -1024,7 +1042,7 @@ var CONSTITUTION = (() => {
             this.setPowers(st, {
               unilateral: st.powers.unilateral || p !== "assent",
               assent: st.powers.assent || p !== "unilateral"
-            });
+            }, "motion");
           }
           break;
         }
@@ -1201,7 +1219,13 @@ var CONSTITUTION = (() => {
         case "member-admitted": {
           const a = this.applicants.get(event.applicant);
           a.status = "admitted";
-          const rec = this.freshMember(event.member, a.email, event.t, event.t);
+          const rec = this.freshMember(
+            event.member,
+            a.email,
+            event.t,
+            event.t,
+            { via: "application", by: "members" }
+          );
           rec.name = a.name;
           rec.picture = a.picture;
           this.members.set(event.member, rec);
@@ -1243,16 +1267,29 @@ var CONSTITUTION = (() => {
       return this.registerPowers().assent;
     }
     /** §9.7 v0.54: holder derives from powers — the convenor's iff any is held. */
-    setPowers(st, powers) {
+    /**
+     * `from` (Q524) says where a power *newly held* came from; a power that was
+     * already held keeps the source it arrived with, and one being given up
+     * loses its source with it. Defaulting to 'founding' is right for every
+     * caller but the carried reserve motion, which is the only way a power
+     * reaches the convenor from outside.
+     */
+    setPowers(st, powers, from = "founding") {
+      const was = st.powers;
+      st.powerFrom = {
+        unilateral: !powers.unilateral ? null : was.unilateral ? st.powerFrom.unilateral : from,
+        assent: !powers.assent ? null : was.assent ? st.powerFrom.assent : from
+      };
       st.powers = powers;
       st.holder = holderOf(powers);
     }
-    freshMember(id, email, invitedAtT, arrivedAtT) {
+    freshMember(id, email, invitedAtT, arrivedAtT, arrival) {
       return {
         id,
         email,
         invitedAtT,
         arrivedAtT,
+        arrival,
         removed: false,
         lapsed: false,
         lapseWarned: false,
@@ -2390,6 +2427,7 @@ var CONSTITUTION = (() => {
         kind: "ordinary",
         holder: st.holder,
         powers: { ...st.powers },
+        powerFrom: { ...st.powerFrom },
         value: null,
         settledBy: null,
         settledAtT: null,
@@ -2404,6 +2442,7 @@ var CONSTITUTION = (() => {
         kind: entry.kind,
         holder: st.holder,
         powers: { ...st.powers },
+        powerFrom: { ...st.powerFrom },
         value: st.value,
         settledBy: st.settledBy,
         settledAtT: st.settledAtT,
@@ -2479,7 +2518,8 @@ var CONSTITUTION = (() => {
         picture: rec.picture,
         arrived: rec.arrivedAtT !== null,
         lapsed: rec.lapsed,
-        isConvenor: rec.id === convenorId
+        isConvenor: rec.id === convenorId,
+        arrival: { ...rec.arrival }
       });
     }
     return {

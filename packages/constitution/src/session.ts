@@ -11,7 +11,7 @@ import { chainHash } from './hash.js';
 import type {
   ApplicantRecord, ConstitutionEvent, ConvenorInput, CrownQuestionId, CrownQuestionRecord,
   LogEntry, MemberId, MemberRecord, MotionAnswer, MotionId, MotionPayload,
-  MotionRecord, Power, Powers, SettingState,
+  MotionRecord, Power, Powers, SettingState, Arrival, PowerSource,
 } from './types.js';
 import { holderOf, SCHEMA_VERSION } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
@@ -149,6 +149,8 @@ export class ConstitutionSession {
             id,
             holder: 'convenor',
             powers: { unilateral: true, assent: true },
+            // both powers are the convenor's by construction at the birth
+            powerFrom: { unilateral: 'founding', assent: 'founding' },
             value: null,
             settledBy: null,
             settledAtT: null,
@@ -160,13 +162,15 @@ export class ConstitutionSession {
         this.foldSet('title', { text: event.title }, 'convenor', event.t);
         this.foldSet('link', { slug: event.slug }, 'convenor', event.t);
         this.slugHistory.push(event.slug);
-        if (c.isMember) this.members.set(c.id, this.freshMember(c.id, c.email, event.t, event.t));
+        if (c.isMember) this.members.set(c.id,
+          this.freshMember(c.id, c.email, event.t, event.t, { via: 'founding', by: null }));
         break;
       }
       case 'convenor-membership-set': {
         if (event.isMember) {
           this.members.set(this.convenor.id,
-            this.freshMember(this.convenor.id, this.convenor.email, event.t, event.t));
+            this.freshMember(this.convenor.id, this.convenor.email, event.t, event.t,
+              { via: 'founding', by: null }));
         } else {
           this.members.delete(this.convenor.id);
         }
@@ -239,7 +243,9 @@ export class ConstitutionSession {
       }
       case 'member-invited': {
         this.members.set(event.member,
-          this.freshMember(event.member, event.email, event.t, null));
+          this.freshMember(event.member, event.email, event.t, null,
+            // a motion carried it, or the convenor's own drafting power did
+            { via: 'invitation', by: event.viaMotion === undefined ? 'convenor' : 'members' }));
         this.nextMemberN += 1;
         break;
       }
@@ -373,10 +379,14 @@ export class ConstitutionSession {
           // restore one power or both (Q394); omitted means both.
           const st = this.settings.get(rec.payload.setting)!;
           const p = rec.payload.power ?? 'both';
+          // 'motion' (Q524): this is the only door a power comes back
+          // through from outside, so it is the only source that is not the
+          // birth — and the one thing the crown's own card can truthfully
+          // say about where it got its pen.
           this.setPowers(st, {
             unilateral: st.powers.unilateral || p !== 'assent',
             assent: st.powers.assent || p !== 'unilateral',
-          });
+          }, 'motion');
         }
         // membership payloads apply through their follow-on events
         break;
@@ -565,7 +575,9 @@ export class ConstitutionSession {
       case 'member-admitted': {
         const a = this.applicants.get(event.applicant)!;
         a.status = 'admitted';
-        const rec = this.freshMember(event.member, a.email, event.t, event.t);
+        // an application is admitted by an ordinary motion, always the room's act
+        const rec = this.freshMember(event.member, a.email, event.t, event.t,
+          { via: 'application', by: 'members' });
         rec.name = a.name;
         rec.picture = a.picture;
         this.members.set(event.member, rec);
@@ -613,15 +625,30 @@ export class ConstitutionSession {
   }
 
   /** §9.7 v0.54: holder derives from powers — the convenor's iff any is held. */
-  private setPowers(st: SettingState, powers: Powers): void {
+  /**
+   * `from` (Q524) says where a power *newly held* came from; a power that was
+   * already held keeps the source it arrived with, and one being given up
+   * loses its source with it. Defaulting to 'founding' is right for every
+   * caller but the carried reserve motion, which is the only way a power
+   * reaches the convenor from outside.
+   */
+  private setPowers(st: SettingState, powers: Powers,
+    from: PowerSource = 'founding'): void {
+    const was = st.powers;
+    st.powerFrom = {
+      unilateral: !powers.unilateral ? null
+        : was.unilateral ? st.powerFrom.unilateral : from,
+      assent: !powers.assent ? null
+        : was.assent ? st.powerFrom.assent : from,
+    };
     st.powers = powers;
     st.holder = holderOf(powers);
   }
 
   private freshMember(id: MemberId, email: string, invitedAtT: number,
-    arrivedAtT: number | null): MemberRecord {
+    arrivedAtT: number | null, arrival: Arrival): MemberRecord {
     return {
-      id, email, invitedAtT, arrivedAtT,
+      id, email, invitedAtT, arrivedAtT, arrival,
       removed: false, lapsed: false, lapseWarned: false, signedOut: null,
       name: null, picture: null,
       lastActivityT: arrivedAtT ?? invitedAtT,

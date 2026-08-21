@@ -4643,7 +4643,8 @@
         const q = index().questions.get(mid);
         const res = index().resolutions.get(mid);
         const mine = q ? q.myAnswer !== null : false;
-        return { holder: st.holder, powers: st.powers, value: st.value,
+        return { holder: st.holder, powers: st.powers, powerFrom: st.powerFrom,
+          value: st.value,
           settledBy: st.settledBy, settledAtT: st.settledAtT,
           collecting: st.collecting,
           distribution: res ? res.distribution : null,
@@ -4654,6 +4655,7 @@
       memberRecords: () => index().members || (index().members = new Map(
         self.v.view.members.map((r) => [r.id, { id: r.id, email: r.email,
           name: r.name, picture: r.picture, arrivedAtT: r.arrived ? 1 : null,
+          arrival: r.arrival,
           lapsed: r.lapsed, removed: false,
           okOwed: r.id === self.v.me ? self.v.view.owedOks : [] }]))),
       convenorRecord: () => self.v.convenor,
@@ -5451,22 +5453,42 @@
   // says *The Founder*, the role is what acted, and it sidesteps §9.0c's
   // Anonymous — which is a rule about how a person appears in the membership,
   // not about how an office is named in a sentence.
+  // **Read, not inferred** (Q524, Ed 2026-08-21: *worth building!*). The
+  // module now folds a per-member arrival record and a per-power source from
+  // events it already had, so these sentences state what happened rather than
+  // reconstructing it from who currently holds the roster — which was a guess
+  // that went wrong exactly when the roster changed hands after somebody
+  // arrived.
+  const myArrival = () => { try {
+    const rec = cs && cs.memberRecords && cs.memberRecords().get(viewerId());
+    return (rec && rec.arrival) || null;
+  } catch (e) { return null; } };
+  // where the founder's pen came from: 'motion' if any setting they hold it on
+  // was handed back by the room, otherwise the birth
+  const penFrom = () => { try {
+    return PW_KEYS.some((k) => { const st = pwState(k);
+      return st && st.powers && st.powers.unilateral &&
+        st.powerFrom && st.powerFrom.unilateral === 'motion'; }) ? 'motion' : 'founding';
+  } catch (e) { return 'founding'; } };
   const grantedBy = (c) => {
     if (!c.open()) return '';                    // nothing has been conferred yet
     if (c.k === 'grant-pen') {
-      // the pen is the founder's by construction at the birth; the only other
-      // road to it is the membership restoring it by a reserve motion (Q394)
-      return amFounder() && !constituted()
-        ? 'You founded this document, and the pen came with it.'
-        : 'The membership returned the pen to you.';
+      return penFrom() === 'motion'
+        ? 'The membership returned the pen to you.'
+        : 'You founded this document, and the pen came with it.';
     }
     if (c.k === 'grant-voice') {
-      if (amFounder()) return 'You founded this document, and every member holds a voice in it.';
-      return (cs && cs.settingState && (() => { try {
-        const st = cs.settingState('membership'); return !!st && st.holder === 'members';
-      } catch (e) { return false; } })()
-        ? 'The membership admitted you, and gave you a voice in every constitutional question.'
-        : 'The Founder brought you into the membership, and a voice in every constitutional question came with it.');
+      const a = myArrival();
+      const via = a ? a.via : (amFounder() ? 'founding' : 'invitation');
+      if (via === 'founding') {
+        return 'You founded this document, and every member holds a voice in it.';
+      }
+      if (via === 'application') {
+        return 'The membership admitted you on your application, and a voice in every constitutional question came with it.';
+      }
+      return (a && a.by === 'members')
+        ? 'The membership agreed to invite you, and a voice in every constitutional question came with it.'
+        : 'The Founder invited you into the membership, and a voice in every constitutional question came with it.';
     }
     // 💡 and ⚖️ both open at 🍾, which is always the founder's own press
     if (c.k === 'canpropose') return 'The Founder began the document, granting every member the right to propose changes to it.';

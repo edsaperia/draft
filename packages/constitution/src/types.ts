@@ -180,11 +180,35 @@ export function versionOf(entry: Pick<LogEntry, 'schemaVersion'>): number {
 
 /* -- fold state records (exposed read-only through projections) ----------- */
 
+/**
+ * How somebody came to be a member (Q524, Ed 2026-08-21). A power arriving
+ * unattributed reads as weather, and 🏛️ — the voice every member holds — is
+ * conferred by whoever brought them in. Derived wholly from events that
+ * already exist (`member-invited` has carried `viaMotion` from the start),
+ * so this adds no event shape and leaves the hash chain untouched.
+ *
+ *  founding    — the convenor, who made the document and was in it from the
+ *                first moment; `by` is null, because nobody let them in.
+ *  invitation  — invited: `by` is 'convenor' where the convenor's own
+ *                drafting power did it, 'members' where a motion carried it.
+ *  application — admitted on their own application, always by the membership.
+ */
+export type ArrivalVia = 'founding' | 'invitation' | 'application';
+export interface Arrival {
+  via: ArrivalVia;
+  by: 'convenor' | 'members' | null;
+}
+
+/** Where a held crown power came from (Q524): the birth, or a reserve motion. */
+export type PowerSource = 'founding' | 'motion';
+
 export interface MemberRecord {
   id: MemberId;
   email: string;
   invitedAtT: number;
   arrivedAtT: number | null;
+  /** How this member got in, and whose act it was (Q524). */
+  arrival: Arrival;
   removed: boolean;
   lapsed: boolean;
   lapseWarned: boolean;
@@ -209,6 +233,13 @@ export interface SettingState {
   holder: 'convenor' | 'members';
   /** The crown powers held on this setting (§9.7 v0.54). */
   powers: Powers;
+  /**
+   * Where each *currently held* power came from (Q524), null where it is not
+   * held: 'founding' if it has been the convenor's since the birth (a
+   * pre-start reclaim included — §9.6a makes that a re-set, not a grant),
+   * 'motion' if the membership put it back with a carried `reserve`.
+   */
+  powerFrom: { unilateral: PowerSource | null; assent: PowerSource | null };
   value: SettingValue | null;
   settledBy: SettledBy | null;
   settledAtT: number | null;

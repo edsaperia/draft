@@ -475,14 +475,8 @@
   function queueEntries() {
     const out = [];
     for (const g of SUGGS) {
-      // **You are not shown a task you have not been given the right to do**
-      // (Ed, 2026-08-21). The line falls exactly where the palette already
-      // draws it: **hot for actions, cold for information**. A 💡 or 🔥 entry
-      // wants a judgment, so it waits until ⚖️ has been acknowledged; a ⏳,
-      // a filed ✔✖ or a draft of your own reports where things stand and is
-      // owed to you whatever you hold. ⚔️ and 🌶️ cannot arise unless you have
-      // already judged, so they need no clause of their own here.
-      if (stateOf(g) === 'needs' && !MAY_JUDGE()) continue;
+      // (A task you have no right to do is not in SUGGS at all — `withheld`,
+      // applied at ingest in bindData, so the rail needs no rule of its own.)
       // a patch's entry is titled by the section it stands in, not by the patch
       // as a whole (Ed, 183) — in a margin, the local name is the useful one
       if (g.kind === 'patch') g.sites.forEach((site, i) =>
@@ -4017,9 +4011,35 @@
     addEventListener('resize', () => { layoutQueue(); onViewportChange(); });
   }
 
+  // **You do not see a card you have no right to act on** (Ed, 2026-08-21,
+  // answering Q523 (b) and Q525 (c) together). Not the rail entry, not the
+  // gutter tab, not the contents-rail mark, and no card behind any of them:
+  // for a reader who has not yet acknowledged ⚖️ the charter is simply prose,
+  // and every mark arrives at once when the grant is pressed — which turns
+  // the acknowledgment into a visible event rather than a formality.
+  //
+  // **Filtered at ingest, not at each render site.** Seven places read SUGGS
+  // to draw something — the document, the rail, the TOC, the wires, the
+  // section marks, the diagonal's serve test, the open-card lookup — and a
+  // rule restated seven times is a rule six of them will eventually forget.
+  // Filtering the array itself makes them agree by construction, and it is
+  // honest about what it means: this reader's document does not contain
+  // these questions yet.
+  //
+  // The line is the palette's own: **hot for actions, cold for information**.
+  // Only 'needs' goes — a ⏳ you have judged, a filed ✔✖ and a draft of your
+  // own report where things stand and are owed to you whatever you hold.
+  // ⚔️ and 🌶️ need no clause here, since neither can arise before you have
+  // judged. What makes this safe to re-run is that the capability is part of
+  // the charter column's data key, so an acknowledgment re-keys and the full
+  // set is handed back in.
+  const withheld = (g) => stateOf(g) === 'needs' && !MAY_JUDGE();
+
   // The data, keyed and seeded exactly as the page did it at load.
   function bindData(d, s) {
-    DOC = d; SUGGS = s;
+    DOC = d; SUGGS = s.filter((g) => !withheld(g));
+    // a card that has just been withheld cannot stay open behind it
+    if (openId != null && !SUGGS.some((g) => g.id === openId)) openId = null;
     // Always-on typing means *every* clause can be edited, so every clause needs
     // an identity to hang a draft on — until now only the ones the fixture had
     // something to say about carried a key. Index-derived, and stable for as long
