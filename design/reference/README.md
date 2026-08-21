@@ -8,7 +8,9 @@ after the design-day builds and again after review #2's door fixes, at
 `refs-birth-2026-08-21` after the constitution's section order was restored
 and the birth was given its own layout, at `refs-gates-2026-08-21` after the
 🎩 fix let the gates through, and at `refs-acks-2026-08-21` after a power
-stopped being held until its grant is acknowledged, marks the same commit
+stopped being held until its grant is acknowledged, and at
+`refs-withheld-2026-08-22` after a task you cannot do stopped being drawn
+at all, marks the same commit
 and is authoritative if EOL normalisation ever makes a copy differ byte-wise.
 
 - **Never edit these files.** When the surface changes intentionally,
