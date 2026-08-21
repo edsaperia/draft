@@ -2441,6 +2441,10 @@
     );
   }
 
+  // Q440 (2026-08-21): 🛡️ held on the Text — a live item carries crownWaits,
+  // and the card says a carried change waits on the Founder before it lands
+  const crownNote = (s) => (s.crownWaits
+    ? '<p class="setnote">If this carries it goes to the Founder, who can accept or reject it before it lands.</p>' : '');
   function suggCardHtml(s, siteKey) {
     if (stateOf(s) === 'sealed') return sealedCardHtml(s);
     if (stuck(s)) return deadlockCardHtml(s);
@@ -2508,7 +2512,7 @@
         fieldHtml(
           proposalHtml(s, { v: 'a', html: wordingHtml(cur, s.race.a.text), why: s.race.a.rationale }) +
           proposalHtml(s, { v: 'b', html: wordingHtml(cur, s.race.b.text), why: s.race.b.rationale }), 2) +
-        reviseNote(s) +
+        reviseNote(s) + crownNote(s) +
         // The one thing a race card cannot say any other way: neither of its
         // two candidates has an incumbent radio, so nothing on the card votes
         // to keep the clause, and a reader could reasonably think one of them
@@ -2572,7 +2576,7 @@
                           chips: chipsFor(key, s.id) }) +
       groundNote(s) +
       fieldHtml(proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, edit: noEdit })) +
-      reviseNote(s) +
+      reviseNote(s) + crownNote(s) +
       commitRowHtml(s) +
       '</div>'
     );
@@ -3966,11 +3970,58 @@
     if (w && w.rules) EDIT_RULES = w.rules;
     if (w && w.held != null) editsHeld = w.held;
     if (w && w.toNext != null) editsToNext = w.toNext;
+    // a live wallet's clock (stage 8, Q503a): the drip interval in seconds,
+    // carried as the tenth-of-window the fixture's clock was built on —
+    // dripIn reads SESSION_MINUTES × 6 seconds per tick, so an interval of
+    // d seconds is SESSION_MINUTES = d / 6; null says the document does not drip
+    if (w && w.dripSeconds !== undefined) SESSION_MINUTES = w.dripSeconds == null ? Infinity : w.dripSeconds / 6;
     renderWallet();
+  }
+  // the room the records speak of (stage 8): E and the floor, from the view
+  // ---- `session-clock` (Q466/Q471) ----------------------------------------
+  // One plain line saying where the document is in its life. **The ladder**:
+  // days beyond a week, hours inside one, 20-minute steps inside six hours,
+  // 10-minute steps inside the hour — never finer, never seconds. Every
+  // figure rounds *down* to its step, so the clock is never optimistic.
+  // Cold at every distance: the last hours' urgency belongs to the questions.
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+    'August', 'September', 'October', 'November', 'December'];
+  // a date in words, the year only when it is not this one (STYLE §2: raw
+  // values are not copy); `todayMs` is a seam for the check script
+  function dateWords(ms, todayMs) {
+    const d = new Date(ms), now = new Date(todayMs ?? Date.now());
+    return d.getDate() + ' ' + MONTHS[d.getMonth()] +
+      (d.getFullYear() === now.getFullYear() ? '' : ' ' + d.getFullYear());
+  }
+  const MIN = 60_000, HOUR = 60 * MIN, DAY = 24 * HOUR;
+  // state: {kind:'none'} | {kind:'left', ms} | {kind:'frozen', mustReturn?}
+  //      | {kind:'closed', atMs, todayMs?}
+  function clockText(state) {
+    if (!state || state.kind === 'none') return '';
+    if (state.kind === 'frozen') {
+      return 'Frozen' + (state.mustReturn > 0 ? ' — ' + state.mustReturn + ' must return' : '');
+    }
+    if (state.kind === 'closed') return 'Closed ' + dateWords(state.atMs, state.todayMs);
+    const ms = state.ms;
+    if (ms <= 0) return 'closing now';       // the clock has passed; the close is landing
+    if (ms > 7 * DAY) { const d = Math.floor(ms / DAY); return d + ' days left'; }
+    if (ms > 6 * HOUR) { const h = Math.floor(ms / HOUR); return h + ' hours left'; }
+    if (ms > HOUR) {
+      const steps = Math.floor(ms / (20 * MIN)), h = Math.floor(steps / 3), m = (steps % 3) * 20;
+      return h + 'h ' + String(m).padStart(2, '0') + 'm left';
+    }
+    const m = Math.floor(ms / (10 * MIN)) * 10;
+    return m >= 10 ? m + ' minutes left' : 'under 10 minutes left';
+  }
+
+  function setRoom(r) {
+    if (r && r.E != null) ROSTER = r.E;
+    if (r && r.floor != null) FLOOR = r.floor;
   }
 
   window.SESSION = {
-    init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet,
+    init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet, setRoom,
+    clockText, dateWords,
     arcFrames, renderWallet, beat, act,
     refreshRail, renderToc, layoutQueue, drawWires, washAttrs,
     get DOC() { return DOC; },

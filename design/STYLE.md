@@ -106,3 +106,11 @@ Scanned: every string literal in `session.js`, `setup.js` and the page, comments
 5. **Dropped** — the fixture topbar's *confidence bar 74% ▲* stat did not survive the merge: the threshold is not topbar material (`session-clock`).
 6. **Passed** — the B2b strings (*you have judged this — it is still running*, *wants your judgment*, *yours · in the race*, *decided — adopted*, *decided — the current text stood*, *retired — the current text stood*, *you judged this*, the two refusal sentences, *today*/*yesterday*): third person about the document, second person only where the card asks; no addresses; a count never a direction.
 7. **Noted, not surface** — `kind: 'ordinary'`, `settledBy === 'ceremony'`, `holder === 'convenor'` are engine vocabulary in data, never rendered; the surface says them only through the glyph pair.
+
+**Second pass (the design-day builds, 2026-08-21, 07:40)** — over every string the builds of Q460/462, the glyph batch, Q501/503 and Q466/471 added (listed in their commit messages):
+
+8. **Fixed — Q502 answered** — 📈 is *Rising Approval Threshold?*, a yes/no title for a yes/no card (Ed).
+9. **Fixed** — three *starting text* strings (*Waiting on the starting text…*, *when the starting text has been decided*) → *the text* (Q440).
+10. **Fixed** — the preamble's *Ordinary proposals ✏️ pass…* → *Proposals ✏️ pass…*; setup.js's removal rung *An ordinary proposal ✏️* → *A proposal ✏️ like any other* (§1: "ordinary" never on the surface).
+11. **Passed** — the birth's new mail (*you have named a document “T” and chosen its address, docs.vote/S — open this link to create it there*), the 📍 verdicts (*docs.vote/S is taken. docs.vote/S-2 is free.*), the power-card lines (*The Founder edits the text directly* / *A change to the text that carries waits on the Founder's OK before it lands*), 🤝's ladder copy (*the least open answer wins: one member who wants invitation only keeps it so*), *Save* on identity, the clock ladder (*6 days left* … *under 10 minutes left*, *Frozen*, *Closed 3 September*), *quorum 2 of 3*: third person about the document, second where a card asks, counts never directions, no addresses, no raw values.
+12. **Open** — the clock says *Frozen* without *— N must return* until the module serves the count (close, server half).

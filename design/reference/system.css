@@ -223,6 +223,16 @@
     .pulse, .pulse.beat { transition: none; animation: none; }
   }
   .navbar .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
+  /* `session-clock`: the room, in the topbar middle. One plain line at
+     --t-small, muted — cold at every distance, because the last hours'
+     urgency belongs to the questions, not the chrome. The clock is a button
+     only because it is the door to ⏰; it wears no button clothes. */
+  .navbar .room { display: inline-flex; gap: 14px; align-items: center; font-size: var(--t-small); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .navbar .room:empty { display: none; }
+  .navbar .clock { appearance: none; border: 0; background: none; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline transparent; text-underline-offset: 3px; transition: text-decoration-color 160ms ease; }
+  .navbar .clock:hover:not([disabled]) { text-decoration-color: currentColor; }
+  .navbar .clock[disabled] { cursor: default; }
+  .navbar .clock:empty { display: none; }
   /* You, at the right-hand end. Initials rather than a photograph: this is a
      mockup with no accounts behind it, and a stock face would be a claim the
      product cannot yet make. */
@@ -383,7 +393,7 @@
      wants anything from you is the colour, which is the rule the whole palette
      runs on. */
   .mk-adopted, .mk-retired { color: var(--ok); }
-  .mk-filedYes, .mk-filedNo { color: var(--muted); font-weight: 500; }
+  .mk-filedYes, .mk-filedNo, .mk-filedUndecided { color: var(--muted); font-weight: 500; }
   .mk-shifted { color: var(--primary); }
   /* a drawn glyph has no plate to give it width, so at the two small sizes it
      needs a little of its own or the marks sit on top of each other */

@@ -1033,7 +1033,7 @@ window.SETUP = (function () {
       ladder(A, 'removal', [
         { v: 'everyone', t: 'Everyone must consent — theirs included', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
         { v: 'others', t: 'Everyone but them must consent', e: 'The whole room, minus the member in question, must agree.' },
-        { v: 'ordinary', t: 'An ordinary proposal ✏️', e: 'Judged at the approval threshold like any change, with quorum.' }]) + BLINDNOTE,
+        { v: 'ordinary', t: 'A proposal ✏️ like any other', e: 'Judged at the approval threshold like any change, with quorum.' }]) + BLINDNOTE,
     machines: (A) =>
       '<p class="why">An AI that patrols the document for drift and proposes fixes — it never judges, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
       ladder(A, 'machines', [

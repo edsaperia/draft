@@ -707,7 +707,7 @@
     { k: 'canpropose', g: '💡', t: 'Proposing', own: 'you', isGate: true, dep: ['roster'],
       open: () => !!cs && !!viewerId() && cs.canPropose(viewerId()),
       why: 'Anybody can read the document from the first second. Nobody can propose a change to a text that is not there yet — and you should not be able to act on a document whose rules you have not yet said what you will accept of, so your own unanswered questions wait here too.',
-      waiting: 'Waiting on the starting text, and on your own answers.',
+      waiting: 'Waiting on the text, and on your own answers.',
       done: 'Open — members can propose as soon as they arrive.',
       blockers: () => [card('text')].filter((c) => !settled(c)).concat(LIVE().filter(owesAnswer)) },
     { k: 'canjudge', g: '⚖️', t: 'Judging', own: 'you', isGate: true, dep: ['roster'],
@@ -820,7 +820,7 @@
       rule: 'Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.',
       takes: 'The document takes the highest', result: '80%',
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
-    { k: 'pace', g: '📈', t: 'How Does the Bar Get There?', kind: 'ordinary', dep: ['ending', 'quorum'], changeable: true },
+    { k: 'pace', g: '📈', t: 'Rising Approval Threshold?', kind: 'ordinary', dep: ['ending', 'quorum'], changeable: true },
     // The number is the room's; the **form** — count or share — is the
     // founder's wording of the question (Ed, 2026-08-18: *quorum can either be
     // a fixed number or a proportion of membership size*; §9.0a).
@@ -1063,7 +1063,7 @@
   // day: proposing is what the defaults are about), in his wording, with
   // the deviation baseline kept as its last sentence.
   const preamblePara = () =>
-    '<div class="cpara notab"><p class="cpv">Members may propose changes to rules. Ordinary proposals ✏️ pass when they meet the approval threshold. Constitutional proposals 🏛️ need everyone' + Q + 's consent. Nobody changes a rule directly, and no carried change waits on anyone' + Q + 's OK, unless a rule says so.</p></div>';
+    '<div class="cpara notab"><p class="cpv">Members may propose changes to rules. Proposals ✏️ pass when they meet the approval threshold. Constitutional proposals 🏛️ need everyone' + Q + 's consent. Nobody changes a rule directly, and no carried change waits on anyone' + Q + 's OK, unless a rule says so.</p></div>';
   // The title's clause (403/404, revised Ed 2026-08-19: *move title tab to
   // the first clause once that clause appears*): the 🪶 value tab stands in
   // front of the two power tabs — the governance tab group proper — so once
@@ -1393,7 +1393,7 @@
       : 'After ' + S.lapseDays + ' days without logging in'),
     removal: () => ({ everyone: 'Everyone has to agree, including them',
       others: 'Everyone else has to agree', ordinary: 'A proposal ✏️ like any other' }[removalRung()]),
-    canpropose: () => (canPropose() ? 'Open' : 'Waiting on the starting text'),
+    canpropose: () => (canPropose() ? 'Open' : 'Waiting on the text'),
     canjudge: () => (canJudge() ? 'Open' : 'Waiting on the constitution'),
   };
   const ANSVALUE = {
@@ -2078,7 +2078,7 @@
     if (c.k === 'canpropose') { const done = LIVE().some(owesAnswer) ? 0 : 1;
       return canPropose() && done
       ? 'Members may propose as soon as they arrive.'
-      : 'Members may begin proposing when the starting text has been decided and they have answered the questions the Founder delegated — ' +
+      : 'Members may begin proposing when the text has been decided and they have answered the questions the Founder delegated — ' +
         done + ' of ' + E() + ' have answered everything.'; }
     if (c.k === 'canjudge') return canJudge()
       ? 'Members may judge proposals.'

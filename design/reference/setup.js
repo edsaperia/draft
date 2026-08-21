@@ -69,12 +69,13 @@ window.SETUP = (function () {
   // compose button into a possible mention of them. SURFACE_EMOJI is a scan
   // of session-view.html + setup.js + session.js + fixture-session.js + cards.js for pictographic
   // characters (variation selectors stripped; re-run the scan from the
-  // 2026-08-19 commit when the furniture changes), plus 🔧/⚙ arriving with
-  // the governance tabs; the reserved set is that minus the offered faces.
+  // 2026-08-19 commit when the furniture changes); 🛡 arrived with the
+  // governance tabs (Q454, 2026-08-21 — 🔧 and ⚙ left the vocabulary with
+  // it); the reserved set is that minus the offered faces.
   // Tones are stripped before the test, so ✋🏽 is as reserved as ✋.
   const SURFACE_EMOJI = ('↔ ⏩ ⏰ ⏱ ⏳ ☑ ⚔ ⚖ ✅ ✉ ✋ ✍ ✏ ✒ ✔ ✖ ❄ ❌ ❎ ❓ ' +
     '🌍 🌶 🎩 🏛 🏷 👁 👍 👑 👤 👥 💡 💤 📄 📈 📌 📍 📝 📧 📬 📯 🔄 🔗 ' +
-    '🔥 🔧 ⚙ 🖼 🗑 🗝 🚪 🤖 🤝 🪪 🪶 ' +
+    '🔥 🖼 🗑 🗝 🚪 🛡 🤖 🤝 🪪 🪶 ' +
     '👦 👧 👨 👩 👱 👳 👴 👵 👶 🧑 🧒 🧓 🧔').split(' ');
   const normEmoji = (s) => s.replace(/[\u{FE0F}\u{FE0E}\u{1F3FB}-\u{1F3FF}]/gu, '');
   const RESERVED_EMOJI = new Set(SURFACE_EMOJI.filter((g) =>
@@ -1014,6 +1015,13 @@ window.SETUP = (function () {
       ladder(A, 'judgments', [
         { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
         { v: 'after', t: 'Revealed once the decision is made', e: 'Published with the record, never before it.' }]) + BLINDNOTE,
+    policy: (A) =>
+      '<p class="why">How somebody who is not a member can become one. The <b>least open</b> answer wins: one member who wants invitation only keeps it so.</p>' +
+      ladder(A, 'policy', [
+        { v: 'invite', t: 'Invitation only', e: 'Nobody joins unless a member brings them in.' },
+        { v: 'proposed', t: 'Applications must be proposed', e: 'Anybody can apply, but nothing happens until a member takes the application up and proposes it.' },
+        { v: 'apply', t: 'Anyone may apply', e: 'An application goes straight to the members, who judge it like any other proposal.' },
+        { v: 'open', t: 'Open', e: 'Anyone with the link becomes a member the moment they open it.' }]) + BLINDNOTE,
     chamber: (A) =>
       '<p class="why">Who may read the document besides the members — readers only, never counted. The <b>most private</b> answer wins: one member who wants the room closed closes it.</p>' +
       ladder(A, 'chamber', [
@@ -1025,7 +1033,7 @@ window.SETUP = (function () {
       ladder(A, 'removal', [
         { v: 'everyone', t: 'Everyone must consent — theirs included', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
         { v: 'others', t: 'Everyone but them must consent', e: 'The whole room, minus the member in question, must agree.' },
-        { v: 'ordinary', t: 'An ordinary proposal ✏️', e: 'Judged at the approval threshold like any change, with quorum.' }]) + BLINDNOTE,
+        { v: 'ordinary', t: 'A proposal ✏️ like any other', e: 'Judged at the approval threshold like any change, with quorum.' }]) + BLINDNOTE,
     machines: (A) =>
       '<p class="why">An AI that patrols the document for drift and proposes fixes — it never judges, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
       ladder(A, 'machines', [
@@ -1059,11 +1067,12 @@ window.SETUP = (function () {
      Its styles live in setup.css behind a NOT-DESIGN-SYSTEM fence: the mail
      previews another medium, and its look must owe nothing to this surface. */
   const MAILS = {
-    verify: (title, to) => ({
+    // Q460: the click is the creation — the address was chosen first
+    verify: (title, to, slug) => ({
       to, from: 'docs.vote',
-      subject: 'Log in to create “' + title + '”',
-      body: 'You have created a document called <b>' + esc(title) + '</b> on docs.vote.',
-      action: 'Log in to create it',
+      subject: 'Create “' + title + '”',
+      body: 'You have named a document <b>' + esc(title) + '</b> and chosen its address, <b>docs.vote/' + esc(slug || '…') + '</b>.',
+      action: 'Open the link to create it there',
     }),
     applyVerify: (title, to) => ({
       to, from: 'docs.vote',

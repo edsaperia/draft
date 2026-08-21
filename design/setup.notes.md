@@ -85,7 +85,7 @@ only*).
 
 ⏰ When Does It End? (an endpoint may now exist)
  ├─⇒ ✒️ How Sure Must the Room Be?   the close bar needs a close
- ├─⇒ 📈 How Does the Bar Get There?  a ramp needs an endpoint
+ ├─⇒ 📈 Rising Approval Threshold?  a ramp needs an endpoint
  └─⇒ 💧 How Fast Do ✏️s Come Back?   the drip is paced against the window
 
 gates (not decisions — they follow from the others):
