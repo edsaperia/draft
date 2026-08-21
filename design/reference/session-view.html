@@ -3602,15 +3602,26 @@
     // ✒️ on 📧, before it is verified, IS the send (Ed, 2026-08-19) — and it
     // leaves the card standing, because the inbox opens over it and what you
     // come back to is the card you were on
+    // **The hold guards every wallet commit, before anything acts on it.**
+    // A click on a held commit is one of three things: the one the hold
+    // itself fires when the glyph lands (act on it), one from a press let go
+    // early or the trailing click of a completed hold (swallow it), or one
+    // with no pointer behind it at all — a key, a script — which acts at
+    // once. This used to sit *below* 📧's send, so the send was the one act
+    // on the surface a quick click still performed (Ed, 2026-08-21), and its
+    // window was inverted: for 700ms after a hold completed, `Date.now() >
+    // penSwallowUntil` was false and a quick click went straight through.
+    // There is no window now — the press itself is the state.
+    const held = ev.target.closest('[data-confirm]');
+    if (held && isPenCommit(held) && !penHoldFired && penPointerDown) {
+      penPointerDown = false;
+      return;
+    }
+    if (held) penPointerDown = false;
     if (ev.target.closest('[data-confirm]') && S.open === 'myemail' && !S.emailVerified) {
       return sendVerify();
     }
     if (ev.target.closest('[data-confirm]')) {
-      // the hold ladder (Q444): a ✒️ commit lands when the pen arrives — a
-      // click released early sets nothing; a click with no pointer behind it
-      // (a key, a script) sets at once
-      const pb = ev.target.closest('[data-confirm]');
-      if (isPenCommit(pb)) { const swallow = penPointerDown && !penHoldFired && Date.now() > penSwallowUntil; penPointerDown = false; if (swallow) return; }
       return closeThen(() => {
         const was = S.open; S.seen.add(was); S.open = null;
         const cw = card(was);
@@ -5056,7 +5067,7 @@
     if (cs && /✒️/.test(b.textContent) && document.querySelector('#penwallet i')) return { g: '✒️', sel: '#penwallet i' };
     return null;
   };
-  let penHold = null, penHoldFired = false, penPointerDown = false, penSwallowUntil = 0;
+  let penHold = null, penHoldFired = false, penPointerDown = false;
   const isPenCommit = (b) => !!holdWallet(b);
   document.addEventListener('pointerdown', (ev) => {
     const b = ev.target.closest && ev.target.closest('[data-confirm]');
@@ -5073,7 +5084,10 @@
     penHold = { b, w, flight, timer: setTimeout(() => {
       penHold = null; penHoldFired = true;
       b.classList.remove('penholding'); penGhost = false; quillGhost = false;
-      try { b.click(); } finally { penHoldFired = false; penPointerDown = false; penSwallowUntil = Date.now() + 700; }
+      // penPointerDown stays true on purpose: the real click that arrives on
+      // pointerup is the trailing half of this same press, and the guard
+      // above swallows it
+      try { b.click(); } finally { penHoldFired = false; }
       renderPowerWallets();
     }, PEN_HOLD_MS) };
   });
