@@ -634,7 +634,7 @@ describe('review #1 hardening', () => {
 });
 
 describe('the surface is served', () => {
-  it('serves setup.html at /d/:slug and the design assets', async () => {
+  it('serves session-view.html at /d/:slug and the design assets', async () => {
     const { base } = await boot();
     const created = await (await post(base, '/api/docs', {
       title: 'Three', email: 'three@example.org',

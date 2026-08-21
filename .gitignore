@@ -11,4 +11,3 @@ data/
 secret.txt
 tokens.json
 outbox.jsonl
-design/_head/

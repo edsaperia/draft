@@ -286,6 +286,43 @@ service container, or the migration is tested only on this machine.
   Environment, so the variable matches the blueprint.
 - 00:15 — `9d89a3a` live and verified 10/10; the run is closed for real.
 
+### Stage 8 — the surface merge (2026-08-21, supervised)
+
+- 00:17 — **Q418 answered (a)** and stage 8 opened. Scope, by Ed: merge the
+  files *and* wire text proposals through the engine in one pass (one
+  transition, not piecemeal); `design/STYLE.md` written as the copy audit
+  passes the strings; residuals 13 (per-document cookie) and 19
+  (server-side face reservation) ride along. Both probes must walk the
+  merged file; intentional diffs allowlisted by name. Pushing stays Ed's.
+- 01:15 — **Track A landed** (`1e9d998`): `propose-text` / `withdraw-text`,
+  the view serves the engine's document (`text`, `textVersion`) and a blind
+  projection of the text races (`clauses`, `mine`, `records`, ten cards,
+  wallet); residuals 13 (per-document cookie) and 19 (server-side face
+  reservation) closed. 404 → 413 tests. **B1 landed** (`b056153`): the
+  session view's script is `design/session.js` (`window.SESSION`), probe
+  IDENTICAL. B2a (page integration, fixture modes, both probes) running.
+- 01:58 — **B2a landed** (`708acfd`): one page — `#charter` mount under the
+  band, one rail (setup tasks as SESSION entries), one wire layer, one TOC;
+  Hollow Oak fixture in `fixture-session.js` behind `?fixture=session`.
+  session-probe IDENTICAL; setup-probe 0 unexplained diffs. **Finding: the
+  frozen `setup-pre-constitution` reference had drifted 200 diffs from HEAD
+  before tonight** — HEAD is the baseline until both references are
+  re-frozen at the end of the stage. Q501/502 claimed. B2b (live wiring)
+  running.
+- 02:24 — **B2b landed** (`7b5b6a0`): the live document is drafted in.
+  Walked on the real server: propose (wallet 4→3), a second member judges
+  by its own per-document cookie, adoption at p 0.892 against 0.66, the
+  page shows the new text and a ✔ record that pins until OK, stake
+  refunded; withdraw refunds; a stale base is refused and the draft kept.
+- 02:52 — **Stage 8 closed.** `setup.html` → `session-view.html` (redirects
+  behind it), server and test repointed, three STYLE fixes, both
+  references re-frozen as one page set at tag `post-merge`, allowlists
+  emptied; session-probe IDENTICAL, setup-probe 34 steps clean — **but its
+  founding chain is dead from step 6 (Q504)**, so that guard is thinner
+  than its count says. 413 tests, build and lint clean, local birth and
+  `/d/:slug` verified. Q501–504 filed. **Not pushed** — the push is the
+  deploy and Ed's call; `npm run verify` after.
+
 ## Decisions
 
 | # | Decision | State |
@@ -294,7 +331,7 @@ service container, or the migration is tested only on this machine.
 | — | First users: Ed + a few friends. Abuse/Sybil/moderation are not launch blockers; correctness, data safety, deliverability and the security fixes are. | decided |
 | — | Public reads at launch (🌍 offers them; the server has no unauthenticated read path yet). | decided |
 | — | Deploy: GitHub → hosting; mail via Resend; domain docs.vote. | decided |
-| — | Surface merge (Q418) is its own supervised session — see stage 8 note. | decided |
+| 418 | Surface merge: **(a)** — one file, fixture only for states the server cannot yet produce; engine wiring for text proposals in the same pass; STYLE.md during; residuals 13 and 19 ride along. | decided 2026-08-21 |
 | 430 | Push to the public GitHub repo. | decided 2026-08-20 |
 | 431 | The first unsupervised run is stages 1–3. | decided 2026-08-20 |
 | 432 | Hosting: **Render**. | decided 2026-08-20 |
@@ -431,7 +468,7 @@ a big-bang first deploy.
 | 5 | ✅ 2026-08-20 — Schema versioning (480a) + golden-log test + both homed residuals | done | safe to change the engine, ever |
 | 6 | ✅ 2026-08-20 — Postgres backend + importer with the hash oracle + CI over both stores; **cut over and drilled on the live database the same night, disk deleted** (projection tables and review #2's second pass still owed — see the running log) | done | durable, concurrent, backup-able |
 | 7 | ✅ 2026-08-20 — `/healthz`, request log, graceful SIGTERM, the two cutover switches | done | deploys are visible |
-| 8 | **Surface merge (Q418)** + `design/STYLE.md` audit — supervised | 1–2w | one surface to secure, style, cache, test |
+| 8 | ✅ 2026-08-21 — **Surface merge (Q418 (a))**: one page, `session-view.html`; text proposals wired through the engine end to end; `design/STYLE.md` written and the audit run; residuals 13 and 19 closed; both references re-frozen (`post-merge`) | done | one surface to secure, style, cache, test |
 | 9 | Resend domain + deliverability (433) — **DNS live, see below**; what is left is verification and one real send | hours, not days | the product actually works |
 | 10 | ✅ 2026-08-20 — **docs.vote is live** (481a: one service, the alpha home), verified 10/10 on the real host; security review #2 still owed | mostly done | docs.vote is live |
 | 11 | ✅ 2026-08-20 — the drill is `draft-tools drill`, passed on the live database; backups are Render's (499a); `repair-tail` for torn files | done | the data is safe |
@@ -575,15 +612,15 @@ remains, deliberately:
   the engine refuses now withdraws the motion the constitution had already
   opened, returning the stake and the seat whole (§3.3a), and the log says
   what happened rather than hiding it. The mover simply tries again.
-- **One cookie for all documents** (finding 13): logging into one document
+- ✅ **One cookie for all documents** (finding 13, closed stage 8 — `draft_session_<docId>`): logging into one document
   logs you out of another, and the login-CSRF story leans on the Origin
   check. Per-document cookie naming belongs to stage 8 (the merge decides
   what the page expects) or earlier if it bites.
 - **Mail failure is silent** (finding 15): a transient Resend failure
   loses an invitation the log says was sent. Already stage 6's outbox
   table with a sender loop — this is the concrete case for it.
-- **Emoji reservation and one-face-one-member are client-side only**
-  (finding 19): a member can claim ✏️ or another member's face via the
+- ✅ **Emoji reservation and one-face-one-member are client-side only**
+  (finding 19, closed stage 8 — `faces.ts`): a member can claim ✏️ or another member's face via the
   API. Needs the reserved-glyph scan server-side; small, stage 8
   territory (it is a page-vocabulary fact).
 - **Torn-log tail repair** (finding 11's second half): a corrupt document

@@ -20,14 +20,14 @@ First target: constitutional conventions for [Newspeak House](https://newspeak.h
 - `packages/constitution` — the §9 layer, equally pure and dependency-free: the settings catalogue, the blind founding (each member states the least they will accept; the document takes the maximum), motions on both routes — ordinary ones race, constitutional ones need everybody — applications, lapse, and its own hash-chained log. It runs in a browser as well as in node, and ships as a committed bundle the design surfaces load. See its [`NOTES.md`](packages/constitution/NOTES.md).
 - `packages/server` — the product host: node:http with no framework, one hash-chained JSONL log per document as the only persistence, magic-link auth, stateless HMAC cookies, and the engine riding every commit. See its [`NOTES.md`](packages/server/NOTES.md).
 - `packages/sim-harness` — synthetic participants driving full sessions (P2): deterministic scripted personas with ground-truth welfare metrics, LLM personas (fourteen of them, including a schemer, a revolutionary, and a literal dog), a constitution calibration sweep, and a colour commentator for watching runs live. See its [`README.md`](packages/sim-harness/README.md).
-- `design/` — the surfaces themselves. `setup.html` is the live page the server serves; `session-view.html` is the drafting surface it is being merged with; `cards.js` and `system.css` are the design system both speak. Each carries its own design notes.
+- `design/` — the surfaces themselves. `session-view.html` is the one page the server serves — birth, founding and the live, drafted document — with its machinery in `session.js`, `setup.js` and `cards.js`; `setup.html` redirects to it.
 
 ## Development
 
 `npm install` at the root, then:
 
 ```
-npm test               # every workspace (399 tests)
+npm test               # every workspace (413 tests)
 npm run typecheck
 npm run lint
 npm run build          # the production artifact: dist/server.mjs
@@ -53,7 +53,7 @@ npm run sim -w @draft/sim-harness -- --mode subscription --scenario clubhouse \
 
 ## Status
 
-Spec v0.62. The mechanism (engine-core, 209 tests) and the constitutional layer (135 tests) are built and tested; the server (24 tests) hosts real documents at docs.vote; the simulator (31 tests) is what keeps all of it honest.
+Spec v0.62. The mechanism (engine-core, 210 tests) and the constitutional layer (139 tests) are built and tested; the server (33 tests, 13 more against Postgres) hosts real documents at docs.vote; the simulator (31 tests) is what keeps all of it honest.
 
 The mechanism holds up in practice:
 
@@ -61,6 +61,6 @@ The mechanism holds up in practice:
 - **Calibration sweep** (2026-08): 575+ runs over nine constitution knobs. Robust everywhere (0.94–0.99); a smaller hot set (3) beat the old default and is now the spec default; long post-adoption cooldowns measurably starve resolution and are now doctrinally capped (§4.2).
 - **Live LLM runs**: full sessions with fourteen Sonnet-powered personas speaking the same participant API as humans, no sim backdoor. Emergent bridge-drafting, factional skirmishes, and overturns consistent with the spec's self-correction story. Two real engine bugs (router slot starvation, replay divergence) were found by simulation before any UI existed.
 
-Next, in the order PRODUCTION.md sets out: the surface merge (a constituted document has no drafting surface yet), accessibility, performance and stress tests, and the privacy policy and terms (drafted, not in force). Postgres, observability, backups and deliverable mail landed on 2026-08-20. P3 (the LLM layer of the engine itself: semantic composition gates, dedup, surgery, briefings, machine participants) waits behind it.
+The surface merge landed on 2026-08-21: a begun document is drafted in on the page, proposals race in the engine and adopt into the text. Next, in the order PRODUCTION.md sets out: accessibility, performance and stress tests, and the privacy policy and terms (drafted, not in force). Postgres, observability, backups and deliverable mail landed on 2026-08-20. P3 (the LLM layer of the engine itself: semantic composition gates, dedup, surgery, briefings, machine participants) waits behind it.
 
 Run logs and sweep CSVs land in `packages/sim-harness/runs/` (git-ignored).

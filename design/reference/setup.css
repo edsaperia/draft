@@ -78,27 +78,25 @@
   .setupcard .why { color: var(--muted); font-size: var(--t-small); margin: 0 0 var(--s4); max-width: 60ch; }
   .setupcard .setnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
   .setupcard .body { border-top: 1px solid var(--border); padding-top: var(--s3); margin-top: var(--s3); }
+  /* the hairline between the constitution and the document proper, and the
+     title standing again as the charter's own heading (Ed, 2026-08-19) */
+  .cpara.docsep { border-top: 1px solid var(--border); margin: var(--s5) 0 var(--s4); padding: 0; }
   .unlocks { font-size: var(--t-cap); color: var(--primary-emphasis); background: var(--primary-subtle);
     border-radius: var(--r-sm); padding: var(--s2) var(--s3); margin: 0 0 var(--s4); }
   .lockline { font-size: var(--t-cap); color: var(--muted); margin: 0 0 var(--s4);
     display: flex; align-items: center; gap: var(--s2); }
 
 /* ---------------------------------------------------------------------------
-   THE RAIL — same rail, laid out by hand, and pinned.
+   THE RAIL — one rail, the session's own margin index.
 
-   `system.css` positions `.qitem` **absolutely**, because in a live session
-   `layoutQueue` stands every entry beside its own clause. A setting belongs to
-   no clause, so they go back into normal flow — and the whole column is sticky,
-   which is what pinning means for this set. It reaches the live rail's rule
-   from the other end: there, four kinds of entry pin because they are the ones
-   about *you* rather than about a clause; here every card is one of those.
+   Until the merge (stage 8, 2026-08-21) this block put the setup tasks back
+   into normal flow under a sticky column, on the reasoning that a setting
+   belongs to no clause. Since the merge every setup task is an entry in
+   session.js's rail, anchored to its own band paragraph and laid out by
+   layoutQueue like everything else — ask, news and yours pin, wait flows —
+   so system.css's absolute .qitem applies here unchanged and nothing is
+   overridden.
    --------------------------------------------------------------------------- */
-  .queue.stack { position: sticky; top: calc(var(--nav-h) + var(--s5)); align-self: start;
-    max-height: calc(100vh - var(--nav-h) - var(--s5)); overflow-y: auto;
-    scrollbar-width: none; -ms-overflow-style: none; }
-  .queue.stack::-webkit-scrollbar { width: 0; }
-  .queue.stack ul, .queue.stack > div { display: flex; flex-direction: column; gap: var(--s2); }
-  .queue.stack .qitem { position: static; list-style: none; }
   .queue .qhead { font-size: var(--t-cap); color: var(--muted); margin: var(--s3) 0 0; padding: 0 10px; }
   .queue .qhead:first-child { margin-top: 0; }
   .queue .setmark { margin-left: auto; display: inline-flex; align-items: center; }
@@ -259,11 +257,18 @@
   .faces { display: flex; flex-wrap: wrap; gap: var(--s2); }
   .pf { display: flex; align-items: center; gap: var(--s1); font-size: var(--t-cap); }
   .pf.me { font-weight: 600; }
-  .av { width: 22px; height: 22px; border-radius: 50%; background: var(--light);
+  .av { width: 22px; height: 22px; border-radius: 50%; background: var(--light); vertical-align: middle;
     border: 1px solid var(--border); color: var(--muted); font-size: 8px; font-weight: 700;
     display: inline-grid; place-items: center; flex: none; overflow: hidden; }
   .av.big { width: 44px; height: 44px; font-size: var(--t-cap); }
   .av.set { border-color: transparent; color: #fff; }
+  span.av.emoji { background: var(--light); border-color: var(--border); font-size: 18px; line-height: 1; }
+  span.av.big.emoji { font-size: 38px; }
+  .avopt.taken { opacity: 0.3; cursor: not-allowed; }
+  .freemoji { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s2); }
+  .emojin { width: 120px; padding: 3px 8px; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 20px; line-height: 1.3; }
+  .emojinote { display: none; font-size: var(--t-small); }
+  .freemoji.bad .emojinote { display: inline; }
   /* invited, but they have not opened it yet */
   .av.pending { opacity: 0.45; border-style: dashed; }
   .av svg { width: 100%; height: 100%; display: block; }
@@ -382,11 +387,14 @@
      title is written, and a second way in would be a second answer to a
      question this surface has already settled. */
   /* type comes from system.css's own .doctitle rule (--t-lead, 600) — the
-     literal 1.5rem was drift (2026-08-18); only the box is ours, because
-     this title sits outside .prose and centres itself */
-  .doc .doctitle { max-width: calc(70ch + 2 * var(--s5) + 3px); margin: 0 auto var(--s5);
-    padding: 0 var(--s5); text-wrap: balance; }
-  .doc .doctitle.ph { color: var(--muted); font-weight: 400; }
+     literal 1.5rem was drift (2026-08-18); only the box is ours. It sits on
+     the document's own left edge (Ed's QA, 2026-08-19: it was indented —
+     the s5 side padding and auto-centring were the indent). */
+  /* the headings only: the fixture charter's own div.doctitle (session.js)
+     keeps system.css's box, as it did on its own page */
+  .doc h1.doctitle, .doc h2.doctitle { max-width: 70ch; margin: 0 0 var(--s5);
+    padding: 0; text-wrap: balance; }
+  .doc h1.doctitle.ph { color: var(--muted); font-weight: 400; }
 
 /* ===========================================================================
    NOT THE DESIGN SYSTEM. The mail modal stands for the reader's inbox: it
@@ -501,7 +509,11 @@ button.cline:hover b { text-decoration: underline; }
 .memrow .av { width: 22px; height: 22px; font-size: 8px; flex: none; }
 /* the identity tabs are regular gutter clause tabs: a pile at your row */
 .memrow .chipcol { top: -3px; }
-.memrow.meRow { margin-top: 3px; min-height: 30px; }
+/* nobody else yet (407a): a full-width muted row where the members would
+   stand — list furniture, not a clause, so it speaks quietly; it also gives
+   the you-row a row's clearance from the 🪪 pile above (the Q308 floor) */
+.memrow.nobody { flex-basis: 100%; color: var(--muted); min-height: 22px; }
+.memrow.meRow { margin-top: var(--s3); min-height: 30px; }
 .memrow .chip { font-size: var(--t-micro); }
 
 /* **The card overhangs the text axis** (Ed's QA, 2026-08-18: the tabs were
@@ -515,7 +527,8 @@ button.cline:hover b { text-decoration: underline; }
 /* the starting-text task anchors the prose itself (Ed, 2026-08-18): a
    zero-height row at the band's end whose 📄 tab hangs in the gutter beside
    the first block of the document text below */
-.cpara.textanchor { height: 0; min-height: 0; margin: 0; }
+.cpara.textanchor { min-height: 0; margin: 0; }
+.cpara.textanchor .dochead { margin: 0 0 var(--s3); padding-left: 0; }
 .cpara.textanchor .chipcol { top: 10px; }
 
 /* the composer's rationale wears your avatar (Ed, 2026-08-18) — the same
@@ -529,9 +542,18 @@ button.cline:hover b { text-decoration: underline; }
    headclause and must not move with it, so the compensation is on the text */
 .constsec .cpara.open .setupcard .clausehead .rtext { margin-left: calc(14px - var(--s5)); }
 
+/* headings fold (Ed, 2026-08-19): hidden prose blocks, and the overlay rail
+   that carries the prose triangles — outside the contenteditable region, so
+   the ▸ never becomes text the harvest reads */
+.prose > .pfolded { display: none; }
+#prosefolds { position: relative; height: 0; overflow: visible; }
+#prosefolds > span { position: absolute; left: -26px; }
+#prosefolds .sectoggle[aria-expanded="true"] { opacity: 0; }
+#prosefolds .sectoggle:hover, #prosefolds .sectoggle:focus-visible { opacity: 1; }
+
 /* Founded by [avatar] [name] (at [time]) — the avatar rides in the line */
 .cpv.founded .av { width: 20px; height: 20px; font-size: 7px;
-  display: inline-flex; vertical-align: -5px; margin: 0 2px; }
+  display: inline-flex; margin: 0 2px; position: relative; top: -2px; }
 
 /* a rule standing as a card's head is the clause, not a title: document size
    and colour, exactly as it stood on the page (Ed's QA, 2026-08-18) */
@@ -555,5 +577,81 @@ button.cline:hover b { text-decoration: underline; }
 /* the title card's head is the document title itself (Ed, 2026-08-18:
    *show me the current state of the title*), at the title's own type;
    muted while it is still the placeholder */
-.setupcard .clausehead .headrule .headdoct { font-size: var(--t-lead); font-weight: 600; }
+/* at the birth the title card's head IS the big heading; post-save it opens
+   at its own clause and the title sits inside the sentence at document size
+   (Ed, 2026-08-19) */
+#titlepara .setupcard .clausehead .headrule .headdoct { font-size: var(--t-lead); }
+.setupcard .clausehead .headrule .headdoct { font-weight: 600; }
 .setupcard .clausehead .headrule .headdoct.ph { color: var(--muted); font-weight: 400; }
+
+/* links in the constitution are real links (Ed, 2026-08-19): ink-coloured,
+   underlined, the underline waking on hover */
+.cpv a.doclink, .headrule a.doclink { color: inherit; text-decoration: underline;
+  text-decoration-thickness: 1px; text-underline-offset: 2.5px;
+  text-decoration-color: var(--muted); }
+.cpv a.doclink:hover, .headrule a.doclink:hover {
+  text-decoration-color: currentColor; text-decoration-thickness: 1.5px; }
+
+/* clicking a heading's text folds it (Ed, 2026-08-19) — the constitution's
+   headings are not editable, so they may say so with the cursor; prose
+   headings keep the text cursor, since they are still editable */
+.constsec h2.docline[id^="cs-"], .constsec .pilehead { cursor: pointer; }
+.constsec .pilehead { position: relative; }
+.constsec .pilehead .sectoggle { position: absolute; right: 100%;
+  margin-right: var(--s3); top: 4px; }
+.constsec .pilelab:hover .sectoggle[aria-expanded="true"] { opacity: 1; }
+
+/* **An emoji needs a quiet ground** (Ed, 2026-08-19: *icon button
+   backgrounds shouldn't be very saturated; there's at least one ✒️ on a dark
+   blue*). An emoji glyph is a coloured object in its own right, so a solid
+   fill under it fights the glyph for the same pixels and muddies both — where
+   the drawn ✔ is one stroke in currentColor and stays the one solid green
+   thing on a card. Which also splits the two commits by hue rather than by
+   accident: ✒️, a set of your own, wears the accent this surface already
+   uses for your own work; ✓, an answer to a shared question, keeps the green
+   that means decided. :not([disabled]) so system.css's greyed-out rule, at
+   the same specificity, still wins where it should. */
+.btn.btn-approve.glyphbtn.emojibtn:not([disabled]) {
+  background: var(--primary-subtle); border-color: var(--primary);
+  color: var(--primary-emphasis);
+}
+.btn.btn-approve.glyphbtn.emojibtn:not([disabled]):hover {
+  background: var(--light); border-color: var(--primary-hover);
+}
+
+/* the emoji picker (Ed, 2026-08-19): a normal picker rather than a row of
+   faces, so it scrolls inside itself instead of pushing the card's own
+   controls off the screen. Reserved and taken options are the .taken state
+   the face row already had. */
+.emojibox { max-height: 15rem; overflow-y: auto; padding-right: var(--s2);
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  padding: var(--s2) var(--s3) var(--s3); }
+.emojibox .emojilab { margin-top: var(--s3); }
+.emojibox .emojilab:first-child { margin-top: 0; }
+/* the anonymous person: a disc with somebody in it, before there is a name
+   to make initials of */
+.av .anonav { width: 62%; height: 62%; color: #fff; opacity: 0.9; }
+.av.anon { background: var(--light); }
+.av.anon .anonav { color: var(--muted); }
+
+/* **One left edge** (Ed's QA, 2026-08-19: on the 📍 card *tab and title and
+   text are misaligned*). The head's text was pulled back onto the document's
+   own axis while the body kept the card's own padding, so every card had its
+   clause ten pixels left of its field — visible on 📍 because that card is
+   nearly all field. The card's padding is now the document overhang itself,
+   and the head needs no compensation to sit where a paragraph sits. */
+.constsec .cpara.open > .setupcard > *:not(.clausehead):not(.chipcol) {
+  margin-left: calc(14px - var(--s5)); }
+
+/* **An emoji is an emoji wherever it sits** (Ed, 2026-08-19: *the ✒️ button
+   in the initial titling is correct for emoji buttons, the rest are too
+   colourful*). The quiet ground was scoped to glyph-only buttons, which left
+   🏛️ and ✏️ Propose — labelled buttons carrying a glyph — on the full
+   accent. Same treatment, whatever else is in the label. */
+.btn.btn-approve.emojibtn:not([disabled]) {
+  background: var(--primary-subtle); border-color: var(--primary);
+  color: var(--primary-emphasis); font-weight: 600;
+}
+.btn.btn-approve.emojibtn:not([disabled]):hover {
+  background: var(--light); border-color: var(--primary-hover);
+}

@@ -67,7 +67,7 @@ window.SETUP = (function () {
   // Any emoji may be a face EXCEPT the surface's own vocabulary (Ed,
   // 2026-08-19): a member whose face is ✏️ would turn every wallet and
   // compose button into a possible mention of them. SURFACE_EMOJI is a scan
-  // of setup.html + setup.js + cards.js + session-view.html for pictographic
+  // of session-view.html + setup.js + session.js + fixture-session.js + cards.js for pictographic
   // characters (variation selectors stripped; re-run the scan from the
   // 2026-08-19 commit when the furniture changes), plus 🔧/⚙ arriving with
   // the governance tabs; the reserved set is that minus the offered faces.

@@ -68,7 +68,7 @@ The redline was answering a question the card had already answered. Option A is 
 
 It also brings the three cards into line. A race lane was never redlined (both sides are whole alternatives, so there is no baseline to mark against), so the redline was a quick-and-patch peculiarity rather than a grammar. Now every lane on every card reads the same way: a label and a piece of prose you could put in the charter unchanged.
 
-The **fixture keeps the full diff**; `resultOnly` in session-view.html:847 strips the `<del>` runs and tidies the whitespace they leave behind at render time. That is deliberate — the diff is the truth about a suggestion, and other surfaces still want both sides. The change card ("what changed here", the doorway from a `freshness-highlight`) is one of them and is untouched: it is a *record* of an edit already made, not a choice between two texts, so seeing what went is the whole point of it (Q92 asks whether Ed agrees).
+The **fixture keeps the full diff**; `resultOnly` in cards.js (once session-view.html:847) strips the `<del>` runs and tidies the whitespace they leave behind at render time. That is deliberate — the diff is the truth about a suggestion, and other surfaces still want both sides. The change card ("what changed here", the doorway from a `freshness-highlight`) is one of them and is untouched: it is a *record* of an edit already made, not a choice between two texts, so seeing what went is the whole point of it (Q92 asks whether Ed agrees).
 
 Green now carries one meaning in the series — **new wording** — and red none. A proposed new section is therefore entirely green, which is correct: all of it is new.
 

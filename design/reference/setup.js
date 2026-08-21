@@ -24,7 +24,12 @@ window.SETUP = (function () {
     pickOf: (m) => (m ? m.pick : null),
     speakerTitle: 'A member wrote this. Who, is sealed until the closing record.',
   });
-  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  // Full five-character escaping (PRODUCTION.md stage 3, defect 4): esc'd
+  // strings land in attribute values (titles, tooltips, data-*) as well as
+  // text, and an unescaped quote in an attribute is an injection. For text
+  // nodes the extra entities parse back to the identical DOM.
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const TICK = '<svg class="mkg" viewBox="0 0 12 12"><path d="M2 6.4 L4.7 9.2 L10 2.9"/></svg>';
   const initials = (n) => String(n).trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
@@ -43,9 +48,113 @@ window.SETUP = (function () {
     ['#1098ad', '<path d="M8 30 L22 10 L36 30 Z" fill="#fff"/>'],
     ['#5c940d', '<rect x="10" y="10" width="10" height="10" fill="#fff"/><rect x="24" y="10" width="10" height="10" fill="#fff"/><rect x="10" y="24" width="10" height="10" fill="#fff"/><rect x="24" y="24" width="10" height="10" fill="#fff"/>'],
   ];
+  const FACE_EMOJI = ['👩', '👨', '🧑', '👧', '👦', '🧒', '👶', '👵', '👴', '🧓',
+    '👩‍🦰', '👨‍🦰', '🧑‍🦰', '👩‍🦱', '👨‍🦱', '🧑‍🦱',
+    '👩‍🦲', '👨‍🦲', '🧑‍🦲', '👩‍🦳', '👨‍🦳', '🧑‍🦳',
+    '👱‍♀️', '👱‍♂️', '👱', '👳‍♀️', '👳‍♂️', '👳',
+    '🧔', '🧔‍♂️', '🧔‍♀️'];
+  const FACE_TONES = ['', '\u{1F3FB}', '\u{1F3FC}', '\u{1F3FD}', '\u{1F3FE}', '\u{1F3FF}'];
+  let FACE_TONE = '';
+  const setFaceTone = (v) => { FACE_TONE = v; };
+  const faceToned = (f) => {
+    const cps = [...f];
+    return cps[0] + FACE_TONE + cps.slice(1).join('');
+  };
+  const faceToneRow = () =>
+    '<div class="avpick">' + FACE_TONES.map((tn) =>
+      '<button class="avopt" data-tone="' + tn + '" aria-pressed="' + (FACE_TONE === tn) + '"' +
+      ' title="Skin tone"><span class="av big emoji">\u270B' + tn + '</span></button>').join('') + '</div>';
+  // Any emoji may be a face EXCEPT the surface's own vocabulary (Ed,
+  // 2026-08-19): a member whose face is ✏️ would turn every wallet and
+  // compose button into a possible mention of them. SURFACE_EMOJI is a scan
+  // of session-view.html + setup.js + session.js + fixture-session.js + cards.js for pictographic
+  // characters (variation selectors stripped; re-run the scan from the
+  // 2026-08-19 commit when the furniture changes), plus 🔧/⚙ arriving with
+  // the governance tabs; the reserved set is that minus the offered faces.
+  // Tones are stripped before the test, so ✋🏽 is as reserved as ✋.
+  const SURFACE_EMOJI = ('↔ ⏩ ⏰ ⏱ ⏳ ☑ ⚔ ⚖ ✅ ✉ ✋ ✍ ✏ ✒ ✔ ✖ ❄ ❌ ❎ ❓ ' +
+    '🌍 🌶 🎩 🏛 🏷 👁 👍 👑 👤 👥 💡 💤 📄 📈 📌 📍 📝 📧 📬 📯 🔄 🔗 ' +
+    '🔥 🔧 ⚙ 🖼 🗑 🗝 🚪 🤖 🤝 🪪 🪶 ' +
+    '👦 👧 👨 👩 👱 👳 👴 👵 👶 🧑 🧒 🧓 🧔').split(' ');
+  const normEmoji = (s) => s.replace(/[\u{FE0F}\u{FE0E}\u{1F3FB}-\u{1F3FF}]/gu, '');
+  const RESERVED_EMOJI = new Set(SURFACE_EMOJI.filter((g) =>
+    !FACE_EMOJI.some((f) => normEmoji(f) === g)));
+  // Two members cannot wear one emoji — first come, first served (Ed,
+  // 2026-08-19). Who already wears what is page state, so the test is a
+  // hook the page installs (the wirePicDrop pattern): ('e'+emoji) → the
+  // holder's name, or null. Exact match on the stored string — 👩🏻 and
+  // 👩🏽 are visibly different people and both claimable.
+  let FACE_TAKEN = () => null;
+  const setFaceTaken = (fn) => { FACE_TAKEN = fn; };
+  const faceTakenBy = (e2) => FACE_TAKEN(e2);
+  // one grapheme, pictographic, not furniture — or 'reserved', or null
+  const emojiFaceOf = (raw) => {
+    const s = raw.trim();
+    if (!s) return null;
+    const segs = typeof Intl !== 'undefined' && Intl.Segmenter
+      ? [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(s)].map((x) => x.segment)
+      : [s];
+    if (segs.length !== 1) return null;
+    const g = segs[0];
+    if (!/\p{Extended_Pictographic}/u.test(g)) return null;
+    if (RESERVED_EMOJI.has(normEmoji(g))) return 'reserved';
+    return g;
+  };
+  const anyEmojiRow = (attr) =>
+    '<div class="eyebrow fieldlab">Or any emoji</div>' +
+    '<div class="freemoji"><input class="emojin" ' + attr + '="1" maxlength="20"' +
+    ' placeholder="🦉 🌵 🫖…">' +
+    '<span class="emojinote"></span></div>';
+  // **Reserved and taken are both greyed, in the picker itself** (Ed,
+  // 2026-08-19: *a normal emoji picker, but with reserved and used emoji
+  // greyed out*). The two refusals had lived only in the type-any-emoji box,
+  // which meant the grid could offer you something it would then refuse.
+  const faceBtn = (f2, ownPic, dataAttr, n) => {
+    const own = (ownPic || '') === 'e' + f2;
+    const hol = own ? null : FACE_TAKEN('e' + f2);
+    const reserved = !own && RESERVED_EMOJI.has(normEmoji(f2));
+    if (reserved) {
+      return '<button class="avopt taken" disabled title="Reserved — docs.vote uses this one">' +
+        avHtml({ n, pic: 'e' + f2 }, 'big') + '</button>';
+    }
+    return hol
+      ? '<button class="avopt taken" disabled title="Taken — ' + esc(hol) + ' got there first">' +
+        avHtml({ n, pic: 'e' + f2 }, 'big') + '</button>'
+      : '<button class="avopt" ' + dataAttr + '="' + 'e' + f2 + '" aria-pressed="' + own + '"' +
+        ' title="' + esc(f2) + '">' + avHtml({ n, pic: 'e' + f2 }, 'big') + '</button>';
+  };
+  // Mirrors wirePicDrop: the machinery lives here, where the picked value
+  // lands stays the caller's.
+  const wireFreeEmoji = (attr, onPick) => {
+    document.addEventListener('input', (ev) => {
+      if (!ev.target.matches || !ev.target.matches('[' + attr + ']')) return;
+      const box = ev.target.closest('.freemoji');
+      const note = box && box.querySelector('.emojinote');
+      const g = emojiFaceOf(ev.target.value);
+      const holder = g && g !== 'reserved' ? FACE_TAKEN('e' + g) : null;
+      const msg = g === 'reserved'
+        ? 'That one is part of the furniture — the marks docs.vote itself uses are reserved.'
+        : holder ? 'Taken — ' + holder + ' got there first.' : '';
+      if (note) note.textContent = msg;
+      if (box) box.classList.toggle('bad', msg !== '');
+      if (g && g !== 'reserved' && !holder) onPick(g);
+    });
+  };
+  // the colour picker proper: no colour, then the six grounds. The drawn
+  // marks left the picker with Ed's three sections (2026-08-19) — they were a
+  // mockup device from before emoji and uploads existed — and avHtml still
+  // renders one, so nobody already wearing a mark loses their face.
   const avatarOptions = () =>
-    [{ id: '' }].concat(GROUNDS.map((g, i) => ({ id: 'c' + i })), MARKS.map((m, i) => ({ id: 'm' + i })));
+    [{ id: '' }].concat(GROUNDS.map((g, i) => ({ id: 'c' + i })));
 
+  // **Before there is a name there is still a person** (Ed, 2026-08-19: the
+  // picture card offers *initials with a colour picker — or, if they have not
+  // given us their name, an anonymous user symbol with a colour picker, which
+  // becomes initials when the name is filled*). Drawn rather than a glyph, for
+  // the same reason the sealed speaker is: a bare disc reads as a bullet.
+  const PERSON = '<svg class="anonav" viewBox="0 0 44 44" aria-hidden="true">' +
+    '<circle cx="22" cy="16" r="7.5" fill="currentColor"/>' +
+    '<path d="M8.5 37c0-7.2 6-12 13.5-12s13.5 4.8 13.5 12z" fill="currentColor"/></svg>';
   function avHtml(person, cls) {
     const pic = person && person.pic;
     const c = 'av ' + (cls || '') + (pic ? ' set' : '');
@@ -53,19 +162,37 @@ window.SETUP = (function () {
     // the browser, which is what lets a mockup have a real uploader in it
     // without inventing a face for anybody (Ed, 2026-08-18).
     if (pic && pic[0] === 'u') {
-      return '<span class="' + c + ' photo" style="background-image:url(' + pic.slice(1) + ')"></span>';
+      // Only a data-URI image may enter a style attribute (PRODUCTION.md
+      // stage 3, defect 4): the server whitelists this shape at
+      // set-identity, and the page enforces it again at the sink, because
+      // the sink is what survives a data path nobody audited. Anything
+      // else stored here renders as nobody — never as markup.
+      const u = pic.slice(1);
+      if (/^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(u)) {
+        return '<span class="' + c + ' photo" style="background-image:url(' + u + ')"></span>';
+      }
+      return '<span class="' + c + ' anon">' + PERSON + '</span>';
     }
     if (pic && pic[0] === 'c') {
-      return '<span class="' + c + '" style="background:' + GROUNDS[+pic.slice(1)] + '">' +
-        esc(initials(person.n)) + '</span>';
+      // a missing index renders as nobody, never as a throw inside the
+      // wholesale render (review #1, finding 2 — the sink survives what
+      // no audit saw)
+      const g = GROUNDS[+pic.slice(1)];
+      if (!g) return '<span class="' + c + ' anon">' + PERSON + '</span>';
+      return '<span class="' + c + '" style="background:' + g + '">' +
+        (person.n ? esc(initials(person.n)) : PERSON) + '</span>';
+    }
+    if (pic && pic[0] === 'e') {
+      return '<span class="' + c + ' emoji">' + esc(pic.slice(1)) + '</span>';
     }
     if (pic && pic[0] === 'm') {
       const m = MARKS[+pic.slice(1)];
+      if (!m) return '<span class="' + c + ' anon">' + PERSON + '</span>';
       return '<span class="' + c + '" style="background:' + m[0] + '">' +
         '<svg viewBox="0 0 44 44" aria-hidden="true">' + m[1] + '</svg></span>';
     }
-    // nobody yet: a blank disc rather than initials of the word "undefined"
-    if (!person || !person.n) return '<span class="' + c + '"></span>';
+    // no name yet: the anonymous person, so a disc never reads as a bullet
+    if (!person || !person.n) return '<span class="' + c + ' anon">' + PERSON + '</span>';
     return '<span class="' + c + '">' + esc(initials(person.n)) + '</span>';
   }
 
@@ -220,12 +347,26 @@ window.SETUP = (function () {
         // heading — the rail keeps the question titles; the document
         // states rules — and ctx.decisionLine supplies the sentence from
         // its reader's side of the table.
-        const para = (c) => (ctx.open === c.k
-          ? '<div class="cpara open">' + cardFor({ ...g, cards: [c] }) + '</div>'
-          : c.inDoc ? ''  // the document displays this itself (the title heading)
-          : '<div class="cpara"><span class="chipcol">' + chipHtml(c, ctx, {}) + '</span>' +
-            '<div class="cptext"><p class="cpv">' +
-            (ctx.decisionLine ? ctx.decisionLine(c) : ctx.summary(c)) + '</p></div></div>');
+        // **The governance tab group** (403, Ed 2026-08-19): a setting may
+        // carry more than its own tab — ctx.chipsFor names the pile (the
+        // value in front, the power tabs beneath), and opening any of them
+        // opens its card at the setting's own paragraph with the whole
+        // group as the strip.
+        const para = (c) => {
+          const chips = ctx.chipsFor ? ctx.chipsFor(c) : [c];
+          const openHere = ctx.open === c.k || chips.some((x) => x.k === ctx.open);
+          // data-para carries the decision's own key so a birth is
+          // detectable across wholesale re-renders (Ed, 2026-08-19: new
+          // sections fade in) — same key open or closed, so opening is
+          // never mistaken for being born
+          return openHere
+            ? '<div class="cpara open" data-para="' + c.k + '">' + cardFor({ ...g, cards: chips }) + '</div>'
+            : c.inDoc ? ''  // the document displays this itself (the title heading)
+            : '<div class="cpara" data-para="' + c.k + '">' + (chips.length > 1 ? pileHtml(chips, ctx)
+              : '<span class="chipcol">' + chipHtml(c, ctx, {}) + '</span>') +
+              '<div class="cptext"><p class="cpv">' +
+              (ctx.decisionLine ? ctx.decisionLine(c) : ctx.summary(c)) + '</p></div></div>';
+        };
         const withTasks = (c) => para(c) +
           (ctx.tasksFor ? ctx.tasksFor(c).map(para).join('') : '');
         const H = { para, chip: (c) => chipHtml(c, ctx, {}),
@@ -236,8 +377,20 @@ window.SETUP = (function () {
         const wants = g.sections.reduce((n, sec) => n + sec.cards
           .reduce((m, c) => m + (ctx.mustAct(c) ? 1 : 0) +
             (ctx.tasksFor ? ctx.tasksFor(c).filter((t) => ctx.mustAct(t)).length : 0), 0), 0);
+        // **the whole constitution folds** (Ed, 2026-08-19): its heading is
+        // a heading like any other — folded, it keeps the heading and the
+        // document text below; the surface decides (ctx.foldedGroup), so an
+        // open card is never folded out from under its own tab
+        const gFold = ctx.foldedGroup && ctx.foldedGroup(g);
+        if (gFold) {
+          return '<div class="setrow constsec" id="pile-' + g.key + '">' +
+            '<div class="pilelab"><span class="pilehead" id="cs-constitution">' +
+            (ctx.groupToggle ? ctx.groupToggle(g) : '') + esc(g.label) + '</span></div>' +
+            (g.textAnchor ? g.textAnchor(H) : '') + '</div>';
+        }
         return '<div class="setrow constsec" id="pile-' + g.key + '">' +
-          '<div class="pilelab"><span class="pilehead" id="cs-constitution">' + esc(g.label) + '</span>' +
+          '<div class="pilelab"><span class="pilehead" id="cs-constitution">' +
+          (ctx.groupToggle ? ctx.groupToggle(g) : '') + esc(g.label) + '</span>' +
           (g.intro ? g.intro() : '') + '</div>' +
           // **the link stands right at the top, under the Constitution
           // heading** (Ed, 2026-08-18) — the document's address is the
@@ -259,12 +412,23 @@ window.SETUP = (function () {
           // document's own (Ed, 2026-08-18): sections at lvl2, subsections
           // at lvl3, state lines plain paragraphs — only avatars and names
           // keep their compact dress
-          g.sections.filter((sec) => !sec.railOnly).map((sec) => '<div class="csec">' +
-            '<h2 class="docline lvl2" id="cs-' + sec.key + '">' + esc(sec.title) + '</h2>' +
+          // **Headings fold** (Ed, 2026-08-19): the ▸ is session-view's own
+          // sectoggle; a folded section keeps its heading and gives up its
+          // body. The surface decides (ctx.foldedSec) so an open card can
+          // never be folded out from under its own tab.
+          g.sections.filter((sec) => !sec.railOnly).map((sec) => {
+            const fold = ctx.foldedSec && ctx.foldedSec(sec);
+            return '<div class="csec">' +
+            '<h2 class="docline lvl2" id="cs-' + sec.key + '">' +
+            (ctx.secToggle ? ctx.secToggle(sec) : '') + esc(sec.title) + '</h2>' +
+            (fold ? '' :
             (sec.text ? '<p class="csintro">' + sec.text + '</p>' : '') +
+            // a section's own opening paragraph (the Proposals preamble,
+            // Ed 2026-08-19) — constitution text, not an intro line
+            (sec.lead ? sec.lead(H) : '') +
             (sec.who ? '<div class="pilewho">' + sec.who() + '</div>' : '') +
             (sec.body ? sec.body(H) : sec.cards.map(withTasks).join('')) +
-            (sec.block ? sec.block() : '') + '</div>').join('') +
+            (sec.block ? sec.block() : '')) + '</div>'; }).join('') +
           '<span class="pilen">' + esc(g.note(wants)) + '</span>' +
           // **the starting text is a task beside the text proper** (Ed,
           // 2026-08-18): a zero-height anchor at the band's end, its 📄 tab
@@ -354,6 +518,30 @@ window.SETUP = (function () {
       const need = col.getBoundingClientRect().bottom - r.top + 14;
       if (need > r.height) card.style.minHeight = Math.ceil(need) + 'px';
     });
+    // **The pile is fitted, not fixed** — the same move session-view's
+    // fitStacks makes: a stacked pile shrinks its peek until it reaches no
+    // further than the next mark below it in the same gutter column (the
+    // 🪪 pile grew to four tabs, 2026-08-19, and stood on the me-row's ✋).
+    // Three phases — clear every peek, snapshot every mark's box once, then
+    // assign — so the pass reads layout once rather than re-measuring the
+    // whole gutter per stack with a write between every read.
+    const stacks = [...band.querySelectorAll('.cpara .chipcol.stack')];
+    stacks.forEach((col) => col.style.removeProperty('--peek'));
+    const marks = stacks.length === 0 ? [] : [...band.querySelectorAll('.achip')]
+      .map((a2) => ({ el: a2, box: a2.getBoundingClientRect() }));
+    stacks.forEach((col) => {
+      const chips = col.querySelectorAll('.achip');
+      if (chips.length < 2) return;
+      const r = col.getBoundingClientRect();
+      const next = marks
+        .filter((m2) => !col.contains(m2.el))
+        .map((m2) => m2.box)
+        .filter((b2) => b2.top > r.top + 1 && Math.abs(b2.left - r.left) < 20)
+        .reduce((m, b2) => (m === null || b2.top < m ? b2.top : m), null);
+      if (next === null) return;
+      const peek = Math.max(0, Math.min(4, (next - 3 - r.top - 30) / (chips.length - 1)));
+      if (peek < 4) col.style.setProperty('--peek', peek.toFixed(1) + 'px');
+    });
   }
 
   /* ---- the rail entry -----------------------------------------------------
@@ -429,15 +617,14 @@ window.SETUP = (function () {
     // three lines under the first is the surest sign a body is not reading as
     // part of its own card. Caught 2026-08-18, on the one card whose title is a
     // question — which asked itself twice.
-    return '<div class="lockline">' + TICK + '<span>' + esc(c.setBy || 'Set by the founder when the document was made') +
-      // what changing it takes is the kind, said plainly — “fixed for the
-      // life of the document” predated motions and was simply false
-      (c.kind === 'constitutional'
-        ? '. 🏛️ Changing it means asking everyone again.'
-        : '. ✏️ Anybody may propose changing it, any time.') + '</span></div>' +
+    // What changing it takes is the constitution's to say — the preamble
+    // states the routes once, the clause states its deviations — so the
+    // lockline says only where the value came from (Ed's copy pass,
+    // 2026-08-19, which also removed the dead setBy/readNote branches:
+    // no card ever set either).
+    return '<div class="lockline">' + TICK + '<span>Set by the founder when the document was made.</span></div>' +
       '<div class="statline"><span class="k">Set to</span><span class="v">' +
-      ctx.value(c) + '</span></div>' +
-      (c.readNote ? '<p class="setnote">' + c.readNote + '</p>' : '');
+      ctx.value(c) + '</span></div>';
   }
 
   /* What the **founder** sees when they open a card they handed to the room —
@@ -484,7 +671,10 @@ window.SETUP = (function () {
       Math.max(2, Math.round(n / max * 54)) + 'px" title="' + n + '"></span>').join('') + '</div>' +
       '<div class="distx"><span>' + esc((c.distEnds || ['', ''])[0]) + '</span>' +
       '<span>' + esc((c.distEnds || ['', ''])[1]) + '</span></div>' +
-      '<p class="setnote">What the fourteen asked for, without names.</p>';
+      // 'the fourteen' was a fixture literal that lied on every roster but
+      // one (copy pass, 2026-08-19) — the strip says the same true thing
+      // whatever the membership is
+      '<p class="setnote">What everyone asked for, without names.</p>';
   }
 
   /* **A name and a picture are two cards** (Ed, 2026-08-18: *picture and name
@@ -501,14 +691,12 @@ window.SETUP = (function () {
      (SPEC §9.0c). Both are written by `setup.js` because both are the same
      question for a founder and for a member. */
   const nameBody = (me, opts) =>
-    '<p class="why">What other people call you here. It is not authorship: who proposed what is settled by the disclosure rule, and under most of its settings your name never appears beside a proposal at all — a document showing fourteen named people and not one named candidate is the usual case.</p>' +
     '<div class="idrow">' + avHtml(me, 'big') +
     '<span class="fld"><label for="myname">Your name</label>' +
     '<input id="myname" data-txt="myname" value="' + esc(me.n || '') + '" placeholder="Your name"></span></div>' +
-    '<p class="setnote">Change it whenever you like; it is yours and it binds nobody.' +
     ((opts && opts.optional)
-      ? ' You are not a member, so this is <b>optional</b> — an anonymous founder is a perfectly normal thing; leave it blank and the constitution simply shows no name.'
-      : '') + '</p>';
+      ? '<p class="setnote">You are not a member, so this is <b>optional</b> — leave it blank and the constitution simply shows no name.</p>'
+      : '');
 
   /* **It is an uploader** (Ed, 2026-08-18). The card had offered a ground for
      your initials or a drawn mark, on the reasoning that a mockup has no
@@ -518,20 +706,52 @@ window.SETUP = (function () {
      it is read into a data URL and drawn, so the mockup invents nothing and
      still behaves like the real control. The initials stay underneath as a
      real answer rather than a fallback — most rooms run on them. */
-  const pictureBody = (me) =>
-    '<p class="why">The shape people will recognise you by in the membership and the presence row.</p>' +
+  /* **Three ways, in the order you would try them** (Ed, 2026-08-19):
+     initials on a colour, then an emoji, then a picture of your own. It was
+     the other way up, which put the one thing a mockup cannot really do — an
+     upload — at the top, and buried the answer most rooms actually run on.
+     Before there is a name, the colours still work: the disc wears the
+     anonymous person and turns into initials the moment the ✋ card is
+     answered. */
+  const EMOJI_GROUPS = [
+    ['People', FACE_EMOJI, true],
+    ['Faces', ['😀', '😄', '😁', '😆', '😊', '🙂', '😉', '😌', '😍', '🥰', '😎', '🤓',
+      '🧐', '🤠', '🥳', '😇', '🤔', '😴', '🤗', '😺', '😸', '🙀'], false],
+    ['Animals', ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮',
+      '🐷', '🐸', '🐵', '🦉', '🦄', '🐢', '🐙', '🦋', '🐝', '🦔', '🦥', '🦦', '🦫',
+      '🐧', '🦅', '🦆', '🐿️', '🦎', '🐳', '🐬', '🦀', '🐌'], false],
+    ['Growing things', ['🌵', '🌲', '🌳', '🌴', '🌱', '🍀', '🌿', '🍁', '🍄', '🌸', '🌼',
+      '🌻', '🌹', '🪴', '🍎', '🍊', '🍋', '🍇', '🍓', '🫐', '🍒', '🍑', '🥑', '🥕',
+      '🌽', '🍞', '🧀', '🍯', '☕', '🫖'], false],
+    ['Things', ['🎸', '🎺', '🎻', '🥁', '🎹', '🎨', '📚', '🔭', '🧭', '🗿', '🏰', '⛵',
+      '🚲', '🛶', '🪁', '🎲', '🧩', '🕯️', '🔔', '🪞', '🧵', '🪚', '⚓', '🧲', '🔑',
+      '🪄', '🎁', '🧊', '🪵', '🛎️', '🎩', '✏️', '🗝️'], false],
+    ['Sky and sea', ['⭐', '🌟', '✨', '🌈', '🌙', '☀️', '🪐', '🌊', '🍃', '☂️', '🌋',
+      '🏔️', '🏝️', '🔥', '❄️', '⚡'], false],
+  ];
+  const emojiPicker = (ownPic, name, dataAttr, freeAttr) =>
+    '<div class="emojibox">' + EMOJI_GROUPS.map(([label, set, toned]) =>
+      '<div class="eyebrow fieldlab emojilab">' + esc(label) + '</div>' +
+      (toned ? faceToneRow() : '') +
+      '<div class="avpick">' + set.map((g) =>
+        faceBtn(toned ? faceToned(g) : g, ownPic, dataAttr, name)).join('') + '</div>').join('') +
+    '</div>' + anyEmojiRow(freeAttr);
+
+  const pictureBody = (me, o) =>
+    '<div class="eyebrow fieldlab">Your initials</div>' +
+    '<div class="avpick">' + avatarOptions().map((c0) =>
+      '<button class="avopt" data-pic="' + c0.id + '" aria-pressed="' + ((me.pic || '') === c0.id) + '"' +
+      ' title="' + (c0.id ? 'A colour behind your initials' : 'No colour') + '">' +
+      avHtml({ n: me.n, pic: c0.id }, 'big') + '</button>').join('') + '</div>' +
+    '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Or an emoji</div>' +
+    emojiPicker(me.pic, me.n, 'data-pic', 'data-picfree') +
+    '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Or upload an image</div>' +
     '<div class="picdrop">' + avHtml(me, 'big') +
     '<div class="picact">' +
     '<label class="btn">' + (me.pic && me.pic[0] === 'u' ? 'Choose another' : 'Choose a picture') +
     '<input type="file" accept="image/*" data-picfile="1"></label>' +
     (me.pic && me.pic[0] === 'u' ? '<button class="btn" data-pic="">Remove</button>' : '') +
-    '<span class="picnote">or drag one onto this box</span></div></div>' +
-    '<div class="eyebrow fieldlab">Or your initials</div>' +
-    '<div class="avpick">' + avatarOptions().map((o) =>
-      '<button class="avopt" data-pic="' + o.id + '" aria-pressed="' + ((me.pic || '') === o.id) + '"' +
-      ' title="' + (o.id ? 'A ground for your initials' : 'Plain') + '">' +
-      avHtml({ n: me.n, pic: o.id }, 'big') + '</button>').join('') + '</div>' +
-    '<p class="setnote">Initials are a real answer, not a placeholder — most rooms run on them. Whichever you choose is how you appear in the room, and it is not authorship: whether your name sits beside a <i>proposal</i> is the disclosure rule, not this.</p>';
+    '<span class="picnote">or drag one onto this box</span></div></div>';
 
   /* ---- ordinary and constitutional ----------------------------------------
      **This is a constitution editor, and what we need to decide is which
@@ -587,20 +807,10 @@ window.SETUP = (function () {
      A `motion` is the act; which route it takes is a fact about the setting.
      `personal` is neither — your name and your picture bind nobody, so there is
      nothing to pass. */
-  // The kind pair is glyphic on the surface (Ed, 2026-08-18): ✏️ already
-  // means a proposal, so the word "ordinary" said the machinery twice; 🏛️
-  // is the constitutional change, the ask-everyone route. "Ordinary" stays
-  // engine vocabulary only — SPEC, code, never a card.
-  const KIND = {
-    constitutional: '🏛️ Constitutional',
-    ordinary: '✏️ Open to proposals',
-    personal: 'Yours alone',
-  };
-  const kindNote = {
-    constitutional: 'Changing it would make past decisions mean something different, so it takes everyone: a proposed change is a unanimous vote, and one refusal keeps what stands.',
-    ordinary: 'Anybody may propose changing it, any time; it carries if it clears the approval threshold with quorum.',
-    personal: 'Yours to change whenever you like. It binds nobody.',
-  };
+  // The KIND/kindNote pair is gone (Ed's copy pass, 2026-08-19): the kind
+  // line on every card restated the preamble, which is where the routes are
+  // stated once. "Ordinary" stays engine vocabulary only — SPEC, code,
+  // never a card.
 
   /* An **ordinary motion in flight**: the value as it stands, the value as
      proposed, a `lane-bar` radio on each, the rationale behind a
@@ -614,19 +824,18 @@ window.SETUP = (function () {
      question is live again — and then the ordinary consent control underneath
      it. */
   function motionBody(c, ctx, m) {
-    const kind = m.kind || routeFor(c, m.to);
-    const need = 'the approval threshold, with quorum';
     // **The card grammar proper** (3b, 2026-08-18): what stands is the
     // card's head, wearing the keep-lane — the quick card's own shape —
     // so the body holds only the proposal: one propblock, the sealed
-    // speaker, the lane radio, all session-view's builders.
-    return '<div class="unlocks"><b>' + esc(KIND[kind]) + '.</b> ' + kindNote[kind] +
-      ' To carry, it needs ' + esc(need) + '.' +
+    // speaker, the lane radio, all session-view's builders. The route is
+    // said once (the old KIND header + kindNote pair stated the threshold
+    // twice in two sentences — Ed's copy pass, 2026-08-19).
+    return '<div class="unlocks"><b>✏️ A proposed change.</b> It carries at the approval threshold, with quorum.' +
       // **Reserved is assent, not silence** (Ed, 2026-08-18): the room may
       // pass a change to a reserved setting; what reservation means is that
       // it then goes to the founder as a 👑 question, theirs to accept or
       // reject.
-      (kind === 'ordinary' && ctx.reserved && ctx.reserved(c)
+      (ctx.reserved && ctx.reserved(c)
         ? ' It is <b>reserved</b>: carrying does not change it by itself — it goes to the founder as a <b>👑 question</b>, theirs to accept or reject.'
         : '') + '</div>' +
       CB.proposalHtml(m, { tag: 'As proposed', html: esc(m.to), why: m.why, v: 'proposed', edit: false }) +
@@ -669,12 +878,15 @@ window.SETUP = (function () {
   const motionCommitHtml = (c, dto, heldOut) => {
     const constitutional = routeFor(c, dto) === 'constitutional';
     return constitutional
-      ? '<button class="btn btn-approve holdmotion"' +
+      ? '<button class="btn btn-approve emojibtn holdmotion"' +
         (!dto || heldOut ? ' disabled' : '') +
         ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first' : 'A full ten-second hold') + '"' +
         ' data-holdmotion="' + c.k + '">🏛️ Hold to ask everyone</button>'
-      : '<button class="btn btn-approve"' + (dto ? '' : ' disabled') +
-        ' data-putmotion="1">Propose</button>';
+      // ✏️ on the ordinary commit, to match the 🏛️ on the other route (Ed,
+      // 2026-08-19): the two commits are the two routes, and a bare word
+      // beside a glyphed hold said only one of them out loud
+      : '<button class="btn btn-approve emojibtn"' + (dto ? '' : ' disabled') +
+        ' data-putmotion="1">✏️ Propose</button>';
   };
 
   /* ---- the consent controls, shared -----------------------------------------
@@ -768,27 +980,27 @@ window.SETUP = (function () {
       const share = form === 'share';
       const asN = (v) => (share ? Math.max(1, Math.ceil(v / 100 * E)) : v);
       const mean = (v) => (asN(v) >= E
-        ? 'Nothing moves unless every member has weighed in. A charter that cannot change without all of them is a perfectly reasonable thing to want.'
+        ? 'Nothing moves unless every member has weighed in. A document that cannot change without all of them is a perfectly reasonable thing to want.'
         : asN(v) <= Math.ceil(E / 4) ? 'A small part of the room can carry a change while the rest are elsewhere.'
         : 'Rather more than half the room has to have looked at a question before it can move.');
-      return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in before a question can change the charter — short of that it waits; silence is never a vote. Asked as a <b>' + (share ? 'share of the membership' : 'count') + '</b>: the wording is the founder’s, the number is the room’s.</p>' +
+      return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in before a question can change the document — short of that it waits; silence is never a vote. Asked as a <b>' + (share ? 'share of the membership' : 'count') + '</b>: the wording is the founder’s, the number is the room’s.</p>' +
       (share
         ? slider(A, 'quorum', 5, 100, (v) => v + '% — ' + asN(v) + ' of ' + E, mean, 5)
         : slider(A, 'quorum', 1, E, (v) => v + ' of ' + E, mean)) +
-      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> given, so it is never lower than yours.</p>';
+      '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given, so it is never lower than yours.</p>';
     },
     bar: (A) =>
       '<p class="why">How sure the room must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. A confidence, not a vote share. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the founder’s pacing.</p>' +
       slider(A, 'bar', 50, 95, (v) => v + '%', (v) =>
-        v >= 85 ? 'Only near-agreement changes anything. Expect the charter to move slowly and keep most of what it started with.'
-        : v <= 60 ? 'A modest preference is enough. The charter will move quickly, and reverse itself more often.'
+        v >= 85 ? 'Only near-agreement changes anything. Expect the document to move slowly and keep most of what it started with.'
+        : v <= 60 ? 'A modest preference is enough. The document will move quickly, and reverse itself more often.'
         : 'A clear preference is needed, but not agreement.', 5) +
-      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>highest</b> given.</p>',
+      '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given.</p>',
     authorship: (A) =>
-      '<p class="why">Rationales are always visible; what varies is whether a name is attached. The <b>most private</b> answer wins: one person who wants no names keeps the charter unnamed.</p>' +
+      '<p class="why">Rationales are always visible; what varies is whether a name is attached. The <b>most private</b> answer wins: one person who wants no names keeps the document unnamed.</p>' +
       ladder(A, 'authorship', [
         { v: 'anonymous', t: 'Nobody’s name, ever', e: 'Not during the session and not in the closing record.' },
-        { v: 'sealed', t: 'Names at the close', e: 'Hidden while the charter is being written; published with the record.' },
+        { v: 'sealed', t: 'Names at the close', e: 'Hidden while the document is being written; published with the record.' },
         { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' }]) +
       '<p class="blindnote">Nothing is preselected — anonymity holds unless everyone is content with more.</p>',
     signing: (A) =>
@@ -803,15 +1015,21 @@ window.SETUP = (function () {
         { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
         { v: 'after', t: 'Revealed once the decision is made', e: 'Published with the record, never before it.' }]) + BLINDNOTE,
     chamber: (A) =>
-      '<p class="why">Who may read the charter besides the members — readers only, never counted. The <b>most private</b> answer wins: one member who wants the room closed closes it.</p>' +
+      '<p class="why">Who may read the document besides the members — readers only, never counted. The <b>most private</b> answer wins: one member who wants the room closed closes it.</p>' +
       ladder(A, 'chamber', [
         { v: 'closed', t: 'Members only', e: 'Nobody outside the membership sees anything at all.' },
         { v: 'link', t: 'Anyone with the link', e: 'The chamber view only, to whoever the link reaches.' },
         { v: 'public', t: 'Public', e: 'Listed and readable by anyone.' }]) + BLINDNOTE,
+    removal: (A) =>
+      '<p class="why">How this room may remove a member. Whichever is chosen, the member always sees a removal proposed against them. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
+      ladder(A, 'removal', [
+        { v: 'everyone', t: 'Everyone must consent — theirs included', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
+        { v: 'others', t: 'Everyone but them must consent', e: 'The whole room, minus the member in question, must agree.' },
+        { v: 'ordinary', t: 'An ordinary proposal ✏️', e: 'Judged at the approval threshold like any change, with quorum.' }]) + BLINDNOTE,
     machines: (A) =>
       '<p class="why">An AI that patrols the document for drift and proposes fixes — it never judges, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
       ladder(A, 'machines', [
-        { v: false, t: 'No AI proposals', e: 'People write everything in this charter.' },
+        { v: false, t: 'No AI proposals', e: 'People write everything in this document.' },
         { v: true, t: 'AI proposals are fine', e: 'They compete on the same terms as anybody’s and can be out-judged like anybody’s.' }]) + BLINDNOTE,
     ending: (A) =>
       '<p class="why">When the document should close. The <b>latest</b> answer anybody gives is taken, and <b>never</b> is the latest of all — so nobody is cut off before they were ready.</p>' +
@@ -828,9 +1046,9 @@ window.SETUP = (function () {
       ' data-ansnum="lapse"' + (typeof A.lapse === 'number' ? ' value="' + A.lapse + '"' : '') + '>' +
       '<span class="setnote" style="margin:0">days</span></span></span>' +
       ansRow(A.lapse === 'never', 'lapse', 'never', 'Never', 'Memberships do not lapse, however long inactive.') +
-      '<p class="blindnote">Nobody sees your answer. The charter takes the <b>longest</b> asked for, <b>never</b> the longest of all.</p>',
+      '<p class="blindnote">Nobody sees your answer. The document takes the <b>longest</b> asked for, <b>never</b> the longest of all.</p>',
     rate: (A) =>
-      '<p class="why">The most sparing proposal rate you would accept. The charter takes the <b>most generous</b> answer given.</p>' +
+      '<p class="why">The most sparing proposal rate you would accept. The document takes the <b>most generous</b> answer given.</p>' +
       '<span class="fld"><label>The fewest ✏️ to start with</label><input class="num" type="number" min="0" max="40"' +
       ' data-ansnum="rate"' + (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '></span>' + BLINDNOTE,
   };
@@ -867,119 +1085,11 @@ window.SETUP = (function () {
   }
 
   /* ---- the cable ----------------------------------------------------------
-     `queue-wire`, lifted from session-view with its rules intact: 6px, opaque,
-     exactly the colour of its own queue card (the wash composited over white,
-     painted on a white cable of the same weight), a 10px cap at the document
-     end only, lifted to the cards' own height by a hand-drawn shadow clipped so
-     that every card on the surface is punched out of it.
-
-     Only the open card draws one. Its existence is what says *this is the open
-     one*, which is the whole job the accent used to do.  */
-  const SVGNS = 'http://www.w3.org/2000/svg';
-  const GROUND_A = 0.06;
-  const prevWire = new Map();
-
-  function wireColor(el) {
-    const host = !el ? null : (el.dataset && el.dataset.washkey ? el : el.querySelector('[data-washkey]'));
-    const raw = host ? getComputedStyle(host).getPropertyValue('--washcol').trim() : '';
-    const m = raw.match(/^rgba\((.+?),\s*([\d.]+)\s*\)$/);
-    if (!m) return { rgb: 'rgb(var(--lc-closed))', a: 0.16 };
-    const a = +m[2];
-    return { rgb: 'rgb(' + m[1] + ')', a: +(a + GROUND_A * (1 - a)).toFixed(3) };
-  }
-
-  function drawWire(wiresEl, key) {
-    if (!wiresEl) return;
-    while (wiresEl.firstChild) wiresEl.removeChild(wiresEl.firstChild);
-    if (!key) return;
-    const start = document.querySelector('.queue [data-card="' + key + '"]');
-    const target = document.querySelector('[data-setupcard="' + key + '"]');
-    const mainEl = document.querySelector('main');
-    if (!start || !target || !mainEl) return;
-
-    const b = start.getBoundingClientRect(), r = target.getBoundingClientRect();
-    const mainR = mainEl.getBoundingClientRect();
-    const railX = (start.closest('.qitem') || start).getBoundingClientRect().left;
-    const gx = (mainR.right + railX) / 2;
-    const sx = b.left, sy = b.top + Math.min(b.height / 2, 18);
-    const tx = r.right;
-    const ty = Math.min(Math.max(sy, r.top + 8), Math.max(r.top + 8, r.bottom - 8));
-    const down = ty > sy;
-    const rad = Math.max(0, Math.min(8, Math.abs(ty - sy) / 2, (sx - gx) / 2, (gx - tx) / 2));
-    const d = 'M ' + sx + ' ' + sy + ' H ' + (gx + rad) +
-      ' Q ' + gx + ' ' + sy + ' ' + gx + ' ' + (sy + (down ? rad : -rad)) +
-      ' V ' + (ty + (down ? -rad : rad)) +
-      ' Q ' + gx + ' ' + ty + ' ' + (gx - rad) + ' ' + ty + ' H ' + tx;
-
-    const shapes = (g, col) => {
-      const p = document.createElementNS(SVGNS, 'path');
-      p.setAttribute('d', d); p.setAttribute('stroke', col); g.appendChild(p);
-      const c = document.createElementNS(SVGNS, 'circle');
-      c.setAttribute('class', 'cap'); c.setAttribute('cx', tx); c.setAttribute('cy', ty);
-      c.setAttribute('r', 7); c.setAttribute('fill', col); g.appendChild(c);
-    };
-    const paint = (col, alpha) => {
-      const g = document.createElementNS(SVGNS, 'g');
-      if (alpha != null) { g.setAttribute('class', 'ink'); g.setAttribute('opacity', alpha); }
-      shapes(g, col); wiresEl.appendChild(g); return g;
-    };
-    // A thing does not shadow its own layer, so every card, tab and rail entry
-    // is punched out. Overlapping holes have to be **merged**: the clip is one
-    // `evenodd` path, so two rectangles that overlap XOR back to solid.
-    const boxes = [...document.querySelectorAll('.sugg, .achip, .queue button')]
-      .map((e) => e.getBoundingClientRect()).filter((x) => x.width && x.height);
-    const merged = [];
-    for (const x of boxes) {
-      let cur = { left: x.left, top: x.top, right: x.right, bottom: x.bottom };
-      for (let i = merged.length - 1; i >= 0; i--) {
-        const m = merged[i];
-        if (cur.left < m.right && m.left < cur.right && cur.top < m.bottom && m.top < cur.bottom) {
-          cur = { left: Math.min(cur.left, m.left), top: Math.min(cur.top, m.top),
-            right: Math.max(cur.right, m.right), bottom: Math.max(cur.bottom, m.bottom) };
-          merged.splice(i, 1);
-        }
-      }
-      merged.push(cur);
-    }
-    const defs = document.createElementNS(SVGNS, 'defs');
-    let path = 'M0 0H' + innerWidth + 'V' + innerHeight + 'H0Z';
-    for (const m of merged) path += 'M' + m.left + ' ' + m.top + 'H' + m.right + 'V' + m.bottom + 'H' + m.left + 'Z';
-    const cp = document.createElementNS(SVGNS, 'clipPath');
-    cp.setAttribute('id', 'wire-not-cards'); cp.setAttribute('clipPathUnits', 'userSpaceOnUse');
-    const cpp = document.createElementNS(SVGNS, 'path');
-    cpp.setAttribute('d', path); cpp.setAttribute('clip-rule', 'evenodd');
-    cp.appendChild(cpp); defs.appendChild(cp);
-    for (const bl of [1, 3]) {
-      const f = document.createElementNS(SVGNS, 'filter');
-      f.setAttribute('id', 'wire-blur-' + bl);
-      const fe = document.createElementNS(SVGNS, 'feGaussianBlur');
-      fe.setAttribute('stdDeviation', bl); f.appendChild(fe); defs.appendChild(f);
-    }
-    wiresEl.appendChild(defs);
-    // two nested groups: clip on the outer, offset on the inner — a clip-path
-    // resolves *after* the referencing element's own transform
-    const shadow = (dy, blur, alpha) => {
-      const outer = document.createElementNS(SVGNS, 'g');
-      outer.setAttribute('clip-path', 'url(#wire-not-cards)');
-      outer.setAttribute('opacity', alpha);
-      const g = document.createElementNS(SVGNS, 'g');
-      g.setAttribute('filter', 'url(#wire-blur-' + blur + ')');
-      g.setAttribute('transform', 'translate(0 ' + dy + ')');
-      shapes(g, '#000'); outer.appendChild(g); wiresEl.appendChild(outer);
-    };
-    shadow(1, 1, 0.13); shadow(3, 3, 0.20);
-    paint('#FFFFFF', null);
-    const color = wireColor(start);
-    const from = prevWire.get(key) || color;
-    const ink = paint(from.rgb, from.a);
-    if (from.rgb !== color.rgb || from.a !== color.a) {
-      void wiresEl.getBoundingClientRect();
-      ink.setAttribute('opacity', color.a);
-      ink.querySelectorAll('path').forEach((p) => p.setAttribute('stroke', color.rgb));
-      ink.querySelectorAll('circle').forEach((cc) => cc.setAttribute('fill', color.rgb));
-    }
-    prevWire.set(key, color);
-  }
+     Retired from this file at the merge (stage 8, 2026-08-21): the queue-wire
+     is drawn once, by session.js's drawWires, for whichever card is open —
+     a setup card included. Its rules (6px, opaque, the card's own colour, a
+     cap at the document end only, the shadow punched out of every card) live
+     there; the frozen reference copy keeps the old drawWire for the probe. */
 
   /* ---- small shared builders ----------------------------------------------
      `opt` draws the session-view's own `.lanepick` radio (Ed, 2026-08-18). The
@@ -1002,13 +1112,109 @@ window.SETUP = (function () {
 
   const someIn = (n, E) => (n >= E ? 'everyone in' : n + ' of ' + E + ' in');
 
+  /* ---- births --------------------------------------------------------------
+     **What is born arrives, it does not appear** (Ed, 2026-08-19: new
+     sections should fade in; new queue-cards should transition in). The
+     document and both rails are rebuilt wholesale on every render, so a
+     newly-created paragraph, section or rail entry would otherwise pop in
+     fully formed between two frames — the wash-fade problem again, solved
+     the wash-fade way: key every element by what it is *about*, remember
+     every key ever seen, and hand a new one its full presence only after a
+     forced reflow. The key set is cumulative — a section folded away and
+     unfolded is not reborn, and a seat switched away from and back does not
+     replay its entrances.
+
+     Two entrances, by what the element does to its neighbours. A **rail
+     entry** grows open from zero height while it fades, because the jarring
+     half of a rail birth is the neighbours jumping down by its height in one
+     frame — growing makes them part instead. A **document paragraph or
+     section** only fades: the prose column is something you read, and text
+     that slides while you read it is worse than text that arrives. Under
+     reduced motion everything fades and nothing moves. */
+  const REDUCED_MQ = matchMedia('(prefers-reduced-motion: reduce)');
+  const bornKeys = new Set();
+  let bornPrimed = false;
+  const GROW_MS = 240, FADE_MS = 420, STAGGER_MS = 55, STAGGER_MAX = 5;
+  function birthPass(band, rail, mute, done) {
+    const found = [];
+    if (rail) rail.querySelectorAll('.qitem[data-q]').forEach((el) =>
+      found.push({ key: 'q:' + el.dataset.q, el, grow: true }));
+    if (band) {
+      band.querySelectorAll('.cpara[data-para]').forEach((el) =>
+        found.push({ key: 'p:' + el.dataset.para, el, grow: false }));
+      band.querySelectorAll('.csec > h2[id]').forEach((h) =>
+        found.push({ key: 's:' + h.id, el: h.parentElement, grow: false }));
+    }
+    // first render, or a stagehand act (seat switch, ⏩): absorb, don't act
+    if (!bornPrimed || mute) {
+      found.forEach((f) => bornKeys.add(f.key));
+      bornPrimed = true;
+      return;
+    }
+    const born = found.filter((f) => !bornKeys.has(f.key));
+    found.forEach((f) => bornKeys.add(f.key));
+    if (!born.length) return;
+    const reduced = REDUCED_MQ.matches;
+    const undo = [];
+    // **A batch cascades, it does not land as a block** (Ed, 2026-08-19,
+    // choosing grow-and-fade with a stagger): several tasks born at once are
+    // several things that happened, and arriving in one frame says they are
+    // one thing. They come in document order — top to bottom, the order you
+    // would read them — with each column keeping its own count, so a rail
+    // cascade and a document cascade run beside each other rather than end
+    // to end. Capped, because a cascade long enough to notice waiting for is
+    // a cascade that has become a loading spinner.
+    const step = { rail: 0, doc: 0 };
+    const delayOf = (f) => {
+      const lane = f.grow ? 'rail' : 'doc';
+      return Math.min(step[lane]++, STAGGER_MAX) * STAGGER_MS;
+    };
+    let last = 0;
+    born.forEach((f) => {
+      const el = f.el;
+      const wait = delayOf(f);
+      if (wait > last) last = wait;
+      if (f.grow && !reduced) {
+        const cs2 = getComputedStyle(el);
+        const h = el.offsetHeight, mt = cs2.marginTop, mb = cs2.marginBottom;
+        el.style.overflow = 'hidden';
+        el.style.height = '0px'; el.style.marginTop = '0px'; el.style.marginBottom = '0px';
+        el.style.opacity = '0';
+        undo.push(() => {
+          el.style.transition = 'height ' + GROW_MS + 'ms cubic-bezier(.22, .61, .36, 1) ' + wait + 'ms, ' +
+            'margin ' + GROW_MS + 'ms cubic-bezier(.22, .61, .36, 1) ' + wait + 'ms, ' +
+            'opacity ' + (GROW_MS + 40) + 'ms ease-out ' + (wait + 60) + 'ms';
+          el.style.height = h + 'px'; el.style.marginTop = mt; el.style.marginBottom = mb;
+          el.style.opacity = '1';
+        });
+      } else {
+        el.style.opacity = '0';
+        undo.push(() => {
+          el.style.transition = 'opacity ' + FADE_MS + 'ms ease ' + wait + 'ms';
+          el.style.opacity = '1';
+        });
+      }
+    });
+    void document.body.offsetHeight;      // one reflow for the whole batch
+    undo.forEach((fn) => fn());
+    setTimeout(() => {
+      born.forEach((f) => {
+        ['transition', 'opacity', 'height', 'margin-top', 'margin-bottom', 'overflow']
+          .forEach((p) => f.el.style.removeProperty(p));
+      });
+      if (done) done();
+    }, FADE_MS + last + 40);
+  }
+
   const faces = (roster, meName) => '<div class="faces">' + roster.map((p) =>
     '<span class="pf' + (p.n === meName ? ' me' : '') + '">' + avHtml(p) +
     esc(p.n) + (p.n === meName ? ' (you)' : '') + '</span>').join('') + '</div>';
 
   return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, stateOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
-    nameBody, pictureBody, drawWire, opt, num, faces, someIn,
-    KIND, kindNote, motionBody, motionReopen, routeFor, motionCommitHtml,
-    slider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal };
+    nameBody, pictureBody, opt, num, faces, someIn, FACE_EMOJI,
+    FACE_TONES, faceToneRow, faceToned, setFaceTone,
+    anyEmojiRow, wireFreeEmoji, emojiFaceOf, setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
+    motionBody, motionReopen, routeFor, motionCommitHtml,
+    slider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

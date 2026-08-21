@@ -1,6 +1,6 @@
 # The setup surfaces — task grammar and dependency tree
 
-Working notes for `design/setup.html` — one surface since 2026-08-18 evening
+Working notes for the founding half of `design/session-view.html` (was `setup.html` until the stage 8 merge, 2026-08-21) — one surface since 2026-08-18 evening
 (Ed, 361; `document-creation.html` and `founding-ceremony.html` are
 redirects, who you are is the dev dropdown top-left) — kept
 here because they describe structure the code holds in scattered `dep:` arrays,

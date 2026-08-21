@@ -2,9 +2,9 @@
  *
  * Injected into session-view (live or the frozen /reference/ copy) in the
  * page's MAIN world — e.g. by appending a <script src="/tools/session-probe.js">
- * element — so it can reach the page's machinery: window.SESSION since stage 8
- * (session.js), or the script-global lexicals (SUGGS, toggle) on the frozen
- * reference copy.
+ * element — so it can reach the page's machinery through window.SESSION
+ * (session.js). The frozen copy in /reference/ (tag post-merge) is the
+ * merged page itself, so both sides speak the same namespace.
  *
  * What it does, on load:
  *   1. Stubs motion: wraps matchMedia so prefers-reduced-motion reports true
@@ -41,16 +41,13 @@
     }
     return mmReal(q);
   };
-  // Since stage 8 the machinery lives in session.js behind window.SESSION (the
-  // frozen reference still has script-global lexicals), so the probe reads
-  // whichever the page offers.
-  const S = window.SESSION || null;
+  // the machinery lives in session.js behind window.SESSION (stage 8)
+  const S = window.SESSION;
   const jump = (dy, done) => { window.scrollBy(0, dy); if (done) done(); };
-  if (S) S.smoothScrollBy = jump;
-  else { try { smoothScrollBy = jump; } catch (e) { /* const on some future version: tab must be foregrounded */ } }
-  const suggIds = () => S ? S.SUGGS.map((s) => s.id) : (typeof SUGGS !== 'undefined') ? SUGGS.map((s) => s.id) : [];
-  const toggleCard = (id) => S ? S.toggle(id, false) : toggle(id, false);
-  const keysOf = (id) => S ? S.clauseKeysOf(id) : (typeof clauseKeysOf === 'function') ? clauseKeysOf(id) : [];
+  S.smoothScrollBy = jump;
+  const suggIds = () => S.SUGGS.map((s) => s.id);
+  const toggleCard = (id) => S.toggle(id, false);
+  const keysOf = (id) => S.clauseKeysOf(id);
 
   /* ---- helpers ------------------------------------------------------------ */
   const R2 = (x) => Math.round(x * 100) / 100;

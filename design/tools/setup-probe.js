@@ -2,8 +2,8 @@
  * (plan 367a, commit 8; the session-probe discipline applied to a surface
  * you have to *drive*).
  *
- * Injected into setup.html — live, or the frozen copy in
- * /reference/setup-pre-constitution/ — in the page's MAIN world. It runs an
+ * Injected into session-view.html — live, or the frozen copy in
+ * /reference/ (tag post-merge) — in the page's MAIN world. It runs an
  * IDENTICAL public-DOM script on both pages (data-* attributes and page ids
  * only, no internals), snapshots after every step, stores the run under
  * localStorage, and when both runs exist compares them step by step.
@@ -29,30 +29,17 @@
 (function () {
   'use strict';
 
-  /* Diffs expected from the swap, keyed 'scenario:step:region'. Seeded from
-   * the known mock bugs the module fixes; empty for the self-proof run.
-   * confirm-membership: the delegated questions bloom here, and the frozen
-   * page's p-fixture tallies ("2 of 3 have answered", invented) became the
-   * module's real blind counts ("0 of 3") — the fixture-progress deletion
-   * the plan predicted. */
-  const ALLOWLIST = [
-    'founding:confirm-membership:band',
-    'founding:confirm-membership:rail',
-  ];
-  /* Stage 8 (the merge, 2026-08-21) — intentional, by pattern:
-   *   - geo.rail everywhere: the setup tasks are entries in session.js's
-   *     margin index now, absolutely positioned beside their own band
-   *     paragraphs (the frozen page laid them out in flow). Entry CONTENT is
-   *     still compared — see the rail region below, hashed with the layout's
-   *     own attributes stripped.
-   *   - toc once the text is confirmed (founding: fast-forward onward, every
-   *     motions step): the charter's headings come from session.js's DOC
-   *     (#sec-N, fold toggles, lifecycle marks) rather than from #prose. */
-  const ALLOW_RE = [
-    /:geo\.rail$/,
-    /^founding:(fast-forward|seat-bo|seat-founder):toc$/,
-    /^motions:[^:]+:toc$/,
-  ];
+  /* Diffs expected from a change in hand, keyed 'scenario:step:region'
+   * (exact) or matched by pattern. Empty since the post-merge freeze
+   * (stage 8, 2026-08-21): the reference is the merged page itself, so a
+   * fresh comparison needs no allowances. Seed these only for an
+   * intentional change, name each, and re-freeze when it lands. History:
+   * the constitution swap allowlisted confirm-membership's band and rail
+   * (invented p-fixture tallies became real blind counts); the merge
+   * allowlisted geo.rail (tasks became margin-index entries) and the
+   * post-confirm toc (headings from session.js). */
+  const ALLOWLIST = [];
+  const ALLOW_RE = [];
   const allowed = (k) => ALLOWLIST.includes(k) || ALLOW_RE.some((re) => re.test(k));
 
   /* ---- determinism stubs -------------------------------------------------- */
@@ -93,7 +80,7 @@
     return h1.toString(36) + '.' + h2.toString(36);
   };
   const REGIONS = {
-    topbar: '.topbar',
+    topbar: '.navbar',
     toc: '#toc',
     titlepara: '#titlepara',
     band: '#band',
@@ -214,10 +201,7 @@
   const SCENARIOS = [['founding', founding], ['motions', motions]];
 
   /* ---- run, store, compare ------------------------------------------------ */
-  // a working copy of HEAD served under /_head/ (git show HEAD:design/* into
-  // design/_head/, gitignored) counts as the reference too: the frozen
-  // pre-constitution copy was the swap's baseline; HEAD is any later change's
-  const SIDE = /\/(reference|_head)\//.test(location.pathname) ? 'ref' : 'live';
+  const SIDE = /\/reference\//.test(location.pathname) ? 'ref' : 'live';
   const KEY = 'setup-probe:';
   const run = {};
   for (const [scName, steps] of SCENARIOS) {

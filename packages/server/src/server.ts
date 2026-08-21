@@ -739,7 +739,7 @@ export async function createDraftServer(cfg: ServerConfig,
     }
     if (req.method === 'GET' && seg[0] === 'd' && seg.length === 2) {
       if (docOr404(store.bySlug(seg[1]!)) === null) return;
-      serveFile(res, join(cfg.designDir, 'setup.html'));
+      serveFile(res, join(cfg.designDir, 'session-view.html'));
       return;
     }
     if (req.method === 'GET' && seg[0] === 'design') {
@@ -761,7 +761,7 @@ export async function createDraftServer(cfg: ServerConfig,
     }
     if (req.method === 'GET' && path === '/') {
       // arriving at docs.vote presents a brand-new unsaved document (§9.7a)
-      serveFile(res, join(cfg.designDir, 'setup.html'));
+      serveFile(res, join(cfg.designDir, 'session-view.html'));
       return;
     }
 

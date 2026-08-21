@@ -22,7 +22,15 @@
 window.CARDS = (function () {
   'use strict';
 
-  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  // Full five-character escaping (PRODUCTION.md stage 3, defect 4): esc'd
+  // strings land in attribute values as well as text (a lane's valAttr
+  // carries member-proposed setting values on the live page), and an
+  // unescaped quote there is an injection, not a rendering quirk. For text
+  // nodes the extra entities parse back to the identical DOM.
+  function esc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
 
   // Decision cards show the text as it would *stand*, not a redline: the struck
   // words come out and only what is new stays lit. The fixture keeps the full
@@ -404,6 +412,14 @@ window.CARDS = (function () {
       : '<div class="said none">No reason given.</div>') +
     '</div>';
 
+  // The fold triangle — one control on every surface (2026-08-19, lifted
+  // from session-view when setup grew its own copy). Fold state lives with
+  // each page, so `open` arrives as a fact rather than being read here.
+  const secToggleHtml = (key, open, cls) =>
+    '<button class="sectoggle' + (cls ? ' ' + cls : '') + '" data-sec-toggle="' + esc(String(key)) + '"' +
+    ' aria-expanded="' + open + '" title="' + (open ? 'Fold this section away' : 'Unfold this section') +
+    '"><span class="tri">▸</span></button>';
+
   // The field label names the band and, where there is more than one candidate,
   // says how many — which is a fact about this card rather than a standing, so
   // §8.3 has nothing to say about it.
@@ -768,7 +784,7 @@ window.CARDS = (function () {
       const para = env.root().querySelector('.prose p');
       const endMB = para ? getComputedStyle(para).marginBottom : cs.marginBottom;
 
-      el.style.overflow = 'hidden';
+      el.style.clipPath = 'inset(-60px -100px 0px -100px)';
       el.style.height = h + 'px';
       void el.offsetHeight;
       const ease = COLLAPSE_MS + 'ms cubic-bezier(.32, .72, 0, 1)';
@@ -808,7 +824,7 @@ window.CARDS = (function () {
       const h = el.offsetHeight;
       const start = Math.min(headOnlyHeight(el), h);
       const body = cardBody(el);
-      el.style.overflow = 'hidden';
+      el.style.clipPath = 'inset(-60px -100px 0px -100px)';
       el.style.height = start + 'px';
       body.forEach((c) => { c.style.opacity = '0'; });
       void el.offsetHeight;
@@ -822,7 +838,7 @@ window.CARDS = (function () {
         c.style.opacity = '1';
       });
       setTimeout(() => {
-        el.style.height = ''; el.style.overflow = ''; el.style.transition = '';
+        el.style.height = ''; el.style.clipPath = ''; el.style.transition = '';
         body.forEach((c) => { c.style.opacity = ''; c.style.transition = ''; });
         env.onExpand();
         done();
@@ -912,7 +928,7 @@ window.CARDS = (function () {
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
-    laneSeed, laneProposeHtml, speakerHtml, fieldHtml, fieldOf, groundNote,
+    laneSeed, laneProposeHtml, speakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
     make,
   };

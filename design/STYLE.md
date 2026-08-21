@@ -93,8 +93,16 @@ founder-is-member 🎩, proposing gate 💡, judging gate ⚖️, crown 👑, ho
 
 ## 7. The audit (stage 8, 2026-08-21)
 
-Run over `design/session.js` and `design/setup.html` after the merge — every
+Run over `design/session.js`, `design/setup.js` and `design/session-view.html` after the merge — every
 string literal a member can read, against §§1–6. Findings and fixes are
 listed below as they land; a finding that is *not* fixed says why.
 
-_(filled in during B3)_
+Scanned: every string literal in `session.js`, `setup.js` and the page, comments stripped (the earlier tally of 31 "ordinary" and 17 "the bar" in session-view.html was almost entirely comments). Findings:
+
+1. **Fixed** — race-card foot *"…unless the leader clears the bar"* → *"…clears the approval threshold"* (§1).
+2. **Fixed** — the wallet's *"No edits left…"* / *"Your edits — proposing one costs…"* and the disabled-button title named the currency after what it buys; now ✏️ (§1 — the wallet was renamed `propose-wallet` for the same reason).
+3. **Fixed** — the 📄 task was titled *Starting Text*; there is no starting text (Q440), so *Text*.
+4. **Open — Q502** — 📈 *How Does the Bar Get There?* is named that way in CLAUDE.md and breaks §1. Ed's call.
+5. **Dropped** — the fixture topbar's *confidence bar 74% ▲* stat did not survive the merge: the threshold is not topbar material (`session-clock`).
+6. **Passed** — the B2b strings (*you have judged this — it is still running*, *wants your judgment*, *yours · in the race*, *decided — adopted*, *decided — the current text stood*, *retired — the current text stood*, *you judged this*, the two refusal sentences, *today*/*yesterday*): third person about the document, second person only where the card asks; no addresses; a count never a direction.
+7. **Noted, not surface** — `kind: 'ordinary'`, `settledBy === 'ceremony'`, `holder === 'convenor'` are engine vocabulary in data, never rendered; the surface says them only through the glyph pair.

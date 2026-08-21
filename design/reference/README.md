@@ -1,61 +1,52 @@
 # Frozen reference — do not edit
 
-Byte-copies of `design/session-view.html` and `design/system.css` as they
-stood on 2026-08-18, immediately before the decision-card machinery was
-extracted into `design/cards.js`. Ed asked for the pre-extraction
-session-view kept somewhere careful; this is it.
+Byte-copies of the merged page and everything it loads, as they stood at
+the end of stage 8 (2026-08-21) — `session-view.html`, `session.js`,
+`fixture-session.js`, `setup.js`, `setup.css`, `cards.js`, `system.css`,
+`constitution.js`. The git tag `post-merge` marks the same commit and is
+authoritative if EOL normalisation ever makes a copy differ byte-wise.
 
-- Never edit these files. If session-view changes intentionally later,
-  re-freeze (new copies, new tag) as its own commit.
+- **Never edit these files.** When the surface changes intentionally,
+  re-freeze (new copies, new tag) as its own commit, and empty the probes'
+  allowlists again — a freeze needs no allowances.
 - `http://localhost:8137/reference/session-view.html` renders the frozen
-  surface standalone — the stylesheet href is relative and resolves to the
-  frozen copy beside it.
-- The git tag `pre-cards` marks the same state and is authoritative if
-  EOL normalization ever makes the copies differ byte-wise.
-- The contamination guard (`design/tools/session-probe.js`) measures the
-  live surface against this one: card-by-card outerHTML equality and
-  0.0px geometry difference.
+  surface standalone (relative hrefs resolve to the frozen copies beside
+  it); `?fixture=session` renders the frozen Hollow Oak session.
+- `session-baseline.json` is the session-probe's recorded baseline at the
+  cards.js extraction (2026-08-18), kept as history.
 
-## setup-pre-constitution/ (frozen 2026-08-18, evening)
+History: the `pre-cards` tag (2026-08-18) froze the pre-extraction
+session-view; the `pre-constitution` tag froze the setup surface before the
+`@draft/constitution` rewiring. The pre-constitution copy had drifted 200
+diffs from HEAD by the time the merge was measured, which is why HEAD, not a
+rotted copy, must be the baseline whenever the copies are not re-frozen.
 
-Byte-copies of `design/setup.html`, `setup.css`, `setup.js`, `cards.js` and
-`system.css` as they stood immediately before the setup surface was rewired
-onto `@draft/constitution` (plan 367a — the shadow-engine cure). Same rules:
-never edit; re-freeze on intentional change as its own commit. The git tag
-`pre-constitution` marks the state.
+## Running the probes
 
-The guard here is `design/tools/setup-probe.js` — step-driven, because this
-surface has to be *driven*: an identical public-DOM script (data-* clicks
-only) runs on the live page and on
-`http://localhost:8137/reference/setup-pre-constitution/setup.html`,
-snapshotting per step; diffs fail unless allowlisted per
-scenario:step:region. Its commit-8 self-proof ran live-vs-frozen with the
-live page untouched and an empty allowlist: 34 steps, identical.
+Serve `design/` on `localhost:8137` (a tiny node http server). Both sides at
+**one window size**, both pages **from scroll 0**; the automation tab runs
+backgrounded (rAF never fires, timers clamp — the probes stub what they
+need). Each probe is injected as a MAIN-world `<script src="/tools/…">`; it
+stores its run in `localStorage` (keyed by side from the pathname —
+`/reference/` is the reference) and, once both runs exist, compares them
+into `window.__probeReport` and a `#probe-report` `<pre>`.
 
-## Running the probes since the merge (stage 8, 2026-08-21)
+- **session-probe** (`tools/session-probe.js`): reference
+  `/reference/session-view.html?fixture=session`, live
+  `/session-view.html?fixture=session`. Walks all 43 Hollow Oak cards: 0.0px
+  geometry and whitespace-normalised outerHTML equality per card, plus the
+  rail, the anchors, the chips and the charter's contents-rail entries. In
+  fixture-session mode the constitution band is hidden (`.doc.fixsession`);
+  `&band=1` shows the composition but is not a probe target. Gate: IDENTICAL.
+  A first load occasionally reports one or two rail y deltas that vanish on
+  a rerun (a settle-timing flake, never a card diff).
+- **setup-probe** (`tools/setup-probe.js`): reference
+  `/reference/session-view.html`, live `/session-view.html`. Drives the
+  founding and a motion — 34 steps — through public DOM only, snapshotting
+  regions and rects after each. Diffs fail unless their
+  `scenario:step:region` key is allowlisted (empty since the freeze). The
+  *Founded at [time]* line is stamped from the load-time clock, so run both
+  sides inside one minute or the band hashes differ from ⏩ onward.
 
-One surface now: `setup.html` is the page, `session-view.html` a redirect to
-`setup.html?fixture=session`, and the session's machinery is `session.js`.
-
-- **session-probe**: reference `/reference/session-view.html`, live
-  `/setup.html?fixture=session`. In that mode the constitution band is hidden
-  (`.doc.fixsession`) so the charter's geometry is the frozen page's to the
-  pixel — pinned rail entries clamp to the *viewport* edge, so a band above
-  the charter cannot be normalised away. `&band=1` shows the whole
-  composition (not a probe target). Measurements take y from the charter's
-  `.prose` top and the contents rail's charter headings from the first of
-  them. Gate unchanged: IDENTICAL.
-- **setup-probe**: the frozen `setup-pre-constitution/` copy is the
-  constitution swap's baseline and now differs from HEAD by design (200
-  diffs at 2026-08-21). For any later change the reference is **HEAD
-  itself**: `git show HEAD:design/<f> > design/_head/<f>` for setup.html,
-  setup.js, setup.css, cards.js, system.css, constitution.js, session.js and
-  fixture-session.js (the directory
-  is gitignored; a path containing `/_head/` counts as the reference side).
-  Intentional diffs since the merge are allowlisted by pattern: `geo.rail`
-  at every step (the tasks are entries in the session's margin index,
-  absolutely positioned) and `toc` once the text is confirmed (the
-  charter's headings come from session.js). Rail entries are still compared
-  by content, with the layout's own attributes stripped. The *Founded at
-  [time]* line is stamped from the load-time clock: run both sides inside
-  one minute or the band hashes differ after ⏩.
+Re-run the session-probe whenever `cards.js` or `session.js` changes, the
+setup-probe whenever the page, `setup.js` or `setup.css` changes.
