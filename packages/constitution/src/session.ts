@@ -125,17 +125,34 @@ export class ConstitutionSession {
         const c = event.convenor;
         this.convenor = { ...c, name: c.name ?? null, picture: c.picture ?? null,
           lastActivityT: event.t, lapseWarned: false };
+        // **Nothing arrives delegated** (Ed, 2026-08-21, amending SPEC §9.0a,
+        // closing Q511). Every held setting is born with the founder holding
+        // it, both powers intact and its question shut, because a default
+        // holder states an answer the founder has not given — the clause
+        // reads *The Founder is deciding X* until they decide it, and
+        // delegating is the ✒️/🛡️ act like any other, which is what emits
+        // `setting-delegated` and opens the blind question.
+        //
+        // §9.0a used to say the roster was the default holder of the
+        // constitutional ones, on the argument that a default you must argue
+        // out of is stronger than a ticked radio. The cost was that ten
+        // questions opened for answering at the instant of creation, before
+        // the founder had seen one of them — so the room could be answering
+        // while the founder was still naming the document, and the surface
+        // could not tell a default apart from a decision.
+        //
+        // `holderDefault` survives in the catalogue as doctrine — which
+        // settings the room is expected to end up holding — and is no longer
+        // read here; birth is uniform.
         for (const id of HELD) {
-          const entry = entryOf(id);
-          const delegated = entry.delegable && entry.holderDefault === 'members';
           this.settings.set(id, {
             id,
-            holder: delegated ? 'members' : 'convenor',
-            powers: { unilateral: !delegated, assent: !delegated },
+            holder: 'convenor',
+            powers: { unilateral: true, assent: true },
             value: null,
             settledBy: null,
             settledAtT: null,
-            collecting: delegated,
+            collecting: false,
             answers: new Map(),
             distribution: null,
           });

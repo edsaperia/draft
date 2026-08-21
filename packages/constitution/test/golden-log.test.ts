@@ -66,19 +66,26 @@ describe('the golden log', () => {
     // The version rides outside the hash, so this log chains to exactly
     // where it did the morning it was written — and to today's golden: the
     // start's lay-down of the Text's powers is derived at the fold, never
-    // emitted, so a log written before 2026-08-21 replays the same state.
+    // emitted, so a log written before 2026-08-21 replays to a valid state.
     expect(s.rollingHash()).toBe(V0_ROLLING_HASH);
-    const today = JSON.parse(readFileSync(join(dir, 'founding.state.json'), 'utf8')) as
-      { entries: number; rollingHash: string; settings: Record<string, unknown> };
-    expect(today.rollingHash).toBe(V0_ROLLING_HASH);
     expect(s.settingState('startingText').powers).toEqual({ unilateral: false, assent: false });
-    // (the snapshot lists a setting only once an event names it, so the old
-    // log's snapshot has no Text row at all — compare everything else)
-    const strip = (x: typeof today) => {
-      const { startingText: _t, ...settings } = x.settings;
-      return { ...x, entries: 0, rollingHash: '', settings };
-    };
-    expect(strip(snapshotOf(s) as typeof today)).toEqual(strip(today));
+
+    // **This log no longer chains to today's golden, and that is the point.**
+    // Until 2026-08-21 the two hashes were equal, because the walk had not
+    // changed since the morning v0 was frozen. Then §9.0a was amended so that
+    // nothing arrives delegated: the walk gained three `setting-delegated`
+    // events and lost the `setting-reclaimed` ones the founder no longer
+    // needs, so the two logs are now different walks. What this fixture is
+    // for survives untouched — an unversioned log still verifies, still
+    // reads as version 1, and still replays into a session this build can
+    // work with. Coupling it to whatever the current walk happens to be
+    // would only re-break it the next time the founding changes shape.
+    const today = JSON.parse(readFileSync(join(dir, 'founding.state.json'), 'utf8')) as
+      { entries: number; rollingHash: string };
+    expect(today.rollingHash).not.toBe(V0_ROLLING_HASH);
+    // it replays into something coherent, not into wreckage
+    expect(s.constitutedAtT).not.toBeNull();
+    expect(s.E()).toBeGreaterThan(0);
   });
 
   it('stamps what this build writes', () => {

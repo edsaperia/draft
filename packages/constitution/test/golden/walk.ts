@@ -40,6 +40,13 @@ export function goldenWalk(): ConstitutionSession {
   // dee never arrives: an invitation outstanding through the whole life
   s.uninvite(3, dee);
 
+  /* -- the founder hands three to the room (§9.0a as amended 2026-08-21) --- *
+   * Nothing arrives delegated: the hand-over is the act that opens a blind
+   * question, so it stands in the log before any answer to one.            */
+  s.delegate(3, 'ending');
+  s.delegate(3, 'bar');
+  s.delegate(3, 'chamber');
+
   /* -- the blind founding questions (§9.0a): maxima, live electorate ------ */
   s.answer(4, bo, 'ending', { endsAtMs: 1_000_000 });
   s.answer(4, cy, 'ending', { endsAtMs: 800_000 });

@@ -257,6 +257,9 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
       await cmd(ada, 'reclaim', { setting });
       await cmd(ada, 'set-setting', { setting, value });
     }
+    // nothing arrives delegated (Ed, 2026-08-21, amending §9.0a): the founder
+    // hands each question to the room, which is what opens it for answering
+    for (const setting of ['ending', 'bar', 'chamber']) await cmd(ada, 'delegate', { setting });
     const ends = Date.now() + 7 * 24 * 3600_000;
     for (const [setting, value] of [
       ['ending', { endsAtMs: ends }],
@@ -1063,6 +1066,7 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
       await cmd(ada, 'reclaim', { setting });
       await cmd(ada, 'set-setting', { setting, value });
     }
+    for (const setting of ['ending', 'bar', 'chamber']) await cmd(ada, 'delegate', { setting });
     const ends = Date.now() + 3600_000;
     for (const [setting, value] of [
       ['ending', { endsAtMs: ends }], ['bar', { pct: 66 }], ['chamber', { rung: 'link' }],
@@ -1176,8 +1180,14 @@ describe("the stranger's door (Q452/455/456)", () => {
     expect(k.body.textShape).toEqual([]);
     expect(k.body.canRead).toBe(false);
 
-    // text confirmed; 🌍 delegated to the members by default: they are deciding
+    // Text confirmed. **Nothing arrives delegated** (Ed, 2026-08-21, amending
+    // §9.0a): 🌍 is the founder's until they hand it over, so the door names
+    // them first and the membership only once the hand-over has happened.
     await cmd(ada, 'confirm-starting-text', { text: '# The orchard\nThe apples are shared at harvest.' });
+    k = await knock();
+    expect(k.body.holding.kind).toBe('founder-deciding');
+    expect(k.body.holding.sentence).toMatch(/deciding if you can see this document\.$/);
+    await cmd(ada, 'delegate', { setting: 'chamber' });
     k = await knock();
     expect(k.body.holding.kind).toBe('members-deciding');
     expect(k.body.holding.sentence).toBe('The members are deciding if you can see this document.');
@@ -1220,12 +1230,17 @@ describe("the stranger's door (Q452/455/456)", () => {
     await cmd(ada, 'set-identity', { name: 'Ada Lovell' });
 
     // whether a rule is still being collected is the module's own flag: the
-    // door states rules, and a count would be a standings read (§9.0b)
+    // door states rules, and a count would be a standings read (§9.0b).
+    // 💤 has to be handed over first — nothing arrives delegated, so nothing
+    // is collecting until the founder opens it (Ed, 2026-08-21).
+    await cmd(ada, 'delegate', { setting: 'lapse' });
     k = await knock();
     expect(k.body.view.settings.find((x) => x.setting === 'lapse')!.collecting).toBe(true);
     expect(k.raw).not.toMatch(/"answeredCount"/);
 
-    // members only: who decided, what they decided
+    // members only: who decided, what they decided — taking 🌍 back first,
+    // since the founder handed it to the room a few lines above
+    await cmd(ada, 'reclaim', { setting: 'chamber' });
     await cmd(ada, 'set-setting', { setting: 'chamber', value: { rung: 'closed' } });
     k = await knock();
     expect(k.body.holding).toEqual({ kind: 'members-only',

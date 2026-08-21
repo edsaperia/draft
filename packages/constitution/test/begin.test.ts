@@ -23,6 +23,11 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
     for (const [id, v] of Object.entries(FOUNDER_SET)) {
       s.reclaim(1, id as never); s.setSetting(1, id as never, v as never);
     }
+    // nothing arrives delegated (Ed, 2026-08-21): the two the room decides
+    // are handed over first, which is what opens their blind questions
+    s.delegate(1, 'ending');
+    s.delegate(1, 'bar');
+    s.delegate(1, 'chamber');
     s.answer(2, 'ada', 'ending', { endsAtMs: 1_000_000 });
     s.answer(2, bo, 'ending', { endsAtMs: 1_000_000 });
     s.answer(2, 'ada', 'bar', { pct: 66 });

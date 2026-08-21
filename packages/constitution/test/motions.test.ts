@@ -22,7 +22,12 @@ const constituted = (opts: { reserveRate?: boolean } = {}) => {
   s.arrive(1, bo);
   s.arrive(1, cy);
   // ending, bar and chamber resolve by ceremony, so they are members-held —
-  // motions on them apply directly, with no crown in the way (§9.7 v0.49)
+  // motions on them apply directly, with no crown in the way (§9.7 v0.49).
+  // Nothing arrives delegated (Ed, 2026-08-21, amending §9.0a), so the
+  // founder hands each over first, which is what opens its blind question.
+  s.delegate(1, 'ending');
+  s.delegate(1, 'bar');
+  s.delegate(1, 'chamber');
   s.answer(1, 'ada', 'ending', { endsAtMs: 500_000 });
   s.answer(1, bo, 'ending', { endsAtMs: 1_000_000 });
   s.answer(1, cy, 'ending', { endsAtMs: 800_000 }); // resolved — bar may follow
@@ -162,6 +167,9 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     }, 0);
     const bo = s.invite(1, 'bo@example.org');
     s.arrive(1, bo);
+    // nothing arrives delegated (Ed, 2026-08-21): handing over opens the question
+    s.delegate(1, 'ending');
+    s.delegate(1, 'bar');
     s.answer(1, 'ada', 'ending', { endsAtMs: 1_000_000 });
     s.answer(1, bo, 'ending', { endsAtMs: 800_000 }); // resolved — bar may follow
     s.answer(1, 'ada', 'bar', { pct: 66 });

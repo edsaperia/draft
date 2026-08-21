@@ -15,6 +15,21 @@ const openDoc = (isMember = true) =>
     convenor: { id: 'ada', email: 'ada@example.org', isMember },
   }, 0);
 
+/**
+ * A document whose constitutional settings the founder has handed to the room.
+ * **Nothing arrives delegated** (Ed, 2026-08-21, amending §9.0a), so a test
+ * about blind collection has to perform the act that opens the questions —
+ * which is the founder's, and explicit. `openDoc` stays the raw birth, so the
+ * tests about what creation produces still test creation.
+ */
+const DELEGABLE_CONSTITUTIONAL = ['ending', 'bar', 'quorum', 'authorship',
+  'signing', 'judgments', 'chamber', 'lapse', 'removal', 'applications'] as const;
+const openDelegated = (isMember = true) => {
+  const s = openDoc(isMember);
+  for (const id of DELEGABLE_CONSTITUTIONAL) s.delegate(0, id);
+  return s;
+};
+
 /** Settle everything reserved-style except the delegated set the test keeps. */
 const settleAllReserved = (s: ConstitutionSession, t: number,
   except: string[] = []) => {
@@ -44,12 +59,23 @@ const settleAllReserved = (s: ConstitutionSession, t: number,
 };
 
 describe('creation and the pre-start free hand (§9.6a, §9.7a)', () => {
-  it('opens with title and link settled, constitutional settings delegated', () => {
+  // **Nothing arrives delegated** (Ed, 2026-08-21, amending §9.0a, closing
+  // Q511). §9.0a used to make the roster the default holder of every
+  // constitutional setting, which meant ten blind questions opened at the
+  // instant of creation — the room could answer before the founder had seen
+  // one of them, and no surface could tell a default from a decision.
+  it('opens with title and link settled and nothing yet delegated', () => {
     const s = openDoc();
     expect(s.titleOf).toBe('Hollow Oak Club Charter');
     expect(s.slug).toBe('hollow-oak');
-    expect(s.settingState('bar').holder).toBe('members');
-    expect(s.settingState('bar').collecting).toBe(true);
+    for (const id of DELEGABLE_CONSTITUTIONAL) {
+      const st = s.settingState(id);
+      expect(st.holder, id).toBe('convenor');
+      expect(st.collecting, id).toBe(false);
+      expect(st.value, id).toBeNull();
+      expect(st.powers.unilateral, id).toBe(true);
+      expect(st.powers.assent, id).toBe(true);
+    }
     expect(s.settingState('rate').holder).toBe('convenor');
     // pacing is the founder's and not delegable pre-start (Q415)
     expect(s.settingState('pace').holder).toBe('convenor');
@@ -79,7 +105,7 @@ describe('creation and the pre-start free hand (§9.6a, §9.7a)', () => {
   });
 
   it('refuses to set a delegated setting — reclaim first', () => {
-    const s = openDoc();
+    const s = openDelegated();
     expect(() => s.setSetting(1, 'bar', { pct: 66 })).toThrow(/delegated/);
   });
 
@@ -133,12 +159,12 @@ describe('the roster before the start (§9.6a)', () => {
 
 describe('blind collection and the consent rule live (§9.0a)', () => {
   it('a question with unsettled dependencies is not answerable', () => {
-    const s = openDoc();
+    const s = openDelegated();
     expect(() => s.answer(1, 'ada', 'bar', { pct: 66 })).toThrow(/waits on 'ending'/);
   });
 
   it('answers are revisable until the question settles, and the last member resolves it', () => {
-    const s = openDoc();
+    const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org');
     s.arrive(1, bo);
     s.answer(2, 'ada', 'ending', { endsAtMs: 500_000 });
@@ -153,7 +179,7 @@ describe('blind collection and the consent rule live (§9.0a)', () => {
   });
 
   it('a never holdout keeps the document perpetual (⏰) and unlapsed (💤)', () => {
-    const s = openDoc();
+    const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org');
     s.arrive(1, bo);
     s.answer(2, 'ada', 'ending', { endsAtMs: 500_000 });
@@ -165,7 +191,7 @@ describe('blind collection and the consent rule live (§9.0a)', () => {
   });
 
   it('the quorum question is asked in the convenor’s form (§9.0a)', () => {
-    const s = openDoc();
+    const s = openDelegated();
     s.setQuorumForm(1, 'count');
     expect(() => s.answer(2, 'ada', 'quorum', { form: 'share', n: 60 }))
       .toThrow(/asked as a count/);
@@ -177,7 +203,7 @@ describe('blind collection and the consent rule live (§9.0a)', () => {
   // founder. Delegating it pre-start is therefore a hand-over like the
   // title's, not a blind collection, so 📯 stays reachable.
   it('pacing is never a founding question, and hands over rather than collects', () => {
-    const s = openDoc();
+    const s = openDelegated();
     expect(s.settingState('pace').collecting).toBe(false);
     expect(() => s.answer(2, 'ada', 'pace', { shape: 'fixed' }))
       .toThrow(/not collecting/);
@@ -190,7 +216,7 @@ describe('blind collection and the consent rule live (§9.0a)', () => {
 
 describe('ground shifts (§9.6a): the roster is the ground of every answer', () => {
   it('an arrival mid-collection shifts the ground and re-opens completion', () => {
-    const s = openDoc();
+    const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org');
     s.arrive(1, bo);
     s.answer(2, 'ada', 'ending', { endsAtMs: 500_000 }); // bo still owes his
@@ -206,7 +232,7 @@ describe('ground shifts (§9.6a): the roster is the ground of every answer', () 
   });
 
   it('a departure can complete a question (live electorate)', () => {
-    const s = openDoc();
+    const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org');
     const cy = s.invite(1, 'cy@example.org');
     s.arrive(1, bo);
@@ -222,7 +248,7 @@ describe('ground shifts (§9.6a): the roster is the ground of every answer', () 
   // Q413 (Ed, 2026-08-19): a consent rule computed over one answer is that
   // answer, so a delegated question does not resolve on a membership of one
   it('never resolves on one voice', () => {
-    const s = openDoc();
+    const s = openDelegated();
     s.answer(2, 'ada', 'ending', { endsAtMs: 500_000 });
     expect(s.settingState('ending').collecting).toBe(true);
     expect(s.settingState('ending').value).toBeNull();
@@ -235,7 +261,7 @@ describe('ground shifts (§9.6a): the roster is the ground of every answer', () 
 
 describe('owed OKs (§9.6a): inheritance as unacknowledged decisions', () => {
   it('a reserved constitutional set is owed to every arrived member but the convenor', () => {
-    const s = openDoc();
+    const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org');
     s.arrive(1, bo);
     s.reclaim(2, 'chamber');
@@ -250,7 +276,7 @@ describe('owed OKs (§9.6a): inheritance as unacknowledged decisions', () => {
   });
 
   it('a late arrival is owed the whole settled constitution; answerers are owed nothing', () => {
-    const s = openDoc();
+    const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org'); // invited before the start…
     settleAllReserved(s, 2);                  // …which the settle constitutes
     s.arrive(3, bo);                          // arrival inherits (§9.6a)
@@ -266,7 +292,7 @@ describe('owed OKs (§9.6a): inheritance as unacknowledged decisions', () => {
 
 describe('📯 is reachable (§9.7 v0.51)', () => {
   it('delegate the ordinary defaults, resolve by ceremony, then delegate title and link', () => {
-    const s = openDoc();
+    const s = openDelegated();
     s.delegate(0, 'rate');
     s.delegate(0, 'machines');
     const bo = s.invite(1, 'bo@example.org');
@@ -298,7 +324,7 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
 
 describe('constituted (§9.6a): the moment judging opens', () => {
   it('fires when the seven gates settle, and the pre-start rights die with it', () => {
-    const s = openDoc();
+    const s = openDelegated();
     settleAllReserved(s, 1, ['applications']); // applications is not a gate
     s.begin(1); // 🍾 (Q443): nothing starts until the founder says so
     expect(s.constitutedAtT).toBe(1);
@@ -314,7 +340,7 @@ describe('constituted (§9.6a): the moment judging opens', () => {
   });
 
   it('a ceremony resolves it when the last gate question completes', () => {
-    const s = openDoc();
+    const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org');
     s.arrive(1, bo);
     settleAllReserved(s, 2, ['bar']);
@@ -329,7 +355,7 @@ describe('constituted (§9.6a): the moment judging opens', () => {
   });
 
   it('post-start the convenor direct-changes reserved settings (§9.7, Ed 366)', () => {
-    const s = openDoc();
+    const s = openDelegated();
     settleAllReserved(s, 1);
     s.begin(1);
     s.setSetting(2, 'chamber', { rung: 'closed' }); // reserved: the crown rule
@@ -337,7 +363,7 @@ describe('constituted (§9.6a): the moment judging opens', () => {
   });
 
   it('the ramp anchors at constituted and rises to the close bar (§4.3)', () => {
-    const s = openDoc();
+    const s = openDelegated();
     settleAllReserved(s, 10); // ramp 55 → 78 over [10, 1_000_000]
     s.begin(10);
     expect(s.bar(10)).toBeCloseTo(55, 5);
@@ -350,7 +376,7 @@ describe('constituted (§9.6a): the moment judging opens', () => {
 
 describe('proposing is yours (§9.0b)', () => {
   it('needs the confirmed text and your own answers, not the room’s', () => {
-    const s = openDoc();
+    const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org');
     s.arrive(1, bo);
     expect(s.canPropose('ada')).toBe(false); // no text yet
@@ -363,7 +389,7 @@ describe('proposing is yours (§9.0b)', () => {
   });
 
   it('a starting text may be empty — confirmed decision, not content (§9.0b)', () => {
-    const s = openDoc();
+    const s = openDelegated();
     s.confirmStartingText(1, '');
     expect(s.textConfirmed).toBe(true);
     expect(s.text).toBe('');
@@ -372,7 +398,7 @@ describe('proposing is yours (§9.0b)', () => {
 
 describe('replay (SPEC §11)', () => {
   it('re-folds bit-identically and re-verifies the chain', () => {
-    const s = openDoc();
+    const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org');
     s.arrive(1, bo);
     s.setIdentity(2, bo, { name: 'Bo' });
@@ -394,7 +420,7 @@ describe('replay (SPEC §11)', () => {
   });
 
   it('detects tampering at the right seq', () => {
-    const s = openDoc();
+    const s = openDelegated();
     s.invite(1, 'bo@example.org');
     const log = s.logEntries().map((e) => ({ ...e, event: { ...e.event } }));
     (log[1]!.event as { t: number }).t = 99;
@@ -402,7 +428,7 @@ describe('replay (SPEC §11)', () => {
   });
 
   it('members verify their own moves were counted (receipts)', () => {
-    const s = openDoc();
+    const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org');
     s.arrive(2, bo);
     s.answer(3, bo, 'ending', { endsAtMs: 500 });

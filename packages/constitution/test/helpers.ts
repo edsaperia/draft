@@ -26,6 +26,13 @@ export function buildConstituted(opts: {
   const cy = s.invite(1, 'cy@example.org');
   s.arrive(1, bo);
   s.arrive(1, cy);
+  // **Nothing arrives delegated** (Ed, 2026-08-21, amending §9.0a): the three
+  // the room decides are handed over by the founder first, and that act is
+  // what opens their blind questions. Before, they collected from the moment
+  // the document existed.
+  s.delegate(1, 'ending');
+  s.delegate(1, 'bar');
+  s.delegate(1, 'chamber');
   // ending resolves first: bar waits on it (§9.0a deps)
   s.answer(1, bo, 'ending', { endsAtMs: 1_000_000 });
   s.answer(1, cy, 'ending', { endsAtMs: 800_000 });
