@@ -3966,11 +3966,21 @@
     if (w && w.rules) EDIT_RULES = w.rules;
     if (w && w.held != null) editsHeld = w.held;
     if (w && w.toNext != null) editsToNext = w.toNext;
+    // a live wallet's clock (stage 8, Q503a): the drip interval in seconds,
+    // carried as the tenth-of-window the fixture's clock was built on —
+    // dripIn reads SESSION_MINUTES × 6 seconds per tick, so an interval of
+    // d seconds is SESSION_MINUTES = d / 6; null says the document does not drip
+    if (w && w.dripSeconds !== undefined) SESSION_MINUTES = w.dripSeconds == null ? Infinity : w.dripSeconds / 6;
     renderWallet();
+  }
+  // the room the records speak of (stage 8): E and the floor, from the view
+  function setRoom(r) {
+    if (r && r.E != null) ROSTER = r.E;
+    if (r && r.floor != null) FLOOR = r.floor;
   }
 
   window.SESSION = {
-    init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet,
+    init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet, setRoom,
     arcFrames, renderWallet, beat, act,
     refreshRail, renderToc, layoutQueue, drawWires, washAttrs,
     get DOC() { return DOC; },

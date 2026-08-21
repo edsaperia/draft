@@ -93,7 +93,12 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // this one; bisection against a pristine tree confirmed the new hash is
   // v0.58's own, byte-identical with and without the same-day refactors
   // (was e4d17eaf4501f9d518f9df301b12e9acd2b44a4a476d1f926a50b3206dd10dd1).
-  const PINNED = '61cddb50bb7cfb381f51edb96c78c42d9f2074cf2f7bd535f2ec9085c17be969';
+  // Re-pinned 2026-08-21 (stage 8, Q503c): `adopted` and `candidate-retired`
+  // events name their race (`raceId`), so every resolution event — and the
+  // chain after the first — hashes differently. Both variants of this test
+  // still agree with each other, which is the invariant it defends
+  // (was 61cddb50bb7cfb381f51edb96c78c42d9f2074cf2f7bd535f2ec9085c17be969).
+  const PINNED = 'a0e8813425676539adfb2096a79bed27ea8f1d75a92e32e3818cd31d7c6a3523';
 
   const run = (withGate: boolean) =>
     runSession({

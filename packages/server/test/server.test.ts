@@ -347,6 +347,70 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(cyDone.clauses).toHaveLength(0);
     expect(cyDone.mine.find((m) => m.id === second.id)!.state).toBe('withdrawn');
 
+    // -- stage 8 follow-up (Q501, Q503): two rivals on one clause make one
+    // race; the third member is served the pair with the router's own
+    // urgency; the race carries a signless closeness and its judge count;
+    // the wallet has a clock; the record files the race once, with the
+    // field and the text it displaced -----------------------------------
+    type RichView = TextView & {
+      floor: number;
+      walletInfo: { balance: number; nextDripInMs: number | null; dripIntervalMs: number | null; cap: number } | null;
+      clauses: Array<{ closeness: number; judges: number; floor: number; candidates: Array<{ id: string }> }>;
+      raceCards: Array<{ raceId: string; urgency: number; a: { id: string; incumbent?: boolean }; b: { id: string; incumbent?: boolean } }>;
+      records: Array<{ raceId: string; candidateId: string; outcome: string; judges: number;
+        displaced: string[]; field: Array<{ candidateId: string; outcome: string }> }>;
+    };
+    const rich = async (cookie: string) => (await textView(cookie)) as unknown as RichView;
+    const v1 = (await rich(bo)).textVersion;
+    const r1 = await cmd(bo, 'propose-text', { baseVersion: v1,
+      hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open every day.'] }], why: 'daily' }) as { id: string; raceId: string };
+    const r2 = await cmd(cy, 'propose-text', { baseVersion: v1,
+      hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall never close.'] }], why: 'never' }) as { id: string; raceId: string };
+    expect(r2.raceId).toBe(r1.raceId);
+    const adaV = await rich(ada);
+    expect(adaV.clauses).toHaveLength(1);
+    expect(adaV.clauses[0]!.candidates).toHaveLength(2);
+    expect(adaV.clauses[0]!.closeness).toBeGreaterThanOrEqual(0);
+    expect(adaV.clauses[0]!.closeness).toBeLessThanOrEqual(1);
+    expect(adaV.clauses[0]!.judges).toBe(2); // the two authors' own derived preferences
+    expect(adaV.clauses[0]!.floor).toBe(adaV.floor);
+    expect(adaV.floor).toBeGreaterThan(0);
+    expect(JSON.stringify(adaV.clauses)).not.toMatch(/leaderP|certification|author|"value"/);
+    expect(adaV.walletInfo).not.toBeNull();
+    expect(adaV.walletInfo!.dripIntervalMs).toBe(240 * 60_000);
+    expect(adaV.walletInfo!.nextDripInMs).toBeGreaterThan(0);
+    expect(adaV.walletInfo!.nextDripInMs).toBeLessThanOrEqual(240 * 60_000);
+    const served = adaV.raceCards.filter((c) => c.raceId === r1.raceId);
+    expect(served.length).toBeGreaterThan(0);
+    expect(Math.max(...adaV.raceCards.map((c) => c.urgency))).toBe(1);
+    expect(JSON.stringify(adaV.raceCards)).not.toMatch(/"value"|leaderP/);
+    // ada judges until the race resolves: prefer r1 over whatever it is paired with
+    for (let i = 0; i < 8; i++) {
+      const now = await rich(ada);
+      if (now.clauses.length === 0) break;
+      const card = now.raceCards.find((c) => c.raceId === r1.raceId);
+      if (!card) break;
+      const outcome = card.a.id === r1.id ? 'a' : card.b.id === r1.id ? 'b'
+        : card.a.incumbent ? 'b' : 'a';
+      await cmd(ada, 'judge-race', { a: card.a.id, b: card.b.id, outcome });
+    }
+    const done = await rich(ada);
+    expect(done.clauses).toHaveLength(0);
+    const rec = done.records.find((r) => r.raceId === r1.raceId)!;
+    expect(rec).toBeTruthy();
+    // the field holds the outcome(s): r1 adopted; r2, patching the same
+    // line, could not be rebased and went back to its author (§2.4) — a
+    // return, not an outcome, so it is cy's to see under `mine`, not the record's
+    expect(rec.field.map((f) => [f.candidateId, f.outcome])).toEqual([[r1.id, 'adopted']]);
+    const cyMine = (await rich(cy)).mine.find((m) => m.id === r2.id)!;
+    expect(cyMine.state).not.toBe('live');
+    expect(cyMine.state).not.toBe('adopted');
+    expect(rec.displaced).toEqual(['The clubhouse shall be kept open all week.']);
+    // ada's judgment and bo's own derived preference: two movers on the record
+    expect(rec.judges).toBe(2);
+    // one record per race: the adopted rival and the retired one do not file twice
+    expect(done.records.filter((r) => r.raceId === r1.raceId)).toHaveLength(1);
+
     // -- an applicant at the door (§9.7½): start → verify → submit --------
     const preApply = booted[booted.length - 1]!.draft.store
       .bySlug(created.slug)!.cs.logEntries().length;

@@ -168,6 +168,17 @@ export interface RaceView {
   certification: number | null;
   deadlocked: boolean;
   /**
+   * Closeness to resolution as a magnitude, never a direction (SPEC §8.3:
+   * "closeness-to-resolution as a single number"): how far the room's
+   * evidence has moved the leader from a coin flip, scaled so the carry
+   * boundary is 1 — |2p − 1| / (2θ − 1) with p = P(leader beats incumbent)
+   * and θ the adoption threshold now, clamped to [0, 1]. A fresh race
+   * (p = ½) sits at 0; a race about to carry and a race the incumbent is
+   * about to see off both read 1, because |2p − 1| is exactly invariant
+   * under p ↔ 1 − p — the number cannot be inverted into "which way".
+   */
+  closeness: number;
+  /**
    * Rival-pair gate state (SPEC §8.3, Q48): true once some challenger
    * shows displacement evidence against the incumbent, unlocking
    * rival-vs-rival pairs for ordinary value-based sampling.
@@ -253,7 +264,7 @@ export type Event =
       participantId: string;
     }
   | { type: 'candidate-withdrawn'; t: number; id: string; refund: number }
-  | { type: 'candidate-retired'; t: number; id: string; refund: number }
+  | { type: 'candidate-retired'; t: number; id: string; refund: number; raceId?: string }
   | {
       /** Author folds their support into an existing candidate (SPEC §5.1). */
       type: 'co-signed';
@@ -268,6 +279,8 @@ export type Event =
       type: 'adopted';
       t: number;
       candidateId: string;
+      /** The race the candidate resolved in (stage 8; absent on older logs). */
+      raceId?: string;
       /** Document version the adoption produced. */
       newVersion: number;
       /** Posterior P(winner beats incumbent) at adoption. */

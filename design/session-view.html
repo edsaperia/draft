@@ -3881,15 +3881,23 @@
       const ids = new Set(r.candidates.map((c) => c.id).concat([r.incumbentId]));
       const at = cards.findIndex((rc) => rc.kind === 'edge' && sideOf(rc, ids));
       const rc = at >= 0 ? cards[at] : null;
-      const keys = keysOfSpan(r.contested, lines);
-      const inc = plain(lines, r.contested);
-      const textOf = (c) => applyIn(lines, r.contested, c.hunks);
+      // the contested footprint is a list of spans; the page anchors the race
+      // at their union (one clause run)
+      const csp = spanOf(r.contested && r.contested.length ? r.contested : r.candidates.flatMap((c) => c.hunks));
+      const keys = keysOfSpan(csp, lines);
+      const inc = plain(lines, csp);
+      const textOf = (c) => applyIn(lines, csp, c.hunks);
       const byId = (id) => r.candidates.find((c) => c.id === id);
       const base = {
         id: r.id, keys, state: r.judged ? 'deciding' : 'needs',
         qLabel: labelFor(keys[0]),
-        urgency: at >= 0 ? Math.max(0.5, 1 - at * 0.08) : 0.3,
-        pct: 0, cap: r.judged ? 'you have judged this — it is still running' : 'wants your judgment',
+        // urgency is the router's own (SPEC §8.1): the served card's value
+        // over the best in this feed; the fill is the race's closeness to
+        // resolution — a magnitude the engine cannot be made to sign (Q501)
+        urgency: rc && rc.urgency != null ? rc.urgency : 0.3,
+        pct: Math.round((r.closeness || 0) * 100),
+        judges: r.judges || 0, floor: r.floor,
+        cap: r.judged ? 'you have judged this — it is still running' : 'wants your judgment',
         shifted: !!r.shifted, deadlocked: !!r.deadlocked,
         // the served pair, for the judgment that goes back
         card: rc ? { a: rc.a.id, b: rc.b.id, inc: rc.a.incumbent ? 'a' : rc.b.incumbent ? 'b' : null } : null,
@@ -3927,20 +3935,30 @@
         state: 'needs', qLabel: sites[0].label, urgency: 0, pct: 0,
         cap: 'yours · in the race', rationale: m.rationale, sites, candidate: m.id });
     }
+    // one record per race (Q503c): the whole field, the text it displaced
+    // as it stood, and how many weighed in
     for (const o of v.records || []) {
-      const sp = o.footprint && o.footprint.length ? spanOf(o.footprint) : spanOf(o.hunks);
+      const field = o.field || [];
+      const hs = field.flatMap((f) => f.hunks);
+      const sp = hs.length ? spanOf(hs) : spanOf(o.footprint || o.hunks || []);
       const keys = keysOfSpan(sp, lines);
       const adopted = o.outcome === 'adopted';
-      items.push({ id: 'rec:' + o.candidateId, kind: 'quick', keys, state: 'sealed',
+      const textOfF = (f) => f.hunks.flatMap((h) => h.lines).map(unhead).join('\n');
+      const winner = field.find((f) => f.outcome === 'adopted') || field[0] || {};
+      const replaced = (o.displaced || []).filter((l) => l.trim()).map(unhead).join('\n') || undefined;
+      const slate = field.length > 1
+        ? { slate: field.map((f) => ({ text: textOfF(f), rationale: f.rationale,
+            p: f.p == null ? undefined : f.p, won: f.outcome === 'adopted' })) } : {};
+      items.push({ id: 'rec:' + (o.raceId || o.candidateId), kind: 'quick', keys, state: 'sealed',
         qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
         cap: adopted ? 'decided — adopted' : 'decided — the current text stood',
         decided: { outcome: adopted ? 'adopted' : 'retired — the current text stood',
-          when: whenOf(o.when), p: o.p, bar: o.threshold },
+          when: whenOf(o.when), p: o.p, bar: o.threshold, judges: o.judges },
         won: adopted ? 'b' : undefined,
-        optionB: o.hunks.flatMap((h) => h.lines).map(unhead).join('\n'),
-        rationale: o.rationale,
+        optionB: textOfF(winner), replaced,
+        rationale: winner.rationale,
         verdict: o.judgedByMe ? 'you judged this' : undefined,
-        unread: true });
+        unread: true, ...slate });
     }
     // the draft being typed is the page's own, never the view's — it survives
     // every rebind
@@ -4011,8 +4029,16 @@
     // the engine's balance accrues by the minute, so it is fractional: the
     // whole part is what you can spend, the fraction how far the next has got
     const bal = cs.v.wallet == null ? 0 : cs.v.wallet;
-    SESSION.setWallet({ held: Math.floor(bal), toNext: bal - Math.floor(bal),
-      rules: { grant: rv.grant ?? 4, cap: rv.cap ?? 8, stake: 1 } });
+    // the clock rides the view (Q503a): how long until the next ✏️ lands and
+    // the interval it runs on, so the tray says *when* from the server's own
+    // numbers and nothing when the document does not drip
+    const wi = cs.v.walletInfo || {};
+    const drips = wi.dripIntervalMs != null && wi.nextDripInMs != null;
+    const frac = drips ? Math.max(0, Math.min(1, 1 - wi.nextDripInMs / wi.dripIntervalMs)) : (bal - Math.floor(bal));
+    SESSION.setWallet({ held: Math.floor(bal), toNext: frac,
+      dripSeconds: drips ? wi.dripIntervalMs / 1000 : null,
+      rules: { grant: rv.grant ?? 4, cap: wi.cap ?? rv.cap ?? 8, stake: 1 } });
+    SESSION.setRoom({ E: cs.E(), floor: cs.v.floor });
   }
   const extra = {
     entries: () => railEntries,

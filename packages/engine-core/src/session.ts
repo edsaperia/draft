@@ -30,7 +30,8 @@ import { makeRng, type Rng } from './rng.js';
 import { smoothstep } from './adoption-threshold.js';
 import {
   balanceAt,
-  credit,
+  dripIntervalMs,
+  credit,
   materialize,
   openLedger,
   performanceRefund,
@@ -624,6 +625,28 @@ export class Session {
     return balanceAt(this.rosterEntry(participantId).ledger, this.constitutionValue, t);
   }
 
+  /**
+   * The wallet with its clock (stage 8, Q503a): the balance, when the next
+   * drip lands (engine time), the interval, and the cap. `nextDripT` is
+   * Infinity when the document does not drip.
+   */
+  ledgerInfo(participantId: string, t: number): {
+    balance: number; nextDripT: number; dripIntervalMs: number; cap: number;
+  } {
+    const ledger = this.rosterEntry(participantId).ledger;
+    const balance = balanceAt(ledger, this.constitutionValue, t);
+    const interval = dripIntervalMs(this.constitutionValue);
+    const drips = Number.isFinite(interval) && interval > 0;
+    return { balance, nextDripT: drips ? ledger.nextDripT : Infinity,
+      dripIntervalMs: drips ? interval : Infinity, cap: this.constitutionValue.tokenCap };
+  }
+
+  /** The id of the live race holding a candidate, as `races()` names it. */
+  private raceIdOf(candidateId: string): string {
+    const r = this.races().find((x) => x.members.includes(candidateId));
+    return r ? r.id : `r:${candidateId}`;
+  }
+
   getCandidate(id: string): Readonly<Candidate> {
     return this.candidate(id);
   }
@@ -859,6 +882,7 @@ export class Session {
       type: 'candidate-retired',
       t,
       id: candidateId,
+      raceId: this.raceIdOf(candidateId),
       refund: performanceRefund(c.stakePaid, c.peakW),
     });
   }
@@ -1021,10 +1045,18 @@ export class Session {
     // Measured evidence only: a derived author preference is a preference, not
     // a measurement, so it cannot help a race look sufficiently sampled.
     const measured = usable.filter((c) => !c.derived);
+    const bestValue = this.maxPairValue(fit, members, incumbentId, null, rivalGateOpen);
     const deadlocked =
       measured.length >= this.constitutionValue.deadlockMinComparisons &&
-      this.maxPairValue(fit, members, incumbentId, null, rivalGateOpen) <
-        this.constitutionValue.deadlockEpsilon;
+      bestValue < this.constitutionValue.deadlockEpsilon;
+    // closeness (stage 8): see RaceView — a magnitude with no sign. Built
+    // from leaderP alone: the fit's variance is not mirror-symmetric (the
+    // incumbent and the tie parameter sit differently in the Laplace
+    // covariance), so a statistic that leaned on it would carry a trace
+    // of direction. |2p − 1| is exactly invariant under p ↔ 1 − p.
+    const span = 2 * this.adoptionThreshold() - 1;
+    const closeness = leaderP === null || span <= 0 ? 0
+      : Math.max(0, Math.min(1, Math.abs(2 * leaderP - 1) / span));
     return {
       id,
       members,
@@ -1041,6 +1073,7 @@ export class Session {
       certification,
       deadlocked,
       rivalGateOpen,
+      closeness,
       ...(setting ? { settingId: setting.settingId } : {}),
     };
   }
@@ -1323,6 +1356,7 @@ export class Session {
 
   private adopt(t: number, candidateId: string, p: number, threshold: number): void {
     const winner = this.candidate(candidateId);
+    const raceId = this.raceIdOf(candidateId);
     if (!winner.patch) {
       // A setting race carried (Q390): the verdict is recorded and the
       // stake refunded; the value lands via setStanding, host-called,
@@ -1331,6 +1365,7 @@ export class Session {
         type: 'adopted',
         t,
         candidateId,
+        raceId,
         newVersion: this.currentVersion(),
         p,
         threshold,
@@ -1339,7 +1374,7 @@ export class Session {
     }
     const adoptedHunks = winner.patch.hunks;
     const newVersion = this.currentVersion() + 1;
-    this.emit({ type: 'adopted', t, candidateId, newVersion, p, threshold });
+    this.emit({ type: 'adopted', t, candidateId, raceId, newVersion, p, threshold });
     // Rebase every other live patch onto the new text (SPEC §2.4).
     // Setting candidates have no text ground and are untouched (Q390).
     const others = [...this.candidates.values()].filter(

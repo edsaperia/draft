@@ -890,3 +890,89 @@ describe('ParticipantApi.outcomes (stage 8): resolutions are public, nothing els
     expect(JSON.stringify(out)).not.toContain('refund');
   });
 });
+
+describe('stage 8 follow-up: closeness, urgency, the record and the wallet clock', () => {
+  it('closeness is a magnitude: mirror races read identically whichever side leads', () => {
+    const mk = (dir: 'a' | 'b') => {
+      const s = openHeld();
+      const { id } = s.submitCandidate(1000, {
+        author: 'p1', patch: rewrite(0, 1, 'Membership needs a sponsor.'), rationale: 'r',
+      });
+      const inc = s.raceOf(id).incumbentId;
+      // the author's derived preference (§3.3) is one voice for the proposal
+      // in both, so the mirror is 3:1 one way against 1:3 the other
+      const votes: Array<'a' | 'b'> = dir === 'a' ? ['a', 'a', 'b'] : ['b', 'b', 'b'];
+      let t = 2000;
+      votes.forEach((v, i) => s.judge((t += 1000), ['p2', 'p3', 'p4'][i]!, id, inc, v));
+      return s.raceOf(id);
+    };
+    const toward = mk('a');
+    const against = mk('b');
+    expect(toward.closeness).toBeGreaterThan(0);
+    expect(toward.closeness).toBeLessThanOrEqual(1);
+    expect(toward.closeness).toBeCloseTo(against.closeness, 10);
+    // a fresh race sits at the bottom of the scale
+    const s = openHeld();
+    const { id } = s.submitCandidate(1000, {
+      author: 'p1', patch: rewrite(0, 2, 'Decisions are made by vote.'), rationale: 'r',
+    });
+    expect(s.raceOf(id).closeness).toBeLessThan(toward.closeness);
+  });
+
+  it('cards carry their race and a relative urgency, the most pivotal at 1.0', async () => {
+    const s = openHeld();
+    s.submitCandidate(1000, { author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'a' });
+    s.submitCandidate(1100, { author: 'p2', patch: rewrite(0, 3, 'B.'), rationale: 'b' });
+    const { ParticipantApi } = await import('../src/participant-api.js');
+    const cards = new ParticipantApi(s, 'p4').nextCards(5, 2000);
+    expect(cards.length).toBeGreaterThan(0);
+    expect(Math.max(...cards.map((c) => c.urgency))).toBe(1);
+    for (const c of cards) {
+      expect(c.urgency).toBeGreaterThanOrEqual(0);
+      expect(c.urgency).toBeLessThanOrEqual(1);
+      expect(c.raceId).toMatch(/^r:/);
+    }
+    expect(JSON.stringify(cards)).not.toMatch(/value|leaderP|author/);
+  });
+
+  it('outcomes name their race and the version they resolved against', async () => {
+    const s = openSession();
+    const { id: c1 } = s.submitCandidate(1000, {
+      author: 'p1', patch: rewrite(0, 1, 'Membership needs a sponsor.'), rationale: 'a',
+    });
+    const { id: c2 } = s.submitCandidate(1200, {
+      author: 'p2', patch: rewrite(0, 1, 'Membership needs two sponsors.'), rationale: 'b',
+    });
+    const raceId = s.raceOf(c1).id;
+    expect(s.raceOf(c2).id).toBe(raceId);
+    const inc = s.raceOf(c1).incumbentId;
+    let t = 10_000;
+    for (const judge of ['p3', 'p4', 'p5']) {
+      if (s.getCandidate(c1).state === 'adopted') break;
+      s.judge((t += 1000), judge, c1, inc, 'a');
+    }
+    expect(s.getCandidate(c1).state).toBe('adopted');
+    const { ParticipantApi } = await import('../src/participant-api.js');
+    const out = new ParticipantApi(s, 'p5').outcomes();
+    const adopted = out.find((o) => o.candidateId === c1)!;
+    expect(adopted.raceId).toBe(raceId);
+    expect(adopted.version).toBe(0);
+    expect(s.documentAt(adopted.version).split('\n')[1]).toBe('Membership is open to anyone.');
+    // replay carries the race id through the log
+    const again = Session.replay(s.log);
+    expect(new ParticipantApi(again, 'p5').outcomes().find((o) => o.candidateId === c1)!.raceId)
+      .toBe(raceId);
+  });
+
+  it('the wallet says when the next drip lands, and nothing when it never does', async () => {
+    const { ParticipantApi } = await import('../src/participant-api.js');
+    const s = openSession();
+    const w = new ParticipantApi(s, 'p1').wallet(30 * 60_000);
+    expect(w.dripIntervalMs).toBe(HOUR);
+    expect(w.nextDripInMs).toBe(30 * 60_000);
+    expect(w.cap).toBe(s.constitution.tokenCap);
+    const still = openSession({ tokenDripMinutes: 0 });
+    const w2 = new ParticipantApi(still, 'p1').wallet(1000);
+    expect(w2.nextDripInMs).toBe(Infinity);
+  });
+});

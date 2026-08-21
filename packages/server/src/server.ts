@@ -177,15 +177,21 @@ export async function createDraftServer(cfg: ServerConfig,
   const raceView = (doc: LoadedDoc, memberId: string, nowMs: number): {
     text: string; textVersion: number; clauses: unknown[]; mine: unknown[];
     records: unknown[]; raceCards: unknown[]; wallet: number | null;
+    walletInfo: unknown; floor: number;
   } => {
     const ed = asEngineDoc(doc);
-    const idle = { clauses: [], mine: [], records: [], raceCards: [], wallet: null };
+    const idle = { clauses: [], mine: [], records: [], raceCards: [], wallet: null,
+      walletInfo: null, floor: 0 };
     if (ed.bridge === null) return { text: doc.cs.text ?? '', textVersion: 0, ...idle };
     const engine = ed.bridge.engine;
     const api = new ParticipantApi(engine, memberId);
     const myJ = api.myJudgments();
     const touches = (ids: Set<string>) => (j: { aId: string; bId: string }) =>
       ids.has(j.aId) || ids.has(j.bId);
+    // per-race judge counts are the record's own numbers (§8.2): a count,
+    // never who or which way
+    const allJ = engine.judgments();
+    const floor = engine.adoptionFloor();
     const clauses = engine.races().filter((r) => r.settingId === undefined).map((r) => {
       const ids = new Set([...r.members, r.incumbentId]);
       const here = myJ.filter(touches(ids));
@@ -195,6 +201,10 @@ export async function createDraftServer(cfg: ServerConfig,
         contested: r.contested,
         incumbentId: r.incumbentId,
         deadlocked: r.deadlocked,
+        // closeness to resolution as a magnitude (SPEC §8.3) — see RaceView
+        closeness: r.closeness,
+        judges: r.distinctMovers,
+        floor,
         candidates: r.members.map((id) => {
           const c = engine.getCandidate(id);
           return { id, hunks: c.patch?.hunks ?? [], rationale: c.rationale,
@@ -212,22 +222,65 @@ export async function createDraftServer(cfg: ServerConfig,
       return [{ id: m.id, state: m.state, rationale: m.rationale,
         patch: c.patch, footprint: c.footprint }];
     });
-    const records = api.outcomes().flatMap((o) => {
+    // the record, one entry per race (Q503c): the whole field, the text it
+    // displaced as it stood at resolution, and the race's judge count
+    type Rec = { raceId: string; candidateId: string; outcome: string; when: number;
+      p: number | null; threshold: number | null; version: number;
+      footprint: unknown; displaced: string[]; judges: number; judgedByMe: boolean;
+      field: Array<{ candidateId: string; outcome: string; p: number | null;
+        threshold: number | null; hunks: Array<{ start: number; end: number; lines: string[] }>;
+        rationale: string; judgedByMe: boolean }> };
+    const byRace = new Map<string, Rec>();
+    // an author's derived preference is a mover (§3.3, §8.2): counted, never named
+    const authorsOf = new Map<string, Set<string>>();
+    for (const o of api.outcomes()) {
       const c = engine.getCandidate(o.candidateId);
-      if (c.patch === undefined) return [];
-      return [{ candidateId: o.candidateId, outcome: o.outcome, when: o.t,
-        p: o.p ?? null, threshold: o.threshold ?? null,
-        hunks: c.patch.hunks, footprint: c.footprint, rationale: c.rationale,
-        judgedByMe: myJ.some((j) => j.aId === o.candidateId || j.bId === o.candidateId) }];
-    }).slice(-50);
+      if (c.patch === undefined) continue;
+      const mineJ = myJ.some((j) => j.aId === o.candidateId || j.bId === o.candidateId);
+      const entry = { candidateId: o.candidateId, outcome: o.outcome, p: o.p ?? null,
+        threshold: o.threshold ?? null, hunks: c.patch.hunks, rationale: c.rationale,
+        judgedByMe: mineJ };
+      let rec = byRace.get(o.raceId);
+      if (!rec) {
+        rec = { raceId: o.raceId, candidateId: o.candidateId, outcome: o.outcome, when: o.t,
+          p: o.p ?? null, threshold: o.threshold ?? null, version: o.version,
+          footprint: c.footprint, displaced: [], judges: 0, judgedByMe: false, field: [] };
+        byRace.set(o.raceId, rec);
+      }
+      rec.field.push(entry);
+      if (!authorsOf.has(o.raceId)) authorsOf.set(o.raceId, new Set());
+      authorsOf.get(o.raceId)!.add(c.author);
+      rec.judgedByMe = rec.judgedByMe || mineJ;
+      if (o.outcome === 'adopted') {
+        rec.candidateId = o.candidateId; rec.outcome = 'adopted'; rec.when = o.t;
+        rec.p = o.p ?? null; rec.threshold = o.threshold ?? null; rec.version = o.version;
+        rec.footprint = c.footprint;
+      }
+    }
+    for (const rec of byRace.values()) {
+      const hs = rec.field.flatMap((f) => f.hunks);
+      const span = { start: Math.min(...hs.map((h) => h.start)), end: Math.max(...hs.map((h) => h.end)) };
+      let prev: string[] = [];
+      try { prev = engine.documentAt(rec.version).split('\n'); } catch { prev = []; }
+      rec.displaced = prev.slice(span.start, span.end);
+      const ids = new Set(rec.field.map((f) => f.candidateId));
+      rec.judges = new Set([...allJ.filter(touches(ids)).map((j) => j.participantId),
+        ...(authorsOf.get(rec.raceId) ?? [])]).size;
+    }
+    const records = [...byRace.values()].sort((a, b) => a.when - b.when).slice(-50);
     const base = { text: engine.document(), textVersion: engine.currentVersion(),
-      clauses, mine, records };
-    if (engine.closed) return { ...base, raceCards: [], wallet: null };
+      clauses, mine, records, floor };
+    if (engine.closed) return { ...base, raceCards: [], wallet: null, walletInfo: null };
     try {
       const t = tOf(doc.cs, nowMs);
-      return { ...base, raceCards: api.nextCards(10, t), wallet: engine.balance(memberId, t) };
+      const w = api.wallet(t);
+      // JSON has no Infinity: a document that does not drip says null
+      const fin = (x: number) => (Number.isFinite(x) ? x : null);
+      return { ...base, raceCards: api.nextCards(10, t), wallet: w.balance,
+        walletInfo: { balance: w.balance, nextDripInMs: fin(w.nextDripInMs),
+          dripIntervalMs: fin(w.dripIntervalMs), cap: w.cap } };
     } catch {
-      return { ...base, raceCards: [], wallet: null }; // a clerk, or a seat out of E
+      return { ...base, raceCards: [], wallet: null, walletInfo: null }; // a clerk, or a seat out of E
     }
   };
 

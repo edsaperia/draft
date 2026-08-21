@@ -41,6 +41,15 @@ export interface OptionView {
 
 export interface CardView {
   kind: 'edge' | 'diagonal';
+  /** The race of the pair (side A's race on a diagonal) — an id, not a standing. */
+  raceId: string;
+  /**
+   * How much this judgment is worth to the room relative to the others
+   * served in the same call (stage 8, SPEC §8.1): the pair's routing
+   * value v over the largest v in this feed, so the most pivotal card is
+   * 1.0. A ratio of magnitudes; it says nothing about which way.
+   */
+  urgency: number;
   /**
    * Edge subtype (SPEC §8.3, Q48). Rival cards ask the conditional
    * question and never offer "keep the current text"; a client must
@@ -71,6 +80,10 @@ export interface OutcomeEntry {
   outcome: 'adopted' | 'retired';
   p?: number;
   threshold?: number;
+  /** The race it resolved in (older logs: derived as r:<candidateId>). */
+  raceId: string;
+  /** The document version the candidate's patch was measured against at resolution. */
+  version: number;
 }
 
 export class ParticipantApi {
@@ -81,9 +94,12 @@ export class ParticipantApi {
 
   /** The participant's feed, rendered blind (SPEC §3.1, §8.3). */
   nextCards(n: number, now: number): CardView[] {
-    return this.session
-      .feed(this.participantId, n, now)
+    const feed = this.session.feed(this.participantId, n, now);
+    const top = feed.reduce((m, c) => Math.max(m, c.value), 0);
+    return feed
       .map((card) => ({
+        raceId: card.raceId,
+        urgency: top > 0 ? Math.max(0, Math.min(1, card.value / top)) : 1,
         kind: card.kind === 'diagonal' ? ('diagonal' as const) : ('edge' as const),
         ...(card.subtype ? { subtype: card.subtype } : {}),
         prompt:
@@ -157,6 +173,13 @@ export class ParticipantApi {
     return this.session.balance(this.participantId, now);
   }
 
+  /** The wallet with its clock (Q503a): balance, time to the next drip, interval, cap. */
+  wallet(now: number): { balance: number; nextDripInMs: number; dripIntervalMs: number; cap: number } {
+    const l = this.session.ledgerInfo(this.participantId, now);
+    return { balance: l.balance, nextDripInMs: Number.isFinite(l.nextDripT) ? Math.max(0, l.nextDripT - now) : Infinity,
+      dripIntervalMs: l.dripIntervalMs, cap: l.cap };
+  }
+
   /** Own candidates only; states, not standings. */
   myCandidates(): Array<{ id: string; state: string; rationale: string }> {
     return this.session
@@ -201,10 +224,14 @@ export class ParticipantApi {
     for (const e of this.session.log) {
       const ev = e.event;
       if (ev.type === 'adopted') {
+        const c = this.session.getCandidate(ev.candidateId);
         out.push({ t: ev.t, candidateId: ev.candidateId, outcome: 'adopted',
-          p: ev.p, threshold: ev.threshold });
+          p: ev.p, threshold: ev.threshold, raceId: ev.raceId ?? `r:${ev.candidateId}`,
+          version: c.patch ? Math.max(0, ev.newVersion - 1) : ev.newVersion });
       } else if (ev.type === 'candidate-retired') {
-        out.push({ t: ev.t, candidateId: ev.id, outcome: 'retired' });
+        const c = this.session.getCandidate(ev.id);
+        out.push({ t: ev.t, candidateId: ev.id, outcome: 'retired',
+          raceId: ev.raceId ?? `r:${ev.id}`, version: c.patch?.baseVersion ?? this.session.currentVersion() });
       }
     }
     return out;
