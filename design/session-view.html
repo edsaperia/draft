@@ -72,6 +72,19 @@
      the way, so its geometry is the frozen session-view's to the pixel (the
      session-probe's gate); add &band=1 to see the whole composition */
   .doc.fixsession .titlerow, .doc.fixsession #band { display: none; }
+  /* the stranger's door (Q455/456): the holding sentence is the one line that
+     changes — who decided, what they decided, what you may do about it — and
+     the charter stands as bars at real metrics: grey, because grey means
+     nothing is being asked of you; ?bars=black is the experiment Ed asked to
+     look at */
+  /* both stand on the prose's own column (.doc .prose: 70ch, centred) */
+  .doc .holding { font-size: var(--t-body); color: var(--muted); margin: var(--s4) auto var(--s5); max-width: 70ch; font-style: italic; }
+  .redacted { padding-bottom: var(--s5); max-width: 70ch; margin: 0 auto; }
+  .redacted .rblock { margin: 0 0 1em; }
+  .redacted .rblock.h1 { margin: 1.6em 0 .6em; } .redacted .rblock.h2 { margin: 1.4em 0 .5em; } .redacted .rblock.h3 { margin: 1.2em 0 .4em; }
+  .redacted .bar { display: block; height: .72em; border-radius: 3px; background: var(--border); margin: .42em 0; }
+  .redacted .h1 .bar { height: 1.1em; } .redacted .h2 .bar { height: .95em; } .redacted .h3 .bar { height: .85em; }
+  .redacted.black .bar { background: var(--fg); }
   .alphaflag { position: fixed; bottom: 10px; left: 10px; z-index: 55;
     font-size: var(--t-small); color: var(--muted); background: var(--bg);
     border: 1px solid var(--border); border-radius: var(--r-sm);
@@ -159,7 +172,11 @@
         <!-- the charter: session.js renders the confirmed text here as clauses,
              every one wearing a caret and a gutter; until then the founder
              writes in #prose below and this stands empty -->
+        <!-- the stranger's door (Q455/456): one sentence at the head of the
+             charter column, and the charter as bars at real metrics -->
+        <p class="holding" id="holding" hidden></p>
         <div id="charter"></div>
+        <div class="redacted" id="redacted" hidden></div>
         <div class="prose empty" id="prose" contenteditable="true" spellcheck="false"></div>
       </div>
     </main>
@@ -250,6 +267,7 @@
   let charterKey = null;
   const charterOn = () => !!(cs && cs.textConfirmed);
   function syncCharter() {
+    if (isStranger()) return syncStrangerCharter();
     const on = charterOn();
     // the close re-keys the column: the backlog and the signatures are blocks of the closed document, and a new signature is a new block
     const closeKey = cs && cs.closed ? ' closed:' + closeSignatures().length + ':' + undecidedCount() : '';
@@ -316,6 +334,8 @@
         .then((data) => {
           if (!data || !cs || !cs.isRemote) return;
           if (!data.view) return; // unchanged — the short answer has no view
+          // the stranger's payload is reshaped to what the predicates read
+          if (data.stranger) { STR = data; data = strangerAsView(data); }
           // the engine's seq moves on every judgment, proposal and adoption,
           // so it is the cheap fingerprint for the charter's side of the view
           const moved = data.seq !== cs.v.seq || (data.eseq || 0) !== (cs.v.eseq || 0) ||
@@ -510,7 +530,12 @@
   // are accessors delegating to whoever is in the chair, so every existing
   // call site reads and writes the current viewer without knowing it.
   const APP_STUB = { n: '', pic: '', role: 'applicant', ans: {}, okd: new Set() };
-  const viewerRow = () => (S.viewer === 'applicant' ? APP_STUB : (S.roster[S.viewer] || S.roster[0]));
+  // the stranger (Q455/456): the fifth seat — nothing about them is known, so
+  // the chair holds nothing
+  const STRANGER_STUB = { n: '', pic: '', role: 'stranger', ans: {}, okd: new Set() };
+  const isStranger = () => S.viewer === 'stranger';
+  const viewerRow = () => (S.viewer === 'applicant' ? APP_STUB
+    : isStranger() ? STRANGER_STUB : (S.roster[S.viewer] || S.roster[0]));
   const amFounder = () => !!viewerRow().founder;
   // any reservation crowns (Q379 wide): the module's read where it exists,
   // the radios' before the save. startingText never counts (no post-start
@@ -526,7 +551,7 @@
   // asks nothing of you while a decision you are owed still waits
   const owedNews = () => CARDS.some((c) => !c.isGate && visible(c) && news(c));
   const staged = (c) => !c.isGate || !owedNews();
-  const viewerIsMember = () => S.viewer !== 'applicant' && viewerRow().role !== 'clerk';
+  const viewerIsMember = () => S.viewer !== 'applicant' && !isStranger() && viewerRow().role !== 'clerk';
   for (const [prop, key] of [['myname', 'n'], ['mypic', 'pic'], ['myemail', 'e']]) {
     Object.defineProperty(S, prop, { get: () => viewerRow()[key] || '',
       set: (v) => { viewerRow()[key] = v; } });
@@ -1276,7 +1301,7 @@
     });
   };
   const ansWaveReady = (c) => ansGate(c.ansFor);
-  const visible = (c) => (c.ansFor
+  const visible = (c) => (isStranger() && (c.isGate || c.kind === 'personal' || c.ansFor) ? false : c.ansFor
     ? viewerIsMember() && ansDue() && ansWaveReady(c) &&
       isRoom(card(c.ansFor)) && visible(card(c.ansFor))
     : !(c.hide && c.hide()) && (c.dep || []).every((k) => settled(card(k))));
@@ -1322,7 +1347,9 @@
         // stacks twelve pixels apart in one clause — the Q308 floor). The
         // row says the true thing and gives the you-row a row's clearance.
         // No avatar: a face here would claim a person who does not exist.
-        const list = '<div class="memlist">' +
+        // a stranger reads how many, never who (Q508 — shipped private)
+        const list = isStranger() ? '<div class="memlist"><div class="memrow nobody">' + strMembersLine() + '</div></div>'
+          : '<div class="memlist">' +
           (others.length === 0 ? '<div class="memrow nobody">Nobody else yet.</div>' : '') +
           others.map((p) => '<div class="memrow">' + avHtml(p) +
             '<span class="mn">' + esc(p.n || (!p.in && p.e) || 'Anonymous') +
@@ -1395,9 +1422,9 @@
         // 🌍 is about the document, not member privacy — the penultimate
         // clause of the opening section (Ed, 2026-08-19)
         (visible(card('chamber')) ? h.para(card('chamber')) + h.tasks(card('chamber')) : '') +
-        (S.myname.trim()
+        (founderInfo().n.trim()
           ? '<div class="cpara notab"><p class="cpv founded">Founded by ' +
-            avHtml(me()) + ' ' + esc(S.myname) +
+            avHtml(founderInfo()) + ' ' + esc(founderInfo().n) +
             // 👑 by any reservation (Ed, Q379 wide); 📯 = holds nothing.
             ' <span title="' + (founderCrowned()
               ? 'Part of the constitution is reserved: changing it needs the founder’s assent'
@@ -1993,7 +2020,8 @@
   // without writing — and you did not have to be the first member you
   // invited. Only yours to flip until judging starts; after that you join
   // the way anybody joins.
-  const rosterClause = () =>
+  const rosterClause = () => (isStranger()
+    ? '<div class="roster clauselist"><p class="cpv">' + strMembersLine() + '</p></div>' : '') ||
     '<div class="roster clauselist">' + S.roster.map((p, i) =>
       '<div class="rperson">' + avHtml(p) +
       '<span><span class="nm">' + esc(p.n || 'Anonymous') + (p.founder ? ' <span class="chip founder">founder</span>' : '') +
@@ -2307,6 +2335,14 @@
     return [...rail.querySelectorAll(sel)].filter((el) => ids.has(el.dataset.q)); } });
 
   function renderRail() {
+    if (isStranger()) {
+      // the stranger's rail holds one card: 📧 Log in — or Apply, where the
+      // 🤝 rule allows it (Q456)
+      railEntries = STRCARDS().map((c) => entryOf(c, strRailCtx));
+      stageWords = 'reading only';
+      renderClock();
+      return;
+    }
     if (S.viewer === 'applicant') {
       // **The applicant's seat follows the 🤝 rule as it stands** (pacing
       // pass, 2026-08-19: the topbar said "applications open" whatever the
@@ -2401,7 +2437,8 @@
     const opts = S.roster.map((r, i) => '<option value="' + i + '"' + (S.viewer === i ? ' selected' : '') + '>' +
       esc(r.n || (r.founder ? 'Unnamed founder' : 'Invited · ' + (r.e || '?'))) +
       (r.founder ? ' 🎩' : r.in ? '' : ' (invited)') + '</option>').join('') +
-      '<option value="applicant"' + (S.viewer === 'applicant' ? ' selected' : '') + '>— an applicant</option>';
+      '<option value="applicant"' + (S.viewer === 'applicant' ? ' selected' : '') + '>— an applicant</option>' +
+      '<option value="stranger"' + (isStranger() ? ' selected' : '') + '>— a stranger</option>';
     if (sel.innerHTML !== opts) sel.innerHTML = opts;
   }
 
@@ -2831,6 +2868,17 @@
 
   // ---- the band: two piles, and the card one of them opens into ----------
   function renderBand() {
+    if (isStranger()) {
+      const tp0 = document.getElementById('titlepara');
+      tp0.classList.remove('open');
+      tp0.querySelectorAll('.setupcard').forEach((el) => el.remove());
+      const own = STRCARDS().some((c) => c.k === S.open);
+      band.innerHTML = (own
+        ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + strangerCardHtml() + '</div></div></div>' : '') +
+        (cs ? bandHtml(groups(), strCtx, strangerReadCard) : '');
+      fitBand(band);
+      return;
+    }
     if (S.viewer === 'applicant') {
       const tp0 = document.getElementById('titlepara');
       tp0.classList.remove('open');
@@ -3102,7 +3150,8 @@
     if (bin) bin.disabled = S.titleDraft === null || S.titleDraft === cs_titleNow();
   }
 
-  const renderMail = () => (S.viewer === 'applicant'
+  const renderMail = () => (isStranger() ? renderMailModal(false, MAILS.verify(S.title, '', S.slug))
+    : S.viewer === 'applicant'
     ? renderMailModal(S.app.mailOpen, MAILS.applyVerify(S.title || 'this document', S.app.email))
     : renderMailModal(S.mailOpen, MAILS.verify(S.title, S.myemail, S.slug)));
 
@@ -3118,7 +3167,8 @@
     renderDev();
     renderTitle(); renderRail(); renderBand(); syncCharter(); renderMail(); renderPowerWallets();
     document.getElementById('mebtn').innerHTML = avHtml(
-      S.viewer === 'applicant' ? { n: S.app.name || '?', pic: S.app.pic } : me(), 'face');
+      S.viewer === 'applicant' ? { n: S.app.name || '?', pic: S.app.pic }
+      : isStranger() ? { n: '?', pic: '' } : me(), 'face');
     if (S.open && S.open !== lastOpen) {
       const el = document.querySelector('.setupcard');
       if (el) CC.expandCard(el, () => {});
@@ -3134,9 +3184,9 @@
     const closedNow = !!(cs && cs.closed);
     document.getElementById('doc').classList.toggle('closedpage', closedNow);
     const gone = closedNow && (farewellDone || signedClose() || !viewerIsMember());
-    SESSION.setClosed(gone);
+    SESSION.setClosed(gone || isStranger());
     const pulse = document.getElementById('pulse');
-    if (pulse) pulse.style.display = gone ? 'none' : '';
+    if (pulse) pulse.style.display = gone || isStranger() ? 'none' : '';
     birthsMuted = false;
   };
   let birthsMuted = false;
@@ -3646,9 +3696,9 @@
   });
   document.getElementById('devwho').addEventListener('change', (ev) => {
     const v = ev.target.value;
-    S.viewer = v === 'applicant' ? 'applicant' : +v;
+    S.viewer = v === 'applicant' ? 'applicant' : v === 'stranger' ? 'stranger' : +v;
     // sitting in an invited seat is that member's first arrival (§9.6a)
-    if (cs && v !== 'applicant') {
+    if (cs && v !== 'applicant' && v !== 'stranger') {
       const row = S.roster[+v];
       if (row && row.mid && !row.in) {
         try { cs.arrive(now(), row.mid);
@@ -3664,6 +3714,200 @@
   });
   addEventListener('resize', () => { fitBand(band); });
   // the wire and the rail follow the scroll through session.js's own listener
+
+  // ---- the stranger's door (Q452/455/456; Q508) ---------------------------
+  // There is no login screen. A stranger arrives at the three columns: the
+  // rules are public while the text is private, the text's *shape* stands
+  // as bars at real metrics, one sentence says who decided, what they
+  // decided and what you may do about it, and the rail holds one card.
+  let STR = null;   // the server's stranger payload (live); the fixture derives its own
+  const HOLDING = {
+    drafting: () => 'The constitution is being drafted.',
+    'founder-deciding': (f) => 'The founder ' + (f ? esc(f) + ' ' : '') + 'is deciding if you can see this document.',
+    'members-deciding': () => 'The members are deciding if you can see this document.',
+    'members-only': (f, by) => (by === 'members' ? 'The members decided' : 'The founder ' + (f ? esc(f) + ' ' : '') + 'decided') +
+      ' this document is visible to members only.',
+    open: () => '',
+  };
+  // the fixture's own door: the payload the server would build, derived from
+  // the fixture's module state, so the stagehand's fifth seat is honest
+  const fixtureStrangerPayload = () => {
+    const f = S.roster[0] || {};
+    const ch = cs ? cs.settingState('chamber') : null;
+    const rung = ch && ch.value ? ch.value.rung : null;
+    const kind = !cs || !cs.textConfirmed ? 'drafting'
+      : rung === 'link' || rung === 'public' ? 'open'
+      : rung === 'closed' ? 'members-only'
+      : ch && ch.holder === 'members' ? 'members-deciding' : 'founder-deciding';
+    const canRead = kind === 'open';
+    const pol = cs ? cs.settingState('applications') : null;
+    const jp = pol && pol.value ? pol.value.joinPolicy : 'invite';
+    const begun = !!(cs && cs.constitutedAtT !== null);
+    return { stranger: true, title: S.title, slug: S.slug,
+      holding: { kind, sentence: HOLDING[kind](f.n, ch && ch.settledBy === 'ceremony' ? 'members' : 'founder') },
+      founder: { name: f.n || null, picture: f.pic || null },
+      canRead, text: canRead && cs ? cs.text : null,
+      textShape: cs && cs.text ? shapeOf(cs.text) : [],
+      joinPolicy: jp, applyOpen: begun && (jp === 'proposed' || jp === 'apply'), joinOpen: begun && jp === 'open',
+      members: { arrived: cs ? cs.E() : 0 } };
+  };
+  const strPayload = () => (LIVEMODE ? STR : fixtureStrangerPayload());
+  // the shape of a text: per block, heading level and character count — the
+  // server's own rule (never a word)
+  const shapeOf = (text) => String(text).split(/\n/).map((l) => {
+    const m = l.match(/^(#{1,3})\s+/);
+    return { heading: m ? m[1].length : 0, chars: (m ? l.slice(m[0].length) : l).length };
+  });
+  // the server's stranger payload, reshaped to the member view the page's
+  // predicates read: no members, no questions, no motions, no identity
+  const strangerAsView = (d) => {
+    const quorum = (d.view.settings.find((x) => x.setting === 'quorum') || {}).value;
+    return { ...d, me: null, electorateSize: d.members.arrived, membershipReserved: false,
+      quorumForm: quorum && quorum.form ? quorum.form : 'count',
+      convenor: { id: FOUNDER, email: '', name: d.founder.name, isMember: true },
+      view: { settings: d.view.settings, gates: d.view.gates, crowned: d.view.crowned,
+        questions: [], resolutions: [], members: [], applicants: [], owedOks: [], motions: [],
+        crownTasks: [], identity: { name: null, picture: null },
+        frozen: d.frozen, closed: d.closed, mustReturn: null } };
+  };
+  const founderInfo = () => (isStranger() && strPayload()
+    ? { n: strPayload().founder.name || '', pic: strPayload().founder.picture || '' }
+    : (S.roster[0] || { n: '', pic: '' }));
+  const strMembersLine = () => {
+    const n = (strPayload() || { members: { arrived: 0 } }).members.arrived;
+    return n === 1 ? 'One member.' : n + ' members.';
+  };
+  // the band, read-only: the rule as it stands, no composer, no radios
+  const strCtx = Object.create(ctx, {
+    clauseFor: { value: (c) => (c.k === 'roster' ? rosterClause() : (ctx.clauseFor ? ctx.clauseFor(c) : '')) },
+    tasksFor: { value: () => [] },
+    // nothing is asked of a stranger and nothing is news to them: every tab
+    // is the rule's own state — settled grey, or ⏳ while the room decides
+    mustAct: { value: () => false },
+    news: { value: () => false },
+  });
+  const strangerReadCard = (g) => {
+    const c = card(S.open);
+    if (!c || !g.cards.some((x) => x.k === c.k)) return '';
+    const body = c.k === 'text' ? strangerTextBody() : readBody(c, strCtx);
+    return cardHtml(c, strCtx, body, '<button class="btn" data-close="1">Close</button>', g.cards);
+  };
+  const strangerTextBody = () => {
+    const p = strPayload();
+    return '<p class="why">' + (p && p.holding.sentence ? p.holding.sentence : 'The text is readable.') + '</p>' +
+      (p && p.canRead ? '<div class="doctext">' + textDivs(p.text || '') + '</div>' : '');
+  };
+  // the charter column: the text where 🌍 permits (read-only — typing opens
+  // nothing), else its shape as bars
+  function syncStrangerCharter() {
+    const p = strPayload();
+    const hold = document.getElementById('holding'), red = document.getElementById('redacted');
+    const sentence = p ? p.holding.sentence : '';
+    hold.textContent = sentence;
+    hold.hidden = !sentence;
+    const key = 'stranger:' + (p ? (p.canRead ? 'read:' + p.text : 'shape:' + JSON.stringify(p.textShape)) : '');
+    if (key !== charterKey) {
+      charterKey = key;
+      SESSION.setData({ DOC: p && p.canRead && p.text ? blocksOf(p.text) : [], SUGGS: [] });
+      const shape = p && !p.canRead ? p.textShape.filter((b) => b.chars > 0) : [];
+      red.classList.toggle('black', new URLSearchParams(location.search).get('bars') === 'black');
+      red.innerHTML = shape.length ? barsHtml(shape, red) : '';
+      red.hidden = !shape.length;
+    } else {
+      SESSION.refreshRail();
+    }
+    SESSION.setClosed(true);
+    document.getElementById('doc').classList.add('begun');
+  }
+  // **Bars at real metrics**: a line is as many characters as the prose
+  // column holds at its own font, measured — not guessed — from a probe
+  // string in that font, so a 340-character paragraph wraps into the same
+  // number of lines the real one would, and a heading is one bar as wide
+  // as its words
+  function barsHtml(shape, host) {
+    const probe = document.createElement('span');
+    probe.textContent = 'abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz ';
+    probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+    host.hidden = false;
+    host.appendChild(probe);
+    const w = host.clientWidth || 600;
+    const cw = (probe.getBoundingClientRect().width || 300) / probe.textContent.length;
+    probe.remove();
+    const hw = { 1: 1.5, 2: 1.3, 3: 1.15 };
+    return shape.map((b) => {
+      if (b.chars === 0) return '';
+      const charW = cw * (hw[b.heading] || 1);
+      const cpl = Math.max(12, Math.floor(w / charW));
+      const lines = Math.max(1, Math.ceil(b.chars / cpl));
+      const bars = [];
+      for (let i = 0; i < lines; i++) {
+        const n = i === lines - 1 ? b.chars - cpl * (lines - 1) : cpl;
+        bars.push('<i class="bar" style="width:' + Math.min(100, (n / cpl) * 100).toFixed(1) + '%"></i>');
+      }
+      return '<div class="rblock' + (b.heading ? ' h' + b.heading : '') + '">' + bars.join('') + '</div>';
+    }).join('');
+  }
+  // the rail's one card
+  const STRCARDS = () => {
+    const p = strPayload() || {};
+    const login = { k: 'strlogin', g: '📧', t: p.joinOpen ? 'Join' : 'Log In', kind: 'personal', own: 'you',
+      done: () => false };
+    const apply = { k: 'strapply', g: '🪪', t: 'Apply for Membership', kind: 'personal', own: 'you', done: () => false };
+    return p.applyOpen ? [login, apply] : [login];
+  };
+  const STRS = { email: '', sent: null, sentTo: '' };   // the stranger's provisional layer
+  const strRailCtx = {
+    get open() { return S.open; }, get E() { return E(); },
+    mustAct: (c) => STRS.sent !== c.k,
+    yours: () => false,
+    waiting: (c) => STRS.sent === c.k,
+    fillOf: () => '100%',
+    summary: (c) => (STRS.sent === c.k ? 'Check your inbox'
+      : c.k === 'strapply' ? 'Membership is by application'
+      : (strPayload() || {}).joinOpen ? 'Anyone with the link may join' : 'Members log in by email'),
+    value: (c) => strRailCtx.summary(c), isRoom: () => false,
+  };
+  function strangerCardHtml() {
+    const c = STRCARDS().find((x) => x.k === S.open);
+    if (!c) return '';
+    const okAddr = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email);
+    const p = strPayload() || {};
+    const body = STRS.sent === c.k
+      ? '<p class="why">Sent to <b>' + esc(STRS.sentTo) + '</b>. ' +
+        (c.k === 'strapply' ? 'Follow the link to begin your application — the address is your identity here.'
+          : 'If that address is on the membership, a link is on its way.') + '</p>' +
+        '<div style="margin-top:var(--s3)"><button class="btn" data-stredit="1">Wrong address?</button></div>'
+      : '<p class="why">' + (c.k === 'strapply'
+          ? 'Membership is by application. Your email is your identity here — the link it sends is the login, and the answer arrives on it.'
+          : p.joinOpen ? 'Anyone with the link may join. Your email is your identity here — the link it sends is the login.'
+          : 'Members log in by email: enter the address the membership knows you by, and follow the link it sends. Nothing here says whether an address is a member’s.') + '</p>' +
+        '<span class="fld"><label>Your email</label><input type="email" data-stremail="1" value="' + esc(STRS.email) + '" placeholder="you@example.com" style="width:20rem"></span>' +
+        '<div style="margin-top:var(--s3)"><button class="btn"' + (okAddr ? '' : ' disabled') + ' data-strsend="' + c.k + '">Send the link</button></div>';
+    const foot = '<button class="btn" data-close="1">Close</button>';
+    return cardHtml(c, strRailCtx, body, foot, [c]);
+  }
+  document.addEventListener('input', (ev) => {
+    const t = ev.target.closest('[data-stremail]');
+    if (!t) return;
+    STRS.email = t.value;
+    const b = document.querySelector('[data-strsend]');
+    if (b) b.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email);
+  });
+  document.addEventListener('click', (ev) => {
+    const send = ev.target.closest('[data-strsend]');
+    if (send) {
+      const k = send.dataset.strsend;
+      STRS.sent = k; STRS.sentTo = STRS.email.trim();
+      if (LIVEMODE) {
+        // the same answer whatever the server says: the door is not an oracle
+        api.post('/api/d/' + LIVESLUG + (k === 'strapply' ? '/apply' : '/login'), { email: STRS.sentTo })
+          .catch(() => {});
+      }
+      return render();
+    }
+    const edit = ev.target.closest('[data-stredit]');
+    if (edit) { STRS.sent = null; return render(); }
+  });
 
   // ---- the live layer (Q391b) -------------------------------------------
   // A ConstitutionSession lookalike over the last-fetched view: the page's
@@ -3989,34 +4233,27 @@
     }).catch(() => {});
   }
 
-  function liveLogin() {
-    document.body.innerHTML = '<div style="font-family:ui-monospace,monospace;max-width:26rem;margin:18vh auto;border:1px dashed #999;padding:1.2rem">' +
-      '<div style="font-weight:600;margin-bottom:.4rem">Log in</div>' +
-      '<div style="margin-bottom:.6rem">Enter the address this membership knows you by, and follow the link it sends.</div>' +
-      '<input id="lemail" type="email" style="width:100%;padding:.45rem" placeholder="you@example.com">' +
-      '<button id="lgo" style="margin-top:.5rem;padding:.45rem .9rem">Send the link</button>' +
-      '<div id="lmsg" style="margin-top:.6rem"></div></div>';
-    devInboxButton(); // the login screen is where the link is needed most
-    document.getElementById('lgo').onclick = () => {
-      api.post('/api/d/' + LIVESLUG + '/login',
-        { email: document.getElementById('lemail').value.trim() })
-        .then((res) => {
-          document.getElementById('lmsg').innerHTML = res.devLink
-            ? '<a href="' + res.devLink + '">dev · follow the magic link</a>'
-            : 'If that address is on the membership, a link is on its way.';
-        });
-    };
-  }
-
   function liveBoot() {
     const dev = document.querySelector('.devswitch');
     if (dev) dev.style.display = 'none';
     devInboxButton();
     fetch('/api/d/' + LIVESLUG + '/view').then((r) => {
-      if (r.status === 401) { liveLogin(); return null; }
+      if (r.status === 401) { console.warn('[live] no seat and no door'); return null; }
       return r.json();
     }).then((data) => {
       if (!data) return;
+      // **There is no login screen** (Q456): a stranger arrives at the three
+      // columns like everybody else — the rules, the text's shape, one
+      // sentence, and a rail holding the 📧 task
+      if (data.stranger) {
+        STR = data;
+        cs = remoteCS(strangerAsView(data));
+        S.viewer = 'stranger';
+        hydrateS();
+        render();
+        setInterval(() => api.refresh(), 4000);
+        return;
+      }
       cs = remoteCS(data);
       wireLive();
       syncFromCs();
@@ -4400,7 +4637,7 @@
     q.title = left > 1
       ? 'Your founding feathers — ' + (left - 1) + ' to spend on the birth; the last one is docs.vote, and makes a new document.'
       : 'docs.vote — make a new document';
-    const notApp = S.viewer !== 'applicant' &&
+    const notApp = S.viewer !== 'applicant' && !isStranger() &&
       // after the farewell the wallets are gone (a reader arriving after the
       // close, or one who has signed, never sees them)
       !(cs && cs.closed && (farewellDone || signedClose() || !viewerIsMember()));
