@@ -748,6 +748,12 @@ export async function createDraftServer(cfg: ServerConfig,
       }
       const isFounder = memberId === doc.cs.convenorRecord().id;
       if (req.method === 'GET' && seg[3] === 'view') {
+        // presence is presence (Q459a): a read refreshes the member's
+        // activity clock, at most hourly — the module says whether it
+        // recorded anything, and only then is there something to commit
+        if (applicantId === null && doc.cs.seen(tOf(doc.cs, nowMs), memberId)) {
+          await commit(doc, nowMs);
+        }
         const seq = doc.cs.logEntries().length;
         // race cards ride the engine's own log, which judge-race moves
         // without touching the document log — freshness is both lengths
@@ -807,6 +813,10 @@ export async function createDraftServer(cfg: ServerConfig,
           electorateSize: doc.cs.motionElectorate().length,
           membershipReserved: doc.cs.membershipReserved(),
           crowned: doc.cs.crowned(),
+          // the 🍾 card's readiness readout (Q443): founder-only, part of
+          // the task rather than of the document — participation by name,
+          // never preference
+          readiness: isFounder ? doc.cs.readiness() : null,
           convenor: { id: doc.cs.convenorRecord().id,
             isMember: doc.cs.convenorRecord().isMember,
             email: doc.cs.convenorRecord().email,

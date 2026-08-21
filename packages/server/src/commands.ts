@@ -198,6 +198,14 @@ const HANDLERS: Record<string, Handler> = {
     founderOnly(a);
     cs.confirmStartingText(t, cap(str(args, 'text'), LIMITS.text, 'the text'));
   },
+  // 🍾 — the founder's explicit act of starting the document (Q443): the
+  // module refuses while a judge-gate setting is still being decided, and
+  // names it; the readiness readout in the founder's view says who is
+  // holding it up. Informs, never blocks: nobody else's answer is waited on.
+  'begin': (cs, a, t) => {
+    founderOnly(a);
+    cs.begin(t);
+  },
   'set-convenor-membership': (cs, a, t, args) => {
     founderOnly(a);
     cs.setConvenorMembership(t, args.isMember === true);

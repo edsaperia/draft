@@ -55,6 +55,7 @@ export function buildConstituted(opts: {
     s.reclaim(2, id as never);
     s.setSetting(2, id as never, v as never);
   }
+  s.begin(2); // 🍾 — the founder's explicit start (Q443)
   expect(s.constitutedAtT).toBe(2);
   return { s, bo, cy };
 }

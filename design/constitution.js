@@ -725,6 +725,7 @@ var CONSTITUTION = (() => {
   var CONSTITUTIONAL = new Set(
     CATALOGUE.filter((e) => e.kind === "constitutional" && e.id !== "membership").map((e) => e.id)
   );
+  var SEEN_EVERY_MS = 60 * 6e4;
   var ConstitutionSession = class _ConstitutionSession {
     constructor() {
       __publicField(this, "log", []);
@@ -1116,6 +1117,9 @@ var CONSTITUTION = (() => {
           this.touch(event.member, event.t);
           break;
         }
+        case "member-seen":
+          this.touch(event.member, event.t);
+          break;
         case "lapse-warned": {
           if (event.member === this.convenor.id && !this.members.has(event.member)) {
             this.convenor.lapseWarned = true;
@@ -1380,7 +1384,6 @@ var CONSTITUTION = (() => {
         by: postStart ? "crown" : "convenor"
       });
       if (CONSTITUTIONAL.has(setting)) this.oweOks(t, setting);
-      this.maybeConstitute(t);
     }
     setQuorumForm(t, form) {
       this.requireOpen("the quorum's form");
@@ -1548,7 +1551,6 @@ var CONSTITUTION = (() => {
       }
       this.emit({ type: "answer-given", t, member, setting, value });
       this.maybeResolve(t, setting);
-      this.maybeConstitute(t);
     }
     giveOk(t, member, setting) {
       this.requireOpen("acknowledging");
@@ -1585,11 +1587,81 @@ var CONSTITUTION = (() => {
     maybeResolveAll(t) {
       for (const id of MANAGED) this.maybeResolve(t, id);
     }
-    maybeConstitute(t) {
-      if (this.constitutedT !== null) return;
-      const gatesSettled = CATALOGUE.filter((e) => e.judgeGate).every((e) => this.settings.get(e.id).settledBy !== null);
-      if (!gatesSettled) return;
+    /**
+     * 🍾 **Begin — the founder's explicit act of starting the document**
+     * (CLAUDE.md `🍾 Begin`, Q443; built 2026-08-21). Until now the
+     * constitution constituted itself the moment its last judge-gate setting
+     * settled; now nothing starts until the founder says so. Judging needs the
+     * whole constitution (§9.0b: a judgment is recorded under a disclosure
+     * setting and counted towards a quorum, neither settleable afterwards), so
+     * 🍾 refuses while any judge-gate setting is still being decided — and
+     * names it, which is what the readiness readout is for. The batch is the
+     * `constituted` fold: the Text's ✒️/🛡️ laid down, the ramp anchored,
+     * judging open. Readiness informs and never blocks (Q443c): a member who
+     * has not answered a question the room has already resolved holds nothing up.
+     */
+    begin(t) {
+      this.requireOpen("beginning");
+      if (this.constitutedT !== null) throw new Error("the document has already begun");
+      const waiting = this.waitingOn();
+      if (waiting.length > 0) {
+        throw new Error(`the document cannot begin while '${waiting.join("', '")}' ${waiting.length === 1 ? "is" : "are"} still being decided (§9.0b)`);
+      }
       this.emit({ type: "constituted", t });
+    }
+    /** The judge-gate settings not yet settled — what 🍾 waits on. */
+    waitingOn() {
+      return CATALOGUE.filter((e) => e.judgeGate && this.settings.get(e.id).settledBy === null).map((e) => e.id);
+    }
+    /**
+     * The founder's readiness readout (Q443 (a)(i), both halves; founder-only
+     * by the host's choice — it is part of the 🍾 task, not of the document).
+     * Per question: whether it stands, and how many have answered. Per person:
+     * how many of the questions they owe they have answered. **Participation
+     * itemised by name, never preference** — no value, no running maximum.
+     */
+    readiness() {
+      const E = eOf(this.members.values());
+      const open = MANAGED.filter((id) => this.settings.get(id).collecting);
+      const questions = MANAGED.filter((id) => {
+        const st = this.settings.get(id);
+        return st.collecting || st.distribution !== null;
+      }).map((id) => {
+        const st = this.settings.get(id);
+        return {
+          setting: id,
+          settled: st.settledBy !== null,
+          collecting: st.collecting,
+          answered: st.answers.size,
+          electorate: E.length
+        };
+      });
+      const members = [...this.members.values()].filter((m) => !m.removed && !m.invitationExpired).map((m) => ({
+        id: m.id,
+        name: m.name,
+        arrived: m.arrivedAtT !== null,
+        owed: m.arrivedAtT === null ? 0 : open.length,
+        answered: m.arrivedAtT === null ? 0 : open.filter((id) => this.settings.get(id).answers.has(m.id)).length
+      }));
+      const waiting = this.waitingOn();
+      return { ready: this.constitutedT === null && waiting.length === 0, waiting, questions, members };
+    }
+    /**
+     * Presence is presence (Q459 (a)): an authenticated read refreshes the
+     * member's activity clock, so nobody lapses with the page open in front of
+     * them. At most one event an hour per member, or a polling page would write
+     * the log every four seconds. Returns whether anything was recorded.
+     */
+    seen(t, member) {
+      if (this.closedFlag) return false;
+      const m = this.members.get(member);
+      const rec = m ?? (member === this.convenor.id ? this.convenor : null);
+      if (!rec || m && m.removed) return false;
+      if (m && m.arrivedAtT === null) return false;
+      if (m && m.lapsed) return false;
+      if (t - rec.lastActivityT < SEEN_EVERY_MS) return false;
+      this.emit({ type: "member-seen", t, member });
+      return true;
     }
     oweOks(t, setting) {
       for (const m of eOf(this.members.values())) {
@@ -1616,7 +1688,6 @@ var CONSTITUTION = (() => {
         floorTerm: adoptionFloorTerm(E)
       });
       this.maybeResolveAll(t);
-      this.maybeConstitute(t);
       this.maybeSettleMotions(t);
     }
     // -------------------------------------------------------------------------

@@ -21,6 +21,52 @@ import { LIMITS } from '../src/commands.js';
 
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
 
+// **One type for the member view** (stage 8 follow-up): every `/view` read
+// in this file is typed here rather than by an ad-hoc cast at the call, so
+// a field the server adds and a test then reads is declared once — and the
+// typecheck says so before CI does. Loose where the tests do not look.
+type Hunk = { start: number; end: number; lines: string[] };
+type CandidateOutcome = { candidateId: string; outcome: string; p: number | null;
+  threshold: number | null; hunks: Hunk[]; rationale: string; judgedByMe: boolean;
+  author?: { id: string; name: string | null } };
+type RaceRecord = { raceId: string; candidateId: string; outcome: string; when: number;
+  p: number | null; threshold: number | null; version: number; footprint: unknown;
+  displaced: string[]; judges: number; judgedByMe: boolean; field: CandidateOutcome[] };
+type CardOption = { id: string; incumbent?: true;
+  setting?: { settingId: string; value: { endsAtMs?: number } } };
+type MemberViewPayload = {
+  me: string; isFounder: boolean; devMail: boolean; title: string; slug: string;
+  constitutedAtT: number | null; seq: number; eseq: number; serverNowMs: number;
+  textConfirmed: boolean; quorumForm: string; electorateSize: number;
+  membershipReserved: boolean; crowned: boolean; provisionalText: string | null;
+  readiness: null | { ready: boolean; waiting: string[];
+    questions: Array<{ setting: string; settled: boolean; collecting: boolean;
+      answered: number; electorate: number }>;
+    members: Array<{ id: string; name: string | null; arrived: boolean;
+      owed: number; answered: number }> };
+  text: string; textVersion: number; floor: number;
+  wallet: number | null;
+  walletInfo: { balance: number; nextDripInMs: number | null; dripIntervalMs: number | null;
+    cap: number | null } | null;
+  clauses: Array<{ id: string; contested: Array<{ start: number; end: number }>;
+    incumbentId: string; deadlocked: boolean; closeness: number; judges: number; floor: number;
+    judged: boolean; shifted: boolean;
+    candidates: Array<{ id: string; mine: boolean; rationale: string; hunks: Hunk[] }> }>;
+  mine: Array<{ id: string; state: string; rationale: string; patch: unknown; footprint: unknown }>;
+  records: RaceRecord[];
+  raceCards: Array<{ kind: string; raceId?: string; urgency: number; a: CardOption; b: CardOption }>;
+  record: null | { closedAt: number; text: string; adopted: RaceRecord[];
+    undecided: RaceRecord[]; carriedButUnassented: Array<{ candidateId: string; summary: string }>;
+    signatures: Array<{ member: string; name: string | null; comment: string; t: number }> };
+  view: {
+    questions: Array<{ setting: string; answered: number; answeredCount: number; myAnswer: unknown }>;
+    members: Array<{ id: string; email: string; name: string | null }>;
+    applicants: Array<{ id: string; email: string; name: string | null }>;
+    frozen: boolean; mustReturn: number | null;
+    closed: null | { at: number; mySignature: { comment: string } | null; signatures: unknown[] };
+  };
+};
+
 interface Booted {
   base: string;
   draft: DraftServer;
@@ -190,10 +236,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     // arrival made them members: the founder's view counts three in E
     const viewOf = async (cookie: string) =>
       (await (await fetch(`${base}/api/d/${created.slug}/view`,
-        { headers: { cookie } })).json()) as {
-        me: string; isFounder: boolean; constitutedAtT: number | null;
-        view: { questions: Array<{ setting: string; answered: number }> };
-      };
+        { headers: { cookie } })).json()) as MemberViewPayload;
     expect((await viewOf(ada)).isFounder).toBe(true);
     expect((await viewOf(bo)).isFounder).toBe(false);
 
@@ -229,15 +272,33 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     await cmd(ada, 'answer', { setting: 'chamber', value: { rung: 'link' } });
     await cmd(bo, 'answer', { setting: 'chamber', value: { rung: 'link' } });
     const blind = await (await fetch(`${base}/api/d/${created.slug}/view`,
-      { headers: { cookie: cy } })).json() as {
-        view: { questions: Array<{ setting: string; answeredCount: number;
-          myAnswer: unknown }> };
-      };
+      { headers: { cookie: cy } })).json() as MemberViewPayload;
     const chamberQ = blind.view.questions.find((q) => q.setting === 'chamber')!;
     expect(chamberQ.answeredCount).toBe(2);
     expect(chamberQ.myAnswer).toBeNull();
     expect(JSON.stringify(blind.view)).not.toContain('"rung":"link"');
     await cmd(cy, 'answer', { setting: 'chamber', value: { rung: 'link' } });
+    // -- 🍾 (Q443): every gate resolved, and still nothing has begun — the
+    // start is the founder's act. The readiness readout is theirs alone
+    // (participation by name, never preference); a member's 🍾 is refused.
+    const resolved = await viewOf(ada);
+    expect(resolved.constitutedAtT).toBeNull();
+    expect(resolved.readiness).not.toBeNull();
+    expect(resolved.readiness!.ready).toBe(true);
+    expect(resolved.readiness!.waiting).toEqual([]);
+    // three arrived members; a delegated question that is not a gate (the
+    // rate) may still be collecting — that is owed, and it holds nothing up
+    expect(resolved.readiness!.members.map((m) => m.arrived)).toEqual([true, true, true]);
+    for (const m of resolved.readiness!.members) expect(m.answered).toBeLessThanOrEqual(m.owed);
+    expect(JSON.stringify(resolved.readiness)).not.toContain('"rung"');
+    expect((await viewOf(bo)).readiness).toBeNull();
+    const boBegins = await post(base, `/api/d/${created.slug}/cmd`, { cmd: 'begin', args: {} }, bo);
+    expect(boBegins.status).toBe(400);
+    expect(((await boBegins.json()) as { error: string }).error).toMatch(/only the founder/);
+    const seqBefore = resolved.seq;
+    await viewOf(bo); // a read within the hour of an act records nothing (Q459)
+    expect((await viewOf(bo)).seq).toBe(seqBefore);
+    await cmd(ada, 'begin', {});
     const after = await viewOf(ada);
     expect(after.constitutedAtT).not.toBeNull();
     // the session-clock (Q466): the view says what time the server thinks it
@@ -256,13 +317,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
 
     // cy is served the race as a card: the standing value against bo's
     const cyView = await (await fetch(`${base}/api/d/${created.slug}/view`,
-      { headers: { cookie: cy } })).json() as {
-        wallet: number | null;
-        raceCards: Array<{ kind: string;
-          a: { id: string; setting?: { settingId: string; value: { endsAtMs: number } } };
-          b: { id: string; setting?: { settingId: string; value: { endsAtMs: number } } };
-        }>;
-      };
+      { headers: { cookie: cy } })).json() as MemberViewPayload;
     expect(cyView.wallet).not.toBeNull();
     const card = cyView.raceCards.find((c) =>
       c.a.setting?.settingId === 'ending' || c.b.setting?.settingId === 'ending');
@@ -283,17 +338,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     // -- a text proposal over HTTP (stage 8, Q418): bo patches the one
     // clause, cy is served it as a clause race and a card, judges it, and
     // the document every member reads changes ---------------------------
-    type TextView = {
-      text: string; textVersion: number; wallet: number | null;
-      clauses: Array<{ id: string; contested: Array<{ start: number; end: number }>;
-        incumbentId: string; judged: boolean; shifted: boolean;
-        candidates: Array<{ id: string; mine: boolean; rationale: string;
-          hunks: Array<{ start: number; end: number; lines: string[] }> }> }>;
-      mine: Array<{ id: string; state: string }>;
-      records: Array<{ candidateId: string; outcome: string; p: number | null;
-        threshold: number | null; judgedByMe: boolean; hunks: unknown[] }>;
-      raceCards: Array<{ a: { id: string }; b: { id: string } }>;
-    };
+    type TextView = MemberViewPayload;
     const textView = async (cookie: string) =>
       (await (await fetch(`${base}/api/d/${created.slug}/view`,
         { headers: { cookie } })).json()) as TextView;
@@ -474,11 +519,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     // candidate against the membership as it stands, served to members,
     // adopted at the bar, and dee is a member -------------------------------
     const boView = await (await fetch(`${base}/api/d/${created.slug}/view`,
-      { headers: { cookie: bo } })).json() as {
-        view: { applicants: Array<{ email: string; name: string | null }> };
-        raceCards: Array<{ a: { id: string; setting?: { settingId: string } };
-          b: { id: string; setting?: { settingId: string } } }>;
-      };
+      { headers: { cookie: bo } })).json() as MemberViewPayload;
     // the members see who is asking, in their own words (v0.56 view)
     expect(boView.view.applicants.some((a2) => a2.email === 'dee@example.org')).toBe(true);
     const admitCard = boView.raceCards.find((c) =>
@@ -693,8 +734,7 @@ describe('review #1 hardening', () => {
       { headers: { cookie: leaver } });
     expect(before.status).toBe(200);
     const gv = await (await fetch(`${base}/api/d/${created.slug}/view`,
-      { headers: { cookie: g } })).json() as {
-        view: { members: Array<{ id: string; email: string }> } };
+      { headers: { cookie: g } })).json() as MemberViewPayload;
     const leaverId = gv.view.members.find((m) => m.email === 'leaver@example.org')!.id;
     await post(base, `/api/d/${created.slug}/cmd`,
       { cmd: 'uninvite', args: { member: leaverId } }, g);
@@ -913,17 +953,7 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
       return body.result;
     };
     const viewOf = async (cookie: string) => (await (await fetch(
-      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as {
-        constitutedAtT: number | null;
-        records: Array<{ raceId: string; outcome: string; field: unknown[] }>;
-        record: null | { closedAt: number; text: string;
-          adopted: unknown[]; undecided: Array<{ raceId: string; outcome: string;
-            field: Array<{ author?: { id: string; name: string | null } }>; displaced: string[] }>;
-          carriedButUnassented: unknown[];
-          signatures: Array<{ member: string; name: string | null; comment: string }> };
-        view: { closed: null | { at: number; mySignature: { comment: string } | null;
-          signatures: unknown[] }; frozen: boolean; mustReturn: number | null };
-      };
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
 
     await cmd(ada, 'confirm-starting-text', { text: 'The watch is kept from dusk.\nThe rota is posted weekly.' });
     await cmd(ada, 'invite', { email: 'bo@example.org' });
@@ -951,6 +981,7 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     ] as const) {
       for (const cookie of [ada, bo, cy]) await cmd(cookie, 'answer', { setting, value });
     }
+    await cmd(ada, 'begin', {}); // 🍾
     expect((await viewOf(ada)).constitutedAtT).not.toBeNull();
 
     // a proposal nobody judges: the close will leave it undecided

@@ -69,6 +69,7 @@ export function goldenWalk(): ConstitutionSession {
     s.reclaim(8, id);
     s.setSetting(8, id, value as never);
   }
+  s.begin(8); // 🍾 (Q443): the same constituted event, at the same t, by the founder's hand
   /* -- live: an ordinary motion raced, a constitutional one by consent --- */
   const rate = s.openMotion(9, bo, {
     kind: 'set', setting: 'rate', value: { grant: 6, cap: 10, dripMinutes: 120 },

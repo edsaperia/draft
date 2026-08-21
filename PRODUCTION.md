@@ -369,6 +369,12 @@ last, being the one irreversible thing):
   "ordinary" out of the copy); references re-frozen as one page set;
   probes IDENTICAL / 0 diffs. Checkpoint: items 1–3 and 6's mechanism
   done; 4, 5, 6 (server + page), 7 remain. Nothing pushed since `aaf057b`.
+- 07:55 — **Pushed `e7d15df`; CI red on `npm run typecheck`** (server test
+  casts behind the view's new fields — vitest never type-checks tests; the
+  deploy gate held, docs.vote stays on `aaf057b`). Fix in flight with item
+  5. The close's server half landed (`9ced181`): tick closes, signatures,
+  record, mail, mustReturn. Ed's power-line rewording applied (Q507 for
+  the other halves). Running: item 4 (wallets), item 5 (🍾) + the typecheck.
 
 ## Decisions
 

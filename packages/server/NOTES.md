@@ -92,3 +92,13 @@
   among them: docs.vote is live in alpha on Render, CI deploys it on
   green (decision 476) and verifies the live host afterwards with
   `npm run verify`.
+
+## 🍾 begin, readiness and the hourly touch (2026-08-21)
+
+- `begin` is founder-only and is the only way a document starts; the founder's view
+  carries `readiness` (null for everybody else). Until the page has its 🍾 card, a
+  document can be begun only through the API — the fixture's ⏩ and the live page's
+  auto-open both assumed the module constituted itself.
+- Every member `GET …/view` calls `cs.seen` first and commits only when the module
+  recorded something (at most hourly per member), so a reader never lapses (Q459a) and
+  a four-second poll does not write the log.

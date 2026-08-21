@@ -113,6 +113,8 @@ export type ConstitutionEvent =
   | { type: 'signed-out'; t: number; member: MemberId; mode: 'holding' | 'abstaining' }
   | { type: 'member-returned'; t: number; member: MemberId }
   | { type: 'lapse-warned'; t: number; member: MemberId }
+  /** Presence is presence (Q459a): an authenticated read refreshed the member's clock — at most hourly. */
+  | { type: 'member-seen'; t: number; member: MemberId }
   | { type: 'member-lapsed'; t: number; member: MemberId }
   | { type: 'frozen'; t: number }
   | { type: 'thawed'; t: number }

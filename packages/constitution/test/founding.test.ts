@@ -285,6 +285,7 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
       s.answer(2, 'ada', id as never, v as never);
       s.answer(2, bo, id as never, v as never);
     }
+    s.begin(2); // 🍾
     expect(s.constitutedAtT).toBe(2); // every gate resolved by the room
     expect(s.crowned()).toBe(true);   // title and link are still ada's
     s.delegate(3, 'title');
@@ -299,6 +300,7 @@ describe('constituted (§9.6a): the moment judging opens', () => {
   it('fires when the seven gates settle, and the pre-start rights die with it', () => {
     const s = openDoc();
     settleAllReserved(s, 1, ['applications']); // applications is not a gate
+    s.begin(1); // 🍾 (Q443): nothing starts until the founder says so
     expect(s.constitutedAtT).toBe(1);
     expect(s.canJudge()).toBe(true);
     // v0.52: delegation survives the start as the hand-over — what dies
@@ -317,15 +319,19 @@ describe('constituted (§9.6a): the moment judging opens', () => {
     s.arrive(1, bo);
     settleAllReserved(s, 2, ['bar']);
     expect(s.constitutedAtT).toBeNull();
+    expect(() => s.begin(2)).toThrow(/'bar' is still being decided/); // 🍾 waits on the gates
     s.answer(3, 'ada', 'bar', { pct: 66 });
     s.answer(4, bo, 'bar', { pct: 78 });
     expect(s.settingState('bar').value).toEqual({ pct: 78 });
+    expect(s.constitutedAtT).toBeNull(); // resolved, not begun
+    s.begin(4);
     expect(s.constitutedAtT).toBe(4);
   });
 
   it('post-start the convenor direct-changes reserved settings (§9.7, Ed 366)', () => {
     const s = openDoc();
     settleAllReserved(s, 1);
+    s.begin(1);
     s.setSetting(2, 'chamber', { rung: 'closed' }); // reserved: the crown rule
     expect(s.settingState('chamber').settledBy).toBe('crown');
   });
@@ -333,6 +339,7 @@ describe('constituted (§9.6a): the moment judging opens', () => {
   it('the ramp anchors at constituted and rises to the close bar (§4.3)', () => {
     const s = openDoc();
     settleAllReserved(s, 10); // ramp 55 → 78 over [10, 1_000_000]
+    s.begin(10);
     expect(s.bar(10)).toBeCloseTo(55, 5);
     expect(s.bar(1_000_000)).toBeCloseTo(78, 5);
     const mid = s.bar(500_005)!;

@@ -178,3 +178,21 @@ no such events, so on replay its founder still holds both powers on the Text
 (the golden v0 test pins this) — the two live documents on docs.vote
 included; a text adoption there waits on the founder's 🛡️ until they lay
 it down or the page performs 🍾's batch for them.
+
+## 🍾 begin, readiness, and presence (Q443, Q441/457, Q459 — 2026-08-21)
+
+- **Nothing starts until the founder says so.** `maybeConstitute` is gone; `begin(t)`
+  emits the one `constituted` event (so a log from before today replays identically —
+  its `constituted` was simply auto-emitted). `begin` refuses while any judge-gate
+  setting is unsettled and names them: judging needs the whole constitution (§9.0b).
+  It does **not** wait on anybody's answer once the questions stand — readiness
+  informs and never blocks (Q443c).
+- `readiness()` is the founder's readout: per question settled/collecting/answered/
+  electorate, per member arrived/owed/answered. Names, never values.
+- **An invitation outstanding at 🍾 survives it** (Q441/457): the room's half of the
+  consent was given before the start and stands; `arrive` after `begin` joins with
+  no motion. Nothing changed in code — the test now says so.
+- **Presence is presence** (Q459a): `seen(t, member)` emits `member-seen` at most
+  once an hour per member (`SEEN_EVERY_MS`), folding to the same activity touch an
+  act makes. A lapsed member's read records nothing — revival stays an act
+  (`memberReturn`). The server calls it on every member view.

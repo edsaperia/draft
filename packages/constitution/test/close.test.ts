@@ -61,6 +61,7 @@ describe('the constitution closes on its ending (SPEC §4.6)', () => {
       applications: { holder: 'members', joinPolicy: 'invite' }, removal: { rung: 'everyone' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
     })) { s2.reclaim(2, id as never); s2.setSetting(2, id as never, v as never); }
+    s2.begin(2);
     expect(s2.constitutedAtT).not.toBeNull();
     s2.tick(500_000);
     expect(s2.closed).toBe(true);
