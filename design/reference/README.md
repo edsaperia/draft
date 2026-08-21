@@ -49,7 +49,8 @@ One surface now: `setup.html` is the page, `session-view.html` a redirect to
   constitution swap's baseline and now differs from HEAD by design (200
   diffs at 2026-08-21). For any later change the reference is **HEAD
   itself**: `git show HEAD:design/<f> > design/_head/<f>` for setup.html,
-  setup.js, setup.css, cards.js, system.css, constitution.js (the directory
+  setup.js, setup.css, cards.js, system.css, constitution.js, session.js and
+  fixture-session.js (the directory
   is gitignored; a path containing `/_head/` counts as the reference side).
   Intentional diffs since the merge are allowlisted by pattern: `geo.rail`
   at every step (the tasks are entries in the session's margin index,

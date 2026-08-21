@@ -241,12 +241,18 @@
   function syncCharter() {
     const on = charterOn();
     const key = !on ? '' : FIX ? '\u0000fixture' : cs.text;
+    // live, the items are rebuilt on every movement the poll sees (the
+    // text only when it changed) — except under a draft being typed, where a
+    // rebuild would take the caret; the rail alone refreshes then
+    const typing = SESSION.openId === 'draft-yours';
     if (key !== charterKey) {
       charterKey = key;
       SESSION.setData({
         DOC: !on ? [] : FIX ? FIX.DOC : blocksOf(cs.text),
         SUGGS: !on ? [] : LIVE_HOOKS.items ? LIVE_HOOKS.items() : FIX ? FIX.SUGGS : [],
       });
+    } else if (on && LIVE_HOOKS.items && !typing) {
+      SESSION.setData({ SUGGS: LIVE_HOOKS.items() });
     } else {
       SESSION.refreshRail();
     }
@@ -276,12 +282,16 @@
         body: JSON.stringify(body || {}) }).then((r) => r.json());
     },
     cmd(name, args) {
+      // resolves with the server's answer ({ok, result} or {error}) after the
+      // refresh that follows it — a hook that has to act on a refusal (a
+      // stale base under a text proposal) reads it here
+      let answer = null;
       this.chain = this.chain
         .then(() => this.post('/api/d/' + LIVESLUG + '/cmd', { cmd: name, args: args || {} }))
-        .then((res) => { if (res && res.error) console.warn('[live]', name, res.error); })
-        .catch((e) => console.warn('[live]', name, e && e.message))
+        .then((res) => { answer = res; if (res && res.error) console.warn('[live]', name, res.error); })
+        .catch((e) => { answer = { error: String(e && e.message) }; console.warn('[live]', name, e && e.message); })
         .then(() => this.refresh());
-      return this.chain;
+      return this.chain.then(() => answer);
     },
     refresh() {
       // the poll says what it has seen (document seq . engine seq); a
@@ -293,10 +303,18 @@
         .then((data) => {
           if (!data || !cs || !cs.isRemote) return;
           if (!data.view) return; // unchanged — the short answer has no view
-          const moved = data.seq !== cs.v.seq ||
+          // the engine's seq moves on every judgment, proposal and adoption,
+          // so it is the cheap fingerprint for the charter's side of the view
+          const moved = data.seq !== cs.v.seq || (data.eseq || 0) !== (cs.v.eseq || 0) ||
+            data.textVersion !== cs.v.textVersion ||
             JSON.stringify(data.raceCards) !== JSON.stringify(cs.v.raceCards);
           cs.v = data;
-          if (moved) { syncFromCs(); hydrateValues(S.open); render(); }
+          if (moved) {
+            // `room-pulse`: one beat per movement by anybody, yourself
+            // included — content-free by rule (what moved is never said)
+            SESSION.beat();
+            syncFromCs(); hydrateValues(S.open); render();
+          }
         })
         .catch((e) => console.warn('[live] view', e && e.message));
     },
@@ -2203,7 +2221,8 @@
     // pulse beats on the fixture's timer, so only the fixture shows it (B2b
     // drives both from the view)
     document.getElementById('wallet').style.display = (charterOn() && canPropose()) ? '' : 'none';
-    document.getElementById('pulse').style.display = FIX ? '' : 'none';
+    document.getElementById('pulse').style.display = (FIX || (LIVEMODE && charterOn())) ? '' : 'none';
+    syncWallet();
   }
 
   // ---- the bodies a founder fills in ------------------------------------
@@ -3732,6 +3751,7 @@
     }).then((data) => {
       if (!data) return;
       cs = remoteCS(data);
+      wireLive();
       syncFromCs();
       const at = S.roster.findIndex((row) => (row.mid || FOUNDER) === data.me);
       if (at >= 0) S.viewer = at;
@@ -3796,6 +3816,204 @@
     seen: null, chill: null, textChanged: null };
   const hookProxy = Object.fromEntries(['judge', 'propose', 'withdraw', 'seen', 'chill', 'textChanged']
     .map((n) => [n, (...a) => (LIVE_HOOKS[n] ? LIVE_HOOKS[n](...a) : undefined)]));
+  // ---- the live wiring (B2b): the view in, the commands out ---------------
+  // Everything session.js renders about the charter is derived here from the
+  // server's blind projection — `clauses` (the text races), `mine`, `records`,
+  // the served `raceCards` and the `wallet` — as items in the fixture's own
+  // shape, so the cards, the rail and the wires need no second grammar. What
+  // is NOT in the view is not invented: no fill on a live race (Q501), no
+  // drip clock, no judge counts.
+  const lineIdx = (key) => +String(key).slice(1);
+  const unhead = (l) => String(l).replace(/^#{1,3}\s+/, '');
+  const headOf = (o) => (o && o.t === 'h' ? '#'.repeat(o.level || 1) + ' ' : '');
+  // the keys of a span, the ones the charter actually shows first (a blank
+  // line is a line the engine counts and nothing the page anchors to)
+  const keysOfSpan = (sp, lines) => {
+    const out = [];
+    for (let i = sp.start; i < sp.end; i++) if ((lines[i] || '').trim()) out.push('L' + i);
+    if (!out.length) out.push('L' + Math.min(sp.start, Math.max(0, lines.length - 1)));
+    return out;
+  };
+  // a candidate's reading of a span: the current lines with its hunks applied
+  const applyIn = (lines, sp, hunks) => {
+    const region = lines.slice(sp.start, sp.end);
+    for (const h of (hunks || []).slice().sort((a, b) => b.start - a.start)) {
+      region.splice(h.start - sp.start, h.end - h.start, ...h.lines);
+    }
+    return region.filter((l) => l.trim()).map(unhead).join('\n');
+  };
+  const spanOf = (hunks) => ({ start: Math.min(...hunks.map((h) => h.start)),
+    end: Math.max(...hunks.map((h) => h.end)) });
+  const plain = (lines, sp) => lines.slice(sp.start, sp.end).filter((l) => l.trim()).map(unhead).join('\n');
+  // the mark the quick card shows: cards.js's own diff, del and ins both
+  // (resultOnly drops the dels where the card states the result)
+  const markedOf = (before, after) => window.CARDS.diffPieces(before, after, true)
+    .map(([t, mk]) => (mk ? window.CARDS.markHtml2(t, mk) : esc(t))).join('');
+  const labelFor = (key) => {
+    let h = '';
+    for (const l of SESSION.DOC) { if (l.t === 'h') h = l.x; if (l.key === key) break; }
+    return h || ((SESSION.DOC.find((l) => l.key === key) || {}).x || '').split(/\s+/).slice(0, 5).join(' ');
+  };
+  // **Raw values are not copy**: a record's moment reads like a diary entry
+  const whenOf = (ms) => {
+    const d = new Date(ms), today = new Date();
+    const hm = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const same = (a, b) => a.toDateString() === b.toDateString();
+    const y = new Date(today); y.setDate(today.getDate() - 1);
+    return (same(d, today) ? 'today' : same(d, y) ? 'yesterday'
+      : d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })) + ', ' + hm;
+  };
+  // read state survives a reload: one key per document and seat
+  const seenKey = () => 'draft:seen:' + LIVESLUG + ':' + ((cs && cs.v && cs.v.me) || '');
+  const loadSeen = () => { try { return JSON.parse(localStorage.getItem(seenKey()) || '[]'); } catch (e) { return []; } };
+  const saveSeen = () => { try { localStorage.setItem(seenKey(), JSON.stringify([...SESSION.readSeals])); } catch (e) { /* private mode */ } };
+  // a proposal keeps the id the card opened under until the view knows it
+  const localIdOf = new Map();      // candidate id → the id the draft was proposed as
+  const proposedAs = new Map();     // the draft's local id → candidate id, once known
+  const DRAFT_ID = 'draft-yours';
+
+  function itemsFromView(v) {
+    const lines = String(v.text || '').split(/\n/);
+    const cards = v.raceCards || [];
+    const sideOf = (rc, ids) => (ids.has(rc.a.id) ? 'a' : ids.has(rc.b.id) ? 'b' : null);
+    const items = [];
+    for (const r of v.clauses || []) {
+      const ids = new Set(r.candidates.map((c) => c.id).concat([r.incumbentId]));
+      const at = cards.findIndex((rc) => rc.kind === 'edge' && sideOf(rc, ids));
+      const rc = at >= 0 ? cards[at] : null;
+      const keys = keysOfSpan(r.contested, lines);
+      const inc = plain(lines, r.contested);
+      const textOf = (c) => applyIn(lines, r.contested, c.hunks);
+      const byId = (id) => r.candidates.find((c) => c.id === id);
+      const base = {
+        id: r.id, keys, state: r.judged ? 'deciding' : 'needs',
+        qLabel: labelFor(keys[0]),
+        urgency: at >= 0 ? Math.max(0.5, 1 - at * 0.08) : 0.3,
+        pct: 0, cap: r.judged ? 'you have judged this — it is still running' : 'wants your judgment',
+        shifted: !!r.shifted, deadlocked: !!r.deadlocked,
+        // the served pair, for the judgment that goes back
+        card: rc ? { a: rc.a.id, b: rc.b.id, inc: rc.a.incumbent ? 'a' : rc.b.incumbent ? 'b' : null } : null,
+      };
+      // a race holding only my own proposal is mine to withdraw, not to judge
+      // — the `mine` item carries it (the author's preference is derived, never asked)
+      if (r.candidates.every((c) => c.mine)) continue;
+      const others = r.candidates.filter((c) => !c.mine);
+      const slate = r.deadlocked
+        ? { slate: r.candidates.map((x) => ({ text: textOf(x), rationale: x.rationale })) } : {};
+      if (r.candidates.length === 1 || (rc && (rc.a.incumbent || rc.b.incumbent))) {
+        // one challenger against what stands: the quick card
+        const c = (rc ? byId(rc.a.incumbent ? rc.b.id : rc.a.id) : null) || r.candidates[0];
+        items.push({ ...base, kind: 'quick', marked: markedOf(inc, textOf(c)),
+          rationale: c.rationale, candId: c.id, ...slate });
+      } else {
+        const a = (rc ? byId(rc.a.id) : null) || others[0] || r.candidates[0];
+        const b = (rc ? byId(rc.b.id) : null) || others[1] || r.candidates[1];
+        items.push({ ...base, kind: 'race',
+          race: { a: { id: a.id, text: textOf(a), rationale: a.rationale },
+                  b: { id: b.id, text: textOf(b), rationale: b.rationale } }, ...slate });
+      }
+    }
+    for (const m of v.mine || []) {
+      if (m.state !== 'live') continue;
+      const sp = spanOf(m.patch.hunks);
+      const keys = keysOfSpan(sp, lines);
+      const sites = m.patch.hunks.map((h) => {
+        const ks = keysOfSpan(h, lines);
+        return { keys: ks, label: labelFor(ks[0]), text: h.lines.map(unhead).join('\n'),
+          origin: ks.map((k) => { const l = SESSION.DOC.find((x) => x.key === k) || {};
+            return { key: k, text: l.x || '', note: null, t: l.t, level: l.level }; }) };
+      });
+      items.push({ id: localIdOf.get(m.id) || ('mine:' + m.id), kind: 'draft', mine: true, keys,
+        state: 'needs', qLabel: sites[0].label, urgency: 0, pct: 0,
+        cap: 'yours · in the race', rationale: m.rationale, sites, candidate: m.id });
+    }
+    for (const o of v.records || []) {
+      const sp = o.footprint && o.footprint.length ? spanOf(o.footprint) : spanOf(o.hunks);
+      const keys = keysOfSpan(sp, lines);
+      const adopted = o.outcome === 'adopted';
+      items.push({ id: 'rec:' + o.candidateId, kind: 'quick', keys, state: 'sealed',
+        qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
+        cap: adopted ? 'decided — adopted' : 'decided — the current text stood',
+        decided: { outcome: adopted ? 'adopted' : 'retired — the current text stood',
+          when: whenOf(o.when), p: o.p, bar: o.threshold },
+        won: adopted ? 'b' : undefined,
+        optionB: o.hunks.flatMap((h) => h.lines).map(unhead).join('\n'),
+        rationale: o.rationale,
+        verdict: o.judgedByMe ? 'you judged this' : undefined,
+        unread: true });
+    }
+    // the draft being typed is the page's own, never the view's — it survives
+    // every rebind
+    const d = SESSION.SUGGS.find((x) => x.id === DRAFT_ID);
+    if (d) items.push(d);
+    return items;
+  }
+
+  const liveItem = (id) => SESSION.SUGGS.find((x) => x.id === id);
+  function wireLive() {
+    for (const id of loadSeen()) SESSION.readSeals.add(id);
+    LIVE_HOOKS.items = () => itemsFromView(cs.v);
+    LIVE_HOOKS.seen = () => saveSeen();
+    LIVE_HOOKS.judge = (id, what) => {
+      const s = liveItem(id);
+      if (!s || !s.card) { console.warn('[live] no card served for', id); return; }
+      const c = s.card;
+      const challenger = c.inc === 'a' ? 'b' : 'a';
+      const outcome = what === 'indifferent' ? 'tie'
+        : what === 'keep' ? (c.inc || 'tie')
+        : what === 'approve' ? challenger
+        : what === 'a' ? 'a' : what === 'b' ? 'b' : 'tie';
+      api.cmd('judge-race', { a: c.a, b: c.b, outcome });
+    };
+    LIVE_HOOKS.propose = (d) => {
+      const hunks = d.sites.map((site) => {
+        const ls = site.text.split('\n');
+        return { start: lineIdx(site.keys[0]), end: lineIdx(site.keys[site.keys.length - 1]) + 1,
+          lines: ls.map((ln, i) => headOf(site.origin[i]) + ln) };
+      });
+      const local = d.id;
+      api.cmd('propose-text', { baseVersion: cs.v.textVersion, hunks, why: d.rationale || '' })
+        .then((res) => {
+          if (res && res.ok && res.result && res.result.id) {
+            localIdOf.set(res.result.id, local); proposedAs.set(local, res.result.id);
+            SESSION.setData({ SUGGS: itemsFromView(cs.v) });
+            return;
+          }
+          // refused: the draft comes back unproposed, the pencil with it
+          const stale = /targets version/.test((res && res.error) || '');
+          const back = liveItem(local) || d;
+          back.id = DRAFT_ID; back.unproposed = true;
+          back.refusal = stale
+            ? 'The text moved while you were writing — your draft is kept; read the new wording and propose again.'
+            : 'That could not be proposed: ' + ((res && res.error) || 'the server did not answer') + '.';
+          if (!SESSION.SUGGS.includes(back)) SESSION.SUGGS.push(back);
+          syncWallet();
+          SESSION.setData({ SUGGS: itemsFromView(cs.v) });
+          // the card was open under the id it was proposed as; it opens again
+          // as the draft, with the refusal on it
+          if (SESSION.openId === local) SESSION.toggle(DRAFT_ID, false);
+        });
+    };
+    LIVE_HOOKS.withdraw = (id) => {
+      // called after session.js has already dropped the item, so the
+      // candidate is read off the id: the view's own ('mine:<id>') or the one
+      // this page proposed it as
+      const s = liveItem(id) || { candidate: proposedAs.get(id) || (String(id).startsWith('mine:') ? id.slice(5) : null) };
+      if (!s.candidate) return;
+      api.cmd('withdraw-text', { candidate: s.candidate });
+    };
+  }
+  // what the wallet holds, from the view — the rules from the rate setting
+  function syncWallet() {
+    if (!LIVEMODE || !cs || !cs.v) return;
+    const rs = csState('rate');
+    const rv = (rs && rs.value) || {};
+    // the engine's balance accrues by the minute, so it is fractional: the
+    // whole part is what you can spend, the fraction how far the next has got
+    const bal = cs.v.wallet == null ? 0 : cs.v.wallet;
+    SESSION.setWallet({ held: Math.floor(bal), toNext: bal - Math.floor(bal),
+      rules: { grant: rv.grant ?? 4, cap: rv.cap ?? 8, stake: 1 } });
+  }
   const extra = {
     entries: () => railEntries,
     isOpen: (id) => S.open === id,
@@ -3806,6 +4024,9 @@
   };
   const sessionEnv = (fix) => ({
     DOC: [], SUGGS: [],
+    // live: the wallet has no clock in the view (the drip tray says nothing),
+    // and the pulse beats from the poll rather than a timer
+    ...(LIVEMODE ? { SESSION_MINUTES: Infinity, editsHeld: 0, editsToNext: 0, fixturePulse: false } : {}),
     ...(fix ? { ROSTER: fix.ROSTER, FLOOR: fix.FLOOR, EDIT_RULES: fix.EDIT_RULES,
       SESSION_MINUTES: fix.SESSION_MINUTES, editsHeld: fix.editsHeld, editsToNext: fix.editsToNext } : {}),
     mounts: { doc: document.getElementById('charter'), queue: rail,

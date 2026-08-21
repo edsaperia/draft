@@ -2132,6 +2132,9 @@
           (rival && n > 1 ? ' · ' : '') +
           (n > 1 ? 'All ' + n + ' places go in as one change' : '') + '.</div>'
         : '') +
+      // a live refusal (the text moved under the draft) is said on the card,
+      // where the draft still is — never lost to a console
+      (d.refusal ? '<div class="foot refusal">' + esc(d.refusal) + '</div>' : '') +
       '</div>'
     );
   }
@@ -3739,6 +3742,10 @@
   // to the second (Ed, 2026-08-17) — a wallet you are waiting at wants a clock,
   // not a rounding, and the seconds are what make it read as running.
   function dripIn() {
+    // a live wallet has no clock of its own yet — the view says how many you
+    // hold and nothing about when the next lands, so the tray says nothing
+    // rather than inventing a time (stage 8; the title still says it accrues)
+    if (!isFinite(SESSION_MINUTES)) return '';
     const secs = Math.max(0, Math.round((1 - Math.max(0, Math.min(1, editsToNext))) * SESSION_MINUTES * 6));
     const m = Math.floor(secs / 60), s = secs % 60;
     // mm:ss (Ed, 2026-08-17) — a clock reads as a clock, and the fixed shape
@@ -3902,7 +3909,9 @@
 
     addEventListener('scroll', onViewportChange, { passive: true });
 
-    (function nextBeat() {
+    // the fixture's other members are a timer; a live host beats the pulse
+    // itself, once per movement the poll sees
+    if (env.fixturePulse !== false) (function nextBeat() {
       setTimeout(() => { beat(); nextBeat(); }, BEATS[beatAt++ % BEATS.length]);
     })();
 
@@ -3954,6 +3963,7 @@
   }
 
   function setWallet(w) {
+    if (w && w.rules) EDIT_RULES = w.rules;
     if (w && w.held != null) editsHeld = w.held;
     if (w && w.toNext != null) editsToNext = w.toNext;
     renderWallet();
