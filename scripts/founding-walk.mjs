@@ -48,7 +48,17 @@ await new Promise((r) => srv.listen(0, r));
 const base = 'http://127.0.0.1:' + srv.address().port;
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+// **The walk pins its locale** (Q628 (a), 2026-08-22). The page dates the
+// Founded line with the *reader's* own locale, so this machine renders
+// "22 August 2026" and a CI runner renders "August 22, 2026" — and the
+// golden's mask matches one form, so the guard failed every push from CI and
+// passed every run here, which is the worst shape a check can have. Pinning
+// it makes the golden record one deterministic string, and a real change to
+// the date's copy still shows as a diff. It deliberately does **not** pin the
+// locale in the page: what every member reads is a product question, open as
+// Q628 (c).
+const page = await browser.newPage({ locale: 'en-GB', timezoneId: 'Europe/London',
+  viewport: { width: 1600, height: 1000 } });
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 await page.goto(base + '/session-view.html');

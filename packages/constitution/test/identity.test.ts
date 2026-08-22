@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import { view } from '../src/view.js';
 
-function open(opts: { clerk?: boolean; name?: string | null } = {}) {
+function open(opts: { clerk?: boolean; name?: string } = {}) {
   return ConstitutionSession.open({
     title: 'Hollow Oak Club Charter',
     slug: 'hollow-oak',
