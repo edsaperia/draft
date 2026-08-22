@@ -186,6 +186,7 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
       s.reclaim(2, id as never);
       s.setSetting(2, id as never, v as never);
     }
+    s.confirmStartingText(2, 'x');
     s.begin(2); // 🍾
     // Q413(b): a blind question does not resolve while an invitation is
     // outstanding, so the third member is invited *after* the start

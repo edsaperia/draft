@@ -326,6 +326,7 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
 describe('constituted (§9.6a): the moment judging opens', () => {
   it('fires when the seven gates settle, and the pre-start rights die with it', () => {
     const s = openDelegated();
+    s.confirmStartingText(1, 'x');
     settleAllReserved(s, 1, ['applications']);
     // a delegated question on any setting blocks the start, gate or not (Q626)
     expect(() => s.begin(1)).toThrow(/'applications' is still being decided/);
@@ -348,6 +349,7 @@ describe('constituted (§9.6a): the moment judging opens', () => {
     const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org');
     s.arrive(1, bo);
+    s.confirmStartingText(1, 'x');
     settleAllReserved(s, 2, ['bar']);
     expect(s.constitutedAtT).toBeNull();
     expect(() => s.begin(2)).toThrow(/'bar' is still being decided/); // 🍾 waits on the gates
@@ -361,6 +363,7 @@ describe('constituted (§9.6a): the moment judging opens', () => {
 
   it('post-start the convenor direct-changes reserved settings (§9.7, Ed 366)', () => {
     const s = openDelegated();
+    s.confirmStartingText(1, 'x');
     settleAllReserved(s, 1);
     s.begin(1);
     s.setSetting(2, 'chamber', { rung: 'closed' }); // reserved: the crown rule
@@ -369,6 +372,7 @@ describe('constituted (§9.6a): the moment judging opens', () => {
 
   it('the ramp anchors at constituted and rises to the close bar (§4.3)', () => {
     const s = openDelegated();
+    s.confirmStartingText(10, 'x');
     settleAllReserved(s, 10); // ramp 55 → 78 over [10, 1_000_000]
     s.begin(10);
     expect(s.bar(10)).toBeCloseTo(55, 5);
@@ -398,6 +402,18 @@ describe('proposing is yours (§9.0b)', () => {
     s.confirmStartingText(1, '');
     expect(s.textConfirmed).toBe(true);
     expect(s.text).toBe('');
+  });
+
+  it('🍾 waits on the confirmed text, and an empty one is enough (§9.0b)', () => {
+    const s = openDelegated();
+    settleAllReserved(s, 2, []);            // every question answered, text unconfirmed
+    expect(s.readiness().waiting).toEqual(['startingText']);
+    expect(() => s.begin(3)).toThrow(/startingText/);
+    expect(s.constitutedAtT).toBeNull();
+    s.confirmStartingText(4, '');
+    expect(s.readiness().waiting).toEqual([]);
+    s.begin(5);
+    expect(s.constitutedAtT).toBe(5);
   });
 });
 

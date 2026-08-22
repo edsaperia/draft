@@ -1722,8 +1722,9 @@ var CONSTITUTION = (() => {
       return CATALOGUE.filter((e) => {
         const st = this.settings.get(e.id);
         if (!st) return false;
+        if (e.id === "startingText") return !this.textConfirmedFlag;
         return st.collecting || e.judgeGate && st.settledBy === null;
-      }).map((e) => e.id);
+      }).map((e) => e.id).sort((a, b) => (a === "startingText" ? 1 : 0) - (b === "startingText" ? 1 : 0));
     }
     /**
      * The founder's readiness readout (Q443 (a)(i), both halves; founder-only

@@ -1166,9 +1166,17 @@ export class ConstitutionSession {
       .filter((e) => {
         const st = this.settings.get(e.id);
         if (!st) return false;            // the register and the personal pair
+        // The text is the one prerequisite outside the gate rule: §9.0b makes
+        // the start wait on a *confirmed decision* about it (empty is fine),
+        // and a start that landed without one could never be answered after —
+        // confirmStartingText refuses post-start, so the document would be
+        // wedged with no text and no way to propose one (2026-08-22).
+        if (e.id === 'startingText') return !this.textConfirmedFlag;
         return st.collecting || (e.judgeGate && st.settledBy === null);
       })
-      .map((e) => e.id);
+      .map((e) => e.id)
+      // the text is the founding's last clause, so it is named last
+      .sort((a, b) => (a === 'startingText' ? 1 : 0) - (b === 'startingText' ? 1 : 0));
   }
 
   /**

@@ -210,13 +210,48 @@ say('identity   · after 🎩 the rail asks [' + identityOrder + ']' +
   (identityOrder === 'myname,mypic' ? '' : '  FAIL: expected myname,mypic'));
 if (identityOrder !== 'myname,mypic') stuck.push('identity tasks (got ' + identityOrder + ')');
 
+// Asserted, not printed (2026-08-22): this block used to report `begun` and
+// pass whatever it said. A begun document hides the founder's pre-start
+// editor `#prose` and mounts the charter; the charter is the only column
+// that takes a caret, and `#prose` must be neither visible nor editable.
 const state = await page.evaluate(() => ({
   begun: !!document.querySelector('.doc.begun'),
   clauses: document.querySelectorAll('#charter .prose p').length,
   editable: (document.querySelector('#charter .prose') || {}).getAttribute
     ? document.querySelector('#charter .prose').getAttribute('contenteditable') : '(none)',
+  proseShown: getComputedStyle(document.getElementById('prose')).display !== 'none',
+  proseEditable: document.getElementById('prose').getAttribute('contenteditable'),
 }));
-say('begun      · ' + JSON.stringify(state));
+const begunOk = state.begun && state.editable === 'true' && !state.proseShown;
+say('begun      · ' + JSON.stringify(state) + (begunOk ? '' : '  FAIL: pre-start editor still live'));
+if (!begunOk) stuck.push('begun state');
+
+/* ---- a caret on the column itself, not in a clause (Ed, 2026-08-22) ----
+ * Clicking the charter's whitespace, an empty charter, or select-all puts the
+ * selection on the host rather than in a block; the page used to let that
+ * keystroke through to the browser, which edited the column in place with no
+ * card and no proposal. Refused now: the text must not change and nothing
+ * may open or send. */
+const hostBefore = await page.evaluate(() => {
+  const host = document.querySelector('#charter .prose');
+  host.scrollIntoView({ block: 'center' });
+  const r = document.createRange();
+  r.setStart(host, host.childNodes.length);      // after the last block: the host itself
+  r.collapse(true);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  return host.textContent;
+});
+await page.keyboard.type('Z');
+await T(500);
+const hostAfter = await page.evaluate(() => ({
+  text: document.querySelector('#charter .prose').textContent,
+  editCard: !!document.querySelector('.sugg.editcard'),
+}));
+const hostOk = hostAfter.text === hostBefore && !hostAfter.editCard && proposeStatus === null;
+say('host caret · ' + (hostOk ? 'keystroke refused, column unchanged'
+  : 'FAIL: changed ' + (hostAfter.text !== hostBefore) + ' · card ' + hostAfter.editCard +
+    ' · propose-text ' + proposeStatus));
+if (!hostOk) stuck.push('host caret');
 await T(4200);                                   // the grant flights and their safety nets
 say('wallet     · ' + await page.evaluate(() =>
   getComputedStyle(document.getElementById('wallet')).display + ' ' +
