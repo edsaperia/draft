@@ -156,6 +156,13 @@
   .pick.above { opacity: 0.5; }
   .pick.off { opacity: 0.42; }
   .pick.off .lanepick { pointer-events: none; }
+  /* A power option that cannot be taken yet dims **whole**, the way .pick.off
+     does. Since the rule moved out of the button and became the block's own
+     document text, dimming the control alone would leave a live-looking
+     sentence standing over a dead radio — and the sentence is now the larger
+     half of the option. */
+  .setupcard .propblock.off { opacity: 0.42; }
+  .setupcard .propblock.off .lanepick { pointer-events: none; }
   /* a row of fields *inside* a card — distinct from `.setrow`, which is the
      band row a pile stands in */
   .setrow2 { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
