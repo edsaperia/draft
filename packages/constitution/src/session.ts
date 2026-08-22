@@ -54,6 +54,10 @@ export class ConstitutionSession {
   // ---- fold state ----------------------------------------------------------
   private convenor!: { id: MemberId; email: string; isMember: boolean;
     name: string | null; picture: string | null;
+    // the clerk's half of Q645's *was it ever answered* — a clerk is never a
+    // MemberRecord, and their name and picture are optional (§9.6a), so the
+    // question is asked of them exactly as it is of anybody
+    nameSet: boolean; pictureSet: boolean;
     lastActivityT: number; lapseWarned: boolean };
   private crownLapsedFlag = false;
   private members = new Map<MemberId, MemberRecord>();
@@ -124,6 +128,8 @@ export class ConstitutionSession {
       case 'created': {
         const c = event.convenor;
         this.convenor = { ...c, name: c.name ?? null, picture: c.picture ?? null,
+          // a founder who arrives already carrying one has answered it (Q645)
+          nameSet: c.name !== undefined, pictureSet: c.picture !== undefined,
           lastActivityT: event.t, lapseWarned: false };
         // **Nothing arrives delegated** (Ed, 2026-08-21, amending SPEC §9.0a,
         // closing Q511). Every held setting is born with the founder holding
@@ -162,16 +168,57 @@ export class ConstitutionSession {
         this.foldSet('title', { text: event.title }, 'convenor', event.t);
         this.foldSet('link', { slug: event.slug }, 'convenor', event.t);
         this.slugHistory.push(event.slug);
-        if (c.isMember) this.members.set(c.id,
-          this.freshMember(c.id, c.email, event.t, event.t, { via: 'founding', by: null }));
+        if (c.isMember) {
+          const rec = this.freshMember(c.id, c.email, event.t, event.t,
+            { via: 'founding', by: null });
+          // readers prefer the MemberRecord over the convenor struct, so a
+          // founder created already carrying a name has to arrive with it here
+          // too, or the two disagree from the first event (Q645)
+          rec.name = this.convenor.name;
+          rec.picture = this.convenor.picture;
+          rec.nameSet = this.convenor.nameSet;
+          rec.pictureSet = this.convenor.pictureSet;
+          this.members.set(c.id, rec);
+        }
         break;
       }
       case 'convenor-membership-set': {
+        // **🎩 decides where the founder sits, not who they are** (Q646). This
+        // rebuilt the record from `freshMember` on every tick, so a founder who
+        // named themselves and then revisited 🎩 — the radios stay live until
+        // the start (SURFACE C9) — lost their name, their picture, the OKs they
+        // were owed and the ones they had given. Identity binds nobody (§9.0c,
+        // exception X15: *the convenor with no powers and no membership keeps
+        // their name and picture*), so nothing about it belongs to the seat.
+        // It carries **both** ways: while they are a member their identity
+        // lives on the MemberRecord and the convenor struct goes stale, so
+        // unticking without carrying it back served a name from before they
+        // joined.
         if (event.isMember) {
-          this.members.set(this.convenor.id,
-            this.freshMember(this.convenor.id, this.convenor.email, event.t, event.t,
-              { via: 'founding', by: null }));
+          const rec = this.freshMember(this.convenor.id, this.convenor.email,
+            event.t, event.t, { via: 'founding', by: null });
+          const prev = this.members.get(this.convenor.id);
+          rec.name = prev ? prev.name : this.convenor.name;
+          rec.picture = prev ? prev.picture : this.convenor.picture;
+          rec.nameSet = prev ? prev.nameSet : this.convenor.nameSet;
+          rec.pictureSet = prev ? prev.pictureSet : this.convenor.pictureSet;
+          if (prev) {
+            rec.okOwed = prev.okOwed;
+            rec.okGiven = prev.okGiven;
+            rec.lastActivityT = prev.lastActivityT;
+          } else {
+            rec.lastActivityT = Math.max(rec.lastActivityT, this.convenor.lastActivityT);
+          }
+          this.members.set(this.convenor.id, rec);
         } else {
+          const prev = this.members.get(this.convenor.id);
+          if (prev) {
+            this.convenor.name = prev.name;
+            this.convenor.picture = prev.picture;
+            this.convenor.nameSet = prev.nameSet;
+            this.convenor.pictureSet = prev.pictureSet;
+            this.convenor.lastActivityT = prev.lastActivityT;
+          }
           this.members.delete(this.convenor.id);
         }
         break;
@@ -270,14 +317,19 @@ export class ConstitutionSession {
         break;
       }
       case 'identity-set': {
+        // **The act is what is recorded, not the value** (Q645). A key present
+        // on the event means the member answered that question; the answer may
+        // perfectly well be null — a blank name is Anonymous (§9.0c) and a
+        // picture is removed by choosing initials — so `!== undefined` is the
+        // test, never truthiness.
         if (event.member === this.convenor.id && !this.members.has(event.member)) {
-          if (event.name !== undefined) this.convenor.name = event.name;
-          if (event.picture !== undefined) this.convenor.picture = event.picture;
+          if (event.name !== undefined) { this.convenor.name = event.name; this.convenor.nameSet = true; }
+          if (event.picture !== undefined) { this.convenor.picture = event.picture; this.convenor.pictureSet = true; }
           break;
         }
         const m = this.members.get(event.member)!;
-        if (event.name !== undefined) m.name = event.name;
-        if (event.picture !== undefined) m.picture = event.picture;
+        if (event.name !== undefined) { m.name = event.name; m.nameSet = true; }
+        if (event.picture !== undefined) { m.picture = event.picture; m.pictureSet = true; }
         this.touch(event.member, event.t);
         break;
       }
@@ -690,7 +742,7 @@ export class ConstitutionSession {
     return {
       id, email, invitedAtT, arrivedAtT, arrival,
       removed: false, lapsed: false, lapseWarned: false, signedOut: null,
-      name: null, picture: null,
+      name: null, picture: null, nameSet: false, pictureSet: false,
       lastActivityT: arrivedAtT ?? invitedAtT,
       okOwed: new Set(), okGiven: new Set(),
       invitationExpired: false, closingAck: null,

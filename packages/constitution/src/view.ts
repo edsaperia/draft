@@ -129,7 +129,14 @@ export interface MemberView {
   myHeldMotion: string | null;
   /** The founder's 👑 questions: a parked motion, or (Q440) a text adoption with `text`. */
   crownTasks: Array<{ id: string; motion: string | null; text?: { candidateId: string; summary: string } }>;
-  identity: { name: string | null; picture: string | null };
+  /**
+   * Your own name and picture, and whether you have ever **answered** ✋ and 🖼️
+   * (Q645). The pair of flags is the whole point: null is not the answer to
+   * *have you been asked*, since a blank name is a real answer (§9.0c), so the
+   * surface cannot derive an outstanding task from the value alone.
+   */
+  identity: { name: string | null; picture: string | null;
+    nameSet: boolean; pictureSet: boolean };
   lapseWarned: boolean;
   frozen: boolean;
   /** The freeze's shortfall (§9.5): how many must return to thaw; null while not frozen. */
@@ -277,10 +284,13 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
           .map((q) => ({ id: q.id, motion: q.motion, ...(q.text ? { text: q.text } : {}) }))
       : [],
     identity: me
-      ? { name: me.name, picture: me.picture }
+      ? { name: me.name, picture: me.picture,
+          nameSet: me.nameSet, pictureSet: me.pictureSet }
       : isConvenor
-        ? { name: s.convenorRecord().name, picture: s.convenorRecord().picture }
-        : { name: null, picture: null },
+        ? { name: s.convenorRecord().name, picture: s.convenorRecord().picture,
+            nameSet: s.convenorRecord().nameSet,
+            pictureSet: s.convenorRecord().pictureSet }
+        : { name: null, picture: null, nameSet: false, pictureSet: false },
     lapseWarned: me ? me.lapseWarned : isConvenor ? s.convenorRecord().lapseWarned : false,
     frozen: s.frozen,
     mustReturn: s.mustReturn(),

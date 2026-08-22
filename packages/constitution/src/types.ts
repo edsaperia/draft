@@ -223,6 +223,19 @@ export interface MemberRecord {
   signedOut: 'holding' | 'abstaining' | null;
   name: string | null;
   picture: string | null;
+  /**
+   * Whether this member has ever *answered* ✋ and 🖼️ (Q645). Null is not the
+   * answer to that question: a blank name is a real answer — §9.0c shows it as
+   * **Anonymous**, "a name, not a gap" — and a picture is removed by choosing
+   * initials, so `name === null` covers both *never asked* and *asked, left
+   * empty*. The surface has to tell those apart to know whether the task is
+   * still owed, so the fold records the act rather than inferring it from the
+   * value. Folded from the `identity-set` events the log already carries, like
+   * `arrival` (Q524) and `previousValue` (Q530): no new event, no envelope
+   * change, hash chain untouched.
+   */
+  nameSet: boolean;
+  pictureSet: boolean;
   lastActivityT: number;
   /** Settings this member has been told they are owed an OK on, minus OKs given. */
   okOwed: Set<SettingId>;

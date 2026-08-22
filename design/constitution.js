@@ -793,6 +793,9 @@ var CONSTITUTION = (() => {
             ...c,
             name: c.name ?? null,
             picture: c.picture ?? null,
+            // a founder who arrives already carrying one has answered it (Q645)
+            nameSet: c.name !== void 0,
+            pictureSet: c.picture !== void 0,
             lastActivityT: event.t,
             lapseWarned: false
           };
@@ -816,25 +819,53 @@ var CONSTITUTION = (() => {
           this.foldSet("title", { text: event.title }, "convenor", event.t);
           this.foldSet("link", { slug: event.slug }, "convenor", event.t);
           this.slugHistory.push(event.slug);
-          if (c.isMember) this.members.set(
-            c.id,
-            this.freshMember(c.id, c.email, event.t, event.t, { via: "founding", by: null })
-          );
+          if (c.isMember) {
+            const rec = this.freshMember(
+              c.id,
+              c.email,
+              event.t,
+              event.t,
+              { via: "founding", by: null }
+            );
+            rec.name = this.convenor.name;
+            rec.picture = this.convenor.picture;
+            rec.nameSet = this.convenor.nameSet;
+            rec.pictureSet = this.convenor.pictureSet;
+            this.members.set(c.id, rec);
+          }
           break;
         }
         case "convenor-membership-set": {
           if (event.isMember) {
-            this.members.set(
+            const rec = this.freshMember(
               this.convenor.id,
-              this.freshMember(
-                this.convenor.id,
-                this.convenor.email,
-                event.t,
-                event.t,
-                { via: "founding", by: null }
-              )
+              this.convenor.email,
+              event.t,
+              event.t,
+              { via: "founding", by: null }
             );
+            const prev = this.members.get(this.convenor.id);
+            rec.name = prev ? prev.name : this.convenor.name;
+            rec.picture = prev ? prev.picture : this.convenor.picture;
+            rec.nameSet = prev ? prev.nameSet : this.convenor.nameSet;
+            rec.pictureSet = prev ? prev.pictureSet : this.convenor.pictureSet;
+            if (prev) {
+              rec.okOwed = prev.okOwed;
+              rec.okGiven = prev.okGiven;
+              rec.lastActivityT = prev.lastActivityT;
+            } else {
+              rec.lastActivityT = Math.max(rec.lastActivityT, this.convenor.lastActivityT);
+            }
+            this.members.set(this.convenor.id, rec);
           } else {
+            const prev = this.members.get(this.convenor.id);
+            if (prev) {
+              this.convenor.name = prev.name;
+              this.convenor.picture = prev.picture;
+              this.convenor.nameSet = prev.nameSet;
+              this.convenor.pictureSet = prev.pictureSet;
+              this.convenor.lastActivityT = prev.lastActivityT;
+            }
             this.members.delete(this.convenor.id);
           }
           break;
@@ -914,13 +945,25 @@ var CONSTITUTION = (() => {
         }
         case "identity-set": {
           if (event.member === this.convenor.id && !this.members.has(event.member)) {
-            if (event.name !== void 0) this.convenor.name = event.name;
-            if (event.picture !== void 0) this.convenor.picture = event.picture;
+            if (event.name !== void 0) {
+              this.convenor.name = event.name;
+              this.convenor.nameSet = true;
+            }
+            if (event.picture !== void 0) {
+              this.convenor.picture = event.picture;
+              this.convenor.pictureSet = true;
+            }
             break;
           }
           const m = this.members.get(event.member);
-          if (event.name !== void 0) m.name = event.name;
-          if (event.picture !== void 0) m.picture = event.picture;
+          if (event.name !== void 0) {
+            m.name = event.name;
+            m.nameSet = true;
+          }
+          if (event.picture !== void 0) {
+            m.picture = event.picture;
+            m.pictureSet = true;
+          }
           this.touch(event.member, event.t);
           break;
         }
@@ -1313,6 +1356,8 @@ var CONSTITUTION = (() => {
         signedOut: null,
         name: null,
         picture: null,
+        nameSet: false,
+        pictureSet: false,
         lastActivityT: arrivedAtT ?? invitedAtT,
         okOwed: /* @__PURE__ */ new Set(),
         okGiven: /* @__PURE__ */ new Set(),
@@ -2589,7 +2634,17 @@ var CONSTITUTION = (() => {
       motions,
       myHeldMotion,
       crownTasks: isConvenor ? [...s.crownQuestionRecords().values()].filter((q) => q.status === "pending").map((q) => ({ id: q.id, motion: q.motion, ...q.text ? { text: q.text } : {} })) : [],
-      identity: me ? { name: me.name, picture: me.picture } : isConvenor ? { name: s.convenorRecord().name, picture: s.convenorRecord().picture } : { name: null, picture: null },
+      identity: me ? {
+        name: me.name,
+        picture: me.picture,
+        nameSet: me.nameSet,
+        pictureSet: me.pictureSet
+      } : isConvenor ? {
+        name: s.convenorRecord().name,
+        picture: s.convenorRecord().picture,
+        nameSet: s.convenorRecord().nameSet,
+        pictureSet: s.convenorRecord().pictureSet
+      } : { name: null, picture: null, nameSet: false, pictureSet: false },
       lapseWarned: me ? me.lapseWarned : isConvenor ? s.convenorRecord().lapseWarned : false,
       frozen: s.frozen,
       mustReturn: s.mustReturn(),
