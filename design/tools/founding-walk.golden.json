@@ -585,7 +585,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "?: When the session begins, members may propose changes to rule",
     "rate: The Founder is deciding how often members may propose."
    ]
   },
@@ -609,7 +609,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when"
+    "?: When the session begins, members may propose changes to rule"
    ]
   },
   {
@@ -632,7 +632,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "?: When the session begins, members may propose changes to rule",
     "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
     "machines: The Founder is deciding whether an AI makes proposals."
    ]
@@ -657,7 +657,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "?: When the session begins, members may propose changes to rule",
     "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get"
    ]
   },
@@ -681,7 +681,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "?: When the session begins, members may propose changes to rule",
     "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
     "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
    ]
@@ -706,7 +706,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "?: When the session begins, members may propose changes to rule",
     "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
     "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
    ]
@@ -731,8 +731,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
-    "begin: The document has not begun.",
+    "begin: When the session begins, members may propose changes to rule",
     "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
     "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
    ]
@@ -757,7 +756,6 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
     "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
     "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
    ]
@@ -785,8 +783,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
-    "begin: The document began at HH:MM on D Month YYYY.",
+    "begin: Members may propose changes to rules. Proposals ✏️ pass when",
     "canpropose: Members may propose as soon as they arrive.",
     "canjudge: Members may judge proposals.",
     "grant-voice: Each member holds one voice in every constitutional question",
@@ -817,8 +814,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
-    "begin: The document began at HH:MM on D Month YYYY.",
+    "begin: Members may propose changes to rules. Proposals ✏️ pass when",
     "canjudge: Members may judge proposals.",
     "grant-voice: Each member holds one voice in every constitutional question",
     "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
@@ -847,8 +843,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
-    "begin: The document began at HH:MM on D Month YYYY.",
+    "begin: Members may propose changes to rules. Proposals ✏️ pass when",
     "canpropose: Members may propose as soon as they arrive.",
     "canjudge: Members may judge proposals.",
     "grant-voice: Each member holds one voice in every constitutional question",
@@ -878,8 +873,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
-    "begin: The document began at HH:MM on D Month YYYY.",
+    "begin: Members may propose changes to rules. Proposals ✏️ pass when",
     "canpropose: Members may propose as soon as they arrive.",
     "grant-voice: Each member holds one voice in every constitutional question",
     "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
@@ -907,8 +901,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
-    "begin: The document began at HH:MM on D Month YYYY.",
+    "begin: Members may propose changes to rules. Proposals ✏️ pass when",
     "canpropose: Members may propose as soon as they arrive.",
     "canjudge: Members may judge proposals.",
     "grant-voice: Each member holds one voice in every constitutional question",
@@ -937,8 +930,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
-    "begin: The document began at HH:MM on D Month YYYY.",
+    "begin: Members may propose changes to rules. Proposals ✏️ pass when",
     "canpropose: Members may propose as soon as they arrive.",
     "canjudge: Members may judge proposals.",
     "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
@@ -964,8 +956,7 @@
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "judgments: What somebody preferred is never made public. The Founder ma",
-    "?: Members may propose changes to rules. Proposals ✏️ pass when",
-    "begin: The document began at HH:MM on D Month YYYY.",
+    "begin: Members may propose changes to rules. Proposals ✏️ pass when",
     "canpropose: Members may propose as soon as they arrive.",
     "canjudge: Members may judge proposals.",
     "grant-voice: Each member holds one voice in every constitutional question",

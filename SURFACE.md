@@ -95,7 +95,7 @@ The card lifecycle, as the rows of the matrix a single card passes through:
 | Y18 | A clause is not a button; the gutter tab is the only way into a card from the document | C1 | clicking a clause puts a caret in it | — |
 | Y19 | The ✒️ commit under an unacknowledged pen stays, dark, with *Your pen is waiting in your tasks* | C9 | a dark commit naming where the pen is tells more than an absent one | Q622 |
 | Y20 | The sealed record and the backlog card have no 🗑️; the 👑 question has Refuse / Accept and no 🗑️; the stranger's and applicant's email cards commit in the body; the applicant's Apply opens with *Begin* | C4 | nothing to put back, or the two answers are the whole act, or the door has no provisional layer | Q613 |
-| Y21 | 🍾's clause heads Proposals while its task is last in the order | C14 | it heads the section because it is what opens it | Q616 |
+| Y21 | 🍾's clause **is** the Proposals preamble, and heads the section while its task is last in the order | C14 | pressing 🍾 is what makes the preamble's first sentence true, so the tab belongs on it | Q616; Ed 2026-08-22 |
 | Y22 | ↻ is a character, styled as a drawn mark | §6 | it has no partner whose weight it must equal | — |
 
 Y1 — *a submitted judgment does not close its card* — was retired by Q576 (Ed, 2026-08-22) and built the same day: a judgment closes and files as ⏳ like every other commit, and the ⏳ tab is the way back to revise. Y3 (⏳ survives where the wait is about you) became the wait row of §6's setup alphabet in pass 2 (Q624).
@@ -289,7 +289,7 @@ The refund flight and every grant's inbound flight take 640 ms.
 
 Outside `ORDER`: 📈 (a tab in ✒️'s stack; no clause, no rail entry — Q512); the `ans-*` answer tasks (a task paragraph under the watching clause); ✉️ ❌ (doors in the 🪪 pile from the moment judging opens); the ✒️/🛡️ power tabs under every held-able setting (*Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* — Q615); 🥂.
 
-**The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link with the pen and shield clauses beneath it, 📧 pre-save, 🌍, the Founded line — then **Membership** (`members`: 🤝 · *Members* · the list with 🪪 ✉️ ❌ 🎩 and your row wearing ✋ 🖼️ 📧 · 💤 · 🚪), **Decisions** (`deciding`: ⏰ · 🥂 when closed · ✒️ with 📈 in its stack · 👥), **Anonymity** (`privacy`: 👤 ✍️ 👁️), **Proposals** (`rate`: the preamble · 🍾 · 💡 · ⚖️ with 🏛️ · ⏱️ · 🤖), the hairline, the charter under its own name with 📄 beside it. **The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📄. Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
+**The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link with the pen and shield clauses beneath it, 📧 pre-save, 🌍, the Founded line — then **Membership** (`members`: 🤝 · *Members* · the list with 🪪 ✉️ ❌ 🎩 and your row wearing ✋ 🖼️ 📧 · 💤 · 🚪), **Decisions** (`deciding`: ⏰ · 🥂 when closed · ✒️ with 📈 in its stack · 👥), **Anonymity** (`privacy`: 👤 ✍️ 👁️), **Proposals** (`rate`: the preamble wearing 🍾 · 💡 · ⚖️ with 🏛️ · ⏱️ · 🤖), the hairline, the charter under its own name with 📄 beside it. **The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📄. Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
 
 ### 8.1 Rules
 

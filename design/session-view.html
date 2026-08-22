@@ -1660,8 +1660,18 @@
   // sentence at all. It opens the **Proposals** section now (Ed, same
   // day: proposing is what the defaults are about), in his wording, with
   // the deviation baseline kept as its last sentence.
+  // **The Proposals preamble is the home of 🍾** (Ed, 2026-08-22).
+  // Pressing 🍾 is what makes the preamble's first sentence true, so the tab
+  // belongs on the preamble rather than on a clause of its own, and the
+  // sentence is tense-aware: before the start it says when the rule takes
+  // effect, and the press drops the qualifier. What the merge retires is
+  // *The document began at [time]*, which the Founded line four paragraphs
+  // above already carried, to the minute.
+  const preambleText = () =>
+    (constituted() ? 'Members' : 'When the session begins, members') +
+    ' may propose changes to rules. Proposals ✏️ pass when they meet the approval threshold. Constitutional proposals 🏛️ need everyone' + Q + 's consent. Nobody amends a rule at will, and no passed change waits on anyone' + Q + 's assent, unless a rule says so.';
   const preamblePara = () =>
-    '<div class="cpara notab"><p class="cpv">Members may propose changes to rules. Proposals ✏️ pass when they meet the approval threshold. Constitutional proposals 🏛️ need everyone' + Q + 's consent. Nobody amends a rule at will, and no passed change waits on anyone' + Q + 's assent, unless a rule says so.</p></div>';
+    '<div class="cpara notab"><p class="cpv">' + preambleText() + '</p></div>';
   // The title's clause (403/404, revised Ed 2026-08-19: *move title tab to
   // the first clause once that clause appears*): the 🪶 value tab stands in
   // front of the two power tabs — the governance tab group proper — so once
@@ -2051,7 +2061,17 @@
     // (Ed, 2026-08-19)
     { key: 'rate', title: 'Proposals',
       text: '',
-      lead: () => (cs ? preamblePara() : ''),
+      // The preamble is 🍾's own paragraph once 🍾 is due (Ed, 2026-08-22).
+      // It stands from the save, tab-less, so the sentence saying what
+      // beginning will do is readable all through the founding; when 🍾
+      // reaches its turn in ORDER the paragraph *gains its tab* rather than
+      // a new paragraph arriving under it, and the press drops the
+      // qualifier from the sentence it was standing on. `body` skips
+      // 'begin' for that reason; `keys` keeps it, because the rail and the
+      // group's own count enumerate from the section's cards.
+      lead: (H) => (cs ? (visible(card('begin')) ? H.para(card('begin')) : preamblePara()) : ''),
+      body: (H) => ['canpropose', 'canjudge', 'rate', 'machines'].map(card)
+        .filter((c) => c && visible(c)).map((c) => H.para(c) + H.tasks(c)).join(''),
       keys: ['begin', 'canpropose', 'canjudge', 'rate', 'machines'] },
     // rail-only: the title is the heading, the link leads the constitution,
     // and the starting text anchors the prose (Ed, 2026-08-18)
@@ -3112,9 +3132,10 @@
   const decisionLine = (c) => {
     // a grant's paragraph states the document's rule (third person, the same
     // for every reader); the card that opens on it is yours
-    if (c.isBegin) return constituted()
-      ? 'The document began' + foundedAt() + '.'
-      : 'The document has not begun.';
+    // 🍾's clause is the Proposals preamble (Ed, 2026-08-22): the tab hangs
+    // on the sentence the press makes true, and the moment itself stays on the
+    // Founded line, which carried it already
+    if (c.isBegin) return preambleText();
     if (c.isClosing) return 'The document closed' + closedAtWords() + '. ' +
       (closeSignatures().length === 0 ? 'Nobody has signed it yet.'
         : closeSignatures().length + (closeSignatures().length === 1 ? ' member has' : ' members have') + ' signed it.');
