@@ -54,7 +54,6 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
     const samples: Partial<Record<SettingId, SettingValue[]>> = {
       ending: [{ endsAtMs: null }, { endsAtMs: 100 }, { endsAtMs: 200 }],
       bar: [{ pct: 60 }, { pct: 95 }],
-      pace: [{ shape: 'fixed' }, { shape: 'ramp', startPct: 55 }, { shape: 'ramp', startPct: 70 }],
       quorum: [{ form: 'share', n: 50 }, { form: 'share', n: 100 }],
       authorship: [{ rung: 'anonymous' }, { rung: 'public' }],
       rate: [
@@ -146,14 +145,6 @@ describe('the consent rule (SPEC §9.0a): maxima along the protective direction'
       [{ rung: 'after' }, { rung: 'never' }]).value).toEqual({ rung: 'never' });
     expect(resolveConsent(entryOf('signing'),
       [{ rung: 'everybody' }, { rung: 'nobody' }]).value).toEqual({ rung: 'nobody' });
-  });
-
-  it('pace: the most cautious wins — fixed beats ramp, higher start beats lower', () => {
-    expect(resolveConsent(entryOf('pace'),
-      [{ shape: 'ramp', startPct: 55 }, { shape: 'fixed' }]).value).toEqual({ shape: 'fixed' });
-    expect(resolveConsent(entryOf('pace'),
-      [{ shape: 'ramp', startPct: 55 }, { shape: 'ramp', startPct: 70 }]).value)
-      .toEqual({ shape: 'ramp', startPct: 70 });
   });
 
   it('rate: the most generous wins (§9.0)', () => {

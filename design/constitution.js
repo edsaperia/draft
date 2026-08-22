@@ -366,7 +366,7 @@ var CONSTITUTION = (() => {
     // Nothing was collecting an answer for it either — no surface ever grew a
     // founding question for a {shape, startPct}. The members can still take it
     // over after the start, by the reserve route, where no blind question is
-    // needed. The consent order survives for exactly that case.
+    // needed, so no consent order: nothing ever resolves one (Q560, 2026-08-22).
     {
       id: "pace",
       glyph: "📈",
@@ -374,16 +374,6 @@ var CONSTITUTION = (() => {
       holderDefault: "convenor",
       delegable: false,
       valueType: "pace",
-      consent: {
-        ask: "the most gradual arrival at the close bar you will accept",
-        order: (a, b) => {
-          const pa = a;
-          const pb = b;
-          if (pa.shape !== pb.shape) return pa.shape === "fixed" ? 1 : -1;
-          if (pa.shape === "ramp" && pb.shape === "ramp") return pa.startPct - pb.startPct;
-          return 0;
-        }
-      },
       deps: ["ending"],
       judgeGate: false
     },

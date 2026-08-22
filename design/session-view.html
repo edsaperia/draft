@@ -470,7 +470,7 @@
     },
   };
   // page key ↔ module setting id — the page keeps its own vocabulary
-  const MID = { slug: 'link', text: 'startingText', policy: 'applications', roster: 'membership' };
+  const MID = { slug: 'link', text: 'startingText', policy: 'applications', roster: 'membership', myname: 'displayName', mypic: 'picture' };
   const midOf = (k) => MID[k] || k;
   const PKEY = { link: 'slug', startingText: 'text', applications: 'policy', membership: 'roster' };
   const pkeyOf = (mid2) => PKEY[mid2] || mid2;
