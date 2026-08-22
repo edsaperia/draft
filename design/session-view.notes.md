@@ -1,3 +1,5 @@
+> **Superseded (spec pass 2, 2026-08-22, Q587).** Kept as history. The rules this file describes now live in `SURFACE.md` (§6–§9) and `design/STYLE.md`; where this file and those disagree, they win. It is no longer kept current.
+
 # Design notes — the session view (default surface), second pass
 
 Desktop-first · light mode · Bootstrap-plain (visual design deferred) · content from run clubhouse-1 · the race-card mockup is this surface's escalation state.

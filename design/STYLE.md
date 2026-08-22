@@ -163,3 +163,45 @@ Scanned: every string literal in `session.js`, `setup.js` and the page, comments
 39. **Fixed — *decline* is not in the vocabulary.** The shield's body said *you cannot write with it, only decline*; the Founder **refuses** (§1, eighth pass, 33).
 40. **Fixed — the ✏️ socket restated the price.** Its bubble read *Each proposal spends one*, where §5 says the price is said in words exactly once, at the act — and it already is, on the Propose control. Now: **You can propose changes to the text. A ✏️ comes back if the membership passes yours, and more arrive as the document runs.** The 🪶 bubble keeps *Each one spends a feather*, and that is the same rule rather than an exception: nothing else on the surface says what a founding act costs, so the bubble is its "exactly once".
 41. **Passed — the socket bubbles say the symbol, then the verb** (Ed: *don't name the item — just have the symbol, larger than in the wallet, and then explain what it is using the verb; keep the language as clear and functional as possible, using verbs and nouns that relate to concrete things on the page*). Naming a thing is not explaining it, and the glyph has already said which one it is. Each sentence starts with who can do what, and every noun in it is something the reader can point at — the text, a setting, a ✒️ tab, the membership, an address. **Held and not-held differ by subject**: holding it, the sentence is about *you*; not holding it, it names *who can*, which is the question a struck-through tool actually raises, answered without a word of apology.
+
+## 8. The card copy rules (spec pass 2, 2026-08-22)
+
+Lifted from CLAUDE.md's glossary and the code in spec pass 2 (Q585 a); the numbered items above are the audit, these are the rules it audits against. Each names where it is enforced.
+
+| # | Rule | Example |
+|---|---|---|
+| T1 | Task titles are Title Case; bare nouns drop the article | *Title*, *Link*, *Text*; *Is the Founder a Member?* |
+| T2 | A title says what kind of answer it wants; Quorum and Approval threshold stay nouns | *How Sure Must the Room Be?* / *Quorum*; the power tabs: *Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* (Q615) |
+| T3 | A settled card's head is the rule, not the task's name; open questions, 🪪, 📄, personal cards and answers keep the title | `headFor` |
+| T4 | A task you have to do carries no subtitle; subtitles survive on a motion (the value) and on news (what happened) | `summary` |
+| T5 | A rename reaches the option labels; **one label per rung, everywhere** — the founder's radio, the member's ladder and the composer's lane say the same words (Q620) | *AI proposals are permitted*; *Revealed after the decision*; *Everyone has to agree, including them*; *Applications must be proposed by members* |
+| T6 | The two 🛡️ radios say veto and name the setting, the negation bold; the head and clause keep the joined verb phrases; the `why` follows the options into veto vocabulary | `vetoLabel`, `PWWHY`, `powerHeadLine` |
+| T7 | A power option is a proposal block, not a radio label: the rule at document size with a full stop, its consequence as a note, a lane bar reading *Choose this / Chosen* | `powerLane` |
+| T8 | The power clause is one sentence in Ed's vocabulary: a member proposes; the membership passes and rejects; the Founder assents, refuses and amends. *pass* not *carry*; *refuse* is the Founder's word | `PW_PHRASE`; the 👑 question's buttons are *Refuse / Accept* |
+| T9 | One voice, only the object changing: per-setting phrases only where the generic would be untrue (policy, text) | `PW_PHRASE`, `PW_OPTS`, `PW_NOUN` |
+| T10 | The constitution's sentences are third person; "you" belongs to tasks and cards; one exception — you at the top of the members list | *The Founder is checking their email for a link.* |
+| T11 | A paragraph states the document's rule, never your own answer | the watch half shows a count, never a value |
+| T12 | A count, never a direction, while a question runs | *4 of 9 have answered* |
+| T13 | A value, never a guess: an undecided rule says who is deciding it, and what applies meanwhile where something does | *The Founder is deciding [x]*; *Until the Founder decides, only members can see the document* (Q618) |
+| T14 | No spec references in surface copy — cards.js included (Q608) | — |
+| T15 | No project-speak, no engine jargon: roster, participant, ordinary, ceremony, tokens, the bar, economy, queue-card, rolling log hash | *the standard rate*; *approval threshold* |
+| T16 | Raw values are not copy | dates through `toLocaleString`; whole percents |
+| T17 | The price is said in words exactly once, at the act | the ✏️ hold's tooltip; the 🪶 bubble |
+| T18 | Decided is a word, not a glyph: OK on anything that only wants to have been seen | `data-seen`, `data-ok` |
+| T19 | Grey means nothing is being asked; hot for actions, cold for information | `HUE` |
+| T20 | A shared body must not hard-code one caller's frame | `ANSWER.quorum(A, E, form)` |
+| T21 | Read-only copy must survive the spec it summarises; the lockline tells the truth about who set it | `ctx.lockline` |
+| T22 | Section headings carry no intro prose | — |
+| T23 | A long value is shown, not narrated: past 32 characters, two aligned *was* / *now* lines | `changeHalf` |
+| T24 | A first decision is not a change and shows neither half | `isChange` |
+| T25 | Attribution names the office, never the name — except the founder's own pen rationale, attributed by construction | *The Founder has changed …*; `founderSpeaker` |
+| T26 | The rationale placeholder is an opening clause, not a question | *We should change this because…* |
+| T27 | A blank rationale is real: *No reason given.* | `speakerHtml` |
+| T28 | An empty application, a blank name, a blank closing comment is a real answer, and the card says what that means | the ✋, apply and 🥂 notes |
+| T29 | A field label names the band and counts rivals as a fact, never a standing | *Proposed · 2 rival proposals* |
+| T30 | The rail says what is true; the buttons say what you can do | ⚔️ is *stuck*; ✏️ is on the drafting it leads to |
+| T31 | Indifferent is labelled, never drawn as 🤷; ❄️'s pressed state is its words | the commit row |
+| T32 | Every commit at the birth wears the 🪶 on the accent-subtle ground — the ground belongs to the glyph | `commitGlyph` |
+| T33 | Mail copy lives in `MAILS`, one substitution from the real template; the subject names the document | setup.js |
+| T34 | A socket's bubble says the symbol then the verb; held and not-held differ by subject | `SAY` |
+| T35 | The address field is the correction — no *Wrong address?* button anywhere (Q609) | 📧, the applicant's and the stranger's cards |

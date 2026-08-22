@@ -1,3 +1,5 @@
+> **Superseded (spec pass 2, 2026-08-22, Q587).** Kept as history. The rules this file describes now live in `SURFACE.md` (§6–§9) and `design/STYLE.md`; where this file and those disagree, they win. It is no longer kept current.
+
 # The setup surfaces — task grammar and dependency tree
 
 Working notes for the founding half of `design/session-view.html` (was `setup.html` until the stage 8 merge, 2026-08-21) — one surface since 2026-08-18 evening

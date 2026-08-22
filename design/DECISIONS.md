@@ -182,3 +182,20 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 - **Checking a mockup:** serve `design/` over localhost (a tiny node http server) and measure the DOM with the browser tools — geometry, computed styles, element counts. `file://` URLs are refused by the extension. Two traps cost real time on 2026-08-16: the automation tab runs **backgrounded**, so `requestAnimationFrame` never fires, CSS transitions don't run, `:hover` never applies, and `setTimeout` is clamped to ~1s. Anything animated must be driven by stubbing the animation helper, and hover states can only be verified by reading the CSS rule. A stalled sequence in that tab usually means rAF, not a bug.
 - **Mockup fixtures:** one array of items, each carrying its own content, progress and state — never parallel literals kept in sync by hand. Content is hand-authored; `sim-harness` has no session-state exporter, and the fixture holds diffs, rationales and captions the engine has no opinion about anyway.
 - No deploys or pushes without Ed's say-so.
+
+## Spec pass 2 (2026-08-22, Q585–624)
+
+The second pass lifted the rest of the surface grammar out of the glossary: SURFACE.md §6 (the marks alphabet and the rail), §7 (the wallets, sockets and holds), §8 (the founding order and the band), §9 (the card kinds, the commit row, the composer); STYLE.md §8 took the card copy rules. CLAUDE.md keeps one-line pointers. The rulings that were not mere drift:
+
+- **🏛️ arrives with the first blind question you are asked** (Q605, superseding Q514's *at arrival*). The build had it at 🍾 through ⚖️'s task, so the founding answers — which the four-verbs rule calls a kind of 🏛️ — were made with a voice nobody had been handed. *At arrival* was right for an invitee into a founding with open questions and wrong for a founder who delegates nothing; the voice now precedes the first act it licenses, whoever you are.
+- **↻ is grey** (Q612). It had kept the accent blue from the emoji era; blue is *yours*, and a void judgment is information — nothing is asked of you until the pair is re-served.
+- **The ⚔️ desk's 🗑️ is never disabled** (Q613); the sealed record, the 👑 question, the door's and the applicant's email cards keep their own shapes as recorded exceptions (Y20).
+- **A motion's ✏️ Propose is a hold with the pencil flight** (Q614). It had been a click from before the hold ladder existed; it spends a ✏️, and every spend is held.
+- **The power tabs are two yes/no questions** (Q615): *Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* — Ed's wording for the pen, replacing *Who Has the Pen?* so the pair reads as one grammar.
+- **🍾's clause heads Proposals** while its task is last (Q616, Y21): it heads the section because it is what opens it.
+- **🤝 stands above the members list** (Q617) — *I need to decide Applications before I can do Membership*; the contrary sentence of the same day is struck.
+- **The 🌍 clause states the interim rule while undecided** (Q618): *Until the Founder decides, only members can see the document.* A clause that says only *is deciding* states that nothing has been decided, not what applies meanwhile.
+- **A member's answer tasks ride `ORDER`** (Q619 b), retiring the last use of the wave graph's `dep` arrays — the founder's single file and the member's are one file.
+- **One label per rung, everywhere** (Q620), with Ed's wordings; the composer filters the standing rule by value, not by label text, which was the fragility that made the mismatch dangerous.
+- **The shield flies out at the close like the pen** (Q621). **The ✒️ commit under an unacknowledged pen stays dark and names where the pen is** (Q622, Y19). **Setup rail entries take the urgency ramp** (Q623). **Two rules absorbed four exceptions** (Q624).
+- **The checker asserts everything the pass made tabular, the headless founding walk included** (Q586 c) — to be re-asked on 2026-08-29 (Q625). **The notes files are superseded, kept as history** (Q587).

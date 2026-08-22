@@ -11,15 +11,15 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 - **C3 Closing is not discarding.** Every provisional value — a radio, a number, a draft, the title lane, the invitation boxes — lives in `S` until 🗑️ takes it; 🗑️ puts back only what the open card can write, and never touches a value already set.
 - **C4 One commit row.** 🗑️ at the left, always live, on every card. At the right: ✒️ where the act is a set of your own (the power tabs included), ✓ where it is an answer, a judgment, or anything about yourself (*Save*), **✏️ Propose** / **🏛️ Hold to ask everyone** where it is a motion, **OK** where the card asks only to have been seen. Every control on the row shares one height and one disabled look. The hold ladder: 🪶 and ✒️ one second, ✏️ the length of its flight, 🏛️ ten seconds (the `assembly-press`: the members' avatars convene in a circle around the control, so the assembly is the progress meter; release early and it disperses, nothing sent).
 - **C5 Opening focuses the main decision** — the first interactive control in the card's own order (the chosen option within a group), never the commit row; focus is never a press; `preventScroll`. A card asking for words puts the caret after any text already there.
-- **C6 Exactly four kinds of entry pin**: 🔥, an unacknowledged decision, a proposal of your own, a prioritisation — what is about *you*. Everything else stands beside its clause and scrolls with it. What does not fit is not shown; admission is ranked by urgency and never thresholded.
+- **C6 Four kinds of entry pin for what they are** — 🔥, an unacknowledged decision, a proposal of your own, a prioritisation — what is about *you* — **and the open entry pins for being open.** Everything else stands beside its clause and scrolls with it. What does not fit is not shown and not counted; admission is ranked by urgency and never thresholded; 🔥, the open entry and anything of your own are exempt from the cap (§6).
 - **C7 Hot for actions, cold for information.** Yellow and pink want something from you; blue and grey tell you where things stand; grey means nothing is asked of you. `--ok`'s green never leaves a card interior.
 - **C8 A decision you had no say in is owed an OK; reading is not enough.** Nothing is owed before the start; the lapsed are owed it too.
-- **C9 No power arrives without acknowledgement, and is not held until acknowledged.** An offer you cannot take is not shown; a question you may not answer is not shown at all — filtered at ingest, never at each render site. Re-asked on every not-held → held transition.
+- **C9 No power arrives without acknowledgement, and is not held until acknowledged.** An offer you cannot take is not shown — except the ✒️ commit, which stays dark and names where the pen is (Y19); a question you may not answer is not shown at all — filtered at ingest in the charter (`withheld`) and by `visible` in the band, never at each render site. Re-asked on every not-held → held transition.
 - **C10 The document reads identically to every reader; only their tasks differ.** The constitution's sentences are third person; attributions name the office (*The Founder …*), never the name, except the founder's own rationale on a pen act, which is attributed by construction. One sanctioned exception: you are at the top of the members list.
 - **C11 A first decision is not a change. A change carries a reason and says who made it** — the founder on the card, everybody else told what changed and reading it. A long value is shown on two aligned lines, never narrated.
 - **C12 Blind while running.** A founding question or a constitutional motion shows only the count of answers; a race shows no standings and no direction; a cleared race is never shown waiting.
 - **C13 A task you have to do carries no subtitle**; a motion's subtitle is the value proposed, news's is what happened.
-- **C14 The founding runs in single file**, one clause per step, in the document's own order (🪶 📍 📧, then the constitution's sections); a gate holds its place without blocking; ✒️ blocks; each answer lands as its own fading clause.
+- **C14 The founding runs in single file**, one clause per step, in the document's own order (🪶 📍 📧, then the constitution's sections — §8); **a grant or gate holds its place without blocking and stands beside the current question**; ✒️ blocks; each answer lands as its own fading clause. A member's answer tasks ride the same order (Q619).
 - **C15 Mail rides the fold** for every event a member is owed off-surface — the verification mail, the lapse warning and package, the close — and the link is the login. Nothing else mails (Q575).
 - **C16 The topbar reads the document · the room · you**: 🪶 and the title; the pulse, the session clock, quorum; your wallets and `me`. Every wallet is a socket, shown to everybody from the start, struck when not held, empty when spent.
 
@@ -31,21 +31,21 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 | E1 | A founding question opens (delegated) | every arrived member, founder if a member | rail ask entry; task paragraph under the watching clause | an answer | ✓ | entry leaves; card shows the count; revisable until resolved | chamber policy lapse removal ending bar quorum authorship signing judgments rate machines |
 | E2 | A founding question resolves | everyone who answered | clause; distribution strip | nothing (pre-start: no OK owed) | — | clause states the rule | — |
 | E3 | A setting is set pre-start | nobody | clause fades in | nothing | — | clause | title slug text hat myname mypic roster |
-| E4 | The document begins 🍾 | every member | 💡 ⚖️ gate news cards, 🏛️ grant, ✏️ storm, the Founded line | OK each | OK | `ACK_KEYS` per seat; grants staged behind the constitutional OKs | begin canpropose canjudge grant-voice |
+| E4 | The document begins 🍾 | every member | 💡 ⚖️ gate news cards, the Founded line; 🏛️ for anybody not yet handed a voice (E8) | OK each | OK | `ACK_KEYS` per seat; grants staged behind the constitutional OKs | begin canpropose canjudge |
 | E5 | A constitutional setting set or changed post-start (pen or carried) | every member who had no say, lapsed included | news entry pinned ✔; clause change line (was / now, who, why) | OK | OK | clause keeps *Last amended*; the record's Amendments | — |
 | E6 | An ordinary setting first set | nobody | clause | nothing | — | clause | — |
 | E7 | An ordinary setting changed | as E5 | as E5; no mail | OK | OK | as E5 | — |
-| E8 | A power arrives | the holder | news entry, wallet flight | OK | OK | per seat; re-asked on each not-held → held | grant-pen grant-shield grant-voice canpropose |
+| E8 | A power arrives | the holder | news entry, wallet flight (the ✏️ storm from 💡's OK, per member); 🏛️ arrives with the first blind question you are asked (Q605) | OK | OK | per seat; re-asked on each not-held → held | grant-pen grant-shield grant-voice canpropose |
 | E9 | A power is laid down | the actor; every member | the power card; **news entry owed an OK** (Q571); clause deviation vanishes | OK | on commit / on OK | clause; record | — |
 | E10 | A constitutional motion is put (invitations and removals included) | every active member | the setting's own card, live again; rail ask | accept / keep / abstain | ✓ — answered entry leaves; tab keeps its glyph | carried → E5 | invite remove |
 | E11 | An ordinary motion is put | whoever the router serves | race card | a judgment | ✓ — closes and files ⏳ (Q576) | → E5 / E14 | — |
-| E12 | A 👑 question | the founder | news-pinned task, Accept / Reject | Accept / Reject | on commit | record | — |
+| E12 | A 👑 question | the founder | news-pinned task, Refuse / Accept | Refuse / Accept | on commit | record | — |
 | E13 | A text race wants a judgment | whoever the router serves | 💡 / 🔥 entry at the clause, gutter tab | a judgment | ✓ — closes; ⏳ tab is the way back to revise (Q576) | ⏳ until the seal | — |
 | E14 | A race seals, the document changed | every member | ✔ green pinned; clause | OK | OK | grey ✔ filed; record | — |
 | E15 | A race seals, the incumbent held | members who judged it | ✖ green, pins only if you judged | OK | OK | grey ✖ filed | — |
 | E16 | The ground shifted under your judgment | the judge | ↻ receipt | nothing; the pair is re-served | — | — | — |
 | E17 | A race deadlocks | each member, once it has nothing left to ask them | ⚔️ entry ranked by bounty | a draft | — | — | — |
-| E18 | A salience diagonal | a member with an empty queue, below 2E | 🌶️ card, served not offered | which matters more | ✓ | no progress state | — |
+| E18 | A salience diagonal | a member with nothing else to judge, once the document holds at least E live questions | 🌶️ card, served not offered | which matters more | ✓ | no progress state | — |
 | E19 | A proposal of your own | the author | ✏️ card, then one line; pinned | withdraw is the remaining act | Propose (stays pinned) | ✏️ throughout | — |
 | E20 | Somebody arrives during the founding | founding answerers (ground shift) | **an acknowledgement task on their own answer card, marked ↻** — *one more member has arrived; your answer stands* (Q567, Q572); no mail | OK, revising optional | OK | register | roster |
 | E21 | An application is submitted | the membership | Applicants block on 🪪; admit race | a judgment | — | record | apply appmail appname apppic apptext |
@@ -78,8 +78,7 @@ The card lifecycle, as the rows of the matrix a single card passes through:
 | # | What | Rule | Why | Ruling |
 |---|---|---|---|---|
 | Y2 | 📧 closes on send and re-opens on refusal | C2 | a refusal has nowhere else to be read | 2026-08-21 |
-| Y3 | ⏳ survives only where the wait is about you (📧, a gate, 🍾); a constitutional card waiting on the room keeps its glyph and leaves the rail | marks | the tab says the rule, the queue says nothing | 2026-08-21 |
-| Y4 | A gate holds its place in the order without blocking it; ✒️ blocks; 🏛️ does not | C14 | everything below ✒️ is committed with the pen it hands over | 2026-08-22 |
+| Y4 | ✒️ is the one grant that blocks the order | C14 | everything below ✒️ is committed with the pen it hands over | 2026-08-22 |
 | Y5 | The gate clauses wait for 🍾 | C14 | 🍾 is where they are decided | Q529 |
 | Y6 | A gate opening is owed an OK even pre-start | C8 | a thing that happened, not a rule that was set | Q414 |
 | Y7 | The ✒️/🛡️ power tabs are exempt from pen gating | C9 | laying a power down must stay possible | 2026-08-21 |
@@ -94,8 +93,12 @@ The card lifecycle, as the rows of the matrix a single card passes through:
 | Y16 | The birth is its own phase: no heading, no sections, 📧 in the lead, the clause blank before the mail | C14 | nothing is being headed yet | 2026-08-21 |
 | Y17 | The alpha flag is absent from the magic-link interstitial | alpha-flag | it would only flash | — |
 | Y18 | A clause is not a button; the gutter tab is the only way into a card from the document | C1 | clicking a clause puts a caret in it | — |
+| Y19 | The ✒️ commit under an unacknowledged pen stays, dark, with *Your pen is waiting in your tasks* | C9 | a dark commit naming where the pen is tells more than an absent one | Q622 |
+| Y20 | The sealed record and the backlog card have no 🗑️; the 👑 question has Refuse / Accept and no 🗑️; the stranger's and applicant's email cards commit in the body; the applicant's Apply opens with *Begin* | C4 | nothing to put back, or the two answers are the whole act, or the door has no provisional layer | Q613 |
+| Y21 | 🍾's clause heads Proposals while its task is last in the order | C14 | it heads the section because it is what opens it | Q616 |
+| Y22 | ↻ is a character, styled as a drawn mark | §6 | it has no partner whose weight it must equal | — |
 
-Y1 — *a submitted judgment does not close its card* — was retired by Q576 (Ed, 2026-08-22): a judgment closes and files as ⏳ like every other commit, and the ⏳ tab is the way back to revise. **Not yet built**; recorded in QUESTIONS.md.
+Y1 — *a submitted judgment does not close its card* — was retired by Q576 (Ed, 2026-08-22) and built the same day: a judgment closes and files as ⏳ like every other commit, and the ⏳ tab is the way back to revise. Y3 (⏳ survives where the wait is about you) became the wait row of §6's setup alphabet in pass 2 (Q624).
 
 ## 4. Page keys
 
@@ -132,4 +135,252 @@ Relocated here from SPEC.md in spec pass 1 (finding 568), with the spec keeping 
 
 - **How a constitutional motion is put** — a full ten-second hold on 🏛️ in which the members' avatars convene in a circle around the control; the assembling circle is the progress meter; release early and nothing is sent (C4).
 - **The head of the document** — the Constitution block carries the founder, the constituted-at time (*Founded by [name] 👑 at [time] on [date]*) and every setting's current value as a clause, governance stated by deviation under the Proposals preamble.
-- **The 👑 question** — a task of its own kind on the founder's surface: news-pinned, Accept / Reject as its commit row (E12).
+- **The 👑 question** — a task of its own kind on the founder's surface: news-pinned, Refuse / Accept as its commit row (E12) — *refuse* is the Founder's word, *reject* the membership's.
+
+## 6. The marks alphabet and the rail
+
+One glyph per entry, the same alphabet in all three columns (contents rail · gutter · queue). A mark says what the document wants **from you**, never what state the machine is in. Kind names are the code's (`markKindOf` in session.js, `MARK` in cards.js); the checker asserts the kind set, which are drawn, which pin, which are exempt from the cap, and that every kind has a place in both orders. Lifted from CLAUDE.md in spec pass 2 (Q585).
+
+<!-- spec-check: marks -->
+| mark | kind | wants | hue | pins? | teaser? | columns | opens | drawn? | exempt? |
+|---|---|---|---|---|---|---|---|---|---|
+| 💡 | needs | your judgment | open, alpha by urgency | no | the rationale(s) | rail · gutter · queue | the decision card | no | no |
+| 🔥 | urgent | your judgment, most | open at `FLAME_A` 0.44 | yes | hidden while its clause is off screen (Y12) | all three | the decision card, ❄️ on its row | no | yes |
+| ⚔️ | stuck | a draft, not a judgment; seen only once you have judged | open, fixed 0.55 | no | the deadlock sentence | all three | the deadlock card | no | no |
+| 🌶️ | weigh | which of two questions is hotter | weigh | yes | none; the title over four lines | queue (one entry, at the earlier clause) · gutter · rail | the salience diagonal | no | no |
+| ⏳ | deciding | nothing — you have judged; revisable | deciding (grey) | no | one line | all three | the card, revisable | no | no |
+| ↻ | shifted | nothing — that judgment is void; the pair is re-served | closed (grey; Q612) | no | one line | all three | the card, with the wording you judged against | yes (Y22) | no |
+| ✔ green | adopted | an OK — the charter changed here | changed | yes | one line + when | all three | the sealed record, OK | yes | no |
+| ✖ green | retired | an OK — the incumbent held; pins only if you judged (Y13) | closed wash, green glyph | if unread | one line | all three | the sealed record, OK | yes | no |
+| ✔ grey | filedYes | nothing; filed, the charter changed | none | no | no | gutter (the filed pile) · queue | the sealed record | yes | no |
+| ✖ grey | filedNo | nothing; filed, the incumbent held | none | no | no | gutter · queue | the sealed record | yes | no |
+| ⏸ | filedUndecided | nothing; undecided at the close | none | no | no | gutter · queue | the record card | yes | no |
+| ✏️ | propose | nothing — withdraw is the remaining act | yours | yes | draft: the rationale as you type; proposed: one line | all three | your proposal | no | yes |
+
+**The setup alphabet** (`stateOf` / `markOf`, setup.js) — five states, tested in the order yours · news · wait · ask · done. A setup entry's wash takes the same urgency ramp as a charter entry's, from its own `RAIL_U` (Q623).
+
+| state | rail mark | tab mark | wants | hue | in the rail? | pins? | opens |
+|---|---|---|---|---|---|---|---|
+| ask | the subject glyph | the subject glyph | an answer or a set | open, by urgency | yes | yes | the setting's card |
+| wait | ⏳ **only where the wait is about you** (📧, a gate, 🍾); a constitutional card waiting on the room keeps its glyph and leaves the rail — the tab says the rule, the queue says nothing | ⏳, or the glyph | nothing; fill = how far the room has got | closed | only where the wait is about you | no | the watching card |
+| news | drawn ✔ | drawn ✔ | OK | changed | yes | yes | the news card |
+| yours | ✏️ | ✏️ | nothing — withdraw | yours | yes | yes, force-kept | the application |
+| done | drawn grey ✔, and it leaves | **the subject glyph** on grey | nothing | closed | no | — | the settled card (= the composer) |
+
+📈 is not a lifecycle mark: it is the **subject glyph** of the pace card, drawn as a filled incline.
+
+### 6.1 Rail rules
+
+- **M1 Four kinds of entry pin for what they are, and the open entry pins for being open** (C6).
+- **M2 Admission is a ranking by leverage, never a threshold.** Nothing is too unimportant to appear; the rail runs out of room; what does not fit is not shown and not counted.
+- **M3 Three things are exempt from the fit cap: 🔥, the open entry, anything of your own.**
+- **M4 The open entry's claim on its clause's line is absolute**; entries that cannot fit around it are dropped, never displace it.
+- **M5 Pinned entries sit at their clause while it is visible and pile against the band edge in document order.** The flow population steps around pinned blocks rather than hiding under them.
+- **M6 Ties at one clause break by the tab stack's order, then leverage — one comparator for both columns.**
+- **M7 Leverage is judgment leverage, with three floors for what a judgment cannot measure**: an unread decision 0.5 (the middle), a deadlocked race `0.9 + 0.1·bounty` (the top), a diagonal `max(urgency, 0.75)`.
+- **M8 🔥 is the most urgent `needs` entry that is not ⚔️, not 🌶️ and not chilled**; ❄️ toggles chilled.
+- **M9 A teaser is always in the markup and hidden in one case — the flame with its clause off screen — tested on the anchor's position, never the entry's.**
+- **M10 The contents rail shows at most four marks per heading, chosen by `KEEP_ORDER` (retention: what must not be lost), drawn in document order, `+n` for the rest; filed marks are absent from it, never counted.** A heading holding exactly one question opens it.
+- **M11 The stack's front is what most wants you (`STACK_ORDER`: priority), and that is deliberately not `KEEP_ORDER`** — ✏️ is third for retention and seventh for priority.
+- **M12 The strip does not reorder; the pile opens only its front tab, index 0 in both.** Slivers carry hue, not a count, and are inert; the pile is fitted by `fitStacks`, never fixed.
+- **M13 Filed decisions are their own pile at the bottom of the open strip, newest first, off the closed gutter; decided-but-unread is not filed; a pile never closes over the card you are reading.**
+- **M14 A decision announces itself if it changed the document, or if you are part of why it did not.**
+- **M15 Code keys on the mark kind, never the character** — two kinds share ✔, two share ✖.
+- **M16 ⚔️ is tested before ⏳ everywhere**, being the state that replaces it.
+
+Exceptions to these, beyond §3: ⚔️ ranks on bounty near the top though its urgency is nil (M7 · drafting leverage is maximal · Q223); the diagonal's floor (M7 · its urgency buried it · 2026-08-17); ✖ green washes grey with a green glyph (green is for what changed, not for what pinned itself); 🌶️ is one entry at the earlier clause (M5 · one judgment about two questions · Q277); a draft started on the ⚔️ desk has no rail entry until proposed (the desk is on the card you are looking at); setup `ask` wears the subject glyph (a rail of many questions in one state — the informative mark is *which*); a setup 🔥 does not exist (single file, every question mandatory); the applicant's done tasks stay in the rail (its four tasks are the whole surface).
+
+## 7. The wallets, the sockets, the holds
+
+Every power is an object you hold, kept where you can see it, spent by flying it. The four verbs are a ladder of who has to agree; the founding answers are a kind of 🏛️. Lifted from CLAUDE.md in spec pass 2.
+
+<!-- spec-check: wallets -->
+| wallet | verb | who has to agree | socket | quantity | hold ms | grant key | arrives | flight |
+|---|---|---|---|---|---|---|---|---|
+| 🪶 quill | founding | nobody — nothing exists yet | quill | 4 feathers; 3 spent on the birth (title, link, the send), the 4th permanent and is the logo | 1000 | — | by navigating to docs.vote; no task | feather → button; home on release |
+| ✒️ pen | drafting | nobody — you hold the power | penwallet | one, perpetual, never spent; ∞ in the count slot | 1000 | grant-pen | the save · *You founded this document, and the pen came with it* / *The membership returned the pen to you* | pen → button; grant OK → socket; farewell → 🥂 |
+| 🛡️ shield | the pen's other half | nobody — a refusal power | shieldwallet | one, perpetual; ∞ | — | grant-shield | the save · *…the shield came with it* / *…returned the shield* | grant OK → socket; farewell → 🥂 (Q621) |
+| ✏️ propose | proposing | enough of the room, at the threshold | wallet | many; 1 per Propose, refunded whole on withdraw, dripped on real minutes, capped; past four, three glyphs and +n | 3000 | canpropose | 🍾, per member at their OK · *The Founder began the document, granting every member the right to propose changes to it* | arc → button; the storm from the OK; farewell storm → 🥂 |
+| 🏛️ voice | consensus | everybody | voicewallet | one at a time, returned whole | 10000 | grant-voice | with the first blind question you are asked (Q605) · four sentences by arrival | grant OK → socket; farewell → 🥂; the motion hold flies nothing — the assembly is the meter |
+| 🍾 begin | a moment, not a capacity | the founder alone | — | — | 1000 | — | 🍾 is its own task | the cork → the document title |
+| ⚖️ judge | a right, not an object | — | — | — | — | canjudge | 🍾 · *…granting every member the right to judge what is proposed* | nothing flies |
+
+### 7.1 Socket states
+
+| state | class | look | when |
+|---|---|---|---|
+| not held | `notheld` | the tool greyed, a `--slash` strike on the socket, never inside the glyph | your role does not include it: stranger, applicant, clerk, a member before 🍾 or before the OK, the founder before the pen's OK |
+| empty | `empty` | ✏️ only: muted, a countdown to the next | held, none left — **never struck** |
+| count | `pencils` | up to four glyphs; past four, three glyphs and +n | ✏️ held |
+| full | `full` | no countdown | at the cap |
+| ∞ | `pmore` | the text ∞, never an `<i>` | ✒️ 🛡️ held |
+| ghost | `gone` | `visibility: hidden`, the slot kept | a token is in the air, or a 🏛️ is out |
+| gone | `gonewallet` | the socket absent | the closed page, after the farewell |
+| bubble | `walletsay` | the socket's own title, under it | any press on a socket |
+
+### 7.2 The hold ladder
+
+An act that spends something out of a wallet is held, and its gravity is the length of the hold. A hold has to say so before it is held: the paying token leans toward the control on hover (`spend-preview`), and a short press always carries it at least a quarter of the way — a distance floor, not a jump — then home at a minimum rate (`short-press-nudge`).
+
+<!-- spec-check: holds -->
+| control | hold ms | quarter-way ms | what flies | early release |
+|---|---|---|---|---|
+| 🪶 commit (title, link, the send) | 1000 | 250 | the last feather | carried to the floor, hangs, rewinds at ×4 |
+| ✒️ commit | 1000 | 250 | the pen | same |
+| 🍾 Begin | 1000 | 250 | the cork, button → title | same |
+| ✏️ Propose (a draft in the charter) | 3000 | 864 | the last drawn ✏️ | same; cancels on `pointerleave` too |
+| ✏️ Propose (a motion) | 3000 | 864 | the last drawn ✏️ (Q614) | same |
+| 🏛️ Hold to ask everyone | 10000 | — | nothing — the members' avatars convene | disperses; nothing sent |
+| OK | a click | — | the grant's object, OK → socket | — |
+
+The refund flight and every grant's inbound flight take 640 ms.
+
+### 7.3 Rules
+
+- **W1 Every power is an object you hold, kept where you can see it, spent by flying it.** 🛡️ is in the toolbar but is not a verb: a refusal is not an act that spends, so it has no hold and nothing flies out of it.
+- **W2 A member's power is limited in quantity and unlimited in scope; the founder's is unlimited in quantity and limited in scope.** Per-setting permission is a property of the lock (the ✒️ tab), never of the wallet.
+- **W3 The quill line falls at the save**: the pen is issued when the URL goes live.
+- **W4 No power arrives without acknowledgement, and is not held until acknowledged** (C9). `may* = can* && member && acked(k)`, and `may*` is the only thing a control may ask. Grants stage behind the constitutional OKs; each animation fires from that press, per member. 🪶 takes no task; `canjudge` is acknowledged but nothing flies.
+- **W5 An acknowledgement covers this holding**: dropped only on a seen held → not-held transition, keyed by seat; re-asked on every not-held → held.
+- **W6 Every acknowledgement that confers a power persists** — `ACK_KEYS` ⊃ `GRANT_KEYS`, one key per document and seat, live only.
+- **W7 The pen blocks the founding order; no other grant or gate does** (Y4). The ✒️/🛡️ power tabs commit without the pen's acknowledgement (Y7).
+- **W8 A grant says who gave it, in the office's name, third person, read from the record — never inferred.**
+- **W9 Nothing rebuilds under a press**: both polls defer while a hold is in flight; the hold belongs to the open card and re-finds its control. A completed hold clicks for you, and that click must not look like the user's.
+- **W10 Nothing may infer a power from the DOM. The ghost must never become a removal.**
+- **W11 The toolbar is a toolbar and every wallet is a socket** (C16): all shown from the start; `notheld` ≠ `empty`; only `notheld` is struck; `--slash` is the only red on the surface; 24 px sockets; the navbar's height is load-bearing. The ✏️ socket is hidden outright during the storm; the closed page hides the sockets rather than striking them.
+- **W12 A wallet says how many, and the pen's answer is ∞**, in the count slot, as text.
+- **W13 A wallet must not depend on its own animation finishing** — every flight has a safety net.
+- **W14 🍾 has no wallet; the cork flies** (Y11). Every wallet flies out at the close, from the 🥂 OK.
+- **W15 One 🏛️ out per member at a time**, returned whole.
+
+## 8. The founding order and the band
+
+`ORDER` in session-view.html **is** the dependency list: each task is born as the one before it settles. A member's answer tasks ride the same order (Q619). The checker asserts the key column equals `ORDER` and each row's section against `SEC`.
+
+<!-- spec-check: order -->
+| # | key | glyph | kind | section | blocks? | hidden until | asks |
+|---|---|---|---|---|---|---|---|
+| 1 | title | 🪶 | birth · ordinary | lead | yes | — | Title |
+| 2 | slug | 📍 | birth · ordinary | lead | yes | title | Link |
+| 3 | myemail | 📧 | birth · identity | lead (pre-save); your own row after | yes | slug | Your Email |
+| 4 | grant-pen | ✒️ | grant | lead, under the link clause | yes | the save | Your Pen |
+| 5 | grant-shield | 🛡️ | grant | lead, under the link clause | no | the save | Your Shield |
+| 6 | chamber | 🌍 | constitutional · judge-gate | lead, penultimate | yes | the pen's OK | Visibility |
+| 7 | policy | 🤝 | constitutional | members, first — above *Members* (Q617) | yes | chamber | Applications |
+| 8 | hat | 🎩 | decision, not a setting | members — a tab on the list; no sentence | yes | policy | Is the Founder a Member? |
+| 9 | myname | ✋ | personal | members — your own row | yes | hat | Your Name |
+| 10 | mypic | 🖼️ | personal | members — your own row | yes | myname | Your Picture |
+| 11 | roster | 🪪 | constitutional, the register | members — the list is the clause | yes | mypic | Membership |
+| 12 | lapse | 💤 | constitutional · judge-gate | members | yes | roster | Do Memberships Lapse? |
+| 13 | removal | 🚪 | constitutional | members, last | yes | lapse | How Is a Member Removed? |
+| 14 | ending | ⏰ | constitutional, route inside it | deciding, first | yes | removal | When Does It End? |
+| 15 | bar | ✒️ | constitutional · judge-gate; its commit sets 📈 | deciding | yes | ending | How Sure Must the Room Be? |
+| 16 | quorum | 👥 | constitutional · judge-gate | deciding, last | yes | bar | Quorum |
+| 17 | authorship | 👤 | constitutional · judge-gate | privacy | yes | quorum | When Is a Proposer Named? |
+| 18 | signing | ✍️ | constitutional · judge-gate | privacy | yes | authorship | Who May Sign a Proposal? |
+| 19 | judgments | 👁️ | constitutional · judge-gate | privacy | yes | signing | When Are Judgments Revealed? |
+| 20 | canpropose | 💡 | gate (and the ✏️ grant) | rate, after 🍾's clause | no | 🍾 | Proposing |
+| 21 | canjudge | ⚖️ | gate | rate | no | 🍾 | Judging |
+| 22 | grant-voice | 🏛️ | grant | under the first question asking you, else under ⚖️ | no | the first blind question you are asked (Q605) | Your Voice |
+| 23 | rate | ⏱️ | ordinary, delegable | rate | yes | judgments | Proposal Rate |
+| 24 | machines | 🤖 | ordinary, delegable | rate, last | yes | rate | AI Proposals |
+| 25 | text | 📄 | ordinary | doc — the charter heading under the hairline | yes | machines | Text |
+| 26 | begin | 🍾 | decision, not a setting | rate, first (Y21) | no | never for the founder; members never see it pre-start | Begin |
+
+Outside `ORDER`: 📈 (a tab in ✒️'s stack; no clause, no rail entry — Q512); the `ans-*` answer tasks (a task paragraph under the watching clause); ✉️ ❌ (doors in the 🪪 pile from the moment judging opens); the ✒️/🛡️ power tabs under every held-able setting (*Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* — Q615); 🥂.
+
+**The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link with the pen and shield clauses beneath it, 📧 pre-save, 🌍, the Founded line — then **Membership** (`members`: 🤝 · *Members* · the list with 🪪 ✉️ ❌ 🎩 and your row wearing ✋ 🖼️ 📧 · 💤 · 🚪), **Decisions** (`deciding`: ⏰ · 🥂 when closed · ✒️ with 📈 in its stack · 👥), **Anonymity** (`privacy`: 👤 ✍️ 👁️), **Proposals** (`rate`: the preamble · 🍾 · 💡 · ⚖️ with 🏛️ · ⏱️ · 🤖), the hairline, the charter under its own name with 📄 beside it. **The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📄. Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
+
+### 8.1 Rules
+
+- **F1 The founding runs in single file, in the document's own order** (C14).
+- **F2 The birth order is 🪶 → 📍 → 📧, and the magic link is the instantiation**: nothing is saved anywhere until it is followed; the rail at the save holds the pen alone.
+- **F3 A non-gate card blocks until settled; a gate or grant holds its place without blocking and stands beside the current question; the pen is the one grant that blocks.**
+- **F4 The gate clauses wait for 🍾**, where they are decided (Y5); 🍾 is the only step that delivers more than one clause.
+- **F5 🍾 is the founder's, invisible to members before the start; its card states the whole batch and the readiness readout, which informs and never blocks except while a judge-gate question is still collecting.**
+- **F6 Nothing is pre-answered; typing into a rung's own field is choosing that rung; delegation is an option on the card and settles the clause the same way.** The old defaults survive only in ⏩'s `SEED`.
+- **F7 A delegated question waits for a member who has arrived, unless nothing else is outstanding; it never resolves on one voice and never while an invitation is out; only committed answers count; the watcher waits for your own answer.**
+- **F8 Nothing is owed an OK until the document begins; a gate opening is the exception** (Y6).
+- **F9 A card with a dependency does not appear until its dependency is settled — never greyed.**
+- **F10 Nothing opens itself, arrival included** (C1).
+- **F11 The address is the machine's until you touch it**: a suggested address moves itself to the nearest free one and says so; a typed one never moves; the chain is capped at three; the check is asked whenever there is an address; a verdict that cannot be got counts as one; the page answers for its own reservation.
+- **F12 The email is verified before anything is saved; before the send the 📧 clause is blank; the birth has no heading and no sections; 📧 stands in the lead for the whole birth** (Y16).
+- **F13 The constitution starts writing itself at the birth**; at the birth the founder holds everything by construction; the assent half waits for a membership.
+- **F14 What is born arrives**: a rail entry grows from zero (240 ms), a clause fades (840 ms), a batch cascades 55 ms apart capped at six, each column counting its own; reduced motion fades everything; a stagehand act mutes the pass.
+- **F15 A clause states *The Founder is deciding [what]* until decided, then the rule and its governance deviation; a settled card's head is the rule; open questions, 🪪, 📄, personal cards and answers keep their title.**
+- **F16 The Founded line carries the founding moment and is never known before the start; 🎩 is settled once the document begins; the register asks for no minimum.**
+
+Exceptions beyond §3: 📈 arrives answered (F6 · the ramp is part of what the threshold says · Q512); the founder alone is served the delegated questions once nothing else is outstanding (F7 · an empty rail while the room fills is worse · Q408/Q413); 📧 post-save speaks in the second person (C10 · your own row · Y8); 🎩 ✋ 🖼️ 🪪 write no sentence (F13 · the answer is the list or a chip); 🌍 is asked sixth, ahead of Membership (F1 · it is the penultimate clause of the opening run); the hat's radios stay visible but disabled post-start (C9 · a locked decision still has to be readable).
+
+## 9. The card kinds, the commit row, the composer
+
+Two implementations of one shell (`suggCardHtml` in session.js for the charter; `cardHtml` in setup.js for the band), one shape: `clause-head` → field → commit row. Every card the surface draws:
+
+| kind | opened from | head | field | radios | left | right | closes | files as |
+|---|---|---|---|---|---|---|---|---|
+| quick / insert | gutter tab · rail · served 🔥 | the clause, **with the keep lane** | one proposal block | Prefer this / Preferred; ✏️ propose edit | Indifferent | ❄️ (🔥 or chilled) · ✓ | ✓ → files ⏳ (Q576); ❄️; the tab | ⏳ → ✔/✖ green → grey |
+| race | as quick | the clause, **no lane** (nothing on a race votes to keep) | two proposal blocks | Prefer this ×2; ✏️ | Indifferent | ❄️? · ✓ | as quick | as quick |
+| patch | as quick, a card at every site | place i of n ↑↓, then the clause with the keep lane | one block per site | Prefer this | Indifferent | ❄️? · ✓ | one judgment commits all sites | as quick |
+| deadlock ⚔️ | gutter · rail, only once you have judged | the clause, no lane | everything in flight, oldest first, floor forced off; then the desk | none (lane bar minus radio) | 🗑️ (always live — Q613) | ✏️ hold | propose · discard · the tab | ⚔️ until a bridge lands |
+| diagonal 🌶️ | served | **not a clause**: the question being put | two questions, the clause quoted under each; no speaker | Prefer this ×2 | Indifferent | ✓ | ✓ | flat, no progress |
+| sealed record | gutter · filed pile · rail ✔/✖ · backlog tab | the top of the ranking **is** the head | the field ranked, % right-aligned; the incumbent in the list, *Previous text* / *the text that stood* | none | nothing (Y20) | OK while unread | OK; the tab | grey ✔ / ✖ / ⏸ |
+| editing (a draft) | the first keystroke; ✏️ on a lane; the ⚔️ desk | the clause run | one block: B · *I* · `[]`, the lane marking additions green, the rationale in the speaker's slot | none | 🗑️ discard | ✏️ **hold** (blue) | propose · discard · the tab | ✏️ full card |
+| mine (proposed) | gutter ✏️ · pinned line | the clause | what you proposed + rationale | none | 🗑️ withdraw | ✏️ Submitted (pressed) | withdraw; the tab | ✏️ one line, pinned |
+| setting (founder, pen) | band tab · rail ask | the rule once settled; the title while open | why · the setting's own radios · *Delegate to the membership* (pre-start) · the watch half · *Why are you changing this?* (a change only) | per setting | 🗑️ | 🪶 / ✒️ / ✓ by era and route; dark until answered | commit · 🗑️ · the tab | grey tab with its glyph |
+| blind answer (member) | rail ask · task paragraph | the title | the consent control: slider, ladder or fields; *Nobody sees your answer…* | the ladder's rungs | 🗑️ | ✓ Answer | ✓ → the entry leaves; revisable until resolved | the tab keeps its glyph |
+| watching | band tab | the rule, or the title | the lockline · *What the room is saying*: pips and the count, or the distribution strip and what the document took | none | 🗑️ | OK when news | OK; the tab | grey |
+| constitutional motion (consent) | the setting's card, live again · rail ask | the title | *Re-opened…* · the consent picks · the count | Keep what stands / I accept the change / Abstain | 🗑️, or 🗑️ Withdraw for the mover | ✓ | ✓ → the entry leaves | wait → carried → news |
+| ordinary motion (dev seam; live, a race card) | the setting's card | what stands with the keep lane | *A proposed change…* · *As proposed* · the count | Prefer this | 🗑️ (Q613) / 🗑️ Withdraw | Indifferent · ✓ | ✓ | ⏳-like |
+| the composer | the settled setting's tab | what stands | `PROPOSE[k]`: the setting's own control, what stands omitted (by value — Q620) · the rationale lane · the 👑 note where the shield is held · the history | Prefer this, or a value inside the sentence | 🗑️ | ✏️ Propose (hold — Q614) / 🏛️ Hold to ask everyone, by the value's route | commit · 🗑️ | ✏️ pinned |
+| power cards ✒️ 🛡️ | the power tabs | the power's rule as it stands | why · two proposal blocks, the rule at document size with its consequence · *Choose this / Chosen* | Choose this / Chosen | 🗑️ | ✒️ (founder; not pen-gated, Y7) | ✒️ | the tab stays |
+| 👑 question | the setting's card, news-pinned | the title | *Passed — awaiting the 👑…* | none | **Refuse** (Y20) | **Accept** | either press | record |
+| news / owed OK | news entry ✔ | the rule | the read body · the watch half · the change line (was / now, who, why; *Last amended* once acknowledged) | none | 🗑️ | OK | OK | grey; the clause keeps the line |
+| gates 💡 ⚖️ | rail, hidden until 🍾 | the gate's sentence | who gave it · why · the blockers · *OK puts n ✏️s in your wallet* (💡) | none | 🗑️ | OK | OK (persisted) | grey ✔; gone from the rail |
+| grants 🏛️ ✒️ 🛡️ | rail, staged | the sentence | as a gate | none | 🗑️ | OK | OK → the flight | grey |
+| 🍾 Begin | rail (founder) | the sentence | the batch · the readiness readout · the hold line | none | 🗑️ | 🍾 Begin (hold) | the hold | grey, restating the batch |
+| 🥂 The Close | rail, pinned, per member | the sentence | final as of · the batch · your closing comment | none | 🗑️ | OK = sign | OK → the farewell | — |
+| 🪪 Membership | band tab | **the list is the clause** | why · invite rows · *Several at once* · the Applicants block (Admit / Keep the membership as it is / Indifferent + ✓) | — | 🗑️ | ✒️ | ✒️; the tab | grey |
+| ✉️ Invite · ❌ Remove | the 🪪 pile, post-start | what stands | the address rows / the members with ✕ *Propose that they leave* | — | 🗑️ | by route: ✒️ · 🏛️ hold · ✏️ Propose | commit | — |
+| 🤝 Applications | band tab | the rule | why · the four rungs | Invitation only / Applications must be proposed by members / Anyone may apply / Open | 🗑️ | ✒️ | ✒️ | grey |
+| identity ✋ 🖼️ 📧 | your own row; the birth run for 📧 | the title | the name field / the picker / the address | — | 🗑️ (puts back, never clears) | ✓ Save; 📧: 🪶 at the birth, 📨 while unverified, ✓ once verified | Save · send; 📧 re-opens on refusal | the row |
+| 🎩 | the members paragraph | the rule | Member — drafting too / Clerk — not drafting; locked at 🍾 | the two | 🗑️ | ✒️ (when dirty, pre-start) | ✒️ | locked |
+| the applicant's five | the applicant's rail | the title | apply · email (Send the link in the body) · name · picture · words | — | Begin (Y20) → 🗑️ + Submit | (as left) / ✓ | Submit · ✓ | ✏️ yours |
+| the stranger's two | the door's rail | the title | why · the address · Send the link in the body (Y20) | — | 🗑️ only | (in the body) | send | — |
+| backlog (closed page) | the ⏸ tab | the best wording | as the sealed record, *Undecided at the close* | none | nothing (Y20) | OK if unread | OK | ⏸ grey |
+
+### 9.1 The commit-row grammar
+
+| control | where | hold | ground | rule |
+|---|---|---|---|---|
+| 🗑️ | every card (Y20 lists the four without one) | — | outline | one bin, always live, puts back un-actioned input only, closes; *Withdraw* beside it only for a mover |
+| 🪶 | every commit before the save | 1 s | accent-subtle | the ground belongs to the glyph, never to the card's kind |
+| ✒️ | a set of your own post-save, the power tabs included | 1 s | accent-subtle | one glyph per route |
+| ✓ (drawn) | an answer, a judgment, anything about yourself (*Save*) | — | **the one solid green on a card** | ✓ where the act binds nobody but you |
+| ✏️ (hold) | a draft, or an ordinary motion | the flight | blue — *blue, not green* | the price is said in words exactly once, here |
+| 🏛️ Hold to ask everyone | a constitutional motion | 10 s | accent-subtle | one 🏛️ out per member |
+| ✏️ Submitted | a proposed draft | — | pressed | the act become the fact; the row does not move |
+| OK | anything that asks only to have been seen | — | solid accent | a word, not a glyph |
+| Indifferent | the third radio on a judgment | — | radio | labelled, never 🤷; a judgment about the pair, out of the lanes |
+| ❄️ | the 🔥 card, or one already chilled | — | glyph button | a toggle on the flame; pressing closes, un-pressing does not |
+| Refuse / Accept | the 👑 question | — | outline / accent | the Founder's words |
+| 🍾 Begin | the start | 1 s | accent-subtle | its own glyph on its own commit |
+| 📨 | 📧 while sent and unverified | — | accent-subtle | a resend spends nothing |
+
+### 9.2 Composer rules
+
+- **K1 The settled card is the composer**: what stands at the head, the alternatives as the setting's own controls, a rationale lane, 🗑️ and the route's commit. Picking an option starts the motion.
+- **K2 The founder's direct hand is the pen**; where it is given up they compose like a member.
+- **K3 A motion composes with the setting's own control, never a free-text lane**; `PROPOSE` covers every composable setting; the rationale is always a lane.
+- **K4 What stands is never offered back** (filtered by value); on a power card it stays, marked *Chosen*, because a two-state toggle needs its other half.
+- **K5 Text composes nowhere** — the text is changed by proposing in the document itself.
+- **K6 The route is read off the value at compose time**, and the commit swaps as you type. **K7 One route, one glyph.**
+- **K8 The mover stands at accept from the open**; 🗑️ Withdraw is their way out and returns the 🏛️ / ✏️ whole.
+- **K9 A constitutional motion re-opens the founding question — no new object.** **K10 An ordinary motion is the race machinery whole.** **K11 Reserved is assent, not silence.**
+- **K12 A change carries a reason and says who made it** (C11).
+- **K13 Always-on-typing intercepts every input**: every clause and heading carries a caret; the keystroke opens the editing card with that character applied; the gutter tab is the only way into a decision card from the document (Y18).
+- **K14 A selection may span blocks; K15 one site is one candidate and a run is one place; K16 one draft at a time.**
+- **K17 The edit is spent at Propose, nowhere earlier; K18 the proposal's lifecycle is one row that does not move.**
+- **K19 A proposal states the text as it would stand, additions marked, nothing struck, with a marking floor of half the new text** (forced off on ⚔️); **K20 punctuation is its own token; K21 *(all text removed)* is a pseudo-element.**
+- **K22 A candidate's text is markdown, inline only** — B · *I* · one `[]` toggle; **K23 the lane preserves spaces.**
+- **K24 The seed of a draft is the lane you pressed ✏️ on; K25 a lane carries what is about that lane and nothing else; K26 choosing and committing are two acts.**
+- **K27 One label per rung, everywhere** — the founder's radio, the member's ladder and the composer's lane say the same words (Q620).
