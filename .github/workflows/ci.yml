@@ -135,3 +135,7 @@ jobs:
       - if: steps.browser.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - run: npm run probe -- --strict
+      # the golden founding walk (spec pass 2, Q586 c; re-asked as Q625): the
+      # order the founder meets, the rail at each step and the first words of
+      # every clause, against design/tools/founding-walk.golden.json
+      - run: npm run founding-golden

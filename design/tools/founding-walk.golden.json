@@ -1,0 +1,977 @@
+{
+ "errors": [],
+ "steps": [
+  {
+   "step": "arrive",
+   "rail": [
+    "title"
+   ],
+   "clauses": []
+  },
+  {
+   "step": "open title",
+   "rail": [
+    "title"
+   ],
+   "clauses": []
+  },
+  {
+   "step": "commit title",
+   "rail": [
+    "slug"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The Founder is deciding the document’s address."
+   ]
+  },
+  {
+   "step": "open slug",
+   "rail": [
+    "slug"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde"
+   ]
+  },
+  {
+   "step": "commit slug",
+   "rail": [
+    "myemail"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The"
+   ]
+  },
+  {
+   "step": "open myemail",
+   "rail": [
+    "myemail"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The"
+   ]
+  },
+  {
+   "step": "commit myemail (sends)",
+   "rail": [
+    "myemail"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "myemail: The Founder is checking their email for a link."
+   ]
+  },
+  {
+   "step": "follow the magic link",
+   "rail": [
+    "grant-pen"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings."
+   ]
+  },
+  {
+   "step": "open grant-pen",
+   "rail": [
+    "grant-pen"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The"
+   ]
+  },
+  {
+   "step": "commit grant-pen",
+   "rail": [
+    "grant-shield",
+    "chamber"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Until the Founder decides, only members can see the document"
+   ]
+  },
+  {
+   "step": "open grant-shield",
+   "rail": [
+    "grant-shield",
+    "chamber"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "chamber: Until the Founder decides, only members can see the document"
+   ]
+  },
+  {
+   "step": "commit grant-shield",
+   "rail": [
+    "chamber"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Until the Founder decides, only members can see the document"
+   ]
+  },
+  {
+   "step": "open chamber",
+   "rail": [
+    "chamber"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings."
+   ]
+  },
+  {
+   "step": "commit chamber",
+   "rail": [
+    "policy"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: The Founder is deciding how people become members."
+   ]
+  },
+  {
+   "step": "open policy",
+   "rail": [
+    "policy"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi"
+   ]
+  },
+  {
+   "step": "commit policy",
+   "rail": [
+    "hat"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and"
+   ]
+  },
+  {
+   "step": "open hat",
+   "rail": [
+    "hat"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and"
+   ]
+  },
+  {
+   "step": "commit hat",
+   "rail": [
+    "myname"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and"
+   ]
+  },
+  {
+   "step": "open myname",
+   "rail": [
+    "myname"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and"
+   ]
+  },
+  {
+   "step": "commit myname",
+   "rail": [
+    "mypic"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and"
+   ]
+  },
+  {
+   "step": "open mypic",
+   "rail": [
+    "mypic"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and"
+   ]
+  },
+  {
+   "step": "commit mypic",
+   "rail": [
+    "roster"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and"
+   ]
+  },
+  {
+   "step": "open roster",
+   "rail": [
+    "roster"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and"
+   ]
+  },
+  {
+   "step": "commit roster",
+   "rail": [
+    "lapse"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: The Founder is deciding whether an inactive membership lapse"
+   ]
+  },
+  {
+   "step": "open lapse",
+   "rail": [
+    "lapse"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and"
+   ]
+  },
+  {
+   "step": "commit lapse",
+   "rail": [
+    "removal"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: The Founder is deciding how a member is removed."
+   ]
+  },
+  {
+   "step": "open removal",
+   "rail": [
+    "removal"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i"
+   ]
+  },
+  {
+   "step": "commit removal",
+   "rail": [
+    "ending"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The Founder is deciding when the drafting process will end."
+   ]
+  },
+  {
+   "step": "open ending",
+   "rail": [
+    "ending"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the"
+   ]
+  },
+  {
+   "step": "commit ending",
+   "rail": [
+    "bar"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The Founder is deciding how sure the room must be at the clo"
+   ]
+  },
+  {
+   "step": "open bar",
+   "rail": [
+    "bar"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found"
+   ]
+  },
+  {
+   "step": "commit bar",
+   "rail": [
+    "quorum"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: The Founder is deciding how many members must weigh in befor"
+   ]
+  },
+  {
+   "step": "open quorum",
+   "rail": [
+    "quorum"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to "
+   ]
+  },
+  {
+   "step": "commit quorum",
+   "rail": [
+    "authorship"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: The Founder is deciding when a proposer is named."
+   ]
+  },
+  {
+   "step": "open authorship",
+   "rail": [
+    "authorship"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can "
+   ]
+  },
+  {
+   "step": "commit authorship",
+   "rail": [
+    "signing"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: The Founder is deciding who may sign a proposal."
+   ]
+  },
+  {
+   "step": "open signing",
+   "rail": [
+    "signing"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d"
+   ]
+  },
+  {
+   "step": "commit signing",
+   "rail": [
+    "judgments"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: The Founder is deciding whether judgments are revealed with "
+   ]
+  },
+  {
+   "step": "open judgments",
+   "rail": [
+    "judgments"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi"
+   ]
+  },
+  {
+   "step": "commit judgments",
+   "rail": [
+    "rate"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "rate: The Founder is deciding how often members may propose."
+   ]
+  },
+  {
+   "step": "open rate",
+   "rail": [
+    "rate"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when"
+   ]
+  },
+  {
+   "step": "commit rate",
+   "rail": [
+    "machines"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
+    "machines: The Founder is deciding whether an AI makes proposals."
+   ]
+  },
+  {
+   "step": "open machines",
+   "rail": [
+    "machines"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get"
+   ]
+  },
+  {
+   "step": "commit machines",
+   "rail": [
+    "text"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
+    "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
+   ]
+  },
+  {
+   "step": "open text",
+   "rail": [
+    "text"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
+    "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
+   ]
+  },
+  {
+   "step": "commit text",
+   "rail": [
+    "begin"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "begin: The document has not begun.",
+    "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
+    "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
+   ]
+  },
+  {
+   "step": "open begin",
+   "rail": [
+    "begin"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 16 settings.",
+    "grant-shield: The Founder holds the shield on 16 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
+    "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
+   ]
+  },
+  {
+   "step": "commit begin",
+   "rail": [
+    "canpropose",
+    "canjudge",
+    "grant-voice"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 15 settings.",
+    "grant-shield: The Founder holds the shield on 15 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "?: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "begin: The document began at HH:MM on D Month YYYY.",
+    "canpropose: Members may propose as soon as they arrive.",
+    "canjudge: Members may judge proposals.",
+    "grant-voice: Each member holds one voice in every constitutional question",
+    "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
+    "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
+   ]
+  },
+  {
+   "step": "open canpropose",
+   "rail": [
+    "canpropose",
+    "canjudge",
+    "grant-voice"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 15 settings.",
+    "grant-shield: The Founder holds the shield on 15 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "?: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "begin: The document began at HH:MM on D Month YYYY.",
+    "canjudge: Members may judge proposals.",
+    "grant-voice: Each member holds one voice in every constitutional question",
+    "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
+    "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
+   ]
+  },
+  {
+   "step": "commit canpropose",
+   "rail": [
+    "canjudge",
+    "grant-voice"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 15 settings.",
+    "grant-shield: The Founder holds the shield on 15 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "?: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "begin: The document began at HH:MM on D Month YYYY.",
+    "canpropose: Members may propose as soon as they arrive.",
+    "canjudge: Members may judge proposals.",
+    "grant-voice: Each member holds one voice in every constitutional question",
+    "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
+    "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
+   ]
+  },
+  {
+   "step": "open canjudge",
+   "rail": [
+    "canjudge",
+    "grant-voice"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 15 settings.",
+    "grant-shield: The Founder holds the shield on 15 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "?: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "begin: The document began at HH:MM on D Month YYYY.",
+    "canpropose: Members may propose as soon as they arrive.",
+    "grant-voice: Each member holds one voice in every constitutional question",
+    "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
+    "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
+   ]
+  },
+  {
+   "step": "commit canjudge",
+   "rail": [
+    "grant-voice"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 15 settings.",
+    "grant-shield: The Founder holds the shield on 15 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "?: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "begin: The document began at HH:MM on D Month YYYY.",
+    "canpropose: Members may propose as soon as they arrive.",
+    "canjudge: Members may judge proposals.",
+    "grant-voice: Each member holds one voice in every constitutional question",
+    "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
+    "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
+   ]
+  },
+  {
+   "step": "open grant-voice",
+   "rail": [
+    "grant-voice"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 15 settings.",
+    "grant-shield: The Founder holds the shield on 15 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "?: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "begin: The document began at HH:MM on D Month YYYY.",
+    "canpropose: Members may propose as soon as they arrive.",
+    "canjudge: Members may judge proposals.",
+    "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
+    "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
+   ]
+  },
+  {
+   "step": "commit grant-voice",
+   "rail": [],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "grant-pen: The Founder holds the pen on 15 settings.",
+    "grant-shield: The Founder holds the shield on 15 settings.",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "?: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: Nobody who proposes a change is ever named, even after the d",
+    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
+    "judgments: What somebody preferred is never made public. The Founder ma",
+    "?: Members may propose changes to rules. Proposals ✏️ pass when",
+    "begin: The document began at HH:MM on D Month YYYY.",
+    "canpropose: Members may propose as soon as they arrive.",
+    "canjudge: Members may judge proposals.",
+    "grant-voice: Each member holds one voice in every constitutional question",
+    "rate: Members start with 5 ✏️ each, up to a maximum of 5. They get",
+    "machines: An AI makes proposals here, with 5 ✏️s of its own. It never "
+   ]
+  }
+ ]
+}
