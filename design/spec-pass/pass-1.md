@@ -1,5 +1,7 @@
 # Spec normalisation — pass 1 (extraction)
 
+> **Folded 2026-08-22.** Ed answered 540–582; SPEC.md v0.65, SURFACE.md and design/SPEC-REASONING.md carry the result and `npm run spec-check` reads them. This file stays as the extraction of record.
+
 > Working document, 2026-08-22. This is the **extraction**, not the rewrite: SPEC.md, SURFACE.md and
 > SPEC-REASONING.md are rebuilt only after Ed answers the items below. `npm run spec-check` parses the
 > tables in this file (marked `<!-- spec-check: … -->`) until they move into SPEC.md / SURFACE.md.
