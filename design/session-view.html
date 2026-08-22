@@ -1080,7 +1080,7 @@
     // which is a thing the journey walk asserts.
     { k: 'grant-shield', g: '🛡️', t: 'Your Shield', own: 'you', isGate: true, isGrant: true, dep: ['slug'],
       open: () => !!cs && amFounder() && holdsShieldAnywhere(),
-      why: 'The shield refuses. Where you hold it, a change the membership passes waits for you to accept it — you cannot write with it, only decline. One shield, many locks, and a shield is not spent. It was issued with the pen, when the address went live.',
+      why: 'The shield refuses. Where you hold it, a change the membership passes waits for you to accept it — you cannot write with it, only refuse. One shield, many locks, and a shield is not spent. It was issued with the pen, when the address went live.',
       waiting: 'Waiting on the save.',
       done: 'You hold the shield.',
       blockers: () => [] },
@@ -2988,6 +2988,16 @@
     if (c.k === 'grant-pen') return holdsPenAnywhere()
       ? 'The Founder holds the pen on ' + penLocks() + (penLocks() === 1 ? ' setting.' : ' settings.')
       : 'The Founder holds no pen.';
+    // The shield's clause, mirroring the pen's. Without it the card fell
+    // through to the generic *The Founder is deciding this.* before the OK —
+    // wrong twice, since nothing is being decided and the sentence says
+    // nothing — and to `DECIDED`'s *You hold the shield* after it, which put
+    // the second person in a clause. A constitutional sentence is third
+    // person: the document reads identically to every reader, and what varies
+    // between them is which tasks they hold, never the text.
+    if (c.k === 'grant-shield') return holdsShieldAnywhere()
+      ? 'The Founder holds the shield on ' + shieldLocks() + (shieldLocks() === 1 ? ' setting.' : ' settings.')
+      : 'The Founder holds no shield.';
     if (c.ansFor) return answered(c)
       ? 'The Founder has answered as a member.'
       : 'The Founder has not yet answered as a member.';
@@ -6047,7 +6057,7 @@
     }
     if (k === 'wallet') {
       return { g: '✏️', t: (charterOn() && mayPropose())
-        ? 'You can propose a change to the text. Each proposal spends one, and you get it back if the change is adopted. More arrive as the document runs.'
+        ? 'You can propose changes to the text. A ✏️ comes back if the membership passes yours, and more arrive as the document runs.'
         : 'Members can propose changes to the text, once the document has begun.' };
     }
     if (k === 'penwallet') {
@@ -6233,17 +6243,31 @@
   } catch (e) { return null; } };
   // where the founder's pen came from: 'motion' if any setting they hold it on
   // was handed back by the room, otherwise the birth
-  const penFrom = () => { try {
+  // where a founder's power came from: 'motion' if any setting they hold it on
+  // was handed back by the room, otherwise the birth. One function for both
+  // halves of the pair, since the only difference is which power is read —
+  // `powerFrom` carries the two separately and always has.
+  const powerFrom = (half) => { try {
     return PW_KEYS.some((k) => { const st = pwState(k);
-      return st && st.powers && st.powers.unilateral &&
-        st.powerFrom && st.powerFrom.unilateral === 'motion'; }) ? 'motion' : 'founding';
+      return st && st.powers && st.powers[half] &&
+        st.powerFrom && st.powerFrom[half] === 'motion'; }) ? 'motion' : 'founding';
   } catch (e) { return 'founding'; } };
+  const penFrom = () => powerFrom('unilateral');
   const grantedBy = (c) => {
     if (!c.open()) return '';                    // nothing has been conferred yet
     if (c.k === 'grant-pen') {
       return penFrom() === 'motion'
         ? 'The membership returned the pen to you.'
         : 'You founded this document, and the pen came with it.';
+    }
+    // the shield's own sentence. Without it the card opened straight into the
+    // explanation with no account of *whose act* conferred the power, which is
+    // most of what tells you whether it can be taken away again — the one
+    // thing every other grant on this surface says first.
+    if (c.k === 'grant-shield') {
+      return powerFrom('assent') === 'motion'
+        ? 'The membership returned the shield to you.'
+        : 'You founded this document, and the shield came with it.';
     }
     if (c.k === 'grant-voice') {
       const a = myArrival();
