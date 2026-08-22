@@ -16,7 +16,8 @@
     "build": "node scripts/build-server.mjs",
     "start": "node dist/server.mjs",
     "verify": "node scripts/verify-deploy.mjs",
-    "probe": "node scripts/probe.mjs"
+    "probe": "node scripts/probe.mjs",
+    "journey": "node scripts/journey-walk.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
