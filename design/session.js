@@ -3897,9 +3897,25 @@
   // 2026-08-17).
   //   `walletShow` — draw this count instead of what is held (the refund's hold)
   //   `walletGhost` — draw the count, but leave the last slot empty (the spend's)
-  let walletShow = null, walletGhost = false;
+  //   `walletHeld` — whether this reader holds the power at all (Q532). Not the
+  //     same question as how many they have: a member with an empty wallet still
+  //     holds it and the drip is running, which is `.empty` and a countdown. This
+  //     one is *your role does not include proposing* — a stranger, an applicant,
+  //     a clerk, a member before the document begins or before they have accepted
+  //     the grant — and it draws the tool struck through in its socket instead of
+  //     hiding the socket, which is what the toolbar is for.
+  let walletShow = null, walletGhost = false, walletHeld = true;
+  const setWalletHeld = (v) => { if (walletHeld !== !!v) { walletHeld = !!v; renderWallet(); } };
   function renderWallet(showAs) {
     if (closedMode) { walletEl.className = 'wallet'; walletEl.innerHTML = ''; walletEl.title = ''; return; }
+    if (!walletHeld) {
+      walletEl.className = 'wallet notheld';
+      const nh = '<span class="pencils"><i>✏️</i></span>';
+      if (walletEl.innerHTML !== nh) walletEl.innerHTML = nh;
+      walletEl.title = 'Proposing a change to the document. It costs one ✏️, and a successful one comes back.';
+      applyLean();
+      return;
+    }
     const held = showAs != null ? showAs : (walletShow != null ? walletShow : editsHeld);
     const full = held >= EDIT_RULES.cap;
     walletEl.className = 'wallet' + (full ? ' full' : '') + (held === 0 ? ' empty' : '');
@@ -4413,7 +4429,7 @@
     // `nudgeHome` brings a released flight back (never travelling less than a
     // quarter), `startLean`/`stopLean` are the spend-preview, and `applyLean`
     // is what any wallet render must call at its tail to survive its own rebuild
-    nudgeHome, startLean, stopLean, applyLean, addSpendProbe, resumeLean,
+    nudgeHome, startLean, stopLean, applyLean, addSpendProbe, resumeLean, setWalletHeld,
     refreshRail, renderToc, layoutQueue, drawWires, washAttrs,
     get DOC() { return DOC; },
     get SUGGS() { return SUGGS; },

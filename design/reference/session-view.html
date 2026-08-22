@@ -166,6 +166,7 @@
            reverse. A clerk holds none of them (Q458). -->
       <span class="wallet" id="wallet"></span>
       <span class="wallet powerwallet" id="penwallet"></span>
+      <span class="wallet powerwallet" id="shieldwallet"></span>
       <span class="wallet powerwallet" id="voicewallet"></span>
       <button class="me" id="mebtn" title="You, and the founder of this document."></button>
     </div>
@@ -737,6 +738,13 @@
   // the pen *somewhere* is what puts it in your topbar
   const holdsPenAnywhere = () => !!cs && PW_KEYS.some((k) => pwPair(k).u);
   const penLocks = () => (cs ? PW_KEYS.filter((k) => pwPair(k).u).length : 0);
+  // 🛡️ is the pen's other half and answers the same way (Q532): one shield,
+  // many locks. `pwPair` is the only place a setting becomes a `{u, a}` pair,
+  // works for every `PW_KEYS` entry including the Text, and reads the same in
+  // live mode off the blind projection — so the shield needs nothing new in the
+  // module, only the other half of a fold the pen was already doing.
+  const holdsShieldAnywhere = () => !!cs && PW_KEYS.some((k) => pwPair(k).a);
+  const shieldLocks = () => (cs ? PW_KEYS.filter((k) => pwPair(k).a).length : 0);
   // **An acknowledgment covers this holding, not the fact for ever** (Q526,
   // Ed 2026-08-21: (b) — re-ask whenever a power goes from not-held to held,
   // however it got there). Without this a founder who lays down every pen and
@@ -2119,6 +2127,14 @@
   const mayJudge = () => canJudge() && viewerIsMember() && acked('canjudge');
   const mayVoice = () => !!cs && viewerIsMember() && !!viewerRow().in && acked('grant-voice');
   const mayPen = () => !!cs && amFounder() && holdsPenAnywhere() && acked('grant-pen');
+  // **The shield rides the pen's acknowledgment** (Q532), because both powers
+  // arrive in the founder's hands by one act at one moment — every setting is
+  // born convenor-held with both intact, and the save is when that becomes
+  // real. Giving 🛡️ a grant task of its own would be the purer reading of *no
+  // power arrives without acknowledgment*, and is the residual on Q532: it
+  // would want its own card, its own flight and its own place in the founding
+  // order, which is more than "let's put it in and see how it looks" asked for.
+  const mayShield = () => !!cs && amFounder() && holdsShieldAnywhere() && acked('grant-pen');
   // A commit that spends out of a wallet needs that wallet to have arrived.
   // The pen is the one this bites for: `holdWallet` reads ✒️ as a **hold**
   // only while the glyph is in the topbar, so before the grant was
@@ -3271,11 +3287,21 @@
     prose.contentEditable = String(!(cs && cs.textConfirmed) &&
       S.viewer !== 'applicant' && amFounder());
     document.getElementById('doc').classList.toggle('begun', charterOn());
-    // the wallet is drafting furniture: shown once proposing is open; the
-    // pulse beats on the fixture's timer, so only the fixture shows it (B2b
-    // drives both from the view)
-    document.getElementById('wallet').style.display = (charterOn() && mayPropose() &&
-      !stormHolding) ? '' : 'none';
+    // **The ✏️ socket stands whether or not you may propose** (Q532). It used
+    // to be `display: none` for everybody who could not — a stranger, an
+    // applicant, a clerk, a member before 🍾, a member who has not accepted the
+    // grant — which is precisely the set of readers the toolbar exists to tell
+    // something. Now the socket is there with the tool struck through, and the
+    // grant fills it.
+    //
+    // `stormHolding` is the one case that still hides it outright, and must:
+    // the pencil storm hides `#wallet` so its pencils can fly into an empty
+    // one, and a struck-through ✏️ sitting in the target would be a lie for the
+    // length of the flight. Note the wallet is **not** struck for a member who
+    // simply has none left — that is `.empty` plus the countdown, a power you
+    // hold and are waiting on, which is a different sentence entirely.
+    document.getElementById('wallet').style.display = stormHolding ? 'none' : '';
+    SESSION.setWalletHeld(charterOn() && mayPropose());
     document.getElementById('pulse').style.display = (FIX || (LIVEMODE && charterOn())) ? '' : 'none';
     syncWallet();
   }
@@ -5908,26 +5934,116 @@
     const penh = '<span class="pencils"><i' + (penGhost ? ' class="gone"' : '') + '>✒️</i>' +
       // in flight the whole wallet goes quiet: a lone ∞ counts nothing
       '<span class="pmore' + (penGhost ? ' gone' : '') + '">∞</span></span>';
-    const ph = showPen ? penh : '';
-    // the idempotent write the quill has always had, extended to the other two
-    // (Q531): these strings almost never change, and rewriting identical markup
-    // every render destroys any animation running on the token — which is why
-    // `.navbar .quill i`'s own 240ms transition could never run here, and what
-    // the spend-preview would have stuttered against every four seconds.
-    if (pen.innerHTML !== ph) pen.innerHTML = ph;
-    pen.title = 'Your pen — never spent, so there is always one. It turns on ' + penLocks() + ' of the settings; each ✒️ tab says where. Hold to set.';
+    // **The socket is always there; the slash says whether the tool is yours**
+    // (Q532, Ed 2026-08-22: *give all of the wallets to all users at the
+    // beginning, and explicitly show that empty ones are empty; the topbar is a
+    // toolbar, and tools are added and taken away depending on what's
+    // happening*). A wallet you did not hold used to be an empty element that
+    // `:empty` hid, so the ladder of powers was visible only to somebody who
+    // already held all of it. Now every socket renders its own tool and a
+    // reader can see what their role can do — *nothing* included.
+    //
+    // `notApp` survives for one case only: **the closed page**, where the
+    // farewell has flown the tools out and the page is deliberately grey and
+    // filed. Arguably Ed's rule reaches there too — the tools were taken away,
+    // which is exactly what a row of empty sockets would say — but that is a
+    // change to a finished ceremony rather than to a live toolbar, so it is
+    // held as the residual on Q532 rather than made here.
+    const gone = cs && cs.closed && (farewellDone || signedClose() || !viewerIsMember());
+    const socket = (el, held, inner, glyph) => {
+      const h = gone ? '' : (held ? inner : '<i>' + glyph + '</i>');
+      // the idempotent write the quill has always had, extended to the rest
+      // (Q531): these strings almost never change, and rewriting identical
+      // markup every render destroys any animation running on the token —
+      // which is why `.navbar .quill i`'s own 240ms transition could never run
+      // here, and what the spend-preview would have stuttered against.
+      if (el.innerHTML !== h) el.innerHTML = h;
+      el.classList.toggle('notheld', !gone && !held);
+      el.classList.toggle('gonewallet', !!gone);
+    };
+    socket(pen, showPen, penh, '✒️');
+    pen.title = showPen
+      ? 'Your pen — never spent, so there is always one. It turns on ' + penLocks() + ' of the settings; each ✒️ tab says where. Hold to set.'
+      : 'The pen. Changing a rule without asking anybody is the Founder’s, and only where they have kept it.';
+    // 🛡️ joins the toolbar (Q532(3)). It is the pen's other half and behaves
+    // like it in every way that shows: one shield, many locks, never spent —
+    // so it takes the ∞ too. What it does is the opposite of the pen: the pen
+    // writes, the shield only refuses.
+    const shield = document.getElementById('shieldwallet');
+    const showShield = notApp && mayShield();
+    socket(shield, showShield,
+      '<span class="pencils"><i>🛡️</i><span class="pmore">∞</span></span>', '🛡️');
+    shield.title = showShield
+      ? 'Your shield — never spent. A change the membership passes on ' + shieldLocks() + ' of the settings waits for you to accept it.'
+      : 'The shield. Refusing a change the membership has passed is the Founder’s, and only where they have kept it.';
     const voice = document.getElementById('voicewallet');
     const out = heldMotion();
     const showVoice = notApp && mayVoice();
-    const vh = showVoice ? '<i' + (out || voiceGhost ? ' class="gone"' : '') + '>🏛️</i>' : '';
-    if (voice.innerHTML !== vh) voice.innerHTML = vh;
-    voice.title = out ? 'Your voice is out on a motion — it comes back whole when the question settles or you withdraw it.'
+    socket(voice, showVoice, '<i' + (out || voiceGhost ? ' class="gone"' : '') + '>🏛️</i>', '🏛️');
+    voice.title = !showVoice
+      ? 'The voice. Asking everybody to agree to a change is for the members of this document.'
+      : out ? 'Your voice is out on a motion — it comes back whole when the question settles or you withdraw it.'
       : 'Your voice in every constitutional question — one motion at a time, returned whole.';
     // the spend-preview is render state like the ghosts above it, so every
     // wallet render has to hand it back to whichever token now stands in the
     // slot — see `applyLean` in session.js for why it cannot be a CSS rule
     SESSION.applyLean();
+    if (sayFor && sayFor.isConnected) showSay(sayFor);
   }
+
+  // ---- the socket's speech bubble (Q532, Ed 2026-08-22) --------------------
+  // *If you click on the wallet, we can have a speech bubble that explains what
+  // it means.* The wallets already carried that sentence in a `title`, which is
+  // a tooltip: it wants a pointer that hovers, it cannot be read on a touch
+  // screen, and it is the browser's furniture rather than this surface's. The
+  // bubble reads the socket's own `title`, so there is **one** piece of copy per
+  // tool feeding both channels — two would drift, and the not-held sentence is
+  // the one that most needs to be readable, since it is the answer to *why is
+  // this one crossed out*.
+  let sayEl = null, sayFor = null;
+  function showSay(el) {
+    if (!sayEl) { sayEl = document.createElement('div'); sayEl.className = 'walletsay'; document.body.appendChild(sayEl); }
+    sayFor = el;
+    // the quill is also the logo, and its link is the one capability a bubble
+    // over it would swallow — so the navigation moves *inside* the bubble
+    // rather than being lost. It is safer there anyway: a founder mid-birth
+    // who clicked the mark used to be navigated away from their own document.
+    sayEl.innerHTML = esc(el.title || '') +
+      (el.id === 'quill' ? '<br><a class="doclink" href="/">Start a new document</a>' : '');
+    const r = el.getBoundingClientRect();
+    // clamped to the window, with the nib following the socket rather than the
+    // box — a bubble pushed off a right-hand wallet must still point at it
+    const w = Math.min(264, window.innerWidth - 16);
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
+    sayEl.style.left = left + 'px';
+    sayEl.style.top = (r.bottom + 9) + 'px';
+    sayEl.style.setProperty('--nib', Math.max(8, Math.min(r.left + r.width / 2 - left - 5, w - 18)) + 'px');
+    requestAnimationFrame(() => sayEl && sayEl.classList.add('in'));
+  }
+  function hideSay() {
+    sayFor = null;
+    if (!sayEl) return;
+    const el = sayEl; sayEl = null;
+    el.classList.remove('in');
+    setTimeout(() => el.remove(), 180);
+  }
+  document.addEventListener('click', (ev) => {
+    const w = ev.target.closest && ev.target.closest('.navbar .wallet, .navbar .quill');
+    if (w) {
+      // the quill's own navigation lives in the bubble now
+      if (w.id === 'quill') ev.preventDefault();
+      if (sayFor === w) hideSay(); else showSay(w);
+      return;
+    }
+    if (sayEl && !ev.target.closest('.walletsay')) hideSay();
+  });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && sayEl) hideSay(); });
+  window.addEventListener('resize', hideSay);
+  // `?slash=muted` — the same toolbar with the strike in the surface's own
+  // muted ink rather than red, so the two can be looked at side by side. The
+  // same shape as the stranger's door's `?bars=black`: an experiment you can
+  // see rather than an argument you have to have.
+  if (new URLSearchParams(location.search).get('slash') === 'muted') document.documentElement.dataset.slash = 'muted';
   // ---- 🍾 and 🥂 --------------------------------------------------------
   // the founder's readiness readout — live from the view (founder only),
   // fixture from the module itself; null for anybody else
@@ -6149,7 +6265,15 @@
     // button into the document** rather than out of a balance into the
     // button. A pop, not a spend.
     if (cs && /🍾/.test(b.textContent)) return { g: '🍾', sel: null, to: '#doctitle, .doctitle' };
-    if (cs && /✒️/.test(b.textContent) && document.querySelector('#penwallet i')) return { g: '✒️', sel: '#penwallet i' };
+    // **Asks whether the pen is held, not whether it is drawn** (Q532). This
+    // used to test `document.querySelector('#penwallet i')` — the token's mere
+    // presence — which was a true proxy only while an unheld wallet rendered
+    // nothing. Now every socket draws its tool whether or not it is yours, so
+    // that test would be permanently true: an unacknowledged pen would become a
+    // working hold, and the guard that swallows a hold's trailing click reads
+    // `isPenCommit(held)`, so its behaviour would have shifted with it. The
+    // question was always *do you hold a pen*, and `mayPen()` is that question.
+    if (cs && /✒️/.test(b.textContent) && mayPen()) return { g: '✒️', sel: '#penwallet i' };
     return null;
   };
   let penHold = null, penHoldFired = false, penPointerDown = false, penNudge = null;

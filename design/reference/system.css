@@ -152,6 +152,17 @@
     --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.10), 0 4px 7px rgba(0, 0, 0, 0.16);
     --shadow-xl: 0 1px 2px rgba(0, 0, 0, 0.10), 0 5px 9px rgba(0, 0, 0, 0.15),
                  0 13px 22px rgba(0, 0, 0, 0.20);
+    /* The one shadow that goes **inward** (Q532), and the only one: a wallet is
+       a socket in the toolbar, a depression saying *something goes here*. Same
+       light source as the family above — a contact line at the top edge where
+       the rim would catch it, one soft cast below it — simply read from inside
+       the hole rather than from under the object. Neutral like the rest; a
+       tinted depression would be a glow pointing the wrong way. */
+    --shadow-in: inset 0 1px 2px rgba(0, 0, 0, 0.13), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+    /* The strike across a tool your role does not hold (Q532). The **only red
+       on the surface** — see the `.notheld` rule for why that is a live
+       question and how to look at the alternative. */
+    --slash: #c8372a;
 
     /* --- the three columns ---------------------------------------- */
     /* How long a lifecycle colour takes to become another one. A wash change
@@ -165,6 +176,7 @@
     --rail-right: 290px;
     --nav-h: 58px;
   }
+  :root[data-slash="muted"] { --slash: var(--muted); }
   * { box-sizing: border-box; }
   body {
     background: var(--bg);
@@ -1639,11 +1651,91 @@
     text-decoration: none; color: inherit; font-size: 1.125rem; line-height: 1; vertical-align: -2px; }
   .navbar .quill i { font-style: normal; display: inline-block; transition: opacity 240ms ease; }
   .navbar .quill i.gone { visibility: hidden; }
-  .navbar .quill:empty { display: none; }
   .navbar .powerwallet { font-size: var(--t-ui); line-height: 1; }
   .navbar .powerwallet i { font-style: normal; }
-  .navbar .powerwallet:empty { display: none; }
   .navbar .powerwallet .gone { visibility: hidden; }
+
+  /* ---- the toolbar (Q532, Ed 2026-08-22) -----------------------------------
+     **The topbar is a toolbar, and every wallet is a socket in it.** Tools are
+     added and taken away as the document goes on, and a row of sockets is what
+     tells a reader what their role can do — so all of them are shown to
+     everybody from the start, because *nothing* is a useful answer. Before this
+     a wallet you did not hold was `display: none`, which meant the ladder the
+     whole design rests on (🪶 nobody · ✒️ nobody · ✏️ enough of the room · 🏛️
+     everybody) was only ever visible to somebody who already held all of it.
+
+     The socket is sized to sit **inside the topbar's existing height**: `.stats`
+     is 26px because of the avatar, so a 24px pill changes no other geometry on
+     the page. That is not a detail — the navbar is sticky and everything below
+     is measured against it, so a taller bar moves every card on the surface. */
+  .navbar .quill, .navbar .wallet {
+    min-height: 24px; padding: 0 7px; border-radius: 999px;
+    background: rgba(0, 0, 0, 0.028); box-shadow: var(--shadow-in);
+  }
+  .navbar .quill { padding: 0 8px; }
+  /* a socket is a thing you can ask about: clicking one says what the tool is
+     (the titles were doing this job for a pointer that has a hover, which a
+     touch screen has not) */
+  .navbar .quill, .navbar .wallet { cursor: pointer; }
+  /* **Not held.** The tool is drawn in the socket and struck through, which is
+     what makes the row legible as *these are the tools, and these are the ones
+     that are not yours* rather than as a row of holes. Greyed as well as
+     struck: grey is this surface's word for *nothing is being asked of you*,
+     and a power you do not hold asks nothing.
+
+     Deliberately NOT the same state as a wallet that is empty because you have
+     spent it — a member with no ✏️ left still holds the power to propose, and
+     the drip is already running. That one keeps `.empty`'s muted treatment and
+     its countdown; only `.notheld` is struck. */
+  /* the closed page keeps its own answer: the farewell flew the tools out and
+     the surface is grey and filed, so the sockets go with them (Q532 residual) */
+  .navbar .gonewallet { display: none; }
+  .navbar .notheld { position: relative; }
+  .navbar .notheld i { opacity: 0.55; filter: grayscale(1); }
+  /* The strike hangs on the **socket**, not inside the glyph. A `::after` on
+     the `<i>` is a child of the filtered box, so `grayscale(1)` desaturated the
+     strike along with the tool and the red came out grey — the one colour
+     decision in the rule, quietly undone by the rule above it. A not-held
+     socket holds exactly one glyph, centred, so centring on the socket and
+     centring on the tool are the same place. */
+  .navbar .notheld::after {
+    content: ''; position: absolute; left: 50%; top: 50%;
+    width: 23px; height: 2px; margin: -1px 0 0 -11.5px; border-radius: 1px;
+    background: var(--slash); transform: rotate(-45deg);
+  }
+  /* The strike is red because Ed asked to see it red (Q532(2)). It is the only
+     red on the surface, and it is worth knowing why that is a real question:
+     the palette is three hues and a grey, 🗑️ was deliberately *not* made red
+     because discarding is an ordinary thing to do, and not holding a power is
+     the shape of your role rather than an error — a clerk would wear two of
+     these all session. `?slash=muted` swaps it for the surface's own muted ink
+     so the two can be looked at side by side. */
+
+  /* **A socket says what it is when you press it** (Q532). The wallets carried
+     this in `title` attributes, which is a tooltip: it needs a pointer that
+     hovers, it cannot be read on a touch screen, and it is the browser's
+     furniture rather than the surface's. A bubble is the same sentence in this
+     design system's own voice, and it is the natural home for the sentence a
+     struck-through tool most needs — *what this is, and why it is not yours*.
+     Not a card: it asks nothing, commits nothing, and never enters the rail. */
+  .walletsay {
+    position: fixed; z-index: 90; max-width: 264px; padding: 9px 11px;
+    background: var(--bg); color: var(--fg); font-size: var(--t-small);
+    line-height: 1.45; border-radius: var(--r-md); box-shadow: var(--shadow-lg);
+    opacity: 0; transform: translateY(-3px); transition: opacity 140ms ease, transform 140ms ease;
+  }
+  .walletsay.in { opacity: 1; transform: translateY(0); }
+  .walletsay b { font-weight: 600; }
+  /* the nib, pointing back at the socket it came out of */
+  .walletsay::before {
+    content: ''; position: absolute; top: -5px; left: var(--nib, 16px);
+    width: 10px; height: 10px; background: var(--bg); transform: rotate(45deg);
+    border-radius: 2px 0 0 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .walletsay { transition: opacity 140ms ease; transform: none; }
+    .walletsay.in { transform: none; }
+  }
   /* a held commit: the pen is on its way from the wallet, one second's worth
      (Q445c — the gravity of an act is the length of its hold) */
   .btn.emojibtn.penholding { transform: translateY(1px); }
