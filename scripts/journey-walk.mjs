@@ -91,7 +91,15 @@ const press = async (holdMs) => {
     if (!b) return null;
     b.scrollIntoView({ block: 'center' });
     const r = b.getBoundingClientRect();
-    return { x: r.x + r.width / 2, y: r.y + r.height / 2, label: b.textContent.trim() };
+    // **A drawn commit has no text** (2026-08-22). ✋ and 🖼️ commit with the
+    // drawn ✓ — two SVG paths, not the character — so `textContent` is empty
+    // and the walk read a perfectly good commit as a failure to find a
+    // button. It reported both as STUCK while the rail behind it was empty,
+    // which is the one shape a check must not have: a false alarm on a page
+    // that is working. The title is what the button says when the glyph is a
+    // drawing.
+    const label = b.textContent.trim() || b.getAttribute('title') || 'commit';
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2, label };
   });
   if (!box) return null;
   await T(160);
@@ -141,10 +149,12 @@ if (!(atSave.length === 1 && atSave[0] === 'grant-pen')) stuck.push('rail at sav
 
 /* ---- the founding: whatever the rail asks, one task at a time ---- */
 const seen = new Set();
+const order = [];
 for (let i = 0; i < 60; i++) {
   const next = (await rail()).find((k) => !seen.has(k));
   if (!next) break;
   seen.add(next);
+  order.push(next);
   if (!(await open(next))) { stuck.push(next + ' (would not open)'); continue; }
   if (await clickIn('.setupcard [data-ok]')) { say('  ok       · ' + next); continue; }
   if (next === 'text') {
@@ -184,6 +194,21 @@ for (let i = 0; i < 60; i++) {
   else say('  committed· ' + next + ' (' + label + ')');
 }
 say('founding   · rail ' + JSON.stringify(await rail()) + (stuck.length ? ' STUCK: ' + stuck.join(', ') : ''));
+
+// **The founder is asked who they are, before they begin** (Q645, Ed's live
+// walk 2026-08-22: *I'm never offered the "Your Name" and "Your Picture"
+// tasks*). ✋ and 🖼️ are steps 9 and 10 of SURFACE §8's order, immediately
+// after 🎩 — and they were dead on every live document, because `hydrateS`
+// declared them settled rather than ask the module whether they had ever been
+// answered. The assertion belongs **here** and nowhere else: both probes and
+// `founding-walk.mjs` drive the fixture, where the pair always worked, so the
+// bug was invisible to all three. It is checked as *position*, not mere
+// presence, because arriving in the wrong place is its own failure.
+const iHat = order.indexOf('hat');
+const identityOrder = order.slice(iHat + 1, iHat + 3).join(',');
+say('identity   · after 🎩 the rail asks [' + identityOrder + ']' +
+  (identityOrder === 'myname,mypic' ? '' : '  FAIL: expected myname,mypic'));
+if (identityOrder !== 'myname,mypic') stuck.push('identity tasks (got ' + identityOrder + ')');
 
 const state = await page.evaluate(() => ({
   begun: !!document.querySelector('.doc.begun'),

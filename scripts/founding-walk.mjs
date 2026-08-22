@@ -20,6 +20,21 @@ import { chromium } from 'playwright';
 const DESIGN = join(resolve(fileURLToPath(new URL('..', import.meta.url))), 'design');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
 const AS_JSON = process.argv.includes('--json');
+/**
+ * `--delegate=<key>` hands one setting to the membership instead of answering
+ * it, and then asserts the founder is served **their own** question before
+ * 🍾 (Q645). It has to be its own mode, because the ordinary walk can never
+ * reach the case: with the founder alone on the roster `roomExists()` is
+ * false, so the founder's answer tasks depend entirely on Q408's *unless
+ * nothing else is outstanding* — which 🍾 made unreachable by counting itself
+ * as outstanding. It cannot ride `journey-walk.mjs` either, and for a reason
+ * worth keeping: a delegated question never resolves on one voice (Q413), so
+ * `begin` refuses and the live journey would correctly stall short of a begun
+ * document. What it checks is pure page logic, identical in the fixture and
+ * live, so the fixture is an honest place to check it.
+ */
+const DELEGATE = (process.argv.find((a) => a.startsWith('--delegate')) || '')
+  .split('=')[1] || (process.argv.includes('--delegate') ? 'chamber' : null);
 
 const srv = createServer(async (req, res) => {
   const p = decodeURIComponent(req.url.split('?')[0]);
@@ -155,7 +170,13 @@ for (let i = 0; i < 40; i++) {
   }
   const before = await record('open ' + next.k);
   const opts = (before.card && before.card.options) || [];
-  const opt = opts.find((o) => o.set && o.val && !o.on);
+  // delegation is an option on the card like any value (Q511), so handing the
+  // setting over is the same gesture as answering it
+  const opt = next.k === DELEGATE ? null : opts.find((o) => o.set && o.val && !o.on);
+  if (next.k === DELEGATE) {
+    const gave = await clickIn('.setupcard .delegrung [data-val="roster"]');
+    if (!gave) log.push({ step: 'could not delegate ' + next.k, rail: before.rail, card: null });
+  }
   if (opt) {
     const picked = await clickIn('.setupcard [data-set="' + opt.set + '"][data-val="' + opt.val + '"]');
     if (!picked) await clickIn('.setupcard [data-ans="' + opt.set + '"][data-ansval="' + opt.val + '"]');
@@ -176,7 +197,28 @@ for (let i = 0; i < 40; i++) {
   await record('commit ' + next.k, committed ? null : 'no commit control');
 }
 
-const out = { log: log, errors: errors };
+/* ---- --delegate: is the founder served their own question? ------------ */
+let verdict = null;
+if (DELEGATE) {
+  const want = 'ans-' + DELEGATE;
+  // **Offered, not still pending.** The founder answers their own question as
+  // soon as it is served, so by the end of the walk it is settled and gone
+  // from the rail — asserting on the *final* rail fails on a surface that is
+  // working. What this is about is whether the question was ever put to them.
+  const steps = log.map((e) => e.step);
+  const at = steps.indexOf('open ' + want);
+  const ok = at >= 0;
+  const answered = steps.includes('commit ' + want);
+  verdict = { want, ok, answered, after: ok ? steps[at - 1] : null };
+  // The founder answers on their own surface (§9.0b) and the Proposing gate
+  // waits on it, so a founder who is never asked cannot begin their own
+  // document — the module refuses while the question is still collecting.
+  if (!ok) errors.push('the founder was never served ' + want +
+    ' — the walk was offered [' + steps.filter((s) => s.startsWith('open ')).map((s) => s.slice(5)).join(', ') + ']');
+  else if (!answered) errors.push(want + ' was offered but could not be answered');
+}
+
+const out = { log: log, errors: errors, ...(verdict ? { verdict } : {}) };
 if (AS_JSON) {
   console.log(JSON.stringify(out, null, 1));
 } else {
@@ -198,7 +240,14 @@ if (AS_JSON) {
       for (const p of e.paras) console.log('    ' + p.k + ': ' + (p.text || '').slice(0, 78));
     }
   }
+  if (verdict) {
+    console.log('\ndelegated ' + DELEGATE + ' · ' + (verdict.ok
+      ? 'the founder is served ' + verdict.want + ' (after ' + verdict.after + ')' +
+        (verdict.answered ? ' and answers it' : ' but CANNOT answer it')
+      : 'FAIL: the founder was never served ' + verdict.want));
+  }
   console.log('\npage errors: ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
 }
 await browser.close();
 srv.close();
+if (verdict && !verdict.ok) process.exit(1);

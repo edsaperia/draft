@@ -20,6 +20,7 @@
     "journey": "node scripts/journey-walk.mjs",
     "slug-walk": "node scripts/slug-walk.mjs",
     "founding-golden": "node scripts/founding-golden.mjs",
+    "founder-answers": "node scripts/founding-walk.mjs --delegate=chamber",
     "spec-check": "node scripts/spec-check.mjs",
     "design": "node scripts/design-server.mjs"
   },
