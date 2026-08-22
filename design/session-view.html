@@ -3397,8 +3397,12 @@
   let railEntries = [];
   const RAIL_RANK = { ask: 0, news: 4, yours: 6, wait: 7, done: 9 };
   const RAIL_U = { ask: 0.95, news: 0.5, yours: 0.5, wait: 0.2, done: 0 };
+  // a setting's tab, wherever it currently stands — in the band, or beside the
+  // big heading while the birth still has no clauses to hang it on
+  const tabFor = (k) => document.querySelector(
+    '#band .achip[data-tab="' + k + '"], #titlepara .achip[data-tab="' + k + '"]');
   const anchorOf = (k) => {
-    const tab = document.querySelector('#band .achip[data-tab="' + k + '"], #titlepara .achip[data-tab="' + k + '"]');
+    const tab = tabFor(k);
     return document.querySelector('.setupcard[data-setupcard="' + k + '"]')
       || document.querySelector('.cpara[data-para="' + k + '"]')
       || (tab && tab.closest('.cpara'))
@@ -3418,6 +3422,72 @@
   const setupRail = () => ({ querySelectorAll: (sel) => {
     const ids = new Set(railEntries.map((e) => e.id));
     return [...rail.querySelectorAll(sel)].filter((el) => ids.has(el.dataset.q)); } });
+
+  // ---- `dead-click-nudge` (Q650–Q653, Ed 2026-08-23) ---------------------
+  // A founder meeting the birth has never seen this surface, and the rail is
+  // where every piece of work is. But the failure Ed watched in user testing
+  // was worse than the rail going unnoticed: #doctitle is a bare <h1> with no
+  // data-card and nothing listening above it, so clicking "Untitled" — the
+  // obvious door, and the thing people reach for first because they expect to
+  // edit a title in place — does *nothing at all*. The tester got no response
+  // and went looking for the nearest thing that would accept typing, which is
+  // the prose column underneath. They typed the title into the document.
+  //
+  // So a click that lands on nothing answers itself: the task that *is*
+  // waiting beats, in its tab and in its rail entry at once (Q650), which is
+  // what teaches that the two are one thing rather than just pointing at a
+  // corner of the screen. It never opens the card, however many times they
+  // click (Q652) — the nudge is a teacher, and C1/F10 keep the opening click
+  // the user's own. Nothing beats unprompted: the intermittent jiggle first
+  // asked for was dropped (Q651), because every other motion on this surface
+  // is a consequence — a clause fades because it was born, an entry lifts
+  // because it was pressed — and the birth has no clock to ride in any case.
+  //
+  // It renders nothing and changes no state: a pure DOM poke, in the shape of
+  // session.js's own beat(). A render would rebuild both rails wholesale and
+  // take the class with it.
+  const BEAT_MS = 640;                   // the taskBeat keyframe's own duration
+  function beatEl(el) {
+    if (!el) return;
+    el.classList.remove('nudge');
+    void el.offsetWidth;                 // so a second click beats again
+    el.classList.add('nudge');
+    const off = () => el.classList.remove('nudge');
+    el.addEventListener('animationend', off, { once: true });
+    // the wallet's lesson — never depend on your own animation finishing. Under
+    // reduced motion there is no animation to end at all, and this timeout is
+    // the only thing that lets the held lift go.
+    setTimeout(off, BEAT_MS + 60);
+  }
+  // The next task: the first entry still asking for something, in rail order —
+  // during the birth the rail runs single file, so this is normally the only
+  // one. `needs` is the class setup.js gives an 'ask' or a 'news' entry.
+  //
+  // The class rides the <li>, never its button and never a data-*: setup-probe
+  // strips `<li class="…">` from its rail hash but hashes the button's classes
+  // and every data-* it does not know. The CSS reaches the button from there.
+  function nudgeNextTask() {
+    const li = [...rail.querySelectorAll('.qitem')].find((q) => q.querySelector('button.needs'));
+    if (!li) return;                     // nothing is waiting; nothing to point at
+    beatEl(li);
+    beatEl(tabFor(li.dataset.q));
+  }
+  document.addEventListener('click', (ev) => {
+    if (cs || S.open) return;            // the birth only (Q653), and only with no card open
+    if (ev.shiftKey || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    const docEl = document.getElementById('doc');
+    if (!docEl || !docEl.contains(ev.target)) return;
+    // A dead click is one with no real control under it. Structural rather than
+    // a list of data-* hooks, which would rot: every hook in the delegated
+    // handlers below sits on a button or an anchor. #prose is excluded by the
+    // contenteditable test on purpose — writing there is invited from arrival
+    // and stashed across the save, so it is not a mistake (Q654).
+    if (ev.target.closest('a, button, input, textarea, select, label, [role="button"], [contenteditable="true"]')) return;
+    // selecting a phrase is reading, not reaching for a door
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed && String(sel).trim()) return;
+    nudgeNextTask();
+  });
 
   function renderRail() {
     if (isStranger()) {
