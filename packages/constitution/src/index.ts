@@ -13,7 +13,7 @@ export {
   CATALOGUE, CATALOGUE_BY_ID, JUDGE_GATES, entryOf, motionRouteOf, validateFor,
 } from './catalogue.js';
 export type {
-  CatalogueEntry, ConsentSpec, Holder, MotionRoute, SettingId, SettingKind,
+  CatalogueEntry, ConsentSpec, MotionRoute, SettingId, SettingKind,
 } from './catalogue.js';
 export { resolveConsent } from './consent.js';
 export type { ConsentResolution } from './consent.js';

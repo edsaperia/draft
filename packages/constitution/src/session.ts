@@ -140,10 +140,8 @@ export class ConstitutionSession {
         // the founder had seen one of them — so the room could be answering
         // while the founder was still naming the document, and the surface
         // could not tell a default apart from a decision.
-        //
-        // `holderDefault` survives in the catalogue as doctrine — which
-        // settings the room is expected to end up holding — and is no longer
-        // read here; birth is uniform.
+        // Birth is uniform; the catalogue carried a `holderDefault` column as
+        // doctrine until 2026-08-22 (spec pass 1, finding 554), read by nothing.
         for (const id of HELD) {
           this.settings.set(id, {
             id,

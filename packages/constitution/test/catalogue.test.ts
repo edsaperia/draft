@@ -22,7 +22,6 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
 
   it('machines is ordinary and convenor-held (Q352, Ed 2026-08-18)', () => {
     expect(entryOf('machines').kind).toBe('ordinary');
-    expect(entryOf('machines').holderDefault).toBe('convenor');
     expect(entryOf('machines').delegable).toBe(true); // the consent question survives
   });
 
@@ -84,7 +83,6 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
     expect(motionRouteOf(entryOf('title'), { text: 'x' }, { text: 'y' })).toBe('ordinary');
     expect(motionRouteOf(entryOf('bar'), { pct: 80 }, { pct: 66 })).toBe('constitutional');
     // pace is ordinary by the test, and the founder's — not delegable (Q415)
-    expect(entryOf('pace').holderDefault).toBe('convenor');
     expect(entryOf('pace').delegable).toBe(false);
     expect(motionRouteOf(entryOf('pace'), { shape: 'fixed' }, { shape: 'ramp', startPct: 55 }))
       .toBe('ordinary');
