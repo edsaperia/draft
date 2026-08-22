@@ -470,7 +470,7 @@
     },
   };
   // page key ↔ module setting id — the page keeps its own vocabulary
-  const MID = { slug: 'link', text: 'startingText', policy: 'applications', roster: 'membership' };
+  const MID = { slug: 'link', text: 'startingText', policy: 'applications', roster: 'membership', myname: 'displayName', mypic: 'picture' };
   const midOf = (k) => MID[k] || k;
   const PKEY = { link: 'slug', startingText: 'text', applications: 'policy', membership: 'roster' };
   const pkeyOf = (mid2) => PKEY[mid2] || mid2;
@@ -879,29 +879,114 @@
   const slugNoteHtml = () => (slugRefused()
     ? '<p class="setnote"><b>docs.vote/' + esc(S.slug) + '</b> is taken.' +
       (S.slugFree.suggestion ? ' <b>docs.vote/' + esc(S.slugFree.suggestion) + '</b> is free.' : '') + '</p>'
-    : S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> already exists, so a short suffix was added.</p>' : '');
+    // Q534c: the address the title actually wanted, and where this one
+    // landed — naming both is the whole point, since the alternative is the
+    // machine choosing an address and not mentioning it
+    : S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> is taken, so this one is <b>docs.vote/' + esc(S.slug) + '</b>.</p>' : '');
   const refreshSlugNote = () => {
     const n = document.querySelector('[data-slugnote]');
     if (n) n.innerHTML = slugNoteHtml();
     refreshCommit();
   };
   const slugRefused = () => !!(S.slugFree && S.slugFree.slug === S.slug && !S.slugFree.available);
-  let slugCheckT = null;
-  const checkSlug = (slug) => {
-    if (!BIRTH) { S.slugFree = TAKEN.has(slug) ? { slug, available: false, suggestion: slug + '-' + suffix(S.title || slug) } : null; refreshSlugNote(); return; }
+  // **An address is checked because it is the address, not because it was
+  // typed** (Ed, 2026-08-22: *the address was taken — we shouldn't allow it
+  // to be set if it's taken*). 📍's commit has been gated on `slugRefused()`
+  // for as long as it has existed, but the only thing that ever asked the
+  // server was the **input** handler — so an address the founder never
+  // edited had no verdict at all, and the gate stood open on an unasked
+  // question. The birth pre-fills 📍 from the title, and `suggestSlug`
+  // consults the fixture's own TAKEN set, which knows nothing about the live
+  // host; accept the suggestion unedited and the first thing in the world to
+  // ask about the address is the **send**, which answered truthfully that it
+  // was taken and walked the founder back to 📍 — the right answer to a
+  // question the card should have asked first, arriving at the one step that
+  // mints the document.
+  //
+  // So the check is idempotent and callable from anywhere: `S.slugSeen` is
+  // the address the last verdict was about, whatever that verdict said, and
+  // asking twice about one address is free. `render` asks whenever there is
+  // an address to ask about, which covers the pre-filled one and every other
+  // path that sets it without a keystroke.
+  // a cap on the automatic move, so a pathological server that keeps
+  // offering an address it then refuses cannot become a request storm: past
+  // it the collision is simply shown, which is the behaviour we started from
+  let slugCheckT = null, slugAsking = null, autoSlugMoves = 0;
+  const slugKnown = () => !BIRTH || S.slugSeen === S.slug;
+  const checkSlug = (slug, wait = 0) => {
+    if (S.slugSeen === slug || slugAsking === slug) return;
+    if (!BIRTH) { S.slugFree = TAKEN.has(slug) ? { slug, available: false, suggestion: slug + '-' + suffix(S.title || slug) } : null; S.slugSeen = slug; refreshSlugNote(); return; }
+    // **A creation's own reservation is not somebody else's** — Q462b, on
+    // the check rather than the send. The first send reserves the address
+    // for this pending creation, so asking the server about it afterwards is
+    // told, truthfully, that it is taken — by us. This page knows which
+    // address its own send holds, so it answers for that one rather than
+    // refusing the founder their own document.
+    if (api.birth && api.birth.slug === slug) {
+      S.slugSeen = slug; S.slugFree = null; refreshSlugNote(); return; }
     clearTimeout(slugCheckT);
+    slugAsking = slug;
+    // typing waits out the keystrokes; an address that simply arrived is
+    // asked about at once, so the commit is never still dark by the time
+    // anybody has read the card
     slugCheckT = setTimeout(() => {
       fetch('/api/slug/' + encodeURIComponent(slug)).then((r) => r.json()).then((res) => {
+        slugAsking = null;
         if (S.slug !== slug) return;
-        S.slugFree = res.available ? null : { slug, available: false, suggestion: null };
+        // **The machine may pick the address, but it must say so** (Q534c,
+        // Ed 2026-08-22). A suggested address that turns out to be taken
+        // moves to the nearest free one *before* the founder ever meets it,
+        // so the ordinary birth never opens a task that is already refused
+        // — and the note says which address the title actually wanted and
+        // where this one landed, because silently handing somebody a
+        // suffixed address is the machine deciding without telling them.
+        // Only ever on an address that is still the machine's: one the
+        // founder typed keeps its refusal, which is theirs to correct.
+        if (!res.available && S.slugAuto && res.suggestion && autoSlugMoves < 3) {
+          autoSlugMoves++;
+          if (!S.slugTaken) S.slugTaken = slug;
+          S.slug = res.suggestion; S.slugFree = null;
+          const f = document.querySelector('[data-slug]');
+          if (f) f.value = S.slug;
+          // the address it moved to is asked about in its own right on the
+          // next render: the server called it free a moment ago, and this
+          // page does not take that on trust when a request settles it
+          refreshSlugNote(); return;
+        }
+        S.slugSeen = slug;
+        S.slugFree = res.available ? null : { slug, available: false, suggestion: res.suggestion || null };
         refreshSlugNote();
-      }).catch(() => {});
-    }, 250);
+      }).catch(() => {
+        // **A verdict that cannot be got counts as one.** The commit waits
+        // for the check, so an unreachable host would otherwise leave the
+        // founder at a permanently dark 📍 with nothing to read and no way
+        // on — worse than the bug this fixes. The send's own 409 is the
+        // backstop it always was: it refuses, says why, and offers the
+        // nearest free address.
+        slugAsking = null;
+        if (S.slug !== slug) return;
+        S.slugSeen = slug; refreshSlugNote();
+      });
+    }, wait);
   };
   const suggestSlug = (title) => {
     const base = slugify(title);
     if (!base || base.length < 3) return { slug: 'untitled-' + suffix(title || 'x'), taken: null };
-    return TAKEN.has(base) ? { slug: base + '-' + suffix(title), taken: base } : { slug: base, taken: null };
+    // the fixture's TAKEN set is the Hollow Oak world's, so at a live birth
+    // it can neither confirm nor deny an address — and the note it drives
+    // says *already exists*, which would be a claim the page has not
+    // checked. Suggest the plain address there and let the live check answer.
+    return (!BIRTH && TAKEN.has(base)) ? { slug: base + '-' + suffix(title), taken: base } : { slug: base, taken: null };
+  };
+  // **The address is the machine's until you touch it** (Q534c), which is
+  // exactly what makes it safe to swap for a free one: the live check may
+  // move a *suggested* address out from under a collision, and must never
+  // move one the founder typed — there the refusal is the answer and the
+  // correction is theirs. One place sets it, and the one act that can make
+  // the address yours clears it.
+  const fillSuggestedSlug = () => {
+    const sg = suggestSlug(S.title);
+    S.slug = sg.slug; S.slugTaken = sg.taken; S.slugAuto = true;
   };
 
   // ---- the document ------------------------------------------------------
@@ -985,7 +1070,7 @@
     const first = lines[0] && lines[0].match(/^#\s+(.+)$/);
     if (first && !S.title) { S.title = first[1]; lines = lines.slice(1);
       S.seen.add('title');
-      if (!S.slug) { const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken; } }
+      if (!S.slug) { fillSuggestedSlug(); } }
     document.execCommand('insertHTML', false, lines.map((l) => '<div>' + esc(l) + '</div>').join(''));
     setTimeout(relabel, 0);
   });
@@ -1027,14 +1112,18 @@
     // What the founder is owed instead — *what is still stopping judging* —
     // is the 🍾 card's readiness readout, which is where they were going to
     // read it anyway.
-    { k: 'canpropose', g: '💡', t: 'Proposing', own: 'you', isGate: true, dep: ['roster'],
+    { k: 'canpropose', g: '💡', t: 'Proposing', own: 'you', isGate: true,
       hide: () => !constituted(),
       open: () => !!cs && !!viewerId() && cs.canPropose(viewerId()),
-      why: 'Anybody can read the document from the first second. Nobody can propose a change to a text that is not there yet — and you should not be able to act on a document whose rules you have not yet said what you will accept of, so your own unanswered questions wait here too.',
-      waiting: 'Waiting on the text, and on your own answers.',
+      // proposing opens at the start (§9.0b, Q606, 2026-08-22): the text a
+      // proposal is made against is decided as part of the start, so the one
+      // blocker is 🍾 itself; your own unanswered questions are the start's
+      // problem too, since 🍾 refuses while a judge-gate question collects
+      why: 'Anybody can read the document from the first second. Nobody can propose a change until the document begins — the text a proposal is made against is decided as part of the start, and so are the rules a proposal is judged under.',
+      waiting: 'Waiting on the start.',
       done: 'Open — members can propose as soon as they arrive.',
-      blockers: () => [card('text')].filter((c) => !settled(c)).concat(LIVE().filter(owesAnswer)) },
-    { k: 'canjudge', g: '⚖️', t: 'Judging', own: 'you', isGate: true, dep: ['roster'],
+      blockers: () => (constituted() ? [] : [card('text'), card('begin')].filter((c) => c && !settled(c))) },
+    { k: 'canjudge', g: '⚖️', t: 'Judging', own: 'you', isGate: true,
       hide: () => !constituted(),
       open: () => canJudge(),
       why: 'A judgment counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the judgment meant, so they come first.',
@@ -1050,15 +1139,25 @@
     // card itself (Q461a). Grants stage behind the constitutional OKs
     // (`staged`): you are told what room you are in before you are handed
     // the tools. The cards hang off the gates they belong with (tasksFor).
-    { k: 'grant-voice', g: '🏛️', t: 'Your Voice', own: 'you', isGate: true, isGrant: true, dep: ['roster'],
+    // **🏛️ arrives with the first blind question you are asked** (Q605 (a), Ed
+    // 2026-08-22): for an invitee arriving into a founding with open
+    // questions, at arrival; for a founder-member, at their first delegation;
+    // for a founder who delegates nothing, at 🍾 — its place in ORDER, which
+    // it keeps as the fallback. `early` is the override: the card is visible
+    // the moment any `ans-*` task is due for this viewer, whatever stands
+    // above it in the order, and it hangs off that first question's
+    // paragraph (`voiceHost`) rather than ⚖️'s, because the voice is what
+    // the question is answered with. It still blocks nothing (a gate).
+    { k: 'grant-voice', g: '🏛️', t: 'Your Voice', own: 'you', isGate: true, isGrant: true,
       open: () => !!cs && viewerIsMember() && !!viewerRow().in,
+      early: () => firstAsked() !== null,
       why: 'Every member holds one voice in every constitutional question — the blind founding answers before the document begins, the ask-everyone motions after. One at a time, and it comes back whole when the question settles or you withdraw it.',
       waiting: 'Waiting on your arrival.',
       done: 'You hold a voice in every constitutional question.',
       blockers: () => [] },
-    { k: 'grant-pen', g: '✒️', t: 'Your Pen', own: 'you', isGate: true, isGrant: true, dep: ['slug'],
+    { k: 'grant-pen', g: '✒️', t: 'Your Pen', own: 'you', isGate: true, isGrant: true,
       open: () => !!cs && amFounder() && holdsPenAnywhere(),
-      why: 'The pen changes a setting directly, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent. It was issued when the address went live, because that is the moment somebody could first knock.',
+      why: 'The pen amends a setting at will, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent. It was issued when the address went live, because that is the moment somebody could first knock.',
       waiting: 'Waiting on the save.',
       done: 'You hold the pen.',
       blockers: () => [] },
@@ -1078,7 +1177,7 @@
     // rather than the pen's exception, and stands alongside 🌍 the way a grant
     // always has. That also leaves the rail at the save holding the pen alone,
     // which is a thing the journey walk asserts.
-    { k: 'grant-shield', g: '🛡️', t: 'Your Shield', own: 'you', isGate: true, isGrant: true, dep: ['slug'],
+    { k: 'grant-shield', g: '🛡️', t: 'Your Shield', own: 'you', isGate: true, isGrant: true,
       open: () => !!cs && amFounder() && holdsShieldAnywhere(),
       why: 'The shield refuses. Where you hold it, a change the membership passes waits for you to accept it — you cannot write with it, only refuse. One shield, many locks, and a shield is not spent. It was issued with the pen, when the address went live.',
       waiting: 'Waiting on the save.',
@@ -1091,7 +1190,7 @@
     // readout (per question, per person — informs, never blocks), and is
     // refused only while a judge-gate question is still being decided. After
     // the press it is a settled grey tab restating the batch and the moment.
-    { k: 'begin', g: '🍾', t: 'Begin', own: 'you', isGate: true, isBegin: true, dep: ['text'],
+    { k: 'begin', g: '🍾', t: 'Begin', own: 'you', isGate: true, isBegin: true,
       open: () => constituted(),
       hide: () => !amFounder() && !constituted(),
       why: '', waiting: '', done: '', blockers: () => [] },
@@ -1137,10 +1236,14 @@
     // click ✒️, not ask separately*) — so the card is ready to commit as soon
     // as the address is a real one, and the commit does the sending. Settling
     // still waits for the link to be clicked: that is what verification is.
-    { k: 'myemail', g: '📧', t: 'Your Email', kind: 'personal', own: 'you', dep: ['slug'],
+    { k: 'myemail', g: '📧', t: 'Your Email', kind: 'personal', own: 'you',
       hide: () => S.viewer === 'applicant', changeable: true,
       ready: () => S.emailVerified || (!S.emailSent && EMAIL_OK.test(S.myemail)) },
-    { k: 'slug', g: '📍', t: 'Link', kind: 'ordinary', dep: ['title'], ready: () => SLUG_OK.test(S.slug) && !slugRefused(), changeable: true },
+    // `slugKnown` is what stops a fast founder committing inside the window
+    // between a keystroke and the answer about it — the address is legal,
+    // nothing has refused it *yet*, and the send would be the first to ask
+    { k: 'slug', g: '📍', t: 'Link', kind: 'ordinary',
+      ready: () => SLUG_OK.test(S.slug) && !slugRefused() && slugKnown(), changeable: true },
     // — the rest, together once the document exists ----------------------
     // 🎩 folded into 🪪 (Ed, 2026-08-18): whether the founder is a
     // member is just whether they invite themselves, asked as their own
@@ -1154,7 +1257,7 @@
     // stays open right up to 🍾 and past it, so nothing is lost by moving on
     // with an empty room. Whether a document can *begin* with nobody in it is
     // 🍾's question, and 🍾 has a readout that names what it is waiting for.
-    { k: 'roster', g: '🪪', t: 'Membership', kind: 'constitutional', dep: ['policy'], ready: () => true, changeable: true, reg: true },
+    { k: 'roster', g: '🪪', t: 'Membership', kind: 'constitutional', ready: () => true, changeable: true, reg: true },
     // **Inviting and removing are their own cards** (Ed, 2026-08-19, 400a:
     // ✉️ and ❌): doors, not decisions — they compose the membership
     // motions, stand in the 🪪 stack, and exist only once judging opens
@@ -1173,19 +1276,19 @@
     // after the ceremony*). The one-card test agrees: who is in the room
     // now, and how anybody gets in later, can be answered differently and
     // on their own.
-    { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', key: 'policyBy', dep: ['myemail'], p: 0.41, changeable: true },
+    { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', key: 'policyBy', p: 0.41, changeable: true },
     // optional for a clerk (Ed, 2026-08-18): an anonymous founder is a
     // perfectly ordinary thing — they can simply not set a name or picture
-    { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you', dep: ['myemail'],       // a blank name is Anonymous (§9.0c), so this card always has something
+    { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you',       // a blank name is Anonymous (§9.0c), so this card always has something
       // to commit — and with the founding running in single file, a task
       // that cannot be committed is a task nothing can get past
       ready: () => true, changeable: true },
-    { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you', dep: ['myemail'], changeable: true },
+    { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you', changeable: true },
     // A document may start empty, which is why this is not a blocker on having
     // content but on having *decided*: a page nobody has looked at and a page
     // somebody chose to leave blank look identical, and only one of them should
     // let people start proposing.
-    { k: 'text', g: '📄', t: 'Text', kind: 'ordinary', dep: ['myemail'], gate: 'propose' },
+    { k: 'text', g: '📄', t: 'Text', kind: 'ordinary', gate: 'propose' },
 
     // — the document's shape --------------------------------------------
     // **When it ends and whether it ends are one card** (Ed, 2026-08-18:
@@ -1196,7 +1299,7 @@
     // decisions is that they take different routes to change afterwards, and
     // that is a fact about the motion rather than about the question (Q329).
     { k: 'ending', g: '⏰', t: 'When Does It End?', kind: 'constitutional', motionKind: 'ordinary',
-      key: 'ending', dep: ['rate', 'machines'], p: 0.5,
+      key: 'ending', p: 0.5,
       // 329(a): *never* is the constitutional answer; any date is ordinary.
       routeOf: (v) => (/never|perpetual|no end/i.test(v) ? 'constitutional' : 'ordinary'),
       routeNote: 'What this takes depends on what you write. A different date is a proposal ✏️ like any other. <b>Never</b> — no end date at all — needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.',
@@ -1214,7 +1317,7 @@
     // Q341). Consent is about the bar **at the close**, where an adoption is
     // permanent — one number. How it gets there is *pacing*, ordinary by §9.6's
     // own test, on the next card.
-    { k: 'bar', g: '✒️', t: 'How Sure Must the Room Be?', kind: 'constitutional', gate: 'judge', key: 'barBy', dep: ['ending', 'quorum'], p: 0.64,
+    { k: 'bar', g: '✒️', t: 'How Sure Must the Room Be?', kind: 'constitutional', gate: 'judge', key: 'barBy', p: 0.64,
       rule: 'Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.',
       takes: 'The document takes the highest', result: '80%',
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
@@ -1228,19 +1331,19 @@
     // The number is the room's; the **form** — count or share — is the
     // founder's wording of the question (Ed, 2026-08-18: *quorum can either be
     // a fixed number or a proportion of membership size*; §9.0a).
-    { k: 'quorum', g: '👥', t: 'Quorum', kind: 'constitutional', gate: 'judge', key: 'quorumBy', dep: ['rate', 'machines'], p: 0.79,
+    { k: 'quorum', g: '👥', t: 'Quorum', kind: 'constitutional', gate: 'judge', key: 'quorumBy', p: 0.79,
       rule: 'Each member says the lowest they will accept, and the document takes the highest.',
       takes: 'The document takes the highest', result: '10 of 14',
       dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', 'all of them'] },
-    { k: 'authorship', g: '👤', t: 'When Is a Proposer Named?', kind: 'constitutional', gate: 'judge', key: 'authorship', dep: ['bar', 'pace'], p: 0.5,
+    { k: 'authorship', g: '👤', t: 'When Is a Proposer Named?', kind: 'constitutional', gate: 'judge', key: 'authorship', p: 0.5,
       rule: 'This one is about privacy, so it runs the other way: the document takes the <b>most private</b> answer, and one member who wants to stay unnamed keeps everybody unnamed.',
       takes: 'The document takes the most private', result: 'Nobody’s name, ever',
       dist: [8, 4, 2], distTop: 0, distEnds: ['No names, ever', 'Names from the start'] },
-    { k: 'signing', g: '✍️', t: 'Who May Sign a Proposal?', kind: 'constitutional', gate: 'judge', key: 'signing', dep: ['bar', 'pace'], p: 0.5,
+    { k: 'signing', g: '✍️', t: 'Who May Sign a Proposal?', kind: 'constitutional', gate: 'judge', key: 'signing', p: 0.5,
       rule: 'Also about privacy, so the <b>most private</b> answer wins.',
       takes: 'The document takes the most private', result: 'Nobody signs',
       dist: [9, 3, 2], distTop: 0, distEnds: ['Nobody signs', 'Everybody signs'] },
-    { k: 'judgments', g: '👁️', t: 'When Are Judgments Revealed?', kind: 'constitutional', gate: 'judge', key: 'judgments', dep: ['bar', 'pace'], p: 0.86,
+    { k: 'judgments', g: '👁️', t: 'When Are Judgments Revealed?', kind: 'constitutional', gate: 'judge', key: 'judgments', p: 0.86,
       rule: 'Nobody can see what somebody preferred while a question is still open, whichever is chosen. This settles only whether it is made public afterwards.',
       takes: 'The document takes the most private', result: 'Never revealed',
       dist: [11, 3], distTop: 0, distEnds: ['Never', 'After the decision'] },
@@ -1256,7 +1359,7 @@
     // mechanism does not have (Ed, 2026-08-18: *isn’t the stake fixed at 1?*).
     // **One decision, not two** (Ed, 2026-08-18: the grant and the drip
     // merged — the rate is one thought, stated as one sentence)
-    { k: 'rate', g: '⏱️', t: 'Proposal Rate', kind: 'ordinary', key: 'rateBy', dep: ['lapse', 'removal'], p: 0.36,
+    { k: 'rate', g: '⏱️', t: 'Proposal Rate', kind: 'ordinary', key: 'rateBy', p: 0.36,
       rule: 'Each member says the <b>most generous</b> they would accept, and the document takes it.',
       takes: 'The document takes the most generous', result: '5 each, one back every 120 minutes',
       dist: [1, 2, 4, 3, 2, 1, 1], distTop: 4, distEnds: ['sparing', 'generous'] },
@@ -1265,7 +1368,7 @@
     // gate 'judge': constitutional (§9.6 disclosure family), so judging waits
     // on it — the member surface already did, and the two disagreed (review
     // finding, 2026-08-18)
-    { k: 'chamber', g: '🌍', t: 'Visibility', kind: 'constitutional', gate: 'judge', key: 'chamber', dep: ['text'], p: 0.43,
+    { k: 'chamber', g: '🌍', t: 'Visibility', kind: 'constitutional', gate: 'judge', key: 'chamber', p: 0.43,
       rule: 'This one is about privacy, so the <b>most private</b> answer wins: one member who wants it kept closed keeps it closed.',
       takes: 'The document takes the most private', result: 'Members only',
       dist: [5, 9], distTop: 1, distEnds: ['Members only', 'Anyone with the link'] },
@@ -1278,9 +1381,9 @@
     // three routes, the middle one a decision class of its own: everyone's
     // consent minus the subject. The subject always sees a removal proposed
     // against them, whichever route holds.
-    { k: 'removal', g: '🚪', t: 'How Is a Member Removed?', kind: 'constitutional', key: 'removal', dep: ['roster'], p: 0.24,
+    { k: 'removal', g: '🚪', t: 'How Is a Member Removed?', kind: 'constitutional', key: 'removal', p: 0.24,
       rule: 'Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.' },
-    { k: 'lapse', g: '💤', t: 'Do Memberships Lapse?', kind: 'constitutional', gate: 'judge', key: 'lapse', dep: ['roster'], p: 0.29,
+    { k: 'lapse', g: '💤', t: 'Do Memberships Lapse?', kind: 'constitutional', gate: 'judge', key: 'lapse', p: 0.29,
       rule: 'Each member says the shortest gap they would accept, and the document takes the longest — <b>never</b> being longer than any of them — so nobody loses their membership faster than they accepted.',
       takes: 'The document takes the longest', result: 'Never',
       dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
@@ -1289,10 +1392,10 @@
     // **Ordinary since Q352** (Ed, same day): switching it re-rates nothing
     // already decided, so it defaults to the founder and judging never
     // waits on it; delegating it is still the founder's option.
-    { k: 'machines', g: '🤖', t: 'AI Proposals', kind: 'ordinary', key: 'auditor', dep: ['lapse', 'removal'], p: 0.86,
+    { k: 'machines', g: '🤖', t: 'AI Proposals', kind: 'ordinary', key: 'auditor', p: 0.86,
       rule: 'The <b>most restrictive</b> answer wins, so one member who would rather not write alongside an AI keeps it out.',
-      takes: 'The document takes the most restrictive', result: 'People only',
-      dist: [9, 5], distTop: 0, distEnds: ['People only', 'A machine is fine'] },
+      takes: 'The document takes the most restrictive', result: 'No AI proposals',
+      dist: [9, 5], distTop: 0, distEnds: ['No AI proposals', 'AI proposals are permitted'] },
   ];
   const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
     GATES.find((c) => c.k === k) || powerCard(k);
@@ -1326,8 +1429,8 @@
       PWCACHE[k] = {
         k, power: mm[1], base: mm[2],
         g: mm[1] === 'u' ? '✒️' : '🛡️', kind: 'constitutional',
-        t: mm[1] === 'u' ? 'Who Has the Pen?'
-          : 'Do Carried Changes Need the Founder' + Q + 's OK?',
+        t: mm[1] === 'u' ? 'Can the Founder Make Amendments at Will?'
+          : 'Does the Founder Have a Veto?',
       };
     }
     return PWCACHE[k];
@@ -1517,7 +1620,7 @@
         L.given[1] + (live ? ' One way — the road back is the members' + Q + ' to give.' : ''),
         cur === 'given', blockUGive) +
       '</div>' +
-      (blockAHeld ? '<p class="setnote">The Founder' + Q + 's OK can only be required where the Founder still changes it directly — take back the ✒️ first.</p>' : '') +
+      (blockAHeld ? '<p class="setnote">A veto can only be held where the Founder still amends it at will — take back the ✒️ first.</p>' : '') +
       (blockUGive ? '<p class="setnote">Giving up your own hand opens once the text is confirmed.</p>' : '') +
       (!live ? '<p class="setnote">Revisable until the document begins. Giving both up hands the question to the members — delegation is exactly the state of holding neither.</p>' : '');
   };
@@ -1558,7 +1661,7 @@
   // day: proposing is what the defaults are about), in his wording, with
   // the deviation baseline kept as its last sentence.
   const preamblePara = () =>
-    '<div class="cpara notab"><p class="cpv">Members may propose changes to rules. Proposals ✏️ pass when they meet the approval threshold. Constitutional proposals 🏛️ need everyone' + Q + 's consent. Nobody changes a rule directly, and no carried change waits on anyone' + Q + 's OK, unless a rule says so.</p></div>';
+    '<div class="cpara notab"><p class="cpv">Members may propose changes to rules. Proposals ✏️ pass when they meet the approval threshold. Constitutional proposals 🏛️ need everyone' + Q + 's consent. Nobody amends a rule at will, and no passed change waits on anyone' + Q + 's assent, unless a rule says so.</p></div>';
   // The title's clause (403/404, revised Ed 2026-08-19: *move title tab to
   // the first clause once that clause appears*): the 🪶 value tab stands in
   // front of the two power tabs — the governance tab group proper — so once
@@ -1734,24 +1837,23 @@
   const ansDue = () => roomExists() || !otherTasksLeft();
   // **The answer tasks cascade like everything else** (Ed, 2026-08-19,
   // closing 416: *if I have to do all of them anyway, they should cascade*).
-  // They ride the settings' own wave graph rather than a second one: a
-  // question is due when the questions of its setting's dependencies have
-  // been answered, so the founding arrives in the constitution's own order.
-  // It looks **through** a dependency nobody is asked about: most of the
-  // wave graph is settings the founder holds, and a wave whose settings are
-  // all the founder's would otherwise let every question behind it through at
-  // once — which is the batch 416 was about, arriving one level further down.
-  const ansGate = (k, seen) => {
-    const been = seen || new Set();
-    if (been.has(k)) return true;
-    been.add(k);
-    return (card(k).dep || []).every((d) => {
-      const a = ANS.find((x) => x.ansFor === d);
-      if (a && isRoom(card(d)) && visible(card(d))) return answered(a);
-      return ansGate(d, been);
+  // **They cascade in ORDER** (Q619 (b), Ed 2026-08-22), not on the cards'
+  // `dep` arrays — those were the retired wave graph, kept alive for this one
+  // reader, and a second ordering beside the single file was a disagreement
+  // waiting to be noticed. An answer task is admitted once every delegated
+  // setting **above it in ORDER** that asks this viewer has been answered; a
+  // setting nobody is asked about (founder-held, or already resolved) is
+  // looked through, so the questions arrive one at a time in the
+  // constitution's own order whoever the founder kept and whoever gave up.
+  const ansWaveReady = (c) => {
+    const i = ORDER.indexOf(c.ansFor);
+    return ORDER.slice(0, i < 0 ? ORDER.length : i).every((k) => {
+      const a = ANS.find((x) => x.ansFor === k);
+      const st = a && csState(k);
+      const asks = a && isRoom(card(k)) && visible(card(k)) && (!st || st.collecting);
+      return !asks || answered(a);
     });
   };
-  const ansWaveReady = (c) => ansGate(c.ansFor);
   // **One task at a time, in the constitution's own order** (Ed, 2026-08-21:
   // *the founder should have to consider each task one at a time in the order
   // they appear in the constitution, from the top to the bottom*). The
@@ -1778,8 +1880,10 @@
     'canpropose', 'canjudge', 'grant-voice', 'rate', 'machines',
     'text', 'begin'];
   // a card in the order waits for everything above it and nothing else: the
-  // ORDER *is* the dependency list, so a card's own `dep` (which paced the
-  // waves) is not consulted for the ones it covers.
+  // ORDER *is* the dependency list. Since Q619 (b) (2026-08-22) a `dep` array
+  // survives only on the four cards outside it — 📈 pace, ✉️ ❌ the doors and
+  // 🥂 — which `orderReady` still paces by their own dependency; the answer
+  // tasks cascade in ORDER too (`ansWaveReady`), so nothing else reads one.
   // **A gate holds its place without holding the queue.** A gate is settled
   // only once it has been OK'd, and ⚖️ Judging cannot open until the whole
   // constitution is decided — so a gate that blocked what stands below it
@@ -1819,7 +1923,24 @@
     // a gate or a grant belongs to a document that exists: before the save
     // there is nothing to gate and no pen to be given, and its paragraph
     // would otherwise stand in the birth's own band saying so
-    : !(c.hide && c.hide()) && (!c.isGate || !!cs) && orderReady(c));
+    : !(c.hide && c.hide()) && (!c.isGate || !!cs) && (orderReady(c) || !!(c.early && c.early())));
+  // the first delegated question this viewer is being asked, in ORDER — the
+  // question 🏛️ arrives with, and the paragraph it hangs off (Q605 (a))
+  // Re-entrant by construction, so it guards itself: `visible(ans)` asks
+  // `ansDue()`, which counts the other tasks left, which asks `visible` of
+  // this very grant — inside that inner ask the voice simply does not count
+  // as a task left, which is right (it is news, not a question) and what
+  // keeps the answer from depending on itself.
+  let askingFirst = false;
+  const firstAsked = () => {
+    if (askingFirst) return null;
+    askingFirst = true;
+    try {
+      return ORDER.map((k) => ANS.find((a) => a.ansFor === k))
+        .find((a) => a && visible(a)) || null;
+    } finally { askingFirst = false; }
+  };
+  const voiceHost = () => { const a = firstAsked(); return a ? a.ansFor : 'canjudge'; };
   // One question card per delegable setting, born when its setting is handed
   // over and gone if it is taken back. Same glyph, same title — it is the
   // same question — told apart by whose pile it stands in.
@@ -1879,13 +2000,14 @@
             (p.in ? '' : ' <span class="chip pending">invited</span>') + '</span></div>').join('') +
           '</div>';
         const openId = my.find((c) => S.open === c.k);
-        // **The people, then the rules about them** (Ed, 2026-08-21, having
-        // delegated the ordering): a Membership section that opens with how
-        // applications work and reaches the list of members third reads
-        // backwards — a register is the fact, and the rest are rules about
-        // it. The founding follows the document, so this also puts 🎩 *are
-        // you a member* and your own name and picture before you invite
-        // anybody, which is the order somebody actually does it in.
+        // **🤝 Applications first, then the people, then the rules about them**
+        // (Q617 (a), Ed 2026-08-22: *I need to decide Applications before I can
+        // do Membership* — how people become members is decided before the
+        // list of who is one, since inviting is an act under that rule). The
+        // list then stands above 💤 and 🚪: a register is the fact, and those
+        // are rules about it. The founding follows the document, so this also
+        // puts 🎩 *are you a member* and your own name and picture before you
+        // invite anybody, which is the order somebody actually does it in.
         return (visible(card('policy')) ? h.para(card('policy')) + h.tasks(card('policy')) : '') +
           '<h2 class="docline lvl3">Members</h2>' +
           (() => { const pileCards = ['roster', 'invite', 'remove', 'hat']
@@ -1908,9 +2030,9 @@
       // and its pacing are one thought on two cards, so they are adjacent;
       // quorum is a different kind of number and reads last (Ed, 2026-08-21).
       keys: ['ending', 'closing', 'bar', 'quorum'],
-      // 📈 stays in `keys` — it is still a task, with its own rail entry and
-      // its place in the founding order — but it has no clause, so the
-      // section renders every card except it (Q512).
+      // 📈 is in neither `keys` nor ORDER (Q512, finding 598): it has no
+      // clause and no rail entry — it arrives answered, is stated inside the
+      // threshold clause, and is changed on a tab in ✒️'s own stack.
       body: (h) => ['ending', 'closing', 'bar', 'quorum'].map(card)
         .filter((c) => c && visible(c)).map((c) => h.para(c) + h.tasks(c)).join('') },
     // "Anonymity" (Ed, 2026-08-19), not "Privacy"
@@ -1948,9 +2070,10 @@
     ? [card('ans-' + c.k)].filter((x) => x && visible(x)) : [])
     // the grants stand as tasks beside the gates they belong with (Q461):
     // the pen with the 📍 link — issued when the address went live (Q451) —
-    // the voice with ⚖️ Judging
+    // the voice with the first blind question you are asked, or with ⚖️
+    // Judging where nothing was delegated to you (Q605 (a))
     .concat(c.k === 'slug' ? [card('grant-pen'), card('grant-shield')].filter(visible)
-      : c.k === 'canjudge' ? [card('grant-voice')].filter(visible) : []);
+      : c.k === voiceHost() ? [card('grant-voice')].filter(visible) : []);
   // A member who has not opened the document yet is drawn faintly rather than
   // left out: they are on the membership, which is the fact the heading is
   // stating, and whether they have looked at it yet is a different one.
@@ -1993,7 +2116,7 @@
             // 👑 by any reservation (Ed, Q379 wide); 📯 = holds nothing.
             ' <span title="' + (founderCrowned()
               ? 'Part of the constitution is reserved: changing it needs the founder’s assent'
-              : 'The founder reserves nothing — no special part in the document') + '">' +
+              : 'The Founder reserves nothing — no special part in the document') + '">' +
             (founderCrowned() ? '👑' : '📯') + '</span>' + esc(foundedAt()) + '.</p></div>' : ''),
       textAnchor: (h) => (!visible(card('text')) ? ''
         : '<div class="cpara notab docsep"></div>' +
@@ -2029,7 +2152,7 @@
       (members().length > arrived() ? ' · ' + (members().length - arrived()) + ' invited' : '') +
       (iDraft() ? '' : ' · you are the clerk'),
     policy: () => { const v = takenValOf('policy');
-      return ({ invite: 'Invitation only', proposed: 'Applications by proposal',
+      return ({ invite: 'Invitation only', proposed: 'Applications must be proposed by members',
         apply: 'Anyone may apply', open: 'Open' }[v ? v.joinPolicy : S.joinBy]) +
         ((cs && (regPair().u || regPair().a)) ? ' · 👑 reserved' : ''); },
     chamber: () => ({ link: 'Anyone with the link', closed: 'Members only',
@@ -2059,12 +2182,12 @@
     // a second entry here used to override them and read S alone)
     machines: () => { const tv = takenValOf('machines');
       const on = tv ? tv.enabled : S.auditor === true;
-      return (on ? 'The coherence auditor, ' + (tv && tv.enabled ? tv.budget : S.auditorBudget) + ' ✏️s' : 'People only'); },
+      return (on ? 'AI proposals are permitted · ' + (tv && tv.enabled ? tv.budget : S.auditorBudget) + ' ✏️s' : 'No AI proposals'); },
     lapse: () => (S.lapse === 'never' ? 'Never — however long you are away'
       : 'After ' + S.lapseDays + ' days without logging in'),
     removal: () => ({ everyone: 'Everyone has to agree, including them',
       others: 'Everyone else has to agree', ordinary: 'A proposal ✏️ like any other' }[removalRung()]),
-    canpropose: () => (canPropose() ? 'Open' : 'Waiting on the text'),
+    canpropose: () => (canPropose() ? 'Open' : 'Waiting on the start'),
     'grant-voice': () => 'You hold a voice in every constitutional question',
     begin: () => (constituted() ? 'Begun' + foundedAt() : 'Not yet begun'),
     closing: () => (cs && cs.closed ? 'Closed' + closedAtWords() : ''),
@@ -2082,8 +2205,8 @@
     signing: (v) => 'You said ' + ({ nobody: 'nobody signs', each: 'each author chooses', everybody: 'everybody signs' }[v] || v),
     judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
-    policy: (v) => 'You said ' + ({ invite: 'invitation only', proposed: 'applications by proposal', apply: 'anyone may apply', open: 'open' }[v] || v),
-    machines: (v) => 'You said ' + (v ? 'AI proposals are fine' : 'no AI proposals'),
+    policy: (v) => 'You said ' + ({ invite: 'invitation only', proposed: 'applications must be proposed by members', apply: 'anyone may apply', open: 'open' }[v] || v),
+    machines: (v) => 'You said ' + (v ? 'AI proposals are permitted' : 'no AI proposals'),
     lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days without logging in'),
     removal: (v) => 'You said ' + ({ everyone: 'everyone has to agree, including them',
       others: 'everyone but them', ordinary: 'a proposal ✏️ like any other' }[v] || v),
@@ -2116,12 +2239,15 @@
     return '';
   };
 
-  // **What is unlocked, and by what.** Reading needs nothing. Proposing needs a
-  // text to propose against. Judging needs the constitution settled, because a
-  // judgment is *recorded under a disclosure setting* and *counted towards a
-  // quorum*, and neither can be decided after the judgment without changing what
-  // the judgment was.
-  const canPropose = () => !!cs && cs.textConfirmed;
+  // **What is unlocked, and by what.** Reading needs nothing. Proposing and
+  // judging both open at the start (§9.0b, Q606, 2026-08-22): there is no
+  // state between 📄 and 🍾 where proposals are open, because the text a
+  // proposal is made against is decided as part of the start, and a judgment
+  // is *recorded under a disclosure setting* and *counted towards a quorum*,
+  // neither of which can be decided after it without changing what it was.
+  // `canPropose` used to be true from the text alone, so the topbar read
+  // *proposals open* on a document that had not begun.
+  const canPropose = () => !!cs && cs.textConfirmed && constituted();
   const ceremony = () => CARDS.filter((c) => c.gate === 'judge');
   const canJudge = () => !!cs && cs.canJudge();
 
@@ -2150,13 +2276,12 @@
   const mayJudge = () => canJudge() && viewerIsMember() && acked('canjudge');
   const mayVoice = () => !!cs && viewerIsMember() && !!viewerRow().in && acked('grant-voice');
   const mayPen = () => !!cs && amFounder() && holdsPenAnywhere() && acked('grant-pen');
-  // **The shield rides the pen's acknowledgment** (Q532), because both powers
-  // arrive in the founder's hands by one act at one moment — every setting is
-  // born convenor-held with both intact, and the save is when that becomes
-  // real. Giving 🛡️ a grant task of its own would be the purer reading of *no
-  // power arrives without acknowledgment*, and is the residual on Q532: it
-  // would want its own card, its own flight and its own place in the founding
-  // order, which is more than "let's put it in and see how it looks" asked for.
+  // **The shield has a grant of its own** (`grant-shield`, since d20f67a — the
+  // purer reading of *no power arrives without acknowledgment* that Q532 asked
+  // for): it used to ride the pen's OK, since both powers arrive in the
+  // founder's hands by one act, but they are opposite powers and a founder
+  // who has pressed OK on one card saying "your powers" has learned one thing
+  // where there were two.
   const mayShield = () => !!cs && amFounder() && holdsShieldAnywhere() && acked('grant-shield');
   // A commit that spends out of a wallet needs that wallet to have arrived.
   // The pen is the one this bites for: `holdWallet` reads ✒️ as a **hold**
@@ -2199,7 +2324,7 @@
     if (k === 'slug') return 'docs.vote/' + p.value.slug;
     if (k === 'pace') return (p.value.shape === 'fixed' ? 'The same number throughout'
       : 'Rising from ' + p.value.startPct + '%');
-    if (k === 'policy') return ({ invite: 'Invitation only', proposed: 'Applications by proposal',
+    if (k === 'policy') return ({ invite: 'Invitation only', proposed: 'Applications must be proposed by members',
       apply: 'Anyone may apply', open: 'Open' })[p.value.joinPolicy];
     if (k === 'rate') return p.value.grant + ' each, up to ' + p.value.cap +
       ', one every ' + p.value.dripMinutes + ' minutes';
@@ -2288,7 +2413,7 @@
     removal: { 'Everyone has to agree, including them': { rung: 'everyone' },
       'Everyone else has to agree': { rung: 'others' },
       'A proposal ✏️ like any other': { rung: 'ordinary' } },
-    machines: { 'People only': { enabled: false, budget: 0 } },
+    machines: { 'No AI proposals': { enabled: false, budget: 0 } },
     // **Public has left the ladder** (Ed, 2026-08-22). It is offered nowhere
     // — not here, not on the founder's card, not in a member's answer — but
     // every map that *reads* a rung back still knows it: the module's
@@ -2325,7 +2450,7 @@
     slug: (v) => 'docs.vote/' + v.slug,
     chamber: (v) => ({ closed: 'members only', link: 'anyone with the link',
       public: 'public' }[v.rung] || v.rung),
-    policy: (v) => ({ invite: 'invitation only', proposed: 'applications by proposal',
+    policy: (v) => ({ invite: 'invitation only', proposed: 'applications must be proposed by members',
       apply: 'anyone may apply', open: 'open' }[v.joinPolicy] || v.joinPolicy),
     lapse: (v) => (v.afterMs === null ? 'never'
       : Math.round(v.afterMs / 86400000) + ' days'),
@@ -2389,7 +2514,7 @@
   };
   const mvalTyped = (k, disp) => {
     if (k === 'policy') {
-      const jp = { 'Invitation only': 'invite', 'Applications by proposal': 'proposed',
+      const jp = { 'Invitation only': 'invite', 'Applications must be proposed by members': 'proposed',
         'Anyone may apply': 'apply', 'Open': 'open' }[disp];
       return jp ? { joinPolicy: jp } : null;
     }
@@ -2482,7 +2607,7 @@
   // stands filters itself out
   const STANDS = {
     chamber: (v) => ({ closed: 'Members only', link: 'Anyone with the link', public: 'Public' })[v],
-    policy: (v) => ({ invite: 'Invitation only', proposed: 'Applications by proposal', apply: 'Anyone may apply', open: 'Open' })[v],
+    policy: (v) => ({ invite: 'Invitation only', proposed: 'Applications must be proposed by members', apply: 'Anyone may apply', open: 'Open' })[v],
     authorship: (v) => ({ anonymous: 'Nobody’s name, ever', sealed: 'Names at the close', public: 'Names from the start' })[v],
     signing: (v) => ({ nobody: 'Nobody signs', each: 'Each author chooses', everybody: 'Everybody signs' })[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed after the decision' })[v],
@@ -2490,7 +2615,7 @@
     removal: (v) => ({ everyone: 'Everyone has to agree, including them',
       others: 'Everyone else has to agree',
       ordinary: 'A proposal ✏️ like any other' })[v],
-    machines: (v) => (v ? 'The coherence auditor drafts here' : 'People only'),
+    machines: (v) => (v ? 'AI proposals are permitted' : 'No AI proposals'),
     quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership' : v + '% of the membership'),
     bar: (v) => v + '% sure at the end',
     ending: (v) => (v === 'never' ? 'Never — it runs until too few members are active'
@@ -2509,7 +2634,18 @@
   };
   // what stands is never offered back: picking the current rule is not a change
   const currentOf = (k) => standsOf(k);
-  const lanesFor = (d, pairs, k) => pairs.filter(([val]) => !currentOf(k).startsWith(val))
+  // **Filtered by value, never by label** (Q620 (a), 2026-08-22). The old
+  // test was `currentOf(k).startsWith(label)`, a string comparison between a
+  // lane's label and the standing rule's sentence — so it held only while
+  // STANDS and the composer happened to spell a rung the same way, and one
+  // label per rung everywhere is now the rule rather than the accident. A
+  // lane is what stands when its typed value equals the module's (or, before
+  // the module holds one, the founder's own fields typed the same way).
+  const standsTyped = (k) => { const st = csState(k);
+    return st && st.value !== null ? st.value : (TYPED[k] ? TYPED[k]() : null); };
+  const offersStanding = (k, label) => { const v = mvalTyped(k, label), s = standsTyped(k);
+    return v && s ? JSON.stringify(v) === JSON.stringify(s) : currentOf(k).startsWith(label); };
+  const lanesFor = (d, pairs, k) => pairs.filter(([val]) => !offersStanding(k, val))
     .map(([val, text]) => laneBlock(d, val, text)).join('');
   const whyLane = (d) =>
     '<div class="lanebox whylane"><div class="speaker">' +
@@ -2519,7 +2655,7 @@
 
   const POLICY_TEXTS = [
     ['Invitation only', 'Membership is by invitation only.'],
-    ['Applications by proposal', 'Anyone may apply, but an application must be proposed ✏️ by a member.'],
+    ['Applications must be proposed by members', 'Anyone may apply, but an application must be proposed ✏️ by a member.'],
     ['Anyone may apply', 'Anyone may apply to join.'],
     ['Open', 'Anyone with the link joins on arrival.'],
   ];
@@ -2582,12 +2718,11 @@
     chamber: (d) => lanesFor(d, [
       ['Members only', 'Only members can read the document.'],
       ['Anyone with the link', 'Anyone with the link can read it; it is not listed.']], 'chamber'),
-    machines: (d) => lanesFor(d, [['People only', 'People only — no machine drafts here.']], 'machines') +
-      inputBlock('The coherence auditor drafts alongside the members, with a budget of ' +
+    machines: (d) => lanesFor(d, [['No AI proposals', 'There are no AI proposals — people write everything in this document.']], 'machines') +
+      inputBlock('AI proposals are permitted, with a budget of ' +
         '<input class="num" type="number" min="1" max="40" data-mnum=" ✏️s for the coherence auditor" value="' +
         esc(S.auditorBudget) + '"> ✏️s.'),
-    policy: (d) => POLICY_TEXTS.filter(([val]) => !currentOf('policy').startsWith(val))
-      .map(([val, text]) => laneBlock(d, val, text)).join('') +
+    policy: (d) => lanesFor(d, POLICY_TEXTS, 'policy') +
       '<p class="setnote">One motion proposes one rule; what you do not touch stands.</p>',
     // ✉️: whom to bring in — the invite half of what was one roster
     // composer (Ed, 2026-08-19, 400a)
@@ -2663,7 +2798,7 @@
   // render what the state-poked page rendered)
   function devFastForward() {
     if (!S.title) { S.title = 'The Hollow Oak Club — House Charter'; }
-    if (!S.slug) { const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken; }
+    if (!S.slug) { fillSuggestedSlug(); }
     const f = S.roster[0];
     if (!f.e) f.e = 'ash@hollowoak.org';
     if (!f.n) f.n = 'Ash Bellamy';
@@ -2848,7 +2983,6 @@
     signing: 'who may sign a proposal',
     judgments: 'whether judgments are revealed with the record',
     chamber: 'who may read the document',
-    policy: 'how somebody who is not a member becomes one',
     lapse: 'whether an inactive membership lapses',
     removal: 'how a member is removed',
     machines: 'whether an AI makes proposals',
@@ -3001,11 +3135,16 @@
     if (c.ansFor) return answered(c)
       ? 'The Founder has answered as a member.'
       : 'The Founder has not yet answered as a member.';
-    if (c.k === 'canpropose') { const done = LIVE().some(owesAnswer) ? 0 : 1;
-      return canPropose() && done
-      ? 'Members may propose as soon as they arrive.'
-      : 'Members may begin proposing when the text has been decided and they have answered the questions the Founder delegated — ' +
-        done + ' of ' + E() + ' have answered everything.'; }
+    if (c.k === 'canpropose') { const done = !LIVE().some(owesAnswer);
+      return canPropose()
+      ? (done ? 'Members may propose as soon as they arrive.'
+        // a delegated ordinary question may still be collecting after the
+        // start (🍾 waits only on the judge-gate ones), and the module keeps
+        // a member who owes it an answer from proposing until they give it
+        : 'Members may propose once they have answered the questions the Founder delegated.')
+      // proposing opens at the start (§9.0b, Q606): the blocker is 🍾, and the
+      // text — which used to be named here — is decided as part of the start
+      : 'Members may begin proposing when the document begins.'; }
     if (c.k === 'canjudge') return canJudge()
       ? 'Members may judge proposals.'
       : 'Members may begin judging proposals when the whole constitution has been decided.';
@@ -3034,17 +3173,29 @@
         // while the founder is the only person the document knows about, an
         // answer count would be counting the founder alone (pacing pass,
         // 2026-08-19) — the honest tail is that the question waits for a room
-        : 'The Founder has delegated to members to decide ' + (WHAT[c.k] || 'this') + ' — ' +
+        // **The interim visibility rule is stated** (Q618 (a), 2026-08-22): before
+        // 🌍 is settled a document is members-only, so the 🌍 clause says so
+        // rather than only who is deciding — a stranger reading the door is
+        // reading this rule, and the by-deviation grammar would otherwise leave
+        // them reading a rule the members cannot see
+        : (c.k === 'chamber'
+          ? 'Until the members decide, only members can see the document — '
+          : 'The Founder has delegated to members to decide ' + (WHAT[c.k] || 'this') + ' — ') +
           (isStranger() ? 'the members are answering.'
             : roomExists() ? Math.min(c.in || 0, E()) + ' of ' + E() + ' have answered.'
             : 'waiting for members.');
     }
     return settled(c) ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c)) + holderLine(c.k)
+      // the same interim rule while the Founder holds 🌍 undecided (Q618 (a))
+      : c.k === 'chamber' ? 'Until the Founder decides, only members can see the document.'
       : 'The Founder is deciding ' + (WHAT[c.k] || 'this') + '.';
   };
 
   const ctx = {
     get open() { return S.open; }, get E() { return E(); },
+    // a setup entry's wash alpha rides the charter's urgency ramp (Q623 (a)):
+    // the urgency is the rail's own `RAIL_U`, so the two columns agree
+    urgencyOf: (c) => RAIL_U[stateOf(c, ctx)],
     clauseFor: (c) => (c.k === 'roster' ? rosterClause() : ''),
     // the title card's head is the document title itself — the clause,
     // opened — never the word “Title” (Ed, 2026-08-18)
@@ -3192,10 +3343,11 @@
     railEntries =
       // What is settled leaves the rail — it is the pile's, and the block's
       // to name — and a gate shows only as news: the moment it opens, until
-      // its OK. Locked, it is a ⏳ tab in the pile and nothing else, because
-      // nothing is being asked of you (Ed, 2026-08-18: *everyone should only
-      // see cards they can act on*). ⏳ entries stay: they are where the
-      // fill says how far the room has got.
+      // its OK. Before that 💡 and ⚖️ are nowhere at all (Q529: the gate
+      // clauses hide until 🍾, where they are decided), because nothing is
+      // being asked of you (Ed, 2026-08-18: *everyone should only see cards
+      // they can act on*). ⏳ entries stay: they are where the fill says how
+      // far the room has got.
       secLive().map((s2) => ({ ...s2, cards: s2.cards
         .flatMap((c) => [c].concat(tasksFor(c)))
         .filter((c) => !owesOwnAnswer(c))
@@ -3214,7 +3366,7 @@
         .filter((s2) => s2.cards.length).flatMap((s2) =>
         s2.cards.map((c) => entryOf(c, ctx)));
 
-    stageWords = canJudge() ? 'open' : canPropose() ? 'proposals open' : 'reading only';
+    stageWords = canJudge() ? 'open' : 'reading only';
     renderClock();
     document.getElementById('mebtn').innerHTML = avHtml(me(), 'face');
   }
@@ -3533,7 +3685,7 @@
       '<div class="choice" role="radiogroup" aria-label="Who may join">' +
       theyDecide('policy', 'Each member says the <b>most open</b> door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.') +
       opt(S, 'joinBy', 'invite', 'Invitation only', 'Nobody joins unless a member brings them in.') +
-      opt(S, 'joinBy', 'proposed', 'Applications must be proposed', 'Anybody can apply, but nothing happens until a member takes the application up and proposes it.') +
+      opt(S, 'joinBy', 'proposed', 'Applications must be proposed by members', 'Anybody can apply, but nothing happens until a member takes the application up and proposes it.') +
       opt(S, 'joinBy', 'apply', 'Anyone may apply', 'An application goes straight to the members, who judge it like any other proposal. Applying costs nothing.') +
       opt(S, 'joinBy', 'open', 'Open', 'Anyone with the link becomes a member the moment they open it.') +
       '</div>',
@@ -3600,7 +3752,7 @@
       '<div class="choice" role="radiogroup">' +
       theyDecide('judgments', 'This one is about privacy, so the document takes the <b>most private</b> answer anybody gives.') +
       opt(S, 'judgments', 'never', 'Never revealed', 'What you preferred stays yours, permanently.') +
-      opt(S, 'judgments', 'after', 'Revealed once the decision is made', 'Published with the document at the end, never before.') +
+      opt(S, 'judgments', 'after', 'Revealed after the decision', 'Published with the document at the end, never before.') +
       '</div>',
     rate: () =>
       '<p class="why">How often a member can propose something. Each proposal costs one ✏️, and you get it back if the proposal passes or if you withdraw it.</p>' +
@@ -3617,7 +3769,7 @@
       (isNum(S.grant) && isNum(S.cap) && +S.cap < +S.grant
         ? '<p class="setnote">The maximum cannot be lower than the number they start with.</p>' : ''),
     chamber: () =>
-      '<p class="why">Who else can read the document. Readers are <b>not members</b>: they cannot propose or judge, and nothing about them is known. The founder can always read it, whichever of these the room chooses. Nobody, member or not, can see how a question is going while it is still open.</p>' +
+      '<p class="why">Who else can read the document. Readers are <b>not members</b>: they cannot propose or judge, and nothing about them is known. The Founder can always read it, whichever of these the room chooses. Nobody, member or not, can see how a question is going while it is still open.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('chamber', 'This one is about privacy, so the document takes the <b>most private</b> answer anybody gives.') +
       // most-private-first, the order every ladder on the surface reads in
@@ -3645,7 +3797,7 @@
       theyDecide('machines', 'The <b>most restrictive</b> answer wins, so a single member who would rather not have AI proposals keeps them out.') +
       // most-restrictive-first, matching the member ladder's order
       opt(S, 'auditor', false, 'No AI proposals', 'People write everything in this document.') +
-      opt(S, 'auditor', true, 'Include the coherence auditor', 'Patrols the document for drift — a definition changed in one place and not another — and proposes fixes.',
+      opt(S, 'auditor', true, 'AI proposals are permitted', 'An AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.',
         '<span class="setrow2">' + num(S, 'auditorBudget', 'Its edit budget', 0, 40) + '</span>') + '</div>',
   };
 
@@ -3711,8 +3863,12 @@
         ? '<div class="lockline">' + TICK + '<span>Verified — <b>' + esc(a.email) + '</b> is your identity here.</span></div>'
         : a.emailSent
         ? '<p class="why">Sent to <b>' + esc(a.email) + '</b>. Nothing is submitted until the address has proved it works — it is your identity here, and the only way the answer can reach you.</p>' +
-          '<div style="margin-top:var(--s3)"><button class="btn" data-appmailopen="1">Open your inbox</button> ' +
-          '<button class="btn" data-appmailedit="1">Wrong address?</button></div>'
+          '<div style="margin-top:var(--s3)"><button class="btn" data-appmailopen="1">Open your inbox</button></div>' +
+          // **the field stays** (Q609, 2026-08-22): *Wrong address?* was a button
+          // whose whole job was to put the field back, as on 📧 — so the field
+          // stays under the sent note, and typing a different address is the
+          // correction: it un-sends, and the send button returns
+          '<span class="fld"><label>Your email</label><input type="email" data-appmail="1" value="' + esc(a.email) + '" placeholder="you@example.com" style="width:20rem"></span>'
         : '<p class="why">Your email is your <b>identity</b> here — the magic link is the login, the answer to your application arrives on it, and no two members may share one. It has to prove it works before you can submit.</p>' +
           '<span class="fld"><label>Your email</label><input type="email" data-appmail="1" value="' + esc(a.email) + '" placeholder="you@example.com" style="width:20rem"></span>' +
           (taken ? '<p class="setnote"><b>Already a member’s address.</b> A member email is one identity — if it is yours, log in with it instead of applying.</p>' : '') +
@@ -3830,7 +3986,7 @@
         return cardHtml(c, ctx,
           '<div class="unlocks"><b>Passed — awaiting the 👑.</b> The room passed <i>' + esc(m.to) + '</i>' +
           (m.why ? ' — <i>' + esc(m.why) + '</i>' : '') +
-          '. The setting is reserved, so the change goes to the founder as a <b>👑 question</b>, theirs to accept or reject. Until then, what stands stands.</div>',
+          '. The setting is reserved, so the change goes to the founder as a <b>👑 question</b>, theirs to assent to or refuse. Until then, what stands stands.</div>',
           (amFounder()
             ? '<button class="btn" data-crownq="reject">Refuse</button>' +
               '<button class="btn btn-approve" data-crownq="accept">Accept</button>'
@@ -3840,9 +3996,11 @@
       if (m && routeOfM(m, c) === 'ordinary') {
         const mLive = { ...m, judged: motionJudged(c.k), pick: S.mAns[c.k] };
         return cardHtml(c, ctx, motionBody(c, ctx, mLive),
+          // one bin on every card, always live (Q613 (a), 2026-08-22): for the
+          // mover it withdraws, for anybody else it simply closes the card
           (m.by === viewerId()
             ? '<button class="btn" data-withdrawmotion="' + c.k + '" title="Withdrawing returns the ✏️ in full">🗑️ Withdraw</button>'
-            : '') +
+            : binBtn()) +
           '<button class="lanepick" aria-pressed="' + (S.mAns[c.k] === 'either') + '"' +
           ' data-motion="either"><span class="dot"></span><span>Indifferent</span></button>' +
           '<button class="btn btn-approve glyphbtn"' + (motionPicked(c) ? '' : ' disabled') +
@@ -4169,6 +4327,12 @@
     // 🪶's own wording: the title card is the one that is typed into, so it
     // says what is missing rather than that nothing has been answered
     ? (commitReady(c) ? (cs ? 'Set it — yours to change any time' : 'Name it') : 'Give it a name first')
+    // 📍 says which of its three reasons it is dark for: *not answered yet*
+    // is a lie about an address that is answered and refused
+    : c.k === 'slug' && !ready(c)
+      ? (!SLUG_OK.test(S.slug) ? 'Lower case, digits and hyphens, three characters or more'
+        : slugRefused() ? 'That address is taken'
+        : 'Checking the address…')
     : ready(c) ? (c.ansFor ? 'Answer' : c.kind === 'personal' ? 'Save' : 'Set it')
     : 'Not answered yet');
   // **The whole commit row follows the typing** (Ed, 2026-08-21: *the 🗑️
@@ -4203,6 +4367,11 @@
     resolveCounts();
     syncGrantAcks();
     syncOwedOks();
+    // the address is checked because it is the address (see `checkSlug`): a
+    // pre-filled 📍 nobody edited would otherwise reach the send unasked.
+    // Idempotent — a repeat ask about an address already answered is a
+    // string comparison.
+    if (SLUG_OK.test(S.slug || '')) checkSlug(S.slug);
     // one snapshot per opening — after the module has had its say, so the
     // bin puts the card back to what stands rather than to what was on screen
     // **What you have typed survives a close** (Ed, 2026-08-21: *my inputs
@@ -4316,8 +4485,6 @@
         catch (e) { console.warn('[cs]', e && e.message); }
       }
       return render(); }
-    const ame = ev.target.closest('[data-appmailedit]');
-    if (ame) { S.app.emailSent = false; return render(); }
     const amo = ev.target.closest('[data-appmailopen]');
     if (amo) { S.app.mailOpen = true; return render(); }
     const ast = ev.target.closest('[data-appstart]');
@@ -4370,7 +4537,13 @@
       if (rec) { try { cs.withdrawMotion(now(), viewerId(), rec.id); } catch (e) {} }
       S.roster.forEach((r) => { if (r.mAns) delete r.mAns[k]; if (r.mAnsOk) r.mAnsOk.delete(k); });
       S.open = null; });
-    if (ev.target.closest('[data-putmotion]')) {
+    const pm = ev.target.closest('[data-putmotion]');
+    if (pm) {
+      // the hold's guard, restated here because this handler sits above the
+      // general one below (Q614): a press let go early, or the trailing click
+      // of a completed hold, is swallowed; the hold's own synthetic click
+      // (`penHoldFired`) and a pointerless click act at once
+      if (isPenCommit(pm) && !penHoldFired && penPointerDown) { penPointerDown = false; return; }
       if (S.draft && S.draft.to) {
         try {
           cs.openMotion(now(), viewerId(), draftPayload(S.draft), S.draft.why || undefined);
@@ -4465,7 +4638,7 @@
     // window was inverted: for 700ms after a hold completed, `Date.now() >
     // penSwallowUntil` was false and a quick click went straight through.
     // There is no window now — the press itself is the state.
-    const held = ev.target.closest('[data-confirm]');
+    const held = ev.target.closest('[data-confirm], [data-putmotion]');
     if (held && isPenCommit(held) && !penHoldFired && penPointerDown) {
       penPointerDown = false;
       return;
@@ -4519,9 +4692,7 @@
           }
           // the link card is born pre-filled the moment the title settles
           if (was === 'title') S.title = titlePending();
-          if (was === 'title' && S.title && !S.slug) {
-            const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken;
-          }
+          if (was === 'title' && S.title && !S.slug) fillSuggestedSlug();
           // Q460: confirming the link only chooses the address — **the save is
           // the magic link** (the click is the instantiation), see the
           // clickmail handler; until then nothing exists anywhere
@@ -4809,6 +4980,7 @@
       lane.classList.toggle('blank', !S.titleDraft);
       refreshCommit(); return; }
     if (t.dataset.appmail !== undefined) { S.app.email = t.value.trim();
+      if (S.app.emailSent && !S.app.emailVerified) { S.app.emailSent = false; return render(); }
       const sb = document.querySelector('[data-appmailsend]');
       if (sb) sb.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S.app.email) ||
         MEMBER_EMAILS.has(S.app.email.toLowerCase());
@@ -4832,8 +5004,12 @@
       const slot = document.querySelector('[data-putmotion], [data-holdmotion]');
       if (slot && S.draft) slot.outerHTML = commitFor(card(S.draft.k));
       return; }
-    if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); S.slugTaken = null;
-      if (SLUG_OK.test(S.slug)) checkSlug(S.slug); else S.slugFree = null;
+    // typing is what makes the address yours: from here a collision is a
+    // refusal to read and correct, never something the page quietly moves
+    if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); S.slugTaken = null; S.slugAuto = false;
+      // typing is the one caller that waits: an ask per keystroke would be a
+      // request per letter, and the commit is dark until the answer lands
+      if (SLUG_OK.test(S.slug)) checkSlug(S.slug, 250); else S.slugFree = null;
       renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     // the invitation boxes are backed by S, so what is typed into them
     // outlives a re-render and a close (Ed, 2026-08-21)
@@ -4885,9 +5061,9 @@
   let STR = null;   // the server's stranger payload (live); the fixture derives its own
   const HOLDING = {
     drafting: () => 'The constitution is being drafted.',
-    'founder-deciding': (f) => 'The founder ' + (f ? f + ' ' : '') + 'is deciding if you can see this document.',
+    'founder-deciding': (f) => 'The Founder ' + (f ? f + ' ' : '') + 'is deciding if you can see this document.',
     'members-deciding': () => 'The members are deciding if you can see this document.',
-    'members-only': (f, by) => (by === 'members' ? 'The members decided' : 'The founder ' + (f ? f + ' ' : '') + 'decided') +
+    'members-only': (f, by) => (by === 'members' ? 'The members decided' : 'The Founder ' + (f ? f + ' ' : '') + 'decided') +
       ' this document is visible to members only.',
     open: () => '',
   };
@@ -4978,7 +5154,7 @@
     if (st && st.settledBy === null) {
       return '<p class="why">' + esc(st.holder === 'members'
         ? 'The members are deciding this.'
-        : 'The founder is deciding this.') + '</p>';
+        : 'The Founder is deciding this.') + '</p>';
     }
     return readBody(c, strCtx);
   };
@@ -5083,7 +5259,9 @@
       ? '<p class="why">Sent to <b>' + esc(STRS.sentTo) + '</b>. ' +
         (c.k === 'strapply' ? 'Follow the link to begin your application — the address is your identity here.'
           : 'If that address is on the membership, a link is on its way.') + '</p>' +
-        '<div style="margin-top:var(--s3)"><button class="btn" data-stredit="1">Wrong address?</button></div>'
+        // the field stays after the send (Q609): typing a different address
+        // un-sends, and the send button returns
+        '<span class="fld"><label>Your email</label><input type="email" data-stremail="1" value="' + esc(STRS.email) + '" placeholder="you@example.com" style="width:20rem"></span>'
       : '<p class="why">' + (c.k === 'strapply'
           ? 'Membership is by application. Your email is your identity here — the link it sends is the login, and the answer arrives on it.'
           : (p.joinOpen ? 'Anyone with the link may join. ' : '') +
@@ -5097,6 +5275,7 @@
     const t = ev.target.closest('[data-stremail]');
     if (!t) return;
     STRS.email = t.value;
+    if (STRS.sent && STRS.email.trim() !== STRS.sentTo) { STRS.sent = null; return render(); }
     const b = document.querySelector('[data-strsend]');
     if (b) b.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email.trim());
   });
@@ -5112,8 +5291,6 @@
       }
       return render();
     }
-    const edit = ev.target.closest('[data-stredit]');
-    if (edit) { STRS.sent = null; return render(); }
   });
 
   // ---- the live layer (Q391b) -------------------------------------------
@@ -5912,11 +6089,12 @@
   }
   // ---- the wallet family (Q444–448, 453, 458, 461; 2026-08-21) -----------
   // 🪶 top left: four feathers at the birth, one spent per founding act
-  // (title, link, the mail), the fourth permanent and the logo. ✏️ ✒️ 🏛️ on
-  // the right: shown once their grant is acknowledged — a power you were
-  // never asked for arrives by a task, never by itself. A clerk's topbar
-  // holds nothing but 🪶 (Q458: a clerk's only power is to found something
-  // else).
+  // (title, link, the mail), the fourth permanent and the logo. ✏️ ✒️ 🛡️ 🏛️
+  // on the right, every socket shown to everybody from the start (Q532) and
+  // struck until its grant is acknowledged — a power you were never asked
+  // for arrives by a task, never by itself. A clerk holds nothing but 🪶
+  // (Q458: a clerk's only power is to found something else), so their
+  // other four sockets stay struck.
   let quillGhost = false, penGhost = false, shieldGhost = false, voiceGhost = false, stormHolding = false;
   let pendingGrant = null;
   const heldMotion = () => {
@@ -6213,7 +6391,9 @@
       const n = cs && cs.isRemote && cs.v ? Math.floor(cs.v.wallet || 0) : (SESSION.editsHeld || 0);
       SESSION.pencilStorm(w.getBoundingClientRect(), to, Math.max(n, 2), () => {});
     }
-    for (const [id, glyph] of [['voicewallet', '🏛️'], ['penwallet', '✒️']]) {
+    // the shield leaves with the pen (Q621 (a), 2026-08-22): it is a power
+    // held like the others, so it flies out like them
+    for (const [id, glyph] of [['voicewallet', '🏛️'], ['penwallet', '✒️'], ['shieldwallet', '🛡️']]) {
       const el = document.querySelector('#' + id + ' i');
       if (el) SESSION.flyGlyph(glyph, el.getBoundingClientRect(), to, 640, { r0: 0, r1: 25 });
     }
@@ -6347,8 +6527,6 @@
     SESSION.flyGlyph(L.g, g.from, slot.getBoundingClientRect(), 640, { onLand: () => {
       L.ghost(false); renderPowerWallets(); } });
   }
-  // a feather spent on a founding act flies from the wallet to the button —
-  // a click, not a hold: only 🪶 happens at the speed of thought (Q444)
   // **The hold ladder** (Q445c; Ed, 2026-08-21: 🪶 joins ✒️). A commit that
   // spends something out of a wallet is a **one-second hold**: the glyph
   // flies from the wallet to the button and the act lands when it arrives;
@@ -6360,8 +6538,25 @@
   const PEN_HOLD_MS = 1000;
   // which wallet a commit spends from — the quill before the save, the pen
   // after it. Nothing else on the surface commits out of a wallet.
+  // A branch may carry its own length and floor (Q614, 2026-08-22): the ✏️
+  // hold is the charter's three seconds with the quarter-way floor at 864ms,
+  // where the pen and the quill take `PEN_HOLD_MS` and 250. `ms` and `floorAt`
+  // default to the pen's where a branch says nothing.
   const holdWallet = (b) => {
-    if (!b || !b.matches('[data-confirm]') || b.disabled) return null;
+    if (!b || b.disabled) return null;
+    // **A motion's ✏️ Propose is a hold with the pencil flight** (Q614, Ed
+    // 2026-08-22: the same act as the charter's Propose — it spends a ✏️ —
+    // so it takes the same gesture: the last ✏️ flies from `#wallet` to the
+    // button over three seconds and the motion goes in when it lands). The
+    // ghost is session.js's own wallet state (`setWalletGhost`), so the drip
+    // cannot put the traveller straight back, and `mayPropose()` is asked
+    // rather than the DOM (W13). The applicant row's *✏️ Propose them* is a
+    // different command (`propose-applicant`) and is left as a click.
+    if (b.matches('[data-putmotion]')) return cs && mayPropose() && document.querySelector('#wallet i')
+      ? { g: '✏️', sel: '#wallet i', ms: 3000, floorAt: 864, ghost: 'wallet',
+        live: '.setupcard [data-putmotion]', r0: -24, r1: 0, easing: 'cubic-bezier(.45, .05, .3, 1)' }
+      : null;
+    if (!b.matches('[data-confirm]')) return null;
     if (!cs && /🪶/.test(b.textContent) && document.querySelector('#quill i')) return { g: '🪶', sel: '#quill i' };
     // 🍾 has no wallet and never will (Q516: a wallet is a capacity you hold
     // and spend, and beginning is a moment that happens once) — but it is
@@ -6391,12 +6586,12 @@
   // capacity you hold (Q516).
   const leanPickFor = (w) => () => [...document.querySelectorAll(w.sel)].pop();
   SESSION.addSpendProbe((t) => {
-    const b = t && t.closest && t.closest('[data-confirm]');
+    const b = t && t.closest && t.closest('[data-confirm], [data-putmotion]');
     const w = holdWallet(b);
     return w && w.sel ? { btn: b, pick: leanPickFor(w) } : null;
   });
   document.addEventListener('pointerdown', (ev) => {
-    const b = ev.target.closest && ev.target.closest('[data-confirm]');
+    const b = ev.target.closest && ev.target.closest('[data-confirm], [data-putmotion]');
     const w = holdWallet(b);
     if (!w || ev.button !== 0) return;
     // a press begins: the token is about to leave for real, and any previous
@@ -6412,11 +6607,15 @@
     const to = dst.getBoundingClientRect();
     b.classList.add('penholding');
     if (w.g === '🪶') quillGhost = true; else if (w.g === '✒️') penGhost = true;
+    else if (w.ghost === 'wallet') SESSION.setWalletGhost(true);
     renderPowerWallets();
-    const flight = SESSION.flyGlyph(w.g, from, to, PEN_HOLD_MS, { r0: -30, r1: 0, easing: 'linear' });
+    const ms = w.ms || PEN_HOLD_MS;
+    const flight = SESSION.flyGlyph(w.g, from, to, ms,
+      { r0: w.r0 ?? -30, r1: w.r1 ?? 0, easing: w.easing || 'linear' });
     penHold = { b, w, flight, timer: setTimeout(() => {
       penHold = null; penHoldFired = true;
       b.classList.remove('penholding'); penGhost = false; quillGhost = false;
+      if (w.ghost === 'wallet') SESSION.setWalletGhost(false);
       // penPointerDown stays true on purpose: the real click that arrives on
       // pointerup is the trailing half of this same press, and the guard
       // above swallows it
@@ -6434,11 +6633,12 @@
       // report. The hold belongs to the open card, not to one DOM node, so
       // it re-finds the live commit control when its own has gone.
       const live = b.isConnected ? b
+        : w.live ? document.querySelector(w.live)
         : (document.querySelector('.setupcard .commitrow [data-confirm]') ||
            document.querySelector('.setupcard [data-confirm]'));
       try { if (live) live.click(); } finally { penHoldFired = false; }
       renderPowerWallets();
-    }, PEN_HOLD_MS) };
+    }, ms) };
   });
   // **Let go early and the token comes home** (Q531). It used to be deleted
   // where it stood — `flight.cancel()` removes the glyph outright — so a tap on
@@ -6463,13 +6663,14 @@
   // act with no hold at all.
   const penRelease = () => {
     if (!penHold) return;
-    const { b, flight } = penHold;
+    const { b, w, flight } = penHold;
     clearTimeout(penHold.timer);
     penHold = null;
     b.classList.remove('penholding');
-    penNudge = SESSION.nudgeHome(flight, { floorAt: 250, onDone: () => {
+    penNudge = SESSION.nudgeHome(flight, { floorAt: w.floorAt || 250, onDone: () => {
       penNudge = null;
       penGhost = false; quillGhost = false;
+      if (w.ghost === 'wallet') SESSION.setWalletGhost(false);
       renderPowerWallets();
       // the token is back in the wallet, so it may start straining again —
       // but only if the pointer never left the button that was asking

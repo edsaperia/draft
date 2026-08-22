@@ -229,9 +229,20 @@ window.SETUP = (function () {
     : ctx.mustAct(c) ? 'ask' : 'done';
   const HUE = { ask: 'open', wait: 'closed', news: 'changed', yours: 'yours', done: 'closed' };
   const hueOf = (c, ctx) => HUE[stateOf(c, ctx)];
+  // **One wash ramp for both columns** (Q623 (a), 2026-08-22). The charter's
+  // entries take their alpha from urgency — session.js's `washCol`, URG_LO at
+  // no urgency to URG_HI at the most — where a setup entry took a fixed 0.22,
+  // so the two families of entry in one rail wore two strengths. A surface
+  // that knows an entry's urgency hands it over as `ctx.urgencyOf`; grey
+  // entries keep 0.16, the charter's own closed alpha. The two constants
+  // restate session.js:360 (`URG_LO`, `URG_HI`), which the SESSION export
+  // does not carry.
+  const URG_LO = 0.05, URG_HI = 0.30;
   const washOf = (c, ctx) => {
     const h = hueOf(c, ctx);
-    return { col: 'rgba(var(--lc-' + h + '), ' + (h === 'closed' ? '0.16' : '0.22') + ')',
+    const u = ctx.urgencyOf ? ctx.urgencyOf(c) : null;
+    const a = h === 'closed' ? 0.16 : u == null ? 0.22 : URG_LO + (URG_HI - URG_LO) * u;
+    return { col: 'rgba(var(--lc-' + h + '), ' + (+a.toFixed(3)) + ')',
       bg: 'rgba(var(--lc-' + h + '), 0.06)' };
   };
   /* The ✔ is drawn rather than an emoji plate for the session-view's own
@@ -855,7 +866,7 @@ window.SETUP = (function () {
       // it then goes to the founder as a 👑 question, theirs to accept or
       // reject.
       (ctx.reserved && ctx.reserved(c)
-        ? ' It is <b>reserved</b>: carrying does not change it by itself — it goes to the founder as a <b>👑 question</b>, theirs to accept or reject.'
+        ? ' It is <b>reserved</b>: carrying does not change it by itself — it goes to the founder as a <b>👑 question</b>, theirs to assent to or refuse.'
         : '') + '</div>' +
       CB.proposalHtml(m, { tag: 'As proposed', html: esc(m.to), why: m.why, v: 'proposed', edit: false }) +
       '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have judged it.</p>';
@@ -1032,31 +1043,32 @@ window.SETUP = (function () {
       '<p class="why">Never revealed while a question is live, whichever is chosen — a room that can read itself judges itself. This settles only whether they are published with the closing record.</p>' +
       ladder(A, 'judgments', [
         { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
-        { v: 'after', t: 'Revealed once the decision is made', e: 'Published with the record, never before it.' }]) + BLINDNOTE,
+        { v: 'after', t: 'Revealed after the decision', e: 'Published with the record, never before it.' }]) + BLINDNOTE,
     policy: (A) =>
       '<p class="why">How somebody who is not a member can become one. The <b>least open</b> answer wins: one member who wants invitation only keeps it so.</p>' +
       ladder(A, 'policy', [
         { v: 'invite', t: 'Invitation only', e: 'Nobody joins unless a member brings them in.' },
-        { v: 'proposed', t: 'Applications must be proposed', e: 'Anybody can apply, but nothing happens until a member takes the application up and proposes it.' },
+        { v: 'proposed', t: 'Applications must be proposed by members', e: 'Anybody can apply, but nothing happens until a member takes the application up and proposes it.' },
         { v: 'apply', t: 'Anyone may apply', e: 'An application goes straight to the members, who judge it like any other proposal.' },
         { v: 'open', t: 'Open', e: 'Anyone with the link becomes a member the moment they open it.' }]) + BLINDNOTE,
     chamber: (A) =>
       '<p class="why">Who may read the document besides the members — readers only, never counted. The <b>most private</b> answer wins: one member who wants the room closed closes it.</p>' +
       ladder(A, 'chamber', [
         { v: 'closed', t: 'Members only', e: 'Nobody outside the membership sees anything at all.' },
-        { v: 'link', t: 'Anyone with the link', e: 'The chamber view only, to whoever the link reaches.' },
-        { v: 'public', t: 'Public', e: 'Listed and readable by anyone.' }]) + BLINDNOTE,
+        // Public left every ladder on 2026-08-22 (Q603): offered nowhere,
+        // read back everywhere a document that took it still states it
+        { v: 'link', t: 'Anyone with the link', e: 'The chamber view only, to whoever the link reaches.' }]) + BLINDNOTE,
     removal: (A) =>
       '<p class="why">How this room may remove a member. Whichever is chosen, the member always sees a removal proposed against them. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'removal', [
-        { v: 'everyone', t: 'Everyone must consent — theirs included', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
-        { v: 'others', t: 'Everyone but them must consent', e: 'The whole room, minus the member in question, must agree.' },
+        { v: 'everyone', t: 'Everyone has to agree, including them', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
+        { v: 'others', t: 'Everyone else has to agree', e: 'The whole room, minus the member in question, must agree.' },
         { v: 'ordinary', t: 'A proposal ✏️ like any other', e: 'Judged at the approval threshold like any change, with quorum.' }]) + BLINDNOTE,
     machines: (A) =>
       '<p class="why">An AI that patrols the document for drift and proposes fixes — it never judges, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
       ladder(A, 'machines', [
         { v: false, t: 'No AI proposals', e: 'People write everything in this document.' },
-        { v: true, t: 'AI proposals are fine', e: 'They compete on the same terms as anybody’s and can be out-judged like anybody’s.' }]) + BLINDNOTE,
+        { v: true, t: 'AI proposals are permitted', e: 'They compete on the same terms as anybody’s and can be out-judged like anybody’s.' }]) + BLINDNOTE,
     ending: (A) =>
       '<p class="why">When the document should close. The <b>latest</b> answer anybody gives is taken, and <b>never</b> is the latest of all — so nobody is cut off before they were ready.</p>' +
       '<div class="choice" role="radiogroup">' +

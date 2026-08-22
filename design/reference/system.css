@@ -389,8 +389,9 @@
      read as a different kind of object beside 💡🔥✏️⏳⚔️ rather than as a
      different state. As text glyphs they take a colour, which means the palette
      chooses it instead of the reader's emoji font, and it is the same in all
-     four columns. Kept at the colours the emoji happened to have, so the change
-     is the plate and nothing else; see the note on whether that survives. */
+     four columns. The colours are the palette's own rule — green for decided,
+     grey for filed, grey for ↻ — never the ones the emoji happened to have
+     (Q612, 2026-08-22: ↻ had kept the accent from its emoji days). */
   .mk { font-family: inherit; font-weight: 700; line-height: 1; }
   /* An action glyph, drawn on the same stroke as the lifecycle marks so a
      control and a mark never look like they came from different sets. */
@@ -411,7 +412,10 @@
      runs on. */
   .mk-adopted, .mk-retired { color: var(--ok); }
   .mk-filedYes, .mk-filedNo, .mk-filedUndecided { color: var(--muted); font-weight: 500; }
-  .mk-shifted { color: var(--primary); }
+  /* ↻ is information — the race will ask you again, it is not asking now — so
+     it wears the filed grey: grey means nothing is asked of you (Ed, Q612,
+     2026-08-22). Blue is for your own work, and a ground shift is not that. */
+  .mk-shifted { color: var(--muted); }
   /* a drawn glyph has no plate to give it width, so at the two small sizes it
      needs a little of its own or the marks sit on top of each other */
   .tocmarks .mk { font-size: 1.15em; letter-spacing: 0.06em; }

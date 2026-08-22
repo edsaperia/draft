@@ -14,7 +14,10 @@ at all, and at `refs-pen-first-2026-08-22` after the pen took its place as
 the only thing the save asks for and 🌍 lost its Public rung, and at
 `refs-toolbar-2026-08-22` after every wallet became a socket shown to
 everybody, 🛡️ joined the row with a grant of its own, and a released hold
-stopped deleting its token in mid-air, marks the same commit
+stopped deleting its token in mid-air, and at `refs-pass2-2026-08-22` after
+spec pass 2 folded (🏛️ with the first question you are asked, one label per
+rung, the 🌍 interim clause, the motion hold, ↻ grey, the cards.js tooltips
+in surface vocabulary), marks the same commit
 and is authoritative if EOL normalisation ever makes a copy differ byte-wise.
 
 - **Never edit these files.** When the surface changes intentionally,

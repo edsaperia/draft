@@ -300,7 +300,6 @@ var CONSTITUTION = (() => {
       id: "title",
       glyph: "🪶",
       kind: "ordinary",
-      holderDefault: "convenor",
       delegable: false,
       valueType: "text",
       deps: [],
@@ -310,7 +309,6 @@ var CONSTITUTION = (() => {
       id: "link",
       glyph: "📍",
       kind: "ordinary",
-      holderDefault: "convenor",
       delegable: false,
       valueType: "slug",
       deps: [],
@@ -323,7 +321,6 @@ var CONSTITUTION = (() => {
       id: "startingText",
       glyph: "📄",
       kind: "ordinary",
-      holderDefault: "convenor",
       delegable: false,
       valueType: "text",
       deps: [],
@@ -333,7 +330,6 @@ var CONSTITUTION = (() => {
       id: "ending",
       glyph: "⏰",
       kind: "constitutional",
-      holderDefault: "members",
       delegable: true,
       valueType: "ending",
       consent: {
@@ -348,7 +344,6 @@ var CONSTITUTION = (() => {
       id: "bar",
       glyph: "✒️",
       kind: "constitutional",
-      holderDefault: "members",
       delegable: true,
       valueType: "percent",
       consent: {
@@ -366,24 +361,13 @@ var CONSTITUTION = (() => {
     // Nothing was collecting an answer for it either — no surface ever grew a
     // founding question for a {shape, startPct}. The members can still take it
     // over after the start, by the reserve route, where no blind question is
-    // needed. The consent order survives for exactly that case.
+    // needed, so no consent order: nothing ever resolves one (Q560, 2026-08-22).
     {
       id: "pace",
       glyph: "📈",
       kind: "ordinary",
-      holderDefault: "convenor",
       delegable: false,
       valueType: "pace",
-      consent: {
-        ask: "the most gradual arrival at the close bar you will accept",
-        order: (a, b) => {
-          const pa = a;
-          const pb = b;
-          if (pa.shape !== pb.shape) return pa.shape === "fixed" ? 1 : -1;
-          if (pa.shape === "ramp" && pb.shape === "ramp") return pa.startPct - pb.startPct;
-          return 0;
-        }
-      },
       deps: ["ending"],
       judgeGate: false
     },
@@ -393,7 +377,6 @@ var CONSTITUTION = (() => {
       id: "quorum",
       glyph: "👥",
       kind: "constitutional",
-      holderDefault: "members",
       delegable: true,
       valueType: "quorum",
       consent: {
@@ -407,7 +390,6 @@ var CONSTITUTION = (() => {
       id: "authorship",
       glyph: "👤",
       kind: "constitutional",
-      holderDefault: "members",
       delegable: true,
       valueType: "ladder",
       rungs: ["anonymous", "sealed", "public"],
@@ -422,7 +404,6 @@ var CONSTITUTION = (() => {
       id: "signing",
       glyph: "✍️",
       kind: "constitutional",
-      holderDefault: "members",
       delegable: true,
       valueType: "ladder",
       rungs: ["nobody", "each", "everybody"],
@@ -437,7 +418,6 @@ var CONSTITUTION = (() => {
       id: "judgments",
       glyph: "👁️",
       kind: "constitutional",
-      holderDefault: "members",
       delegable: true,
       valueType: "ladder",
       rungs: ["never", "after"],
@@ -452,7 +432,6 @@ var CONSTITUTION = (() => {
       id: "chamber",
       glyph: "🌍",
       kind: "constitutional",
-      holderDefault: "members",
       delegable: true,
       valueType: "ladder",
       rungs: ["closed", "link", "public"],
@@ -467,7 +446,6 @@ var CONSTITUTION = (() => {
       id: "rate",
       glyph: "⏱️",
       kind: "ordinary",
-      holderDefault: "convenor",
       delegable: true,
       valueType: "rate",
       consent: {
@@ -490,7 +468,6 @@ var CONSTITUTION = (() => {
       id: "lapse",
       glyph: "💤",
       kind: "constitutional",
-      holderDefault: "members",
       delegable: true,
       valueType: "lapse",
       consent: {
@@ -514,7 +491,6 @@ var CONSTITUTION = (() => {
       id: "removal",
       glyph: "🚪",
       kind: "constitutional",
-      holderDefault: "members",
       delegable: true,
       valueType: "ladder",
       rungs: ["everyone", "others", "ordinary"],
@@ -533,7 +509,6 @@ var CONSTITUTION = (() => {
       id: "machines",
       glyph: "🤖",
       kind: "ordinary",
-      holderDefault: "convenor",
       delegable: true,
       valueType: "machines",
       consent: {
@@ -554,7 +529,6 @@ var CONSTITUTION = (() => {
       id: "membership",
       glyph: "🪪",
       kind: "constitutional",
-      holderDefault: "members",
       delegable: false,
       valueType: "register",
       deps: [],
@@ -568,7 +542,6 @@ var CONSTITUTION = (() => {
       id: "applications",
       glyph: "🤝",
       kind: "constitutional",
-      holderDefault: "members",
       delegable: true,
       valueType: "applications",
       consent: {
@@ -587,7 +560,6 @@ var CONSTITUTION = (() => {
       id: "displayName",
       glyph: "✋",
       kind: "personal",
-      holderDefault: "member",
       delegable: false,
       valueType: "text",
       deps: [],
@@ -597,7 +569,6 @@ var CONSTITUTION = (() => {
       id: "picture",
       glyph: "🖼️",
       kind: "personal",
-      holderDefault: "member",
       delegable: false,
       valueType: "text",
       deps: [],
