@@ -1295,15 +1295,22 @@
   const PWWHY = {
     '*': {
       u: '<p class="why">Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder' + Q + 's own hand.</p>',
-      a: '<p class="why">Whether the Founder may refuse proposals that the membership pass. Anyone may always propose — this is only about what happens once one passes.</p>',
+      // **The why follows the options into veto vocabulary** (Ed,
+      // 2026-08-22, choosing *the why only*). Once the option became
+      // document text at document size, the explanatory paragraph directly
+      // above it was stating the same rule in the older words, inches away
+      // and in the same card. The **head** deliberately keeps *may refuse*:
+      // it is the clause's own sentence, and the clause joins ✒️ and 🛡️ as
+      // verb phrases that "has a veto over" cannot be joined into.
+      a: '<p class="why">Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.</p>',
     },
     policy: {
       u: '<p class="why">Whether the Founder may invite and remove members at will, with nobody' + Q + 's agreement. Anyone may always propose bringing somebody in — this is only about the Founder' + Q + 's own hand.</p>',
-      a: '<p class="why">Whether the Founder may refuse applications that the membership pass. This is only about what happens once one passes.</p>',
+      a: '<p class="why">Whether the Founder has a veto over proposals passed by the membership about applications. This is only about what happens once one passes.</p>',
     },
     text: {
       u: '<p class="why">Whether the Founder may edit the text at will, with no proposal. Anyone may always propose a change to the text — this is only about the Founder' + Q + 's own hand.</p>',
-      a: '<p class="why">Whether the Founder may refuse changes to the text that the membership pass, before they land. Anyone may always propose; this is only about what happens once one passes.</p>',
+      a: '<p class="why">Whether the Founder has a veto over proposals passed by the membership about the text, before they land. Anyone may always propose; this is only about what happens once one passes.</p>',
     },
   };
   const pwWhy = (k, power) => (PWWHY[k] || PWWHY['*'])[power];
@@ -2517,7 +2524,24 @@
         joinBy: 'invite', policyBy: 'roster', lapse: 'roster', lapseDays: 90,
         removal: 'roster', authorship: 'roster', signing: 'roster', judgments: 'roster',
         rateBy: 'founder', grant: 4, dripMin: 180, cap: 8,
-        chamber: 'roster', auditor: false, auditorBudget: 6 };
+        // **🌍 stays with the founder, and that is the tooling fix** (Ed,
+        // 2026-08-22, asking whether ⏩ could be more useful for working on
+        // the power cards). ⏩ already leaves four power cards live — the
+        // title, the link, the rate and the machines, being the settings it
+        // keeps — so the gap was never *no power card*. It was that every
+        // **constitutional** setting was delegated, and delegation is the
+        // state of holding neither power: so the 🛡️ card on a constitutional
+        // setting, the 👑 mark, and the whole crown-question route were
+        // unreachable by hand in a settled document.
+        //
+        // Keeping 🌍 costs the fixture nothing it was saying: the value is
+        // the same 'closed' the room was answering its way to, so every
+        // sentence about visibility reads as it did. What changes is the
+        // governance half — the clause gains its deviation, and Ash is a 👑
+        // rather than a 📯. That is a live state the fixture could not reach
+        // at all before, and the 📯 case is one radio away in either
+        // direction.
+        chamber: 'closed', auditor: false, auditorBudget: 6 };
       for (const k of Object.keys(SEED)) {
         if (S[k] === '' || S[k] === null || S[k] === undefined) S[k] = SEED[k];
       }
