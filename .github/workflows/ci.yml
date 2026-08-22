@@ -41,6 +41,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run spec-check
       - name: the server walk again, over Postgres (stage 6)
         run: DRAFT_TEST_STORE=pg npm test -w @draft/server
       - run: npm run build
