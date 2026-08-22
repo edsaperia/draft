@@ -1670,9 +1670,15 @@ var CONSTITUTION = (() => {
       }
       this.emit({ type: "constituted", t });
     }
-    /** The judge-gate settings not yet settled — what 🍾 waits on. */
+    /** What 🍾 waits on (§9.0b, §9.7.1): a delegated question on **any** setting
+     *  blocks the start while it collects, and every judge-gate must be settled
+     *  however it is held. → why: R-045 */
     waitingOn() {
-      return CATALOGUE.filter((e) => e.judgeGate && this.settings.get(e.id).settledBy === null).map((e) => e.id);
+      return CATALOGUE.filter((e) => {
+        const st = this.settings.get(e.id);
+        if (!st) return false;
+        return st.collecting || e.judgeGate && st.settledBy === null;
+      }).map((e) => e.id);
     }
     /**
      * The founder's readiness readout (Q443 (a)(i), both halves; founder-only

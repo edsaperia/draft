@@ -1106,10 +1106,16 @@ export class ConstitutionSession {
     this.emit({ type: 'constituted', t });
   }
 
-  /** The judge-gate settings not yet settled — what 🍾 waits on. */
+  /** What 🍾 waits on (§9.0b, §9.7.1): a delegated question on **any** setting
+   *  blocks the start while it collects, and every judge-gate must be settled
+   *  however it is held. → why: R-045 */
   private waitingOn(): SettingId[] {
     return CATALOGUE
-      .filter((e) => e.judgeGate && this.settings.get(e.id)!.settledBy === null)
+      .filter((e) => {
+        const st = this.settings.get(e.id);
+        if (!st) return false;            // the register and the personal pair
+        return st.collecting || (e.judgeGate && st.settledBy === null);
+      })
       .map((e) => e.id);
   }
 

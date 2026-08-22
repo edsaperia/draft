@@ -304,6 +304,7 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
       authorship: { rung: 'sealed' }, signing: { rung: 'each' },
       judgments: { rung: 'after' }, chamber: { rung: 'link' },
       applications: { holder: 'members', joinPolicy: 'invite' },
+      removal: { rung: 'everyone' }, // delegated too, so the room must answer it (Q626)
       lapse: { afterMs: null }, rate: { grant: 4, cap: 8, dripMinutes: 240 },
       machines: { enabled: false, budget: 0 },
     } as const;
@@ -325,7 +326,11 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
 describe('constituted (§9.6a): the moment judging opens', () => {
   it('fires when the seven gates settle, and the pre-start rights die with it', () => {
     const s = openDelegated();
-    settleAllReserved(s, 1, ['applications']); // applications is not a gate
+    settleAllReserved(s, 1, ['applications']);
+    // a delegated question on any setting blocks the start, gate or not (Q626)
+    expect(() => s.begin(1)).toThrow(/'applications' is still being decided/);
+    s.reclaim(1, 'applications');
+    s.setSetting(1, 'applications', { holder: 'members', joinPolicy: 'invite' });
     s.begin(1); // 🍾 (Q443): nothing starts until the founder says so
     expect(s.constitutedAtT).toBe(1);
     expect(s.canJudge()).toBe(true);

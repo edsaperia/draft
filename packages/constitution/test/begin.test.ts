@@ -59,6 +59,64 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
     expect(s.readiness().ready).toBe(false); // nothing left to begin
   });
 
+  // Q626: the start waits on **any** delegated question, gate or not. A
+  // question delegated to a room that cannot answer it survives the start in a
+  // state nothing reaches — it cannot resolve (under two voices), cannot be
+  // reclaimed (pre-start only) and cannot be set (the members' now) — while the
+  // adapter runs on a fallback nobody chose. SPEC §9.7.1 always said so.
+  const setAllBut = (s: ConstitutionSession, except: string[], t = 1) => {
+    const all = {
+      ending: { endsAtMs: 1_000_000 }, bar: { pct: 66 }, chamber: { rung: 'link' },
+      rate: { grant: 4, cap: 8, dripMinutes: 240 }, ...FOUNDER_SET,
+    } as const;
+    for (const [k, v] of Object.entries(all)) {
+      if (except.includes(k)) continue;
+      s.reclaim(t, k as never); s.setSetting(t, k as never, v as never);
+    }
+  };
+
+  it('a delegated non-gate question blocks the start too (Q626)', () => {
+    const s = ConstitutionSession.open({ title: 'T', slug: 't4',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 0);
+    s.confirmStartingText(1, 'x');
+    setAllBut(s, ['rate']);
+    s.delegate(1, 'rate'); // the proposal rate: ordinary, and no judge-gate
+    const r = s.readiness();
+    expect(r.ready).toBe(false);
+    expect(r.waiting).toEqual(['rate']);
+    expect(() => s.begin(2)).toThrow(/'rate' is still being decided/);
+    expect(s.constitutedAtT).toBeNull();
+  });
+
+  it('a clerk cannot seal the document by delegating applications (Q626)', () => {
+    const s = ConstitutionSession.open({ title: 'T', slug: 't5',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: false } }, 0);
+    s.confirmStartingText(1, 'x');
+    setAllBut(s, ['applications']);
+    s.delegate(1, 'applications');
+    // The regression this test prevents: past the start there is nobody to
+    // answer the question, nobody to reclaim it, and the hand-over has taken
+    // the register's drafting power with it — so the clerk could neither
+    // invite nor let anybody apply. The document would be sealed for ever.
+    expect(s.E()).toBe(0);
+    expect(() => s.begin(2)).toThrow(/'applications' is still being decided/);
+    expect(s.constitutedAtT).toBeNull();
+  });
+
+  it('reclaiming the question releases the start (Q626)', () => {
+    const s = ConstitutionSession.open({ title: 'T', slug: 't6',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 0);
+    s.confirmStartingText(1, 'x');
+    setAllBut(s, ['rate']);
+    s.delegate(1, 'rate');
+    expect(() => s.begin(2)).toThrow(/'rate' is still being decided/);
+    s.reclaim(2, 'rate');
+    s.setSetting(2, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
+    expect(s.readiness().ready).toBe(true);
+    s.begin(3);
+    expect(s.constitutedAtT).toBe(3);
+  });
+
   it('an invitation outstanding at 🍾 is an offer awaiting the person (Q441/457)', () => {
     const s = ConstitutionSession.open({ title: 'T', slug: 't2',
       convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 0);
