@@ -376,3 +376,22 @@ Recommendation first in each list.
   (b) it rides the fold like every other owed event.
 - **576** L4/Y1 — a submitted judgment leaves its card open: (a) keep the exception; (b) close and file
   as ⏳ like every other commit.
+
+**The pass itself** (calls I had made on my own, turned into questions at Ed's ask, 2026-08-22)
+
+- **577** §9.3's observer-role sentence: (a) strike it, close Q324, move the anonymized metrics feed
+  to Q42 as a spectator-api note; (b) keep it as a non-normative spectator-api stub.
+- **578** Say in the settings table when each non-delegable setting may be handed over (title, link,
+  pace from text-confirmation; the Text at the start): (a) a *hand-over from* column, retiring X6;
+  (b) leave it as X6 and rule 2.
+- **579** CLAUDE.md: the D6 procedure section and the two stale entries (557, 559): (a) all with the
+  rewrite, one sitting; (b) the two corrections now, D6 with the rewrite; (c) all three now.
+- **580** `npm run spec-check` in CI: (a) yes, once the tables are in their final files and 558 is
+  fixed; (b) no, a hand tool run at each pass.
+- **581** The *page key* column: (a) move it to a mapping table in the surface document, the spec
+  table ending at *route of a change*; (b) keep it in the spec table.
+- **582** The artifact source in the repo: (a) keep `design/spec-pass/` as the pass archive, deleting
+  each pass's files once folded; (b) keep the md only; (c) scratchpad only.
+
+The page (`pass-1.html`) carries every item verbosely — the sentence or row it is about, reasoning
+and an example — and is the form Ed answers in; this file is the extraction of record.
