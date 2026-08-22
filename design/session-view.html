@@ -1335,11 +1335,11 @@
       rule: 'Each member says the lowest they will accept, and the document takes the highest.',
       takes: 'The document takes the highest', result: '10 of 14',
       dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', 'all of them'] },
-    { k: 'authorship', g: '👤', t: 'When Is a Proposer Named?', kind: 'constitutional', gate: 'judge', key: 'authorship', p: 0.5,
+    { k: 'authorship', g: '👤', t: 'Are Anonymous Proposers Revealed?', kind: 'constitutional', gate: 'judge', key: 'authorship', p: 0.5,
       rule: 'This one is about privacy, so it runs the other way: the document takes the <b>most private</b> answer, and one member who wants to stay unnamed keeps everybody unnamed.',
       takes: 'The document takes the most private', result: 'Nobody’s name, ever',
       dist: [8, 4, 2], distTop: 0, distEnds: ['No names, ever', 'Names from the start'] },
-    { k: 'signing', g: '✍️', t: 'Who May Sign a Proposal?', kind: 'constitutional', gate: 'judge', key: 'signing', p: 0.5,
+    { k: 'signing', g: '✍️', t: 'Can Members Make Anonymous Proposals?', kind: 'constitutional', gate: 'judge', key: 'signing', p: 0.5,
       rule: 'Also about privacy, so the <b>most private</b> answer wins.',
       takes: 'The document takes the most private', result: 'Nobody signs',
       dist: [9, 3, 2], distTop: 0, distEnds: ['Nobody signs', 'Everybody signs'] },
@@ -1886,7 +1886,7 @@
   const ORDER = ['title', 'slug', 'myemail', 'grant-pen', 'grant-shield', 'chamber',
     'policy', 'hat', 'myname', 'mypic', 'roster', 'lapse', 'removal',
     'ending', 'bar', 'quorum',
-    'authorship', 'signing', 'judgments',
+    'signing', 'authorship', 'judgments',
     'canpropose', 'canjudge', 'grant-voice', 'rate', 'machines',
     'text', 'begin'];
   // a card in the order waits for everything above it and nothing else: the
@@ -2048,7 +2048,7 @@
     // "Anonymity" (Ed, 2026-08-19), not "Privacy"
     { key: 'privacy', title: 'Anonymity',
       text: '',
-      keys: ['authorship', 'signing', 'judgments'] },
+      keys: ['signing', 'authorship', 'judgments'] },
     // **Proposals reads fourth** (Ed, 2026-08-21), restoring the order both
     // CLAUDE.md and design/DECISIONS.md have always carried: Membership ·
     // Decisions · Anonymity · Proposals · The Document. It had drifted to
@@ -2999,8 +2999,8 @@
     quorum: 'how many members must weigh in before a question can pass',
     bar: 'how sure the room must be at the close',
     pace: 'how the approval threshold climbs to the close',
-    authorship: 'when a proposer is named',
-    signing: 'who may sign a proposal',
+    authorship: 'whether anonymous proposers are revealed',
+    signing: 'whether members can make anonymous proposals',
     judgments: 'whether judgments are revealed with the record',
     chamber: 'who may read the document',
     lapse: 'whether an inactive membership lapses',

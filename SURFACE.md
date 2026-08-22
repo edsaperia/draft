@@ -276,9 +276,9 @@ The refund flight and every grant's inbound flight take 640 ms.
 | 14 | ending | ⏰ | constitutional, route inside it | deciding, first | yes | removal | When Does It End? |
 | 15 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | How Sure Must the Room Be? |
 | 16 | quorum | 👥 | constitutional · judge-gate | deciding, last | yes | bar | Quorum |
-| 17 | authorship | 👤 | constitutional · judge-gate | privacy | yes | quorum | When Is a Proposer Named? |
-| 18 | signing | ✍️ | constitutional · judge-gate | privacy | yes | authorship | Who May Sign a Proposal? |
-| 19 | judgments | 👁️ | constitutional · judge-gate | privacy | yes | signing | When Are Judgments Revealed? |
+| 17 | signing | ✍️ | constitutional · judge-gate | privacy | yes | quorum | Can Members Make Anonymous Proposals? |
+| 18 | authorship | 👤 | constitutional · judge-gate | privacy | yes | signing | Are Anonymous Proposers Revealed? |
+| 19 | judgments | 👁️ | constitutional · judge-gate | privacy | yes | authorship | When Are Judgments Revealed? |
 | 20 | canpropose | 💡 | gate (and the ✏️ grant) | rate, after 🍾's clause | no | 🍾 | Proposing |
 | 21 | canjudge | ⚖️ | gate | rate | no | 🍾 | Judging |
 | 22 | grant-voice | 🏛️ | grant | under the first question asking you, else under ⚖️ | no | the first blind question you are asked (Q605) | Your Voice |
@@ -289,7 +289,7 @@ The refund flight and every grant's inbound flight take 640 ms.
 
 Outside `ORDER`: 🪜 (a tab in 🌡️'s stack; no clause, no rail entry — Q512); the `ans-*` answer tasks (a task paragraph under the watching clause); ✉️ ❌ (doors in the 🪪 pile from the moment judging opens); the ✒️/🛡️ power tabs under every held-able setting (*Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* — Q615); 🥂.
 
-**The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link with the pen and shield clauses beneath it, 📧 pre-save, 🌍, the Founded line — then **Membership** (`members`: 🤝 · *Members* · the list with 🪪 ✉️ ❌ 🎩 and your row wearing ✋ 🖼️ 📧 · 💤 · 🥾), **Decisions** (`deciding`: ⏰ · 🥂 when closed · 🌡️ with 🪜 in its stack · 👥), **Anonymity** (`privacy`: 👤 ✍️ 👁️), **Proposals** (`rate`: the preamble wearing 🍾 · 💡 · ⚖️ with 🏛️ · ⏱️ · 🤖), the hairline, the charter under its own name with 📄 beside it. **The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📄. Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
+**The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link with the pen and shield clauses beneath it, 📧 pre-save, 🌍, the Founded line — then **Membership** (`members`: 🤝 · *Members* · the list with 🪪 ✉️ ❌ 🎩 and your row wearing ✋ 🖼️ 📧 · 💤 · 🥾), **Decisions** (`deciding`: ⏰ · 🥂 when closed · 🌡️ with 🪜 in its stack · 👥), **Anonymity** (`privacy`: ✍️ 👤 👁️), **Proposals** (`rate`: the preamble wearing 🍾 · 💡 · ⚖️ with 🏛️ · ⏱️ · 🤖), the hairline, the charter under its own name with 📄 beside it. **The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📄. Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
 
 ### 8.1 Rules
 

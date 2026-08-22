@@ -19,8 +19,10 @@ spec pass 2 folded (🏛️ with the first question you are asked, one label per
 rung, the 🌍 interim clause, the motion hold, ↻ grey, the cards.js tooltips
 in surface vocabulary), and at `refs-glyphs-2026-08-22` after the threshold,
 the ramp and removal took new glyphs (🌡️ 🪜 🥾), which also cleared the
-Proposals-preamble freeze the previous run had left pending. It marks the
-same commit
+Proposals-preamble freeze the previous run had left pending, and at
+`refs-anon-2026-08-22` after ✍️ and 👤 were renamed to the anonymity
+question and its follow-up and traded places in the founding order. It
+marks the same commit
 and is authoritative if EOL normalisation ever makes a copy differ byte-wise.
 
 - **Never edit these files.** When the surface changes intentionally,
