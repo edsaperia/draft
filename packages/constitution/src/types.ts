@@ -56,8 +56,16 @@ export type ConstitutionEvent =
   /* -- creation and the pre-start free hand (§9.6a, §9.7a) ---------------- */
   | { type: 'created'; t: number; title: string; slug: string; convenor: ConvenorInput }
   | { type: 'convenor-membership-set'; t: number; isMember: boolean }
+  /**
+   * The convenor's own hand on a setting. `why` is the reason they gave for
+   * it (Q530) and is **optional on purpose**: `stableStringify` drops
+   * undefined keys, so an event without one serialises exactly as it did
+   * before this field existed and every log written before today replays
+   * bit-identically. `motion-opened` has carried the same field, spelled
+   * the same way, since it existed.
+   */
   | { type: 'setting-set'; t: number; setting: SettingId; value: SettingValue;
-      by: 'convenor' | 'crown' }
+      by: 'convenor' | 'crown'; why?: string }
   | { type: 'setting-delegated'; t: number; setting: SettingId }
   | { type: 'setting-reclaimed'; t: number; setting: SettingId }
   /** One crown power given up — free, separate, one-way (§9.7 v0.54). */
@@ -241,6 +249,21 @@ export interface SettingState {
    */
   powerFrom: { unilateral: PowerSource | null; assent: PowerSource | null };
   value: SettingValue | null;
+  /**
+   * What this setting held before the convenor last set it directly, and the
+   * reason they gave (Q530). Both stay null until the pen changes a value
+   * that already stood — which is exactly what tells a **first decision**
+   * from a **change**, and so what the acknowledgement keys on: nobody is
+   * owed a receipt for the founder answering a question for the first time.
+   * Folded from `setting-set` events the log already carried, so no event
+   * shape changed to get it and the hash chain is untouched.
+   *
+   * Only the convenor's direct hand moves them. A carried motion changes a
+   * value too, but the room watched that happen and voted on it; there is
+   * nothing to announce.
+   */
+  previousValue: SettingValue | null;
+  setWhy: string | null;
   settledBy: SettledBy | null;
   settledAtT: number | null;
   /** A delegated question, while it collects (pre-resolution). */

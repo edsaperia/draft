@@ -575,7 +575,8 @@
     }
     if (wantsDelegate(k)) { cs.delegate(now(), mid); return; }
     if (csDelegated(k)) cs.reclaim(now(), mid);
-    cs.setSetting(now(), mid, TYPED[k]());
+    cs.setSetting(now(), mid, TYPED[k](), (S.setWhy && S.setWhy[k]) || undefined);
+    if (S.setWhy) delete S.setWhy[k];
     // 📈 rides ✒️'s commit (Q512): it is not a task of its own, so setting the
     // threshold sets the pacing with it — at whatever its tab holds, which is
     // rising from 55% until somebody changes it.
@@ -639,6 +640,7 @@
     el.querySelectorAll('[data-txt]').forEach((b) => ks.add(b.dataset.txt));
     el.querySelectorAll('[data-num]').forEach((b) => ks.add(b.dataset.num));
     el.querySelectorAll('[data-ans]').forEach((b) => ks.add('ans:' + b.dataset.ans));
+    if (el.querySelector('[data-setwhy]')) ks.add('setWhy');
     if (el.querySelector('[data-titlelane]')) ks.add('titleDraft');
     if (el.querySelector('[data-pic]')) ks.add('mypic');
     if (el.querySelector('[data-slide]')) {
@@ -701,6 +703,9 @@
     authorship: '', signing: '', judgments: '',
     rateBy: '', grant: '', dripMin: '', cap: '',
     chamber: '', auditor: null, auditorBudget: '',
+    // the reason for a change, per setting, until its ✒️ commits it (Q530) —
+    // a provisional value like any other, so it survives a close
+    setWhy: {},
     hatPick: null,
     roster: [{ n: '', e: '', role: 'member', founder: true, in: true, ans: {}, okd: new Set(), mid: 'founder' }],
     // **Confirmed, not merely defaulted** (Ed, 2026-08-17). A default nobody
@@ -752,6 +757,26 @@
   // same one the OK itself has: the module holds no grant-OK state, so a
   // power relinquished in another browser is not seen here — this is a
   // per-device approximation of a per-member fact.
+  // **The module is the truth about what is owed** (Q530). `hydrateS` does
+  // this for a document served over the wire, but the fixture never reaches
+  // it — and the rule is the module's either way, so it belongs somewhere
+  // both paths run. It only ever *removes*: a change can re-open an
+  // acknowledgement, and nothing here may quietly grant one.
+  const owedSettings = () => {
+    if (!cs) return null;
+    if (cs.isRemote) return new Set((cs.v && cs.v.view && cs.v.view.owedOks) || []);
+    const id = viewerId(); if (!id) return null;
+    let rec = null;
+    try { rec = cs.memberRecords().get(id) || null; } catch (e) { return null; }
+    return rec ? new Set(rec.okOwed) : null;
+  };
+  const syncOwedOks = () => {
+    const owed = owedSettings(); if (!owed) return;
+    for (const c of CARDS) {
+      if (c.isGate || c.ansFor || !PW_KEYS.includes(c.k)) continue;
+      if (owed.has(midOf(c.k))) { S.okd.delete('set-' + c.k); S.okd.delete('res-' + c.k); }
+    }
+  };
   const grantSeen = new Map();
   const syncGrantAcks = () => {
     const seat = (viewerId() || S.viewer || '?') + '|';
@@ -2217,6 +2242,94 @@
     signing: { 'Nobody signs': { rung: 'nobody' }, 'Each author chooses': { rung: 'each' }, 'Everybody signs': { rung: 'everybody' } },
     judgments: { 'Never revealed': { rung: 'never' }, 'Revealed after the decision': { rung: 'after' } },
   };
+  // **A change carries a reason, and says who made it** (Q530, Ed
+  // 2026-08-22). The pen is the only route that changes a rule without
+  // asking anybody, and it was the only one that left no reason behind —
+  // which is backwards: a change nobody got to argue about is the one most
+  // worth explaining. Two halves of one object, and which you meet depends
+  // on which side of the act you stand: the founder is offered a lane to
+  // write in, and everybody else is told what changed and reads what they
+  // wrote.
+  //
+  // **Neither appears on a first decision.** A founder answering a question
+  // for the first time has changed nothing — there is no *from* — and a room
+  // told that the founder has decided fifteen things nobody asked them about
+  // is noise rather than news. §9.6a says the same thing in the spec's own
+  // words: before the start nothing is amended, only set. The test is the
+  // module's `previousValue`, which folds from events the log already
+  // carried, so no event shape moved to get it.
+  //
+  // A value in words, for the *from* half of the sentence. It has to be its
+  // own map: the surface's existing short forms (`RESULT`) read the current
+  // value out of `S`, and MVAL only knows the values a motion may offer —
+  // neither can be handed an arbitrary past value and asked what it says.
+  const WORDS = {
+    title: (v) => '“' + v.text + '”',
+    slug: (v) => 'docs.vote/' + v.slug,
+    chamber: (v) => ({ closed: 'members only', link: 'anyone with the link',
+      public: 'public' }[v.rung] || v.rung),
+    policy: (v) => ({ invite: 'invitation only', proposed: 'applications by proposal',
+      apply: 'anyone may apply', open: 'open' }[v.joinPolicy] || v.joinPolicy),
+    lapse: (v) => (v.afterMs === null ? 'never'
+      : Math.round(v.afterMs / 86400000) + ' days'),
+    removal: (v) => ({ everyone: 'everyone agreeing, them included',
+      others: 'everyone else agreeing', ordinary: 'a proposal like any other' }[v.rung] || v.rung),
+    ending: (v) => (v.endsAtMs === null ? 'never'
+      : new Date(v.endsAtMs).toLocaleString(undefined,
+        { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
+    bar: (v) => v.pct + '%',
+    pace: (v) => (v.shape === 'ramp' ? 'rising from ' + v.startPct + '%'
+      : 'the same number throughout'),
+    quorum: (v) => (v.form === 'share' ? v.n + '% of the members' : v.n + ' members'),
+    authorship: (v) => ({ anonymous: 'nobody ever named', sealed: 'names at the close',
+      public: 'names from the start' }[v.rung] || v.rung),
+    signing: (v) => ({ nobody: 'nobody signs', each: 'each author chooses',
+      everybody: 'everybody signs' }[v.rung] || v.rung),
+    judgments: (v) => ({ never: 'never revealed',
+      after: 'revealed after the decision' }[v.rung] || v.rung),
+    rate: (v) => v.grant + ' ✏️ to start, up to ' + v.cap +
+      ', one more every ' + v.dripMinutes + ' minutes',
+    machines: (v) => (v.enabled ? 'on, with a budget of ' + v.budget + ' ✏️'
+      : 'no AI proposals'),
+  };
+  const wordsFor = (k, v) => { if (v === null || v === undefined) return null;
+    try { return WORDS[k] ? String(WORDS[k](v)) : null; } catch (e) { return null; } };
+  // what this setting held before the founder last set it — null on a first
+  // decision, which is the whole test
+  const changedFrom = (k) => { const st = csState(k); return st ? (st.previousValue || null) : null; };
+  const setWhyOf = (k) => { const st = csState(k); return st ? (st.setWhy || null) : null; };
+  // a setting that already holds a value: committing the pen here is a change
+  const isChange = (k) => { const st = csState(k); return !!(st && st.value !== null); };
+  // **The founder's rationale is not sealed** (Ed, 2026-08-22: *the rationale
+  // should have the founder's name and avatar on it, and 👑 so people know it
+  // was a founder action, even if they have no name or avatar*). Every other
+  // rationale on this surface wears the featureless disc because authorship
+  // is sealed until the record (§3.4). A ✒️ act is attributed **by
+  // construction** — only the founder can perform it — so the disc would be a
+  // lie the first time it was drawn. The 👑 carries the whole sentence on its
+  // own: an anonymous founder has no name and no picture, and the mark still
+  // says *this was the founder's own hand*.
+  const founderSpeaker = (why) => {
+    const f = founderInfo();
+    return '<div class="speaker founderspoke">' + avHtml(f) +
+      '<div class="spksaid"><span class="who">' + esc((f.n || '').trim() || 'The Founder') +
+      ' <span title="The founder’s own hand — a ✒️ act, not a proposal">👑</span></span>' +
+      (why ? '<div class="said">' + esc(why) + '</div>'
+        : '<div class="said none">No reason given.</div>') + '</div></div>';
+  };
+  // the same speaker, with the reason still being written. It is the
+  // editing-card's own arrangement — you write the sentence in the place and
+  // at the weight everybody else will read it in — with the founder's face
+  // where a member's would be sealed.
+  const founderSpeakerLane = (v) => {
+    const f = founderInfo();
+    return '<div class="speaker founderspoke">' + avHtml(f) +
+      '<div class="spksaid"><span class="who">' + esc((f.n || '').trim() || 'The Founder') +
+      ' <span title="The founder’s own hand — a ✒️ act, not a proposal">👑</span></span>' +
+      '<div class="said edit-why' + (v ? '' : ' blank') + '" contenteditable="plaintext-only"' +
+      ' spellcheck="false" data-setwhy="1"' +
+      ' data-placeholder="I am changing this because…">' + esc(v) + '</div></div></div>';
+  };
   const mvalTyped = (k, disp) => {
     if (k === 'policy') {
       const jp = { 'Invitation only': 'invite', 'Applications by proposal': 'proposed',
@@ -2659,7 +2772,12 @@
     // so it is never news to acknowledge (pacing pass, 2026-08-19: the ✉️❌
     // doors were landing in every member's rail as OK cards at the start)
     || (!amFounder() && !c.ansFor && !c.isGate && !c.door && !isRoom(c) && c.own !== 'you' &&
-      c.kind === 'constitutional' && settled(c) && !S.okd.has('set-' + c.k));
+      // **and an ordinary setting the founder *changed*** (Q530, Ed
+      // 2026-08-22). An ordinary rule the founder simply made is not news —
+      // nothing was asked and anybody may motion it whenever they like — but
+      // one they changed has undone something the room was living under.
+      (c.kind === 'constitutional' || changedFrom(c.k) !== null) &&
+      settled(c) && !S.okd.has('set-' + c.k));
 
   // **The constitution states itself in sentences** (Ed, 2026-08-18): each
   // decision has a what-phrase for its open states and a declarative
@@ -3706,6 +3824,40 @@
       // the one sentence only its own card can say: the ⏰ card's
       // whether/when split, where the constitutional line falls inside a
       // single setting.
+      // the two halves of Q530, chosen by which side of the act you are on
+      const changeHalf = (cc) => {
+        const k = cc.k;
+        if (cc.ansFor || cc.isGate || cc.door || !PW_KEYS.includes(k) || k === 'text') return '';
+        // the founder, about to change something that already stands: a lane
+        if (amFounder() && cs && isChange(k) && !motionOn(cc) && !membersHold(cc)) {
+          const v = (S.setWhy && S.setWhy[k]) || '';
+          return '<div class="body whyset"><p class="eyebrow fieldlab">Why are you changing this?</p>' +
+            founderSpeakerLane(v) + '</div>';
+        }
+        // anybody else, reading what happened: what changed, and their reason
+        const from = changedFrom(k);
+        if (!from || amFounder()) return '';
+        const was = wordsFor(k, from);
+        const now2 = wordsFor(k, (csState(k) || {}).value);
+        if (!was) return '';
+        const what = esc(WHAT[k] || (k === 'title' ? 'the document’s title' : cc.t.toLowerCase()));
+        // **Long values are shown, not narrated** (2026-08-22). *from x to y*
+        // reads well for a rung, a percentage or a date, and badly for ⏱️,
+        // whose value is three numbers in a sentence — *from 4 ✏️ to start, up
+        // to 8, one more every 180 minutes to 2 ✏️ to start, up to 8, one more
+        // every 180 minutes* buries the one number that moved and loses its
+        // own *to* in the middle. Past a short value the pair goes on two
+        // aligned lines instead, where the eye finds the difference itself.
+        const longish = was.length > 32 || (now2 || '').length > 32;
+        return '<div class="body changed">' +
+          (longish
+            ? '<p class="cpv">The Founder has changed ' + what + '.</p>' +
+              '<p class="waswas"><span>was</span>' + esc(was) + '</p>' +
+              (now2 ? '<p class="waswas"><span>now</span>' + esc(now2) + '</p>' : '')
+            : '<p class="cpv">The Founder has changed ' + what +
+              ' from ' + esc(was) + (now2 ? ' to ' + esc(now2) : '') + '.</p>') +
+          founderSpeaker(setWhyOf(k)) + '</div>';
+      };
       const kindLine = c.knote ? '<p class="setnote">' + c.knote + '</p>' : '';
       const newsKey = isRoom(c) ? 'res-' + c.k : 'set-' + c.k;
       // **The ground belongs to the glyph, never to the card's kind** (Ed's
@@ -3788,7 +3940,7 @@
         (ready(c) && penOkFor(commitGlyph) ? '' : ' disabled') +
         ' data-confirm="1" title="' +
         (penOkFor(commitGlyph) ? commitTitle(c) : penWaitTitle) + '">' + commitGlyph + '</button>';
-      return cardHtml(c, ctx, body + kindLine, foot, g.cards);
+      return cardHtml(c, ctx, body + changeHalf(c) + kindLine, foot, g.cards);
     };
     // the title card opens in the title's own paragraph, whatever else
     // the band is doing — the clause, opened, with its tab in its strip
@@ -3919,6 +4071,7 @@
     syncFromCs();
     resolveCounts();
     syncGrantAcks();
+    syncOwedOks();
     // one snapshot per opening — after the module has had its say, so the
     // bin puts the card back to what stands rather than to what was on screen
     // **What you have typed survives a close** (Ed, 2026-08-21: *my inputs
@@ -4532,6 +4685,13 @@
     if (t.dataset.appname !== undefined) { S.app.name = t.value; return; }
     const at = t.closest && t.closest('[data-apptext]');
     if (at) { S.app.text = at.textContent.trim(); at.classList.toggle('blank', !S.app.text); return; }
+    const sw = t.closest && t.closest('[data-setwhy]');
+    if (sw) {
+      if (!S.setWhy) S.setWhy = {};
+      S.setWhy[S.open] = sw.textContent.trim();
+      sw.classList.toggle('blank', !sw.textContent.trim());
+      return;
+    }
     const ml = t.closest && t.closest('[data-motionlane]');
     if (ml) { if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
       S.draft[ml.dataset.motionlane] = ml.textContent.trim();
@@ -5062,8 +5222,13 @@
       const st = csState(c.k);
       if (st && (st.settledBy !== null || st.holder === 'members')) {
         S.seen.add(c.k);
-        if (st.settledBy !== null && !owed.has(midOf(c.k))) {
-          S.okd.add('set-' + c.k); S.okd.add('res-' + c.k);
+        // **Owed means not acknowledged, in both directions** (Q530). This
+        // only ever *added*, so an acknowledgement given once could never be
+        // taken back — and a change re-owes the OK it dropped, which is the
+        // whole mechanism by which a change announces itself.
+        if (st.settledBy !== null) {
+          if (owed.has(midOf(c.k))) { S.okd.delete('set-' + c.k); S.okd.delete('res-' + c.k); }
+          else { S.okd.add('set-' + c.k); S.okd.add('res-' + c.k); }
         }
       }
     });

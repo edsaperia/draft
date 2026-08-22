@@ -43,6 +43,14 @@ export interface SettingView {
   /** Where each held power came from (Q524): the birth, or a reserve motion. */
   powerFrom: { unilateral: PowerSource | null; assent: PowerSource | null };
   value: SettingValue | null;
+  /**
+   * What it held before the convenor last set it directly, and their reason
+   * (Q530). `previousValue === null` on a settled setting means the founder
+   * decided it rather than changed it — which is what the acknowledgement
+   * keys on, since nobody is owed a receipt for a first decision.
+   */
+  previousValue: SettingValue | null;
+  setWhy: string | null;
   settledBy: 'convenor' | 'ceremony' | 'motion' | 'crown' | null;
   settledAtT: number | null;
   collecting: boolean;
@@ -144,7 +152,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     const st = s.settingState('startingText');
     settings.push({ setting: 'startingText', glyph: '📄', kind: 'ordinary',
       holder: st.holder, powers: { ...st.powers }, powerFrom: { ...st.powerFrom },
-      value: null, settledBy: null,
+      value: null, previousValue: null, setWhy: null, settledBy: null,
       settledAtT: null, collecting: false });
   }
   for (const entry of MANAGED) {
@@ -157,6 +165,8 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       powers: { ...st.powers },
       powerFrom: { ...st.powerFrom },
       value: st.value,
+      previousValue: st.previousValue,
+      setWhy: st.setWhy,
       settledBy: st.settledBy,
       settledAtT: st.settledAtT,
       collecting: st.collecting,

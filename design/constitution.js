@@ -813,6 +813,8 @@ var CONSTITUTION = (() => {
               // both powers are the convenor's by construction at the birth
               powerFrom: { unilateral: "founding", assent: "founding" },
               value: null,
+              previousValue: null,
+              setWhy: null,
               settledBy: null,
               settledAtT: null,
               collecting: false,
@@ -848,7 +850,14 @@ var CONSTITUTION = (() => {
         }
         case "setting-set": {
           this.touch(this.convenor.id, event.t);
+          const prevOf = this.settings.get(event.setting);
+          const wasValue = prevOf ? prevOf.value : null;
           this.foldSet(event.setting, event.value, event.by, event.t);
+          const nowSt = this.settings.get(event.setting);
+          if (nowSt) {
+            nowSt.previousValue = wasValue;
+            nowSt.setWhy = event.why ?? null;
+          }
           if (event.setting === "quorum") {
             this.quorumFormValue = event.value.form;
           }
@@ -1386,7 +1395,13 @@ var CONSTITUTION = (() => {
       this.emit({ type: "convenor-membership-set", t, isMember });
       this.afterRosterChange(t, isMember ? "arrival" : "departure", this.convenor.id);
     }
-    setSetting(t, setting, value) {
+    /**
+     * The convenor's own hand (Q530 added `why`): a reason for the change,
+     * optional and blank-is-real like every other rationale on the surface.
+     * It is emitted only when there is one, so an event without a reason
+     * serialises exactly as it did before the field existed.
+     */
+    setSetting(t, setting, value, why) {
       this.requireOpen("setting");
       const entry = entryOf(setting);
       if (setting === "startingText") {
@@ -1411,14 +1426,17 @@ var CONSTITUTION = (() => {
         }
       }
       const postStart = this.constitutedT !== null;
+      const reason = typeof why === "string" && why.trim() !== "" ? why.trim() : void 0;
+      const changed = st.value !== null;
       this.emit({
         type: "setting-set",
         t,
         setting,
         value,
-        by: postStart ? "crown" : "convenor"
+        by: postStart ? "crown" : "convenor",
+        ...reason === void 0 ? {} : { why: reason }
       });
-      if (CONSTITUTIONAL.has(setting)) this.oweOks(t, setting);
+      if (CONSTITUTIONAL.has(setting) || changed) this.oweOks(t, setting);
     }
     setQuorumForm(t, form) {
       this.requireOpen("the quorum's form");
@@ -2429,6 +2447,8 @@ var CONSTITUTION = (() => {
         powers: { ...st.powers },
         powerFrom: { ...st.powerFrom },
         value: null,
+        previousValue: null,
+        setWhy: null,
         settledBy: null,
         settledAtT: null,
         collecting: false
@@ -2444,6 +2464,8 @@ var CONSTITUTION = (() => {
         powers: { ...st.powers },
         powerFrom: { ...st.powerFrom },
         value: st.value,
+        previousValue: st.previousValue,
+        setWhy: st.setWhy,
         settledBy: st.settledBy,
         settledAtT: st.settledAtT,
         collecting: st.collecting

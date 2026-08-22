@@ -152,6 +152,8 @@ export class ConstitutionSession {
             // both powers are the convenor's by construction at the birth
             powerFrom: { unilateral: 'founding', assent: 'founding' },
             value: null,
+            previousValue: null,
+            setWhy: null,
             settledBy: null,
             settledAtT: null,
             collecting: false,
@@ -178,7 +180,16 @@ export class ConstitutionSession {
       }
       case 'setting-set': {
         this.touch(this.convenor.id, event.t); // a convenor act moves their clock
+        // read before foldSet overwrites it: this is the whole of what tells
+        // a first decision from a change (Q530)
+        const prevOf = this.settings.get(event.setting);
+        const wasValue = prevOf ? prevOf.value : null;
         this.foldSet(event.setting, event.value, event.by, event.t);
+        const nowSt = this.settings.get(event.setting);
+        if (nowSt) {
+          nowSt.previousValue = wasValue;
+          nowSt.setWhy = event.why ?? null;
+        }
         if (event.setting === 'quorum') {
           this.quorumFormValue = (event.value as QuorumValue).form;
         }
@@ -746,7 +757,13 @@ export class ConstitutionSession {
     this.afterRosterChange(t, isMember ? 'arrival' : 'departure', this.convenor.id);
   }
 
-  setSetting(t: number, setting: SettingId, value: SettingValue): void {
+  /**
+   * The convenor's own hand (Q530 added `why`): a reason for the change,
+   * optional and blank-is-real like every other rationale on the surface.
+   * It is emitted only when there is one, so an event without a reason
+   * serialises exactly as it did before the field existed.
+   */
+  setSetting(t: number, setting: SettingId, value: SettingValue, why?: string): void {
     this.requireOpen('setting');
     const entry = entryOf(setting);
     if (setting === 'startingText') {
@@ -773,11 +790,24 @@ export class ConstitutionSession {
       }
     }
     const postStart = this.constitutedT !== null;
+    const reason = typeof why === 'string' && why.trim() !== '' ? why.trim() : undefined;
+    // whether this is a *change* has to be read before the event folds
+    const changed = st.value !== null;
     // Post-start a reserved setting is the convenor's to change directly —
     // the assent was consented on the way in (§9.7, Ed's 366; NOTES.md).
     this.emit({ type: 'setting-set', t, setting, value,
-      by: postStart ? 'crown' : 'convenor' });
-    if (CONSTITUTIONAL.has(setting)) this.oweOks(t, setting);
+      by: postStart ? 'crown' : 'convenor',
+      ...(reason === undefined ? {} : { why: reason }) });
+    // **A change is owed an acknowledgement whatever its kind** (Q530, Ed
+    // 2026-08-22). A constitutional setting owes one on any set, because a
+    // rule you had no say in is a decision you are owed however it arose.
+    // An **ordinary** one owes nothing when the founder first decides it —
+    // nothing is being asked, and anybody may motion it whenever they like —
+    // but a founder *changing* one has undone something the room was living
+    // under, and that is news by the same argument. So the ordinary case
+    // keys on `changed`, which is also Ed's own exception: the founder
+    // deciding something for the first time is not a change at all.
+    if (CONSTITUTIONAL.has(setting) || changed) this.oweOks(t, setting);
   }
 
   setQuorumForm(t: number, form: 'count' | 'share'): void {

@@ -179,8 +179,12 @@ const HANDLERS: Record<string, Handler> = {
   /* -- the founder's hand (the module enforces powers and timing) -------- */
   'set-setting': (cs, a, t, args) => {
     founderOnly(a);
+    // the reason for a change (Q530) rides the same optional-and-capped
+    // shape every other rationale on this surface uses; blank is real, and
+    // the module drops an empty one so the event is unchanged without it
     cs.setSetting(t, str(args, 'setting') as SettingId,
-      capValue(args.value as SettingValue, 'that value'));
+      capValue(args.value as SettingValue, 'that value'),
+      typeof args.why === 'string' ? cap(args.why, LIMITS.why, 'the reason') : undefined);
   },
   'delegate': (cs, a, t, args) => {
     founderOnly(a);

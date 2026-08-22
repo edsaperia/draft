@@ -705,6 +705,29 @@ button.cline:hover b { text-decoration: underline; }
   .setupcard .setnote.hold { color: var(--ink); }
   .setupcard .sigs .disc.small { width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; }
   .setupcard .edit-why[data-signwhy]:empty::before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; }
+  /* **The founder speaks in their own name** (Q530, Ed 2026-08-22). Every
+     other rationale wears the featureless disc because authorship is sealed
+     (§3.4); a ✒️ act is attributed by construction, so the avatar goes where
+     the disc would be and the name and 👑 stand over the reason. The 👑 is
+     what carries it when there is no name and no picture: an anonymous
+     founder is ordinary, and the mark still says whose hand this was. */
+  .founderspoke .spksaid { min-width: 0; }
+  .founderspoke .who {
+    display: block; font-weight: 600; font-size: var(--t-cap);
+    color: var(--muted); margin-bottom: 2px;
+  }
+  .founderspoke .said { align-self: start; }
+  /* the lane the founder writes it in: an editing surface, so it takes the
+     editing card own placeholder treatment rather than sitting in the flow */
+  .founderspoke .said.edit-why { outline: none; }
+  .whyset .fieldlab { margin-bottom: var(--s2); }
+  .changed .cpv { margin: 0 0 var(--s2); }
+  /* the two-line form for a long value: the label is a fixed column so the
+     two values line up and the eye can find what moved */
+  .waswas { display: flex; gap: var(--s2); margin: 0 0 2px; font-size: var(--t-small); }
+  .waswas span { flex: none; width: 2.4rem; color: var(--muted);
+    font-size: var(--t-cap); text-transform: uppercase; letter-spacing: 0.06em;
+    line-height: 1.6; }
   /* the speaker's revealed form: the disc stays, the name stands beside it */
   .speaker.revealed .who { font-weight: 600; font-size: var(--t-small); margin-right: 6px; }
   /* the closed page: every clause grey, every tab filed; nothing is asked */
