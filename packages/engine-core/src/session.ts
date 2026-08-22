@@ -1293,6 +1293,12 @@ export class Session {
     for (const m of members) {
       const cand = this.candidates.get(m);
       if (!cand) continue;
+      // A suspended author is out of E (§8.2), and a voice out of E cannot be
+      // a mover toward a floor: the applicant authoring their own admit race
+      // (§9.7.3 X11, Q583) is the case this was written for, and a lapsed
+      // author falls under the same definition. Their judgments *cast* keep
+      // counting (§9.5a); a derived preference was never cast.
+      if (this.roster.get(cand.author)?.suspended) continue;
       const key = `${cand.author}|${pairKey(m, incumbentId)}`;
       if (latest.has(key)) continue;
       latest.set(key, {

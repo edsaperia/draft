@@ -855,6 +855,25 @@ describe('suspension — lapse engine-side (SPEC §9.5a, §8.2, 367b)', () => {
     expect(s.adoptionFloor()).toBe(3); // E = 4 → max(ceil(2.4), 2)
   });
 
+  it("a suspended author's derived preference is not a mover (§9.7.3 X11, Q583)", () => {
+    const s = openHeld();
+    const { id: c1 } = s.submitCandidate(1000, {
+      author: 'p1',
+      patch: rewrite(0, 1, 'A.'),
+      rationale: 'r',
+    });
+    const inc = s.raceOf(c1).incumbentId;
+    s.judge(2000, 'p2', c1, inc, 'a');
+    expect(s.raceOf(c1).distinctMovers).toBe(2); // p2, plus p1's own derived preference
+    // An applicant under *apply* authors their own admit race and is suspended
+    // in the same breath (engine-bridge); out of E, their standing preference
+    // stops being a voice toward the floor — p2's cast judgment still counts.
+    s.suspendParticipant(3000, 'p1');
+    expect(s.raceOf(c1).distinctMovers).toBe(1);
+    s.resumeParticipant(4000, 'p1');
+    expect(s.raceOf(c1).distinctMovers).toBe(2);
+  });
+
   it('a suspended participant can still be removed, and replay agrees', () => {
     const s = openSession();
     s.suspendParticipant(1000, 'p4');

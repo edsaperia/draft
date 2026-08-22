@@ -53,7 +53,7 @@ npm run sim -w @draft/sim-harness -- --mode subscription --scenario clubhouse \
 
 ## Status
 
-Spec v0.65. The mechanism (engine-core, 217 tests) and the constitutional layer (192 tests) are built and tested; the server (39 tests, 13 more against Postgres) hosts real documents at docs.vote; the simulator (31 tests) is what keeps all of it honest.
+Spec v0.65. The mechanism (engine-core, 218 tests) and the constitutional layer (192 tests) are built and tested; the server (39 tests, 13 more against Postgres) hosts real documents at docs.vote; the simulator (31 tests) is what keeps all of it honest.
 
 The mechanism holds up in practice:
 
