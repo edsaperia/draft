@@ -148,7 +148,11 @@ export class EngineBridge {
     }
     const motion = this.cs.openMotion(t, by, { kind: 'set', setting, value }, why);
     const rec = this.cs.motionRecords().get(motion)!;
-    if (rec.route !== 'ordinary') return { motion, route: rec.route };
+    // `route` and `rec.route` are the same value by construction (both come
+    // from motionRouteOf, above and inside openMotion) — this reads the local
+    // one because a **raised** motion is never the pen, and the local is
+    // typed to say so. A 'pen' amendment is folded, never opened.
+    if (rec.route !== 'ordinary') return { motion, route };
     // Two append-only logs cannot be written in one act, so a candidate
     // the engine refuses — a duplicate, an exhausted wallet, a race that
     // has since closed — used to leave a motion standing in the

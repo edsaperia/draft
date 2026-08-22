@@ -132,3 +132,89 @@ describe('who is owed an acknowledgement (Q530)', () => {
     expect(s.memberRecords().get('ada')!.okOwed.has('chamber')).toBe(false);
   });
 });
+
+describe('a pen change is an amendment (Q530, Ed 2026-08-22)', () => {
+  const open2 = () => ConstitutionSession.open({
+    title: 'T', slug: 't',
+    convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+  }, 0);
+
+  it('a change joins the amendments, on its own route', () => {
+    const s = open2();
+    s.setSetting(1, 'chamber', { rung: 'closed' });
+    s.setSetting(2, 'chamber', { rung: 'link' }, 'The archive asked to cite us.');
+    const recs = [...s.motionRecords().values()];
+    expect(recs).toHaveLength(1);
+    const m = recs[0]!;
+    expect(m.route).toBe('pen');
+    expect(m.status).toBe('carried');
+    expect(m.by).toBe('ada');
+    expect(m.stake).toBe(0);
+    expect(m.why).toBe('The archive asked to cite us.');
+    expect(m.payload).toEqual({ kind: 'set', setting: 'chamber', value: { rung: 'link' } });
+    expect(s.amendedFrom(m.id)).toEqual({ rung: 'closed' });
+    // it opens and settles in the one act — nobody had to agree
+    expect(m.openedAtT).toBe(m.settledAtT);
+  });
+
+  it('a first decision is not an amendment', () => {
+    const s = open2();
+    s.setSetting(1, 'chamber', { rung: 'closed' });
+    expect([...s.motionRecords().values()]).toHaveLength(0);
+  });
+
+  it('every change is kept, in order', () => {
+    const s = open2();
+    s.setSetting(1, 'chamber', { rung: 'closed' });
+    s.setSetting(2, 'chamber', { rung: 'link' }, 'one');
+    s.setSetting(3, 'chamber', { rung: 'closed' }, 'two');
+    const recs = [...s.motionRecords().values()];
+    expect(recs.map((m) => m.why)).toEqual(['one', 'two']);
+  });
+
+  it('is inert: it is never running, so nothing acts on it', () => {
+    const s = open2();
+    s.setSetting(1, 'chamber', { rung: 'closed' });
+    s.setSetting(2, 'chamber', { rung: 'link' });
+    for (const m of s.motionRecords().values()) expect(m.status).not.toBe('running');
+  });
+
+  it('survives replay, since it folds from the log', () => {
+    const s = open2();
+    s.setSetting(1, 'chamber', { rung: 'closed' });
+    s.setSetting(2, 'chamber', { rung: 'link' }, 'because');
+    const again = ConstitutionSession.replay([...s.logEntries()]);
+    const m = [...again.motionRecords().values()][0]!;
+    expect(m.route).toBe('pen');
+    expect(m.why).toBe('because');
+    expect(again.amendedFrom(m.id)).toEqual({ rung: 'closed' });
+    expect(again.rollingHash()).toBe(s.rollingHash());
+  });
+});
+
+describe('a member who was away is still owed it (Q530, Ed 2026-08-22)', () => {
+  it('a lapsed member is owed the acknowledgement, and meets it on return', () => {
+    const s = ConstitutionSession.open({
+      title: 'T', slug: 't',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+    }, 0);
+    const bo = s.invite(1, 'bo@example.org');
+    s.arrive(2, bo);
+    s.setSetting(3, 'lapse', { afterMs: 86400000 });
+    s.tick(3 + 86400000 * 2);
+    expect(s.memberRecords().get(bo)!.lapsed).toBe(true);
+    s.setSetting(3 + 86400000 * 2, 'chamber', { rung: 'closed' });
+    s.setSetting(4 + 86400000 * 2, 'chamber', { rung: 'link' }, 'while you were away');
+    expect(s.memberRecords().get(bo)!.okOwed.has('chamber')).toBe(true);
+  });
+
+  it('somebody who never arrived is not owed it — they never knew the old rule', () => {
+    const s = ConstitutionSession.open({
+      title: 'T', slug: 't',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+    }, 0);
+    const bo = s.invite(1, 'bo@example.org');
+    s.setSetting(2, 'chamber', { rung: 'closed' });
+    expect(s.memberRecords().get(bo)!.okOwed.has('chamber')).toBe(false);
+  });
+});

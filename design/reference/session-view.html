@@ -473,6 +473,7 @@
   const midOf = (k) => MID[k] || k;
   const PKEY = { link: 'slug', startingText: 'text', applications: 'policy', membership: 'roster' };
   const pkeyOf = (mid2) => PKEY[mid2] || mid2;
+  const PKEYOF = PKEY;
   // which settings the page manages, derived from the module's catalogue so
   // a new setting cannot be forgotten by a hand-kept list (the 🚪 build had
   // to touch catalogue and page lists separately): everything but the
@@ -3804,7 +3805,7 @@
             // beside the flight is the surface explaining its own animation
             : (crownWaits(c) ? '<p class="setnote">If it passes it goes to the Founder, who may assent or refuse.</p>' : '')) +
           (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
-        return cardHtml(c, ctx, body2,
+        return cardHtml(c, ctx, body2 + changeHalf(c),
           '<button class="btn glyphbtn" data-dropmotion="1"' +
           ' title="Discard this motion">🗑️</button>' +
           commitFor(c), g.cards);
@@ -3824,8 +3825,49 @@
       // the one sentence only its own card can say: the ⏰ card's
       // whether/when split, where the constitutional line falls inside a
       // single setting.
+      // **A pen change is an amendment, and reads like one** (Ed, 2026-08-22:
+      // *a unilateral rule change by the founder is still just a kind of
+      // amendment and so should be treated in the same way in terms of how
+      // it's communicated and reported*). So this stopped reading the
+      // setting's own last-set fields and reads **the amendment record**,
+      // which is where every route already lives — and the dividend is that a
+      // clause now carries its history whoever changed it, the founder's pen
+      // and the membership's motion in one line with one shape.
+      //
+      // Who it names follows the route, and has to: the pen is attributed by
+      // construction, so the founder's name and face are on it; a raised
+      // motion's mover is **sealed until the record** (§3.4), so that one is
+      // the membership's act and wears the featureless disc.
+      // The module hands back `MotionRecord`s and the wire hands back
+      // `MotionView`s, and they name two of these fields differently — so
+      // they are normalised here into the one shape the copy below reads,
+      // rather than each caller remembering which it is holding.
+      function lastAmendment(k) {
+        if (!cs) return null;
+        const mid = midOf(k);
+        let best = null;
+        try {
+          for (const m of cs.motionRecords().values()) {
+            if (m.status !== 'carried') continue;
+            if (!m.payload || m.payload.kind !== 'set' || m.payload.setting !== mid) continue;
+            const at = m.at !== undefined && m.at !== null ? m.at : (m.settledAtT || 0);
+            const from = m.from !== undefined && m.from !== null ? m.from
+              : (cs.amendedFrom ? cs.amendedFrom(m.id) : null);
+            const one = { route: m.route, why: m.why || null, at, from };
+            if (!best || one.at >= best.at) best = one;
+          }
+        } catch (e) { return null; }
+        return best;
+      }
       // the two halves of Q530, chosen by which side of the act you are on
-      const changeHalf = (cc) => {
+      // **Declared, not assigned, so the composer above can reach it.** A
+      // member's settled card post-start renders through the composer's own
+      // early return, which is *before* this point in the function — so as an
+      // arrow const the history was drawn on the news card and lost the
+      // moment the OK turned it back into a composer. Ed's answer was that
+      // the clause keeps it permanently, and a settled clause is exactly
+      // where somebody goes to ask why a rule is the way it is.
+      function changeHalf(cc) {
         const k = cc.k;
         if (cc.ansFor || cc.isGate || cc.door || !PW_KEYS.includes(k) || k === 'text') return '';
         // the founder, about to change something that already stands: a lane
@@ -3835,12 +3877,15 @@
             founderSpeakerLane(v) + '</div>';
         }
         // anybody else, reading what happened: what changed, and their reason
-        const from = changedFrom(k);
-        if (!from || amFounder()) return '';
+        const am = lastAmendment(k);
+        if (!am || amFounder()) return '';
+        const from = am.from || changedFrom(k);
+        if (!from) return '';
         const was = wordsFor(k, from);
         const now2 = wordsFor(k, (csState(k) || {}).value);
         if (!was) return '';
         const what = esc(WHAT[k] || (k === 'title' ? 'the document’s title' : cc.t.toLowerCase()));
+        const who = am.route === 'pen' ? 'The Founder has changed ' : 'The membership has changed ';
         // **Long values are shown, not narrated** (2026-08-22). *from x to y*
         // reads well for a rung, a percentage or a date, and badly for ⏱️,
         // whose value is three numbers in a sentence — *from 4 ✏️ to start, up
@@ -3849,15 +3894,25 @@
         // own *to* in the middle. Past a short value the pair goes on two
         // aligned lines instead, where the eye finds the difference itself.
         const longish = was.length > 32 || (now2 || '').length > 32;
-        return '<div class="body changed">' +
+        // **News says what happened; history says when.** The same block does
+        // both jobs, because it is the same fact — but an amendment you have
+        // already acknowledged is no longer being announced to you, and a
+        // line on a settled clause that a reader may meet months later has to
+        // date itself or it reads as something that has just happened.
+        const dated = stateOf(cc, ctx) === 'news' ? ''
+          : '<p class="eyebrow fieldlab">Last amended' +
+            (am.at ? ' ' + esc(new Date(am.at).toLocaleDateString(undefined,
+              { day: 'numeric', month: 'long' })) : '') + '</p>';
+        return '<div class="body changed">' + dated +
           (longish
-            ? '<p class="cpv">The Founder has changed ' + what + '.</p>' +
+            ? '<p class="cpv">' + who + what + '.</p>' +
               '<p class="waswas"><span>was</span>' + esc(was) + '</p>' +
               (now2 ? '<p class="waswas"><span>now</span>' + esc(now2) + '</p>' : '')
-            : '<p class="cpv">The Founder has changed ' + what +
+            : '<p class="cpv">' + who + what +
               ' from ' + esc(was) + (now2 ? ' to ' + esc(now2) : '') + '.</p>') +
-          founderSpeaker(setWhyOf(k)) + '</div>';
-      };
+          (am.route === 'pen' ? founderSpeaker(am.why)
+            : window.CARDS.speakerHtml(am.why)) + '</div>';
+      }
       const kindLine = c.knote ? '<p class="setnote">' + c.knote + '</p>' : '';
       const newsKey = isRoom(c) ? 'res-' + c.k : 'set-' + c.k;
       // **The ground belongs to the glyph, never to the card's kind** (Ed's
@@ -5062,6 +5117,7 @@
         self.v.view.motions.map((rec) => [rec.id, { id: rec.id,
           route: rec.route, payload: rec.payload, why: rec.why,
           status: rec.status, by: rec.mine ? self.v.me : '(sealed)',
+          at: rec.at, from: rec.from,
           answers: { has: (id) => id === self.v.me && rec.myAnswer !== null,
             get: (id) => (id === self.v.me ? rec.myAnswer : undefined),
             size: rec.answeredCount } }]))),
@@ -5448,9 +5504,53 @@
     const f = (o.field || []).slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1));
     return f[0] || null;
   };
+  // **Amendments are reported the same way whoever made them** (Ed,
+  // 2026-08-22). Every carried change to a rule, in order, in one section —
+  // the founder's pen and the membership's motions in one list, because they
+  // are one kind of thing. It names the **office** rather than the person:
+  // the pen is the Founder's by construction, a raised motion is the
+  // membership's act, and neither sentence has to reach into the anonymity
+  // ladder to know what it may say.
+  const amendmentBlocks = () => {
+    if (!cs) return [];
+    const rows = [];
+    try {
+      for (const m of cs.motionRecords().values()) {
+        if (m.status !== 'carried') continue;
+        if (!m.payload || m.payload.kind !== 'set') continue;
+        const k = PKEYOF[m.payload.setting] || m.payload.setting;
+        const at = m.at !== undefined && m.at !== null ? m.at : (m.settledAtT || 0);
+        const from = m.from !== undefined && m.from !== null ? m.from
+          : (cs.amendedFrom ? cs.amendedFrom(m.id) : null);
+        rows.push({ k, at, from, to: m.payload.value, why: m.why || null, route: m.route });
+      }
+    } catch (e) { return []; }
+    if (!rows.length) return [];
+    rows.sort((x, y) => x.at - y.at);
+    const out = [{ t: 'h', level: 1, x: 'Amendments', key: 'A:head' }];
+    rows.forEach((r, i) => {
+      const what = WHAT[r.k] || (r.k === 'title' ? 'the document’s title' : r.k);
+      const was = wordsFor(r.k, r.from);
+      const now2 = wordsFor(r.k, r.to);
+      const who = r.route === 'pen' ? 'The Founder' : 'The membership';
+      // an absolute date, not `whenOf`'s relative one: the record is read
+      // long after the day it describes, and *today, 11:28* is false by
+      // morning. Same formatting as the clause's own history line.
+      const on = r.at ? new Date(r.at).toLocaleDateString(undefined,
+        { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+      // and a reason that already ends in a full stop does not want another
+      const reason = r.why
+        ? ' — ' + r.why + (/[.!?…]$/.test(r.why.trim()) ? '' : '.')
+        : ' — no reason given.';
+      out.push({ t: 'p', key: 'A:' + i,
+        x: on + ' · ' + what +
+          (was && now2 ? ': ' + was + ' → ' + now2 : '') + '. ' + who + reason });
+    });
+    return out;
+  };
   const closedBlocks = () => {
     if (!cs || !cs.closed) return [];
-    const out = [];
+    const out = amendmentBlocks();
     const und = undecidedRecords();
     if (und.length) {
       out.push({ t: 'h', level: 1, x: 'Backlog', key: 'U:head' });

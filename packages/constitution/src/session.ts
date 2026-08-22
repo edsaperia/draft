@@ -190,6 +190,37 @@ export class ConstitutionSession {
           nowSt.previousValue = wasValue;
           nowSt.setWhy = event.why ?? null;
         }
+        // **A pen change is an amendment, and is recorded as one** (Ed,
+        // 2026-08-22: *a unilateral rule change by the founder is still just
+        // a kind of amendment and so should be treated in the same way in
+        // terms of how it's communicated and reported*). So it does not get
+        // a list of its own — it joins the motions, where every other
+        // amendment already lives, and the record renders it beside them
+        // without knowing it is different. It is **folded, not emitted**:
+        // synthesised here from the `setting-set` event the log already
+        // carried, so no event shape changed and the hash chain is untouched,
+        // the same technique as `arrival` in Q524.
+        //
+        // A **first decision is not in it**, by the same test the
+        // acknowledgement uses: nothing was amended, so there is no
+        // amendment. §9.6a in the spec's own words.
+        if (wasValue !== null) {
+          const id = ('pen:' + event.setting + ':' + event.t) as MotionId;
+          this.motions.set(id, {
+            id,
+            by: this.convenor.id,
+            payload: { kind: 'set', setting: event.setting, value: event.value },
+            route: 'pen',
+            stake: 0,
+            openedAtT: event.t,
+            why: event.why ?? null,
+            // it opens and settles in one act — nobody had to agree
+            status: 'carried',
+            answers: new Map(),
+            settledAtT: event.t,
+          });
+          this.penFrom.set(id, wasValue);
+        }
         if (event.setting === 'quorum') {
           this.quorumFormValue = (event.value as QuorumValue).form;
         }
@@ -1136,8 +1167,30 @@ export class ConstitutionSession {
     return true;
   }
 
+  /**
+   * **A lapsed member is owed it too** (Q530, Ed 2026-08-22). E excludes the
+   * lapsed, and for every other purpose that is right: they are out of the
+   * quorum base and out of the electorate, because those are about who is
+   * deciding. An acknowledgement is not a decision — it is a thing owed to
+   * somebody about a document they are **still a member of**. Lapse is a
+   * stall with an alarm rather than a departure (§9.5a): revival is just
+   * logging in, and their cast judgments keep counting. So the person who
+   * was living under the old rule and went quiet is exactly the one a change
+   * ought to find, and owing it now is how they meet it on the way back in.
+   *
+   * The two exclusions that stay are the two that mean something. A
+   * **removed** member is gone. Somebody who has **not arrived** never knew
+   * the old rule, so the change is not news to them — it is simply what the
+   * document says, which they will read like anybody arriving.
+   */
+  /** What each pen amendment changed *from* — a motion proposes a value and
+   *  never needs the old one, so this rides alongside rather than bending the
+   *  payload every other amendment shares. */
+  private readonly penFrom = new Map<MotionId, SettingValue>();
+
   private oweOks(t: number, setting: SettingId): void {
-    for (const m of eOf(this.members.values())) {
+    for (const m of this.members.values()) {
+      if (m.arrivedAtT === null || m.removed) continue;
       if (m.id === this.convenor.id) continue; // the convenor had their say
       if (m.okOwed.has(setting)) continue;
       this.emit({ type: 'ok-owed', t, member: m.id, settings: [setting] });
@@ -1795,6 +1848,19 @@ export class ConstitutionSession {
   get crownLapsed(): boolean { return this.crownLapsedFlag; }
 
   convenorRecord(): Readonly<typeof this.convenor> { return this.convenor; }
+  /**
+   * **Every change the pen has made, in order** (Q530, Ed 2026-08-22, asking
+   * for the reasons to reach the record as well as the rail). `SettingState`
+   * keeps only the last one, because a clause states one rule; the record
+   * states a life. Folded from `setting-set` events the log already carried,
+   * so this is a projection rather than anything new written down — and a
+   * **first decision is not in it**, by the same test the acknowledgement
+   * uses: there is no *from*, so there was no change.
+   */
+  amendedFrom(motion: MotionId): SettingValue | null {
+    return this.penFrom.get(motion) ?? null;
+  }
+
   memberRecords(): ReadonlyMap<MemberId, MemberRecord> { return this.members; }
   settingState(id: SettingId): Readonly<SettingState> {
     const st = this.settings.get(id);

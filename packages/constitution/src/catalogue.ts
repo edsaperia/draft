@@ -17,7 +17,27 @@ import { validateValue } from './values.js';
 
 export type SettingKind = 'ordinary' | 'constitutional' | 'personal';
 export type Holder = 'convenor' | 'members' | 'member';
-export type MotionRoute = 'ordinary' | 'constitutional';
+/**
+ * How an amendment was decided. **A unilateral rule change by the founder is
+ * still just a kind of amendment** (Ed, 2026-08-22), and this is the ladder
+ * of who had to agree for it: 'pen' nobody, because the founder holds the
+ * power; 'ordinary' enough of the room, at the approval threshold;
+ * 'constitutional' everybody. It is the four verbs' own ordering, minus 🪶,
+ * which is not an amendment because nothing exists yet to amend.
+ *
+ * A 'pen' motion is never *raised* — it opens and settles in the one act, so
+ * it is only ever seen as `carried`, and every place that acts on a live
+ * motion tests `status === 'running'` and steps over it.
+ */
+export type MotionRoute = 'ordinary' | 'constitutional' | 'pen';
+
+/**
+ * The routes a motion can be **raised** on. The pen is never raised — it
+ * opens and settles in the one act and is folded from the set itself — so
+ * anything that takes a proposal and asks how it would be decided narrows to
+ * these two, and says so in its type rather than in a comment.
+ */
+export type RaisedRoute = Exclude<MotionRoute, 'pen'>;
 
 export type SettingId =
   | 'title' | 'link' | 'startingText'
@@ -51,7 +71,7 @@ export interface CatalogueEntry {
    * is constitutional — either direction across never, author call in
    * NOTES.md).
    */
-  routeOf?: (proposed: SettingValue, current: SettingValue) => MotionRoute;
+  routeOf?: (proposed: SettingValue, current: SettingValue) => RaisedRoute;
   /** Ceremony serving order: a question is not served until these settle (§9.0a). */
   deps: readonly SettingId[];
   /** Judging waits on this setting being settled (§9.0b; the mock's 8). */
@@ -304,7 +324,7 @@ export function motionRouteOf(
   entry: CatalogueEntry,
   proposed: SettingValue,
   current: SettingValue | null,
-): MotionRoute {
+): RaisedRoute {
   if (current === null) return 'constitutional';
   if (entry.routeOf) return entry.routeOf(proposed, current);
   if (entry.kind === 'personal') throw new Error(`${entry.id} is personal — no motion route`);

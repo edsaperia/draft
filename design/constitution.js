@@ -751,6 +751,26 @@ var CONSTITUTION = (() => {
       __publicField(this, "nextMotionN", 1);
       __publicField(this, "nextCrownN", 1);
       __publicField(this, "nextApplicantN", 1);
+      /**
+       * **A lapsed member is owed it too** (Q530, Ed 2026-08-22). E excludes the
+       * lapsed, and for every other purpose that is right: they are out of the
+       * quorum base and out of the electorate, because those are about who is
+       * deciding. An acknowledgement is not a decision — it is a thing owed to
+       * somebody about a document they are **still a member of**. Lapse is a
+       * stall with an alarm rather than a departure (§9.5a): revival is just
+       * logging in, and their cast judgments keep counting. So the person who
+       * was living under the old rule and went quiet is exactly the one a change
+       * ought to find, and owing it now is how they meet it on the way back in.
+       *
+       * The two exclusions that stay are the two that mean something. A
+       * **removed** member is gone. Somebody who has **not arrived** never knew
+       * the old rule, so the change is not news to them — it is simply what the
+       * document says, which they will read like anybody arriving.
+       */
+      /** What each pen amendment changed *from* — a motion proposes a value and
+       *  never needs the old one, so this rides alongside rather than bending the
+       *  payload every other amendment shares. */
+      __publicField(this, "penFrom", /* @__PURE__ */ new Map());
     }
     // -------------------------------------------------------------------------
     // Opening and replay
@@ -857,6 +877,23 @@ var CONSTITUTION = (() => {
           if (nowSt) {
             nowSt.previousValue = wasValue;
             nowSt.setWhy = event.why ?? null;
+          }
+          if (wasValue !== null) {
+            const id = "pen:" + event.setting + ":" + event.t;
+            this.motions.set(id, {
+              id,
+              by: this.convenor.id,
+              payload: { kind: "set", setting: event.setting, value: event.value },
+              route: "pen",
+              stake: 0,
+              openedAtT: event.t,
+              why: event.why ?? null,
+              // it opens and settles in one act — nobody had to agree
+              status: "carried",
+              answers: /* @__PURE__ */ new Map(),
+              settledAtT: event.t
+            });
+            this.penFrom.set(id, wasValue);
           }
           if (event.setting === "quorum") {
             this.quorumFormValue = event.value.form;
@@ -1717,7 +1754,8 @@ var CONSTITUTION = (() => {
       return true;
     }
     oweOks(t, setting) {
-      for (const m of eOf(this.members.values())) {
+      for (const m of this.members.values()) {
+        if (m.arrivedAtT === null || m.removed) continue;
         if (m.id === this.convenor.id) continue;
         if (m.okOwed.has(setting)) continue;
         this.emit({ type: "ok-owed", t, member: m.id, settings: [setting] });
@@ -2350,6 +2388,18 @@ var CONSTITUTION = (() => {
     convenorRecord() {
       return this.convenor;
     }
+    /**
+     * **Every change the pen has made, in order** (Q530, Ed 2026-08-22, asking
+     * for the reasons to reach the record as well as the rail). `SettingState`
+     * keeps only the last one, because a clause states one rule; the record
+     * states a life. Folded from `setting-set` events the log already carried,
+     * so this is a projection rather than anything new written down — and a
+     * **first decision is not in it**, by the same test the acknowledgement
+     * uses: there is no *from*, so there was no change.
+     */
+    amendedFrom(motion) {
+      return this.penFrom.get(motion) ?? null;
+    }
     memberRecords() {
       return this.members;
     }
@@ -2506,6 +2556,8 @@ var CONSTITUTION = (() => {
         why: rec.why,
         status: rec.status,
         mine: rec.by === member,
+        at: rec.settledAtT,
+        from: s.amendedFrom(rec.id),
         answeredCount: rec.route === "constitutional" ? rec.answers.size : 0,
         electorateSize,
         myAnswer: rec.answers.get(member) ?? null

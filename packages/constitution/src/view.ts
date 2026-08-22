@@ -64,6 +64,13 @@ export interface MotionView {
   why: string | null;
   status: string;
   mine: boolean;
+  /** When it settled — what the record and the clause's history line date. */
+  at: number | null;
+  /**
+   * What a **pen** amendment changed from (Q530): a motion proposes a value
+   * and never needs the old one, so this is null on every raised route.
+   */
+  from: SettingValue | null;
   answeredCount: number;
   electorateSize: number;
   myAnswer: 'accept' | 'keep' | 'abstain' | null;
@@ -212,6 +219,8 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       why: rec.why,
       status: rec.status,
       mine: rec.by === member,
+      at: rec.settledAtT,
+      from: s.amendedFrom(rec.id),
       answeredCount: rec.route === 'constitutional' ? rec.answers.size : 0,
       electorateSize,
       myAnswer: rec.answers.get(member) ?? null,
