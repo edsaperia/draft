@@ -404,8 +404,6 @@
     fill: none; stroke: currentColor; stroke-width: 1.9;
     stroke-linecap: round; stroke-linejoin: round;
   }
-  /* a drawn mark that is a shape rather than a line — the ramp */
-  .mkg.fill { fill: currentColor; stroke: none; }
   /* Green for **decided**, grey for **filed** — the same two glyphs in the two
      colours (Ed, 2026-08-17). Which way it went is the glyph; whether it still
      wants anything from you is the colour, which is the rule the whole palette

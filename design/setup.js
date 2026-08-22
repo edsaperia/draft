@@ -71,11 +71,13 @@ window.SETUP = (function () {
   // characters (variation selectors stripped; re-run the scan from the
   // 2026-08-19 commit when the furniture changes); 🛡 arrived with the
   // governance tabs (Q454, 2026-08-21 — 🔧 and ⚙ left the vocabulary with
-  // it); the reserved set is that minus the offered faces.
+  // it); 🌡 🪜 🥾 arrived and 📈 🚪 left with the glyph rename of
+  // 2026-08-22 (the threshold, the ramp and removal); the reserved set
+  // is that minus the offered faces.
   // Tones are stripped before the test, so ✋🏽 is as reserved as ✋.
   const SURFACE_EMOJI = ('↔ ⏩ ⏰ ⏱ ⏳ ☑ ⚔ ⚖ ✅ ✉ ✋ ✍ ✏ ✒ ✔ ✖ ❄ ❌ ❎ ❓ ' +
-    '🌍 🌶 🎩 🏛 🏷 👁 👍 👑 👤 👥 💡 💤 📄 📈 📌 📍 📝 📧 📬 📯 🔄 🔗 ' +
-    '🔥 🖼 🗑 🗝 🚪 🛡 🤖 🤝 🪪 🪶 ' +
+    '🌍 🌡 🌶 🎩 🏛 🏷 👁 👍 👑 👤 👥 💡 💤 📄 📌 📍 📝 📧 📬 📯 🔄 🔗 ' +
+    '🔥 🖼 🗑 🗝 🛡 🤖 🤝 🥾 🪜 🪪 🪶 ' +
     '👦 👧 👨 👩 👱 👳 👴 👵 👶 🧑 🧒 🧓 🧔').split(' ');
   const normEmoji = (s) => s.replace(/[\u{FE0F}\u{FE0E}\u{1F3FB}-\u{1F3FF}]/gu, '');
   const RESERVED_EMOJI = new Set(SURFACE_EMOJI.filter((g) =>

@@ -104,7 +104,7 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
   eq(s.settingState('lapse').value, { afterMs: null },
     'lapse: never is the longest quiet spell of all');
   eq(s.settingState('removal').value, { rung: 'everyone' },
-    "removal (🚪 Q401a): one member who wants their own say keeps everyone's answer counted");
+    "removal (🥾 Q401a): one member who wants their own say keeps everyone's answer counted");
   eq(s.settingState('rate').value, { grant: 6, cap: 8, dripMinutes: 240 },
     'rate: the most generous grant wins (§9.0)');
   check(s.constitutedAtT === 9, 'the document constituted when the last gate resolved');

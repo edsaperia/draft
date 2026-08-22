@@ -74,13 +74,9 @@ window.CARDS = (function () {
   // distinct from kept (SPEC §4.6): two vertical bars at the tick and
   // cross's own stroke width, spanning the cross's height, in currentColor.
   const PAUSE = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M4.3 2.9 L4.3 9.1 M7.7 2.9 L7.7 9.1\"/></svg>";
-  // **The ramp** (Ed, 2026-08-21: *the icon for ramp should be a filled
-  // incline in the style of ✔️ rather than a jagged rising graph*). 📈 the
-  // emoji is a chart — several segments, a plate behind them, a colour of
-  // its own — where what this mark says is one thing: it goes up. A filled
-  // wedge on the tick's own bounds, taking currentColor like the rest of
-  // the family, so the lifecycle classes still colour it.
-  const RAMP = "<svg class=\"mkg fill\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M2 9.2 L10 2.9 L10 9.2 Z\"/></svg>";
+  // **The ramp is an emoji again** (Ed, 2026-08-22): the drawn wedge is
+  // retired and the pace card wears 🪜, which rejoins it to every other
+  // subject glyph. The `.mkg.fill` branch went with it — it had one user.
   const VS16 = "︎";
   const MARK = {
     // A rail entry is somebody's proposal, not a question the system invented,
@@ -952,7 +948,7 @@ window.CARDS = (function () {
 
   return {
     esc, resultOnly, stripTags, pct, plainLabel,
-    TICK, CROSS, PAUSE, RAMP, VS16, MARK, DRAWN, mkHtml, markHtml,
+    TICK, CROSS, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks,
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,

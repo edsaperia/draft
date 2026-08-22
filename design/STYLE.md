@@ -25,8 +25,8 @@ and their copy was read side by side for the first time.
 | **the standard rate** | v1 defaults | No project-speak. |
 
 Glyph names are stable: title 🪶, link 📍, membership 🪪, applications 🤝,
-lapse 💤, removal 🚪, rate ⏱️, machines 🤖, ending ⏰, quorum 👥, threshold ✒️,
-pacing 📈, naming 👤, signing ✍️, reveal 👁️, visibility 🌍, text 📄,
+lapse 💤, removal 🥾, rate ⏱️, machines 🤖, ending ⏰, quorum 👥, threshold 🌡️,
+pacing 🪜, naming 👤, signing ✍️, reveal 👁️, visibility 🌍, text 📄,
 founder-is-member 🎩, proposing gate 💡, judging gate ⚖️, crown 👑, horn 📯.
 
 ## 2. Addresses and numbers
@@ -103,14 +103,14 @@ Scanned: every string literal in `session.js`, `setup.js` and the page, comments
 1. **Fixed** — race-card foot *"…unless the leader clears the bar"* → *"…clears the approval threshold"* (§1).
 2. **Fixed** — the wallet's *"No edits left…"* / *"Your edits — proposing one costs…"* and the disabled-button title named the currency after what it buys; now ✏️ (§1 — the wallet was renamed `propose-wallet` for the same reason).
 3. **Fixed** — the 📄 task was titled *Starting Text*; there is no starting text (Q440), so *Text*.
-4. **Open — Q502** — 📈 *How Does the Bar Get There?* is named that way in CLAUDE.md and breaks §1. Ed's call.
+4. **Open — Q502** — 🪜 *How Does the Bar Get There?* is named that way in CLAUDE.md and breaks §1. Ed's call.
 5. **Dropped** — the fixture topbar's *confidence bar 74% ▲* stat did not survive the merge: the threshold is not topbar material (`session-clock`).
 6. **Passed** — the B2b strings (*you have judged this — it is still running*, *wants your judgment*, *yours · in the race*, *decided — adopted*, *decided — the current text stood*, *retired — the current text stood*, *you judged this*, the two refusal sentences, *today*/*yesterday*): third person about the document, second person only where the card asks; no addresses; a count never a direction.
 7. **Noted, not surface** — `kind: 'ordinary'`, `settledBy === 'ceremony'`, `holder === 'convenor'` are engine vocabulary in data, never rendered; the surface says them only through the glyph pair.
 
 **Second pass (the design-day builds, 2026-08-21, 07:40)** — over every string the builds of Q460/462, the glyph batch, Q501/503 and Q466/471 added (listed in their commit messages):
 
-8. **Fixed — Q502 answered** — 📈 is *Rising Approval Threshold?*, a yes/no title for a yes/no card (Ed).
+8. **Fixed — Q502 answered** — 🪜 is *Rising Approval Threshold?*, a yes/no title for a yes/no card (Ed).
 9. **Fixed** — three *starting text* strings (*Waiting on the starting text…*, *when the starting text has been decided*) → *the text* (Q440).
 10. **Fixed** — the preamble's *Ordinary proposals ✏️ pass…* → *Proposals ✏️ pass…*; setup.js's removal rung *An ordinary proposal ✏️* → *A proposal ✏️ like any other* (§1: "ordinary" never on the surface).
 11. **Passed** — the birth's new mail (*you have named a document “T” and chosen its address, docs.vote/S — open this link to create it there*), the 📍 verdicts (*docs.vote/S is taken. docs.vote/S-2 is free.*), the power-card lines (*The Founder edits the text directly* / *A change to the text that carries waits on the Founder's OK before it lands*), 🤝's ladder copy (*the least open answer wins: one member who wants invitation only keeps it so*), *Save* on identity, the clock ladder (*6 days left* … *under 10 minutes left*, *Frozen*, *Closed 3 September*), *quorum 2 of 3*: third person about the document, second where a card asks, counts never directions, no addresses, no raw values.
@@ -129,11 +129,11 @@ Scanned: every string literal in `session.js`, `setup.js` and the page, comments
 **Fifth pass (the founder's walk, 2026-08-21)** — every task from a blank arrival to a settled constitution, read in the order the founder now meets them (`node scripts/founding-walk.mjs`, which drives the whole founding headless and prints each card's strings).
 
 19. **Fixed** — 🎩 was titled *Is the Founder a member?*, the one question title not in Title Case (§4).
-20. **Fixed** — 📈 described its neighbour as *the number on the last card*: a body naming another card by its position, which the new pacing could have made false and which said nothing to a reader who had not just been there. It names the approval threshold (§5).
+20. **Fixed** — 🪜 described its neighbour as *the number on the last card*: a body naming another card by its position, which the new pacing could have made false and which said nothing to a reader who had not just been there. It names the approval threshold (§5).
 21. **Fixed** — ✋ *Your Name* can now be saved empty (a blank name is Anonymous, §9.0c, and in a single-file founding a task that cannot be committed is a task nothing gets past), so the card had to say what saving it empty does (§5: the meaning is stated once, at the act).
 22. **Fixed** — the commit's tooltip went stale the moment a typed number woke the button, so it said *Not answered yet* over a live control. One expression (`commitTitle`) now writes it from both the render and the live refresh, the title card's own wording included.
 23. **Passed by reading** — the eighteen task bodies and their option labels against §§1–6: no banned vocabulary, no §-numbers, no raw values, second person only where a card asks, third person in every clause. The clause a settled card produces states the rule and appends only its deviations.
-24. **Noted, not surface** — with nothing pre-answered, three cards (⏱️ ✒️ 👥) open on a lone *I set it* rung with its fields beside it and no visible alternative, because delegation lives on the ✒️/🛡️ tabs by design. Legible once chosen; **Q511** asks whether the founder should meet a delegation default at all.
+24. **Noted, not surface** — with nothing pre-answered, three cards (⏱️ 🌡️ 👥) open on a lone *I set it* rung with its fields beside it and no visible alternative, because delegation lives on the ✒️/🛡️ tabs by design. Legible once chosen; **Q511** asks whether the founder should meet a delegation default at all.
 
 **Sixth pass (the pacing rework, 2026-08-21)** — the strings the birth's fading clauses, the delegation rung, the 📧 rework and the button pass added or changed.
 
@@ -146,7 +146,7 @@ Scanned: every string literal in `session.js`, `setup.js` and the page, comments
 **Seventh pass (Ed's answers, 2026-08-21)** — the power lines, the threshold clause and the writing invitation.
 
 30. **Fixed — Q507** — one voice, only the object changing. Every ✒️ line is *the Founder [does X] at will* (was *directly* on the membership and the Text); every 🛡️ line is *[what the membership decides] requires assent* (was *comes to the Founder as a 👑 question* / *waits on the Founder's OK before it lands*). The radio labels and the card whys follow, per §4's *a rename reaches the option labels*.
-31. **Fixed — Q512** — 📈's clause is gone; the ramp is a clause of ✒️'s: *The members must be 78% sure a change is better for it to carry by the end, starting at 55% when judging opens.* A fixed threshold, or a ramp starting where it ends, says nothing extra.
+31. **Fixed — Q512** — 🪜's clause is gone; the ramp is a clause of 🌡️'s: *The members must be 78% sure a change is better for it to carry by the end, starting at 55% when judging opens.* A fixed threshold, or a ramp starting where it ends, says nothing extra.
 32. **Passed — Q513(c)** — the writing invitation: *Start writing whenever you like. The document's own words are the last thing the constitution settles, so nothing here is being asked of you yet.* Grey, no glyph, asks nothing (§5).
 
 **Eighth pass (Ed's answers, 2026-08-21 afternoon)** — the vocabulary change and the birth's third clause.

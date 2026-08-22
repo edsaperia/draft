@@ -342,7 +342,7 @@ var CONSTITUTION = (() => {
     },
     {
       id: "bar",
-      glyph: "✒️",
+      glyph: "🌡️",
       kind: "constitutional",
       delegable: true,
       valueType: "percent",
@@ -364,7 +364,7 @@ var CONSTITUTION = (() => {
     // needed, so no consent order: nothing ever resolves one (Q560, 2026-08-22).
     {
       id: "pace",
-      glyph: "📈",
+      glyph: "🪜",
       kind: "ordinary",
       delegable: false,
       valueType: "pace",
@@ -489,7 +489,7 @@ var CONSTITUTION = (() => {
     // recorded judgment.
     {
       id: "removal",
-      glyph: "🚪",
+      glyph: "🥾",
       kind: "constitutional",
       delegable: true,
       valueType: "ladder",
@@ -1670,9 +1670,15 @@ var CONSTITUTION = (() => {
       }
       this.emit({ type: "constituted", t });
     }
-    /** The judge-gate settings not yet settled — what 🍾 waits on. */
+    /** What 🍾 waits on (§9.0b, §9.7.1): a delegated question on **any** setting
+     *  blocks the start while it collects, and every judge-gate must be settled
+     *  however it is held. → why: R-045 */
     waitingOn() {
-      return CATALOGUE.filter((e) => e.judgeGate && this.settings.get(e.id).settledBy === null).map((e) => e.id);
+      return CATALOGUE.filter((e) => {
+        const st = this.settings.get(e.id);
+        if (!st) return false;
+        return st.collecting || e.judgeGate && st.settledBy === null;
+      }).map((e) => e.id);
     }
     /**
      * The founder's readiness readout (Q443 (a)(i), both halves; founder-only
@@ -1835,7 +1841,7 @@ var CONSTITUTION = (() => {
         throw new Error(`'${member}' is not in the motion's electorate`);
       }
       if (this.motionExcludes(rec) === member) {
-        throw new Error("the subject of a removal is not asked on this route (🚪 Q401a) — they see it, and it settles without them");
+        throw new Error("the subject of a removal is not asked on this route (🥾 Q401a) — they see it, and it settles without them");
       }
       this.emit({ type: "motion-answer", t, motion, member, answer });
       this.maybeSettleMotions(t);
@@ -1893,7 +1899,7 @@ var CONSTITUTION = (() => {
         this.settleHeldEffects(t, rec);
       }
     }
-    /** 🚪 (Q401): the removal rung as it stands — unset reads as today's rule,
+    /** 🥾 (Q401): the removal rung as it stands — unset reads as today's rule,
      *  everyone's consent with the subject's own answer counted. */
     removalRung() {
       const st = this.settings.get("removal");

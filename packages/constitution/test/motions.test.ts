@@ -400,7 +400,7 @@ describe('guards', () => {
   });
 });
 
-describe('the 🚪 removal setting (Q401a, v0.60): three rungs, one new decision class', () => {
+describe('the 🥾 removal setting (Q401a, v0.60): three rungs, one new decision class', () => {
   it("'everyone' is today's rule — the default when nothing was set", () => {
     const { s, bo, cy } = buildConstituted(); // helpers set removal: everyone
     const m = s.openMotion(3, bo, { kind: 'remove', member: cy });

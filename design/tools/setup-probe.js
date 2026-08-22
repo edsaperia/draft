@@ -39,15 +39,11 @@
    * allowlisted geo.rail (tasks became margin-index entries) and the
    * post-confirm toc (headings from session.js). */
   const ALLOWLIST = [];
-  /* PENDING RE-FREEZE. The Proposals preamble became 🍾's own paragraph
-   * (Ed, 2026-08-22), so the section has one clause where it had two: the
-   * tab-less preamble and *The document began at [time]* merged into a
-   * single tense-aware clause wearing the 🍾 tab. Every paragraph below
-   * it shifts up by one and the chip gutter re-lays, which is the whole of
-   * these diffs: band html and the two band geometries, in the eighteen
-   * post-⏩ steps only. Nothing in the rail, the toc or any card moved.
-   * Empty this and re-freeze once the copy is settled. */
-  const ALLOW_RE = [/^(founding|motions):[a-z-]+:(band|geo.cparas|geo.chips)$/];
+  /* Empty since the re-freeze of 2026-08-22 (the glyph rename: the
+   * threshold 🌡️, the ramp 🪜, removal 🥾 — and with it the Proposals
+   * preamble freeze the previous run had left pending). A fresh
+   * comparison needs no allowances. */
+  const ALLOW_RE = [];
   const allowed = (k) => ALLOWLIST.includes(k) || ALLOW_RE.some((re) => re.test(k));
 
   /* ---- determinism stubs -------------------------------------------------- */

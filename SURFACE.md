@@ -167,7 +167,7 @@ One glyph per entry, the same alphabet in all three columns (contents rail · gu
 | yours | ✏️ | ✏️ | nothing — withdraw | yours | yes | yes, force-kept | the application |
 | done | drawn grey ✔, and it leaves | **the subject glyph** on grey | nothing | closed | no | — | the settled card (= the composer) |
 
-📈 is not a lifecycle mark: it is the **subject glyph** of the pace card, drawn as a filled incline.
+🪜 is not a lifecycle mark: it is the **subject glyph** of the pace card — an emoji like every other subject glyph since the rename of 2026-08-22, which retired the drawn incline it used to wear.
 
 ### 6.1 Rail rules
 
@@ -272,9 +272,9 @@ The refund flight and every grant's inbound flight take 640 ms.
 | 10 | mypic | 🖼️ | personal | members — your own row | yes | myname | Your Picture |
 | 11 | roster | 🪪 | constitutional, the register | members — the list is the clause | yes | mypic | Membership |
 | 12 | lapse | 💤 | constitutional · judge-gate | members | yes | roster | Do Memberships Lapse? |
-| 13 | removal | 🚪 | constitutional | members, last | yes | lapse | How Is a Member Removed? |
+| 13 | removal | 🥾 | constitutional | members, last | yes | lapse | How Is a Member Removed? |
 | 14 | ending | ⏰ | constitutional, route inside it | deciding, first | yes | removal | When Does It End? |
-| 15 | bar | ✒️ | constitutional · judge-gate; its commit sets 📈 | deciding | yes | ending | How Sure Must the Room Be? |
+| 15 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | How Sure Must the Room Be? |
 | 16 | quorum | 👥 | constitutional · judge-gate | deciding, last | yes | bar | Quorum |
 | 17 | authorship | 👤 | constitutional · judge-gate | privacy | yes | quorum | When Is a Proposer Named? |
 | 18 | signing | ✍️ | constitutional · judge-gate | privacy | yes | authorship | Who May Sign a Proposal? |
@@ -287,9 +287,9 @@ The refund flight and every grant's inbound flight take 640 ms.
 | 25 | text | 📄 | ordinary | doc — the charter heading under the hairline | yes | machines | Text |
 | 26 | begin | 🍾 | decision, not a setting | rate, first (Y21) | no | never for the founder; members never see it pre-start | Begin |
 
-Outside `ORDER`: 📈 (a tab in ✒️'s stack; no clause, no rail entry — Q512); the `ans-*` answer tasks (a task paragraph under the watching clause); ✉️ ❌ (doors in the 🪪 pile from the moment judging opens); the ✒️/🛡️ power tabs under every held-able setting (*Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* — Q615); 🥂.
+Outside `ORDER`: 🪜 (a tab in 🌡️'s stack; no clause, no rail entry — Q512); the `ans-*` answer tasks (a task paragraph under the watching clause); ✉️ ❌ (doors in the 🪪 pile from the moment judging opens); the ✒️/🛡️ power tabs under every held-able setting (*Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* — Q615); 🥂.
 
-**The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link with the pen and shield clauses beneath it, 📧 pre-save, 🌍, the Founded line — then **Membership** (`members`: 🤝 · *Members* · the list with 🪪 ✉️ ❌ 🎩 and your row wearing ✋ 🖼️ 📧 · 💤 · 🚪), **Decisions** (`deciding`: ⏰ · 🥂 when closed · ✒️ with 📈 in its stack · 👥), **Anonymity** (`privacy`: 👤 ✍️ 👁️), **Proposals** (`rate`: the preamble wearing 🍾 · 💡 · ⚖️ with 🏛️ · ⏱️ · 🤖), the hairline, the charter under its own name with 📄 beside it. **The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📄. Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
+**The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link with the pen and shield clauses beneath it, 📧 pre-save, 🌍, the Founded line — then **Membership** (`members`: 🤝 · *Members* · the list with 🪪 ✉️ ❌ 🎩 and your row wearing ✋ 🖼️ 📧 · 💤 · 🥾), **Decisions** (`deciding`: ⏰ · 🥂 when closed · 🌡️ with 🪜 in its stack · 👥), **Anonymity** (`privacy`: 👤 ✍️ 👁️), **Proposals** (`rate`: the preamble wearing 🍾 · 💡 · ⚖️ with 🏛️ · ⏱️ · 🤖), the hairline, the charter under its own name with 📄 beside it. **The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📄. Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
 
 ### 8.1 Rules
 
@@ -310,7 +310,7 @@ Outside `ORDER`: 📈 (a tab in ✒️'s stack; no clause, no rail entry — Q51
 - **F15 A clause states *The Founder is deciding [what]* until decided, then the rule and its governance deviation; a settled card's head is the rule; open questions, 🪪, 📄, personal cards and answers keep their title.**
 - **F16 The Founded line carries the founding moment and is never known before the start; 🎩 is settled once the document begins; the register asks for no minimum.**
 
-Exceptions beyond §3: 📈 arrives answered (F6 · the ramp is part of what the threshold says · Q512); the founder alone is served the delegated questions once nothing else is outstanding (F7 · an empty rail while the room fills is worse · Q408/Q413); 📧 post-save speaks in the second person (C10 · your own row · Y8); 🎩 ✋ 🖼️ 🪪 write no sentence (F13 · the answer is the list or a chip); 🌍 is asked sixth, ahead of Membership (F1 · it is the penultimate clause of the opening run); the hat's radios stay visible but disabled post-start (C9 · a locked decision still has to be readable).
+Exceptions beyond §3: 🪜 arrives answered (F6 · the ramp is part of what the threshold says · Q512); the founder alone is served the delegated questions once nothing else is outstanding (F7 · an empty rail while the room fills is worse · Q408/Q413); 📧 post-save speaks in the second person (C10 · your own row · Y8); 🎩 ✋ 🖼️ 🪪 write no sentence (F13 · the answer is the list or a chip); 🌍 is asked sixth, ahead of Membership (F1 · it is the penultimate clause of the opening run); the hat's radios stay visible but disabled post-start (C9 · a locked decision still has to be readable).
 
 ## 9. The card kinds, the commit row, the composer
 

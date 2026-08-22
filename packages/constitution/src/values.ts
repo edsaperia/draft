@@ -13,9 +13,9 @@ export type TextValue = { text: string };
 export type SlugValue = { slug: string };
 /** ⏰ — null means never (perpetual). */
 export type EndingValue = { endsAtMs: number | null };
-/** ✒️ — the bar at the close (§4.3), a confidence, 50–100. */
+/** 🌡️ — the bar at the close (§4.3), a confidence, 50–100. */
 export type PercentValue = { pct: number };
-/** 📈 — how the bar gets there (§9.0): fixed, or rising from startPct. */
+/** 🪜 — how the bar gets there (§9.0): fixed, or rising from startPct. */
 export type PaceValue = { shape: 'fixed' } | { shape: 'ramp'; startPct: number };
 /** 👥 — the form is the convenor's, the number the room's (§9.0a). share n is a percent of E. */
 export type QuorumValue = { form: 'count' | 'share'; n: number };

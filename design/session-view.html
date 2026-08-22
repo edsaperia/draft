@@ -476,7 +476,7 @@
   const pkeyOf = (mid2) => PKEY[mid2] || mid2;
   const PKEYOF = PKEY;
   // which settings the page manages, derived from the module's catalogue so
-  // a new setting cannot be forgotten by a hand-kept list (the 🚪 build had
+  // a new setting cannot be forgotten by a hand-kept list (the 🥾 build had
   // to touch catalogue and page lists separately): everything but the
   // personal settings, the text (never held) and the register (held
   // through applications)
@@ -579,7 +579,7 @@
     if (csDelegated(k)) cs.reclaim(now(), mid);
     cs.setSetting(now(), mid, TYPED[k](), (S.setWhy && S.setWhy[k]) || undefined);
     if (S.setWhy) delete S.setWhy[k];
-    // 📈 rides ✒️'s commit (Q512): it is not a task of its own, so setting the
+    // 🪜 rides 🌡️'s commit (Q512): it is not a task of its own, so setting the
     // threshold sets the pacing with it — at whatever its tab holds, which is
     // rising from 55% until somebody changes it.
     if (k === 'bar') {
@@ -695,7 +695,7 @@
     app: { started: false, email: '', emailSent: false, emailVerified: false,
       mailOpen: false, name: '', pic: '', text: '', submitted: false, csId: null },
     ending: '', endsAt: '',
-    // 📈 is the one thing that arrives answered (Q512): rising from 55%,
+    // 🪜 is the one thing that arrives answered (Q512): rising from 55%,
     // stated inside the threshold's own clause and changed on its tab
     barBy: '', tClose: '', shape: 'ramp', tStart: 55,
     quorumBy: '', quorumForm: '', quorumPct: '', quorumN: '',
@@ -1264,7 +1264,7 @@
     // (before that the 🪪 card's own invitation box is the door).
     { k: 'invite', g: '✉️', t: 'Invite a Member', kind: 'constitutional', dep: ['roster'],
       hide: () => !motionsLive(), ready: () => true, reg: true, door: true },
-    // the door composes by whatever route the 🚪 setting decides (Q401):
+    // the door composes by whatever route the 🥾 setting decides (Q401):
     // ordinary races at the bar, either consent rung is constitutional
     { k: 'remove', g: '❌', t: 'Remove a Member', kind: 'constitutional', dep: ['roster'],
       routeOf: () => (removalRung() === 'ordinary' ? 'ordinary' : 'constitutional'),
@@ -1317,7 +1317,7 @@
     // Q341). Consent is about the bar **at the close**, where an adoption is
     // permanent — one number. How it gets there is *pacing*, ordinary by §9.6's
     // own test, on the next card.
-    { k: 'bar', g: '✒️', t: 'How Sure Must the Room Be?', kind: 'constitutional', gate: 'judge', key: 'barBy', p: 0.64,
+    { k: 'bar', g: '🌡️', t: 'How Sure Must the Room Be?', kind: 'constitutional', gate: 'judge', key: 'barBy', p: 0.64,
       rule: 'Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.',
       takes: 'The document takes the highest', result: '80%',
       dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
@@ -1325,9 +1325,9 @@
     // queue; just default it to 55%*). It is the one setting that arrives
     // answered — a deliberate exception to *nothing is pre-answered*, because
     // the ramp is part of what the threshold says rather than a question of
-    // its own. Its tab stands in ✒️'s stack for anybody who wants to change
-    // it, and ✒️'s own commit sets it.
-    { k: 'pace', g: window.CARDS.RAMP, t: 'Rising Approval Threshold?', kind: 'ordinary', dep: ['bar'], changeable: true },
+    // its own. Its tab stands in 🌡️'s stack for anybody who wants to change
+    // it, and 🌡️'s own commit sets it.
+    { k: 'pace', g: '🪜', t: 'Rising Approval Threshold?', kind: 'ordinary', dep: ['bar'], changeable: true },
     // The number is the room's; the **form** — count or share — is the
     // founder's wording of the question (Ed, 2026-08-18: *quorum can either be
     // a fixed number or a proportion of membership size*; §9.0a).
@@ -1381,7 +1381,7 @@
     // three routes, the middle one a decision class of its own: everyone's
     // consent minus the subject. The subject always sees a removal proposed
     // against them, whichever route holds.
-    { k: 'removal', g: '🚪', t: 'How Is a Member Removed?', kind: 'constitutional', key: 'removal', p: 0.24,
+    { k: 'removal', g: '🥾', t: 'How Is a Member Removed?', kind: 'constitutional', key: 'removal', p: 0.24,
       rule: 'Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.' },
     { k: 'lapse', g: '💤', t: 'Do Memberships Lapse?', kind: 'constitutional', gate: 'judge', key: 'lapse', p: 0.29,
       rule: 'Each member says the shortest gap they would accept, and the document takes the longest — <b>never</b> being longer than any of them — so nobody loses their membership faster than they accepted.',
@@ -1891,7 +1891,7 @@
     'text', 'begin'];
   // a card in the order waits for everything above it and nothing else: the
   // ORDER *is* the dependency list. Since Q619 (b) (2026-08-22) a `dep` array
-  // survives only on the four cards outside it — 📈 pace, ✉️ ❌ the doors and
+  // survives only on the four cards outside it — 🪜 pace, ✉️ ❌ the doors and
   // 🥂 — which `orderReady` still paces by their own dependency; the answer
   // tasks cascade in ORDER too (`ansWaveReady`), so nothing else reads one.
   // **A gate holds its place without holding the queue.** A gate is settled
@@ -2014,7 +2014,7 @@
         // (Q617 (a), Ed 2026-08-22: *I need to decide Applications before I can
         // do Membership* — how people become members is decided before the
         // list of who is one, since inviting is an act under that rule). The
-        // list then stands above 💤 and 🚪: a register is the fact, and those
+        // list then stands above 💤 and 🥾: a register is the fact, and those
         // are rules about it. The founding follows the document, so this also
         // puts 🎩 *are you a member* and your own name and picture before you
         // invite anybody, which is the order somebody actually does it in.
@@ -2035,14 +2035,14 @@
       } },
     { key: 'deciding', title: 'Decisions',
       text: '',
-      // ⏰ when it ends, ✒️ how sure the room must be at that point, 📈 how
+      // ⏰ when it ends, 🌡️ how sure the room must be at that point, 🪜 how
       // that number gets there, 👥 how many must have judged. The threshold
       // and its pacing are one thought on two cards, so they are adjacent;
       // quorum is a different kind of number and reads last (Ed, 2026-08-21).
       keys: ['ending', 'closing', 'bar', 'quorum'],
-      // 📈 is in neither `keys` nor ORDER (Q512, finding 598): it has no
+      // 🪜 is in neither `keys` nor ORDER (Q512, finding 598): it has no
       // clause and no rail entry — it arrives answered, is stated inside the
-      // threshold clause, and is changed on a tab in ✒️'s own stack.
+      // threshold clause, and is changed on a tab in 🌡️'s own stack.
       body: (h) => ['ending', 'closing', 'bar', 'quorum'].map(card)
         .filter((c) => c && visible(c)).map((c) => h.para(c) + h.tasks(c)).join('') },
     // "Anonymity" (Ed, 2026-08-19), not "Privacy"
@@ -2761,7 +2761,7 @@
           : '<button class="xdrop" data-mval="' + esc((p.n || p.e) + ' leaves the membership') + '"' +
             ' title="Propose that they leave">✕</button>') +
         '</div>').join('') + '</div>' +
-      // no route note: the 🚪 clause states how a removal is decided, and
+      // no route note: the 🥾 clause states how a removal is decided, and
       // hardcoding one rung here lied under the other two (copy pass,
       // 2026-08-19)
       '<p class="setnote">Whoever it is will see the proposal — nobody is removed in secret.</p>',
@@ -3011,7 +3011,7 @@
     slug: 'the document’s address',
     text: 'the text the document starts from',
   };
-  // the 🚪 rung as it stands (Q401) — unset reads as today's rule
+  // the 🥾 rung as it stands (Q401) — unset reads as today's rule
   const removalRung = () => takenOf('removal') ||
     (S.removal === 'roster' ? 'everyone' : S.removal);
   const endFmt = () => new Date((endingVal() !== 'never' && endingVal()) || S.endsAt)
@@ -3026,7 +3026,7 @@
     // **The ramp is part of what the threshold says** (Q512, Ed 2026-08-21:
     // *if there is no ramp, the clause can just be blank — maybe the ramp can
     // be in the threshold setting stack, rather than a whole separate
-    // clause*). So 📈 has no clause of its own: a fixed threshold is one
+    // clause*). So 🪜 has no clause of its own: a fixed threshold is one
     // sentence, a rising one is the same sentence saying where it starts.
     bar: () => { const v = takenValOf('pace');
       const shape2 = v ? v.shape : S.shape;
@@ -3091,7 +3091,7 @@
       ordinary: 'A member is removed by a proposal ✏️, judged like any other change.',
     })[removalRung()],
     invite: () => 'Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out.',
-    // the ❌ door states whatever route the 🚪 setting decides (Q401)
+    // the ❌ door states whatever route the 🥾 setting decides (Q401)
     remove: () => ({
       everyone: 'A member may be proposed for removal, and every member has to agree — including them.',
       others: 'A member may be proposed for removal, and every other member has to agree.',
@@ -3269,9 +3269,9 @@
     // sentence carries the title, which is member text — unescaped it was
     // stored XSS into the constitution paragraph
     decisionLine: (c) => linkify(esc(c.power ? powerHeadLine(c) : decisionLine(c))),
-    // 📈 has no paragraph of its own (Q512): the ramp is part of what the
-    // threshold says, so its tab stands in ✒️'s stack and opening it opens
-    // at ✒️'s own clause — which is also where its rail entry anchors,
+    // 🪜 has no paragraph of its own (Q512): the ramp is part of what the
+    // threshold says, so its tab stands in 🌡️'s stack and opening it opens
+    // at 🌡️'s own clause — which is also where its rail entry anchors,
     // since anchorOf falls back to the tab's paragraph.
     chipsFor: (c) => {
       const k = c.k === 'pace' ? 'bar' : c.k;
@@ -3642,7 +3642,7 @@
       '<p class="why">You invite people yourself. An invitation is just the link, sent by email, and whoever arrives starts with the same ✏️s as everybody else.</p>' +
       '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1" value="' + esc(S.inviteOne) + '">' +
       '<button class="btn" data-act="add">Invite</button></div></div>',
-    remove: () => '<p class="why">Propose that somebody stops being a member. It follows whatever the 🚪 rule says, and they always see it.</p>',
+    remove: () => '<p class="why">Propose that somebody stops being a member. It follows whatever the 🥾 rule says, and they always see it.</p>',
     myemail: () => (S.emailVerified
       ? '<div class="lockline">' + TICK + '<span>Verified — <b>' + esc(S.myemail) + '</b> can get back in.</span></div>' +
         '<span class="fld"><label>Change it</label><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" style="width:20rem"></span>' +

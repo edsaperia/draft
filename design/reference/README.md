@@ -17,7 +17,10 @@ everybody, 🛡️ joined the row with a grant of its own, and a released hold
 stopped deleting its token in mid-air, and at `refs-pass2-2026-08-22` after
 spec pass 2 folded (🏛️ with the first question you are asked, one label per
 rung, the 🌍 interim clause, the motion hold, ↻ grey, the cards.js tooltips
-in surface vocabulary), marks the same commit
+in surface vocabulary), and at `refs-glyphs-2026-08-22` after the threshold,
+the ramp and removal took new glyphs (🌡️ 🪜 🥾), which also cleared the
+Proposals-preamble freeze the previous run had left pending. It marks the
+same commit
 and is authoritative if EOL normalisation ever makes a copy differ byte-wise.
 
 - **Never edit these files.** When the surface changes intentionally,

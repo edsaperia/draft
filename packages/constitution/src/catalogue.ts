@@ -115,7 +115,7 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
         : 'ordinary',
     deps: [], judgeGate: false },
 
-  { id: 'bar', glyph: '✒️', kind: 'constitutional',
+  { id: 'bar', glyph: '🌡️', kind: 'constitutional',
     delegable: true, valueType: 'percent',
     consent: {
       ask: 'the lowest bar at the close you will accept',
@@ -132,7 +132,7 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   // founding question for a {shape, startPct}. The members can still take it
   // over after the start, by the reserve route, where no blind question is
   // needed, so no consent order: nothing ever resolves one (Q560, 2026-08-22).
-  { id: 'pace', glyph: '📈', kind: 'ordinary',
+  { id: 'pace', glyph: '🪜', kind: 'ordinary',
     delegable: false, valueType: 'pace',
     deps: ['ending'], judgeGate: false },
 
@@ -217,7 +217,7 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   // ruling); whether they may judge their own *ordinary* removal race is
   // open (Q401b). Not judge-gated: like the join policy, it touches no
   // recorded judgment.
-  { id: 'removal', glyph: '🚪', kind: 'constitutional',
+  { id: 'removal', glyph: '🥾', kind: 'constitutional',
     delegable: true, valueType: 'ladder',
     rungs: ['everyone', 'others', 'ordinary'],
     consent: {

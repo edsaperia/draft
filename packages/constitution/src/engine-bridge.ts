@@ -420,7 +420,7 @@ export class EngineBridge {
   }
 
   /**
-   * A removal under the 🚪 'ordinary' rung is the admit race's mirror
+   * A removal under the 🥾 'ordinary' rung is the admit race's mirror
    * (Q401a): one candidate — this member leaves — against the membership
    * as it stands, never raced against anything else.
    */
