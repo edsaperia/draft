@@ -818,6 +818,17 @@
     Object.defineProperty(S, prop, { get: () => viewerRow()[key] || '',
       set: (v) => { viewerRow()[key] = v; } });
   }
+  // **Whether you have answered ✋ and 🖼️, per seat** (Q645). Mirrored off the
+  // module the way `emailVerified` is — written by the commit, by `hydrateS`
+  // from `view.identity`, and by ⏩ — because the value cannot answer for the
+  // act: a blank name is a real answer (§9.0c). It has to hang on the row
+  // rather than on `S` directly, since `S.seen` being page-global is half of
+  // what this fixes.
+  for (const [prop, key] of [['nameSet', 'nSet'], ['picSet', 'picSet']]) {
+    Object.defineProperty(S, prop, { get: () => !!viewerRow()[key],
+      set: (v) => { viewerRow()[key] = !!v; } });
+  }
+  const identityAnswered = (k) => (k === 'myname' ? S.nameSet : S.picSet);
   Object.defineProperty(S, 'myAns', { get: () => (viewerRow().ans || (viewerRow().ans = {})) });
   Object.defineProperty(S, 'okd', { get: () => (viewerRow().okd || (viewerRow().okd = new Set())) });
   // a motion draft and your consent answers are yours, not the room's
@@ -1786,6 +1797,22 @@
     // everything below 🎩 — 💡, ⚖️, 🪪 — waited on a question that could not
     // settle, so no gate could be acknowledged and no ✏️ wallet ever arrived.
     if (c.k === 'hat') return S.seen.has('hat') || constituted();
+    // **✋ and 🖼️ are settled by the module, per seat** (Q645, Ed's live walk
+    // 2026-08-22: *I'm never offered the "Your Name" and "Your Picture"
+    // tasks*). They are the same lesson 🎩 taught one line above, in its
+    // sharpest form: their settledness lived **only** in `S.seen`, because
+    // `ready()` is permanently true for both, and `hydrateS` could not
+    // reconstruct it — so it simply declared them seen on every live render
+    // and the two tasks were dead on every real document, for every seat.
+    // What blocked the honest version is that **null is not the answer to
+    // *have you been asked***: a blank name is Anonymous (§9.0c) and a
+    // picture is removed by choosing initials, so the module had to start
+    // recording the act rather than the value (`nameSet`/`pictureSet`).
+    // Two dividends. It is **per seat** by construction, where `S.seen` is
+    // page-global — the one store on this surface that was not, which is why
+    // one seat's committed ✋ used to read as settled for everybody. And it
+    // survives a reload, which is the whole of what the live path needs.
+    if (c.k === 'myname' || c.k === 'mypic') return identityAnswered(c.k);
     // verified is the whole of what this card asks (a member's address is
     // verified by arrival; changing it un-verifies and asks again)
     if (c.k === 'myemail') return S.emailVerified;
@@ -1855,7 +1882,27 @@
   const roomExists = () => S.roster.some((r) => !r.founder && r.in);
   // everything of yours that is not an answer to a delegated question — the
   // ans-* cards are the ones being paced, so they cannot pace themselves
-  const otherTasksLeft = () => CARDS.concat(GATES).some((c) => visible(c) && mustAct(c));
+  // **A gate or a grant is news, not a question, so it is never one of the
+  // other tasks** (Q645, Ed's live walk 2026-08-22: *I am never offered the
+  // "delegate to members" tasks either*). This counted every gate, and two of
+  // them are outstanding precisely *because* the answers are:
+  //   🍾 — `mustAct` is `amFounder() && !constituted()`, so it is outstanding
+  //     by definition until pressed, and the module refuses the press while a
+  //     delegated question is still collecting (§9.0b). It is the act the
+  //     answers unblock.
+  //   🏛️ — the voice arrives **with the first blind question you are asked**
+  //     (Q605), so it cannot precede that question without a deadlock: the
+  //     grant was withholding the very thing it accompanies.
+  // Either way Q408's exception — *a founder with nothing else outstanding is
+  // served the rest anyway* — was unreachable, and a founder who founded in
+  // one sitting arrived at Begin, was refused, and had nowhere to answer. The
+  // rule is the one `askingFirst` below already states for 🏛️ inside its own
+  // re-entrancy: what a question hands you cannot be the reason to withhold
+  // the question. Ordering is not weakened by this — the file is kept by
+  // `ORDER`/`blocksOrder`, and no answer task can exist before its own
+  // setting has been delegated, which happens well below the pen.
+  const otherTasksLeft = () => CARDS.concat(GATES)
+    .some((c) => !c.isGate && visible(c) && mustAct(c));
   const ansDue = () => roomExists() || !otherTasksLeft();
   // **The answer tasks cascade like everything else** (Ed, 2026-08-19,
   // closing 416: *if I have to do all of them anyway, they should cascade*).
@@ -2862,13 +2909,22 @@
         cs = window.cs = M.ConstitutionSession.open({ title: S.title, slug: S.slug,
           convenor: { id: FOUNDER, email: f.e, isMember: f.role !== 'clerk' } }, now());
       }
-      if (f.role !== 'clerk') { try { cs.setIdentity(now(), FOUNDER, { name: f.n }); } catch (e) {} }
+      // **⏩ answers ✋ and 🖼️ too** (Q645). Both are real tasks now rather
+      // than cards `hydrateS` declared settled, so a stagehand that only names
+      // the founder leaves 🖼️ standing and the founding is not settled. The
+      // picture is answered **null** — that is what choosing your initials
+      // commits, and Ash wears initials everywhere in the fixture.
+      if (f.role !== 'clerk') {
+        try { cs.setIdentity(now(), FOUNDER, { name: f.n, picture: f.pic || null }); } catch (e) {}
+        f.nSet = true; f.picSet = true;
+      }
       if (S.roster.length === 1) { invite('ivy@hollowoak.org'); invite('moss@hollowoak.org'); }
       const named = { 'ivy@hollowoak.org': 'Ivy Fen', 'moss@hollowoak.org': 'Moss Whitlow' };
       S.roster.forEach((r) => { if (named[r.e]) r.n = named[r.e]; });
       S.roster.forEach((r) => { if (!r.founder && !r.in) { r.in = true;
         if (r.mid) { try { cs.arrive(now(), r.mid);
-          cs.setIdentity(now(), r.mid, { name: r.n }); } catch (e) {} } } });
+          cs.setIdentity(now(), r.mid, { name: r.n, picture: r.pic || null });
+          r.nSet = true; r.picSet = true; } catch (e) {} } } });
       if (!cs.textConfirmed) { try { cs.confirmStartingText(now(), proseText()); } catch (e) {} }
       CARDS.forEach((c) => S.seen.add(c.k));
       // **The stagehand fills the founder's hand.** Since the surface itself
@@ -4783,8 +4839,10 @@
             if (S.slug !== cs.slug) cs.setSetting(now(), 'link', { slug: S.slug });
             return; }
           if (was === 'text') { cs.confirmStartingText(now(), proseText()); return; }
-          if (was === 'myname') { cs.setIdentity(now(), viewerId(), { name: S.myname || null }); return; }
-          if (was === 'mypic') { cs.setIdentity(now(), viewerId(), { picture: S.mypic || null }); return; }
+          // committing is the act, whatever the value — an empty name is
+          // Anonymous and an empty picture is your initials, both real answers
+          if (was === 'myname') { S.nameSet = true; cs.setIdentity(now(), viewerId(), { name: S.myname || null }); return; }
+          if (was === 'mypic') { S.picSet = true; cs.setIdentity(now(), viewerId(), { picture: S.mypic || null }); return; }
           if (was === 'roster') return; // the register commits row by row
           // 🎩 commits here like every other setting (Q522, Ed 2026-08-21).
           // It used to carry a commit control of its own, which is how it
@@ -5561,6 +5619,9 @@
     S.emailSent = true; S.emailVerified = true;
     S.myname = v.view.identity.name || '';
     S.mypic = v.view.identity.picture || '';
+    // whether they were ever *answered*, which the values cannot say (Q645)
+    S.nameSet = !!v.view.identity.nameSet;
+    S.picSet = !!v.view.identity.pictureSet;
     S.quorumForm = v.quorumForm;
     hydrateValues(null);
     // delegation seeds: a members-held setting with no resolved value reads
@@ -5600,7 +5661,10 @@
       if (c.isGate || c.ansFor) return;
       if (c.k === 'title' || c.k === 'slug' || c.k === 'myemail' || c.k === 'roster') { S.seen.add(c.k); return; }
       if (c.k === 'text') { if (v.textConfirmed) S.seen.add(c.k); return; }
-      if (c.k === 'myname' || c.k === 'mypic') { S.seen.add(c.k); return; }
+      // ✋ and 🖼️ answer for themselves now, per seat, off `view.identity`'s
+      // own flags (Q645) — this line used to declare them settled on every
+      // live render, which is why neither task existed on a real document.
+      if (c.k === 'myname' || c.k === 'mypic') return;
       const st = csState(c.k);
       if (st && (st.settledBy !== null || st.holder === 'members')) {
         S.seen.add(c.k);
