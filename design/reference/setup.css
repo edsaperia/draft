@@ -632,13 +632,8 @@ button.cline:hover b { text-decoration: underline; }
    uses for your own work; ✓, an answer to a shared question, keeps the green
    that means decided. :not([disabled]) so system.css's greyed-out rule, at
    the same specificity, still wins where it should. */
-.btn.btn-approve.glyphbtn.emojibtn:not([disabled]) {
-  background: var(--primary-subtle); border-color: var(--primary);
-  color: var(--primary-emphasis);
-}
-.btn.btn-approve.glyphbtn.emojibtn:not([disabled]):hover {
-  background: var(--light); border-color: var(--primary-hover);
-}
+/* the ground itself now lives in system.css as `.btn.glyphbtn.emojibtn`, so
+   the charter’s ✏️ Propose wears it too (2026-08-22). */
 
 /* the emoji picker (Ed, 2026-08-19): a normal picker rather than a row of
    faces, so it scrolls inside itself instead of pushing the card's own

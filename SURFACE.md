@@ -228,7 +228,7 @@ An act that spends something out of a wallet is held, and its gravity is the len
 | 🪶 commit (title, link, the send) | 1000 | 250 | the last feather | carried to the floor, hangs, rewinds at ×4 |
 | ✒️ commit | 1000 | 250 | the pen | same |
 | 🍾 Begin | 1000 | 250 | the cork, button → title | same |
-| ✏️ Propose (a draft in the charter) | 3000 | 864 | the last drawn ✏️ | same; cancels on `pointerleave` too |
+| ✏️ Propose (a draft in the charter) | 3000 | 864 | the last drawn ✏️ | same |
 | ✏️ Propose (a motion) | 3000 | 864 | the last drawn ✏️ (Q614) | same |
 | 🏛️ Hold to ask everyone | 10000 | — | nothing — the members' avatars convene | disperses; nothing sent |
 | OK | a click | — | the grant's object, OK → socket | — |
@@ -252,6 +252,7 @@ The refund flight and every grant's inbound flight take 640 ms.
 - **W13 A wallet must not depend on its own animation finishing** — every flight has a safety net.
 - **W14 🍾 has no wallet; the cork flies** (Y11). Every wallet flies out at the close, from the 🥂 OK.
 - **W15 One 🏛️ out per member at a time**, returned whole.
+- **W16 A hold is released by letting go, and by nothing else**: `pointerup` and `pointercancel`, bound once on the document, never `pointerleave` and never per control. A hold that a boundary event can cancel is cancelled by its own surface — a render detaches the button under the pointer, and `.holding`’s own shrink insets the hit box by 0.78 px under a stationary cursor. What survives that is a commit resolved by **id** rather than by node. → the charter’s ✏️ Propose lost a live proposal to this twice (2026-08-22); `spec-check` asserts the release set.
 
 ## 8. The founding order and the band
 
@@ -356,7 +357,7 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 | 🪶 | every commit before the save | 1 s | accent-subtle | the ground belongs to the glyph, never to the card's kind |
 | ✒️ | a set of your own post-save, the power tabs included | 1 s | accent-subtle | one glyph per route |
 | ✓ (drawn) | an answer, a judgment, anything about yourself (*Save*) | — | **the one solid green on a card** | ✓ where the act binds nobody but you |
-| ✏️ (hold) | a draft, or an ordinary motion | the flight | blue — *blue, not green* | the price is said in words exactly once, here |
+| ✏️ (hold) | a draft, or an ordinary motion | the flight | accent-subtle — *blue, not green* | the price is said in words exactly once, here |
 | 🏛️ Hold to ask everyone | a constitutional motion | 10 s | accent-subtle | one 🏛️ out per member |
 | ✏️ Submitted | a proposed draft | — | pressed | the act become the fact; the row does not move |
 | OK | anything that asks only to have been seen | — | solid accent | a word, not a glyph |

@@ -14,8 +14,11 @@
  *
  * What it does NOT prove: anything that depends on an animation completing.
  * The automation tab runs backgrounded — rAF never fires, transitions never
- * advance — so the three holds (🪶, ✒️, ✏️) cannot be exercised faithfully
- * here, and the final Propose is reported as unverified rather than failed.
+ * advance — so no flight is asserted here. The **holds themselves** are a
+ * different matter and were wrongly lumped in with them until 2026-08-22: a
+ * hold needs a pointer held down, not a running animation, and the propose
+ * hold is now driven for its full three seconds with a render forced into the
+ * middle of it — the case that used to cancel it in silence.
  * Every commit below is driven by a real pointer press for the same reason a
  * synthetic .click() is not enough, and each control is scrolled into view
  * first: a pointer cannot press what is off screen.
@@ -35,6 +38,12 @@ page.on('pageerror', (e) => errors.push(String(e)));
 // page dutifully walked back to 📍, which the walk simply drove through. The
 // surface's own recovery is what hid it, so the check belongs at the wire.
 const refused = [];
+// the propose command, watched at the wire: the page’s own state says a draft
+// is "mine" either way, so the only unambiguous answer is what the server was
+// asked and what it said back
+let proposeStatus = null;
+page.on('response', (r) => { if (r.request().method() === 'POST' &&
+  /propose-text/.test(r.request().postData() || '')) proposeStatus = r.status(); });
 page.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400)
   refused.push(r.status() + ' ' + r.request().method() + ' ' + new URL(r.url()).pathname); });
 const T = (ms) => page.waitForTimeout(ms);
@@ -213,7 +222,36 @@ if (caret) {
   }));
   say('typing     · ' + (r.editCard ? 'opens the editing card' : 'FAIL: no editing card') +
     ' · propose control ' + (r.proposeBtn ? 'present and live' : 'MISSING'));
-  say('propose    · not exercised: the hold needs animation timing this tab cannot run');
+  /* **And now the hold itself** (2026-08-22). This step used to say the
+   * gesture could not be exercised here, and the bug it could not see cost
+   * two live proposals: the hold released on `pointerleave`, so a render
+   * mid-hold — or `.holding`’s own 0.78px shrink under a stationary cursor —
+   * cancelled it in silence. What that reasoning got wrong is that the hold
+   * does not need an *animation*: it needs a **pointer held down**, which
+   * Playwright can do exactly and for as long as it likes. The flight cannot
+   * be judged here and is not asserted; the commit can, and now is.
+   * A render is forced in the middle on purpose — that is the failing case. */
+  const pb = await page.$('[data-act="draft-propose"]:not([disabled])');
+  await pb.scrollIntoViewIfNeeded();
+  const bx = await pb.boundingBox();
+  await page.mouse.move(bx.x + bx.width / 2, bx.y + bx.height / 2);
+  await page.mouse.down();
+  await T(500);
+  const mid = await page.evaluate(() => ({ holding: window.SESSION.holding,
+    flying: !!document.querySelector('.flypencil'), edits: window.SESSION.editsHeld }));
+  await page.evaluate(() => window.SESSION && window.SESSION.renderAll());
+  await T(3200);
+  await page.mouse.up();
+  await T(900);
+  const after = await page.evaluate(() => ({ edits: window.SESSION.editsHeld,
+    mine: (window.SESSION.SUGGS || []).filter((x) => x.mine && x.unproposed !== true).length }));
+  const ok = proposeStatus !== null && proposeStatus < 400 && after.edits < mid.edits;
+  say('propose    · ' + (ok
+    ? 'held through a render · propose-text ' + proposeStatus + ' · wallet ' +
+      mid.edits + '→' + after.edits + ' · ' + after.mine + ' of mine standing'
+    : 'FAIL: propose-text ' + proposeStatus + ' · wallet ' + mid.edits + '→' + after.edits +
+      ' · held ' + mid.holding + ' · flying ' + mid.flying));
+  if (!ok) stuck.push('propose hold');
 }
 say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
 say('refused    · ' + (refused.length ? refused.join(' / ') : 'none'));

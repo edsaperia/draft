@@ -1404,17 +1404,36 @@
      start of one. And everything else about your work is now the accent — the
      drafting box, the tab, the rail entry — so a green button was the one part
      of your own proposal that did not look like yours. */
-  .btn.btn-propose {
-    background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600;
+  /* **An emoji glyph is a coloured object**, so it sits on the accent-subtle
+     ground rather than a solid fill — Ed, 2026-08-19 for ✒️, and 2026-08-22
+     for this one (*the colour of the ✏️ button is dark blue, which is wrong
+     as it is a glyph*). One rule with two named users, the founding’s ✒️
+     commit and the charter’s ✏️ Propose, which is what keeps two surfaces
+     saying the same thing about the same kind of control; it used to live in
+     setup.css, where only one of them could reach it. It also settles a
+     contradiction inside this button’s own life: ✏️ Submitted below has
+     always been subtle, so the live control was the loud one and the spent
+     one the quiet one, which is backwards. */
+  .btn.glyphbtn.emojibtn:not([disabled]) {
+    background: var(--primary-subtle); border-color: var(--primary);
+    color: var(--primary-emphasis);
   }
-  .btn.btn-propose:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  .btn.glyphbtn.emojibtn:not([disabled]):hover {
+    background: var(--light); border-color: var(--primary-hover);
+  }
+  .btn.btn-propose { font-weight: 600; }
   /* The draft's propose button **is** a glyph button, so it says so in its class
      list rather than restating .glyphbtn's geometry here and getting the height
      wrong (housekeeping pass, 2026-08-17: it was 52x30 in a row of 52x40). What
      is left is the one thing that is true of this button and no other glyph
      button: it never grows, because what grows instead is the pencil crossing
      the screen towards it. */
-  .btn.btn-propose.holding { background: var(--primary-hover); transform: scale(0.97); }
+  /* the ground stays and the border tightens: a hold is this control engaged,
+     not a different control. Specificity has to beat the shared hover above,
+     since the pointer is by definition on it while it is held. */
+  .btn.btn-propose.glyphbtn.emojibtn.holding {
+    background: var(--primary-subtle); border-color: var(--primary-hover); transform: scale(0.97);
+  }
   /* the edit in flight: it belongs to neither end, so it lives on the body and
      is pointer-transparent — you are still holding the button underneath it.
      It travels along a curve rather than a straight run, because a thing thrown
@@ -1429,8 +1448,12 @@
     font-size: var(--t-ui); line-height: 1; will-change: transform;
     transform: translate(-50%, -50%);
   }
-  @media (prefers-reduced-motion: reduce) { .btn.btn-propose.holding { transform: none; } }
-  .btn.btn-propose[disabled]:hover { background: var(--primary); border-color: var(--primary); }
+  @media (prefers-reduced-motion: reduce) { .btn.btn-propose.glyphbtn.emojibtn.holding { transform: none; } }
+  /* No disabled rule of its own: setup.css already carries **one flat** for
+     the whole commit row (`.commitrow .btn[disabled]`, Ed 2026-08-21). What
+     stood here restored the solid accent on hover and beat that rule on
+     specificity, so a dead ✏️ lit up under the pointer. Deleted rather than
+     replaced — the shared rule was always the right one. */
   /* Withdrawal is a real thing to do and not a danger (SPEC §3.3a — the stake
      comes back in full), so it is an ordinary outline button rather than a red
      one. */

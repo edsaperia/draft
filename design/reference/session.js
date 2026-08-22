@@ -92,12 +92,12 @@
   // open, so a surface that never sets them behaves exactly as before. They
   // are read at call time, never captured — the answer changes the moment an
   // OK is pressed, with no reload and no remount.
-  // **A press in progress, visible to the host.** The propose hold lives
-  // inside renderDoc, so it is re-created by every render — and a render
-  // during a hold removes the button the pointer is on, which makes the
-  // browser fire pointerleave and silently cancels the hold. At HOLD_MS
-  // 3000 against a 4s poll that is most attempts, which is why a live
-  // proposal so often never went in. The host reads this to hold its poll.
+  // **A press in progress, visible to the host**, so a poll does not rebuild
+  // the surface under a hold. This was once the whole fix for a live
+  // proposal never going in; it was one door of three, and the hold itself
+  // has since been rebuilt to survive the other two (see the propose hold
+  // above `renderDoc`). Worth keeping regardless: nothing should move under
+  // a hand mid-gesture, whether or not the gesture would now survive it.
   let holdInFlight = false;
   let MAY_PROPOSE = () => true;
   let MAY_JUDGE = () => true;
@@ -2162,7 +2162,7 @@
       // spent at Propose, which is where the price is said in words* — and
       // makes the price itself the confirmation step, rather than bolting a
       // "sure?" onto it. Pressing anything else disarms it.
-      '<button class="btn btn-propose glyphbtn" data-act="draft-propose"' +
+      '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
       (broke ? ' disabled title="No ✏️ left — another arrives as the drip accrues"' : '') +
       ' title="Hold to propose this' + (n > 1 ? ' in all ' + n + ' places' : '') +
       ' — one edit leaves your wallet to pay for it">✏️</button>' +
@@ -2486,7 +2486,7 @@
           '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
           ' title="' + (site ? 'Discard this draft — nothing has been spent on it yet'
                              : 'Close — there is nothing here to put back') + '">🗑️</button>' +
-          '<button class="btn btn-propose glyphbtn" data-act="draft-propose"' +
+          '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
           (site && !broke ? '' : ' disabled') +
           ' title="Hold to propose this — one edit leaves your wallet to pay for it">✏️</button>' +
           '</div>'
@@ -2635,6 +2635,120 @@
       '</div>'
     );
   }
+
+  // committing
+  // **Hold to propose, and the edit flies out of your wallet to pay for it**
+  // (Ed, 2026-08-17). A whimsical idea that turns out to be the most literal
+  // thing on the surface: the confirmation gesture and the price are the same
+  // object, because what you are holding down for is the time it takes one of
+  // your pencils to travel from the wallet to the button. Let go and it flies
+  // home and nothing is spent.
+  //
+  // It replaces the two-press arming built an hour earlier, which said the
+  // price in words at the moment of confirming. This says it by moving the
+  // thing being spent, which is better in the way a diagram is better than a
+  // caption — and it keeps the standing rule that the price is stated *at*
+  // Propose rather than in advance.
+  //
+  // Under reduced motion the pencil does not travel: it fades at the wallet
+  // and arrives at the button. Same gesture, same duration, no flight.
+  const HOLD_MS = 3000;
+  let holding = null;
+  const flyStop = (fired) => {
+    if (!holding) return;
+    const { el, pencil, timer, anim } = holding;
+    holding = null; holdInFlight = false;
+    clearTimeout(timer);
+    el.classList.remove('holding');
+    // Fired: the edit is spent, and act() renders the wallet one lighter — so
+    // the reserved gap is released without a render of its own, or the wallet
+    // would show the old count for a frame before the spend lands.
+    if (fired) { walletGhost = false; if (pencil) pencil.remove(); return; }
+    if (!pencil) { walletGhost = false; renderWallet(); return; }
+    // Let go early and it comes home **along its own arc** — the flight run
+    // backwards rather than a second, straighter journey, because the way it
+    // came is the way it goes back. Faster than it left: rewinding at the
+    // speed it flew would punish a late change of mind with a three-second
+    // wait, and the return is not a gesture anybody is performing.
+    //
+    // Since Q531 the return is `nudgeHome`, shared with the pen and the
+    // quill, which adds the quarter floor: a press too short to be a hold
+    // still carries the pencil a quarter of the way before it comes back.
+    // **864ms, not 750** — this flight's easing is slow off the mark, and
+    // the floor is a quarter of the *distance* (see `nudgeHome`). The old
+    // `HOLD_MS / 4 + 60` safety timeout is gone with it: the fallback now
+    // derives from the actual journey, which a literal cannot do once there
+    // is a push phase in front of the rewind.
+    nudgeHome({ anim, el: pencil }, { floorAt: 864,
+      onDone: () => {
+        walletGhost = false;
+        // the pencil is home, so the preview may resume — but only if the
+        // pointer never left the button that was asking for it
+        resumeLean(el);
+        renderWallet();
+      } });
+  };
+  const flyStart = (el) => {
+    flyStop(false);
+    if (el.disabled) return;
+    // the token is about to leave for real, so it stops straining at the leash
+    stopLean();
+    // The slot the pencil leaves and the pencil that leaves are the same
+    // object: ghosting the wallet marks it, and the mark is what we measure
+    // from. It is render state, not a poke at the DOM — the drip re-renders
+    // the wallet every second and used to put the flying pencil straight back
+    // (Ed, 2026-08-17).
+    walletGhost = true;
+    renderWallet();
+    const src = walletEl.querySelector('.gone');
+    let pencil = null, anim = null;
+    if (src) {
+      const a = src.getBoundingClientRect();
+      const b = el.getBoundingClientRect();
+      pencil = document.createElement('div');
+      pencil.className = 'flypencil';
+      pencil.textContent = '✏️';
+      pencil.style.left = (a.left + a.width / 2) + 'px';
+      pencil.style.top = (a.top + a.height / 2) + 'px';
+      document.body.appendChild(pencil);
+      anim = REDUCED()
+        ? pencil.animate([{ opacity: 1 }, { opacity: 0 }], { duration: HOLD_MS, fill: 'both' })
+        : pencil.animate(arcFrames(a, b, 0, -24),
+            { duration: HOLD_MS, easing: 'cubic-bezier(.45, .05, .3, 1)', fill: 'both' });
+    }
+    el.classList.add('holding');
+    holdInFlight = true;
+    const id = el.closest('.sugg').dataset.card;
+    holding = { el, pencil, anim, timer: setTimeout(() => { flyStop(true); act(id, 'draft-propose'); }, HOLD_MS) };
+  };
+// **The press outlives the button, here too** (Ed, 2026-08-22: *I cannot
+// submit it even if I hold it — the pencil flies back*). This hold used to
+// be built inside `renderDoc`, bound per button and released on
+// **pointerleave**, and both halves of that were fatal. A render during a
+// hold detaches the button under the pointer, so the browser fires
+// pointerleave at the node it just removed and the hold silently cancels —
+// measured, not deduced: after a render the held button reports
+// `isConnected: false` while its timer is still running. And `.holding`
+// applies `scale(0.97)`, which insets the hit box by 0.78px, so a press
+// landing within a pixel of the edge cancels itself on the spot with no
+// render involved at all. Deferring the poll (the earlier fix) closed only
+// the third of the three doors.
+//
+// So it takes the ✒️ pen hold’s shape, which has never had this bug: bound
+// once on the document, released on **pointerup and pointercancel only**.
+// Sliding off to cancel goes with it, deliberately — the pen has never
+// offered it, and letting go is the cancel. What made the timer survivable
+// already was that it commits through `act(id, …)`, which resolves the
+// draft by id rather than by node: verified by holding through a render and
+// watching the proposal land from a button that no longer existed.
+document.addEventListener('pointerdown', (ev) => {
+  const b = ev.target.closest && ev.target.closest('[data-act="draft-propose"]');
+  if (!b || ev.button !== 0) return;
+  ev.preventDefault(); ev.stopPropagation();
+  flyStart(b);
+});
+document.addEventListener('pointerup', () => flyStop(false));
+document.addEventListener('pointercancel', () => flyStop(false));
 
   function renderDoc() {
     let html = PROSE();
@@ -3048,96 +3162,6 @@
         smoothScrollBy(target.getBoundingClientRect().top - READ_LINE, () => { layoutQueue(); drawWires(); });
       })
     );
-    // committing
-    // **Hold to propose, and the edit flies out of your wallet to pay for it**
-    // (Ed, 2026-08-17). A whimsical idea that turns out to be the most literal
-    // thing on the surface: the confirmation gesture and the price are the same
-    // object, because what you are holding down for is the time it takes one of
-    // your pencils to travel from the wallet to the button. Let go and it flies
-    // home and nothing is spent.
-    //
-    // It replaces the two-press arming built an hour earlier, which said the
-    // price in words at the moment of confirming. This says it by moving the
-    // thing being spent, which is better in the way a diagram is better than a
-    // caption — and it keeps the standing rule that the price is stated *at*
-    // Propose rather than in advance.
-    //
-    // Under reduced motion the pencil does not travel: it fades at the wallet
-    // and arrives at the button. Same gesture, same duration, no flight.
-    const HOLD_MS = 3000;
-    let holding = null;
-    const flyStop = (fired) => {
-      if (!holding) return;
-      const { el, pencil, timer, anim } = holding;
-      holding = null; holdInFlight = false;
-      clearTimeout(timer);
-      el.classList.remove('holding');
-      // Fired: the edit is spent, and act() renders the wallet one lighter — so
-      // the reserved gap is released without a render of its own, or the wallet
-      // would show the old count for a frame before the spend lands.
-      if (fired) { walletGhost = false; if (pencil) pencil.remove(); return; }
-      if (!pencil) { walletGhost = false; renderWallet(); return; }
-      // Let go early and it comes home **along its own arc** — the flight run
-      // backwards rather than a second, straighter journey, because the way it
-      // came is the way it goes back. Faster than it left: rewinding at the
-      // speed it flew would punish a late change of mind with a three-second
-      // wait, and the return is not a gesture anybody is performing.
-      //
-      // Since Q531 the return is `nudgeHome`, shared with the pen and the
-      // quill, which adds the quarter floor: a press too short to be a hold
-      // still carries the pencil a quarter of the way before it comes back.
-      // **864ms, not 750** — this flight's easing is slow off the mark, and
-      // the floor is a quarter of the *distance* (see `nudgeHome`). The old
-      // `HOLD_MS / 4 + 60` safety timeout is gone with it: the fallback now
-      // derives from the actual journey, which a literal cannot do once there
-      // is a push phase in front of the rewind.
-      nudgeHome({ anim, el: pencil }, { floorAt: 864,
-        onDone: () => {
-          walletGhost = false;
-          // the pencil is home, so the preview may resume — but only if the
-          // pointer never left the button that was asking for it
-          resumeLean(el);
-          renderWallet();
-        } });
-    };
-    const flyStart = (el) => {
-      flyStop(false);
-      if (el.disabled) return;
-      // the token is about to leave for real, so it stops straining at the leash
-      stopLean();
-      // The slot the pencil leaves and the pencil that leaves are the same
-      // object: ghosting the wallet marks it, and the mark is what we measure
-      // from. It is render state, not a poke at the DOM — the drip re-renders
-      // the wallet every second and used to put the flying pencil straight back
-      // (Ed, 2026-08-17).
-      walletGhost = true;
-      renderWallet();
-      const src = walletEl.querySelector('.gone');
-      let pencil = null, anim = null;
-      if (src) {
-        const a = src.getBoundingClientRect();
-        const b = el.getBoundingClientRect();
-        pencil = document.createElement('div');
-        pencil.className = 'flypencil';
-        pencil.textContent = '✏️';
-        pencil.style.left = (a.left + a.width / 2) + 'px';
-        pencil.style.top = (a.top + a.height / 2) + 'px';
-        document.body.appendChild(pencil);
-        anim = REDUCED()
-          ? pencil.animate([{ opacity: 1 }, { opacity: 0 }], { duration: HOLD_MS, fill: 'both' })
-          : pencil.animate(arcFrames(a, b, 0, -24),
-              { duration: HOLD_MS, easing: 'cubic-bezier(.45, .05, .3, 1)', fill: 'both' });
-      }
-      el.classList.add('holding');
-      holdInFlight = true;
-      const id = el.closest('.sugg').dataset.card;
-      holding = { el, pencil, anim, timer: setTimeout(() => { flyStop(true); act(id, 'draft-propose'); }, HOLD_MS) };
-    };
-    doc.querySelectorAll('[data-act="draft-propose"]').forEach((b) => {
-      b.addEventListener('pointerdown', (ev) => { ev.preventDefault(); ev.stopPropagation(); flyStart(b); });
-      ['pointerup', 'pointerleave', 'pointercancel'].forEach((e) =>
-        b.addEventListener(e, () => flyStop(false)));
-    });
     doc.querySelectorAll('.sugg [data-act]').forEach((b) =>
       b.addEventListener('click', (ev) => {
         ev.stopPropagation();

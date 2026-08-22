@@ -275,6 +275,20 @@ function checkWallets(pm) {
   if (!/floorAt(?::| \|\|) 250/.test(page)) find('holds', 'the pen release floor (250) not found');
   if (!/floorAt: 864/.test(sess)) find('holds', 'the pencil release floor (864) not found');
   if (numLit(sess, 'REFUND_MS') !== 640) find('holds', 'REFUND_MS is not 640');
+  // **A hold is released by letting go, never by the surface moving** (2026-08-22).
+  // Both holds on this product release on pointerup and pointercancel and on
+  // nothing else. `pointerleave` was fatal on the charter’s: a render during a
+  // hold detaches the button under the pointer, the browser fires a boundary
+  // event at the node it removed, and the proposal silently never went in — and
+  // `.holding`’s scale(0.97) could do it with no render at all, by insetting the
+  // hit box 0.78px under a stationary cursor. Nothing here can see a live
+  // browser, so it asserts the policy in the source, which is the thing that was
+  // wrong: no propose-hold release may name pointerleave.
+  const holdBind = sess.slice(sess.indexOf("flyStart(b);"), sess.indexOf("function renderDoc"));
+  if (/pointerleave/.test(holdBind)) find('holds', 'the propose hold releases on pointerleave — a render or the .holding shrink cancels it silently');
+  for (const e of ['pointerup', 'pointercancel'])
+    if (!holdBind.includes("addEventListener('" + e + "'")) find('holds', `the propose hold does not release on ${e}`);
+  if (sess.includes(`doc.querySelectorAll('[data-act="draft-propose"]')`)) find('holds', 'the propose hold is bound per button again — it must be delegated, or a render orphans it');
   note(`  ${rows.length} wallets; holds 🪶✒️🍾 ${pen} · ✏️ ${propose} · 🏛️ ${assembly}`);
 }
 
