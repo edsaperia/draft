@@ -1279,3 +1279,47 @@ describe("the stranger's door (Q452/455/456)", () => {
     expect(k.body.joinPolicy).toBe('invite');
   });
 });
+
+/**
+ * **Foundership carries a read, independent of 🌍** (Ed, 2026-08-22).
+ *
+ * 🌍 settles who may read a document *besides* the people it is already
+ * about. A clerk founder is not a member, so under *members only* the
+ * document's own clause read as though it shut out the person who convened
+ * it — and the surface said so in as many words. The server has never
+ * behaved that way (the convenor's seat is always alive, and the member
+ * branch consults no rung), but nothing pinned it, and the one place that
+ * *does* gate a read on the rung — the applicant branch — is one refactor
+ * away from being the rule for everybody who is not on the roster.
+ */
+describe('the founder reads their own document (2026-08-22)', () => {
+  it('a clerk founder reads the text under members-only, and a stranger does not', async () => {
+    const { base } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Clerk Convened Charter', email: 'ada@example.org', isMember: false,
+    })).json() as { slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+
+    const cmd = async (name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${created.slug}/cmd`,
+        { cmd: name, args }, ada)).json() as { error?: string };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+    };
+    await cmd('confirm-starting-text', { text: 'The clubhouse shall be kept open.' });
+    await cmd('set-setting', { setting: 'chamber', value: { rung: 'closed' } });
+
+    // the founder is not on the roster at all — this is the clerk case
+    const mine = await (await fetch(base + `/api/d/${created.slug}/view`,
+      { headers: { cookie: ada } })).json() as
+      { isFounder: boolean; text?: string; convenor: { isMember: boolean } };
+    expect(mine.convenor.isMember).toBe(false);
+    expect(mine.isFounder).toBe(true);
+    expect(mine.text).toContain('clubhouse');
+
+    // …and the rung still means what it says to everybody else
+    const door = await (await fetch(base + `/api/d/${created.slug}/view`)).json() as
+      { canRead: boolean; text: string | null };
+    expect(door.canRead).toBe(false);
+    expect(door.text).toBe(null);
+  });
+});

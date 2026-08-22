@@ -28,6 +28,15 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
+// **A refused command is a failure even when the walk recovers from it**
+// (2026-08-22). Both of the day's birth bugs went straight past this walk:
+// a held commit fired twice, so the second 📧 send asked for the address the
+// first had just reserved and was told 409 *that address is taken* — and the
+// page dutifully walked back to 📍, which the walk simply drove through. The
+// surface's own recovery is what hid it, so the check belongs at the wire.
+const refused = [];
+page.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400)
+  refused.push(r.status() + ' ' + r.request().method() + ' ' + new URL(r.url()).pathname); });
 const T = (ms) => page.waitForTimeout(ms);
 
 const rail = () => page.evaluate(() => [...document.querySelectorAll('#rail li')]
@@ -86,6 +95,7 @@ const press = async (holdMs) => {
 };
 
 /* ---- the birth: title, link, address, then the magic link saves it ---- */
+const stuck = [];
 const TITLE = 'Journey ' + Date.now();
 await page.goto(BASE + '/');
 await T(800);
@@ -111,10 +121,17 @@ await page.goto(link);
 for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await T(500);
 await T(2200);
 say('birth      · saved at ' + page.url());
+// **The pen is the only thing asked for at the save** (Ed, 2026-08-22).
+// Every card below ✒️ in the founding order commits with the pen it hands
+// over, so until it is acknowledged they are tasks the founder may not
+// action — and a task you may not action is not shown at all.
+const atSave = await rail();
+say('at save    · rail ' + JSON.stringify(atSave) +
+  (atSave.length === 1 && atSave[0] === 'grant-pen' ? '' : '  FAIL: the pen should stand alone'));
+if (!(atSave.length === 1 && atSave[0] === 'grant-pen')) stuck.push('rail at save');
 
 /* ---- the founding: whatever the rail asks, one task at a time ---- */
 const seen = new Set();
-const stuck = [];
 for (let i = 0; i < 60; i++) {
   const next = (await rail()).find((k) => !seen.has(k));
   if (!next) break;
@@ -199,5 +216,6 @@ if (caret) {
   say('propose    · not exercised: the hold needs animation timing this tab cannot run');
 }
 say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
+say('refused    · ' + (refused.length ? refused.join(' / ') : 'none'));
 await browser.close();
-process.exit(stuck.length || !caret || errors.length ? 1 : 0);
+process.exit(stuck.length || !caret || errors.length || refused.length ? 1 : 0);

@@ -1195,7 +1195,7 @@
     { k: 'chamber', g: '🌍', t: 'Visibility', kind: 'constitutional', gate: 'judge', key: 'chamber', dep: ['text'], p: 0.43,
       rule: 'This one is about privacy, so the <b>most private</b> answer wins: one member who wants it kept closed keeps it closed.',
       takes: 'The document takes the most private', result: 'Members only',
-      dist: [5, 8, 1], distTop: 1, distEnds: ['Members only', 'Public'] },
+      dist: [5, 9], distTop: 1, distEnds: ['Members only', 'Anyone with the link'] },
     // **Do memberships lapse?** (Ed, 2026-08-18, closing Q345 with the sunset
     // option.) Constitutional — it is a rule about the roster, and it passes
     // §9.6's test the honest way round: it re-rates nothing already decided,
@@ -1624,12 +1624,32 @@
   // constitution is decided — so a gate that blocked what stands below it
   // would stop the constitution being finished at all. It takes a position,
   // so nothing arrives before its turn, and is skipped as a blocker.
+  //
+  // **The pen is the exception** (Ed, 2026-08-22: *immediately after the
+  // birth I can see "Your Pen" and "Visibility"; visibility is a
+  // constitutional setting with a ✒️ action, and if I haven't accepted the
+  // pen yet I shouldn't see it, because I shouldn't be given tasks that I
+  // can't action*). The skip-as-blocker rule was written for ⚖️, which
+  // cannot open until the whole constitution is decided — blocking on it
+  // would stop the constitution being finished at all. ✒️ is in no such
+  // position: it is open from the save and one press settles it. And
+  // **every card below it in the order is committed with the very pen it
+  // hands over**, so until it is acknowledged they are, to the letter, tasks
+  // the founder may not action.
+  //
+  // 🏛️ deliberately keeps the gates' rule. A voice is spent on motions and
+  // never on a founding commit, so it hands over nothing the queue below it
+  // needs — and a clerk founder, who is not a member, never opens it at all,
+  // so a blocking 🏛️ would strand the founding four questions from its end.
+  const blocksOrder = (p) => p.k === 'grant-pen'
+    ? amFounder() && !!p.open() && !acked('grant-pen')
+    : !p.isGate && !settled(p);
   const orderReady = (c) => {
     const i = ORDER.indexOf(c.k);
     return i < 0 ? (c.dep || []).every((k) => settled(card(k)))
       : ORDER.slice(0, i).every((k) => {
         const p = card(k);
-        return !p || p.isGate || settled(p);
+        return !p || !blocksOrder(p);
       });
   };
   const visible = (c) => (isStranger() && (c.isGate || c.kind === 'personal' || c.ansFor) ? false : c.ansFor
@@ -2099,7 +2119,12 @@
       'Everyone else has to agree': { rung: 'others' },
       'A proposal ✏️ like any other': { rung: 'ordinary' } },
     machines: { 'People only': { enabled: false, budget: 0 } },
-    chamber: { 'Members only': { rung: 'closed' }, 'Anyone with the link': { rung: 'link' }, 'Public': { rung: 'public' } },
+    // **Public has left the ladder** (Ed, 2026-08-22). It is offered nowhere
+    // — not here, not on the founder's card, not in a member's answer — but
+    // every map that *reads* a rung back still knows it: the module's
+    // catalogue still holds it, so a document that took it before today
+    // still states its own rule truthfully rather than printing a raw value.
+    chamber: { 'Members only': { rung: 'closed' }, 'Anyone with the link': { rung: 'link' } },
     authorship: { 'Nobody’s name, ever': { rung: 'anonymous' }, 'Names at the close': { rung: 'sealed' }, 'Names from the start': { rung: 'public' } },
     signing: { 'Nobody signs': { rung: 'nobody' }, 'Each author chooses': { rung: 'each' }, 'Everybody signs': { rung: 'everybody' } },
     judgments: { 'Never revealed': { rung: 'never' }, 'Revealed after the decision': { rung: 'after' } },
@@ -2298,8 +2323,7 @@
       ['Revealed after the decision', 'Judgments are published with the record of each decision, never before.']], 'judgments'),
     chamber: (d) => lanesFor(d, [
       ['Members only', 'Only members can read the document.'],
-      ['Anyone with the link', 'Anyone with the link can read it; it is not listed.'],
-      ['Public', 'Listed and readable by anyone.']], 'chamber'),
+      ['Anyone with the link', 'Anyone with the link can read it; it is not listed.']], 'chamber'),
     machines: (d) => lanesFor(d, [['People only', 'People only — no machine drafts here.']], 'machines') +
       inputBlock('The coherence auditor drafts alongside the members, with a budget of ' +
         '<input class="num" type="number" min="1" max="40" data-mnum=" ✏️s for the coherence auditor" value="' +
@@ -2595,7 +2619,15 @@
     judgments: () => ({ never: 'What somebody preferred is never made public.',
       after: 'What somebody preferred is made public when the document is finished, and not before.' })[
       takenOf('judgments') || (S.judgments === 'roster' ? 'never' : S.judgments)],
-    chamber: () => ({ closed: 'Only members can see the document.',
+    // **Foundership carries a read, whatever 🌍 says** (Ed, 2026-08-22).
+    // 🌍 settles who may read *besides* the people the document is already
+    // about, and a clerk founder is not a member — so under *members only*
+    // the clause stated a rule that shut the founder out of the document
+    // they convened, which the product has never actually done. It is said
+    // only where it is a deviation: a founder who is a member is covered by
+    // the sentence already, and under link or public everybody reads anyway.
+    chamber: () => ({ closed: 'Only members can see the document.' +
+        (iDraft() ? '' : ' The Founder can always read it.'),
       link: 'Anyone with the link can read the document.',
       public: 'The document is public — listed and readable by anyone.' })[
       takenOf('chamber') || (S.chamber === 'roster' ? 'closed' : S.chamber)],
@@ -3285,13 +3317,12 @@
       (isNum(S.grant) && isNum(S.cap) && +S.cap < +S.grant
         ? '<p class="setnote">The maximum cannot be lower than the number they start with.</p>' : ''),
     chamber: () =>
-      '<p class="why">Who else can read the document. Readers are <b>not members</b>: they cannot propose or judge, and nothing about them is known. Nobody, member or not, can see how a question is going while it is still open.</p>' +
+      '<p class="why">Who else can read the document. Readers are <b>not members</b>: they cannot propose or judge, and nothing about them is known. The founder can always read it, whichever of these the room chooses. Nobody, member or not, can see how a question is going while it is still open.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('chamber', 'This one is about privacy, so the document takes the <b>most private</b> answer anybody gives.') +
       // most-private-first, the order every ladder on the surface reads in
       opt(S, 'chamber', 'closed', 'Members only') +
-      opt(S, 'chamber', 'link', 'Anyone with the link') +
-      opt(S, 'chamber', 'public', 'Public', 'Listed and readable by anyone.') + '</div>',
+      opt(S, 'chamber', 'link', 'Anyone with the link') + '</div>',
     lapse: () =>
       '<p class="why">Whether somebody stops being a member if they go a long time without logging in. They are warned by email first, and sent the document as it stands when it happens. Anything they already judged still counts, the other members can finish without them, and coming back is just logging in again.</p>' +
       '<div class="choice" role="radiogroup">' +
@@ -4050,7 +4081,22 @@
       penPointerDown = false;
       return;
     }
-    if (held) penPointerDown = false;
+    // **and it must not clear the flag its own trailing click is caught by**
+    // (Ed, 2026-08-22: *during the birth, after entering the email, the Link
+    // card opens immediately*). A completed hold calls `click()` itself, and
+    // that synthetic click ran this line — so by the time the browser's own
+    // click arrived on pointerup, `penPointerDown` was false, the guard above
+    // did not fire, and **every held commit on this surface ran twice**. On
+    // 📧 the second send asked for the address the first had just reserved
+    // for itself and was told, truthfully, that it was taken; on any other
+    // card it was a second `answer`/`setSetting` a millisecond behind the
+    // first, since `closeThen` defers the commit behind the collapse and
+    // `S.open` is still set when the second click lands.
+    //
+    // `penHoldFired` is true for exactly the duration of that synthetic
+    // dispatch (set before the call, cleared in its `finally`), so inside a
+    // click handler it means precisely *this click is the hold's own*.
+    if (held && !penHoldFired) penPointerDown = false;
     if (ev.target.closest('[data-confirm]') && S.open === 'myemail' && !S.emailVerified) {
       return sendAndClose();
     }
@@ -4201,9 +4247,19 @@
   const sendAndClose = () => closeThen(() => { S.open = null; dropSnap('myemail'); sendVerify(); });
   // sending the verification mail: at the birth it mints the real document
   // server-side (§9.7a), in the mockup it opens the pretend inbox
+  // **A creation must never race itself for its own address.** The first
+  // send reserves the slug against a pendingId the response carries back, so
+  // a second send fired before that response lands has nothing to prove the
+  // reservation is its own and is told the address is taken — walking the
+  // founder back to 📍 in the middle of the one step that mints the document.
+  // The double press that caused it is fixed above; this is the guard that
+  // makes the class of bug impossible rather than one instance of it gone.
+  let birthSending = false;
   function sendVerify() {
     S.sentAddr = S.myemail;
     if (BIRTH && S.viewer !== 'applicant') {
+      if (birthSending) return;
+      birthSending = true;
       S.emailErr = null;
       // 📨 is this creation speaking again, not a rival one (Ed's QA,
       // 2026-08-21): the pendingId the first send returned is what says the
@@ -4214,6 +4270,7 @@
         isMember: S.roster[0].role !== 'clerk',
         ...(api.birth && api.birth.pendingId ? { pendingId: api.birth.pendingId } : {}) })
         .then((res) => {
+          birthSending = false;
           // api.post resolves the error JSON rather than throwing, so a
           // refused send must be caught here — a card that says "Sent"
           // over a mail that never went is the one lie this step can tell
@@ -4244,6 +4301,7 @@
           }
         })
         .catch(() => {
+          birthSending = false;
           S.emailErr = 'The mail could not be sent — check the connection and press 🪶 again.';
           S.emailSent = false; S.open = 'myemail'; render();
         });
