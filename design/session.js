@@ -361,7 +361,11 @@
   // A deadlocked race is not a low-urgency one, it is a *differently* addressed
   // one (Ed, 166): no judgment of yours can move it, so the urgency ramp does
   // not apply, and it says so in its own words.
-  const classFor = (g) => (g.mine ? 'yours' : stuck(g) ? 'wants' : 'needs');
+  // The rail button's own class: `yours` on a proposal of your own, which
+  // system.css styles, and nothing otherwise. It used to emit `wants`/`needs`
+  // too, which no stylesheet ever read (Q611, 2026-08-22) — the lifecycle is
+  // said by the mark and the wash, not by a class on the button.
+  const classFor = (g) => (g.mine ? 'yours' : '');
   const tint = (hue, a) => 'rgba(var(--lc-' + hue + '), ' + a.toFixed(3) + ')';
   // Colour says lifecycle (Ed, 162); the wash is still the progress bar it
   // always was, so how far the fill reaches is closeness to resolution. On a
@@ -700,8 +704,9 @@
       if (top) seenTop = true;
       html +=
         '<li class="qitem' + (top ? ' mosturgent' : '') + '" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
-        '<button class="' + stateCls + sib + (top ? ' mosturgent' : '') +
-        (oneLine && g.shifted ? ' shifted' : '') + (justArrived === g.id ? ' arriving' : '') +
+        '<button class="' + [stateCls, sib.trim(), top ? 'mosturgent' : '',
+          oneLine && g.shifted ? 'shifted' : '', justArrived === g.id ? 'arriving' : '']
+          .filter(Boolean).join(' ') +
         '" data-q="' + g.id + '"' +
         (locked ? ' tabindex="-1"' : '') + ' aria-current="' + (openId === g.id) + '"' +
         (cap ? ' title="' + esc(g.shifted || cap) + '"' : '') +
@@ -1585,12 +1590,14 @@
     // and which nothing else on the card was saying in words.
     // Where it held, the incumbent is the clause at the head and is not previous
     // anything — its label already says it stood, and the slot stays empty.
-    // **No score on the alternatives** (Ed, 2026-08-17). The list is in order,
-    // so each box's place already says where it came — and the one comparison
-    // anybody actually makes is against the text they had, which the incumbent's
-    // own position in the list makes without a single number: everything above it
-    // beat the charter, everything below did not. The numbers were five decimals
-    // answering a question the ordering had already answered.
+    // **Every alternative carries its score, as a percentage** (the sealed
+    // record's rule; corrected here 2026-08-22, Q611 — this comment used to say
+    // the opposite of what the line below does). Each score is the probability
+    // that proposal beats the text it was measured on, right-aligned into one
+    // column, so the incumbent's 50% is a construction the others are read
+    // against: everything above it beat the charter, everything below did not.
+    // The five-decimal raw numbers went; the percentage stayed because the
+    // column is the comparison the card exists to make.
     //
     // The eyebrow keeps its two, because there the numbers are the point: what
     // the room came to, and what it had to clear.
@@ -1735,7 +1742,7 @@
      There is no composing *surface*. You compose by editing the charter: every
      clause carries a caret, and the first character you type opens the clause
      into two lanes — what it says on the left, what you are making it say on
-     the right — with your rationale above and Propose / Cancel below. The
+     the right — with your rationale above and 🗑️ and the ✏️ hold below. The
      briefing, the drafting desk and the arrival bar from design/composer.html
      are all superseded by this; what survives of that mockup is the briefing,
      and only as an escalation state (SPEC §3.5).
@@ -2471,12 +2478,14 @@
           '<div class="propblock">' + laneBoxHtml(d, site, site ? null : key) + '</div></div>' +
       // The same row as the editing card's, and it stays the same row: 🗑️ at
       // the very left for the whole of a proposal's life, the commit control at
-      // the very right. Both greyed until there is something to act on, which is
-      // what gives an untouched desk its shape — the argument the ✓ won on.
+      // the very right. The ✏️ is greyed until there is something to propose,
+      // which is what gives an untouched desk its shape. **🗑️ is never
+      // disabled** (Q613, 2026-08-22, the one-bin rule): it is the way out of
+      // the card, and with nothing to put back it simply closes it.
           '<div class="race-mid commitrow">' +
           '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
-          (site ? '' : ' disabled') +
-          ' title="Discard this draft — nothing has been spent on it yet">🗑️</button>' +
+          ' title="' + (site ? 'Discard this draft — nothing has been spent on it yet'
+                             : 'Close — there is nothing here to put back') + '">🗑️</button>' +
           '<button class="btn btn-propose glyphbtn" data-act="draft-propose"' +
           (site && !broke ? '' : ' disabled') +
           ' title="Hold to propose this — one edit leaves your wallet to pay for it">✏️</button>' +
@@ -3573,7 +3582,14 @@
   // When more marks than fit, the space goes to whatever still wants something
   // from you (Ed, 178). Filed decisions go first, then the states with nothing
   // to do at all, and an open question is the last thing to be dropped.
-  const KEEP_ORDER = ['urgent', 'stuck', 'propose', 'needs', 'adopted', 'retired', 'deciding', 'shifted', 'filedYes', 'filedNo'];
+  // 🌶️ is in the list (Q607, 2026-08-22): a diagonal asks for a judgment, so it
+  // is kept ahead of the states that only tell you where things stand, and
+  // behind ✏️ for the reason the next comment gives. The third filed mark,
+  // undecided, files with the other two — they are one family, dropped first.
+  const KEEP_ORDER = ['urgent', 'stuck', 'propose', 'weigh', 'needs', 'adopted', 'retired', 'deciding', 'shifted', 'filedYes', 'filedNo', 'filedUndecided'];
+  // the three filed marks — ✔ ✖ and undecided — as one set, so a rule about
+  // *filed* cannot quietly apply to two of them (Q607)
+  const FILED_KINDS = new Set(['filedYes', 'filedNo', 'filedUndecided']);
   const keepRank = (kind) => {
     const i = KEEP_ORDER.indexOf(kind);
     return i < 0 ? KEEP_ORDER.length : i;
@@ -3600,7 +3616,7 @@
   // Guest holds a ✏️ of yours and two 💡, and under the rail's order clicking
   // that pile opened your own draft.
   const STACK_ORDER = ['urgent', 'stuck', 'needs', 'weigh', 'adopted', 'retired',
-    'propose', 'deciding', 'shifted', 'filedYes', 'filedNo'];
+    'propose', 'deciding', 'shifted', 'filedYes', 'filedNo', 'filedUndecided'];
   const stackRank = (kind) => {
     const i = STACK_ORDER.indexOf(kind);
     return i < 0 ? STACK_ORDER.length : i;
@@ -3623,7 +3639,7 @@
     // happened here*, which is a different question with a different answer.
     // The `+n` tally counts what it hides, so a section of nothing but filed
     // decisions now reads as empty rather than as a row of ticks.
-    const marks = entriesForSection(n).map(markKindOf).filter((k) => k !== 'filedYes' && k !== 'filedNo');
+    const marks = entriesForSection(n).map(markKindOf).filter((k) => !FILED_KINDS.has(k));
     if (!marks.length) return '';
     // choose by what is actionable, then draw in document order
     const keep = new Set(marks.map((m, i) => [m, i])
@@ -3914,6 +3930,12 @@
   //     disagree about the same tool.
   let walletShow = null, walletGhost = false, walletHeld = true, walletTitle = null;
   const setWalletHeld = (v) => { if (walletHeld !== !!v) { walletHeld = !!v; renderWallet(); } };
+  // The ghost, for a hold this file does not run (Q614, 2026-08-22): the page's
+  // `holdWallet` flies a ✏️ out of `#wallet` for a motion's Propose, and the
+  // drip would put the traveller straight back unless the wallet is told its
+  // last slot is in the air. Same rule as `flyStart` above — render state, set
+  // for the hold and cleared when the token lands or flies home.
+  const setWalletGhost = (v) => { if (walletGhost !== !!v) { walletGhost = !!v; renderWallet(); } };
   const setWalletTitle = (s) => { if (walletTitle !== s) { walletTitle = s; if (walletEl) walletEl.title = s || ''; } };
   function renderWallet(showAs) {
     if (closedMode) { walletEl.className = 'wallet'; walletEl.innerHTML = ''; walletEl.title = ''; return; }
@@ -4439,6 +4461,7 @@
     // quarter), `startLean`/`stopLean` are the spend-preview, and `applyLean`
     // is what any wallet render must call at its tail to survive its own rebuild
     nudgeHome, startLean, stopLean, applyLean, addSpendProbe, resumeLean, setWalletHeld, setWalletTitle,
+    setWalletGhost,
     refreshRail, renderToc, layoutQueue, drawWires, washAttrs,
     get DOC() { return DOC; },
     get SUGGS() { return SUGGS; },

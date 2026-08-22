@@ -422,7 +422,7 @@ window.CARDS = (function () {
   // Absent, the markup is what it always was, byte for byte.
   const speakerHtml = (why, title, who) =>
     '<div class="speaker' + (who ? ' revealed' : '') + '">' +
-    '<span class="disc" aria-hidden="true" title="' + (title || (who ? esc(who) + ' wrote this.' : 'A member of the roster wrote this. Who, is sealed until the record (SPEC §3.4).')) + '"></span>' +
+    '<span class="disc" aria-hidden="true" title="' + (title || (who ? esc(who) + ' wrote this.' : 'A member wrote this. Who, is sealed until the closing record.')) + '"></span>' +
     (who ? '<span class="who">' + esc(who) + '</span>' : '') +
     (why
       ? '<div class="said">' + esc(why) + '</div>'
@@ -466,7 +466,7 @@ window.CARDS = (function () {
 
   const groundNote = (s) => (!s.shifted || !s.wasGround ? ''
     : '<div class="replaced"><div class="rtag">The text you judged against' +
-      '<span class="rsub">it changed under you — SPEC §4.4</span></div>' +
+      '<span class="rsub">the clause changed after you judged it</span></div>' +
       '<div class="rtext">' + esc(s.wasGround) + '</div></div>');
 
   // ---- geometry, the pure half --------------------------------------------
@@ -669,11 +669,11 @@ window.CARDS = (function () {
       const said = '<span class="rl">You ' + (env.verdictOf(s) || s.verdict || 'judged') + '</span>';
       if (s.shifted) {
         return '<div class="srationale locked">' + said + esc(s.shifted) +
-          ' You cannot change it, because it was not a judgment about this text (SPEC §4.4).</div>';
+          ' You cannot change it, because it was not a judgment about this text.</div>';
       }
       if (s.locked) {
         return '<div class="srationale locked">' + said +
-          'This one is settled, so your judgment is on the record as it stands (SPEC §4.4).</div>';
+          'This one is settled, so your judgment is on the record as it stands.</div>';
       }
       // **The unlocked case says nothing at all** (Ed, 2026-08-17). It had been
       // trimmed once already, to what you said plus the fact it can change, and
@@ -732,7 +732,7 @@ window.CARDS = (function () {
         // hairline separates them without dividing them, which is the card's own
         // band grammar applied one level down.
         '<div class="speaker">' +
-        '<span class="disc" aria-hidden="true" title="This is how your reason will reach everybody else: with your name off it (SPEC §3.4)."></span>' +
+        '<span class="disc" aria-hidden="true" title="This is how your reason will reach everybody else: with your name off it until the closing record."></span>' +
         '<div class="said edit-why" contenteditable="plaintext-only"' +
         (blank ? ' data-deadwhy="' + blank + '"' : ' data-why') + ' spellcheck="false"' +
         // Ed, 2026-08-17. A question invited an answer to a different question —
