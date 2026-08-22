@@ -879,7 +879,10 @@
   const slugNoteHtml = () => (slugRefused()
     ? '<p class="setnote"><b>docs.vote/' + esc(S.slug) + '</b> is taken.' +
       (S.slugFree.suggestion ? ' <b>docs.vote/' + esc(S.slugFree.suggestion) + '</b> is free.' : '') + '</p>'
-    : S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> already exists, so a short suffix was added.</p>' : '');
+    // Q534c: the address the title actually wanted, and where this one
+    // landed — naming both is the whole point, since the alternative is the
+    // machine choosing an address and not mentioning it
+    : S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> is taken, so this one is <b>docs.vote/' + esc(S.slug) + '</b>.</p>' : '');
   const refreshSlugNote = () => {
     const n = document.querySelector('[data-slugnote]');
     if (n) n.innerHTML = slugNoteHtml();
@@ -905,7 +908,10 @@
   // asking twice about one address is free. `render` asks whenever there is
   // an address to ask about, which covers the pre-filled one and every other
   // path that sets it without a keystroke.
-  let slugCheckT = null, slugAsking = null;
+  // a cap on the automatic move, so a pathological server that keeps
+  // offering an address it then refuses cannot become a request storm: past
+  // it the collision is simply shown, which is the behaviour we started from
+  let slugCheckT = null, slugAsking = null, autoSlugMoves = 0;
   const slugKnown = () => !BIRTH || S.slugSeen === S.slug;
   const checkSlug = (slug, wait = 0) => {
     if (S.slugSeen === slug || slugAsking === slug) return;
@@ -927,6 +933,26 @@
       fetch('/api/slug/' + encodeURIComponent(slug)).then((r) => r.json()).then((res) => {
         slugAsking = null;
         if (S.slug !== slug) return;
+        // **The machine may pick the address, but it must say so** (Q534c,
+        // Ed 2026-08-22). A suggested address that turns out to be taken
+        // moves to the nearest free one *before* the founder ever meets it,
+        // so the ordinary birth never opens a task that is already refused
+        // — and the note says which address the title actually wanted and
+        // where this one landed, because silently handing somebody a
+        // suffixed address is the machine deciding without telling them.
+        // Only ever on an address that is still the machine's: one the
+        // founder typed keeps its refusal, which is theirs to correct.
+        if (!res.available && S.slugAuto && res.suggestion && autoSlugMoves < 3) {
+          autoSlugMoves++;
+          if (!S.slugTaken) S.slugTaken = slug;
+          S.slug = res.suggestion; S.slugFree = null;
+          const f = document.querySelector('[data-slug]');
+          if (f) f.value = S.slug;
+          // the address it moved to is asked about in its own right on the
+          // next render: the server called it free a moment ago, and this
+          // page does not take that on trust when a request settles it
+          refreshSlugNote(); return;
+        }
         S.slugSeen = slug;
         S.slugFree = res.available ? null : { slug, available: false, suggestion: res.suggestion || null };
         refreshSlugNote();
@@ -951,6 +977,16 @@
     // says *already exists*, which would be a claim the page has not
     // checked. Suggest the plain address there and let the live check answer.
     return (!BIRTH && TAKEN.has(base)) ? { slug: base + '-' + suffix(title), taken: base } : { slug: base, taken: null };
+  };
+  // **The address is the machine's until you touch it** (Q534c), which is
+  // exactly what makes it safe to swap for a free one: the live check may
+  // move a *suggested* address out from under a collision, and must never
+  // move one the founder typed — there the refusal is the answer and the
+  // correction is theirs. One place sets it, and the one act that can make
+  // the address yours clears it.
+  const fillSuggestedSlug = () => {
+    const sg = suggestSlug(S.title);
+    S.slug = sg.slug; S.slugTaken = sg.taken; S.slugAuto = true;
   };
 
   // ---- the document ------------------------------------------------------
@@ -1034,7 +1070,7 @@
     const first = lines[0] && lines[0].match(/^#\s+(.+)$/);
     if (first && !S.title) { S.title = first[1]; lines = lines.slice(1);
       S.seen.add('title');
-      if (!S.slug) { const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken; } }
+      if (!S.slug) { fillSuggestedSlug(); } }
     document.execCommand('insertHTML', false, lines.map((l) => '<div>' + esc(l) + '</div>').join(''));
     setTimeout(relabel, 0);
   });
@@ -2716,7 +2752,7 @@
   // render what the state-poked page rendered)
   function devFastForward() {
     if (!S.title) { S.title = 'The Hollow Oak Club — House Charter'; }
-    if (!S.slug) { const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken; }
+    if (!S.slug) { fillSuggestedSlug(); }
     const f = S.roster[0];
     if (!f.e) f.e = 'ash@hollowoak.org';
     if (!f.n) f.n = 'Ash Bellamy';
@@ -4583,9 +4619,7 @@
           }
           // the link card is born pre-filled the moment the title settles
           if (was === 'title') S.title = titlePending();
-          if (was === 'title' && S.title && !S.slug) {
-            const sg = suggestSlug(S.title); S.slug = sg.slug; S.slugTaken = sg.taken;
-          }
+          if (was === 'title' && S.title && !S.slug) fillSuggestedSlug();
           // Q460: confirming the link only chooses the address — **the save is
           // the magic link** (the click is the instantiation), see the
           // clickmail handler; until then nothing exists anywhere
@@ -4896,7 +4930,9 @@
       const slot = document.querySelector('[data-putmotion], [data-holdmotion]');
       if (slot && S.draft) slot.outerHTML = commitFor(card(S.draft.k));
       return; }
-    if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); S.slugTaken = null;
+    // typing is what makes the address yours: from here a collision is a
+    // refusal to read and correct, never something the page quietly moves
+    if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); S.slugTaken = null; S.slugAuto = false;
       // typing is the one caller that waits: an ask per keystroke would be a
       // request per letter, and the commit is dark until the answer lands
       if (SLUG_OK.test(S.slug)) checkSlug(S.slug, 250); else S.slugFree = null;

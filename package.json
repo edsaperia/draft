@@ -18,6 +18,7 @@
     "verify": "node scripts/verify-deploy.mjs",
     "probe": "node scripts/probe.mjs",
     "journey": "node scripts/journey-walk.mjs",
+    "slug-walk": "node scripts/slug-walk.mjs",
     "spec-check": "node scripts/spec-check.mjs",
     "design": "node scripts/design-server.mjs"
   },
