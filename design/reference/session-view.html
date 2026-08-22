@@ -807,7 +807,7 @@
   // land in. ACK_KEYS is what is **remembered**, which is a wider set: since
   // an unacknowledged ⚖️ now withholds judging itself, its OK has to survive
   // a reload too, or a refresh would quietly take judging away again.
-  const GRANT_KEYS = ['canpropose', 'grant-pen', 'grant-voice'];
+  const GRANT_KEYS = ['canpropose', 'grant-pen', 'grant-shield', 'grant-voice'];
   const ACK_KEYS = GRANT_KEYS.concat(['canjudge']);
   // grants stage behind the constitutional OKs (Q453c): a gate or grant
   // asks nothing of you while a decision you are owed still waits
@@ -1061,6 +1061,28 @@
       why: 'The pen changes a setting directly, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent. It was issued when the address went live, because that is the moment somebody could first knock.',
       waiting: 'Waiting on the save.',
       done: 'You hold the pen.',
+      blockers: () => [] },
+    // **The shield is acknowledged separately from the pen** (Q532(3), Ed
+    // 2026-08-22: *a founder should have to acknowledge both separately — it's
+    // very important for them to understand what they can and can't do*). The
+    // two arrive in the founder's hands by one act, so it was tempting to let
+    // one OK cover both; the objection is exactly the rule *no power arrives
+    // without acknowledgment* was written for. They are opposite powers — one
+    // writes, one only refuses — and a founder who has pressed OK on a single
+    // card saying "your powers" has learned one thing where there were two.
+    //
+    // It stands **immediately after** ✒️ in the order, so the pen is met,
+    // accepted, and then the shield is met on its own. It does **not** block
+    // the queue: 🛡️ hands over nothing the cards below it need — you cannot
+    // commit anything with a shield — so it keeps the gates' and 🏛️'s rule
+    // rather than the pen's exception, and stands alongside 🌍 the way a grant
+    // always has. That also leaves the rail at the save holding the pen alone,
+    // which is a thing the journey walk asserts.
+    { k: 'grant-shield', g: '🛡️', t: 'Your Shield', own: 'you', isGate: true, isGrant: true, dep: ['slug'],
+      open: () => !!cs && amFounder() && holdsShieldAnywhere(),
+      why: 'The shield refuses. Where you hold it, a change the membership passes waits for you to accept it — you cannot write with it, only decline. One shield, many locks, and a shield is not spent. It was issued with the pen, when the address went live.',
+      waiting: 'Waiting on the save.',
+      done: 'You hold the shield.',
       blockers: () => [] },
     // **🍾 Begin — the founder's explicit act of starting the document**
     // (Q443, built 2026-08-21). Not a gate — nobody's permission opens; the
@@ -1749,7 +1771,7 @@
   // was still four questions from that section. The band stopped accreting a
   // clause at a time and dealt out a section. They take their document
   // positions here instead.
-  const ORDER = ['title', 'slug', 'myemail', 'grant-pen', 'chamber',
+  const ORDER = ['title', 'slug', 'myemail', 'grant-pen', 'grant-shield', 'chamber',
     'policy', 'hat', 'myname', 'mypic', 'roster', 'lapse', 'removal',
     'ending', 'bar', 'quorum',
     'authorship', 'signing', 'judgments',
@@ -1927,7 +1949,7 @@
     // the grants stand as tasks beside the gates they belong with (Q461):
     // the pen with the 📍 link — issued when the address went live (Q451) —
     // the voice with ⚖️ Judging
-    .concat(c.k === 'slug' ? [card('grant-pen')].filter(visible)
+    .concat(c.k === 'slug' ? [card('grant-pen'), card('grant-shield')].filter(visible)
       : c.k === 'canjudge' ? [card('grant-voice')].filter(visible) : []);
   // A member who has not opened the document yet is drawn faintly rather than
   // left out: they are on the membership, which is the fact the heading is
@@ -2047,6 +2069,7 @@
     begin: () => (constituted() ? 'Begun' + foundedAt() : 'Not yet begun'),
     closing: () => (cs && cs.closed ? 'Closed' + closedAtWords() : ''),
     'grant-pen': () => 'You hold the pen',
+    'grant-shield': () => 'You hold the shield',
     canjudge: () => (canJudge() ? 'Open' : 'Waiting on the constitution'),
   };
   const ANSVALUE = {
@@ -2134,7 +2157,7 @@
   // power arrives without acknowledgment*, and is the residual on Q532: it
   // would want its own card, its own flight and its own place in the founding
   // order, which is more than "let's put it in and see how it looks" asked for.
-  const mayShield = () => !!cs && amFounder() && holdsShieldAnywhere() && acked('grant-pen');
+  const mayShield = () => !!cs && amFounder() && holdsShieldAnywhere() && acked('grant-shield');
   // A commit that spends out of a wallet needs that wallet to have arrived.
   // The pen is the one this bites for: `holdWallet` reads ✒️ as a **hold**
   // only while the glyph is in the topbar, so before the grant was
@@ -2723,7 +2746,7 @@
         r.okd.add('begin');
         CARDS.forEach((c) => { r.okd.add('res-' + c.k); r.okd.add('set-' + c.k); });
         r.okd.add('canpropose'); r.okd.add('canjudge');
-        r.okd.add('grant-voice'); if (r.founder) r.okd.add('grant-pen');
+        r.okd.add('grant-voice'); if (r.founder) { r.okd.add('grant-pen'); r.okd.add('grant-shield'); }
         const rec = cs.memberRecords().get(r.mid || FOUNDER);
         if (rec) for (const sid of [...rec.okOwed]) {
           try { cs.giveOk(now(), r.mid || FOUNDER, sid); } catch (e) {}
@@ -5884,7 +5907,7 @@
   // never asked for arrives by a task, never by itself. A clerk's topbar
   // holds nothing but 🪶 (Q458: a clerk's only power is to found something
   // else).
-  let quillGhost = false, penGhost = false, voiceGhost = false, stormHolding = false;
+  let quillGhost = false, penGhost = false, shieldGhost = false, voiceGhost = false, stormHolding = false;
   let pendingGrant = null;
   const heldMotion = () => {
     if (!cs) return false;
@@ -5899,9 +5922,6 @@
     const qh = Array.from({ length: left }, (_, i) =>
       '<i' + (quillGhost && i === left - 1 ? ' class="gone"' : '') + '>🪶</i>').join('');
     if (q.innerHTML !== qh) q.innerHTML = qh;
-    q.title = left > 1
-      ? 'Your founding feathers — ' + (left - 1) + ' to spend on the birth; the last one is docs.vote, and makes a new document.'
-      : 'docs.vote — make a new document';
     const notApp = S.viewer !== 'applicant' && !isStranger() &&
       // after the farewell the wallets are gone (a reader arriving after the
       // close, or one who has signed, never sees them)
@@ -5962,9 +5982,6 @@
       el.classList.toggle('gonewallet', !!gone);
     };
     socket(pen, showPen, penh, '✒️');
-    pen.title = showPen
-      ? 'Your pen — never spent, so there is always one. It turns on ' + penLocks() + ' of the settings; each ✒️ tab says where. Hold to set.'
-      : 'The pen. Changing a rule without asking anybody is the Founder’s, and only where they have kept it.';
     // 🛡️ joins the toolbar (Q532(3)). It is the pen's other half and behaves
     // like it in every way that shows: one shield, many locks, never spent —
     // so it takes the ∞ too. What it does is the opposite of the pen: the pen
@@ -5973,17 +5990,18 @@
     const showShield = notApp && mayShield();
     socket(shield, showShield,
       '<span class="pencils"><i>🛡️</i><span class="pmore">∞</span></span>', '🛡️');
-    shield.title = showShield
-      ? 'Your shield — never spent. A change the membership passes on ' + shieldLocks() + ' of the settings waits for you to accept it.'
-      : 'The shield. Refusing a change the membership has passed is the Founder’s, and only where they have kept it.';
     const voice = document.getElementById('voicewallet');
     const out = heldMotion();
     const showVoice = notApp && mayVoice();
     socket(voice, showVoice, '<i' + (out || voiceGhost ? ' class="gone"' : '') + '>🏛️</i>', '🏛️');
-    voice.title = !showVoice
-      ? 'The voice. Asking everybody to agree to a change is for the members of this document.'
-      : out ? 'Your voice is out on a motion — it comes back whole when the question settles or you withdraw it.'
-      : 'Your voice in every constitutional question — one motion at a time, returned whole.';
+    // one sentence per socket, from one table, in both channels: the tooltip a
+    // pointer gets and the bubble a press gets say exactly the same thing
+    [q, pen, shield, voice].forEach((el) => { if (el) el.title = SAY(el).t; });
+    // the ✏️ socket is rendered by session.js, which rewrites its own title on
+    // every drip tick — so its sentence goes in through the seam rather than
+    // being set here and overwritten a second later
+    const pwEl = document.getElementById('wallet');
+    if (pwEl) SESSION.setWalletTitle(SAY(pwEl).t);
     // the spend-preview is render state like the ghosts above it, so every
     // wallet render has to hand it back to whichever token now stands in the
     // slot — see `applyLean` in session.js for why it cannot be a CSS rule
@@ -6000,6 +6018,57 @@
   // tool feeding both channels — two would drift, and the not-held sentence is
   // the one that most needs to be readable, since it is the answer to *why is
   // this one crossed out*.
+  // **What a socket says: the symbol, then the verb** (Ed, 2026-08-22: *don't
+  // name the item — just have the symbol, larger than in the wallet, and then
+  // explain what it is using the verb; keep the language as clear and
+  // functional as possible, using verbs and nouns that relate to concrete
+  // things on the page*). So no *"The shield."* opening — naming a thing is not
+  // explaining it, and the glyph has already said which one this is. Each
+  // sentence starts with **who can do what**, and every noun in it is something
+  // the reader can point at: the document, the settings, a ✒️ tab, the
+  // membership, an address.
+  //
+  // Held and not-held are different sentences, and the difference is the
+  // subject. Holding it, the sentence is about **you** and says what it costs
+  // and what comes back. Not holding it, the sentence names **who can** — which
+  // answers the question a struck-through tool actually raises, and does it
+  // without a word of apology.
+  //
+  // One table, both channels: the bubble draws it, and the tooltip is the same
+  // sentence, so the two can never drift.
+  const SAY = (el) => {
+    const k = el.id;
+    if (k === 'quill') {
+      const spent = cs ? 3 : (S.seen.has('title') ? 1 : 0) + (S.seen.has('slug') ? 1 : 0) + (S.emailSent ? 1 : 0);
+      const left = 4 - Math.min(3, spent) - 1;
+      return { g: '🪶', t: left > 0
+        ? 'You can name this document, choose its address and verify your email. Each one spends a feather. The last feather stays, and starts a new document.'
+        : 'You can start a new document.' };
+    }
+    if (k === 'wallet') {
+      return { g: '✏️', t: (charterOn() && mayPropose())
+        ? 'You can propose a change to the text. Each proposal spends one, and you get it back if the change is adopted. More arrive as the document runs.'
+        : 'Members can propose changes to the text, once the document has begun.' };
+    }
+    if (k === 'penwallet') {
+      return { g: '✒️', t: mayPen()
+        ? 'You can change ' + penLocks() + (penLocks() === 1 ? ' setting' : ' settings') + ' yourself, without asking anybody. Each setting’s ✒️ tab says whether you can.'
+        : 'The Founder can change some settings without asking anybody, where they have kept the pen.' };
+    }
+    if (k === 'shieldwallet') {
+      return { g: '🛡️', t: mayShield()
+        ? 'You can refuse a change the membership passes on ' + shieldLocks() + (shieldLocks() === 1 ? ' setting' : ' settings') + '. Nothing changes there until you accept it.'
+        : 'The Founder can refuse a change the membership passes, where they have kept the shield.' };
+    }
+    if (k === 'voicewallet') {
+      return { g: '🏛️', t: !mayVoice()
+        ? 'Members can ask everybody to agree to a change.'
+        : heldMotion()
+          ? 'You are asking everybody to agree to a change. This comes back when that question settles, or when you withdraw it.'
+          : 'You can ask everybody to agree to a change. One question at a time.' };
+    }
+    return { g: '', t: el.title || '' };
+  };
   let sayEl = null, sayFor = null;
   function showSay(el) {
     if (!sayEl) { sayEl = document.createElement('div'); sayEl.className = 'walletsay'; document.body.appendChild(sayEl); }
@@ -6008,8 +6077,11 @@
     // over it would swallow — so the navigation moves *inside* the bubble
     // rather than being lost. It is safer there anyway: a founder mid-birth
     // who clicked the mark used to be navigated away from their own document.
-    sayEl.innerHTML = esc(el.title || '') +
-      (el.id === 'quill' ? '<br><a class="doclink" href="/">Start a new document</a>' : '');
+    const s = SAY(el);
+    // the symbol, bigger than it is in the socket — in the wallet it is a
+    // token in a row and here it is the subject of the sentence beside it
+    sayEl.innerHTML = '<span class="saysym">' + s.g + '</span><span class="saytxt">' + esc(s.t) +
+      (el.id === 'quill' ? '<br><a class="doclink" href="/">Start a new document</a>' : '') + '</span>';
     const r = el.getBoundingClientRect();
     // clamped to the window, with the nib following the socket rather than the
     // box — a bubble pushed off a right-hand wallet must still point at it
@@ -6235,13 +6307,21 @@
       setTimeout(land, 4000);
       return;
     }
-    const id = g.k === 'grant-pen' ? 'penwallet' : 'voicewallet';
-    const glyph = g.k === 'grant-pen' ? '✒️' : '🏛️';
-    if (g.k === 'grant-pen') penGhost = true; else voiceGhost = true;
+    // which socket this grant lands in. A table rather than the ternary pair
+    // this was, because 🛡️ made it three and a ternary chain that has to agree
+    // with itself three times in a row is a place two of them drift.
+    const LANDS = {
+      'grant-pen': { id: 'penwallet', g: '✒️', ghost: (v) => { penGhost = v; } },
+      'grant-shield': { id: 'shieldwallet', g: '🛡️', ghost: (v) => { shieldGhost = v; } },
+      'grant-voice': { id: 'voicewallet', g: '🏛️', ghost: (v) => { voiceGhost = v; } },
+    };
+    const L = LANDS[g.k];
+    if (!L) return;
+    L.ghost(true);
     renderPowerWallets();
-    const slot = document.querySelector('#' + id + ' i') || document.getElementById(id);
-    SESSION.flyGlyph(glyph, g.from, slot.getBoundingClientRect(), 640, { onLand: () => {
-      if (g.k === 'grant-pen') penGhost = false; else voiceGhost = false; renderPowerWallets(); } });
+    const slot = document.querySelector('#' + L.id + ' i') || document.getElementById(L.id);
+    SESSION.flyGlyph(L.g, g.from, slot.getBoundingClientRect(), 640, { onLand: () => {
+      L.ghost(false); renderPowerWallets(); } });
   }
   // a feather spent on a founding act flies from the wallet to the button —
   // a click, not a hold: only 🪶 happens at the speed of thought (Q444)

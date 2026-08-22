@@ -160,9 +160,12 @@
        tinted depression would be a glow pointing the wrong way. */
     --shadow-in: inset 0 1px 2px rgba(0, 0, 0, 0.13), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
     /* The strike across a tool your role does not hold (Q532). The **only red
-       on the surface** — see the `.notheld` rule for why that is a live
-       question and how to look at the alternative. */
-    --slash: #c8372a;
+       on the surface**, and a **dark** one by Ed's choice (2026-08-22) once
+       both were on screen: at full saturation four strikes read as four errors,
+       where the fact being stated is only that this is not your tool. Dark
+       enough to sit as ink rather than as an alarm, and still unmistakably red.
+       `?slash=muted` keeps the greyed version reachable for comparison. */
+    --slash: #8e2116;
 
     /* --- the three columns ---------------------------------------- */
     /* How long a lifecycle colour takes to become another one. A wash change
@@ -1726,6 +1729,11 @@
   }
   .walletsay.in { opacity: 1; transform: translateY(0); }
   .walletsay b { font-weight: 600; }
+  /* the symbol leads, at more than twice its size in the socket: there it is a
+     token in a row, here it is the subject of the sentence beside it */
+  .walletsay { display: flex; gap: 9px; align-items: flex-start; }
+  .walletsay .saysym { font-size: 1.5rem; line-height: 1.1; flex: none; }
+  .walletsay .saytxt { flex: 1; min-width: 0; }
   /* the nib, pointing back at the socket it came out of */
   .walletsay::before {
     content: ''; position: absolute; top: -5px; left: var(--nib, 16px);

@@ -3904,26 +3904,33 @@
   //     a clerk, a member before the document begins or before they have accepted
   //     the grant — and it draws the tool struck through in its socket instead of
   //     hiding the socket, which is what the toolbar is for.
-  let walletShow = null, walletGhost = false, walletHeld = true;
+  //   `walletTitle` — the host's own sentence for this socket, if it has one.
+  //     Since Q532 the page keeps one copy per tool feeding both the tooltip and
+  //     the bubble a press opens, and this wallet is the one the page does not
+  //     render itself — without a seam the drip would overwrite the page's
+  //     sentence every second with this file's, and the two channels would
+  //     disagree about the same tool.
+  let walletShow = null, walletGhost = false, walletHeld = true, walletTitle = null;
   const setWalletHeld = (v) => { if (walletHeld !== !!v) { walletHeld = !!v; renderWallet(); } };
+  const setWalletTitle = (s) => { if (walletTitle !== s) { walletTitle = s; if (walletEl) walletEl.title = s || ''; } };
   function renderWallet(showAs) {
     if (closedMode) { walletEl.className = 'wallet'; walletEl.innerHTML = ''; walletEl.title = ''; return; }
     if (!walletHeld) {
       walletEl.className = 'wallet notheld';
       const nh = '<span class="pencils"><i>✏️</i></span>';
       if (walletEl.innerHTML !== nh) walletEl.innerHTML = nh;
-      walletEl.title = 'Proposing a change to the document. It costs one ✏️, and a successful one comes back.';
+      walletEl.title = walletTitle || '';
       applyLean();
       return;
     }
     const held = showAs != null ? showAs : (walletShow != null ? walletShow : editsHeld);
     const full = held >= EDIT_RULES.cap;
     walletEl.className = 'wallet' + (full ? ' full' : '') + (held === 0 ? ' empty' : '');
-    walletEl.title = held === 0
+    walletEl.title = walletTitle || (held === 0
       ? 'No ✏️ left. Another arrives as the drip accrues; proposing costs one.'
       : 'Your ✏️s — proposing one costs ' + EDIT_RULES.stake +
         '. You hold ' + held + ' of a possible ' + EDIT_RULES.cap +
-        (full ? ', which is the cap.' : '; the tray shows how far the drip has got toward the next.');
+        (full ? ', which is the cap.' : '; the tray shows how far the drip has got toward the next.'));
     // The wallet draws at most four slots wide, and counts when it cannot fit
     // (Ed, 2026-08-17). Four held is four pencils, because "+1" costs exactly
     // the space it saves and reads as an abbreviation of nothing. Five is three
@@ -4429,7 +4436,7 @@
     // `nudgeHome` brings a released flight back (never travelling less than a
     // quarter), `startLean`/`stopLean` are the spend-preview, and `applyLean`
     // is what any wallet render must call at its tail to survive its own rebuild
-    nudgeHome, startLean, stopLean, applyLean, addSpendProbe, resumeLean, setWalletHeld,
+    nudgeHome, startLean, stopLean, applyLean, addSpendProbe, resumeLean, setWalletHeld, setWalletTitle,
     refreshRail, renderToc, layoutQueue, drawWires, washAttrs,
     get DOC() { return DOC; },
     get SUGGS() { return SUGGS; },
