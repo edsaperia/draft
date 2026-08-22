@@ -886,22 +886,71 @@
     refreshCommit();
   };
   const slugRefused = () => !!(S.slugFree && S.slugFree.slug === S.slug && !S.slugFree.available);
-  let slugCheckT = null;
-  const checkSlug = (slug) => {
-    if (!BIRTH) { S.slugFree = TAKEN.has(slug) ? { slug, available: false, suggestion: slug + '-' + suffix(S.title || slug) } : null; refreshSlugNote(); return; }
+  // **An address is checked because it is the address, not because it was
+  // typed** (Ed, 2026-08-22: *the address was taken — we shouldn't allow it
+  // to be set if it's taken*). 📍's commit has been gated on `slugRefused()`
+  // for as long as it has existed, but the only thing that ever asked the
+  // server was the **input** handler — so an address the founder never
+  // edited had no verdict at all, and the gate stood open on an unasked
+  // question. The birth pre-fills 📍 from the title, and `suggestSlug`
+  // consults the fixture's own TAKEN set, which knows nothing about the live
+  // host; accept the suggestion unedited and the first thing in the world to
+  // ask about the address is the **send**, which answered truthfully that it
+  // was taken and walked the founder back to 📍 — the right answer to a
+  // question the card should have asked first, arriving at the one step that
+  // mints the document.
+  //
+  // So the check is idempotent and callable from anywhere: `S.slugSeen` is
+  // the address the last verdict was about, whatever that verdict said, and
+  // asking twice about one address is free. `render` asks whenever there is
+  // an address to ask about, which covers the pre-filled one and every other
+  // path that sets it without a keystroke.
+  let slugCheckT = null, slugAsking = null;
+  const slugKnown = () => !BIRTH || S.slugSeen === S.slug;
+  const checkSlug = (slug, wait = 0) => {
+    if (S.slugSeen === slug || slugAsking === slug) return;
+    if (!BIRTH) { S.slugFree = TAKEN.has(slug) ? { slug, available: false, suggestion: slug + '-' + suffix(S.title || slug) } : null; S.slugSeen = slug; refreshSlugNote(); return; }
+    // **A creation's own reservation is not somebody else's** — Q462b, on
+    // the check rather than the send. The first send reserves the address
+    // for this pending creation, so asking the server about it afterwards is
+    // told, truthfully, that it is taken — by us. This page knows which
+    // address its own send holds, so it answers for that one rather than
+    // refusing the founder their own document.
+    if (api.birth && api.birth.slug === slug) {
+      S.slugSeen = slug; S.slugFree = null; refreshSlugNote(); return; }
     clearTimeout(slugCheckT);
+    slugAsking = slug;
+    // typing waits out the keystrokes; an address that simply arrived is
+    // asked about at once, so the commit is never still dark by the time
+    // anybody has read the card
     slugCheckT = setTimeout(() => {
       fetch('/api/slug/' + encodeURIComponent(slug)).then((r) => r.json()).then((res) => {
+        slugAsking = null;
         if (S.slug !== slug) return;
-        S.slugFree = res.available ? null : { slug, available: false, suggestion: null };
+        S.slugSeen = slug;
+        S.slugFree = res.available ? null : { slug, available: false, suggestion: res.suggestion || null };
         refreshSlugNote();
-      }).catch(() => {});
-    }, 250);
+      }).catch(() => {
+        // **A verdict that cannot be got counts as one.** The commit waits
+        // for the check, so an unreachable host would otherwise leave the
+        // founder at a permanently dark 📍 with nothing to read and no way
+        // on — worse than the bug this fixes. The send's own 409 is the
+        // backstop it always was: it refuses, says why, and offers the
+        // nearest free address.
+        slugAsking = null;
+        if (S.slug !== slug) return;
+        S.slugSeen = slug; refreshSlugNote();
+      });
+    }, wait);
   };
   const suggestSlug = (title) => {
     const base = slugify(title);
     if (!base || base.length < 3) return { slug: 'untitled-' + suffix(title || 'x'), taken: null };
-    return TAKEN.has(base) ? { slug: base + '-' + suffix(title), taken: base } : { slug: base, taken: null };
+    // the fixture's TAKEN set is the Hollow Oak world's, so at a live birth
+    // it can neither confirm nor deny an address — and the note it drives
+    // says *already exists*, which would be a claim the page has not
+    // checked. Suggest the plain address there and let the live check answer.
+    return (!BIRTH && TAKEN.has(base)) ? { slug: base + '-' + suffix(title), taken: base } : { slug: base, taken: null };
   };
 
   // ---- the document ------------------------------------------------------
@@ -1140,7 +1189,11 @@
     { k: 'myemail', g: '📧', t: 'Your Email', kind: 'personal', own: 'you', dep: ['slug'],
       hide: () => S.viewer === 'applicant', changeable: true,
       ready: () => S.emailVerified || (!S.emailSent && EMAIL_OK.test(S.myemail)) },
-    { k: 'slug', g: '📍', t: 'Link', kind: 'ordinary', dep: ['title'], ready: () => SLUG_OK.test(S.slug) && !slugRefused(), changeable: true },
+    // `slugKnown` is what stops a fast founder committing inside the window
+    // between a keystroke and the answer about it — the address is legal,
+    // nothing has refused it *yet*, and the send would be the first to ask
+    { k: 'slug', g: '📍', t: 'Link', kind: 'ordinary', dep: ['title'],
+      ready: () => SLUG_OK.test(S.slug) && !slugRefused() && slugKnown(), changeable: true },
     // — the rest, together once the document exists ----------------------
     // 🎩 folded into 🪪 (Ed, 2026-08-18): whether the founder is a
     // member is just whether they invite themselves, asked as their own
@@ -4169,6 +4222,12 @@
     // 🪶's own wording: the title card is the one that is typed into, so it
     // says what is missing rather than that nothing has been answered
     ? (commitReady(c) ? (cs ? 'Set it — yours to change any time' : 'Name it') : 'Give it a name first')
+    // 📍 says which of its three reasons it is dark for: *not answered yet*
+    // is a lie about an address that is answered and refused
+    : c.k === 'slug' && !ready(c)
+      ? (!SLUG_OK.test(S.slug) ? 'Lower case, digits and hyphens, three characters or more'
+        : slugRefused() ? 'That address is taken'
+        : 'Checking the address…')
     : ready(c) ? (c.ansFor ? 'Answer' : c.kind === 'personal' ? 'Save' : 'Set it')
     : 'Not answered yet');
   // **The whole commit row follows the typing** (Ed, 2026-08-21: *the 🗑️
@@ -4203,6 +4262,11 @@
     resolveCounts();
     syncGrantAcks();
     syncOwedOks();
+    // the address is checked because it is the address (see `checkSlug`): a
+    // pre-filled 📍 nobody edited would otherwise reach the send unasked.
+    // Idempotent — a repeat ask about an address already answered is a
+    // string comparison.
+    if (SLUG_OK.test(S.slug || '')) checkSlug(S.slug);
     // one snapshot per opening — after the module has had its say, so the
     // bin puts the card back to what stands rather than to what was on screen
     // **What you have typed survives a close** (Ed, 2026-08-21: *my inputs
@@ -4833,7 +4897,9 @@
       if (slot && S.draft) slot.outerHTML = commitFor(card(S.draft.k));
       return; }
     if (t.dataset.slug) { S.slug = t.value.trim().toLowerCase(); S.slugTaken = null;
-      if (SLUG_OK.test(S.slug)) checkSlug(S.slug); else S.slugFree = null;
+      // typing is the one caller that waits: an ask per keystroke would be a
+      // request per letter, and the commit is dark until the answer lands
+      if (SLUG_OK.test(S.slug)) checkSlug(S.slug, 250); else S.slugFree = null;
       renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     // the invitation boxes are backed by S, so what is typed into them
     // outlives a re-render and a close (Ed, 2026-08-21)

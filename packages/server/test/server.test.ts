@@ -909,7 +909,8 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
   it('checks availability, reserves the promised slug, and tells a second founder "taken"', async () => {
     const { base } = await boot();
     const ask = async (slug: string) =>
-      (await (await fetch(`${base}/api/slug/${slug}`)).json()) as { available: boolean; legal: boolean };
+      (await (await fetch(`${base}/api/slug/${slug}`)).json()) as
+        { available: boolean; legal: boolean; suggestion?: string };
 
     expect(await ask('hollow-oak')).toEqual({ available: true, legal: true });
     expect((await ask('No Caps')).legal).toBe(false);
@@ -923,7 +924,12 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
 
     // reserved while the creation is pending: a second founder is refused
     // and offered the nearest free address
-    expect((await ask('hollow-oak')).available).toBe(false);
+    // …and the *check* refuses in the same shape as the send, offering the
+    // nearest free address. 📍 blocks its commit on this answer (2026-08-22),
+    // so a refusal naming no way forward would strand the founder at the one
+    // step that mints the document.
+    expect(await ask('hollow-oak')).toEqual(
+      { available: false, legal: true, suggestion: 'hollow-oak-2' });
     const second = await post(base, '/api/docs',
       { title: 'Another Oak', slug: 'hollow-oak', email: 'bo@example.org' });
     expect(second.status).toBe(409);

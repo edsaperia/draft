@@ -487,7 +487,14 @@ export async function createDraftServer(cfg: ServerConfig,
         return;
       }
       res.setHeader('cache-control', 'no-store');
-      json(res, 200, { available: await slugFree(slug), legal: true });
+      /* A refusal offers the nearest free address, exactly as the send's own
+         409 has since Q462b. 📍 blocks its commit on this answer now, and a
+         block that names no way forward leaves the founder to invent an
+         address at the one step that mints the document. Computed only when
+         it is needed: a free address costs no extra lookups. */
+      const free = await slugFree(slug);
+      json(res, 200, { available: free, legal: true,
+        ...(free ? {} : { suggestion: await uniqueSlugAsync(slug) }) });
       return;
     }
 
