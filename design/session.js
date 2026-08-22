@@ -3451,12 +3451,13 @@
       if (on && openId === id) collapseCards(id, shut); else { renderAll(); drawWires(); }
       return;
     }
-    // Submitting no longer closes the card (Ed, 217): it stays open and simply
-    // becomes what it now is — a judged card, tick pressed, its note underneath
-    // saying you may still change your mind. Closing it used to be the only way
-    // the surface acknowledged the act; the pressed tick does that better, and
-    // keeping the card open means the document does not move under a reader who
-    // was in the middle of it. The queue entry re-renders around it.
+    // **Submitting closes the card and files it as ⏳** (Ed, 2026-08-22, Q576 —
+    // reversing Ed, 217, which kept it open so the pressed tick could be read).
+    // A judgment is a commit like every other on the surface, and every other
+    // commit closes; the ⏳ tab in the gutter is the receipt that says
+    // *revisable and still running*, and clicking it reopens the card to
+    // revise. The card runs its closing motion onto its own paragraph, the
+    // queue entry re-renders around it.
     const firstTime = !resolved.has(id);
     const btn = queueEl.querySelector('[data-q="' + id + '"]');
     if (firstTime && btn) btn.classList.add('leaving');
@@ -3467,7 +3468,8 @@
       resolved.add(id);
       justArrived = firstTime ? id : null;
       if (hooks.judge) hooks.judge(id, what);
-      renderAll();
+      const shut = () => { if (openId === id) openId = null; renderAll(); drawWires(); };
+      if (openId === id) collapseCards(id, shut); else shut();
     }, firstTime && btn ? 240 : 0);
   }
 
