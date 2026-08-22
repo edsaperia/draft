@@ -11,8 +11,10 @@ and the birth was given its own layout, at `refs-gates-2026-08-21` after the
 stopped being held until its grant is acknowledged, and at
 `refs-withheld-2026-08-22` after a task you cannot do stopped being drawn
 at all, and at `refs-pen-first-2026-08-22` after the pen took its place as
-the only thing the save asks for and 🌍 lost its Public rung, marks the same
-commit
+the only thing the save asks for and 🌍 lost its Public rung, and at
+`refs-toolbar-2026-08-22` after every wallet became a socket shown to
+everybody, 🛡️ joined the row with a grant of its own, and a released hold
+stopped deleting its token in mid-air, marks the same commit
 and is authoritative if EOL normalisation ever makes a copy differ byte-wise.
 
 - **Never edit these files.** When the surface changes intentionally,

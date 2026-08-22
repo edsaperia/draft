@@ -50,6 +50,17 @@ its four tasks are the whole surface.
 
 ## Dependency tree — document-creation (the convenor)
 
+> **Superseded, kept as history (Q533, 2026-08-22).** The wave graph below
+> was retired on 2026-08-21 when the founding went **single file**: one task
+> at a time, in the order the clauses appear in the document. `ORDER` in
+> `session-view.html` *is* the dependency list now, for every card it names,
+> and a card's own `dep` is not consulted for those. The tree also predates
+> the glyph batch — title is 🪶 and link is 📍; 🏷️ and 🔗 are retired — and
+> the grants that have since taken their own places in the order (✒️ at the
+> save, 🛡️ immediately after it, 🏛️ at arrival). Read it for the *reasoning*
+> about what literally depends on what, which still holds; do not read it as
+> a description of what the surface does.
+
 Edge key: **⇒ literal** (needs information or existence from upstream) ·
 **⋯ pacing** (UX only — don't overwhelm; the answer needs nothing upstream)
 (Ed, 2026-08-18: *some of these are literal dependencies … and some are UX

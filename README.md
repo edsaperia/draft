@@ -27,7 +27,7 @@ First target: constitutional conventions for [Newspeak House](https://newspeak.h
 `npm install` at the root, then:
 
 ```
-npm test               # every workspace (460 tests)
+npm test               # every workspace (480 tests)
 npm run typecheck
 npm run lint
 npm run build          # the production artifact: dist/server.mjs
@@ -53,7 +53,7 @@ npm run sim -w @draft/sim-harness -- --mode subscription --scenario clubhouse \
 
 ## Status
 
-Spec v0.64. The mechanism (engine-core, 217 tests) and the constitutional layer (173 tests) are built and tested; the server (39 tests, 13 more against Postgres) hosts real documents at docs.vote; the simulator (31 tests) is what keeps all of it honest.
+Spec v0.64. The mechanism (engine-core, 217 tests) and the constitutional layer (193 tests) are built and tested; the server (39 tests, 13 more against Postgres) hosts real documents at docs.vote; the simulator (31 tests) is what keeps all of it honest.
 
 The mechanism holds up in practice:
 
