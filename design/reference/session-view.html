@@ -236,15 +236,53 @@
   // animation it is landing in. The caret goes after any text already there,
   // so typing extends a draft that survived a close rather than sitting in
   // front of it (`setSelectionRange` throws on email inputs, hence the try).
-  const COMPOSER_SEL = ['[data-titlelane]', 'textarea:not([disabled])',
+  // **An opening card focuses its main decision** (Ed, 2026-08-22), which
+  // reverses the narrower rule built the day before — *only onto something
+  // you type into, never a radio* — and reverses it for a good reason: on a
+  // card whose decision **is** a radio, refusing to focus radios did not
+  // leave focus alone, it sent the caret **past** the decision into the
+  // rationale lane below. The card asked *which of these* and put your cursor
+  // in the box for explaining yourself.
+  //
+  // The main decision is **the first interactive control in the card's own
+  // DOM order**, which needs no per-card list because the card grammar
+  // already puts the decision first: the values, then the rationale, then the
+  // commit row. It falls out right everywhere — 🌍 focuses its first rung,
+  // ⏱️ its first number (the delegate rung is *set apart after the values*,
+  // so it can never be first), 🪶 its title lane, 📧 its address, a motion
+  // card the value it is proposing rather than the reason for it.
+  //
+  // Two refinements. The commit row is excluded: it is where the card ends,
+  // never what it asks. And within a chosen radio group the focus goes to the
+  // **chosen** option rather than the first, because where a decision stands
+  // is the decision.
+  const DECIDE_SEL = ['[data-titlelane]', 'textarea:not([disabled])',
     'input[type="text"]:not([disabled])', 'input[type="email"]:not([disabled])',
+    'input[type="number"]:not([disabled])', 'input[type="datetime-local"]:not([disabled])',
     'input:not([type]):not([disabled])',
-    '[contenteditable=""]', '[contenteditable="true"]'].join(',');
+    '[contenteditable=""]', '[contenteditable="true"]',
+    '[data-set]:not([disabled])', '[data-ans]:not([disabled])',
+    '[data-mval]:not([disabled])', '[data-v]:not([disabled])'].join(',');
+  const chosenOf = (el) => {
+    const group = el.closest('.choice, .lanepick, .field') || el.parentElement;
+    if (!group) return el;
+    const on = [...group.querySelectorAll('[aria-checked="true"], [aria-pressed="true"], .on')]
+      .find((x) => x.matches(DECIDE_SEL) && x.offsetParent !== null);
+    return on || el;
+  };
   const focusComposer = (card) => {
     if (!card) return;
-    const el = card.querySelector(COMPOSER_SEL);
-    if (!el || el.offsetParent === null) return;
-    try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
+    const el = [...card.querySelectorAll(DECIDE_SEL)]
+      .find((x) => x.offsetParent !== null && !x.closest('.commitrow'));
+    if (!el) return;
+    const isPick = el.matches('[data-set],[data-ans],[data-mval],[data-v]');
+    const target = isPick ? chosenOf(el) : el;
+    // focus is not a press: a radio is only put under the keyboard, never
+    // chosen — choosing stays the click it always was
+    try { target.focus({ preventScroll: true }); } catch (e) { target.focus(); }
+    if (isPick) return;
+    // the caret goes *after* what is already there, so typing extends a draft
+    // that survived a close rather than sitting in front of it
     if (typeof el.value === 'string' && el.setSelectionRange) {
       try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) { /* email/number */ }
     } else if (el.isContentEditable) {
@@ -4985,7 +5023,18 @@
         S.viewer = 'stranger';
         hydrateS();
         render();
-        setInterval(() => api.refresh(), 4000);
+        setInterval(() => {
+        // **Nothing rebuilds under a press.** A pen hold is a gesture in
+        // progress — the glyph is in the air and the button is under the
+        // pointer — and a poll that re-renders mid-hold replaces the very
+        // control being held. The same rule the draft typing guard keeps,
+        // for the same reason: the surface must not move under the hand.
+        // The poll simply waits for the next tick.
+        // a pen hold here, or a propose hold in the charter — either way a
+        // press is in progress and the surface must not move under it
+        if (penHold || SESSION.holding) return;
+        api.refresh();
+      }, 4000);
         return;
       }
       cs = remoteCS(data);
@@ -5002,7 +5051,18 @@
       if (data.text) setProse(data.text);
       else if (data.provisionalText) setProse(data.provisionalText);
       render();
-      setInterval(() => api.refresh(), 4000);
+      setInterval(() => {
+        // **Nothing rebuilds under a press.** A pen hold is a gesture in
+        // progress — the glyph is in the air and the button is under the
+        // pointer — and a poll that re-renders mid-hold replaces the very
+        // control being held. The same rule the draft typing guard keeps,
+        // for the same reason: the surface must not move under the hand.
+        // The poll simply waits for the next tick.
+        // a pen hold here, or a propose hold in the charter — either way a
+        // press is in progress and the surface must not move under it
+        if (penHold || SESSION.holding) return;
+        api.refresh();
+      }, 4000);
       // the founder's unconfirmed draft rides the stash (§9.7a v0.55)
       let deb = null;
       prose.addEventListener('input', () => {
@@ -5560,8 +5620,21 @@
       const to = w.getBoundingClientRect();
       w.style.display = 'none';
       const n = cs && cs.isRemote && cs.v ? Math.floor(cs.v.wallet || 0) : (SESSION.editsHeld || 0);
-      SESSION.pencilStorm(g.from, to, Math.max(n, 3), () => {
-        stormHolding = false; w.style.display = ''; syncWallet(); SESSION.renderWallet(); });
+      // **A wallet must not depend on its own animation finishing.** The
+      // storm hides the wallet so the pencils can fly into an empty one, and
+      // hands it back in its completion callback — so anything that stops
+      // that callback (a backgrounded tab, where rAF never fires; a
+      // cancelled animation; reduced motion taking an unexpected path) hides
+      // a power the member has just been granted, permanently and with no
+      // way back. That is the *worst* failure this animation can have and it
+      // was one missed callback away. The safety net runs the same
+      // restoration on a timer well past the storm's own length; whichever
+      // arrives first wins, and `done` makes the second a no-op.
+      let done = false;
+      const land = () => { if (done) return; done = true;
+        stormHolding = false; w.style.display = ''; syncWallet(); SESSION.renderWallet(); };
+      SESSION.pencilStorm(g.from, to, Math.max(n, 3), land);
+      setTimeout(land, 4000);
       return;
     }
     const id = g.k === 'grant-pen' ? 'penwallet' : 'voicewallet';
@@ -5620,7 +5693,23 @@
       // penPointerDown stays true on purpose: the real click that arrives on
       // pointerup is the trailing half of this same press, and the guard
       // above swallows it
-      try { b.click(); } finally { penHoldFired = false; }
+      //
+      // **The press outlives the button** (Ed's live walk, 2026-08-22: *I
+      // still haven't managed to get all the way from founding a document to
+      // proposing an amendment*). `b` is captured at pointerdown, a second
+      // before this runs, and the live page re-renders the whole band on its
+      // 4s poll — so a poll landing inside the hold replaces the button and
+      // leaves `b` detached. A click on a detached element never reaches the
+      // `document` listener that commits, so the act **vanished in silence**:
+      // no command, no error, the card simply sitting there as though the
+      // press had not happened. Deterministic in a harness, and for a person
+      // a different card every time, which is what made it so hard to
+      // report. The hold belongs to the open card, not to one DOM node, so
+      // it re-finds the live commit control when its own has gone.
+      const live = b.isConnected ? b
+        : (document.querySelector('.setupcard .commitrow [data-confirm]') ||
+           document.querySelector('.setupcard [data-confirm]'));
+      try { if (live) live.click(); } finally { penHoldFired = false; }
       renderPowerWallets();
     }, PEN_HOLD_MS) };
   });

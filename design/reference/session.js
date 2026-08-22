@@ -92,6 +92,13 @@
   // open, so a surface that never sets them behaves exactly as before. They
   // are read at call time, never captured — the answer changes the moment an
   // OK is pressed, with no reload and no remount.
+  // **A press in progress, visible to the host.** The propose hold lives
+  // inside renderDoc, so it is re-created by every render — and a render
+  // during a hold removes the button the pointer is on, which makes the
+  // browser fire pointerleave and silently cancels the hold. At HOLD_MS
+  // 3000 against a 4s poll that is most attempts, which is why a live
+  // proposal so often never went in. The host reads this to hold its poll.
+  let holdInFlight = false;
   let MAY_PROPOSE = () => true;
   let MAY_JUDGE = () => true;
   const {
@@ -3053,7 +3060,7 @@
     const flyStop = (fired) => {
       if (!holding) return;
       const { el, pencil, timer, anim } = holding;
-      holding = null;
+      holding = null; holdInFlight = false;
       clearTimeout(timer);
       el.classList.remove('holding');
       // Fired: the edit is spent, and act() renders the wallet one lighter — so
@@ -3103,6 +3110,7 @@
               { duration: HOLD_MS, easing: 'cubic-bezier(.45, .05, .3, 1)', fill: 'both' });
       }
       el.classList.add('holding');
+      holdInFlight = true;
       const id = el.closest('.sugg').dataset.card;
       holding = { el, pencil, anim, timer: setTimeout(() => { flyStop(true); act(id, 'draft-propose'); }, HOLD_MS) };
     };
@@ -4177,6 +4185,8 @@
     get DOC() { return DOC; },
     get SUGGS() { return SUGGS; },
     get openId() { return openId; },
+    /** true while a propose hold is in the air — the host must not re-render */
+    get holding() { return holdInFlight; },
     get readSeals() { return readSeals; },
     get verdicts() { return verdicts; },
     get editsHeld() { return editsHeld; },
