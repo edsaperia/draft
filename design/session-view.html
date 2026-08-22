@@ -5874,11 +5874,19 @@
   // line per block (a leading '# ' … '### ' marks a heading), and the engine's
   // document is the same lines — so a clause key is its line index and a
   // proposal on a block is one hunk over that line.
-  const blocksOf = (text) => String(text || '').split(/\n/).flatMap((l, i) => {
-    if (!l.trim()) return [];                      // a blank line is a line the engine counts, and nothing to read
-    const m = l.match(/^(#{1,3})\s+(.*)$/);
-    return [m ? { t: 'h', level: m[1].length, x: m[2], key: 'L' + i } : { t: 'p', x: l, key: 'L' + i }];
-  });
+  const blocksOf = (text) => {
+    const blocks = String(text || '').split(/\n/).flatMap((l, i) => {
+      if (!l.trim()) return [];                      // a blank line is a line the engine counts, and nothing to read
+      const m = l.match(/^(#{1,3})\s+(.*)$/);
+      return [m ? { t: 'h', level: m[1].length, x: m[2], key: 'L' + i } : { t: 'p', x: l, key: 'L' + i }];
+    });
+    // **An empty document has one clause, and it is empty** (Q649 (a), Ed
+    // 2026-08-22). §9.0b allows a confirmed-empty text, and the engine holds
+    // it as one empty line; without a block keyed to it there is nowhere to
+    // put a caret, so nobody could ever propose the first paragraph. The
+    // block is line 0, so a proposal on it is the ordinary hunk [0, 1).
+    return blocks.length ? blocks : [{ t: 'p', x: '', key: 'L0' }];
+  };
   // ---- the closed document is bracketed (Q470) ----------------------------
   // constitution · charter · **the backlog as ranked document text** · the
   // signatures. Each undecided race is a paragraph — its best candidate's
@@ -6187,9 +6195,16 @@
       api.cmd('judge-race', { a: c.a, b: c.b, outcome });
     };
     LIVE_HOOKS.propose = (d) => {
+      // A hunk replaces the document's lines [start, end); the engine holds an
+      // empty document as **zero** lines, so the empty clause an empty
+      // document renders (Q649 (a)) proposes an insert at [0, 0), never a
+      // replacement of a line that does not exist. Clamped to the text the
+      // engine actually holds, which is the rule for every hunk.
+      const nLines = cs.text === '' ? 0 : String(cs.text).split('\n').length;
       const hunks = d.sites.map((site) => {
         const ls = site.text.split('\n');
-        return { start: lineIdx(site.keys[0]), end: lineIdx(site.keys[site.keys.length - 1]) + 1,
+        const start = Math.min(lineIdx(site.keys[0]), nLines);
+        return { start, end: Math.max(start, Math.min(lineIdx(site.keys[site.keys.length - 1]) + 1, nLines)),
           lines: ls.map((ln, i) => headOf(site.origin[i]) + ln) };
       });
       const local = d.id;

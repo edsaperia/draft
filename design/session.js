@@ -2900,10 +2900,18 @@ document.addEventListener('pointercancel', () => flyStop(false));
           html += '</div>' + suggCardHtml(wasResolved) + PROSE();
           cardDone = true;
         } else {
-          html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + '"' +
+          // An empty clause — the one block of an empty document (Q649 (a)) —
+          // keeps a line's height and says what it is, in grey and out of the
+          // text flow so the caret lands at offset 0. The sentence promises
+          // typing only to somebody who may propose.
+          const blank = line.key && !line.x && !wasResolved;
+          html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + (blank ? ' blank' : '') + '"' +
             (wasResolved ? ' data-anchor="' + wasResolved.id + '"' +
               anchWash(wasResolved, openId === wasResolved.id, line.key) : '') +
-            (line.key ? ' data-key="' + line.key + '"' : '') + '>' +
+            (line.key ? ' data-key="' + line.key + '"' : '') +
+            (blank ? ' data-placeholder="' + (MAY_PROPOSE()
+              ? 'Nothing here yet — start typing to propose the first paragraph.'
+              : 'Nothing here yet.') + '"' : '') + '>' +
             (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
               '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + mkHtml(markKindOf(wasResolved)) + '</span></span>' : '') +
             esc(line.x) + '</p>';

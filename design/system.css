@@ -636,6 +636,15 @@
   .doc .prose { max-width: 70ch; margin: 0 auto; }
   .doc .doctitle { font-size: var(--t-lead); font-weight: 600; margin: 0 0 18px; text-wrap: balance; }
   .doc p { margin: 0 0 var(--s3); position: relative; }
+  /* **An empty document has one clause, and it is empty** (Q649 (a), Ed
+     2026-08-22). The block keeps a line's height so it can be clicked, and
+     its sentence is drawn out of the text flow — as inline content it would
+     put the caret after itself — in the rationale placeholder's own manner. */
+  .doc p.editable.blank { min-height: 1.6em; }
+  .doc p.editable.blank::before {
+    content: attr(data-placeholder); color: var(--muted); font-style: italic;
+    position: absolute; left: 0; top: 0; right: 0; pointer-events: none;
+  }
 
   /* three ranks of heading: part, chapter, section */
   .doc h2.docline {

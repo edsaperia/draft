@@ -25,7 +25,10 @@
  */
 import { chromium } from 'playwright';
 
-const BASE = process.argv[2] || 'http://127.0.0.1:8199';
+const BASE = process.argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8199';
+// --empty-text: found the document on a confirmed-empty text (Q649 (a)) and
+// propose its first paragraph into the one empty clause the charter renders.
+const EMPTY_TEXT = process.argv.includes('--empty-text');
 const say = (...a) => console.log(...a);
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });
@@ -157,8 +160,10 @@ for (let i = 0; i < 60; i++) {
   order.push(next);
   if (!(await open(next))) { stuck.push(next + ' (would not open)'); continue; }
   if (await clickIn('.setupcard [data-ok]')) { say('  ok       · ' + next); continue; }
-  if (next === 'text') {
-    // 📄's value lives in the document column, never in a field
+  if (next === 'text' && !EMPTY_TEXT) {
+    // 📄's value lives in the document column, never in a field. With
+    // --empty-text the column is left empty and confirmed so (§9.0b allows
+    // it), and the walk proposes the document's first paragraph instead.
     await page.evaluate(() => {
       const pr = document.getElementById('prose');
       pr.innerHTML = '<div>The clubhouse shall be kept open on Tuesdays.</div>' +
@@ -258,20 +263,30 @@ say('wallet     · ' + await page.evaluate(() =>
   document.getElementById('wallet').textContent.trim()));
 
 /* ---- proposing: a caret in the charter, then one keystroke ---- */
-const caret = await page.evaluate(() => {
-  const p = [...document.querySelectorAll('#charter .prose p')].find((x) => x.textContent.trim().length > 5);
-  if (!p) return null;
-  p.scrollIntoView({ block: 'center' });
-  const tn = [...p.childNodes].find((n) => n.nodeType === 3);
-  if (!tn) return null;
+const caret = await page.evaluate((empty) => {
   const r = document.createRange();
-  r.setStart(tn, Math.min(3, tn.length));
+  let p;
+  if (empty) {
+    // the one empty clause of an empty document (Q649 (a)): no text node,
+    // so the caret goes at offset 0 of the block itself
+    p = document.querySelector('#charter .prose p.editable.blank[data-key]');
+    if (!p) return null;
+    p.scrollIntoView({ block: 'center' });
+    r.setStart(p, 0);
+  } else {
+    p = [...document.querySelectorAll('#charter .prose p')].find((x) => x.textContent.trim().length > 5);
+    if (!p) return null;
+    p.scrollIntoView({ block: 'center' });
+    const tn = [...p.childNodes].find((n) => n.nodeType === 3);
+    if (!tn) return null;
+    r.setStart(tn, Math.min(3, tn.length));
+  }
   r.collapse(true);
   const s = getSelection();
   s.removeAllRanges();
   s.addRange(r);
   return p.dataset.key || '(no key)';
-});
+}, EMPTY_TEXT);
 say('caret      · ' + (caret || 'FAIL: no charter paragraph to type in'));
 if (caret) {
   await page.keyboard.type('X');
