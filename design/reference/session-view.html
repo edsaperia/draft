@@ -1004,13 +1004,30 @@
   // room, and they stand in the members' pile because what they gate is what
   // the members will be able to do.
   const GATES = [
+    // **The gate clauses wait for 🍾** (Q529, Ed 2026-08-22: *let's try
+    // that*). They used to arrive the moment their position in the founding
+    // order was reached, because a gate is skipped as a blocker — so crossing
+    // into Proposals delivered the section heading, the preamble and **both**
+    // gate clauses in one frame, three paragraphs where every other step of
+    // the founding has delivered exactly one. Holding them until 🍾 is not a
+    // pacing trick: it is where they are actually decided, and 🍾's own card
+    // states them as part of its batch. So the Proposals section now fills a
+    // clause at a time like every other, and the two gates arrive together at
+    // the press that opens them, as the thing that just happened.
+    //
+    // This supersedes the ⏳-tab-in-the-band waiting state for these two.
+    // What the founder is owed instead — *what is still stopping judging* —
+    // is the 🍾 card's readiness readout, which is where they were going to
+    // read it anyway.
     { k: 'canpropose', g: '💡', t: 'Proposing', own: 'you', isGate: true, dep: ['roster'],
+      hide: () => !constituted(),
       open: () => !!cs && !!viewerId() && cs.canPropose(viewerId()),
       why: 'Anybody can read the document from the first second. Nobody can propose a change to a text that is not there yet — and you should not be able to act on a document whose rules you have not yet said what you will accept of, so your own unanswered questions wait here too.',
       waiting: 'Waiting on the text, and on your own answers.',
       done: 'Open — members can propose as soon as they arrive.',
       blockers: () => [card('text')].filter((c) => !settled(c)).concat(LIVE().filter(owesAnswer)) },
     { k: 'canjudge', g: '⚖️', t: 'Judging', own: 'you', isGate: true, dep: ['roster'],
+      hide: () => !constituted(),
       open: () => canJudge(),
       why: 'A judgment counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the judgment meant, so they come first.',
       waiting: 'Waiting on the constitution.',
