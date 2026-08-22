@@ -3073,19 +3073,29 @@
       // came is the way it goes back. Faster than it left: rewinding at the
       // speed it flew would punish a late change of mind with a three-second
       // wait, and the return is not a gesture anybody is performing.
-      anim.playbackRate = -4;
-      anim.play();
-      // Belt and braces on both flights: a document timeline is paused while the
-      // tab is hidden, so `onfinish` can be arbitrarily late, and the one thing
-      // that must not happen is a wallet left holding a gap for an edit that is
-      // no longer in the air.
-      const home = () => { pencil.remove(); walletGhost = false; renderWallet(); };
-      anim.onfinish = home;
-      setTimeout(() => { if (pencil.isConnected) home(); }, HOLD_MS / 4 + 60);
+      //
+      // Since Q531 the return is `nudgeHome`, shared with the pen and the
+      // quill, which adds the quarter floor: a press too short to be a hold
+      // still carries the pencil a quarter of the way before it comes back.
+      // **864ms, not 750** — this flight's easing is slow off the mark, and
+      // the floor is a quarter of the *distance* (see `nudgeHome`). The old
+      // `HOLD_MS / 4 + 60` safety timeout is gone with it: the fallback now
+      // derives from the actual journey, which a literal cannot do once there
+      // is a push phase in front of the rewind.
+      nudgeHome({ anim, el: pencil }, { floorAt: 864,
+        onDone: () => {
+          walletGhost = false;
+          // the pencil is home, so the preview may resume — but only if the
+          // pointer never left the button that was asking for it
+          resumeLean(el);
+          renderWallet();
+        } });
     };
     const flyStart = (el) => {
       flyStop(false);
       if (el.disabled) return;
+      // the token is about to leave for real, so it stops straining at the leash
+      stopLean();
       // The slot the pencil leaves and the pencil that leaves are the same
       // object: ghosting the wallet marks it, and the mark is what we measure
       // from. It is render state, not a poke at the DOM — the drip re-renders
@@ -3765,9 +3775,106 @@
     let finished = false;
     const done = () => { if (finished) return; finished = true; el.remove(); if (o.onLand) o.onLand(); };
     anim.onfinish = done;
-    setTimeout(() => { if (el.isConnected) done(); }, ms + (o.delay || 0) + 80);
-    return { cancel: () => { try { anim.cancel(); } catch (e) {} el.remove(); } };
+    const fb = setTimeout(() => { if (el.isConnected) done(); }, ms + (o.delay || 0) + 80);
+    // **A flight can be handed back** (Q531): a caller that means to bring the
+    // glyph home rather than let it land has to take ownership first, because
+    // both the `onfinish` above and the belt-and-braces timeout beside it will
+    // otherwise remove the traveller at the landing moment — and a release at
+    // 990ms of a 1000ms flight rewinds for another 250ms, well past it. So the
+    // glyph would vanish in mid-air on exactly the presses this exists for.
+    // `disarm` transfers that responsibility; `cancel` is unchanged and still
+    // the right thing where the flight simply stops meaning anything.
+    const disarm = () => { clearTimeout(fb); anim.onfinish = null; finished = true; };
+    return { anim, el, disarm, cancel: () => { try { anim.cancel(); } catch (e) {} el.remove(); } };
   }
+  // **A press always carries the token a quarter of the way** (Q531, Ed
+  // 2026-08-22: *when someone just clicks and doesn't hold, the token jumps 1/4
+  // the way towards the button, so that it's hard to miss that you're making
+  // something happen*). Nobody realised these buttons had to be held, and the
+  // reason is that a tap showed almost nothing: 80ms of a 1000ms flight is 8%
+  // of the arc, and on the pen path the glyph was not even flown home — it was
+  // deleted where it stood. So a release short of the floor is rounded **up**
+  // to it.
+  //
+  // Three things this is careful about.
+  //
+  // **The floor is distance, not time.** "A quarter of the way" is ambiguous by
+  // 60%: the pen flies `linear`, so a quarter of its duration is a quarter of
+  // its arc, but the pencil flies `cubic-bezier(.45, .05, .3, 1)`, whose slow
+  // start means a quarter of *its* duration is only 18% of the arc. Distance is
+  // what the eye reads — there is no track on the surface, so nobody can
+  // perceive a fraction of a duration at all — so each caller passes the
+  // *time at which its own easing reaches a quarter of the way*: 250ms of 1000
+  // for the pen, 864ms of 3000 for the pencil (the solve for that bezier).
+  //
+  // **It is a floor, not a jump.** `t >= floorAt` rewinds from where it got to,
+  // so letting go at nine-tenths never snaps backwards to a quarter — which
+  // would be a worse lie than the one below.
+  //
+  // **The push runs at a speed the hold cannot produce.** A fixed ~160ms flick
+  // means the token is *thrown* rather than slid: from a standing start on the
+  // pencil that is 5.4x the hold's own pace. This is the whole reason the
+  // exaggeration is honest. Position on an arc is only a progress reading if
+  // there is a scale to read it against, and there deliberately is none — so
+  // what a viewer can perceive is departure, distance and return, not "this is
+  // 25%". A floor on time in the air instead would be unimpeachable and
+  // useless: 100ms of the pencil's easing is 3% of the arc, under 20px, which
+  // is nothing at all at the corner of your eye.
+  //
+  // It takes an animation rather than a distance, which is what makes reduced
+  // motion free: there the flight is an opacity fade, so a quarter of the way
+  // is a quarter of a fade, and nothing here needs to know the difference.
+  const nudgeHome = (flight, opts) => {
+    const o = opts || {};
+    const anim = flight && flight.anim, el = flight && flight.el;
+    if (!anim || !el) { if (o.onDone) o.onDone(); return { cancel: () => {} }; }
+    if (flight.disarm) flight.disarm();
+    // `push` is the *longest* the throw may take and `minRate` the slowest it
+    // may go, and the second is what makes it read as a throw. Measured on the
+    // pen: a quarter of its arc is 250ms of a 1000ms flight, so covering the
+    // last 150ms of that over a fixed 160ms push came out at **0.94x** — the
+    // token drifting forward *slower* than the hold moves it, which is the
+    // exact opposite of the point. A floor on the rate means the flick is
+    // always a speed the hold itself cannot produce, on a short pen press and a
+    // long pencil one alike, and the duration falls out of it.
+    const rewind = o.rewind || 4, push = o.push || 160, hang = o.hang || 90, minRate = o.minRate || 1.8;
+    const dur = Number((anim.effect && anim.effect.getTiming().duration) || 0) || 0;
+    const floorAt = dur ? Math.min(o.floorAt || 0, dur) : (o.floorAt || 0);
+    const t = Math.max(0, Number(anim.currentTime) || 0);
+    let done = false, timers = [];
+    const finish = () => {
+      if (done) return;
+      done = true;
+      timers.forEach(clearTimeout);
+      try { anim.cancel(); } catch (e) { /* already gone */ }
+      el.remove();
+      if (o.onDone) o.onDone();
+    };
+    // the reversal is the existing idiom — the flight run backwards along its
+    // own arc rather than a second, straighter journey — and `onfinish` is
+    // attached only once the rate is negative, or a forward push that happens
+    // to reach the end would fire it early
+    const reverse = (from) => { anim.playbackRate = -rewind; anim.play(); anim.onfinish = finish; return from / rewind; };
+    let total;
+    if (t >= floorAt) { total = reverse(t); }
+    else {
+      const rate = Math.max(minRate, (floorAt - t) / push);
+      const pushMs = (floorAt - t) / rate;
+      anim.playbackRate = rate;
+      anim.play();
+      // land exactly on the floor rather than wherever the rate has carried it,
+      // then hold still, so the turn reads as a decision and not a bounce
+      timers.push(setTimeout(() => { try { anim.currentTime = floorAt; anim.pause(); } catch (e) { /* gone */ } }, pushMs));
+      timers.push(setTimeout(() => reverse(floorAt), pushMs + hang));
+      total = pushMs + hang + floorAt / rewind;
+    }
+    // belt and braces on both paths, derived from the journey rather than a
+    // literal: a document timeline is paused while the tab is hidden, so
+    // `onfinish` can be arbitrarily late, and what must not happen is a wallet
+    // left holding a gap for a token that is no longer in the air
+    timers.push(setTimeout(finish, total + 80));
+    return { cancel: finish };
+  };
   const STORM_MS = 900;
   function pencilStorm(from, to, count, onLand) {
     const n = Math.max(1, Math.min(12, count));
@@ -3827,7 +3934,128 @@
       (full ? '' : '<span class="pwhen" style="--fill: ' +
         (Math.max(0, Math.min(1, editsToNext)) * 100).toFixed(1) + '%">' + dripIn() + '</span>') +
       '</span>';
+    applyLean();
   }
+
+  // ---- spend-preview (Q531, Ed 2026-08-22) ---------------------------------
+  // **Hover a button that spends, and the token that will pay leans toward it.**
+  // Nobody was realising these buttons had to be held, and the surface's whole
+  // explanation of the gesture lived *inside* it — a glyph crossing the air
+  // between the wallet and the button, while the eye is on the button. So the
+  // wallet says, before anything is pressed, *this one, and it is going over
+  // there*: the token strains a few pixels along the run it would fly, and back,
+  // over and over, like a thing on a leash.
+  //
+  // A lean rather than a glow or a ring because the wallet is 400–700px from the
+  // pointer: peripheral vision is poor at colour and detail and good at motion,
+  // and of the motions available only this one also says **where**.
+  //
+  // **Phase-locked, because the wallet is rebuilt under it.** Every wallet on
+  // this surface rebuilds its own innerHTML wholesale — the ✏️ row every second
+  // on the drip, the power wallets on every render — so the token wearing the
+  // lean is a different element moments later and a CSS animation would restart
+  // from frame one, visibly, every second. So the preview is *render state* like
+  // `walletGhost` beside it: a flag naming the button, re-applied at the tail of
+  // each render, and the new animation is given the old one's `startTime` on the
+  // shared document timeline. Same phase, no seam, one number of state.
+  //
+  // **And it re-validates rather than trusting `pointerout`.** A button can be
+  // removed from under the cursor — the card commits and closes, or a poll
+  // replaces the row mid-hover — and a `pointerout` that never arrives would
+  // leave a preview running for ever. Checking `:hover` on every render means a
+  // missed exit self-corrects within one tick, structurally, which matters
+  // because the ✏️ path re-binds its handlers on every render.
+  const LEAN_MS = 900, LEAN_PX = 6;
+  let leanBtn = null, leanPick = null, leanT0 = 0, leanAnim = null;
+  // where the lean points: the straight run from the token to the button, not
+  // the arc's own opening tangent — the flight's bow is drawn fresh each time
+  // and swings either way (`arcFrames`), so there is no one arc it will fly,
+  // and the chord is the honest average of all of them.
+  function leanFrames(token, btn) {
+    if (REDUCED()) return [{ opacity: 1 }, { opacity: 0.4 }, { opacity: 1 }];
+    const a = token.getBoundingClientRect(), b = btn.getBoundingClientRect();
+    const dx = b.left + b.width / 2 - (a.left + a.width / 2);
+    const dy = b.top + b.height / 2 - (a.top + a.height / 2);
+    const len = Math.hypot(dx, dy) || 1;
+    const x = (dx / len * LEAN_PX).toFixed(1), y = (dy / len * LEAN_PX).toFixed(1);
+    return [{ transform: 'translate(0, 0)' },
+            { transform: 'translate(' + x + 'px, ' + y + 'px)' },
+            { transform: 'translate(0, 0)' }];
+  }
+  // the token that would pay: the last one drawn, which is what every other
+  // part of this already means by it — the slot the ghost empties and the rect
+  // the flight measures from
+  const payingToken = () => { try { return (leanPick && leanPick()) || null; } catch (e) { return null; } };
+  function dropLean() {
+    if (leanAnim) { try { leanAnim.cancel(); } catch (e) { /* gone */ } leanAnim = null; }
+  }
+  function applyLean() {
+    if (!leanBtn) { dropLean(); return; }
+    // the self-heal, and the one that matters: a card commits and closes, or a
+    // poll replaces the row, and the button is gone from under the cursor with
+    // no exit event to be had. Checked on every render, which for the ✏️ row is
+    // every second, so a lost button cannot leave a preview running for ever.
+    //
+    // **Deliberately not `matches(':hover')`.** That was the first version and
+    // it was wrong twice over: it is false in headless Chromium even with the
+    // pointer parked on the button, so every harness would have been blind to
+    // this feature — and more importantly, hover is a *paint* state to ask CSS
+    // about, not a fact to hang correctness on. The pointer is over exactly one
+    // element chain at a time, so a `pointerover` on anything that does not
+    // spend is itself the proof it has left, and that is what ends a preview.
+    if (!leanBtn.isConnected) { stopLean(); return; }
+    const token = payingToken();
+    if (!token) { dropLean(); return; }
+    if (leanAnim && leanAnim.effect && leanAnim.effect.target === token) return;
+    dropLean();
+    leanAnim = token.animate(leanFrames(token, leanBtn),
+      { duration: LEAN_MS, iterations: Infinity, easing: 'ease-in-out' });
+    try { leanAnim.startTime = leanT0; } catch (e) { /* a timeline that will not take it */ }
+  }
+  function startLean(btn, pick) {
+    if (leanBtn === btn) return;
+    stopLean();
+    leanBtn = btn; leanPick = pick;
+    // the phase origin, kept across every rebuild for as long as this preview
+    // lasts, so the lean carries on rather than starting again
+    leanT0 = document.timeline.currentTime || 0;
+    applyLean();
+  }
+  function stopLean() { leanBtn = null; leanPick = null; dropLean(); }
+  // **One listener, and each surface says what spends.** Both halves of this
+  // page have hold-commits with different rules — the charter's ✏️ Propose here,
+  // the constitution's 🪶 and ✒️ commits in the page's own script — and a
+  // listener each would fight: whichever ran second would see a control it did
+  // not recognise and stop the preview the first had just started. So they
+  // register a *probe* (a target → `{btn, pick}` or null) and one listener asks
+  // each in turn. It is also delegated rather than bound per button because
+  // `renderDoc` re-binds its handlers on every render, and a per-button
+  // listener would be re-attached on each pass and carry state across a swap it
+  // cannot see.
+  const spendProbes = [];
+  const addSpendProbe = (fn) => spendProbes.push(fn);
+  // the button the pointer is actually on, kept whether or not a preview is
+  // running — a press stops the preview without the pointer having moved, and
+  // this is how the token knows to start straining again when it gets home
+  let hoverSpend = null;
+  document.addEventListener('pointerover', (ev) => {
+    let hit = null;
+    for (const fn of spendProbes) {
+      try { hit = fn(ev.target); } catch (e) { hit = null; }
+      if (hit) break;
+    }
+    hoverSpend = hit;
+    if (hit) startLean(hit.btn, hit.pick); else stopLean();
+  });
+  // leaving the window fires no `pointerover` anywhere, so this is the one exit
+  // the rule above cannot see
+  document.addEventListener('pointerout', (ev) => { if (!ev.relatedTarget) { hoverSpend = null; stopLean(); } });
+  const resumeLean = (btn) => { if (hoverSpend && hoverSpend.btn === btn) startLean(btn, hoverSpend.pick); };
+  addSpendProbe((t) => {
+    const b = t && t.closest && t.closest('[data-act="draft-propose"]');
+    if (!b || b.disabled || !walletEl) return null;
+    return { btn: b, pick: () => [...walletEl.querySelectorAll('.pencils i')].pop() };
+  });
 
   // How long until the next edit arrives. The drip is one per tenth of the
   // window (SPEC §7), so what is left of the current tenth is the wait. Stated
@@ -4181,6 +4409,11 @@
     init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet, setRoom, setClosed,
     clockText, dateWords,
     arcFrames, flyGlyph, pencilStorm, renderWallet, beat, act,
+    // the hold vocabulary, shared with the founder's own wallets in the page:
+    // `nudgeHome` brings a released flight back (never travelling less than a
+    // quarter), `startLean`/`stopLean` are the spend-preview, and `applyLean`
+    // is what any wallet render must call at its tail to survive its own rebuild
+    nudgeHome, startLean, stopLean, applyLean, addSpendProbe, resumeLean,
     refreshRail, renderToc, layoutQueue, drawWires, washAttrs,
     get DOC() { return DOC; },
     get SUGGS() { return SUGGS; },

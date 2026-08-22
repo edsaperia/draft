@@ -5882,14 +5882,51 @@
       !(cs && cs.closed && (farewellDone || signedClose() || !viewerIsMember()));
     const pen = document.getElementById('penwallet');
     const showPen = notApp && mayPen();
-    pen.innerHTML = showPen ? '<i' + (penGhost ? ' class="gone"' : '') + '>✒️</i>' : '';
-    pen.title = 'Your pen — it turns on ' + penLocks() + ' of the settings; each ✒️ tab says where. Hold to set.';
+    // **✒️∞ — the pen wallet says how many, and the answer is not one** (Ed,
+    // 2026-08-22). A single ✒️ standing where a row of ✏️s stands reads as a
+    // quantity of one, which is exactly the scarcity a pen does not have: it is
+    // perpetual and never spent, and a founder who thinks they are about to use
+    // theirs up will not use it. The ∞ goes in the **count slot** rather than
+    // beside the pen as a second token, because that is what this row already
+    // means by the position — `✏️✏️✏️+5` is the same sentence with a number in
+    // it — and because a token is a thing that can fly and a count is not.
+    // `.pmore` therefore, never an `<i>`: `holdWallet` and the flight both find
+    // their pen with `#penwallet i`, and a second `<i>` would be picked up as
+    // the last one drawn and flown to the button instead.
+    //
+    // **The text infinity, not the emoji ♾️** (Ed, 2026-08-22). `.pmore` is
+    // `font-weight: 700; color: var(--fg)`, and a text character takes both —
+    // so ∞ is the same object as `+5`, set in the same ink at the same weight,
+    // which is the whole of what makes it read as a count. The emoji renders as
+    // a coloured picture with its own design in every font and would have stood
+    // beside the pen as a second *glyph*, which is the one thing this must not
+    // say. It also cannot be anybody's face, being no kind of pictograph, so
+    // the reserved-emoji lists do not move.
+    // wrapped in `.pencils` like the ✏️ row, so the glyph and its count are one
+    // object at the same 1px gap rather than two children of the wallet's own
+    // 6px one — the pen and its ∞ are a single statement, not two things
+    const penh = '<span class="pencils"><i' + (penGhost ? ' class="gone"' : '') + '>✒️</i>' +
+      // in flight the whole wallet goes quiet: a lone ∞ counts nothing
+      '<span class="pmore' + (penGhost ? ' gone' : '') + '">∞</span></span>';
+    const ph = showPen ? penh : '';
+    // the idempotent write the quill has always had, extended to the other two
+    // (Q531): these strings almost never change, and rewriting identical markup
+    // every render destroys any animation running on the token — which is why
+    // `.navbar .quill i`'s own 240ms transition could never run here, and what
+    // the spend-preview would have stuttered against every four seconds.
+    if (pen.innerHTML !== ph) pen.innerHTML = ph;
+    pen.title = 'Your pen — never spent, so there is always one. It turns on ' + penLocks() + ' of the settings; each ✒️ tab says where. Hold to set.';
     const voice = document.getElementById('voicewallet');
     const out = heldMotion();
     const showVoice = notApp && mayVoice();
-    voice.innerHTML = showVoice ? '<i' + (out || voiceGhost ? ' class="gone"' : '') + '>🏛️</i>' : '';
+    const vh = showVoice ? '<i' + (out || voiceGhost ? ' class="gone"' : '') + '>🏛️</i>' : '';
+    if (voice.innerHTML !== vh) voice.innerHTML = vh;
     voice.title = out ? 'Your voice is out on a motion — it comes back whole when the question settles or you withdraw it.'
       : 'Your voice in every constitutional question — one motion at a time, returned whole.';
+    // the spend-preview is render state like the ghosts above it, so every
+    // wallet render has to hand it back to whichever token now stands in the
+    // slot — see `applyLean` in session.js for why it cannot be a CSS rule
+    SESSION.applyLean();
   }
   // ---- 🍾 and 🥂 --------------------------------------------------------
   // the founder's readiness readout — live from the view (founder only),
@@ -6115,12 +6152,29 @@
     if (cs && /✒️/.test(b.textContent) && document.querySelector('#penwallet i')) return { g: '✒️', sel: '#penwallet i' };
     return null;
   };
-  let penHold = null, penHoldFired = false, penPointerDown = false;
+  let penHold = null, penHoldFired = false, penPointerDown = false, penNudge = null;
   const isPenCommit = (b) => !!holdWallet(b);
+  // **The spend-preview** (Q531): hovering a commit that spends leans the token
+  // that will pay toward the button it will fly to. Gated on `holdWallet`, so
+  // the preview and the hold can never disagree about whether this press costs
+  // anything — an unaffordable or disabled commit previews nothing, and the two
+  // glyphs without a wallet fall out for free: 🏛️ has no branch there at all,
+  // and 🍾's returns `sel: null`, because beginning is a moment rather than a
+  // capacity you hold (Q516).
+  const leanPickFor = (w) => () => [...document.querySelectorAll(w.sel)].pop();
+  SESSION.addSpendProbe((t) => {
+    const b = t && t.closest && t.closest('[data-confirm]');
+    const w = holdWallet(b);
+    return w && w.sel ? { btn: b, pick: leanPickFor(w) } : null;
+  });
   document.addEventListener('pointerdown', (ev) => {
     const b = ev.target.closest && ev.target.closest('[data-confirm]');
     const w = holdWallet(b);
     if (!w || ev.button !== 0) return;
+    // a press begins: the token is about to leave for real, and any previous
+    // token still on its way home is no longer the one being spent
+    SESSION.stopLean();
+    if (penNudge) { penNudge.cancel(); penNudge = null; }
     penPointerDown = true;
     // the feather leaves from the last one in the row, as it always has; the
     // cork leaves from the button and lands in the document
@@ -6158,11 +6212,41 @@
       renderPowerWallets();
     }, PEN_HOLD_MS) };
   });
+  // **Let go early and the token comes home** (Q531). It used to be deleted
+  // where it stood — `flight.cancel()` removes the glyph outright — so a tap on
+  // ✒️ or 🪶 made a feather appear near the wallet and vanish, which is no
+  // motion at all on the two buttons a founder meets first. Now it flies back
+  // along its own arc, and never travels less than a quarter of the way out
+  // first, so a press too short to be a hold is still unmistakably a press.
+  //
+  // Two things this has to get right. The ghost is cleared **when the token
+  // lands**, not here: clearing it now would draw the pen back in the wallet
+  // while a copy of it was still in the air. And `penHold` is nulled first and
+  // unconditionally, because `pointercancel` follows `pointerup` on touch and
+  // the early return at the top is what stops the second one starting a second
+  // return flight.
+  //
+  // Load-bearing, and not obviously: the ghost is a **`visibility` ghost** —
+  // `.gone` hides the token and keeps its box (system.css) — and it must never
+  // become a removal or an omitted element. `holdWallet` tests for the token's
+  // *existence*, and the guard that swallows the trailing click of a hold is
+  // `isPenCommit(held) && ...`; if the token left the DOM during the return
+  // flight, that guard would stop firing and an early release would commit the
+  // act with no hold at all.
   const penRelease = () => {
     if (!penHold) return;
-    clearTimeout(penHold.timer); penHold.flight.cancel();
-    penHold.b.classList.remove('penholding'); penHold = null;
-    penGhost = false; quillGhost = false; renderPowerWallets();
+    const { b, flight } = penHold;
+    clearTimeout(penHold.timer);
+    penHold = null;
+    b.classList.remove('penholding');
+    penNudge = SESSION.nudgeHome(flight, { floorAt: 250, onDone: () => {
+      penNudge = null;
+      penGhost = false; quillGhost = false;
+      renderPowerWallets();
+      // the token is back in the wallet, so it may start straining again —
+      // but only if the pointer never left the button that was asking
+      SESSION.resumeLean(b);
+    } });
   };
   document.addEventListener('pointerup', penRelease);
   document.addEventListener('pointercancel', penRelease);
