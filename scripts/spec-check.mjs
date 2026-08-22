@@ -320,6 +320,18 @@ function checkOrder(pm) {
   const glyphs = {};
   for (const m of page.matchAll(/\{ k: '([a-z-]+)', g: '([^']+)'/g)) glyphs[m[1]] = m[2];
   for (const r of rows) if (glyphs[r.key] && glyphs[r.key] !== r.glyph) find('order', `${r.key}: glyph ${r.glyph} vs the card's ${glyphs[r.key]}`);
+  // F16, the half a table cannot hold (Q639): ✒️ and 🛡️ write no clause of
+  // their own — the count they used to state is already on every setting
+  // `holderLine` touches and on the wallet's own tooltip — and each is the
+  // holder's alone, which is E8's audience column. Both are one-line
+  // predicates that a refactor could drop without anything else noticing.
+  if (/holds the (pen|shield) on '/.test(page))
+    find('order', 'the pen or shield clause is back — F16 retires it: the count is already stated per setting and on the wallet');
+  for (const k of ['grant-pen', 'grant-shield']) {
+    const def = page.slice(page.indexOf(`{ k: '${k}',`), page.indexOf(`{ k: '${k}',`) + 900);
+    if (!/hide: \(\) => !amFounder\(\)/.test(def))
+      find('order', `${k} is not hidden from a non-founder — E8 gives a grant to the holder, and a member cannot acknowledge somebody else's power`);
+  }
   note(`  ${rows.length} steps; blocking grant: ${blocker}; ${secs.length} sections`);
 }
 

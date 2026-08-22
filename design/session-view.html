@@ -1155,7 +1155,18 @@
       waiting: 'Waiting on your arrival.',
       done: 'You hold a voice in every constitutional question.',
       blockers: () => [] },
+    // **A grant is the holder's** (SURFACE E8's audience column, enforced here
+    // since Q639). ✒️ and 🛡️ arrive in the founder's hands alone, and `open`
+    // has always said so — but nothing hid them, so a *member* was served two
+    // ⏳ tabs titled *Your Pen* and *Your Shield* about somebody else's powers,
+    // which they could never acknowledge and were never asked to. It went
+    // unnoticed while the pair wrote clauses of their own (a member read the
+    // count and the tab had a sentence beside it); with the clauses retired it
+    // would have left two unexplained tabs on the Founded line. What the
+    // founder holds is stated where it bites — on each setting's own clause,
+    // by `holderLine` — which is the whole of Ed's argument for retiring them.
     { k: 'grant-pen', g: '✒️', t: 'Your Pen', own: 'you', isGate: true, isGrant: true,
+      hide: () => !amFounder(),
       open: () => !!cs && amFounder() && holdsPenAnywhere(),
       why: 'The pen amends a setting at will, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent. It was issued when the address went live, because that is the moment somebody could first knock.',
       waiting: 'Waiting on the save.',
@@ -1178,6 +1189,7 @@
     // always has. That also leaves the rail at the save holding the pen alone,
     // which is a thing the journey walk asserts.
     { k: 'grant-shield', g: '🛡️', t: 'Your Shield', own: 'you', isGate: true, isGrant: true,
+      hide: () => !amFounder(),   // the holder's, like the pen above
       open: () => !!cs && amFounder() && holdsShieldAnywhere(),
       why: 'The shield refuses. Where you hold it, a change the membership passes waits for you to accept it — you cannot write with it, only refuse. One shield, many locks, and a shield is not spent. It was issued with the pen, when the address went live.',
       waiting: 'Waiting on the save.',
@@ -1951,6 +1963,12 @@
     } finally { askingFirst = false; }
   };
   const voiceHost = () => { const a = firstAsked(); return a ? a.ansFor : 'canjudge'; };
+  // **The two grants whose clause is the Founded line** (Q639 (a), Ed
+  // 2026-08-22). They are still tasks of the 📍 link for every purpose that
+  // counts them — the rail enumerates from `tasksFor`, and so does the
+  // group's own note — but they draw no paragraph of their own: their tabs
+  // stand on the Founded line, and that sentence is their clause.
+  const onFoundedLine = (c) => !!c && (c.k === 'grant-pen' || c.k === 'grant-shield');
   // One question card per delegable setting, born when its setting is handed
   // over and gone if it is taken back. Same glyph, same title — it is the
   // same question — told apart by whose pile it stands in.
@@ -2089,9 +2107,10 @@
   const tasksFor = (c) => (c.key && ANSWER[c.k] && (c.in || 0) < E()
     ? [card('ans-' + c.k)].filter((x) => x && visible(x)) : [])
     // the grants stand as tasks beside the gates they belong with (Q461):
-    // the pen with the 📍 link — issued when the address went live (Q451) —
-    // the voice with the first blind question you are asked, or with ⚖️
-    // Judging where nothing was delegated to you (Q605 (a))
+    // the pen and the shield with the 📍 link — issued when the address went
+    // live (Q451) — the voice with the first blind question you are asked,
+    // or with ⚖️ Judging where nothing was delegated to you (Q605 (a)).
+    // ✒️ and 🛡️ are enumerated here and drawn on the Founded line (Q639).
     .concat(c.k === 'slug' ? [card('grant-pen'), card('grant-shield')].filter(visible)
       : c.k === voiceHost() ? [card('grant-voice')].filter(visible) : []);
   // A member who has not opened the document yet is drawn faintly rather than
@@ -2113,11 +2132,14 @@
       // enumerates from `secLive()`, which is what keeps the birth's own
       // tasks in it.
       sections: cs ? secLive() : [],
-      // Founded by [avatar] [name] — only once the document has begun, since
-      // the founding time is never known before the start (§9.6a); a founder
-      // who set no name is Anonymous like anybody else (§9.0c)
+      // Founded by [avatar] [name] — from the save (Q640), gaining its time
+      // at the 🍾 press; a founder who set no name is Anonymous like anybody
+      // else (§9.0c). **It is where ✒️ and 🛡️ hang their tabs** (Q639 (a)).
       lead: (h) => titleGovPara(h) +
-        (visible(card('slug')) ? h.para(card('slug')) + h.tasks(card('slug')) : '') +
+        // the link's own answer-task still draws here; the two grants it
+        // carries do not — they are drawn on the Founded line below (Q639)
+        (visible(card('slug')) ? h.para(card('slug')) +
+          tasksFor(card('slug')).filter((t) => !onFoundedLine(t)).map((t) => h.para(t)).join('') : '') +
         // **The birth's third clause** (Ed, 2026-08-21): the document says
         // what is happening and wears the 📧 tab, so the card does not have
         // to say *Sent to…* and the founder can get back to their own
@@ -2130,14 +2152,26 @@
         // 🌍 is about the document, not member privacy — the penultimate
         // clause of the opening section (Ed, 2026-08-19)
         (visible(card('chamber')) ? h.para(card('chamber')) + h.tasks(card('chamber')) : '') +
-        (foundedAt()
-          ? '<div class="cpara notab"><p class="cpv founded">Founded by ' +
-            avHtml(founderInfo()) + ' ' + esc(founderInfo().n.trim() || 'Anonymous') +
-            // 👑 by any reservation (Ed, Q379 wide); 📯 = holds nothing.
-            ' <span title="' + (founderCrowned()
-              ? 'Part of the constitution is reserved: changing it needs the founder’s assent'
-              : 'The Founder reserves nothing — no special part in the document') + '">' +
-            (founderCrowned() ? '👑' : '📯') + '</span>' + esc(foundedAt()) + '.</p></div>' : ''),
+        // **The grants stand here** (Q639 (a), Ed 2026-08-22). Their own two
+        // clauses — *The Founder holds the pen on 16 settings.* and its
+        // shield twin — are retired: the count is already stated on every
+        // setting the power turns (`holderLine`) and in the second person on
+        // the wallet's own tooltip, so the clause was the third telling and
+        // the one that went stale whenever a power was laid down. Every
+        // *settings* clause wears ✒️ and 🛡️ for its **own** powers, so a
+        // grant could not hang on one without putting two ✒️ tabs meaning
+        // different things in one stack; the Founded line carries none, sits
+        // in the opening run where the grants arrive, and already wears 👑 —
+        // the mark that means *holds either power*. The tabs make the crown
+        // clickable, which is the dividend rather than the cost.
+        (cs ? (() => {
+          const gc = [card('grant-pen'), card('grant-shield')].filter((c) => c && visible(c));
+          // a member, a stranger, a founder who holds nothing: no pile, and
+          // the line renders exactly as it always did
+          return gc.some((c) => S.open === c.k) ? h.paraWith(card(S.open), gc)
+            : '<div class="cpara' + (gc.length ? '' : ' notab') + '" data-para="founded">' +
+              (gc.length ? h.pile(gc) : '') +
+              '<div class="cptext">' + foundedClause() + '</div></div>'; })() : ''),
       textAnchor: (h) => (!visible(card('text')) ? ''
         : '<div class="cpara notab docsep"></div>' +
           (/^(text|pw:[ua]:text)$/.test(S.open || '') ? h.para(card('text'))
@@ -3140,19 +3174,13 @@
       (closeSignatures().length === 0 ? 'Nobody has signed it yet.'
         : closeSignatures().length + (closeSignatures().length === 1 ? ' member has' : ' members have') + ' signed it.');
     if (c.k === 'grant-voice') return 'Each member holds one voice in every constitutional question.';
-    if (c.k === 'grant-pen') return holdsPenAnywhere()
-      ? 'The Founder holds the pen on ' + penLocks() + (penLocks() === 1 ? ' setting.' : ' settings.')
-      : 'The Founder holds no pen.';
-    // The shield's clause, mirroring the pen's. Without it the card fell
-    // through to the generic *The Founder is deciding this.* before the OK —
-    // wrong twice, since nothing is being decided and the sentence says
-    // nothing — and to `DECIDED`'s *You hold the shield* after it, which put
-    // the second person in a clause. A constitutional sentence is third
-    // person: the document reads identically to every reader, and what varies
-    // between them is which tasks they hold, never the text.
-    if (c.k === 'grant-shield') return holdsShieldAnywhere()
-      ? 'The Founder holds the shield on ' + shieldLocks() + (shieldLocks() === 1 ? ' setting.' : ' settings.')
-      : 'The Founder holds no shield.';
+    // ✒️ and 🛡️ write no sentence (Q639 (a), Ed 2026-08-22). They used to
+    // state a count — *The Founder holds the pen on 16 settings.* — which
+    // `holderLine` already says on every setting the power turns, and which
+    // the wallet's own tooltip already says in the second person. Their tabs
+    // now stand on the Founded line and that sentence is their clause, so
+    // neither this function nor `para` is ever called with them; `headFor`
+    // returns null and `ctx.clauseFor` supplies the head.
     if (c.ansFor) return answered(c)
       ? 'The Founder has answered as a member.'
       : 'The Founder has not yet answered as a member.';
@@ -3217,7 +3245,10 @@
     // a setup entry's wash alpha rides the charter's urgency ramp (Q623 (a)):
     // the urgency is the rail's own `RAIL_U`, so the two columns agree
     urgencyOf: (c) => RAIL_U[stateOf(c, ctx)],
-    clauseFor: (c) => (c.k === 'roster' ? rosterClause() : ''),
+    // a clause that is a thing rather than a sentence: the membership list,
+    // and — since Q639 — the Founded line the two grants hang their tabs on
+    clauseFor: (c) => (c.k === 'roster' ? rosterClause()
+      : onFoundedLine(c) ? foundedClause() : ''),
     // the title card's head is the document title itself — the clause,
     // opened — never the word “Title” (Ed, 2026-08-18)
     inDocOpenSlot: false,
@@ -3237,10 +3268,11 @@
       // a settled card is its own paragraph, opened, so what stands at its
       // head is the constitutional sentence the paragraph states. The
       // exceptions are cards whose clause is a thing rather than a sentence
-      // — the membership (the list) and the starting text (the document
-      // itself) — and open questions, which their title names better than
-      // a rule that does not exist yet.
-      if (c.k === 'text' || c.k === 'roster') return null;
+      // — the membership (the list), the starting text (the document
+      // itself), and since Q639 the two grants, whose clause is the Founded
+      // line they hang their tabs on — and open questions, which their title
+      // names better than a rule that does not exist yet.
+      if (c.k === 'text' || c.k === 'roster' || onFoundedLine(c)) return null;
       if (c.isGate) return linkify(esc(decisionLine(c)));
       if (c.ansFor || c.kind === 'personal') return null;
       if (settled(c)) return linkify(esc(decisionLine(c)));
@@ -3564,7 +3596,12 @@
   // the ✒️ and 🛡️ tabs under 🤝 are where the Founder keeps or gives up
   // inviting directly and the OK on carried applications, like any setting.
   // Founded by [avatar] [name] at [time] on [date] (Ed, 2026-08-19) —
-  // the time is the start (§9.6a), never known before it
+  // the time is the start (§9.6a), never known before it. **The line itself
+  // stands from the save** (Q640, Ed 2026-08-22): what is unknown before the
+  // start is the *moment*, not the founding, so the sentence renders as soon
+  // as there is a document and *gains* its time at the 🍾 press — the same
+  // reasoning that makes an unnamed document read *Untitled* rather than
+  // leave a gap where the answer goes.
   const foundedAt = () => {
     if (!cs || cs.constitutedAtT === null) return '';
     const d0 = new Date(cs.constitutedAtT);
@@ -3572,6 +3609,21 @@
     return ' at ' + p2(d0.getHours()) + ':' + p2(d0.getMinutes()) + ' on ' +
       d0.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
   };
+  // **The Founded line is a clause, not a colophon** (Q639 (a), Ed 2026-08-22).
+  // It is where ✒️ and 🛡️ hang their tabs now, so the sentence has to be
+  // available in two places at once: as the paragraph in the band, and as the
+  // *thing* at the head of the card that opens on it — the 🪪 pattern, where a
+  // clause is a list rather than a sentence. It carries markup (the avatar, the
+  // 👑 span), so it rides `ctx.clauseFor` beside `rosterClause()` and never
+  // `headFor`, which escapes what it is given.
+  const foundedClause = () =>
+    (!cs ? '' : '<p class="cpv founded">Founded by ' +
+      avHtml(founderInfo()) + ' ' + esc(founderInfo().n.trim() || 'Anonymous') +
+      // 👑 by any reservation (Ed, Q379 wide); 📯 = holds nothing.
+      ' <span title="' + (founderCrowned()
+        ? 'Part of the constitution is reserved: changing it needs the founder’s assent'
+        : 'The Founder reserves nothing — no special part in the document') + '">' +
+      (founderCrowned() ? '👑' : '📯') + '</span>' + esc(foundedAt()) + '.</p>');
   // the close's moment, the same shape as the founding's
   const closedAtWords = () => {
     if (!cs || !cs.closed || cs.closedAt == null) return '';

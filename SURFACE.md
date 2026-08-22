@@ -264,8 +264,8 @@ The refund flight and every grant's inbound flight take 640 ms.
 | 1 | title | 🪶 | birth · ordinary | lead | yes | — | Title |
 | 2 | slug | 📍 | birth · ordinary | lead | yes | title | Link |
 | 3 | myemail | 📧 | birth · identity | lead (pre-save); your own row after | yes | slug | Your Email |
-| 4 | grant-pen | ✒️ | grant | lead, under the link clause | yes | the save | Your Pen |
-| 5 | grant-shield | 🛡️ | grant | lead, under the link clause | no | the save | Your Shield |
+| 4 | grant-pen | ✒️ | grant | lead — a tab on the Founded line, no clause | yes | the save | Your Pen |
+| 5 | grant-shield | 🛡️ | grant | lead — a tab on the Founded line, no clause | no | the save | Your Shield |
 | 6 | chamber | 🌍 | constitutional · judge-gate | lead, penultimate | yes | the pen's OK | Visibility |
 | 7 | policy | 🤝 | constitutional | members, first — above *Members* (Q617) | yes | chamber | Applications |
 | 8 | hat | 🎩 | decision, not a setting | members — a tab on the list; no sentence | yes | policy | Is the Founder a Member? |
@@ -290,7 +290,7 @@ The refund flight and every grant's inbound flight take 640 ms.
 
 Outside `ORDER`: 🪜 (a tab in 🌡️'s stack; no clause, no rail entry — Q512); the `ans-*` answer tasks (a task paragraph under the watching clause); ✉️ ❌ (doors in the 🪪 pile from the moment judging opens); the ✒️/🛡️ power tabs under every held-able setting (*Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* — Q615); 🥂.
 
-**The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link with the pen and shield clauses beneath it, 📧 pre-save, 🌍, the Founded line — then **Membership** (`members`: 🤝 · *Members* · the list with 🪪 ✉️ ❌ 🎩 and your row wearing ✋ 🖼️ 📧 · 💤 · 🥾), **Decisions** (`deciding`: ⏰ · 🥂 when closed · 🌡️ with 🪜 in its stack · 👥), **Anonymity** (`privacy`: ✍️ 👤 👁️), **Proposals** (`rate`: the preamble wearing 🍾 · 💡 · ⚖️ with 🏛️ · ⏱️ · 🤖), the hairline, the charter under its own name with 📄 beside it. **The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📄. Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
+**The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link, 📧 pre-save, 🌍, the Founded line wearing the two grants' ✒️ 🛡️ — then **Membership** (`members`: 🤝 · *Members* · the list with 🪪 ✉️ ❌ 🎩 and your row wearing ✋ 🖼️ 📧 · 💤 · 🥾), **Decisions** (`deciding`: ⏰ · 🥂 when closed · 🌡️ with 🪜 in its stack · 👥), **Anonymity** (`privacy`: ✍️ 👤 👁️), **Proposals** (`rate`: the preamble wearing 🍾 · 💡 · ⚖️ with 🏛️ · ⏱️ · 🤖), the hairline, the charter under its own name with 📄 beside it. **The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📄. Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
 
 ### 8.1 Rules
 
@@ -309,7 +309,7 @@ Outside `ORDER`: 🪜 (a tab in 🌡️'s stack; no clause, no rail entry — Q5
 - **F13 The constitution starts writing itself at the birth**; at the birth the founder holds everything by construction; the assent half waits for a membership.
 - **F14 What is born arrives**: a rail entry grows from zero (240 ms), a clause fades (840 ms), a batch cascades 55 ms apart capped at six, each column counting its own; reduced motion fades everything; a stagehand act mutes the pass.
 - **F15 A clause states *The Founder is deciding [what]* until decided, then the rule and its governance deviation; a settled card's head is the rule; open questions, 🪪, 📄, personal cards and answers keep their title.**
-- **F16 The Founded line carries the founding moment and is never known before the start; 🎩 is settled once the document begins; the register asks for no minimum.**
+- **F16 The Founded line stands from the save and gains its moment at the press** — the *moment* is what is unknown before the start, not the founding — **and it is the clause ✒️ and 🛡️ hang their tabs on, neither writing a sentence of its own; 🎩 is settled once the document begins; the register asks for no minimum.** → why: the grants' own clauses stated a count `holderLine` and the wallet tooltip already state (Q639); every settings clause wears ✒️ and 🛡️ for its **own** powers, so a grant hung on one would put two ✒️ tabs meaning different things in one stack, and the Founded line carries none and already wears 👑.
 
 Exceptions beyond §3: 🪜 arrives answered (F6 · the ramp is part of what the threshold says · Q512); the founder alone is served the delegated questions once nothing else is outstanding (F7 · an empty rail while the room fills is worse · Q408/Q413); 📧 post-save speaks in the second person (C10 · your own row · Y8); 🎩 ✋ 🖼️ 🪪 write no sentence (F13 · the answer is the list or a chip); 🌍 is asked sixth, ahead of Membership (F1 · it is the penultimate clause of the opening run); the hat's radios stay visible but disabled post-start (C9 · a locked decision still has to be readable).
 
