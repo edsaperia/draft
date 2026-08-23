@@ -1,0 +1,464 @@
+<title>Card Audit — every decision card against STYLE.md</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #ffffff; --ink: #1b1f23; --muted: #5c6670; --hair: #d9dee3; --well: #f3f5f7;
+    --accent: #1f5fbf; --accent-soft: #e7eefb; --ok: #2e7d4f; --ok-soft: #e6f2ea; --veto: #b8731a; --veto-soft: #fbf0e0;
+    --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', Consolas, 'Courier New', monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141618; --ink: #e6e8ea; --muted: #9aa3ab; --hair: #2b3136; --well: #1c2023;
+      --accent: #6fa3f0; --accent-soft: #1b2940; --ok: #6cc08f; --ok-soft: #1a2e22; --veto: #e0a35a; --veto-soft: #33261a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141618; --ink: #e6e8ea; --muted: #9aa3ab; --hair: #2b3136; --well: #1c2023;
+    --accent: #6fa3f0; --accent-soft: #1b2940; --ok: #6cc08f; --ok-soft: #1a2e22; --veto: #e0a35a; --veto-soft: #33261a;
+  }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0; padding: 0 0 96px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 48px 28px 0; }
+  .prose { max-width: 78ch; }
+  h1 { font-family: var(--serif); font-weight: 600; font-size: 2rem; line-height: 1.15; margin: 0 0 8px; text-wrap: balance; }
+  h2 { font-family: var(--serif); font-weight: 600; font-size: 1.45rem; margin: 56px 0 12px; padding-top: 20px; border-top: 1px solid var(--hair); text-wrap: balance; }
+  h3 { font-size: 0.95rem; font-weight: 600; margin: 32px 0 8px; }
+  p { margin: 0 0 12px; }
+  .lede { color: var(--muted); margin-bottom: 28px; }
+  .eyebrow { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .spec { font-family: var(--serif); font-size: 1.06rem; line-height: 1.6; background: var(--well); padding: 24px 28px; border-radius: 4px; margin: 16px 0 24px; }
+  .spec p, .spec li { margin-bottom: 10px; }
+  .tbl { overflow-x: auto; margin: 12px 0 20px; border: 1px solid var(--hair); border-radius: 4px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.84rem; }
+  th, td { text-align: left; vertical-align: top; padding: 7px 10px; border-bottom: 1px solid var(--hair); }
+  th { font-weight: 600; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--well); position: sticky; top: 0; }
+  tr:last-child td { border-bottom: 0; }
+  td.k, code { font-family: var(--mono); font-size: 0.8rem; }
+  code { background: var(--well); padding: 1px 4px; border-radius: 3px; }
+  .rules li { margin-bottom: 8px; }
+  .item { border-top: 1px solid var(--hair); padding: 22px 0 24px; }
+  .item:last-child { border-bottom: 1px solid var(--hair); }
+  .item .prose p { margin-bottom: 10px; }
+  .num { font-family: var(--mono); font-size: 0.8rem; color: var(--accent); font-weight: 500; margin-right: 8px; }
+  .item.done .num { color: var(--ok); }
+  .item.vetoed .num { color: var(--veto); }
+  .head { font-weight: 600; font-size: 1.02rem; margin-bottom: 8px; }
+  .where { font-family: var(--mono); font-size: 0.76rem; color: var(--muted); margin-bottom: 6px; }
+  .tag { display: inline-block; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--hair); color: var(--muted); margin-left: 8px; vertical-align: middle; }
+  .tag.code { border-color: var(--accent); color: var(--accent); }
+  .tag.lens { border-color: var(--muted); }
+  blockquote { margin: 10px 0 12px; padding: 8px 16px; border-left: 3px solid var(--hair); font-family: var(--serif); font-size: 1rem; color: var(--ink); }
+  blockquote .src { display: block; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+  .fix { margin-top: 8px; padding: 10px 14px; background: var(--ok-soft); border-radius: 4px; }
+  .fix b { font-weight: 600; }
+  .item .tbl { margin: 10px 0 12px; }
+  figure { margin: 14px 0 16px; }
+  figcaption { font-size: 0.8rem; color: var(--muted); margin-top: 6px; font-family: var(--mono); }
+  svg { max-width: 100%; height: auto; background: var(--well); border-radius: 4px; }
+  svg text { font-family: var(--mono); font-size: 9px; fill: var(--muted); }
+  svg text.big { font-family: var(--sans); font-size: 11px; fill: var(--ink); }
+  label.opt { display: flex; gap: 10px; align-items: flex-start; padding: 8px 8px; margin: 2px -8px; border-radius: 4px; cursor: pointer; max-width: 78ch; }
+  label.opt:hover { background: var(--well); }
+  label.opt input { margin-top: 5px; accent-color: var(--accent); flex: none; }
+  label.opt .rec { font-size: 0.72rem; color: var(--accent); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-left: 6px; }
+  label.opt .cons { display: block; color: var(--muted); font-size: 0.88rem; margin-top: 2px; }
+  label.veto { display: inline-flex; gap: 8px; align-items: center; margin-top: 12px; font-size: 0.86rem; cursor: pointer; padding: 4px 10px 4px 6px; border: 1px solid var(--hair); border-radius: 999px; }
+  label.veto input { accent-color: var(--veto); }
+  .item.vetoed label.veto { border-color: var(--veto); background: var(--veto-soft); }
+  textarea { width: 100%; max-width: 78ch; box-sizing: border-box; font: inherit; font-size: 0.9rem; padding: 8px 10px; border: 1px solid var(--hair); border-radius: 4px; background: var(--bg); color: var(--ink); margin-top: 8px; min-height: 44px; resize: vertical; display: block; }
+  textarea:focus, input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .foot { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bg); border-top: 1px solid var(--hair); padding: 10px 28px; display: flex; justify-content: center; }
+  .foot .in { width: 100%; max-width: 1180px; display: flex; align-items: center; gap: 16px; justify-content: space-between; }
+  .count { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.9rem; }
+  .count b { color: var(--ink); }
+  button { font: inherit; font-weight: 500; padding: 8px 16px; border-radius: 4px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
+  button.quiet { background: transparent; color: var(--accent); }
+  .toast { font-size: 0.85rem; color: var(--ok); min-width: 0; }
+  .toc { font-size: 0.88rem; color: var(--muted); margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  pre.out { display: none; white-space: pre-wrap; font-family: var(--mono); font-size: 0.8rem; }
+  @media (prefers-reduced-motion: no-preference) { .item { transition: background 200ms; } }
+</style>
+
+<main>
+  <div class="eyebrow">draft · card audit · 2026-08-23</div>
+  <h1>Every decision card, read at once</h1>
+  <div class="prose">
+    <p class="lede">Ten STYLE.md passes have each audited whatever had just been built. That shape has two blind spots. It <b>cannot see between cards</b> — T5's <i>one label per rung, everywhere</i>, T9's <i>one voice</i> and §1's glyph table all quantify over the whole surface, and nothing has ever read card 1 against card 40. And it <b>audits words only</b>: every finding in ten passes is a sentence, none is a measurement, though the rules governing your three lenses are numeric and already written down.</p>
+    <p class="lede">So: one instrument, <code>design/tools/card-audit.mjs</code>, walking all four surfaces and opening <b>182 cards</b> — the founding as the founder meets it, the founder's own answer cards, the settled band with its composers and power tabs, a member's seat, an applicant's and a stranger's, the charter's 42, and the closed page. For each it records the strings <i>and</i> the pixels. It reported <b>18 measured findings that survive a second window size</b>; those collapse into the items below, alongside what reading the strings turned up. Findings are drift against a ruling already made — fixed unless vetoed; questions are genuine choices, recommendation first. <b>Nothing in the tree has changed</b>: this is the review, and the fixes come on your word, card by card.</p>
+  </div>
+  <nav class="toc">
+    <a href="#how">How it measures</a><a href="#f-buttons">buttons 685–689</a><a href="#f-copy">helper text and copy 690–696</a>
+    <a href="#f-space">spacing 697–698</a><a href="#q">questions 699–706</a><a href="#next">next</a>
+  </nav>
+
+  <h2 id="how">How it measures — and what it refuses to measure</h2>
+  <div class="prose">
+    <p>It borrows rather than invents: the founding drive and the <code>snap()</code> shape from <code>scripts/founding-walk.mjs</code>, whose own header already calls what it captures <i>the material a STYLE.md audit reads</i>; the motion stubs, the <code>SESSION.toggle</code> walk and <code>rect()</code> from <code>design/tools/session-probe.js</code>. One window size and scroll 0 on every run.</p>
+    <p><b>Three measurements were re-taken by hand in the browser</b> before any of this was written up, because an instrument that measures the wrong box is worse than none — and three of the first draft's rules were measuring the wrong box, which is worth saying plainly:</p>
+    <ul class="rules">
+      <li><b>The tab is <i>supposed</i> to move.</b> The active tab grows 8px out to the left, so reading its rect reported the design as a defect on every card. What is promised is that <b>the glyph</b> does not move — the 8px goes on <code>padding-left</code> as well as <code>width</code>, so the content box stays 34px — so the glyph's content box is what the instrument now derives and compares.</li>
+      <li><b>A tab in a pile is not where its card is.</b> The tabs behind the front one slide up under it leaving a sliver each, so a stacked tab's rect is a position in the pile. Only the front of a stack is measurable; the rest are recorded as stacked and skipped.</li>
+      <li><b>A charter clause is not surface copy.</b> Scanning card text for engine jargon reported the Hollow Oak charter's own <i>“Ordinary spending on the running of the house”</i> as a T15 breach. The scan reads what the surface says, never what the members wrote.</li>
+    </ul>
+    <p>And every geometry finding was <b>re-run at 1280×900</b>. Two moved with the window and are excluded: a charter card's automatic side margins, and the tab travel derived from them. That check is now the instrument's own <code>--baseline</code> flag rather than something somebody remembers to do.</p>
+    <div class="tbl"><table id="walks"></table></div>
+  </div>
+
+  <h2 id="f-buttons">Findings — buttons</h2>
+  <div class="prose"><p>The last time anybody checked a commit row by hand (housekeeping, 2026-08-17) they found four buttons at four heights sharing one row. Nothing has re-measured since, and ~15 cards have been built in the meantime.</p></div>
+  <div id="f-buttons-items"></div>
+
+  <h2 id="f-copy">Findings — helper text and copy</h2>
+  <div id="f-copy-items"></div>
+
+  <h2 id="f-space">Findings — spacing</h2>
+  <div id="f-space-items"></div>
+
+  <h2 id="q">Questions</h2>
+  <div id="questions"></div>
+
+  <h2 id="next">What happens next</h2>
+  <div class="prose">
+    <p>Nothing is rewritten until these are answered. After the answers: each finding becomes its own commit, card by card, in the order you set; the questions' answers become rules in STYLE.md §8 and rows in SURFACE.md §9.1 where they generalise; <code>npm run card-audit</code> stays as the instrument, and 706 decides whether it gates anything. QUESTIONS.md has 685–722 claimed; 707–722 are released when this folds.</p>
+    <p>Two things the pass deliberately did <b>not</b> do. It did not touch a single surface file — including 690, which is a live copy bug. And it did not audit the 🖼️ picker's 150 emoji faces, which are not vocabulary.</p>
+  </div>
+</main>
+
+<div class="foot"><div class="in">
+  <span class="count"><b id="n-done">0</b> of <span id="n-all">0</span> questions answered · <span id="n-veto">0</span> of <span id="n-f">0</span> findings vetoed</span>
+  <span class="toast" id="toast"></span>
+  <span><button class="quiet" id="clear">Clear answers</button> <button id="copy">Copy all answers</button></span>
+</div></div>
+<pre class="out" id="out"></pre>
+
+<script>
+(() => {
+  const KEY = 'draft:card-audit';
+  const h = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const md = (s) => h(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\*([^*]+)\*/g, '<i>$1</i>');
+  const tableHtml = (head, rows) => '<div class="tbl"><table><thead><tr>' + head.map((c) => '<th>' + h(c) + '</th>').join('') + '</tr></thead><tbody>' +
+    rows.map((r) => '<tr>' + r.map((c, i) => '<td' + (i === 0 ? ' class="k"' : '') + '>' + md(c) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
+  const table = (id, head, rows) => { document.getElementById(id).outerHTML = tableHtml(head, rows).replace('<table>', '<table id="' + id + '">'); };
+
+  table('walks', ['walk', 'what it opens', 'cards', 'how'], [
+    ['founding', 'every key in `ORDER`, opened **before** it is answered — the only state in which its question, its helper text and its dark commit can be read', '26', 'the birth, then the rail, one task at a time'],
+    ['answers', 'the founder\'s own `ans-*` card, which exists on no other drive', '25', '`--delegate=chamber`'],
+    ['settled', 'the settled band: settled heads, every composer, the ✒️/🛡️ power tab under each held-able setting, ✉️ and ❌', '22', '⏩, then a sweep of every tab the band offers'],
+    ['outsiders', 'a member\'s seat, an applicant\'s, a stranger\'s door', '25', 'the dev dropdown'],
+    ['charter', 'every id in `SUGGS` — quick · insert · race · patch · deadlock ⚔️ · diagonal 🌶️ · editing · mine · sealed record', '42', '`SESSION.toggle(id, false)`, so nothing scrolls'],
+    ['closed', 'the closed page: the same 42 grey, plus the backlog\'s ⏸ records', '42', '`?fixture=session&closed=1`'],
+  ]);
+
+  // ---- the drawing -----------------------------------------------------------
+  // To scale, from the payload: charter·quick-keys, 1600×1000. The row is 53px
+  // tall including its 12px rule-and-padding; Indifferent is 33px and the ✓ is
+  // 40px, and they are centred rather than aligned, so they miss at both edges.
+  const rowSvg = () => {
+    const S = 1.6, W = 620, pad = 30;
+    const y = (v) => pad + v * S;
+    const box = (x, w, hh, fill, stroke) => '<rect x="' + x + '" y="' + y(hh.t) + '" width="' + w + '" height="' + hh.h * S +
+      '" rx="4" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1"/>';
+    return '<svg viewBox="0 0 ' + W + ' 130" role="img" aria-label="the commit row, to scale">' +
+      '<line x1="20" y1="' + y(0) + '" x2="' + (W - 20) + '" y2="' + y(0) + '" stroke="currentColor" stroke-opacity="0.25"/>' +
+      '<text x="20" y="' + (y(0) - 6) + '">.commitrow — border-top, then 12px</text>' +
+      box(20, 180, { t: 16.5, h: 33 }, 'transparent', 'currentColor') +
+      box(430, 84, { t: 13, h: 40 }, 'var(--accent-soft)', 'var(--accent)') +
+      '<text class="big" x="30" y="' + y(37) + '">Indifferent</text>' +
+      '<text class="big" x="462" y="' + y(37) + '">✓</text>' +
+      '<text x="20" y="' + y(62) + '">33px · .lanepick vin · no shadow</text>' +
+      '<text x="430" y="' + y(62) + '">40px · .commitrow .btn · 2.5rem</text>' +
+      '<line x1="200" y1="' + y(13) + '" x2="430" y2="' + y(13) + '" stroke="var(--veto)" stroke-dasharray="3 3"/>' +
+      '<line x1="200" y1="' + y(53) + '" x2="430" y2="' + y(53) + '" stroke="var(--veto)" stroke-dasharray="3 3"/>' +
+      '<text x="240" y="' + (y(13) - 4) + '" fill="var(--veto)">3.5px short at the top</text>' +
+      '<text x="240" y="' + (y(53) + 11) + '" fill="var(--veto)">3.5px short at the bottom</text>' +
+      '</svg>';
+  };
+
+  // ---- items -----------------------------------------------------------------
+  const F = (n, head, where, lens, ctx, fix, code) => ({ n, kind: 'finding', head, where, lens, ctx, fix, code: !!code });
+  const Q = (n, head, ctx, opts) => ({ n, kind: 'question', head, ctx, opts });
+  const quote = (q, src) => ({ q, src });
+  const T = (head, rows) => ({ t: [head, rows] });
+  const O = (label, cons) => ({ label, cons });
+  const SVG = (svg, cap) => ({ svg, cap });
+
+  const BUTTONS = [
+    F(685, 'Indifferent is 33px in a 40px row, on 44 cards', 'design/cards.js:636 · design/system.css:1219', 'buttons', [
+      'The commit row sets one height for its controls — `.commitrow .btn { height: 2.5rem }` — and the comment above it says why: *Height belongs to the row, so the row sets it*. **Indifferent is not a `.btn`.** It is `class="lanepick vin"`, deliberately, because it is a radio and the surface\'s radio is `.lanepick` — so the row\'s rule does not reach it, and it stands 33px tall beside a 40px ✓.',
+      SVG(rowSvg(), 'charter·quick-keys at 1600×1000, to scale. Row 53px; Indifferent 33px at y+16.5; ✓ 40px at y+13.'),
+      'Measured on **44 cards** — every quick, race, patch and diagonal card on the charter and the closed page. It is the same defect the housekeeping pass of 2026-08-17 found and fixed for the buttons that *were* `.btn`s; this one survived because fixing it by class could not reach a control that is not one.',
+      'Two consequences ride with it, below (686, 687), and all three have the one cause.',
+    ], 'the row\'s height rule stops keying on `.btn`: `.commitrow > .btn, .commitrow > .lanepick` — or, better, `.commitrow > *`, since what the rule is about is *whatever is in this row*. 688 asks which.'
+      , true),
+
+    F(686, 'Indifferent carries no shadow, where every other control in the row does', 'design/system.css:1234', 'buttons', [
+      '`.commitrow .btn:not([aria-pressed="true"]) { box-shadow: var(--shadow-md) }`, and the comment beside it is explicit that the two it had previously missed *are the two outline buttons on the surface, which are the ones with no fill to read as a control instead*. Indifferent is now exactly that: an outline control with no fill and no lift, on 42 cards.',
+      'Same cause as 685 — the selector says `.btn`.',
+    ], 'follows 685: whatever selector the row\'s height moves to, the elevation ladder moves with it.', true),
+
+    F(687, 'A locked card\'s Indifferent misses the one flat disabled look', 'design/setup.css:681 · design/system.css:1024', 'buttons', [
+      '`.commitrow .btn[disabled]` is *one flat disabled look* — `--light` ground, `--border` edge, `--muted` ink, no lift — and its comment says the pressed-and-disabled states that mean something carry more classes and still win. A disabled `.lanepick` instead takes `opacity: 0.55` and keeps **full `--fg` ink**.',
+      'Measured on the two locked cards in the fixture (`quick-garden`, live and closed). It is invisible until a card is locked, which is why ten passes have not met it.',
+      'Worth noting what this one is *not*: it is not an argument against `.lanepick[disabled]`\'s opacity, which is right for a lane inside a card body. It is that the commit row has its own disabled grammar and one of its three controls is outside it.',
+    ], 'follows 685.', true),
+
+    F(688, 'Four labelled commit buttons are set at --t-cap, and “OK” is set at two sizes', 'the payload · `.commitrow` across 182 cards', 'buttons', [
+      'STYLE\'s type scale gives `--t-ui` (14px) as *card and rail titles, **buttons***. Four labelled commit controls are at `--t-cap` (11.52px) instead:',
+      T(['label', 'size', 'where'], [
+        ['OK', '11.52px', 'the ✒️ 🛡️ 🏛️ grants and the 💡 ⚖️ gates — 15 cards'],
+        ['OK', '**14px**', 'the charter\'s sealed records — 10 cards'],
+        ['🏛️ Hold to ask everyone', '11.52px', 'every constitutional composer — 17 cards'],
+        ['✏️ Propose', '11.52px', 'every ordinary composer — 6 cards'],
+        ['🍾 Begin', '11.52px', 'the 🍾 card'],
+      ]),
+      '**The cross-card half is the finding.** *OK* is one word doing one job — §5\'s *decided is a word, not a glyph* — and it is 11.52px on the founding surface and 14px on the charter. No single-pass audit could see that; the two cards were built five days apart and each is internally consistent.',
+      'The glyph-only controls (🗑️ 19.2px, ❄️ 19.2px, ✒️ 21.6px, 🪶 21.6px) are **not** findings: a glyph size tunes a silhouette to a box rather than text to a scale, which CLAUDE.md already sanctions as the one allowed literal.',
+    ], 'the four move to `--t-ui`, which makes *OK* one size everywhere. If instead the small size is right for a commit label, it is `--t-ui` that should change and the charter\'s OK that should follow — 703 asks.'
+      , true),
+
+    F(689, 'A ✏️ Submitted keeps an inset shadow while disabled — kept, not a finding', 'design/system.css', 'buttons', [
+      'Recorded here because the instrument flagged it on the first run and it is **right**: `rgba(13,110,253,0.28) 0 2px 4px inset` on a disabled ✏️ Submitted. An *inset* shadow is not a lift — a submitted ✏️ and a cast ✓ are pressed-and-disabled states that mean something, and they say so by sinking. The rule now tests for `inset` and passes them.',
+      'It is here so that the next pass does not re-find it.',
+    ], 'nothing. Vetoing this item means you disagree that a sunk disabled control is right.'),
+  ];
+
+  const COPY = [
+    F(690, 'A newline escape has been eaten: the founder\'s first helper text reads “…whenever you like.AA The document\'s own words…”', 'design/session-view.html:111', 'helper text', [
+      quote('content: "Start writing whenever you like.AA The document\'s own words are the last thing the constitution settles, so nothing here is being asked of you yet.";', '.prose.empty.writeready::before'),
+      'The `\\A\\A` newline escape has been stripped to a literal `AA`. Its sibling two lines down is correct:',
+      quote('content: "Paste the text this document starts from, or begin typing it.\\A\\A Markdown headings become its sections…";', '.prose.empty.pasteready::before, line 116'),
+      'This is **the founder\'s first grey helper text after the save**, and it is the very string STYLE\'s seventh pass (item 32) passed as the model of *grey, no glyph, asks nothing*. Almost certainly the `sed -i` / `Set-Content` trap the global CLAUDE.md warns about. Swept: the damage is isolated to this one line.',
+    ], 'restore `\\A\\A`. It is a one-character fix and the only item here that is a live bug rather than an inconsistency — say the word and it goes first.', true),
+
+    F(691, 'The approval threshold is stamped with the pen, and judgments with a 👍', 'design/session.js:571–572', 'copy', [
+      quote('const JUDG = "<span class=\\"unit\\">👍</span>";\nconst BAR = "<span class=\\"unit\\">✒️</span>";', 'session.js'),
+      'So a sealed record\'s eyebrow reads **74%👍 > 66%✒️**. ✒️ is the founder\'s *drafting* power everywhere else on the surface — the pen — and STYLE §1 gives the threshold 🌡️. This is rename drift: 🌡️ did not mean the threshold when this was written (Q632–633). **👍 is not in the stable glyph table at all**, and it is the only thumb on the surface.',
+    ], '`BAR` becomes 🌡️. 👍 wants a decision rather than a substitution — 702 asks.', true),
+
+    F(692, 'Engine vocabulary in a sentence a member reads', 'design/session.js:3465, 3473', 'copy', [
+      quote("what === 'approve' ? 'approved (recorded as: proposal beats current text)'\n…\n: 'skipped (recirculates with decay)'", 'the verdict strings in reviseNote'),
+      'Rendered, that is *“You approved (recorded as: proposal beats current text)This one is settled…”*. T15 bans engine jargon on a card; **recirculates with decay** is router vocabulary, and *recorded as: proposal beats current text* is the engine\'s own framing of what the member just did, in brackets, on the card.',
+      'The neighbouring verdicts are already right — *kept the current text*, *preferred “…”*, *said they matter equally* — which is what makes these two read as leftovers.',
+    ], '*approved* and *skipped*, plainly, in the voice of the strings beside them.', true),
+
+    F(693, 'The retired price sentence survives as a fallback', 'design/session.js:3985–3989', 'copy', [
+      quote("walletEl.title = walletTitle || (held === 0\n  ? 'No ✏️ left. Another arrives as the drip accrues; proposing costs one.'\n  : 'Your ✏️s — proposing one costs ' + EDIT_RULES.stake + '. You hold …');", 'renderWallet'),
+      'STYLE\'s ninth pass (item 40) removed this copy for restating the price against T17 — *the price is said in words exactly once, at the act*. It is still there, behind `walletTitle ||`.',
+      '**Whether any path renders it**: `setWalletTitle` is called from one place in `session-view.html` (line 6488), inside the socket loop, so the fallback is what a wallet wears until that loop has run at least once with a `pwEl` present. It is reachable, and it is what a member sees on any render where the socket is absent.',
+    ], 'the fallback becomes the same sentence the ✏️ socket\'s bubble carries, which item 40 already wrote: *You can propose changes to the text. A ✏️ comes back if the membership passes yours, and more arrive as the document runs.*', true),
+
+    F(694, 'The `anonymous` rung is written three ways', 'design/session-view.html:2282, 2314, 2576', 'copy · cross-card', [
+      'T5: *a rename reaches the option labels — one label per rung, everywhere; the founder\'s radio, the member\'s ladder and the composer\'s lane say the same words.*',
+      T(['says', 'where', 'line'], [
+        ['**Nobody’s name, ever**', 'the founder\'s radio, the member\'s ladder, the composer\'s lane, `VALUE`, `STANDS`, the distribution', '3946, setup.js:1034, 2818, 2282, 2533, 1363'],
+        ['no names, ever', '`ANSVALUE` — *“You said no names, ever”*', '2314'],
+        ['nobody ever named', '`WORDS` — the *was → now* half of an amendment sentence', '2576'],
+      ]),
+      'The lowercasing itself is **not** the finding: `ANSVALUE` and `WORDS` both sit mid-sentence and both lowercase every rung, consistently, across chamber, policy, signing and judgments. What is wrong is that `anonymous` alone is **reworded** in both — every other rung in both maps is its own label, lowercased.',
+      'This is the cross-card blind spot in its plainest form: three call sites, each internally consistent, none of them ever read against the others.',
+    ], 'both become the label, lowercased: *no name, ever* — or the label itself changes and all six sites follow. 700 asks which.', true),
+
+    F(695, 'The chamber reads back a rung it will not offer', 'design/session-view.html:2268, 2317, 3165, 2719', 'copy · cross-card', [
+      '*Public* left every ladder on 2026-08-22 (Q603): the founder\'s radio offers `closed` and `link` only, and so does the composer. Four read-back maps still carry it.',
+      T(['map', 'still says', 'line'], [
+        ['`VALUE`', 'Public', '2268'],
+        ['`MVAL`', 'Public', '2719'],
+        ['`ANSVALUE`', '*You said public*', '2317'],
+        ['`DECIDED`', '*The document is public — listed and readable by anyone.*', '3165'],
+      ]),
+      '`STANDS` (2533) already carries only the two, which is what makes this look like an unfinished sweep rather than a deliberate retention.',
+      'The catalogue still holds `public` (Q527 is open on that), so a *module* that stands at it is conceivable — which is the argument for keeping the read-backs, and the reason this is a question as well as a finding.',
+    ], 'the four lose their `public` branch, matching `STANDS`. 701 asks whether a document already standing at it needs the sentence.', true),
+
+    F(696, 'Two amendment dates disagree, and one of them carries the argument against itself', 'design/session-view.html:4345 vs 6081', 'copy · cross-card', [
+      'The clause\'s own history line:',
+      quote("'<p class=\"eyebrow fieldlab\">Last amended' + (am.at ? ' ' + new Date(am.at).toLocaleDateString(undefined, { day: 'numeric', month: 'long' }) : '')", 'line 4345 — no year'),
+      'The closed record\'s amendment line, with its reason stated in the comment directly above it:',
+      quote("const on = r.at ? new Date(r.at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) : '';\n// an absolute date, not `whenOf`'s relative one: the record is read long after the day it describes", 'line 6081 — with the year'),
+      'And the clause\'s **own** comment, twenty lines up, makes exactly the same argument: *a line on a settled clause that a reader may meet months later has to date itself or it reads as something that has just happened.* Both comments are right and only one of the two dates follows.',
+      'A perpetual document is the case that bites: *Last amended 23 August* on a charter in its second year says nothing at all.',
+    ], 'the clause line takes the year, matching the record.', true),
+  ];
+
+  const SPACE = [
+    F(697, 'A note that asks nothing is in full ink', 'design/session-view.html · the 🍾 card', 'helper text', [
+      quote('The document cannot begin while 🌍 Visibility is still being decided.', 'a .setnote on 🍾 Begin, rendered at rgb(33, 37, 41) — full --fg'),
+      'Every other `.setnote` on the surface measures at `--muted` (108, 117, 125). §5: *grey means nothing is being asked of you*, and this note asks nothing — it explains a dark commit.',
+      'The counter-argument is real and is why this is a finding rather than a question only: a refusal is arguably the one note that *should* be loud. But the surface already has a vocabulary for loud, and it is not full ink on a grey note — it is the flame, which this deliberately is not.',
+    ], 'it wears `--muted` like every other note. Veto if a refusal earns full ink, in which case it wants stating as a rule so the next one matches.', true),
+
+    F(698, 'The card\'s own boxes are laid out off the 4px grid', 'design/system.css · design/setup.css', 'spacing', [
+      'CLAUDE.md: *spacing `--s1`–`--s5` on a 4px grid*, and the tokens\' own comment is *use the step, not the pixel*. Six structural boxes do not:',
+      T(['box', 'off-grid value', 'cards', 'looks like'], [
+        ['`.headclause`', 'padding-top 6px, padding-bottom 6px', '**182** — every card there is', 'matching a `.anch` paragraph\'s own box so the mark moves 0px'],
+        ['`.setupcard`', 'margin-left −14px, padding 14px', '53', '`.chipcol`\'s 14px paragraph gutter'],
+        ['`.setupcard`', 'and margin-top −17px', '45', 'the gate and grant cards'],
+        ['`.field`, `.commitrow`', 'margin-left −10px', '98', 'a second, different gutter correction'],
+        ['`.sugg`', 'padding 14px', '84', 'the charter card, matching `.setupcard`'],
+        ['`.rsub`', 'margin-top 2px', '6', 'an optical nudge'],
+      ]),
+      '**This is not obviously a defect, and the instrument does not treat it as one.** Every value here is a geometry constant tied to the card-over-paragraph alignment — the promise that *the tab you click does not move* is bought with exactly these numbers, and the 4px grid was written for rhythm between boxes, not for the alignment of one box onto another.',
+      'What is worth deciding is whether that is a stated exception or an accident. `.field` at −10px and `.setupcard` at −14px are two different corrections of the same gutter on the same card, which reads more like drift than like a constant.',
+    ], 'the grid rule gains its exception in CLAUDE.md — *alignment onto the document\'s own boxes is measured, not stepped* — and the two gutter corrections are reconciled to one number. 699 asks.', true),
+  ];
+
+  const QS = [
+    Q(699, 'Is the 4px grid a rule the card\'s own boxes keep?', [
+      'See 698. Six structural boxes carry values off the grid, all of them alignment constants rather than rhythm.',
+    ], [
+      O('state the exception and reconcile the two gutters', 'CLAUDE.md gains one sentence — alignment onto the document\'s own boxes is measured, never stepped — and `.field`/`.commitrow`\'s −10px is made to agree with `.setupcard`\'s −14px, or the difference is explained where it is written.'),
+      O('bring them onto the grid', 'the honest cost: the tab-does-not-move promise is measured against these exact numbers, so this is a re-derivation of the card-opening geometry and a re-freeze of both reference copies.'),
+      O('leave it', 'the grid stays a rule about rhythm and nobody writes it down; the next audit re-finds this.'),
+    ]),
+
+    Q(700, 'Which wording wins for the `anonymous` rung?', [
+      'See 694. Three wordings across six call sites.',
+    ], [
+      O('*Nobody’s name, ever* wins; the other two become its lowercase', 'the label is the one six sites already carry; `ANSVALUE` says *You said nobody’s name, ever* and `WORDS` says *from nobody’s name, ever to names at the close*.'),
+      O('the mid-sentence maps keep a rewording, and it is written down', '*no name, ever* in both — one wording, not two — and T5 gains a clause saying a mid-sentence form may differ from the label as long as it is one form.'),
+      O('the label itself changes', 'if *Nobody’s name, ever* is not the phrase you want, say the phrase and all six sites take it.'),
+    ]),
+
+    Q(701, 'Does *public* leave the read-back maps?', [
+      'See 695. Four maps still read back a rung no ladder offers; `STANDS` already does not.',
+    ], [
+      O('yes — the four lose the branch', 'consistent with `STANDS` and with the ladders. A module standing at `public` would fall through to the raw rung name, which is a visible defect rather than a silent lie.'),
+      O('no — a value that can stand must be sayable', 'Q527 leaves `public` in the catalogue, so keep every read-back and treat the ladders as the only place it is withdrawn.'),
+      O('remove it from the catalogue too, and answer Q527 with it', 'the widest fix: one act removes the rung everywhere and this stops being a class of bug.'),
+    ]),
+
+    Q(702, 'What glyph marks a judgment count?', [
+      'See 691. `JUDG` is 👍 — the only thumb on the surface, in no table, and arguably a *direction* rather than a count, which §2 forbids wherever a question is running. It appears in a sealed record\'s eyebrow: **74%👍 > 66%🌡️** once the pen is corrected.',
+    ], [
+      O('no glyph — the eyebrow says the words', 'a record\'s eyebrow has room for *74% sure · threshold 66%*, and the two numbers stop needing a legend.'),
+      O('👥 — the people who judged', 'already in the table, already means the room; reads as *how much of the room*, which is what the number is.'),
+      O('⚖️ — the judging mark', 'already in the table, and it is the mark of the act being counted.'),
+      O('keep 👍 and add it to the table', 'cheapest, but it is a direction glyph on a confidence, which is the one thing §1 keeps saying the threshold is not.'),
+    ]),
+
+    Q(703, 'Where does the height of a commit row belong?', [
+      'See 685. `.commitrow .btn { height: 2.5rem }` cannot reach Indifferent, which is deliberately a `.lanepick`. The comment above the rule already states the principle — *height belongs to the row, so the row sets it* — and the selector does not say that.',
+    ], [
+      O('`.commitrow > *` — the row sets the height of whatever is in it', 'says exactly what the comment says, and cannot be defeated by a control that is not a button. The `.rightpair` wrapper needs the rule too, which is one extra selector.'),
+      O('name both classes', '`.commitrow > .btn, .commitrow > .lanepick` — narrower and more legible, and the next non-button control in a row re-opens this.'),
+      O('give Indifferent the `.btn` class as well', 'smallest diff, and it makes a radio inherit a button\'s whole grammar, which is what the surface spent a design decision separating.'),
+    ]),
+
+    Q(704, 'What does Indifferent say when it is pressed?', [
+      'T31: *Indifferent is labelled, never drawn as 🤷; ❄️\'s pressed state is its words.*',
+      quote("'<span class=\"off\">Indifferent</span><span class=\"on\">Indifferent</span>'", 'design/cards.js:640'),
+      'It is the only two-label control on the surface whose two labels are the same word. `Prefer this / Preferred` — the lane bar beside it, on the same card — changes; so does ❄️. The markup is there for the change and the change was never written.',
+    ], [
+      O('*Indifferent / **Indifferent***, as the lanes do', 'the lane bar\'s own pattern is present-tense offer → past-tense record: *Prefer this / Preferred*. The parallel here is *Indifferent* → **Recorded as indifferent**, which is long; a shorter past form is wanted.'),
+      O('*I can’t split them / **Neither***', 'the offer is already the tooltip\'s words; the pressed state says what is recorded.'),
+      O('collapse the two spans into one', 'if Indifferent genuinely has nothing to say when pressed, the markup should stop promising that it does — the radio dot already says it is chosen.'),
+    ]),
+
+    Q(705, '📧 heads two cards. Is that a collision?', [
+      '📧 heads **Your Email** in the founding and **Log In** at the stranger\'s door. §1\'s glyph names are one-to-one with settings; these are two cards for one act — *tell us your address and we will mail you a link* — met from two sides.',
+      'It is the only subject-glyph collision in 182 cards, which is itself worth knowing: the alphabet holds.',
+    ], [
+      O('not a collision — one act, two doors', 'and STYLE §1 gains a sentence saying a glyph names an *act*, not a card, which is already how ✒️ and 🛡️ work across every setting\'s tab group.'),
+      O('the stranger\'s door takes its own glyph', 'a distinct mark for logging in; costs a glyph and gains nothing a member ever sees.'),
+    ]),
+
+    Q(706, 'Does `card-audit` gate anything?', [
+      'It runs in ~2 minutes for all six walks, needs no network, and found 18 stable findings on its first outing. It is a `npm run card-audit` script now.',
+    ], [
+      O('kept instrument, not in CI', 'run it when a card or the design system changes, as the probes are run. Nothing new goes red on a push.'),
+      O('advisory in CI for a week, then gating on the measured lenses only', 'the pattern Q665 chose for the mobile walks. The copy lenses stay advisory, since a false positive there is a judgement call and a false positive on a pixel is not.'),
+      O('gating now', 'the 18 findings would have to be fixed or allowlisted first, which makes this an answer to *fix all of these* rather than to this question.'),
+    ]),
+  ];
+
+  const ALL = [...BUTTONS, ...COPY, ...SPACE, ...QS];
+
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) { /* private window: answers live for this visit only */ } };
+
+  const piece = (p) => {
+    if (typeof p === 'string') return '<p>' + md(p) + '</p>';
+    if (p.q) return '<blockquote>' + md(p.q).replace(/\n/g, '<br>') + '<span class="src">' + h(p.src) + '</span></blockquote>';
+    if (p.t) return tableHtml(p.t[0], p.t[1]);
+    if (p.svg) return '<figure>' + p.svg + '<figcaption>' + h(p.cap) + '</figcaption></figure>';
+    return '';
+  };
+  const ctxHtml = (ctx) => ctx.map(piece).join('');
+  const letter = (i) => String.fromCharCode(97 + i);
+  const render = (host, items) => {
+    document.getElementById(host).innerHTML = items.map((it) => {
+      const a = saved[it.n] || {};
+      if (it.kind === 'finding') {
+        return '<div class="item' + (a.veto ? ' vetoed' : '') + '" data-n="' + it.n + '">' +
+          '<div class="head"><span class="num">' + it.n + '</span>' + md(it.head) +
+          (it.lens ? '<span class="tag lens">' + h(it.lens) + '</span>' : '') +
+          (it.code ? '<span class="tag code">code</span>' : '') + '</div>' +
+          '<div class="where">' + h(it.where) + '</div>' +
+          '<div class="prose">' + ctxHtml(it.ctx) + '<div class="fix"><b>Fix (its own commit):</b> ' + md(it.fix) + '</div></div>' +
+          '<label class="veto"><input type="checkbox" data-veto="' + it.n + '"' + (a.veto ? ' checked' : '') + '> Veto — leave it as it is</label>' +
+          '<textarea data-note="' + it.n + '" placeholder="Note (optional)">' + h(a.note || '') + '</textarea></div>';
+      }
+      return '<div class="item' + (a.pick ? ' done' : '') + '" data-n="' + it.n + '">' +
+        '<div class="head"><span class="num">' + it.n + '</span>' + md(it.head) + '</div>' +
+        '<div class="prose">' + ctxHtml(it.ctx) + '</div>' +
+        it.opts.map((o, i) => '<label class="opt"><input type="radio" name="q' + it.n + '" value="' + letter(i) + '"' + (a.pick === letter(i) ? ' checked' : '') + '><span>(' + letter(i) + ') ' + md(o.label) + (i === 0 ? '<span class="rec">recommended</span>' : '') + (o.cons ? '<span class="cons">' + md(o.cons) + '</span>' : '') + '</span></label>').join('') +
+        '<textarea data-note="' + it.n + '" placeholder="Reply (optional)">' + h(a.note || '') + '</textarea></div>';
+    }).join('');
+  };
+  const renderAll = () => {
+    render('f-buttons-items', BUTTONS); render('f-copy-items', COPY);
+    render('f-space-items', SPACE); render('questions', QS);
+  };
+  renderAll();
+
+  const count = () => {
+    let done = 0, veto = 0;
+    for (const it of ALL) {
+      const a = saved[it.n] || {};
+      if (it.kind === 'finding') { if (a.veto) veto++; }
+      else if (a.pick) done++;
+    }
+    document.getElementById('n-done').textContent = done;
+    document.getElementById('n-all').textContent = ALL.filter((i) => i.kind === 'question').length;
+    document.getElementById('n-veto').textContent = veto;
+    document.getElementById('n-f').textContent = ALL.filter((i) => i.kind === 'finding').length;
+  };
+  count();
+
+  document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.matches('input[type=radio]')) { const n = t.name.slice(1); saved[n] = Object.assign(saved[n] || {}, { pick: t.value }); t.closest('.item').classList.add('done'); }
+    if (t.matches('input[data-veto]')) { const n = t.dataset.veto; saved[n] = Object.assign(saved[n] || {}, { veto: t.checked }); t.closest('.item').classList.toggle('vetoed', t.checked); }
+    save(); count();
+  });
+  document.addEventListener('input', (e) => {
+    const t = e.target;
+    if (t.matches('textarea[data-note]')) { const n = t.dataset.note; saved[n] = Object.assign(saved[n] || {}, { note: t.value }); save(); }
+  });
+
+  const block = () => {
+    const lines = ['card audit — answers'];
+    for (const it of ALL.slice().sort((x, y) => x.n - y.n)) {
+      const a = saved[it.n] || {};
+      if (it.kind === 'finding') lines.push(it.n + ': ' + (a.veto ? 'VETO' : 'ok') + (a.note ? ' — ' + a.note.replace(/\s+/g, ' ') : ''));
+      else lines.push(it.n + ': ' + (a.pick ? '(' + a.pick + ')' : '—') + (a.note ? ' — ' + a.note.replace(/\s+/g, ' ') : ''));
+    }
+    return lines.join('\n');
+  };
+  document.getElementById('copy').addEventListener('click', async () => {
+    const text = block();
+    const toast = document.getElementById('toast');
+    try { await navigator.clipboard.writeText(text); toast.textContent = 'Copied ' + ALL.length + ' lines'; }
+    catch (e) {
+      const out = document.getElementById('out'); out.textContent = text; out.style.display = 'block';
+      toast.textContent = 'Clipboard blocked — the block is printed at the foot of the page';
+    }
+    setTimeout(() => { toast.textContent = ''; }, 4000);
+  });
+  document.getElementById('clear').addEventListener('click', () => { saved = {}; save(); renderAll(); count(); });
+})();
+</script>
