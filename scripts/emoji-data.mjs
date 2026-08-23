@@ -49,14 +49,32 @@ const ROW = /^([0-9A-F ]+?)\s*;\s*([a-z-]+)\s*#\s*(\S+)\s+E[\d.]+\s+(.+)$/;
    guessed: a toned row's glyph with its tone stripped IS the base sequence,
    so the file states the answer. It matters because the tone selector sits on
    the People row and that group also holds 🦴 and 👣 — applying a Fitzpatrick
-   modifier to something with no skin in it produces a sequence no font has. */
-const tonable = new Set();
+   modifier to something with no skin in it produces a sequence no font has.
+
+   **The question is not "may this be toned" but "may the page's own toning
+   produce something real"**, and those are not the same set. `faceToned`
+   inserts one modifier after the *first* code point, which is right for every
+   one-person glyph and wrong for the thirteen two-person ones — 🧑‍🤝‍🧑,
+   👩‍❤️‍👨, 🫱‍🫲 and their kin, which Unicode tones by giving *each*
+   person their own modifier. Stripping tones off `🧑🏻‍🤝‍🧑🏻` names
+   `🧑‍🤝‍🧑` as tonable, but `🧑🏽‍🤝‍🧑` is a sequence no font has and no
+   row of this file lists, so a member who picked a tone on it stored a face
+   that renders as three separate emoji. So a base is tonable only when the
+   single-insertion form the page actually builds is itself fully-qualified. */
+const faceToned = (g, tone) => {
+  const cp = [...g];
+  return cp[0] + tone + cp.slice(1).join('');
+};
+const fullyQualified = new Set();
+const toneStripped = new Set();
 for (const line of src.split(/\r?\n/)) {
   const m = line.match(ROW);
-  if (m && m[2] === 'fully-qualified' && TONE.test(m[3])) {
-    tonable.add(m[3].replace(TONE_G, ''));
-  }
+  if (!m || m[2] !== 'fully-qualified') continue;
+  fullyQualified.add(m[3]);
+  if (TONE.test(m[3])) toneStripped.add(m[3].replace(TONE_G, ''));
 }
+const tonable = new Set([...toneStripped]
+  .filter((g) => fullyQualified.has(faceToned(g, '\u{1F3FB}'))));
 
 const groups = [];
 let group = null;
