@@ -329,13 +329,28 @@ export async function createDraftServer(cfg: ServerConfig,
     for (const doc of store.all()) {
       if (closing !== null) return; // shutting down: no new commits join the drain
       if (doc.cs.constitutedAtT === null) continue;
-      // engine first (SPEC §4.6): the final adoption batch must run before
-      // the constitution closes, or a carried motion has nowhere to land —
-      // driveBridge closes the engine at the ending and finishes the
-      // constitution's close itself; cs.tick then finds it closed
-      driveBridge(doc, tOf(doc.cs, nowMs), cfg.engineTuning);
-      doc.cs.tick(tOf(doc.cs, nowMs));
-      await commit(doc, nowMs);
+      // **One document must never stop the clock for the others** (Q679).
+      // Without this the loop is a single point of failure for every
+      // document at once: the tick is the adoption metronome, the lapse
+      // clock and the close, and `main.ts`'s interval only logs the throw
+      // — so one document that cannot tick silently freezes every document
+      // after it in insertion order, once a minute, for ever. The throw is
+      // real and reachable: both closes stamp themselves at the *ending*
+      // rather than at t, so a document whose log runs past its own close
+      // raises "timestamps must be non-decreasing" on every tick from then
+      // on. Logged rather than quarantined, because the failure may be
+      // transient and the once-a-minute repeat is itself the alarm.
+      try {
+        // engine first (SPEC §4.6): the final adoption batch must run before
+        // the constitution closes, or a carried motion has nowhere to land —
+        // driveBridge closes the engine at the ending and finishes the
+        // constitution's close itself; cs.tick then finds it closed
+        driveBridge(doc, tOf(doc.cs, nowMs), cfg.engineTuning);
+        doc.cs.tick(tOf(doc.cs, nowMs));
+        await commit(doc, nowMs);
+      } catch (e) {
+        console.error(`tick failed for document '${doc.id}':`, e);
+      }
     }
   };
 

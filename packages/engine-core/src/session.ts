@@ -251,6 +251,14 @@ export class Session {
   // Event plumbing
 
   private emit(event: Event): void {
+    // **A refused event must never reach the log** (Q679) — the same rule
+    // and the same reason as `@draft/constitution`'s own `emit`: the clock
+    // check lived in `apply`, which ran *after* the push, so a backwards
+    // timestamp left a validly-hashed entry in the chain that `replay`
+    // then threw on for ever. The engine reaches it by its own road: a
+    // close runs at `windowEndMs`, and an ending moved to a time already
+    // past makes that earlier than the log's last event.
+    if (event.t < this.lastT) throw new Error('timestamps must be non-decreasing');
     const prevHash = this.log.length > 0 ? this.log[this.log.length - 1]!.hash : '';
     const seq = this.log.length;
     const hash = chainHash(prevHash, event);

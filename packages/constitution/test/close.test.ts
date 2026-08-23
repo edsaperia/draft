@@ -144,3 +144,58 @@ describe('the bridge relays the close, engine first then constitution (SPEC §4.
     expect(rec.carriedButUnassented.some((c) => c.candidateId === id)).toBe(true);
   });
 });
+
+describe('a refused event never reaches the log (Q679)', () => {
+  /** A constituted document the founder holds outright, so the pen can
+   *  move its close after the start without a motion. */
+  function penHeld(): ConstitutionSession {
+    const s = ConstitutionSession.open({ title: 'Night Watch', slug: 'night-watch',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 10);
+    s.confirmStartingText(10, 'The watch is kept from dusk.');
+    s.setSetting(10, 'ending', { endsAtMs: 1_000_000 }); // the bar waits on it
+    const values: [string, unknown][] = [
+      ['bar', { pct: 66 }], ['pace', { shape: 'fixed' }],
+      ['quorum', { form: 'count', n: 1 }], ['authorship', { rung: 'sealed' }],
+      ['signing', { rung: 'each' }], ['judgments', { rung: 'after' }],
+      ['chamber', { rung: 'link' }], ['lapse', { afterMs: null }],
+      ['applications', { joinPolicy: 'invite' }], ['removal', { rung: 'everyone' }],
+      ['machines', { enabled: false, budget: 0 }],
+      ['rate', { grant: 4, cap: 8, dripMinutes: 240 }],
+    ];
+    for (const [id, v] of values) s.setSetting(10, id as never, v as never);
+    s.begin(10);
+    return s;
+  }
+
+  /**
+   * An ending may legally be moved to a time already past (`values.ts` asks
+   * only for a non-negative time), and the close stamps itself at the
+   * *ending* rather than at t — so moving a close behind the log's own last
+   * event makes `runClose` emit backwards. That refusal is right. What was
+   * wrong is where it happened: `emit` pushed the entry and `apply` threw
+   * afterwards, leaving a validly hashed entry in the chain that
+   * `verifyChain` still accepted and the host's next persist wrote out —
+   * after which `replay` threw on it for ever and the document was
+   * quarantined at every boot, with a log nothing could repair.
+   */
+  it('a backwards close throws, and leaves the chain replayable', () => {
+    const s = penHeld();
+    s.setSetting(20, 'ending', { endsAtMs: 5 }); // the close, moved into the past
+    const before = s.logEntries().length;
+
+    expect(() => s.tick(30)).toThrow(/non-decreasing/);
+
+    // nothing was written, the chain still verifies, and — the assertion
+    // that matters — the log still replays into the very same document
+    expect(s.logEntries()).toHaveLength(before);
+    expect(s.verifyChain()).toBe(true);
+    expect(s.closed).toBe(false);
+    const again = ConstitutionSession.replay([...s.logEntries()]);
+    expect(again.rollingHash()).toBe(s.rollingHash());
+    expect(again.closed).toBe(false);
+
+    // and it stays refused rather than corrupting on the second attempt
+    expect(() => s.tick(40)).toThrow(/non-decreasing/);
+    expect(s.logEntries()).toHaveLength(before);
+  });
+});

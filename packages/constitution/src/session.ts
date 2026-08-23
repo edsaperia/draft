@@ -112,6 +112,21 @@ export class ConstitutionSession {
   // Event plumbing
 
   private emit(event: ConstitutionEvent): void {
+    // **A refused event must never reach the log** (Q679). The clock rule
+    // lives in `apply`, which `emit` used to call *after* pushing — so a
+    // backwards timestamp threw with the entry already in the chain, and
+    // the entry was validly hashed, so `verifyChain` still passed and the
+    // next `persist` wrote it out. `replay` then threw on it for ever:
+    // the document became unloadable, quarantined at every boot, with a
+    // log nothing could repair. Reachable, and not exotically: both
+    // closes stamp themselves at the *ending* rather than at t
+    // (`runClose(ending.endsAtMs)`, engine `runClose(windowEndMs)`), and
+    // an ending may legally be moved to a time already past — so a motion
+    // that closes the document "now", landing a moment later, is exactly
+    // this. Checking here leaves the refusal where it always was and the
+    // log untouched by it. `apply`'s own check stays: `replay` calls it
+    // directly, and a log that arrives out of order must still be refused.
+    if (event.t < this.lastT) throw new Error('timestamps must be non-decreasing');
     const prevHash = this.log.length > 0 ? this.log[this.log.length - 1]!.hash : '';
     const seq = this.log.length;
     const hash = chainHash(prevHash, event);

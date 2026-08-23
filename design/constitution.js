@@ -777,6 +777,7 @@ var CONSTITUTION = (() => {
     // -------------------------------------------------------------------------
     // Event plumbing
     emit(event) {
+      if (event.t < this.lastT) throw new Error("timestamps must be non-decreasing");
       const prevHash = this.log.length > 0 ? this.log[this.log.length - 1].hash : "";
       const seq = this.log.length;
       const hash = chainHash(prevHash, event);

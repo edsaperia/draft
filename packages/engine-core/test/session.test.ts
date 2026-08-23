@@ -1051,3 +1051,31 @@ describe('the close (SPEC §4.6)', () => {
     expect(replayed.closedAt).toBe(s.closedAt);
   });
 });
+
+describe('a refused event never reaches the log (Q679)', () => {
+  /**
+   * The room may move its close, and the bridge relays that to the engine
+   * as an `amend` — so a close moved to a time already past leaves
+   * `runClose(windowEndMs)` emitting behind the log's own last event. The
+   * refusal is right; where it happened was not. `emit` pushed the entry
+   * and `apply` threw after, leaving a validly hashed entry in the chain
+   * that `verifyChain` still accepted and the host's next persist wrote
+   * out — after which `replay` threw on it for ever and the engine was
+   * quarantined at every boot. The twin of the same fix in
+   * `@draft/constitution`'s own `emit`.
+   */
+  it('a close amended into the past throws, and leaves the chain replayable', () => {
+    const s = openSession();
+    s.amend(5 * HOUR, { windowEndMs: 1 * HOUR }); // the close, moved behind us
+    const before = s.log.length;
+
+    expect(() => s.tick(6 * HOUR)).toThrow(/non-decreasing/);
+
+    expect(s.log).toHaveLength(before);
+    expect(s.verifyChain()).toBe(true);
+    expect(s.closed).toBe(false);
+    const again = Session.replay([...s.log]);
+    expect(again.rollingHash()).toBe(s.rollingHash());
+    expect(again.closed).toBe(false);
+  });
+});
