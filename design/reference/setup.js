@@ -779,12 +779,20 @@ window.SETUP = (function () {
   let EMOJI_Q = '';
   let PICKER = null;
 
+  /* **Both sides of the comparison are folded.** CLDR names are not lowercase
+     — 388 of them carry a capital, which is every one of the 258 flags
+     (`flag: Ascension Island`), `OK hand`, `person gesturing NO`, the Japanese
+     buttons — and the query was lowercased while the name was not, so typing
+     the country you wanted answered *Nothing here is called that*. The names
+     are search-only (a button's title is its glyph), so folding them here
+     rather than in the generated file keeps `emoji-data.js` faithful to
+     Unicode's own spelling. */
   const emojiHits = (q) => {
     const n = q.trim().toLowerCase();
     const out = [];
     for (const [, subs] of EMOJI_DATA()) {
       for (const [, items] of subs) {
-        for (const it of items) if (it[1].indexOf(n) >= 0) out.push(it);
+        for (const it of items) if (it[1].toLowerCase().indexOf(n) >= 0) out.push(it);
       }
     }
     return out;
