@@ -5841,7 +5841,11 @@
   // reload, and the page rebuilds itself from the payload it is served.
   // Off the design system for the same reason as 📬 and the seat dropdown:
   // a stagehand, not a member of the cast.
-  const LADDER_STYLE = 'position:fixed;top:64px;left:96px;z-index:60;display:flex;' +
+  // bottom-left, where the stagehand lives: the seat dropdown sits there in
+  // the fixture and is hidden live, so the corner is free, and the top-left
+  // is not — a bar there stands on the contents rail and hides the headings
+  // it is meant to help you look at
+  const LADDER_STYLE = 'position:fixed;bottom:47px;left:10px;z-index:60;display:flex;' +
     'gap:.35rem;align-items:center;font:12px ui-monospace,monospace;' +
     'border:1px dashed #999;background:#fff;padding:.3rem .5rem';
   function ladderBar() {
