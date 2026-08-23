@@ -268,7 +268,7 @@
     border: 1px solid var(--border); color: var(--muted); font-size: 8px; font-weight: 700;
     display: inline-grid; place-items: center; flex: none; overflow: hidden; }
   .av.big { width: 44px; height: 44px; font-size: var(--t-cap); }
-  /* **An emoji is a glyph, not a disc** (Q688, Ed 2026-08-23). It used to be
+  /* **An emoji is a glyph, not a disc** (Q735, Ed 2026-08-23). It used to be
      an `.av` wearing a ground, at a size fought for by specificity —
      `span.av.emoji` is (0,2,1) and every contextual avatar rule is three
      classes, so each of them silently re-sized the emoji to a value chosen
@@ -338,7 +338,7 @@
     overflow: hidden; clip: rect(0 0 0 0); }
   .picnote { font-size: var(--t-cap); color: var(--muted); }
   /* the white-on-colour treatment was `.av.set`, worn by every stored format;
-     with the grounds and marks gone (Q687) a photograph is the only thing
+     with the grounds and marks gone (Q734) a photograph is the only thing
      left that fills its own disc, so the rule folds into it */
   .av.photo { background-size: cover; background-position: center;
     border-color: transparent; color: transparent; }
@@ -596,7 +596,7 @@ button.cline:hover b { text-decoration: underline; }
    `justify-content` because the override to `inline-flex` silently dropped
    half of the base rule's `place-items: center` (the justify half means
    nothing in flex), so the initials fell to `flex-start` inside a 20px disc
-   with `overflow: hidden` and were shoved against its edge (Q685). */
+   with `overflow: hidden` and were shoved against its edge (Q732). */
 .cpv.founded .av { width: 20px; height: 20px; font-size: 7px;
   display: inline-flex; align-items: center; justify-content: center;
   margin: 0 2px; position: relative; top: -2px; }
@@ -669,6 +669,22 @@ button.cline:hover b { text-decoration: underline; }
   padding: var(--s2) var(--s3) var(--s3); }
 .emojibox .emojilab { margin-top: var(--s3); }
 .emojibox .emojilab:first-child { margin-top: 0; }
+/* the search field and the category tabs (Q732). The tabs are chips rather
+   than a second radio: nothing is being *chosen* by opening a category, so
+   the `lanepick` would say the wrong thing about them. */
+.emojisearch { margin-top: var(--s2); }
+.emojisearch input { width: 100%; padding: var(--s2) var(--s3);
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  font: inherit; font-size: var(--t-ui); }
+.emojisearch input:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.emojitabs { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s2);
+  margin: var(--s2) 0; }
+.emojitab { font: inherit; font-size: var(--t-cap); padding: 2px var(--s2);
+  border: 1px solid var(--border); border-radius: 999px; background: var(--bg);
+  color: var(--muted); cursor: pointer; }
+.emojitab:hover { border-color: var(--primary); color: var(--primary-emphasis); }
+.emojitab[aria-pressed="true"] { border-color: var(--primary);
+  background: var(--primary-subtle); color: var(--primary-emphasis); }
 /* the anonymous person: a disc with somebody in it, before there is a name
    to make initials of */
 .av .anonav { width: 62%; height: 62%; color: #fff; opacity: 0.9; }

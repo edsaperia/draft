@@ -38,7 +38,7 @@ window.SETUP = (function () {
      accounts behind it yet". There are now — choosing how you appear is one of
      the cards — so the initials become the *default* rather than the rule.
 
-     **A picture is an emoji, an uploaded image, or none** (Q687, 2026-08-23).
+     **A picture is an emoji, an uploaded image, or none** (Q734, 2026-08-23).
      The grounds for your initials and the three drawn marks are gone: they
      were a mockup device from before either of the real answers existed, and
      with a real uploader in the card a ground is a fourth thing to choose
@@ -47,13 +47,22 @@ window.SETUP = (function () {
      and `m0`–`m2` are refused by the server as well as un-offered here, and
      everything that is not `e`+emoji or `u`+image is simply the empty answer.
 
-     **And an emoji is a glyph, not a disc** (Q685/Q688, Ed 2026-08-23: they
+     **And an emoji is a glyph, not a disc** (Q732/Q735, Ed 2026-08-23: they
      render *very small and right aligned*, and should be *sized like the text
      around them and replace the circle that images use*). So the emoji branch
      stops emitting an `.av` altogether: `.emojiface` has no box, no ground and
      no size of its own, and inherits whatever text it stands in. The circle
      survives exactly where it is doing work — behind an uploaded photograph
      and behind initials, which need a ground to be legible. */
+  /* **`FACE_EMOJI` is the exemption list**, and nothing else since Q732 took
+     the curated grid away. It used to be the People row of the picker *and*
+     the set subtracted from the surface's vocabulary to make
+     `RESERVED_EMOJI`; the grid is Unicode's now, but the subtraction has to
+     stay — every one of these person-glyphs is also furniture somewhere on
+     the surface, and without the exemption the picker would refuse a member
+     the commonest faces there are. It is mirrored in `packages/server/src/
+     faces.ts` and asserted byte-identical by the parity test, which reads
+     this declaration with a regex: keep its shape. */
   const FACE_EMOJI = ['👩', '👨', '🧑', '👧', '👦', '🧒', '👶', '👵', '👴', '🧓',
     '👩‍🦰', '👨‍🦰', '🧑‍🦰', '👩‍🦱', '👨‍🦱', '🧑‍🦱',
     '👩‍🦲', '👨‍🦲', '🧑‍🦲', '👩‍🦳', '👨‍🦳', '🧑‍🦳',
@@ -79,7 +88,7 @@ window.SETUP = (function () {
   // governance tabs (Q454, 2026-08-21 — 🔧 and ⚙ left the vocabulary with
   // it); 🌡 🪜 🥾 arrived and 📈 🚪 left with the glyph rename of
   // 2026-08-22 (the threshold, the ramp and removal); 🍾 🥂 📨 were three the
-  // scan had never been re-run for and joined it with Q687 (2026-08-23,
+  // scan had never been re-run for and joined it with Q734 (2026-08-23,
   // closing Q632) — a member whose face is 🍾 turns every mention of
   // beginning the document into a possible mention of them; the reserved set
   // is that minus the offered faces.
@@ -163,7 +172,7 @@ window.SETUP = (function () {
   function avHtml(person, cls) {
     const pic = person && person.pic;
     const c = 'av ' + (cls || '');
-    // **An emoji is not a disc** (Q688): no ground, no border, no box — it
+    // **An emoji is not a disc** (Q735): no ground, no border, no box — it
     // takes the size of the text it stands in, which is what makes one rule
     // right at all nineteen sites at once instead of a specificity race
     // against every context that tunes a two-letter initials size.
@@ -171,7 +180,7 @@ window.SETUP = (function () {
       return '<span class="emojiface ' + (cls || '') + '">' + esc(pic.slice(1)) + '</span>';
     }
     // An uploaded picture is stored as 'u' + a data URL, downscaled and
-    // re-encoded in the browser before it is ever stored (Q688): the file
+    // re-encoded in the browser before it is ever stored (Q735): the file
     // itself never leaves the page.
     if (pic && pic[0] === 'u') {
       // Only a data-URI image may enter a style attribute (PRODUCTION.md
@@ -732,38 +741,125 @@ window.SETUP = (function () {
      it is read into a data URL and drawn, so the mockup invents nothing and
      still behaves like the real control. The initials stay underneath as a
      real answer rather than a fallback — most rooms run on them. */
-  /* **Two ways, and then what you get with neither** (Q686, Ed 2026-08-23).
+  /* **Two ways, and then what you get with neither** (Q733, Ed 2026-08-23).
      It had been three sections — a ground for your initials, then an emoji,
      then an upload — which put a decision where there is none: the initials
      are not a third answer you pick, they are what the room shows when you
      have given no picture. So the card is *pick an emoji* → *upload an image*
      → what you are wearing now, and the sentence underneath says what nothing
      means. */
-  const EMOJI_GROUPS = [
-    ['People', FACE_EMOJI, true],
-    ['Faces', ['😀', '😄', '😁', '😆', '😊', '🙂', '😉', '😌', '😍', '🥰', '😎', '🤓',
-      '🧐', '🤠', '🥳', '😇', '🤔', '😴', '🤗', '😺', '😸', '🙀'], false],
-    ['Animals', ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮',
-      '🐷', '🐸', '🐵', '🦉', '🦄', '🐢', '🐙', '🦋', '🐝', '🦔', '🦥', '🦦', '🦫',
-      '🐧', '🦅', '🦆', '🐿️', '🦎', '🐳', '🐬', '🦀', '🐌'], false],
-    ['Growing things', ['🌵', '🌲', '🌳', '🌴', '🌱', '🍀', '🌿', '🍁', '🍄', '🌸', '🌼',
-      '🌻', '🌹', '🪴', '🍎', '🍊', '🍋', '🍇', '🍓', '🫐', '🍒', '🍑', '🥑', '🥕',
-      '🌽', '🍞', '🧀', '🍯', '☕', '🫖'], false],
-    ['Things', ['🎸', '🎺', '🎻', '🥁', '🎹', '🎨', '📚', '🔭', '🧭', '🗿', '🏰', '⛵',
-      '🚲', '🛶', '🪁', '🎲', '🧩', '🕯️', '🔔', '🪞', '🧵', '🪚', '⚓', '🧲', '🔑',
-      '🪄', '🎁', '🧊', '🪵', '🛎️', '🎩', '✏️', '🗝️'], false],
-    ['Sky and sea', ['⭐', '🌟', '✨', '🌈', '🌙', '☀️', '🪐', '🌊', '🍃', '☂️', '🌋',
-      '🏔️', '🏝️', '🔥', '❄️', '⚡'], false],
-  ];
-  const emojiPicker = (ownPic, name, dataAttr, freeAttr) =>
-    '<div class="emojibox">' + EMOJI_GROUPS.map(([label, set, toned]) =>
-      '<div class="eyebrow fieldlab emojilab">' + esc(label) + '</div>' +
-      (toned ? faceToneRow() : '') +
-      '<div class="avpick">' + set.map((g) =>
-        faceBtn(toned ? faceToned(g) : g, ownPic, dataAttr, name)).join('') + '</div>').join('') +
-    '</div>' + anyEmojiRow(freeAttr);
+  /* **A normal emoji picker** (Q732, Ed 2026-08-23). What stood here was six
+     hand-kept rows — about 150 glyphs somebody chose — which is a fine
+     shortlist and a poor picker: it cannot be searched, it goes stale every
+     Unicode release, and since one emoji is worn by one member the offered
+     set is a hard cap on how many people can have a face at all. The list now
+     comes from Unicode's own `emoji-test.txt`, generated into
+     `design/emoji-data.js` by `scripts/emoji-data.mjs` and committed beside
+     its input, on the same discipline as the `design/constitution.js` bundle.
 
-  /* One body, two seats (Q686): the applicant's 🖼️ used to hand-roll its own
+     **Only the open category is rendered.** 1906 buttons is not a thing to
+     build on every keystroke, and this body is rebuilt by every `render()` —
+     the live page polls every four seconds — so the grid is one group at a
+     time, a few hundred at most.
+
+     Reserved and taken glyphs are greyed **in place** with their reason,
+     which `faceBtn` already did and needed no change: the whole of Unicode is
+     offered now, so the surface's own marks are in the grid and have to
+     refuse themselves where a member meets them. */
+  const EMOJI_DATA = () => (typeof window !== 'undefined' && window.EMOJI_DATA) || [];
+  const TONED_GROUP = 'People & Body';
+  const HITS_MAX = 240;
+  /* Which category is open and what is typed are **picker state, like
+     `FACE_TONE`**: they live here, are never stored, and survive the body
+     being rebuilt under them. One picker is open at a time — there is one
+     open card — so one set of them is enough, and `PICKER` remembers the
+     arguments the open one was drawn with so the grid can be refreshed in
+     place without a page render. */
+  let EMOJI_CAT = 0;
+  let EMOJI_Q = '';
+  let PICKER = null;
+
+  const emojiHits = (q) => {
+    const n = q.trim().toLowerCase();
+    const out = [];
+    for (const [, subs] of EMOJI_DATA()) {
+      for (const [, items] of subs) {
+        for (const it of items) if (it[1].indexOf(n) >= 0) out.push(it);
+      }
+    }
+    return out;
+  };
+
+  const emojiGridHtml = () => {
+    if (!PICKER) return '';
+    const { ownPic, name, dataAttr } = PICKER;
+    const groups = EMOJI_DATA();
+    if (!groups.length) return '<p class="setnote">The emoji list is still loading.</p>';
+    if (EMOJI_Q.trim()) {
+      const hits = emojiHits(EMOJI_Q);
+      if (!hits.length) return '<p class="setnote">Nothing here is called that.</p>';
+      const shown = hits.slice(0, HITS_MAX);
+      return '<div class="avpick">' + shown.map(([g]) =>
+        faceBtn(g, ownPic, dataAttr, name)).join('') + '</div>' +
+        (hits.length > shown.length
+          ? '<p class="setnote">' + (hits.length - shown.length) + ' more — keep typing.</p>'
+          : '');
+    }
+    const [label, subs] = groups[Math.min(EMOJI_CAT, groups.length - 1)];
+    // the tone selector belongs to the people, and only to the glyphs in it
+    // that a tone can be put on — the same group holds 🦴 and 👣
+    const toned = label === TONED_GROUP;
+    return (toned ? faceToneRow() : '') + subs.map(([sublabel, items]) =>
+      '<div class="eyebrow fieldlab emojilab">' + esc(sublabel.replace(/-/g, ' ')) + '</div>' +
+      '<div class="avpick">' + items.map(([g, , tonable]) =>
+        faceBtn(toned && tonable ? faceToned(g) : g, ownPic, dataAttr, name)).join('') +
+      '</div>').join('');
+  };
+
+  const emojiPicker = (ownPic, name, dataAttr, freeAttr) => {
+    PICKER = { ownPic, name, dataAttr };
+    const searching = !!EMOJI_Q.trim();
+    return '<div class="emojisearch"><input type="search" data-emojisearch="1"' +
+      ' value="' + esc(EMOJI_Q) + '" placeholder="Search" autocomplete="off"' +
+      ' spellcheck="false"></div>' +
+      '<div class="emojitabs">' + EMOJI_DATA().map(([label], i) =>
+        '<button type="button" class="emojitab" data-emojicat="' + i + '"' +
+        ' aria-pressed="' + (!searching && i === EMOJI_CAT) + '">' +
+        esc(label) + '</button>').join('') + '</div>' +
+      '<div class="emojibox" data-emojigrid="1">' + emojiGridHtml() + '</div>' +
+      anyEmojiRow(freeAttr);
+  };
+
+  /* The grid refreshes **in place**, never through the page's own render: a
+     render rebuilds the search input, and rebuilding an input under a caret
+     is how you lose what somebody is halfway through typing. Bound once, on
+     the document, like every other delegated control here. */
+  const wireEmojiPicker = () => {
+    const refresh = () => {
+      const box = document.querySelector('[data-emojigrid]');
+      if (box) box.innerHTML = emojiGridHtml();
+      const searching = !!EMOJI_Q.trim();
+      document.querySelectorAll('[data-emojicat]').forEach((b) => {
+        b.setAttribute('aria-pressed', String(!searching && +b.dataset.emojicat === EMOJI_CAT));
+      });
+    };
+    document.addEventListener('input', (ev) => {
+      if (!ev.target.matches || !ev.target.matches('[data-emojisearch]')) return;
+      EMOJI_Q = ev.target.value;
+      refresh();
+    });
+    document.addEventListener('click', (ev) => {
+      const t = ev.target.closest && ev.target.closest('[data-emojicat]');
+      if (!t) return;
+      EMOJI_CAT = +t.dataset.emojicat;
+      EMOJI_Q = '';
+      const box = document.querySelector('[data-emojisearch]');
+      if (box) box.value = '';
+      refresh();
+    });
+  };
+
+  /* One body, two seats (Q733): the applicant's 🖼️ used to hand-roll its own
      copy of the grounds and the picker and carried no uploader at all, which
      is an asymmetry nobody chose. Everything that differs between the two is
      an attribute name and where the file lands. */
@@ -987,7 +1083,7 @@ window.SETUP = (function () {
      the drop zone's own `data-picinto` so one handler can serve the founder's
      🖼️ and the applicant's.
 
-     **It downscales and re-encodes** (Q688, 2026-08-23). It used to hand the
+     **It downscales and re-encodes** (Q735, 2026-08-23). It used to hand the
      raw file straight to `readAsDataURL`, which is three defects in one line:
      a phone photograph previewed perfectly and then failed on Save, because
      the server caps a picture well under what a camera produces; every
@@ -1312,6 +1408,7 @@ window.SETUP = (function () {
     nameBody, pictureBody, opt, num, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
     anyEmojiRow, wireFreeEmoji, emojiFaceOf, setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
+    wireEmojiPicker,
     motionBody, motionReopen, routeFor, motionCommitHtml,
     slider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

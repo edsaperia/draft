@@ -204,6 +204,9 @@
 
 <script src="constitution.js"></script>
 <script src="cards.js"></script>
+<!-- generated from Unicode's emoji-test.txt by scripts/emoji-data.mjs; the
+     picker reads it, so it loads before setup.js -->
+<script src="emoji-data.js"></script>
 <script src="setup.js"></script>
 <script src="session.js"></script>
 <script>
@@ -2929,7 +2932,7 @@
       }
       if (S.roster.length === 1) { invite('ivy@hollowoak.org'); invite('moss@hollowoak.org'); }
       const named = { 'ivy@hollowoak.org': 'Ivy Fen', 'moss@hollowoak.org': 'Moss Whitlow' };
-      // **Somebody in the fixture wears a face** (Q685, 2026-08-23). Every
+      // **Somebody in the fixture wears a face** (Q732, 2026-08-23). Every
       // picture in every fixture was the empty string, so no member on any
       // surface had ever worn an emoji — which is why no probe, walk or
       // golden could catch the 7px face on the Founded line. One member with
@@ -4093,7 +4096,7 @@
     },
     appname: () => '<p class="why">What the members will call you — in the application, and in the membership if it passes.</p>' +
       '<span class="fld"><label>Your name</label><input data-appname="1" value="' + esc(S.app.name) + '" placeholder="Your name" style="width:20rem"></span>',
-    // **The founder's own card** (Q686) — one body, two seats, so they cannot
+    // **The founder's own card** (Q733) — one body, two seats, so they cannot
     // drift. It used to be a hand-rolled copy with no uploader in it at all.
     apppic: () => pictureBody({ n: S.app.name, pic: S.app.pic },
       { picAttr: 'data-apppic', freeAttr: 'data-appfree', into: 'app' }),
@@ -4626,11 +4629,14 @@
   // the card is rebuilt on every render; the file is read locally and never
   // sent anywhere.
   // the drop zone names where its file lands, so one handler serves the
-  // founder's 🖼️ and the applicant's (Q686)
+  // founder's 🖼️ and the applicant's (Q733)
   wirePicDrop((d, into) => {
     if (into === 'app') S.app.pic = d; else S.mypic = d;
     render();
   });
+  // the picker's search and category tabs refresh their own grid, without a
+  // page render, so a caret in the search box survives (Q732)
+  window.SETUP.wireEmojiPicker();
   window.SETUP.wireFreeEmoji('data-picfree', (g) => { S.mypic = 'e' + g; render(); });
   window.SETUP.wireFreeEmoji('data-appfree', (g) => { S.app.pic = 'e' + g; render(); });
   window.SETUP.setFaceTaken((e2) => {

@@ -3,7 +3,8 @@
 Byte-copies of the merged page and everything it loads, as they stood at
 the end of stage 8 (2026-08-21) — `session-view.html`, `session.js`,
 `fixture-session.js`, `setup.js`, `setup.css`, `cards.js`, `system.css`,
-`constitution.js`. The git tag `post-merge`, re-frozen at `refs-2026-08-21`
+`constitution.js`, and since 2026-08-23 `emoji-data.js`, which the picker
+reads and the page therefore loads. The git tag `post-merge`, re-frozen at `refs-2026-08-21`
 after the design-day builds and again after review #2's door fixes, at
 `refs-birth-2026-08-21` after the constitution's section order was restored
 and the birth was given its own layout, at `refs-gates-2026-08-21` after the
@@ -28,7 +29,9 @@ boundary event and ✏️ Propose took the accent-subtle ground, and at
 and hung their tabs on the Founded line, which now stands from the save,
 and at `refs-picture-2026-08-23` after an emoji face stopped being a disc
 and the picture card became *pick an emoji* → *upload an image* → what
-you are wearing now. That last run also caught `session.js` and
+you are wearing now, re-taken the same day when the picker became
+Unicode's own with a search box and category tabs. That run also caught
+`session.js` and
 `constitution.js` having drifted from the previous freeze, which is
 exactly the rot this file warns about below: re-freeze **every** copy,
 not the ones you happened to edit.
