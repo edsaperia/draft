@@ -525,7 +525,8 @@ function checkClaudeMd() {
   // T1–T35 — so they have to be asked separately. Accepting either for either
   // is what makes `STYLE.md §20` resolve against rule T20 and the check a
   // no-op for exactly the drift it is for.
-  for (const [, mark, n] of src.matchAll(/STYLE\.md (§|T)([0-9]+)/g)) {
+  for (const p of new Set([...src.matchAll(/STYLE\.md (§|T)([0-9]+)/g)].map((m) => m[1] + m[2]))) {
+    const mark = p[0], n = p.slice(1);
     const re = mark === 'T' ? new RegExp(`^\\| T${n} \\|`, 'm') : new RegExp(`^## ${n}\\. `, 'm');
     if (!has('design/STYLE.md', re)) find('claude', `STYLE.md ${mark}${n} points at no ${mark === 'T' ? 'rule' : 'section'} of design/STYLE.md`);
   }
