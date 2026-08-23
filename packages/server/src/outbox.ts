@@ -43,9 +43,18 @@ export interface QueuedMail extends Mail {
   tokenHash?: string;
 }
 
+/** How long a delivered row is kept before it is swept. Long enough to
+ *  answer "did that go out?" the next morning, short enough that the queue
+ *  never becomes an archive of member-written mail. */
+const KEEP_SENT_MS = 24 * 60 * 60 * 1000;
+
 export interface OutboxPassReport {
   sent: number;
-  /** Rows that reached the attempt cap in this pass, or were refused. */
+  /**
+   * Rows that reached the attempt cap in this pass. A provably undeliverable
+   * address is **retired, not failed** (see `pass`), so it is not counted
+   * here — `failed` is the number an operator is meant to act on.
+   */
   failed: number;
   /** True when the kill-switch held everything (Step 6, `DRAFT_MAIL_OFF`). */
   held: boolean;
@@ -104,6 +113,10 @@ export class MailOutbox {
 
   private async pass(nowMs: number): Promise<OutboxPassReport> {
     if (this.deps.mailOff()) return { sent: 0, failed: 0, held: true };
+    // the queue is a queue: sweep what has been delivered before offering
+    // anything, or the file store rewrites an ever-longer map on every mark
+    await this.deps.persistence.pruneOutbox(this.now - KEEP_SENT_MS)
+      .catch((e: unknown) => { console.error('pruning the outbox failed:', e); return 0; });
     const rows = await this.deps.persistence.listPendingOutbox(nowMs, BATCH);
     let sent = 0;
     let failed = 0;

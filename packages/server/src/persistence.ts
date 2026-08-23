@@ -153,12 +153,27 @@ export interface Persistence {
    *  first. `dueMs` is the latest `lastAttemptMs + backoff` a row may carry
    *  and still be served; a row never attempted is always due. */
   listPendingOutbox(nowMs: number, limit: number): Promise<OutboxRow[]>;
+  /**
+   * A row is done. **The link goes with it**: the queue is not an archive,
+   * and a delivered row that keeps its magic link turns the outbox into a
+   * permanent plaintext store of every credential the server has ever
+   * minted — which is exactly what `Auth.revoke` exists to prevent for the
+   * undelivered ones.
+   */
   markOutboxSent(id: string, sentMs: number): Promise<void>;
   /** Record one failed attempt: the new count, when it was made, and why. */
   markOutboxFailed(id: string, attempts: number, lastAttemptMs: number,
     lastError: string): Promise<void>;
   /** `/healthz`'s two numbers: unsent under the cap, and unsent at it. */
   outboxCounts(): Promise<{ pending: number; failed: number }>;
+  /**
+   * Drop rows that finished before `beforeMs`. The queue is a queue: nothing
+   * reads a sent row, the file store rewrites its whole map on every mark
+   * (so an unpruned outbox makes every send quadratic), and a mail body is
+   * member-written text nobody asked us to keep. Failed rows are left
+   * standing — they are what `/healthz` is counting.
+   */
+  pruneOutbox(beforeMs: number): Promise<number>;
 
   /* -- lifecycle ---------------------------------------------------------- */
   /** Release what the backend holds (a connection pool); called once at
@@ -315,8 +330,22 @@ export class FilePersistence implements Persistence {
   async markOutboxSent(id: string, sentMs: number): Promise<void> {
     const row = this.outbox.get(id);
     if (row === undefined) return;
-    this.outbox.set(id, { ...row, sentMs, lastError: null });
+    // the link and its token hash leave with the send: a delivered row is a
+    // receipt, not a credential store
+    const rest = { ...row };
+    delete rest.link;
+    delete rest.tokenHash;
+    this.outbox.set(id, { ...rest, sentMs, lastError: null });
     this.saveOutbox();
+  }
+
+  async pruneOutbox(beforeMs: number): Promise<number> {
+    let dropped = 0;
+    for (const [id, row] of this.outbox) {
+      if (row.sentMs !== null && row.sentMs < beforeMs) { this.outbox.delete(id); dropped += 1; }
+    }
+    if (dropped > 0) this.saveOutbox();
+    return dropped;
   }
 
   async markOutboxFailed(id: string, attempts: number, lastAttemptMs: number,

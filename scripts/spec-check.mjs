@@ -405,7 +405,18 @@ function checkPicture() {
       if (gone.test(src)) find('picture', `${where} still carries the retired ${gone} (Q734)`);
     }
   }
-  note(`  ${said.length} stored shapes: ${said.join(' · ')}; the grounds and marks are gone from both ends`);
+  // **The encoder's ceiling and the gate's are one number stated twice.** The
+  // uploader steps its JPEG quality down until the stored string fits
+  // `PIC_MAX_STORED`, precisely so a picture cannot preview and then fail on
+  // Save; raise `LIMITS.picture` without the page and the ladder refuses
+  // pictures the server would take, lower it and the defect comes back.
+  const srvCap = (cmd.match(/picture:\s*([\d_]+)/) || [])[1];
+  const pageCap = (setup.match(/PIC_MAX_STORED\s*=\s*([\d_]+)/) || [])[1];
+  if (!srvCap || !pageCap) find('picture', 'the picture cap is not stated in both commands.ts and setup.js');
+  else if (Number(srvCap.replace(/_/g, '')) !== Number(pageCap.replace(/_/g, ''))) {
+    find('picture', `the server caps a picture at ${srvCap} and the uploader encodes to ${pageCap}`);
+  }
+  note(`  ${said.length} stored shapes: ${said.join(' · ')}; capped at ${srvCap} both ends; the grounds and marks are gone`);
 }
 
 function checkBannedWords() {

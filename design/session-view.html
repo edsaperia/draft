@@ -647,7 +647,17 @@
     el.querySelectorAll('[data-ans]').forEach((b) => ks.add('ans:' + b.dataset.ans));
     if (el.querySelector('[data-setwhy]')) ks.add('setWhy');
     if (el.querySelector('[data-titlelane]')) ks.add('titleDraft');
-    if (el.querySelector('[data-pic]')) ks.add('mypic');
+    // **The picture card names itself by its uploader, not by its grid.**
+    // `[data-pic]` used to be the always-present row of grounds; since Q732
+    // the only `[data-pic]` elements are the open category's buttons and the
+    // Remove button, and both can be absent at once — remove your picture,
+    // then type a search nothing matches, and the card carries no `[data-pic]`
+    // at all, so 🗑️ would decline to put the removed picture back. The file
+    // drop zone is rendered by `pictureBody` unconditionally and names whose
+    // picture it is, so it is the honest marker of "this is *your* picture
+    // card" — the applicant's body is the same one and must not reach across
+    // to `mypic`.
+    if (el.querySelector('[data-pic], [data-picinto="me"]')) ks.add('mypic');
     if (el.querySelector('[data-slide]')) {
       el.querySelectorAll('[data-slide]').forEach((b) => ks.add('ans:' + b.dataset.slide));
     }
