@@ -22,6 +22,34 @@ export interface Mailer {
   send(mail: Mail): Promise<void>;
 }
 
+/**
+ * The TLDs that can never receive mail (RFC 2606 §2, RFC 6761): reserved
+ * for documentation and testing, guaranteed never to resolve. Note the
+ * reserved second-level *domains* — example.com/net/org — are deliberately
+ * absent: they are equally undeliverable, but this project's own tests
+ * follow real magic links at @example.org, so refusing them would refuse
+ * the tests' own inbox.
+ */
+const UNDELIVERABLE_TLDS = new Set(['invalid', 'test', 'example', 'localhost']);
+
+/**
+ * **Mail to a reserved address is refused at the mailer** (Q680). Sending
+ * to an address that provably cannot receive is bounce traffic, and bounce
+ * traffic is what costs a young sending domain its reputation — so this is
+ * worth having on its own. It is also the seam the phase ladder is silenced
+ * through: its cast lives at `@ladder.invalid`, and refusing here survives
+ * a restart, a later tick and the close, where a flag held beside the
+ * document during the build survives none of the three (`relay` runs
+ * unconditionally on every fresh entry, and the close mails everybody
+ * long after any build has finished).
+ */
+export const deliverable = (to: string): boolean => {
+  const at = to.lastIndexOf('@');
+  if (at < 0) return false;
+  const tld = to.slice(at + 1).toLowerCase().split('.').pop() ?? '';
+  return !UNDELIVERABLE_TLDS.has(tld);
+};
+
 export function makeMailer(opts: {
   resendApiKey: string | null;
   mailFrom: string;
@@ -33,6 +61,13 @@ export function makeMailer(opts: {
     return {
       dev: true,
       send: async (mail) => {
+        // refused in the dev branch too, and not only for symmetry: the
+        // outbox is a developer's inbox and the 📬 modal reads its tail,
+        // so a stagehand roster would bury the one mail they were waiting for
+        if (!deliverable(mail.to)) {
+          console.log(`[mail dropped→${mail.to}] reserved address, never delivered`);
+          return;
+        }
         appendFileSync(outbox, JSON.stringify({ at: Date.now(), ...mail }) + '\n', 'utf8');
         console.log(`[mail→${mail.to}] ${mail.subject}${mail.link ? ` :: ${mail.link}` : ''}`);
       },
@@ -42,6 +77,12 @@ export function makeMailer(opts: {
   return {
     dev: false,
     send: async (mail) => {
+      // never handed to the provider: a guaranteed bounce, and on a young
+      // sending domain bounces are the expensive kind of mistake
+      if (!deliverable(mail.to)) {
+        console.log(`[mail dropped→${mail.to}] reserved address, never delivered`);
+        return;
+      }
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {

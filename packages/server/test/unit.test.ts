@@ -14,6 +14,7 @@ import { FilePersistence, WriteChain } from '../src/persistence.js';
 import { Auth } from '../src/auth.js';
 import { Stash } from '../src/stash.js';
 import { DocStore, uniqueSlug } from '../src/store.js';
+import { deliverable, makeMailer } from '../src/mailer.js';
 
 const tmp = () => mkdtempSync(join(tmpdir(), 'draft-unit-'));
 
@@ -254,5 +255,31 @@ describe('the slug reservation rides the stash (Q462b)', () => {
     expect(await again.take('k1', t0, 'd-oak')).toBe('pasted text');
     expect(await again.reservedBy('oak', t0)).toBeNull();
     expect(await again.claimedBy('k1', t0)).toBe('d-oak');
+  });
+});
+
+describe('mail to a reserved address is refused at the mailer (Q680)', () => {
+  it('knows which addresses can never receive', () => {
+    // the ones that can
+    expect(deliverable('ada@example.org')).toBe(true); // the tests' own inbox
+    expect(deliverable('ada@docs.vote')).toBe(true);
+    expect(deliverable('ada@sub.domain.co.uk')).toBe(true);
+    // the ones that cannot (RFC 2606 §2, RFC 6761)
+    expect(deliverable('ladder-1@ladder.invalid')).toBe(false);
+    expect(deliverable('ada@somewhere.test')).toBe(false);
+    expect(deliverable('ada@anything.example')).toBe(false);
+    expect(deliverable('ada@localhost')).toBe(false);
+    expect(deliverable('ADA@LADDER.INVALID')).toBe(false); // case is not a way round
+    expect(deliverable('not-an-address')).toBe(false);
+  });
+
+  it('writes nothing to the dev outbox for one, and everything for the others', async () => {
+    const dir = tmp();
+    const mailer = makeMailer({ resendApiKey: null, mailFrom: 't <t@example.org>', dataDir: dir });
+    await mailer.send({ to: 'ladder-1@ladder.invalid', subject: 'hush', text: 'x' });
+    await mailer.send({ to: 'ada@example.org', subject: 'real', text: 'y' });
+    const lines = readFileSync(join(dir, 'outbox.jsonl'), 'utf8')
+      .split('\n').filter((l) => l.length > 0).map((l) => JSON.parse(l) as { to: string });
+    expect(lines.map((m) => m.to)).toEqual(['ada@example.org']);
   });
 });
