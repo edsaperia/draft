@@ -777,7 +777,7 @@ describe('the surface is served', () => {
 
   it('serves the top of the design tree only — no notes, references or tooling', async () => {
     const { base } = await boot();
-    for (const path of ['/design/setup.notes.md', '/design/tools/session-probe.js',
+    for (const path of ['/design/STYLE.md', '/design/tools/session-probe.js',
                         '/design/reference/system.css',
                         '/design/reference/setup-pre-constitution/setup.js']) {
       expect((await fetch(base + path)).status, path).toBe(404);

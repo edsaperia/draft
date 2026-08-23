@@ -418,3 +418,47 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 - `participant-api` — the blind-discipline surface (engine-core module) every participant speaks: cards, judge, submit, gazette, browse. Humans, sim personas and personal AIs are interchangeable behind it.
 - `scripted-persona` / `llm-persona` — deterministic utility-model participants (regression + welfare ground truth) vs claude-haiku-4-5 participants (realism).
 - `welfare-ratio` — sim metric: (achieved − incumbent) / (optimal − incumbent) summed utility over the roster; 1.0 = utilitarian-best text found.
+
+## The two design-notes files, deleted 2026-08-23 (Q726)
+
+`design/session-view.notes.md` (342 KB, 68 top-level sections) and `design/setup.notes.md`
+(20 KB, 8) were the build diaries of the session view and the two setup surfaces — every
+design ruling from 2026-08-14 to 2026-08-19, keyed to Ed's own numbered points, in the order it
+happened. Spec pass 2 marked both **superseded** (Q587) and gave `SURFACE.md` precedence wherever
+they disagreed, which left them holding no live rule and one live reason each.
+
+**They are in git, whole, at `aba22fd`.** To read them:
+
+```
+git show aba22fd:design/session-view.notes.md
+git show aba22fd:design/setup.notes.md
+```
+
+and to find a section without checking out 342 KB, `git show aba22fd:design/session-view.notes.md | grep "^#"`.
+That index is deliberately not reproduced here: a 68-line table of contents for a deleted file is
+exactly the accretion this pass exists to reverse, and one command is cheaper than carrying it for ever.
+
+Where their material went. **Rules** — the marks alphabet, the rail, the card kinds, the commit row,
+the composer, the founding order, the band, the wallets and the holds — are `SURFACE.md` §6–§9, which
+is tabular and machine-checked where the notes were prose and checked by nobody. **Reasoning** that
+survived into an operative rule is cited from those tables as `→ why:` lines, or from the glossary
+above. **The rest is history**, and history is what a sha is for.
+
+Two things were salvaged rather than left, being live and stated in no other document.
+
+- **Nothing underneath the view** (Ed, 76) — the three columns are the whole page; no footer, no
+  notes, no second region to scroll into, and what lies below the last line of the charter is empty
+  scroll runway rather than content. Now a line of the `session-view` glossary entry.
+
+- **The empty members list** (Q407a, Ed 2026-08-19). A membership of one renders a placeholder row —
+  *Nobody else yet.* — where the other members would stand: full width, muted, no avatar, since a face
+  would claim a person who does not exist. It leaves with the first invitee. The surface fact is in
+  CLAUDE.md's `constitution-section` entry; the reason it is load-bearing is not, and is kept here.
+  Two reasons, one visible and one geometric. A members list showing nobody while the room has a
+  member reads as broken. And founder-alone, the you-row stood so high that its ✋🖼️📧 pile collided
+  with the 🪪 pile above it — two stacks twelve pixels apart inside one 42px clause, under the Q308
+  floor, where a pile cannot shrink below its 30px front tab; `fitBand` squeezed the peek to 0.0 and
+  they still overlapped by 18px. The placeholder gives the you-row a row's clearance, and the piles
+  then clear by measurement (5px at the default peek). **Anything that removes the placeholder has to
+  answer the geometry as well as the sentence.**
+

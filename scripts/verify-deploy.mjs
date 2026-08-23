@@ -129,7 +129,7 @@ await check('design assets serve, design notes do not', async () => {
   expect(js.status === 200, `/setup.js status ${js.status}`);
   expect((js.headers.get('content-type') ?? '').includes('javascript'),
     `/setup.js content-type ${js.headers.get('content-type')}`);
-  for (const p of ['/design/setup.notes.md', '/design/session-view.notes.md',
+  for (const p of ['/design/STYLE.md', '/design/DECISIONS.md',
                    '/design/tools/session-probe.js', '/design/reference/system.css',
                    '/design/reference/session-view.html', '/design/../SPEC.md']) {
     const r = await get(p);
