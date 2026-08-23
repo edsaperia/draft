@@ -24,7 +24,8 @@ The switch never falls back silently.
 ## The tool
 
 `dist/draft-tools.mjs` is built beside the server by `npm run build` and
-is on the service's disk after every deploy. Four verbs; none deletes
+is on the service's disk after every deploy. Five verbs — import · export ·
+verify · drill · repair-tail; none deletes
 anything; all are safe beside a live service:
 
     node dist/draft-tools.mjs import <dataDir> <databaseUrl>   # disk → Postgres

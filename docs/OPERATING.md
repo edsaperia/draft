@@ -44,7 +44,7 @@ in the repo).
 | Variable | Meaning | Default | Where set |
 |---|---|---|---|
 | `PORT` | Listening port | `8140` | Render sets it |
-| `DRAFT_DATA_DIR` | Root of the data directory (§5) | `<cwd>/data` | `render.yaml` → `/var/data` |
+| `DRAFT_DATA_DIR` | Root of the data directory (§5) | `<cwd>/data` | **Unset in production.** `render.yaml` stopped declaring it when the disk was retired (498(b), 2026-08-20); with `DRAFT_STORE=pg` the log lives in Postgres and only the ephemeral instance filesystem is used. |
 | `DRAFT_BASE_URL` | Absolute origin used in **mailed links** and in the same-origin check | `http://localhost:<port>` | Dashboard → `https://docs.vote`. Also a **GitHub Actions repository variable** of the same name, which is what CI verifies against |
 | `DRAFT_SECRET` | HMAC secret for session cookies and for tokens at rest | A random 32-byte secret persisted to `secret.txt` in the data dir | `render.yaml`, `generateValue: true` — so nothing is written to the disk in production |
 | `RESEND_API_KEY` | Real mail when set; the dev outbox otherwise | unset | Dashboard |
@@ -81,14 +81,16 @@ freely; pushing is the decision.
 
 1. Push to `main`.
 2. CI (`.github/workflows/ci.yml`) runs `npm ci`, `npm run lint`,
-   `npm run typecheck`, `npm test`, `npm run build`.
+   `npm run typecheck`, `npm test`, `npm run spec-check`, `npm run build`,
+   and re-runs the server's own tests against Postgres with
+   `DRAFT_TEST_STORE=pg npm test -w @draft/server`.
 3. CI runs a **boot smoke** on the artifact: it must refuse to boot with no
    secrets; configured, it must serve `/`, serve `/setup.js`, answer
    `/healthz` with `"store":"file"`, send `x-content-type-options: nosniff`,
    and **404 on `/api/dev/outbox`**.
 4. On `main` only, CI POSTs the `RENDER_DEPLOY_HOOK` repository secret. With
    no such secret the step is inert — no hook, no deploy, no failure.
-5. CI polls `$DRAFT_BASE_URL/` every 15 seconds, up to 60 times, reading the
+5. CI polls `$DRAFT_BASE_URL/` every 15 seconds, up to 100 times, reading the
    **`x-build`** response header, and waits for it to equal the pushed SHA.
    This is the step that makes the verification mean something: the old
    instance keeps answering 200 for the whole minutes a build takes, so

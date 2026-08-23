@@ -7,7 +7,11 @@ Written 2026-08-20 as stage 7 landed. For the map of what runs where, see
 
     curl -s https://docs.vote/healthz
 
-    {"ok":true,"build":"<commit sha>","store":"file","documents":3,"uptimeSeconds":912}
+    {"ok":true,"build":"<commit sha>","store":"pg","documents":3,"uptimeSeconds":912}
+
+Production has read `"store":"pg"` since the cutover of 2026-08-20; a
+`"file"` there means `DRAFT_STORE` is unset and the instance is writing to
+a disk that no longer exists between deploys.
 
 - `build` is the commit the running artifact was built from (Render's
   `RENDER_GIT_COMMIT`; `DRAFT_BUILD_SHA` elsewhere). Compare with
@@ -33,8 +37,10 @@ pg) are logged as `internal error:` with the stack and answered 500 with no
 detail; module and validation errors are answered 400 with their message
 and not logged.
 
-Boot prints one line: `draft server on https://docs.vote (store: file,
-data: /var/data, mail: resend, build: abcdef123456)`. Mail mode `dev
+Boot prints one line: `draft server on https://docs.vote (store: pg,
+mail: resend, build: abcdef123456)`. There is no `data:` path in
+production since the disk was retired (498(b)); a `data: /var/data` there
+means the service is on the file store. Mail mode `dev
 outbox` in production means RESEND_API_KEY is missing — but the production
 artifact refuses to boot in that state, so you will see the refusal
 instead.

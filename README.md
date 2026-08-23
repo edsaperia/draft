@@ -9,7 +9,11 @@ First target: constitutional conventions for [Newspeak House](https://newspeak.h
 **It is live, in alpha, at [docs.vote](https://docs.vote).** One document is created by naming it and verifying an address; everything after that — who is a member, how sure the room must be, whether the document ever ends — is decided in the document itself, by the people in it. Alpha means exactly what the banner on every page says: this is early, and nothing in it should yet be trusted with a decision that matters.
 
 - **[SPEC.md](SPEC.md)** — the specification (currently v0.67), single source of truth for the mechanism.
+- **[SURFACE.md](SURFACE.md)** — what the surface tells a member and what a control does: the event matrix, the marks alphabet, the wallets and holds, the founding order and the band, the card kinds and the composer. Tabular, and asserted against the code by `npm run spec-check`.
 - **[QUESTIONS.md](QUESTIONS.md)** — open and deferred items; resolved decisions are folded into the spec, not logged separately.
+- **[design/STYLE.md](design/STYLE.md)** — the surface-copy checklist every string a member can read has to pass, and the audit log.
+- **[design/DECISIONS.md](design/DECISIONS.md)** and **[design/SPEC-REASONING.md](design/SPEC-REASONING.md)** — the reasoning archives: why a thing is the way it is, what it replaced, what was tried and rejected. The second is keyed to the spec's own `R-nnn` rulings.
+- **[design/MOBILE.md](design/MOBILE.md)** — docs.vote on a phone: the responsive plan, the PWA and push stage, and the device checklist. Not yet built.
 - **[PRODUCTION.md](PRODUCTION.md)** — the road to docs.vote: the staged rollout, the security work, the persistence design, and the go-live checklist. A working document.
 - **[docs/OPERATING.md](docs/OPERATING.md)** — the operator's map: what runs where, every environment variable, how a deploy happens, and the data directory's layout. Procedures live beside it, in `docs/runbooks/`.
 - **[CLAUDE.md](CLAUDE.md)** — project conventions, v1 product decisions, and the glossary of named parts.
@@ -30,7 +34,7 @@ First target: constitutional conventions for [Newspeak House](https://newspeak.h
 npm test               # every workspace (501 tests)
 npm run typecheck
 npm run lint
-npm run build          # the production artifact: dist/server.mjs
+npm run build          # the production artifacts: dist/server.mjs and dist/draft-tools.mjs
 npm run server         # a local instance on :8140
 npm run verify <url>   # the live-environment checks, safe against production
 ```
@@ -61,6 +65,6 @@ The mechanism holds up in practice:
 - **Calibration sweep** (2026-08): 575+ runs over nine constitution knobs. Robust everywhere (0.94–0.99); a smaller hot set (3) beat the old default and is now the spec default; long post-adoption cooldowns measurably starve resolution and are now doctrinally capped (§4.2).
 - **Live LLM runs**: full sessions with fourteen Sonnet-powered personas speaking the same participant API as humans, no sim backdoor. Emergent bridge-drafting, factional skirmishes, and overturns consistent with the spec's self-correction story. Two real engine bugs (router slot starvation, replay divergence) were found by simulation before any UI existed.
 
-The surface merge landed on 2026-08-21: a begun document is drafted in on the page, proposals race in the engine and adopt into the text. Next, in the order PRODUCTION.md sets out: accessibility, performance and stress tests, and the privacy policy and terms (drafted, not in force). Postgres, observability, backups and deliverable mail landed on 2026-08-20. P3 (the LLM layer of the engine itself: semantic composition gates, dedup, surgery, briefings, machine participants) waits behind it.
+The surface merge landed on 2026-08-21: a begun document is drafted in on the page, proposals race in the engine and adopt into the text. Next, in the order PRODUCTION.md sets out: privacy, ToS, retention and erasure (stage 12), then accessibility (13), then performance and stress tests, and the privacy policy and terms (drafted, not in force). Postgres, observability, backups and deliverable mail landed on 2026-08-20. P3 (the LLM layer of the engine itself: semantic composition gates, dedup, surgery, briefings, machine participants) waits behind it.
 
 Run logs and sweep CSVs land in `packages/sim-harness/runs/` (git-ignored).
