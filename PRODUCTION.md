@@ -577,7 +577,7 @@ a big-bang first deploy.
 | 14 | Performance, caching, **stress tests** | 4–5d | known limits, proven crash recovery |
 | 15 | **Documentation review** | 2–3d | somebody else can operate it |
 | 16 | Rollback, go-live checklist, soft launch | 2–3d | live |
-| 17 | **Mobile read + judge** — `design/MOBILE.md` stages 0–4 (planned 2026-08-23; decisions 655–673 open) | 5–8d | a cohort can judge on phones |
+| 17 | **Mobile read + judge** — `design/MOBILE.md` stages 0–4 (planned 2026-08-23; decisions 655–673 answered the same day) | 5–8d | a cohort can judge on phones |
 | 18 | **PWA · push · offline** — `design/MOBILE.md` stage 5 | 4–6d | a phone member learns the room wants them |
 
 Roughly 10–13 weeks solo. Stages 1 and 9–10 partly overlap with waiting time
