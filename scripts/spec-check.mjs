@@ -24,7 +24,8 @@
  *
  * Exit code 1 on any disagreement. `--quiet` prints findings only.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
@@ -390,11 +391,87 @@ function checkBannedWords() {
   }
 }
 
+/**
+ * CLAUDE.md's own shape (Q730, 2026-08-23). The file is loaded whole into
+ * every session and had no enforcement of any kind, while the two smaller
+ * documents it duplicated were already checked here. Two prior extractions
+ * each pulled ~55 KB out and the file regrew past its pre-extraction size
+ * within two days, because extraction without an admission rule only resets
+ * the clock. Three assertions hold the rule in *What goes in this file*:
+ *
+ *  - every glossary bullet that names something leads with a backticked name
+ *    and declares its kind, and no Gotchas bullet leads with one — which is
+ *    what keeps the two lists from re-merging into one
+ *  - `file` and `symbol` kinds resolve; `concept` is unchecked on purpose,
+ *    since `overlap-gates`, `coherence-auditor` and `spectator-api`
+ *    legitimately name ideas and planned parts rather than identifiers, and a
+ *    naive every-name-appears-in-code rule would be wrong about all three
+ *  - every SPEC §, SURFACE § and STYLE.md T pointer lands on something real
+ *
+ * Q numbers are deliberately **not** checked. QUESTIONS.md deletes an item
+ * once it is folded, so a Q reference here cites a decision rather than
+ * indexing a live entry; 7 of the 62 in the file today name numbers that are
+ * gone by that rule, and asserting them would make the checker red for
+ * doing what the numbering rules say to do.
+ */
+function checkClaudeMd() {
+  note('CLAUDE.md — the glossary shape, the entry kinds, the pointers');
+  const lines = read('CLAUDE.md').split(/\r?\n/);
+  const idx = (p) => lines.findIndex((l) => l.startsWith(p));
+  const gloss = idx('## Glossary'), gotcha = idx('## Gotchas'), end = idx('## The spec pass');
+  if (gloss < 0 || gotcha < 0 || end < 0) return find('claude', 'the Glossary / Gotchas / spec-pass sections are not all present');
+
+  const NAMED = /^\s*- `([^`]+)`[^—]*\[(file|symbol|concept)\]/;
+  const entries = [];
+  for (const l of lines.slice(gloss, gotcha)) {
+    if (!/^\s*- /.test(l)) continue;
+    const m = l.match(NAMED);
+    if (m) { entries.push({ name: m[1], kind: m[2] }); continue; }
+    // a bullet that opens with a backticked name but declares no kind
+    if (/^\s*- `/.test(l)) find('claude', `glossary bullet names something and declares no kind: ${l.trim().slice(0, 70)}`);
+  }
+  note(`  ${entries.length} glossary entries`);
+
+  for (const l of lines.slice(gotcha, end)) {
+    if (/^- `/.test(l)) find('claude', `Gotchas bullet leads with a backticked name — it belongs in the glossary: ${l.slice(0, 70)}`);
+  }
+
+  const roots = ['', 'design/', 'design/tools/', 'packages/', 'scripts/', 'docs/'];
+  for (const { name, kind } of entries) {
+    if (kind === 'concept') continue;
+    if (kind === 'file') {
+      if (!roots.some((r) => existsSync(join(ROOT, r + name)))) find('claude', `[file] \`${name}\` is not a path in the repo`);
+      continue;
+    }
+    try {
+      execSync(`git grep -q -l -F -- ${JSON.stringify(name)} -- packages design scripts docs package.json`, { cwd: ROOT, stdio: 'ignore' });
+    } catch {
+      find('claude', `[symbol] \`${name}\` appears nowhere in packages/ design/ scripts/ docs/`);
+    }
+  }
+
+  const src = lines.join('\n');
+  const has = (rel, re) => re.test(read(rel));
+  for (const n of new Set([...src.matchAll(/SPEC §([0-9]+(?:\.[0-9]+)?[a-z]?)/g)].map((m) => m[1]))) {
+    // a top-level section is a heading; a subsection is a bold-led line, `**9.5a Lapsing.**`
+    const esc = n.replace(/\./g, '\\.');
+    const re = n.includes('.') ? new RegExp(`^\\*\\*${esc}[. ]`, 'm') : new RegExp(`^#+ ${esc}\\. `, 'm');
+    if (!has('SPEC.md', re)) find('claude', `SPEC §${n} points at no section of SPEC.md`);
+  }
+  for (const n of new Set([...src.matchAll(/SURFACE §([0-9]+(?:\.[0-9]+)?)/g)].map((m) => m[1]))) {
+    if (!has('SURFACE.md', new RegExp(`^#+ ${n.replace(/\./g, '\\.')}[. ]`, 'm'))) find('claude', `SURFACE §${n} points at no section of SURFACE.md`);
+  }
+  for (const t of new Set([...src.matchAll(/STYLE\.md (?:§|T)([0-9]+)/g)].map((m) => m[1]))) {
+    if (!has('design/STYLE.md', new RegExp(`\\bT${t}\\b|^## ${t}\\.`, 'm'))) find('claude', `STYLE.md ${t} points at no rule or section of design/STYLE.md`);
+  }
+}
+
 checkMarks();
 checkWallets(pm);
 checkOrder(pm);
 checkComposer(M, pm);
 checkBannedWords();
+checkClaudeMd();
 
 console.log(findings.length ? `\n${findings.length} disagreement(s)` : '\nspec and code agree');
 process.exit(findings.length ? 1 : 0);
