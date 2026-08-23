@@ -62,10 +62,13 @@ const TYPES = {
 /** design/ over a free port, no traversal — probe.mjs's server. */
 function serveDesign() {
   const server = createServer(async (req, res) => {
-    const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
-    const file = normalize(join(DESIGN, path === '/' ? '/session-view.html' : path));
-    if (!file.startsWith(DESIGN + sep) && file !== DESIGN) { res.writeHead(403); return res.end(); }
+    // the decode is inside the guard: a malformed escape throws a URIError,
+    // and an async handler that throws is an unhandled rejection, which takes
+    // the whole run down rather than the one request
     try {
+      const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+      const file = normalize(join(DESIGN, path === '/' ? '/session-view.html' : path));
+      if (!file.startsWith(DESIGN + sep) && file !== DESIGN) { res.writeHead(403); return res.end(); }
       const s = await stat(file);
       const body = await readFile(s.isDirectory() ? join(file, 'index.html') : file);
       res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream', 'cache-control': 'no-store' });
@@ -94,7 +97,26 @@ const IN_PAGE = () => {
     const r = el.getBoundingClientRect();
     return [R2(r.left + window.scrollX), R2(r.top + window.scrollY), R2(r.width), R2(r.height)];
   };
-  const txt = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : null);
+  /**
+   * **Text as a member reads it, which is not `textContent`.** The surface
+   * keeps both labels of a two-state control in the markup and lets CSS pick
+   * one (`.lanepick .on { display: none }`), so a plain read returns
+   * “Prefer thisPreferred” and “IndifferentIndifferent” — and then T5's *one
+   * label per rung* compares a doubled label against a clean one and reports
+   * agreement as drift, or drift as agreement. Hidden subtrees are skipped.
+   */
+  const visText = (el) => {
+    let s = '';
+    for (const n of el.childNodes) {
+      if (n.nodeType === 3) { s += n.nodeValue; continue; }
+      if (n.nodeType !== 1) continue;
+      const st = getComputedStyle(n);
+      if (st.display === 'none' || st.visibility === 'hidden') continue;
+      s += visText(n);
+    }
+    return s;
+  };
+  const txt = (el) => (el ? visText(el).replace(/\s+/g, ' ').trim() : null);
   const px = (v) => R2(parseFloat(v) || 0);
 
   /** The design system's own tokens, read off :root rather than copied. */
@@ -254,7 +276,7 @@ const IN_PAGE = () => {
         if (t) bits.push(t);
       });
       card.querySelectorAll('button[title],[role="button"][title]').forEach((el) => {
-        if (!el.closest('.emojibox, .avpick, .freemoji')) bits.push(el.title);
+        if (el.title && !el.closest('.emojibox, .avpick, .freemoji')) bits.push(el.title);
       });
       return bits.join(' · ');
     })(),
@@ -741,7 +763,14 @@ async function walkCharter(page, base, cards, errors, { closed } = {}) {
   if (closed) {
     // the closed page's own furniture: the backlog's ⏸ records and the
     // signatures, which exist nowhere else
-    const keys = await page.evaluate(() => window.__CA.offered().filter((k) => /^U:/.test(k)));
+    // `offered()` reads `data-card`/`data-tab`; a backlog paragraph's mark is
+    // an `.achip[data-anchor]`, so it has to be asked for by name or this
+    // block silently matches nothing and the closed page's own furniture
+    // never gets measured at all.
+    const keys = await page.evaluate(() => [...new Set([...document.querySelectorAll('[data-card],[data-tab],[data-anchor]')]
+      .map((el) => el.dataset.card || el.dataset.tab || el.dataset.anchor)
+      .filter((k) => k && /^U:/.test(k)))]);
+    if (!keys.length) errors.push(walk + ': no backlog (U:) records on the page — nothing measured for the backlog');
     for (const k of keys.slice(0, 4)) await openAndMeasure(page, k, '.sugg, .setupcard', walk, cards, errors);
   }
 }
@@ -767,6 +796,9 @@ async function main() {
     if (!WALKS.includes(name)) return;
     const n = cards.length;
     try { await fn(); } catch (e) { errors.push(name + ' walk threw: ' + (e && e.message)); }
+    // a walk that measures nothing and says nothing is the worst outcome the
+    // instrument has: it reads as coverage in the summary line
+    if (cards.length === n) errors.push(name + ' walk measured no cards');
     if (!AS_JSON) console.log('  ' + name + ': ' + (cards.length - n) + ' cards');
   };
 
@@ -775,7 +807,15 @@ async function main() {
   await run('answers', () => walkAnswers(page, base, cards, errors));
   await run('settled', () => walkSettled(page, base, cards, errors));
   await run('outsiders', async () => {
-    for (const seat of ['1', 'applicant', 'stranger']) await walkSettled(page, base, cards, errors, seat);
+    // one seat at a time, each with its own net: the three seats are three
+    // separate audits sharing a name, and a seat that throws must not take
+    // the seats after it with it
+    for (const seat of ['1', 'applicant', 'stranger']) {
+      const n = cards.length;
+      try { await walkSettled(page, base, cards, errors, seat); }
+      catch (e) { errors.push('seat:' + seat + ' threw: ' + (e && e.message)); }
+      if (cards.length === n) errors.push('seat:' + seat + ' offered no cards — nothing was measured for it');
+    }
   });
   await run('charter', () => walkCharter(page, base, cards, errors));
   await run('closed', () => walkCharter(page, base, cards, errors, { closed: true }));
