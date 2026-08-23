@@ -41,7 +41,7 @@ describe('what a face may be', () => {
     expect(() => validPicture('eA')).toThrow('one emoji');
   });
 
-  // Q687, 2026-08-23: the grounds and the drawn marks left the picker, and
+  // Q734, 2026-08-23: the grounds and the drawn marks left the picker, and
   // are refused rather than merely un-offered — nothing historical needs
   // tolerating (Ed: alpha, no real documents), and a shape the surface
   // cannot make is one nothing should accept.

@@ -255,7 +255,7 @@
     appearance: none; border: 0; background: none; padding: 0; cursor: pointer;
     display: inline-flex; align-items: center; align-self: center;
   }
-  /* `.av.face`, not `.face`: an emoji face is not a disc any more (Q688) and
+  /* `.av.face`, not `.face`: an emoji face is not a disc any more (Q735) and
      must not be sized by the rule that makes one. The navbar's height is
      load-bearing — the sockets are 24px because this is 26 — so the glyph
      takes the same 26px line box the disc occupies. */

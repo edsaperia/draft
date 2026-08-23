@@ -1,5 +1,5 @@
 /**
- * Where an emoji face sits, measured (Q685, 2026-08-23).
+ * Where an emoji face sits, measured (Q732, 2026-08-23).
  *
  * The 7px face survived because nothing on any surface had ever worn an
  * emoji: every fixture picture was the empty string, so the only rule that
@@ -100,6 +100,7 @@ await tab('myname');
 await type('.setupcard input[data-txt="myname"]', 'Ada Lovell');
 await click('.setupcard [data-confirm]');
 await tab('mypic');
+await type('.setupcard [data-emojisearch]', 'fox');
 await click('.setupcard .avopt[data-pic="e🦊"]');
 await click('.setupcard [data-confirm]');
 await click('#devff');

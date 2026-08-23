@@ -376,7 +376,7 @@ function checkComposer(M, pm) {
 }
 
 /* What a picture may be — SURFACE.md §9 against the page's sink and the
-   server's gate (Q687, 2026-08-23). The two ends of this had drifted before
+   server's gate (Q734, 2026-08-23). The two ends of this had drifted before
    anybody looked: the picker had stopped offering the grounds while both the
    renderer and the validator still carried them, so a format the surface
    could not make was one the store would still accept. The table names the
@@ -402,7 +402,7 @@ function checkPicture() {
   // the retired shapes, named so a re-addition is red rather than quiet
   for (const [where, src] of [['the server', cmd], ['the page', setup]]) {
     for (const gone of [/c\[0-5\]/, /m\[0-2\]/, /GROUNDS/, /MARKS\b/]) {
-      if (gone.test(src)) find('picture', `${where} still carries the retired ${gone} (Q687)`);
+      if (gone.test(src)) find('picture', `${where} still carries the retired ${gone} (Q734)`);
     }
   }
   note(`  ${said.length} stored shapes: ${said.join(' · ')}; the grounds and marks are gone from both ends`);

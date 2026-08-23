@@ -42,7 +42,7 @@ export const str = (args: Args, key: string, allowEmpty = true): string => {
  */
 export const LIMITS = {
   email: 254, name: 80, title: 200, why: 5_000, words: 2_000,
-  // the picture cap is set for what the page now encodes (Q688): a 256px
+  // the picture cap is set for what the page now encodes (Q735): a 256px
   // JPEG at quality 0.8, base64'd, lands around 10–25KB. It was 150,000 —
   // ~112KB of image — chosen for a browser handing over a raw camera file,
   // which nothing does any more. Nothing historical needs tolerating (Ed,
@@ -93,7 +93,7 @@ export const capValue = <T>(value: T, what: string): T => {
  * A picture is one of the page's own stored formats and nothing else
  * (defect 4: avHtml interpolates it into a style attribute, so the store
  * must never hold a string that could read as markup or CSS): one emoji
- * grapheme, or an uploaded data-URI image. **Two shapes, since Q687** —
+ * grapheme, or an uploaded data-URI image. **Two shapes, since Q734** —
  * the grounds `c0`–`c5` and the drawn marks `m0`–`m2` left the picker, and
  * they are refused here rather than merely un-offered, because nothing
  * historical needs tolerating (Ed, 2026-08-23: alpha, no real documents)

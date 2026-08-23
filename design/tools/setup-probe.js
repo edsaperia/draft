@@ -200,9 +200,13 @@
     ['type-name', () => typeInto('.setupcard input[data-txt="myname"]', 'Ada Lovell')],
     ['confirm-name', () => click('.setupcard [data-confirm]')],
     // 🖼️ is step 10 of the founding order and the probe had never opened it
-    // (Q685, 2026-08-23) — which is how an emoji face rendered at 7px on the
+    // (Q732, 2026-08-23) — which is how an emoji face rendered at 7px on the
     // Founded line for four days with every check green.
     ['open-picture', () => openTab('mypic')],
+    // the picker is Unicode's now and opens on the first category, so a
+    // named glyph is reached by searching for it — which is the control
+    // Q732 added and the one worth walking
+    ['search-emoji', () => typeInto('.setupcard [data-emojisearch]', 'fox')],
     ['choose-emoji', () => click('.setupcard .avopt[data-pic="e🦊"]')],
     ['confirm-picture', () => click('.setupcard [data-confirm]')],
     ['fast-forward', () => click('#devff')],
