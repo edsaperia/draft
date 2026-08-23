@@ -392,6 +392,28 @@ function checkBannedWords() {
 }
 
 /**
+ * Every tracked source file, read once, as one haystack — the oracle a
+ * `[symbol]` entry has to appear in. **Markdown is excluded deliberately**:
+ * `design/DECISIONS.md` carries the glossary's own prose, so grepping it
+ * makes every name resolve against its own definition and the check becomes
+ * a no-op for exactly the entries it exists to catch. `flat` is the same
+ * corpus lower-cased with hyphens dropped, so a kebab-case entry still finds
+ * its camelCase identifier (`birth-pass` → `birthPass`).
+ */
+let CORPUS = null;
+function sourceCorpus() {
+  if (CORPUS) return CORPUS;
+  const files = execSync('git ls-files -- packages scripts design docs package.json',
+    { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 })
+    .split('\n').filter((f) => f && !f.endsWith('.md'));
+  const exact = [files.join('\n'), ...files.map((f) => {
+    try { return readFileSync(join(ROOT, f), 'utf8'); } catch { return ''; }
+  })].join('\n');
+  CORPUS = { exact, flat: exact.toLowerCase().replace(/-/g, '') };
+  return CORPUS;
+}
+
+/**
  * CLAUDE.md's own shape (Q730, 2026-08-23). The file is loaded whole into
  * every session and had no enforcement of any kind, while the two smaller
  * documents it duplicated were already checked here. Two prior extractions
@@ -402,7 +424,9 @@ function checkBannedWords() {
  *  - every glossary bullet that names something leads with a backticked name
  *    and declares its kind, and no Gotchas bullet leads with one — which is
  *    what keeps the two lists from re-merging into one
- *  - `file` and `symbol` kinds resolve; `concept` is unchecked on purpose,
+ *  - `file` and `symbol` kinds resolve, against source files only — see
+ *    `sourceCorpus` for why prose cannot be allowed to answer; `concept` is
+ *    unchecked on purpose,
  *    since `overlap-gates`, `coherence-auditor` and `spectator-api`
  *    legitimately name ideas and planned parts rather than identifiers, and a
  *    naive every-name-appears-in-code rule would be wrong about all three
@@ -433,32 +457,32 @@ function checkClaudeMd() {
   note(`  ${entries.length} glossary entries`);
 
   for (const l of lines.slice(gotcha, end)) {
-    if (/^- `/.test(l)) find('claude', `Gotchas bullet leads with a backticked name — it belongs in the glossary: ${l.slice(0, 70)}`);
+    if (/^\s*- `/.test(l)) find('claude', `Gotchas bullet leads with a backticked name — it belongs in the glossary: ${l.slice(0, 70)}`);
   }
 
   const roots = ['', 'design/', 'design/tools/', 'packages/', 'scripts/', 'docs/'];
+  const code = sourceCorpus();
   for (const { name, kind } of entries) {
     if (kind === 'concept') continue;
     if (kind === 'file') {
       if (!roots.some((r) => existsSync(join(ROOT, r + name)))) find('claude', `[file] \`${name}\` is not a path in the repo`);
       continue;
     }
-    try {
-      execSync(`git grep -q -l -F -- ${JSON.stringify(name)} -- packages design scripts docs package.json`, { cwd: ROOT, stdio: 'ignore' });
-    } catch {
-      find('claude', `[symbol] \`${name}\` appears nowhere in packages/ design/ scripts/ docs/`);
+    if (!code.exact.includes(name) && !code.flat.includes(name.toLowerCase().replace(/-/g, ''))) {
+      find('claude', `[symbol] \`${name}\` appears in no source file — it names an idea, so it is [concept]`);
     }
   }
 
   const src = lines.join('\n');
-  const has = (rel, re) => re.test(read(rel));
-  for (const n of new Set([...src.matchAll(/SPEC §([0-9]+(?:\.[0-9]+)?[a-z]?)/g)].map((m) => m[1]))) {
+  const cache = new Map();
+  const has = (rel, re) => { if (!cache.has(rel)) cache.set(rel, read(rel)); return re.test(cache.get(rel)); };
+  for (const n of new Set([...src.matchAll(/SPEC §([0-9]+(?:\.[0-9]+)*[a-z]?)/g)].map((m) => m[1]))) {
     // a top-level section is a heading; a subsection is a bold-led line, `**9.5a Lapsing.**`
     const esc = n.replace(/\./g, '\\.');
     const re = n.includes('.') ? new RegExp(`^\\*\\*${esc}[. ]`, 'm') : new RegExp(`^#+ ${esc}\\. `, 'm');
     if (!has('SPEC.md', re)) find('claude', `SPEC §${n} points at no section of SPEC.md`);
   }
-  for (const n of new Set([...src.matchAll(/SURFACE §([0-9]+(?:\.[0-9]+)?)/g)].map((m) => m[1]))) {
+  for (const n of new Set([...src.matchAll(/SURFACE §([0-9]+(?:\.[0-9]+)*)/g)].map((m) => m[1]))) {
     if (!has('SURFACE.md', new RegExp(`^#+ ${n.replace(/\./g, '\\.')}[. ]`, 'm'))) find('claude', `SURFACE §${n} points at no section of SURFACE.md`);
   }
   for (const t of new Set([...src.matchAll(/STYLE\.md (?:§|T)([0-9]+)/g)].map((m) => m[1]))) {

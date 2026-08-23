@@ -24,16 +24,22 @@ The switch never falls back silently.
 ## The tool
 
 `dist/draft-tools.mjs` is built beside the server by `npm run build` and
-is on the service's disk after every deploy. Five verbs — import · export ·
-verify · drill · repair-tail; none deletes
-anything; all are safe beside a live service:
+is on the service's disk after every deploy. Five verbs, none of which
+deletes anything. Four of them are the copiers, and all four are safe
+beside a live service:
 
     node dist/draft-tools.mjs import <dataDir> <databaseUrl>   # disk → Postgres
     node dist/draft-tools.mjs export <databaseUrl> <dataDir>   # Postgres → disk
     node dist/draft-tools.mjs verify <dataDir> <databaseUrl>   # compare, write nothing
     node dist/draft-tools.mjs drill  <dataDir> <databaseUrl>   # the restore drill
 
-Every verb ends with the oracle: **every rolling hash identical** between
+The fifth, `repair-tail <dataDir> <docId> [--write]`, is not a copier: it
+rewrites one document's log in place (keeping the original byte for byte
+beside it), carries no hash oracle, and must not be run against a store a
+service is serving from. Its procedure is in
+[backup-and-restore.md](backup-and-restore.md).
+
+Every copier ends with the oracle: **every rolling hash identical** between
 source and destination, both logs, and the destination replaying from
 genesis to the source's last hash. Exit 0 means it held for every
 document. Exit 1 means it did not, and the output names the document and

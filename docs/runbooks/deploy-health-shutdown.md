@@ -38,9 +38,12 @@ detail; module and validation errors are answered 400 with their message
 and not logged.
 
 Boot prints one line: `draft server on https://docs.vote (store: pg,
-mail: resend, build: abcdef123456)`. There is no `data:` path in
-production since the disk was retired (498(b)); a `data: /var/data` there
-means the service is on the file store. Mail mode `dev
+data: /opt/render/project/src/data, mail: resend, build: abcdef123456)`.
+`store:` is the field that matters: since the disk was retired (498(b))
+`DRAFT_DATA_DIR` is unset in production, so the `data:` path is the
+artifact's default under the *ephemeral* instance filesystem and means
+nothing while `store: pg` — it is `store: file` there that is the alarm.
+Mail mode `dev
 outbox` in production means RESEND_API_KEY is missing — but the production
 artifact refuses to boot in that state, so you will see the refusal
 instead.
