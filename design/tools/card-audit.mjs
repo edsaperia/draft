@@ -51,6 +51,13 @@ const OUT = arg('out', join(DESIGN, 'tools', 'card-audit.json'));
 const BASELINE = arg('baseline', null);
 const ALL_WALKS = ['founding', 'answers', 'settled', 'outsiders', 'charter', 'closed'];
 const WALKS = arg('walk', ALL_WALKS.join(',')).split(',').filter(Boolean);
+// a misspelt walk otherwise runs nothing, finds nothing and exits 0 — which is
+// the one outcome this instrument treats as worse than a red run
+const UNKNOWN = WALKS.filter((w) => !ALL_WALKS.includes(w));
+if (!WALKS.length || UNKNOWN.length) {
+  console.error('no such walk: ' + (UNKNOWN.join(', ') || '(none given)') + ' — walks are ' + ALL_WALKS.join(', '));
+  process.exit(2);
+}
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -366,7 +373,10 @@ const STABLE_GLYPHS = ['🪶', '📍', '🪪', '🤝', '💤', '🥾', '⏱️',
   '👤', '✍️', '👁️', '🌍', '📄', '🎩', '💡', '⚖️', '👑', '📯', '✒️', '🛡️', '✏️', '🏛️', '🍾',
   '🥂', '📧', '✋', '🖼️', '📝', '✉️', '❌', '❄️', '🔥', '⚔️', '🌶️', '⏳', '↻', '⏸', '🗑️', '📨',
   '📬', '⏩', '⏭', '✔', '✖', '✓', '✕', '·', '▸', '∞'];
-const GLYPH_RE = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}]\u{FE0F}?/gu;
+// U+2300–U+23FF is not optional: ⏰ ⏱️ ⏳ ⏸ ⏩ ⏭ all live there, six of them
+// are in the table above, and without the range a clock-family glyph is
+// invisible to G1 *and* drops its whole card out of G2's identity map.
+const GLYPH_RE = /[\u{1F300}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}]\u{FE0F}?/gu;
 
 function rulesFor(card, tok) {
   const out = [];
@@ -479,7 +489,8 @@ function rulesFor(card, tok) {
     }
   }
   for (const word of ['ordinary', 'roster', 'participant', 'ceremony', 'token', 'the bar', 'economy', 'queue-card', 'convenor', 'admin']) {
-    const re = new RegExp('(^|[^a-z])' + word + '([^a-z]|$)', 'i');
+    // the plural is the same breach: *never "tokens"*, *never "participants"*
+    const re = new RegExp('(^|[^a-z])' + word + 's?([^a-z]|$)', 'i');
     if (re.test(said)) at('T15', 'copy', 'no project-speak, no engine jargon', 'says "' + word + '"', excerpt(said, word));
   }
   if (/§\s*\d/.test(said)) at('T14', 'copy', 'no spec references in surface copy', 'cites a §-number', excerpt(said, '§'));
@@ -724,11 +735,31 @@ async function walkSettled(page, base, cards, errors, seat) {
   }
   const walk = seat ? 'seat:' + seat : 'settled';
   const keys = await page.evaluate(() => window.__CA.offered());
+  const seen = new Set(keys);
+  const strip = () => page.evaluate(() =>
+    [...document.querySelectorAll('.setupcard .chipcol .achip[data-tab]')].map((el) => el.dataset.tab));
   for (const k of keys) {
     await openAndMeasure(page, k, '.setupcard', walk, cards, errors);
-    // a card is closed by its own mark, which is the one way in and out
+    /**
+     * **A tab behind the front of a pile has no key on it.** `pileHtml` marks
+     * every chip after the first `inert`, and `chipHtml`'s inert branch emits
+     * no `data-tab` at all — so `offered()`, which reads `data-card`/`data-tab`,
+     * cannot see the ✒️/🛡️ power tabs, and neither can anything that clicks by
+     * key. They become addressable only once their own setting's card is open
+     * and the strip draws every chip live. Harvested here, or no power card is
+     * ever measured on any run and T9 has nothing to read.
+     */
+    for (const t of await strip()) {
+      if (seen.has(t)) continue;
+      seen.add(t);
+      await openAndMeasure(page, t, '.setupcard', walk, cards, errors);
+    }
+    // a card is closed by its own mark — the **active** one, since clicking any
+    // other chip in the strip morphs to that card rather than closing this one,
+    // and the next card's "closed" baseline would then be an open tab
     await page.evaluate(() => {
-      const mark = document.querySelector('.setupcard .chipcol .achip');
+      const mark = document.querySelector('.setupcard .chipcol .achip.wmark') ||
+        document.querySelector('.setupcard .chipcol .achip');
       if (mark) mark.click();
     });
     await wait(page, 200);

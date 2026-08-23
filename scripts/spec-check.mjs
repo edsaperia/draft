@@ -405,7 +405,10 @@ function sourceCorpus() {
   if (CORPUS) return CORPUS;
   const files = execSync('git ls-files -- packages scripts design docs package.json',
     { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 })
-    .split('\n').filter((f) => f && !f.endsWith('.md'));
+    // `design/spec-pass/` is prose in HTML clothing — a pass artifact quotes
+    // the glossary's own names, so leaving it in lets six `[symbol]` entries
+    // resolve against a questions document rather than against any code
+    .split('\n').filter((f) => f && !f.endsWith('.md') && !f.startsWith('design/spec-pass/'));
   const exact = [files.join('\n'), ...files.map((f) => {
     try { return readFileSync(join(ROOT, f), 'utf8'); } catch { return ''; }
   })].join('\n');
@@ -485,8 +488,13 @@ function checkClaudeMd() {
   for (const n of new Set([...src.matchAll(/SURFACE §([0-9]+(?:\.[0-9]+)*)/g)].map((m) => m[1]))) {
     if (!has('SURFACE.md', new RegExp(`^#+ ${n.replace(/\./g, '\\.')}[. ]`, 'm'))) find('claude', `SURFACE §${n} points at no section of SURFACE.md`);
   }
-  for (const t of new Set([...src.matchAll(/STYLE\.md (?:§|T)([0-9]+)/g)].map((m) => m[1]))) {
-    if (!has('design/STYLE.md', new RegExp(`\\bT${t}\\b|^## ${t}\\.`, 'm'))) find('claude', `STYLE.md ${t} points at no rule or section of design/STYLE.md`);
+  // § and T are two numbering schemes over one file — eight sections and
+  // T1–T35 — so they have to be asked separately. Accepting either for either
+  // is what makes `STYLE.md §20` resolve against rule T20 and the check a
+  // no-op for exactly the drift it is for.
+  for (const [, mark, n] of src.matchAll(/STYLE\.md (§|T)([0-9]+)/g)) {
+    const re = mark === 'T' ? new RegExp(`^\\| T${n} \\|`, 'm') : new RegExp(`^## ${n}\\. `, 'm');
+    if (!has('design/STYLE.md', re)) find('claude', `STYLE.md ${mark}${n} points at no ${mark === 'T' ? 'rule' : 'section'} of design/STYLE.md`);
   }
 }
 
