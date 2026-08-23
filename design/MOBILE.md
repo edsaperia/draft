@@ -25,7 +25,7 @@ Every surface is the `session-view`: three columns — contents rail · document
 - **Hover-only**: the fold triangle (`system.css:367`), the spend-preview lean (`session.js:4106`), `.queue button:hover`, `.achip:hover`, `.doctitle[data-card]:hover`, and ~66 native `title=` tooltips across the four files. `.walletsay` dismisses on `resize`, which a mobile keyboard opening fires.
 - **Editing**: one `contenteditable` host for the whole charter (`session.js:150`); `startDraftFromTyping` (`session.js:2017`) switches on `inputType` and `default: return`s — `insertCompositionText` (Android keyboards' ordinary typing) opens no draft. Out of v1 scope; the seam is §1.7.
 - **Fixed pixels**: `--rail-left 210`, `--rail-right 290`, `--nav-h 58`, `.doc` left padding 132px *is* the gutter, `.achip` 34×30 (active 42), `READ_LINE 150`, `BAND_TOP 70`, `BAND_BOT 24`, `QGAP 8`, `.walletsay` 264px, `.wrap` 1440px, `.toc` max-height in `100vh`.
-- **Judging is never a hold** — ✓ is a click (SURFACE §9.1). In a read + judge v1 the only hold a phone meets is the founder's 🪶 at `/`.
+- **Judging is never a hold** — ✓ is a click (SURFACE §9.1). In a read + judge v1 the holds a phone meets are the birth's three 🪶 commits at `/` (§1.6, Q663).
 - **The commit row is 40px by rule** and the sockets 24px by W11 — a 44px target rule collides unless hit area and drawn box may differ (§1.4).
 - **Server**: static files by basename from `design/` (`server.ts:1058–1090`); `serveFile` (:1271) sets no `Cache-Control`, ETag or compression; `x-build: <sha>` is already sent on every response (the asset-versioning seed a service worker needs); `/api/*` is `no-store`. No service worker, manifest, VAPID or push anywhere; notifications are email only (`relay()`, `server.ts` ~113). The `?since=` poll already answers *did anything move* content-free.
 - **Decision 436's `people` table is adopted but unbuilt** (schema v1: `documents`, `document_log`, `engine_log`, `provisional`, `bridge_state`, `tokens`, `stashes`), so Q428's target does not exist yet.
@@ -36,7 +36,7 @@ Every surface is the `session-view`: three columns — contents rail · document
 
 ### 1.0 The architectural consequence
 
-**Narrow is not a stylesheet, it is a mode.** Four measurement passes (`layoutQueue`, `drawWires`, `fitStacks`, `fitBand`) each need a *named* narrow behaviour rather than being left to misfire. Two of them (`fitStacks`, `fitBand`) keep working unchanged **provided the gutter survives as a vertical column** — so the plan keeps the gutter and deletes the `:851` rule that flattened it, rather than teaching the passes a second geometry. `layoutQueue` cannot be saved by CSS; but pinning is already a JS concern (`.queue` is merely `relative`; `layoutQueue` writes `top`), so the narrow form can be a JS concern too.
+**Narrow is not a stylesheet, it is a mode.** Four measurement passes (`layoutQueue`, `drawWires`, `fitStacks`, `fitBand`) each need a *named* narrow behaviour rather than being left to misfire. Two of them (`fitStacks`, `fitBand`) keep working unchanged **provided the gutter survives as a vertical column** — so the plan keeps the gutter and deletes the `:851` rule that flattened it, rather than teaching the passes a second geometry. `layoutQueue` cannot be saved by CSS: `aside.queue` sits *below* `main` in the DOM (`session-view.html:178–200`), so in one column `railTop` is the bottom of the document and every `want` is negative. But pinning is already a JS concern (`.queue` is merely `relative`; `layoutQueue` writes `top`), so the narrow form can be a JS concern too.
 
 ### 1.1 The mechanism: two orthogonal flags, one literal each
 
@@ -128,7 +128,7 @@ SURFACE §7.2's holds table gains an **on touch** column (*two taps; the flight 
 A sibling of `journey-walk.mjs` against a running dev server with the outbox; non-zero on any failed assertion, any `pageerror`, any 4xx/5xx on `/api/` (journey's refusal net, verbatim). One `chromium.launch()`, two contexts:
 
 - **Desktop context** (1600×1100, no touch) plays the founder: birth → founding → 🪪 invite one address → 🍾 → propose one text edit with the held ✏️ (exactly as journey does). This produces the one thing a judging walk needs that journey never has: a race whose candidate is *not the judge's own*.
-- **Mobile context** (`devices['iPhone 13']`, then `devices['Pixel 7']` — viewport, DPR, `isMobile`, `hasTouch`, UA) plays the member: reads the invitation from `/api/dev/outbox`, follows the link, lands on `/d/:slug`, OKs 💡/⚖️ with `page.tap`, opens the 🔥 entry, taps a lane, taps ✓; the walk watches the wire for `judge-race`.
+- **Mobile context** (`devices['iPhone 13']`, then `devices['Pixel 7']` — viewport, DPR, `isMobile`, `hasTouch`, UA) **births from the phone first** (§1.6, Q663): 🪶 title, 📍 link, 📧 email, three two-taps — the gesture's live exercises. Then it plays the member on the desktop context's document: reads the invitation from `/api/dev/outbox`, follows the link, lands on `/d/:slug`, OKs 💡/⚖️ with `page.tap`, opens the 🔥 entry, taps a lane, taps ✓; the walk watches the wire for `judge-race`.
 
 **Shared helpers** (Q664): lift journey's `press`, `open`, `clickIn`, `typeIn`, the birth block and the founding loop into `scripts/walk-lib.mjs`; journey imports them, its assertions and docstring untouched. Otherwise the two walks fork 120 lines and drift (the reference-copy failure mode CLAUDE.md already records).
 
@@ -137,9 +137,9 @@ A sibling of `journey-walk.mjs` against a running dev server with the outbox; no
 1. Viewport meta present and honoured: `innerWidth === viewport.width`, `visualViewport.scale === 1`.
 2. No horizontal overflow: `scrollWidth <= innerWidth`, **and per visible element** `rect.right <= innerWidth + 0.5 && rect.left >= -0.5` — catches a strip or `.chipcol` transformed off-screen without widening the page. First five offenders by selector path.
 3. Every interactive target ≥ 44×44, **measured as hit area, not box**: probe `elementFromPoint` at centre ± 22px on both axes, each probe must resolve to the target or a descendant. Candidates: `button, a[href], input, textarea, [role=button], .lanepick, .achip, .qitem, .sectoggle, .toc a, .commitrow .btn`. Disabled controls exempt; the 24px sockets are **not** (they are pressable — `walletsay`).
-4. The dock holds only pinned entries, each resolvable to a clause; flow entries are absent; **the DOM is identical between wide and narrow** (the DOM is canonical — Q419's premise — so CSS placement is the only thing that changes).
+4. The dock holds only pinned entries, each resolvable to a clause; flow entries are absent; **the DOM is identical between wide and narrow** (the DOM is canonical — Q419's premise — so CSS placement is the only thing that changes). Measured by `compareDocumentPosition` over the rail entries in the mobile context against the same entries in the desktop context: same set, same order. That comparison is what proves the narrow form re-parented nothing, which is the claim §2.4 rests on.
 5. A judgment commits at the wire: the POST carrying `judge-race` is 2xx; afterwards the 🔥 entry is gone and a ⏳ tab present (Q576). Page state is not trusted, for the reason journey distrusts it for `propose-text`.
-6. Two-tap confirm needs exactly two taps (on 🪶 Title in the mobile context — the only hold a read+judge walk meets): one tap → no POST, a confirming state visible, **and the state survives a 4.5s wait across a poll**; second tap → exactly one 2xx POST; tap-then-tap-elsewhere → no POST, state cleared; three rapid taps → still one POST (the 2026-08-22 double-fire class, caught at the wire).
+6. Two-tap confirm needs exactly two taps (on the birth's 🪶 commits in the mobile context — §1.6): one tap → no POST, a confirming state visible, **and the state survives a 4.5s wait across a poll** (W9 applied to a *state*: the confirming state lives in `S`/`SESSION`, keyed by `spec.key`, never on the node — a poll landing inside the arm must not disarm it); second tap → exactly one 2xx POST; tap-then-tap-elsewhere → no POST, state cleared; three rapid taps → still one POST (the 2026-08-22 double-fire class, caught at the wire).
 7. Nothing is hover-gated: precondition `matchMedia('(hover: none)').matches`; for every element a `:hover` rule reveals (today `.sectoggle` via `.toc li:hover`, `.filedpile:not(.open):hover .achip`, `.navbar .me:hover .face`), computed `opacity >= 1` and `visibility: visible` **at rest**. Q421 by measurement.
 8. The poll lives: two `view?since=` responses ≥ 4s apart in the mobile context; one `SESSION.beat()` observed after the desktop context acts (wrap `window.SESSION.beat` as a spy).
 9. Hairline contrast (Q427): contrast ratio of `borderColor` against effective background for `.sealed .incumbent` and the other `--border-strong` users ≥ 3:1. A colour assertion no probe can make (probes hash outerHTML and measure rects).
@@ -153,7 +153,7 @@ Nothing in CI runs a live walk today. A third job **`walks`** beside `probe`: `n
 
 ### 2.3 What headless cannot see
 
-Anything rAF-driven (flights, washes, the lift — only the two-tap's *state* is asserted); real IME behaviour (Q424, out of scope); iOS Safari's dynamic toolbar vs `100vh`; safe-area insets (`env()` resolves to 0 in Playwright — read the stylesheet rule, not the computed value); scroll-bounce on a sticky topbar; the 300ms tap delay (gone with the viewport meta, provable only on a device); install prompts; Google Fonts on a slow radio. These are the device checklist's (§6).
+Anything rAF-driven (flights, washes, the lift — only the two-tap's *state* is asserted); real IME behaviour (Q424, out of scope); iOS Safari's dynamic toolbar vs `100vh` (`.doc` pads `95vh` and the sticky `--nav-h` rails are exactly what the toolbar fights); safe-area insets (`env()` resolves to 0 in Playwright — read the stylesheet rule, not the computed value); scroll-bounce on a sticky topbar; the 300ms tap delay (gone with the viewport meta, provable only on a device); install prompts; Google Fonts on a slow radio. These are the device checklist's (§7).
 
 ### 2.4 Proving the desktop did not change
 
@@ -246,12 +246,32 @@ No queued judgment, ever: a judgment against a pair the room has moved past is a
 | # | Stage | What it makes measurable |
 |---|---|---|
 | 0 | ☐ **Measure the breakage** — `mobile-walk` stage-0 form against the fixtures (iPhone 13 descriptor): overflow, negative `.qitem` tops, sub-44 targets, triangle opacity 0, `.doc` padding-left, `#wires` visibility; the desktop Tab-order audit (Q419); the probe viewport parametrisation. No product change. | All of it fails today — the baseline. |
-| 1 | ☐ **The mode and the one-column layout** — viewport meta; `NARROW_Q` + CSS literal + `spec-check`; root-attribute boot script; the six rules replaced; `classifyEntries`/`layoutQueueNarrow`/dock; `drawWires` return; `readLine()`/`bandRect()`; measured `BAND_TOP`; TOC drawer; topbar second row; `--border-strong`; `.walletsay` width-only. | Stage 0 green on overflow/tops/padding/wires; at 390 chip travel and clause-text travel 0.0px on open; `fitBand` 0px both axes on the founding fixture; no `.sugg` overflow at 360; dock ≤ capacity in urgency order. Desktop: probes 0 deltas, journey green. |
+| 1 | ☐ **The mode and the one-column layout** — viewport meta; `NARROW_Q` + CSS literal + `spec-check`; root-attribute boot script; the six rules replaced; `classifyEntries`/`layoutQueueNarrow`/dock; `drawWires` return; `readLine()`/`bandRect()`; measured `BAND_TOP`; TOC drawer; the narrow topbar (one row, sockets hidden — Q656); `--border-strong`; `.walletsay` width-only. | Stage 0 green on overflow/tops/padding/wires; at 390 chip travel and clause-text travel 0.0px on open; `fitBand` 0px both axes on the founding fixture; no `.sugg` overflow at 360; dock ≤ capacity in urgency order. Desktop: probes 0 deltas, journey green. |
 | 2 | ☐ **Touch** — hit-area pseudos; `touch-action`/highlight/callout; the `(hover: hover)` sweep; triangle under `(hover: none)`; permanent title underline; `say` long-press; `contenteditable` gating; `SESSION.press` at the three sites, polls deferring on armed, SURFACE §7.2 column, `spec-check` three-sites assertion. | §2.1 #3, #6, #7; a `hasTouch` journey variant taps 🪶 twice and asserts at the wire; one tap + 7s asserts no request; long-press on a chip shows the bubble and opens no card. |
 | 3 | ☐ **Keyboard, safe area, dvh, fixed chrome** (§1.8). | Focusing the 🥂 lane sets `html[data-kbd]` and hides the dock, restored on blur; the dock's `bottom` rule names the safe-area term; `.toc`'s rule names `dvh`. |
 | 4 | ☐ **Live walk, freeze and fold** — the full §2.1 mobile-walk on the live path; the `walks` CI job; narrow baseline recorded; `design/reference/` re-frozen under a new tag; QUESTIONS.md closes 419/420/421/425/427; SURFACE.md gains the narrow rules (an M-rule: *on one column the rail is the dock — the pinned population, nothing else*; the holds table's touch column; §6's note that the teaser is in the card on narrow); CLAUDE.md glossary lines for `narrow`/`coarse`/`press`/`say`/`dock`; the device checklist run on a real iPhone and Pixel and logged. | CI green with `walks`; device log rows for both devices. |
 | 5 | ☐ **PWA · push · offline** (§3, in its own order a–d). | `verify-deploy` caching checks; `spec-check` budget; push end to end on a real device, logged. |
 | 6 | ☐ **Composer, founding and motions on touch** (Q424) — doors and IME handling on the §1.7 seams; no layout. | A `hasTouch` journey walking propose → judge → motion. |
+
+### 6.1 Critical files
+
+Where each stage lands. Lines checked 2026-08-23; the stages that move them say so.
+
+| file | what it holds | stages |
+|---|---|---|
+| `design/system.css` | the six dormant rules (§1.9), the `(hover: hover)` sweep, the hit-area pseudos, `--border-strong` | 1, 2 |
+| `design/session.js` | the four passes — `layoutQueue` (:870, classification :874–976), `drawWires`, `fitStacks`, `readLine()` (:123) — and the charter's ✏️ hold (:2744) | 1, 2 |
+| `design/session-view.html` | the viewport meta; `holdWallet` and the assembly (the other two `SESSION.press` sites); the poll and `SESSION.beat()` (:465); `ACK_KEYS` (:811); `mayJudge()`/`acked()` (:2384–2386) — the offline gate of §3.c | 1, 2, 5 |
+| `design/setup.js` | `fitBand` and its `\|left − left\| < 20` neighbour filter (:567) — why the gutter stays a column | 1 |
+| `scripts/journey-walk.mjs` | the source of `scripts/walk-lib.mjs`; `scripts/mobile-walk.mjs` is its sibling (Q664) | 0, 2, 4 |
+| `scripts/probe.mjs` | the viewport parametrised from argv; the narrow baseline (§1.9) | 0, 1 |
+| `scripts/spec-check.mjs` | `NARROW_Q` against the CSS literal; the three `SESSION.press` sites; the push channel vocabulary | 1, 2, 5 |
+| `packages/server/src/server.ts` | `serveFile` (:1388) and `MIME` (:1376) for caching and `.webmanifest`; the static-asset gate (:1173); `relay()` (:115) as push's second queue; the view route (:980–1001) | 5 |
+| `packages/server/src/persistence.ts`, `pg-persistence.ts` | `push_subscriptions` in migration v2 and its `push.jsonl` mirror; put/delete/list/deleteFor on both stores (Q673) | 5 |
+| `packages/server/src/config.ts`, `render.yaml` | `DRAFT_VAPID_*`, optional like `RESEND_API_KEY`; `/healthz` reporting `push: on\|off` | 5 |
+| `design/sw.js` (new) | the read-only offline shell and the push handlers (§3.c) | 5 |
+| `SURFACE.md` | the narrow M-rule, §7.2's **on touch** column and its §3 exception, the `push` channel and C17, the 🔔 card | 2, 4, 5 |
+| `.github/workflows/ci.yml` | the `walks` job beside `ci` and `probe` (Q665) | 4 |
 
 ## 7. Device checklist
 
