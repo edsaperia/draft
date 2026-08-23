@@ -255,14 +255,19 @@
     appearance: none; border: 0; background: none; padding: 0; cursor: pointer;
     display: inline-flex; align-items: center; align-self: center;
   }
-  .navbar .me .face {
+  /* `.av.face`, not `.face`: an emoji face is not a disc any more (Q688) and
+     must not be sized by the rule that makes one. The navbar's height is
+     load-bearing — the sockets are 24px because this is 26 — so the glyph
+     takes the same 26px line box the disc occupies. */
+  .navbar .me .av.face {
     width: 26px; height: 26px; border-radius: 50%;
     background: var(--primary); color: #fff;
     font-size: var(--t-micro); font-weight: 700; letter-spacing: 0.02em;
     display: inline-flex; align-items: center; justify-content: center;
     box-shadow: var(--shadow-sm); transition: box-shadow 120ms ease;
   }
-  .navbar .me:hover .face { box-shadow: var(--shadow-md); }
+  .navbar .me .emojiface.face { font-size: 20px; line-height: 26px; }
+  .navbar .me:hover .av.face { box-shadow: var(--shadow-md); }
   .navbar .me:focus-visible .face { outline: 2px solid var(--primary); outline-offset: 2px; }
 
   /* The edit-wallet (Ed, 2026-08-16). A token *is* an edit, so it is drawn as
@@ -618,6 +623,47 @@
     .queue button.leaving, .queue button.arriving { animation: none; }
   }
 
+  /* `task-beat` — the motion of the `dead-click-nudge` (Q650–Q653, Ed
+     2026-08-23). A click that lands on nothing during the birth beats the task
+     that *is* waiting, in both the places it lives: its tab in the gutter and
+     its entry in the rail. Beating both is the point — it teaches that the tab,
+     the rail entry and the card are one thing, rather than merely pointing at a
+     location. It never opens the card, however many times you click: the nudge
+     is a teacher, and C1 keeps the opening click the user's own.
+
+     Two beats, not one. A single lift reads as a repaint at the edge of vision,
+     and the founder's eye is on the heading they just clicked while the rail is
+     in their periphery — which detects movement far better than contrast. The
+     rail entry travels to --shadow-xl, the open-entry lift below, so the beat
+     is a preview of what pressing it would do; the tab travels at the scale its
+     own hover already uses, so it is the tab's existing vocabulary said louder
+     for a moment. Neither changes colour: the hue is lifecycle, and a brighter
+     wash would be a claim about the task rather than an answer to the click.
+
+     **The transform sits on the button, never on .qitem.** The li is what
+     layoutQueue positions, what drawWires measures the cable's start from, and
+     what setup-probe measures to 0.01px — a moving li would leave its cable
+     behind and flake the probe on every birth step. The li is absolutely
+     positioned and sized by layout, so a transform on its child moves neither.
+     Same reason .leaving/.arriving above sit on the button.
+
+     One keyframe, two tunings, so the rhythm cannot drift between the halves. */
+  @keyframes taskBeat {
+    0%, 100% { transform: translateY(0); box-shadow: var(--shadow-sm); }
+    15%, 55% { transform: translateY(var(--beat-lift)); box-shadow: var(--beat-shadow); }
+    35%, 75% { transform: translateY(0); box-shadow: var(--shadow-sm); }
+  }
+  .qitem.nudge > button { --beat-lift: -3px; --beat-shadow: var(--shadow-xl); animation: taskBeat 640ms ease-in-out; }
+  .achip.nudge { --beat-lift: -2px; --beat-shadow: var(--shadow-lg); animation: taskBeat 640ms ease-in-out; }
+  /* Reduced motion moves nothing (F14) — but the teaching survives rather than
+     being dropped: the lift is held for the beat's own duration and then let
+     go, a state change instead of a motion. The class comes off on the same
+     clock either way, so the JS need not know which of the two it got. */
+  @media (prefers-reduced-motion: reduce) {
+    .qitem.nudge > button { animation: none; box-shadow: var(--shadow-xl); }
+    .achip.nudge { animation: none; box-shadow: var(--shadow-lg); }
+  }
+
   /* ===================================================================
      The document. Its wide left padding is the chip-gutter (see .chipcol).
      =================================================================== */
@@ -636,6 +682,15 @@
   .doc .prose { max-width: 70ch; margin: 0 auto; }
   .doc .doctitle { font-size: var(--t-lead); font-weight: 600; margin: 0 0 18px; text-wrap: balance; }
   .doc p { margin: 0 0 var(--s3); position: relative; }
+  /* **An empty document has one clause, and it is empty** (Q649 (a), Ed
+     2026-08-22). The block keeps a line's height so it can be clicked, and
+     its sentence is drawn out of the text flow — as inline content it would
+     put the caret after itself — in the rationale placeholder's own manner. */
+  .doc p.editable.blank { min-height: 1.6em; }
+  .doc p.editable.blank::before {
+    content: attr(data-placeholder); color: var(--muted); font-style: italic;
+    position: absolute; left: 0; top: 0; right: 0; pointer-events: none;
+  }
 
   /* three ranks of heading: part, chapter, section */
   .doc h2.docline {

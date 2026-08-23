@@ -194,7 +194,7 @@
         <p class="holding" id="holding" hidden></p>
         <div id="charter"></div>
         <div class="redacted" id="redacted" hidden></div>
-        <div class="prose empty" id="prose" contenteditable="true" spellcheck="false"></div>
+        <div class="prose empty" id="prose" contenteditable="false" spellcheck="false"></div>
       </div>
     </main>
     <aside class="queue stack"><ul id="rail"></ul></aside>
@@ -208,7 +208,7 @@
 <script src="session.js"></script>
 <script>
 (function () {
-  const { esc, TICK, avHtml, avatarOptions, bandHtml, fitBand, railEntry, cardHtml, watchBody,
+  const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, opt, num, someIn, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, readBody,
     motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE } = window.SETUP;
@@ -818,6 +818,17 @@
     Object.defineProperty(S, prop, { get: () => viewerRow()[key] || '',
       set: (v) => { viewerRow()[key] = v; } });
   }
+  // **Whether you have answered ✋ and 🖼️, per seat** (Q645). Mirrored off the
+  // module the way `emailVerified` is — written by the commit, by `hydrateS`
+  // from `view.identity`, and by ⏩ — because the value cannot answer for the
+  // act: a blank name is a real answer (§9.0c). It has to hang on the row
+  // rather than on `S` directly, since `S.seen` being page-global is half of
+  // what this fixes.
+  for (const [prop, key] of [['nameSet', 'nSet'], ['picSet', 'picSet']]) {
+    Object.defineProperty(S, prop, { get: () => !!viewerRow()[key],
+      set: (v) => { viewerRow()[key] = !!v; } });
+  }
+  const identityAnswered = (k) => (k === 'myname' ? S.nameSet : S.picSet);
   Object.defineProperty(S, 'myAns', { get: () => (viewerRow().ans || (viewerRow().ans = {})) });
   Object.defineProperty(S, 'okd', { get: () => (viewerRow().okd || (viewerRow().okd = new Set())) });
   // a motion draft and your consent answers are yours, not the room's
@@ -1785,7 +1796,32 @@
     // for ever. Harmless until the gates joined ORDER, at which point
     // everything below 🎩 — 💡, ⚖️, 🪪 — waited on a question that could not
     // settle, so no gate could be acknowledged and no ✏️ wallet ever arrived.
-    if (c.k === 'hat') return S.seen.has('hat') || constituted();
+    // …and the same fix again, for the half that ruling left open (Q682,
+    // found by the phase ladder). `|| constituted()` covers a *begun*
+    // document; before the start `S.seen` was still the whole of it, and
+    // `S.seen` is page-local — so a founder who answered 🎩 and reloaded
+    // was asked again, and since 🎩 blocks the founding order everything
+    // below it was withheld again with it. The module records the act now,
+    // folded from the `convenor-membership-set` events the log already
+    // carried, and it rides the view payload so both paths can read it.
+    if (c.k === 'hat') return S.seen.has('hat') || constituted() ||
+      !!(cs && cs.convenorRecord && cs.convenorRecord().membershipSet);
+    // **✋ and 🖼️ are settled by the module, per seat** (Q645, Ed's live walk
+    // 2026-08-22: *I'm never offered the "Your Name" and "Your Picture"
+    // tasks*). They are the same lesson 🎩 taught one line above, in its
+    // sharpest form: their settledness lived **only** in `S.seen`, because
+    // `ready()` is permanently true for both, and `hydrateS` could not
+    // reconstruct it — so it simply declared them seen on every live render
+    // and the two tasks were dead on every real document, for every seat.
+    // What blocked the honest version is that **null is not the answer to
+    // *have you been asked***: a blank name is Anonymous (§9.0c) and a
+    // picture is removed by choosing initials, so the module had to start
+    // recording the act rather than the value (`nameSet`/`pictureSet`).
+    // Two dividends. It is **per seat** by construction, where `S.seen` is
+    // page-global — the one store on this surface that was not, which is why
+    // one seat's committed ✋ used to read as settled for everybody. And it
+    // survives a reload, which is the whole of what the live path needs.
+    if (c.k === 'myname' || c.k === 'mypic') return identityAnswered(c.k);
     // verified is the whole of what this card asks (a member's address is
     // verified by arrival; changing it un-verifies and asks again)
     if (c.k === 'myemail') return S.emailVerified;
@@ -1855,7 +1891,27 @@
   const roomExists = () => S.roster.some((r) => !r.founder && r.in);
   // everything of yours that is not an answer to a delegated question — the
   // ans-* cards are the ones being paced, so they cannot pace themselves
-  const otherTasksLeft = () => CARDS.concat(GATES).some((c) => visible(c) && mustAct(c));
+  // **A gate or a grant is news, not a question, so it is never one of the
+  // other tasks** (Q645, Ed's live walk 2026-08-22: *I am never offered the
+  // "delegate to members" tasks either*). This counted every gate, and two of
+  // them are outstanding precisely *because* the answers are:
+  //   🍾 — `mustAct` is `amFounder() && !constituted()`, so it is outstanding
+  //     by definition until pressed, and the module refuses the press while a
+  //     delegated question is still collecting (§9.0b). It is the act the
+  //     answers unblock.
+  //   🏛️ — the voice arrives **with the first blind question you are asked**
+  //     (Q605), so it cannot precede that question without a deadlock: the
+  //     grant was withholding the very thing it accompanies.
+  // Either way Q408's exception — *a founder with nothing else outstanding is
+  // served the rest anyway* — was unreachable, and a founder who founded in
+  // one sitting arrived at Begin, was refused, and had nowhere to answer. The
+  // rule is the one `askingFirst` below already states for 🏛️ inside its own
+  // re-entrancy: what a question hands you cannot be the reason to withhold
+  // the question. Ordering is not weakened by this — the file is kept by
+  // `ORDER`/`blocksOrder`, and no answer task can exist before its own
+  // setting has been delegated, which happens well below the pen.
+  const otherTasksLeft = () => CARDS.concat(GATES)
+    .some((c) => !c.isGate && visible(c) && mustAct(c));
   const ansDue = () => roomExists() || !otherTasksLeft();
   // **The answer tasks cascade like everything else** (Ed, 2026-08-19,
   // closing 416: *if I have to do all of them anyway, they should cascade*).
@@ -2862,13 +2918,31 @@
         cs = window.cs = M.ConstitutionSession.open({ title: S.title, slug: S.slug,
           convenor: { id: FOUNDER, email: f.e, isMember: f.role !== 'clerk' } }, now());
       }
-      if (f.role !== 'clerk') { try { cs.setIdentity(now(), FOUNDER, { name: f.n }); } catch (e) {} }
+      // **⏩ answers ✋ and 🖼️ too** (Q645). Both are real tasks now rather
+      // than cards `hydrateS` declared settled, so a stagehand that only names
+      // the founder leaves 🖼️ standing and the founding is not settled. The
+      // picture is answered **null** — that is what choosing your initials
+      // commits, and Ash wears initials everywhere in the fixture.
+      if (f.role !== 'clerk') {
+        try { cs.setIdentity(now(), FOUNDER, { name: f.n, picture: f.pic || null }); } catch (e) {}
+        f.nSet = true; f.picSet = true;
+      }
       if (S.roster.length === 1) { invite('ivy@hollowoak.org'); invite('moss@hollowoak.org'); }
       const named = { 'ivy@hollowoak.org': 'Ivy Fen', 'moss@hollowoak.org': 'Moss Whitlow' };
-      S.roster.forEach((r) => { if (named[r.e]) r.n = named[r.e]; });
+      // **Somebody in the fixture wears a face** (Q685, 2026-08-23). Every
+      // picture in every fixture was the empty string, so no member on any
+      // surface had ever worn an emoji — which is why no probe, walk or
+      // golden could catch the 7px face on the Founded line. One member with
+      // an emoji and one without is the pair that keeps both paths drawn.
+      const faced = { 'ivy@hollowoak.org': 'e🦉' };
+      S.roster.forEach((r) => {
+        if (named[r.e]) r.n = named[r.e];
+        if (faced[r.e] && !r.pic) r.pic = faced[r.e];
+      });
       S.roster.forEach((r) => { if (!r.founder && !r.in) { r.in = true;
         if (r.mid) { try { cs.arrive(now(), r.mid);
-          cs.setIdentity(now(), r.mid, { name: r.n }); } catch (e) {} } } });
+          cs.setIdentity(now(), r.mid, { name: r.n, picture: r.pic || null });
+          r.nSet = true; r.picSet = true; } catch (e) {} } } });
       if (!cs.textConfirmed) { try { cs.confirmStartingText(now(), proseText()); } catch (e) {} }
       CARDS.forEach((c) => S.seen.add(c.k));
       // **The stagehand fills the founder's hand.** Since the surface itself
@@ -3341,8 +3415,12 @@
   let railEntries = [];
   const RAIL_RANK = { ask: 0, news: 4, yours: 6, wait: 7, done: 9 };
   const RAIL_U = { ask: 0.95, news: 0.5, yours: 0.5, wait: 0.2, done: 0 };
+  // a setting's tab, wherever it currently stands — in the band, or beside the
+  // big heading while the birth still has no clauses to hang it on
+  const tabFor = (k) => document.querySelector(
+    '#band .achip[data-tab="' + k + '"], #titlepara .achip[data-tab="' + k + '"]');
   const anchorOf = (k) => {
-    const tab = document.querySelector('#band .achip[data-tab="' + k + '"], #titlepara .achip[data-tab="' + k + '"]');
+    const tab = tabFor(k);
     return document.querySelector('.setupcard[data-setupcard="' + k + '"]')
       || document.querySelector('.cpara[data-para="' + k + '"]')
       || (tab && tab.closest('.cpara'))
@@ -3362,6 +3440,72 @@
   const setupRail = () => ({ querySelectorAll: (sel) => {
     const ids = new Set(railEntries.map((e) => e.id));
     return [...rail.querySelectorAll(sel)].filter((el) => ids.has(el.dataset.q)); } });
+
+  // ---- `dead-click-nudge` (Q650–Q653, Ed 2026-08-23) ---------------------
+  // A founder meeting the birth has never seen this surface, and the rail is
+  // where every piece of work is. But the failure Ed watched in user testing
+  // was worse than the rail going unnoticed: #doctitle is a bare <h1> with no
+  // data-card and nothing listening above it, so clicking "Untitled" — the
+  // obvious door, and the thing people reach for first because they expect to
+  // edit a title in place — does *nothing at all*. The tester got no response
+  // and went looking for the nearest thing that would accept typing, which is
+  // the prose column underneath. They typed the title into the document.
+  //
+  // So a click that lands on nothing answers itself: the task that *is*
+  // waiting beats, in its tab and in its rail entry at once (Q650), which is
+  // what teaches that the two are one thing rather than just pointing at a
+  // corner of the screen. It never opens the card, however many times they
+  // click (Q652) — the nudge is a teacher, and C1/F10 keep the opening click
+  // the user's own. Nothing beats unprompted: the intermittent jiggle first
+  // asked for was dropped (Q651), because every other motion on this surface
+  // is a consequence — a clause fades because it was born, an entry lifts
+  // because it was pressed — and the birth has no clock to ride in any case.
+  //
+  // It renders nothing and changes no state: a pure DOM poke, in the shape of
+  // session.js's own beat(). A render would rebuild both rails wholesale and
+  // take the class with it.
+  const BEAT_MS = 640;                   // the taskBeat keyframe's own duration
+  function beatEl(el) {
+    if (!el) return;
+    el.classList.remove('nudge');
+    void el.offsetWidth;                 // so a second click beats again
+    el.classList.add('nudge');
+    const off = () => el.classList.remove('nudge');
+    el.addEventListener('animationend', off, { once: true });
+    // the wallet's lesson — never depend on your own animation finishing. Under
+    // reduced motion there is no animation to end at all, and this timeout is
+    // the only thing that lets the held lift go.
+    setTimeout(off, BEAT_MS + 60);
+  }
+  // The next task: the first entry still asking for something, in rail order —
+  // during the birth the rail runs single file, so this is normally the only
+  // one. `needs` is the class setup.js gives an 'ask' or a 'news' entry.
+  //
+  // The class rides the <li>, never its button and never a data-*: setup-probe
+  // strips `<li class="…">` from its rail hash but hashes the button's classes
+  // and every data-* it does not know. The CSS reaches the button from there.
+  function nudgeNextTask() {
+    const li = [...rail.querySelectorAll('.qitem')].find((q) => q.querySelector('button.needs'));
+    if (!li) return;                     // nothing is waiting; nothing to point at
+    beatEl(li);
+    beatEl(tabFor(li.dataset.q));
+  }
+  document.addEventListener('click', (ev) => {
+    if (cs || S.open) return;            // the birth only (Q653), and only with no card open
+    if (ev.shiftKey || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    const docEl = document.getElementById('doc');
+    if (!docEl || !docEl.contains(ev.target)) return;
+    // A dead click is one with no real control under it. Structural rather than
+    // a list of data-* hooks, which would rot: every hook in the delegated
+    // handlers below sits on a button or an anchor. #prose is excluded by the
+    // contenteditable test on purpose — writing there is invited from arrival
+    // and stashed across the save, so it is not a mistake (Q654).
+    if (ev.target.closest('a, button, input, textarea, select, label, [role="button"], [contenteditable="true"]')) return;
+    // selecting a phrase is reading, not reaching for a door
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed && String(sel).trim()) return;
+    nudgeNextTask();
+  });
 
   function renderRail() {
     if (isStranger()) {
@@ -3913,7 +4057,7 @@
       : c.k === 'appmail' ? (S.app.emailVerified ? S.app.email + ' · verified'
         : S.app.emailSent ? 'Check your inbox' : 'Your identity here')
       : c.k === 'appname' ? (S.app.name || 'What members will call you')
-      : c.k === 'apppic' ? (S.app.pic ? 'Chosen' : 'A ground for your initials')
+      : c.k === 'apppic' ? (S.app.pic ? 'Chosen' : 'An emoji, or a picture of your own')
       : (S.app.text ? 'Written' : 'A few words — optional')),
     value: (c) => appCtx.summary(c), isRoom: () => false,
   };
@@ -3949,15 +4093,10 @@
     },
     appname: () => '<p class="why">What the members will call you — in the application, and in the membership if it passes.</p>' +
       '<span class="fld"><label>Your name</label><input data-appname="1" value="' + esc(S.app.name) + '" placeholder="Your name" style="width:20rem"></span>',
-    // the founder's own picker, three sections in Ed's order — one picker,
-    // two seats, so they cannot drift
-    apppic: () => '<div class="eyebrow fieldlab">Your initials</div>' +
-      '<div class="avpick">' + avatarOptions().map((o) =>
-        '<button class="avopt" data-apppic="' + o.id + '" aria-pressed="' + (S.app.pic === o.id) + '"' +
-        ' title="' + (o.id ? 'A colour behind your initials' : 'No colour') + '">' +
-        avHtml({ n: S.app.name, pic: o.id }, 'big') + '</button>').join('') + '</div>' +
-      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Or an emoji</div>' +
-      window.SETUP.emojiPicker(S.app.pic, S.app.name, 'data-apppic', 'data-appfree'),
+    // **The founder's own card** (Q686) — one body, two seats, so they cannot
+    // drift. It used to be a hand-rolled copy with no uploader in it at all.
+    apppic: () => pictureBody({ n: S.app.name, pic: S.app.pic },
+      { picAttr: 'data-apppic', freeAttr: 'data-appfree', into: 'app' }),
     apptext: () => '<p class="why">A few words to the members, if you want them — who you are, why this document. Optional: an empty application is a real application.</p>' +
       '<div class="lanebox"><div class="lp editlane' + (S.app.text ? '' : ' blank') + '" contenteditable="plaintext-only"' +
       ' spellcheck="false" data-apptext="1" data-ph="To the members…">' + esc(S.app.text) + '</div></div>',
@@ -4486,7 +4625,12 @@
   // **The picture card is an uploader** (Ed, 2026-08-18). Delegated, because
   // the card is rebuilt on every render; the file is read locally and never
   // sent anywhere.
-  wirePicDrop((d) => { S.mypic = d; render(); });
+  // the drop zone names where its file lands, so one handler serves the
+  // founder's 🖼️ and the applicant's (Q686)
+  wirePicDrop((d, into) => {
+    if (into === 'app') S.app.pic = d; else S.mypic = d;
+    render();
+  });
   window.SETUP.wireFreeEmoji('data-picfree', (g) => { S.mypic = 'e' + g; render(); });
   window.SETUP.wireFreeEmoji('data-appfree', (g) => { S.app.pic = 'e' + g; render(); });
   window.SETUP.setFaceTaken((e2) => {
@@ -4783,8 +4927,10 @@
             if (S.slug !== cs.slug) cs.setSetting(now(), 'link', { slug: S.slug });
             return; }
           if (was === 'text') { cs.confirmStartingText(now(), proseText()); return; }
-          if (was === 'myname') { cs.setIdentity(now(), viewerId(), { name: S.myname || null }); return; }
-          if (was === 'mypic') { cs.setIdentity(now(), viewerId(), { picture: S.mypic || null }); return; }
+          // committing is the act, whatever the value — an empty name is
+          // Anonymous and an empty picture is your initials, both real answers
+          if (was === 'myname') { S.nameSet = true; cs.setIdentity(now(), viewerId(), { name: S.myname || null }); return; }
+          if (was === 'mypic') { S.picSet = true; cs.setIdentity(now(), viewerId(), { picture: S.mypic || null }); return; }
           if (was === 'roster') return; // the register commits row by row
           // 🎩 commits here like every other setting (Q522, Ed 2026-08-21).
           // It used to carry a commit control of its own, which is how it
@@ -5561,6 +5707,9 @@
     S.emailSent = true; S.emailVerified = true;
     S.myname = v.view.identity.name || '';
     S.mypic = v.view.identity.picture || '';
+    // whether they were ever *answered*, which the values cannot say (Q645)
+    S.nameSet = !!v.view.identity.nameSet;
+    S.picSet = !!v.view.identity.pictureSet;
     S.quorumForm = v.quorumForm;
     hydrateValues(null);
     // delegation seeds: a members-held setting with no resolved value reads
@@ -5600,7 +5749,10 @@
       if (c.isGate || c.ansFor) return;
       if (c.k === 'title' || c.k === 'slug' || c.k === 'myemail' || c.k === 'roster') { S.seen.add(c.k); return; }
       if (c.k === 'text') { if (v.textConfirmed) S.seen.add(c.k); return; }
-      if (c.k === 'myname' || c.k === 'mypic') { S.seen.add(c.k); return; }
+      // ✋ and 🖼️ answer for themselves now, per seat, off `view.identity`'s
+      // own flags (Q645) — this line used to declare them settled on every
+      // live render, which is why neither task existed on a real document.
+      if (c.k === 'myname' || c.k === 'mypic') return;
       const st = csState(c.k);
       if (st && (st.settledBy !== null || st.holder === 'members')) {
         S.seen.add(c.k);
@@ -5689,6 +5841,69 @@
       document.body.appendChild(b);
     }).catch(() => {});
   }
+  // **The phase ladder's bar** (Q674–Q678). Deliberately its own control
+  // rather than a re-enable of `.devswitch`: that one's seats are page state
+  // (`S.viewer` changes rendering while every command still posts under the
+  // cookie, so you would drive one member's hand from another's chair) and
+  // its change handler calls `cs.arrive`, which `remoteCS` does not
+  // implement. Here a seat *is* a cookie, so every control is a POST and a
+  // reload, and the page rebuilds itself from the payload it is served.
+  // Off the design system for the same reason as 📬 and the seat dropdown:
+  // a stagehand, not a member of the cast.
+  // bottom-left, where the stagehand lives: the seat dropdown sits there in
+  // the fixture and is hidden live, so the corner is free, and the top-left
+  // is not — a bar there stands on the contents rail and hides the headings
+  // it is meant to help you look at
+  const LADDER_STYLE = 'position:fixed;bottom:47px;left:10px;z-index:60;display:flex;' +
+    'gap:.35rem;align-items:center;font:12px ui-monospace,monospace;' +
+    'border:1px dashed #999;background:#fff;padding:.3rem .5rem';
+  function ladderBar() {
+    const slug = LIVEMODE ? LIVESLUG : '';
+    fetch('/api/dev/ladder?slug=' + encodeURIComponent(slug))
+      .then((r) => (r.ok ? r.json() : null)).then((d) => {
+        if (!d || document.getElementById('ladderbar')) return;
+        const wrap = document.createElement('div');
+        wrap.id = 'ladderbar';
+        wrap.style.cssText = LADDER_STYLE;
+        const atEnd = d.phase === d.next;
+        const seats = (d.seats || []).map((s) =>
+          '<option value="' + esc(s.id) + '"' + (s.id === d.me ? ' selected' : '') + '>' +
+          esc(s.name) + (s.founder ? ' 🎩' : '') + '</option>').join('');
+        wrap.innerHTML =
+          '<b>ladder</b>' +
+          '<span style="color:#666">' + esc(d.phase) +
+          (d.seed === null ? '' : ' · seed ' + d.seed) + '</span>' +
+          (atEnd ? '' : '<button id="ladnext" style="border:1px dashed #999;background:#fff;' +
+            'cursor:pointer;padding:.2rem .5rem">⏭ ' + esc(d.next) + '</button>') +
+          (d.seed === null ? '<input id="ladseed" size="6" placeholder="seed" ' +
+            'style="border:1px dashed #999;font:inherit;padding:.15rem .3rem">' : '') +
+          (seats ? '<select id="ladseat" style="border:1px dashed #999;font:inherit">' +
+            seats + '</select>' : '');
+        document.body.appendChild(wrap);
+        const post = (path, body) => fetch(path, { method: 'POST',
+          headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+          .then((r) => r.json());
+        const next = document.getElementById('ladnext');
+        if (next) next.onclick = () => {
+          next.disabled = true;
+          next.textContent = '…';
+          const seedBox = document.getElementById('ladseed');
+          const seed = seedBox && seedBox.value ? Number(seedBox.value) : undefined;
+          post('/api/dev/ladder', { to: d.next, ...(slug ? { slug } : {}),
+            ...(seed === undefined || Number.isNaN(seed) ? {} : { seed }) })
+            .then((r) => {
+              if (r && r.skipped && r.skipped.length) console.warn('[ladder]', r.skipped);
+              // the birth has no document to reload, so it travels to one
+              if (r && r.slug && r.slug !== slug) location.href = '/d/' + r.slug;
+              else location.reload();
+            });
+        };
+        const seat = document.getElementById('ladseat');
+        if (seat) seat.onchange = () => {
+          post('/api/dev/seat', { slug, member: seat.value }).then(() => location.reload());
+        };
+      }).catch(() => {});
+  }
   function openDevInbox() {
     fetch('/api/dev/outbox').then((r) => r.json()).then((d) => {
       const old = document.getElementById('devoutbox');
@@ -5719,6 +5934,7 @@
     const dev = document.querySelector('.devswitch');
     if (dev) dev.style.display = 'none';
     devInboxButton();
+    ladderBar();
     fetch('/api/d/' + LIVESLUG + '/view').then((r) => {
       if (r.status === 401) { console.warn('[live] no seat and no door'); return null; }
       return r.json();
@@ -5789,6 +6005,7 @@
     const dev = document.querySelector('.devswitch');
     if (dev) dev.style.display = 'none';
     devInboxButton();
+    ladderBar();
     // pasted text syncs against the pending creation (§9.7a v0.55)
     let deb = null;
     prose.addEventListener('input', () => {
@@ -5810,11 +6027,19 @@
   // line per block (a leading '# ' … '### ' marks a heading), and the engine's
   // document is the same lines — so a clause key is its line index and a
   // proposal on a block is one hunk over that line.
-  const blocksOf = (text) => String(text || '').split(/\n/).flatMap((l, i) => {
-    if (!l.trim()) return [];                      // a blank line is a line the engine counts, and nothing to read
-    const m = l.match(/^(#{1,3})\s+(.*)$/);
-    return [m ? { t: 'h', level: m[1].length, x: m[2], key: 'L' + i } : { t: 'p', x: l, key: 'L' + i }];
-  });
+  const blocksOf = (text) => {
+    const blocks = String(text || '').split(/\n/).flatMap((l, i) => {
+      if (!l.trim()) return [];                      // a blank line is a line the engine counts, and nothing to read
+      const m = l.match(/^(#{1,3})\s+(.*)$/);
+      return [m ? { t: 'h', level: m[1].length, x: m[2], key: 'L' + i } : { t: 'p', x: l, key: 'L' + i }];
+    });
+    // **An empty document has one clause, and it is empty** (Q649 (a), Ed
+    // 2026-08-22). §9.0b allows a confirmed-empty text, and the engine holds
+    // it as one empty line; without a block keyed to it there is nowhere to
+    // put a caret, so nobody could ever propose the first paragraph. The
+    // block is line 0, so a proposal on it is the ordinary hunk [0, 1).
+    return blocks.length ? blocks : [{ t: 'p', x: '', key: 'L0' }];
+  };
   // ---- the closed document is bracketed (Q470) ----------------------------
   // constitution · charter · **the backlog as ranked document text** · the
   // signatures. Each undecided race is a paragraph — its best candidate's
@@ -6123,9 +6348,16 @@
       api.cmd('judge-race', { a: c.a, b: c.b, outcome });
     };
     LIVE_HOOKS.propose = (d) => {
+      // A hunk replaces the document's lines [start, end); the engine holds an
+      // empty document as **zero** lines, so the empty clause an empty
+      // document renders (Q649 (a)) proposes an insert at [0, 0), never a
+      // replacement of a line that does not exist. Clamped to the text the
+      // engine actually holds, which is the rule for every hunk.
+      const nLines = cs.text === '' ? 0 : String(cs.text).split('\n').length;
       const hunks = d.sites.map((site) => {
         const ls = site.text.split('\n');
-        return { start: lineIdx(site.keys[0]), end: lineIdx(site.keys[site.keys.length - 1]) + 1,
+        const start = Math.min(lineIdx(site.keys[0]), nLines);
+        return { start, end: Math.max(start, Math.min(lineIdx(site.keys[site.keys.length - 1]) + 1, nLines)),
           lines: ls.map((ln, i) => headOf(site.origin[i]) + ln) };
       });
       const local = d.id;

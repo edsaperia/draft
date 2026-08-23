@@ -2900,10 +2900,18 @@ document.addEventListener('pointercancel', () => flyStop(false));
           html += '</div>' + suggCardHtml(wasResolved) + PROSE();
           cardDone = true;
         } else {
-          html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + '"' +
+          // An empty clause — the one block of an empty document (Q649 (a)) —
+          // keeps a line's height and says what it is, in grey and out of the
+          // text flow so the caret lands at offset 0. The sentence promises
+          // typing only to somebody who may propose.
+          const blank = line.key && !line.x && !wasResolved;
+          html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + (blank ? ' blank' : '') + '"' +
             (wasResolved ? ' data-anchor="' + wasResolved.id + '"' +
               anchWash(wasResolved, openId === wasResolved.id, line.key) : '') +
-            (line.key ? ' data-key="' + line.key + '"' : '') + '>' +
+            (line.key ? ' data-key="' + line.key + '"' : '') +
+            (blank ? ' data-placeholder="' + (MAY_PROPOSE()
+              ? 'Nothing here yet — start typing to propose the first paragraph.'
+              : 'Nothing here yet.') + '"' : '') + '>' +
             (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
               '" title="' + esc(plainLabel(wasResolved.qLabel)) + ' — decided">' + mkHtml(markKindOf(wasResolved)) + '</span></span>' : '') +
             esc(line.x) + '</p>';
@@ -4299,8 +4307,13 @@ document.addEventListener('pointercancel', () => flyStop(false));
       // The host is the whole prose column now, so the block being typed in comes
       // from the *selection* rather than from the event's target — the target is
       // the column itself.
+      // A caret on the column itself — its whitespace, an empty charter, a
+      // select-all — picks no block, and used to fall through here *without*
+      // refusing, so the browser edited the host in place: no card, no
+      // proposal, wiped by the next render (Ed, 2026-08-22: the founder typing
+      // freely into a begun document). Refused like every other input.
       const picked = selectedBlocks();
-      if (!picked) return;
+      if (!picked) { ev.preventDefault(); return; }
       ev.preventDefault();
       // One block or several: the same keystroke, told apart by what is selected.
       if (picked.blocks.length > 1) return startDraftFromRun(picked, ev);

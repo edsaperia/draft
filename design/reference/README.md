@@ -25,7 +25,13 @@ question and its follow-up and traded places in the founding order, and at
 `refs-hold-2026-08-22` after the propose hold stopped releasing on a
 boundary event and ✏️ Propose took the accent-subtle ground, and at
 `refs-founded-2026-08-22` after the pen and shield gave up their clauses
-and hung their tabs on the Founded line, which now stands from the save.
+and hung their tabs on the Founded line, which now stands from the save,
+and at `refs-picture-2026-08-23` after an emoji face stopped being a disc
+and the picture card became *pick an emoji* → *upload an image* → what
+you are wearing now. That last run also caught `session.js` and
+`constitution.js` having drifted from the previous freeze, which is
+exactly the rot this file warns about below: re-freeze **every** copy,
+not the ones you happened to edit.
 It marks the same commit
 and is authoritative if EOL normalisation ever makes a copy differ byte-wise.
 
