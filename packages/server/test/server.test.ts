@@ -62,6 +62,9 @@ type MemberViewPayload = {
     questions: Array<{ setting: string; answered: number; answeredCount: number; myAnswer: unknown }>;
     members: Array<{ id: string; email: string; name: string | null }>;
     applicants: Array<{ id: string; email: string; name: string | null }>;
+    motions: Array<{ id: string; route: string; status: string; payload: unknown }>;
+    crownTasks: Array<{ id: string; motion: string | null;
+      text?: { candidateId: string; summary: string } }>;
     frozen: boolean; mustReturn: number | null;
     closed: null | { at: number; mySignature: { comment: string } | null; signatures: unknown[] };
   };
@@ -1328,4 +1331,87 @@ describe('the founder reads their own document (2026-08-22)', () => {
     expect(door.canRead).toBe(false);
     expect(door.text).toBe(null);
   });
+});
+
+describe('the phase ladder (Q674–Q678)', () => {
+  it('walks one real document from birth to a closed session with signatures', async () => {
+    const { base } = await boot();
+    interface Step { slug: string; docId: string; phase: string; seed: number;
+      seats: { id: string; name: string; founder: boolean }[];
+      built: string[]; skipped: string[]; error?: string }
+    let last: Step | null = null;
+    let cookie = '';
+    const press = async (to: string): Promise<Step> => {
+      const res = await post(base, '/api/dev/ladder', {
+        to, ...(last === null ? { seed: 42 } : { slug: last.slug }),
+      });
+      const body = await res.json() as Step;
+      expect(body.error, `press to ${to} — ${res.status}: ${JSON.stringify(body)}`).toBeUndefined();
+      cookie = cookieOf(res);
+      // **nothing the ladder writes may be stamped past real now**, or tOf's
+      // clamp drags every later command into the future with it
+      last = body;
+      return body;
+    };
+    const viewOf = async () => await (await fetch(`${base}/api/d/${last!.slug}/view`,
+      { headers: { cookie } })).json() as MemberViewPayload;
+
+    // -- one press per rung, the same document throughout ----------------
+    const constitution = await press('constitution');
+    expect(constitution.phase).toBe('constitution');
+    expect(constitution.seed).toBe(42);
+    expect(constitution.slug).toBe('ladder-16'); // the seed rides the address
+    expect(constitution.seats).toHaveLength(20); // ~20 members (Q678)
+    expect(constitution.seats[0]!.founder).toBe(true);
+
+    const ready = await press('ready');
+    expect(ready.skipped, ready.skipped.join(' · ')).toEqual([]);
+    // **the rung stops one press short of 🍾** (Q678): the start is the
+    // transition worth watching, so the stagehand does not spend it
+    expect(ready.phase).toBe('ready');
+    const beforeStart = await viewOf();
+    expect(beforeStart.constitutedAtT).toBeNull();
+    expect(beforeStart.readiness!.ready).toBe(true);
+
+    const session = await press('session');
+    expect(session.phase).toBe('session');
+    expect(session.skipped, session.skipped.join(' · ')).toEqual([]);
+    expect(session.built.join(' · ')).toMatch(/30 text proposals over 10 clauses/);
+
+    // -- the document itself, not the ladder's account of it -------------
+    const live = await viewOf();
+    expect(live.constitutedAtT).not.toBeNull();
+    // really begun in the past, so the ramp is genuinely part-way up
+    expect(live.constitutedAtT!).toBeLessThan(Date.now() - 60_000);
+    expect(live.view.members).toHaveLength(20);
+    // proposals of different kinds, all at once (Q678)
+    const candidates = live.clauses.reduce((n, c) => n + c.candidates.length, 0);
+    // how many stay live depends on the host's cooldown — this boot tunes it
+    // to nothing, so far more of the thirty carry than a real room would see
+    expect(candidates).toBeGreaterThanOrEqual(5);
+    expect(live.records.length).toBeGreaterThan(0); // some carried
+    expect(live.raceCards.length).toBeGreaterThan(0); // and there is judging to do
+    const statuses = new Set(live.view.motions.map((m) => `${m.route}:${m.status}`));
+    expect(statuses.size).toBeGreaterThanOrEqual(4);
+    expect([...statuses].some((s) => s.startsWith('ordinary:'))).toBe(true);
+    expect([...statuses].some((s) => s.startsWith('constitutional:'))).toBe(true);
+    expect(live.view.applicants.length).toBeGreaterThan(0);
+    // the 👑 route, reachable only because 🛡️ was reserved before anything carried
+    expect(live.view.crownTasks.length).toBeGreaterThan(0);
+
+    const closing = await press('closing');
+    expect(closing.phase).toBe('closing');
+    const nearly = await viewOf();
+    expect(nearly.view.closed).toBeNull(); // not yet — the real clock closes it
+
+    const closed = await press('closed');
+    expect(closed.phase).toBe('closed');
+    expect(closed.built.join(' · ')).toMatch(/members signed/);
+    const done = await viewOf();
+    expect(done.view.closed).not.toBeNull();
+    expect(done.record).not.toBeNull();
+    expect(done.record!.signatures.length).toBeGreaterThan(0);
+    // …and signed with real words, which is what the closing comment is
+    expect(done.record!.signatures.some((s) => (s.comment ?? '').length > 0)).toBe(true);
+  }, 120_000);
 });

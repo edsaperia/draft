@@ -490,6 +490,58 @@ export async function createDraftServer(cfg: ServerConfig,
       return;
     }
 
+    /* -- the phase ladder (Q674–Q678) ------------------------------------
+       One press, one rung: birth → constitution → ready → session →
+       closing → closed, on a real document with a real log and a real
+       engine. Dropped from the production artifact the same way the
+       outbox is — and the import is **dynamic and inside the label**,
+       which is what keeps the ladder, its cast and its charter from being
+       resolved into the bundle at all. A static import would survive the
+       drop, because esbuild cannot prove a module's top-level
+       initialisers pure and keeps them even with no live reference. */
+    DEV: if (req.method === 'POST' && path === '/api/dev/ladder') {
+      if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
+      if (devCrossSite(req, res, new URL(cfg.baseUrl).origin)) return;
+      const body = await readJson(req) as { to?: unknown; seed?: unknown; slug?: unknown };
+      const { runLadder } = await import('./dev-ladder.js');
+      const doc = typeof body.slug === 'string' ? store.bySlug(body.slug) : null;
+      const result = await runLadder({ store, commit }, doc, {
+        ...(typeof body.to === 'string' ? { to: body.to as never } : {}),
+        ...(typeof body.seed === 'number' ? { seed: body.seed } : {}),
+      });
+      // the press seats you as the founder, since the founder is who the
+      // ladder's own rungs are written from
+      setCookie(res, result.docId, auth.cookieFor(result.docId, 'founder', nowMs), httpsOn);
+      json(res, 200, result);
+      return;
+    }
+
+    /* Sit in any seat. `cookieFor` checks nothing at all, so this mirrors
+       /auth/login's own arrival and revival — a cookie for somebody who
+       has not arrived renders a seat whose every command then throws. The
+       seat list is served from here rather than from the view payload:
+       `devMail` already rides the view unconditionally, the stranger's
+       path included, and a roster there would be an oracle to anybody
+       holding the slug. */
+    DEV: if (req.method === 'POST' && path === '/api/dev/seat') {
+      if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
+      if (devCrossSite(req, res, new URL(cfg.baseUrl).origin)) return;
+      const body = await readJson(req) as { slug?: unknown; member?: unknown };
+      const doc = docOr404(typeof body.slug === 'string' ? store.bySlug(body.slug) : null);
+      if (!doc) return;
+      const member = typeof body.member === 'string' ? body.member : '';
+      const rec = doc.cs.memberRecords().get(member);
+      const isFounder = member === doc.cs.convenorRecord().id;
+      if (!rec && !isFounder) { json(res, 404, { error: 'no such seat' }); return; }
+      const t = tOf(doc.cs, nowMs);
+      if (rec && rec.arrivedAtT === null) doc.cs.arrive(t, member);
+      else if (rec && rec.lapsed) doc.cs.memberReturn(t, member);
+      await commit(doc, nowMs);
+      setCookie(res, doc.id, auth.cookieFor(doc.id, member, nowMs), httpsOn);
+      json(res, 200, { ok: true, member });
+      return;
+    }
+
     /* the address, asked before the email (Q460): is it free? A document
        holds it, or a pending creation has reserved it (Q462b) — the one
        small oracle on pending documents, the price of promising an
@@ -930,7 +982,20 @@ export async function createDraftServer(cfg: ServerConfig,
         // presence is presence (Q459a): a read refreshes the member's
         // activity clock, at most hourly — the module says whether it
         // recorded anything, and only then is there something to commit
-        if (applicantId === null && doc.cs.seen(tOf(doc.cs, nowMs), memberId)) {
+        //
+        // **A ladder document's clock belongs to the ladder** (Q681). This
+        // one write is what made the stagehand's whole premise unworkable:
+        // presence stamps `now`, so merely *looking* at a document pinned
+        // its log to the present, and the next rung — which builds its
+        // three hours of session by writing them into the past — had no
+        // past left to write into. Since the bar reloads the page after
+        // every press, that happened between every pair of presses. The
+        // skip is dev-only and lives inside the label, so production keeps
+        // presence exactly as it was.
+        let ladderClock = false;
+        DEV: { ladderClock = mailer.dev && doc.cs.slug.startsWith('ladder-'); }
+        if (applicantId === null && !ladderClock &&
+            doc.cs.seen(tOf(doc.cs, nowMs), memberId)) {
           await commit(doc, nowMs);
         }
         const seq = doc.cs.logEntries().length;
@@ -1253,6 +1318,21 @@ function ipOf(req: IncomingMessage, cfg: ServerConfig): string {
     }
   }
   return req.socket.remoteAddress ?? 'unknown';
+}
+
+/**
+ * The dev routes' own Origin check. The blanket one above covers /auth
+ * only, and these two mint cookies and write to a document, so they want
+ * the same guard — a cross-site form must not be able to reseat somebody
+ * or run a ladder in their session.
+ */
+function devCrossSite(req: IncomingMessage, res: ServerResponse, expected: string): boolean {
+  const origin = req.headers.origin;
+  if (origin !== undefined && origin !== expected) {
+    json(res, 403, { error: 'cross-site request refused' });
+    return true;
+  }
+  return false;
 }
 
 function json(res: ServerResponse, code: number, payload: unknown): void {
