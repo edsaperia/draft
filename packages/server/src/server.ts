@@ -121,10 +121,17 @@ export async function createDraftServer(cfg: ServerConfig,
    * feedback the person in front of the screen can act on, so they stay
    * synchronous. What they share with the queue is the kill-switch: with
    * mail off they are enqueued instead, so nothing is lost.
+   *
+   * A held mail carries the hash of the token in its link, exactly as a
+   * relayed one does: a queued magic link that later gives up must be
+   * revoked, or the switch being on turns a link nobody received into a
+   * live credential for the rest of its week.
    */
-  const sendNow = async (mail: Mail, documentId: string | null): Promise<void> => {
+  const sendNow = async (mail: Mail, documentId: string | null,
+    token?: string): Promise<void> => {
     if (cfg.mailOff) {
-      await outbox.enqueue([{ ...mail, documentId }], Date.now());
+      await outbox.enqueue([{ ...mail, documentId,
+        ...(token === undefined ? {} : { tokenHash: sha256Hex(token) }) }], Date.now());
       return;
     }
     await mailer.send(mail);
@@ -517,7 +524,17 @@ export async function createDraftServer(cfg: ServerConfig,
       // the outbox's two numbers (finding 15): `pending` is mail on its way
       // and normally 0; `failed` is mail that gave up and is the number an
       // operator is meant to notice. `mail: off` says the kill-switch is on.
-      const mail = await outbox.counts();
+      //
+      // **The health check must not fail because the store did.** These two
+      // numbers come out of Postgres, and a pg error carries a `code`, so an
+      // uncaught one is answered 500 — which takes a perfectly healthy
+      // process out of service and restarts it over a database blip the
+      // restart cannot fix. A store that will not answer reports itself as
+      // `null` instead, which is the honest thing and still says something.
+      const mail = await outbox.counts().catch((e: unknown) => {
+        console.error('outbox counts failed:', e);
+        return null;
+      });
       json(res, 200, {
         ok: true,
         build: cfg.buildSha,
@@ -698,7 +715,7 @@ export async function createDraftServer(cfg: ServerConfig,
       const token = await auth.mintToken(
         { kind: 'create', email, pending: { title, slug, email, isMember, stashKey } }, nowMs);
       const link = `${cfg.baseUrl}/auth/create?token=${token}`;
-      await sendNow({ to: email, ...MAILS.create(title, slug, link) }, null);
+      await sendNow({ to: email, ...MAILS.create(title, slug, link) }, null, token);
       json(res, 200, { ok: true, slug, pendingId,
         ...(mailer.dev ? { devLink: link } : {}) });
       return;
@@ -788,11 +805,14 @@ export async function createDraftServer(cfg: ServerConfig,
       }
       await commit(doc, nowMs);
       // the operator hears about every birth (Ed, 2026-08-20) — fired and
-      // forgotten: the save must never fail, or wait, on this mail
+      // forgotten: the save must never fail, or wait, on this mail. Through
+      // `sendNow` rather than the mailer, because the kill-switch means
+      // *nothing goes out*, and a mail that leaves while mail is off is a
+      // switch that does not switch.
       if (cfg.notifyEmail !== null) {
-        void mailer.send({ to: cfg.notifyEmail,
-          ...MAILS.newDocument(p.title, `${cfg.baseUrl}/d/${slug}`, p.email) })
-          .catch((e) => console.error('new-document notification failed:', e));
+        void sendNow({ to: cfg.notifyEmail,
+          ...MAILS.newDocument(p.title, `${cfg.baseUrl}/d/${slug}`, p.email) }, null)
+          .catch((e: unknown) => console.error('new-document notification failed:', e));
       }
       setCookie(res, id, auth.cookieFor(id, 'founder', nowMs), httpsOn);
       redirect(res, `/d/${slug}`);
@@ -817,7 +837,7 @@ export async function createDraftServer(cfg: ServerConfig,
       const token = await auth.mintToken(
         { kind: 'login', email, docId: doc.id, memberId }, nowMs);
       const link = `${cfg.baseUrl}/auth/login?token=${token}`;
-      await sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id);
+      await sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id, token);
       json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
       return;
     }
@@ -850,7 +870,7 @@ export async function createDraftServer(cfg: ServerConfig,
         const token = await auth.mintToken(
           { kind: 'login', email, docId: doc.id, memberId: already }, nowMs);
         const link = `${cfg.baseUrl}/auth/login?token=${token}`;
-        await sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id);
+        await sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id, token);
         json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
         return;
       }
@@ -868,14 +888,14 @@ export async function createDraftServer(cfg: ServerConfig,
         const token = await auth.mintToken(
           { kind: 'apply', email, docId: doc.id, applicantId: underway.id }, nowMs);
         const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
-        await sendNow({ to: email, ...MAILS.applyVerify(doc.cs.titleOf, link) }, doc.id);
+        await sendNow({ to: email, ...MAILS.applyVerify(doc.cs.titleOf, link) }, doc.id, token);
         json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
         return;
       }
       const token = await auth.mintToken({ kind: 'apply', email, docId: doc.id }, nowMs);
       const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
       await sendNow({ to: email,
-        ...MAILS.applyVerify(doc.cs.titleOf, link) }, doc.id);
+        ...MAILS.applyVerify(doc.cs.titleOf, link) }, doc.id, token);
       json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
       return;
     }

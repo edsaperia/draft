@@ -1041,6 +1041,12 @@ window.SETUP = (function () {
       for (let q = 0.6; out.length > PIC_MAX_STORED && q >= 0.3; q -= 0.15) {
         out = 'u' + cv.toDataURL('image/jpeg', q);
       }
+      // …and the ladder runs out somewhere, so the last rung is checked
+      // rather than assumed: handing over a string the Save will refuse is
+      // the very defect above, arrived at by the other road.
+      if (out.length > PIC_MAX_STORED) {
+        return refuse(zone, 'That picture will not compress small enough — try a simpler one.');
+      }
       onFile(out, into);
     };
     document.addEventListener('change', (ev) => {

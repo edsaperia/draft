@@ -110,12 +110,20 @@ export class MailOutbox {
     for (const row of rows) {
       // **The RFC 2606 refusal stays at the mailer** (Q680) — this is the
       // queue's half of it: an address that provably cannot receive is not
-      // worth six attempts and a backoff, so it is marked failed with the
-      // reason and never offered again.
+      // worth six attempts and a backoff, so the row is retired here and
+      // never offered again.
+      //
+      // **Retired, not failed.** `failed` is the number an operator is meant
+      // to notice, and the phase ladder's whole cast lives at
+      // `@ladder.invalid` — counting these would put dozens of permanent
+      // failures in `/healthz` after one `npm run ladder` and bury the one
+      // real give-up among them. The mailer's own contract already treats a
+      // reserved address as dropped rather than refused, so the row takes
+      // the same shape: terminal, with the reason in `lastError`, and the
+      // link it carried revoked because nobody received it.
       if (!deliverable(row.to)) {
-        await this.give(row, OUTBOX_MAX_ATTEMPTS,
-          'reserved address (RFC 2606) — provably undeliverable, never retried');
-        failed += 1;
+        await this.retire(row,
+          'reserved address (RFC 2606) — provably undeliverable, never sent');
         continue;
       }
       try {
@@ -147,11 +155,28 @@ export class MailOutbox {
     await this.deps.persistence.markOutboxFailed(row.id, attempts, this.now, why);
     console.error(`MAIL GIVEN UP: "${row.subject}" to ${row.to} after ${attempts} ` +
       `attempts — ${why}`);
-    if (row.tokenHash !== undefined) {
-      await this.deps.revoke(row.tokenHash).catch((e: unknown) => {
-        console.error('revoking the undelivered link failed:', e);
-      });
-    }
+    await this.dropToken(row);
+  }
+
+  /** Retire a row that was never worth offering: terminal like a send, so
+   *  it leaves the pending count without joining the failed one, and its
+   *  link goes with it because nobody received it either. */
+  private async retire(row: OutboxRow, why: string): Promise<void> {
+    // sent first, then the reason: `markOutboxSent` clears `lastError`, so
+    // writing the note before stamping it would erase the note
+    await this.deps.persistence.markOutboxSent(row.id, this.now);
+    await this.deps.persistence.markOutboxFailed(row.id, row.attempts, this.now, why);
+    console.log(`[mail dropped→${row.to}] ${why}`);
+    await this.dropToken(row);
+  }
+
+  /** A link nobody received must not stay live for the week its expiry
+   *  promised — this is the credential half of giving up. */
+  private async dropToken(row: OutboxRow): Promise<void> {
+    if (row.tokenHash === undefined) return;
+    await this.deps.revoke(row.tokenHash).catch((e: unknown) => {
+      console.error('revoking the undelivered link failed:', e);
+    });
   }
 
   /** Run a pass without waiting for it — the immediate kick after a commit,

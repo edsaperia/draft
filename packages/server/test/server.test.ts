@@ -186,7 +186,18 @@ const consume = async (link: string): Promise<Response> => {
   });
 };
 
-const lastMailTo = (dataDir: string, to: string): { link?: string } => {
+/**
+ * **A relayed mail is no longer sent inside the request.** Since the outbox
+ * landed, `relay` enqueues and kicks the sender; the kick is deliberately
+ * fire-and-forget, so a 200 does not mean the provider has been offered the
+ * mail — only that the mail cannot now be lost. A reader of the dev inbox
+ * therefore waits for whatever pass is in flight, which is what `drain` is.
+ * Without this the assertion below raced the sender and the invitation,
+ * admission and close mails were read as missing.
+ */
+const lastMailTo = async (dataDir: string, to: string): Promise<{ link?: string }> => {
+  const owner = booted.find((b) => b.dataDir === dataDir);
+  if (owner !== undefined) await owner.draft.outbox.drain();
   const lines = readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
     .split('\n').filter((l) => l.length > 0)
     .map((l) => JSON.parse(l) as { to: string; link?: string });
@@ -228,7 +239,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
 
     // -- invitations went out as mail with login links --------------------
     const follow = async (email: string): Promise<string> => {
-      const mail = lastMailTo(dataDir, email);
+      const mail = await lastMailTo(dataDir, email);
       expect(mail.link).toBeTruthy();
       const res = await consume(mail.link!);
       expect(res.status).toBe(302);
@@ -492,7 +503,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     const again = await (await post(base, `/api/d/${created.slug}/apply`,
       { email: 'dee@example.org' })).json() as { ok: boolean; devLink: string };
     expect(again.ok).toBe(true);
-    expect(lastMailTo(dataDir, 'dee@example.org').link).toContain('/auth/apply');
+    expect((await lastMailTo(dataDir, 'dee@example.org')).link).toContain('/auth/apply');
     expect(booted[booted.length - 1]!.draft.store
       .bySlug(created.slug)!.cs.logEntries().length).toBe(beforeRe);
     const reEntry = await consume(again.devLink);
@@ -553,7 +564,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
       .find((m) => m.email === 'dee@example.org');
     expect(deeMember).toBeDefined();
     // the admitted member was mailed their seat (review #1, finding 7)
-    expect(lastMailTo(dataDir, 'dee@example.org').link).toContain('/auth/login');
+    expect((await lastMailTo(dataDir, 'dee@example.org')).link).toContain('/auth/login');
     expect(deeMember!.arrivedAtT).not.toBeNull();
     // a member's address gets the same 200 as anybody — the apply door
     // is not a membership oracle (review #1, finding 8) — and a login
@@ -562,7 +573,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
       { email: 'bo@example.org' });
     expect(dupe.status).toBe(200);
     expect(((await dupe.json()) as { ok: boolean }).ok).toBe(true);
-    expect(lastMailTo(dataDir, 'bo@example.org').link).toContain('/auth/login');
+    expect((await lastMailTo(dataDir, 'bo@example.org')).link).toContain('/auth/login');
 
     // -- restart: both logs on disk replay to the same state --------------
     const reopened = await reopen();
@@ -620,7 +631,7 @@ describe('the pre-save text stash (§9.7a v0.55)', () => {
     await post(base, `/api/d/${created.slug}/cmd`,
       { cmd: 'invite', args: { email: 'reader@example.org' } }, founder);
     const reader = await (async () => {
-      const mail = lastMailTo(dataDir, 'reader@example.org');
+      const mail = await lastMailTo(dataDir, 'reader@example.org');
       return cookieOf(await consume(mail.link!));
     })();
     expect((await viewOf(reader)).provisionalText)
@@ -742,7 +753,7 @@ describe('review #1 hardening', () => {
     await post(base, `/api/d/${created.slug}/cmd`,
       { cmd: 'invite', args: { email: 'leaver@example.org' } }, g);
     const leaver = cookieOf(await consume(
-      lastMailTo(dataDir, 'leaver@example.org').link!));
+      (await lastMailTo(dataDir, 'leaver@example.org')).link!));
     const before = await fetch(`${base}/api/d/${created.slug}/view`,
       { headers: { cookie: leaver } });
     expect(before.status).toBe(200);
@@ -1032,7 +1043,7 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
     // with them rather than being left behind on a name nobody is using
     expect((await (await fetch(`${base}/api/slug/oak-club`)).json() as
       { available: boolean }).available).toBe(true);
-    expect(lastMailTo(dataDir, 'ada@example.org').link).toBeTruthy();
+    expect((await lastMailTo(dataDir, 'ada@example.org')).link).toBeTruthy();
   });
 });
 
@@ -1060,7 +1071,7 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     await cmd(ada, 'invite', { email: 'bo@example.org' });
     await cmd(ada, 'invite', { email: 'cy@example.org' });
     const follow = async (email: string): Promise<string> =>
-      cookieOf(await consume(lastMailTo(dataDir, email).link!));
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
     const bo = await follow('bo@example.org');
     const cy = await follow('cy@example.org');
     await cmd(ada, 'set-identity', { name: 'Ada' });
