@@ -199,6 +199,12 @@
     ['open-name', () => openTab('myname')],
     ['type-name', () => typeInto('.setupcard input[data-txt="myname"]', 'Ada Lovell')],
     ['confirm-name', () => click('.setupcard [data-confirm]')],
+    // 🖼️ is step 10 of the founding order and the probe had never opened it
+    // (Q685, 2026-08-23) — which is how an emoji face rendered at 7px on the
+    // Founded line for four days with every check green.
+    ['open-picture', () => openTab('mypic')],
+    ['choose-emoji', () => click('.setupcard .avopt[data-pic="e🦊"]')],
+    ['confirm-picture', () => click('.setupcard [data-confirm]')],
     ['fast-forward', () => click('#devff')],
     ['seat-bo', () => setSeat('1')],
     ['seat-founder', () => setSeat('0')],

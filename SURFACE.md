@@ -345,11 +345,21 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 | 🪪 Membership | band tab | **the list is the clause** | why · invite rows · *Several at once* · the Applicants block (Admit / Keep the membership as it is / Indifferent + ✓) | — | 🗑️ | ✒️ | ✒️; the tab | grey |
 | ✉️ Invite · ❌ Remove | the 🪪 pile, post-start | what stands | the address rows / the members with ✕ *Propose that they leave* | — | 🗑️ | by route: ✒️ · 🏛️ hold · ✏️ Propose | commit | — |
 | 🤝 Applications | band tab | the rule | why · the four rungs | Invitation only / Applications must be proposed by members / Anyone may apply / Open | 🗑️ | ✒️ | ✒️ | grey |
-| identity ✋ 🖼️ 📧 | your own row; the birth run for 📧 | the title | the name field / the picker / the address | — | 🗑️ (puts back, never clears) | ✓ Save; 📧: 🪶 at the birth, 📨 while unverified, ✓ once verified | Save · send; 📧 re-opens on refusal | the row |
+| identity ✋ 🖼️ 📧 | your own row; the birth run for 📧 | the title | the name field / *Pick an emoji* → *Or upload an image* → *Currently* with Remove / the address | — | 🗑️ (puts back, never clears) | ✓ Save; 📧: 🪶 at the birth, 📨 while unverified, ✓ once verified | Save · send; 📧 re-opens on refusal | the row |
 | 🎩 | the members paragraph | the rule | Member — drafting too / Clerk — not drafting; locked at 🍾 | the two | 🗑️ | ✒️ (when dirty, pre-start) | ✒️ | locked |
 | the applicant's five | the applicant's rail | the title | apply · email (Send the link in the body) · name · picture · words | — | Begin (Y20) → 🗑️ + Submit | (as left) / ✓ | Submit · ✓ | ✏️ yours |
 | the stranger's two | the door's rail | the title | why · the address · Send the link in the body (Y20) | — | 🗑️ only | (in the body) | send | — |
 | backlog (closed page) | the ⏸ tab | the best wording | as the sealed record, *Undecided at the close* | none | nothing (Y20) | OK if unread | OK | ⏸ grey |
+
+**What a picture may be** (Q687). Two shapes and the absence of one — the grounds for your initials and the drawn marks left the picker on 2026-08-23, and are refused rather than merely un-offered. The initials are not a third answer: they are what the room shows when you have given no picture, which is why the card says so in a sentence instead of offering them in a row.
+
+<!-- spec-check: picture -->
+
+| stored as | what it is | how it is drawn | refused when |
+|---|---|---|---|
+| `e`+emoji | one pictographic grapheme | the glyph itself, at the size of the text it stands in — never a disc | it is one of the surface's own marks · another member already wears it |
+| `u`+data URI | an image, scaled and re-encoded in the page before it is stored | a photograph filling a disc | it is not an image · it is bigger than the page will encode |
+| — | none | your initials on a disc, an anonymous mark before you have a name | — |
 
 ### 9.1 The commit-row grammar
 

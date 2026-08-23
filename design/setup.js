@@ -36,18 +36,24 @@ window.SETUP = (function () {
   /* ---- avatars ------------------------------------------------------------
      `me` in the glossary reads "initials, not a photograph: there are no
      accounts behind it yet". There are now — choosing how you appear is one of
-     the cards — so the initials become the *default* rather than the rule, and
-     what the picker offers is a ground for them or a drawn mark instead.
+     the cards — so the initials become the *default* rather than the rule.
 
-     No uploads in a mockup, and no invented photographs of people who do not
-     exist: a face on this screen would be the one piece of fiction that reads
-     as a claim about a real person. */
-  const GROUNDS = ['#3b5bdb', '#0b7285', '#2b8a3e', '#e8590c', '#862e9c', '#495057'];
-  const MARKS = [
-    ['#d6336c', '<circle cx="22" cy="22" r="9" fill="#fff"/><circle cx="22" cy="22" r="18" fill="none" stroke="#fff" stroke-width="3"/>'],
-    ['#1098ad', '<path d="M8 30 L22 10 L36 30 Z" fill="#fff"/>'],
-    ['#5c940d', '<rect x="10" y="10" width="10" height="10" fill="#fff"/><rect x="24" y="10" width="10" height="10" fill="#fff"/><rect x="10" y="24" width="10" height="10" fill="#fff"/><rect x="24" y="24" width="10" height="10" fill="#fff"/>'],
-  ];
+     **A picture is an emoji, an uploaded image, or none** (Q687, 2026-08-23).
+     The grounds for your initials and the three drawn marks are gone: they
+     were a mockup device from before either of the real answers existed, and
+     with a real uploader in the card a ground is a fourth thing to choose
+     between two that mean something. Nothing is left tolerating them — we are
+     in alpha and there are no real documents (Ed, 2026-08-23) — so `c0`–`c5`
+     and `m0`–`m2` are refused by the server as well as un-offered here, and
+     everything that is not `e`+emoji or `u`+image is simply the empty answer.
+
+     **And an emoji is a glyph, not a disc** (Q685/Q688, Ed 2026-08-23: they
+     render *very small and right aligned*, and should be *sized like the text
+     around them and replace the circle that images use*). So the emoji branch
+     stops emitting an `.av` altogether: `.emojiface` has no box, no ground and
+     no size of its own, and inherits whatever text it stands in. The circle
+     survives exactly where it is doing work — behind an uploaded photograph
+     and behind initials, which need a ground to be legible. */
   const FACE_EMOJI = ['👩', '👨', '🧑', '👧', '👦', '🧒', '👶', '👵', '👴', '🧓',
     '👩‍🦰', '👨‍🦰', '🧑‍🦰', '👩‍🦱', '👨‍🦱', '🧑‍🦱',
     '👩‍🦲', '👨‍🦲', '🧑‍🦲', '👩‍🦳', '👨‍🦳', '🧑‍🦳',
@@ -63,7 +69,7 @@ window.SETUP = (function () {
   const faceToneRow = () =>
     '<div class="avpick">' + FACE_TONES.map((tn) =>
       '<button class="avopt" data-tone="' + tn + '" aria-pressed="' + (FACE_TONE === tn) + '"' +
-      ' title="Skin tone"><span class="av big emoji">\u270B' + tn + '</span></button>').join('') + '</div>';
+      ' title="Skin tone"><span class="emojiface big">\u270B' + tn + '</span></button>').join('') + '</div>';
   // Any emoji may be a face EXCEPT the surface's own vocabulary (Ed,
   // 2026-08-19): a member whose face is ✏️ would turn every wallet and
   // compose button into a possible mention of them. SURFACE_EMOJI is a scan
@@ -72,12 +78,15 @@ window.SETUP = (function () {
   // 2026-08-19 commit when the furniture changes); 🛡 arrived with the
   // governance tabs (Q454, 2026-08-21 — 🔧 and ⚙ left the vocabulary with
   // it); 🌡 🪜 🥾 arrived and 📈 🚪 left with the glyph rename of
-  // 2026-08-22 (the threshold, the ramp and removal); the reserved set
+  // 2026-08-22 (the threshold, the ramp and removal); 🍾 🥂 📨 were three the
+  // scan had never been re-run for and joined it with Q687 (2026-08-23,
+  // closing Q632) — a member whose face is 🍾 turns every mention of
+  // beginning the document into a possible mention of them; the reserved set
   // is that minus the offered faces.
   // Tones are stripped before the test, so ✋🏽 is as reserved as ✋.
   const SURFACE_EMOJI = ('↔ ⏩ ⏰ ⏱ ⏳ ☑ ⚔ ⚖ ✅ ✉ ✋ ✍ ✏ ✒ ✔ ✖ ❄ ❌ ❎ ❓ ' +
-    '🌍 🌡 🌶 🎩 🏛 🏷 👁 👍 👑 👤 👥 💡 💤 📄 📌 📍 📝 📧 📬 📯 🔄 🔗 ' +
-    '🔥 🖼 🗑 🗝 🛡 🤖 🤝 🥾 🪜 🪪 🪶 ' +
+    '🌍 🌡 🌶 🍾 🎩 🏛 🏷 👁 👍 👑 👤 👥 💡 💤 📄 📌 📍 📝 📧 📨 📬 📯 🔄 🔗 ' +
+    '🔥 🖼 🗑 🗝 🛡 🤖 🤝 🥂 🥾 🪜 🪪 🪶 ' +
     '👦 👧 👨 👩 👱 👳 👴 👵 👶 🧑 🧒 🧓 🧔').split(' ');
   const normEmoji = (s) => s.replace(/[\u{FE0F}\u{FE0E}\u{1F3FB}-\u{1F3FF}]/gu, '');
   const RESERVED_EMOJI = new Set(SURFACE_EMOJI.filter((g) =>
@@ -143,13 +152,6 @@ window.SETUP = (function () {
       if (g && g !== 'reserved' && !holder) onPick(g);
     });
   };
-  // the colour picker proper: no colour, then the six grounds. The drawn
-  // marks left the picker with Ed's three sections (2026-08-19) — they were a
-  // mockup device from before emoji and uploads existed — and avHtml still
-  // renders one, so nobody already wearing a mark loses their face.
-  const avatarOptions = () =>
-    [{ id: '' }].concat(GROUNDS.map((g, i) => ({ id: 'c' + i })));
-
   // **Before there is a name there is still a person** (Ed, 2026-08-19: the
   // picture card offers *initials with a colour picker — or, if they have not
   // given us their name, an anonymous user symbol with a colour picker, which
@@ -160,10 +162,17 @@ window.SETUP = (function () {
     '<path d="M8.5 37c0-7.2 6-12 13.5-12s13.5 4.8 13.5 12z" fill="currentColor"/></svg>';
   function avHtml(person, cls) {
     const pic = person && person.pic;
-    const c = 'av ' + (cls || '') + (pic ? ' set' : '');
-    // An uploaded picture is stored as 'u' + a data URL: the file never leaves
-    // the browser, which is what lets a mockup have a real uploader in it
-    // without inventing a face for anybody (Ed, 2026-08-18).
+    const c = 'av ' + (cls || '');
+    // **An emoji is not a disc** (Q688): no ground, no border, no box — it
+    // takes the size of the text it stands in, which is what makes one rule
+    // right at all nineteen sites at once instead of a specificity race
+    // against every context that tunes a two-letter initials size.
+    if (pic && pic[0] === 'e') {
+      return '<span class="emojiface ' + (cls || '') + '">' + esc(pic.slice(1)) + '</span>';
+    }
+    // An uploaded picture is stored as 'u' + a data URL, downscaled and
+    // re-encoded in the browser before it is ever stored (Q688): the file
+    // itself never leaves the page.
     if (pic && pic[0] === 'u') {
       // Only a data-URI image may enter a style attribute (PRODUCTION.md
       // stage 3, defect 4): the server whitelists this shape at
@@ -176,24 +185,9 @@ window.SETUP = (function () {
       }
       return '<span class="' + c + ' anon">' + PERSON + '</span>';
     }
-    if (pic && pic[0] === 'c') {
-      // a missing index renders as nobody, never as a throw inside the
-      // wholesale render (review #1, finding 2 — the sink survives what
-      // no audit saw)
-      const g = GROUNDS[+pic.slice(1)];
-      if (!g) return '<span class="' + c + ' anon">' + PERSON + '</span>';
-      return '<span class="' + c + '" style="background:' + g + '">' +
-        (person.n ? esc(initials(person.n)) : PERSON) + '</span>';
-    }
-    if (pic && pic[0] === 'e') {
-      return '<span class="' + c + ' emoji">' + esc(pic.slice(1)) + '</span>';
-    }
-    if (pic && pic[0] === 'm') {
-      const m = MARKS[+pic.slice(1)];
-      if (!m) return '<span class="' + c + ' anon">' + PERSON + '</span>';
-      return '<span class="' + c + '" style="background:' + m[0] + '">' +
-        '<svg viewBox="0 0 44 44" aria-hidden="true">' + m[1] + '</svg></span>';
-    }
+    // anything else stored here is the empty answer — a ground index, a mark
+    // index, a string nobody audited — and renders as nobody, never as markup
+    if (pic) return '<span class="' + c + ' anon">' + PERSON + '</span>';
     // no name yet: the anonymous person, so a disc never reads as a bullet
     if (!person || !person.n) return '<span class="' + c + ' anon">' + PERSON + '</span>';
     return '<span class="' + c + '">' + esc(initials(person.n)) + '</span>';
@@ -738,13 +732,13 @@ window.SETUP = (function () {
      it is read into a data URL and drawn, so the mockup invents nothing and
      still behaves like the real control. The initials stay underneath as a
      real answer rather than a fallback — most rooms run on them. */
-  /* **Three ways, in the order you would try them** (Ed, 2026-08-19):
-     initials on a colour, then an emoji, then a picture of your own. It was
-     the other way up, which put the one thing a mockup cannot really do — an
-     upload — at the top, and buried the answer most rooms actually run on.
-     Before there is a name, the colours still work: the disc wears the
-     anonymous person and turns into initials the moment the ✋ card is
-     answered. */
+  /* **Two ways, and then what you get with neither** (Q686, Ed 2026-08-23).
+     It had been three sections — a ground for your initials, then an emoji,
+     then an upload — which put a decision where there is none: the initials
+     are not a third answer you pick, they are what the room shows when you
+     have given no picture. So the card is *pick an emoji* → *upload an image*
+     → what you are wearing now, and the sentence underneath says what nothing
+     means. */
   const EMOJI_GROUPS = [
     ['People', FACE_EMOJI, true],
     ['Faces', ['😀', '😄', '😁', '😆', '😊', '🙂', '😉', '😌', '😍', '🥰', '😎', '🤓',
@@ -769,21 +763,35 @@ window.SETUP = (function () {
         faceBtn(toned ? faceToned(g) : g, ownPic, dataAttr, name)).join('') + '</div>').join('') +
     '</div>' + anyEmojiRow(freeAttr);
 
-  const pictureBody = (me, o) =>
-    '<div class="eyebrow fieldlab">Your initials</div>' +
-    '<div class="avpick">' + avatarOptions().map((c0) =>
-      '<button class="avopt" data-pic="' + c0.id + '" aria-pressed="' + ((me.pic || '') === c0.id) + '"' +
-      ' title="' + (c0.id ? 'A colour behind your initials' : 'No colour') + '">' +
-      avHtml({ n: me.n, pic: c0.id }, 'big') + '</button>').join('') + '</div>' +
-    '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Or an emoji</div>' +
-    emojiPicker(me.pic, me.n, 'data-pic', 'data-picfree') +
-    '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Or upload an image</div>' +
-    '<div class="picdrop">' + avHtml(me, 'big') +
-    '<div class="picact">' +
-    '<label class="btn">' + (me.pic && me.pic[0] === 'u' ? 'Choose another' : 'Choose a picture') +
-    '<input type="file" accept="image/*" data-picfile="1"></label>' +
-    (me.pic && me.pic[0] === 'u' ? '<button class="btn" data-pic="">Remove</button>' : '') +
-    '<span class="picnote">or drag one onto this box</span></div></div>';
+  /* One body, two seats (Q686): the applicant's 🖼️ used to hand-roll its own
+     copy of the grounds and the picker and carried no uploader at all, which
+     is an asymmetry nobody chose. Everything that differs between the two is
+     an attribute name and where the file lands. */
+  const pictureBody = (me, o) => {
+    const opt = o || {};
+    const at = opt.picAttr || 'data-pic';
+    const free = opt.freeAttr || 'data-picfree';
+    const into = opt.into || 'me';
+    const pic = me.pic || '';
+    const uploaded = pic[0] === 'u';
+    return '<div class="eyebrow fieldlab">Pick an emoji</div>' +
+      emojiPicker(pic, me.n, at, free) +
+      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Or upload an image</div>' +
+      '<div class="picdrop" data-picinto="' + into + '"><div class="picact">' +
+      '<label class="btn">' + (uploaded ? 'Choose another' : 'Choose a picture') +
+      '<input type="file" accept="image/*" data-picfile="1"></label>' +
+      // it is scaled down and re-encoded here rather than stored whole, so the
+      // card has to say what that costs a picture that moves
+      '<span class="picnote">or drag one onto this box. It is scaled down and' +
+      ' saved as a still, so an animated picture stops moving.</span></div></div>' +
+      '<div class="piccur"><span class="piccurlab">Currently:</span> ' + avHtml(me, 'big') +
+      (pic ? '<button class="btn" ' + at + '="">Remove</button>' : '') + '</div>' +
+      // T28's rule for the picture: the card says what choosing nothing means
+      '<p class="setnote">' + (me.n
+        ? 'With no picture you appear as your initials.'
+        : 'With no picture you appear as an anonymous mark, and as your initials once you have a name.') +
+      '</p>';
+  };
 
   /* ---- ordinary and constitutional ----------------------------------------
      **This is a constitution editor, and what we need to decide is which
@@ -974,18 +982,59 @@ window.SETUP = (function () {
       ? 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.'
       : 'It comes back to you the moment it opens.') + '</p>';
 
-  // The FileReader dance and the .picdrop drag targets, one copy for both
-  // surfaces (2026-08-18): the file is read locally and never sent anywhere;
-  // where the data lands (S.mypic, and which render runs) stays the caller's.
+  /* The uploader, one copy for both surfaces: the file is read locally and
+     never sent anywhere; where the data lands stays the caller's, named by
+     the drop zone's own `data-picinto` so one handler can serve the founder's
+     🖼️ and the applicant's.
+
+     **It downscales and re-encodes** (Q688, 2026-08-23). It used to hand the
+     raw file straight to `readAsDataURL`, which is three defects in one line:
+     a phone photograph previewed perfectly and then failed on Save, because
+     the server caps a picture well under what a camera produces; every
+     picture change appended the whole thing to an append-only log that is
+     replayed on every load; and `readAsDataURL` preserves EXIF, so an
+     uploaded photograph carried its own GPS coordinates into a log that holds
+     answers in plaintext.
+
+     `imageOrientation: 'from-image'` is load-bearing rather than a nicety: a
+     canvas re-encode drops EXIF, and the orientation flag goes with it, so a
+     portrait photograph comes out on its side unless the rotation is applied
+     at decode. */
+  const PIC_SIDE = 256;
+  const PIC_MAX_SOURCE = 20 * 1024 * 1024;
   const wirePicDrop = (onFile) => {
-    const take = (file) => {
-      if (!file || !/^image\//.test(file.type)) return;
-      const fr = new FileReader();
-      fr.onload = () => onFile('u' + fr.result);
-      fr.readAsDataURL(file);
+    const refuse = (zone, msg) => {
+      const note = zone && zone.querySelector('.picnote');
+      if (note) note.textContent = msg;
+    };
+    const take = async (file, zone) => {
+      const into = (zone && zone.dataset.picinto) || 'me';
+      if (!file) return;
+      if (!/^image\//.test(file.type)) return refuse(zone, 'That is not a picture.');
+      if (file.size > PIC_MAX_SOURCE) return refuse(zone, 'That picture is too big to open here.');
+      let bmp;
+      try {
+        bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      } catch (e) { return refuse(zone, 'That picture could not be opened.'); }
+      const cv = document.createElement('canvas');
+      cv.width = PIC_SIDE; cv.height = PIC_SIDE;
+      const cx = cv.getContext('2d');
+      // a white ground rather than transparency: the encoding is JPEG, and
+      // transparency in a JPEG is black
+      cx.fillStyle = '#fff'; cx.fillRect(0, 0, PIC_SIDE, PIC_SIDE);
+      // fitted, never cropped and never enlarged — the room is being given a
+      // picture, not a thumbnail somebody else framed
+      const s = Math.min(PIC_SIDE / bmp.width, PIC_SIDE / bmp.height, 1);
+      const w = Math.max(1, Math.round(bmp.width * s));
+      const h = Math.max(1, Math.round(bmp.height * s));
+      cx.drawImage(bmp, (PIC_SIDE - w) / 2, (PIC_SIDE - h) / 2, w, h);
+      if (bmp.close) bmp.close();
+      onFile('u' + cv.toDataURL('image/jpeg', 0.8), into);
     };
     document.addEventListener('change', (ev) => {
-      if (ev.target.matches('[data-picfile]')) take(ev.target.files[0]);
+      if (ev.target.matches('[data-picfile]')) {
+        take(ev.target.files[0], ev.target.closest('.picdrop'));
+      }
     });
     document.addEventListener('dragover', (ev) => {
       const z = ev.target.closest && ev.target.closest('.picdrop');
@@ -999,7 +1048,7 @@ window.SETUP = (function () {
       const z = ev.target.closest && ev.target.closest('.picdrop');
       if (!z) return;
       ev.preventDefault(); z.classList.remove('over');
-      take(ev.dataTransfer.files && ev.dataTransfer.files[0]);
+      take(ev.dataTransfer.files && ev.dataTransfer.files[0], z);
     });
   };
 
@@ -1258,7 +1307,7 @@ window.SETUP = (function () {
     '<span class="pf' + (p.n === meName ? ' me' : '') + '">' + avHtml(p) +
     esc(p.n) + (p.n === meName ? ' (you)' : '') + '</span>').join('') + '</div>';
 
-  return { esc, TICK, initials, avHtml, avatarOptions, hueOf, washOf, stateOf, markOf, railEntry,
+  return { esc, TICK, initials, avHtml, hueOf, washOf, stateOf, markOf, railEntry,
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
     nameBody, pictureBody, opt, num, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,

@@ -375,6 +375,39 @@ function checkComposer(M, pm) {
   note(`  ${propose.length} composable; ${answer.length} answer bodies; ${ladders} ladders compared`);
 }
 
+/* What a picture may be — SURFACE.md §9 against the page's sink and the
+   server's gate (Q687, 2026-08-23). The two ends of this had drifted before
+   anybody looked: the picker had stopped offering the grounds while both the
+   renderer and the validator still carried them, so a format the surface
+   could not make was one the store would still accept. The table names the
+   shapes; this asserts nothing else renders and nothing else is let in. */
+function checkPicture() {
+  note('What a picture may be — SURFACE.md §9 against the page and the server');
+  const rows = tableAfter('SURFACE.md', 'picture');
+  const said = rows.map((r) => (r['stored as'].match(/`([a-z])`\+/) || [])[1]).filter(Boolean);
+  const cmd = read('packages/server/src/commands.ts');
+  const setup = js('design/setup.js');
+  const accepted = [];
+  if (/pic\.startsWith\('e'\)/.test(cmd)) accepted.push('e');
+  if (/\^udata:image\\\//.test(cmd)) accepted.push('u');
+  // avHtml's own branches: what the sink will draw as something other than nobody
+  const drawn = [...new Set([...setup.matchAll(/pic\[0\] === '([a-z])'/g)].map((m) => m[1]))];
+  const same = (a, b) => [...a].sort().join('') === [...b].sort().join('');
+  if (!same(said, accepted)) {
+    find('picture', `SURFACE names ${said.join('/')}; the server accepts ${accepted.join('/') || 'nothing'}`);
+  }
+  if (!same(said, drawn)) {
+    find('picture', `SURFACE names ${said.join('/')}; avHtml draws ${drawn.join('/') || 'nothing'}`);
+  }
+  // the retired shapes, named so a re-addition is red rather than quiet
+  for (const [where, src] of [['the server', cmd], ['the page', setup]]) {
+    for (const gone of [/c\[0-5\]/, /m\[0-2\]/, /GROUNDS/, /MARKS\b/]) {
+      if (gone.test(src)) find('picture', `${where} still carries the retired ${gone} (Q687)`);
+    }
+  }
+  note(`  ${said.length} stored shapes: ${said.join(' · ')}; the grounds and marks are gone from both ends`);
+}
+
 function checkBannedWords() {
   note('Banned words — STYLE.md §1–2 over every file a member reads from');
   const files = ['design/cards.js', 'design/session.js', 'design/setup.js', 'design/session-view.html'];
@@ -502,6 +535,7 @@ checkMarks();
 checkWallets(pm);
 checkOrder(pm);
 checkComposer(M, pm);
+checkPicture();
 checkBannedWords();
 checkClaudeMd();
 

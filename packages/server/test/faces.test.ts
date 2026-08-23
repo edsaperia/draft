@@ -39,7 +39,20 @@ describe('what a face may be', () => {
     expect(() => validPicture('e✏️')).toThrow('furniture');
     expect(() => validPicture('e🦊🦊')).toThrow('one emoji');
     expect(() => validPicture('eA')).toThrow('one emoji');
-    expect(validPicture('c3')).toBe('c3'); // the other formats are untouched
+  });
+
+  // Q687, 2026-08-23: the grounds and the drawn marks left the picker, and
+  // are refused rather than merely un-offered — nothing historical needs
+  // tolerating (Ed: alpha, no real documents), and a shape the surface
+  // cannot make is one nothing should accept.
+  it('a picture is an emoji or an uploaded image, and nothing else', () => {
+    expect(() => validPicture('c3')).toThrow('unrecognised picture format');
+    expect(() => validPicture('m0')).toThrow('unrecognised picture format');
+    expect(validPicture('udata:image/jpeg;base64,AAAA')).toBe('udata:image/jpeg;base64,AAAA');
+    expect(() => validPicture('udata:image/svg+xml;base64,AAAA')).toThrow('unrecognised');
+    // the cap is what the page now encodes, not what a raw camera file was
+    expect(() => validPicture('udata:image/jpeg;base64,' + 'A'.repeat(40_001)))
+      .toThrow('too long');
   });
 
   it('a taken face is refused in the page\'s words; your own and a differently toned one are not', () => {

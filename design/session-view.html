@@ -208,7 +208,7 @@
 <script src="session.js"></script>
 <script>
 (function () {
-  const { esc, TICK, avHtml, avatarOptions, bandHtml, fitBand, railEntry, cardHtml, watchBody,
+  const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, opt, num, someIn, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, readBody,
     motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE } = window.SETUP;
@@ -2929,7 +2929,16 @@
       }
       if (S.roster.length === 1) { invite('ivy@hollowoak.org'); invite('moss@hollowoak.org'); }
       const named = { 'ivy@hollowoak.org': 'Ivy Fen', 'moss@hollowoak.org': 'Moss Whitlow' };
-      S.roster.forEach((r) => { if (named[r.e]) r.n = named[r.e]; });
+      // **Somebody in the fixture wears a face** (Q685, 2026-08-23). Every
+      // picture in every fixture was the empty string, so no member on any
+      // surface had ever worn an emoji — which is why no probe, walk or
+      // golden could catch the 7px face on the Founded line. One member with
+      // an emoji and one without is the pair that keeps both paths drawn.
+      const faced = { 'ivy@hollowoak.org': 'e🦉' };
+      S.roster.forEach((r) => {
+        if (named[r.e]) r.n = named[r.e];
+        if (faced[r.e] && !r.pic) r.pic = faced[r.e];
+      });
       S.roster.forEach((r) => { if (!r.founder && !r.in) { r.in = true;
         if (r.mid) { try { cs.arrive(now(), r.mid);
           cs.setIdentity(now(), r.mid, { name: r.n, picture: r.pic || null });
@@ -4048,7 +4057,7 @@
       : c.k === 'appmail' ? (S.app.emailVerified ? S.app.email + ' · verified'
         : S.app.emailSent ? 'Check your inbox' : 'Your identity here')
       : c.k === 'appname' ? (S.app.name || 'What members will call you')
-      : c.k === 'apppic' ? (S.app.pic ? 'Chosen' : 'A ground for your initials')
+      : c.k === 'apppic' ? (S.app.pic ? 'Chosen' : 'An emoji, or a picture of your own')
       : (S.app.text ? 'Written' : 'A few words — optional')),
     value: (c) => appCtx.summary(c), isRoom: () => false,
   };
@@ -4084,15 +4093,10 @@
     },
     appname: () => '<p class="why">What the members will call you — in the application, and in the membership if it passes.</p>' +
       '<span class="fld"><label>Your name</label><input data-appname="1" value="' + esc(S.app.name) + '" placeholder="Your name" style="width:20rem"></span>',
-    // the founder's own picker, three sections in Ed's order — one picker,
-    // two seats, so they cannot drift
-    apppic: () => '<div class="eyebrow fieldlab">Your initials</div>' +
-      '<div class="avpick">' + avatarOptions().map((o) =>
-        '<button class="avopt" data-apppic="' + o.id + '" aria-pressed="' + (S.app.pic === o.id) + '"' +
-        ' title="' + (o.id ? 'A colour behind your initials' : 'No colour') + '">' +
-        avHtml({ n: S.app.name, pic: o.id }, 'big') + '</button>').join('') + '</div>' +
-      '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Or an emoji</div>' +
-      window.SETUP.emojiPicker(S.app.pic, S.app.name, 'data-apppic', 'data-appfree'),
+    // **The founder's own card** (Q686) — one body, two seats, so they cannot
+    // drift. It used to be a hand-rolled copy with no uploader in it at all.
+    apppic: () => pictureBody({ n: S.app.name, pic: S.app.pic },
+      { picAttr: 'data-apppic', freeAttr: 'data-appfree', into: 'app' }),
     apptext: () => '<p class="why">A few words to the members, if you want them — who you are, why this document. Optional: an empty application is a real application.</p>' +
       '<div class="lanebox"><div class="lp editlane' + (S.app.text ? '' : ' blank') + '" contenteditable="plaintext-only"' +
       ' spellcheck="false" data-apptext="1" data-ph="To the members…">' + esc(S.app.text) + '</div></div>',
@@ -4621,7 +4625,12 @@
   // **The picture card is an uploader** (Ed, 2026-08-18). Delegated, because
   // the card is rebuilt on every render; the file is read locally and never
   // sent anywhere.
-  wirePicDrop((d) => { S.mypic = d; render(); });
+  // the drop zone names where its file lands, so one handler serves the
+  // founder's 🖼️ and the applicant's (Q686)
+  wirePicDrop((d, into) => {
+    if (into === 'app') S.app.pic = d; else S.mypic = d;
+    render();
+  });
   window.SETUP.wireFreeEmoji('data-picfree', (g) => { S.mypic = 'e' + g; render(); });
   window.SETUP.wireFreeEmoji('data-appfree', (g) => { S.app.pic = 'e' + g; render(); });
   window.SETUP.setFaceTaken((e2) => {

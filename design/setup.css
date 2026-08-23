@@ -268,9 +268,17 @@
     border: 1px solid var(--border); color: var(--muted); font-size: 8px; font-weight: 700;
     display: inline-grid; place-items: center; flex: none; overflow: hidden; }
   .av.big { width: 44px; height: 44px; font-size: var(--t-cap); }
-  .av.set { border-color: transparent; color: #fff; }
-  span.av.emoji { background: var(--light); border-color: var(--border); font-size: 18px; line-height: 1; }
-  span.av.big.emoji { font-size: 38px; }
+  /* **An emoji is a glyph, not a disc** (Q688, Ed 2026-08-23). It used to be
+     an `.av` wearing a ground, at a size fought for by specificity —
+     `span.av.emoji` is (0,2,1) and every contextual avatar rule is three
+     classes, so each of them silently re-sized the emoji to a value chosen
+     for two initial letters, 7px on the Founded line. The fix is not another
+     round of that: an emoji has no box at all, so no rule that sizes a disc
+     can reach it, and it takes the size of the text it stands in at every
+     site at once. Two places want it large and say so. */
+  .emojiface { display: inline-block; font-size: 1em; line-height: 1;
+    vertical-align: middle; }
+  .emojiface.big { font-size: 38px; }
   .avopt.taken { opacity: 0.3; cursor: not-allowed; }
   .freemoji { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s2); }
   .emojin { width: 120px; padding: 3px 8px; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 20px; line-height: 1.3; }
@@ -329,7 +337,15 @@
   .picact input[type=file] { position: absolute; width: 1px; height: 1px;
     overflow: hidden; clip: rect(0 0 0 0); }
   .picnote { font-size: var(--t-cap); color: var(--muted); }
-  .av.photo { background-size: cover; background-position: center; color: transparent; }
+  /* the white-on-colour treatment was `.av.set`, worn by every stored format;
+     with the grounds and marks gone (Q687) a photograph is the only thing
+     left that fills its own disc, so the rule folds into it */
+  .av.photo { background-size: cover; background-position: center;
+    border-color: transparent; color: transparent; }
+  /* what you are wearing now, under the two ways of changing it */
+  .piccur { display: flex; align-items: center; gap: var(--s3);
+    margin-top: var(--s4); font-size: var(--t-ui); }
+  .piccur .piccurlab { color: var(--muted); }
 
   .avpick { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
   .avopt { border: 2px solid transparent; border-radius: 50%; padding: 2px; background: none;
@@ -455,6 +471,10 @@ button.cline:hover b { text-decoration: underline; }
   transition: opacity 220ms ease, transform 320ms cubic-bezier(0.2, 1.45, 0.45, 1); }
 #assembly .seat.in { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 #assembly .seat .av { width: 30px; height: 30px; font-size: 11px; box-shadow: var(--shadow-md); }
+/* a seat is a token floating over the page with no text around it to take a
+   size from, so an emoji face states one here, as it does in the navbar —
+   *sized like the text around them* has nothing to mean in a ring */
+#assembly .seat .emojiface { font-size: 26px; line-height: 30px; }
 #assembly.done .seat { transform: translate(-50%, -50%) scale(1.14); }
 #assembly.gone .seat { opacity: 0 !important;
   transform: translate(-50%, -50%) scale(0.3) !important; transition-duration: 160ms; }
@@ -572,9 +592,14 @@ button.cline:hover b { text-decoration: underline; }
 #prosefolds .sectoggle[aria-expanded="true"] { opacity: 0; }
 #prosefolds .sectoggle:hover, #prosefolds .sectoggle:focus-visible { opacity: 1; }
 
-/* Founded by [avatar] [name] (at [time]) — the avatar rides in the line */
+/* Founded by [avatar] [name] (at [time]) — the avatar rides in the line.
+   `justify-content` because the override to `inline-flex` silently dropped
+   half of the base rule's `place-items: center` (the justify half means
+   nothing in flex), so the initials fell to `flex-start` inside a 20px disc
+   with `overflow: hidden` and were shoved against its edge (Q685). */
 .cpv.founded .av { width: 20px; height: 20px; font-size: 7px;
-  display: inline-flex; margin: 0 2px; position: relative; top: -2px; }
+  display: inline-flex; align-items: center; justify-content: center;
+  margin: 0 2px; position: relative; top: -2px; }
 
 /* a rule standing as a card's head is the clause, not a title: document size
    and colour, exactly as it stood on the page (Ed's QA, 2026-08-18) */

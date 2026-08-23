@@ -209,6 +209,7 @@ Lifted from CLAUDE.md's glossary and the code in spec pass 2 (Q585 a); the numbe
 | T26 | The rationale placeholder is an opening clause, not a question | *We should change this because…* |
 | T27 | A blank rationale is real: *No reason given.* | `speakerHtml` |
 | T28 | An empty application, a blank name, a blank closing comment is a real answer, and the card says what that means | the ✋, apply and 🥂 notes |
+| T28a | 🖼️'s version of T28: with no picture the card says what you show as, and the uploader says what it does to a picture that moves | *With no picture you appear as your initials.* · *saved as a still* |
 | T29 | A field label names the band and counts rivals as a fact, never a standing | *Proposed · 2 rival proposals* |
 | T30 | The rail says what is true; the buttons say what you can do | ⚔️ is *stuck*; ✏️ is on the drafting it leads to |
 | T31 | Indifferent is labelled, never drawn as 🤷; ❄️'s pressed state is its words | the commit row |

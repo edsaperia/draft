@@ -14,8 +14,8 @@ export const FACE_EMOJI = ['👩', '👨', '🧑', '👧', '👦', '🧒', '👶
   '🧔', '🧔‍♂️', '🧔‍♀️'];
 
 export const SURFACE_EMOJI = ('↔ ⏩ ⏰ ⏱ ⏳ ☑ ⚔ ⚖ ✅ ✉ ✋ ✍ ✏ ✒ ✔ ✖ ❄ ❌ ❎ ❓ ' +
-  '🌍 🌡 🌶 🎩 🏛 🏷 👁 👍 👑 👤 👥 💡 💤 📄 📌 📍 📝 📧 📬 📯 🔄 🔗 ' +
-  '🔥 🖼 🗑 🗝 🛡 🤖 🤝 🥾 🪜 🪪 🪶 ' +
+  '🌍 🌡 🌶 🍾 🎩 🏛 🏷 👁 👍 👑 👤 👥 💡 💤 📄 📌 📍 📝 📧 📨 📬 📯 🔄 🔗 ' +
+  '🔥 🖼 🗑 🗝 🛡 🤖 🤝 🥂 🥾 🪜 🪪 🪶 ' +
   '👦 👧 👨 👩 👱 👳 👴 👵 👶 🧑 🧒 🧓 🧔').split(' ');
 
 /** Variation selectors and skin tones stripped: ✋🏽 is as reserved as ✋. */
