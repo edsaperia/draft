@@ -36,6 +36,9 @@ export interface CopyReport {
   engineEntries: number;
   tokens: number;
   stashes: number;
+  /** Queued mail (finding 15). A backup that dropped it would silently
+   *  un-send whatever had not gone out yet. */
+  outbox: number;
 }
 
 export interface CopyOptions {
@@ -110,7 +113,7 @@ export async function copyStore(from: Persistence, to: Persistence,
   const log = opts.log ?? (() => undefined);
   const report: CopyReport = {
     documents: 0, unchanged: [], copied: [], docEntries: 0, engineEntries: 0,
-    tokens: 0, stashes: 0,
+    tokens: 0, stashes: 0, outbox: 0,
   };
   const ids = await from.listDocIds();
   for (const id of ids) {
@@ -137,10 +140,11 @@ export async function copyStore(from: Persistence, to: Persistence,
       `${moved ? `copied from seq ${haveDoc}` : 'already complete'}, hashes identical`);
   }
   if (opts.sidecars !== false) {
-    const { tokens, stashes } = await copySidecars(from, to);
+    const { tokens, stashes, outbox } = await copySidecars(from, to);
     report.tokens = tokens;
     report.stashes = stashes;
-    log(`${tokens} tokens, ${stashes} stashes`);
+    report.outbox = outbox;
+    log(`${tokens} tokens, ${stashes} stashes, ${outbox} queued mails`);
   }
   return report;
 }
@@ -157,6 +161,8 @@ export async function verifyStores(from: Persistence, to: Persistence,
     const { docEntries, engineEntries } = await assertIdentical(id, from, to);
     log(`${id}: ${docEntries} + ${engineEntries} entries, hashes identical`);
   }
+  const mails = await assertOutboxCarried(from, to);
+  if (mails > 0) log(`${mails} queued mails, every one carried`);
   return ids.length;
 }
 
@@ -169,18 +175,49 @@ export async function verifyStores(from: Persistence, to: Persistence,
 export interface SidecarDump {
   dumpTokens(): Promise<Array<readonly [string, import('./persistence.js').TokenRecord]>>;
   dumpStashes(): Promise<Array<readonly [string, import('./persistence.js').StashRecord]>>;
+  dumpOutbox(): Promise<import('./persistence.js').OutboxRow[]>;
 }
 
 const dumps = (p: Persistence): SidecarDump | null =>
   typeof (p as Partial<SidecarDump>).dumpTokens === 'function' ? p as unknown as SidecarDump : null;
 
 async function copySidecars(from: Persistence, to: Persistence):
-  Promise<{ tokens: number; stashes: number }> {
+  Promise<{ tokens: number; stashes: number; outbox: number }> {
   const d = dumps(from);
   if (d === null) throw new Error('the source backend cannot enumerate tokens and stashes');
   const tokens = await d.dumpTokens();
   if (tokens.length > 0) await to.putTokens(tokens);
   const stashes = await d.dumpStashes();
   for (const [key, rec] of stashes) await to.putStash(key, rec);
-  return { tokens: tokens.length, stashes: stashes.length };
+  const outbox = await d.dumpOutbox();
+  await to.putOutbox(outbox);
+  await assertOutboxCarried(from, to);
+  return { tokens: tokens.length, stashes: stashes.length, outbox: outbox.length };
+}
+
+/**
+ * **The oracle extended, never relaxed** (finding 15). The hash chains are
+ * asserted per document; queued mail has no chain, so its assertion is
+ * this: every row at the source stands at the destination, field for
+ * field. A *subset*, deliberately — the copier upserts, and a destination
+ * that already holds mail of its own is not a divergence — but a source
+ * row that failed to land is, and a backup that quietly dropped the queue
+ * would un-send whatever had not gone out.
+ */
+export async function assertOutboxCarried(from: Persistence, to: Persistence): Promise<number> {
+  const src = dumps(from);
+  const dst = dumps(to);
+  if (src === null) throw new Error('the source backend cannot enumerate the outbox');
+  const want = await src.dumpOutbox();
+  if (want.length === 0) return 0;
+  if (dst === null) throw new Error('the destination backend cannot enumerate the outbox');
+  const have = new Map((await dst.dumpOutbox()).map((r) => [r.id, r]));
+  for (const row of want) {
+    const there = have.get(row.id);
+    if (there === undefined) throw new Error(`outbox row ${row.id} is missing at the destination`);
+    if (JSON.stringify(there) !== JSON.stringify(row)) {
+      throw new Error(`outbox row ${row.id} differs at the destination`);
+    }
+  }
+  return want.length;
 }

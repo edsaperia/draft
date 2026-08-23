@@ -56,8 +56,8 @@ const say = (line: string): void => console.log(line);
 function summarise(verb: string, r: CopyReport): void {
   say(`${verb}: ${r.documents} documents (${r.copied.length} copied, ` +
     `${r.unchanged.length} already complete), ${r.docEntries} document entries, ` +
-    `${r.engineEntries} engine entries, ${r.tokens} tokens, ${r.stashes} stashes — ` +
-    'every hash identical');
+    `${r.engineEntries} engine entries, ${r.tokens} tokens, ${r.stashes} stashes, ` +
+    `${r.outbox} queued mails — every hash identical`);
 }
 
 /**

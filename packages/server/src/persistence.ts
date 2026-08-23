@@ -57,6 +57,63 @@ export interface StashRecord {
   docId?: string;
 }
 
+/**
+ * One pending mail (PRODUCTION.md stage 6's outbox, review #1 finding 15).
+ * Written after the commit that implies it and before anything is handed
+ * to a provider, so a transient refusal is a row that is still there next
+ * minute rather than an invitation the log says was sent.
+ *
+ * `attempts` is the whole of the state machine: a row with `sentMs` set is
+ * done, a row without one is **pending** below `OUTBOX_MAX_ATTEMPTS` and
+ * **failed** at or above it — so nothing has to remember to write a status
+ * column, and refusing an address for good is `attempts = max` with the
+ * reason in `lastError`.
+ */
+export interface OutboxRow {
+  /** Random, ours: the id is what makes a re-send idempotent. */
+  id: string;
+  /** The document the mail is about; null for the operator notification. */
+  documentId: string | null;
+  to: string;
+  subject: string;
+  body: string;
+  /** The magic link, kept beside the body so the dev inbox stays easy to drive. */
+  link?: string;
+  /**
+   * The sha256 of the token the link carries, where it carries one. A row
+   * that exhausts its attempts has its token revoked: a link nobody
+   * received must not stay live for the week its expiry promised.
+   */
+  tokenHash?: string;
+  createdMs: number;
+  attempts: number;
+  lastAttemptMs: number | null;
+  lastError: string | null;
+  sentMs: number | null;
+}
+
+/**
+ * How many times a mail is offered to the provider before it is left for
+ * an operator. Six attempts spread over the backoff below is a little
+ * under three hours — long enough to ride out a provider incident, short
+ * enough that a genuinely dead address is visible in `/healthz` the same
+ * morning.
+ */
+export const OUTBOX_MAX_ATTEMPTS = 6;
+
+/** Exponential, from half a minute, capped at an hour. Attempt 0 is due
+ *  immediately; the argument is how many attempts have already failed. */
+export function outboxBackoffMs(attempts: number): number {
+  if (attempts <= 0) return 0;
+  return Math.min(3_600_000, 30_000 * 2 ** (attempts - 1));
+}
+
+/** Whether a row is ready to be offered again. Both backends ask this. */
+export const outboxDue = (row: OutboxRow, nowMs: number): boolean =>
+  row.sentMs === null && row.attempts < OUTBOX_MAX_ATTEMPTS &&
+  (row.lastAttemptMs === null ||
+    row.lastAttemptMs + outboxBackoffMs(row.attempts) <= nowMs);
+
 export interface Persistence {
   /* -- documents: one append-only hash-chained log each ------------------ */
   listDocIds(): Promise<string[]>;
@@ -88,6 +145,21 @@ export interface Persistence {
   /** The key of the live stash holding this slug, or null (Q462b). */
   findStashBySlug(slug: string): Promise<string | null>;
 
+  /* -- the mail outbox (finding 15) -------------------------------------- */
+  /** Durably enqueue; the caller's promise resolving means the mail cannot
+   *  be lost by a provider refusal or a restart. */
+  putOutbox(rows: readonly OutboxRow[]): Promise<void>;
+  /** Unsent rows below the attempt cap whose backoff has elapsed, oldest
+   *  first. `dueMs` is the latest `lastAttemptMs + backoff` a row may carry
+   *  and still be served; a row never attempted is always due. */
+  listPendingOutbox(nowMs: number, limit: number): Promise<OutboxRow[]>;
+  markOutboxSent(id: string, sentMs: number): Promise<void>;
+  /** Record one failed attempt: the new count, when it was made, and why. */
+  markOutboxFailed(id: string, attempts: number, lastAttemptMs: number,
+    lastError: string): Promise<void>;
+  /** `/healthz`'s two numbers: unsent under the cap, and unsent at it. */
+  outboxCounts(): Promise<{ pending: number; failed: number }>;
+
   /* -- lifecycle ---------------------------------------------------------- */
   /** Release what the backend holds (a connection pool); called once at
    *  shutdown after every commit has drained. Optional: files need none. */
@@ -98,16 +170,25 @@ export class FilePersistence implements Persistence {
   private readonly docsDir: string;
   private readonly tokensPath: string;
   private readonly stashPath: string;
+  private readonly outboxPath: string;
   private readonly tokens: Map<string, TokenRecord>;
   private readonly stashes: Map<string, StashRecord>;
+  private readonly outbox: Map<string, OutboxRow>;
 
   constructor(dataDir: string) {
     this.docsDir = join(dataDir, 'docs');
     mkdirSync(this.docsDir, { recursive: true });
     this.tokensPath = join(dataDir, 'tokens.json');
     this.stashPath = join(dataDir, 'pending.json');
+    // **Not `outbox.jsonl`**, which the dev inbox has owned since the
+    // mailer was written and which `GET /api/dev/outbox` tails: that file
+    // is a record of what was *sent*, this one is a queue of what has not
+    // been. Two different things, and one name for both would make the
+    // developer's inbox fill with mail nobody had received yet.
+    this.outboxPath = join(dataDir, 'mail-outbox.json');
     this.tokens = loadJsonMap<TokenRecord>(this.tokensPath);
     this.stashes = loadJsonMap<StashRecord>(this.stashPath);
+    this.outbox = loadJsonMap<OutboxRow>(this.outboxPath);
   }
 
   /* -- documents ---------------------------------------------------------- */
@@ -216,6 +297,47 @@ export class FilePersistence implements Persistence {
     if (dropped) this.saveStashes();
   }
 
+  /* -- the mail outbox ------------------------------------------------------ */
+
+  async putOutbox(rows: readonly OutboxRow[]): Promise<void> {
+    if (rows.length === 0) return;
+    for (const row of rows) this.outbox.set(row.id, row);
+    this.saveOutbox();
+  }
+
+  async listPendingOutbox(nowMs: number, limit: number): Promise<OutboxRow[]> {
+    return [...this.outbox.values()]
+      .filter((r) => outboxDue(r, nowMs))
+      .sort((a, b) => a.createdMs - b.createdMs || (a.id < b.id ? -1 : 1))
+      .slice(0, limit);
+  }
+
+  async markOutboxSent(id: string, sentMs: number): Promise<void> {
+    const row = this.outbox.get(id);
+    if (row === undefined) return;
+    this.outbox.set(id, { ...row, sentMs, lastError: null });
+    this.saveOutbox();
+  }
+
+  async markOutboxFailed(id: string, attempts: number, lastAttemptMs: number,
+    lastError: string): Promise<void> {
+    const row = this.outbox.get(id);
+    if (row === undefined) return;
+    this.outbox.set(id, { ...row, attempts, lastAttemptMs, lastError });
+    this.saveOutbox();
+  }
+
+  async outboxCounts(): Promise<{ pending: number; failed: number }> {
+    let pending = 0;
+    let failed = 0;
+    for (const r of this.outbox.values()) {
+      if (r.sentMs !== null) continue;
+      if (r.attempts >= OUTBOX_MAX_ATTEMPTS) failed += 1;
+      else pending += 1;
+    }
+    return { pending, failed };
+  }
+
   /* -- enumeration for the copier (copy-store.ts), never for the server -- */
 
   async dumpTokens(): Promise<Array<readonly [string, TokenRecord]>> {
@@ -224,6 +346,15 @@ export class FilePersistence implements Persistence {
 
   async dumpStashes(): Promise<Array<readonly [string, StashRecord]>> {
     return [...this.stashes.entries()];
+  }
+
+  async dumpOutbox(): Promise<OutboxRow[]> {
+    return [...this.outbox.values()].sort((a, b) => (a.id < b.id ? -1 : 1));
+  }
+
+  private saveOutbox(): void {
+    writeFileSync(this.outboxPath,
+      JSON.stringify(Object.fromEntries(this.outbox), null, 2), 'utf8');
   }
 
   private saveTokens(): void {

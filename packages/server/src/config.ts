@@ -48,6 +48,14 @@ export interface ServerConfig {
   /** Real mail when set; the dev outbox otherwise. */
   resendApiKey: string | null;
   mailFrom: string;
+  /**
+   * The mail kill-switch (`DRAFT_MAIL_OFF=1`, PRODUCTION.md stage 16).
+   * The sender loop holds every queued mail **pending**, never failed, so
+   * nothing is lost and nothing goes out — and switching it back off
+   * delivers the backlog rather than leaving an operator a list to re-send
+   * by hand. An env-var change and a restart; no deploy.
+   */
+  mailOff: boolean;
   /** HMAC secret for cookies and tokens at rest. */
   secret: string;
   /**
@@ -140,6 +148,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     // the sending domain is mail.docs.vote (decision 433): a subdomain
     // keeps deliverability reputation off the domain the product lives on
     mailFrom: env.DRAFT_MAIL_FROM ?? 'docs.vote <invitations@mail.docs.vote>',
+    mailOff: env.DRAFT_MAIL_OFF === '1',
     notifyEmail: (env.DRAFT_NOTIFY_EMAIL ?? 'edsaperia@gmail.com') || null,
     secret: env.DRAFT_SECRET ?? persistedSecret(dataDir),
     trustProxy: env.DRAFT_TRUST_PROXY !== undefined

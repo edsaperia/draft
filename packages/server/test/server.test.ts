@@ -94,7 +94,7 @@ const schemaName = () => 't_' + Math.random().toString(36).slice(2, 10);
 const booted: Booted[] = [];
 
 async function boot(over: { trustProxy?: boolean; proxyHops?: number;
-  notifyEmail?: string | null } = {}): Promise<Booted> {
+  notifyEmail?: string | null; mailOff?: boolean } = {}): Promise<Booted> {
   const dataDir = mkdtempSync(join(tmpdir(), 'draft-server-'));
   const cfg = {
     port: 0,
@@ -103,6 +103,7 @@ async function boot(over: { trustProxy?: boolean; proxyHops?: number;
     designDir: DESIGN_DIR,
     resendApiKey: null,
     mailFrom: 'test <t@example.org>',
+    mailOff: false,
     secret: 'test-secret',
     store: STORE as 'file' | 'pg',
     databaseUrl: null,

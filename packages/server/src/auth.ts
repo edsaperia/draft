@@ -48,6 +48,16 @@ export class Auth {
     if (batch.length > 0) await this.persistence.putTokens(batch);
   }
 
+  /**
+   * Drop a token by its hash, unused (finding 15's outbox). A mail that
+   * exhausts its attempts carried a link nobody received, and leaving that
+   * link live for the week its expiry promised is a credential in a queue
+   * an operator is about to go looking through.
+   */
+  async revoke(hash: string): Promise<void> {
+    await this.persistence.takeToken(hash);
+  }
+
   /** Single use: a token that verifies is deleted in the act. */
   async useToken(token: string, nowMs: number): Promise<TokenRecord | null> {
     const rec = await this.persistence.takeToken(sha256Hex(token));

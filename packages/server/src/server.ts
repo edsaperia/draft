@@ -27,6 +27,8 @@ import type { Persistence } from './persistence.js';
 import { PgPersistence } from './pg-persistence.js';
 import { Stash } from './stash.js';
 import { MAILS, makeMailer } from './mailer.js';
+import { MailOutbox } from './outbox.js';
+import type { QueuedMail } from './outbox.js';
 import { asEngineDoc, driveBridge, persistEngine, resumeBridge } from './engine-host.js';
 import { ParticipantApi } from '../../engine-core/src/participant-api.js';
 import type { Mail, Mailer } from './mailer.js';
@@ -60,6 +62,8 @@ export interface DraftServer {
   store: DocStore;
   auth: Auth;
   mailer: Mailer;
+  /** The durable mail queue and its sender (finding 15). */
+  outbox: MailOutbox;
   /** Drive the clocks (§9.5/§9.5a): call periodically; safe to call any time. */
   tick(nowMs?: number): Promise<void>;
   /**
@@ -101,8 +105,30 @@ export async function createDraftServer(cfg: ServerConfig,
   }
   const auth = new Auth(cfg.secret, persistence);
   const mailer = makeMailer(cfg);
+  const outbox = new MailOutbox({
+    persistence, mailer,
+    mailOff: () => cfg.mailOff,
+    revoke: (hash) => auth.revoke(hash),
+  });
   const stash = new Stash(persistence);
   const commits = new WriteChain();
+
+  /**
+   * The one door every mail goes through (finding 15). The relayed ones —
+   * invitations, the close, the lapse pair — are queued by `relay` and
+   * sent by the loop; these are the three the *requester* is waiting on
+   * (creation, login, the applicant's verification), where a failure is
+   * feedback the person in front of the screen can act on, so they stay
+   * synchronous. What they share with the queue is the kill-switch: with
+   * mail off they are enqueued instead, so nothing is lost.
+   */
+  const sendNow = async (mail: Mail, documentId: string | null): Promise<void> => {
+    if (cfg.mailOff) {
+      await outbox.enqueue([{ ...mail, documentId }], Date.now());
+      return;
+    }
+    await mailer.send(mail);
+  };
 
   /** Non-decreasing time per document (the module requires it). */
   const tOf = (cs: ConstitutionSession, nowMs: number): number => {
@@ -111,29 +137,44 @@ export async function createDraftServer(cfg: ServerConfig,
     return Math.max(nowMs, last);
   };
 
-  /** Mail follows the fold: relay what freshly-persisted events imply. */
+  /**
+   * Mail follows the fold: relay what freshly-persisted events imply.
+   *
+   * **Nothing is sent from here** since the outbox landed (finding 15).
+   * The pass mints its tokens, writes the mails as durable rows, and kicks
+   * the sender — so a provider refusal is a row still standing next minute
+   * rather than an invitation the log records as sent. The order is the
+   * commit's own: the document log is written first (it is the source of
+   * truth), then the mails it implies.
+   */
   const relay = async (doc: LoadedDoc, fresh: readonly LogEntry[], nowMs: number): Promise<void> => {
     const cs = doc.cs;
     const title = cs.titleOf;
-    const loginLink = (memberId: string, email: string): string => {
+    /** A login link and the hash of the token in it, so a mail that gives
+     *  up can revoke a link nobody ever received. */
+    const loginLink = (memberId: string, email: string): { link: string; tokenHash: string } => {
       // deferred: one relay pass persists the token batch once, not per mail
       const token = auth.mintDeferred(
         { kind: 'login', email, docId: doc.id, memberId }, nowMs);
-      return `${cfg.baseUrl}/auth/login?token=${token}`;
+      return { link: `${cfg.baseUrl}/auth/login?token=${token}`, tokenHash: sha256Hex(token) };
     };
-    const queue: Mail[] = [];
+    const queue: QueuedMail[] = [];
+    const push = (to: string, mail: Omit<Mail, 'to'>, tokenHash?: string): void => {
+      queue.push({ to, ...mail, documentId: doc.id,
+        ...(tokenHash === undefined ? {} : { tokenHash }) });
+    };
     for (const { event } of fresh) {
       if (event.type === 'member-invited') {
-        queue.push({ to: event.email,
-          ...MAILS.invite(title, loginLink(event.member, event.email)) });
+        const l = loginLink(event.member, event.email);
+        push(event.email, MAILS.invite(title, l.link), l.tokenHash);
       } else if (event.type === 'member-admitted') {
         // without this, an admitted applicant is stranded: their applicant
         // cookie can only submit, and nothing tells them they are in
         // (review #1, finding 7)
         const m = cs.memberRecords().get(event.member);
         if (m !== undefined && m.email.length > 0) {
-          queue.push({ to: m.email,
-            ...MAILS.admitted(title, loginLink(event.member, m.email)) });
+          const l = loginLink(event.member, m.email);
+          push(m.email, MAILS.admitted(title, l.link), l.tokenHash);
         }
       } else if (event.type === 'closed') {
         // the close (SPEC §4.6): every member and invitee is told, once — the
@@ -143,7 +184,7 @@ export async function createDraftServer(cfg: ServerConfig,
         const tell = (email: string | null | undefined): void => {
           if (!email || seen.has(email)) return;
           seen.add(email);
-          queue.push({ to: email, ...MAILS.closed(title, link) });
+          push(email, MAILS.closed(title, link));
         };
         tell(cs.convenorRecord().email);
         for (const m of cs.memberRecords().values()) if (!m.removed) tell(m.email);
@@ -153,14 +194,15 @@ export async function createDraftServer(cfg: ServerConfig,
           ? cs.convenorRecord().email : null);
         if (email !== null) {
           const make = event.type === 'lapse-warned' ? MAILS.lapseWarning : MAILS.lapsed;
-          queue.push({ to: email, ...make(title, loginLink(event.member, email)) });
+          const l = loginLink(event.member, email);
+          push(email, make(title, l.link), l.tokenHash);
         }
       }
     }
-    if (queue.length > 0) await auth.flush(nowMs); // every queued mail minted a token
-    for (const mail of queue) void mailer.send(mail).catch((e) => {
-      console.error(`mail to ${mail.to} failed:`, e);
-    });
+    if (queue.length === 0) return;
+    await auth.flush(nowMs); // every queued mail minted a token
+    await outbox.enqueue(queue, nowMs);
+    outbox.kick(nowMs);
   };
 
   /** Persist a document's fresh entries, durably, in order. A 200 means
@@ -352,6 +394,15 @@ export async function createDraftServer(cfg: ServerConfig,
         console.error(`tick failed for document '${doc.id}':`, e);
       }
     }
+    // the sender's own metronome (finding 15): the kick after each commit
+    // is the fast path, and this is what re-offers a row whose backoff has
+    // elapsed. Awaited, so a tick that overlaps a shutdown drains with it.
+    if (closing === null) {
+      await outbox.run(nowMs).catch((e: unknown) => {
+        console.error('outbox pass failed:', e);
+        return { sent: 0, failed: 0, held: false };
+      });
+    }
   };
 
   const server = createServer((req, res) => {
@@ -463,12 +514,18 @@ export async function createDraftServer(cfg: ServerConfig,
     }
     if (req.method === 'GET' && path === '/healthz') {
       res.setHeader('cache-control', 'no-store');
+      // the outbox's two numbers (finding 15): `pending` is mail on its way
+      // and normally 0; `failed` is mail that gave up and is the number an
+      // operator is meant to notice. `mail: off` says the kill-switch is on.
+      const mail = await outbox.counts();
       json(res, 200, {
         ok: true,
         build: cfg.buildSha,
         store: cfg.store,
         documents: [...store.all()].length,
         uptimeSeconds: Math.floor((nowMs - bootedAtMs) / 1000),
+        mail: cfg.mailOff ? 'off' : 'on',
+        outbox: mail,
       });
       return;
     }
@@ -641,7 +698,7 @@ export async function createDraftServer(cfg: ServerConfig,
       const token = await auth.mintToken(
         { kind: 'create', email, pending: { title, slug, email, isMember, stashKey } }, nowMs);
       const link = `${cfg.baseUrl}/auth/create?token=${token}`;
-      await mailer.send({ to: email, ...MAILS.create(title, slug, link) });
+      await sendNow({ to: email, ...MAILS.create(title, slug, link) }, null);
       json(res, 200, { ok: true, slug, pendingId,
         ...(mailer.dev ? { devLink: link } : {}) });
       return;
@@ -760,7 +817,7 @@ export async function createDraftServer(cfg: ServerConfig,
       const token = await auth.mintToken(
         { kind: 'login', email, docId: doc.id, memberId }, nowMs);
       const link = `${cfg.baseUrl}/auth/login?token=${token}`;
-      await mailer.send({ to: email, ...MAILS.login(doc.cs.titleOf, link) });
+      await sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id);
       json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
       return;
     }
@@ -793,7 +850,7 @@ export async function createDraftServer(cfg: ServerConfig,
         const token = await auth.mintToken(
           { kind: 'login', email, docId: doc.id, memberId: already }, nowMs);
         const link = `${cfg.baseUrl}/auth/login?token=${token}`;
-        await mailer.send({ to: email, ...MAILS.login(doc.cs.titleOf, link) });
+        await sendNow({ to: email, ...MAILS.login(doc.cs.titleOf, link) }, doc.id);
         json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
         return;
       }
@@ -811,14 +868,14 @@ export async function createDraftServer(cfg: ServerConfig,
         const token = await auth.mintToken(
           { kind: 'apply', email, docId: doc.id, applicantId: underway.id }, nowMs);
         const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
-        await mailer.send({ to: email, ...MAILS.applyVerify(doc.cs.titleOf, link) });
+        await sendNow({ to: email, ...MAILS.applyVerify(doc.cs.titleOf, link) }, doc.id);
         json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
         return;
       }
       const token = await auth.mintToken({ kind: 'apply', email, docId: doc.id }, nowMs);
       const link = `${cfg.baseUrl}/auth/apply?token=${token}`;
-      await mailer.send({ to: email,
-        ...MAILS.applyVerify(doc.cs.titleOf, link) });
+      await sendNow({ to: email,
+        ...MAILS.applyVerify(doc.cs.titleOf, link) }, doc.id);
       json(res, 200, { ok: true, ...(mailer.dev ? { devLink: link } : {}) });
       return;
     }
@@ -1220,6 +1277,10 @@ export async function createDraftServer(cfg: ServerConfig,
       server.closeIdleConnections();
       await Promise.race([closed, new Promise<void>((r) => setTimeout(r, 3_000).unref())]);
       await commits.drain();
+      // …and the sender with them (finding 15): a send torn in half by a
+      // deploy's SIGTERM leaves a row that is still pending, which the next
+      // instance re-offers — so the member gets it twice
+      await outbox.drain();
       server.closeAllConnections();
       await closed;
       await persistence.close?.();
@@ -1227,7 +1288,7 @@ export async function createDraftServer(cfg: ServerConfig,
     return closing;
   };
 
-  return { server, store, auth, mailer, tick, close };
+  return { server, store, auth, mailer, outbox, tick, close };
 }
 
 /* -------------------------------------------------------------------------- */
