@@ -2333,9 +2333,18 @@
     lapse: 'The shortest you will accept',
     removal: 'The easiest you will accept',
     rate: 'The most generous you will accept' };
+  // **A power tab has no VALUE of its own — its value *is* its rule.**
+  // `chipsFor` hands every viewer the ✒️/🛡️ tabs of a settled setting, and on
+  // any chair but the founder's the card body is `readBody`, which asks for
+  // `ctx.value(c)` — so `VALUE['pw:u:title']` was read as a function and the
+  // TypeError took the whole `render()` with it: a member or a stranger
+  // clicking a power tab got a page frozen at its last good frame. Found by
+  // the card-audit's power walk, 2026-08-23. The missing-key guard beside it
+  // is the one `holderLine`'s own lookup already keeps.
   const value = (c) => (c.ansFor
     ? esc(filled(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
-    : esc(VALUE[c.k]()));
+    : c.power ? esc(powerHeadLine(c))
+    : esc(VALUE[c.k] ? VALUE[c.k]() : ''));
   // **A task you have to do needs no subtitle** (Ed, 2026-08-19: *subtitles
   // are there to help me make choices — if I have to do them, they don't need
   // extra information*; and on 📧, *the queue-card does not need "Not given

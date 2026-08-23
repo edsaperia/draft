@@ -1098,6 +1098,8 @@ window.SETUP = (function () {
      at decode. */
   const PIC_SIDE = 256;
   const PIC_MAX_SOURCE = 20 * 1024 * 1024;
+  // the server's own `LIMITS.picture`, over the stored string
+  const PIC_MAX_STORED = 40_000;
   const wirePicDrop = (onFile) => {
     const refuse = (zone, msg) => {
       const note = zone && zone.querySelector('.picnote');
@@ -1125,7 +1127,23 @@ window.SETUP = (function () {
       const h = Math.max(1, Math.round(bmp.height * s));
       cx.drawImage(bmp, (PIC_SIDE - w) / 2, (PIC_SIDE - h) / 2, w, h);
       if (bmp.close) bmp.close();
-      onFile('u' + cv.toDataURL('image/jpeg', 0.8), into);
+      // **What is handed over has to fit what the server will take.** The cap
+      // is on the *stored string* (commands.ts `LIMITS.picture`), and 256px at
+      // 0.8 only *usually* lands under it — a noisy photograph encodes past it,
+      // and a picture that previews perfectly and then fails on Save is exactly
+      // the defect this encoder was written to remove. So quality steps down
+      // until it fits rather than hand over something that will be refused.
+      let out = 'u' + cv.toDataURL('image/jpeg', 0.8);
+      for (let q = 0.6; out.length > PIC_MAX_STORED && q >= 0.3; q -= 0.15) {
+        out = 'u' + cv.toDataURL('image/jpeg', q);
+      }
+      // …and the ladder runs out somewhere, so the last rung is checked
+      // rather than assumed: handing over a string the Save will refuse is
+      // the very defect above, arrived at by the other road.
+      if (out.length > PIC_MAX_STORED) {
+        return refuse(zone, 'That picture will not compress small enough — try a simpler one.');
+      }
+      onFile(out, into);
     };
     document.addEventListener('change', (ev) => {
       if (ev.target.matches('[data-picfile]')) {
