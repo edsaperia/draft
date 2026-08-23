@@ -17,6 +17,26 @@
  * absent, which is the path it takes in any plain install.
  */
 import { build } from 'esbuild';
+import { readFileSync } from 'node:fs';
+
+/**
+ * The DEV drop, asserted rather than trusted (Q674). `dropLabels` removes the
+ * labelled statement, and the dev modules are reached only through a **dynamic**
+ * import inside one — which is what stops esbuild resolving them at all. A
+ * static import would survive the drop and ship the whole phase ladder, its
+ * twenty-strong cast and its charter, because esbuild cannot prove a module's
+ * top-level initialisers pure and keeps them even with no live reference. The
+ * failure would be silent, so the build checks its own work.
+ */
+const NEVER_IN_PROD = ['dev-ladder', 'ladder.invalid', 'Bellamy', '/api/dev/'];
+function assertNoDevCode(file) {
+  const bytes = readFileSync(file, 'utf8');
+  const found = NEVER_IN_PROD.filter((needle) => bytes.includes(needle));
+  if (found.length > 0) {
+    throw new Error(`${file} carries dev-only code: ${found.join(', ')} — ` +
+      'a DEV-labelled block is reachable, or an import escaped its label');
+  }
+}
 
 const common = {
   bundle: true,
@@ -41,7 +61,8 @@ await build({
   dropLabels: ['DEV'],
   define: { 'process.env.DRAFT_BUILD': '"prod"' },
 });
-console.log('dist/server.mjs built (production artifact)');
+assertNoDevCode('dist/server.mjs');
+console.log('dist/server.mjs built (production artifact), no dev code in it');
 
 await build({
   ...common,
@@ -51,4 +72,5 @@ await build({
   // that ships, even though today's import graph reaches none
   dropLabels: ['DEV'],
 });
-console.log('dist/draft-tools.mjs built (store tools)');
+assertNoDevCode('dist/draft-tools.mjs');
+console.log('dist/draft-tools.mjs built (store tools), no dev code in it');

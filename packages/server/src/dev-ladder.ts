@@ -346,7 +346,7 @@ export async function runLadder(host: LadderHost, doc: LoadedDoc | null, opts: {
 
 const nextRung = (r: Rung): Rung => RUNGS[Math.min(RUNGS.indexOf(r) + 1, RUNGS.length - 1)]!;
 
-function seatsOf(cs: ConstitutionSession): { id: string; name: string; founder: boolean }[] {
+export function seatsOf(cs: ConstitutionSession): { id: string; name: string; founder: boolean }[] {
   const founder = cs.convenorRecord();
   const seats = [{ id: founder.id, name: founder.name ?? 'The Founder', founder: true }];
   for (const m of cs.memberRecords().values()) {
@@ -416,6 +416,12 @@ async function toReady(host: LadderHost, doc: LoadedDoc, ctx: Ctx): Promise<void
   const endsAtMs = ctx.nowMs + WINDOW; // centred: the session sits mid-ramp
   const { values, delegated } = shuffle(rnd, endsAtMs);
 
+  // **🎩 is a question, and the ladder has to answer it** — it is not a
+  // catalogue setting, so `readiness()` says nothing about it and a document
+  // can be ready in the module's sense while the surface is still asking the
+  // founder whether they are a member. The founder is one here, which is the
+  // ordinary case and the one that gives them a wallet to look at.
+  cs.setConvenorMembership(pen.next(), true);
   cs.confirmStartingText(pen.next(), CHARTER_TEXT);
 
   // ⏰ first: 🌡️ and 🪜 declare it as a dependency, and a delegated question
@@ -436,8 +442,23 @@ async function toReady(host: LadderHost, doc: LoadedDoc, ctx: Ctx): Promise<void
     }
   }
 
+  // **Nothing may be left owed that the module can settle.** A constitutional
+  // setting somebody had no say in sits in their rail until they press OK, and
+  // twenty members each owed a dozen acknowledgements would bury the rung
+  // under news. The grants are a different matter: their OK lives in the
+  // browser, so the ladder cannot press them and the founder meets ✒️ and 🛡️
+  // on arrival — which is the founding order working, not a gap.
+  let owed = 0;
+  for (const member of [cs.convenorRecord().id, ...castOf(cs)]) {
+    const rec = cs.memberRecords().get(member);
+    for (const setting of [...(rec?.okOwed ?? [])]) {
+      try { cs.giveOk(pen.next(), member, setting); owed++; } catch { /* not owed after all */ }
+    }
+  }
+
   await host.commit(doc, pen.now);
   const held = order.length - delegated.size;
+  if (owed > 0) ctx.built.push(`${owed} owed acknowledgements given`);
   ctx.built.push(`constitution drawn from seed ${ctx.seed}: ${held} settings kept, ` +
     `${delegated.size} delegated and answered blind by ${castOf(cs).length}`);
   if (!cs.readiness().ready) {

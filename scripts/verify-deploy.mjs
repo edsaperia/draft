@@ -100,6 +100,23 @@ await check('/api/dev/outbox is not in the artifact (437)', async () => {
   return '404';
 });
 
+// **Asked with each route's real method** (Q674). A 404 for a GET on a
+// POST-only route proves nothing at all — it is what a *present* route
+// answers — so the ladder and the seat switch are asked the way they would
+// actually be used. Between them they can build documents and mint a cookie
+// for any seat, so their absence is worth checking on the live host and not
+// only in the build.
+await check('the phase ladder is not in the artifact (Q674)', async () => {
+  const posts = await Promise.all(['/api/dev/ladder', '/api/dev/seat'].map((p) =>
+    fetch(base + p, { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: '{}' })));
+  const ladderGet = await get('/api/dev/ladder');
+  for (const r of [...posts, ladderGet]) {
+    expect(r.status === 404, `${r.url} answered ${r.status} — the ladder is reachable`);
+  }
+  return '404 on POST ladder · POST seat · GET ladder';
+});
+
 await check('api responses are never cached (finding 10)', async () => {
   const r = await get('/api/dev/outbox');
   expect((r.headers.get('cache-control') ?? '') === 'no-store',

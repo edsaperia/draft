@@ -1796,7 +1796,16 @@
     // for ever. Harmless until the gates joined ORDER, at which point
     // everything below 🎩 — 💡, ⚖️, 🪪 — waited on a question that could not
     // settle, so no gate could be acknowledged and no ✏️ wallet ever arrived.
-    if (c.k === 'hat') return S.seen.has('hat') || constituted();
+    // …and the same fix again, for the half that ruling left open (Q682,
+    // found by the phase ladder). `|| constituted()` covers a *begun*
+    // document; before the start `S.seen` was still the whole of it, and
+    // `S.seen` is page-local — so a founder who answered 🎩 and reloaded
+    // was asked again, and since 🎩 blocks the founding order everything
+    // below it was withheld again with it. The module records the act now,
+    // folded from the `convenor-membership-set` events the log already
+    // carried, and it rides the view payload so both paths can read it.
+    if (c.k === 'hat') return S.seen.has('hat') || constituted() ||
+      !!(cs && cs.convenorRecord && cs.convenorRecord().membershipSet);
     // **✋ and 🖼️ are settled by the module, per seat** (Q645, Ed's live walk
     // 2026-08-22: *I'm never offered the "Your Name" and "Your Picture"
     // tasks*). They are the same lesson 🎩 taught one line above, in its
@@ -5823,6 +5832,65 @@
       document.body.appendChild(b);
     }).catch(() => {});
   }
+  // **The phase ladder's bar** (Q674–Q678). Deliberately its own control
+  // rather than a re-enable of `.devswitch`: that one's seats are page state
+  // (`S.viewer` changes rendering while every command still posts under the
+  // cookie, so you would drive one member's hand from another's chair) and
+  // its change handler calls `cs.arrive`, which `remoteCS` does not
+  // implement. Here a seat *is* a cookie, so every control is a POST and a
+  // reload, and the page rebuilds itself from the payload it is served.
+  // Off the design system for the same reason as 📬 and the seat dropdown:
+  // a stagehand, not a member of the cast.
+  const LADDER_STYLE = 'position:fixed;top:64px;left:96px;z-index:60;display:flex;' +
+    'gap:.35rem;align-items:center;font:12px ui-monospace,monospace;' +
+    'border:1px dashed #999;background:#fff;padding:.3rem .5rem';
+  function ladderBar() {
+    const slug = LIVEMODE ? LIVESLUG : '';
+    fetch('/api/dev/ladder?slug=' + encodeURIComponent(slug))
+      .then((r) => (r.ok ? r.json() : null)).then((d) => {
+        if (!d || document.getElementById('ladderbar')) return;
+        const wrap = document.createElement('div');
+        wrap.id = 'ladderbar';
+        wrap.style.cssText = LADDER_STYLE;
+        const atEnd = d.phase === d.next;
+        const seats = (d.seats || []).map((s) =>
+          '<option value="' + esc(s.id) + '"' + (s.id === d.me ? ' selected' : '') + '>' +
+          esc(s.name) + (s.founder ? ' 🎩' : '') + '</option>').join('');
+        wrap.innerHTML =
+          '<b>ladder</b>' +
+          '<span style="color:#666">' + esc(d.phase) +
+          (d.seed === null ? '' : ' · seed ' + d.seed) + '</span>' +
+          (atEnd ? '' : '<button id="ladnext" style="border:1px dashed #999;background:#fff;' +
+            'cursor:pointer;padding:.2rem .5rem">⏭ ' + esc(d.next) + '</button>') +
+          (d.seed === null ? '<input id="ladseed" size="6" placeholder="seed" ' +
+            'style="border:1px dashed #999;font:inherit;padding:.15rem .3rem">' : '') +
+          (seats ? '<select id="ladseat" style="border:1px dashed #999;font:inherit">' +
+            seats + '</select>' : '');
+        document.body.appendChild(wrap);
+        const post = (path, body) => fetch(path, { method: 'POST',
+          headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+          .then((r) => r.json());
+        const next = document.getElementById('ladnext');
+        if (next) next.onclick = () => {
+          next.disabled = true;
+          next.textContent = '…';
+          const seedBox = document.getElementById('ladseed');
+          const seed = seedBox && seedBox.value ? Number(seedBox.value) : undefined;
+          post('/api/dev/ladder', { to: d.next, ...(slug ? { slug } : {}),
+            ...(seed === undefined || Number.isNaN(seed) ? {} : { seed }) })
+            .then((r) => {
+              if (r && r.skipped && r.skipped.length) console.warn('[ladder]', r.skipped);
+              // the birth has no document to reload, so it travels to one
+              if (r && r.slug && r.slug !== slug) location.href = '/d/' + r.slug;
+              else location.reload();
+            });
+        };
+        const seat = document.getElementById('ladseat');
+        if (seat) seat.onchange = () => {
+          post('/api/dev/seat', { slug, member: seat.value }).then(() => location.reload());
+        };
+      }).catch(() => {});
+  }
   function openDevInbox() {
     fetch('/api/dev/outbox').then((r) => r.json()).then((d) => {
       const old = document.getElementById('devoutbox');
@@ -5853,6 +5921,7 @@
     const dev = document.querySelector('.devswitch');
     if (dev) dev.style.display = 'none';
     devInboxButton();
+    ladderBar();
     fetch('/api/d/' + LIVESLUG + '/view').then((r) => {
       if (r.status === 401) { console.warn('[live] no seat and no door'); return null; }
       return r.json();
@@ -5923,6 +5992,7 @@
     const dev = document.querySelector('.devswitch');
     if (dev) dev.style.display = 'none';
     devInboxButton();
+    ladderBar();
     // pasted text syncs against the pending creation (§9.7a v0.55)
     let deb = null;
     prose.addEventListener('input', () => {

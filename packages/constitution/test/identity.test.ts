@@ -132,3 +132,29 @@ describe('🎩 re-tick keeps the founder’s identity (Q646)', () => {
     expect(replayed.memberRecords().get('ada')!.picture).toBe('e🦊');
   });
 });
+
+/**
+ * 🎩 is answered too, and by the same argument (Q682). `isMember` arrives
+ * with the creation, so its value cannot say whether the founder was ever put
+ * the question — and the surface kept that fact in page state alone, which no
+ * reload can rebuild. Since 🎩 blocks the founding order, a founder who
+ * answered it and reloaded before pressing 🍾 was asked again *and* had the
+ * whole constitution below it withheld again. Found by the phase ladder.
+ */
+describe('🎩 records the act, not the value (Q682)', () => {
+  it('is unanswered at creation, whichever way the founder was created', () => {
+    expect(open().convenorRecord().membershipSet).toBe(false);
+    expect(open({ clerk: true }).convenorRecord().membershipSet).toBe(false);
+  });
+
+  it('is answered by either reply, and survives a replay', () => {
+    for (const isMember of [true, false]) {
+      const s = open();
+      s.setConvenorMembership(1, isMember);
+      expect(s.convenorRecord().membershipSet).toBe(true);
+      // the point of the whole thing: a reload is a replay
+      const again = ConstitutionSession.replay([...s.logEntries()]);
+      expect(again.convenorRecord().membershipSet).toBe(true);
+    }
+  });
+});

@@ -499,6 +499,26 @@ export async function createDraftServer(cfg: ServerConfig,
        resolved into the bundle at all. A static import would survive the
        drop, because esbuild cannot prove a module's top-level
        initialisers pure and keeps them even with no live reference. */
+    /* The bar's readout, and how it knows to exist at all. A GET must not
+       climb: the bar asks on every page load, and a probe that advanced a
+       rung would make merely opening the page press the button. */
+    DEV: if (req.method === 'GET' && path === '/api/dev/ladder') {
+      if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
+      const { phaseOf, RUNGS, seedOfSlug, seatsOf } = await import('./dev-ladder.js');
+      const slug = url.searchParams.get('slug');
+      const doc = slug === null ? null : store.bySlug(slug);
+      const phase = phaseOf(doc, nowMs);
+      json(res, 200, {
+        phase,
+        next: RUNGS[Math.min(RUNGS.indexOf(phase) + 1, RUNGS.length - 1)],
+        rungs: RUNGS,
+        seed: doc === null ? null : seedOfSlug(doc.cs.slug),
+        seats: doc === null ? [] : seatsOf(doc.cs),
+        me: doc === null ? null : (cookieSession(req, doc.id)?.memberId ?? null),
+      });
+      return;
+    }
+
     DEV: if (req.method === 'POST' && path === '/api/dev/ladder') {
       if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
       if (devCrossSite(req, res, new URL(cfg.baseUrl).origin)) return;
@@ -1065,7 +1085,9 @@ export async function createDraftServer(cfg: ServerConfig,
             isMember: doc.cs.convenorRecord().isMember,
             email: doc.cs.convenorRecord().email,
             name: doc.cs.convenorRecord().name,
-            picture: doc.cs.convenorRecord().picture },
+            picture: doc.cs.convenorRecord().picture,
+            // whether 🎩 was ever put, which its value cannot say (Q682)
+            membershipSet: doc.cs.convenorRecord().membershipSet },
           // the unconfirmed starting text (§9.7a v0.55): readable by any
           // member — the charter is what the founding questions are about
           provisionalText: doc.cs.textConfirmed ? null : doc.provisional,

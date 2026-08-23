@@ -797,6 +797,9 @@ var CONSTITUTION = (() => {
             // a founder who arrives already carrying one has answered it (Q645)
             nameSet: c.name !== void 0,
             pictureSet: c.picture !== void 0,
+            // 🎩 is asked, never assumed: `isMember` arrives with the creation
+            // and answers nothing about whether the founder was put the question
+            membershipSet: false,
             lastActivityT: event.t,
             lapseWarned: false
           };
@@ -837,6 +840,10 @@ var CONSTITUTION = (() => {
           break;
         }
         case "convenor-membership-set": {
+          if (event.isMember === this.members.has(this.convenor.id)) {
+            this.convenor.membershipSet = true;
+            break;
+          }
           if (event.isMember) {
             const rec = this.freshMember(
               this.convenor.id,
@@ -869,6 +876,7 @@ var CONSTITUTION = (() => {
             }
             this.members.delete(this.convenor.id);
           }
+          this.convenor.membershipSet = true;
           break;
         }
         case "setting-set": {
@@ -1445,7 +1453,12 @@ var CONSTITUTION = (() => {
       this.requireOpen("the founder's membership");
       this.requirePreStart("re-ticking the convenor row");
       const current = this.members.has(this.convenor.id);
-      if (current === isMember) return;
+      if (current === isMember) {
+        if (!this.convenor.membershipSet) {
+          this.emit({ type: "convenor-membership-set", t, isMember });
+        }
+        return;
+      }
       this.emit({ type: "convenor-membership-set", t, isMember });
       this.afterRosterChange(t, isMember ? "arrival" : "departure", this.convenor.id);
     }

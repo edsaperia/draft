@@ -58,6 +58,18 @@ export class ConstitutionSession {
     // MemberRecord, and their name and picture are optional (§9.6a), so the
     // question is asked of them exactly as it is of anybody
     nameSet: boolean; pictureSet: boolean;
+    /**
+     * **Whether 🎩 has been answered** (Q682), and the same lesson as
+     * `nameSet` one line above. `isMember` is a value with a default, so it
+     * cannot say whether the question was ever put — and pre-🍾 the surface
+     * had nowhere else to look: it kept 🎩's settledness in page state alone,
+     * which no reload can rebuild. Since 🎩 blocks the founding order, a
+     * founder who answered it and then reloaded was asked again *and* had
+     * everything below it withheld again. Folded from the
+     * `convenor-membership-set` events the log already carries: no new event,
+     * no envelope change, hash chain untouched.
+     */
+    membershipSet: boolean;
     lastActivityT: number; lapseWarned: boolean };
   private crownLapsedFlag = false;
   private members = new Map<MemberId, MemberRecord>();
@@ -145,6 +157,9 @@ export class ConstitutionSession {
         this.convenor = { ...c, name: c.name ?? null, picture: c.picture ?? null,
           // a founder who arrives already carrying one has answered it (Q645)
           nameSet: c.name !== undefined, pictureSet: c.picture !== undefined,
+          // 🎩 is asked, never assumed: `isMember` arrives with the creation
+          // and answers nothing about whether the founder was put the question
+          membershipSet: false,
           lastActivityT: event.t, lapseWarned: false };
         // **Nothing arrives delegated** (Ed, 2026-08-21, amending SPEC §9.0a,
         // closing Q511). Every held setting is born with the founder holding
@@ -209,6 +224,12 @@ export class ConstitutionSession {
         // lives on the MemberRecord and the convenor struct goes stale, so
         // unticking without carrying it back served a name from before they
         // joined.
+        // the seat only moves when the answer differs from where they sit;
+        // an answer that repeats itself records the act and nothing else
+        if (event.isMember === this.members.has(this.convenor.id)) {
+          this.convenor.membershipSet = true;
+          break;
+        }
         if (event.isMember) {
           const rec = this.freshMember(this.convenor.id, this.convenor.email,
             event.t, event.t, { via: 'founding', by: null });
@@ -236,6 +257,8 @@ export class ConstitutionSession {
           }
           this.members.delete(this.convenor.id);
         }
+        // the act, not the value (Q682): whichever way it went, 🎩 was asked
+        this.convenor.membershipSet = true;
         break;
       }
       case 'setting-set': {
@@ -848,7 +871,19 @@ export class ConstitutionSession {
     this.requireOpen("the founder's membership");
     this.requirePreStart('re-ticking the convenor row');
     const current = this.members.has(this.convenor.id);
-    if (current === isMember) return;
+    if (current === isMember) {
+      // **Answering is an act even when the value does not move** (Q682). A
+      // founder who is already a member and answers *member* has answered 🎩,
+      // and nothing else in the document can say so — which is why the surface
+      // had to keep it in page state, and why a reload re-asked. Recorded once
+      // and only once, so a founder working the radios does not fill the log
+      // with an answer they have already given; the roster does not churn,
+      // because nothing about the roster moved.
+      if (!this.convenor.membershipSet) {
+        this.emit({ type: 'convenor-membership-set', t, isMember });
+      }
+      return;
+    }
     this.emit({ type: 'convenor-membership-set', t, isMember });
     this.afterRosterChange(t, isMember ? 'arrival' : 'departure', this.convenor.id);
   }
