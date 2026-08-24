@@ -333,6 +333,23 @@ function checkOrder(pm) {
     if (!/hide: \(\) => !amFounder\(\)/.test(def))
       find('order', `${k} is not hidden from a non-founder — E8 gives a grant to the holder, and a member cannot acknowledge somebody else's power`);
   }
+  // F9 on the one card that broke it (Q745): 🍾 is not served until it can be
+  // pressed. Two independent systems decided *show* and *enable* — `blocksOrder`
+  // skips every gate but the pen, `readiness()` is the module's own answer — and
+  // nothing reconciled them, so the founder met a task with a dead commit.
+  // Asserted as three separate claims, because each can be dropped alone: the
+  // hide predicate, the readiness half, and the voice half.
+  const beginDef = page.slice(page.indexOf("{ k: 'begin',"), page.indexOf("{ k: 'begin',") + 900);
+  if (!/hide: \(\) => !constituted\(\) && \(!amFounder\(\) \|\| !beginOffered\(\)\)/.test(beginDef))
+    find('order', "🍾 no longer hides until it can be pressed — F9: a card with a dependency does not appear until its dependency is settled, never greyed");
+  const offered = page.slice(page.indexOf('const beginOffered ='), page.indexOf('const beginOffered =') + 1600);
+  if (!/readinessOf\(\)/.test(offered) || !/rd\.ready/.test(offered))
+    find('order', "🍾's `beginOffered` no longer asks the module's `readiness()` — the page would be deciding *show* from state the module contradicts");
+  // …and the voice half is `visible(card(voiceHost()))`, never `mustAct` alone:
+  // with nothing delegated 🏛️ hangs off ⚖️, which is hidden until 🍾, so a bare
+  // `mustAct` holds 🍾 shut for ever (the Q645 deadlock, in a new place).
+  if (!/visible\(card\(voiceHost\(\)\)\) && mustAct\(card\('grant-voice'\)\)/.test(offered))
+    find('order', "🍾's voice half no longer asks whether 🏛️ is being *served* — a bare mustAct deadlocks a founder who delegates nothing");
   note(`  ${rows.length} steps; blocking grant: ${blocker}; ${secs.length} sections`);
 }
 
