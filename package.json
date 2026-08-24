@@ -9,6 +9,7 @@
   },
   "scripts": {
     "test": "npm run test --workspaces",
+    "test:pg": "node scripts/test-pg.mjs",
     "typecheck": "npm run typecheck --workspaces",
     "lint": "eslint .",
     "bundle": "npm run bundle -w @draft/constitution",
