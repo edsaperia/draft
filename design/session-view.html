@@ -5036,8 +5036,9 @@
         : v;
       return render(); }
     const o = ev.target.closest('[data-set]');
-    if (o) { fillRung(o.dataset.set, setVal(o.dataset.val));
-      S[o.dataset.set] = setVal(o.dataset.val);
+    if (o) { const nv = setVal(o.dataset.val);
+      fillRung(o.dataset.set, nv);
+      S[o.dataset.set] = nv;
       if (perpetual() && S.shape === 'ramp') S.shape = 'fixed';
       return render(); }
     const pic = ev.target.closest('[data-pic]');
