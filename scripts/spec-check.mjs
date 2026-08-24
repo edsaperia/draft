@@ -466,7 +466,7 @@ function sourceCorpus() {
  * documents it duplicated were already checked here. Two prior extractions
  * each pulled ~55 KB out and the file regrew past its pre-extraction size
  * within two days, because extraction without an admission rule only resets
- * the clock. Three assertions hold the rule in *What goes in this file*:
+ * the clock. Five assertions hold the rule in *What goes in this file*:
  *
  *  - every glossary bullet, at any depth, names something and declares its
  *    kind, and no Gotchas bullet leads with one — which is what keeps the two
@@ -526,11 +526,18 @@ function checkClaudeMd() {
   // A gotcha entry is a top-level bullet plus its indented continuation lines.
   // Only the guarded ones are capped; an unguarded gotcha is capped by nothing,
   // because those are the ones that earn their place (Ed, Q723–731).
-  const GUARD = /spec-check|npm run|asserted by test|parity test|golden log|fails on the pre-fix|pinned by a server test/;
+  // A named guard is a named *invocation*: an npm script, or a tool run by
+  // hand. A bare tool name is not enough — half the file mentions the probes in
+  // order to say what they do not cover, and a checker that cries wolf on prose
+  // is worse than none.
+  const GUARD = /spec-check|npm run|node scripts\/|node design\/tools\/|asserted by test|parity test|golden log|fails on the pre-fix|pinned by a server test/;
   const gotchas = [];
   for (const l of lines.slice(gotcha, end)) {
     if (/^\s*- `/.test(l)) find('claude', `Gotchas bullet leads with a backticked name — it belongs in the glossary: ${l.slice(0, 70)}`);
-    if (/^- /.test(l)) gotchas.push({ head: l.trim().slice(2, 70), len: l.length + 1, buf: l });
+    // a nested bullet is a gotcha in its own right, measured on its own text:
+    // folding it into its parent both misnames the offender and lets one child's
+    // guard make the whole family guarded
+    if (/^\s*- /.test(l)) gotchas.push({ head: l.trim().slice(2, 70), len: l.length + 1, buf: l });
     else if (gotchas.length && /^\s+\S/.test(l)) { const g = gotchas[gotchas.length - 1]; g.len += l.length + 1; g.buf += ` ${l}`; }
   }
   for (const g of gotchas) {
