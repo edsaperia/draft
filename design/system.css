@@ -1784,7 +1784,7 @@
   .navbar .notheld::after {
     content: ''; position: absolute; left: 50%; top: 50%;
     width: 23px; height: 2px; margin: -1px 0 0 -11.5px; border-radius: 1px;
-    background: var(--slash); transform: rotate(-45deg);
+    background: var(--slash); transform: rotate(45deg);
   }
   /* The strike is red because Ed asked to see it red (Q532(2)). It is the only
      red on the surface, and it is worth knowing why that is a real question:
