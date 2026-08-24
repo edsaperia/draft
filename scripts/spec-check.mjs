@@ -543,6 +543,36 @@ function checkClaudeMd() {
   }
 }
 
+/**
+ * A raw NUL byte in the first 8000 bytes of a file makes git call the whole
+ * file binary, and a binary file has no three-way merge: two branches that
+ * touch it conflict entirely, however far apart their edits sit. It is not a
+ * hypothetical — it stranded the production plan's branch, whose only quarrel
+ * with main was two test cases in different halves of pg.test.ts.
+ *
+ * So the rule is the *window*, not the byte. The sentinels in session-view.html
+ * are deliberate (see this file's own header) and live well past 8000, where
+ * git never looks. Anywhere nearer the top, write the escape `\u0000`: the
+ * string is identical at runtime and the file still merges.
+ */
+function checkMergeable() {
+  const WINDOW = 8000; // git's FIRST_FEW_BYTES, in xdiff/xutils.c
+  const files = execSync('git ls-files -- packages scripts design docs package.json',
+    { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 })
+    .split('\n').filter((f) => f && /\.(ts|js|mjs|cjs|html|css|json|md|ya?ml)$/.test(f));
+  let seen = 0;
+  for (const f of files) {
+    let b;
+    try { b = readFileSync(join(ROOT, f)); } catch { continue; }
+    seen++;
+    const i = b.subarray(0, WINDOW).indexOf(0);
+    if (i < 0) continue;
+    const line = b.subarray(0, i).toString('utf8').split('\n').length;
+    find('mergeable', `${f}:${line} holds a raw NUL in git's first ${WINDOW} bytes — git will call the file binary and refuse to merge it; write the escape instead`);
+  }
+  note(`  ${seen} source files hold no merge-blocking NUL`);
+}
+
 checkMarks();
 checkWallets(pm);
 checkOrder(pm);
@@ -550,6 +580,7 @@ checkComposer(M, pm);
 checkPicture();
 checkBannedWords();
 checkClaudeMd();
+checkMergeable();
 
 console.log(findings.length ? `\n${findings.length} disagreement(s)` : '\nspec and code agree');
 process.exit(findings.length ? 1 : 0);
