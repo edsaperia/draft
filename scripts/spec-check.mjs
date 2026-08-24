@@ -468,9 +468,19 @@ function sourceCorpus() {
  * within two days, because extraction without an admission rule only resets
  * the clock. Three assertions hold the rule in *What goes in this file*:
  *
- *  - every glossary bullet that names something leads with a backticked name
- *    and declares its kind, and no Gotchas bullet leads with one — which is
- *    what keeps the two lists from re-merging into one
+ *  - every glossary bullet, at any depth, names something and declares its
+ *    kind, and no Gotchas bullet leads with one — which is what keeps the two
+ *    lists from re-merging into one. A bullet that names nothing is a rule, a
+ *    reason or a gotcha, and each of those has a home elsewhere (Q737)
+ *  - no glossary entry runs past ENTRY_CAP characters (Q737). The cap is
+ *    roughly the median entry plus a third: a name, a one-line job and
+ *    pointers fit inside it and a second sentence does not, which is the
+ *    admission rule stated as a number
+ *  - no gotcha that names an automated guard runs past ENTRY_CAP either
+ *    (Q736, the eviction rule): what stops the mistake recurring is the red
+ *    build, not the paragraph, so a guarded gotcha keeps the failure and the
+ *    guard and sends its post-mortem to design/DECISIONS.md. The fix is
+ *    always to move the post-mortem, never to stop naming the guard
  *  - `file` and `symbol` kinds resolve, against source files only — see
  *    `sourceCorpus` for why prose cannot be allowed to answer; `concept` is
  *    unchecked on purpose,
@@ -493,19 +503,41 @@ function checkClaudeMd() {
   if (gloss < 0 || gotcha < 0 || end < 0) return find('claude', 'the Glossary / Gotchas / spec-pass sections are not all present');
 
   const NAMED = /^\s*- `([^`]+)`[^—]*\[(file|symbol|concept)\]/;
+  const ENTRY_CAP = 400;
   const entries = [];
   for (const l of lines.slice(gloss, gotcha)) {
     if (!/^\s*- /.test(l)) continue;
     const m = l.match(NAMED);
-    if (m) { entries.push({ name: m[1], kind: m[2] }); continue; }
-    // a bullet that opens with a backticked name but declares no kind
-    if (/^\s*- `/.test(l)) find('claude', `glossary bullet names something and declares no kind: ${l.trim().slice(0, 70)}`);
+    if (!m) {
+      // a bullet that opens with a backticked name but declares no kind, and a
+      // bullet that names nothing at all, are the same failure at two depths
+      find('claude', /^\s*- `/.test(l)
+        ? `glossary bullet names something and declares no kind: ${l.trim().slice(0, 70)}`
+        : `glossary bullet names nothing — it is a rule, a reason or a gotcha (SURFACE/SPEC/STYLE · DECISIONS · Gotchas): ${l.trim().slice(0, 70)}`);
+      continue;
+    }
+    entries.push({ name: m[1], kind: m[2] });
+    if (l.length > ENTRY_CAP) {
+      find('claude', `glossary entry \`${m[1]}\` is ${l.length} chars, past the ${ENTRY_CAP} cap — send the rule, reason or post-mortem to its own file: ${l.trim().slice(0, 70)}`);
+    }
   }
   note(`  ${entries.length} glossary entries`);
 
+  // A gotcha entry is a top-level bullet plus its indented continuation lines.
+  // Only the guarded ones are capped; an unguarded gotcha is capped by nothing,
+  // because those are the ones that earn their place (Ed, Q723–731).
+  const GUARD = /spec-check|npm run|asserted by test|parity test|golden log|fails on the pre-fix|pinned by a server test/;
+  const gotchas = [];
   for (const l of lines.slice(gotcha, end)) {
     if (/^\s*- `/.test(l)) find('claude', `Gotchas bullet leads with a backticked name — it belongs in the glossary: ${l.slice(0, 70)}`);
+    if (/^- /.test(l)) gotchas.push({ head: l.trim().slice(2, 70), len: l.length + 1, buf: l });
+    else if (gotchas.length && /^\s+\S/.test(l)) { const g = gotchas[gotchas.length - 1]; g.len += l.length + 1; g.buf += ` ${l}`; }
   }
+  for (const g of gotchas) {
+    if (!GUARD.test(g.buf) || g.len <= ENTRY_CAP) continue;
+    find('claude', `guarded gotcha is ${g.len} chars, past the ${ENTRY_CAP} cap — move the post-mortem to design/DECISIONS.md, keeping the failure and the guard (never stop naming the guard): ${g.head}`);
+  }
+  note(`  ${gotchas.length} gotchas, ${gotchas.filter((g) => GUARD.test(g.buf)).length} of them guarded`);
 
   const roots = ['', 'design/', 'design/tools/', 'packages/', 'scripts/', 'docs/'];
   const code = sourceCorpus();
