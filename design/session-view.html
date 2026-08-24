@@ -499,6 +499,24 @@
     return d2.getFullYear() + '-' + p2(d2.getMonth() + 1) + '-' + p2(d2.getDate()) +
       'T' + p2(d2.getHours()) + ':' + p2(d2.getMinutes());
   };
+  // **the standard proposal rate**, one literal (Q740, Ed 2026-08-23). The
+  // founding pre-answers nothing (F6), and this is not a pre-answer: the card
+  // still opens with three empty boxes, and these numbers are what the machine
+  // writes into them when the founder picks *I set it* — an answer to a rung
+  // they have just chosen. Referenced twice: by that fill, and by the
+  // delegated fallbacks below, which used to carry 8 and 240 of their own.
+  const RATE_START = { grant: 4, cap: 6, dripMin: 10 };
+  const unset = (v) => v === '' || v === null || v === undefined;
+  // picking a rung may fill that rung's own fields. Two guards the design
+  // rests on: **only empty fields**, so a founder who typed 12 and re-picked
+  // the rung keeps their 12; and **only on the transition** into the rung, so
+  // a field they deliberately cleared is not refilled behind them. Called
+  // before the assignment, which is what makes the transition visible.
+  const fillRung = (key, val) => {
+    if (key === 'rateBy' && val === 'founder' && S.rateBy !== 'founder') {
+      for (const k of Object.keys(RATE_START)) if (unset(S[k])) S[k] = RATE_START[k];
+    }
+  };
   // the founder's provisional radio state → the typed value the module takes
   const TYPED = {
     title: () => ({ text: S.title }),
@@ -532,7 +550,8 @@
     removal: (v) => ({ rung: v }),
     machines: (v) => (v === true ? { enabled: true, budget: +S.auditorBudget || 4 } : { enabled: false, budget: 0 }),
     lapse: (v) => (v === 'never' ? { afterMs: null } : { afterMs: +v * 86400000 }),
-    rate: (v) => ({ grant: +v, cap: Math.max(+v, +S.cap || 8), dripMinutes: +S.dripMin || 240 }),
+    rate: (v) => ({ grant: +v, cap: Math.max(+v, +S.cap || RATE_START.cap),
+      dripMinutes: +S.dripMin || RATE_START.dripMin }),
   };
   // a typed value → the page's own vocabulary (what STANDS/DECIDED speak)
   const PAGEVAL = {
@@ -5017,7 +5036,8 @@
         : v;
       return render(); }
     const o = ev.target.closest('[data-set]');
-    if (o) { S[o.dataset.set] = setVal(o.dataset.val);
+    if (o) { fillRung(o.dataset.set, setVal(o.dataset.val));
+      S[o.dataset.set] = setVal(o.dataset.val);
       if (perpetual() && S.shape === 'ramp') S.shape = 'fixed';
       return render(); }
     const pic = ev.target.closest('[data-pic]');
