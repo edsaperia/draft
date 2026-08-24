@@ -108,7 +108,7 @@
      The save is the moment because it is the first moment there is anywhere
      to put the words: before it nothing is stored anywhere. */
   .prose.empty.writeready::before {
-    content: "Start writing whenever you like.AA The document's own words are the last thing the constitution settles, so nothing here is being asked of you yet.";
+    content: "Start writing whenever you like.\A\A The document's own words are the last thing the constitution settles, so nothing here is being asked of you yet.";
     white-space: pre-wrap; color: var(--muted); font-size: var(--t-body); line-height: 1.6;
   }
   /* the paste-well: the empty state of the prose column, and nothing more */
@@ -296,6 +296,25 @@
       if (sel) { sel.removeAllRanges(); sel.addRange(r); }
     }
   };
+  // **📄's main decision is the column** (C1: a card opens and focuses its
+  // main decision). Every other card carries the thing it decides; 📄 decides
+  // the prose below it, so opening it puts the caret at the end of the
+  // column — which is also the only thing on the surface that says the column
+  // is somewhere you may type. Only where it is actually editable: `#prose`
+  // is `contentEditable` for the founder's own seat alone, and only until the
+  // text is confirmed.
+  const focusProse = () => {
+    if (!prose.isContentEditable) return;
+    try { prose.focus({ preventScroll: true }); } catch (e) { prose.focus(); }
+    const r = document.createRange();
+    r.selectNodeContents(prose); r.collapse(false);
+    const sel = window.getSelection();
+    if (sel) { sel.removeAllRanges(); sel.addRange(r); }
+  };
+  // what an opening focuses — fired on the transition into open and never on
+  // a re-render, since the live page polls every four seconds and stealing
+  // the caret each time would fight the founder's typing
+  const focusOpened = (el, k) => (k === 'text' ? focusProse() : focusComposer(el));
   // run the close animation, then the state change it was closing for
   const closeThen = (fn) => {
     const el = document.querySelector('.setupcard');
@@ -336,7 +355,7 @@
     const el = document.querySelector('.setupcard');
     // a morph is an opening too — it sets lastOpen itself, so it never
     // reaches render's open branch and has to put the caret in place here
-    focusComposer(el);
+    focusOpened(el, k);
     if (!el || !was) return;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const h1 = el.offsetHeight;
@@ -577,6 +596,29 @@
     const m = b.className.match(/lvl(\d)/);
     return (m ? '#'.repeat(+m[1]) + ' ' : '') + b.textContent;
   }).join('\n').trim();
+  // **The column, counted once** — 📄's own value, the 📄 clause and the rail
+  // entry all state the same fact about the same blocks, and each used to
+  // count them itself. A heading is a block whose class carries `lvl<n>`, the
+  // same test `proseText` uses to put the Markdown hashes back. It returns
+  // the counts; every caller phrases them.
+  const proseCounts = () => {
+    let paras = 0; let heads = 0;
+    for (const b of prose.children) {
+      if (!b.textContent.trim()) continue;
+      if (/lvl\d/.test(b.className)) heads++; else paras++;
+    }
+    return { paras, heads, blocks: paras + heads };
+  };
+  // 📄's value slot: what stands in the column, said in the fewest words that
+  // are still a count. An empty column is a real answer (§9.0b), so it gets a
+  // statement of its own rather than a zero.
+  const proseLine = () => {
+    const c = proseCounts();
+    if (!c.blocks) return 'Nothing written yet.';
+    const n = (x, w) => x + ' ' + w + (x === 1 ? '' : 's');
+    return [c.paras ? n(c.paras, 'paragraph') : '', c.heads ? n(c.heads, 'heading') : '']
+      .filter(Boolean).join(' and ') + ', below.';
+  };
   // which page field carries a setting's delegation radio ('roster' = the members')
   const DKEY = { ending: 'ending', bar: 'barBy', quorum: 'quorumBy',
     authorship: 'authorship', signing: 'signing', judgments: 'judgments',
@@ -1245,9 +1287,13 @@
     // readout (per question, per person — informs, never blocks), and is
     // refused only while a judge-gate question is still being decided. After
     // the press it is a settled grey tab restating the batch and the moment.
+    // **It is not served until it can be pressed** (F9, Q745): the founder
+    // meets it at the moment beginning becomes possible, never as a task with
+    // a dead commit. Post-start it shows for everybody as the settled grey
+    // tab, which the leading `!constituted()` preserves.
     { k: 'begin', g: '🍾', t: 'Begin', own: 'you', isGate: true, isBegin: true,
       open: () => constituted(),
-      hide: () => !amFounder() && !constituted(),
+      hide: () => !constituted() && (!amFounder() || !beginOffered()),
       why: '', waiting: '', done: '', blockers: () => [] },
     // **🥂 — the close, acknowledged** (Q468, built 2026-08-21): 🍾's mirror,
     // a news card pinned until OK, one per member on their own clock; OK on
@@ -2276,7 +2322,7 @@
   ];
 
   const VALUE = {
-    text: () => { const n = [...prose.children].filter((b) => b.textContent.trim()).length;
+    text: () => { const n = proseCounts().blocks;
       return n ? n + ' blocks' : (S.seen.has('text') ? 'Starts empty — the room writes it' : 'Nothing yet'); },
     title: () => S.title || 'Not named yet',
     slug: () => 'docs.vote/' + (S.slug || '…'),
@@ -3246,7 +3292,7 @@
       others: 'A member may be proposed for removal, and every other member has to agree.',
       ordinary: 'A member may be proposed for removal — a proposal ✏️ like any other.',
     })[removalRung()],
-    text: () => { const n = [...prose.children].filter((b) => b.textContent.trim()).length;
+    text: () => { const n = proseCounts().blocks;
       return n ? 'The document starts from ' + n + ' blocks of text.'
         : 'The document starts empty — the members write it.'; },
   };
@@ -3825,9 +3871,17 @@
           ? '<i>It began empty — the room wrote it.</i>'
           : textDivs(cs.text)) +
         '</div></div>'
-      : '<div class="unlocks">Once you confirm this, members can start <b>proposing</b> changes. They cannot judge until the rest of the constitution is settled.</div>' +
-      '<p class="why">Type or paste it into the page below — the same column it will be edited in once drafting begins.</p>' +
-      '<p class="setnote"><b>Or leave it blank.</b> Starting from nothing is a perfectly good way to begin. This card is asking whether you have decided, not whether there is any text yet.</p>'),
+      // **📄 is the one card whose object is not on it** (Ed's live walk,
+      // 2026-08-23), and it had become an explainer instead of a control:
+      // nothing said the column below was somewhere you may type, nothing
+      // showed what pressing ✒️ would commit, and the first sentence was
+      // false — *members can start proposing* is the pre-Q606 rule, and
+      // `canPropose` has been `&& constituted()` since 2026-08-22, so
+      // proposing opens at 🍾 and not here. The card takes the shape every
+      // other one uses: why → the value → the note → the commit row.
+      : '<p class="why">What the document starts from. Write it in the column below; after the start it changes by proposing.</p>' +
+      '<div class="propblock"><div class="rtext">' + esc(proseLine()) + '</div></div>' +
+      '<p class="setnote"><b>Or leave it blank.</b> Starting from nothing is a perfectly good way to begin — this card asks whether you have decided, not whether there is anything there yet.</p>'),
     hat: () => {
       const started = !!(cs && cs.constitutedAtT !== null);
       // the radio is the session-view's own opt(), over the derived current
@@ -4473,7 +4527,16 @@
         // its own `ans:` key — and a card whose value lives elsewhere (the
         // register, the text) simply has nothing to put back, so the bin
         // there is the close it always was under another name.
-        : binBtn() +
+        //
+        // …except 📄, which loses it outright (Ed, 2026-08-23). The card names
+        // no `data-set`/`data-txt`/`data-num`/`data-ans` key, so `cardKeys()`
+        // is empty and the bin iterates nothing — a control that does nothing
+        // while its tooltip promises to put the text back, and beside a column
+        // holding the founder's own words it reads as *delete the document*.
+        // Y20's own footing: nothing to put back. Clicking the card's own tab
+        // still closes it, so nothing is stranded open. Scoped to `text` alone
+        // — `pw:u:text` and `pw:a:text` have real radios and keep their bins.
+        : (c.k === 'text' ? '' : binBtn()) +
         // ✒️ is the founder's pen (Ed, 360): a set of a setting binds the
         // document. Q449 (Ed, 2026-08-20): an answer to a shared question
         // and a setting about yourself — your name, picture, email — bind
@@ -4586,6 +4649,12 @@
       ? (!SLUG_OK.test(S.slug) ? 'Lower case, digits and hyphens, three characters or more'
         : slugRefused() ? 'That address is taken'
         : 'Checking the address…')
+    // 📄's commit names what it commits. Blank is a real answer (§9.0b), so
+    // `ready('text')` is unconditionally true and the ✒️ is live from the
+    // instant the card appears — which means a founder who has not realised
+    // they may type can start an empty document without ever being told that
+    // is what they are doing.
+    : c.k === 'text' ? (proseCounts().blocks ? 'Set the text' : 'Start it empty')
     : ready(c) ? (c.ansFor ? 'Answer' : c.kind === 'personal' ? 'Save' : 'Set it')
     : 'Not answered yet');
   // **The whole commit row follows the typing** (Ed, 2026-08-21: *the 🗑️
@@ -4642,7 +4711,7 @@
       : isStranger() ? { n: '?', pic: '' } : me(), 'face');
     if (S.open && S.open !== lastOpen) {
       const el = document.querySelector('.setupcard');
-      if (el) { CC.expandCard(el, () => {}); focusComposer(el); }
+      if (el) { CC.expandCard(el, () => {}); focusOpened(el, S.open); }
     }
     lastOpen = S.open;
     // what is born arrives (setup.js birthPass): a stagehand act — seat
@@ -6661,6 +6730,32 @@
   const readinessOf = () => {
     if (!cs || constituted()) return null;
     try { return cs.readiness ? cs.readiness() : null; } catch (e) { return null; }
+  };
+  // **A card with a dependency does not appear until its dependency is
+  // settled — never greyed** (SURFACE F9), and 🍾 was the one card that broke
+  // it: it arrived with a dead commit while the founder's own blind answers
+  // were outstanding and 🏛️ was unacknowledged. Two independent systems
+  // decided *show* and *enable* and nothing reconciled them — `blocksOrder`
+  // skips every gate but the pen, and a delegated setting reads *settled* the
+  // instant it is handed over — so visibility keys on the module's own
+  // answer instead. The voice half is `!mustAct(…)` rather than
+  // `acked('grant-voice')` deliberately: a **clerk** founder is not a member,
+  // so 🏛️ never opens for them, and an `acked()` test would hold 🍾 shut for
+  // ever.
+  const beginOffered = () => {
+    const rd = readinessOf();
+    if (!rd || !rd.ready) return false;
+    // …and the voice — but only where the voice is actually being served.
+    // `tasksFor` hangs 🏛️ off `voiceHost()`: the first blind question asking
+    // you, or ⚖️ Judging where nothing was delegated to you — and ⚖️ is hidden
+    // until 🍾. So a founder who delegates nothing is never offered the voice
+    // before the start, and `mustAct` alone (which is true from their
+    // arrival, the card being open and unacknowledged) would hold 🍾 shut for
+    // ever: the Q645 deadlock in a new place, and the one this file already
+    // warns about above `otherTasksLeft` — *what a question hands you cannot
+    // be the reason to withhold the question*. The same clause covers a
+    // clerk, who is not a member and never opens 🏛️ at all.
+    return !(visible(card(voiceHost())) && mustAct(card('grant-voice')));
   };
   const glyphOfSetting = (mid) => { const c = card(pkeyOf(mid)); return c ? c.g + ' ' : ''; };
   const BEGIN_BATCH = [
