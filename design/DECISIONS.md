@@ -462,3 +462,64 @@ Two things were salvaged rather than left, being live and stated in no other doc
   then clear by measurement (5px at the default peek). **Anything that removes the placeholder has to
   answer the geometry as well as the sentence.**
 
+
+## ⏱️'s *I set it* fills its own fields (2026-08-24, Q740)
+
+Ed, 2026-08-23: *when you choose "I set it" on the proposal rate, it should have defaults — 4 to
+start with, up to a maximum of 6, an additional every 10 minutes.* The rule is in `SURFACE.md` F6;
+what is here is why it does not contradict the thing F6 has said since Q511.
+
+**Why ⏱️ alone.** Every other founding card asks for a *choice* — a rung, a date, a number the
+founder has a view about. ⏱️ asks for a **shape**: three numbers that only mean anything together,
+whose relation (the maximum is not below the start, the drip is in minutes) is the whole of the
+decision. A founder who has never run one of these has no view on 4 against 6 and no way to form
+one from the card, and the card answered that with three empty boxes and a dark ✓ — the one place
+on the surface where *no defaults* left somebody with nothing to work from rather than a clear
+question. The other multi-field card, 🌡️'s ramp, is F6's standing exception for a related reason
+(Q512: the ramp is part of what the threshold says). ⏱️ does **not** join it there, and that is the
+point of the next paragraph.
+
+**Why a clarification of F6 rather than an exception to it.** The test F6 states is about what a
+card **arrives** as, and SPEC §9.0a says the same in the spec's words — a setting is born with its
+value unset, nothing arrives answered. Under Ed's answer (1) that stays literally true: the fill
+hangs on the *rung click*, so the card opens with three blank boxes and the founder has to pick
+before anything appears. What the machine then writes is an answer to a question the founder has
+just asked it. F6 already carries the converse half — *typing into a rung's own field is choosing
+that rung* — and this is the other direction of the same identity between a rung and its fields.
+It is also **complete** rather than partial, which is what makes it a rule and not a special case:
+`.pick .inner` is `display: none` until the rung is on (`design/setup.css:148`), so ⏱️'s fields are
+physically unreachable before the pick and F6's typing half can never fire first on this card. The
+radio is the only entrance, so hanging the fill there covers every path in.
+
+**Why the anchoring ban does not reach here.** The `consent-slider` has nothing preselected on the
+stated principle that *a suggested value is exactly the anchoring blind collection exists to
+prevent*. That ban is about **blind collection**: many people answering the same question without
+seeing each other, where one number on the screen coordinates a room that must not read itself, and
+the document then takes an extremum of answers that were never independent. None of that machinery
+is present on the founder's half of ⏱️. One person has taken the decision, there is nobody to
+coordinate with, and they can see the numbers, change them and commit. Anchoring a room is a defect
+in a collection mechanism; anchoring one decider who can overwrite what they are anchored to is
+called a starting point. The ban stays exactly where it is, on the member's answer card.
+
+**The two guards, and what each is for.** *Only empty fields* is the one that keeps the fill from
+being destructive: a founder who typed 12, wandered off to the delegate rung and came back keeps
+their 12, because the fill has nothing to say about a field that already carries an answer. *Only
+on the transition* is the subtler one: without it, re-clicking a rung that is already on would
+refill a box the founder had just deliberately cleared — the machine quietly undoing an act, which
+is the failure mode every no-defaults rule on this surface exists to prevent. Together they mean
+the fill can only ever put numbers where there were none, and only in answer to a fresh pick.
+
+**Silent, per Ed's answer (3).** No *suggested* note and no explanatory line. A note would be the
+card apologising for numbers the founder can read and change; and the surface has one place where
+it does announce a machine-chosen value — 📍's suggested address (F11), which says so because that
+value is about to become *public and permanent* and the founder may never look at the field again.
+Three numbers sitting in three visible boxes above a lit ✓ are neither.
+
+**Scope, per Ed's answer (4).** The delegated fallbacks follow — `ANSTYPED.rate` widened a member's
+one-number answer with a hard-coded `8` and `240`, which were literally the defaults Q511 forbade,
+firing exactly where the founder had delegated ⏱️ and set no machinery, so the document took
+numbers nobody gave. They read `RATE_START` now. ⏩'s `SEED` and the post-start motion composer keep
+theirs: the first is fixture furniture that writes `S` directly and never meets the click handler,
+and the second should show what stands today rather than the factory numbers. The engine's own
+fallbacks are untouched, being engine tuning (R-040). That the three sets now disagree in three
+ways is real, and is filed as Q741 rather than fixed under a ruling that did not ask for it.
