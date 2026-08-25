@@ -535,6 +535,35 @@
   // own powers, read through the same pair every held-able setting has —
   // nothing rides the applications value but the join policy
   const regPair = () => pwPair('policy');
+  // **The door is drawn on the gate that acts** (Q812). The 🪪 card asked
+  // whether *either* register power was held, where the module refuses a
+  // direct invitation on anything but the pen — so a founder who laid the
+  // pen down at 🍾 and kept the 🛡️ was shown a box that could not send, and
+  // pressing it did nothing at all. `membershipReserved()` is the module's
+  // own name for this test and now means exactly what `invite()` asks, lapse
+  // included; the pair is the fallback for a page with no session yet.
+  const directInvite = () => (cs && cs.membershipReserved
+    ? !!cs.membershipReserved() : regPair().u);
+  // **A door that will not open says why** (Q811). Every act on this card
+  // was fire-and-forget — `api.cmd` warns to the console and the page
+  // re-renders as though it had worked — so a refusal looked exactly like
+  // nothing happening. A refusal is kept against the card it belongs to and
+  // printed under the control that tried, the way a refused text proposal
+  // comes back on its own draft card.
+  const doorErrOn = (k) => (S.doorErr && S.doorErr.k === k ? S.doorErr.m : '');
+  const doorErrHtml = (k) => (doorErrOn(k)
+    ? '<p class="why refusal"><b>' + esc(doorErrOn(k)) + '</b></p>' : '');
+  // the module's sentences carry their own § pointer, which is this
+  // repository's vocabulary and not a member's (STYLE.md §8): the pointer
+  // goes and the sentence stays
+  const plainRefusal = (m) => String(m == null ? '' : m)
+    .replace(/\s*\(§[^)]*\)\s*$/, '').replace(/\.$/, '').trim();
+  // an answer that arrives after the act has to repaint by itself: a
+  // refusal from the wire lands one round trip and one refresh later
+  const setDoorErr = (k, m) => { S.doorErr = m ? { k: k, m: m } : null; render(); };
+  // which card a control sits on, from the card itself rather than from
+  // whatever happens to be open
+  const cardKeyAt = (el) => (el && el.dataset && el.dataset.setupcard) || S.open || 'roster';
   const msToLocal = (ms) => {
     const d2 = new Date(ms);
     const p2 = (x) => String(x).padStart(2, '0');
@@ -796,6 +825,8 @@
     titleBy: 'founder', slugBy: 'founder', policyBy: '',
     mailOpen: false,
     sentAddr: '', inviteOne: '', inviteMany: '',
+    // the last refusal, against the card it belongs to: {k, m} (Q811)
+    doorErr: null,
     viewer: 0,
     app: { started: false, email: '', emailSent: false, emailVerified: false,
       mailOpen: false, name: '', pic: '', text: '', submitted: false, csId: null },
@@ -3012,9 +3043,16 @@
   const composerOn = (c) => motionsLive() && viewerIsMember() && !c.isGate && !c.ansFor &&
     c.kind !== 'personal' && c.k !== 'text' && c.k !== 'roster' && settled(c) && !motionOn(c) &&
     !(amFounder() && !membersHold(c) && founderDirect(c));
+  // **One 🏛️ out per member, on every card including the one it is out on**
+  // (Q816). The exemption for `c.k` was a guess about which card could still
+  // be composing, and the module makes no such exemption: `openMotion`
+  // refuses a second constitutional motion whatever it targets. ✉️ is where
+  // that bites, since two invitations in a row are one act repeated — so the
+  // commit greys and says to withdraw the first, rather than taking the
+  // press and losing it.
   const commitFor = (c) => motionCommitHtml(c,
     (S.draft && S.draft.k === c.k) ? S.draft.to : '',
-    !!myHeldOut() && myHeldOut() !== c.k);
+    !!myHeldOut());
 
   /* **A motion is composed with the setting's own control** (motion-controls),
      and the grammar is session-view's, via cards.js (Ed, 2026-08-18: *the
@@ -4258,7 +4296,8 @@
     invite: () =>
       '<p class="why">You invite people yourself. An invitation is just the link, sent by email, and whoever arrives starts with the same ✏️s as everybody else.</p>' +
       '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1" value="' + esc(S.inviteOne) + '">' +
-      '<button class="btn" data-act="add">Invite</button></div></div>',
+      '<button class="btn" data-act="add">Invite</button></div></div>' +
+      doorErrHtml('invite'),
     remove: () => '<p class="why">Propose that somebody stops being a member. It follows whatever the 🥾 rule says, and they always see it.</p>',
     myemail: () => (S.emailVerified
       ? '<div class="lockline">' + TICK + '<span>Verified — <b>' + esc(S.myemail) + '</b> can get back in.</span></div>' +
@@ -4295,11 +4334,18 @@
     // one person a preamble to a list of everybody — and the founder is a hat
     // worn over a role rather than a role itself (SPEC §9.0a), so the hat and
     // the roster are two things.
-    roster: () => (cs && cs.constitutedAtT !== null && !(regPair().u || regPair().a)
-      ? '<p class="why">Who is a member. Bringing somebody in, or proposing that somebody leaves, is the ✉️ and ❌ tabs beside this list.</p>'
+    // The box is drawn only where it can send (Q812): before the start
+    // anybody may be brought in freely, and after it only the pen invites
+    // directly — with the shield alone, or with neither power, inviting is a
+    // proposal like any other and the sentence says so rather than offering
+    // a field that answers nothing (Q813).
+    roster: () => (cs && cs.constitutedAtT !== null && !directInvite()
+      ? '<p class="why">Who is a member. Now the document has begun, bringing somebody in is a proposal like any other — everybody answers it, and one refusal keeps them out — so it is the ✉️ tab beside this list. Proposing that somebody leaves is ❌.</p>' +
+        doorErrHtml('roster')
       : '<p class="why">Who is a member. An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as <i>invited</i> until then.</p>' +
       '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1" value="' + esc(S.inviteOne) + '">' +
       '<button class="btn" data-act="add">Invite</button></div></div>' +
+      doorErrHtml('roster') +
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
             // the boxes keep what is in them across a close, like every other
       // field here: a pasted list of addresses is the most expensive thing
@@ -4691,6 +4737,7 @@
             // flying out of the wallet is what teaches it, and a sentence
             // beside the flight is the surface explaining its own animation
             : (crownWaits(c) ? '<p class="setnote">If it passes it goes to the Founder, who may assent or refuse.</p>' : '')) +
+          doorErrHtml(c.k) +
           (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
         return cardHtml(c, ctx, body2 + changeHalf(c),
           '<button class="btn glyphbtn" data-dropmotion="1"' +
@@ -5238,10 +5285,24 @@
       // (`penHoldFired`) and a pointerless click act at once
       if (isPenCommit(pm) && !penHoldFired && penPointerDown) { penPointerDown = false; return; }
       if (S.draft && S.draft.to) {
+        // **A refused motion is not a sent one** (Q811). The draft was
+        // cleared whatever came back, and live `openMotion` is a command
+        // that resolves rather than throws — so a refusal (the commonest
+        // being the one 🏛️ out per member) emptied the composer and read as
+        // a motion that had gone. What is refused comes back with its
+        // reason on it, the way a refused text proposal does.
+        const d0 = S.draft;
         try {
-          cs.openMotion(now(), viewerId(), draftPayload(S.draft), S.draft.why || undefined);
+          const sent = cs.openMotion(now(), viewerId(), draftPayload(d0), d0.why || undefined);
           S.draft = null;
-        } catch (e) { console.warn('[cs]', e && e.message); }
+          S.doorErr = null;
+          if (sent && sent.then) sent.then((res) => { if (res && res.error) {
+            S.draft = d0;
+            setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(res.error) + '.');
+          } });
+        } catch (e) {
+          setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(e && e.message) + '.');
+        }
       }
       return render(); }
     const cq = ev.target.closest('[data-crownq]');
@@ -5477,16 +5538,40 @@
     if (pic) { S.mypic = pic.dataset.pic; return render(); }
     const d = ev.target.closest('[data-drop]');
     if (d) { const row = S.roster[+d.dataset.drop];
-      if (cs && row && row.mid) { try { cs.uninvite(now(), row.mid); } catch (e) { return render(); } }
+      // ✕ was as silent as the field beside it (Q811): post-start `uninvite`
+      // refuses outright, and the row simply stayed. The ✕ is pressed from
+      // the clause as well as from the open card, so a refusal opens 🪪 to
+      // say so — the 📧 card's own precedent for a refused act.
+      if (cs && row && row.mid) {
+        let sent = null;
+        try { sent = cs.uninvite(now(), row.mid); }
+        catch (e) { S.open = 'roster';
+          return setDoorErr('roster', 'That could not be undone: ' +
+            plainRefusal(e && e.message) + '.'); }
+        if (sent && sent.then) sent.then((res) => { if (res && res.error) {
+          S.open = 'roster';
+          setDoorErr('roster', 'That could not be undone: ' + plainRefusal(res.error) + '.');
+        } });
+      }
       S.roster.splice(+d.dataset.drop, 1); return render(); }
-    if (ev.target.closest('[data-act="add"]')) {
-      const f = document.querySelector('[data-add]');
-      if (f && f.value.trim()) invite(f.value.trim());
-      S.inviteOne = '';
+    const addBtn = ev.target.closest('[data-act="add"]');
+    if (addBtn) {
+      // **The field belongs to the card that was pressed** (Q814). Both 🪪
+      // and ✉️ draw a `[data-add]`, and a document-global lookup reads
+      // whichever the DOM happens to hold first — so the press could take an
+      // address off a card nobody was looking at, or find nothing and fall
+      // through without a word.
+      const scope = addBtn.closest('.setupcard');
+      const f = (scope || document).querySelector('[data-add]');
+      invite(f ? f.value : '', cardKeyAt(scope));
       return render(); }
     if (ev.target.closest('[data-act="invite"]')) {
-      const box = document.querySelector('[data-emails]');
-      if (box) { box.value.split(/[\s,;]+/).filter((x) => x.includes('@')).forEach(invite); }
+      const scope2 = ev.target.closest('.setupcard');
+      const box = (scope2 || document).querySelector('[data-emails]');
+      // one address at a time, and `forEach` would otherwise hand `invite`
+      // the index as its card key
+      if (box) { box.value.split(/[\s,;]+/).filter((x) => x.includes('@'))
+        .forEach((x) => invite(x, cardKeyAt(scope2))); }
       S.inviteMany = '';
       return render();
     }
@@ -5570,15 +5655,45 @@
     S.emailSent = true; S.mailOpen = !BIRTH; return render();
   }
 
-  function invite(em) {
-    if (S.roster.some((p) => p.e === em)) return;
-    if (cs && cs.isRemote) { api.cmd('invite', { email: em }); return; }
+  // `k` is the card the press came from — 🪪 before the start, ✉️ after it —
+  // so a refusal is printed under the field that tried (Q811). Called from
+  // the *Several at once* box too, one address at a time.
+  function invite(em, k) {
+    const key = k || 'roster';
+    const at = String(em == null ? '' : em).trim();
+    // **The two silences on this field** (Q815). An empty press returned
+    // without a word, and the dedupe compared raw addresses while the store
+    // lowercases every one it takes (`emailOk`) — so `Bo@…` walked past the
+    // page's check into a server refusal nobody could see.
+    if (!at) return setDoorErr(key, 'Type an address to send the invitation to.');
+    const low = at.toLowerCase();
+    if (S.roster.some((p) => String(p.e || '').toLowerCase() === low)) {
+      return setDoorErr(key, at + ' is already on the membership — one address, one member.');
+    }
+    if (cs && cs.isRemote) {
+      // the command's own answer, not the console's: what the server refuses
+      // is what the founder is told, and what it accepts clears the field
+      api.cmd('invite', { email: at }).then((res) => {
+        if (res && res.error) {
+          setDoorErr(key, 'That invitation was not sent: ' + plainRefusal(res.error) + '.');
+        } else { S.inviteOne = ''; setDoorErr(key, ''); }
+      });
+      return;
+    }
     let mid = null;
-    if (cs) { try { mid = cs.invite(now(), em); } catch (e) { return; } }
-    S.roster.push({ n: em.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (x) => x.toUpperCase()),
-      e: em, role: 'member', in: false, mid });
+    if (cs) {
+      try { mid = cs.invite(now(), at); }
+      catch (e) {
+        return setDoorErr(key, 'That invitation was not sent: ' +
+          plainRefusal(e && e.message) + '.');
+      }
+    }
+    S.inviteOne = '';
+    S.doorErr = null;
+    S.roster.push({ n: at.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (x) => x.toUpperCase()),
+      e: at, role: 'member', in: false, mid });
     // the arrival theatre stays; its payload is a real command now (§9.6a)
-    setTimeout(() => { const p = S.roster.find((x) => x.e === em);
+    setTimeout(() => { const p = S.roster.find((x) => x.e === at);
       if (p) { p.in = true;
         if (cs && p.mid) { try { cs.arrive(now(), p.mid);
           cs.setIdentity(now(), p.mid, { name: p.n }); } catch (e) {} }
@@ -5618,12 +5733,23 @@
       setTimeout(() => s2.classList.add('in'), 80 + i * (HOLD_MS - 800) / seats.length));
     assembly = { el, timers, done: setTimeout(() => {
       el.classList.add('done');
-      try { cs.openMotion(now(), viewerId(), draftPayload(d0), d0.why || undefined);
+      // the 🏛️ half of the same silence (Q811/Q816): ten seconds of the
+      // room convening, and then a refusal nobody was told about
+      let sent = null;
+      try { sent = cs.openMotion(now(), viewerId(), draftPayload(d0), d0.why || undefined);
         // the module auto-answered accept for the mover (§9.6 v0.49) —
         // the provisional layer agrees, so their own radio reads pressed
-        S.mAns[d0.k] = 'yes'; }
-      catch (e) { console.warn('[cs]', e && e.message); }
-      S.draft = null; assembly = null;
+        S.mAns[d0.k] = 'yes';
+        S.doorErr = null;
+        S.draft = null; }
+      catch (e) {
+        setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(e && e.message) + '.');
+      }
+      if (sent && sent.then) sent.then((res) => { if (res && res.error) {
+        S.draft = d0; delete S.mAns[d0.k];
+        setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(res.error) + '.');
+      } });
+      assembly = null;
       setTimeout(() => { el.remove(); render(); }, 420);
     }, HOLD_MS) };
   }
@@ -5644,6 +5770,15 @@
     if (ev.key === 'Escape' && SESSION.openId != null) SESSION.closeCard();
     if (ev.key === 'Escape' && S.open) { S.open = null; return render(); }
     if (ev.key === 'Enter' && ev.target.closest('[data-titlelane]')) ev.preventDefault();
+    // **Enter sends the invitation** (Q814). A lone field with a button
+    // beside it and no form around it swallowed the return key, so the one
+    // gesture everybody makes after typing an address did nothing.
+    const add = ev.key === 'Enter' && ev.target.closest && ev.target.closest('[data-add]');
+    if (add) {
+      ev.preventDefault();
+      const btn = (add.closest('.setupcard') || document).querySelector('[data-act="add"]');
+      if (btn) btn.click();
+    }
     if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.closest('[data-tab]')) {
       ev.preventDefault(); ev.target.closest('[data-tab]').click();
     }
@@ -5740,6 +5875,14 @@
       renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     // the invitation boxes are backed by S, so what is typed into them
     // outlives a re-render and a close (Ed, 2026-08-21)
+    // a refusal is about what was in the field, so the next keystroke
+    // retires it — repainted in place, since a render here would rebuild
+    // the card under the caret (Q811)
+    if (t.matches && (t.matches('[data-add]') || t.matches('[data-emails]')) && S.doorErr) {
+      S.doorErr = null;
+      const line = (t.closest('.setupcard') || document).querySelector('.why.refusal');
+      if (line) line.remove();
+    }
     if (t.matches && t.matches('[data-add]')) { S.inviteOne = t.value; return; }
     if (t.matches && t.matches('[data-emails]')) { S.inviteMany = t.value; return; }
     if (t.dataset.txt === 'myname') { S.myname = t.value; renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
