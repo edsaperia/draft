@@ -1804,9 +1804,14 @@
     // vocabulary the surface otherwise avoids.
     let s1;
     if (!constituted()) s1 = 'When the document begins, members may propose changes to rules and judge proposals.';
-    // the defensive branch — begun, with proposing shut. 💡's own sentence,
-    // with what is true said first rather than a new one invented.
-    else if (!canPropose()) s1 = 'Members may judge proposals. They may propose changes to rules when the document begins.';
+    // the defensive branch — begun, with proposing shut (a constituted
+    // document whose text never confirmed). 💡's own sentence, with what is
+    // true said first rather than a new one invented — and ⚖️ keeps its own
+    // condition here as it does below: judging is not open just because the
+    // document has begun.
+    else if (!canPropose()) s1 = (canJudge() ? 'Members may judge proposals.'
+      : 'Members may begin judging proposals when the whole constitution has been decided.') +
+      ' They may propose changes to rules when the document begins.';
     else {
       // a delegated ordinary question may still be collecting after the
       // start (🍾 waits only on the judge-gate ones), and the module keeps
@@ -3502,10 +3507,15 @@
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
     reserved: (c) => !c.power && !c.isGate && !c.ansFor && c.kind !== 'personal' && !membersHold(c),
-    // a section never folds while it holds the open card or its tasks
+    // a section never folds while it holds the open card or its tasks —
+    // including a card pinned to its `lead` rather than enumerated by its
+    // own keys: 🏛️ hangs on the Proposals preamble (Q750) and appears in
+    // neither `cards` nor `tasksFor`, so without this the fold hid the one
+    // paragraph its card can render in and the rail entry opened nothing
     foldedSec: (sec) => S.folded.has('cs-' + sec.key) &&
       !sec.cards.some((c) => S.open === c.k ||
-        (tasksFor(c) || []).some((t2) => S.open === t2.k)),
+        (tasksFor(c) || []).some((t2) => S.open === t2.k)) &&
+      !(sec.key === 'rate' && voiceInStack() && S.open === 'grant-voice'),
     secToggle: (sec) => secToggleHtml('cs-' + sec.key),
     // the whole constitution folds under its own heading (Ed, 2026-08-19);
     // never while any card is open — a fold must not swallow the open card
