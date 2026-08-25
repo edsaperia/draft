@@ -93,6 +93,15 @@ export function makeConstitution(
   return { ...DEFAULT_CONSTITUTION, ...overrides };
 }
 
+/**
+ * The shortest scale `RaceView.closeness` will measure against (Q836): the
+ * span of a 51% bar, which is the lowest bar the surface can express above a
+ * coin flip — the threshold input is whole percent from 50. A bar of exactly
+ * ½ leaves no distance between the coin flip and the bar at all, so without
+ * this the meter divides by zero and reads empty for ever.
+ */
+const MIN_CLOSENESS_SPAN = 2 * 0.51 - 1;
+
 interface StoredComparison {
   seq: number;
   t: number;
@@ -1130,8 +1139,21 @@ export class Session {
     // incumbent and the tie parameter sit differently in the Laplace
     // covariance), so a statistic that leaned on it would carry a trace
     // of direction. |2p − 1| is exactly invariant under p ↔ 1 − p.
-    const span = 2 * this.adoptionThreshold() - 1;
-    const closeness = leaderP === null || span <= 0 ? 0
+    //
+    // The denominator is floored (Q836). At a bar of exactly ½ the carry
+    // boundary sits *on* the coin flip, `2θ − 1` is 0, and the old guard
+    // returned 0 — so every race in a document at the minimum bar showed an
+    // empty meter for ever, whatever the room had measured, while the same
+    // posterior under a bar of 0.51 already clamped to full. 50 is the
+    // threshold input's own minimum and the natural answer to *the lowest bar
+    // you will accept*, so it is a value real documents hold. Of the two ways
+    // out — floor the span, or special-case θ = ½ onto the full [0, 1] scale —
+    // this is the floor, because it is continuous in θ and its blast radius is
+    // exactly nil: `max` picks `2θ − 1` for every bar the surface can express
+    // above the minimum, so only the singular point moves, and it moves to the
+    // reading its neighbour already gave.
+    const span = Math.max(2 * this.adoptionThreshold() - 1, MIN_CLOSENESS_SPAN);
+    const closeness = leaderP === null ? 0
       : Math.max(0, Math.min(1, Math.abs(2 * leaderP - 1) / span));
     return {
       id,

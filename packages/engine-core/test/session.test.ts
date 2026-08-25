@@ -1079,3 +1079,95 @@ describe('a refused event never reaches the log (Q679)', () => {
     expect(again.closed).toBe(false);
   });
 });
+
+/**
+ * A document of one (Q837, backlog 60). Ed: *"If I'm the only member in a
+ * document and the quorum is 1 and the threshold is 50%, it did not pass."*
+ *
+ * The engine was never the reason: at E=1, Q=1, θ=½ the floor is 1, the
+ * author's derived preference meets it, `feed` serves the sole member the
+ * edge card, and their explicit judgment is a measured comparison that
+ * clears `comparisons > 0` in the same call. What was missing was the
+ * **card** — the page skipped every all-mine race, and at E=1 that is every
+ * race (Q835). This pins the engine half, so a future author exclusion in
+ * `judge` or `feed` cannot quietly take the sole member's document away
+ * again; and it pins the meter at the minimum bar (Q836).
+ */
+describe('a document of one (Q837)', () => {
+  const solo = () =>
+    openSession(
+      {
+        adoptionThresholdStart: 0.5,
+        adoptionThresholdEnd: 0.5,
+        quorum: { form: 'count', n: 1 },
+      },
+      1,
+    );
+  const propose = (s: Session) =>
+    s.submitCandidate(1000, {
+      author: 'p1',
+      patch: rewrite(0, 1, 'Membership requires two existing members to vouch.'),
+      rationale: 'Vouching keeps the roster accountable.',
+    });
+
+  it('the sole member is served their own race, and their judgment adopts it', () => {
+    const s = solo();
+    expect(s.adoptionFloor()).toBe(1);
+    expect(s.adoptionThreshold(1000)).toBeCloseTo(0.5, 10);
+
+    const { id: c1 } = propose(s);
+    const race = s.raceOf(c1);
+    // the author's derived preference is a mover and meets the floor, but it
+    // is not a measurement — so nothing has been judged yet
+    expect(race.distinctMovers).toBe(1);
+    expect(race.comparisons).toBe(0);
+    expect(s.getCandidate(c1).state).toBe('live');
+
+    // …and an hour of the host's clock changes nothing: the room has not spoken
+    const before = s.log.length;
+    for (let t = 2000; t <= HOUR; t += 60_000) expect(s.tick(t)).toHaveLength(0);
+    expect(s.log).toHaveLength(before);
+    expect(s.getCandidate(c1).state).toBe('live');
+
+    // the router does serve it — there is no author exclusion anywhere
+    const cards = s.feed('p1', 3, 2000);
+    expect(cards.some((c) => c.kind === 'edge')).toBe(true);
+
+    // and the judgment is a measurement, so it carries in the same call
+    const kinds = s.judge(HOUR + 1000, 'p1', c1, race.incumbentId, 'a').map((e) => e.type);
+    expect(kinds).toContain('comparison');
+    expect(kinds).toContain('adopted');
+    expect(s.getCandidate(c1).state).toBe('adopted');
+    expect(s.document()).toContain('two existing members to vouch');
+  });
+
+  it('the meter reads a real fraction at a bar of exactly 50% (Q836)', () => {
+    const s = solo();
+    const { id } = propose(s);
+    // before the floor was put on the span this was identically 0, whatever
+    // the posterior — the whole document read as an empty bar for ever
+    expect(s.raceOf(id).closeness).toBeGreaterThan(0);
+    // and it reads as the lowest bar the surface can express above the coin
+    // flip does, rather than as its own singular point
+    const nudged = openSession(
+      { adoptionThresholdStart: 0.51, adoptionThresholdEnd: 0.51, quorum: { form: 'count', n: 1 } },
+      1,
+    );
+    propose(nudged);
+    expect(s.raceOf(id).closeness).toBeCloseTo(nudged.races()[0]!.closeness, 10);
+  });
+
+  it('a bar above the coin flip is untouched by the floor', () => {
+    // `max` picks the real span for every threshold the surface can set above
+    // the minimum, so nothing else on the surface moves: at 0.9 the reading is
+    // still |2p − 1| / (2θ − 1) exactly, unclamped
+    const s = openSession({ adoptionThresholdStart: 0.9, adoptionThresholdEnd: 0.9 }, 5);
+    const { id } = s.submitCandidate(1000, {
+      author: 'p1', patch: rewrite(0, 1, 'Membership needs a sponsor.'), rationale: 'r',
+    });
+    const race = s.raceOf(id);
+    const want = Math.abs(2 * (race.leaderP as number) - 1) / (2 * 0.9 - 1);
+    expect(want).toBeLessThan(1);
+    expect(race.closeness).toBeCloseTo(want, 10);
+  });
+});

@@ -65,8 +65,12 @@
      that shouted would fight every card on the surface for the whole
      session. pointer-events: none, because it stands over the document's
      own margin and must never eat a click meant for the text. */
-  /* once the text is confirmed the founder's editor gives way to the charter
-     column session.js renders (#charter); both are in the markup, one shows */
+  /* once the document begins the founder's editor gives way to the charter
+     column session.js renders (#charter); both are in the markup, one shows.
+     It used to give way at 📄's OK; the OK is an acknowledgement that the
+     column will become the text, not the act of setting it, so the column
+     stays until 🍾 (Q819) — which is also the moment the text stops being
+     anybody's to type and starts changing by proposal. */
   .doc.begun #prose, .doc.begun #prosefolds { display: none; }
   /* ?fixture=session runs the Hollow Oak charter with the constitution out of
      the way, so its geometry is the frozen session-view's to the pixel (the
@@ -415,12 +419,24 @@
   const M = window.CONSTITUTION;
   let cs = null;
   // ---- the charter column (stage 8) --------------------------------------
-  // Confirmed text renders as clauses through session.js; the founder's
-  // editor (#prose) is for the text before it exists. FIX is the Hollow Oak
-  // session fixture when the page runs as ?fixture=session.
+  // The document's text renders as clauses through session.js; the founder's
+  // editor (#prose) is for the text before there is anywhere else to put it.
+  // FIX is the Hollow Oak session fixture when the page runs as
+  // ?fixture=session.
+  //
+  // **The column swaps at 🍾, not at the OK** (Q819, Ed 2026-08-25: *clicking
+  // OK on 📄 locks the text from being edited; it should remain editable until
+  // Begin*). 📄's press is an acknowledgement — *whatever stands in the column
+  // is what the document begins from* — and a fact stated about the future
+  // does not take the column away from the founder in the present. The
+  // handover has one honest moment and it is the cork: from 🍾 the text is the
+  // document's and changes by proposal, so from 🍾 the charter mounts. This
+  // gate carries three other readers with it, all of which want the same
+  // moment: which headings the prose folds and the outline see (`tocLead`,
+  // `afterToc`) and the ✏️ wallet's own sentence.
   let FIX = null;
   let charterKey = null;
-  const charterOn = () => !!(cs && cs.textConfirmed);
+  const charterOn = () => constituted();
   function syncCharter() {
     if (isStranger()) return syncStrangerCharter();
     const on = charterOn();
@@ -1201,7 +1217,9 @@
   }
   // The constitution's sections lead the table of contents, then the title;
   // the charter's own headings follow — from #prose while the founder is
-  // still writing, from session.js's DOC once the text is confirmed.
+  // still writing, from session.js's DOC once the document has begun. The
+  // outline reads whichever column is on screen, which is the whole of why it
+  // rides `charterOn()` rather than the OK (Q825).
   function tocLead() {
     const hs = charterOn() ? [] : [...prose.children].filter((b) => b.dataset.h !== undefined);
     // the constitution's sections lead the table of contents (Ed,
@@ -4086,12 +4104,21 @@
     // **The caret leaves with the founder's hand** (Ed's QA, 2026-08-19: he
     // went looking for how to relinquish direct editing on the text — there
     // is nothing to relinquish, because the text is never held (§9.7): once
-    // it is confirmed it changes by drafting. Until that drafting surface
-    // exists here, an editable prose is a phantom power — keystrokes were
-    // accepted and silently discarded — so the column goes read-only the
-    // moment the text is confirmed, and was never editable off the
-    // founder's own seat.
-    prose.contentEditable = String(!(cs && cs.textConfirmed) &&
+    // it changes by drafting there is a drafting surface for it, and until
+    // one exists an editable prose is a phantom power — keystrokes accepted
+    // and silently discarded. It was never editable off the founder's own
+    // seat, and it still is not.
+    //
+    // **The hand leaves at 🍾, not at 📄's OK** (Q820, Ed 2026-08-25). The
+    // moment the old rule froze on was the acknowledgement, which is a
+    // statement about what the document *will* begin from — so between the OK
+    // and the cork the founder was locked out of a column nothing else could
+    // yet change. The phantom-power argument is exactly why the freeze moves
+    // rather than simply lifting: the write channel moves with it (the stash
+    // while unconfirmed, `confirm-starting-text` after, Q821) and 🍾 flushes
+    // the column one last time (Q822), so every keystroke has somewhere to go
+    // right up to the press.
+    prose.contentEditable = String(!constituted() &&
       S.viewer !== 'applicant' && amFounder());
     document.getElementById('doc').classList.toggle('begun', charterOn());
     // **The ✏️ socket stands whether or not you may propose** (Q532). It used
@@ -4217,7 +4244,10 @@
       d0.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
   };
   const BODY = {
-    text: () => (cs && cs.textConfirmed
+    // the retrospective branch keys on the **start**, not on the OK (Q820):
+    // until 🍾 the column below is still the founder's and still the answer,
+    // so the card that describes it must still describe it in the present
+    text: () => (constituted()
       ? '<div class="unlocks"><b>The text the document started from.</b> Drafting changes the document in place, so the page may have moved on — this is what stood when it began.</div>' +
         '<div class="propblock"><div class="rtext">' +
         (String(cs.text || '').trim() === ''
@@ -4245,7 +4275,7 @@
       // release (R-048).
       : '<p class="why">The document begins from whatever stands in the column below, and from then it changes by proposal — whoever holds the pen.</p>' +
       '<div class="propblock"><div class="rtext">' + esc(proseLine()) + '</div></div>' +
-      '<p class="setnote"><b>Write it below, or leave it blank.</b> The column is yours until you press OK; starting from nothing is a perfectly good way to begin.</p>'),
+      '<p class="setnote"><b>Write it below, or leave it blank.</b> The column is yours until the document begins; starting from nothing is a perfectly good way to begin.</p>'),
     hat: () => {
       const started = !!(cs && cs.constitutedAtT !== null);
       // the radio is the session-view's own opt(), over the derived current
@@ -5319,6 +5349,15 @@
     const bgn = ev.target.closest('[data-begin]');
     if (bgn && !bgn.disabled) return closeThen(() => {
       S.okd.add('begin'); S.open = null;
+      // **What is in the column at the press is what the document begins
+      // from** (Q822). The column stays the founder's until this moment, so
+      // the press flushes it before it starts: it covers the write channel's
+      // debounce, and it covers the fixture, which keeps no input listener at
+      // all. Repeated confirmation is legal right up to the start — the same
+      // flush ⏩ settle-the-founding makes for the column it never asked about.
+      if (!constituted() && cs.textConfirmed && amFounder()) {
+        try { cs.confirmStartingText(now(), proseText()); } catch (e) {}
+      }
       try { cs.begin(now()); } catch (e) { console.warn('[begin]', e && e.message); }
     });
     // 🥂 — OK signs the document; the comment is the signing rationale,
@@ -6661,14 +6700,31 @@
         if (pressInFlight()) return;
         api.refresh();
       }, 4000);
-      // the founder's unconfirmed draft rides the stash (§9.7a v0.55)
+      // **The column keeps a write channel for as long as it keeps a caret**
+      // (Q821). Before 📄's OK the founder's draft rides the stash (§9.7a
+      // v0.55); after it the stash route is shut — the confirm supersedes the
+      // provisional draft and a later stash is a 400 — so the keystrokes go
+      // where the text now lives, by re-confirming it. Repeated confirmation
+      // is legal pre-start (the module refuses only after 🍾) and a reload
+      // finds the column because boot prefers `data.text`. Each confirm is an
+      // event in the log, so it debounces longer and never sends what the
+      // server already holds.
       let deb = null;
+      let sent = null;                  // the text the last confirm carried
       prose.addEventListener('input', () => {
-        if (cs.textConfirmed || !amFounder()) return;
+        if (constituted() || !amFounder()) return;
         clearTimeout(deb);
+        const confirmed = cs.textConfirmed;   // the delay, not the branch
         deb = setTimeout(() => {
-          api.post('/api/d/' + LIVESLUG + '/stash', { text: proseText() })
-            .catch(() => {}); }, 800);
+          const text = proseText();
+          if (!cs.textConfirmed) {
+            api.post('/api/d/' + LIVESLUG + '/stash', { text }).catch(() => {});
+            return;
+          }
+          if (text === sent || text === cs.text) return;
+          sent = text;
+          api.cmd('confirm-starting-text', { text });
+        }, confirmed ? 1500 : 800);
       });
     }).catch((e) => console.warn('[live] boot', e && e.message));
   }
@@ -6927,7 +6983,16 @@
       };
       // a race holding only my own proposal is mine to withdraw, not to judge
       // — the `mine` item carries it (the author's preference is derived, never asked)
-      if (r.candidates.every((c) => c.mine)) continue;
+      // — **but only where somebody else in the room could judge it** (Q835).
+      // In a document of one every race is only yours, so the blanket skip left
+      // the sole member no card at all: measured `comparisons` stayed 0 for
+      // ever, and a solo document could not change its own text under a form
+      // that had just promised *1 of the 1 members must have judged*. A
+      // self-judgment is legal and always was — §4.2's *the author's preference
+      // is counted but is not the room* is about the **derived** one, and an
+      // explicit judgment is a measurement that supersedes it. The withdraw
+      // affordance stays: at E = 1 you get both.
+      if (r.candidates.every((c) => c.mine) && E() > 1) continue;
       const others = r.candidates.filter((c) => !c.mine);
       const slate = r.deadlocked
         ? { slate: r.candidates.map((x) => ({ text: textOf(x), rationale: x.rationale })) } : {};

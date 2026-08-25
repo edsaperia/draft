@@ -166,6 +166,50 @@ const penCount = async () => {
   return m ? +m[1] : null;
 };
 
+/**
+ * **The column stays live until 🍾** (Q824, backlog 56). 📄's press is an
+ * acknowledgement — *whatever stands in the column is what the document begins
+ * from* — and a statement about what will happen must not take the column away
+ * before it does: between the OK and the cork the founder is still writing, and
+ * what they write is still what begins. This is the only walk that can see it,
+ * being the only one that presses 📄's commit and 🍾 in one pass.
+ *
+ * Two halves, and both are needed. The **caret**: is the column still on screen
+ * and still editable after the OK? The **text**: do words typed after the OK
+ * reach the charter at 🍾? A column left editable with nowhere to send its
+ * keystrokes is the phantom power the old freeze existed to prevent, so a page
+ * that passes the first and fails the second is worse than one that fails both.
+ */
+const POST_OK_LINE = 'Written after the acknowledgement, before the cork.';
+let proseWasLive = false;
+const afterTextOk = async () => {
+  const st = await page.evaluate(() => {
+    const el = document.getElementById('prose');
+    return el ? { shown: !!el.offsetParent, editable: el.getAttribute('contenteditable') } : null;
+  });
+  if (!st) { errors.push('there is no prose column at all after 📄’s OK'); return; }
+  if (!st.shown) {
+    errors.push('the prose column is hidden after 📄’s OK — it is the founder’s until 🍾');
+  }
+  if (st.editable !== 'true') {
+    errors.push('the prose column is read-only after 📄’s OK (contenteditable=' +
+      st.editable + ') — the acknowledgement is not the freeze');
+  }
+  proseWasLive = st.shown && st.editable === 'true';
+  // a block appended by hand, then the page's own input event: the write
+  // channel hangs off that listener, so typing without it would prove nothing
+  await page.evaluate((line) => {
+    const el = document.getElementById('prose');
+    const d = document.createElement('div');
+    d.textContent = line;
+    el.appendChild(d);
+    el.classList.remove('empty');
+    el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+  }, POST_OK_LINE);
+  await page.waitForTimeout(200);
+  await record('write after 📄’s OK');
+};
+
 const log = [];
 const record = async (step, note) => {
   const s = await snap();
@@ -275,6 +319,19 @@ for (let i = 0; i < 40; i++) {
     (await clickIn('.setupcard [data-ok]')) || (await clickIn('.setupcard [data-hatgo]'));
   await record('commit ' + next.k, committed ? null : 'no commit control');
   if (next.k === PEN_RELEASE) await releasePen(next.k);
+  if (next.k === 'text') await afterTextOk();
+}
+
+/* ---- and what was written after the OK is what began (Q824) ------------ */
+if (proseWasLive && log.some((e) => e.step === 'commit begin')) {
+  const charter = await page.evaluate(() => {
+    const el = document.getElementById('charter');
+    return el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
+  });
+  if (!charter.includes(POST_OK_LINE)) {
+    errors.push('the line written after 📄’s OK is not in the charter after 🍾 — ' +
+      'the column was live but its keystrokes went nowhere');
+  }
 }
 
 /* ---- and at 🍾 the release is spent (R-048) ---------------------------- */

@@ -906,6 +906,9 @@ things that made a set a set were all downstream of one glyph. What is deliberat
 `data-confirm`: the act is unchanged, and `data-ok` would have been clicked by `journey-walk`'s own
 OK branch before it ever reached the step that types into the column.
 
+**One sentence here is superseded** — *the column is still editable until it lands* — by the entry
+below, which moves the landing from the OK to 🍾. Everything else in this section stands.
+
 **Two things checked and left alone.** The **clause**: 📄 has none — `doc` is a rail-only section
 and `textAnchor` draws the pile beside the charter heading, so `DECIDED.text` renders nowhere
 today. It is kept in step with the card anyway (a pre-start tense and a post-start one) so the two
@@ -914,6 +917,118 @@ is about who may propose *rules*, and this is about the text. The **rail entry**
 title alone — a task you have to do carries no subtitle — and *Text* names the subject rather than
 an act, so there was nothing there reading as an instruction to write.
 
+## The prose column stays live until 🍾 (2026-08-25, Q819–Q825)
+
+Ed, the morning after the entry above: *Clicking 'OK' on 📄 locks the text from being edited; it
+should remain editable until Begin. It is an acknowledgement that the text will become the starting
+text, not a ✒️ for setting the starting text now.*
+
+**Not a regression from that entry**, which changed the label and the copy and nothing else. The
+freeze is a year older in project time: *the caret leaves with the founder's hand*, 2026-08-19, and
+its reasoning was sound at the time — the text is never held (§9.7), so once it changes by drafting
+there has to be a drafting surface for it, and until one exists an editable prose is a **phantom
+power**, keystrokes accepted and silently discarded. What the acknowledgement ruling exposed is
+that the moment was wrong. `textConfirmed` is when the founder says *this column is what the
+document will begin from*. That is a statement about the future. It has no business taking the
+column away in the present, and between the OK and the cork it took it away from the one person who
+could still change it, to give it to a drafting surface that does not exist yet either — proposing
+opens at 🍾, not here.
+
+**One moment, and it is the cork.** `charterOn()` becomes `constituted()`, which is the honest line:
+before 🍾 the text is the founder's and is typed; from 🍾 it is the document's and changes by
+proposal. Everything about the **column** moves to it; everything about the **acknowledgement**
+stays on `textConfirmed` — the card is settled by the OK, the ✒️ tab's *has a value* test is the OK
+(R-048's order is unchanged: acknowledge the fact, then decide whether to keep a hand on it), the
+module's delegation gate and `waitingOn` are the OK. The OK keeps real work; it simply is not this.
+
+**The phantom-power argument is why the freeze moved rather than merely lifting.** A column left
+editable with nowhere to send its keystrokes is precisely the failure the 2026-08-19 rule named, so
+the write channel had to move with the caret. Before the OK the founder's draft rides the §9.7a
+stash as it always has. After it the stash route is *shut* — the confirm supersedes the provisional
+draft and a later stash is a 400 — so the input listener re-confirms instead: repeated confirmation
+is legal pre-start (the module refuses only after 🍾), a reload finds the words because boot already
+prefers `data.text`, and each confirm is an event in the log, so it debounces longer than the stash
+and never sends what the server already holds. The alternative considered and rejected was to keep
+the stash live past the OK: it reads as the smaller change and is not, because it would move the
+supersession, the 400 and the server test that pins them, to buy a channel that is already there.
+
+**And 🍾 flushes the column.** Two things need it and neither is exotic: the debounce, where a press
+lands inside the 1.5s window, and the fixture, which has no input listener at all. It is modelled
+on ⏩ settle-the-founding's own flush, which does the same job from the other side — that one
+confirms a column nobody asked about, this one re-confirms a column that has moved since it was.
+
+## A document of one (2026-08-25, Q835–Q841)
+
+Ed, from the docs.vote founding walk: *If I'm the only member in a document and the quorum is 1 and
+the threshold is 50%, it did not pass. Can you check if this is expected behaviour.*
+
+**The engine was never the reason, and that is the finding.** At E = 1, Q = 1, θ = ½ the adoption
+floor is 1, the author's own derived preference meets it, `judge` carries no author exclusion, an
+explicit judgment supersedes the derived one, and `feed` serves the sole member the edge card like
+anybody else. Driven directly, `judge()` returns `comparison, adopted` in the same call. Every part
+of the mechanism a one-person document needs was already there and already correct. What failed
+were two readouts, and each had assumed a room bigger than one in a different way.
+
+**The `mine` filter was a rule about other people, written as a rule about candidates.** *A race
+holding only my own proposal is mine to withdraw, not to judge* is true, and its reason is that
+somebody else will judge it — the author's preference is derived and is not the room (§4.2). At
+E = 1 there is no somebody else, so the premise is false and the conclusion becomes a trap: no card
+is served, the measured `comparisons` the adoption gate wants stays 0 for ever, and the document
+cannot change its own text. The founding form had just promised *1 of the 1 members must have
+judged a question before it can change the document*, which is the exact promise the filter broke.
+The fix restores the premise as a condition rather than weakening the rule, and the withdrawal
+stays: at E = 1 the sole member gets both cards, because both acts are genuinely open to them.
+
+**What was rejected.** Excluding the author from `feed` and letting the floor carry the adoption
+instead — that is the *other* reading of §4.2, and it would make a solo document adopt on nobody's
+judgment at all, which is worse than not adopting. Also rejected: a special sole-member path
+anywhere. Nothing in the engine needed one, and a second code path for E = 1 is a second thing to
+keep true.
+
+**The 50% bar was a division by zero wearing a guard.** `closeness` is `|2p − 1| / (2θ − 1)` —
+distance from the coin flip, scaled so the carry boundary reads 1. At θ = ½ the carry boundary *is*
+the coin flip, the denominator is 0, and the guard returned 0 rather than dividing. So every race
+in a document at the minimum bar showed an empty evidence meter whatever the room had measured,
+while the same posterior under a bar of 0.51 already clamped to full — a discontinuity at exactly
+the value the threshold input offers as its minimum and the natural answer to *the lowest bar you
+will accept*.
+
+Two ways out were considered. **Special-case θ = ½ onto the full [0, 1] scale** — read the
+posterior's own excess over the coin flip — gives a meter that fills gradually and never claims a
+race is resolved on evidence nobody has given, which is the more *informative* number. It was
+rejected for being violently discontinuous in the wrong direction: a document at 0.500 would read
+60% where one at 0.501 reads 100%, so the fix would have introduced a second, larger disagreement
+between neighbouring bars in order to remove the first. **Flooring the span** is what landed:
+`MIN_CLOSENESS_SPAN`, the span of a 51% bar, the lowest the surface can express above a coin flip.
+It is continuous in θ, and its blast radius is exactly nil — `max` picks the real span for every bar
+the surface can set above the minimum, so nothing on any existing document moves and the singular
+point moves to the reading its neighbour already gave.
+
+The cost, stated rather than hidden: at θ = ½ the meter saturates on the author's derived preference
+alone, before anybody has judged. That is not new behaviour invented here — it is what a bar of
+0.51 has always done, and the card states the other two gates (*n of the n members must have
+judged*) in their own words beside it. The deeper point, that at a coin-flip bar the posterior
+carries almost no information about closeness to resolution and the meter is really reporting the
+evidence count, is real and is not this change's to settle.
+
+**No walk covers this, and that is why the guard is a `spec-check` assertion.** The ladder's cast is
+20 and asserts `members > 1`; nothing anywhere drives a document of one. So the E > 1 condition is
+pinned as source, because its failure is silent by construction — a rail with nothing in it looks
+like a document at rest, which is precisely how the bug survived to reach Ed.
+
+**Three readers came along for free, and one is the tell.** `charterOn()` also decides which
+headings the outline and the prose folds see (`tocLead`, `afterToc`) — both of which want *whichever
+column is on screen*, which is the gate's real meaning and was only ever coincidentally the OK. The
+third is the ✏️ wallet's tooltip, where `charterOn() && mayPropose()` was already redundant:
+`mayPropose()` goes through `canPropose()`, which has been `&& constituted()` since 2026-08-22. Two
+more the change quietly fixes: the room pulse and `setWalletHeld`, both of which had been live from
+the OK — a page that beat for the room's movements before the room could move.
+
+**The check is the founder's walk**, which is the only pass that presses 📄's commit and 🍾 in one
+run. It asserts both halves, and both are needed: the **caret** (the column shown and
+`contenteditable` after the OK) and the **text** (a line typed then, in the charter after 🍾). A
+page that passed the first and failed the second would be the phantom power restored, which is
+worse than the freeze it replaced. On the pre-fix page it fails with exactly the two caret errors.
 ## The invite door: two gates wearing one name (2026-08-25, Q811–Q818)
 
 Backlog 51, from Ed's founding walk on docs.vote/d/genesis: *I managed to invite one additional
