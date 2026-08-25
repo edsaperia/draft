@@ -314,6 +314,53 @@ const inviteDoorPreBegin = async () => {
   if (!cleared) stuck.push('the refusal did not clear');
 };
 
+/* ---- the dead end, and the way out of it (Q826–Q830) --------------------
+ * Ed, founding alone: *I did all my open tasks and then got served Begin while
+ * being unable to action it. My guess is this is because I delegated things to
+ * the members and I'm the only member.* He was right, and he had to guess: the
+ * card's counts read *1 of 1 have answered* and said nothing about what would
+ * end the wait. `--delegate-all` is the only walk that reaches this state, so
+ * everything the state now owes the founder is asserted here — the reason on
+ * the module's own readout, the sentence on the card, the remedy in the rail,
+ * and that the remedy actually works. */
+const oneVoiceState = () => page.evaluate(() => {
+  const f = window.__founding ? window.__founding() : null;
+  const c = document.querySelector('.setupcard');
+  return { served: (f && f.served) || [], rail: (f && f.rail) || [],
+    holds: ((f && f.readiness) || {}).holds || [],
+    owedUnservable: (f && f.owedUnservable) || [],
+    card: c ? c.textContent.replace(/\s+/g, ' ').trim() : '' };
+});
+const stuckAtBegin = async () => {
+  const st = await oneVoiceState();
+  // 1 — the module names the reason. Without it no page wording can say why:
+  // the id alone is a question that looks finished.
+  const oneVoice = st.holds.filter((h) => h.why === 'one-voice').map((h) => h.setting);
+  say('one voice  · ' + JSON.stringify(oneVoice) +
+    (oneVoice.length ? '' : '  FAIL: readiness gives no `one-voice` reason for a delegating founder alone'));
+  if (!oneVoice.length) stuck.push('readiness has no one-voice reason');
+  // 2 — and 🍾 says it, naming both acts. Read off the open card, which is what
+  // the founder is actually looking at.
+  const saysWhy = /delegated to the membership/.test(st.card) &&
+    /only member/.test(st.card) && /Invite somebody/.test(st.card) && /take it back|take them back/.test(st.card);
+  say('says why   · ' + (saysWhy ? 'names the delegation, the room of one and both remedies'
+    : 'FAIL: the 🍾 card does not say why it cannot be pressed · ' + JSON.stringify(st.card.slice(0, 300))));
+  if (!saysWhy) stuck.push("🍾's hold sentence");
+  // 3 — and the remedy is in the rail, not only in a sentence
+  say('remedy     · rail ' + JSON.stringify(st.rail) +
+    (st.rail.includes('roster') ? '' : '  FAIL: 🪪 is not served while the waiting is one-voice'));
+  if (!st.rail.includes('roster')) stuck.push('🪪 is not served as the remedy');
+  // 4 — and it works: one address is enough to end the wait it names
+  if (await open('roster')) {
+    await inviteFrom(GUEST1, false);
+    const after = await oneVoiceState();
+    const gone = !after.holds.some((h) => h.why === 'one-voice') && !after.rail.includes('roster');
+    say('invited    · ' + (gone ? 'the 🪪 task leaves and the reason is no longer one-voice'
+      : 'FAIL: holds ' + JSON.stringify(after.holds) + ' · rail ' + JSON.stringify(after.rail)));
+    if (!gone) stuck.push('the 🪪 remedy did not clear after an invitation');
+  } else { say('invited    · FAIL: no 🪪 to invite from'); stuck.push('the 🪪 tab at the dead end'); }
+};
+
 const seen = new Set();
 const order = [];
 const handedOver = [];
@@ -350,6 +397,19 @@ for (let i = 0; i < 60; i++) {
   }
   seen.add(next);
   order.push(next);
+  // **`owedUnservable` is an assertion now, not a readout** (Q831). It was
+  // written to *name* the Q775 shape — a card `mustAct` says is owed that no
+  // rail can reach — for whoever came to read the dump after a founding had
+  // already run dry. But it is a complete statement of the defect, checkable at
+  // every step, and a walk that prints it and passes is a walk that watched the
+  // bug go by. Read each turn, because the state that produces it is transient:
+  // it appears the moment a setting is handed over and is gone once the rail
+  // moves on.
+  const owed = ((await founding()) || {}).owedUnservable || [];
+  if (owed.length) {
+    say('  UNSERVED · at ' + next + ' these are owed and beyond any rail: ' + JSON.stringify(owed));
+    stuck.push('owedUnservable at ' + next + ': ' + owed.join(','));
+  }
   if (!(await open(next))) { stuck.push(next + ' (would not open)'); continue; }
   // **🪪 is a band tab, never a rail task** — it is always settled, having
   // no value to settle — so the door is walked at the last moment before
@@ -368,16 +428,19 @@ for (let i = 0; i < 60; i++) {
   }
   if (next === 'begin') {
     // 🍾 is served either because it can be pressed or because it is the last
-    // thing standing (Q773). The second is a real end to a founding that has
-    // handed its questions to a room that is still one person — §9.0b resolves
-    // no blind question on one voice — and the card's whole job there is to say
-    // so. Asserted as such rather than driven through a disabled commit.
+    // thing standing (Q773) — or, since Q830, because the document is waiting on
+    // something the founding cannot clear by itself. That is this founding: its
+    // questions went to a room that is still one person, §9.0b resolves no blind
+    // question on one voice, and the card's whole job there is to say so and
+    // point at the two acts that end it. Asserted rather than driven through a
+    // disabled commit.
     if (!(await committable())) {
       const f = await founding();
       const wait = ((f && f.readiness) || {}).waiting || [];
       say('waiting    · 🍾 is served and cannot be pressed yet — waiting on ' + JSON.stringify(wait));
       if (!wait.length) stuck.push('🍾 is dead and says it is waiting for nothing');
       waitingAtBegin = true;
+      if (DELEGATE_ALL) await stuckAtBegin();
       break;
     }
   }
@@ -460,6 +523,17 @@ if (DELEGATE_ALL) {
   say('delegated  · handed over ' + handedOver.length + ', asked back ' + asked.length);
   say('as a member· ' + JSON.stringify(asked) + (gotAll ? '' : '  FAIL: expected ' + JSON.stringify(want)));
   if (!gotAll) stuck.push('the founder-member was not served every delegated question in ORDER');
+  // **🏛️ is served the moment it is granted** (Q829, Ed 2026-08-25: *when I (as
+  // a founder-member) was granted 🏛️ I did not get a task — the 🏛️ tab was
+  // grey*). Its host was the first blind question asking you, else ⚖️, which is
+  // hidden until 🍾 — so the grant was reachable only after the very press it
+  // stood in front of. Checked as *before* 🍾 rather than merely present.
+  const iVoice = order.indexOf('grant-voice');
+  const iBegin = order.indexOf('begin');
+  const voiceOk = iVoice >= 0 && (iBegin < 0 || iVoice < iBegin);
+  say('the voice  · ' + (voiceOk ? 'served as a task before 🍾 (at ' + iVoice + ' of ' + order.length + ')'
+    : 'FAIL: 🏛️ was ' + (iVoice < 0 ? 'never served' : 'served only after 🍾')));
+  if (!voiceOk) stuck.push('🏛️ was not served to a founder-member before 🍾');
   say('ends at 🍾 · ' + (waitingAtBegin ? 'served, waiting on the room'
     : 'FAIL: the founding did not end at a served 🍾'));
   if (!waitingAtBegin) stuck.push('a delegating founding did not end at 🍾');

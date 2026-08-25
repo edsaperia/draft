@@ -7461,16 +7461,18 @@
   // disabled while `readiness()` says so, which is the half of F9 that
   // matters here: the founder is told what the document is waiting for, not
   // invited to press through it.
-  // **A dead end is served, not hidden** (Q830). F18's last-resort door asks
-  // whether the rail would otherwise be empty, and Q828 puts a task in it in
-  // exactly the state the door was written for: serve 🪪 as the remedy for a
-  // `one-voice` wait and `nothingElseServed()` goes false, so 🍾 disappears and
-  // the sentence naming *why* the founder is being sent to 🪪 is unreachable.
-  // The remedy and its explanation are one thing and have to stand together, so
-  // the door gains a second half: 🍾 is shown, commit dark, whenever the
-  // document is waiting on something the founding cannot clear by itself. That
-  // is `one-voice` and nothing else — every other reason `readiness()` gives is
-  // a state the rail's own next task will leave.
+  // **A dead end is served, not hidden — and the remedy is not a way out of
+  // needing the explanation** (Q830). F18's last-resort door asks whether the
+  // rail would otherwise be empty, and Q828 puts a task in it in exactly the
+  // state the door was written for: serve 🪪 as the remedy for a `one-voice`
+  // wait and 🍾 disappears, taking with it the only sentence that says *why* the
+  // founder is being sent to 🪪. The two are one thing and have to stand
+  // together, so the remedy does not count as *something else being served* —
+  // it is the dead end wearing a card, not the next task. Nothing else changes:
+  // 🍾 still waits behind every real task the founding has left, which is why
+  // this is an exclusion here rather than a second door on `readiness()`. That
+  // was tried and was too eager — it opened 🍾 from the founder's first
+  // delegation, jumping ahead of their own questions.
   // Re-entrant like `firstAsked` above, and guarded the same way: `servedCards`
   // asks `visible(card('begin'))`, which asks this. Inside that inner ask the
   // door is simply shut, so 🍾 never counts itself as the thing being served.
@@ -7478,7 +7480,7 @@
   const nothingElseServed = () => {
     if (askingLast) return false;
     askingLast = true;
-    try { return !servedCards().some((c) => !c.isBegin); }
+    try { return !servedCards().some((c) => !c.isBegin && !remedyOnly(c)); }
     finally { askingLast = false; }
   };
   const beginOffered = () => {
@@ -7488,8 +7490,7 @@
     // last-resort door stays shut here rather than offer a press through an
     // unknown state
     if (!rd) return false;
-    // a dead end is served, not hidden (Q830, above)
-    if (!rd.ready) return oneVoiceHolds().length > 0 || nothingElseServed();
+    if (!rd.ready) return nothingElseServed();
     // …and the voice — but only where the voice is actually being served.
     // `tasksFor` hangs 🏛️ off `voiceHost()`: the first blind question asking
     // you, or ⚖️ Judging where nothing was delegated to you — and ⚖️ is hidden
@@ -7517,8 +7518,10 @@
     constituted: constituted(),
     amFounder: amFounder(), viewerIsMember: viewerIsMember(),
     beginOffered: (() => { try { return beginOffered(); } catch (e) { return String(e); } })(),
+    // `holds` is the reason beside each waiting id (Q826) — the walks assert on
+    // it, so the readout carries it rather than making them re-derive it
     readiness: (() => { const rd = readinessOf();
-      return rd ? { ready: rd.ready, waiting: rd.waiting } : null; })(),
+      return rd ? { ready: rd.ready, waiting: rd.waiting, holds: rd.holds || [] } : null; })(),
     roomExists: roomExists(), otherTasksLeft: otherTasksLeft(), ansDue: ansDue(),
     voiceHost: voiceHost(),
     order: ORDER.map((k) => { const c = card(k); return !c ? k + ' (no card)'

@@ -376,13 +376,14 @@ function checkOrder(pm) {
   // empty rail sees a page that looks finished.
   if (!/nothingElseServed\(\)/.test(offered))
     find('order', "🍾 has no last-resort door — F18: when nothing else is served the rail is empty and the founding has no way on");
-  // …and its second half (Q830, F5). 🪪 stands as the remedy for a `one-voice`
-  // wait, which makes `nothingElseServed()` false in exactly the state the
-  // last-resort door exists for — so without this the founder is sent to 🪪 by
-  // a card that has just hidden itself, and the sentence naming why is
-  // unreachable. Silent by construction: everything still renders.
-  if (!/oneVoiceHolds\(\)\.length > 0 \|\| nothingElseServed\(\)/.test(offered))
-    find('order', "🍾 no longer opens on a `one-voice` wait — F5/Q830: serving 🪪 as the remedy shuts the last-resort door on the one state it was written for");
+  // …and the door does not count the remedy (Q830, F5). 🪪 stands as the remedy
+  // for a `one-voice` wait, which would make `nothingElseServed()` false in
+  // exactly the state the last-resort door exists for — so without this the
+  // founder is sent to 🪪 by a card that has just hidden itself, and the
+  // sentence naming why is unreachable. Silent by construction: everything
+  // still renders.
+  if (!/servedCards\(\)\.some\(\(c\) => !c\.isBegin && !remedyOnly\(c\)\)/.test(page))
+    find('order', "🍾's last-resort door counts the 🪪 remedy again — F5/Q830: serving the remedy shuts the door on the one state it was written for");
   if (!/const oneVoiceRemedy = \(\) => amFounder\(\) && !constituted\(\) && oneVoiceHolds\(\)\.length > 0/.test(page))
     find('order', "🪪 is no longer served as the `one-voice` remedy — Q828: a wait no answering can end, with no card offering the two acts that end it");
   // the remedy must not pace the questions it is the remedy *for* (Q775's rule,
