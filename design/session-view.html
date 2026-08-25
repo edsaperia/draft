@@ -3821,13 +3821,21 @@
     const ch = document.querySelector('#band .achip[data-chip="' + k + '"]');
     return ch ? ch.closest('.cpara') : null;
   };
+  // **The last resort has to be something on screen.** The fallback was the
+  // title paragraph, which was the top of the document until the pre-save
+  // heading started retiring at the save (backlog 33) — a hidden element
+  // measures as a rect of zeros, which would lay the entry at the top of the
+  // window and scroll the rail's click to y=0. So it is the title paragraph
+  // while the title paragraph is showing, and the band's first clause after
+  // that, which is what the top of the document then is.
   const anchorOf = (k) => {
     const tab = tabFor(k);
+    const tp = document.getElementById('titlepara');
     return document.querySelector('.setupcard[data-setupcard="' + k + '"]')
       || document.querySelector('.cpara[data-para="' + k + '"]')
       || hostParaOf(k)
       || (tab && tab.closest('.cpara'))
-      || document.getElementById('titlepara');
+      || (tp.offsetParent ? tp : (band.querySelector('.cpara') || tp));
   };
   function entryOf(c, cx) {
     const st = stateOf(c, cx);
@@ -4536,19 +4544,25 @@
   // From the save the name stands at the head of the prose column instead
   // (`textAnchor`) — where the outline points, where the charter begins, and
   // where the founder is about to write — so this row goes rather than saying
-  // it again a screen higher. It is keyed on the **hairline the band has just
-  // drawn**, not on `cs`, and that is the whole of the guard: one is what the
-  // rule asks for, and zero would be worse than two. An applicant is served no
-  // band at all, so on that seat this heading is still the document's only
-  // name and stays. The row, not the heading: an emptied `.cpara` would keep
-  // its own margin and leave a gap where the title used to be. It wraps the
-  // band rather than standing inside it because three of the seats below
-  // return early, and a display left over from the last seat rendered is the
-  // one way this rule can end up showing zero.
+  // it again a screen higher. It is keyed on **the name the band has just
+  // drawn** — not on `cs`, and not on the hairline beside it — and that is the
+  // whole of the guard: one is what the rule asks for, and zero would be worse
+  // than two. The hairline is the wrong key because `textAnchor` draws it even
+  // when it does not draw the name: opening 📄 (or either of its power tabs)
+  // replaces the title's own paragraph with the card, which is the clause-opens
+  // grammar working correctly — but with the hairline as the key that left the
+  // document with no name anywhere on the page, on the last task of every
+  // founding. An applicant is served no band until they have given their
+  // address, so on that seat this heading is still the document's only name and
+  // stays. The row, not the heading: an emptied `.cpara` would keep its own
+  // margin and leave a gap where the title used to be. It wraps the band rather
+  // than standing inside it because three of the seats below return early, and
+  // a display left over from the last seat rendered is the one way this rule
+  // can end up showing zero.
   function renderBand() {
     drawBand();
     document.getElementById('titlepara').closest('.titlerow').style.display =
-      band.querySelector('.cpara.docsep') ? 'none' : '';
+      band.querySelector('.doctitle.dochead') ? 'none' : '';
   }
   function drawBand() {
     if (isStranger()) {
