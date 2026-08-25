@@ -348,6 +348,7 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 | 🤝 Applications | band tab | the rule | why · the four rungs | Invitation only / Applications must be proposed by members / Anyone may apply / Open | 🗑️ | ✒️ | ✒️ | grey |
 | identity ✋ 🖼️ 📧 | your own row — the Founded line for a clerk, who has none (Q759); the birth run for 📧 | the title | the name field / *Pick an emoji* → *Or upload an image* → *Currently* with Remove / the address | — | 🗑️ (puts back, never clears) | ✓ Save; 📧: 🪶 at the birth, 📨 while unverified, ✓ once verified | Save · send; 📧 re-opens on refusal | the row |
 | 🎩 | the members paragraph | the rule | Member — drafting too / Clerk — not drafting; locked at 🍾 | the two | 🗑️ | ✒️ (when dirty, pre-start) | ✒️ | locked |
+| 📄 Text | the tab beside the charter heading · rail ask | the title — its clause is the document itself (F15) | the fact the press acknowledges · what stands in the column · *Write it below, or leave it blank* | — | nothing (Y20) | **OK** — the task is an acknowledgement, not a set, so it is not a pen act (Q798) | OK; the tab | grey; the ✒️ 🛡️ tabs beneath it stay, and are where the pen is laid down |
 | the applicant's five | the applicant's rail | the title | apply · email (Send the link in the body) · name · picture · words | — | Begin (Y20) → 🗑️ + Submit | (as left) / ✓ | Submit · ✓ | ✏️ yours |
 | the stranger's two | the door's rail | the title | why · the address · Send the link in the body (Y20) | — | 🗑️ only | (in the body) | send | — |
 | backlog (closed page) | the ⏸ tab | the best wording | as the sealed record, *Undecided at the close* | none | nothing (Y20) | OK if unread | OK | ⏸ grey |
@@ -375,7 +376,7 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 | ✏️ (hold) | a draft, or an ordinary motion | the flight | accent-subtle — *blue, not green* | the price is said in words exactly once, here |
 | 🏛️ Hold to ask everyone | a constitutional motion | 10 s | accent-subtle | one 🏛️ out per member |
 | ✏️ Submitted | a proposed draft | — | pressed | the act become the fact; the row does not move |
-| OK | anything that asks only to have been seen | — | solid accent | a word, not a glyph |
+| OK | anything that asks only to have been seen — the gates, the grants, news, 🥂, and 📄 Text (Q798) | — | solid accent | a word, not a glyph |
 | Indifferent | the third radio on a judgment | — | radio | labelled, never 🤷; a judgment about the pair, out of the lanes |
 | ❄️ | the 🔥 card, or one already chilled | — | glyph button | a toggle on the flame; pressing closes, un-pressing does not |
 | Refuse / Accept | the 👑 question | — | outline / accent | the Founder's words |

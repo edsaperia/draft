@@ -875,3 +875,41 @@ same lookup the Proposals stack made necessary.
 owed* moves, only where the tab is drawn. `decisionLine`'s `ansFor` branch survives as `''`
 rather than being deleted, because without it the card falls through to the room-setting branch
 below and states a rule it does not own.
+
+## 📄's task is an acknowledgement (2026-08-25, Q797–Q800)
+
+Ed: *I think 'text' shouldn't allow ✒️ to fix — it gets fixed at 🍾. Maybe text is just an
+acknowledgement of this fact.* Then, precisely: *the action on the main 📄 tab is an
+acknowledgement, and it's the ✒️ tab under 📄 that allows the founder to relinquish it.*
+
+**Nothing about the power model moves.** 📄 is a setting like any other: it holds ✒️ and 🛡️, a
+founder who keeps either is a 👑 by the same rule as anywhere else, the start lays both down, and
+a pre-start release is recorded now and takes effect at the start (R-048, which reads 📄's *has a
+value* as `textConfirmed` — so the pen can only be laid down here **after** this OK, which is the
+right order: you acknowledge what the document begins from, then decide whether to keep a hand on
+it). `confirmStartingText` is still the commit, and the column is still editable until it lands.
+
+**What moved is what the task says it is.** The body read *What the document starts from. Write it
+in the column below; after the start it changes by proposing.* — an instruction to write — and the
+commit was the ✒️, which on this surface means *a set of my own that binds the document*. Between
+them they claimed the founder was **choosing** a text, and that the pen was the instrument of the
+choosing. Neither is true. The founder is not choosing a text on this card; the text is whatever is
+in the column, put there by typing into the column, and it is the same text whoever holds the pen.
+What the card asks is that the founder has understood the fact, which is exactly what an OK is for
+(SURFACE §9.1: *anything that asks only to have been seen*). So the body states the fact and the
+commit is the word the gates and the grants use for theirs.
+
+**The pen falls away by itself, which is the argument that it was miscast.** `holdWallet` keys the
+hold on the ✒️ in the button's own text, so changing the word retires the pen flight, the
+spend-preview and `mayPen()`'s gate on this card without a line of new logic anywhere — the three
+things that made a set a set were all downstream of one glyph. What is deliberately kept is
+`data-confirm`: the act is unchanged, and `data-ok` would have been clicked by `journey-walk`'s own
+OK branch before it ever reached the step that types into the column.
+
+**Two things checked and left alone.** The **clause**: 📄 has none — `doc` is a rail-only section
+and `textAnchor` draws the pile beside the charter heading, so `DECIDED.text` renders nowhere
+today. It is kept in step with the card anyway (a pre-start tense and a post-start one) so the two
+cannot drift if 📄 is ever given a paragraph, and `proposalsClause` does not say it: the preamble
+is about who may propose *rules*, and this is about the text. The **rail entry**: it is the card
+title alone — a task you have to do carries no subtitle — and *Text* names the subject rather than
+an act, so there was nothing there reading as an instruction to write.

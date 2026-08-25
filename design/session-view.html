@@ -3543,8 +3543,18 @@
       others: 'A member may be proposed for removal, and every other member has to agree.',
       ordinary: 'A member may be proposed for removal — a proposal ✏️ like any other.',
     })[removalRung()],
+    // 📄's sentence, in the two tenses its task now has (Q799). Before the
+    // start the fact is the one the founder is acknowledging — what stands in
+    // the column is what the document begins from — and afterwards it is the
+    // record of what did. **Nothing renders it today**: `doc` is a rail-only
+    // section, `textAnchor` draws 📄's pile beside the charter heading rather
+    // than on a clause of its own, and `headFor` returns null for 📄 because
+    // its clause is the document itself (F15). It is kept in step so that the
+    // sentence and the card cannot drift apart if 📄 is ever given a paragraph.
     text: () => { const n = proseCounts().blocks;
-      return n ? 'The document starts from ' + n + ' blocks of text.'
+      return !constituted()
+        ? 'The document begins from whatever stands in the column below.'
+        : n ? 'The document starts from ' + n + ' blocks of text.'
         : 'The document starts empty — the members write it.'; },
   };
   // 404 (Ed, 2026-08-19): the preamble states the defaults once; a clause
@@ -4164,9 +4174,20 @@
       // `canPropose` has been `&& constituted()` since 2026-08-22, so
       // proposing opens at 🍾 and not here. The card takes the shape every
       // other one uses: why → the value → the note → the commit row.
-      : '<p class="why">What the document starts from. Write it in the column below; after the start it changes by proposing.</p>' +
+      //
+      // **…and the task is an acknowledgement, not a set** (Q797, Ed
+      // 2026-08-25: *the action on the main 📄 tab is an acknowledgement, and
+      // it's the ✒️ tab under 📄 that allows the founder to relinquish it*).
+      // The body read as an instruction to write and the ✒️ as fixing a text
+      // the founder was choosing; what it actually says is a fact about the
+      // document — whatever stands in the column is what it begins from, and
+      // from the start it changes by proposal — which holds whoever holds the
+      // pen. Handing the pen over is the separate, optional act on the ✒️ tab
+      // beneath, and it takes effect at the start like every other pre-start
+      // release (R-048).
+      : '<p class="why">The document begins from whatever stands in the column below, and from then it changes by proposal — whoever holds the pen.</p>' +
       '<div class="propblock"><div class="rtext">' + esc(proseLine()) + '</div></div>' +
-      '<p class="setnote"><b>Or leave it blank.</b> Starting from nothing is a perfectly good way to begin — this card asks whether you have decided, not whether there is anything there yet.</p>'),
+      '<p class="setnote"><b>Write it below, or leave it blank.</b> The column is yours until you press OK; starting from nothing is a perfectly good way to begin.</p>'),
     hat: () => {
       const started = !!(cs && cs.constitutedAtT !== null);
       // the radio is the session-view's own opt(), over the derived current
@@ -4815,7 +4836,19 @@
         // Y20's own footing: nothing to put back. Clicking the card's own tab
         // still closes it, so nothing is stranded open. Scoped to `text` alone
         // — `pw:u:text` and `pw:a:text` have real radios and keep their bins.
-        : (c.k === 'text' ? '' : binBtn()) +
+        //
+        // **…and 📄 commits with OK** (Q798, Ed 2026-08-25). The task is an
+        // acknowledgement of a fact, not a set, so it takes the word every
+        // other card that asks only to have been seen takes (SURFACE §9.1) —
+        // and with it stops being a pen act: `holdWallet` keys the hold on the
+        // ✒️ in the button's own text, so the flight, the spend-preview and
+        // `mayPen()`'s gate all fall away by themselves. `data-confirm` stays,
+        // because the commit is still `confirmStartingText`: the founding walk
+        // types into the column at this step, and a `data-ok` here would be
+        // clicked by the walk's own OK branch before it ever got there.
+        : (c.k === 'text'
+        ? '<button class="btn btn-approve" data-confirm="1" title="' + commitTitle(c) + '">OK</button>'
+        : binBtn() +
         // ✒️ is the founder's pen (Ed, 360): a set of a setting binds the
         // document. Q449 (Ed, 2026-08-20): an answer to a shared question
         // and a setting about yourself — your name, picture, email — bind
@@ -4823,7 +4856,7 @@
         '<button class="btn btn-approve glyphbtn' + (commitGlyph === TICK ? '' : ' emojibtn') + '"' +
         (ready(c) && penOkFor(commitGlyph) ? '' : ' disabled') +
         ' data-confirm="1" title="' +
-        (penOkFor(commitGlyph) ? commitTitle(c) : penWaitTitle) + '">' + commitGlyph + '</button>';
+        (penOkFor(commitGlyph) ? commitTitle(c) : penWaitTitle) + '">' + commitGlyph + '</button>');
       return cardHtml(c, ctx, body + changeHalf(c) + kindLine, foot, g.cards);
     };
     // the title card opens in the title's own paragraph, whatever else
@@ -4929,11 +4962,16 @@
         : slugRefused() ? 'That address is taken'
         : 'Checking the address…')
     // 📄's commit names what it commits. Blank is a real answer (§9.0b), so
-    // `ready('text')` is unconditionally true and the ✒️ is live from the
+    // `ready('text')` is unconditionally true and the commit is live from the
     // instant the card appears — which means a founder who has not realised
     // they may type can start an empty document without ever being told that
-    // is what they are doing.
-    : c.k === 'text' ? (proseCounts().blocks ? 'Set the text' : 'Start it empty')
+    // is what they are doing. Since Q798 the press is an OK rather than a set,
+    // so the tooltip states the fact being acknowledged rather than an act —
+    // and the empty branch keeps the warning, which is the whole reason the
+    // two branches exist.
+    : c.k === 'text' ? (proseCounts().blocks
+      ? 'The document begins from what is in the column'
+      : 'The document begins empty')
     : ready(c) ? (c.ansFor ? 'Answer' : c.kind === 'personal' ? 'Save' : 'Set it')
     : 'Not answered yet');
   // **The whole commit row follows the typing** (Ed, 2026-08-21: *the 🗑️
