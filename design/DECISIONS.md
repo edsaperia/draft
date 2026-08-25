@@ -1092,3 +1092,94 @@ command, so no refusal exists there to be swallowed, and the two probes and `fou
 drive the fixture. Against the pre-fix page the walk reproduces Ed's report exactly — one row, one
 mail, the second invitation vanishing without a trace, the duplicate answered by a 400 at the wire
 and by nothing at all on the screen, and the box still drawn after the pen has gone.
+
+## Begin says what it is waiting for (2026-08-25, Q826–Q834)
+
+Ed, founding a document alone and reaching its last step: *"I did all my open tasks and then got
+served Begin while being unable to action it … My guess is this is because I delegated things to the
+members and I'm the only member."* And, separately: *"When I (as a founder-member) was granted 🏛️ I
+did not get a task. The 🏛️ tab was grey."* Two reports, one founder, one rail, one screenshot.
+
+**The first is a rule working, reported as a fault, and that is the interesting part.**
+`maybeResolve` refuses to resolve a blind question on an electorate of one, and the reason is
+written above the line: *a consent rule computed over a single answer is that answer, so a delegated
+question with a membership of one has not been delegated to anybody.* Nothing is broken. What was
+broken is that the surface could not say so. `readiness()` returned bare ids — `waiting: ['bar']` —
+and the card printed the per-question counts beside them, which for a room of one read **1 of 1 have
+answered**: a question that looks finished, standing next to a start that will not come. So the
+founder guessed, and guessed right, which is the worst possible outcome for a readout whose whole
+job is to say what the document is waiting for.
+
+**The fix is a reason, not a sentence.** `readiness()` now returns `holds` beside `waiting` — the
+same ids with `judge-gate`, `invitation-open`, `one-voice`, `collecting` or `text-unconfirmed`
+against each. `waiting` is untouched, because `begin`'s own refusal message and every existing
+reader want exactly a list of ids, and a field that changes shape breaks them all to save one
+caller. The reasons are computed in the order `maybeResolve`'s own gates run, so a room of one with
+an unopened invitation reads `invitation-open` rather than `one-voice` — which is right: the
+invitation is already the remedy, and naming the deeper reason would send the founder to invite
+somebody they have just invited. Wording stays on the surface; the module owes it the fact.
+
+**Only one of the five is a dead end.** `judge-gate`, `collecting`, `invitation-open` and
+`text-unconfirmed` are all states the founding leaves by itself — the next task in the rail, or
+somebody opening their email. `one-voice` is not: the founder can answer their own question, watch
+nothing happen, and answer it again for ever. It is the only reason that names an act rather than a
+wait, and both acts already exist — invite somebody, or take the setting back. That asymmetry is
+what the whole of the rest follows from.
+
+**The remedy is a task, because a sentence is not a way out.** 🪪 stands in the rail while the
+document waits on a `one-voice` question, its card leading with which questions are stuck and both
+ways to unstick them. It is a task by **derivation and nothing else**: no `S.okd` key, no `ACK_KEYS`
+entry, no news, nothing owed. It appears because a reason holds and leaves the instant the reason
+stops holding — an invitation makes it `invitation-open`, taking the setting back stops it
+collecting. Nothing is acknowledged because nothing has been decided, which is what keeps it clear
+of *nothing is owed an OK until the document begins* (F8).
+
+**Then it collided with the door written for the same state, twice.** F18's last-resort door serves
+🍾 when the rail would otherwise be empty — and Ed's dead end is exactly that rail. Serving 🪪 in it
+makes `nothingElseServed()` false, so 🍾 vanishes and takes with it the only sentence explaining why
+the founder has been sent to 🪪. The first attempt opened a second door: 🍾 shown whenever
+`readiness()` reports `one-voice`. `journey-walk --delegate-all` killed it in one run. A question is
+`one-voice` from the moment it is handed over, so that door opened 🍾 at the founder's **first
+delegation**, ahead of the ten questions they still had to answer as a member — *handed over 10,
+asked back 0*, which is Q776 undone. The rule is narrower than a door: **the remedy is the dead end
+wearing a card, not the next task**, so `nothingElseServed()` simply does not count it. 🍾 still
+waits behind every real task the founding has left.
+
+**And the same exclusion, for the same reason, at `otherTasksLeft`.** That predicate decides whether
+a lone founder is served their own delegated questions, and 🪪-as-remedy is owed exactly while those
+questions are stuck. Counting it would have held every one of them shut from the first delegation
+onwards: Q775's shape — *what is offered because the questions are stuck cannot be the reason to
+withhold them* — for the third time in this file, after 🍾 (Q645) and 🪜 (Q773). Three instances is
+not a coincidence; it is what happens when a predicate that means *is anything else being asked* is
+read by something that is itself only being asked because of the answer.
+
+**The grey 🏛️ is the same failure in a different place.** The voice hung off `voiceHost()`: the
+first blind question asking you, else ⚖️ Judging. ⚖️ is hidden until 🍾, so before the start the
+fallback host was a card nothing could see and `tasksFor` never reached the grant. A founder who
+delegates nothing has no blind question to hang it on, so they were never served the voice they have
+held since the save — the grant standing behind the very press it stands in front of, which is
+Q645's shape again. 🪪 is the pre-start host now. Only the **enumeration** moves: the tab is pinned
+to the Proposals preamble by Q750 and the rail entry follows its own chip, so nothing changes where
+the founder looks. What changes is the order — 🏛️ arrives after 👁️, its own place in `ORDER`,
+instead of after 🍾 — and that is every founding by a founder-member, not only Ed's. It is the right
+answer for all of them: a power you hold and have not been told about is the unacknowledged-decision
+rule seen from the other side, whatever else is going on.
+
+**The harness lied first, and that is worth its own paragraph.** `founding-walk.mjs --delegate=<key>`
+clicks the delegate rung and then fills every empty field on the card — and typing into a rung's
+field *chooses that rung*. So `--delegate=bar`, the one-minute reproduction of Ed's exact case,
+walked all the way to a begun document with 🌡️ **founder-held**, and its verdict blamed the page for
+never serving the founder their own question. The fill already skipped `range` inputs, which is why
+this had gone unnoticed; 🌡️'s card carries a `number` input as well. `journey-walk.mjs` has guarded
+against this since its first `--delegate-all` run and the guard is simply ported. The lesson is the
+one this repository keeps relearning about fixtures: a walk that drives the surface with a gesture
+the surface reads differently is not a weaker test, it is a test of something else.
+
+**Where it is checked.** `spec-check` pins the three one-line predicates that could each be dropped
+with everything still rendering — the door's exclusion, the remedy, and `otherTasksLeft`'s
+exclusion. `npm run journey -- --delegate-all` asserts the dead end end to end: the module's reason,
+the card's sentence, 🪪 in the rail, and one invitation clearing it — plus 🏛️ served **before** 🍾,
+as a position rather than a presence. `owedUnservable` stops being a readout and becomes an
+assertion read at every step, because a state that transient is not something to leave to whoever
+comes to read the dump afterwards. And `founding-walk.golden.json` was re-frozen for 🏛️'s move,
+which is the whole of that diff.
