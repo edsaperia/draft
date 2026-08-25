@@ -297,7 +297,7 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 - `lapse` — 💤 *Do memberships lapse?*: whether an **inactive** membership lapses (the surface says "inactive", never "quiet") and after how long, each member stating the **shortest quiet spell** they would accept and the document taking the longest, *never* the longest of all. A lapsed member leaves the quorum base like an abstainer, keeps their cast judgments counted, is warned by email first, receives **the package** (the document as it stands + the record to date) at the lapse, and revives by simply logging in — consented rule, no motion. SPEC §9.5a.
 - `mail-modal` — the verification email renders as a **modal standing for your inbox**, deliberately OFF the design system (no tokens, Arial, an email client's idea of a page) because it previews another medium and will soon be a real email whose look must owe nothing to this surface. Its copy lives in `MAILS`, a template object one substitution away from the real transactional template.
 - `alpha-flag` — **"Warning: docs.vote is in alpha!"**, fixed bottom-left of every page. Quiet by the palette's own rule — it asks nothing of you, so no hot colour and no glyph. At `--t-small` rather than `--t-micro` (a warning nobody can read is decoration), and **`pointer-events: none`**, because it stands over the document's own margin and must never eat a click meant for the text. The `devswitch` sits above it (bottom 47px); live mode hides the stagehand and the flag stands alone. Deliberately **not** on the magic-link interstitial, which submits itself on arrival — a flag there would only flash.
-- `constitution-section` — the document's first heading is **Constitution**, and the constitution is **document text with sections**: under 🎩 who founded it and ⏱️ when it was *constituted*, the opening run, then **Membership · Decisions · Anonymity · Proposals**, the hairline, and the charter under its own name — **the band table and the founding order are SURFACE §8**. Three rulings worth keeping in view: 🤝 stands above the members list (*how people become members* before *who they are* — Q617); 🪜 has no clause and no rail entry (Q512); 🍾's clause **is** the Proposals preamble (Y21; Ed, 2026-08-22) — the tab hangs on the sentence the press makes true, and the sentence is tense-aware: *When the session begins, members may propose changes to rules…* until the press, *Members may propose…* after it. The paragraph stands tab-less from the save, so it is readable all through the founding, and **gains** its tab at 🍾's turn rather than a new paragraph arriving. Retired with the merge: *The document began at [time]*, which the Founded line already carried to the minute. 🌍 offers two rungs (Public left the ladder 2026-08-22; the catalogue still holds it, Q527), foundership carries a read independent of it (§9.3), and **before 🌍 is decided the clause states the interim rule** — *Until the Founder decides, only members can see the document* (Q618).
+- `constitution-section` — the document's first heading is **Constitution**, and the constitution is **document text with sections**: under 🎩 who founded it and ⏱️ when it was *constituted*, the opening run, then **Membership · Proposals · Decisions · Anonymity** (that order since Q871, 2026-08-26; it read Membership · Decisions · Anonymity · Proposals before), the hairline, and the charter under its own name — **the band table and the founding order are SURFACE §8**. Three rulings worth keeping in view: 🤝 stands above the members list, and since Q865 so do 💤 and 🥾 (*how people become members* and how they stop being one, before *who they are* — Q617, half reversed); 🪜 has no clause and no rail entry (Q512); 🍾's clause **is** the Proposals preamble (Y21; Ed, 2026-08-22) — the tab hangs on the sentence the press makes true, and the sentence is tense-aware: *When the session begins, members may propose changes to rules…* until the press, *Members may propose…* after it. The paragraph stands tab-less from the save, so it is readable all through the founding, and **gains** its tab at 🍾's turn rather than a new paragraph arriving. Retired with the merge: *The document began at [time]*, which the Founded line already carried to the minute. 🌍 offers two rungs (Public left the ladder 2026-08-22; the catalogue still holds it, Q527), foundership carries a read independent of it (§9.3), and **before 🌍 is decided the clause states the interim rule** — *Until the Founder decides, only members can see the document* (Q618).
   **The section headings carry no intro prose** — the sections are not big enough to need explanations, and the clauses ought to be self-explanatory.
   - Within a section, **one distinct paragraph per decision, its tab in the gutter to its left** (clause-tab geometry), and the open card **replaces its own paragraph**, taking its tab with it, so the tab you click does not move.
   - **A question the members answer stands as a task in the section it decides**: the rule and the question are one paragraph wearing one tab where the reader is asked, and a delegated setting's watching paragraph (⏳) is followed by a *Your answer* task paragraph via `ctx.tasksFor`. The rails group by the same section titles.
@@ -1326,3 +1326,72 @@ context on a real invitation (Q842–Q848), so the room of one is read at the mo
 lands and the two-face state at the moment after. Each seat must see exactly the other — the founder
 a seat that is not `founder`, the member the founder's own minted id — never itself, and never
 GUEST2, who was invited and never came, because an invitation is not an arrival.
+
+## The leaving rules before the register, and Proposals before Decisions (2026-08-26, Q865–Q876)
+
+Two reorders Ed asked for together, built together because they move the same three structures —
+`ORDER`, `SEC`, and `SURFACE.md` §8's ordered table — and share one re-freeze of the golden founding
+walk. Ed: *💤 and 🥾 sections should be above the Members heading … separate subheadings under
+Members for applicants and invitees*, and *Proposals above Decisions*.
+
+**Both are reversals of written rulings, and each had its own comment block standing as the live
+statement of it.** That is the part worth recording, because a reversal that leaves the old argument
+in the source is worse than one with no comment at all: the next reader trusts the prose over the
+code. Both blocks are rewritten in place.
+
+**Q617 (a), half kept and half reversed.** The kept half is 🤝 Applications leading the section — *how
+people become members* before *who they are*, since inviting is an act under that rule (Ed,
+2026-08-22: *I need to decide Applications before I can do Membership*). The reversed half is what
+followed it: *the list then stands above 💤 and 🥾 — a register is the fact, and those are rules about
+it.* That argument is true of a finished document and false of the founding, which is the reader this
+order is actually built for. At the founding the register is **not** a fact: it is the founder's own
+name and nobody else's, and every rule underneath it will be in force before the first invitation
+goes out. So the three rules that govern a membership now stand together above the heading — the way
+in, and the two ways out — and *Members* opens directly on the people they apply to. The founding
+follows the document, so 🎩 and your own name and picture still come before you invite anybody.
+
+**`removal` never carried `gate: 'judge'`** — only `lapse` does. It changes nothing about the cascade,
+since neither is `isGate` and both therefore block whatever sits below them either way, but it does
+change what can be said about them: 🥾 is not a question judging waits on.
+
+**The cascade shift was the risk, and the walk is what settled it.** Moving `roster` below 💤 and 🥾
+means the register — and the invitation box on it — is not served until two constitutional questions
+are settled, and three things hang off that: `voiceHost()`'s pre-start fallback is `'roster'` (F20),
+F19 makes 🪪 the remedy 🍾 offers while it waits on `one-voice`, and Q779's own note records that a
+founder alone on the roster has `ansDue()` false until nothing else is outstanding. None of it needed
+reasoning about in the end, because `founding-walk.mjs --delegate-all` walks the whole thing: the rail
+is empty at exactly one step, the last, so F18 holds through the new order.
+
+**Proposals reads second (Ed, 2026-08-26), reversing *Proposals reads fourth* (Ed, 2026-08-21).** The
+2026-08-21 ruling was itself a restoration — the section had drifted to second, and the objection was
+that its whole arrival landed directly beneath the Membership clauses the founder was still working
+through. What has changed since is that the section no longer arrives at once: Q748 made its opening
+one clause wearing four tabs, and `ORDER` (not the retired wave graph) paces ⏱️ and 🤖 under it one at
+a time. The objection dissolved, and what is left is the reading order, which reads better this way —
+who may propose, and how often, before how the room decides what is proposed. 🍾 keeps its place last
+in `ORDER` though its clause opens the section (Ed: *Begin can be in the middle*), and 📄 stays last
+but one, because the charter follows the whole constitution.
+
+**The Members list is three groups, and only the first is the membership.** Membership begins at first
+arrival, so a flat list telling arrivals from invitees by a chip on the row read as *these are your
+members, some of them faintly* — the chip was doing a heading's job. Your row, then everybody else who
+has arrived, then **Invitees**, then **Applicants**, each standing only where it has rows, and the
+*invited* chip retired. One consequence follows and is deliberate: *(nobody else here yet)* now counts
+the arrived rows alone, so it stands above your row while an invitation is out — which is precisely
+the case where the sentence is both true and worth saying, and was previously the one case it was
+suppressed in.
+
+**Applicants under *Members* is a second view, not a move.** `liveApplicantsHtml()` stays exactly
+where it is, on `rosterClause()` — the 🪪 card's own clause — because what it holds is the **admit
+judgment**: the lanes, the ✏️ Propose them button, the race. Ed's *under the Members heading* is about
+the document saying who is asking, which is `SEC[0].body`, and that is a different object wearing the
+same word. Moving the existing block would put controls in the prose; copying the controls would put
+one race in front of a member twice. So `memApplicantsHtml()` is a plain read of the same
+`view.applicants` — a name and a face, and the still-asking only, an admitted applicant already being
+a member row above and a refused one not asking. The two are never on screen together: an open 🪪
+replaces the very paragraph the list stands in.
+
+**The golden is the record of the order a founder actually meets**, so the re-freeze was read before
+it was accepted. It is a pure permutation — 55 steps before and after, the same step names, the same
+clause strings, the same rail entries, in a new order — which is exactly the shape a reorder should
+produce, and the shape that says no clause was lost or gained on the way.
