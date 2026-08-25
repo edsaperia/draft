@@ -1288,7 +1288,14 @@ window.SETUP = (function () {
     ending: (A) =>
       '<p class="why">When the document should close. The <b>latest</b> answer anybody gives is taken, and <b>never</b> is the latest of all — so nobody is cut off before they were ready.</p>' +
       '<div class="choice" role="radiogroup">' +
-      ansRow(A.ending !== null && A.ending !== 'never', 'ending', 'date', 'At a set time', '',
+      // **Unset is "no value", not "null"** (Q779) — the same defect the
+      // consent slider carried, in the one other answer body that tests for
+      // null by hand. An unanswered question arrives as `undefined` (the live
+      // hydration skips a `myAnswer` of null outright), so `!== null` read
+      // true and painted *At a set time* as chosen, beside an empty date and
+      // a dark ✓: a suggested answer on a blind collection.
+      ansRow(A.ending !== null && A.ending !== undefined && A.ending !== 'never',
+        'ending', 'date', 'At a set time', '',
         '', '<span class="fld"><label>Ends</label><input type="datetime-local" data-ansdate="ending"' +
         (A.ending && A.ending !== 'never' ? ' value="' + esc(A.ending) + '"' : '') + '></span>') +
       ansRow(A.ending === 'never', 'ending', 'never', 'Never', 'It runs until it is frozen.') +
