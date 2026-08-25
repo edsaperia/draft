@@ -830,3 +830,48 @@ else is outstanding, so 🌡️'s answer card is unreachable unless somebody has
 invites, which is the ordinary case anyway; and delegating **both** questions empties the rail
 before 🍾 altogether, which is Q773/Q776's subject and the reason each slider gets a founding of
 its own.
+
+## The founder's answer writes no clause (2026-08-25, Q786–Q788)
+
+Ed, founding as a member who had delegated 👥 and not yet answered: *I see "The Founder has
+delegated to members to decide … — waiting for members." and "The Founder has not yet answered as
+a member." I shouldn't need to see the latter clause.* Then, on being asked where the tab should
+stand instead: *I don't think we need two clauses. Whether the founder specifically has answered
+their member question doesn't matter enough to have a whole clause, it's just part of the {x/y
+members have answered this delegated question}.*
+
+**The two sentences were one fact.** A delegated setting's own clause already ends *n of m have
+answered*, and m is the whole electorate — the founder among them, since a founder who is a member
+answers on their own surface like anybody else (§9.0b). So the second sentence added no
+information: it said out loud which of the n was you. It also broke the band's own voice twice
+over. The constitution states rules in the third person about the document, and *The Founder has
+not yet answered as a member* is a rule about nothing — it is a progress report on a person, and
+the one place the surface allows itself a person is a member's own row in the Membership list.
+And it stood **under** the sentence that already counted it, so the pair read as a contradiction
+the first time you met it: the room is waiting for members, and separately the founder has not
+answered, with nothing on the page joining the two.
+
+**Where the tab goes: the ✒️/🛡️ precedent, not 📧's.** The card is still a task — it is how the
+founder is served the question, and its rail entry is untouched — so deleting the sentence leaves
+the question of what its paragraph is for. Two shapes were already on the surface. 📧 before the
+send returns `''` from `decisionLine` and keeps its own `.cpara`, the tab standing where its
+sentence will appear; that is right for 📧, whose sentence is coming, and wrong here, where no
+sentence is ever coming and the paragraph would be a permanent blank line under the clause. The
+grants (Q639) instead never reach `para` at all: their tabs ride the Founded line, and that
+sentence is their clause. This takes the second shape, and 🪜's (Q512) is the same move by a
+different route — a tab in 🌡️'s stack, opening at 🌡️'s own clause.
+
+So `chipsFor(setting)` gains the answer card and `ctx.tasksFor` drops it, which is exactly the seam
+🏛️ already uses to draw no clause where the Proposals preamble carries it. The pile becomes the
+value's tab, your question, and the two power tabs; `stackOrder` sorts a pile by what is being
+asked, so the question leads while it is asking and falls in beside the watcher once it is
+answered — one clause, one place to click, and the count in the sentence goes 0 of 2 → 1 of 2 as
+the only thing that changes. `hostParaOf` needed nothing: every chip has carried `data-chip`
+whether or not it is clickable since Q752, so the rail entry finds the host's paragraph by the
+same lookup the Proposals stack made necessary.
+
+**What this does not change**: the raw `tasksFor` — the rail's own enumeration, `railable`,
+`servedCards`, `foldedSec` and F18's `otherTasksLeft` all read it — so nothing about *what is
+owed* moves, only where the tab is drawn. `decisionLine`'s `ansFor` branch survives as `''`
+rather than being deleted, because without it the card falls through to the room-setting branch
+below and states a rule it does not own.

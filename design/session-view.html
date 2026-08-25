@@ -2389,13 +2389,19 @@
   const secLive = () => SEC.map((s2) => ({ ...s2,
     cards: s2.keys.map(card).filter((c) => c && visible(c)) }))
     .filter((s2) => s2.cards.length);
-  // a delegated setting's paragraph is followed by the founder's own
-  // answer-task, the same card a member gets, standing where the rule is
-  // a resolved question keeps no answer-task paragraph: the rule above it
-  // now states the outcome, and a standing “has answered” line under a
-  // decided rule is a task that finished still asking to be read
-  const tasksFor = (c) => (c.key && ANSWER[c.k] && (c.in || 0) < E()
-    ? [card('ans-' + c.k)].filter((x) => x && visible(x)) : [])
+  // **The founder's own answer is a tab on the setting's clause** (Q786–Q788,
+  // Ed 2026-08-25: *whether the founder specifically has answered their member
+  // question doesn't matter enough to have a whole clause, it's just part of
+  // the x of y members have answered this delegated question*). The card is
+  // still a task and still stands in the rail; what it no longer has is a
+  // paragraph and a sentence of its own — its tab rides the delegated
+  // setting's own pile, on the one clause that already counts the answers,
+  // the founder's among them. The ✒️/🛡️ precedent (Q639), not 📧's blank line.
+  // A resolved question keeps no answer task at all: the rule above states the
+  // outcome, and a finished task has nothing left to ask.
+  const ansTaskFor = (c) => (c && c.key && ANSWER[c.k] && (c.in || 0) < E()
+    ? [card('ans-' + c.k)].filter((x) => x && visible(x)) : []);
+  const tasksFor = (c) => ansTaskFor(c)
     // the grants stand as tasks beside the gates they belong with (Q461):
     // the pen and the shield with the 📍 link — issued when the address went
     // live (Q451) — the voice with the first blind question you are asked,
@@ -3537,9 +3543,15 @@
     // now stand on the Founded line and that sentence is their clause, so
     // neither this function nor `para` is ever called with them; `headFor`
     // returns null and `ctx.clauseFor` supplies the head.
-    if (c.ansFor) return answered(c)
-      ? 'The Founder has answered as a member.'
-      : 'The Founder has not yet answered as a member.';
+    // **The founder's own answer writes no clause** (Q786, Ed 2026-08-25). It
+    // used to state one in either direction — *The Founder has (not yet)
+    // answered as a member.* — standing under the delegated setting's own
+    // sentence, which already says how many of the members have answered and
+    // counts the founder among them. Two clauses for one fact, and the second
+    // of them about a person rather than the document. Since Q787 the card
+    // draws no paragraph at all (its tab rides the setting's pile), so this
+    // branch is reached only where something asks for the sentence directly.
+    if (c.ansFor) return '';
     // 💡's and ⚖️'s own branches are `proposalsClause`'s sentence 1 now
     // (Q749), handled above: proposing opens at the start (§9.0b, Q606), the
     // blocker being 🍾 rather than the text.
@@ -3650,8 +3662,11 @@
     // the paragraph seam, so 🏛️ draws no clause of its own where the
     // preamble is standing to carry it (Q750). The rail reads `tasksFor`
     // itself and is unaffected — the news still travels with its question.
+    // Since Q787 an `ans-*` task is filtered here too: it is a chip of its
+    // host setting's pile (`chipsFor` below), so a paragraph of its own would
+    // be the same tab drawn twice.
     tasksFor: (c) => (c.power ? []
-      : tasksFor(c).filter((t) => !(t.k === 'grant-voice' && voiceInStack()))),
+      : tasksFor(c).filter((t) => !t.ansFor && !(t.k === 'grant-voice' && voiceInStack()))),
     // esc before linkify, like the head path (review #1, finding 20): the
     // sentence carries the title, which is member text — unescaped it was
     // stored XSS into the constitution paragraph
@@ -3669,8 +3684,14 @@
       const k = c.k === 'pace' ? 'bar' : c.k;
       const base = (k === 'bar' && card('pace') && visible(card('pace')))
         ? [card('bar'), card('pace')] : [card(k)];
+      // your own answer to a delegated question stands in the pile of the
+      // clause it answers (Q787): the value's tab, your question, then the
+      // two power tabs. `stackOrder` puts whichever is asking in front, so an
+      // unanswered question leads and an answered one falls in beside the
+      // watcher — one place to click, and no clause about the founder.
+      const withAns = base.concat(ansTaskFor(card(k)));
       return (cs && PW_KEYS.includes(k))
-        ? base.concat([card('pw:u:' + k), card('pw:a:' + k)]) : base;
+        ? withAns.concat([card('pw:u:' + k), card('pw:a:' + k)]) : withAns;
     },
     // **The lockline tells the truth about who set it** (Q510(a), Ed
     // 2026-08-21). It had said *Set by the founder when the document was
