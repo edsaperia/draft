@@ -130,7 +130,10 @@ function measure() {
     beginTask: q('#rail [data-card="begin"], #band [data-tab="begin"]'),
     penTask: q('#rail [data-card="grant-pen"], #band [data-tab="grant-pen"]'),
     wallet: q('#wallet i'),
-    members: q('.memrow'),
+    // real people only: `.memrow.nobody` is the empty-list placeholder, so
+    // counting every `.memrow` let "the membership is drawn" pass on a
+    // membership of nobody (Q757)
+    members: q('.memrow:not(.nobody)'),
     closedPage: q('.doc.closedpage'),
     signatures: /Signature/i.test(document.body.textContent ?? '') ? 1 : 0,
     clockText: (clock?.textContent ?? '').trim(),

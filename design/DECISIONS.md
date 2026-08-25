@@ -451,16 +451,37 @@ Two things were salvaged rather than left, being live and stated in no other doc
   scroll runway rather than content. Now a line of the `session-view` glossary entry.
 
 - **The empty members list** (Q407a, Ed 2026-08-19). A membership of one renders a placeholder row —
-  *Nobody else yet.* — where the other members would stand: full width, muted, no avatar, since a face
-  would claim a person who does not exist. It leaves with the first invitee. The surface fact is in
-  CLAUDE.md's `constitution-section` entry; the reason it is load-bearing is not, and is kept here.
+  *(nobody else here yet)* — where the other members would stand: full width, muted, no avatar, since
+  a face would claim a person who does not exist. It leaves with the first invitee. The surface rule
+  is SURFACE §9's members row; the reason it was load-bearing is not, and is kept here.
   Two reasons, one visible and one geometric. A members list showing nobody while the room has a
   member reads as broken. And founder-alone, the you-row stood so high that its ✋🖼️📧 pile collided
   with the 🪪 pile above it — two stacks twelve pixels apart inside one 42px clause, under the Q308
   floor, where a pile cannot shrink below its 30px front tab; `fitBand` squeezed the peek to 0.0 and
-  they still overlapped by 18px. The placeholder gives the you-row a row's clearance, and the piles
-  then clear by measurement (5px at the default peek). **Anything that removes the placeholder has to
-  answer the geometry as well as the sentence.**
+  they still overlapped by 18px. The placeholder gave the you-row a row's clearance, and the piles
+  then cleared by measurement (5px at the default peek).
+
+  **The geometry left the placeholder on 2026-08-25** (Q753/Q757). When Ed moved *you* to the top of
+  the list (2026-08-21) the clearance job moved with it, onto `.memrow.meRow { margin-top: 42px }` —
+  and nobody re-asked what the placeholder was for once it had no spacer job left, so it stayed where
+  it was and ended up dangling *below* your row: full width and muted, the shape of a caption on you
+  rather than a statement about the list. It now stands above you, and the 42px sits on
+  `.constsec .cpara .memlist` instead, which is what stops the two from double-counting into a 64px
+  gap. Putting it on the list rather than on a row is also what makes the spacer job genuinely
+  redundant rather than accidentally so: the clearance is now a fact about the block, true whichever
+  row happens to lead it, so the placeholder can come and go on its sentence alone.
+
+  It has to be `padding-top`, not `margin-top`, and that took a measurement to see. The list is the
+  first in-flow child of a `.cpara` with no top border or padding — the 🪪 pile beside it is
+  `position: absolute` — so a top *margin* collapses straight out to the paragraph and takes the pile
+  down with it, leaving the clearance exactly where it was: measured at **−3px**, an overlap, from a
+  rule that reads as if it adds 42. Padding does not collapse. Measured after, 🪪-pile-bottom to
+  ✋-pile-top: **founder alone 35px** (the placeholder row stands between them), **founder with
+  others 8px**, **a member reading a full room 3px** (four tabs in the head pile there, against two
+  and three). A clerk has no you-row and so no second pile in the block at all; their five-tab
+  Founded-line pile is 46px with 25px clear above it and 45.5px below.
+  **Anything that changes the list's leading row still has to answer the geometry as well as the
+  sentence** — it is just no longer the placeholder's answer to give.
 
 
 ## ⏱️'s *I set it* fills its own fields (2026-08-24, Q740)

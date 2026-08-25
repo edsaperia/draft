@@ -523,13 +523,29 @@ button.cline:hover b { text-decoration: underline; }
 .doctitle[data-card]:hover { text-decoration: underline dotted 1.5px; text-underline-offset: 4px; }
 
 /* Members / Applications subsections (Ed, 2026-08-18): Members IS the list,
-   🪪 the invitations tab beside it, your own row last wearing ✋ and 🖼️;
-   Applicants is the list under the Applications decision. */
+   🪪 the invitations tab beside it, your own row first wearing ✋ 🖼️ 📧;
+   Applicants is the list under the Applications decision.
+   **The clearance is the list's, not the row's** (Q757). The Members block is
+   one paragraph carrying two tab columns in one gutter — 🪪 (with ✉️ ❌ 🎩) at
+   the paragraph's head, and your ✋🖼️📧 riding your own row, which is the
+   first list row since you moved to the top (Ed, 2026-08-21: *membership tab
+   and your name tab overlap*). At 12px they collided by 18px, and `fitStacks`
+   cannot help: it shrinks a *pile's* peek and bails under two tabs, and a lone
+   tab is 30px and cannot shrink (Q308's stated residual). So the whole list is
+   dropped clear of the head pile — 42px is the tallest that pile gets (38px
+   stacked) plus the gutter's own 4px. It hangs here rather than on the you-row
+   because the placeholder now stands above you (Q753) and a margin on the row
+   would double-count with it. **Padding, not margin**: the list is the first
+   in-flow child of a `.cpara` with no top border or padding, so a top *margin*
+   collapses straight out to the paragraph and carries the 🪪 pile down with
+   it — the head tab is `position: absolute` against `.cpara` — leaving the gap
+   exactly as it was. Measured: with a margin the clearance reads −3px. */
+.constsec .cpara .memlist { padding-top: 42px; }
 .memlist { display: flex; flex-wrap: wrap; gap: 5px 18px; }
 /* "you" — the one sanctioned per-reader difference (Ed): in the members list
-   you are always at the bottom, on your own line, your identity pile in the
-   gutter beside you */
-.memrow.meRow { flex-basis: 100%; }
+   you are at the top, on your own line, your identity pile in the gutter
+   beside you; the min-height is the 30px front tab of that pile */
+.memrow.meRow { flex-basis: 100%; min-height: 30px; }
 /* only avatars and names keep the compact dress (Ed) */
 .memrow { display: flex; align-items: center; gap: 8px; font-size: var(--t-small);
   position: relative; }
@@ -537,19 +553,11 @@ button.cline:hover b { text-decoration: underline; }
 /* the identity tabs are regular gutter clause tabs: a pile at your row */
 .memrow .chipcol { top: -3px; }
 /* nobody else yet (407a): a full-width muted row where the members would
-   stand — list furniture, not a clause, so it speaks quietly; it also gives
-   the you-row a row's clearance from the 🪪 pile above (the Q308 floor) */
+   stand — list furniture, not a clause, so it speaks quietly. It stands
+   **above** your row (Q753), where it is a statement about the list rather
+   than a caption on you; the clearance job it used to do as well is the
+   list's own padding now. */
 .memrow.nobody { flex-basis: 100%; color: var(--muted); min-height: 22px; }
-/* **Your own row clears the paragraph's own tab** (Ed, 2026-08-21: *membership
-   tab and your name tab overlap*). The Members block is one paragraph carrying
-   two tab columns in one gutter — 🪪 (with ✉️ ❌ 🎩) at the paragraph's head,
-   and your ✋🖼️📧 riding the first list row, which is yours since you moved to
-   the top of the list. At 12px they collided by 18px. `fitStacks` cannot help:
-   it shrinks a *pile's* peek and bails under two tabs, and a lone tab is 30px
-   and cannot shrink (Q308's stated residual). So the row is spaced to clear a
-   full tab instead — 42px is the tallest the head pile gets (38px stacked) plus
-   the gutter's own 4px. */
-.memrow.meRow { margin-top: 42px; min-height: 30px; }
 .memrow .chip { font-size: var(--t-micro); }
 
 /* **The card overhangs the text axis** (Ed's QA, 2026-08-18: the tabs were

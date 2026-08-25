@@ -52,8 +52,9 @@ founder-is-member 🎩, proposing gate 💡, judging gate ⚖️, crown 👑, ho
 - **"You" belongs to tasks and cards**: a card asks you; a clause tells
   everybody.
 - One sanctioned exception: in the members list *you* stand at the **top** on
-  your own line, with *(nobody else here yet)* under you until somebody
-  arrives (Ed, 2026-08-21).
+  your own line (Ed, 2026-08-21), with *(nobody else here yet)* **above** you
+  until somebody arrives — a statement about the list, not a caption on you
+  (Q753). A clerk has no row there, so the list reads *(nobody here yet)*.
 
 ## 4. Titles and labels
 

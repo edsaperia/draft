@@ -932,8 +932,12 @@
   // judging for everybody. E is the arrived.
   const arrived = () => (cs ? cs.E() : members().filter((m) => m.in).length);
   const E = () => Math.max(arrived(), 1);
-  const meRow = () => S.roster.find((p) => p.founder);
-  const iDraft = () => { const m = meRow(); return !!m && m.role !== 'clerk'; };
+  // **`founderRow` is the founder's row, and says so** (Q756). It was called
+  // `meRow`, which is what `viewerRow` above actually is — and the misnomer
+  // read true only for the founder, so it wrote the viewer's own address onto
+  // the founder's row (Q755) and labelled every reader the founder (Q754).
+  const founderRow = () => S.roster.find((p) => p.founder);
+  const iDraft = () => { const m = founderRow(); return !!m && m.role !== 'clerk'; };
   const quorumCount = () => {
     const st = csState('quorum');
     if (st && st.value) return Math.min(M.quorumCount(st.value, E()), E());
@@ -2163,6 +2167,14 @@
   // group's own note — but they draw no paragraph of their own: their tabs
   // stand on the Founded line, and that sentence is their clause.
   const onFoundedLine = (c) => !!c && (c.k === 'grant-pen' || c.k === 'grant-shield');
+  // **Your identity tabs ride wherever you appear in the document** (Q759, Ed
+  // 2026-08-23). Ordinarily that is your own row in the Members list; a clerk
+  // has no row there (Q758) and appears in the document only on the Founded
+  // line, so their ✋🖼️📧 stack joins the grants' pile on it. The open-card
+  // path comes free — that paragraph already routes an open pile card through
+  // `paraWith` — and so does the rail anchor, `hostParaOf` reading `data-chip`.
+  const myIdCards = () => ['myname', 'mypic', 'myemail'].map(card).filter((c) => c && visible(c));
+  const idOnFounded = () => (cs && amFounder() && !viewerIsMember() ? myIdCards() : []);
   // One question card per delegable setting, born when its setting is handed
   // over and gone if it is taken back. Same glyph, same title — it is the
   // same question — told apart by whose pile it stands in.
@@ -2195,30 +2207,55 @@
       // 🖼️ tabs. Applications is the 🤝 decision (its Applicants list
       // arrives with the first applicant, after the start).
       body: (h) => {
+        // **The list is split by who is reading, not by who founded** (Q754).
+        // It was built from the viewer's own name and face but labelled with
+        // the founder's chips and split on `!p.founder`, so every member who
+        // is not the founder wore the founder chip, appeared a second time in
+        // the tail, and never saw the founder at all — the ordinary case on
+        // any live document, where the viewer is seated by roster index.
+        // `showMe` is the whole of it: the you-row is *yours*, the tail is
+        // everybody else in roster order, and the chips are per row on both
+        // halves, mirroring `rosterClause`, which has always got this right.
+        const meIdx = S.roster.indexOf(viewerRow());   // -1 for the applicant and stranger stubs
+        // **A clerk is not in the Members list** (Q758, Ed 2026-08-23) — the
+        // same predicate `members()` uses, so a clerk founder falls out of
+        // the list by the rule rather than by a special case. They appear in
+        // the 🪪 register and on the Founded line, and nowhere else.
+        const inList = (p) => p.role !== 'clerk';
+        const showMe = meIdx >= 0 && inList(S.roster[meIdx]);
+        const others = S.roster.filter((p, i) => i !== meIdx && inList(p));
         // the You stack: name, picture, email (Ed, 2026-08-19 — everyone
-        // logged in has an address they may want to change or re-send)
-        const my = ['myname', 'mypic', 'myemail'].map(card).filter((c) => c && visible(c));
-        const others = S.roster.filter((p) => !p.founder);
-        // an empty list gets a placeholder row (407a, Ed 2026-08-19): a
-        // membership of one showing nobody read as broken, and the you-row
-        // stood so high its ✋ pile collided with the 🪪 pile above (two
-        // stacks twelve pixels apart in one clause — the Q308 floor). The
-        // row says the true thing and gives the you-row a row's clearance.
-        // No avatar: a face here would claim a person who does not exist.
+        // logged in has an address they may want to change or re-send). Only
+        // where there is a row to hang it on: a clerk's rides the Founded
+        // line instead (Q759), and an applicant's is in their own rail.
+        const my = showMe ? myIdCards() : [];
+        // **The placeholder is a statement about the list, so it stands above
+        // you** (Q753, Ed 2026-08-23). It was invented doing two jobs (Q407a):
+        // saying the true thing about an empty list, and giving the you-row
+        // clearance from the 🪪 pile above. When *you* moved to the top of the
+        // list (2026-08-21) the clearance job went with you onto the you-row's
+        // own margin — the list's padding now (Q757) — and the sentence was
+        // left dangling below your row, reading as a caption on you rather
+        // than a statement about the list. Its wording follows from whether
+        // there is a you-row at all, so neither string is chosen by hand.
+        // No avatar: a face here would
+        // claim a person who does not exist.
+        const nobody = others.length ? ''
+          : '<div class="memrow nobody">(nobody' + (showMe ? ' else' : '') + ' here yet)</div>';
         // a stranger reads how many, never who (Q508 — shipped private)
         const list = isStranger() ? (strMemberList() || '<div class="memlist"><div class="memrow nobody">' + strMembersLine() + '</div></div>')
           // **You are at the top** (Ed, 2026-08-21). A membership starts as
           // one person, and that person is reading this: the list opens with
-          // your own row — the only one wearing your ✋🖼️ tabs — and says
-          // plainly that there is nobody else yet. (It used to end with you,
-          // under a room that had not been invited.)
-          : '<div class="memlist">' +
-          '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
-          '<span class="mn">' + esc(S.myname || 'Anonymous') + ' <span class="chip founder">founder</span> <span class="chip">you</span>' +
-          (iDraft() ? '' : ' <span class="chip">clerk</span>') + '</span></div>' +
-          (others.length === 0 ? '<div class="memrow nobody">(nobody else here yet)</div>' : '') +
+          // your own row — the only one wearing your ✋🖼️ tabs. (It used to
+          // end with you, under a room that had not been invited.)
+          : '<div class="memlist">' + nobody +
+          (showMe ? '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
+            '<span class="mn">' + esc(S.myname || 'Anonymous') +
+            (S.roster[meIdx].founder ? ' <span class="chip founder">founder</span>' : '') +
+            ' <span class="chip">you</span></span></div>' : '') +
           others.map((p) => '<div class="memrow">' + avHtml(p) +
             '<span class="mn">' + esc(p.n || (!p.in && p.e) || 'Anonymous') +
+            (p.founder ? ' <span class="chip founder">founder</span>' : '') +
             (p.in ? '' : ' <span class="chip pending">invited</span>') + '</span></div>').join('') +
           '</div>';
         const openId = my.find((c) => S.open === c.k);
@@ -2363,7 +2400,11 @@
         // the mark that means *holds either power*. The tabs make the crown
         // clickable, which is the dividend rather than the cost.
         (cs ? (() => {
-          const gc = [card('grant-pen'), card('grant-shield')].filter((c) => c && visible(c));
+          // and a clerk's ✋🖼️📧 join them (Q759): the Founded line is where
+          // a clerk appears in the document, so it is where their identity
+          // tabs ride. Five tabs is the tallest this pile gets.
+          const gc = [card('grant-pen'), card('grant-shield')].filter((c) => c && visible(c))
+            .concat(idOnFounded());
           // a member, a stranger, a founder who holds nothing: no pile, and
           // the line renders exactly as it always did
           return gc.some((c) => S.open === c.k) ? h.paraWith(card(S.open), gc)
@@ -5139,7 +5180,7 @@
           // It used to carry a commit control of its own, which is how it
           // came to be the one card that did not close on being set.
           if (was === 'hat') {
-            const m = meRow(); const want = S.hatPick;
+            const m = founderRow(); const want = S.hatPick;
             if (m && want) {
               m.role = want === 'clerk' ? 'clerk' : 'member';
               cs.setConvenorMembership(now(), want !== 'clerk');
@@ -5442,7 +5483,11 @@
     if (t.dataset.txt === 'myname') { S.myname = t.value; renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (t.dataset.txt === 'myemail') { S.myemail = t.value.trim();
       S.emailSent = false; S.emailVerified = false; S.seen.delete('myemail');
-      const m = meRow(); if (m) m.e = S.myemail;
+      // **Your address is yours** (Q755). A line here wrote `S.myemail` onto
+      // `meRow()` — the *founder's* row — so a member typing into 📧 changed
+      // the founder's address. It is not replaced with the viewer's row but
+      // deleted: `S.myemail`'s own setter already writes `viewerRow().e`, so
+      // the write was redundant for the founder and wrong for everybody else.
       // the send button tracks validity in place — a full render would
       // rebuild the card under the caret
       const sv = document.querySelector('[data-resend="1"]');
