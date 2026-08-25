@@ -78,7 +78,9 @@
   .setupcard .setnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
   .setupcard .body { border-top: 1px solid var(--border); padding-top: var(--s3); margin-top: var(--s3); }
   /* the hairline between the constitution and the document proper, and the
-     title standing again as the charter's own heading (Ed, 2026-08-19) */
+     title as the charter's own heading (Ed, 2026-08-19). Both stand from the
+     save (backlog 33), and the title stands there alone: the big heading
+     above the constitution is the pre-save one and leaves at the save. */
   .cpara.docsep { border-top: 1px solid var(--border); margin: var(--s5) 0 var(--s4); padding: 0; }
   .unlocks { font-size: var(--t-cap); color: var(--primary-emphasis); background: var(--primary-subtle);
     border-radius: var(--r-sm); padding: var(--s2) var(--s3); margin: 0 0 var(--s4); }
@@ -594,7 +596,11 @@ button.cline:hover b { text-decoration: underline; }
    box is 30px, so flush tops centre one on the other. It had been `top:10px`,
    from when this row was empty and the tab hung beside the first block of
    prose below it — the title moved in and the constant stayed. Everywhere
-   else the gutter's own -3px does the same job against a 24px line. */
+   else the gutter's own -3px does the same job against a 24px line.
+   **The pile is empty from the save until 📄's turn** (backlog 33), and the
+   title must sit at the same x either way — which it does for free, the
+   `.chipcol` being `position: absolute` out in the gutter, so nothing about
+   the title's box depends on whether a tab is standing beside it. */
 .cpara.textanchor { min-height: 0; margin: 0; }
 .cpara.textanchor .dochead { margin: 0 0 var(--s3); padding-left: 0; }
 .cpara.textanchor .chipcol { top: 0; }   /* see the note above: 30px tab, 30px title line */

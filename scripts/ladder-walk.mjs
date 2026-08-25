@@ -142,7 +142,12 @@ function measure() {
     closedPage: q('.doc.closedpage'),
     signatures: /Signature/i.test(document.body.textContent ?? '') ? 1 : 0,
     clockText: (clock?.textContent ?? '').trim(),
-    title: (document.querySelector('#doctitle')?.textContent ?? '').trim(),
+    // the *shown* title: from the save the name stands at the head of the
+    // prose column (#dochead) and the pre-save heading above the constitution
+    // is gone (backlog 33), so a walk that only ever asked #doctitle would be
+    // reading a hidden element on every rung it checks
+    title: ((document.querySelector('#dochead') ?? document.querySelector('#doctitle'))
+      ?.textContent ?? '').trim(),
     };
   });
 }

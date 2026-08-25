@@ -95,7 +95,12 @@ const snap = () => page.evaluate(() => {
       label: txt(b) || b.title, title: b.title || null, disabled: b.disabled,
     })),
   } : null;
-  return { rail, paras, card, title: txt(document.querySelector('.doctitle')) };
+  // the title as the founder sees it: the big heading before the save, the
+  // charter's own heading at the head of the prose column after it (backlog
+  // 33) — the pre-save heading is still in the DOM, hidden, so the first
+  // `.doctitle` in document order is no longer the one on screen
+  const shown = [...document.querySelectorAll('.doctitle')].find((el) => el.offsetParent);
+  return { rail, paras, card, title: txt(shown || null) };
 });
 
 const openCard = async (k) => {

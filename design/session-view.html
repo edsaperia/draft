@@ -2568,10 +2568,22 @@
             : '<div class="cpara' + (gc.length ? '' : ' notab') + '" data-para="founded">' +
               (gc.length ? h.pile(gc) : '') +
               '<div class="cptext">' + foundedClause() + '</div></div>'; })() : ''),
-      textAnchor: (h) => (!visible(card('text')) ? ''
+      // **The hairline and the title are facts about the document, not about
+      // the 📄 task** (Ed, backlog 33: *immediately after the birth, when my
+      // named document opens for the first time, the Text area should already
+      // have the title and hairline above it*). They arrive at the **save**,
+      // which is when both become true — the document has a name and it has a
+      // column to be written in — and the outline has been pointing at
+      // `#dochead` from the save for as long as it has existed (`tocLead`),
+      // at an anchor that did not exist until 📄's turn at the very end of
+      // the founding. The **pile** keeps 📄's own gate: the tab arrives when
+      // the task does, and because it hangs in the gutter the title does not
+      // move when it comes.
+      textAnchor: (h) => (!cs ? ''
         : '<div class="cpara notab docsep"></div>' +
           (/^(text|pw:[ua]:text)$/.test(S.open || '') ? h.para(card('text'))
-          : '<div class="cpara textanchor">' + h.pile(ctx.chipsFor(card('text'))) +
+          : '<div class="cpara textanchor">' +
+            h.pile(visible(card('text')) ? ctx.chipsFor(card('text')) : []) +
             '<h2 class="doctitle dochead" id="dochead">' + esc(S.title || 'Untitled') + '</h2></div>')) },
   ];
 
@@ -4518,7 +4530,27 @@
   }
 
   // ---- the band: two piles, and the card one of them opens into ----------
+  // **One title, one place, at every step** (backlog 33). The big heading at
+  // the top of the page is the *pre-save* heading: before the document exists
+  // it is the only place the name appears, and the title card opens over it.
+  // From the save the name stands at the head of the prose column instead
+  // (`textAnchor`) — where the outline points, where the charter begins, and
+  // where the founder is about to write — so this row goes rather than saying
+  // it again a screen higher. It is keyed on the **hairline the band has just
+  // drawn**, not on `cs`, and that is the whole of the guard: one is what the
+  // rule asks for, and zero would be worse than two. An applicant is served no
+  // band at all, so on that seat this heading is still the document's only
+  // name and stays. The row, not the heading: an emptied `.cpara` would keep
+  // its own margin and leave a gap where the title used to be. It wraps the
+  // band rather than standing inside it because three of the seats below
+  // return early, and a display left over from the last seat rendered is the
+  // one way this rule can end up showing zero.
   function renderBand() {
+    drawBand();
+    document.getElementById('titlepara').closest('.titlerow').style.display =
+      band.querySelector('.cpara.docsep') ? 'none' : '';
+  }
+  function drawBand() {
     if (isStranger()) {
       const tp0 = document.getElementById('titlepara');
       tp0.classList.remove('open');
@@ -7444,7 +7476,13 @@
     // held like every consequential act, and the cork flies **out of the
     // button into the document** rather than out of a balance into the
     // button. A pop, not a spend.
-    if (cs && /🍾/.test(b.textContent)) return { g: '🍾', sel: null, to: '#doctitle, .doctitle' };
+    // It lands on the document's **name**, and since backlog 33 the name
+    // stands at the head of the prose column: the pre-save heading is hidden
+    // from the save, and a selector list picks the first match in *document
+    // order*, so `#doctitle, .doctitle` would have aimed the cork at a
+    // display:none element with a rect of zeros — the top-left of the window.
+    // Neither of these two can match it.
+    if (cs && /🍾/.test(b.textContent)) return { g: '🍾', sel: null, to: '.doctitle.dochead, #charter .doctitle' };
     // **Asks whether the pen is held, not whether it is drawn** (Q532). This
     // used to test `document.querySelector('#penwallet i')` — the token's mere
     // presence — which was a true proxy only while an unheld wallet rendered

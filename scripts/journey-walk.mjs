@@ -174,6 +174,26 @@ const atSave = await rail();
 say('at save    · rail ' + JSON.stringify(atSave) +
   (atSave.length === 1 && atSave[0] === 'grant-pen' ? '' : '  FAIL: the pen should stand alone'));
 if (!(atSave.length === 1 && atSave[0] === 'grant-pen')) stuck.push('rail at save');
+// **The column carries the document's name from the save** (backlog 33, Ed:
+// *immediately after the birth, when my named document opens for the first
+// time, the Text area should already have the title and hairline above it*).
+// The hairline and the title are facts about the document, not about 📄's
+// task, so they stand at the head of the column the founder is invited to
+// write in — while the **pile** waits for 📄's own turn at the end of the
+// founding, and the pre-save heading that said the same thing a screen higher
+// is gone by the same act. Checked live because this is the one step the
+// fixture cannot reach: the save is a real POST and a real magic link.
+const proseHead = await page.evaluate(() => ({
+  dochead: (document.getElementById('dochead') || {}).textContent || null,
+  hairline: !!document.querySelector('.cpara.docsep'),
+  chips: document.querySelectorAll('.cpara.textanchor .achip').length,
+  presave: !!(document.getElementById('titlepara') || {}).offsetParent,
+}));
+const headOk = proseHead.dochead === TITLE && proseHead.hairline &&
+  proseHead.chips === 0 && !proseHead.presave;
+say('at save    · prose head ' + JSON.stringify(proseHead) +
+  (headOk ? '' : '  FAIL: the column should head with the hairline and the title, and nowhere else'));
+if (!headOk) stuck.push('the prose column head at the save');
 
 /* ---- the founding: whatever the rail asks, one task at a time ---- */
 // how many options an open card offers, so the walk can try the next one when
