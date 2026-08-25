@@ -345,6 +345,48 @@ describe('constituted (§9.6a): the moment judging opens', () => {
     expect(() => s.confirmStartingText(2, 'x')).toThrow(/proposing in the document/);
   });
 
+  // **The invite door, post-start** (Q817, backlog 51 — Ed, on genesis: *I
+  // managed to invite one additional member … and further ones don't work*).
+  // `invite`'s post-start refusal had exactly one test, and it was the
+  // delegated case above (`:344`); the state that actually bit was the one
+  // in between — a founder who laid the pen down at 🍾 (R-048) and kept the
+  // 🛡️. The door was drawn on `membershipReserved()`, which counted either
+  // power, and refused by the narrow test, which counts only the pen. So the
+  // three states are asserted together: the two gates must agree in all of
+  // them, since that agreement is the whole of the fix.
+  const registerAt = (lay: 'nothing' | 'pen' | 'both') => {
+    const s = openDelegated();
+    s.confirmStartingText(1, 'x');
+    settleAllReserved(s, 1, ['applications']);
+    s.reclaim(1, 'applications');
+    s.setSetting(1, 'applications', { joinPolicy: 'invite' }); // both powers held
+    if (lay !== 'nothing') s.relinquish(1, 'applications', 'unilateral');
+    s.begin(1); // 🍾 spends the pending release
+    // the second power goes after the start: laying both down pre-start IS
+    // delegation (Q403), which opens the question and 🍾 waits on it
+    if (lay === 'both') s.relinquish(2, 'applications', 'assent');
+    return s;
+  };
+
+  it('the pen invites directly; the shield alone does not, and says so', () => {
+    const kept = registerAt('nothing');
+    expect(kept.registerPowers()).toEqual({ unilateral: true, assent: true });
+    expect(kept.membershipReserved()).toBe(true);
+    expect(() => kept.invite(2, 'bo@example.org')).not.toThrow();
+    expect(() => kept.invite(2, 'cy@example.org')).not.toThrow(); // and again
+
+    // the pen laid down at Begin, the veto kept: the door is shut, and
+    // `membershipReserved()` — what the surface draws it on — says so
+    const shield = registerAt('pen');
+    expect(shield.registerPowers()).toEqual({ unilateral: false, assent: true });
+    expect(shield.membershipReserved()).toBe(false);
+    expect(() => shield.invite(2, 'bo@example.org')).toThrow(/constitutional motion/);
+
+    const none = registerAt('both');
+    expect(none.membershipReserved()).toBe(false);
+    expect(() => none.invite(2, 'bo@example.org')).toThrow(/constitutional motion/);
+  });
+
   it('a ceremony resolves it when the last gate question completes', () => {
     const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org');

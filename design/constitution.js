@@ -1649,7 +1649,7 @@ var CONSTITUTION = (() => {
     // The roster (§9.6a)
     invite(t, email) {
       this.requireOpen("inviting");
-      if (this.constitutedT !== null && !(this.registerPowers().unilateral && !this.crownLapsedFlag)) {
+      if (this.constitutedT !== null && !this.membershipReserved()) {
         throw new Error("after the start an invitation is a constitutional motion (§9.6a)");
       }
       this.requireEmailFree(email);
@@ -2339,10 +2339,16 @@ var CONSTITUTION = (() => {
     registerPowers() {
       return { ...this.settings.get("applications").powers };
     }
-    /** Any register power held and the crown awake — the direct-invite gate. */
+    /**
+     * The direct-invite gate, and **exactly `invite()`'s own test** (Q812).
+     * It read `unilateral || assent` while `invite` refuses on anything but
+     * the unilateral power, so a founder holding only the 🛡️ was shown the
+     * door and refused at it — two gates wearing one name. The pen is what
+     * acts alone; the shield only refuses, so it can never be what opens a
+     * door (§9.6a, R-048).
+     */
     membershipReserved() {
-      const rp = this.registerPowers();
-      return (rp.unilateral || rp.assent) && !this.crownLapsedFlag;
+      return this.registerPowers().unilateral && !this.crownLapsedFlag;
     }
     /**
      * 👑 by any reservation (Ed, 2026-08-18, Q379 wide): the mark reads what

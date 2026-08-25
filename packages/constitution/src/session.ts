@@ -1115,8 +1115,9 @@ export class ConstitutionSession {
 
   invite(t: number, email: string): MemberId {
     this.requireOpen('inviting');
-    if (this.constitutedT !== null &&
-        !(this.registerPowers().unilateral && !this.crownLapsedFlag)) {
+    // one gate, named once: what the surface draws the door on is what
+    // refuses here (Q812)
+    if (this.constitutedT !== null && !this.membershipReserved()) {
       throw new Error('after the start an invitation is a constitutional motion (§9.6a)');
     }
     this.requireEmailFree(email);
@@ -1902,10 +1903,16 @@ export class ConstitutionSession {
     return { ...this.settings.get('applications')!.powers }; // Q506: one pair, on the setting
   }
 
-  /** Any register power held and the crown awake — the direct-invite gate. */
+  /**
+   * The direct-invite gate, and **exactly `invite()`'s own test** (Q812).
+   * It read `unilateral || assent` while `invite` refuses on anything but
+   * the unilateral power, so a founder holding only the 🛡️ was shown the
+   * door and refused at it — two gates wearing one name. The pen is what
+   * acts alone; the shield only refuses, so it can never be what opens a
+   * door (§9.6a, R-048).
+   */
   membershipReserved(): boolean {
-    const rp = this.registerPowers();
-    return (rp.unilateral || rp.assent) && !this.crownLapsedFlag;
+    return this.registerPowers().unilateral && !this.crownLapsedFlag;
   }
 
   /**
