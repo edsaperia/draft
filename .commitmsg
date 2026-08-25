@@ -1,0 +1,39 @@
+The Proposals run is one clause wearing four tabs (Q748-Q752)
+
+Ed, 2026-08-23: this should be one clause - maybe two - with the tabs in
+a stack. Four one-thought paragraphs opened the Proposals section, two
+pairs of them saying one thing twice, and four full-height tabs claiming
+four decisions where there is one topic.
+
+Now one paragraph, data-para="begin", carrying the pile. proposalsClause()
+composes three sentences from per-decision fragments, so no gate loses its
+own variants: sentence 1 is the two canPropose() branches joined to the
+judge gate, sentence 2 is what it takes to pass with the voice grant's
+clause on its tail, sentence 3 is the deviation baseline verbatim. All four
+card heads are that clause (F15). SURFACE gains Y23 and spec-check asserts
+PROPOSAL_CHIPS against the band prose's glyph run.
+
+Measured: 0.0px on both axes for the front mark on open and for each of the
+four reached within the strip, at 1600 and 1280 - including the path nothing
+had exercised, a non-front chip opened from its rail entry. The four-chip
+pile keeps its 4px peek with 93px of clearance below.
+
+Two adjustments to the plan, both from the tree it was not written against.
+The numbers are 748-752, claimed for this plan in QUESTIONS.md on 2026-08-24;
+the plan asks for 740-744, which were spent by plans 07 and 09. And the
+voice grant stays out of SEC.rate.keys, where the plan's edit list put it:
+secLive() makes a section live when one of its keys is visible, and the
+grant is visible from ORDER row 22, so admitting it would pull the whole
+section forward and offer its news before the begin card - the F9 situation
+Q745 closed the day before. The clause is pinned by chipsFor instead, one
+predicate decides whether the grant is a fragment or a paragraph of its own,
+tasksFor is untouched so Q605's news still travels, and spec-check takes an
+explicit hosts override. voiceHost, firstAsked and beginOffered are all
+untouched, as plan 09's three assertions require.
+
+anchorOf resolved a rail entry through tabFor, and an inert chip carries no
+data-tab - so a non-front stacked tab's entry fell through to #titlepara.
+Nothing had reached that branch before this group. Every chip now carries
+data-chip and hostParaOf consults it, for every pile.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

@@ -1763,16 +1763,71 @@
   // the deviation baseline kept as its last sentence.
   // **The Proposals preamble is the home of 🍾** (Ed, 2026-08-22).
   // Pressing 🍾 is what makes the preamble's first sentence true, so the tab
-  // belongs on the preamble rather than on a clause of its own, and the
-  // sentence is tense-aware: before the start it says when the rule takes
-  // effect, and the press drops the qualifier. What the merge retires is
-  // *The document began at [time]*, which the Founded line four paragraphs
-  // above already carried, to the minute.
-  const preambleText = () =>
-    (constituted() ? 'Members' : 'When the session begins, members') +
-    ' may propose changes to rules. Proposals ✏️ pass when they meet the approval threshold. Constitutional proposals 🏛️ need everyone' + Q + 's consent. Nobody amends a rule at will, and no passed change waits on anyone' + Q + 's assent, unless a rule says so.';
+  // belongs on the preamble rather than on a clause of its own. What the merge
+  // retired is *The document began at [time]*, which the Founded line four
+  // paragraphs above already carried, to the minute.
+  // **And it is the home of 💡 ⚖️ 🏛️ too** (Q748–Q750, Ed 2026-08-23: *this
+  // should be one clause — maybe two — with the tabs in a stack*). Four
+  // one-thought paragraphs stood here and two pairs of them said one thing
+  // twice: the preamble already granted proposing and named the constitutional
+  // route, and 💡 and 🏛️ restated each half from the member's side. Each
+  // decision contributes a **fragment** and this composes them (Q749), so the
+  // duplication goes, every gate keeps its own variants, and the four tabs
+  // stack in one gutter column. SURFACE Y21; the reasoning is
+  // `design/DECISIONS.md`.
+  const PROPOSAL_CHIPS = ['begin', 'canpropose', 'canjudge', 'grant-voice'];
+  // The preamble is standing exactly when the Proposals section is live, which
+  // `secLive()` decides from the section's own keys — read from the literal so
+  // the two cannot drift.
+  const preambleStands = () => !!cs &&
+    ((SEC.find((s2) => s2.key === 'rate') || { keys: [] }).keys
+      .some((k) => { const c = card(k); return !!c && visible(c); }));
+  // **🏛️'s clause is pinned to the merged paragraph** (Q750): where the
+  // preamble stands, the voice contributes *each member holding one voice* to
+  // it and its tab joins the stack, so where the sentence lives no longer
+  // depends on session state. Q605 is narrowed rather than reversed — the
+  // grant still *arrives* with the first question that needed it, because
+  // `tasksFor` is untouched and the rail entry travels as it always did. The
+  // one state that keeps the old paragraph is the one with no preamble to
+  // join: a member met by a blind question before the constitution has
+  // reached Proposals at all.
+  const voiceInStack = () => preambleStands() && visible(card('grant-voice'));
+  // The open card is kept in its own group even if it has just gone invisible
+  // under the pointer: the strip a card opened into must not lose the tab you
+  // are looking at.
+  const proposalChips = () => PROPOSAL_CHIPS.map(card)
+    .filter((c) => c && (visible(c) || S.open === c.k));
+  const proposalsClause = () => {
+    // sentence 1 — who may take part: 💡's own two branches joined to ⚖️'s.
+    // Before the press both gates say the same thing, so they join into one
+    // clause; *the document begins*, never *the session*, which is engine
+    // vocabulary the surface otherwise avoids.
+    let s1;
+    if (!constituted()) s1 = 'When the document begins, members may propose changes to rules and judge proposals.';
+    // the defensive branch — begun, with proposing shut. 💡's own sentence,
+    // with what is true said first rather than a new one invented.
+    else if (!canPropose()) s1 = 'Members may judge proposals. They may propose changes to rules when the document begins.';
+    else {
+      // a delegated ordinary question may still be collecting after the
+      // start (🍾 waits only on the judge-gate ones), and the module keeps
+      // a member who owes it an answer from proposing until they give it
+      const prop = 'Members may propose changes to rules ' + (LIVE().some(owesAnswer)
+        ? 'once they have answered the questions the Founder delegated'
+        : 'as soon as they arrive');
+      s1 = canJudge() ? prop + ', and may judge proposals.'
+        : prop + '. They may begin judging proposals when the whole constitution has been decided.';
+    }
+    // sentence 2 — what it takes to pass, with 🏛️'s fragment on its tail.
+    // Singular, because *each member holding one voice* only scans against a
+    // singular subject.
+    const s2 = 'A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone' +
+      Q + 's consent' + (voiceInStack() ? ', each member holding one voice.' : '.');
+    // sentence 3 — the governance baseline `holderLine` states deviations from
+    return s1 + ' ' + s2 + ' Nobody amends a rule at will, and no passed change waits on anyone' +
+      Q + 's assent, unless a rule says so.';
+  };
   const preamblePara = () =>
-    '<div class="cpara notab"><p class="cpv">' + preambleText() + '</p></div>';
+    '<div class="cpara notab"><p class="cpv">' + proposalsClause() + '</p></div>';
   // The title's clause (403/404, revised Ed 2026-08-19: *move title tab to
   // the first clause once that clause appears*): the 🪶 value tab stands in
   // front of the two power tabs — the governance tab group proper — so once
@@ -2213,16 +2268,20 @@
     // (Ed, 2026-08-19)
     { key: 'rate', title: 'Proposals',
       text: '',
-      // The preamble is 🍾's own paragraph once 🍾 is due (Ed, 2026-08-22).
-      // It stands from the save, tab-less, so the sentence saying what
-      // beginning will do is readable all through the founding; when 🍾
-      // reaches its turn in ORDER the paragraph *gains its tab* rather than
-      // a new paragraph arriving under it, and the press drops the
-      // qualifier from the sentence it was standing on. `body` skips
-      // 'begin' for that reason; `keys` keeps it, because the rail and the
-      // group's own count enumerate from the section's cards.
-      lead: (H) => (cs ? (visible(card('begin')) ? H.para(card('begin')) : preamblePara()) : ''),
-      body: (H) => ['canpropose', 'canjudge', 'rate', 'machines'].map(card)
+      // **The section opens with one clause wearing four tabs** (Q748). The
+      // preamble stands tab-less while the group is empty, so the sentence
+      // saying what beginning will do is readable from the moment the section
+      // is live; each of 🍾 💡 ⚖️ 🏛️ *joins the stack* as it arrives rather
+      // than a new paragraph appearing under it, and the whole group opens at
+      // this one paragraph (`chipsFor` / `PROPOSAL_CHIPS`). `body` therefore
+      // skips all four; `keys` keeps 🍾 💡 ⚖️, because the rail and the
+      // group's own count enumerate from the section's cards. 🏛️ stays out of
+      // `keys` deliberately — it is `visible` from its place in ORDER, and
+      // admitting it would make the whole section live that early and offer
+      // its news before 🍾 (F9). It is enumerated by `tasksFor`, as Q605
+      // built it, and only its *clause* moves here.
+      lead: (H) => (cs ? (proposalChips().length ? H.para(card('begin')) : preamblePara()) : ''),
+      body: (H) => ['rate', 'machines'].map(card)
         .filter((c) => c && visible(c)).map((c) => H.para(c) + H.tasks(c)).join(''),
       keys: ['begin', 'canpropose', 'canjudge', 'rate', 'machines'] },
     // rail-only: the title is the heading, the link leads the constitution,
@@ -2316,7 +2375,11 @@
       // announced *all confirmed* over a document whose address and whose
       // founder's own email were still to come. The birth is a fixed
       // three-act run, so before the save it counts the feathers: 🪶 🪶 🪶.
-      note: (n) => { const left = cs ? n
+      // 🏛️ pinned into the preamble's stack leaves the paragraph seam
+      // `n` counts from (Q750), so it is added back here: a tab that still
+      // wants an OK is one of the things left, wherever its sentence lives.
+      note: (n) => { const left = cs
+        ? n + (voiceInStack() && mustAct(card('grant-voice')) ? 1 : 0)
         : ['title', 'slug', 'myemail'].map(card).filter((c) => c && !settled(c)).length;
         return left ? left + ' still to confirm or answer' : 'all confirmed'; } },
   ];
@@ -3329,12 +3392,18 @@
     // for every reader); the card that opens on it is yours
     // 🍾's clause is the Proposals preamble (Ed, 2026-08-22): the tab hangs
     // on the sentence the press makes true, and the moment itself stays on the
-    // Founded line, which carried it already
-    if (c.isBegin) return preambleText();
+    // Founded line, which carried it already. Since Q748 the preamble is
+    // **the whole opening of the section** and 💡 ⚖️ 🏛️ share it, so all four
+    // heads are the rule as the document states it (F15).
+    if (c.isBegin) return proposalsClause();
+    if (c.k === 'canpropose' || c.k === 'canjudge') return proposalsClause();
     if (c.isClosing) return 'The document closed' + closedAtWords() + '. ' +
       (closeSignatures().length === 0 ? 'Nobody has signed it yet.'
         : closeSignatures().length + (closeSignatures().length === 1 ? ' member has' : ' members have') + ' signed it.');
-    if (c.k === 'grant-voice') return 'Each member holds one voice in every constitutional question.';
+    // 🏛️'s own sentence survives only where there is no preamble to join
+    // (Q750) — otherwise it is the merged clause's trailing fragment
+    if (c.k === 'grant-voice') return voiceInStack() ? proposalsClause()
+      : 'Each member holds one voice in every constitutional question.';
     // ✒️ and 🛡️ write no sentence (Q639 (a), Ed 2026-08-22). They used to
     // state a count — *The Founder holds the pen on 16 settings.* — which
     // `holderLine` already says on every setting the power turns, and which
@@ -3345,19 +3414,9 @@
     if (c.ansFor) return answered(c)
       ? 'The Founder has answered as a member.'
       : 'The Founder has not yet answered as a member.';
-    if (c.k === 'canpropose') { const done = !LIVE().some(owesAnswer);
-      return canPropose()
-      ? (done ? 'Members may propose as soon as they arrive.'
-        // a delegated ordinary question may still be collecting after the
-        // start (🍾 waits only on the judge-gate ones), and the module keeps
-        // a member who owes it an answer from proposing until they give it
-        : 'Members may propose once they have answered the questions the Founder delegated.')
-      // proposing opens at the start (§9.0b, Q606): the blocker is 🍾, and the
-      // text — which used to be named here — is decided as part of the start
-      : 'Members may begin proposing when the document begins.'; }
-    if (c.k === 'canjudge') return canJudge()
-      ? 'Members may judge proposals.'
-      : 'Members may begin judging proposals when the whole constitution has been decided.';
+    // 💡's and ⚖️'s own branches are `proposalsClause`'s sentence 1 now
+    // (Q749), handled above: proposing opens at the start (§9.0b, Q606), the
+    // blocker being 🍾 rather than the text.
     // **The birth is its own phase** (Ed, 2026-08-21). Before the save the
     // band is writing a constitution, whose sentences are third person, and
     // 📧 stands in the opening run beside the title and the link — there is
@@ -3457,7 +3516,11 @@
     mustAct: (c) => (c.power ? false : mustAct(c)),
     waiting: (c) => (c.power ? false : waiting(c)),
     news: (c) => (c.power ? false : news(c)),
-    tasksFor: (c) => (c.power ? [] : tasksFor(c)),
+    // the paragraph seam, so 🏛️ draws no clause of its own where the
+    // preamble is standing to carry it (Q750). The rail reads `tasksFor`
+    // itself and is unaffected — the news still travels with its question.
+    tasksFor: (c) => (c.power ? []
+      : tasksFor(c).filter((t) => !(t.k === 'grant-voice' && voiceInStack()))),
     // esc before linkify, like the head path (review #1, finding 20): the
     // sentence carries the title, which is member text — unescaped it was
     // stored XSS into the constitution paragraph
@@ -3467,8 +3530,12 @@
     // at 🌡️'s own clause — which is also where its rail entry anchors,
     // since anchorOf falls back to the tab's paragraph.
     chipsFor: (c) => {
-      const k = c.k === 'pace' ? 'bar' : c.k;
       if (c.power || c.ansFor) return [c];
+      // the Proposals opening is one clause carrying four tabs (Q748): the
+      // group is the same whichever of the four you come in by, and `para`
+      // opens the card at 🍾's paragraph for any of them
+      if (PROPOSAL_CHIPS.includes(c.k)) return proposalChips();
+      const k = c.k === 'pace' ? 'bar' : c.k;
       const base = (k === 'bar' && card('pace') && visible(card('pace')))
         ? [card('bar'), card('pace')] : [card(k)];
       return (cs && PW_KEYS.includes(k))
@@ -3506,10 +3573,23 @@
   // big heading while the birth still has no clauses to hang it on
   const tabFor = (k) => document.querySelector(
     '#band .achip[data-tab="' + k + '"], #titlepara .achip[data-tab="' + k + '"]');
+  // **A stacked tab that is not in front carries no `data-tab`** (Q752): it is
+  // inert, because nothing may click past the tab in front of it — so `tabFor`
+  // was blind to it and its rail entry fell all the way through to the title
+  // paragraph. Nothing reached that branch while the only piles with hidden
+  // tabs were 🪜 and the power tabs, none of which has a rail entry; the
+  // Proposals stack is the first group where three of four do. Every chip
+  // carries `data-chip` whether or not it is clickable, so a pile's own
+  // paragraph is findable for all of them — a fix for every pile, not this one.
+  const hostParaOf = (k) => {
+    const ch = document.querySelector('#band .achip[data-chip="' + k + '"]');
+    return ch ? ch.closest('.cpara') : null;
+  };
   const anchorOf = (k) => {
     const tab = tabFor(k);
     return document.querySelector('.setupcard[data-setupcard="' + k + '"]')
       || document.querySelector('.cpara[data-para="' + k + '"]')
+      || hostParaOf(k)
       || (tab && tab.closest('.cpara'))
       || document.getElementById('titlepara');
   };

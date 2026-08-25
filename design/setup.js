@@ -299,7 +299,12 @@ window.SETUP = (function () {
      which is what leaves the head of the document holding the constitution. */
   const chipHtml = (c, ctx, o) => {
     const st = stateOf(c, ctx);
+    // `data-chip` names the card on every chip, clickable or not; `data-tab`
+    // is the *click* hook and stays off the inert ones. Anything that needs to
+    // find a tab's own paragraph reads `data-chip`, since a pile behind the
+    // front tab has no other handle (the surface's `anchorOf`).
     return '<span class="achip st-' + st + (o.active ? ' wmark' : '') + (o.inert ? ' behind' : '') + '"' +
+    ' data-chip="' + c.k + '"' +
     (o.inert ? ' aria-hidden="true"' : ' role="button" tabindex="0" data-tab="' + c.k + '"') +
     ' style="--chiphue: var(--lc-' + HUE[st] + ')' + (o.z ? '; z-index:' + o.z : '') + '"' +
     (o.inert ? '' : ' title="' + esc(c.t + (o.active ? ' — close it'
@@ -388,8 +393,11 @@ window.SETUP = (function () {
           return openHere
             ? '<div class="cpara open" data-para="' + c.k + '">' + cardFor({ ...g, cards: chips }) + '</div>'
             : c.inDoc ? ''  // the document displays this itself (the title heading)
+            // the lone tab is the **group's**, not necessarily the host's:
+            // a group whose other members are not being served yet leaves one
+            // chip standing on the host's paragraph, and it must be that one
             : '<div class="cpara" data-para="' + c.k + '">' + (chips.length > 1 ? pileHtml(chips, ctx)
-              : '<span class="chipcol">' + chipHtml(c, ctx, {}) + '</span>') +
+              : '<span class="chipcol">' + (chips.length ? chipHtml(chips[0], ctx, {}) : '') + '</span>') +
               '<div class="cptext"><p class="cpv">' +
               (ctx.decisionLine ? ctx.decisionLine(c) : ctx.summary(c)) + '</p></div></div>';
         };

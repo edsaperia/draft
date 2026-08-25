@@ -662,3 +662,88 @@ missing was the name.
   - **The operator hears about every birth**: the save mails `cfg.notifyEmail` the title, the founder's address and the URL — the one mail the server sends to somebody who is not a member, and the one that does not ride the fold. **Fired and forgotten: the save must never fail or wait on a mail.** `DRAFT_NOTIFY_EMAIL` overrides; empty switches it off.
 - `engine-bridge` [symbol] — `packages/constitution/src/engine-bridge.ts`: marries a `ConstitutionSession` to an engine-core `Session`. `proposeText`/`withdrawText` carry text candidates straight to the engine with no constitution event; ordinary set-motions race in the engine and adoption reports through `adjudicateOrdinaryMotion`; what then *stands* flows back by a **standing diff** in `sync(t)`, which is the ground shift. Roster truth relays **one way**: arrive→add, lapse→suspend, return→resume, remove→remove. **Deliberately not exported from index.ts**, so the page bundle stays engine-free — the engine runs at the server. Evidence walk: `npm run motions -w @draft/sim-harness`.
 - `constitution` [symbol] — **the §9 layer as a real package** (`packages/constitution`, `@draft/constitution`). Pure, dependency-free, browser-loadable: the 19-setting catalogue (SPEC §9.7.1 is its table, asserted by `spec-check`) with typed values, never display strings; the consent rule as maxima under per-setting protective orders; the blind founding with live-electorate resolution and ground shifts; owed OKs; motions on both routes; the 👑 question with crown lapse and auto-pass; sign-out, freeze and lapse clocks via one host-called `tick(t)`; applications on all four rungs; a hash-chained log with bit-identical `replay`. **Blindness is the projection layer** — `view()` is the only sanctioned member read path. Ships a pure-TS sha256 (node:crypto parity asserted), which engine-core adopted, so neither package needs node. **The browser bundle is committed**: `design/constitution.js`, rebuilt with `npm run bundle`, byte-freshness asserted by test. Author calls in `packages/constitution/NOTES.md`.
+
+## The Proposals run merged into one clause (2026-08-25, Q748–Q752)
+
+Ed, 2026-08-23, reading the founding: *this should be one clause — maybe two — with the tabs in a
+stack*. The rule is SURFACE **Y23**; what is here is why four became one, and what it reverses.
+
+**The fragmentation was structural, not careless.** The band's rule is *one distinct paragraph per
+decision, its tab in the gutter to its left*, which quietly assumes every decision has enough
+prose to **be** a paragraph. These four do not: 💡 and ⚖️ are **gates**, which follow from the
+other decisions rather than being decided; 🏛️ is a **grant**; and 🍾's is the governance preamble,
+which speaks only in deviations. So a reader met four stubs where there is one topic — how a rule
+changes, and who may take part — and four full-height tabs claiming four decisions of equal
+weight. Worse, two pairs said one thing twice: *Members may propose changes to rules* (🍾) against
+*Members may propose as soon as they arrive* (💡), and *Constitutional proposals 🏛️ need
+everyone's consent* (🍾) against *Each member holds one voice in every constitutional question*
+(🏛️) — the same fact from the room's side and the member's.
+
+**Composed, not concatenated** (Q749). Each decision contributes a **fragment** and one function
+joins them, so no gate loses its variants and nothing is stated twice: sentence 1 is 💡's own two
+`canPropose()` branches joined to ⚖️'s, sentence 2 is what it takes to pass with 🏛️'s clause on
+its tail, sentence 3 is the deviation baseline `holderLine` states exceptions to, verbatim. No
+new copy was invented; the composition removes the duplication and supplies the joins. Two calls
+made under stated assumption rather than asked: the merged sentence says **when the document
+begins**, not the preamble's *when the session begins*, because 💡's own sentence already said
+*document* and *session* is engine vocabulary the surface otherwise avoids; and sentence 2 goes
+**singular**, because the appended *each member holding one voice* only scans against a singular
+subject. Either is a one-string revert.
+
+**Two rulings this reverses, deliberately.** **Q641** (2026-08-22) held that 🏛️ *Your Voice*
+keeps its clause, "since *Each member holds one voice in every constitutional question* is not
+restated anywhere and so earns its paragraph by Ed's own test". It **is** restated — the
+consent sentence is the same fact — so the test was applied to a sentence nobody had read beside
+its neighbour. It survives as a subordinate clause (Q751). **Q605** put 🏛️'s clause under the
+first blind question asking you, falling back to ⚖️; Q750 **narrows** rather than reverses it.
+Q605's reasoning is about when the **news** arrives, and the news still travels: `tasksFor` is
+untouched and the rail entry appears with the question that needed it. What stops depending on
+session state is where the **sentence** lives.
+
+**The shapes rejected.** *Two paragraphs, split taking-part from passing* — it splits one thought
+at exactly the seam the duplication runs along, and leaves two two-tab piles twelve pixels apart,
+which is the Q308 floor the members block already pays for. *Preamble untouched, the three stubs
+merged under it* — it keeps the duplication, which was the actual complaint, and buys nothing but
+a shorter run. One paragraph won because the four state one rule together.
+
+**The mechanism is `chipsFor`**, the supported N-tabs-on-one-paragraph route — the one 🌡️
+already uses to carry 🪜 and its two power tabs — not the Members block's two absolutely
+positioned `.chipcol`s, an exception paid for by a hard-coded 42px that does not generalise. The
+host paragraph is **`begin`**, so `data-para` is stable open or closed, which is what `birthPass`
+and `scrollToCard` key on. Closed, only the front tab opens; open, the whole strip is live and
+switching is a `card-morph`. Measured after the merge: **0.0px on both axes** for the front mark
+when the card opens and for each of the four reached within the open strip, at 1600 and 1280 —
+including the path nothing had ever exercised, a **non-front chip opened from its rail entry**
+(the strip's order is `stackOrder`'s, the same sort the closed pile uses, so the front chip is
+index 0 whether or not it is the active one). `fitBand` leaves the four-chip pile at its default
+4px peek with 93px of clearance to ⏱️'s tab below it.
+
+**One consequence, accepted.** `birthPass` keys band paragraphs `p:<data-para>`; `.achip`s are
+not keyed, so a tab never animates as born. 💡 and ⚖️ used to arrive as new `.cpara`s and fade in
+over F14's 840ms; now `p:begin` is already born, so at the press the three tabs appear without a
+fade while the paragraph's text changes under them. Their rail entries still grow, and 🍾's own
+ceremony carries the moment. No bespoke re-fade: anything keyed on content would re-fire on every
+state change of the sentence, which is the opposite of *what is born arrives*.
+
+**Two things the build found that the plan did not.** **🏛️ stays out of `SEC.rate.keys`.** The
+plan's edit list put it there so `spec-check` could resolve its host through `secOf`. But
+`secLive()` makes a section live exactly when one of its keys is visible, and 🏛️ is `visible`
+from its own place in ORDER (row 22) or earlier via `early()` — so admitting it would drag the
+whole Proposals section forward and offer its news before 🍾, which is the F9 situation Q745 had
+just closed. The clause is pinned by `chipsFor` instead, the checker takes an explicit `hosts`
+override, and `voiceInStack()` — *the preamble is standing and the voice is visible* — decides in
+one place whether 🏛️ is a fragment or a paragraph of its own. It keeps its own paragraph in the
+one state with no preamble to join: a member met by a blind question before the constitution has
+reached Proposals at all. **And the group's note had to count it back**: the pinned tab leaves
+the `ctx.tasksFor` seam `wants` counts from, and a tab that still wants an OK is one of the
+things left wherever its sentence lives.
+
+**The latent hole this closed** (Q752). `anchorOf` resolved a rail entry's anchor through
+`tabFor`, which reads `data-tab` — and an **inert** chip carries none, because nothing may click
+past the tab in front of it. So a non-front stacked tab was unfindable and its entry fell all the
+way through to the title paragraph. Nothing reached that branch before: 🪜 has no rail entry and
+neither do the power tabs. This group is the first where three of four do. Every chip now carries
+`data-chip` whether or not it is clickable and `hostParaOf` consults it — a fix for every pile,
+not a patch for this one. `para()` gained the matching correction: a group whose other members
+are not being served yet leaves **one** chip standing, and it must be the group's, not the
+host's.
