@@ -1773,12 +1773,38 @@ var CONSTITUTION = (() => {
      *  blocks the start while it collects, and every judge-gate must be settled
      *  however it is held. → why: R-045 */
     waitingOn() {
+      return this.waitingWith().map((w) => w.setting);
+    }
+    /**
+     * **…and *why* it waits** (Q826, Ed 2026-08-25: *I did all my open tasks and
+     * then got served Begin while being unable to action it*). The list of ids
+     * says which questions are outstanding and nothing about what would end the
+     * wait — and the four ways a question can be outstanding want four different
+     * acts of the founder. `one-voice` in particular is the one the founder can
+     * do nothing about *on the card that names it*: the remedy is a second member
+     * or taking the setting back, neither of which the id alone points at. The
+     * reason is computed here rather than worded here: what a founder reads is
+     * the surface's business, and the module owes it the fact.
+     *
+     * The order matches `maybeResolve`'s own gates, because that is what is
+     * actually holding the resolution: an invitation in flight stops it before
+     * the electorate is even counted, so a room of one with an unopened
+     * invitation reads `invitation-open` and not `one-voice` — which is right,
+     * since the invitation is already the remedy.
+     */
+    waitingWith() {
+      const invitationOut = [...this.members.values()].some((m) => m.arrivedAtT === null && !m.removed);
+      const soleVoice = eOf(this.members.values()).length < 2;
       return CATALOGUE.filter((e) => {
         const st = this.settings.get(e.id);
         if (!st) return false;
         if (e.id === "startingText") return !this.textConfirmedFlag;
         return st.collecting || e.judgeGate && st.settledBy === null;
-      }).map((e) => e.id).sort((a, b) => (a === "startingText" ? 1 : 0) - (b === "startingText" ? 1 : 0));
+      }).map((e) => {
+        const st = this.settings.get(e.id);
+        const why = e.id === "startingText" ? "text-unconfirmed" : !st.collecting ? "judge-gate" : invitationOut ? "invitation-open" : soleVoice ? "one-voice" : "collecting";
+        return { setting: e.id, why };
+      }).sort((a, b) => (a.setting === "startingText" ? 1 : 0) - (b.setting === "startingText" ? 1 : 0));
     }
     /**
      * The founder's readiness readout (Q443 (a)(i), both halves; founder-only
@@ -1810,8 +1836,9 @@ var CONSTITUTION = (() => {
         owed: m.arrivedAtT === null ? 0 : open.length,
         answered: m.arrivedAtT === null ? 0 : open.filter((id) => this.settings.get(id).answers.has(m.id)).length
       }));
-      const waiting = this.waitingOn();
-      return { ready: this.constitutedT === null && waiting.length === 0, waiting, questions, members };
+      const holds = this.waitingWith();
+      const waiting = holds.map((w) => w.setting);
+      return { ready: this.constitutedT === null && waiting.length === 0, waiting, holds, questions, members };
     }
     /**
      * Presence is presence (Q459 (a)): an authenticated read refreshes the

@@ -304,8 +304,15 @@ for (let i = 0; i < 40; i++) {
     const picked = await clickIn('.setupcard [data-set="' + opt.set + '"][data-val="' + opt.val + '"]');
     if (!picked) await clickIn('.setupcard [data-ans="' + opt.set + '"][data-ansval="' + opt.val + '"]');
   }
+  // **A delegated setting takes no value with it, so its card's fields are left
+  // alone** (Q832, `journey-walk.mjs`'s own guard, ported). Typing into a
+  // rung's field *chooses that rung*, so the fill below un-delegated whatever
+  // `--delegate=` had just handed over — silently, and only for a setting whose
+  // value rung carries a field. 🌡️ is exactly that (one `number` input), which
+  // is Ed's own case: `--delegate=bar` walked all the way to a begun document
+  // with 🌡️ founder-held, and the verdict blamed the page.
   // with no defaults a card waits for its numbers: fill whatever is empty
-  await page.evaluate(() => {
+  if (next.k !== DELEGATE) await page.evaluate(() => {
     document.querySelectorAll('.setupcard input, .setupcard textarea').forEach((i) => {
       if (i.value || /^(email|radio|checkbox|file|hidden|range|color)$/.test(i.type)) return;
       if (i.type === 'number') i.value = String(Math.max(+i.min || 1, 5));

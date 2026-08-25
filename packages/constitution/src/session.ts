@@ -32,6 +32,17 @@ export interface OpenInput {
   convenor: ConvenorInput;
 }
 
+/**
+ * Why 🍾 is waiting on one question (Q826). Four of the five are a state the
+ * founding will leave by itself; **`one-voice` is the one that needs an act** —
+ * a delegated question with a membership of one has not been delegated to
+ * anybody (`maybeResolve`), and no amount of answering will clear it.
+ * `text-unconfirmed` is the text's own prerequisite (§9.0b), which is not a
+ * question anybody is being asked.
+ */
+export type WaitingWhy = 'judge-gate' | 'invitation-open' | 'one-voice'
+  | 'collecting' | 'text-unconfirmed';
+
 /** The settings the map manages: everything except the register, the text and the personal pair. */
 const MANAGED: readonly SettingId[] = CATALOGUE
   .filter((e) => e.kind !== 'personal' && e.id !== 'membership' && e.id !== 'startingText')
@@ -1265,6 +1276,30 @@ export class ConstitutionSession {
    *  blocks the start while it collects, and every judge-gate must be settled
    *  however it is held. → why: R-045 */
   private waitingOn(): SettingId[] {
+    return this.waitingWith().map((w) => w.setting);
+  }
+
+  /**
+   * **…and *why* it waits** (Q826, Ed 2026-08-25: *I did all my open tasks and
+   * then got served Begin while being unable to action it*). The list of ids
+   * says which questions are outstanding and nothing about what would end the
+   * wait — and the four ways a question can be outstanding want four different
+   * acts of the founder. `one-voice` in particular is the one the founder can
+   * do nothing about *on the card that names it*: the remedy is a second member
+   * or taking the setting back, neither of which the id alone points at. The
+   * reason is computed here rather than worded here: what a founder reads is
+   * the surface's business, and the module owes it the fact.
+   *
+   * The order matches `maybeResolve`'s own gates, because that is what is
+   * actually holding the resolution: an invitation in flight stops it before
+   * the electorate is even counted, so a room of one with an unopened
+   * invitation reads `invitation-open` and not `one-voice` — which is right,
+   * since the invitation is already the remedy.
+   */
+  private waitingWith(): Array<{ setting: SettingId; why: WaitingWhy }> {
+    const invitationOut = [...this.members.values()]
+      .some((m) => m.arrivedAtT === null && !m.removed);
+    const soleVoice = eOf(this.members.values()).length < 2;
     return CATALOGUE
       .filter((e) => {
         const st = this.settings.get(e.id);
@@ -1277,9 +1312,17 @@ export class ConstitutionSession {
         if (e.id === 'startingText') return !this.textConfirmedFlag;
         return st.collecting || (e.judgeGate && st.settledBy === null);
       })
-      .map((e) => e.id)
+      .map((e) => {
+        const st = this.settings.get(e.id)!;
+        const why: WaitingWhy = e.id === 'startingText' ? 'text-unconfirmed'
+          : !st.collecting ? 'judge-gate'
+          : invitationOut ? 'invitation-open'
+          : soleVoice ? 'one-voice'
+          : 'collecting';
+        return { setting: e.id, why };
+      })
       // the text is the founding's last clause, so it is named last
-      .sort((a, b) => (a === 'startingText' ? 1 : 0) - (b === 'startingText' ? 1 : 0));
+      .sort((a, b) => (a.setting === 'startingText' ? 1 : 0) - (b.setting === 'startingText' ? 1 : 0));
   }
 
   /**
@@ -1292,6 +1335,10 @@ export class ConstitutionSession {
   readiness(): {
     ready: boolean;
     waiting: SettingId[];
+    /** the same list with `waitingWith`'s reason beside each id (Q826) —
+     *  `waiting` is kept as bare ids because `begin`'s own refusal and every
+     *  existing reader want exactly that */
+    holds: Array<{ setting: SettingId; why: WaitingWhy }>;
     questions: Array<{ setting: SettingId; settled: boolean; collecting: boolean;
       answered: number; electorate: number }>;
     members: Array<{ id: MemberId; name: string | null; arrived: boolean;
@@ -1312,8 +1359,9 @@ export class ConstitutionSession {
         owed: m.arrivedAtT === null ? 0 : open.length,
         answered: m.arrivedAtT === null ? 0
           : open.filter((id) => this.settings.get(id)!.answers.has(m.id)).length }));
-    const waiting = this.waitingOn();
-    return { ready: this.constitutedT === null && waiting.length === 0, waiting, questions, members };
+    const holds = this.waitingWith();
+    const waiting = holds.map((w) => w.setting);
+    return { ready: this.constitutedT === null && waiting.length === 0, waiting, holds, questions, members };
   }
 
   /**

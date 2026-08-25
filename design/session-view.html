@@ -2160,6 +2160,9 @@
   const mustAct = (c) => (motionOn(c) ? (viewerIsMember() && !answeredMotion(c) && !motionExcludesMe(c))
     : c.isBegin ? (amFounder() && !constituted())
     : c.isClosing ? false
+    // 🪪 is the remedy for a `one-voice` wait, and while that is what the
+    // document is waiting for it is asking something (Q828, `oneVoiceRemedy`)
+    : c.k === 'roster' && oneVoiceRemedy() ? true
     : c.isGate ? (c.open() && staged(c) && !S.okd.has(c.k))
     : c.ansFor || c.own === 'you' || amFounder() ? !settled(c)
     : false);
@@ -2231,8 +2234,19 @@
   // delegated 🌡️ left it unanswered this predicate stayed true for ever. The
   // instance is fixed at `commitSetting`; `railable` is the class, and it
   // reads the section literals rather than a second list of its own.
+  // **And the remedy for a stuck question is not one of them either** (Q828,
+  // the same rule a third time). 🪪 stands as a task while the document is
+  // waiting on a `one-voice` question — and a question is `one-voice` only once
+  // it has been handed over, so from the founder's first delegation this
+  // predicate would have been true for ever, `ansDue()` false for ever, and not
+  // one of the questions they handed over would have come back: Q775 exactly,
+  // wearing 🪪. What is being offered *because* the questions are stuck cannot
+  // be the reason to withhold them. It is excluded only where the remedy is the
+  // whole of why it is asking; an unsettled 🪪 is an ordinary founding task and
+  // paces like one.
+  const remedyOnly = (c) => c.k === 'roster' && settled(c) && oneVoiceRemedy();
   const otherTasksLeft = () => CARDS.concat(GATES)
-    .some((c) => !c.isGate && railable(c) && visible(c) && mustAct(c));
+    .some((c) => !c.isGate && railable(c) && visible(c) && mustAct(c) && !remedyOnly(c));
   const ansDue = () => roomExists() || !otherTasksLeft();
   // **The answer tasks cascade like everything else** (Ed, 2026-08-19,
   // closing 416: *if I have to do all of them anyway, they should cascade*).
@@ -2339,7 +2353,25 @@
         .find((a) => a && visible(a)) || null;
     } finally { askingFirst = false; }
   };
-  const voiceHost = () => { const a = firstAsked(); return a ? a.ansFor : 'canjudge'; };
+  // **A founder-member is handed the voice, so a founder-member is served it**
+  // (Q829, Ed 2026-08-25: *when I (as a founder-member) was granted 🏛️ I did
+  // not get a task — the 🏛️ tab was grey*). The host was the first blind
+  // question asking you, else ⚖️ Judging — and ⚖️ is hidden until 🍾, so before
+  // the start the fallback host was a card nothing could see and `tasksFor`
+  // never reached the grant. A founder who delegates nothing has no blind
+  // question to hang it on and was therefore never served the voice they hold
+  // from the save; and a founder who *does* delegate has one only once
+  // `ansDue()` lets the question through, which for a sole founder-member is
+  // after every other task. Either way the grant sat unacknowledged behind the
+  // very thing it accompanies, which is Q645's shape in a third place.
+  // **🪪 is the pre-start host**: the voice is one every member holds, so the
+  // membership's own clause is where it belongs while there is no question to
+  // ride, and the register is always visible from its place in ORDER. Only the
+  // *enumeration* moves — the tab is pinned to the Proposals preamble by Q750
+  // and the rail entry follows its own chip (`anchorOf`), so nothing changes
+  // where the founder looks.
+  const voiceHost = () => { const a = firstAsked();
+    return a ? a.ansFor : (cs && !constituted() ? 'roster' : 'canjudge'); };
   // **The two grants whose clause is the Founded line** (Q639 (a), Ed
   // 2026-08-22). They are still tasks of the 📍 link for every purpose that
   // counts them — the rail enumerates from `tasksFor`, and so does the
@@ -4391,7 +4423,10 @@
     roster: () => (cs && cs.constitutedAtT !== null && !directInvite()
       ? '<p class="why">Who is a member. Now the document has begun, bringing somebody in is a proposal like any other — everybody answers it, and one refusal keeps them out — so it is the ✉️ tab beside this list. Proposing that somebody leaves is ❌.</p>' +
         doorErrHtml('roster')
-      : '<p class="why">Who is a member. An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as <i>invited</i> until then.</p>' +
+      // and where the document is stuck on a question nobody can answer, the
+      // card leads with *why you are here* (Q828) — the remedy above the door
+      : oneVoiceAsk() +
+      '<p class="why">Who is a member. An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as <i>invited</i> until then.</p>' +
       '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1" value="' + esc(S.inviteOne) + '">' +
       '<button class="btn" data-act="add">Invite</button></div></div>' +
       doorErrHtml('roster') +
@@ -7372,6 +7407,37 @@
     if (!cs || constituted()) return null;
     try { return cs.readiness ? cs.readiness() : null; } catch (e) { return null; }
   };
+  // **The one wait no amount of answering can end** (Q826–Q828). `readiness()`
+  // now says *why* each question is outstanding, and `one-voice` is the reason
+  // that is not a state the founding will leave by itself: a question handed to
+  // a membership of one has not been handed to anybody (`maybeResolve`), so the
+  // founder answers it, watches nothing happen, and arrives at a 🍾 they cannot
+  // press. The two remedies are the founder's and both exist already — invite
+  // somebody, or take the setting back — and neither is anywhere in a bare id.
+  const oneVoiceHolds = () => { const rd = readinessOf();
+    return rd && rd.holds ? rd.holds.filter((h) => h.why === 'one-voice').map((h) => h.setting) : []; };
+  // …and where that is what the document is waiting for, 🪪 is a **task**, not
+  // a settled tab in the band. It is a task by derivation and nothing else: no
+  // `S.okd` key, no `ACK_KEYS` entry, no news — it is owed exactly while the
+  // reason stands and leaves the instant an invitation goes out (the reason
+  // becomes `invitation-open`) or the setting is taken back (it stops
+  // collecting). Nothing is acknowledged, because nothing has been decided.
+  const oneVoiceRemedy = () => amFounder() && !constituted() && oneVoiceHolds().length > 0;
+  // what 🪪 says while it is standing as that remedy: which questions are stuck,
+  // why nobody can answer them, and both ways out — the same two acts 🍾's own
+  // hold sentence names, said on the card that performs one of them
+  const oneVoiceAsk = () => {
+    const ov = oneVoiceHolds();
+    if (!ov.length || !amFounder()) return '';
+    const one = ov.length === 1;
+    return '<p class="why"><b>' + ov.map(settingNamed).join(' and ') + (one ? ' is' : ' are') +
+      ' waiting for somebody to answer ' + (one ? 'it' : 'them') + '.</b> You handed ' +
+      (one ? 'it' : 'them') + ' to the membership, and you are its only member — ' +
+      'a question answered by one voice has not been handed to anybody, so one more member ' +
+      'is enough to start it. If you would rather not invite anybody, take ' +
+      (one ? 'it' : 'them') + ' back on ' + (one ? 'its' : 'their') + ' own card and set ' +
+      (one ? 'it' : 'them') + ' yourself.</p>';
+  };
   // **A card with a dependency does not appear until its dependency is
   // settled — never greyed** (SURFACE F9), and 🍾 was the one card that broke
   // it: it arrived with a dead commit while the founder's own blind answers
@@ -7395,6 +7461,16 @@
   // disabled while `readiness()` says so, which is the half of F9 that
   // matters here: the founder is told what the document is waiting for, not
   // invited to press through it.
+  // **A dead end is served, not hidden** (Q830). F18's last-resort door asks
+  // whether the rail would otherwise be empty, and Q828 puts a task in it in
+  // exactly the state the door was written for: serve 🪪 as the remedy for a
+  // `one-voice` wait and `nothingElseServed()` goes false, so 🍾 disappears and
+  // the sentence naming *why* the founder is being sent to 🪪 is unreachable.
+  // The remedy and its explanation are one thing and have to stand together, so
+  // the door gains a second half: 🍾 is shown, commit dark, whenever the
+  // document is waiting on something the founding cannot clear by itself. That
+  // is `one-voice` and nothing else — every other reason `readiness()` gives is
+  // a state the rail's own next task will leave.
   // Re-entrant like `firstAsked` above, and guarded the same way: `servedCards`
   // asks `visible(card('begin'))`, which asks this. Inside that inner ask the
   // door is simply shut, so 🍾 never counts itself as the thing being served.
@@ -7412,7 +7488,8 @@
     // last-resort door stays shut here rather than offer a press through an
     // unknown state
     if (!rd) return false;
-    if (!rd.ready) return nothingElseServed();
+    // a dead end is served, not hidden (Q830, above)
+    if (!rd.ready) return oneVoiceHolds().length > 0 || nothingElseServed();
     // …and the voice — but only where the voice is actually being served.
     // `tasksFor` hangs 🏛️ off `voiceHost()`: the first blind question asking
     // you, or ⚖️ Judging where nothing was delegated to you — and ⚖️ is hidden
@@ -7459,6 +7536,9 @@
     rail: railEntries.map((e) => e.id),
   });
   const glyphOfSetting = (mid) => { const c = card(pkeyOf(mid)); return c ? c.g + ' ' : ''; };
+  // a setting named as the founder meets it — its glyph and its own title
+  const settingNamed = (mid) => glyphOfSetting(mid) +
+    esc(card(pkeyOf(mid)) ? card(pkeyOf(mid)).t : mid);
   const BEGIN_BATCH = [
     'The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.',
     'Members gain ✏️s on it, at the proposal rate.',
@@ -7473,8 +7553,24 @@
     // informs, never blocks — except the questions judging cannot do without
     const hold = rd.waiting && rd.waiting.length
       ? '<p class="setnote hold">The document cannot begin while ' +
-        rd.waiting.map((mid) => glyphOfSetting(mid) + esc(card(pkeyOf(mid)) ? card(pkeyOf(mid)).t : mid)).join(' and ') +
+        rd.waiting.map(settingNamed).join(' and ') +
         (rd.waiting.length === 1 ? ' is' : ' are') + ' still being decided.</p>' : '';
+    // **…and it says what to do about it** (Q827, Ed 2026-08-25: *I did all my
+    // open tasks and then got served Begin while being unable to action it. My
+    // guess is this is because I delegated things to the members and I'm the
+    // only member*). He had to guess, because the counts above are the only
+    // thing the card said and they read *1 of 1 have answered* — a question
+    // that looks finished beside a start that will not come. The counts stay;
+    // what they no longer do is stand alone. Both remedies are named, because
+    // the founder may not want either one in particular and has to be able to
+    // choose: a second member, or the setting back in their own hand.
+    const ov = oneVoiceHolds();
+    const one = ov.length === 1;
+    const why = ov.length ? '<p class="setnote hold">' + ov.map(settingNamed).join(' and ') +
+      (one ? ' is' : ' are') + ' delegated to the membership, and you are its only member: ' +
+      'a question answered by one voice has not been handed to anybody. Invite somebody at ' +
+      '🪪 Membership, or take ' + (one ? 'it' : 'them') + ' back on ' + (one ? 'its' : 'their') +
+      ' own card and set ' + (one ? 'it' : 'them') + ' yourself.</p>' : '';
     const qs = (rd.questions || []).map((q) => '<span class="gaterow">' +
       '<span class="gg">' + glyphOfSetting(q.setting) + '</span>' +
       esc(card(pkeyOf(q.setting)) ? card(pkeyOf(q.setting)).t : q.setting) +
@@ -7484,11 +7580,14 @@
       esc(m.name || 'Anonymous') + '<span class="rsub"> · ' +
       (!m.arrived ? 'invited, not yet arrived' : m.owed === 0 ? 'nothing owed'
         : m.answered >= m.owed ? 'answered everything' : m.answered + ' of ' + m.owed + ' answered') + '</span></span>').join('');
-    return batch + hold +
+    return batch + hold + why +
       '<div class="readiness"><div class="fieldlab">The questions</div><div class="gatelist">' + qs + '</div>' +
       '<div class="fieldlab">The people</div><div class="gatelist">' + ms + '</div></div>' +
       '<p class="setnote">' + (rd.ready
         ? 'Nobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin.'
+        // *it comes back to you* is a promise about a wait that ends by
+        // itself, and `one-voice` is the one that does not (Q827)
+        : ov.length ? 'It comes back to you the moment somebody else can answer.'
         : 'It comes back to you the moment the questions stand.') + '</p>';
   };
   // what the close did, in one card: final as of when, what adopted, what

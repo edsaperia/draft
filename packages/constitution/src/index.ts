@@ -19,7 +19,7 @@ export { resolveConsent } from './consent.js';
 export type { ConsentResolution } from './consent.js';
 export * from './types.js';
 export { ConstitutionSession } from './session.js';
-export type { OpenInput } from './session.js';
+export type { OpenInput, WaitingWhy } from './session.js';
 export { eOf, inE, quorumBaseOf, motionElectorateOf, quorumCount,
   adoptionFloorTerm, adoptionFloor } from './populations.js';
 export { barAt, reAnchor, seedAnchors, smoothstep } from './threshold.js';

@@ -40,6 +40,7 @@ type MemberViewPayload = {
   textConfirmed: boolean; quorumForm: string; electorateSize: number;
   membershipReserved: boolean; crowned: boolean; provisionalText: string | null;
   readiness: null | { ready: boolean; waiting: string[];
+    holds: Array<{ setting: string; why: string }>;
     questions: Array<{ setting: string; settled: boolean; collecting: boolean;
       answered: number; electorate: number }>;
     members: Array<{ id: string; name: string | null; arrived: boolean;

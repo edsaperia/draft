@@ -450,12 +450,52 @@ describe('proposing is yours (§9.0b)', () => {
     const s = openDelegated();
     settleAllReserved(s, 2, []);            // every question answered, text unconfirmed
     expect(s.readiness().waiting).toEqual(['startingText']);
+    expect(s.readiness().holds).toEqual([{ setting: 'startingText', why: 'text-unconfirmed' }]);
     expect(() => s.begin(3)).toThrow(/startingText/);
     expect(s.constitutedAtT).toBeNull();
     s.confirmStartingText(4, '');
     expect(s.readiness().waiting).toEqual([]);
     s.begin(5);
     expect(s.constitutedAtT).toBe(5);
+  });
+
+  /**
+   * **The readout says *why*, not just *which*** (Q826). The four reasons want
+   * four different acts of the founder, and `one-voice` is the only one no
+   * amount of answering will clear — so the surface cannot word the remedy
+   * from a bare id. Checked as the same question moving through three of them.
+   */
+  it('readiness names why each question is waiting (Q826)', () => {
+    const s = openDoc();                          // the founder alone, a member
+    s.delegate(0, 'bar');
+    const whyOf = (id: string) =>
+      (s.readiness().holds.find((h) => h.setting === id) || { why: null }).why;
+    // handed to a membership of one: the remedy is a second member or taking
+    // it back, and neither is anywhere in the bare id
+    expect(whyOf('bar')).toBe('one-voice');
+    // an invitation in flight stops the resolution before the electorate is
+    // counted, and it is already the remedy — so it is the reason given
+    const bo = s.invite(1, 'bo@example.org');
+    expect(whyOf('bar')).toBe('invitation-open');
+    s.arrive(2, bo);
+    expect(whyOf('bar')).toBe('collecting');
+    // a judge-gate nobody was asked about is waiting for the founder's own hand
+    expect(whyOf('quorum')).toBe('judge-gate');
+    // and the ids stay exactly what they were: `begin`'s refusal reads them
+    expect(s.readiness().waiting).toEqual(s.readiness().holds.map((h) => h.setting));
+  });
+
+  it('a delegated question with a membership of one never resolves (Q826)', () => {
+    const s = openDoc();
+    s.setSetting(0, 'ending', { endsAtMs: 1_000_000 });   // 🌡️ waits on ⏰ (§9.0a)
+    s.delegate(0, 'bar');
+    s.answer(1, 'ada', 'bar', { pct: 60 });
+    expect(s.settingState('bar').settledBy).toBeNull();
+    expect(s.readiness().holds.some((h) => h.why === 'one-voice')).toBe(true);
+    // …and taking it back is the other half of the remedy the reason names
+    s.reclaim(2, 'bar');
+    s.setSetting(2, 'bar', { pct: 60 });
+    expect(s.readiness().holds.some((h) => h.setting === 'bar')).toBe(false);
   });
 });
 
