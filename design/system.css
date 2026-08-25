@@ -969,8 +969,13 @@
     box-shadow: var(--shadow-xl);
     /* --s5 rather than --s4 of side padding: the lifecycle mark hangs in the
        left one, so the rationale below the lanes stays column-aligned with
-       them instead of being pushed right by its own glyph. */
-    padding: 14px var(--s5);
+       them instead of being pushed right by its own glyph.
+
+       `--measure-gutter` rather than the `--s5` it is equal to: the card's
+       side padding is load-bearing for the measure, not only for the mark —
+       it is what puts the head's text on the prose's own edges (see .sugg's
+       max-width below), so it has to move with the gutter and not beside it. */
+    padding: 14px var(--measure-gutter);
     background: var(--bg);
   }
   .sugg .foot { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); }
