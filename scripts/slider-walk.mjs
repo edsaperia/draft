@@ -164,8 +164,15 @@ const walkTo = async (stop, delegate) => {
       });
       await page.waitForTimeout(200);
     }
-    const done = (await clickIn('.setupcard [data-confirm]')) || (await clickIn('.setupcard [data-ok]')) ||
-      (await clickIn('.setupcard [data-hatgo]'));
+    // **A commit that has not woken yet is not a commit that will not.** The
+    // ✓ follows the card's own state, and some of it lands a tick after the
+    // click that caused it — so a single attempt made the whole walk flaky
+    // (one run in five stopped at ⏰ with the card still open and every task
+    // below it unreachable). Try again once the surface has settled.
+    const commit = async () => (await clickIn('.setupcard [data-confirm]')) ||
+      (await clickIn('.setupcard [data-ok]')) || (await clickIn('.setupcard [data-hatgo]'));
+    let done = await commit();
+    if (!done) { await page.waitForTimeout(500); done = await commit(); }
     if (TRACE) console.log('   walked ' + next + (done ? '' : ' (no commit)'));
   }
   return null;

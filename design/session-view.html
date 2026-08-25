@@ -5459,6 +5459,27 @@
       ev.preventDefault(); ev.target.closest('[data-tab]').click();
     }
   });
+  // **A drag is a press held down, and the poll has to know about it too.**
+  // Taking `render()` out of the `input` handler fixes the page's own rebuild,
+  // but the live path re-renders every 4s of its own accord — and a drag runs
+  // for a second or two, so a tick landing inside one destroys the very range
+  // input the pointer is capturing and the thumb freezes exactly as before.
+  // The two polls already defer for `penHold` and `SESSION.holding`; a slider
+  // drag is the third press on this surface and joins them. Released on
+  // `pointerup`/`pointercancel` only, never on `change` — a press that ends
+  // where it began fires no `change` at all and would leave the flag stuck.
+  // A lost `pointerup` (released off the window) must never park the live
+  // surface for good, so the flag carries the time it was set and goes stale
+  // by itself — the same belt-and-braces the wallet's restoration keeps.
+  let sliderHold = 0;
+  const endSliderHold = () => { sliderHold = 0; };
+  document.addEventListener('pointerdown', (ev) => {
+    if (ev.target && ev.target.closest && ev.target.closest('[data-slide]')) sliderHold = Date.now();
+  }, true);
+  document.addEventListener('pointerup', endSliderHold, true);
+  document.addEventListener('pointercancel', endSliderHold, true);
+  const pressInFlight = () => penHold || SESSION.holding ||
+    (sliderHold && Date.now() - sliderHold < 30_000);
   // A lane rebuilt on every keystroke would lose the caret, so typing repaints
   // the bar and the rail and leaves the card alone — only the commit control,
   // which is about what you have just typed, is set directly.
@@ -6270,9 +6291,10 @@
         // control being held. The same rule the draft typing guard keeps,
         // for the same reason: the surface must not move under the hand.
         // The poll simply waits for the next tick.
-        // a pen hold here, or a propose hold in the charter — either way a
-        // press is in progress and the surface must not move under it
-        if (penHold || SESSION.holding) return;
+        // a pen hold here, a propose hold in the charter, a slider drag on an
+        // answer card — either way a press is in progress and the surface
+        // must not move under it
+        if (pressInFlight()) return;
         api.refresh();
       }, 4000);
         return;
@@ -6298,9 +6320,10 @@
         // control being held. The same rule the draft typing guard keeps,
         // for the same reason: the surface must not move under the hand.
         // The poll simply waits for the next tick.
-        // a pen hold here, or a propose hold in the charter — either way a
-        // press is in progress and the surface must not move under it
-        if (penHold || SESSION.holding) return;
+        // a pen hold here, a propose hold in the charter, a slider drag on an
+        // answer card — either way a press is in progress and the surface
+        // must not move under it
+        if (pressInFlight()) return;
         api.refresh();
       }, 4000);
       // the founder's unconfirmed draft rides the stash (§9.7a v0.55)

@@ -1076,7 +1076,8 @@ window.SETUP = (function () {
     return '<div class="cs' + (unset ? ' unset' : '') + '">' +
       '<div class="csval' + (unset ? ' unset' : '') + '">' + (unset ? 'Drag to answer' : fmt(v)) + '</div>' +
       '<input type="range" min="' + min + '" max="' + max + '" step="' + st + '" value="' + at + '"' +
-      ' style="--n:' + Math.max(1, Math.round((max - min) / st)) + ';--pct:' + (unset ? 0 : (v - min) / (max - min) * 100) + '"' +
+      ' style="--n:' + Math.max(1, Math.round((max - min) / st)) + ';--pct:' +
+      (unset ? 0 : max > min ? (v - min) / (max - min) * 100 : 100) + '"' +
       ' data-slide="' + key + '">' +
       '<div class="csends"><span>' + fmt(min) + '</span><span>' + fmt(max) + '</span></div>' +
       '<div class="csmean">' + (unset ? mean(min) + '<br>' + mean(max) : mean(v)) + '</div></div>';
@@ -1097,7 +1098,9 @@ window.SETUP = (function () {
     if (val) { val.classList.remove('unset'); val.textContent = f.fmt(v); }
     const mn = cs.querySelector('.csmean');
     if (mn) mn.textContent = f.mean(v);
-    sl.style.setProperty('--pct', (v - f.min) / (f.max - f.min) * 100);
+    // a one-answer track (👥 as a count in a room of one) has no span to
+    // divide by, so the fill is full rather than `NaN`, which CSS drops
+    sl.style.setProperty('--pct', f.max > f.min ? (v - f.min) / (f.max - f.min) * 100 : 100);
   };
 
   const ansRow = (on, key, val, ttl, exp, extra, inner) =>
