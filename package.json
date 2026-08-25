@@ -21,6 +21,7 @@
     "card-audit": "node design/tools/card-audit.mjs",
     "journey": "node scripts/journey-walk.mjs",
     "slug-walk": "node scripts/slug-walk.mjs",
+    "slider-walk": "node scripts/slider-walk.mjs",
     "ladder": "node scripts/ladder-walk.mjs",
     "founding-golden": "node scripts/founding-golden.mjs",
     "emoji-data": "node scripts/emoji-data.mjs",

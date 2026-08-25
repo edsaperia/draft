@@ -768,3 +768,65 @@ neither do the power tabs. This group is the first where three of four do. Every
 not a patch for this one. `para()` gained the matching correction: a group whose other members
 are not being served yet leaves **one** chip standing, and it must be the group's, not the
 host's.
+
+## The two blind sliders, dead under a pointer (2026-08-25, Q779–Q782)
+
+Ed, walking docs.vote as a founder who is also a member: *I delegated Quorum and then was served
+the Quorum blind task as expected. Clicking on the slider / slider control doesn't appear to do
+anything, so I can't set my quorum answer.* The operative lines are in `CLAUDE.md`'s *Gotchas*;
+this is the record.
+
+**The survey's reading was wrong, and measuring it was what showed that.** The plan came with two
+candidate causes — an `input` that never reaches the global handler, or a value written to a key
+the readout does not read — and both are false. Driven headless from a blank arrival to a delegated
+👥 and the answer card it births, a dispatched `input` fired, `S.myAns.quorum` took the value, and
+the readout followed it. The control was answering correctly the whole time it was broken, which is
+why nothing here had caught it: `founding-walk.mjs` fills a card's inputs by assignment and skips
+`type=range` outright, the two probes never open an `ans-*` card at all, and **a dispatched event is
+not a pointer**. Two separate defects were producing one symptom.
+
+**Unset is "no value", not "null".** `slider()` tested `v === null` for the untouched state, and a
+question nobody has answered is `undefined`: a member's answers object is `viewerRow().ans`, born
+`{}`, and the live hydration `continue`s past a `myAnswer` of null rather than writing one. So the
+unset branch never fired on any real document. What that renders is `value="undefined"` — invalid,
+so the browser falls back to parking the thumb at the **midpoint of the range** — under a readout
+reading `undefined% — NaN of 5` and a `--pct` of `NaN`. Two consequences, and the second is the
+one Ed met. It is **a suggested value, painted in the live colour**, which is precisely the
+anchoring the blind collection exists to prevent and which `consent-slider`'s own entry says the
+control must not do. And a click on a thumb where the thumb already is changes nothing, so it
+fires **no `input` at all** — the control is not merely misleading, it is inert to the first press
+a person naturally makes.
+
+**A drag is a press held down, and the surface's own rule already covered it.** The `input` handler
+called `render()` on every step and then re-focused the replacement. `render()` rebuilds the card,
+so the range input holding the pointer capture was removed from the document on the first move of a
+drag; the pointer then had nothing to drag, and the thumb froze under the finger. Re-focusing does
+not put a capture back. Measured before the fix: a drag from 80% of the track to 20% ends one step
+from where it started. This is the same lesson as *nothing rebuilds under a press* and as the
+lane that is not rebuilt on every keystroke, and the slider was the one control on the surface that
+ignored it — the pre-fix event order gives it away, `change` arriving **before** `pointerup`
+because the element was detached mid-gesture.
+
+So the gesture takes the shape the typing branches beside it already have: `syncSlider(sl)` paints
+the readout, the mean and the fill **in place** from the element's own value, the rail and the
+commit are repainted around it, and the full `render()` waits for **`change`** — the release, when
+the gesture is over and the card may be rebuilt without stealing anything. A click on the track is
+an `input` and a `change` a moment apart, so the one-press case loses nothing. The formatters live
+in a small `SLIDERS` registry rewritten on every render of the body rather than being re-derived,
+because 👥's wording is the founder's chosen form and its second half is a function of E — facts the
+handler cannot know and must not guess.
+
+**Both blind sliders, because the cause is in `slider()`.** 🌡️'s `ans-bar` was broken identically
+and is fixed by the same change; the guard walks both.
+
+**`npm run slider-walk`** (`scripts/slider-walk.mjs`) is the guard, and it is a pointer walk by
+necessity. It founds twice from blank — one delegation per walk — and for each of 🌡️ and 👥 asserts
+the card is **born untouched** (`.cs.unset`, *Drag to answer*, no fill, a dark commit) and that the
+thumb **follows the pointer to both ends of the track** (drag to the left edge reads `min`, to the
+right edge `max`, and a drag between them stops between them). It fails on the pre-fix page on all
+four for both cards. Two things it had to work around, both belonging to the plan queued beside
+this one rather than here: with the founder alone on the roster `ansDue()` is false until nothing
+else is outstanding, so 🌡️'s answer card is unreachable unless somebody has been invited — the walk
+invites, which is the ordinary case anyway; and delegating **both** questions empties the rail
+before 🍾 altogether, which is Q773/Q776's subject and the reason each slider gets a founding of
+its own.

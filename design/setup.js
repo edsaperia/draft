@@ -1052,16 +1052,52 @@ window.SETUP = (function () {
      rather than opt()'s `data-set`, because on the founder surface data-set
      already means "set the delegation", and one attribute must not mean two
      things on one page. */
+  /* The formatters of whichever sliders are on screen, kept so the readout can
+     be repainted **without re-running the body** — see `syncSlider`. Rewritten
+     every time the body renders, so the entry is always the current question's
+     (quorum's wording follows the founder's chosen form, and its second half
+     follows E). */
+  const SLIDERS = {};
   const slider = (A, key, min, max, fmt, mean, step) => {
     const v = A[key], st = step || 1;
-    const at = (v === null ? Math.round((min + max) / 2 / st) * st : v);
-    return '<div class="cs' + (v === null ? ' unset' : '') + '">' +
-      '<div class="csval' + (v === null ? ' unset' : '') + '">' + (v === null ? 'Drag to answer' : fmt(v)) + '</div>' +
+    // **Unset is "no value", not "null"** (Q779). This tested `v === null`
+    // alone, and a question nobody has answered arrives as `undefined`: a
+    // member's answers object starts empty and the live hydration skips a
+    // `myAnswer` of null outright, so on every real document the unset branch
+    // never fired. What the founder-member met on 👥 was `value="undefined"` —
+    // invalid, so the browser parks the thumb at the midpoint — under a
+    // readout reading `undefined% — NaN of 5`. That is a **suggested value**,
+    // painted in the live colour, which is the one thing a blind collection
+    // must not show; and a click on the thumb where it already sits fires no
+    // `input` at all, so the control read as dead.
+    const unset = v === null || v === undefined;
+    const at = (unset ? Math.round((min + max) / 2 / st) * st : v);
+    SLIDERS[key] = { fmt: fmt, mean: mean, min: min, max: max };
+    return '<div class="cs' + (unset ? ' unset' : '') + '">' +
+      '<div class="csval' + (unset ? ' unset' : '') + '">' + (unset ? 'Drag to answer' : fmt(v)) + '</div>' +
       '<input type="range" min="' + min + '" max="' + max + '" step="' + st + '" value="' + at + '"' +
-      ' style="--n:' + Math.max(1, Math.round((max - min) / st)) + ';--pct:' + (v === null ? 0 : (v - min) / (max - min) * 100) + '"' +
+      ' style="--n:' + Math.max(1, Math.round((max - min) / st)) + ';--pct:' + (unset ? 0 : (v - min) / (max - min) * 100) + '"' +
       ' data-slide="' + key + '">' +
       '<div class="csends"><span>' + fmt(min) + '</span><span>' + fmt(max) + '</span></div>' +
-      '<div class="csmean">' + (v === null ? mean(min) + '<br>' + mean(max) : mean(v)) + '</div></div>';
+      '<div class="csmean">' + (unset ? mean(min) + '<br>' + mean(max) : mean(v)) + '</div></div>';
+  };
+  /* **Nothing rebuilds under a press**, and a drag is a press held down. The
+     surface answers a slider by re-rendering, and a re-render replaces the very
+     `<input>` the pointer is capturing — so the thumb moved once and then
+     froze, which is the other half of what read as a dead control. This paints
+     the readout, the mean and the fill **in place** from the element's own
+     value, so the drag survives; the caller repaints the rail and the commit
+     around it, and leaves the full render to `change`. */
+  const syncSlider = (sl) => {
+    const f = sl && SLIDERS[sl.dataset.slide], cs = sl && sl.closest('.cs');
+    if (!f || !cs) return;
+    const v = +sl.value;
+    cs.classList.remove('unset');
+    const val = cs.querySelector('.csval');
+    if (val) { val.classList.remove('unset'); val.textContent = f.fmt(v); }
+    const mn = cs.querySelector('.csmean');
+    if (mn) mn.textContent = f.mean(v);
+    sl.style.setProperty('--pct', (v - f.min) / (f.max - f.min) * 100);
   };
 
   const ansRow = (on, key, val, ttl, exp, extra, inner) =>
@@ -1440,5 +1476,5 @@ window.SETUP = (function () {
     anyEmojiRow, wireFreeEmoji, emojiFaceOf, setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     wireEmojiPicker,
     motionBody, motionReopen, routeFor, motionCommitHtml,
-    slider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
+    slider, syncSlider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

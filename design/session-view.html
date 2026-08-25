@@ -214,7 +214,7 @@
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, opt, num, someIn, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, readBody,
-    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE } = window.SETUP;
+    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, syncSlider } = window.SETUP;
   // **A setup card opens and closes like a decision card** (Ed, 2026-08-18:
   // *the whole point of building off session-view is that we would have all
   // this stuff*): cards.js own expandCard/collapseCard, which have been
@@ -5463,10 +5463,19 @@
   // the bar and the rail and leaves the card alone — only the commit control,
   // which is about what you have just typed, is set directly.
   document.addEventListener('input', (ev) => {
+    // **A slider is the same case as a lane, and was the one control that
+    // ignored it** (Q779, Ed on docs.vote: *clicking on the slider doesn't
+    // appear to do anything, so I can't set my quorum answer*). This called
+    // `render()` on every `input`, which rebuilds the card — and a drag is a
+    // press held down, so the range input holding the pointer capture was
+    // destroyed on the first step and the thumb froze under the finger.
+    // Re-focusing the replacement does not put the drag back. So the gesture
+    // repaints the readout in place and the rail and the commit around it,
+    // exactly as typing does; the full render waits for `change`, which fires
+    // when the pointer comes up.
     const sl = ev.target.closest && ev.target.closest('[data-slide]');
-    if (sl) { S.myAns[sl.dataset.slide] = +sl.value; render();
-      const again = document.querySelector('[data-slide="' + sl.dataset.slide + '"]');
-      if (again) again.focus(); return; }
+    if (sl) { S.myAns[sl.dataset.slide] = +sl.value;
+      syncSlider(sl); renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     const t = ev.target;
     // **Typing into a rung's field is choosing that rung.** The field only
     // exists inside its own option — the days inside *They lapse*, the date
@@ -5543,6 +5552,19 @@
     // the num branch never needed to while every number arrived pre-filled)
     if (t.dataset.num) { S[t.dataset.num] = t.value === '' ? '' : +t.value;
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
+  });
+  // …and the render the drag deferred. `change` on a range is the release —
+  // the gesture is over, so the card may be rebuilt, which is what brings the
+  // rest of the surface (the card's own tab mark, its head) up to the answer.
+  // A click on the track is an `input` and a `change` a moment apart, so the
+  // one-press case loses nothing.
+  document.addEventListener('change', (ev) => {
+    const sl = ev.target.closest && ev.target.closest('[data-slide]');
+    if (!sl) return;
+    S.myAns[sl.dataset.slide] = +sl.value;
+    render();
+    const again = document.querySelector('[data-slide="' + sl.dataset.slide + '"]');
+    if (again) again.focus();
   });
   document.getElementById('devwho').addEventListener('change', (ev) => {
     const v = ev.target.value;
