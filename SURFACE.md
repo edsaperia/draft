@@ -32,7 +32,7 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 | E2 | A founding question resolves | everyone who answered | clause; distribution strip | nothing (pre-start: no OK owed) | — | clause states the rule | — |
 | E3 | A setting is set pre-start | nobody | clause fades in | nothing | — | clause | title slug text hat myname mypic roster |
 | E4 | The document begins 🍾 | every member | 💡 ⚖️ gate news cards, the Founded line; 🏛️ for anybody not yet handed a voice (E8) | OK each | OK | `ACK_KEYS` per seat; grants staged behind the constitutional OKs | begin canpropose canjudge |
-| E5 | A constitutional setting set or changed post-start (pen or carried) | every member who had no say, lapsed included | news entry pinned ✔; clause change line (was / now, who, why) | OK | OK | clause keeps *Last amended*; the record's Amendments | — |
+| E5 | A constitutional setting set or changed post-start (pen or carried) | every member who had no say **and arrived when it was set**, lapsed included; a later joiner reads it as the document | news entry pinned ✔; clause change line (was / now, who, why) | OK | OK | clause keeps *Last amended*; the record's Amendments | — |
 | E6 | An ordinary setting first set | nobody | clause | nothing | — | clause | — |
 | E7 | An ordinary setting changed | as E5 | as E5; no mail | OK | OK | as E5 | — |
 | E8 | A power arrives | the holder | news entry, wallet flight (the ✏️ storm from 💡's OK, per member); 🏛️ arrives with the first blind question you are asked (Q605) | OK | OK | per seat; re-asked on each not-held → held | grant-pen grant-shield grant-voice canpropose |

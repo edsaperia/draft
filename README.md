@@ -8,7 +8,7 @@ First target: constitutional conventions for [Newspeak House](https://newspeak.h
 
 **It is live, in alpha, at [docs.vote](https://docs.vote).** One document is created by naming it and verifying an address; everything after that — who is a member, how sure the room must be, whether the document ever ends — is decided in the document itself, by the people in it. Alpha means exactly what the banner on every page says: this is early, and nothing in it should yet be trusted with a decision that matters.
 
-- **[SPEC.md](SPEC.md)** — the specification (currently v0.72), single source of truth for the mechanism.
+- **[SPEC.md](SPEC.md)** — the specification (currently v0.73), single source of truth for the mechanism.
 - **[SURFACE.md](SURFACE.md)** — what the surface tells a member and what a control does: the event matrix, the marks alphabet, the wallets and holds, the founding order and the band, the card kinds and the composer. Tabular, and asserted against the code by `npm run spec-check`.
 - **[QUESTIONS.md](QUESTIONS.md)** — open and deferred items; resolved decisions are folded into the spec, not logged separately.
 - **[design/STYLE.md](design/STYLE.md)** — the surface-copy checklist every string a member can read has to pass, and the audit log.
@@ -57,7 +57,7 @@ npm run sim -w @draft/sim-harness -- --mode subscription --scenario clubhouse \
 
 ## Status
 
-Spec v0.72. The mechanism (engine-core, 222 tests) and the constitutional layer (215 tests) are built and tested; the server (43 tests, 14 more against Postgres) hosts real documents at docs.vote; the simulator (31 tests) is what keeps all of it honest.
+Spec v0.73. The mechanism (engine-core, 222 tests) and the constitutional layer (215 tests) are built and tested; the server (43 tests, 14 more against Postgres) hosts real documents at docs.vote; the simulator (31 tests) is what keeps all of it honest.
 
 The mechanism holds up in practice:
 

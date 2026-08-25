@@ -1183,3 +1183,82 @@ as a position rather than a presence. `owedUnservable` stops being a readout and
 assertion read at every step, because a state that transient is not something to leave to whoever
 comes to read the dump afterwards. And `founding-walk.golden.json` was re-frozen for 🏛️'s move,
 which is the whole of that diff.
+
+## A setting that predates you (2026-08-25, Q842–Q849)
+
+Ed, on his founding walk: *a setting that predates you is simply what the document says; a power
+handed to you is news addressed to you.* It reverses one clause of R-016 and leaves the rest of it
+standing, and the reversal is small enough to be worth stating precisely: a late arrival still
+**inherits** the constitution rather than reopening it, and is still owed everything set or changed
+**after** they got here. What goes is the debt on arrival.
+
+**Why the old rule was defensible and still wrong.** R-016 got inheritance for free by folding it
+into machinery that already existed — *a decision you had no say in is one you are owed* — and *had
+no say* is literally true of a rule settled before you were invited. What it missed is that the
+unacknowledged-decision rule is about **news**. Its whole point is that a change to the document has
+undone something you were living under, and that reading is not enough; the OK exists to make you
+meet the change. A rule that was already there when you walked in has undone nothing for you. So the
+new member's first morning was the entire constitution stacked in their rail, nine cards deep, each
+demanding to be dismissed before the document would say anything else — the acknowledgement
+mechanism at its loudest in exactly the case where it has the least to say.
+
+The two clauses turn out to be the same clause once *had no say* is time-indexed to arrival, which
+is what §9.6a already does for everything else. R-016 even carried the principle: *a gate opening is
+the exception, being a thing that happened rather than a rule that was set*. What a member is owed is
+what **happened while they were here**. A grant survives untouched by that test, and is the other
+half of Ed's sentence: a power handed to you is addressed to you whenever it arrives, which is why
+`ACK_KEYS` and the gates were never part of this.
+
+**One rule, three sites.** `oweOnJoining` was called from `arrive`, from an admitted applicant and
+from an open-policy joiner, and all three go; there was no reason to keep the method emitting
+nothing, since every *other* owing path was already post-arrival and already skipped
+`arrivedAtT === null`. The module is the truth about what is owed, so removing the emission is the
+whole of the mechanism change. `SPEC.md`'s §9.7½ carried the same clause a fourth time, in prose
+about applicants, and it went with them.
+
+**The page half was a second bug wearing the first one's clothes.** `news`'s second disjunct served a
+member every settled constitutional setting, and the `!constituted()` guard three lines above it
+governs only the ternary chain — the `||` escapes it. So the acknowledgements arrived **before 🍾**,
+in a document whose founder may still re-set every one of them, against SURFACE C8 and F8, which
+have always said nothing is owed an OK until the start. That is now stated where the disjunct is,
+rather than relied on from above: the module has stopped owing these, and a page that can be run
+against a fixture and against a four-second-old view should not be taking the module's word for a
+rule it can state itself.
+
+**The double press, which is a different bug entirely and was reported as one symptom.** *I click a
+queue-card, click OK, then click the queue-card again, then click OK, then the queue card goes.*
+Deterministic, every `set-` acknowledgement. The handler adds the key to `S.okd` and calls
+`giveOk`, which live is a fire-and-forget `api.cmd`; `closeThen` then runs `render()` in the same
+breath, and `syncOwedOks` reads `cs.v.view.owedOks` — the view fetched **before** the command — and
+deletes the key it has just seen added. Its own comment said *it only ever removes*, which was the
+careful half of a rule with a missing half: nothing re-added, so the second press, landing after the
+refresh, stuck.
+
+Two changes, and both are needed. A pressed key is held **in flight** from the press until
+`api.cmd`'s promise resolves, which is after the refresh it triggers — so the sync that runs in
+between is told, correctly, that it is holding a stale opinion. And `syncOwedOks` gained the
+direction it never had: it adds when the module does not owe, as `hydrateS` has always done, so the
+module is the truth in both directions rather than in one. Symmetry alone would still have flashed
+the task back for one round trip; the in-flight set alone would have lost the acknowledgement at the
+next boot on any path `hydrateS` does not run. Only the `set-` half is made symmetric: a delegated
+question **resolving** owes no OK in the module at all, so module silence is no evidence whatever
+about `res-`, and reading it as evidence would quietly retire the resolution news.
+
+**Nothing could see any of this, which is the finding under the finding.** Both halves are facts
+about a *second seat*, and the project had never driven one. `dev-ladder.ts` presses every owed OK
+for every member in one go at the constitution rung — the state under test is the state it exists to
+skip past. `founding-walk.mjs` and the two probes are the founder alone in the fixture, where no
+command is ever sent and so no stale view exists. `journey-walk.mjs` had the live path and the birth
+but only one browser context. So `journey-walk.mjs` grows a second one: an invited guest follows
+their own invitation out of the dev outbox before 🍾 and is asked what is served to them; the founder
+then amends 🌍 at the wire; the guest presses OK **once**, and the task must leave, stay gone through
+a poll, and still be gone after a reload. The reload is the tell — before the fix that walk fails at
+the press and passes after the reload, which is the signature of the mechanism and not something a
+pass/fail line would have told anybody.
+
+Two smaller notes. `window.__founding` now carries `okd` beside `owed`, because the two ways this
+can break — an acknowledgement the page invented, and one the module keeps re-owing after a press —
+are indistinguishable from the rail, and a walk that can only say *the task is still there* names a
+symptom. And `npm run ladder` will report fewer *owed acknowledgements given* than it used to, since
+`oweOnJoining` was most of what it was counting; the line is guarded by `if (owed > 0)` and nothing
+asserts on it, so that is the expected outcome rather than a regression to chase.
