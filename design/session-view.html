@@ -660,17 +660,27 @@
     if (k === 'quorum' && cs.quorumForm !== S.quorumForm) {
       try { cs.setQuorumForm(now(), S.quorumForm); } catch (e) {}
     }
-    if (wantsDelegate(k)) { cs.delegate(now(), mid); return; }
-    if (csDelegated(k)) cs.reclaim(now(), mid);
-    cs.setSetting(now(), mid, TYPED[k](), (S.setWhy && S.setWhy[k]) || undefined);
-    if (S.setWhy) delete S.setWhy[k];
     // 🪜 rides 🌡️'s commit (Q512): it is not a task of its own, so setting the
     // threshold sets the pacing with it — at whatever its tab holds, which is
     // rising from 55% until somebody changes it.
+    // **And it rides the hand-over too** (Q775, Ed 2026-08-25: *maybe the 🌡️
+    // and 🪜 didn't generate a task*). The ramp is the founder's whichever way
+    // 🌡️ goes — the bar at the close is consent, the ramp that reaches it is
+    // pacing (Q341/Q415) — so it is owed either way. It rode only the *set*
+    // branch, below the delegate return, and 🪜 is in neither ORDER nor any
+    // section's keys, so nothing on the surface could ever ask for it: a
+    // delegated 🌡️ left `mustAct('pace')` true for ever, `otherTasksLeft()`
+    // counted it, `ansDue()` was false, and **not one delegated question ever
+    // reached the founder**. It stands above the return now, so the commit
+    // answers it whichever branch the commit takes.
     if (k === 'bar') {
       S.seen.add('pace');
       try { cs.setSetting(now(), midOf('pace'), TYPED.pace()); } catch (e) {}
     }
+    if (wantsDelegate(k)) { cs.delegate(now(), mid); return; }
+    if (csDelegated(k)) cs.reclaim(now(), mid);
+    cs.setSetting(now(), mid, TYPED[k](), (S.setWhy && S.setWhy[k]) || undefined);
+    if (S.setWhy) delete S.setWhy[k];
     // taking a value back restores both powers (reclaim) — drop any unsent
     // tab choices so the ✒️/🛡️ tabs show what now stands
     S['pw:u:' + k] = undefined; S['pw:a:' + k] = undefined;
@@ -2089,8 +2099,16 @@
   // the question. Ordering is not weakened by this — the file is kept by
   // `ORDER`/`blocksOrder`, and no answer task can exist before its own
   // setting has been delegated, which happens well below the pen.
+  // **And a task nothing can serve is not one of them either** (Q775). This
+  // counts what is *owed* in order to decide what is *offered*, so anything it
+  // counts must itself be offerable — otherwise it is a question the founder
+  // can neither answer nor get past. 🪜 was exactly that: in neither ORDER nor
+  // any section's keys (Q512), it has no rail entry by design, and while a
+  // delegated 🌡️ left it unanswered this predicate stayed true for ever. The
+  // instance is fixed at `commitSetting`; `railable` is the class, and it
+  // reads the section literals rather than a second list of its own.
   const otherTasksLeft = () => CARDS.concat(GATES)
-    .some((c) => !c.isGate && visible(c) && mustAct(c));
+    .some((c) => !c.isGate && railable(c) && visible(c) && mustAct(c));
   const ansDue = () => roomExists() || !otherTasksLeft();
   // **The answer tasks cascade like everything else** (Ed, 2026-08-19,
   // closing 416: *if I have to do all of them anyway, they should cascade*).
@@ -2385,6 +2403,46 @@
     // ✒️ and 🛡️ are enumerated here and drawn on the Founded line (Q639).
     .concat(c.k === 'slug' ? [card('grant-pen'), card('grant-shield')].filter(visible)
       : c.k === voiceHost() ? [card('grant-voice')].filter(visible) : []);
+  // **The keys the rail can ever list** (Q775). Every section's own keys, plus
+  // the three grants and the answer tasks `tasksFor` adds beside them — the
+  // whole of what `servedCards` below can produce, read off the same literals
+  // it reads. It exists because a card can be *owed* without being **servable**:
+  // 🪜 is in neither ORDER nor any section's keys (Q512), so nothing could ever
+  // put it in front of the founder, and `otherTasksLeft` counting it held every
+  // delegated question shut for ever. Whatever makes a task owed must make it
+  // served; where it cannot, the task must not block.
+  const railable = (c) => !!c && (!!c.ansFor ||
+    SEC.some((s2) => s2.keys.includes(c.k)) ||
+    c.k === 'grant-pen' || c.k === 'grant-shield' || c.k === 'grant-voice');
+  // **The rail's own set, in one place** (Q773). The rail is what tells a
+  // founder there is anything left to do, so *what is being served* has to be
+  // a question anything can ask — 🍾's own last-resort door asks it, and so
+  // does the walks' readout. It used to live inline in `renderRail`, where the
+  // only way to ask it was to read the DOM back: a second implementation of
+  // the thing under test.
+  const servedCards = () =>
+    // What is settled leaves the rail — it is the pile's, and the block's
+    // to name — and a gate shows only as news: the moment it opens, until
+    // its OK. Before that 💡 and ⚖️ are nowhere at all (Q529: the gate
+    // clauses hide until 🍾, where they are decided), because nothing is
+    // being asked of you (Ed, 2026-08-18: *everyone should only see cards
+    // they can act on*). ⏳ entries stay: they are where the fill says how
+    // far the room has got.
+    secLive().flatMap((s2) => s2.cards)
+      .flatMap((c) => [c].concat(tasksFor(c)))
+      .filter((c) => !owesOwnAnswer(c))
+      .filter((c) => ((c.isGate && !c.isBegin && !c.isClosing) ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done'))
+      // **A constitutional question waiting on the room is not a task**
+      // (Ed, 2026-08-21): nothing is being asked of you — you have either
+      // answered it or were never asked — so it keeps its own glyph on the
+      // grey tab in the band and leaves the rail. It covers the three ways
+      // a constitutional card waits: the watcher on a setting you handed
+      // over, your own question once you have answered it, and a
+      // constitutional motion you have answered.
+      .filter((c) => !(c.kind === 'constitutional' && stateOf(c, ctx) === 'wait'))
+      // the closed page asks nothing but the signature (Q470): a grant or
+      // a question outstanding at the close is moot, and leaves the rail
+      .filter((c) => !(cs && cs.closed) || c.isClosing);
   // A member who has not opened the document yet is drawn faintly rather than
   // left out: they are on the membership, which is the fact the heading is
   // stating, and whether they have looked at it yet is a different one.
@@ -3789,31 +3847,7 @@
     // an entry anchored to its own band paragraph, laid out by layoutQueue
     // with every charter entry — ask, news and yours pin, wait flows. This
     // only decides *which* entries; SESSION.refreshRail draws them.
-    railEntries =
-      // What is settled leaves the rail — it is the pile's, and the block's
-      // to name — and a gate shows only as news: the moment it opens, until
-      // its OK. Before that 💡 and ⚖️ are nowhere at all (Q529: the gate
-      // clauses hide until 🍾, where they are decided), because nothing is
-      // being asked of you (Ed, 2026-08-18: *everyone should only see cards
-      // they can act on*). ⏳ entries stay: they are where the fill says how
-      // far the room has got.
-      secLive().map((s2) => ({ ...s2, cards: s2.cards
-        .flatMap((c) => [c].concat(tasksFor(c)))
-        .filter((c) => !owesOwnAnswer(c))
-        .filter((c) => ((c.isGate && !c.isBegin && !c.isClosing) ? stateOf(c, ctx) === 'news' : stateOf(c, ctx) !== 'done'))
-        // **A constitutional question waiting on the room is not a task**
-        // (Ed, 2026-08-21): nothing is being asked of you — you have either
-        // answered it or were never asked — so it keeps its own glyph on the
-        // grey tab in the band and leaves the rail. It covers the three ways
-        // a constitutional card waits: the watcher on a setting you handed
-        // over, your own question once you have answered it, and a
-        // constitutional motion you have answered.
-        .filter((c) => !(c.kind === 'constitutional' && stateOf(c, ctx) === 'wait'))
-        // the closed page asks nothing but the signature (Q470): a grant or
-        // a question outstanding at the close is moot, and leaves the rail
-        .filter((c) => !(cs && cs.closed) || c.isClosing) }))
-        .filter((s2) => s2.cards.length).flatMap((s2) =>
-        s2.cards.map((c) => entryOf(c, ctx)));
+    railEntries = servedCards().map((c) => entryOf(c, ctx));
 
     stageWords = canJudge() ? 'open' : 'reading only';
     renderClock();
@@ -6964,9 +6998,36 @@
   // `acked('grant-voice')` deliberately: a **clerk** founder is not a member,
   // so 🏛️ never opens for them, and an `acked()` test would hold 🍾 shut for
   // ever.
+  // **…and 🍾 is served when it is the last thing standing** (Q773, Ed
+  // 2026-08-25: *before begin, there shouldn't be a situation where I don't see
+  // any queue-cards*). F9 hides a card whose dependency is unsettled because
+  // something else is being asked instead; when nothing is, hiding it leaves
+  // the founder a blank rail and no way out of it. The ruling this restores is
+  // already on the 🪪 card (Ed, 2026-08-21, dropping its one-member minimum):
+  // *whether a document can begin with nobody in it is 🍾's question, and 🍾
+  // has a readout that names what it is waiting for* — and Q745 hid the card
+  // in precisely the state that readout was written for. The commit stays
+  // disabled while `readiness()` says so, which is the half of F9 that
+  // matters here: the founder is told what the document is waiting for, not
+  // invited to press through it.
+  // Re-entrant like `firstAsked` above, and guarded the same way: `servedCards`
+  // asks `visible(card('begin'))`, which asks this. Inside that inner ask the
+  // door is simply shut, so 🍾 never counts itself as the thing being served.
+  let askingLast = false;
+  const nothingElseServed = () => {
+    if (askingLast) return false;
+    askingLast = true;
+    try { return !servedCards().some((c) => !c.isBegin); }
+    finally { askingLast = false; }
+  };
   const beginOffered = () => {
     const rd = readinessOf();
-    if (!rd || !rd.ready) return false;
+    // no readout at all is not the same as a readout that says *not yet*: the
+    // commit is live when `rd` is null (`cardFor`'s `!rd || rd.ready`), so the
+    // last-resort door stays shut here rather than offer a press through an
+    // unknown state
+    if (!rd) return false;
+    if (!rd.ready) return nothingElseServed();
     // …and the voice — but only where the voice is actually being served.
     // `tasksFor` hangs 🏛️ off `voiceHost()`: the first blind question asking
     // you, or ⚖️ Judging where nothing was delegated to you — and ⚖️ is hidden
@@ -6979,6 +7040,39 @@
     // clerk, who is not a member and never opens 🏛️ at all.
     return !(visible(card(voiceHost())) && mustAct(card('grant-voice')));
   };
+  // **The founding never runs out of tasks before 🍾** (Q773, Ed 2026-08-25:
+  // *before begin, there shouldn't be a situation where I don't see any
+  // queue-cards*). An empty rail on an unbegun document is a dead end with no
+  // way out of it, so `journey-walk.mjs` and `ladder-walk.mjs` assert against
+  // it — and an assertion that can only say *the rail was empty* names a
+  // symptom. This is the readout it prints instead: every key in ORDER with
+  // the four predicates that decide whether it is served, the answer tasks
+  // with the three that pace them, and the module's own readiness. Same shape
+  // as session.js's `__q291`, and for the same reason: the state a walk needs
+  // lives inside a closure, and reconstructing it from the DOM is a second
+  // implementation of the thing under test.
+  window.__founding = () => ({
+    constituted: constituted(),
+    amFounder: amFounder(), viewerIsMember: viewerIsMember(),
+    beginOffered: (() => { try { return beginOffered(); } catch (e) { return String(e); } })(),
+    readiness: (() => { const rd = readinessOf();
+      return rd ? { ready: rd.ready, waiting: rd.waiting } : null; })(),
+    roomExists: roomExists(), otherTasksLeft: otherTasksLeft(), ansDue: ansDue(),
+    voiceHost: voiceHost(),
+    order: ORDER.map((k) => { const c = card(k); return !c ? k + ' (no card)'
+      : k + ' vis=' + (visible(c) ? 1 : 0) + ' set=' + (settled(c) ? 1 : 0) +
+        ' act=' + (mustAct(c) ? 1 : 0) + ' blk=' + (blocksOrder(c) ? 1 : 0) +
+        ' st=' + stateOf(c, ctx); }),
+    answers: ANS.map((a) => a.k + ' vis=' + (visible(a) ? 1 : 0) +
+      ' wave=' + (ansWaveReady(a) ? 1 : 0) + ' isRoom=' + (isRoom(card(a.ansFor)) ? 1 : 0) +
+      ' hostVis=' + (visible(card(a.ansFor)) ? 1 : 0) + ' ans=' + (answered(a) ? 1 : 0)),
+    // owed by `mustAct` and beyond any rail's reach — the shape of the bug
+    // this readout was written for, named rather than left to be inferred
+    owedUnservable: CARDS.filter((c) => !c.isGate && !railable(c) && visible(c) && mustAct(c))
+      .map((c) => c.k),
+    served: servedCards().map((c) => c.k),
+    rail: railEntries.map((e) => e.id),
+  });
   const glyphOfSetting = (mid) => { const c = card(pkeyOf(mid)); return c ? c.g + ' ' : ''; };
   const BEGIN_BATCH = [
     'The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.',

@@ -124,6 +124,11 @@ function measure() {
   const clock = document.querySelector('#sessclock, .sessclock, #clock');
   return {
     railEntries: q('#rail li'),
+    // what the rail is *holding*, not just how much: a rung that fails on
+    // "🍾 is not offered" is unreadable without the two entries standing in
+    // front of it
+    railKeys: [...document.querySelectorAll('#rail li')].map((li) => li.dataset.q ||
+      (li.querySelector('[data-card]') ?? { dataset: {} }).dataset.card || '?'),
     bandTabs: q('#band [data-tab]'),
     clauses: q('#charter .editable, #prose .editable'),
     clauseTabs: q('.achip'), // the clause tab in the chip-gutter
@@ -148,8 +153,17 @@ async function assertSurface(rung) {
 
   if (rung === 'constitution') {
     check(rung, 'the document has its name', m.title.length > 0 && m.title !== 'Untitled', m.title);
-    check(rung, 'the rail holds the founding tasks', m.railEntries > 0, `${m.railEntries}`);
     check(rung, 'the constitution stands in the band', m.bandTabs > 0, `${m.bandTabs} tabs`);
+  }
+  // **The founding never runs out of tasks before 🍾** (Q777, Ed 2026-08-25).
+  // `constitution` has checked its rail since it was written; the rungs after
+  // it never did, and `ready` is the one where a founder actually stands —
+  // everything is set, the questions are out, and the rail is the only thing
+  // saying whether there is anything left to do. Checked on **every** rung
+  // before the cork, and both sides of the pen's OK on `ready`, because the
+  // acknowledgement is what releases the rest of the constitution.
+  if (rung === 'constitution' || rung === 'ready') {
+    check(rung, 'the rail is not empty before 🍾', m.railEntries > 0, `${m.railEntries} entries`);
   }
   if (rung === 'ready') {
     // **The ✒️ grant is the one blocking grant** (`blocksOrder`), and its OK
@@ -161,12 +175,23 @@ async function assertSurface(rung) {
     check(rung, 'and the constitution below it is withheld', m.beginTask === 0);
     await okThe('grant-pen');
     const after = await measure();
+    check(rung, 'and the rail still holds something afterwards', after.railEntries > 0,
+      `${after.railEntries} entries`);
     check(rung, 'acknowledging the pen releases the constitution',
       after.bandTabs > m.bandTabs, `${m.bandTabs} → ${after.bandTabs} tabs`);
     check(rung, 'the membership is drawn', after.members > 1, `${after.members} rows`);
+    // **…and the same for 🏛️** (Q777). The ladder's document delegates, so the
+    // founder is served their own first blind question and the voice that
+    // arrives with it — and F5 holds 🍾 back while 🏛️ is still being served.
+    // The OK lives in the browser like the pen's, so the ladder cannot press
+    // it either. (Before Q775 this rung reached 🍾 without ever meeting 🏛️,
+    // because `ansDue()` was false: 🪜 was owed by a hand nothing could ask.)
+    await okThe('grant-voice');
+    const armed = await measure();
     // **the rung stops one press short of the cork** (Q678) — 🍾 is offered,
     // not spent, and the whole point is that the press is the reader's
-    check(rung, '🍾 is offered and not yet pressed', after.beginTask > 0);
+    check(rung, '🍾 is offered and not yet pressed', armed.beginTask > 0,
+      JSON.stringify(armed.railKeys));
   }
   if (rung === 'session') {
     check(rung, 'the charter is drawn', m.clauses > 10, `${m.clauses} blocks`);

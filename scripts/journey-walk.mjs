@@ -29,6 +29,20 @@ const BASE = process.argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8
 // --empty-text: found the document on a confirmed-empty text (Q649 (a)) and
 // propose its first paragraph into the one empty clause the charter renders.
 const EMPTY_TEXT = process.argv.includes('--empty-text');
+// **The three foundings** (Q774). The base walk answers everything itself,
+// which is one founder in one mood; the two variants below are the other two,
+// and each was written to break something. `--delegate-all` hands every
+// delegable setting to the membership as it is served, which is the path that
+// found Q775 — a delegated 🌡️ left 🪜 owed and unservable, and not one of the
+// eleven questions came back. `--proposals-first` takes 🍾 💡 ⚖️ 🏛️ the moment
+// any of them is offered rather than in rail order, which is the Q645 shape:
+// acknowledging what a question hands you before answering the question.
+// A delegating founding cannot *begin* — §9.0b resolves no blind question on
+// one voice — so it ends at a served 🍾 that says what it is waiting for,
+// which is the whole of what Q773 asks for and is asserted as such.
+const DELEGATE_ALL = process.argv.includes('--delegate-all');
+const PROPOSALS_FIRST = process.argv.includes('--proposals-first');
+const PROPOSALS = ['begin', 'canpropose', 'canjudge', 'grant-voice'];
 const say = (...a) => console.log(...a);
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });
@@ -47,12 +61,23 @@ const refused = [];
 let proposeStatus = null;
 page.on('response', (r) => { if (r.request().method() === 'POST' &&
   /propose-text/.test(r.request().postData() || '')) proposeStatus = r.status(); });
-page.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400)
-  refused.push(r.status() + ' ' + r.request().method() + ' ' + new URL(r.url()).pathname); });
+// …and it says **which** command and why. `400 POST /cmd` names the wire and
+// nothing else, which on a page that posts every act through one route is a
+// line you have to go and reproduce by hand.
+page.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400) {
+  const at = refused.push(r.status() + ' ' + r.request().method() + ' ' + new URL(r.url()).pathname +
+    ' ' + String(r.request().postData() || '').slice(0, 120)) - 1;
+  r.text().then((b) => { refused[at] += ' → ' + b.slice(0, 160); }).catch(() => {});
+} });
 const T = (ms) => page.waitForTimeout(ms);
 
 const rail = () => page.evaluate(() => [...document.querySelectorAll('#rail li')]
   .map((li) => li.dataset.q || ((li.querySelector('[data-card]') || { dataset: {} }).dataset.card) || '?'));
+// the page's own founding readout (`window.__founding`): what is served, what
+// is owed, where every key in ORDER stands, and the module's `readiness()`.
+// The rail is read from the DOM above because that is what a founder sees;
+// *why* it holds what it holds cannot be read from the DOM at all.
+const founding = () => page.evaluate(() => (window.__founding ? window.__founding() : null));
 const open = async (k) => {
   const ok = await page.evaluate((kk) => {
     const el = document.querySelector('#rail [data-card="' + kk + '"], #band [data-tab="' + kk + '"]');
@@ -151,14 +176,109 @@ say('at save    · rail ' + JSON.stringify(atSave) +
 if (!(atSave.length === 1 && atSave[0] === 'grant-pen')) stuck.push('rail at save');
 
 /* ---- the founding: whatever the rail asks, one task at a time ---- */
+// how many options an open card offers, so the walk can try the next one when
+// the first leaves the ✓ dark: a blind answer's rungs are not interchangeable
+// (*At a set time* wants a date beside it), and the walk must not assume that
+// the first thing it can click is a complete answer.
+const options = (wantDelegate) => page.evaluate((del) => {
+  const all = [...document.querySelectorAll('.setupcard [data-set],.setupcard [data-ans]')]
+    .filter((x) => (x.dataset.val || x.dataset.ansval) && x.offsetParent !== null);
+  const isDel = (x) => /delegate/i.test(x.textContent);
+  const wanted = del ? all.filter(isDel) : all.filter((x) => !isDel(x));
+  return (wanted.length ? wanted : all).map((x) => x.textContent.trim().slice(0, 48));
+}, wantDelegate);
+const pickOption = (label) => page.evaluate((l) => {
+  const o = [...document.querySelectorAll('.setupcard [data-set],.setupcard [data-ans]')]
+    .filter((x) => (x.dataset.val || x.dataset.ansval) && x.offsetParent !== null)
+    .find((x) => x.textContent.trim().slice(0, 48) === l);
+  if (!o) return null;
+  o.scrollIntoView({ block: 'center' });
+  const r = o.getBoundingClientRect();
+  return { x: r.x + 14, y: r.y + r.height / 2 };
+}, label);
+const fillFields = () => page.evaluate(() =>
+  document.querySelectorAll('.setupcard input, .setupcard textarea').forEach((n) => {
+    // **A consent slider always has a value and still needs touching** — it is
+    // greyed until it is, because a range control with no default still paints
+    // its thumb somewhere. So it cannot be skipped for having a `.value` the
+    // way every other field is: the walk has to move it and say so.
+    // **and both events, because the page listens for both**: a blind answer's
+    // own fields (`[data-ansnum]`, `[data-ansdate]`) write on `change`, where
+    // every founder-side field writes on `input`. Dispatching only `input` left
+    // ⏱️'s answer reading *Not answered yet* beside a filled-in number.
+    const fire = () => { for (const e of ['input', 'change'])
+      n.dispatchEvent(new Event(e, { bubbles: true })); };
+    if (n.type === 'range') {
+      // A consent slider always has a value and still needs touching — it is
+      // greyed until it is, because a range control with no default still
+      // paints its thumb somewhere. So it cannot be skipped for having a
+      // `.value` the way every other field is. Snapped to its own step: 🌡️
+      // runs 50–95 by 5s, and an off-grid answer is not one a member could give.
+      const lo = +n.min || 0; const hi = +n.max || 100; const st = +n.step || 1;
+      n.value = String(Math.min(hi, lo + Math.round((hi - lo) / 2 / st) * st));
+      return fire();
+    }
+    if (n.value || /^(email|radio|checkbox|file|hidden|color)$/.test(n.type)) return;
+    if (n.type === 'number') n.value = String(Math.max(+n.min || 1, 5));
+    else if (n.type === 'datetime-local') n.value = '2026-09-18T18:00';
+    else n.value = 'The club shall meet on the first Tuesday.';
+    fire();
+  }));
+const committable = () => page.evaluate(() =>
+  [...document.querySelectorAll('.setupcard .commitrow button')]
+    .some((x) => !x.disabled && !/🗑/.test(x.textContent)));
+
 const seen = new Set();
 const order = [];
+const handedOver = [];
+let waitingAtBegin = false;
 for (let i = 0; i < 60; i++) {
-  const next = (await rail()).find((k) => !seen.has(k));
-  if (!next) break;
+  const standing = await rail();
+  // --proposals-first: the four tabs of the Proposals opening jump the queue
+  const next = (PROPOSALS_FIRST ? PROPOSALS.find((k) => standing.includes(k) && !seen.has(k)) : undefined)
+    || standing.find((k) => !seen.has(k));
+  if (!next) {
+    // **The founding never runs out of tasks before 🍾** (Q773, Ed 2026-08-25:
+    // *before begin, there shouldn't be a situation where I don't see any
+    // queue-cards*). This loop used to `break` on an empty rail and let
+    // everything below report on whatever it found — so a founder left with
+    // nothing to do and no way on was, to this walk, simply the end of the
+    // founding. It is a failure, and it is printed with the page's own
+    // readout: naming the symptom would leave the next reader to reconstruct
+    // by hand which card was owed, which was hidden, and what the module was
+    // waiting for.
+    // Read from the DOM, not from the readout: a page too old to carry
+    // `window.__founding` is exactly the page this has to fail on. And the
+    // test is *the document has not begun*, not *the rail is empty* — the
+    // first pre-fix run left a seen entry standing that the founder could not
+    // get past, which is the same dead end wearing one queue card.
+    if (!(await page.evaluate(() => !!document.querySelector('.doc.begun')))) {
+      const f = await founding();
+      say('FAIL: the founding has run out of tasks and the document has not begun · rail ' +
+        JSON.stringify(standing));
+      say(f ? JSON.stringify(f, null, 1) : '(no window.__founding on this page)');
+      stuck.push('the founding ran dry before Begin');
+    }
+    break;
+  }
   seen.add(next);
   order.push(next);
   if (!(await open(next))) { stuck.push(next + ' (would not open)'); continue; }
+  if (next === 'begin') {
+    // 🍾 is served either because it can be pressed or because it is the last
+    // thing standing (Q773). The second is a real end to a founding that has
+    // handed its questions to a room that is still one person — §9.0b resolves
+    // no blind question on one voice — and the card's whole job there is to say
+    // so. Asserted as such rather than driven through a disabled commit.
+    if (!(await committable())) {
+      const f = await founding();
+      const wait = ((f && f.readiness) || {}).waiting || [];
+      say('waiting    · 🍾 is served and cannot be pressed yet — waiting on ' + JSON.stringify(wait));
+      if (!wait.length) stuck.push('🍾 is dead and says it is waiting for nothing');
+      waitingAtBegin = true;
+      break;
+    }
+  }
   if (await clickIn('.setupcard [data-ok]')) { say('  ok       · ' + next); continue; }
   if (next === 'text' && !EMPTY_TEXT) {
     // 📄's value lives in the document column, never in a field. With
@@ -172,33 +292,80 @@ for (let i = 0; i < 60; i++) {
     });
     await T(400);
   }
-  const picked = await page.evaluate(() => {
-    const o = [...document.querySelectorAll('.setupcard [data-set],.setupcard [data-ans]')]
-      .filter((x) => (x.dataset.val || x.dataset.ansval) && x.offsetParent !== null)
-      .find((x) => !/delegate/i.test(x.textContent));
-    if (!o) return null;
-    o.scrollIntoView({ block: 'center' });
-    const r = o.getBoundingClientRect();
-    return { x: r.x + 14, y: r.y + r.height / 2 };
-  });
-  if (picked) { await page.mouse.click(picked.x, picked.y); await T(320); }
-  await page.evaluate(() => document.querySelectorAll('.setupcard input, .setupcard textarea').forEach((n) => {
-    if (n.value || /^(email|radio|checkbox|file|hidden|range|color)$/.test(n.type)) return;
-    if (n.type === 'number') n.value = String(Math.max(+n.min || 1, 5));
-    else if (n.type === 'datetime-local') n.value = '2026-09-18T18:00';
-    else n.value = 'The club shall meet on the first Tuesday.';
-    n.dispatchEvent(new Event('input', { bubbles: true }));
-  }));
+  // --delegate-all hands over what can be handed over. The founder's own
+  // questions (✋ 🖼️ 🎩) and the undelegable settings have no such rung, so
+  // `options` falls back to the ordinary ones and the walk answers them.
+  // **⏰ is held back, and that is a finding rather than a convenience**
+  // (Q778). It is the one delegable setting anything depends on — 🌡️ and 🪜
+  // are `deps: ['ending']` — and §9.0a refuses an answer to a dependent while
+  // its dependency is still collecting (`session.ts:1129`). Handing over both
+  // in a room of one puts 🌡️'s question in the rail with a live ✓ that the
+  // module answers `'bar' waits on 'ending'`: the surface offers a question the
+  // spec says is not answerable, and the cascade behind it stalls on an answer
+  // that cannot be given. That is its own defect and its own fix — the page has
+  // no copy of the catalogue's `deps`, and whether a blocked question pauses
+  // the cascade or is looked through is a real call — so it is filed, not
+  // guessed at here. Holding ⏰ leaves the other ten to test what this walk is
+  // for: that every question a founder hands over comes back to them.
+  const wantDelegate = DELEGATE_ALL && !next.startsWith('ans-') && next !== 'ending';
+  let chose = null;
+  for (const label of await options(wantDelegate)) {
+    const at = await pickOption(label);
+    if (!at) continue;
+    await page.mouse.click(at.x, at.y);
+    await T(320);
+    chose = label;
+    // **A delegated setting takes no value with it** — picking one is the
+    // taking-back — so the fields are left alone on that branch. Filling them
+    // is what made the first `--delegate-all` run hand over five of eleven and
+    // look like the page's doing.
+    if (!/delegate/i.test(label)) await fillFields();
+    await T(220);
+    if (await committable()) break;
+  }
+  if (chose === null) await fillFields();
   await T(220);
+  if (chose !== null && /delegate/i.test(chose)) handedOver.push(next);
   const label = await press(1250);
   const open2 = await page.evaluate((kk) => {
     const c = document.querySelector('.setupcard');
     return !!c && (c.dataset.card === kk || !!c.querySelector('[data-tab="' + kk + '"]'));
   }, next);
-  if (!label || open2) stuck.push(next);
-  else say('  committed· ' + next + ' (' + label + ')');
+  if (!label || open2) {
+    stuck.push(next);
+    // a stuck card says *why* it is stuck: which controls its commit row holds
+    // and which of them are dark. "STUCK: ans-rate" alone is a line somebody
+    // has to go and reproduce by hand.
+    say('  STUCK    · ' + next + (chose ? ' — ' + chose : '') + ' · commit row ' +
+      JSON.stringify(await page.evaluate(() =>
+        [...document.querySelectorAll('.setupcard .commitrow button')]
+          .map((b) => (b.textContent.trim() || b.getAttribute('title') || '?') + (b.disabled ? ' [dark]' : '')))));
+  } else say('  committed· ' + next + ' (' + label + ')' + (chose ? ' — ' + chose : ''));
 }
 say('founding   · rail ' + JSON.stringify(await rail()) + (stuck.length ? ' STUCK: ' + stuck.join(', ') : ''));
+
+if (DELEGATE_ALL) {
+  // **A founder who delegates is asked each question back, in ORDER** (Q776).
+  // The founding order is the constitution's order and the answer tasks
+  // cascade in it (`ansWaveReady`), so this is checked as a *sequence* and not
+  // as a set: arriving in the wrong place is its own failure, the same
+  // argument the identity check below makes.
+  const f = (await founding()) || { order: [] };
+  const ORDER = (f.order || []).map((l) => String(l).split(' ')[0]);
+  const asked = order.filter((k) => k.startsWith('ans-'));
+  const want = ORDER.filter((k) => handedOver.includes(k)).map((k) => 'ans-' + k);
+  const gotAll = JSON.stringify(asked) === JSON.stringify(want);
+  say('delegated  · handed over ' + handedOver.length + ', asked back ' + asked.length);
+  say('as a member· ' + JSON.stringify(asked) + (gotAll ? '' : '  FAIL: expected ' + JSON.stringify(want)));
+  if (!gotAll) stuck.push('the founder-member was not served every delegated question in ORDER');
+  say('ends at 🍾 · ' + (waitingAtBegin ? 'served, waiting on the room'
+    : 'FAIL: the founding did not end at a served 🍾'));
+  if (!waitingAtBegin) stuck.push('a delegating founding did not end at 🍾');
+  say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
+  say('refused    · ' + (refused.length ? refused.join(' / ') : 'none'));
+  await browser.close();
+  process.exit(stuck.length || errors.length || refused.length ? 1 : 0);
+}
 
 // **The founder is asked who they are, before they begin** (Q645, Ed's live
 // walk 2026-08-22: *I'm never offered the "Your Name" and "Your Picture"

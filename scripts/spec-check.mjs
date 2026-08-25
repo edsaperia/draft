@@ -370,6 +370,17 @@ function checkOrder(pm) {
   // `mustAct` holds 🍾 shut for ever (the Q645 deadlock, in a new place).
   if (!/visible\(card\(voiceHost\(\)\)\) && mustAct\(card\('grant-voice'\)\)/.test(offered))
     find('order', "🍾's voice half no longer asks whether 🏛️ is being *served* — a bare mustAct deadlocks a founder who delegates nothing");
+  // F18, the two halves of *the founding never runs out of tasks* (Q773–Q777).
+  // Each is a one-line predicate a refactor could drop with everything still
+  // rendering, and the failure is silent by construction: a founder with an
+  // empty rail sees a page that looks finished.
+  if (!/nothingElseServed\(\)/.test(offered))
+    find('order', "🍾 has no last-resort door — F18: when nothing else is served the rail is empty and the founding has no way on");
+  if (!/const otherTasksLeft = \(\) => CARDS\.concat\(GATES\)\s*\n?\s*\.some\(\(c\) => !c\.isGate && railable\(c\)/.test(page))
+    find('order', "`otherTasksLeft` no longer asks `railable` — F18: a task the rail can never offer would withhold every delegated question for ever (🪜)");
+  const commit = page.slice(page.indexOf('function commitSetting('), page.indexOf('function commitSetting(') + 1800);
+  if (commit.indexOf("if (k === 'bar')") > commit.indexOf('if (wantsDelegate(k))'))
+    find('order', "🪜 rides only 🌡️'s *set* branch again — F18: it is the founder's whichever way 🌡️ goes, and nothing else on the surface can ever ask for it");
   note(`  ${rows.length} steps; blocking grant: ${blocker}; ${secs.length} sections`);
 }
 
