@@ -506,6 +506,18 @@
         .then((data) => {
           if (!data || !cs || !cs.isRemote) return;
           if (!data.view) return; // unchanged — the short answer has no view
+          // **A view older than the one we hold is not news, it is a
+          // rollback** (Q846's last window). `api.cmd` resolves after its own
+          // refresh, but a 4s poll already in flight when the command was sent
+          // answers on its own clock and can land *after* it, carrying the
+          // state from before the command — and `cs.v = data` below would put
+          // that state back. `okInFlight` has been released by then, so
+          // `syncOwedOks` reads the stale `owedOks` and un-gives the OK this
+          // seat has just given, for one whole poll interval. Sequences only
+          // ever grow, so an answer that goes backwards is simply dropped.
+          if (cs.v && typeof data.seq === 'number' && typeof cs.v.seq === 'number' &&
+            (data.seq < cs.v.seq ||
+              (data.seq === cs.v.seq && (data.eseq || 0) < (cs.v.eseq || 0)))) return;
           // the stranger's payload is reshaped to what the predicates read
           // a seat can die mid-session (removal, §9.5a): the door is what
           // the poll starts serving, so the viewer moves to it — the boot
@@ -3588,8 +3600,13 @@
     // this `||` escapes it, so a non-founder was served every settled
     // constitutional setting whether or not the document had begun — and
     // §9.6a owes nothing for the founder's pre-start re-setting, which may
-    // yet be re-set again. The module stopped owing these (Q844); this is the
-    // same rule stated where the fixture and a stale view can also read it.
+    // yet be re-set again. **This guard is load-bearing, not belt and
+    // braces**: Q844 stopped the module owing on *joining*, but `oweOks` still
+    // fires on every pre-start constitutional set to whoever has already
+    // arrived (founding.test.ts, *a reserved constitutional set is owed to
+    // every arrived member but the convenor*), so the module's `owedOks`
+    // carries them from the moment they are set and this is the only thing
+    // holding them back until 🍾 (SURFACE F8, E4: owed at the start, not before).
     || (constituted() && !amFounder() && !c.ansFor && !c.isGate && !c.door && !isRoom(c) && c.own !== 'you' &&
       // **and an ordinary setting the founder *changed*** (Q530, Ed
       // 2026-08-22). An ordinary rule the founder simply made is not news —
