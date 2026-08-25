@@ -248,6 +248,44 @@
   .navbar .clock:hover:not([disabled]) { text-decoration-color: currentColor; }
   .navbar .clock[disabled] { cursor: default; }
   .navbar .clock:empty { display: none; }
+  /* the quorum reading, which is a sentence only once there is a quorum to
+     read: before 🍾 the row of faces beside it is the whole of what the middle
+     says about the room */
+  .navbar .room .count:empty { display: none; }
+  /* `room-faces` (Q858–Q862): who is in the room, where the count used to be a
+     sentence. Everybody but you — your own face is `me` at the right-hand end
+     — overlapping left to right, so each extra member costs a fixed sliver
+     rather than a whole avatar's width. The ring is the navbar's own ground
+     showing through between two discs, not an outline: nothing here is open,
+     and open is said by depth.
+     22px, deliberately under `me`'s 26: **the navbar's height is load-bearing**
+     — the sockets are 24 because the avatar is 26 — so a second family of
+     faces in the bar must never be the tallest thing in it. */
+  .navbar .facestack { display: inline-flex; align-items: center; }
+  .navbar .facestack:empty { display: none; }
+  .navbar .facestack .seat { display: inline-flex; margin-left: -7px; }
+  .navbar .facestack .seat:first-child { margin-left: 0; }
+  /* `background-color`, never the `background` shorthand: an uploaded picture
+     is an inline `background-image` and `.av.photo`'s own `cover` is a weaker
+     selector than this one, so a shorthand here would silently paint a 256px
+     photograph at its natural size in a 22px hole. */
+  .navbar .facestack .av {
+    width: 22px; height: 22px; border-radius: 50%;
+    background-color: var(--primary); color: #fff;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.02em;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 2px var(--light);
+  }
+  /* **An emoji is not a disc** (Q735), so every rule that sizes an `.av` in a
+     new context needs its twin — or the glyph takes a size chosen for two
+     initial letters. A face in a stack has no text around it to take a size
+     from, so it states one, exactly as `me` and the assembly's seats do. */
+  .navbar .facestack .emojiface { font-size: 17px; line-height: 22px; }
+  /* everybody the row could not fit, counted rather than drawn */
+  .navbar .facestack .more {
+    margin-left: 5px; font-size: var(--t-micro); font-weight: 700;
+    color: var(--muted); font-variant-numeric: tabular-nums;
+  }
   /* You, at the right-hand end. Initials rather than a photograph: this is a
      mockup with no accounts behind it, and a stock face would be a claim the
      product cannot yet make. */

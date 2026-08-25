@@ -1262,3 +1262,67 @@ are indistinguishable from the rail, and a walk that can only say *the task is s
 symptom. And `npm run ladder` will report fewer *owed acknowledgements given* than it used to, since
 `oweOnJoining` was most of what it was counting; the line is guarded by `if (owed > 0)` and nothing
 asserts on it, so that is the expected outcome rather than a regression to chase.
+
+## A row of faces where *n in the room* was (2026-08-26, Q858–Q864)
+
+Ed: *where we currently say "n in the room" in the topbar we should show a row / stack of user
+avatars.* Backlog 15, and gated behind backlog 42 for a reason worth keeping: a face stack is only
+honest once other seats' names and pictures actually reach you, and until `syncFromCs` reconciles
+`row.n`/`row.pic` a live document draws a row of anonymous discs that nobody can tell from a bug.
+Presence itself was never the broken half — the arrival branch has always set `row.in` — so what
+this plan added is drawn from data that was already correct, and what the faces *say* arrives with
+its prerequisite.
+
+**Q278, closed by the same argument as 42's.** A row of who is present is **membership**, and the
+register is public (§9.0c; `view.ts:85–95` projects name and picture to every seat). What is sealed
+is **authorship** (§3.5a) and what is never shown is **direction** (§3.5) — neither of which a
+presence row touches, because it is not attached to a race, a judgment or the pulse. The one thing
+that would break that is tying a face to an act, which is why the row is built from the register and
+not from anything the engine knows, and why the `room-pulse` two elements to its left stays
+content-free: the pulse says *somebody did something* and the faces say *somebody is here*, and the
+whole discipline is that the surface never lets a reader join them up.
+
+**Whose count is which.** `arrived()` is `cs.E()` on a live document — the engine's electorate, which
+drops the lapsed — while the row is `members().filter(m => m.in)`, the register's arrived rows. They
+can disagree, and the honest resolution is not to pick one but to let each number belong to the thing
+it is about: the stack and its `+n` overflow are the **register's**, because they answer *who is
+here*, and the quorum reading beside them stays the **engine's**, because *k of n* is a fact about
+what a decision needs. So the two halves of the old sentence part company. The begun reading survives
+verbatim; the pre-Begin head count is what the row replaces, and it survives as the row's title
+rather than disappearing — a number a founder could read a moment ago should not become unreadable
+because it became a picture.
+
+**The viewer is not in the row.** Their face is `me`, at the right-hand end of the same bar, so
+including them would draw the same person twice within 400px. The consequence is the state the check
+is written around: **a room of one draws no stack at all**, which is right — a stack of one face,
+your own, would say nothing — and it means the row is a statement about *other people*, which is why
+a second seat is the smallest room the feature can be tested in.
+
+**The 30-second beat is why the row is keyed.** `renderClock` diffs by `textContent` and runs on its
+own interval, out of step with `render()`; a row of faces is markup, so the same idiom would either
+rebuild the stack twice a minute under whatever the pointer is doing or never rebuild it at all. It
+is guarded by a key of exactly what it draws — the ids, pictures and names of the seats shown, plus
+the overflow count — so the DOM is touched only when the room actually changes. The 4s poll defers
+under a press (`pressInFlight`) and the clock tick does not, which is what makes the key load-bearing
+rather than an optimisation.
+
+**Three rules the CSS had to obey.** The navbar's height is load-bearing — the sockets are 24px
+because `me` is 26 — so the stack states 22px and is measured: 48.5px bar and 26px `.stats` with the
+row and without it, empty and full. An emoji is not a disc (Q735), so the `.av` rule has an
+`.emojiface` twin stating 17px/22px, the same shape the assembly's seats use, and
+`node design/tools/pic-measure.mjs` gained the site so the next change here is measured rather than
+argued. And the ground is set with `background-color`, never the `background` shorthand: an uploaded
+picture is an inline `background-image` whose `cover` comes from `.av.photo`, a weaker selector than
+this one, so the shorthand would silently reset `background-size` and paint a 256px photograph at
+natural size in a 22px hole.
+
+**Who is shown none of it.** A stranger and an applicant get no row. The register may be public, but
+the stranger's door is a deliberately narrow statement — who decided, what they decided, what you may
+do about it (Q508) — and answering *who is in the room* there is a surface decision nobody has made.
+The rule is one line in `roomFaces` and reversible if Ed wants the opposite.
+
+The check is `npm run journey`'s, extended rather than built: the walk already opens a second browser
+context on a real invitation (Q842–Q848), so the room of one is read at the moment before that guest
+lands and the two-face state at the moment after. Each seat must see exactly the other — the founder
+a seat that is not `founder`, the member the founder's own minted id — never itself, and never
+GUEST2, who was invited and never came, because an invitation is not an arrival.
