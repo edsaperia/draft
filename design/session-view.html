@@ -2510,19 +2510,7 @@
         : '<div class="cpara notab docsep"></div>' +
           (/^(text|pw:[ua]:text)$/.test(S.open || '') ? h.para(card('text'))
           : '<div class="cpara textanchor">' + h.pile(ctx.chipsFor(card('text'))) +
-            '<h2 class="doctitle dochead" id="dochead">' + esc(S.title || 'Untitled') + '</h2></div>')),
-      // **The birth counts its own three** (Ed, 2026-08-21). The note is
-      // derived from the group's sections, and the birth has none — so it
-      // announced *all confirmed* over a document whose address and whose
-      // founder's own email were still to come. The birth is a fixed
-      // three-act run, so before the save it counts the feathers: 🪶 🪶 🪶.
-      // 🏛️ pinned into the preamble's stack leaves the paragraph seam
-      // `n` counts from (Q750), so it is added back here: a tab that still
-      // wants an OK is one of the things left, wherever its sentence lives.
-      note: (n) => { const left = cs
-        ? n + (voiceInStack() && mustAct(card('grant-voice')) ? 1 : 0)
-        : ['title', 'slug', 'myemail'].map(card).filter((c) => c && !settled(c)).length;
-        return left ? left + ' still to confirm or answer' : 'all confirmed'; } },
+            '<h2 class="doctitle dochead" id="dochead">' + esc(S.title || 'Untitled') + '</h2></div>')) },
   ];
 
   const VALUE = {

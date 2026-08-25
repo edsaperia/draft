@@ -408,9 +408,6 @@ window.SETUP = (function () {
           paraWith: (c, sibs) => (ctx.open === c.k
             ? '<div class="cpara open">' + cardFor({ ...g, cards: sibs }) + '</div>' : ''),
           tasks: (c) => (ctx.tasksFor ? ctx.tasksFor(c).map(para).join('') : '') };
-        const wants = g.sections.reduce((n, sec) => n + sec.cards
-          .reduce((m, c) => m + (ctx.mustAct(c) ? 1 : 0) +
-            (ctx.tasksFor ? ctx.tasksFor(c).filter((t) => ctx.mustAct(t)).length : 0), 0), 0);
         // **the whole constitution folds** (Ed, 2026-08-19): its heading is
         // a heading like any other — folded, it keeps the heading and the
         // document text below; the surface decides (ctx.foldedGroup), so an
@@ -468,7 +465,6 @@ window.SETUP = (function () {
             (sec.who ? '<div class="pilewho">' + sec.who() + '</div>' : '') +
             (sec.body ? sec.body(H) : sec.cards.map(withTasks).join('')) +
             (sec.block ? sec.block() : '')) + '</div>'; }).join('') +
-          '<span class="pilen">' + esc(g.note(wants)) + '</span>' +
           // **the starting text is a task beside the text proper** (Ed,
           // 2026-08-18): a zero-height anchor at the band's end, its 📄 tab
           // hanging in the gutter beside the first block of the prose that
@@ -477,7 +473,6 @@ window.SETUP = (function () {
       }
       const holds = g.cards.some((c) => ctx.open === c.k);
       if (holds) return '<div class="setrow open" id="pile-' + g.key + '">' + cardFor(g) + '</div>';
-      const left = g.cards.filter((c) => ctx.mustAct(c)).length;
       // **The heading is the people** (Ed, 2026-08-18: *"Founder" heading gets a
       // name and picture under it as soon as they exist; "Membership" heading
       // gets the roster's names and pictures under it as those appear*). Which
@@ -493,8 +488,7 @@ window.SETUP = (function () {
         // the Constitution heading carries a statement of itself — the
         // constitutional settings' current values, legible without opening
         // a single tab (Ed, 2026-08-18)
-        (g.block ? g.block() : '') +
-        '<span class="pilen">' + esc(g.note(left)) + '</span></div></div>';
+        (g.block ? g.block() : '') + '</div></div>';
     }).join('');
   }
 
