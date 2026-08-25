@@ -46,7 +46,7 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 | E16 | The ground shifted under your judgment | the judge | ↻ receipt | nothing; the pair is re-served | — | — | — |
 | E17 | A race deadlocks | each member, once it has nothing left to ask them | ⚔️ entry ranked by bounty | a draft | — | — | — |
 | E18 | A salience diagonal | a member with nothing else to judge, once the document holds at least E live questions | 🌶️ card, served not offered | which matters more | ✓ | no progress state | — |
-| E19 | A proposal of your own | the author | ✏️ card, then one line; pinned | withdraw is the remaining act | Propose (stays pinned) | ✏️ throughout | — |
+| E19 | A proposal of your own | the author | ✏️ card, then one line; pinned | withdraw is the remaining act — **unless nobody else in the room could judge it** (Q835): where every member of the race is an author, at E = 1 always, the judgment is offered beside the withdrawal | Propose (stays pinned) | ✏️ throughout | — |
 | E20 | Somebody arrives during the founding | founding answerers (ground shift) | **an acknowledgement task on their own answer card, marked ↻** — *one more member has arrived; your answer stands* (Q567, Q572); no mail | OK, revising optional | OK | register | roster |
 | E21 | An application is submitted | the membership | Applicants block on 🪪; admit race | a judgment | — | record | apply appmail appname apppic apptext |
 | E22 | A membership is about to lapse / lapses | the member | mail: warning, then the package | nothing; revival is logging in | — | — | — |
