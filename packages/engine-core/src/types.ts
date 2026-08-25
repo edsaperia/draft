@@ -178,6 +178,10 @@ export interface RaceView {
    * (p = ½) sits at 0; a race about to carry and a race the incumbent is
    * about to see off both read 1, because |2p − 1| is exactly invariant
    * under p ↔ 1 − p — the number cannot be inverted into "which way".
+   *
+   * The denominator never falls below `MIN_CLOSENESS_SPAN` (Q836), so a bar
+   * of exactly ½ — where there is no distance from the coin flip to the bar
+   * to measure — reads as the lowest bar above it rather than as 0.
    */
   closeness: number;
   /**

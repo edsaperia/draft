@@ -384,6 +384,27 @@ function checkOrder(pm) {
   note(`  ${rows.length} steps; blocking grant: ${blocker}; ${secs.length} sections`);
 }
 
+/**
+ * E19's condition (Q838). *A proposal of your own* is yours to withdraw and
+ * not to judge — but that is a claim about a room bigger than one, and the
+ * page enforced it unconditionally: in a document of one every race is only
+ * yours, so the sole member was served no judgment card at all, the engine's
+ * measured `comparisons` stayed 0 for ever and the document could not change
+ * its own text. There is no walk at E = 1 anywhere (the ladder's cast is 20
+ * and asserts `members > 1`), so this one-line predicate is the only thing
+ * standing between that bug and its return, and the failure is silent by
+ * construction — a rail with nothing in it looks like a document at rest.
+ */
+function checkSoloJudgment() {
+  note('The sole member’s own judgment — SURFACE.md E19 against the page');
+  const page = js('design/session-view.html');
+  const at = page.indexOf('function itemsFromView(');
+  const items = at < 0 ? '' : page.slice(at, at + 4000);
+  if (!/r\.candidates\.every\(\(c\) => c\.mine\) && E\(\) > 1/.test(items))
+    find('events', "the all-mine race is skipped unconditionally again — E19 exempts it only where somebody else in the room could judge it, and at E = 1 that skip is every race (Q835)");
+  else note('  the `mine` exemption carries its E > 1 condition');
+}
+
 function checkComposer(M, pm) {
   note('The composer maps — PROPOSE · ANSWER · the rung values · PW_*');
   const page = js('design/session-view.html'); const setup = js('design/setup.js');
@@ -668,6 +689,7 @@ function checkMergeable() {
 checkMarks();
 checkWallets(pm);
 checkOrder(pm);
+checkSoloJudgment();
 checkComposer(M, pm);
 checkPicture();
 checkBannedWords();
