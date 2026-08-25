@@ -1158,7 +1158,10 @@ export class ConstitutionSession {
     if (!m || m.removed) throw new Error(`unknown member '${member}'`);
     if (m.arrivedAtT !== null) { this.touch(member, t); return; }
     this.emit({ type: 'member-arrived', t, member });
-    this.oweOnJoining(t, member);
+    // **A setting that predates you is simply what the document says** (Ed,
+    // 2026-08-25; §9.0a, §9.6a): an arrival inherits the constitution and is
+    // owed nothing for it. What is news to a joiner is a power handed to
+    // them, which is a grant and never an `ok-owed`.
     this.afterRosterChange(t, 'arrival', member);
   }
 
@@ -1675,17 +1678,20 @@ export class ConstitutionSession {
       const id = `m-${this.nextMemberN}`;
       this.emit({ type: 'member-admitted', t, applicant: rec.payload.applicant,
         member: id });
-      this.oweOnJoining(t, id); // an admitted applicant inherits (§9.6a)
+      // an admitted applicant inherits the constitution and is owed nothing
+      // for it, like any other joiner (§9.7½, §9.0a)
       this.afterRosterChange(t, 'arrival', id); // and is present
     }
   }
 
-  /** A joiner is owed an OK on every constitutional setting they had no say in. */
-  private oweOnJoining(t: number, member: MemberId): void {
-    const owed = this.settledConstitutionalIds()
-      .filter((id) => !this.settings.get(id)!.answers.has(member));
-    if (owed.length > 0) this.emit({ type: 'ok-owed', t, member, settings: owed });
-  }
+  /**
+   * A joiner used to be owed an OK on every settled constitutional setting
+   * they had no say in — R-016's inheritance clause. **Reversed** (Ed,
+   * 2026-08-25): *a setting that predates you is simply what the document
+   * says; a power handed to you is news addressed to you.* Nothing is owed
+   * on arrival; `oweOks` covers everything set or changed after it, and it
+   * already skips whoever has not arrived.
+   */
 
   /** Follow-ons of a held motion: a refused application is told so (§9.7½). */
   private settleHeldEffects(t: number, rec: MotionRecord): void {
@@ -1911,7 +1917,6 @@ export class ConstitutionSession {
       // anyone with the link joins on arrival — no motion in the way
       const id = `m-${this.nextMemberN}`;
       this.emit({ type: 'member-admitted', t, applicant, member: id });
-      this.oweOnJoining(t, id);
       this.afterRosterChange(t, 'arrival', id);
     } else if (policy === 'apply') {
       // straight to the bar, free — the tasks its price, the bar its filter
@@ -2003,10 +2008,6 @@ export class ConstitutionSession {
     const id = `cq-${this.nextCrownN}`;
     this.emit({ type: 'crown-question-opened', t, question: id, motion: null, text });
     return id;
-  }
-
-  private settledConstitutionalIds(): SettingId[] {
-    return [...CONSTITUTIONAL].filter((id) => this.settings.get(id)!.settledBy !== null);
   }
 
   private requireEmailFree(email: string): void {

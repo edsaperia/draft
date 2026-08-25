@@ -256,7 +256,7 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     expect(s.motionRecords().get(m)!.route).toBe('constitutional');
   });
 
-  it('those outside the electorate are owed the decision they had no say in', () => {
+  it('an amendment that predates a member is what the document says, not news', () => {
     const { s, bo, cy } = constituted();
     // dee invited by motion, arrives after a later amendment carries
     const inv = s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' }, 'dee kept our minutes for a year');
@@ -270,8 +270,13 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
       s.answerMotion(t, who, m, 'accept');
     }
     expect(s.motionRecords().get(m)!.status).toBe('carried');
+    // dee arrives after the amendment carried, so it predates them and is
+    // simply what the document says — nothing is owed on arrival (§9.0a).
+    // Whoever was *here* and had no say is still owed it, which is
+    // `membership.test.ts`'s lapsed member.
     s.arrive(11, dee);
-    expect(s.memberRecords().get(dee)!.okOwed.has('bar')).toBe(true);
+    expect(s.memberRecords().get(dee)!.okOwed.has('bar')).toBe(false);
+    expect(s.memberRecords().get(dee)!.okOwed.size).toBe(0);
   });
 });
 

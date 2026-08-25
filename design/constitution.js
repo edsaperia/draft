@@ -1678,7 +1678,6 @@ var CONSTITUTION = (() => {
         return;
       }
       this.emit({ type: "member-arrived", t, member });
-      this.oweOnJoining(t, member);
       this.afterRosterChange(t, "arrival", member);
     }
     // -------------------------------------------------------------------------
@@ -2115,15 +2114,17 @@ var CONSTITUTION = (() => {
           applicant: rec.payload.applicant,
           member: id
         });
-        this.oweOnJoining(t, id);
         this.afterRosterChange(t, "arrival", id);
       }
     }
-    /** A joiner is owed an OK on every constitutional setting they had no say in. */
-    oweOnJoining(t, member) {
-      const owed = this.settledConstitutionalIds().filter((id) => !this.settings.get(id).answers.has(member));
-      if (owed.length > 0) this.emit({ type: "ok-owed", t, member, settings: owed });
-    }
+    /**
+     * A joiner used to be owed an OK on every settled constitutional setting
+     * they had no say in — R-016's inheritance clause. **Reversed** (Ed,
+     * 2026-08-25): *a setting that predates you is simply what the document
+     * says; a power handed to you is news addressed to you.* Nothing is owed
+     * on arrival; `oweOks` covers everything set or changed after it, and it
+     * already skips whoever has not arrived.
+     */
     /** Follow-ons of a held motion: a refused application is told so (§9.7½). */
     settleHeldEffects(t, rec) {
       if (rec.payload.kind === "admit") {
@@ -2320,7 +2321,6 @@ var CONSTITUTION = (() => {
       if (policy === "open") {
         const id = `m-${this.nextMemberN}`;
         this.emit({ type: "member-admitted", t, applicant, member: id });
-        this.oweOnJoining(t, id);
         this.afterRosterChange(t, "arrival", id);
       } else if (policy === "apply") {
         this.emit({
@@ -2415,9 +2415,6 @@ var CONSTITUTION = (() => {
       const id = `cq-${this.nextCrownN}`;
       this.emit({ type: "crown-question-opened", t, question: id, motion: null, text });
       return id;
-    }
-    settledConstitutionalIds() {
-      return [...CONSTITUTIONAL].filter((id) => this.settings.get(id).settledBy !== null);
     }
     requireEmailFree(email) {
       for (const m of this.members.values()) {

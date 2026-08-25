@@ -259,7 +259,7 @@ describe('ground shifts (§9.6a): the roster is the ground of every answer', () 
   });
 });
 
-describe('owed OKs (§9.6a): inheritance as unacknowledged decisions', () => {
+describe('owed OKs (§9.6a): what was decided after you arrived', () => {
   it('a reserved constitutional set is owed to every arrived member but the convenor', () => {
     const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org');
@@ -275,18 +275,25 @@ describe('owed OKs (§9.6a): inheritance as unacknowledged decisions', () => {
     expect(s.memberRecords().get(bo)!.okOwed.has('chamber')).toBe(true);
   });
 
-  it('a late arrival is owed the whole settled constitution; answerers are owed nothing', () => {
+  // **A setting that predates you is simply what the document says** (Ed,
+  // 2026-08-25), reversing R-016's inheritance clause: a late arrival
+  // inherits the constitution and is owed nothing for any of it. What is
+  // still owed is everything set or changed *after* they arrived, which is
+  // `oweOks`'s business and is asserted directly above.
+  it('a late arrival inherits the constitution and is owed nothing for it', () => {
     const s = openDelegated();
     const bo = s.invite(1, 'bo@example.org'); // invited before the start…
     settleAllReserved(s, 2);                  // …which the settle constitutes
     s.arrive(3, bo);                          // arrival inherits (§9.6a)
     const owed = s.memberRecords().get(bo)!.okOwed;
     for (const id of ['ending', 'bar', 'quorum', 'authorship',
-      'judgments', 'chamber', 'lapse', 'applications']) {
-      expect(owed.has(id as never), id).toBe(true);
+      'judgments', 'chamber', 'lapse', 'applications', 'rate', 'machines']) {
+      expect(owed.has(id as never), id).toBe(false);
     }
-    expect(owed.has('rate' as never)).toBe(false); // ordinary settings are not owed
-    expect(owed.has('machines' as never)).toBe(false); // ordinary since Q352
+    expect(owed.size).toBe(0);
+    // …and a constitutional setting changed after they arrived still is
+    s.setSetting(4, 'chamber', { rung: 'public' });
+    expect(s.memberRecords().get(bo)!.okOwed.has('chamber')).toBe(true);
   });
 });
 

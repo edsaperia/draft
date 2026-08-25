@@ -31,7 +31,9 @@ describe('applications (§9.7½): four rungs, one identity rule', () => {
     expect(s.E()).toBe(4);
     const dee = [...s.memberRecords().values()].find((m) => m.email === 'dee@example.org')!;
     expect(dee.name).toBe('Dee');
-    expect(dee.okOwed.size).toBeGreaterThan(0); // inherits the constitution (§9.6a)
+    // an admitted applicant inherits the constitution and is owed nothing
+    // for it — a setting that predates you is what the document says (§9.0a)
+    expect(dee.okOwed.size).toBe(0);
   });
 
   it('a refused application is told so', () => {
