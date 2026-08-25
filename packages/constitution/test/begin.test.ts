@@ -59,6 +59,37 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
     expect(s.readiness().ready).toBe(false); // nothing left to begin
   });
 
+  it('spends every pending release in the same act (R-048)', () => {
+    const s = ConstitutionSession.open({ title: 'T', slug: 't2',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 0);
+    const bo = s.invite(1, 'bo@example.org');
+    s.arrive(1, bo);
+    s.confirmStartingText(1, 'x');
+    s.setSetting(1, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
+    for (const [id, v] of Object.entries({ ...FOUNDER_SET,
+      ending: { endsAtMs: 1_000_000 }, bar: { pct: 66 }, chamber: { rung: 'link' },
+    })) { s.reclaim(1, id as never); s.setSetting(1, id as never, v as never); }
+    // three releases, made while the founding ran: one power, the other, and
+    // both on a setting that takes no founding question
+    s.relinquish(2, 'rate', 'assent');
+    s.relinquish(2, 'quorum', 'unilateral');
+    s.relinquish(2, 'link', 'unilateral');
+    s.relinquish(2, 'link', 'assent');
+    expect(s.settingState('rate').powers).toEqual({ unilateral: true, assent: true });
+    s.begin(3);
+    expect(s.settingState('rate').powers).toEqual({ unilateral: true, assent: false });
+    expect(s.settingState('quorum').powers).toEqual({ unilateral: false, assent: true });
+    expect(s.settingState('link').holder).toBe('members');
+    // …and the values the founder set all stand: a lay-down is not a reset
+    expect(s.settingState('link').value).toEqual({ slug: 't2' });
+    expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 60 });
+    // the log carries the four events and replays to the same state
+    const r = ConstitutionSession.replay(s.logEntries().slice());
+    expect(r.rollingHash()).toBe(s.rollingHash());
+    expect(r.settingState('quorum').powers).toEqual({ unilateral: false, assent: true });
+    expect(r.settingState('link').holder).toBe('members');
+  });
+
   // Q626: the start waits on **any** delegated question, gate or not. A
   // question delegated to a room that cannot answer it survives the start in a
   // state nothing reaches — it cannot resolve (under two voices), cannot be

@@ -816,6 +816,7 @@ var CONSTITUTION = (() => {
               powers: { unilateral: true, assent: true },
               // both powers are the convenor's by construction at the birth
               powerFrom: { unilateral: "founding", assent: "founding" },
+              pendingRelease: { unilateral: false, assent: false },
               value: null,
               previousValue: null,
               setWhy: null,
@@ -1039,6 +1040,13 @@ var CONSTITUTION = (() => {
           this.constitutedT = event.t;
           this.anchors = this.computeAnchors(event.t);
           this.setPowers(this.settings.get("startingText"), { unilateral: false, assent: false });
+          for (const st of this.settings.values()) {
+            if (!st.pendingRelease.unilateral && !st.pendingRelease.assent) continue;
+            this.setPowers(st, {
+              unilateral: st.powers.unilateral && !st.pendingRelease.unilateral,
+              assent: st.powers.assent && !st.pendingRelease.assent
+            });
+          }
           break;
         }
         case "ok-owed": {
@@ -1093,8 +1101,12 @@ var CONSTITUTION = (() => {
         }
         case "power-relinquished": {
           const st = this.settings.get(event.setting);
-          const powers = { ...st.powers, [event.power]: false };
-          this.setPowers(st, powers);
+          if (this.constitutedT === null) {
+            st.pendingRelease = { ...st.pendingRelease, [event.power]: true };
+          } else {
+            const powers = { ...st.powers, [event.power]: false };
+            this.setPowers(st, powers);
+          }
           this.touch(this.convenor.id, event.t);
           break;
         }
@@ -1357,6 +1369,7 @@ var CONSTITUTION = (() => {
       };
       st.powers = powers;
       st.holder = holderOf(powers);
+      st.pendingRelease = { unilateral: false, assent: false };
     }
     freshMember(id, email, invitedAtT, arrivedAtT, arrival) {
       return {
@@ -1556,11 +1569,29 @@ var CONSTITUTION = (() => {
       this.emit({ type: "setting-handed-over", t, setting });
     }
     /**
+     * Has this setting been set at least once? — the pre-start gate on laying a
+     * power down (R-048). The Text carries no managed value (Q440), so its own
+     * answer to *has it been set* is whether it has been confirmed.
+     */
+    everSet(st) {
+      if (st.id === "startingText") return this.textConfirmedFlag;
+      return st.value !== null;
+    }
+    /** The power as the *founder's own card* reads it: a pending release is given. */
+    stillHeld(st, power) {
+      return st.powers[power] && !st.pendingRelease[power];
+    }
+    /**
      * Give up one crown power on one setting (§9.7 v0.54): free, separate,
-     * one-way — the road back is the room's reserve motion. Assent may go
-     * from creation; unilateral change only once proposing opens, because
-     * the assent-only state is inert before the start (Ed, 2026-08-19,
-     * corrected the same day: delegation keeps its earlier clock).
+     * one-way after the start — the road back is the room's reserve motion.
+     *
+     * **Once a setting has a value, either power may go** (Ed, 2026-08-25;
+     * R-048), and before the start the release is *pending*: recorded when it
+     * is made, effective at 🍾. The old clocks — assent from creation, the pen
+     * only once the text confirmed — are both retired. What replaces them is
+     * one gate on the setting rather than two on the calendar: a setting nobody
+     * has set has nothing to hand over, and the text's own confirmation is one
+     * setting's value among nineteen rather than the whole document's clock.
      */
     relinquish(t, setting, power) {
       this.requireOpen("giving up a power");
@@ -1572,16 +1603,19 @@ var CONSTITUTION = (() => {
         throw new Error("the register's powers are the applications setting's -- relinquish there (§9.7½)");
       }
       const st = this.settings.get(setting);
-      if (!st.powers[power]) {
+      if (!this.stillHeld(st, power)) {
         throw new Error(`the ${power} power on '${setting}' is not held`);
       }
-      if (power === "unilateral" && this.constitutedT === null) {
-        if (!st.powers.assent && entry.delegable) {
+      if (this.constitutedT === null) {
+        const other = power === "unilateral" ? "assent" : "unilateral";
+        if (!this.stillHeld(st, other) && entry.delegable) {
           this.emit({ type: "setting-delegated", t, setting });
           return;
         }
-        if (!this.textConfirmedFlag) {
-          throw new Error("giving up unilateral change waits until proposing opens (§9.7 v0.54)");
+        if (!this.everSet(st)) {
+          throw new Error(
+            `'${setting}' has no value yet — a power can only be laid down once the setting is set (§9.7)`
+          );
         }
       }
       this.emit({ type: "power-relinquished", t, setting, power });
@@ -1591,7 +1625,7 @@ var CONSTITUTION = (() => {
       this.requirePreStart("reclaiming");
       const st = this.settings.get(setting);
       if (!st) throw new Error(`'${setting}' is not a delegable setting`);
-      if (st.holder === "convenor" && st.powers.unilateral && st.powers.assent) return;
+      if (st.holder === "convenor" && st.powers.unilateral && st.powers.assent && !st.pendingRelease.unilateral && !st.pendingRelease.assent) return;
       this.emit({ type: "setting-reclaimed", t, setting });
     }
     confirmStartingText(t, text) {
@@ -2545,6 +2579,7 @@ var CONSTITUTION = (() => {
         holder: st.holder,
         powers: { ...st.powers },
         powerFrom: { ...st.powerFrom },
+        pendingRelease: { ...st.pendingRelease },
         value: null,
         previousValue: null,
         setWhy: null,
@@ -2562,6 +2597,7 @@ var CONSTITUTION = (() => {
         holder: st.holder,
         powers: { ...st.powers },
         powerFrom: { ...st.powerFrom },
+        pendingRelease: { ...st.pendingRelease },
         value: st.value,
         previousValue: st.previousValue,
         setWhy: st.setWhy,
@@ -2615,7 +2651,8 @@ var CONSTITUTION = (() => {
     const rp = s.registerPowers();
     const register = {
       holder: holderOf(rp),
-      powers: rp
+      powers: rp,
+      pendingRelease: { ...s.settingState("applications").pendingRelease }
     };
     const applicants = [];
     for (const a of s.applicantRecords().values()) {

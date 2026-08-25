@@ -440,6 +440,43 @@
    ]
   },
   {
+   "step": "open pw:u:quorum",
+   "rail": [
+    "authorship"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "founded: Founded by AL Ada Lovell 👑.",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "authorship: The Founder is deciding whether anonymous proposers are reve"
+   ]
+  },
+  {
+   "step": "commit pw:u:quorum",
+   "rail": [
+    "authorship"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "founded: Founded by AL Ada Lovell 👑.",
+    "policy: Membership is by invitation only. The Founder may invite and",
+    "lapse: Somebody stops being a member after 7 days without logging i",
+    "removal: Removing a member needs every member to agree, including the",
+    "ending: The drafting process will end on Weekday at HH:MM. The Found",
+    "bar: The members must be 50% sure a proposal is better for it to ",
+    "quorum: 5% of the members must have judged a question before it can ",
+    "authorship: The Founder is deciding whether anonymous proposers are reve"
+   ]
+  },
+  {
    "step": "open authorship",
    "rail": [
     "authorship"

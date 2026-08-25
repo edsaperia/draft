@@ -261,6 +261,17 @@ export interface SettingState {
    * 'motion' if the membership put it back with a carried `reserve`.
    */
   powerFrom: { unilateral: PowerSource | null; assent: PowerSource | null };
+  /**
+   * A power laid down **before the start**, which takes effect at 🍾 (§9.7
+   * rule 3, R-048). The act is recorded when it is made — the log carries the
+   * `power-relinquished` event and the clause says so — but the power is
+   * still the convenor's until `constituted`, so nothing else in the module
+   * has to ask whether a holder is a real one. `reclaim` clears it, which is
+   * what keeps a pre-start release as revisable as any other pre-start act.
+   * Both flags are false at every moment after the start: the fold at
+   * `constituted` spends them into `powers` and never sets one again.
+   */
+  pendingRelease: Powers;
   value: SettingValue | null;
   /**
    * What this setting held before the convenor last set it directly, and the

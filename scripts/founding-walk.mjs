@@ -136,6 +136,31 @@ const typeIn = async (sel, v) => {
   return ok;
 };
 
+/**
+ * **A power laid down before the start takes effect at 🍾** (R-048), and this
+ * is the walk that can see both halves of that: the founder releases 👥's pen
+ * the moment the setting has a value, and the surface has to say *released,
+ * from the start* while still handing them the pen they are holding until the
+ * press. The pen wallet's own count is the witness for the second half —
+ * unchanged by the release, one lower after 🍾 — because a page that says
+ * *may not amend this at will* while the tooltip still counts the setting
+ * would be telling the founder two different things about one hand.
+ */
+const clauseText = (k) => page.evaluate((kk) => {
+  const p = [...document.querySelectorAll('#band .cpara')].find((el) =>
+    (el.dataset.para || (el.querySelector('[data-tab]') || { dataset: {} }).dataset.tab) === kk);
+  const v = p && p.querySelector('.cpv');
+  return v ? v.textContent.replace(/\s+/g, ' ').trim() : null;
+}, k);
+const penCount = async () => {
+  const t = await page.evaluate(() => {
+    const el = document.querySelector('#penwallet');
+    return el ? el.title || '' : '';
+  });
+  const m = /\b(\d+)\s+settings?\b/.exec(t);
+  return m ? +m[1] : null;
+};
+
 const log = [];
 const record = async (step, note) => {
   const s = await snap();
@@ -167,6 +192,37 @@ await page.waitForTimeout(600);
 await record('follow the magic link');
 
 /* ---- then whatever the rail asks for, one at a time ------------------- */
+const PEN_RELEASE = 'quorum';         // 👥, whose value the walk sets itself
+let penHeldAtRelease = null;
+const releasePen = async (k) => {
+  penHeldAtRelease = await penCount();
+  // a settled setting's tabs are a closed pile, and the ones behind the front
+  // carry no click hook — open the value's own card first and the pile becomes
+  // the card's tabs, which is the only way a founder reaches ✒️ either
+  await openCard(k);
+  if (!(await openCard('pw:u:' + k))) {
+    errors.push('no ✒️ tab on ' + k + ' to lay the pen down from');
+    return;
+  }
+  await record('open pw:u:' + k);
+  const gave = await clickIn('.setupcard [data-set="pw:u:' + k + '"][data-val="given"]');
+  if (!gave) {
+    errors.push('the ✒️ tab on ' + k + ' would not let the pen go on a setting that has a value');
+    return;
+  }
+  await clickIn('.setupcard [data-confirm]');
+  await record('commit pw:u:' + k);
+  const said = await clauseText(k);
+  if (!/From the start, the Founder may not amend this at will\./.test(said || '')) {
+    errors.push(k + ' released the pen but its clause does not say so: ' + said);
+  }
+  const now = await penCount();
+  if (now !== penHeldAtRelease) {
+    errors.push('the pen left before 🍾 — the wallet counted ' + penHeldAtRelease +
+      ' settings before the release and ' + now + ' after');
+  }
+};
+
 const seen = new Set();
 for (let i = 0; i < 40; i++) {
   const s = await snap();
@@ -205,6 +261,23 @@ for (let i = 0; i < 40; i++) {
   const committed = (await clickIn('.setupcard [data-confirm]')) ||
     (await clickIn('.setupcard [data-ok]')) || (await clickIn('.setupcard [data-hatgo]'));
   await record('commit ' + next.k, committed ? null : 'no commit control');
+  if (next.k === PEN_RELEASE) await releasePen(next.k);
+}
+
+/* ---- and at 🍾 the release is spent (R-048) ---------------------------- */
+if (penHeldAtRelease !== null && log.some((e) => e.step === 'commit begin')) {
+  const said = await clauseText(PEN_RELEASE);
+  if (/may (not )?amend this at will/.test(said || '')) {
+    errors.push(PEN_RELEASE + ' still speaks of the pen after 🍾: ' + said);
+  }
+  // two settings leave the pen wallet at the press: 👥, released above, and
+  // 📄 the Text, which 🍾 lays down by itself (§9.7 rule 8)
+  const now = await penCount();
+  if (now !== null && now !== penHeldAtRelease - 2) {
+    errors.push('🍾 did not spend the release — the wallet counted ' + penHeldAtRelease +
+      ' settings before it and ' + now + ' after, where ' + (penHeldAtRelease - 2) +
+      ' is 👥 released and 📄 laid down');
+  }
 }
 
 /* ---- --delegate: is the founder served their own question? ------------ */

@@ -21,16 +21,24 @@ describe('the Text carries a crown pair (Q440)', () => {
     expect(() => s.setSetting(1, 'startingText', { text: 'x' })).toThrow(/drafting/);
   });
 
-  it('assent goes from creation; the pen waits for proposing to open; reclaim restores pre-start', () => {
+  it('both powers wait for the text to be confirmed — its own value (R-048)', () => {
     const s = openDoc();
-    expect(() => s.relinquish(1, 'startingText', 'unilateral')).toThrow(/proposing opens/);
-    s.relinquish(1, 'startingText', 'assent');
-    expect(s.settingState('startingText').powers).toEqual({ unilateral: true, assent: false });
+    // the Text carries no managed value, so *has it been set* is *has it been
+    // confirmed*: before that there is nothing to lay a power down over
+    expect(() => s.relinquish(1, 'startingText', 'unilateral')).toThrow(/has no value yet/);
+    expect(() => s.relinquish(1, 'startingText', 'assent')).toThrow(/has no value yet/);
     s.confirmStartingText(2, 'The clubhouse shall be kept open.');
+    s.relinquish(3, 'startingText', 'assent');
     s.relinquish(3, 'startingText', 'unilateral');
-    expect(s.settingState('startingText').holder).toBe('members');
+    // both pending: the founder's hand is on the Text until 🍾 lays it down
+    expect(s.settingState('startingText').powers).toEqual({ unilateral: true, assent: true });
+    expect(s.settingState('startingText').pendingRelease)
+      .toEqual({ unilateral: true, assent: true });
+    expect(s.settingState('startingText').holder).toBe('convenor');
     s.reclaim(4, 'startingText');
     expect(s.settingState('startingText').powers).toEqual({ unilateral: true, assent: true });
+    expect(s.settingState('startingText').pendingRelease)
+      .toEqual({ unilateral: false, assent: false });
     expect(s.text).toBe('The clubhouse shall be kept open.'); // reclaim touches no value
   });
 

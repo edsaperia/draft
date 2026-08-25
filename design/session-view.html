@@ -1569,7 +1569,6 @@
   // the power state of a held-able setting: the Text's rides its own
   // module row (value null, never a question), everything else csState's
   const pwState = (k) => (cs ? (k === 'text' ? cs.settingState('startingText') : csState(k)) : null);
-  const isDelegable = (k) => MANAGED_KEYS.includes(k) && M.entryOf(midOf(k)).delegable;
   const PWCACHE = {};
   // Q454 (Ed, 2026-08-20): 🔧 becomes ✒️ and the assent half of 👑 becomes
   // 🛡️ — a sword and a shield, one writes and one only refuses, where 🔧
@@ -1595,6 +1594,27 @@
     if (st.holder === 'members') return { u: false, a: false };
     return { u: st.powers.unilateral, a: st.powers.assent };
   };
+  // **A pre-start release is recorded now and takes effect at 🍾** (Ed,
+  // 2026-08-25; R-048). So there are two truths about a power before the
+  // start and the surface says both: `pwPair` is the hand actually on the
+  // setting — which is what the wallets, the crown mark and every gate ask
+  // about — and `pwPend` is what the founder has already promised away.
+  // The card reads a pending release as *chosen*, and the clause says
+  // *from the start*.
+  const pwPend = (k) => {
+    const st = pwState(k);
+    const p = st && st.pendingRelease;
+    return { u: !!(p && p.unilateral), a: !!(p && p.assent) };
+  };
+  // **A power can only be laid down once the setting has a value** — there
+  // is nothing to hand over before that (R-048). The Text carries no managed
+  // value, so its own answer is whether the text has been confirmed.
+  const pwHasValue = (k) => {
+    if (!cs) return false;
+    if (k === 'text') return !!cs.textConfirmed;
+    const st = pwState(k);
+    return !!st && st.value !== null;
+  };
   // 396c's precise sentences for each power, held and given, stated once
   // per setting — the clause (holderLine) and the card head that opens
   // from it must agree by construction, not by copy discipline. The
@@ -1615,11 +1635,20 @@
   };
   const pwPhrase = (k, power) => (PW_PHRASE[k] || PW_PHRASE['*'])[power];
   const founderMay = (parts) => (parts.length ? 'The Founder may ' + parts.join(', and ') + '.' : '');
-  const pwLine = (k, power, held) => (held ? founderMay([pwPhrase(k, power)])
-    : 'The Founder may not ' + pwPhrase(k, power) + '.');
+  // the same grammar for a power laid down *from the start* (R-048): the
+  // negative under a date, so a reader can tell a power already given from
+  // one given up the moment the document begins
+  const founderMayNotYet = (parts) => (parts.length
+    ? 'From the start, the Founder may not ' + parts.join(', or ') + '.' : '');
+  const pwLine = (k, power, held, pending) => (pending
+    ? founderMayNotYet([pwPhrase(k, power)])
+    : held ? founderMay([pwPhrase(k, power)])
+      : 'The Founder may not ' + pwPhrase(k, power) + '.');
   const powerHeadLine = (c) => {
     const p = pwPair(c.base);
-    return pwLine(c.base, c.power, c.power === 'u' ? p.u : p.a);
+    const pend = pwPend(c.base);
+    return pwLine(c.base, c.power, c.power === 'u' ? p.u : p.a,
+      c.power === 'u' ? pend.u : pend.a);
   };
   const PWWHY = {
     '*': {
@@ -1748,8 +1777,8 @@
     const k = c.base;
     const p = pwPair(k);
     const live = cs && cs.constitutedAtT !== null;
-    const preText = cs && !cs.textConfirmed && !live;
-    const held = c.power === 'u' ? p.u : p.a;
+    const pend = c.power === 'u' ? pwPend(k).u : pwPend(k).a;
+    const held = (c.power === 'u' ? p.u : p.a) && !pend;
     const key = 'pw:' + c.power + ':' + k;
     const why = pwWhy(k, c.power);
     const L = pwOpts(k, c.power);
@@ -1762,19 +1791,25 @@
       return why + '<p class="setnote"><b>Given up — one way.</b> The road back is the members' + Q + ' reserve motion.</p>';
     }
     // 🛡️-held is unreachable pre-start while ✒️ is given (the
-    // assent-only state is inert before the start, §9.7 v0.54); giving up
-    // ✒️ alone waits for proposing unless it completes a delegation
+    // assent-only state is inert before the start, §9.7 v0.54)
     const blockAHeld = c.power === 'a' && !live && !p.u && !held;
-    const blockUGive = c.power === 'u' && preText && held && !(!p.a && isDelegable(k));
+    // **Nothing to hand over until the setting has a value** (R-048), and it
+    // is the same bar on both tabs now: the old one asked about the *text*
+    // being confirmed, which is one setting's value among nineteen. The
+    // delegation escape hatch the old test carried is gone with it — pre-start
+    // a power is only ever actually false through delegation, and a delegated
+    // setting is not drawn held at all.
+    const blockGive = !live && held && !pwHasValue(k);
     const cur = S[key] || (held ? 'held' : 'given');
     return why + '<div class="choice" role="radiogroup">' +
       powerLane(key, 'held', L.held[0], L.held[1], cur === 'held', blockAHeld) +
       powerLane(key, 'given', L.given[0],
-        L.given[1] + (live ? ' One way — the road back is the members' + Q + ' to give.' : ''),
-        cur === 'given', blockUGive) +
+        L.given[1] + (live ? ' One way — the road back is the members' + Q + ' to give.'
+          : ' It takes effect when the document begins.'),
+        cur === 'given', blockGive) +
       '</div>' +
       (blockAHeld ? '<p class="setnote">A veto can only be held where the Founder still amends it at will — take back the ✒️ first.</p>' : '') +
-      (blockUGive ? '<p class="setnote">Giving up your own hand opens once the text is confirmed.</p>' : '') +
+      (blockGive ? '<p class="setnote">Opens once this setting has a value.</p>' : '') +
       (!live ? '<p class="setnote">Revisable until the document begins. Giving both up hands the question to the members — delegation is exactly the state of holding neither.</p>' : '');
   };
   function commitPower(key) {
@@ -1786,7 +1821,9 @@
     const want = S[key];
     if (!want) return;
     const p = pwPair(k);
-    const held = mm[1] === 'u' ? p.u : p.a;
+    const pend = pwPend(k);
+    // held as the card reads it: a pending release is already *given* (R-048)
+    const held = (mm[1] === 'u' ? p.u : p.a) && !(mm[1] === 'u' ? pend.u : pend.a);
     const wantHeld = want === 'held';
     if (wantHeld !== held) {
       try {
@@ -1796,9 +1833,11 @@
           // (Q403) — keep the page’s own delegation vocabulary coherent
           if (csDelegated(k) && DKEY[k]) S[DKEY[k]] = 'roster';
         } else {
-          // pre-start take-back (§9.6a): reclaim restores both, then
-          // re-drop whichever the other tab still shows as given
-          const otherHeld = mm[1] === 'u' ? p.a : p.u;
+          // pre-start take-back (§9.6a): reclaim restores both — including
+          // whichever is only *pending* (R-048) — then re-drop whichever the
+          // other tab still shows as given
+          const otherHeld = (mm[1] === 'u' ? p.a : p.u) &&
+            !(mm[1] === 'u' ? pend.a : pend.u);
           cs.reclaim(now(), mid);
           if (!otherHeld) {
             try { cs.relinquish(now(), mid, mm[1] === 'u' ? 'assent' : 'unilateral'); } catch (e2) {}
@@ -3508,11 +3547,17 @@
     const st = pwState(k);
     if (!st || st.holder === 'members') return '';
     const p = st.powers;
-    // one sentence, joining whichever powers the Founder actually holds
+    const pend = pwPend(k);
+    // one sentence, joining whichever powers the Founder actually holds —
+    // and, since R-048, a second for whichever they have laid down from the
+    // start. The two cannot be joined: *until the document begins* would
+    // scope over both halves of a sentence that means it about one.
     const parts = [];
-    if (p.unilateral) parts.push(pwPhrase(k, 'u'));
-    if (p.assent && membershipDecided()) parts.push(pwPhrase(k, 'a'));
-    return parts.length ? ' ' + founderMay(parts) : '';
+    const going = [];
+    if (p.unilateral) (pend.u ? going : parts).push(pwPhrase(k, 'u'));
+    if (p.assent && membershipDecided()) (pend.a ? going : parts).push(pwPhrase(k, 'a'));
+    const said = [founderMay(parts), founderMayNotYet(going)].filter(Boolean);
+    return said.length ? ' ' + said.join(' ') : '';
   };
   // **Links in the constitution are real links** (Ed, 2026-08-19):
   // underlined, ink-coloured (.doclink), applied after escaping so a
@@ -5938,7 +5983,9 @@
         if (mid === 'membership') {
           const reg = self.v.view.register ||
             { holder: 'members', powers: { unilateral: false, assent: false } };
-          return { holder: reg.holder, powers: reg.powers, value: null,
+          return { holder: reg.holder, powers: reg.powers,
+            pendingRelease: reg.pendingRelease ||
+              { unilateral: false, assent: false }, value: null,
             settledBy: null, settledAtT: null, collecting: false,
             distribution: null, answeredCount: 0,
             answers: { has: () => false } };
@@ -5949,6 +5996,7 @@
         const res = index().resolutions.get(mid);
         const mine = q ? q.myAnswer !== null : false;
         return { holder: st.holder, powers: st.powers, powerFrom: st.powerFrom,
+          pendingRelease: st.pendingRelease || { unilateral: false, assent: false },
           value: st.value,
           settledBy: st.settledBy, settledAtT: st.settledAtT,
           collecting: st.collecting,

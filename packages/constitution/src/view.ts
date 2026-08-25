@@ -42,6 +42,11 @@ export interface SettingView {
   powers: { unilateral: boolean; assent: boolean };
   /** Where each held power came from (Q524): the birth, or a reserve motion. */
   powerFrom: { unilateral: PowerSource | null; assent: PowerSource | null };
+  /**
+   * A power the convenor has laid down **from the start** (R-048): still
+   * theirs, already promised away. Both false at every moment after 🍾.
+   */
+  pendingRelease: { unilateral: boolean; assent: boolean };
   value: SettingValue | null;
   /**
    * What it held before the convenor last set it directly, and their reason
@@ -114,6 +119,8 @@ export interface ApplicantRowView {
 export interface RegisterView {
   holder: 'convenor' | 'members';
   powers: { unilateral: boolean; assent: boolean };
+  /** The register's pair is the applications setting's, pending releases included (R-048). */
+  pendingRelease: { unilateral: boolean; assent: boolean };
 }
 
 export interface MemberView {
@@ -166,6 +173,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     const st = s.settingState('startingText');
     settings.push({ setting: 'startingText', glyph: '📄', kind: 'ordinary',
       holder: st.holder, powers: { ...st.powers }, powerFrom: { ...st.powerFrom },
+      pendingRelease: { ...st.pendingRelease },
       value: null, previousValue: null, setWhy: null, settledBy: null,
       settledAtT: null, collecting: false });
   }
@@ -178,6 +186,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       holder: st.holder,
       powers: { ...st.powers },
       powerFrom: { ...st.powerFrom },
+      pendingRelease: { ...st.pendingRelease },
       value: st.value,
       previousValue: st.previousValue,
       setWhy: st.setWhy,
@@ -238,6 +247,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
   const register: RegisterView = {
     holder: holderOf(rp),
     powers: rp,
+    pendingRelease: { ...s.settingState('applications').pendingRelease },
   };
 
   const applicants: ApplicantRowView[] = [];

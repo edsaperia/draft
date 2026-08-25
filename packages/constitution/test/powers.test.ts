@@ -1,13 +1,41 @@
 /**
  * The two crown powers (§9.7 v0.54): reservation is unilateral change and
- * assent, held and relinquished separately. Assent may be given up from
- * creation; unilateral change only once proposing opens (Ed, 2026-08-19,
- * corrected the same day — the assent-only state is inert before the
- * start). The road back is the reserve motion, which may name one power.
+ * assent, held and relinquished separately.
+ *
+ * Since R-048 (Ed, 2026-08-25) both are laid down on one clock: **once the
+ * setting has a value**, either may go, and a release made before the start
+ * is *pending* — recorded when it is made, effective at 🍾, revisable by
+ * `reclaim` until then. The road back after the start is the reserve motion,
+ * which may name one power.
  */
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import { buildConstituted } from './helpers.js';
+
+/**
+ * A document one press short of beginning, with every setting the founder's
+ * and every one of them set — which is what a pre-start release needs
+ * (R-048), and what `buildConstituted` cannot give, having already begun.
+ */
+const readyToBegin = (): ConstitutionSession => {
+  const s = ConstitutionSession.open({
+    title: 'T', slug: 't',
+    convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+  }, 0);
+  const bo = s.invite(1, 'bo@example.org');
+  s.arrive(1, bo);
+  s.confirmStartingText(1, 'x');
+  const values = {
+    ending: { endsAtMs: 1_000_000 }, bar: { pct: 66 }, chamber: { rung: 'link' },
+    rate: { grant: 4, cap: 8, dripMinutes: 240 }, pace: { shape: 'fixed' },
+    quorum: { form: 'share', n: 60 }, authorship: { rung: 'sealed' },
+    judgments: { rung: 'after' }, applications: { joinPolicy: 'invite' },
+    removal: { rung: 'everyone' }, machines: { enabled: false, budget: 0 },
+    lapse: { afterMs: null },
+  };
+  for (const [id, v] of Object.entries(values)) s.setSetting(1, id as never, v as never);
+  return s;
+};
 
 const crownQuestionFor = (s: ConstitutionSession, motion: string) =>
   (s.logEntries().map((e) => e.event)
@@ -22,11 +50,15 @@ describe('pre-start, powers are as revisable as values (§9.6a)', () => {
     }, 0);
     s.setSetting(1, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
     s.relinquish(2, 'rate', 'assent');
-    expect(s.settingState('rate').powers).toEqual({ unilateral: true, assent: false });
+    // pending, not gone: the shield is still the founder's until 🍾 (R-048)
+    expect(s.settingState('rate').powers).toEqual({ unilateral: true, assent: true });
+    expect(s.settingState('rate').pendingRelease)
+      .toEqual({ unilateral: false, assent: true });
     // the founder changes their mind before anything has started
     s.reclaim(3, 'rate');
     const st = s.settingState('rate');
     expect(st.powers).toEqual({ unilateral: true, assent: true });
+    expect(st.pendingRelease).toEqual({ unilateral: false, assent: false });
     expect(st.holder).toBe('convenor');
     // the value the founder set is untouched — only the power came back
     expect(st.value).toEqual({ grant: 4, cap: 8, dripMinutes: 240 });
@@ -40,17 +72,65 @@ describe('pre-start, powers are as revisable as values (§9.6a)', () => {
   });
 });
 
-describe('giving up assent alone (available from creation)', () => {
-  it('a carried motion on a unilateral-only setting applies with nobody asked', () => {
+describe('a power may be laid down as soon as the setting has a value (R-048)', () => {
+  it('an unset setting refuses both powers — there is nothing to hand over', () => {
     const s = ConstitutionSession.open({
       title: 'T', slug: 't',
       convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
     }, 0);
-    // before the text even confirms — assent may go from creation
-    s.relinquish(0, 'rate', 'assent');
-    expect(s.settingState('rate').powers).toEqual({ unilateral: true, assent: false });
-    expect(s.settingState('rate').holder).toBe('convenor'); // still held
+    expect(() => s.relinquish(0, 'rate', 'assent')).toThrow(/has no value yet/);
+    expect(() => s.relinquish(0, 'rate', 'unilateral')).toThrow(/has no value yet/);
+    expect(s.settingState('rate').powers).toEqual({ unilateral: true, assent: true });
+    // the title was set at the birth, so it is relinquishable from the birth
+    s.relinquish(0, 'title', 'unilateral');
+    expect(s.settingState('title').pendingRelease)
+      .toEqual({ unilateral: true, assent: false });
+  });
 
+  it('a pre-start release is spent at 🍾, and nothing moves before it', () => {
+    const s = readyToBegin();
+    s.relinquish(2, 'rate', 'assent');
+    // still the founder's hand, all the way to the press
+    expect(s.settingState('rate').powers).toEqual({ unilateral: true, assent: true });
+    expect(s.crowned()).toBe(true);
+    s.begin(3);
+    expect(s.settingState('rate').powers).toEqual({ unilateral: true, assent: false });
+    expect(s.settingState('rate').pendingRelease)
+      .toEqual({ unilateral: false, assent: false });
+    expect(s.settingState('rate').holder).toBe('convenor');
+    // and the log replays to the same state, the release being an event
+    const r = ConstitutionSession.replay(s.logEntries().slice());
+    expect(r.rollingHash()).toBe(s.rollingHash());
+    expect(r.settingState('rate').powers).toEqual({ unilateral: true, assent: false });
+  });
+
+  it('a pending release is undone by a pre-start reclaim, and the start finds nothing', () => {
+    const s = readyToBegin();
+    s.relinquish(2, 'rate', 'unilateral');
+    s.reclaim(2, 'rate');
+    expect(s.settingState('rate').pendingRelease)
+      .toEqual({ unilateral: false, assent: false });
+    s.begin(3);
+    expect(s.settingState('rate').powers).toEqual({ unilateral: true, assent: true });
+    // the value the founder set is untouched by either act
+    expect(s.settingState('rate').value).toEqual({ grant: 4, cap: 8, dripMinutes: 240 });
+  });
+
+  it('both powers pending on a non-delegable setting hand it over at the start', () => {
+    // 🪶 the title takes no founding question, so neither release is a
+    // delegation — the pair is spent together at 🍾 as a hand-over
+    const s = readyToBegin();
+    s.relinquish(2, 'title', 'unilateral');
+    s.relinquish(2, 'title', 'assent');
+    expect(s.settingState('title').holder).toBe('convenor'); // still, until 🍾
+    s.begin(3);
+    const st = s.settingState('title');
+    expect(st.holder).toBe('members');
+    expect(st.powers).toEqual({ unilateral: false, assent: false });
+    expect(st.value).toEqual({ text: 'T' }); // the value stands: a hand-over
+  });
+
+  it('a carried motion on a unilateral-only setting applies with nobody asked', () => {
     const { s: cs, bo, cy } = buildConstituted();
     cs.relinquish(3, 'rate', 'assent');
     const m = cs.openMotion(10, bo, {
@@ -68,15 +148,8 @@ describe('giving up assent alone (available from creation)', () => {
   });
 });
 
-describe('giving up unilateral change (waits until proposing opens)', () => {
-  it('is refused before the text confirms, and afterwards leaves assent standing', () => {
-    const s = ConstitutionSession.open({
-      title: 'T', slug: 't',
-      convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
-    }, 0);
-    expect(() => s.relinquish(0, 'rate', 'unilateral'))
-      .toThrow(/waits until proposing opens/);
-
+describe('giving up unilateral change', () => {
+  it('leaves assent standing, and a carried change waits on the crown', () => {
     const { s: cs, bo } = buildConstituted();
     cs.relinquish(3, 'rate', 'unilateral');
     expect(cs.settingState('rate').powers).toEqual({ unilateral: false, assent: true });
@@ -188,23 +261,30 @@ describe('delegation is the state of holding no powers (Q403, Ed 2026-08-19)', (
     s.setSetting(1, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
     s.relinquish(2, 'rate', 'assent');
     // the second power going pre-start opens the blind founding question,
-    // exactly as the delegate verb always did — one state, one meaning
+    // exactly as the delegate verb always did — one state, one meaning. It
+    // takes effect at once, unlike a lone release (R-048): a question that
+    // waited for the start would never be collected.
     s.relinquish(3, 'rate', 'unilateral');
     const st = s.settingState('rate');
     expect(st.holder).toBe('members');
     expect(st.powers).toEqual({ unilateral: false, assent: false });
+    expect(st.pendingRelease).toEqual({ unilateral: false, assent: false });
     expect(st.collecting).toBe(true);
     expect(st.value).toBeNull();
   });
 
-  it('pre-start, unilateral alone still waits — the assent-only state is inert', () => {
+  it('the shortcut is symmetric — the press order does not decide it (R-048)', () => {
     const s = ConstitutionSession.open({
       title: 'T', slug: 't',
       convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
     }, 0);
-    // assent still held: not a delegation, and proposing has not opened
-    expect(() => s.relinquish(1, 'rate', 'unilateral'))
-      .toThrow(/waits until proposing opens/);
+    s.setSetting(1, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
+    s.relinquish(2, 'rate', 'unilateral');   // the pen first, this time
+    expect(s.settingState('rate').holder).toBe('convenor');
+    s.relinquish(3, 'rate', 'assent');
+    const st = s.settingState('rate');
+    expect(st.holder).toBe('members');
+    expect(st.collecting).toBe(true);
   });
 
   it('post-start, giving up the second power hands the settled value over', () => {

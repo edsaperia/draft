@@ -114,8 +114,9 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   Wants Ed's eye; the primary key (join policy) is unchanged.
 - **The Text is held like anything else** (Q440, 2026-08-21). `startingText`
   now carries a crown pair (`HELD` = the managed map plus the Text), held
-  by the founder from creation, relinquished on the same clocks as every
-  setting (assent from creation, the pen once proposing opens), reclaimed
+  by the founder from creation, relinquished on the same clock as every
+  setting (R-048: once it has a value — for the Text, once it is confirmed —
+  and a pre-start release takes effect at 🍾), reclaimed
   pre-start, handed over by `delegate`, restored by a `reserve` motion, and
   counted by `crowned()` — the founder who keeps the pen or the shield on
   the document itself is a 👑. The founding value is untouched:

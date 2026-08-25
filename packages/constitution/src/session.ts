@@ -185,6 +185,7 @@ export class ConstitutionSession {
             powers: { unilateral: true, assent: true },
             // both powers are the convenor's by construction at the birth
             powerFrom: { unilateral: 'founding', assent: 'founding' },
+            pendingRelease: { unilateral: false, assent: false },
             value: null,
             previousValue: null,
             setWhy: null,
@@ -429,6 +430,17 @@ export class ConstitutionSession {
         // post-start reserve motion; 🍾, when it is an explicit act, takes
         // this over.
         this.setPowers(this.settings.get('startingText')!, { unilateral: false, assent: false });
+        // and the same act spends every **pending** release (R-048): a power
+        // laid down while the founding ran was recorded then and takes effect
+        // now. Derived at the fold like the Text's own lay-down, so no event
+        // shape changed and the frozen log replays byte for byte.
+        for (const st of this.settings.values()) {
+          if (!st.pendingRelease.unilateral && !st.pendingRelease.assent) continue;
+          this.setPowers(st, {
+            unilateral: st.powers.unilateral && !st.pendingRelease.unilateral,
+            assent: st.powers.assent && !st.pendingRelease.assent,
+          });
+        }
         break;
       }
       case 'ok-owed': {
@@ -483,8 +495,17 @@ export class ConstitutionSession {
       }
       case 'power-relinquished': {
         const st = this.settings.get(event.setting)!;
-        const powers: Powers = { ...st.powers, [event.power]: false };
-        this.setPowers(st, powers);
+        // **A pre-start release takes effect at Begin** (Ed, 2026-08-25;
+        // R-048). The act is recorded here and now — this event is the
+        // record of it — but the power stays the convenor's until 🍾, so
+        // everything that reads `powers` before the start reads the hand
+        // that is actually on the setting. `constituted` spends it.
+        if (this.constitutedT === null) {
+          st.pendingRelease = { ...st.pendingRelease, [event.power]: true };
+        } else {
+          const powers: Powers = { ...st.powers, [event.power]: false };
+          this.setPowers(st, powers);
+        }
         this.touch(this.convenor.id, event.t);
         break;
       }
@@ -773,6 +794,10 @@ export class ConstitutionSession {
     };
     st.powers = powers;
     st.holder = holderOf(powers);
+    // whatever moves a power decides it: a pre-start release that has been
+    // spent at 🍾, reclaimed, or overtaken by a delegation is no longer
+    // pending anything (R-048)
+    st.pendingRelease = { unilateral: false, assent: false };
   }
 
   private freshMember(id: MemberId, email: string, invitedAtT: number,
@@ -991,11 +1016,31 @@ export class ConstitutionSession {
   }
 
   /**
+   * Has this setting been set at least once? — the pre-start gate on laying a
+   * power down (R-048). The Text carries no managed value (Q440), so its own
+   * answer to *has it been set* is whether it has been confirmed.
+   */
+  private everSet(st: SettingState): boolean {
+    if (st.id === 'startingText') return this.textConfirmedFlag;
+    return st.value !== null;
+  }
+
+  /** The power as the *founder's own card* reads it: a pending release is given. */
+  private stillHeld(st: SettingState, power: Power): boolean {
+    return st.powers[power] && !st.pendingRelease[power];
+  }
+
+  /**
    * Give up one crown power on one setting (§9.7 v0.54): free, separate,
-   * one-way — the road back is the room's reserve motion. Assent may go
-   * from creation; unilateral change only once proposing opens, because
-   * the assent-only state is inert before the start (Ed, 2026-08-19,
-   * corrected the same day: delegation keeps its earlier clock).
+   * one-way after the start — the road back is the room's reserve motion.
+   *
+   * **Once a setting has a value, either power may go** (Ed, 2026-08-25;
+   * R-048), and before the start the release is *pending*: recorded when it
+   * is made, effective at 🍾. The old clocks — assent from creation, the pen
+   * only once the text confirmed — are both retired. What replaces them is
+   * one gate on the setting rather than two on the calendar: a setting nobody
+   * has set has nothing to hand over, and the text's own confirmation is one
+   * setting's value among nineteen rather than the whole document's clock.
    */
   relinquish(t: number, setting: SettingId, power: Power): void {
     this.requireOpen('giving up a power');
@@ -1007,22 +1052,26 @@ export class ConstitutionSession {
       throw new Error("the register's powers are the applications setting's -- relinquish there (§9.7½)");
     }
     const st = this.settings.get(setting)!;
-    if (!st.powers[power]) {
+    if (!this.stillHeld(st, power)) {
       throw new Error(`the ${power} power on '${setting}' is not held`);
     }
-    if (power === 'unilateral' && this.constitutedT === null) {
-      // Q403 (Ed, 2026-08-19): delegation IS the state of holding no
-      // powers, so pre-start, giving up the second power on a delegable
-      // setting is delegation — it opens the blind founding question like
-      // the verb always did. Giving up unilateral change *alone* stays
-      // barred until proposing opens (the assent-only state is inert
-      // before the start, §9.7 v0.54).
-      if (!st.powers.assent && entry.delegable) {
+    if (this.constitutedT === null) {
+      // Q403 (Ed, 2026-08-19): delegation IS the state of holding no powers,
+      // so pre-start, giving up the *second* power on a delegable setting is
+      // delegation — it opens the blind founding question like the verb
+      // always did, and it takes effect at once, because a question that
+      // waited for the start would never be collected. Symmetric in the two
+      // powers since R-048: with the pen relinquishable pre-start, the order
+      // the founder happens to press them in must not decide whether they
+      // end up delegating.
+      const other: Power = power === 'unilateral' ? 'assent' : 'unilateral';
+      if (!this.stillHeld(st, other) && entry.delegable) {
         this.emit({ type: 'setting-delegated', t, setting });
         return;
       }
-      if (!this.textConfirmedFlag) {
-        throw new Error('giving up unilateral change waits until proposing opens (§9.7 v0.54)');
+      if (!this.everSet(st)) {
+        throw new Error(
+          `'${setting}' has no value yet — a power can only be laid down once the setting is set (§9.7)`);
       }
     }
     this.emit({ type: 'power-relinquished', t, setting, power });
@@ -1033,8 +1082,11 @@ export class ConstitutionSession {
     this.requirePreStart('reclaiming');
     const st = this.settings.get(setting);
     if (!st) throw new Error(`'${setting}' is not a delegable setting`);
-    // nothing to take back: held, with both powers intact
-    if (st.holder === 'convenor' && st.powers.unilateral && st.powers.assent) return;
+    // nothing to take back: held, with both powers intact and neither of them
+    // promised away at the start (R-048 — a pending release is exactly what a
+    // pre-start reclaim is for)
+    if (st.holder === 'convenor' && st.powers.unilateral && st.powers.assent
+      && !st.pendingRelease.unilateral && !st.pendingRelease.assent) return;
     this.emit({ type: 'setting-reclaimed', t, setting });
   }
 
