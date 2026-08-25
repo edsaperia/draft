@@ -927,8 +927,29 @@ export async function createDraftServer(cfg: ServerConfig,
       if (doc.cs.applicantRecords().get(applicantId)?.status === 'started') {
         doc.cs.verifyApplication(t, applicantId);
       }
+      // **Under `open` the link is the joining** (backlog 73, Q894). The rung
+      // says so in as many words — *anyone with the link becomes a member the
+      // moment they open it* — and the module agrees, `submitApplication`
+      // auto-admitting with no motion in the way. But this handler only ever
+      // verified, so the visitor was left at `verified` for ever: no UI
+      // submits for them (the page renders an `open` applicant no rail at all,
+      // believing landing already admitted them), so `open` membership was
+      // unreachable by any road. An empty application is a real application
+      // (§9.7½), which is what makes the admit here honest. The other rungs
+      // land verify-only and keep their later submit and their motion.
+      const apps = doc.cs.settingState('applications').value as
+        { joinPolicy?: 'invite' | 'proposed' | 'apply' | 'open' } | null;
+      if ((apps?.joinPolicy ?? 'invite') === 'open' && !doc.cs.closed &&
+          doc.cs.applicantRecords().get(applicantId)?.status === 'verified') {
+        doc.cs.submitApplication(t, applicantId);
+      }
       await commit(doc, nowMs);
-      setCookie(res, doc.id, auth.cookieFor(doc.id, `app:${applicantId}`, nowMs), httpsOn);
+      // an admitted visitor holds a member's seat, not an applicant's — the
+      // applicant cookie stays the fallback for every road that lands short
+      // of membership, and for an admit this handler could not make
+      const mid = memberIdByEmail(doc.cs, rec.email);
+      setCookie(res, doc.id,
+        auth.cookieFor(doc.id, mid ?? `app:${applicantId}`, nowMs), httpsOn);
       redirect(res, `/d/${doc.cs.slug}`);
       return;
     }

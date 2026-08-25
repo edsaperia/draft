@@ -1427,3 +1427,91 @@ describe('the phase ladder (Q674–Q678)', () => {
     expect(done.record!.signatures.some((s) => (s.comment ?? '').length > 0)).toBe(true);
   }, 120_000);
 });
+
+/**
+ * **The open-join link admits the visitor, not just verifies them**
+ * (backlog 73, Q894–Q896). Under the `open` rung the surface promises
+ * *anyone with the link becomes a member the moment they open it*, and the
+ * module keeps that promise — `submitApplication` auto-admits with no motion
+ * in the way. The HTTP seam did not: `/auth/apply` verified and handed an
+ * applicant cookie whatever the policy, so the visitor sat at `verified` for
+ * ever with no road onward (the page draws an `open` applicant no rail at
+ * all, believing the landing already made them a member). The module's own
+ * `open` test passes because it calls `submitApplication` directly, which is
+ * exactly why the gap lived here and not there.
+ */
+describe('the open join link admits (backlog 73)', () => {
+  it('a visitor who follows the apply link under `open` lands a member, with no motion in the way', async () => {
+    const { base, draft } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Open Commons Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      const body = await res.json() as { ok?: boolean; error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+
+    await cmd(ada, 'confirm-starting-text', { text: 'The commons are open to all.' });
+    await cmd(ada, 'set-setting',
+      { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    // the founder keeps every question: a delegated one never resolves on a
+    // single voice (§9.0a), and this document has a membership of one
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: Date.now() + 3600_000 },
+      pace: { shape: 'fixed' }, bar: { pct: 66 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { joinPolicy: 'open' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'begin', {}); // 🍾
+    expect((await viewOf(ada)).constitutedAtT).not.toBeNull();
+
+    // -- the visitor knocks, and the mail is the whole of the joining ----
+    const knock = await (await post(base, `/api/d/${slug}/apply`,
+      { email: 'dee@example.org' })).json() as { ok: boolean; devLink: string };
+    expect(knock.ok).toBe(true);
+    const landed = await consume(knock.devLink);
+    expect(landed.status).toBe(302);
+    const dee = cookieOf(landed);
+
+    // arrival IS joining: the roster holds them, arrived, from the landing
+    // itself — no `submit-application` was posted and no admit motion ran
+    const live = draft.store.bySlug(slug)!;
+    const deeMember = [...live.cs.memberRecords().values()]
+      .find((m) => m.email === 'dee@example.org');
+    expect(deeMember).toBeDefined();
+    expect(deeMember!.arrivedAtT).not.toBeNull();
+    expect(deeMember!.removed).toBe(false);
+    expect([...live.cs.applicantRecords().values()]
+      .find((a) => a.email === 'dee@example.org')!.status).toBe('admitted');
+
+    // the seat the link handed back is a member's, not an applicant's:
+    // the member view answers it, where an `app:` cookie is served the
+    // applicant's own thin payload instead
+    const deeView = await viewOf(dee);
+    expect(deeView.me).toBe(deeMember!.id);
+    expect(deeView.isFounder).toBe(false);
+    expect((deeView as unknown as { applicant?: unknown }).applicant).toBeUndefined();
+    expect(deeView.text).toContain('The commons are open to all.');
+
+    // nothing was put before the room: no admit motion, no admit race
+    const adaView = await viewOf(ada);
+    expect(adaView.view.motions.some((m) =>
+      (m.payload as { kind?: string } | null)?.kind === 'admit')).toBe(false);
+    expect(adaView.raceCards.some((c) =>
+      (c.a.setting?.settingId ?? '').startsWith('admit:') ||
+      (c.b.setting?.settingId ?? '').startsWith('admit:'))).toBe(false);
+    expect(adaView.view.members.some((m) => m.email === 'dee@example.org')).toBe(true);
+  }, 60_000);
+});
