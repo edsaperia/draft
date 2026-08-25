@@ -467,6 +467,13 @@ const identityReachesEverySeat = async () => {
     stuck.push('set-identity for the member'); return;
   }
   await T(5500);
+  // the register is the 🪪 card's own body, so it has to be open to be read —
+  // the band's Membership clause is the members *list*, which carries no
+  // address to pick a row out by
+  if (!(await open('roster'))) {
+    say('their seat · FAIL: no 🪪 tab to read the register from');
+    stuck.push('the 🪪 tab for the register'); return;
+  }
   const rows = await rosterRows();
   const row = rows.find((r) => r.e === GUEST1);
   const reached = !!row && row.n === GUEST_NAME && row.face === GUEST_FACE.slice(1);
