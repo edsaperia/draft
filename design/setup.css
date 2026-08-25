@@ -46,8 +46,8 @@
      `fitBand` floors it against the pile beside it. */
   .setrow {
     position: relative; box-sizing: border-box;
-    max-width: calc(70ch + 2 * var(--s5) + 3px);
-    margin: 0 auto var(--s4); padding: 0 var(--s5);
+    max-width: calc(var(--measure) + 2 * var(--measure-gutter));
+    margin: 0 auto var(--s4); padding: 0 var(--measure-gutter);
   }
   .setrow .pilelab { display: flex; flex-direction: column; gap: 2px; padding-top: 3px; }
   /* **Founder and Membership are document headings** (Ed, 2026-08-18: *the
@@ -427,7 +427,10 @@
      the s5 side padding and auto-centring were the indent). */
   /* the headings only: the fixture charter's own div.doctitle (session.js)
      keeps system.css's box, as it did on its own page */
-  .doc h1.doctitle, .doc h2.doctitle { max-width: 70ch; margin: 0 0 var(--s5);
+  /* `--measure` rather than a second `70ch`: read at `--t-lead` the literal
+     resolved to a wider column than the prose's and so never bound at all
+     (Ed, 2026-08-25) — the row it sits in was the only thing holding it. */
+  .doc h1.doctitle, .doc h2.doctitle { max-width: var(--measure); margin: 0 0 var(--s5);
     padding: 0; text-wrap: balance; }
   .doc h1.doctitle.ph { color: var(--muted); font-weight: 400; min-height: 1.15em; }
 

@@ -667,7 +667,26 @@
   /* ===================================================================
      The document. Its wide left padding is the chip-gutter (see .chipcol).
      =================================================================== */
+  /* **One measure, and the gutter beside it** (Ed, 2026-08-25: *the text area
+     for "Text" is wider than the constitution text; they should be the same*).
+     The prose column and the constitution rows had each been handed `70ch`
+     separately, and they agreed only where the column was wide enough for both
+     to reach it: a row carries its tab gutter *inside* its max-width and the
+     prose carried none, so wherever the document column was the narrower of
+     the two the prose spread a whole gutter further out on each side. Both
+     take these two now — max-width is the measure plus two gutters, padding is
+     one gutter — so the clause text and the prose text share both edges at
+     every width, by construction rather than by two numbers agreeing.
+
+     Registered, so `70ch` is resolved **here**, at document type, and inherits
+     as a length. An unregistered custom property substitutes its tokens and
+     resolves `ch` against whoever *uses* it — which is how `.doctitle`'s own
+     `70ch`, read at `--t-lead`, came to be a different width from the prose's
+     and to never bind at all. */
+  @property --measure { syntax: "<length>"; inherits: true; initial-value: 0px; }
   .doc {
+    --measure: 70ch;
+    --measure-gutter: var(--s5);
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
@@ -679,7 +698,11 @@
     padding: 36px 44px 95vh 132px;
   }
   @media (max-width: 900px) { .doc { padding: var(--s5) 20px 95vh; } }
-  .doc .prose { max-width: 70ch; margin: 0 auto; }
+  .doc .prose {
+    max-width: calc(var(--measure) + 2 * var(--measure-gutter));
+    padding: 0 var(--measure-gutter);
+    margin: 0 auto;
+  }
   .doc .doctitle { font-size: var(--t-lead); font-weight: 600; margin: 0 0 18px; text-wrap: balance; }
   .doc p { margin: 0 0 var(--s3); position: relative; }
   /* **An empty document has one clause, and it is empty** (Q649 (a), Ed
@@ -718,8 +741,16 @@
      on whatever is open, including all of a patch's clauses at once. A filed
      clause washes nothing — the document should look settled where it is.
      The extra class beats `.doc p`, which also sets margin. */
+  /* The negative margins are what put the *text* on the measure: the block is
+     a highlight box with its own air, and each side's padding is given back so
+     the words start and end exactly where the column does. The left side has
+     always done this; the right side was giving up 8px of measure, which is
+     what made a charter paragraph wrap 8px earlier than a constitution clause
+     (Ed, 2026-08-25). Both selectors move together, as they must — the
+     card-opening motion is measured against the two boxes being identical. */
   .doc .anch, .clausehead .headclause {
-    padding: 6px var(--s2) 6px var(--s3); margin-left: calc(-1 * var(--s3));
+    padding: 6px var(--s2) 6px var(--s3);
+    margin-left: calc(-1 * var(--s3)); margin-right: calc(-1 * var(--s2));
     border-radius: var(--r-sm);
   }
   .anch.active:hover { box-shadow: none; }
@@ -1167,8 +1198,10 @@
      clause does not shift sideways when it becomes a head — and the `.chipcol`
      inside the head therefore lands in exactly the gutter column the document
      puts its marks in. Width is the prose measure plus the card's own padding
-     and border; `margin: auto` centres it on the same axis .prose centres on. */
-  .sugg { max-width: calc(70ch + 2 * var(--s5) + 3px); }
+     and border; `margin: auto` centres it on the same axis .prose centres on.
+     Its side padding *is* `--measure-gutter`, so its content column is the
+     measure itself and the head lands on the prose's own text edges. */
+  .sugg { max-width: calc(var(--measure) + 2 * var(--measure-gutter)); }
   /* Marks belonging to *other* live suggestions at this clause travel into the
      head's own chip column, where they stack under the card's mark exactly as
      they stacked beside the paragraph. No label needed any more: the column
