@@ -18,6 +18,7 @@ import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { CATALOGUE, ConstitutionSession, sha256Hex, view } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
+import { authorshipBase } from '../../constitution/src/adapter.js';
 import { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
 import { DocStore, slugify, uniqueSlug } from './store.js';
@@ -339,7 +340,13 @@ export async function createDraftServer(cfg: ServerConfig,
     // `sealed` unseals at the record, `public` already was, `anonymous` never.
     const record = !engine.closed ? null : (() => {
       const r = ed.bridge!.closeRecord();
-      const rung = (doc.cs.settingState('authorship').value as { rung?: string } | null)?.rung ?? 'sealed';
+      // **The elective rungs are read through `authorshipBase`** (Q767): 👤 is
+      // a ladder of five, and a raw `rung === 'anonymous'` test names every
+      // author in the record on a document that took *Nobody's name unless
+      // they choose* — the opposite of what that rung promises, and with no
+      // sign control built (Q770) nobody has chosen anything.
+      const rung = authorshipBase(
+        (doc.cs.settingState('authorship').value as { rung?: string } | null)?.rung ?? 'sealed');
       const nameOf = (id: string): string | null => {
         if (id === doc.cs.convenorRecord().id) return doc.cs.convenorRecord().name ?? null;
         return doc.cs.memberRecords().get(id)?.name ?? null;

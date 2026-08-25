@@ -24,8 +24,13 @@ import { goldenWalk, snapshotOf } from './golden/walk.js';
 
 const dir = join(import.meta.dirname, 'golden');
 
+// **The separator is not part of the entry.** `freeze.ts` writes LF and git
+// stores LF, but this repo's Windows checkouts run `core.autocrlf=true`, so
+// the working copy is CRLF — and splitting on '\n' alone left a trailing CR on
+// every line, failing the byte-for-byte comparison locally while CI stayed
+// green. What is frozen is the JSON, so the line ending is stripped with it.
 const frozenLines = readFileSync(join(dir, 'founding.jsonl'), 'utf8')
-  .split('\n').filter((l) => l.length > 0);
+  .split(/\r?\n/).filter((l) => l.length > 0);
 const frozenState = JSON.parse(readFileSync(join(dir, 'founding.state.json'), 'utf8')) as
   { rollingHash: string; entries: number };
 
@@ -55,7 +60,7 @@ describe('the golden log', () => {
     // the claim that "absent means 1" is worth nothing without a log that
     // actually lacks the field.
     const old = readFileSync(join(dir, 'founding-v0.jsonl'), 'utf8')
-      .split('\n').filter((l) => l.length > 0)
+      .split(/\r?\n/).filter((l) => l.length > 0)
       .map((l) => JSON.parse(l) as LogEntry);
     expect(old.every((e) => e.schemaVersion === undefined)).toBe(true);
     expect(old.every((e) => versionOf(e) === 1)).toBe(true);

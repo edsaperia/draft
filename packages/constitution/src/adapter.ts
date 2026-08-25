@@ -43,6 +43,22 @@ export const DEFAULT_TUNING: EngineTuning = {
 };
 
 /**
+ * **The elective rungs ride their base** (Q767, Ed 2026-08-25). 👤 is a ladder
+ * of five, but what a document *does by default* is still the three-value fact
+ * the engine and the closing record are written against: the two opt-in rungs
+ * add a per-proposal choice on top (Q770, not built) and change nothing else.
+ * So *nobody named unless they ask* is `anonymous` and *named at the close, or
+ * earlier by choice* is `sealed` — which is what makes offering them honest
+ * rather than merely offerable. **Every reader of the rung goes through here**,
+ * so no site can quietly treat `anonymousElective` as *not anonymous*.
+ */
+export function authorshipBase(rung: string): Constitution['authorshipVisibility'] {
+  const base = rung === 'anonymousElective' ? 'anonymous'
+    : rung === 'sealedElective' ? 'sealed' : rung;
+  return base as Constitution['authorshipVisibility'];
+}
+
+/**
  * The engine constitution fields one settled value implies (§9.6/Q328):
  * folded over the settings at open (below), and amended through by the
  * bridge when a standing changes — one mapper, so the two conventions
@@ -68,21 +84,8 @@ export function engineFieldsFor(
       const r = value as RateValue;
       return { tokenGrant: r.grant, tokenCap: r.cap, tokenDripMinutes: r.dripMinutes };
     }
-    case 'authorship': {
-      // **The elective rungs ride their base** (Q767, Ed 2026-08-25). The
-      // engine's `authorshipVisibility` is a three-value fact about what the
-      // document does *by default*, and the two opt-in rungs do not change
-      // it: what they add is a per-proposal choice on top, which is Q770 and
-      // is not built. So *nobody named unless they ask* is `anonymous` to the
-      // engine and *named at the close, or earlier by choice* is `sealed` —
-      // and until the sign control exists those are the whole of their
-      // behaviour, which is what makes offering them honest rather than
-      // merely offerable.
-      const rung = (value as LadderValue).rung;
-      const base = rung === 'anonymousElective' ? 'anonymous'
-        : rung === 'sealedElective' ? 'sealed' : rung;
-      return { authorshipVisibility: base as Constitution['authorshipVisibility'] };
-    }
+    case 'authorship':
+      return { authorshipVisibility: authorshipBase((value as LadderValue).rung) };
     default:
       return {};
   }

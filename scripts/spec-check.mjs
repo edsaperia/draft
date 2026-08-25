@@ -392,10 +392,15 @@ function checkComposer(M, pm) {
   for (const e of M.CATALOGUE.filter((x) => x.rungs && x.delegable)) {
     const k = pageKey(e.id);
     const rungs = [...e.rungs].filter((r) => !(e.id === 'chamber' && r === 'public'));
-    const at = ans.indexOf(`\n  ${k}:`); if (at < 0) continue;
-    const next = ans.slice(at + 1).search(/\n  [a-z]+:/);
+    // **This check was dead until 2026-08-25**: `ANSWER`'s keys sit at four
+    // spaces, not two, so every `indexOf` missed and the run reported *0
+    // ladders compared* while claiming to assert the rungs. The rung pattern
+    // was lowercase-only too, which no camelCase rung (`anonymousElective`)
+    // could ever have matched. Both are anchored on `\s{2,}` / `\w` now.
+    const at = ans.search(new RegExp(`\\n\\s{2,}${k}:`)); if (at < 0) continue;
+    const next = ans.slice(at + 1).search(/\n\s{2,}[A-Za-z][A-Za-z0-9]*:\s*\(/);
     const block = ans.slice(at, next < 0 ? undefined : at + 1 + next);
-    const vals = [...block.matchAll(/v: '([a-z]+)'/g)].map((m) => m[1]);
+    const vals = [...block.matchAll(/v: '([A-Za-z][A-Za-z0-9]*)'/g)].map((m) => m[1]);
     if (!vals.length) continue;
     ladders++;
     for (const r of rungs) if (!vals.includes(r)) find('composer', `ANSWER.${k} lacks rung '${r}'`);

@@ -3,6 +3,7 @@ import {
   CATALOGUE, CATALOGUE_BY_ID, JUDGE_GATES, entryOf, motionRouteOf, validateFor,
 } from '../src/catalogue.js';
 import type { SettingId } from '../src/catalogue.js';
+import { authorshipBase } from '../src/adapter.js';
 import { resolveConsent } from '../src/consent.js';
 import type { SettingValue } from '../src/values.js';
 import { eqValue, validateValue } from '../src/values.js';
@@ -19,6 +20,16 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
     expect([...JUDGE_GATES].sort()).toEqual(
       ['authorship', 'bar', 'chamber', 'judgments', 'lapse', 'quorum'].sort(),
     );
+  });
+
+  // **Every reader of the rung goes through `authorshipBase`** (Q767). The
+  // ladder is five rungs; what a document *does* is still the engine's three,
+  // and the two elective rungs ride their base until the per-proposal sign
+  // control exists (Q770). A site testing the raw rung reads
+  // `anonymousElective` as *not anonymous* and names everybody.
+  it('the elective rungs ride their base (Q767)', () => {
+    expect(entryOf('authorship').rungs!.map(authorshipBase))
+      .toEqual(['anonymous', 'anonymous', 'sealed', 'sealed', 'public']);
   });
 
   it('machines is ordinary and convenor-held (Q352, Ed 2026-08-18)', () => {

@@ -72,6 +72,12 @@ describe('the constitution closes on its ending (SPEC §4.6)', () => {
 
   it('OK on the 🥂 card signs the document; the comment is the rationale', () => {
     const { s, bo, cy } = windowed();
+    // **A signature is always named** (Q769): the block no longer reads ✍️ at
+    // all, so what stands is the signer's own name — whatever the disclosure
+    // setting says, since 👤 is about proposals and signing is the opposite
+    // act. cy gives one and bo does not, so the assertion below distinguishes
+    // *unnamed* from *anonymised*: under the old rule both were null.
+    s.setIdentity(999_000, cy, { name: 'Cy Cadwallader' });
     s.tick(1_000_000);
     // blank is a real signature
     s.acknowledgeClose(1_000_100, bo, '');
@@ -80,9 +86,8 @@ describe('the constitution closes on its ending (SPEC §4.6)', () => {
     const sigs = s.closingSignatures();
     expect(sigs.map((x) => x.member)).toEqual([bo, cy]);
     expect(sigs[1]!.comment).toBe('dissent noted, but I sign');
-    // **A signature is always named** (Q769): the block no longer reads ✍️
-    // at all, so what stands here is the member's own name — null only
-    // because this fixture's members have never given one.
+    expect(sigs[1]!.name).toBe('Cy Cadwallader');
+    // null only because this member never gave a name
     expect(sigs[0]!.name).toBe(null);
     const v = view(s, bo);
     expect(v.closed!.at).toBe(1_000_000);

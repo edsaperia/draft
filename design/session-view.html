@@ -270,17 +270,23 @@
   // Q771: the values and the delegate rung write one state key from two boxes,
   // so *the question* is both of them and what stands may be in either. The
   // pair is bridged here rather than in the markup because the rung is
-  // concatenated after the body and cannot reach inside it; only a `.delegrung`
-  // immediately following a `.choice` is joined, so quorum's two genuinely
-  // separate groups stay separate.
+  // concatenated after the body and cannot reach inside it; the scan in either
+  // direction stops at the **first `.choice`** it meets, so quorum's two
+  // genuinely separate groups stay separate while a body that ends in a note —
+  // 👤 always, ⏱️ whenever its cap warning shows — still joins its own rung.
+  const isChoice = (n) => !!n && !!n.classList && n.classList.contains('choice');
+  const nextChoice = (n, dir) => {
+    let x = n[dir];
+    while (x && !isChoice(x)) x = x[dir];
+    return x;
+  };
   const groupPair = (group) => {
-    if (!group.classList || !group.classList.contains('choice')) return [group];
+    if (!isChoice(group)) return [group];
     const del = group.classList.contains('delegrung') ? group
-      : (group.nextElementSibling && group.nextElementSibling.classList
-         && group.nextElementSibling.classList.contains('delegrung') ? group.nextElementSibling : null);
+      : (() => { const n = nextChoice(group, 'nextElementSibling');
+        return n && n.classList.contains('delegrung') ? n : null; })();
     if (!del) return [group];
-    let val = del.previousElementSibling;
-    while (val && !(val.classList && val.classList.contains('choice'))) val = val.previousElementSibling;
+    const val = nextChoice(del, 'previousElementSibling');
     return val ? [val, del] : [del];
   };
   const chosenOf = (el) => {
@@ -2526,7 +2532,7 @@
     ending: (v) => (v === 'never' ? 'You said never'
       : 'You said ' + (isNaN(Date.parse(v)) ? v
         : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }))),
-    authorship: (v) => 'You said ' + ({'anonymous':'no names, ever','anonymousElective':'no names unless somebody chooses','sealed':'names at the close','sealedElective':'names at the close, or earlier by choice','public':'names from the start'})[v] || v,
+    authorship: (v) => 'You said ' + ({ anonymous: 'no names, ever', anonymousElective: 'no names unless somebody chooses', sealed: 'names at the close', sealedElective: 'names at the close, or earlier by choice', public: 'names from the start' }[v] || v),
     judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
     policy: (v) => 'You said ' + ({ invite: 'invitation only', proposed: 'applications must be proposed by members', apply: 'anyone may apply', open: 'open' }[v] || v),

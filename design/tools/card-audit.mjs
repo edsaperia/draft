@@ -574,7 +574,8 @@ function rulesFor(card, tok) {
     }
   }
 
-  // **H3 — a body is subject plus one consequence** (Q764/Q766). Ed's budget
+  // **H4 — a body is subject plus one consequence** (Q764/Q766; H3 is the
+  // cross-card lens below, so this one is H4). Ed's budget
   // for a `.why`: what the setting is, and the one consequence that would
   // change your answer; every other mechanic belongs to the act that performs
   // it (STYLE T17). Two sentences do not run past this, so anything that does
