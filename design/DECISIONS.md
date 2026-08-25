@@ -913,3 +913,67 @@ cannot drift if 📄 is ever given a paragraph, and `proposalsClause` does not s
 is about who may propose *rules*, and this is about the text. The **rail entry**: it is the card
 title alone — a task you have to do carries no subtitle — and *Text* names the subject rather than
 an act, so there was nothing there reading as an instruction to write.
+
+## The invite door: two gates wearing one name (2026-08-25, Q811–Q818)
+
+Backlog 51, from Ed's founding walk on docs.vote/d/genesis: *I managed to invite one additional
+member using the membership invitation action (not the one with several names at once), and further
+ones don't work; their names don't appear in the list, and they don't receive emails.*
+
+**The leading suspect was wrong, and that mattered.** The obvious reading is a price — the ✏️
+wallet emptying after one invitation — and it is not: the direct invite touches no stake, an invite
+motion is `stake: 0`, and the rate limiter sits only on the doors that mint mail. Two consecutive
+pre-start invitations over HTTP were already a passing server test. What was left was the one
+state-dependent refusal in the code, and a page that could not show a refusal at all.
+
+**The gate that acts and the gate the surface was built on were different gates.** `invite()`
+refuses post-start unless the founder holds the register's **unilateral** power — the pen — and the
+crown is awake. `membershipReserved()`, whose docstring called it *the direct-invite gate* and which
+the server ships in every view, asked whether **either** power was held. So a founder who laid the
+pen down at 🍾 and kept the 🛡️ — a perfectly ordinary state since R-048 made a pre-start release
+land at the start — was drawn a field and a button that could not send, and pressing it did
+precisely nothing. The 🪪 card has never been able to compose a motion either (`composerOn`
+excludes `roster`), so from that card there was no route at all.
+
+**Which side moves is not a matter of taste.** §9.6a and R-048 are the spec, and the module's test
+is the spec's: the pen is the power that acts alone, the shield only refuses, and a power that can
+only refuse can never be what opens a door. So the surface narrowed and the module did not widen —
+and `invite()` now calls `membershipReserved()`, so the two cannot drift apart again. Where the door
+is shut the card says why in a sentence and names ✉️, which is the route that does exist.
+
+**Everything on this card was fire-and-forget.** `api.cmd` resolves with the server's answer and has
+since it was written; `invite`, `uninvite` and both `openMotion` presses discarded it and let a
+`console.warn` be the whole report. On a surface that re-renders after every act, that makes a
+refusal and a success **identical to look at** — and it is why the second half of the bug (the
+missing Enter handler on the field) was invisible: nothing anywhere said no. The precedents were
+already in the file, on the two acts that had been debugged in public: the birth email's `S.emailErr`
+reopening its own card, and `propose-text` bringing a refused draft back with `back.refusal` on it.
+The refusal store follows them — one sentence, keyed to the card it belongs to, under the control
+that tried, retired by the next keystroke.
+
+**The § pointer comes off.** The module's sentences end *(§9.6a)*, *(§9.7½)*. That is this
+repository's vocabulary, not a member's (STYLE.md §8), and the alternative — a page-side translation
+table for every refusal the module can make — would be a second copy of the module's rules, drifting.
+Stripping the trailing parenthetical keeps one source for the sentence and no spec reference on the
+surface.
+
+**Three smaller silences on the same field**, all of them the same shape. An empty press returned
+without a word. The dedupe compared raw addresses while the store lowercases every one it takes
+(`emailOk`), so a case variant walked past the page's own check into a server refusal nobody could
+see. And the click handler read `[data-add]` with a **document-global** selector where both 🪪 and
+✉️ draw one, so the press could take an address off a card nobody was looking at — or find nothing
+and fall through in silence. The field is read from the card that was pressed now, and the card's
+own key is what the refusal is filed under.
+
+**One 🏛️ out per member, on every card including the one it is out on.** `commitFor` exempted
+`c.k` from the greying, which was a guess about which card could still be composing; the module
+makes no such exemption, and ✉️ is exactly where it bites, two invitations in a row being one act
+repeated. The exemption is unreachable today — a card holding your live motion renders the motion
+rather than a composer — so this is defence rather than a fix, and it is the cheap kind: the
+disabled state now states the module's rule instead of approximating it.
+
+**Where it is checked.** `journey-walk.mjs`, and it could not be anywhere else: the fixture sends no
+command, so no refusal exists there to be swallowed, and the two probes and `founding-walk.mjs` all
+drive the fixture. Against the pre-fix page the walk reproduces Ed's report exactly — one row, one
+mail, the second invitation vanishing without a trace, the duplicate answered by a 400 at the wire
+and by nothing at all on the screen, and the box still drawn after the pen has gone.
