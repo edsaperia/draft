@@ -49,7 +49,7 @@ const AS_JSON = process.argv.includes('--json');
 const VIEWPORT = { width: +arg('width', 1600), height: +arg('height', 1000) };
 const OUT = arg('out', join(DESIGN, 'tools', 'card-audit.json'));
 const BASELINE = arg('baseline', null);
-const ALL_WALKS = ['founding', 'answers', 'settled', 'outsiders', 'charter', 'closed'];
+const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed'];
 const WALKS = arg('walk', ALL_WALKS.join(',')).split(',').filter(Boolean);
 // a misspelt walk otherwise runs nothing, finds nothing and exits 0 — which is
 // the one outcome this instrument treats as worse than a red run
@@ -174,11 +174,35 @@ const IN_PAGE = () => {
    * every radio on a card lines up down its left edge — so what is measured
    * is the dot, not the button, since the button's box is the lane.
    */
-  const radios = (card) => Array.from(card.querySelectorAll('.lanepick, [role="radio"], .pick > button')).map((b) => {
-    const dot = b.querySelector('.dot');
-    return { label: txt(b), x: (rect(dot) || rect(b))[0], dot: !!dot,
-             on: b.getAttribute('aria-pressed') === 'true' || b.classList.contains('on') };
-  });
+  const radios = (card) => {
+    // P5 needs the vertical too, and the box that carries it is the *row* —
+    // the `.pick`, which holds the pill, its explanation and any fields the
+    // option brings with it. Two rows are only comparable when nothing is
+    // rendered between them: adjacent within one `.choice`, or the last of one
+    // group and the first of the next with the two groups themselves adjacent.
+    // Anything else (quorum's eyebrow, a trailing note) is a gap about
+    // something other than the rhythm of the rungs.
+    const flush = (a, b) => {
+      if (!a || !b || a === b) return false;
+      if (a.nextElementSibling === b) return true;
+      const ga = a.parentElement; const gb = b.parentElement;
+      return !!ga && !!gb && ga !== gb && ga.nextElementSibling === gb
+        && a === ga.lastElementChild && b === gb.firstElementChild;
+    };
+    let prevRow = null;
+    return Array.from(card.querySelectorAll('.lanepick, [role="radio"], .pick > button')).map((b) => {
+      const dot = b.querySelector('.dot');
+      const row = b.closest('.pick') || b;
+      const rr = rect(row);
+      const pr = prevRow ? rect(prevRow) : null;
+      const gap = (pr && rr && flush(prevRow, row)) ? R2(rr[1] - (pr[1] + pr[3])) : null;
+      prevRow = row;
+      return { label: txt(b), x: (rect(dot) || rect(b))[0], dot: !!dot,
+               on: b.getAttribute('aria-pressed') === 'true' || b.classList.contains('on'),
+               y: rr ? rr[1] : null, h: rr ? R2(row.getBoundingClientRect().height) : null,
+               gap };
+    });
+  };
 
   /** Ed's *helper text* lens: everything on a card that is not the decision. */
   const HELPERS = '.lockline, .setnote, .rsub, .qwhy, .exp, .why, [data-placeholder], [data-ph]';
@@ -286,6 +310,26 @@ const IN_PAGE = () => {
         if (el.title && !el.closest('.emojibox, .avpick, .freemoji')) bits.push(el.title);
       });
       return bits.join(' · ');
+    })(),
+    /**
+     * **A control's own help, which repeats by construction.** A tooltip and a
+     * placeholder belong to the control they hang on, so two lanes carrying
+     * the same *Say you prefer this proposal* is one string on two instances
+     * of one control, not one fact with two homes. T36 subtracts these; every
+     * other copy rule still reads them, since project-speak in a tooltip is
+     * still project-speak.
+     */
+    hints: (() => {
+      const out = [];
+      card.querySelectorAll('input[placeholder],[data-placeholder],[data-ph]').forEach((el) => {
+        if (el.closest('.emojibox, .avpick, .freemoji')) return;
+        const t = el.getAttribute('placeholder') || el.getAttribute('data-placeholder') || el.getAttribute('data-ph');
+        if (t) out.push(t);
+      });
+      card.querySelectorAll('[title]').forEach((el) => {
+        if (el.title && !el.closest('.emojibox, .avpick, .freemoji')) out.push(el.title);
+      });
+      return [...new Set(out)];
     })(),
   });
 
@@ -443,6 +487,22 @@ function rulesFor(card, tok) {
         'it grows ' + grew + 'px and its left edge moves ' + left + 'px');
     }
   }
+  // **P5 — stacked radio rows are spaced on the scale** (Q762). P1 was the
+  // only thing this instrument said about a radio, and it is horizontal — so
+  // the one defect Ed's *spacing* lens was pointed straight at, two rungs
+  // touching at 0px, went through six walks unremarked. Only flush pairs carry
+  // a gap (see `radios`), so what is measured is the rhythm of the rungs and
+  // nothing else.
+  for (const r of card.radios) {
+    if (r.gap === null || r.gap === undefined) continue;
+    if (Math.abs(r.gap) < 0.01) {
+      at('P5', 'positioning', 'stacked radio rows are spaced on the --s1–--s5 scale',
+        '“' + (r.label || '?') + '” sits flush against the rung above it — 0px');
+    } else if (!onGrid(r.gap)) {
+      at('P5', 'positioning', 'stacked radio rows are spaced on the --s1–--s5 scale',
+        '“' + (r.label || '?') + '” is ' + r.gap + 'px below the rung above it');
+    }
+  }
   if (card.tab.front && card.tab.rightEdge !== null && !near(card.tab.rightEdge, 0, 0.01)) {
     at('P4', 'positioning', 'every tab\'s right edge lands exactly on the card\'s left edge',
       'the open tab overshoots by ' + card.tab.rightEdge + 'px');
@@ -494,6 +554,39 @@ function rulesFor(card, tok) {
     if (re.test(said)) at('T15', 'copy', 'no project-speak, no engine jargon', 'says "' + word + '"', excerpt(said, word));
   }
   if (/§\s*\d/.test(said)) at('T14', 'copy', 'no spec references in surface copy', 'cites a §-number', excerpt(said, '§'));
+
+  // **T36 — one fact, one home** (Q765/Q766). A sentence stating a rule of the
+  // mechanism appears once on a card. This lens read every string on every
+  // card and measured nothing about them, so ⏱️, 👥 and 🥾 could each say one
+  // sentence twice, verbatim, a few lines apart, through six walks. Sentences
+  // under 40 characters are not compared: a rung label, a commit word and a
+  // *Choose this* are all legitimately repeated, and none of them is a rule.
+  const sentences = new Map();
+  const normalise = (s) => s.toLowerCase().replace(/[^a-z0-9 ]+/g, '').replace(/\s+/g, ' ').trim();
+  const hints = new Set((card.strings.hints || []).map(normalise));
+  for (const s of said.split(/\s+·\s+|(?<=[.!?])\s+/)) {
+    const norm = normalise(s);
+    if (norm.length < 40 || hints.has(norm)) continue;
+    sentences.set(norm, (sentences.get(norm) || 0) + 1);
+    if (sentences.get(norm) === 2) {
+      at('T36', 'copy', 'one fact, one home — a sentence stating a rule appears once on a card',
+        'said twice', s.trim().slice(0, 90));
+    }
+  }
+
+  // **H3 — a body is subject plus one consequence** (Q764/Q766). Ed's budget
+  // for a `.why`: what the setting is, and the one consequence that would
+  // change your answer; every other mechanic belongs to the act that performs
+  // it (STYLE T17). Two sentences do not run past this, so anything that does
+  // is carrying a third thing.
+  const WHY_BUDGET = 200;
+  for (const h of card.helpers) {
+    if (!/(^|\s)why(\s|$)/.test(String(h.cls)) || !h.text) continue;
+    if (h.text.length > WHY_BUDGET) {
+      at('H4', 'helper text', 'a body is subject plus one consequence — ' + WHY_BUDGET + ' characters',
+        h.text.length + ' characters', h.text.slice(0, 90));
+    }
+  }
 
   return out;
 }
@@ -679,9 +772,25 @@ async function walkFounding(page, base, cards, errors, opts = {}) {
     seen.add(next);
     const m = await openAndMeasure(page, next, '.setupcard', walk, cards, errors);
     if (!m) continue;
-    if (next === opts.delegate) {
+    // **The state the other six pass through** (Q766). A card is measured
+    // *before* it is answered on the founding walk and *after* on the settled
+    // one; the state in between — handed to the room and still collecting — is
+    // where the delegate rung and the blind-collection note stand together,
+    // and it was measured nowhere. `delegateAll` chooses the rung and
+    // re-measures the same open card in place, so the walk reports the
+    // collecting body rather than the untouched one. A card with no rung to
+    // choose is dropped from this walk and answered the ordinary way: leaving
+    // it unanswered stalls the founding, which is what a rail with nothing new
+    // on it means.
+    const handedOver = opts.delegateAll && await clickIn('.setupcard .delegrung [data-val="roster"]');
+    if (handedOver) {
+      await wait(page, 320);
+      const d = await page.evaluate((a) => window.__CA.measure(a[0], a[1], a[2]), ['.setupcard', next, null]);
+      if (d) { d.walk = walk; cards[cards.length - 1] = d; }
+    } else if (next === opts.delegate) {
       await clickIn('.setupcard .delegrung [data-val="roster"]');
     } else {
+      if (opts.delegateAll) cards.pop();
       const opt = m.strings.options.find((o) => o.set && o.val && !o.on);
       if (opt) {
         const ok = await clickIn('.setupcard [data-set="' + opt.set + '"][data-val="' + opt.val + '"]');
@@ -712,6 +821,14 @@ async function walkFounding(page, base, cards, errors, opts = {}) {
  */
 const walkAnswers = (page, base, cards, errors) =>
   walkFounding(page, base, cards, errors, { delegate: 'chamber', walk: 'answers' });
+
+/**
+ * Walk 7 — every delegable setting **open and collecting** (Q766): the
+ * founder's own view of a question he has just handed to the room. See
+ * `delegateAll` in `walkFounding` for why the other six never reach it.
+ */
+const walkDelegated = (page, base, cards, errors) =>
+  walkFounding(page, base, cards, errors, { delegateAll: true, walk: 'delegated' });
 
 /**
  * Walk 3 — the settled surface: every card the band offers once the founding
@@ -836,6 +953,7 @@ async function main() {
   if (!AS_JSON) console.log('card-audit @ ' + VIEWPORT.width + '×' + VIEWPORT.height);
   await run('founding', () => walkFounding(page, base, cards, errors));
   await run('answers', () => walkAnswers(page, base, cards, errors));
+  await run('delegated', () => walkDelegated(page, base, cards, errors));
   await run('settled', () => walkSettled(page, base, cards, errors));
   await run('outsiders', async () => {
     // one seat at a time, each with its own net: the three seats are three

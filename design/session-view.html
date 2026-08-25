@@ -267,10 +267,27 @@
     '[contenteditable=""]', '[contenteditable="true"]',
     '[data-set]:not([disabled])', '[data-ans]:not([disabled])',
     '[data-mval]:not([disabled])', '[data-v]:not([disabled])'].join(',');
+  // Q771: the values and the delegate rung write one state key from two boxes,
+  // so *the question* is both of them and what stands may be in either. The
+  // pair is bridged here rather than in the markup because the rung is
+  // concatenated after the body and cannot reach inside it; only a `.delegrung`
+  // immediately following a `.choice` is joined, so quorum's two genuinely
+  // separate groups stay separate.
+  const groupPair = (group) => {
+    if (!group.classList || !group.classList.contains('choice')) return [group];
+    const del = group.classList.contains('delegrung') ? group
+      : (group.nextElementSibling && group.nextElementSibling.classList
+         && group.nextElementSibling.classList.contains('delegrung') ? group.nextElementSibling : null);
+    if (!del) return [group];
+    let val = del.previousElementSibling;
+    while (val && !(val.classList && val.classList.contains('choice'))) val = val.previousElementSibling;
+    return val ? [val, del] : [del];
+  };
   const chosenOf = (el) => {
     const group = el.closest('.choice, .lanepick, .field') || el.parentElement;
     if (!group) return el;
-    const on = [...group.querySelectorAll('[aria-checked="true"], [aria-pressed="true"], .on')]
+    const on = groupPair(group)
+      .flatMap((g) => [...g.querySelectorAll('[aria-checked="true"], [aria-pressed="true"], .on')])
       .find((x) => x.matches(DECIDE_SEL) && x.offsetParent !== null);
     return on || el;
   };
@@ -1214,7 +1231,7 @@
       // proposal is made against is decided as part of the start, so the one
       // blocker is 🍾 itself; your own unanswered questions are the start's
       // problem too, since 🍾 refuses while a judge-gate question collects
-      why: 'Anybody can read the document from the first second. Nobody can propose a change until the document begins — the text a proposal is made against is decided as part of the start, and so are the rules a proposal is judged under.',
+      why: 'Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.',
       waiting: 'Waiting on the start.',
       done: 'Open — members can propose as soon as they arrive.',
       blockers: () => (constituted() ? [] : [card('text'), card('begin')].filter((c) => c && !settled(c))) },
@@ -1246,7 +1263,7 @@
     { k: 'grant-voice', g: '🏛️', t: 'Your Voice', own: 'you', isGate: true, isGrant: true,
       open: () => !!cs && viewerIsMember() && !!viewerRow().in,
       early: () => firstAsked() !== null,
-      why: 'Every member holds one voice in every constitutional question — the blind founding answers before the document begins, the ask-everyone motions after. One at a time, and it comes back whole when the question settles or you withdraw it.',
+      why: 'Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.',
       waiting: 'Waiting on your arrival.',
       done: 'You hold a voice in every constitutional question.',
       blockers: () => [] },
@@ -1263,7 +1280,7 @@
     { k: 'grant-pen', g: '✒️', t: 'Your Pen', own: 'you', isGate: true, isGrant: true,
       hide: () => !amFounder(),
       open: () => !!cs && amFounder() && holdsPenAnywhere(),
-      why: 'The pen amends a setting at will, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent. It was issued when the address went live, because that is the moment somebody could first knock.',
+      why: 'The pen amends a setting at will, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent.',
       waiting: 'Waiting on the save.',
       done: 'You hold the pen.',
       blockers: () => [] },
@@ -1286,7 +1303,7 @@
     { k: 'grant-shield', g: '🛡️', t: 'Your Shield', own: 'you', isGate: true, isGrant: true,
       hide: () => !amFounder(),   // the holder's, like the pen above
       open: () => !!cs && amFounder() && holdsShieldAnywhere(),
-      why: 'The shield refuses. Where you hold it, a change the membership passes waits for you to accept it — you cannot write with it, only refuse. One shield, many locks, and a shield is not spent. It was issued with the pen, when the address went live.',
+      why: 'The shield refuses: where you hold it, a change the membership passes waits for you to accept it. One shield, many locks, and a shield is not spent.',
       waiting: 'Waiting on the save.',
       done: 'You hold the shield.',
       blockers: () => [] },
@@ -1387,7 +1404,8 @@
     // after the ceremony*). The one-card test agrees: who is in the room
     // now, and how anybody gets in later, can be answered differently and
     // on their own.
-    { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', key: 'policyBy', p: 0.41, changeable: true },
+    { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', key: 'policyBy', p: 0.41, changeable: true,
+      rule: 'Each member says the <b>most open</b> door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.' },
     // optional for a clerk (Ed, 2026-08-18): an anonymous founder is a
     // perfectly ordinary thing — they can simply not set a name or picture
     { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you',       // a blank name is Anonymous (§9.0c), so this card always has something
@@ -1455,7 +1473,10 @@
       takes: 'The document takes the most private', result: 'Nobody signs',
       dist: [9, 3, 2], distTop: 0, distEnds: ['Nobody signs', 'Everybody signs'] },
     { k: 'judgments', g: '👁️', t: 'When Are Judgments Revealed?', kind: 'constitutional', gate: 'judge', key: 'judgments', p: 0.86,
-      rule: 'Nobody can see what somebody preferred while a question is still open, whichever is chosen. This settles only whether it is made public afterwards.',
+      // Q763: this field is *how answers aggregate* and nothing else — it had
+      // been carrying the whichever-you-choose fact, which the card's own `why`
+      // states already and which the delegate rung has no use for.
+      rule: 'Also about privacy, so the <b>most private</b> answer wins: one member who wants them kept private keeps them private.',
       takes: 'The document takes the most private', result: 'Never revealed',
       dist: [11, 3], distTop: 0, distEnds: ['Never', 'After the decision'] },
 
@@ -1472,6 +1493,9 @@
     // merged — the rate is one thought, stated as one sentence)
     { k: 'rate', g: '⏱️', t: 'Proposal Rate', kind: 'ordinary', key: 'rateBy', p: 0.36,
       rule: 'Each member says the <b>most generous</b> they would accept, and the document takes it.',
+      // what applies while the question is still collecting — the one fact the
+      // delegated note owns, and the reason `meanwhile` exists (Q763)
+      meanwhile: 'Until it is settled everybody gets the standard rate.',
       takes: 'The document takes the most generous', result: '5 each, one back every 120 minutes',
       dist: [1, 2, 4, 3, 2, 1, 1], distTop: 4, distEnds: ['sparing', 'generous'] },
 
@@ -3946,19 +3970,34 @@
     const dk = DKEY[c.k];
     if (!dk || !DELEGABLE.includes(dk)) return '';
     if (!cs || cs.constitutedAtT !== null) return '';   // one-way after the start
-    return '<div class="choice delegrung" role="radiogroup">' +
+    // **No radiogroup of its own** (Q771): this rung writes the *same* state
+    // key as the values above it, so it is part of that question rather than a
+    // second one. Two elements each claiming the role made two groups out of
+    // one decision, which the value group's own label already covers.
+    return '<div class="choice delegrung">' +
       opt(S, dk, 'roster', 'Delegate to the membership',
         'Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. ' +
         (c.rule ? String(c.rule).replace(/<[/]?b>/g, '') : '')) +
       '</div>';
   };
-  const theyDecide = (key, note) => (wantsDelegate(key)
-    ? '<p class="setnote">' +
+  // **One fact, one home** (Q763, STYLE T36). How blind answers aggregate had
+  // two homes and both printed into one body: the card record's `rule`, which
+  // the delegate rung above explains itself with, and a literal note handed to
+  // this function at every call site. On ⏱️, 👥 and 🥾 the two were verbatim,
+  // so a delegated card said the same sentence twice a few lines apart. The
+  // note argument is gone: the record owns the aggregation rule and this
+  // paragraph prints the one fact only it can know — the frame, and what
+  // applies **meanwhile**, while the question is still collecting.
+  const theyDecide = (key) => {
+    if (!wantsDelegate(key)) return '';
+    const c = card(key);
+    return '<p class="setnote">' +
       (cs && cs.constitutedAtT !== null
         ? 'You propose like anybody, and nothing comes to you for assent.'
-        : '<b>Asked of everyone before drafting begins, blind</b> — you among them, if you are on the membership. ' + note) +
-      ' Picking a value here takes it back.</p>'
-    : '');
+        : '<b>Asked of everyone before drafting begins, blind</b> — you among them, if you are on the membership.' +
+          (c && c.meanwhile ? ' ' + c.meanwhile : '')) +
+      ' Picking a value here takes it back.</p>';
+  };
 
   // Q506: the register's "and afterwards" pair is gone from this card —
   // the ✒️ and 🛡️ tabs under 🤝 are where the Founder keeps or gives up
@@ -4108,7 +4147,7 @@
     // the roster are two things.
     roster: () => (cs && cs.constitutedAtT !== null && !(regPair().u || regPair().a)
       ? '<p class="why">Who is a member. Bringing somebody in, or proposing that somebody leaves, is the ✉️ and ❌ tabs beside this list.</p>'
-      : '<p class="why">An invitation is just the link, sent by email — there are no passwords. Somebody becomes a member when they open it; until then they are listed as <i>invited</i> and count towards nothing. For now you can invite and uninvite freely, because nothing has been decided yet. Once people start judging, bringing somebody in or taking them out is a decision of its own — the ✉️ and ❌ tabs beside this list.</p>' +
+      : '<p class="why">Who is a member. An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as <i>invited</i> until then.</p>' +
       '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1" value="' + esc(S.inviteOne) + '">' +
       '<button class="btn" data-act="add">Invite</button></div></div>' +
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
@@ -4124,7 +4163,7 @@
     // the constitutional act; each application that arrives through it is
     // its ordinary consequence.
     policy: () =>
-      '<p class="why">How somebody who is not a member can become one. Whether the Founder invites at will, and whether an application the membership passes needs their assent, are the ✒️ and 🛡️ tabs beside this one.</p>' +
+      '<p class="why">How somebody who is not a member can become one. An application is judged like any other proposal.</p>' +
       // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
       // the gate the Apply card hangs off. An application becomes an
       // ordinary proposal to grant membership, judged like any other.
@@ -4132,29 +4171,29 @@
       // default like every constitutional setting, so the members' option
       // leads the list the way it does on ⏰ or 🌍.
       '<div class="choice" role="radiogroup" aria-label="Who may join">' +
-      theyDecide('policy', 'Each member says the <b>most open</b> door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.') +
+      theyDecide('policy') +
       opt(S, 'joinBy', 'invite', 'Invitation only', 'Nobody joins unless a member brings them in.') +
       opt(S, 'joinBy', 'proposed', 'Applications must be proposed by members', 'Anybody can apply, but nothing happens until a member takes the application up and proposes it.') +
       opt(S, 'joinBy', 'apply', 'Anyone may apply', 'An application goes straight to the members, who judge it like any other proposal. Applying costs nothing.') +
       opt(S, 'joinBy', 'open', 'Open', 'Anyone with the link becomes a member the moment they open it.') +
       '</div>',
     ending: () =>
-      '<p class="why">When drafting stops. At that moment the text is final and the record is published. <b>Never</b> is one of the answers: a document with no end date stops only when too few members are still active.</p>' +
+      '<p class="why">When drafting stops and the text is final. <b>Never</b> is one of the answers: a document with no end date stops only when too few members are active.</p>' +
       '<div class="choice" role="radiogroup">' +
-      theyDecide('ending', 'The document takes the <b>latest</b> answer anybody gives, and <b>never</b> is later than any date — so one member who wants it to run on keeps it running.') +
+      theyDecide('ending') +
       opt(S, 'ending', 'ends', 'At a set time', '',
         '<span class="fld"><label>Ends</label><input type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '"></span>') +
       opt(S, 'ending', 'perpetual', 'Never', 'It runs until too few members are still active.') +
       '</div>',
     bar: () =>
-      '<p class="why">How sure the members have to be that a change is better than the words it would replace. It is not a vote — nobody counts for and against; members compare the two versions, and this is how clear the result has to be. This is the number that applies <b>at the end</b>, when a change can no longer be challenged.</p>' +
+      '<p class="why">How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be <b>at the end</b>.</p>' +
       '<div class="choice" role="radiogroup">' +
-      theyDecide('bar', 'Each member says the lowest they will accept, and the document takes the highest.') +
+      theyDecide('bar') +
       opt(S, 'barBy', 'founder', 'I set it', '',
         '<span class="setrow2">' + num(S, 'tClose', 'At the end', 50, 99, '%') + '</span>') +
       '</div>',
     pace: () =>
-      '<p class="why">Whether the approval threshold applies the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily, while there is still time for somebody to challenge them.</p>' +
+      '<p class="why">Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.</p>' +
       '<div class="choice" role="radiogroup">' +
       opt(S, 'shape', 'ramp', 'Rising', 'Starts lower when people begin judging and climbs to the number at the end.',
         '<span class="setrow2">' + num(S, 'tStart', 'When judging opens', 50, 99, '%') + '</span>', perpetual()) +
@@ -4170,9 +4209,9 @@
       opt(S, 'quorumForm', 'share', 'A share of the membership', 'The number goes up and down as members join and leave.') +
       opt(S, 'quorumForm', 'count', 'A fixed number', 'The number stays the same however the membership changes.') +
       '</div>' +
-      '<div class="eyebrow fieldlab" style="margin-top:var(--s4)">The number</div>' +
+      '<div class="eyebrow fieldlab">The number</div>' +
       '<div class="choice" role="radiogroup" aria-label="Number">' +
-      theyDecide('quorum', 'Each member says the lowest they will accept, and the document takes the highest.') +
+      theyDecide('quorum') +
       opt(S, 'quorumBy', 'founder', 'I set it', '',
         '<span class="setrow2">' + (S.quorumForm === 'share'
           ? num(S, 'quorumPct', 'Share', 1, 100, '% — ' + quorumCount() + ' of ' + E() + ' today')
@@ -4181,7 +4220,7 @@
     authorship: () =>
       '<p class="why">Whoever proposes a change writes a reason for it, and everybody can read that. This is only about whether their name is on it.</p>' +
       '<div class="choice" role="radiogroup">' +
-      theyDecide('authorship', 'This one is about privacy, so the document takes the <b>most private</b> answer anybody gives.') +
+      theyDecide('authorship') +
       // one vocabulary with the member ladder (copy pass, 2026-08-19: the
       // same three rungs wore three wordings across the two seats)
       opt(S, 'authorship', 'anonymous', 'Nobody’s name, ever', 'No proposal ever carries a name, even after the document is finished.') +
@@ -4191,22 +4230,22 @@
     signing: () =>
       '<p class="why">Whether somebody can choose to put their name on a proposal that would otherwise carry no name.</p>' +
       '<div class="choice" role="radiogroup">' +
-      theyDecide('signing', 'This one is about privacy, so the document takes the <b>most private</b> answer anybody gives.') +
+      theyDecide('signing') +
       opt(S, 'signing', 'nobody', 'Nobody signs', 'No proposal carries a name, so no proposal says anything about who wrote it.') +
       opt(S, 'signing', 'each', 'Each author chooses', 'Anyone may sign — which means a proposal with no name on it stands out.') +
       opt(S, 'signing', 'everybody', 'Everybody signs', 'Every proposal carries its writer’s name.') +
       '</div>',
     judgments: () =>
-      '<p class="why">Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is still open, whichever you choose — that is what keeps the judging honest.</p>' +
+      '<p class="why">Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.</p>' +
       '<div class="choice" role="radiogroup">' +
-      theyDecide('judgments', 'This one is about privacy, so the document takes the <b>most private</b> answer anybody gives.') +
+      theyDecide('judgments') +
       opt(S, 'judgments', 'never', 'Never revealed', 'What you preferred stays yours, permanently.') +
       opt(S, 'judgments', 'after', 'Revealed after the decision', 'Published with the document at the end, never before.') +
       '</div>',
     rate: () =>
-      '<p class="why">How often a member can propose something. Each proposal costs one ✏️, and you get it back if the proposal passes or if you withdraw it.</p>' +
+      '<p class="why">How often a member can propose something. Each proposal costs one ✏️.</p>' +
       '<div class="choice" role="radiogroup">' +
-      theyDecide('rate', 'Each member says the <b>most generous</b> they would accept, and the document takes it. Until it is settled everybody gets the standard rate.') +
+      theyDecide('rate') +
       opt(S, 'rateBy', 'founder', 'I set it', '',
         '<span class="setrow2">' + num(S, 'grant', '✏️ to start with', 0, 40) +
         num(S, 'cap', 'up to a maximum of', 1, 99) +
@@ -4218,16 +4257,16 @@
       (isNum(S.grant) && isNum(S.cap) && +S.cap < +S.grant
         ? '<p class="setnote">The maximum cannot be lower than the number they start with.</p>' : ''),
     chamber: () =>
-      '<p class="why">Who else can read the document. Readers are <b>not members</b>: they cannot propose or judge, and nothing about them is known. The Founder can always read it, whichever of these the room chooses. Nobody, member or not, can see how a question is going while it is still open.</p>' +
+      '<p class="why">Who else can read the document. Readers are <b>not members</b> — they cannot propose or judge, and nothing about them is known.</p>' +
       '<div class="choice" role="radiogroup">' +
-      theyDecide('chamber', 'This one is about privacy, so the document takes the <b>most private</b> answer anybody gives.') +
+      theyDecide('chamber') +
       // most-private-first, the order every ladder on the surface reads in
       opt(S, 'chamber', 'closed', 'Members only') +
       opt(S, 'chamber', 'link', 'Anyone with the link') + '</div>',
     lapse: () =>
-      '<p class="why">Whether somebody stops being a member if they go a long time without logging in. They are warned by email first, and sent the document as it stands when it happens. Anything they already judged still counts, the other members can finish without them, and coming back is just logging in again.</p>' +
+      '<p class="why">Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.</p>' +
       '<div class="choice" role="radiogroup">' +
-      theyDecide('lapse', 'Each member says the shortest gap they would accept, and the document takes the longest — <b>never</b> being longer than any of them.') +
+      theyDecide('lapse') +
       opt(S, 'lapse', 'days', 'They lapse', 'After a gap you choose.',
         '<span class="setrow2">' + num(S, 'lapseDays', 'Days without logging in', 7, 365) + '</span>') +
       opt(S, 'lapse', 'never', 'Never', 'You stay a member however long you are away.') +
@@ -4235,7 +4274,7 @@
     removal: () =>
       '<p class="why">How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.</p>' +
       '<div class="choice" role="radiogroup">' +
-      theyDecide('removal', 'Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.') +
+      theyDecide('removal') +
       opt(S, 'removal', 'everyone', 'Everyone has to agree, including them', 'One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.') +
       opt(S, 'removal', 'others', 'Everyone else has to agree', 'Somebody can be removed even if they object, but only if every other member agrees.') +
       opt(S, 'removal', 'ordinary', 'A proposal ✏️ like any other', 'A removal is proposed and judged the same way as a change to the text.') +
@@ -4243,7 +4282,7 @@
     machines: () =>
       '<p class="why">An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.</p>' +
       '<div class="choice" role="radiogroup">' +
-      theyDecide('machines', 'The <b>most restrictive</b> answer wins, so a single member who would rather not have AI proposals keeps them out.') +
+      theyDecide('machines') +
       // most-restrictive-first, matching the member ladder's order
       opt(S, 'auditor', false, 'No AI proposals', 'People write everything in this document.') +
       opt(S, 'auditor', true, 'AI proposals are permitted', 'An AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.',

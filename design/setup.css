@@ -143,6 +143,19 @@
    accept* only reads as a ladder if you can see what you are refusing.
    --------------------------------------------------------------------------- */
   .choice { display: flex; flex-direction: column; gap: var(--s3); }
+  /* **A second radio group stacked under the first is set apart** (Q761).
+     `.choice` spaces its own rungs, and nothing spaced the *containers* — so
+     the delegate rung sat flush against the values above it, 0px, and the two
+     pills simply touched. Loudest where the value group holds one rung, since
+     then the --s3 gap never paints anywhere on the card and there is no
+     internal rhythm for the seam to be read against: ⏱️, 🌡️ and 👥's number.
+     --s4 exceeds --s3, which is what makes the second group read as *apart
+     from* the first rather than as another rung of it — the relationship
+     quorum's own eyebrow had been asserting with an inline style. One number
+     for one relationship, and the users are named in the selector, per
+     `.eyebrow` in system.css. */
+  .choice.delegrung,
+  .choice + .eyebrow.fieldlab { margin-top: var(--s4); }
   .pick .exp { display: block; color: var(--muted); font-size: var(--t-small);
     margin-top: var(--s1); padding-left: 2px; max-width: 58ch; }
   .pick .inner { display: none; margin-top: var(--s3); padding-left: 2px; }
