@@ -1402,3 +1402,45 @@ committed both through those cards earlier.
 Not fixed here, and worth knowing: the assembly ring (`design/setup.css`) draws member avatars from
 the same rows, so it has been showing the same anonymous discs for the same reason, and it stops
 without being touched.
+
+## The stated address carries `/d/` (2026-08-26, Q891–Q893)
+
+Backlog 70, from Ed: *the Link clause says "The document lives at docs.vote/[slug]" whereas in fact
+it lives at docs.vote/d/[slug].*
+
+**The address the surface states is the route the server serves.** That is the whole rule, and it
+had no home, which is why it was broken in eleven places at once. The server has exactly one
+document route — `seg[0] === 'd' && seg.length === 2` in `server.ts`, with a 404 fallthrough and no
+bare `/<slug>` — and every link it *builds* has always been right: `${baseUrl}/d/${slug}` at
+`server.ts:190`, and the redirects beside it. So nothing clickable was ever wrong. What was wrong
+was every address a member reads and then has to type or trust: the Link clause, the birth mail's
+prose (beside a correct link, which makes the disagreement visible in one glance), 📍's *is taken* /
+*is free* verdicts, the prefix on 📍's own field, and the three short-form value maps a motion's
+sentence is built from.
+
+**Not a redirect.** The obvious alternative was to make the stated address true by serving it —
+a bare `/<slug>` route, or a redirect from it. It was not taken and was not close: Ed's report
+establishes `/d/` as where the document lives, nobody asked for a second address, and a document
+with two addresses is a document whose invitations, clause text and record can disagree about which
+one it has. The surface was wrong; the route was not.
+
+**Why a helper for a string concatenation.** `docAddr(slug)` earns itself not by saving characters
+but by being the thing that failed: the convention lived in eleven inlined copies of `'docs.vote/' +
+slug`, so there was nowhere for it to be corrected once. The two sites that cannot reach it —
+`mailer.ts` and `setup.js`'s mockup twin of the same mail — are in other bundles and say so in a
+comment naming the other.
+
+**The site the plan did not name, and the one that mattered.** `linkify` wraps a `docs.vote/…` run
+in the constitution's text as a real anchor, and its pattern was `\bdocs\.vote\/[a-z0-9][a-z0-9-]*`
+— which, against the corrected clause, matches `docs.vote/d` and stops. So the fix would have
+shipped a clause stating the right address and linking to a wrong one, which is worse than the bug:
+before, at least the words and the link agreed with each other. The segment is in the pattern now,
+and **optional**, because a member may write a bare address into their own charter text and a link
+that stops working is not the correction for that.
+
+**One thing left standing.** `design/tools/founding-walk.golden.json` freezes the Link clause in 52
+of its 55 steps, so it is stale as of this commit and `node scripts/founding-golden.mjs --update` is
+owed. It was not run here: the same golden is plan 32's to re-freeze wholesale, and that plan was
+being built in a tree alongside this one. Two sessions re-freezing one golden is a conflict somebody
+has to resolve by hand, and the walk is a sprint-end check (Q625) rather than a gate, so the cost of
+leaving it is a day of staleness and the cost of racing it is a merge.

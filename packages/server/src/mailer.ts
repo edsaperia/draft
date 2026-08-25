@@ -111,7 +111,9 @@ export const MAILS = {
   // being at the address promised, and not before
   create: (title: string, slug: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Create “${title}”`,
-    text: `You have named a document “${title}” and chosen its address, docs.vote/${slug}.\n\n` +
+    // the prose states the same address the `link` beside it resolves to:
+    // one document route, `/d/<slug>`, and no bare `/<slug>` (backlog 70)
+    text: `You have named a document “${title}” and chosen its address, docs.vote/d/${slug}.\n\n` +
       `Open this link to create it there:\n${link}\n\n` +
       `Until you do, nothing exists anywhere — this address is the only way back in.`,
     link,

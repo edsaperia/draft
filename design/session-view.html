@@ -235,6 +235,14 @@
     .map((l) => { const m = l.match(/^(#{1,3})\s+(.*)$/);
       return m ? '<div class="docline lvl' + m[1].length + '" data-h="' + esc(m[2]) + '">' + esc(m[2]) + '</div>'
         : '<div>' + esc(l) + '</div>'; }).join('');
+  // **The address the surface states is the route the server serves** (Ed,
+  // backlog 70: *the Link clause says the document lives at docs.vote/[slug]
+  // whereas in fact it lives at docs.vote/d/[slug]*). The server has one
+  // document route, `/d/<slug>`, and no bare `/<slug>` — so every stated
+  // address goes through here rather than being composed by hand, which is
+  // how eleven copies of it came to be wrong at once. Pass an already-escaped
+  // slug where the result is markup.
+  const docAddr = (slug) => 'docs.vote/d/' + slug;
   let lastOpen = null;
   // **An opened card puts the caret in its composer** (Ed, 2026-08-21): if a
   // card is asking for words, you should be able to type them without first
@@ -1133,12 +1141,12 @@
   // the verdict is swapped in place while you type — a re-render would
   // throw the caret out of the field
   const slugNoteHtml = () => (slugRefused()
-    ? '<p class="setnote"><b>docs.vote/' + esc(S.slug) + '</b> is taken.' +
-      (S.slugFree.suggestion ? ' <b>docs.vote/' + esc(S.slugFree.suggestion) + '</b> is free.' : '') + '</p>'
+    ? '<p class="setnote"><b>' + docAddr(esc(S.slug)) + '</b> is taken.' +
+      (S.slugFree.suggestion ? ' <b>' + docAddr(esc(S.slugFree.suggestion)) + '</b> is free.' : '') + '</p>'
     // Q534c: the address the title actually wanted, and where this one
     // landed — naming both is the whole point, since the alternative is the
     // machine choosing an address and not mentioning it
-    : S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> is taken, so this one is <b>docs.vote/' + esc(S.slug) + '</b>.</p>' : '');
+    : S.slugTaken ? '<p class="setnote">Suggested from the title — <b>' + docAddr(esc(S.slugTaken)) + '</b> is taken, so this one is <b>' + docAddr(esc(S.slug)) + '</b>.</p>' : '');
   const refreshSlugNote = () => {
     const n = document.querySelector('[data-slugnote]');
     if (n) n.innerHTML = slugNoteHtml();
@@ -2755,7 +2763,7 @@
     text: () => { const n = proseCounts().blocks;
       return n ? n + ' blocks' : (S.seen.has('text') ? 'Starts empty — the room writes it' : 'Nothing yet'); },
     title: () => S.title || 'Not named yet',
-    slug: () => 'docs.vote/' + (S.slug || '…'),
+    slug: () => docAddr(S.slug || '…'),
     invite: () => 'Everyone has to agree',
     remove: () => ({ everyone: 'Everyone has to agree, including them',
       others: 'Everyone else has to agree',
@@ -2944,7 +2952,7 @@
     if (p.kind === 'admit') return 'an applicant joins the membership';
     const k = pkeyOf(p.setting);
     if (k === 'title') return p.value.text;
-    if (k === 'slug') return 'docs.vote/' + p.value.slug;
+    if (k === 'slug') return docAddr(p.value.slug);
     if (k === 'pace') return (p.value.shape === 'fixed' ? 'The same number throughout'
       : 'Rising from ' + p.value.startPct + '%');
     if (k === 'policy') return ({ invite: 'Invitation only', proposed: 'Applications must be proposed by members',
@@ -3075,7 +3083,7 @@
   // neither can be handed an arbitrary past value and asked what it says.
   const WORDS = {
     title: (v) => '“' + v.text + '”',
-    slug: (v) => 'docs.vote/' + v.slug,
+    slug: (v) => docAddr(v.slug),
     chamber: (v) => ({ closed: 'members only', link: 'anyone with the link',
       public: 'public' }[v.rung] || v.rung),
     policy: (v) => ({ invite: 'invitation only', proposed: 'applications must be proposed by members',
@@ -3340,8 +3348,11 @@
   const PROPOSE = {
     title: (d) => inputBlock('The document is titled ' +
       '<input data-mtext="1" value="' + esc(d.to || S.title) + '" style="width:22rem">.'),
-    slug: (d) => inputBlock('The document lives at docs.vote/' +
-      '<input data-mslug="1" value="' + esc((d.to || S.slug).replace(/^docs\.vote\//, '')) + '" style="width:12rem">.',
+    slug: (d) => inputBlock('The document lives at ' + docAddr('') +
+      // the field holds the slug alone, so the stored form is stripped back
+      // off it; the `d/` is optional in the strip so a draft composed before
+      // the address gained its route still round-trips into the box
+      '<input data-mslug="1" value="' + esc((d.to || S.slug).replace(/^docs\.vote\/(?:d\/)?/, '')) + '" style="width:12rem">.',
       '<p class="setnote">Every link the document has ever had keeps working — a change leaves a redirect behind.</p>'),
     pace: (d) => lanesFor(d, [['The same number throughout',
         'The approval threshold stays the same all the way through.']], 'pace') +
@@ -3766,7 +3777,7 @@
         proposed: 'Anyone may apply, but nothing happens until a member takes the application up and proposes it ✏️.',
         apply: 'Anyone may apply to join.',
         open: 'Anyone with the link joins on arrival.' })[v ? v.joinPolicy : S.joinBy]; },
-    slug: () => 'The document lives at docs.vote/' + S.slug + '.',
+    slug: () => 'The document lives at ' + docAddr(S.slug) + '.',
     removal: () => ({
       everyone: 'Removing a member needs every member to agree, including them.',
       others: 'Removing a member needs every other member to agree — they see the proposal, and it is decided without them.',
@@ -3824,8 +3835,11 @@
   };
   // **Links in the constitution are real links** (Ed, 2026-08-19):
   // underlined, ink-coloured (.doclink), applied after escaping so a
-  // sentence can never smuggle markup in
-  const linkify = (s) => String(s).replace(/\bdocs\.vote\/[a-z0-9][a-z0-9-]*/g,
+  // sentence can never smuggle markup in. The `d/` is optional so a member's
+  // own sentence naming a bare address still becomes a link — but the route
+  // segment has to be in the pattern, or the clause's own address links as
+  // far as `docs.vote/d` and stops (backlog 70)
+  const linkify = (s) => String(s).replace(/\bdocs\.vote\/(?:d\/)?[a-z0-9][a-z0-9-]*/g,
     (m2) => '<a class="doclink" href="https://' + m2 + '" target="_blank" rel="noopener">' + m2 + '</a>');
   const decisionLine = (c) => {
     // a grant's paragraph states the document's rule (third person, the same
@@ -4502,7 +4516,7 @@
     slug: () =>
       '<div data-slugnote>' + slugNoteHtml() + '</div>' +
       '<span class="fld"><span class="setrow2">' +
-      '<span class="setnote" style="margin:0">docs.vote/</span>' +
+      '<span class="setnote" style="margin:0">' + docAddr('') + '</span>' +
       '<input data-slug="1" value="' + esc(S.slug) + '" spellcheck="false" style="width:16rem">' +
       '</span></span>' +
       // the rules recital went with the rest (Ed, 2026-08-19) — a legal link
@@ -4543,7 +4557,7 @@
         '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>' +
         (BIRTH ? '' : '<div style="margin-top:var(--s3)"><button class="btn" data-act="openmail">Open your inbox</button></div>') +
         (BIRTH ? ''
-          : '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works' + (cs ? '.' : ' and creates the document at docs.vote/' + esc(S.slug) + '.') + '</p>')
+          : '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works' + (cs ? '.' : ' and creates the document at ' + docAddr(esc(S.slug)) + '.') + '</p>')
       // the send button and the two explanatory blocks left on Ed's word
       // (2026-08-19): ✒️ sends it, and the card is a field with a title over
       // it — which is the whole of what it has ever been asking for
@@ -5409,7 +5423,7 @@
       S.draft.val = { text: S.draft.to }; return render(); }
     if (ev.target.matches('[data-mslug]')) {
       const v = ev.target.value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
-      S.draft.to = v ? 'docs.vote/' + v : '';
+      S.draft.to = v ? docAddr(v) : '';
       S.draft.val = v ? { slug: v } : null;
       return render(); }
     if (ev.target.matches('[data-mpace]')) { S.draft.to = 'Rising from ' + ev.target.value + '%';
