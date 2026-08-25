@@ -1262,3 +1262,80 @@ are indistinguishable from the rail, and a walk that can only say *the task is s
 symptom. And `npm run ladder` will report fewer *owed acknowledgements given* than it used to, since
 `oweOnJoining` was most of what it was counting; the line is guarded by `if (owed > 0)` and nothing
 asserts on it, so that is the expected outcome rather than a regression to chase.
+
+## Names and faces reach every seat (2026-08-26, Q850–Q857)
+
+Backlog 42, and the symptom is one sentence: an invitee saw the founder as *Anonymous*, saw no face
+at all, and saw no name anybody chose after their own row already existed. It reads like a missing
+server projection and is not one. `MemberRowView` (`packages/constitution/src/view.ts`) has always
+carried `name`, `picture` and `arrived` to every seat, with a comment on it saying why the register
+is public; `remoteCS.memberRecords()` has always read all three. The loss was entirely in
+`syncFromCs`, and it was two separate bugs sharing one loop.
+
+**The first is that identity was a property of *creating* a row.** `rec.name` was read in the push
+branch and nowhere else; the three `else` branches reconciled `removed` and arrival and nothing
+more. So a row was named once, at the moment the page first heard of the person — which for an
+invitee is before they have arrived to choose anything — and then never again. **The second is the
+founder's row, which was skipped outright** by `if (mid2 === FOUNDER) continue;`. It is worth being
+precise about what the skip was for, because the answer is *nothing*: the seeded founder row carries
+`mid: 'founder'` and the server mints the convenor with that same literal id, so the lookup was
+always going to find row 0 rather than push a duplicate. The one branch it did protect is removal —
+splicing row 0 would take the convenor out of the register — so that branch now guards on
+`row.founder` and says so, and the skip is gone.
+
+The founder's **picture** is the sharper half of the second bug and deserves naming separately: no
+path on the live page has ever written it. The boot line sets `f.e`, `f.role` and `f.n` once and
+stops, which is also why a name the founder set *later* never reached their own row on anybody
+else's screen. The fix needed no boot line of its own — `render()` calls `syncFromCs` first, so the
+founder's row is reconciled before anything draws it.
+
+**Your own row is the exception, and it is not an optimisation.** ✋ and 🖼️ write straight onto the
+viewer's row as you type and as you pick a face, before anything is committed; a render or a 4s poll
+landing mid-choice would put the module's answer back over the one you are making. It is the same
+rule the value hydration already keeps for the open card, applied to the one row that has a
+provisional layer. What you have *committed* is on the row already, by way of `hydrateS`'s read of
+`view.identity`.
+
+**The clerk is reached, deliberately.** A clerk is no `MemberRecord` at all — 🎩 deletes it — so the
+members loop cannot see them, and §9.7 X15 (*the convenor with no powers and no membership keeps
+their name and picture*) makes leaving them dark not an option. `cs.convenorRecord()` is consulted
+exactly when the founder's id is absent from `memberRecords()`, which is the module's own test for
+the same thing. Note the asymmetry it exposes: the module keeps a clerk's identity on the convenor
+struct and a founder-member's on their `MemberRecord`, and the server serves the *struct*, so
+`data.convenor.name` is null for a member founder. That is why the boot line could never have fixed
+this by itself.
+
+**The fallback stays each row's own**, which looks like an inconsistency and is a rule. An invitee
+is listed by the local part of their address until a name exists — that is what the register carries
+emails for, and it is what the push has always done. A founder who set no name is **Anonymous**
+(§9.0c), which is what the Founded line says in as many words. Making both rows fall back the same
+way would have had to break one of the two, and neither is arbitrary.
+
+One consequence outside the live path. The mockup's own `invite()` pushes a Title-Cased courtesy
+name for somebody who has not arrived to choose one — *Ivy* for `ivy@…` — and a name only the page
+holds is now a name the next sync overwrites with the address. It is told to the module in the same
+act instead, one line beside the push; the arrival theatre two seconds later re-states it
+harmlessly. Live documents never take that branch, `invite()` returning at the wire above it.
+
+**Q278 loses its faces half.** `CLAUDE.md`'s `me` entry had hung *may anybody else's face appear* on
+Q278 and cited SPEC §3.4 for it, and both were wrong. §3.4 is *Speech*. Who is in the room is
+membership, public by §9.0c and by the register's own design; what §3.5a seals is whose name is on a
+**proposal**, and the membership list never passes through that rung — it reads the roster row
+directly. A document showing fourteen named people and not one named candidate is the ordinary case.
+What is still open at Q278 is the authorship surface and nothing else.
+
+**The check is the second seat that already existed.** The plan proposed building a second browser
+context in `ladder-walk.mjs`; `journey-walk.mjs` has carried a complete guest rig since Q848 —
+`invitationLink()` off the dev outbox, `guestLand()`, `guestPage`, `guestState()` — driving the live
+`/d/:slug` path where this bug lives. Three assertions bolted onto it: the founder sets a name and a
+face and the guest's **Founded line** shows both and never reads *Anonymous*; then the guest sets
+their own and both reach the founder's register. Both directions run through the **4s poll rather
+than a reload**, which is the whole discipline of the check — a reload rebuilds every row from the
+module and would pass against the broken page. Both identities are set at the wire for the reason
+the Q846 amendment is: what is under test is what the *other* seat renders, and driving ✋ and 🖼️
+through their own cards would put two more things inside one assertion, when the walk has already
+committed both through those cards earlier.
+
+Not fixed here, and worth knowing: the assembly ring (`design/setup.css`) draws member avatars from
+the same rows, so it has been showing the same anonymous discs for the same reason, and it stops
+without being touched.
