@@ -259,11 +259,19 @@ const STAMP = String(Date.now()).slice(-8);
 const GUEST1 = 'bo' + STAMP + '@example.org';
 const GUEST2 = 'cy' + STAMP + '@example.org';
 // the membership as the clause states it: address and chips, per row
-const rosterRows = () => page.evaluate(() =>
-  [...document.querySelectorAll('.roster.clauselist .rperson')].map((r) => ({
+// **and the name and the face on it** (Q850): the register is public, so
+// what a row *says* about a person is as checkable as that it is there.
+// `.nm` carries the chips too, so the name is its first text node; the face
+// is an `.emojiface` glyph or the `.av` that stood in for one.
+const ROW_READ = `[...document.querySelectorAll('.roster.clauselist .rperson')].map((r) => ({
     e: ((r.querySelector('.em') || {}).textContent || '').trim(),
+    n: (((r.querySelector('.nm') || {}).childNodes || [])[0] || { textContent: '' })
+      .textContent.trim(),
+    face: ((r.querySelector('.emojiface') || {}).textContent ||
+      ((r.querySelector('.av') || {}).className || '(no avatar)')).trim(),
     chips: [...r.querySelectorAll('.chip')].map((c) => c.textContent.trim()).join(' / '),
-  })));
+  }))`;
+const rosterRows = () => page.evaluate(ROW_READ);
 const refusalLine = () => page.evaluate(() =>
   ((document.querySelector('.setupcard .why.refusal') || {}).textContent || '').trim());
 const inviteFrom = async (addr, byEnter) => {
@@ -390,6 +398,90 @@ const secondSeatPreBegin = async () => {
     : 'FAIL: ' + JSON.stringify(owed) + ' are served as acknowledgements before 🍾'));
   if (owed.length) stuck.push('pre-Begin acks in the member seat: ' + owed.join(','));
 };
+/* ---- names and faces reach every seat (backlog 42, Q850–Q853) -----------
+ * The register is public by the spec's own test — names, pictures, who has
+ * arrived — and the module has always projected all three to every seat. The
+ * page threw two thirds of it away: it read `rec.name` only on the push that
+ * *created* a row, and skipped the founder's row outright, so an invitee read
+ * the founder as *Anonymous*, never saw their face, and never saw a name
+ * anybody chose after their row already existed.
+ *
+ * It is a second-seat bug by construction. From the founder's own chair every
+ * name on the page is one the founder's page put there, so no fixture walk and
+ * no single-seat walk can see it — which is why it is checked here, and why
+ * both directions run through the **4s poll** rather than a reload: a reload
+ * rebuilds the rows from the module and would pass either way.
+ */
+const FOUNDER_NAME = 'Ada Lovelace';
+const FOUNDER_FACE = 'e🦉';
+const GUEST_NAME = 'Bo Marlowe';
+const GUEST_FACE = 'e🦊';
+// Set at the wire, for the reason the amendment below is: what is under test
+// is what the *other* seat renders, and driving ✋ and 🖼️ through their own
+// cards would be two more things to go wrong inside one check. Both were
+// committed through their own cards earlier in this walk, so the surface half
+// of setting an identity is covered where it belongs.
+const setIdentityAt = (pg, args) => pg.evaluate((a) =>
+  fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cmd: 'set-identity', args: a }),
+  }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), args);
+const identityReachesEverySeat = async () => {
+  if (!guestPage) return; // its own failure, already reported
+  const said = await setIdentityAt(page, { name: FOUNDER_NAME, picture: FOUNDER_FACE });
+  if (said && said.error) {
+    say('identity   · FAIL: the founder could not set a name and a face · ' +
+      JSON.stringify(said.error));
+    stuck.push('set-identity for the founder'); return;
+  }
+  await T(5500); // one poll in the member's seat, and a little air
+  // the Founded line is where the founder appears in the document, and it is
+  // drawn from the founder's own roster row — the row that was skipped
+  const founded = await guestPage.evaluate(() => {
+    const p = document.querySelector('.cpv.founded');
+    return p ? { text: p.textContent.replace(/\s+/g, ' ').trim(),
+      face: ((p.querySelector('.emojiface') || {}).textContent ||
+        ((p.querySelector('.av') || {}).className || '(no avatar)')).trim() } : null;
+  });
+  if (!founded) {
+    say('the founder· FAIL: no Founded line in the invited seat');
+    stuck.push('the Founded line in the member seat'); return;
+  }
+  const named = founded.text.includes(FOUNDER_NAME) && !/Anonymous/.test(founded.text);
+  say('the founder· ' + JSON.stringify(founded) +
+    (named ? '' : '  FAIL: the invited seat should read the founder’s name, never Anonymous'));
+  if (!named) stuck.push('the founder’s name in the member seat');
+  const faced = founded.face === FOUNDER_FACE.slice(1);
+  say('their face · ' + (faced ? 'the founder’s face reaches the invited seat'
+    : 'FAIL: expected ' + FOUNDER_FACE.slice(1) + ', got ' + JSON.stringify(founded.face)));
+  if (!faced) stuck.push('the founder’s face in the member seat');
+
+  // …and the other way, which is the half that has nothing to do with the
+  // founder at all: a member chooses a name and a face on their own seat,
+  // long after their row was pushed, and it reaches the register everybody
+  // else is reading.
+  const back = await setIdentityAt(guestPage, { name: GUEST_NAME, picture: GUEST_FACE });
+  if (back && back.error) {
+    say('identity   · FAIL: the member could not set a name and a face · ' +
+      JSON.stringify(back.error));
+    stuck.push('set-identity for the member'); return;
+  }
+  await T(5500);
+  // the register is the 🪪 card's own body, so it has to be open to be read —
+  // the band's Membership clause is the members *list*, which carries no
+  // address to pick a row out by
+  if (!(await open('roster'))) {
+    say('their seat · FAIL: no 🪪 tab to read the register from');
+    stuck.push('the 🪪 tab for the register'); return;
+  }
+  const rows = await rosterRows();
+  const row = rows.find((r) => r.e === GUEST1);
+  const reached = !!row && row.n === GUEST_NAME && row.face === GUEST_FACE.slice(1);
+  say('their seat · ' + JSON.stringify(row || rows.map((r) => r.e)) +
+    (reached ? '' : '  FAIL: a name and a face chosen after the row existed did not reach the founder'));
+  if (!reached) stuck.push('the member’s name and face in the founder’s register');
+};
+
 const secondSeatOnAmendment = async () => {
   if (!guestPage) return; // its own failure, already reported
   // the founder amends a constitutional setting they still hold, at the wire:
@@ -625,6 +717,9 @@ for (let i = 0; i < 60; i++) {
       // an invitation is a seat, so one of them is taken here: what a member
       // is owed on arrival can only be read from the member's own page
       await secondSeatPreBegin();
+      // …and once there are two seats, whether each of them can see who the
+      // other is (Q850–Q853)
+      await identityReachesEverySeat();
     } else {
       say('invite ×2  · FAIL: no 🪪 tab in the band to invite from');
       stuck.push('the 🪪 tab');

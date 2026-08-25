@@ -1318,7 +1318,9 @@ window.SETUP = (function () {
     verify: (title, to, slug) => ({
       to, from: 'docs.vote',
       subject: 'Create “' + title + '”',
-      body: 'You have named a document <b>' + esc(title) + '</b> and chosen its address, <b>docs.vote/' + esc(slug || '…') + '</b>.',
+      // the address as the server serves it, `/d/<slug>` — this body is the
+      // mockup twin of mailer.ts's `create` and must state the same one
+      body: 'You have named a document <b>' + esc(title) + '</b> and chosen its address, <b>docs.vote/d/' + esc(slug || '…') + '</b>.',
       action: 'Open the link to create it there',
     }),
     applyVerify: (title, to) => ({

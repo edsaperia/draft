@@ -235,6 +235,14 @@
     .map((l) => { const m = l.match(/^(#{1,3})\s+(.*)$/);
       return m ? '<div class="docline lvl' + m[1].length + '" data-h="' + esc(m[2]) + '">' + esc(m[2]) + '</div>'
         : '<div>' + esc(l) + '</div>'; }).join('');
+  // **The address the surface states is the route the server serves** (Ed,
+  // backlog 70: *the Link clause says the document lives at docs.vote/[slug]
+  // whereas in fact it lives at docs.vote/d/[slug]*). The server has one
+  // document route, `/d/<slug>`, and no bare `/<slug>` — so every stated
+  // address goes through here rather than being composed by hand, which is
+  // how eleven copies of it came to be wrong at once. Pass an already-escaped
+  // slug where the result is markup.
+  const docAddr = (slug) => 'docs.vote/d/' + slug;
   let lastOpen = null;
   // **An opened card puts the caret in its composer** (Ed, 2026-08-21): if a
   // card is asking for words, you should be able to type them without first
@@ -1133,12 +1141,12 @@
   // the verdict is swapped in place while you type — a re-render would
   // throw the caret out of the field
   const slugNoteHtml = () => (slugRefused()
-    ? '<p class="setnote"><b>docs.vote/' + esc(S.slug) + '</b> is taken.' +
-      (S.slugFree.suggestion ? ' <b>docs.vote/' + esc(S.slugFree.suggestion) + '</b> is free.' : '') + '</p>'
+    ? '<p class="setnote"><b>' + docAddr(esc(S.slug)) + '</b> is taken.' +
+      (S.slugFree.suggestion ? ' <b>' + docAddr(esc(S.slugFree.suggestion)) + '</b> is free.' : '') + '</p>'
     // Q534c: the address the title actually wanted, and where this one
     // landed — naming both is the whole point, since the alternative is the
     // machine choosing an address and not mentioning it
-    : S.slugTaken ? '<p class="setnote">Suggested from the title — <b>docs.vote/' + esc(S.slugTaken) + '</b> is taken, so this one is <b>docs.vote/' + esc(S.slug) + '</b>.</p>' : '');
+    : S.slugTaken ? '<p class="setnote">Suggested from the title — <b>' + docAddr(esc(S.slugTaken)) + '</b> is taken, so this one is <b>' + docAddr(esc(S.slug)) + '</b>.</p>' : '');
   const refreshSlugNote = () => {
     const n = document.querySelector('[data-slugnote]');
     if (n) n.innerHTML = slugNoteHtml();
@@ -2801,7 +2809,7 @@
     text: () => { const n = proseCounts().blocks;
       return n ? n + ' blocks' : (S.seen.has('text') ? 'Starts empty — the room writes it' : 'Nothing yet'); },
     title: () => S.title || 'Not named yet',
-    slug: () => 'docs.vote/' + (S.slug || '…'),
+    slug: () => docAddr(S.slug || '…'),
     invite: () => 'Everyone has to agree',
     remove: () => ({ everyone: 'Everyone has to agree, including them',
       others: 'Everyone else has to agree',
@@ -2990,7 +2998,7 @@
     if (p.kind === 'admit') return 'an applicant joins the membership';
     const k = pkeyOf(p.setting);
     if (k === 'title') return p.value.text;
-    if (k === 'slug') return 'docs.vote/' + p.value.slug;
+    if (k === 'slug') return docAddr(p.value.slug);
     if (k === 'pace') return (p.value.shape === 'fixed' ? 'The same number throughout'
       : 'Rising from ' + p.value.startPct + '%');
     if (k === 'policy') return ({ invite: 'Invitation only', proposed: 'Applications must be proposed by members',
@@ -3121,7 +3129,7 @@
   // neither can be handed an arbitrary past value and asked what it says.
   const WORDS = {
     title: (v) => '“' + v.text + '”',
-    slug: (v) => 'docs.vote/' + v.slug,
+    slug: (v) => docAddr(v.slug),
     chamber: (v) => ({ closed: 'members only', link: 'anyone with the link',
       public: 'public' }[v.rung] || v.rung),
     policy: (v) => ({ invite: 'invitation only', proposed: 'applications must be proposed by members',
@@ -3265,24 +3273,65 @@
   };
   // a carried title or link changed under the page's mirrors — resync; and
   // the rows follow the register (carried invitations, removals, admissions)
+  // **A name and a face reach every seat** (Q850–Q853). The register is
+  // public by the spec's own test — names, pictures and who has arrived
+  // (§9.0c, and `MemberRowView`'s note in the module) — and the module has
+  // always projected all three to everybody. The page threw two thirds of it
+  // away: `rec.name` was read only on the push that *created* a row, so a
+  // name or a face chosen after that reached nobody, and the founder's row
+  // was skipped outright, so an invitee read the founder as *Anonymous* and
+  // never saw their picture at all. The founder's picture is the sharper
+  // half: no live path has ever written it, the boot line setting `f.e`,
+  // `f.role` and `f.n` once and nothing since.
+  //
+  // **Your own row is not reconciled.** ✋ and 🖼️ write straight onto it as
+  // you type and as you pick, before anything is committed, so a render or a
+  // 4s poll landing mid-choice would put the module's answer back over the
+  // one you are making — the same rule the value hydration keeps for the
+  // open card. What you have committed is already on the row, by way of
+  // `hydrateS`'s own read of `view.identity`.
+  //
+  // The fallback stays each row's own: an invitee is listed by their address
+  // until a name exists (which is why the register carries emails at all),
+  // and a founder who set no name is *Anonymous* like anybody else (§9.0c),
+  // which is what the Founded line says.
+  const syncIdentity = (row, rec) => {
+    if (!row || row === viewerRow()) return;
+    row.n = rec.name || (row.founder ? '' : String(rec.email || '').split('@')[0]);
+    row.pic = rec.picture || '';
+  };
   const syncFromCs = () => {
     if (!cs) return;
     const tv = csState('title'), lv = csState('slug');
     if (tv && tv.settledBy === 'motion' && tv.value.text !== S.title) S.title = tv.value.text;
     if (lv && lv.settledBy === 'motion' && lv.value.slug !== S.slug) S.slug = lv.value.slug;
     for (const [mid2, rec] of cs.memberRecords()) {
-      if (mid2 === FOUNDER) continue;
+      // the founder is in here too, seeded `mid: 'founder'` and minted by the
+      // server with that same literal, so the row is found rather than
+      // duplicated — which is the whole of why the skip could simply go
       const row = S.roster.find((r) => r.mid === mid2);
       if (!row && !rec.removed) {
-        S.roster.push({ n: rec.name || rec.email.split('@')[0], e: rec.email,
+        S.roster.push({ n: rec.name || rec.email.split('@')[0], pic: rec.picture || '',
+          e: rec.email,
           role: 'member', in: rec.arrivedAtT !== null, mid: mid2, ans: {}, okd: new Set() });
-      } else if (row && rec.removed) {
+      } else if (row && rec.removed && !row.founder) {
         const at = S.roster.indexOf(row);
         S.roster.splice(at, 1);
         if (S.viewer === at) S.viewer = 0;
-      } else if (row && rec.arrivedAtT !== null && !row.in) {
-        row.in = true;
+      } else if (row) {
+        if (rec.arrivedAtT !== null && !row.in) row.in = true;
+        syncIdentity(row, rec);
       }
+    }
+    // **A clerk is no member, and still has a name and a face** (§9.7 X15): a
+    // founder with no powers and no membership keeps both. They are in no
+    // `MemberRecord` at all — 🎩 deletes it — so the register's founder row
+    // reads from the convenor record instead, which is exactly where the
+    // module puts a clerk's identity.
+    const f = S.roster.find((r) => r.founder);
+    if (f && !cs.memberRecords().has(f.mid || FOUNDER) && cs.convenorRecord) {
+      const c = cs.convenorRecord();
+      if (c) syncIdentity(f, { name: c.name, picture: c.picture, email: c.email || f.e });
     }
   };
   // ...stated in the composers' own vocabulary, so a lane equal to what
@@ -3345,8 +3394,11 @@
   const PROPOSE = {
     title: (d) => inputBlock('The document is titled ' +
       '<input data-mtext="1" value="' + esc(d.to || S.title) + '" style="width:22rem">.'),
-    slug: (d) => inputBlock('The document lives at docs.vote/' +
-      '<input data-mslug="1" value="' + esc((d.to || S.slug).replace(/^docs\.vote\//, '')) + '" style="width:12rem">.',
+    slug: (d) => inputBlock('The document lives at ' + docAddr('') +
+      // the field holds the slug alone, so the stored form is stripped back
+      // off it; the `d/` is optional in the strip so a draft composed before
+      // the address gained its route still round-trips into the box
+      '<input data-mslug="1" value="' + esc((d.to || S.slug).replace(/^docs\.vote\/(?:d\/)?/, '')) + '" style="width:12rem">.',
       '<p class="setnote">Every link the document has ever had keeps working — a change leaves a redirect behind.</p>'),
     pace: (d) => lanesFor(d, [['The same number throughout',
         'The approval threshold stays the same all the way through.']], 'pace') +
@@ -3771,7 +3823,7 @@
         proposed: 'Anyone may apply, but nothing happens until a member takes the application up and proposes it ✏️.',
         apply: 'Anyone may apply to join.',
         open: 'Anyone with the link joins on arrival.' })[v ? v.joinPolicy : S.joinBy]; },
-    slug: () => 'The document lives at docs.vote/' + S.slug + '.',
+    slug: () => 'The document lives at ' + docAddr(S.slug) + '.',
     removal: () => ({
       everyone: 'Removing a member needs every member to agree, including them.',
       others: 'Removing a member needs every other member to agree — they see the proposal, and it is decided without them.',
@@ -3829,8 +3881,11 @@
   };
   // **Links in the constitution are real links** (Ed, 2026-08-19):
   // underlined, ink-coloured (.doclink), applied after escaping so a
-  // sentence can never smuggle markup in
-  const linkify = (s) => String(s).replace(/\bdocs\.vote\/[a-z0-9][a-z0-9-]*/g,
+  // sentence can never smuggle markup in. The `d/` is optional so a member's
+  // own sentence naming a bare address still becomes a link — but the route
+  // segment has to be in the pattern, or the clause's own address links as
+  // far as `docs.vote/d` and stops (backlog 70)
+  const linkify = (s) => String(s).replace(/\bdocs\.vote\/(?:d\/)?[a-z0-9][a-z0-9-]*/g,
     (m2) => '<a class="doclink" href="https://' + m2 + '" target="_blank" rel="noopener">' + m2 + '</a>');
   const decisionLine = (c) => {
     // a grant's paragraph states the document's rule (third person, the same
@@ -4507,7 +4562,7 @@
     slug: () =>
       '<div data-slugnote>' + slugNoteHtml() + '</div>' +
       '<span class="fld"><span class="setrow2">' +
-      '<span class="setnote" style="margin:0">docs.vote/</span>' +
+      '<span class="setnote" style="margin:0">' + docAddr('') + '</span>' +
       '<input data-slug="1" value="' + esc(S.slug) + '" spellcheck="false" style="width:16rem">' +
       '</span></span>' +
       // the rules recital went with the rest (Ed, 2026-08-19) — a legal link
@@ -4548,7 +4603,7 @@
         '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>' +
         (BIRTH ? '' : '<div style="margin-top:var(--s3)"><button class="btn" data-act="openmail">Open your inbox</button></div>') +
         (BIRTH ? ''
-          : '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works' + (cs ? '.' : ' and creates the document at docs.vote/' + esc(S.slug) + '.') + '</p>')
+          : '<p class="setnote">In the mockup the inbox is a pretend one — the mail in it is the magic link, and clicking it proves the address works' + (cs ? '.' : ' and creates the document at ' + docAddr(esc(S.slug)) + '.') + '</p>')
       // the send button and the two explanatory blocks left on Ed's word
       // (2026-08-19): ✒️ sends it, and the card is a field with a title over
       // it — which is the whole of what it has ever been asking for
@@ -5414,7 +5469,7 @@
       S.draft.val = { text: S.draft.to }; return render(); }
     if (ev.target.matches('[data-mslug]')) {
       const v = ev.target.value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
-      S.draft.to = v ? 'docs.vote/' + v : '';
+      S.draft.to = v ? docAddr(v) : '';
       S.draft.val = v ? { slug: v } : null;
       return render(); }
     if (ev.target.matches('[data-mpace]')) { S.draft.to = 'Rising from ' + ev.target.value + '%';
@@ -5936,8 +5991,14 @@
     }
     S.inviteOne = '';
     S.doorErr = null;
-    S.roster.push({ n: at.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (x) => x.toUpperCase()),
-      e: at, role: 'member', in: false, mid });
+    // the mockup's courtesy name for somebody who has not arrived to choose
+    // one — told to the module in the same act, because the rows follow the
+    // register on every sync now (Q850) and a name only the page holds is a
+    // name the next render throws away. The arrival theatre below re-states
+    // it, harmlessly, along with everything else it pretends.
+    const nice = at.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (x) => x.toUpperCase());
+    if (cs && mid) { try { cs.setIdentity(now(), mid, { name: nice }); } catch (e) {} }
+    S.roster.push({ n: nice, e: at, role: 'member', in: false, mid });
     // the arrival theatre stays; its payload is a real command now (§9.6a)
     setTimeout(() => { const p = S.roster.find((x) => x.e === at);
       if (p) { p.in = true;

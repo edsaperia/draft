@@ -1326,6 +1326,178 @@ context on a real invitation (Q842–Q848), so the room of one is read at the mo
 lands and the two-face state at the moment after. Each seat must see exactly the other — the founder
 a seat that is not `founder`, the member the founder's own minted id — never itself, and never
 GUEST2, who was invited and never came, because an invitation is not an arrival.
+## Names and faces reach every seat (2026-08-26, Q850–Q857)
+
+Backlog 42, and the symptom is one sentence: an invitee saw the founder as *Anonymous*, saw no face
+at all, and saw no name anybody chose after their own row already existed. It reads like a missing
+server projection and is not one. `MemberRowView` (`packages/constitution/src/view.ts`) has always
+carried `name`, `picture` and `arrived` to every seat, with a comment on it saying why the register
+is public; `remoteCS.memberRecords()` has always read all three. The loss was entirely in
+`syncFromCs`, and it was two separate bugs sharing one loop.
+
+**The first is that identity was a property of *creating* a row.** `rec.name` was read in the push
+branch and nowhere else; the three `else` branches reconciled `removed` and arrival and nothing
+more. So a row was named once, at the moment the page first heard of the person — which for an
+invitee is before they have arrived to choose anything — and then never again. **The second is the
+founder's row, which was skipped outright** by `if (mid2 === FOUNDER) continue;`. It is worth being
+precise about what the skip was for, because the answer is *nothing*: the seeded founder row carries
+`mid: 'founder'` and the server mints the convenor with that same literal id, so the lookup was
+always going to find row 0 rather than push a duplicate. The one branch it did protect is removal —
+splicing row 0 would take the convenor out of the register — so that branch now guards on
+`row.founder` and says so, and the skip is gone.
+
+The founder's **picture** is the sharper half of the second bug and deserves naming separately: no
+path on the live page has ever written it. The boot line sets `f.e`, `f.role` and `f.n` once and
+stops, which is also why a name the founder set *later* never reached their own row on anybody
+else's screen. The fix needed no boot line of its own — `render()` calls `syncFromCs` first, so the
+founder's row is reconciled before anything draws it.
+
+**Your own row is the exception, and it is not an optimisation.** ✋ and 🖼️ write straight onto the
+viewer's row as you type and as you pick a face, before anything is committed; a render or a 4s poll
+landing mid-choice would put the module's answer back over the one you are making. It is the same
+rule the value hydration already keeps for the open card, applied to the one row that has a
+provisional layer. What you have *committed* is on the row already, by way of `hydrateS`'s read of
+`view.identity`.
+
+**The clerk is reached, deliberately.** A clerk is no `MemberRecord` at all — 🎩 deletes it — so the
+members loop cannot see them, and §9.7 X15 (*the convenor with no powers and no membership keeps
+their name and picture*) makes leaving them dark not an option. `cs.convenorRecord()` is consulted
+exactly when the founder's id is absent from `memberRecords()`, which is the module's own test for
+the same thing. Note the asymmetry it exposes: the module keeps a clerk's identity on the convenor
+struct and a founder-member's on their `MemberRecord`, and the server serves the *struct*, so
+`data.convenor.name` is null for a member founder. That is why the boot line could never have fixed
+this by itself.
+
+**The fallback stays each row's own**, which looks like an inconsistency and is a rule. An invitee
+is listed by the local part of their address until a name exists — that is what the register carries
+emails for, and it is what the push has always done. A founder who set no name is **Anonymous**
+(§9.0c), which is what the Founded line says in as many words. Making both rows fall back the same
+way would have had to break one of the two, and neither is arbitrary.
+
+One consequence outside the live path. The mockup's own `invite()` pushes a Title-Cased courtesy
+name for somebody who has not arrived to choose one — *Ivy* for `ivy@…` — and a name only the page
+holds is now a name the next sync overwrites with the address. It is told to the module in the same
+act instead, one line beside the push; the arrival theatre two seconds later re-states it
+harmlessly. Live documents never take that branch, `invite()` returning at the wire above it.
+
+**Q278 loses its faces half.** `CLAUDE.md`'s `me` entry had hung *may anybody else's face appear* on
+Q278 and cited SPEC §3.4 for it, and both were wrong. §3.4 is *Speech*. Who is in the room is
+membership, public by §9.0c and by the register's own design; what §3.5a seals is whose name is on a
+**proposal**, and the membership list never passes through that rung — it reads the roster row
+directly. A document showing fourteen named people and not one named candidate is the ordinary case.
+What is still open at Q278 is the authorship surface and nothing else.
+
+**The check is the second seat that already existed.** The plan proposed building a second browser
+context in `ladder-walk.mjs`; `journey-walk.mjs` has carried a complete guest rig since Q848 —
+`invitationLink()` off the dev outbox, `guestLand()`, `guestPage`, `guestState()` — driving the live
+`/d/:slug` path where this bug lives. Three assertions bolted onto it: the founder sets a name and a
+face and the guest's **Founded line** shows both and never reads *Anonymous*; then the guest sets
+their own and both reach the founder's register. Both directions run through the **4s poll rather
+than a reload**, which is the whole discipline of the check — a reload rebuilds every row from the
+module and would pass against the broken page. Both identities are set at the wire for the reason
+the Q846 amendment is: what is under test is what the *other* seat renders, and driving ✋ and 🖼️
+through their own cards would put two more things inside one assertion, when the walk has already
+committed both through those cards earlier.
+
+Not fixed here, and worth knowing: the assembly ring (`design/setup.css`) draws member avatars from
+the same rows, so it has been showing the same anonymous discs for the same reason, and it stops
+without being touched.
+
+## The stated address carries `/d/` (2026-08-26, Q891–Q893)
+
+Backlog 70, from Ed: *the Link clause says "The document lives at docs.vote/[slug]" whereas in fact
+it lives at docs.vote/d/[slug].*
+
+**The address the surface states is the route the server serves.** That is the whole rule, and it
+had no home, which is why it was broken in eleven places at once. The server has exactly one
+document route — `seg[0] === 'd' && seg.length === 2` in `server.ts`, with a 404 fallthrough and no
+bare `/<slug>` — and every link it *builds* has always been right: `${baseUrl}/d/${slug}` at
+`server.ts:190`, and the redirects beside it. So nothing clickable was ever wrong. What was wrong
+was every address a member reads and then has to type or trust: the Link clause, the birth mail's
+prose (beside a correct link, which makes the disagreement visible in one glance), 📍's *is taken* /
+*is free* verdicts, the prefix on 📍's own field, and the three short-form value maps a motion's
+sentence is built from.
+
+**Not a redirect.** The obvious alternative was to make the stated address true by serving it —
+a bare `/<slug>` route, or a redirect from it. It was not taken and was not close: Ed's report
+establishes `/d/` as where the document lives, nobody asked for a second address, and a document
+with two addresses is a document whose invitations, clause text and record can disagree about which
+one it has. The surface was wrong; the route was not.
+
+**Why a helper for a string concatenation.** `docAddr(slug)` earns itself not by saving characters
+but by being the thing that failed: the convention lived in eleven inlined copies of `'docs.vote/' +
+slug`, so there was nowhere for it to be corrected once. The two sites that cannot reach it —
+`mailer.ts` and `setup.js`'s mockup twin of the same mail — are in other bundles and say so in a
+comment naming the other.
+
+**The site the plan did not name, and the one that mattered.** `linkify` wraps a `docs.vote/…` run
+in the constitution's text as a real anchor, and its pattern was `\bdocs\.vote\/[a-z0-9][a-z0-9-]*`
+— which, against the corrected clause, matches `docs.vote/d` and stops. So the fix would have
+shipped a clause stating the right address and linking to a wrong one, which is worse than the bug:
+before, at least the words and the link agreed with each other. The segment is in the pattern now,
+and **optional**, because a member may write a bare address into their own charter text and a link
+that stops working is not the correction for that.
+
+**One thing left standing.** `design/tools/founding-walk.golden.json` freezes the Link clause in 52
+of its 55 steps, so it is stale as of this commit and `node scripts/founding-golden.mjs --update` is
+owed. It was not run here: the same golden is plan 32's to re-freeze wholesale, and that plan was
+being built in a tree alongside this one. Two sessions re-freezing one golden is a conflict somebody
+has to resolve by hand, and the walk is a sprint-end check (Q625) rather than a gate, so the cost of
+leaving it is a day of staleness and the cost of racing it is a merge.
+
+## The open-join link admits the visitor (2026-08-26, Q894–Q896)
+
+Backlog 73, a live-path bug Ed found by walking it: on a document set so *anyone with the link may
+join*, a visitor enters their email, gets a mail, clicks the link — and is not a member.
+
+**The `open` rung means auto-admit, and two places already said so.** The card's own option reads
+*Anyone with the link becomes a member the moment they open it* (`design/session-view.html:4618`),
+and `submitApplication` in `packages/constitution/src/session.ts` emits `member-admitted` and
+`afterRosterChange('arrival')` under its `open` branch, with a comment saying *anyone with the link
+joins on arrival — no motion in the way*. Neither was wrong. What was missing was anything that
+called it: `/auth/apply` ran `verifyApplication` and nothing else, whatever the policy, and always
+minted the `app:` applicant cookie. So the visitor was left at status `verified`, for ever.
+
+**And the front end sealed it shut rather than papering over it.** For an `open` applicant the page
+renders **zero** rail entries, deliberately — *under "open" arrival is joining, not applying* — so
+there is no Apply task, no submit button and no road onward. The two halves each assumed the other
+did the admitting. That is the shape worth remembering: a policy whose meaning is *this step is
+skipped* leaves nobody visibly responsible for the step it replaces, and both sides can be locally
+correct while the transition happens nowhere.
+
+**Why the module's own test did not catch it.** `packages/constitution/test/applications.test.ts`
+covers `open` and passes, because it calls `submitApplication` directly. The gap was never in the
+module; it was in the one seam no module test reaches, which is exactly the seam the HTTP layer is.
+The new case in `packages/server/test/server.test.ts` drives the whole road — begin an `open`
+document, POST the door, consume the mailed link — and asserts what a member would see: an arrived
+roster row, an `admitted` applicant record, a member view, and **no** admit motion and no admit
+race, because under `open` there is nothing to put before the room.
+
+**The cookie is the fix's other half, and it is what keeps the change this small.** Admitting
+without re-seating would leave the new member holding an `app:` cookie and therefore reading the
+applicant's thin payload — a member by the log and a stranger by the seat. Handing back
+`memberIdByEmail(doc.cs, rec.email)` when it resolves, and the applicant cookie when it does not,
+means every other road through this handler is untouched and the page needs no change at all: the
+empty `open` applicant branch simply never fires, because nobody arrives at it any more.
+
+**Left alone deliberately.** The `apply` and `proposed` rungs are correct as they stand — they land
+verify-only and need their later `submit-application` and their motion, which is the whole point of
+being a different rung. No UI submit task was added for `open`: arrival *is* the joining, and a task
+asking a member to confirm the thing that already happened is a step the rung exists to delete.
+
+**One guard on the guard.** The admit is conditioned on the applicant standing at `verified` and on
+the document being open. The first is what makes a re-entry link (Q439(a)) idempotent — a second
+landing on an already-admitted seat finds nothing to submit; the second keeps a closed document
+behaving as it did, since `submitApplication` refuses after the close and this handler would
+otherwise have turned that refusal into a 400 where it used to hand back a cookie.
+
+**A note for whoever writes the next test in this file.** The obvious shape for this case is a
+one-member document — a founder alone, every question answered by them — and it does not work: a
+*delegated* question never resolves on a single voice (`maybeResolve`'s `electorate.length < 2`,
+which is Q413's ruling that a founder does not delegate to themselves), so the founding never
+settles and `begin` refuses. The founder keeps every setting here and sets it directly, which is
+the right document for this test anyway: the visitor is the second member, and their arrival is
+what is being measured.
 
 ## The leaving rules before the register, and Proposals before Decisions (2026-08-26, Q865–Q876)
 
