@@ -162,8 +162,12 @@
             title="The room is working — this blinks when anybody judges or proposes anything. It never says who, what, or which way."></span>
       <!-- `session-clock` (Q466/Q471): the topbar reads the document · the
            room · you. The middle is one plain line — pulse, clock, quorum —
-           cold at every distance; the clock is the door to ⏰. -->
-      <span class="room"><button class="clock" id="clock" type="button" data-card="ending" disabled></button><span id="quorum">1 in the room</span></span>
+           cold at every distance; the clock is the door to ⏰.
+           `room-faces` (Q858): and the room itself, as the faces of everybody
+           else who has arrived. Pre-Begin the row is what *n in the room* used
+           to say in words; from 🍾 the count beside it is the quorum reading,
+           which is the engine's and stays. -->
+      <span class="room"><button class="clock" id="clock" type="button" data-card="ending" disabled></button><span class="count" id="quorum"></span><span class="facestack" id="faces"></span></span>
       <!-- the wallets you spend in this document, ✏️ ✒️ 🏛️, beside `me`
            (Q444b): proposing, drafting, consensus — a member's power is
            limited in quantity and unlimited in scope; the founder's the
@@ -1080,6 +1084,21 @@
   // judging for everybody. E is the arrived.
   const arrived = () => (cs ? cs.E() : members().filter((m) => m.in).length);
   const E = () => Math.max(arrived(), 1);
+  // **The room is a row of faces** (Q858/Q859). Who is present is **membership**,
+  // and membership is public (§9.0c) — it is authorship that is sealed (§3.5a)
+  // and direction that is never shown (§3.5), so a face here says that somebody
+  // has arrived and nothing whatever about what they are doing. Everybody but
+  // you, because your own face is `me` at the end of the same bar: a room of one
+  // draws no stack rather than drawing the viewer twice.
+  // A seat that is not a member is not in the room and is shown none of it — the
+  // stranger's door says who *decided*, never who is here (Q508), and an
+  // applicant is not on the register yet.
+  const FACE_CAP = 5;
+  const roomFaces = () => {
+    if (isStranger() || S.viewer === 'applicant') return [];
+    const you = viewerRow();
+    return members().filter((p) => p.in && p !== you);
+  };
   // **`founderRow` is the founder's row, and says so** (Q756). It was called
   // `meRow`, which is what `viewerRow` above actually is — and the misnomer
   // read true only for the founder, so it wrote the viewer's own address onto
@@ -4196,10 +4215,39 @@
     // a close to move
     clock.disabled = !(begun && st.kind === 'left');
     clock.title = clock.disabled ? '' : 'When does it end? — open the ⏰ card';
+    // **The count belongs to what it is about** (Q860). The begun reading is
+    // the quorum's — `arrived()` is `cs.E()` live, the electorate, which drops
+    // the lapsed — and it stays a sentence, because *k of n* is a fact about a
+    // decision and not about who is in the room. The pre-Begin head count is
+    // what the row of faces replaces, so it says nothing at all now.
     const q = begun
       ? 'quorum ' + ((cs.isRemote && cs.v.floor) || quorumCount()) + ' of ' + arrived()
-      : arrived() + ' in the room';
+      : '';
     if (quorum.textContent !== q) quorum.textContent = q;
+    // The faces themselves. `renderClock` diffs by `textContent` and beats on
+    // its own 30-second interval, out of step with `render()` — and a row of
+    // faces is markup, so it is guarded by a key of exactly what it draws.
+    // Without that the stack is either rebuilt twice a minute under whatever
+    // the pointer is doing, or never rebuilt at all.
+    const faces = document.getElementById('faces');
+    const others = roomFaces();
+    const shown = others.slice(0, FACE_CAP);
+    const key = JSON.stringify([others.length,
+      shown.map((p) => [p.mid || p.e || '', p.pic || '', p.n || ''])]);
+    if (faces.dataset.k !== key) {
+      faces.dataset.k = key;
+      // the overflow counts everybody else the row could not fit, which is the
+      // stack's own arithmetic and not the room's: the row is the register's
+      // arrived rows, where the quorum line above is the engine's electorate
+      faces.innerHTML = shown.map((p) => '<span class="seat"' +
+        (p.mid ? ' data-mid="' + esc(p.mid) + '"' : '') + '>' + avHtml(p) + '</span>').join('') +
+        (others.length > shown.length
+          ? '<span class="more">+' + (others.length - shown.length) + '</span>' : '');
+    }
+    // and the head count stays reachable, in the words it used to be printed in
+    const here = members().filter((p) => p.in).length;
+    const t = others.length ? here + ' in the room' : '';
+    if (faces.title !== t) faces.title = t;
   }
   // the ladder sharpens on its own: the coarsest step is ten minutes, so a
   // half-minute tick is never late by a visible amount

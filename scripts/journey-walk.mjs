@@ -556,6 +556,55 @@ const secondSeatOnAmendment = async () => {
   if (guestOks - before !== 1) stuck.push('give-ok was sent ' + (guestOks - before) + ' times');
 };
 
+/* ---- the room, as a row of faces (backlog 15, Q858–Q864) ----------------
+ * Ed: *where we currently say "n in the room" in the topbar we should show a
+ * row / stack of user avatars.* Two seats is the smallest room in which the
+ * row can be wrong in the way that matters — it is built from *other* people,
+ * so a page with one member and a page with two are the only two states, and
+ * the founder's own chair cannot tell them apart. Checked here rather than in
+ * the fixture for the ordinary reason: `members()` on a live document is fed
+ * by `syncFromCs`, and only a real arrival sets `in`.
+ * Presence, and only presence: an invitation is not an arrival, so GUEST2 —
+ * invited above and never opened — is in neither stack. */
+const facesIn = (pg) => pg.evaluate(() => ({
+  seats: [...document.querySelectorAll('#faces .seat')].map((s) => s.dataset.mid || '?'),
+  more: ((document.querySelector('#faces .more') || {}).textContent || '').trim(),
+  title: (document.getElementById('faces') || {}).title || '(no #faces)',
+  count: (document.getElementById('quorum') || {}).textContent || '',
+}));
+const topbarAlone = async () => {
+  const f = await facesIn(page);
+  say('faces ×0   · ' + (f.seats.length === 0
+    ? 'a room of one draws no stack — the two addresses above are invitations, not arrivals'
+    : 'FAIL: the founder alone sees ' + JSON.stringify(f.seats)));
+  if (f.seats.length !== 0) stuck.push('the face row in a room of one');
+};
+const topbarFaces = async () => {
+  if (!guestPage) return;                       // its own failure, already reported
+  const mine = await facesIn(page);
+  const theirs = await facesIn(guestPage);
+  // the founder sees the one member who arrived, and not their own face: that
+  // is `me`, two sockets along the same bar
+  const founderOk = mine.seats.length === 1 && mine.seats[0] !== 'founder' &&
+    mine.seats[0] !== '?' && mine.title === '2 in the room';
+  say('faces ×1   · the founder sees ' + JSON.stringify(mine.seats) + ' · ' + JSON.stringify(mine.title) +
+    (founderOk ? '' : '  FAIL: expected one seat that is not their own, titled “2 in the room”'));
+  if (!founderOk) stuck.push("the founder's face row");
+  // and the member sees the founder, whose row is the one with the minted id
+  const guestOk = theirs.seats.length === 1 && theirs.seats[0] === 'founder' &&
+    theirs.title === '2 in the room';
+  say('their view · the member sees ' + JSON.stringify(theirs.seats) + ' · ' + JSON.stringify(theirs.title) +
+    (guestOk ? '' : '  FAIL: expected the founder’s face and nobody else’s'));
+  if (!guestOk) stuck.push("the member's face row");
+  // **the count is still reachable** (Q860): the row replaced the pre-Begin
+  // head count, never the quorum reading, which is the engine's and is a fact
+  // about a decision rather than about who is here
+  const countOk = /^quorum \d+ of \d+$/.test(mine.count.trim());
+  say('the count  · ' + JSON.stringify(mine.count) +
+    (countOk ? '' : '  FAIL: a begun document must still read quorum k of n'));
+  if (!countOk) stuck.push('the quorum reading beside the faces');
+};
+
 /* ---- the dead end, and the way out of it (Q826–Q830) --------------------
  * Ed, founding alone: *I did all my open tasks and then got served Begin while
  * being unable to action it. My guess is this is because I delegated things to
@@ -662,6 +711,9 @@ for (let i = 0; i < 60; i++) {
     if (await open('roster')) {
       await inviteDoorPreBegin();
       await clickIn('.setupcard [data-revert]');
+      // the founder is still alone in the room at this exact moment, which is
+      // the only place in the walk where that can be said of a saved document
+      await topbarAlone();
       // an invitation is a seat, so one of them is taken here: what a member
       // is owed on arrival can only be read from the member's own page
       await secondSeatPreBegin();
@@ -825,6 +877,9 @@ if (!begunOk) stuck.push('begun state');
 // the other half of backlog 50: what *is* news to a member is a rule changed
 // while they were here, and one press of OK is what dismisses it
 await secondSeatOnAmendment();
+
+// and with two seats standing, each of them is the other's face in the topbar
+await topbarFaces();
 
 /* ---- the door, once the pen is laid down (Q812/Q813) -------------------
  * The state the backlog report was made in: the founder gives up the ✒️ on

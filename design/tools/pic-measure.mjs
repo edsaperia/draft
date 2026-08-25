@@ -116,6 +116,9 @@ const SITES = [
   ['the invitations list', '.rperson', true],
   ['a speaker', '.speaker', true],
   ['the navbar me', '#mebtn', false],
+  // `room-faces` (Q862): the second family of faces in the navbar, and the
+  // second place a glyph has no text around it to take a size from
+  ['the topbar faces', '#faces .seat', false],
 ];
 
 const rows = await page.evaluate((sites) => {
