@@ -194,8 +194,15 @@ await record('follow the magic link');
 /* ---- then whatever the rail asks for, one at a time ------------------- */
 const PEN_RELEASE = 'quorum';         // 👥, whose value the walk sets itself
 let penHeldAtRelease = null;
+let penReleased = false;          // the walk got all the way through the release
 const releasePen = async (k) => {
   penHeldAtRelease = await penCount();
+  if (penHeldAtRelease === null) {
+    // a guard that cannot read its own witness is not a guard — say so rather
+    // than skipping the whole of R-048 in silence
+    errors.push('the ✒️ wallet states no settings count, so the pen half of R-048 cannot be checked');
+    return;
+  }
   // a settled setting's tabs are a closed pile, and the ones behind the front
   // carry no click hook — open the value's own card first and the pile becomes
   // the card's tabs, which is the only way a founder reaches ✒️ either
@@ -221,6 +228,7 @@ const releasePen = async (k) => {
     errors.push('the pen left before 🍾 — the wallet counted ' + penHeldAtRelease +
       ' settings before the release and ' + now + ' after');
   }
+  penReleased = true;
 };
 
 const seen = new Set();
@@ -265,7 +273,7 @@ for (let i = 0; i < 40; i++) {
 }
 
 /* ---- and at 🍾 the release is spent (R-048) ---------------------------- */
-if (penHeldAtRelease !== null && log.some((e) => e.step === 'commit begin')) {
+if (penReleased && log.some((e) => e.step === 'commit begin')) {
   const said = await clauseText(PEN_RELEASE);
   if (/may (not )?amend this at will/.test(said || '')) {
     errors.push(PEN_RELEASE + ' still speaks of the pen after 🍾: ' + said);

@@ -1569,6 +1569,9 @@
   // the power state of a held-able setting: the Text's rides its own
   // module row (value null, never a question), everything else csState's
   const pwState = (k) => (cs ? (k === 'text' ? cs.settingState('startingText') : csState(k)) : null);
+  // delegability is the catalogue's own flag, never a page-kept list — the
+  // power tabs need it to say *when* giving the second power lands (R-048)
+  const isDelegable = (k) => MANAGED_KEYS.includes(k) && M.entryOf(midOf(k)).delegable;
   const PWCACHE = {};
   // Q454 (Ed, 2026-08-20): 🔧 becomes ✒️ and the assent half of 👑 becomes
   // 🛡️ — a sword and a shield, one writes and one only refuses, where 🔧
@@ -1783,9 +1786,14 @@
     const why = pwWhy(k, c.power);
     const L = pwOpts(k, c.power);
     if (!amFounder()) {
+      // a release made before the start is recorded now and lands at 🍾
+      // (R-048), so it is not *given up* yet — and the clause beside this
+      // card says so in the same breath
       return why + '<p class="setnote">' + (held
         ? 'The Founder holds this. Giving it up is the Founder' + Q + 's, one way; taking a held power from them is a constitutional motion, the members' + Q + ' to move.'
-        : '<b>Given up.</b> The road back is a constitutional motion, the members' + Q + ' to move.') + '</p>';
+        : pend && !live
+          ? '<b>Given up from the start.</b> The Founder holds it until the document begins.'
+          : '<b>Given up.</b> The road back is a constitutional motion, the members' + Q + ' to move.') + '</p>';
     }
     if (live && !held) {
       return why + '<p class="setnote"><b>Given up — one way.</b> The road back is the members' + Q + ' reserve motion.</p>';
@@ -1800,12 +1808,21 @@
     // a power is only ever actually false through delegation, and a delegated
     // setting is not drawn held at all.
     const blockGive = !live && held && !pwHasValue(k);
+    // **The second power going is a delegation, and that lands at once**
+    // (R-048): a lone pre-start release waits for 🍾, but the act that leaves
+    // neither power held on a delegable setting opens the founding question
+    // immediately — and clears the value with it — so this lane must not
+    // promise a deferral it is not going to take.
+    const otherHeldNow = c.power === 'u' ? (p.a && !pwPend(k).a) : (p.u && !pwPend(k).u);
+    const givingDelegates = !live && held && !otherHeldNow && isDelegable(k);
     const cur = S[key] || (held ? 'held' : 'given');
     return why + '<div class="choice" role="radiogroup">' +
       powerLane(key, 'held', L.held[0], L.held[1], cur === 'held', blockAHeld) +
       powerLane(key, 'given', L.given[0],
         L.given[1] + (live ? ' One way — the road back is the members' + Q + ' to give.'
-          : ' It takes effect when the document begins.'),
+          : givingDelegates
+            ? ' Neither power would be left, so it hands the question to the membership straight away.'
+            : ' It takes effect when the document begins.'),
         cur === 'given', blockGive) +
       '</div>' +
       (blockAHeld ? '<p class="setnote">A veto can only be held where the Founder still amends it at will — take back the ✒️ first.</p>' : '') +
