@@ -248,10 +248,77 @@ const committable = () => page.evaluate(() =>
   [...document.querySelectorAll('.setupcard .commitrow button')]
     .some((x) => !x.disabled && !/🗑/.test(x.textContent)));
 
+/* ---- the invite door (backlog 51, Q811–Q816) ---------------------------
+ * Ed, on genesis: *I managed to invite one additional member … and further
+ * ones don't work; their names don't appear in the list, and they don't
+ * receive emails.* Every act on the 🪪 card was fire-and-forget, so a refusal
+ * and a success looked identical — which is why this is checked **here**: the
+ * fixture never sends a command, so no refusal exists there to be swallowed.
+ * Three things, at the two moments they can each go wrong. */
+const STAMP = String(Date.now()).slice(-8);
+const GUEST1 = 'bo' + STAMP + '@example.org';
+const GUEST2 = 'cy' + STAMP + '@example.org';
+// the membership as the clause states it: address and chips, per row
+const rosterRows = () => page.evaluate(() =>
+  [...document.querySelectorAll('.roster.clauselist .rperson')].map((r) => ({
+    e: ((r.querySelector('.em') || {}).textContent || '').trim(),
+    chips: [...r.querySelectorAll('.chip')].map((c) => c.textContent.trim()).join(' / '),
+  })));
+const refusalLine = () => page.evaluate(() =>
+  ((document.querySelector('.setupcard .why.refusal') || {}).textContent || '').trim());
+const inviteFrom = async (addr, byEnter) => {
+  await typeIn('.setupcard [data-add]', addr);
+  await T(120);
+  if (byEnter) {
+    // **Enter sends** (Q814): a lone field with a button beside it and no
+    // form around it swallowed the return key, which is the one gesture
+    // everybody makes after typing an address.
+    await page.focus('.setupcard [data-add]');
+    await page.keyboard.press('Enter');
+  } else await clickIn('.setupcard [data-act="add"]');
+  await T(900);
+};
+const inviteDoorPreBegin = async () => {
+  await inviteFrom(GUEST1, false);
+  await inviteFrom(GUEST2, true);
+  const rows = await rosterRows();
+  const listed = [GUEST1, GUEST2].filter((a) =>
+    rows.some((r) => r.e === a && /invited/.test(r.chips)));
+  say('invite ×2  · ' + JSON.stringify(rows.map((r) => r.e)) +
+    (listed.length === 2 ? '' : '  FAIL: both should be listed as invited'));
+  if (listed.length !== 2) stuck.push('two invitations from the single-name field');
+
+  const ob = await (await fetch(BASE + '/api/dev/outbox')).json();
+  const posted = JSON.stringify(ob.mails || ob);
+  const mailed = [GUEST1, GUEST2].filter((a) => posted.includes(a));
+  say('their mail · ' + mailed.length + ' of 2 in the outbox' +
+    (mailed.length === 2 ? '' : '  FAIL: an invitation with no mail is the reported symptom'));
+  if (mailed.length !== 2) stuck.push('invitation mail');
+
+  // **A door that will not open says why** (Q811), and the address is
+  // compared the way the store compares it (Q815): the store lowercases
+  // every address it takes, so a case variant used to walk past the page's
+  // own check into a server refusal nobody could see.
+  await inviteFrom(GUEST1.toUpperCase(), false);
+  const said = await refusalLine();
+  const refusalOk = /already on the membership/i.test(said);
+  say('refusal    · ' + (refusalOk ? '“' + said + '”'
+    : 'FAIL: a duplicate address said ' + JSON.stringify(said)));
+  if (!refusalOk) stuck.push('the refusal sentence on 🪪');
+  // and it is about what is in the field, so the next keystroke retires it
+  await typeIn('.setupcard [data-add]', '');
+  await T(220);
+  const cleared = !(await refusalLine());
+  say('cleared    · ' + (cleared ? 'the next keystroke retires it'
+    : 'FAIL: the refusal outlived the field'));
+  if (!cleared) stuck.push('the refusal did not clear');
+};
+
 const seen = new Set();
 const order = [];
 const handedOver = [];
 let waitingAtBegin = false;
+let doorWalked = false;
 for (let i = 0; i < 60; i++) {
   const standing = await rail();
   // --proposals-first: the four tabs of the Proposals opening jump the queue
@@ -284,6 +351,21 @@ for (let i = 0; i < 60; i++) {
   seen.add(next);
   order.push(next);
   if (!(await open(next))) { stuck.push(next + ' (would not open)'); continue; }
+  // **🪪 is a band tab, never a rail task** — it is always settled, having
+  // no value to settle — so the door is walked at the last moment before
+  // 🍾, which is the state it is drawn in: pre-start, both register powers
+  // still in the founder's hand.
+  if (next === 'begin' && !DELEGATE_ALL && !doorWalked) {
+    doorWalked = true;
+    if (await open('roster')) {
+      await inviteDoorPreBegin();
+      await clickIn('.setupcard [data-revert]');
+    } else {
+      say('invite ×2  · FAIL: no 🪪 tab in the band to invite from');
+      stuck.push('the 🪪 tab');
+    }
+    await open('begin');
+  }
   if (next === 'begin') {
     // 🍾 is served either because it can be pressed or because it is the last
     // thing standing (Q773). The second is a real end to a founding that has
@@ -417,6 +499,43 @@ const state = await page.evaluate(() => ({
 const begunOk = state.begun && state.editable === 'true' && !state.proseShown;
 say('begun      · ' + JSON.stringify(state) + (begunOk ? '' : '  FAIL: pre-start editor still live'));
 if (!begunOk) stuck.push('begun state');
+
+/* ---- the door, once the pen is laid down (Q812/Q813) -------------------
+ * The state the backlog report was made in: the founder gives up the ✒️ on
+ * the register and keeps the 🛡️. `invite()` has always refused on anything
+ * but the pen, while the 🪪 card drew its box on *either* power — so the
+ * founder was shown a field that could not send, and pressing it did
+ * nothing whatever. The box must be gone, and the card must say where to go
+ * instead. Driven through the ✒️ power tab, because that is the control a
+ * founder actually uses. */
+// the power tabs are inert peeks on a closed pile — no `data-tab` until the
+// pile is the open card's own strip — so 🤝 is opened first and the ✒️ tab
+// clicked from its strip, which is the founder's own route to it
+await open('policy');
+if (await open('pw:u:policy')) {
+  const chose = await clickIn('[data-set="pw:u:policy"][data-val="given"]');
+  const laid = chose ? await press(1250) : null;
+  say('the pen    · ' + (laid ? 'laid down on 🤝 (' + laid + ')'
+    : 'FAIL: the ✒️ tab would not commit'));
+  if (!laid) stuck.push('laying the register pen down');
+  await open('roster');
+  const door = await page.evaluate(() => {
+    const c = document.querySelector('.setupcard');
+    return { box: !!(c && c.querySelector('[data-add]')),
+      says: ((c && c.querySelector('.why')) || {}).textContent || '' };
+  });
+  const doorOk = !door.box && /✉️/.test(door.says) && /proposal/i.test(door.says);
+  say('shut door  · ' + (doorOk ? 'no box, and the card names ✉️'
+    : 'FAIL: box ' + door.box + ' · says ' + JSON.stringify(door.says.slice(0, 140))));
+  if (!doorOk) stuck.push('the 🪪 door after the pen goes');
+  await clickIn('.setupcard [data-revert]');
+} else {
+  const tabs = await page.evaluate(() => [...document.querySelectorAll('[data-tab],[data-card]')]
+    .map((n) => n.dataset.tab || n.dataset.card).filter((k) => /policy|roster|invite/.test(k)));
+  say('the pen    · FAIL: no ✒️ tab on 🤝 to lay the register pen down with · ' +
+    'register tabs on the page ' + JSON.stringify(tabs));
+  stuck.push('the 🤝 pen tab');
+}
 
 /* ---- a caret on the column itself, not in a clause (Ed, 2026-08-22) ----
  * Clicking the charter's whitespace, an empty charter, or select-all puts the
