@@ -314,6 +314,156 @@ const inviteDoorPreBegin = async () => {
   if (!cleared) stuck.push('the refusal did not clear');
 };
 
+/* ---- a second seat (backlog 50, Q842–Q848) ------------------------------
+ * Ed's ruling, and the whole of what it changes: *a setting that predates you
+ * is simply what the document says; a power handed to you is news addressed
+ * to you.* Neither half of it can be seen from the founder's chair, and
+ * nothing else in the project drives a second one — `dev-ladder.ts` presses
+ * every owed OK for every member in one go at the constitution rung, and
+ * `founding-walk.mjs` is the founder alone in the fixture. So an invited
+ * member follows their own invitation into a second browser context here,
+ * and their seat is asked the two questions:
+ *   1 — pre-Begin, is anything the founder set before this arrival being
+ *       served as an acknowledgement? (Nine were, on every real document.)
+ *   2 — post-Begin, does **one** press of OK dismiss an amendment's task?
+ *       It took two: the press sent `give-ok` and re-rendered against the
+ *       view fetched before it, which put the task straight back. The
+ *       reload is the tell — the second half of the check passed before the
+ *       fix only *after* a reload, which is the signature of the mechanism.
+ */
+// the constitutional settings, in the page's own keys: what a founder settles
+// during the founding and what a late arrival used to be handed nine of
+const PREDATING = ['ending', 'bar', 'quorum', 'authorship', 'judgments',
+  'chamber', 'lapse', 'policy', 'removal'];
+const AMENDED = 'chamber'; // 🌍, constitutional and founder-held after this founding
+let guestPage = null;
+let guestOks = 0;
+// the readout and the rail, read the way `founding()` and `rail()` read the
+// founder's — the rail from the DOM, because that is what the member sees
+const guestState = () => guestPage.evaluate(() => ({
+  f: window.__founding ? window.__founding() : null,
+  rail: [...document.querySelectorAll('#rail li')].map((li) => li.dataset.q ||
+    ((li.querySelector('[data-card]') || { dataset: {} }).dataset.card) || '?'),
+}));
+const invitationLink = async (addr) => {
+  const ob = await (await fetch(BASE + '/api/dev/outbox')).json();
+  const mail = (ob.mails || ob).find((m) => JSON.stringify(m).includes(addr));
+  return mail ? (JSON.stringify(mail).match(/http:[A-Za-z0-9_?=/:.-]+/) || [])[0] : null;
+};
+const guestLand = async (url) => {
+  await guestPage.goto(url);
+  for (let i = 0; i < 40 && !guestPage.url().includes('/d/'); i++) {
+    await guestPage.waitForTimeout(500);
+  }
+  await guestPage.waitForTimeout(2600);
+};
+const secondSeatPreBegin = async () => {
+  const link = await invitationLink(GUEST1);
+  if (!link) {
+    say('second seat· FAIL: no invitation link in the outbox for ' + GUEST1);
+    stuck.push('the invitation link'); return;
+  }
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+  guestPage = await ctx.newPage();
+  guestPage.on('pageerror', (e) => errors.push('[guest] ' + String(e)));
+  guestPage.on('response', (r) => { if (r.request().method() === 'POST' &&
+    /give-ok/.test(r.request().postData() || '')) guestOks += 1; });
+  guestPage.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400) {
+    refused.push('[guest] ' + r.status() + ' ' + r.request().method() + ' ' +
+      new URL(r.url()).pathname + ' ' + String(r.request().postData() || '').slice(0, 120));
+  } });
+  await guestLand(link);
+  const { f } = await guestState();
+  if (!f) {
+    say('second seat· FAIL: no window.__founding in the invited seat at ' + guestPage.url());
+    stuck.push('the member seat'); return;
+  }
+  say('second seat· ' + GUEST1.split('@')[0] + ' at ' + guestPage.url() +
+    ' · founder=' + f.amFounder + ' begun=' + f.constituted);
+  if (f.amFounder || f.constituted) {
+    say('             FAIL: the invited seat should be a member of an unbegun document');
+    stuck.push('the invited seat');
+  }
+  const owed = (f.served || []).filter((k) => PREDATING.includes(k));
+  say('predates   · ' + (owed.length === 0
+    ? 'nothing set before this arrival is served · served ' + JSON.stringify(f.served)
+    : 'FAIL: ' + JSON.stringify(owed) + ' are served as acknowledgements before 🍾'));
+  if (owed.length) stuck.push('pre-Begin acks in the member seat: ' + owed.join(','));
+};
+const secondSeatOnAmendment = async () => {
+  if (!guestPage) return; // its own failure, already reported
+  // the founder amends a constitutional setting they still hold, at the wire:
+  // what is under test is the *member's* single press, and driving 🌍's card
+  // through the band would be a second thing to go wrong in the same check
+  const said = await page.evaluate((k) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cmd: 'set-setting', args: { setting: k,
+      value: { rung: 'public' }, why: 'so the cohort can read along' } }),
+  }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), AMENDED);
+  if (said && said.error) {
+    say('amendment  · FAIL: the founder could not amend 🌍 · ' + JSON.stringify(said.error));
+    stuck.push('the post-start amendment'); return;
+  }
+  await T(5000); // one poll in the member's seat, and a little air
+  const arrived = await guestState();
+  const isServed = (s) => ((s.f || {}).served || []).includes(AMENDED) ||
+    (s.rail || []).includes(AMENDED);
+  say('amendment  · ' + (isServed(arrived)
+    ? '🌍 reaches the member as a task · rail ' + JSON.stringify(arrived.rail)
+    : 'FAIL: an amendment made after this member arrived is not served · served ' +
+      JSON.stringify((arrived.f || {}).served) + ' · rail ' + JSON.stringify(arrived.rail)));
+  if (!isServed(arrived)) {
+    stuck.push('the amendment did not reach the member'); return;
+  }
+  // …and the start is not a second chance to serve what predates them: 🍾
+  // ends the era in which the founder may re-set freely, so everything they
+  // settled before this member arrived is now simply what the document says.
+  const before2 = (arrived.f.served || [])
+    .filter((k) => PREDATING.includes(k) && k !== AMENDED);
+  say('predates 2 · ' + (before2.length === 0
+    ? 'and 🍾 serves none of what was settled before this arrival'
+    : 'FAIL: ' + JSON.stringify(before2) + ' predate this member and are served · ' +
+      JSON.stringify((arrived.f.order || [])
+        .filter((l) => before2.some((k) => String(l).startsWith(k + ' ')))) +
+      ' · okd ' + JSON.stringify(arrived.f.okd) + ' · owed ' + JSON.stringify(arrived.f.owed)));
+  if (before2.length) stuck.push('post-🍾 acks that predate the member: ' + before2.join(','));
+  // one press, and one only
+  const before = guestOks;
+  await guestPage.evaluate((k) => {
+    const el = document.querySelector('#rail [data-card="' + k + '"]');
+    if (el) el.click();
+  }, AMENDED);
+  await guestPage.waitForTimeout(500);
+  const pressed = await guestPage.evaluate(() => {
+    const b = document.querySelector('.setupcard [data-ok]');
+    if (!b || b.disabled) return false;
+    b.scrollIntoView({ block: 'center' });
+    b.click();
+    return true;
+  });
+  if (!pressed) {
+    say('one press  · FAIL: no OK on the member’s 🌍 card');
+    stuck.push('the member’s OK button'); return;
+  }
+  await T(5000); // >4s: a poll lands, carrying the view the press was not in
+  const after = await guestState();
+  const gone = !isServed(after);
+  say('one press  · ' + (gone ? 'the task leaves and stays gone through a poll'
+    : 'FAIL: one press did not dismiss it · served ' + JSON.stringify((after.f || {}).served) +
+      ' · rail ' + JSON.stringify(after.rail)));
+  if (!gone) stuck.push('the OK took more than one press');
+  // …and the module agrees, which is what a reload asks it
+  await guestLand(guestPage.url());
+  const reloaded = await guestState();
+  const stillGone = !isServed(reloaded);
+  say('reloaded   · ' + (stillGone ? 'the module has the acknowledgement'
+    : 'FAIL: the task came back on a reload · served ' + JSON.stringify((reloaded.f || {}).served)));
+  if (!stillGone) stuck.push('the OK did not reach the module');
+  say('give-ok    · ' + (guestOks - before) + ' sent for one press' +
+    (guestOks - before === 1 ? '' : '  FAIL: expected exactly one'));
+  if (guestOks - before !== 1) stuck.push('give-ok was sent ' + (guestOks - before) + ' times');
+};
+
 /* ---- the dead end, and the way out of it (Q826–Q830) --------------------
  * Ed, founding alone: *I did all my open tasks and then got served Begin while
  * being unable to action it. My guess is this is because I delegated things to
@@ -420,6 +570,9 @@ for (let i = 0; i < 60; i++) {
     if (await open('roster')) {
       await inviteDoorPreBegin();
       await clickIn('.setupcard [data-revert]');
+      // an invitation is a seat, so one of them is taken here: what a member
+      // is owed on arrival can only be read from the member's own page
+      await secondSeatPreBegin();
     } else {
       say('invite ×2  · FAIL: no 🪪 tab in the band to invite from');
       stuck.push('the 🪪 tab');
@@ -573,6 +726,10 @@ const state = await page.evaluate(() => ({
 const begunOk = state.begun && state.editable === 'true' && !state.proseShown;
 say('begun      · ' + JSON.stringify(state) + (begunOk ? '' : '  FAIL: pre-start editor still live'));
 if (!begunOk) stuck.push('begun state');
+
+// the other half of backlog 50: what *is* news to a member is a rule changed
+// while they were here, and one press of OK is what dismisses it
+await secondSeatOnAmendment();
 
 /* ---- the door, once the pen is laid down (Q812/Q813) -------------------
  * The state the backlog report was made in: the founder gives up the ✒️ on

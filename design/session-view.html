@@ -950,11 +950,44 @@
     try { rec = cs.memberRecords().get(id) || null; } catch (e) { return null; }
     return rec ? new Set(rec.okOwed) : null;
   };
+  // **One press dismisses the task** (Q846, Ed: *I click a queue-card, click
+  // OK, then click the queue-card again, then click OK, then the queue card
+  // goes*). The press adds the key and sends `give-ok` in the same act, and
+  // the command is a POST; `closeThen` renders straight after it, and this
+  // function read `view.owedOks` from the view fetched **before** the
+  // command and deleted the key again. The second press found a refreshed
+  // view and stuck — deterministic, on every `set-` acknowledgement.
+  // A key is *in flight* from the press until the command's own refresh has
+  // landed, and while it is, the module's answer about it is known to be out
+  // of date and is not read. Page keys, matching `c.k`.
+  const okInFlight = new Set();
+  const holdOkInFlight = (pk, p) => {
+    okInFlight.add(pk);
+    // `api.cmd` resolves after the refresh it triggers, so the next sync
+    // reads a view that knows about the press. Belt and braces: a promise
+    // that never settles must not strand the key for the life of the page,
+    // since nothing would then re-owe it if a later change re-opened it.
+    let done = false;
+    const release = () => { if (done) return; done = true;
+      okInFlight.delete(pk); render(); };
+    if (p && typeof p.then === 'function') p.then(release, release);
+    else { okInFlight.delete(pk); return; } // the fixture answers in the act
+    setTimeout(release, 15000);
+  };
   const syncOwedOks = () => {
     const owed = owedSettings(); if (!owed) return;
     for (const c of CARDS) {
       if (c.isGate || c.ansFor || !PW_KEYS.includes(c.k)) continue;
+      if (okInFlight.has(c.k)) continue;
       if (owed.has(midOf(c.k))) { S.okd.delete('set-' + c.k); S.okd.delete('res-' + c.k); }
+      // **and it adds, too** — the module is the truth in both directions,
+      // as `hydrateS` has always been (Q846). Symmetry alone still flashes
+      // the task back for one round trip, which is what the in-flight set
+      // above is for; without it the press survives only until the next
+      // boot. Only the `set-` half: a delegated question resolving owes no
+      // OK in the module at all, so module silence is no evidence about
+      // `res-`, and reading it as one would retire the resolution news.
+      else if (!isRoom(c) && csSettled(c.k)) S.okd.add('set-' + c.k);
     }
   };
   const grantSeen = new Map();
@@ -3550,7 +3583,14 @@
     // a door is not a decision — nobody set it, nothing binds through it —
     // so it is never news to acknowledge (pacing pass, 2026-08-19: the ✉️❌
     // doors were landing in every member's rail as OK cards at the start)
-    || (!amFounder() && !c.ansFor && !c.isGate && !c.door && !isRoom(c) && c.own !== 'you' &&
+    // …and **nothing is owed an OK until the document begins** (SURFACE C8,
+    // F8). The `!constituted()` guard above governs only the ternary chain;
+    // this `||` escapes it, so a non-founder was served every settled
+    // constitutional setting whether or not the document had begun — and
+    // §9.6a owes nothing for the founder's pre-start re-setting, which may
+    // yet be re-set again. The module stopped owing these (Q844); this is the
+    // same rule stated where the fixture and a stale view can also read it.
+    || (constituted() && !amFounder() && !c.ansFor && !c.isGate && !c.door && !isRoom(c) && c.own !== 'you' &&
       // **and an ordinary setting the founder *changed*** (Q530, Ed
       // 2026-08-22). An ordinary rule the founder simply made is not news —
       // nothing was asked and anybody may motion it whenever they like — but
@@ -5436,7 +5476,9 @@
       if (GRANT_KEYS.includes(kk)) pendingGrant = { k: kk, from: okb.getBoundingClientRect() };
       if (ACK_KEYS.includes(kk)) saveGrants();
       if (cs && kk.startsWith('set-') && viewerId()) {
-        try { cs.giveOk(now(), viewerId(), midOf(kk.slice(4))); } catch (e) {}
+        // held in flight until the command's own refresh lands, so the view
+        // this press was made against cannot put the task straight back
+        try { holdOkInFlight(kk.slice(4), cs.giveOk(now(), viewerId(), midOf(kk.slice(4)))); } catch (e) {}
       } });
     const toggleFold = (k2) => {
       if (S.folded.has(k2)) S.folded.delete(k2); else S.folded.add(k2); };
@@ -7537,6 +7579,11 @@
       .map((c) => c.k),
     served: servedCards().map((c) => c.k),
     rail: railEntries.map((e) => e.id),
+    // what this seat has acknowledged, beside what the module says it owes
+    // (Q846): the two disagree in exactly the two ways backlog 50 is about —
+    // an ack the page invented, and one the module keeps re-owing after a
+    // press — and neither can be told from the other by reading the rail
+    okd: [...S.okd], owed: [...(owedSettings() || [])],
   });
   const glyphOfSetting = (mid) => { const c = card(pkeyOf(mid)); return c ? c.g + ' ' : ''; };
   // a setting named as the founder meets it — its glyph and its own title
