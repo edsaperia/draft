@@ -1444,3 +1444,57 @@ owed. It was not run here: the same golden is plan 32's to re-freeze wholesale, 
 being built in a tree alongside this one. Two sessions re-freezing one golden is a conflict somebody
 has to resolve by hand, and the walk is a sprint-end check (Q625) rather than a gate, so the cost of
 leaving it is a day of staleness and the cost of racing it is a merge.
+
+## The open-join link admits the visitor (2026-08-26, Q894–Q896)
+
+Backlog 73, a live-path bug Ed found by walking it: on a document set so *anyone with the link may
+join*, a visitor enters their email, gets a mail, clicks the link — and is not a member.
+
+**The `open` rung means auto-admit, and two places already said so.** The card's own option reads
+*Anyone with the link becomes a member the moment they open it* (`design/session-view.html:4618`),
+and `submitApplication` in `packages/constitution/src/session.ts` emits `member-admitted` and
+`afterRosterChange('arrival')` under its `open` branch, with a comment saying *anyone with the link
+joins on arrival — no motion in the way*. Neither was wrong. What was missing was anything that
+called it: `/auth/apply` ran `verifyApplication` and nothing else, whatever the policy, and always
+minted the `app:` applicant cookie. So the visitor was left at status `verified`, for ever.
+
+**And the front end sealed it shut rather than papering over it.** For an `open` applicant the page
+renders **zero** rail entries, deliberately — *under "open" arrival is joining, not applying* — so
+there is no Apply task, no submit button and no road onward. The two halves each assumed the other
+did the admitting. That is the shape worth remembering: a policy whose meaning is *this step is
+skipped* leaves nobody visibly responsible for the step it replaces, and both sides can be locally
+correct while the transition happens nowhere.
+
+**Why the module's own test did not catch it.** `packages/constitution/test/applications.test.ts`
+covers `open` and passes, because it calls `submitApplication` directly. The gap was never in the
+module; it was in the one seam no module test reaches, which is exactly the seam the HTTP layer is.
+The new case in `packages/server/test/server.test.ts` drives the whole road — begin an `open`
+document, POST the door, consume the mailed link — and asserts what a member would see: an arrived
+roster row, an `admitted` applicant record, a member view, and **no** admit motion and no admit
+race, because under `open` there is nothing to put before the room.
+
+**The cookie is the fix's other half, and it is what keeps the change this small.** Admitting
+without re-seating would leave the new member holding an `app:` cookie and therefore reading the
+applicant's thin payload — a member by the log and a stranger by the seat. Handing back
+`memberIdByEmail(doc.cs, rec.email)` when it resolves, and the applicant cookie when it does not,
+means every other road through this handler is untouched and the page needs no change at all: the
+empty `open` applicant branch simply never fires, because nobody arrives at it any more.
+
+**Left alone deliberately.** The `apply` and `proposed` rungs are correct as they stand — they land
+verify-only and need their later `submit-application` and their motion, which is the whole point of
+being a different rung. No UI submit task was added for `open`: arrival *is* the joining, and a task
+asking a member to confirm the thing that already happened is a step the rung exists to delete.
+
+**One guard on the guard.** The admit is conditioned on the applicant standing at `verified` and on
+the document being open. The first is what makes a re-entry link (Q439(a)) idempotent — a second
+landing on an already-admitted seat finds nothing to submit; the second keeps a closed document
+behaving as it did, since `submitApplication` refuses after the close and this handler would
+otherwise have turned that refusal into a 400 where it used to hand back a cookie.
+
+**A note for whoever writes the next test in this file.** The obvious shape for this case is a
+one-member document — a founder alone, every question answered by them — and it does not work: a
+*delegated* question never resolves on a single voice (`maybeResolve`'s `electorate.length < 2`,
+which is Q413's ruling that a founder does not delegate to themselves), so the founding never
+settles and `begin` refuses. The founder keeps every setting here and sets it directly, which is
+the right document for this test anyway: the visitor is the second member, and their arrival is
+what is being measured.
