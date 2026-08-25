@@ -888,6 +888,12 @@
   const owedNews = () => CARDS.some((c) => !c.isGate && visible(c) && news(c));
   const staged = (c) => !c.isGate || !owedNews();
   const viewerIsMember = () => S.viewer !== 'applicant' && !isStranger() && viewerRow().role !== 'clerk';
+  // **Whether *you* are the clerk is not whether the founder is** (Q754's
+  // family). `iDraft()` reads the founder's row wherever it is called, so any
+  // copy in the second person that keyed on it addressed the founder's status
+  // to whoever was reading. The stubs carry roles of their own, so an
+  // applicant and a stranger are not clerks either.
+  const viewerIsClerk = () => viewerRow().role === 'clerk';
   for (const [prop, key] of [['myname', 'n'], ['mypic', 'pic'], ['myemail', 'e']]) {
     Object.defineProperty(S, prop, { get: () => viewerRow()[key] || '',
       set: (v) => { viewerRow()[key] = v; } });
@@ -2447,7 +2453,7 @@
     // and says who is still only invited
     roster: () => arrived() + (arrived() === 1 ? ' member' : ' members') +
       (members().length > arrived() ? ' · ' + (members().length - arrived()) + ' invited' : '') +
-      (iDraft() ? '' : ' · you are the clerk'),
+      (viewerIsClerk() ? ' · you are the clerk' : ''),
     policy: () => { const v = takenValOf('policy');
       return ({ invite: 'Invitation only', proposed: 'Applications must be proposed by members',
         apply: 'Anyone may apply', open: 'Open' }[v ? v.joinPolicy : S.joinBy]) +
@@ -4093,7 +4099,7 @@
           ? '<p class="why">Your address is the only way back in — there are no passwords — so a new one has to prove it works before it replaces the old.</p>'
           : '') +
         '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com" style="width:20rem"></span>'),
-    myname: () => nameBody(me(), { optional: !iDraft() }),
+    myname: () => nameBody(me(), { optional: viewerIsClerk() }),
     mypic: () => pictureBody(me()),
     // **Whether the founder is in it is its own question** (Ed, 2026-08-18).
     // It had been the top half of the roster card, which made a decision about

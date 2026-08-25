@@ -539,8 +539,12 @@ button.cline:hover b { text-decoration: underline; }
    in-flow child of a `.cpara` with no top border or padding, so a top *margin*
    collapses straight out to the paragraph and carries the 🪪 pile down with
    it — the head tab is `position: absolute` against `.cpara` — leaving the gap
-   exactly as it was. Measured: with a margin the clearance reads −3px. */
-.constsec .cpara .memlist { padding-top: 42px; }
+   exactly as it was. Measured: with a margin the clearance reads −3px.
+   It is the **you-row** that needs clearing, so the padding hangs on lists
+   that have one: a clerk founder has no row here (Q758) and a stranger reads
+   a list with no identity tabs at all, and neither has a second tab column
+   to clear — unscoped, both opened with 42px of nothing. */
+.constsec .cpara .memlist:has(.memrow.meRow) { padding-top: 42px; }
 .memlist { display: flex; flex-wrap: wrap; gap: 5px 18px; }
 /* "you" — the one sanctioned per-reader difference (Ed): in the members list
    you are at the top, on your own line, your identity pile in the gutter
