@@ -81,10 +81,10 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
         (answers[setting]![m] ?? defaults[setting]) as never);
     }
   }
+  // one elective answer does not lift it either: the foot of the ladder binds,
+  // which is the claim the merged rungs of Q767 have to keep making
   eq(s.settingState('authorship').value, { rung: 'anonymous' },
-    'authorship: one anonym keeps the whole document unnamed');
-    // and one elective answer does not lift it: the foot of the ladder binds
-
+    'authorship: one anonym keeps the whole document unnamed, elective rungs included');
   eq(s.settingState('judgments').value, { rung: 'never' },
     'judgments: never-revealed beats seven afters');
   eq(s.settingState('chamber').value, { rung: 'closed' },

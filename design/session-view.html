@@ -6976,7 +6976,14 @@
     const carried = cs ? [...cs.motionRecords().values()].filter((m) => m.status === 'carried').length : 0;
     const unassented = rec ? rec.carriedButUnassented.length : 0;
     const auth = csState('authorship');
-    const reveal = auth && auth.value ? auth.value.rung || auth.value : null;
+    // **The elective rungs ride their base** (Q767), the page's own half of
+    // `authorshipBase` in adapter.ts — 👤 is a ladder of five, and a raw
+    // `=== 'anonymous'` test tells a document that took *Nobody’s name unless
+    // they choose* that its record names every author, which is the opposite
+    // of what the record does and of what the rung promises.
+    const rawRung = auth && auth.value ? auth.value.rung || auth.value : null;
+    const reveal = rawRung === 'anonymousElective' ? 'anonymous'
+      : rawRung === 'sealedElective' ? 'sealed' : rawRung;
     const names = reveal === 'anonymous' ? 'Authorship stays sealed: the record names nobody.'
       : reveal === 'public' ? 'Authorship was public throughout.'
       : 'Authorship is unsealed: the record names who proposed what.';

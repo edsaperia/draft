@@ -296,7 +296,7 @@ export function entryOf(id: SettingId): CatalogueEntry {
   return e;
 }
 
-/** The seven settings judging waits on (§9.0b; machines left with Q352). */
+/** The six settings judging waits on (§9.0b; machines left with Q352, signing folded by Q767). */
 export const JUDGE_GATES: readonly SettingId[] =
   CATALOGUE.filter((e) => e.judgeGate).map((e) => e.id);
 
