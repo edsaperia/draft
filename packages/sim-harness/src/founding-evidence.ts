@@ -69,7 +69,7 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
     chamber: { [eve]: { rung: 'closed' } },
   };
   const defaults: Record<string, unknown> = {
-    authorship: { rung: 'public' }, signing: { rung: 'everybody' },
+    authorship: { rung: 'public' }, signing: { rung: 'each' },
     judgments: { rung: 'after' }, chamber: { rung: 'public' },
   };
   for (const setting of Object.keys(answers)) {
@@ -81,7 +81,7 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
   eq(s.settingState('authorship').value, { rung: 'anonymous' },
     'authorship: one anonym keeps the whole document unnamed');
   eq(s.settingState('signing').value, { rung: 'nobody' },
-    'signing: nobody-signs beats seven everybody-signs');
+    'signing: nobody-signs beats seven each-author-chooses (Q768: everybody is gone)');
   eq(s.settingState('judgments').value, { rung: 'never' },
     'judgments: never-revealed beats seven afters');
   eq(s.settingState('chamber').value, { rung: 'closed' },

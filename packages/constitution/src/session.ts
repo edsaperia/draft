@@ -1936,20 +1936,26 @@ export class ConstitutionSession {
 
   /**
    * The signatures block (SPEC §4.6): who has acknowledged the close, in the
-   * order they signed, each with their comment. Names follow the ✍️ signing
-   * setting — `nobody` anonymises every signature, `each` lets the signer's
-   * own name stand, `everybody` names all. The comment is always shown; it
-   * is the rationale, and blank is a real signature.
+   * order they signed, each with their comment. The comment is always shown;
+   * it is the rationale, and blank is a real signature.
+   *
+   * **A signature is always named** (Q769, Ed 2026-08-23, closing Q634 (ii)).
+   * This read the ✍️ setting and anonymised the whole block under `nobody`,
+   * with `?? 'each'` when nothing had been settled — a middle-rung default
+   * where every other privacy default on this surface is the most private
+   * one. Both are gone. ✍️ is about **proposals**: whether a name is attached
+   * to a thing you wrote *while the room is still deciding*, which is what
+   * the blindness discipline is for. Signing the finished document is the
+   * opposite act — deliberate, after every decision is made — and an unnamed
+   * signature is an anonymous comment rather than a signature.
    */
   closingSignatures(): Array<{ member: MemberId; name: string | null; comment: string; t: number }> {
-    const signing = this.settings.get('signing')!.value as LadderValue | null;
-    const rung = (signing?.rung as 'nobody' | 'each' | 'everybody' | undefined) ?? 'each';
     const out: Array<{ member: MemberId; name: string | null; comment: string; t: number }> = [];
     for (const m of this.members.values()) {
       if (m.closingAck === null) continue;
       out.push({
         member: m.id,
-        name: rung === 'nobody' ? null : m.name,
+        name: m.name,
         comment: m.closingAck.comment,
         t: m.closingAck.t,
       });

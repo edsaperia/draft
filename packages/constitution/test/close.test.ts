@@ -80,8 +80,10 @@ describe('the constitution closes on its ending (SPEC §4.6)', () => {
     const sigs = s.closingSignatures();
     expect(sigs.map((x) => x.member)).toEqual([bo, cy]);
     expect(sigs[1]!.comment).toBe('dissent noted, but I sign');
-    // signing 'each' → the signer's own name stands (here null, unnamed)
-    expect(sigs[0]!.name).toBeNull();
+    // **A signature is always named** (Q769): the block no longer reads ✍️
+    // at all, so what stands here is the member's own name — null only
+    // because this fixture's members have never given one.
+    expect(sigs[0]!.name).toBe(null);
     const v = view(s, bo);
     expect(v.closed!.at).toBe(1_000_000);
     expect(v.closed!.mySignature!.comment).toBe('');

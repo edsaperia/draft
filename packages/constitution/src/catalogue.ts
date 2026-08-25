@@ -155,12 +155,28 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
     },
     deps: [], judgeGate: true },
 
+  // **✍️ is about proposals, and it stops lying** (Q768, Ed 2026-08-23,
+  // closing Q634 and Q638 (i)). Its third rung `everybody` said *every
+  // proposal carries its writer's name*, which is the same fact as 👤
+  // `public` — so `authorship: anonymous` with `signing: everybody` was a
+  // reachable self-contradiction the module would happily settle on. Deleting
+  // the rung removes the contradiction **structurally rather than guarding
+  // it**: every surviving pair is coherent — `each` + `anonymous` reads
+  // *nobody is named unless they choose to be*, `each` + `sealed` reads
+  // *named at the close, or earlier by choice*, and under `public` the opt-in
+  // simply changes nothing, since every proposal is named already.
+  //
+  // It stays a **setting**, and stays its own axis, because Ed's ruling that
+  // the opt-in resolves most-private-wins is exactly what an independently
+  // consented question is: a member who accepts `sealed` without elective
+  // signing must not be handed elective signing because somebody else asked
+  // for it. What merged is the *card* and the *clause* (Q767), not the axes.
   { id: 'signing', glyph: '✍️', kind: 'constitutional',
     delegable: true, valueType: 'ladder',
-    rungs: ['nobody', 'each', 'everybody'],
+    rungs: ['nobody', 'each'],
     consent: {
       ask: 'the most signing you will accept',
-      order: ladderOrder(['nobody', 'each', 'everybody']),
+      order: ladderOrder(['nobody', 'each']),
     },
     deps: [], judgeGate: true },
 

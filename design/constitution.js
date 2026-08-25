@@ -400,16 +400,32 @@ var CONSTITUTION = (() => {
       deps: [],
       judgeGate: true
     },
+    // **✍️ is about proposals, and it stops lying** (Q768, Ed 2026-08-23,
+    // closing Q634 and Q638 (i)). Its third rung `everybody` said *every
+    // proposal carries its writer's name*, which is the same fact as 👤
+    // `public` — so `authorship: anonymous` with `signing: everybody` was a
+    // reachable self-contradiction the module would happily settle on. Deleting
+    // the rung removes the contradiction **structurally rather than guarding
+    // it**: every surviving pair is coherent — `each` + `anonymous` reads
+    // *nobody is named unless they choose to be*, `each` + `sealed` reads
+    // *named at the close, or earlier by choice*, and under `public` the opt-in
+    // simply changes nothing, since every proposal is named already.
+    //
+    // It stays a **setting**, and stays its own axis, because Ed's ruling that
+    // the opt-in resolves most-private-wins is exactly what an independently
+    // consented question is: a member who accepts `sealed` without elective
+    // signing must not be handed elective signing because somebody else asked
+    // for it. What merged is the *card* and the *clause* (Q767), not the axes.
     {
       id: "signing",
       glyph: "✍️",
       kind: "constitutional",
       delegable: true,
       valueType: "ladder",
-      rungs: ["nobody", "each", "everybody"],
+      rungs: ["nobody", "each"],
       consent: {
         ask: "the most signing you will accept",
-        order: ladderOrder(["nobody", "each", "everybody"])
+        order: ladderOrder(["nobody", "each"])
       },
       deps: [],
       judgeGate: true
@@ -2390,20 +2406,26 @@ var CONSTITUTION = (() => {
     }
     /**
      * The signatures block (SPEC §4.6): who has acknowledged the close, in the
-     * order they signed, each with their comment. Names follow the ✍️ signing
-     * setting — `nobody` anonymises every signature, `each` lets the signer's
-     * own name stand, `everybody` names all. The comment is always shown; it
-     * is the rationale, and blank is a real signature.
+     * order they signed, each with their comment. The comment is always shown;
+     * it is the rationale, and blank is a real signature.
+     *
+     * **A signature is always named** (Q769, Ed 2026-08-23, closing Q634 (ii)).
+     * This read the ✍️ setting and anonymised the whole block under `nobody`,
+     * with `?? 'each'` when nothing had been settled — a middle-rung default
+     * where every other privacy default on this surface is the most private
+     * one. Both are gone. ✍️ is about **proposals**: whether a name is attached
+     * to a thing you wrote *while the room is still deciding*, which is what
+     * the blindness discipline is for. Signing the finished document is the
+     * opposite act — deliberate, after every decision is made — and an unnamed
+     * signature is an anonymous comment rather than a signature.
      */
     closingSignatures() {
-      const signing = this.settings.get("signing").value;
-      const rung = signing?.rung ?? "each";
       const out = [];
       for (const m of this.members.values()) {
         if (m.closingAck === null) continue;
         out.push({
           member: m.id,
-          name: rung === "nobody" ? null : m.name,
+          name: m.name,
           comment: m.closingAck.comment,
           t: m.closingAck.t
         });

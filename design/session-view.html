@@ -2498,7 +2498,7 @@
       : (takenOf('quorum') || S.quorumPct) + '% — ' + quorumCount() + ' of ' + E()),
     authorship: () => ({ anonymous: 'Nobody’s name, ever', sealed: 'Names at the close',
       public: 'Names from the start' }[takenOf('authorship') || (S.authorship === 'roster' ? 'anonymous' : S.authorship)]),
-    signing: () => ({ nobody: 'Nobody signs', each: 'Each author chooses', everybody: 'Everybody signs' }[
+    signing: () => ({ nobody: 'Nobody signs', each: 'Each author chooses' }[
       takenOf('signing') || (S.signing === 'roster' ? 'nobody' : S.signing)]),
     judgments: () => ({ never: 'Never revealed', after: 'Revealed after the decision' }[
       takenOf('judgments') || (S.judgments === 'roster' ? 'never' : S.judgments)]),
@@ -2529,7 +2529,7 @@
       : 'You said ' + (isNaN(Date.parse(v)) ? v
         : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }))),
     authorship: (v) => 'You said ' + ({ anonymous: 'no names, ever', sealed: 'names at the close', public: 'names from the start' }[v] || v),
-    signing: (v) => 'You said ' + ({ nobody: 'nobody signs', each: 'each author chooses', everybody: 'everybody signs' }[v] || v),
+    signing: (v) => 'You said ' + ({ nobody: 'nobody signs', each: 'each author chooses' }[v] || v),
     judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
     policy: (v) => 'You said ' + ({ invite: 'invitation only', proposed: 'applications must be proposed by members', apply: 'anyone may apply', open: 'open' }[v] || v),
@@ -2757,7 +2757,7 @@
     // still states its own rule truthfully rather than printing a raw value.
     chamber: { 'Members only': { rung: 'closed' }, 'Anyone with the link': { rung: 'link' } },
     authorship: { 'Nobody’s name, ever': { rung: 'anonymous' }, 'Names at the close': { rung: 'sealed' }, 'Names from the start': { rung: 'public' } },
-    signing: { 'Nobody signs': { rung: 'nobody' }, 'Each author chooses': { rung: 'each' }, 'Everybody signs': { rung: 'everybody' } },
+    signing: { 'Nobody signs': { rung: 'nobody' }, 'Each author chooses': { rung: 'each' } },
     judgments: { 'Never revealed': { rung: 'never' }, 'Revealed after the decision': { rung: 'after' } },
   };
   // **A change carries a reason, and says who made it** (Q530, Ed
@@ -2801,8 +2801,7 @@
     quorum: (v) => (v.form === 'share' ? v.n + '% of the members' : v.n + ' members'),
     authorship: (v) => ({ anonymous: 'nobody ever named', sealed: 'names at the close',
       public: 'names from the start' }[v.rung] || v.rung),
-    signing: (v) => ({ nobody: 'nobody signs', each: 'each author chooses',
-      everybody: 'everybody signs' }[v.rung] || v.rung),
+    signing: (v) => ({ nobody: 'nobody signs', each: 'each author chooses' }[v.rung] || v.rung),
     judgments: (v) => ({ never: 'never revealed',
       after: 'revealed after the decision' }[v.rung] || v.rung),
     rate: (v) => v.grant + ' ✏️ to start, up to ' + v.cap +
@@ -2945,7 +2944,7 @@
     chamber: (v) => ({ closed: 'Members only', link: 'Anyone with the link', public: 'Public' })[v],
     policy: (v) => ({ invite: 'Invitation only', proposed: 'Applications must be proposed by members', apply: 'Anyone may apply', open: 'Open' })[v],
     authorship: (v) => ({ anonymous: 'Nobody’s name, ever', sealed: 'Names at the close', public: 'Names from the start' })[v],
-    signing: (v) => ({ nobody: 'Nobody signs', each: 'Each author chooses', everybody: 'Everybody signs' })[v],
+    signing: (v) => ({ nobody: 'Nobody signs', each: 'Each author chooses' })[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed after the decision' })[v],
     lapse: (v) => (v === 'never' ? 'Never — however long you are away' : 'After ' + v + ' days without logging in'),
     removal: (v) => ({ everyone: 'Everyone has to agree, including them',
@@ -3046,8 +3045,7 @@
       ['Names from the start', 'Every proposal carries its proposer’s name from the moment it is made.']], 'authorship'),
     signing: (d) => lanesFor(d, [
       ['Nobody signs', 'No proposal carries a signature.'],
-      ['Each author chooses', 'A proposer may sign or stay unsigned, proposal by proposal.'],
-      ['Everybody signs', 'Every proposal is signed.']], 'signing'),
+      ['Each author chooses', 'A proposer may sign or stay unsigned, proposal by proposal.']], 'signing'),
     judgments: (d) => lanesFor(d, [
       ['Never revealed', 'Judgments are never revealed — not even in the closing record.'],
       ['Revealed after the decision', 'Judgments are published with the record of each decision, never before.']], 'judgments'),
@@ -3381,8 +3379,8 @@
       sealed: 'Whoever proposes a change is named when the document is finished, and not before.',
       public: 'Whoever proposes a change is named from the moment they propose it.' })[
       takenOf('authorship') || (S.authorship === 'roster' ? 'anonymous' : S.authorship)],
-    signing: () => ({ nobody: 'Nobody may sign a proposal.', each: 'Each author chooses whether to sign.',
-      everybody: 'Every proposal is signed.' })[
+    signing: () => ({ nobody: 'Nobody may sign a proposal.',
+      each: 'Each author chooses whether to sign.' })[
       takenOf('signing') || (S.signing === 'roster' ? 'nobody' : S.signing)],
     judgments: () => ({ never: 'What somebody preferred is never made public.',
       after: 'What somebody preferred is made public when the document is finished, and not before.' })[
@@ -4233,7 +4231,6 @@
       theyDecide('signing') +
       opt(S, 'signing', 'nobody', 'Nobody signs', 'No proposal carries a name, so no proposal says anything about who wrote it.') +
       opt(S, 'signing', 'each', 'Each author chooses', 'Anyone may sign — which means a proposal with no name on it stands out.') +
-      opt(S, 'signing', 'everybody', 'Everybody signs', 'Every proposal carries its writer’s name.') +
       '</div>',
     judgments: () =>
       '<p class="why">Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.</p>' +

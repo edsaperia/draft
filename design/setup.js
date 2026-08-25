@@ -1218,8 +1218,7 @@ window.SETUP = (function () {
       '<p class="why">Whether an author may put their name to a proposal that is otherwise unattributed.</p>' +
       ladder(A, 'signing', [
         { v: 'nobody', t: 'Nobody signs', e: 'The only setting under which an unsigned proposal says nothing about whoever wrote it.' },
-        { v: 'each', t: 'Each author chooses', e: 'An unsigned proposal among signed ones says something.' },
-        { v: 'everybody', t: 'Everybody signs', e: 'Uniform in the other direction.' }]) + BLINDNOTE,
+        { v: 'each', t: 'Each author chooses', e: 'An unsigned proposal among signed ones says something.' }]) + BLINDNOTE,
     judgments: (A) =>
       '<p class="why">Never revealed while a question is live, whichever is chosen — a room that can read itself judges itself. This settles only whether they are published with the closing record.</p>' +
       ladder(A, 'judgments', [

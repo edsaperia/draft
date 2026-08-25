@@ -141,8 +141,10 @@ describe('the consent rule (SPEC §9.0a): maxima along the protective direction'
       [{ rung: 'public' }, { rung: 'closed' }]).value).toEqual({ rung: 'closed' });
     expect(resolveConsent(entryOf('judgments'),
       [{ rung: 'after' }, { rung: 'never' }]).value).toEqual({ rung: 'never' });
+    // Q768: ✍️ is two rungs now — `everybody` was the same fact as 👤 public
+    expect(entryOf('signing').rungs).toEqual(['nobody', 'each']);
     expect(resolveConsent(entryOf('signing'),
-      [{ rung: 'everybody' }, { rung: 'nobody' }]).value).toEqual({ rung: 'nobody' });
+      [{ rung: 'each' }, { rung: 'nobody' }]).value).toEqual({ rung: 'nobody' });
   });
 
   it('rate: the most generous wins (§9.0)', () => {

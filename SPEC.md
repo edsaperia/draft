@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.68
+# Group Drafting Engine — Specification v0.69
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -75,7 +75,9 @@ Because withdrawal changes the field, it is a **ground shift** for that race (§
 
 **Candidate authorship** runs on a ladder from most private to least: **anonymous** (never revealed) · **sealed** (hidden during the session, revealed at close) · **public** (visible live). Rationales are always visible whatever the setting — what varies is only whether a name is attached to one.
 
-**Who may sign.** Independently, a document says whether authorship is uniform or elective: **nobody signs**, **everybody signs**, or **each author chooses per candidate**. Elective signing is a real option and a costly one: in a small roster an unsigned candidate among signed ones says something about its author, so a document that allows the choice is not neutral between the two. That is a cost for the roster to weigh rather than a reason to withhold the option (Ed, 2026-08-17).
+**Who may sign.** Independently, a document says whether authorship is uniform or elective: **nobody signs**, or **each author chooses per candidate**. The two axes are independently consented, and each resolves most-private-wins. *Everybody signs* was a third rung until v0.69 and is gone, being the same fact as **public** above: a document that names every proposal has already answered this question, and offering it twice made `anonymous` + *everybody signs* a reachable self-contradiction. Elective signing is a real option and a costly one: in a small roster an unsigned candidate among signed ones says something about its author, so a document that allows the choice is not neutral between the two. That is a cost for the roster to weigh rather than a reason to withhold the option (Ed, 2026-08-17). → why: R-047
+
+**A signature is always named.** Acknowledging the close signs the final document (§4.6), and the signature carries the signer's own name whatever this setting says. Signing is the opposite act to proposing under a disclosure rule: deliberate, after every decision is made, and an unnamed signature is an anonymous comment rather than a signature. → why: R-047
 
 **Judgments** have their own ladder, one rung shorter: **never revealed** (the default and the assumption everywhere else in this spec) or **revealed after the decision they contributed to**. Live disclosure is not on it — §8.3's no-standings rule is not a preference but the thing that keeps judgment blind while it is still being collected.
 
@@ -283,7 +285,7 @@ Out of scope, by ruling: reserving the text from creation (Q387); delegating pow
 | pace | 🪜 | ordinary | no | no | ending | pace | — | — | ordinary | text confirmed |
 | quorum | 👥 | constitutional | yes | yes | — | quorum | — | lowest quorum, in the convenor's form | constitutional | any time |
 | authorship | 👤 | constitutional | yes | yes | — | ladder | anonymous · sealed · public | most exposure accepted | constitutional | any time |
-| signing | ✍️ | constitutional | yes | yes | — | ladder | nobody · each · everybody | most signing accepted | constitutional | any time |
+| signing | ✍️ | constitutional | yes | yes | — | ladder | nobody · each | most signing accepted | constitutional | any time |
 | judgments | 👁️ | constitutional | yes | yes | — | ladder | never · after | most reveal accepted | constitutional | any time |
 | chamber | 🌍 | constitutional | yes | yes | — | ladder | closed · link · public (Q527) | most visibility accepted | constitutional | any time |
 | rate | ⏱️ | ordinary | yes | no | — | rate | — | least generous rate accepted (most generous wins) | ordinary | any time |
