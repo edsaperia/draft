@@ -520,7 +520,26 @@
             JSON.stringify(data.raceCards) !== JSON.stringify(cs.v.raceCards);
           data.receivedAtMs = Date.now();
           cs.v = data;
-          if (moved) {
+          // **A column nobody may type in still has to follow the document.**
+          // `charterOn()` is the start now rather than 📄's OK (Q819), so
+          // between the OK and the cork *everybody* is looking at `#prose` —
+          // and `#prose` is filled once, at boot. For the founder that is
+          // right (it is their caret), but for every other reader it froze
+          // the text at the moment they loaded the page: the founder could
+          // go on writing and re-confirming right up to 🍾 and no member
+          // would see a word of it until they reloaded. Nothing else
+          // repaints the column before the charter mounts, so the poll does.
+          // Repainted only when the words actually differ: `innerHTML` on a
+          // column somebody is reading drops their selection, and the poll
+          // runs every four seconds.
+          let repainted = false;
+          if (S.viewer !== 'stranger' && !constituted() && !amFounder()) {
+            const want = data.text || data.provisionalText || '';
+            // `proseText` trims, so the comparison does too — otherwise a
+            // stored text with an edge newline would repaint for ever
+            if (want.trim() !== proseText()) { setProse(want); repainted = true; }
+          }
+          if (moved || repainted) {
             // `room-pulse`: one beat per movement by anybody, yourself
             // included — content-free by rule (what moved is never said)
             SESSION.beat();
