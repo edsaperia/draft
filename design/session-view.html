@@ -2350,11 +2350,20 @@
   // was still four questions from that section. The band stopped accreting a
   // clause at a time and dealt out a section. They take their document
   // positions here instead.
+  // **The leaving rules stand before the register, and Proposals before
+  // Decisions** (Ed, 2026-08-26, Q865, Q871 — reversing Q617 (a)'s second half
+  // and *Proposals reads fourth*). Two moves in one file: 💤 and 🥾 rise above
+  // 🪪, so the founder settles what a membership costs to keep and what it
+  // takes to end before they name anybody it applies to; and the whole
+  // Proposals run — the gates, the voice, ⏱️ and 🤖 — rises above Decisions and
+  // Anonymity, so *what may be proposed* is decided before *how the room
+  // decides it*. 🍾 stays last in the file though its clause opens Proposals
+  // (Ed: *Begin can be in the middle*), and 📄 the text stays last but one.
   const ORDER = ['title', 'slug', 'myemail', 'grant-pen', 'grant-shield', 'chamber',
-    'policy', 'hat', 'myname', 'mypic', 'roster', 'lapse', 'removal',
+    'policy', 'hat', 'myname', 'mypic', 'lapse', 'removal', 'roster',
+    'canpropose', 'canjudge', 'grant-voice', 'rate', 'machines',
     'ending', 'bar', 'quorum',
     'authorship', 'judgments',
-    'canpropose', 'canjudge', 'grant-voice', 'rate', 'machines',
     'text', 'begin'];
   // a card in the order waits for everything above it and nothing else: the
   // ORDER *is* the dependency list. Since Q619 (b) (2026-08-22) a `dep` array
@@ -2515,7 +2524,29 @@
         // there is a you-row at all, so neither string is chosen by hand.
         // No avatar: a face here would
         // claim a person who does not exist.
-        const nobody = others.length ? ''
+        // **And it counts who is *here*, not who is on the roster** (Q870).
+        // Once the invitees have a heading of their own the sentence is about
+        // the rows above it, and an outstanding invitation is precisely the
+        // case where *nobody else here yet* is both true and worth saying.
+        // **Three kinds of person, three groups, each standing only where it
+        // has rows** (Q868–Q870, Ed 2026-08-26: *separate subheadings under
+        // Members for applicants and invitees*). Membership begins at first
+        // arrival, so the list proper is the people who are **here**; an
+        // invitation is a fact about somebody who is not yet one of them, and
+        // an application is a request from somebody nobody has invited. They
+        // were one flat list distinguished by a chip on the row, which read as
+        // *these are your members, some of them faintly* — the chip was doing a
+        // heading's job. The arrived rows keep the order B2 gave them, you
+        // first, and the two subheadings are the only new furniture: no chip
+        // survives that its own heading now says (the *invited* chip goes, the
+        // *applicant* chip stays out of this view, which never had one).
+        const memhead = (t) => '<div class="memhead eyebrow">' + t + '</div>';
+        const memRow = (p) => '<div class="memrow">' + avHtml(p) +
+          '<span class="mn">' + esc(p.n || (!p.in && p.e) || 'Anonymous') +
+          (p.founder ? ' <span class="chip founder">founder</span>' : '') + '</span></div>';
+        const here = others.filter((p) => p.in);
+        const invited = others.filter((p) => !p.in);
+        const nobody = here.length ? ''
           : '<div class="memrow nobody">(nobody' + (showMe ? ' else' : '') + ' here yet)</div>';
         // a stranger reads how many, never who (Q508 — shipped private)
         const list = isStranger() ? (strMemberList() || '<div class="memlist"><div class="memrow nobody">' + strMembersLine() + '</div></div>')
@@ -2528,21 +2559,31 @@
             '<span class="mn">' + esc(S.myname || 'Anonymous') +
             (S.roster[meIdx].founder ? ' <span class="chip founder">founder</span>' : '') +
             ' <span class="chip">you</span></span></div>' : '') +
-          others.map((p) => '<div class="memrow">' + avHtml(p) +
-            '<span class="mn">' + esc(p.n || (!p.in && p.e) || 'Anonymous') +
-            (p.founder ? ' <span class="chip founder">founder</span>' : '') +
-            (p.in ? '' : ' <span class="chip pending">invited</span>') + '</span></div>').join('') +
+          here.map(memRow).join('') +
+          (invited.length ? memhead('Invitees') + invited.map(memRow).join('') : '') +
+          memApplicantsHtml(memhead) +
           '</div>';
         const openId = my.find((c) => S.open === c.k);
-        // **🤝 Applications first, then the people, then the rules about them**
-        // (Q617 (a), Ed 2026-08-22: *I need to decide Applications before I can
-        // do Membership* — how people become members is decided before the
-        // list of who is one, since inviting is an act under that rule). The
-        // list then stands above 💤 and 🥾: a register is the fact, and those
-        // are rules about it. The founding follows the document, so this also
-        // puts 🎩 *are you a member* and your own name and picture before you
-        // invite anybody, which is the order somebody actually does it in.
+        // **🤝 how they join, 💤 and 🥾 how they leave, and only then who they
+        // are** (Q865, Q867, Ed 2026-08-26: *💤 and 🥾 sections should be above
+        // the Members heading* — reversing the second half of Q617 (a)). The
+        // first half stands and is untouched: 🤝 Applications leads the
+        // section, because inviting is an act under that rule (Ed, 2026-08-22:
+        // *I need to decide Applications before I can do Membership*). What is
+        // reversed is where the list falls. It used to stand above 💤 and 🥾 on
+        // the argument that *a register is the fact and those are rules about
+        // it* — true of the document, but it is the founding that reads this
+        // order, and there the register is not a fact yet: it is the founder's
+        // own name and nobody else's, and every rule below it will be in force
+        // before the first invitation goes out. So the three rules governing a
+        // membership now stand together above the heading, the way in and the
+        // two ways out, and *Members* opens on the people it applies to. The
+        // founding follows the document, so 🎩 *are you a member* and your own
+        // name and picture still come before you invite anybody, which is the
+        // order somebody actually does it in.
         return (visible(card('policy')) ? h.para(card('policy')) + h.tasks(card('policy')) : '') +
+          (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
+          (visible(card('removal')) ? h.para(card('removal')) + h.tasks(card('removal')) : '') +
           '<h2 class="docline lvl3">Members</h2>' +
           (() => { const pileCards = ['roster', 'invite', 'remove', 'hat']
             .map(card).filter((c) => c && visible(c));
@@ -2553,31 +2594,20 @@
             : pileCards.length
             ? '<div class="cpara">' + h.pile(pileCards) + list + '</div>'
             : ''); })() +
-          (openId ? h.paraWith(openId, my) : '') +
-          (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
-          (visible(card('removal')) ? h.para(card('removal')) + h.tasks(card('removal')) : '');
+          (openId ? h.paraWith(openId, my) : '');
       } },
-    { key: 'deciding', title: 'Decisions',
-      text: '',
-      // ⏰ when it ends, 🌡️ how sure the room must be at that point, 🪜 how
-      // that number gets there, 👥 how many must have judged. The threshold
-      // and its pacing are one thought on two cards, so they are adjacent;
-      // quorum is a different kind of number and reads last (Ed, 2026-08-21).
-      keys: ['ending', 'closing', 'bar', 'quorum'],
-      // 🪜 is in neither `keys` nor ORDER (Q512, finding 598): it has no
-      // clause and no rail entry — it arrives answered, is stated inside the
-      // threshold clause, and is changed on a tab in 🌡️'s own stack.
-      body: (h) => ['ending', 'closing', 'bar', 'quorum'].map(card)
-        .filter((c) => c && visible(c)).map((c) => h.para(c) + h.tasks(c)).join('') },
-    // "Anonymity" (Ed, 2026-08-19), not "Privacy"
-    { key: 'privacy', title: 'Anonymity',
-      text: '',
-      keys: ['authorship', 'judgments'] },
-    // **Proposals reads fourth** (Ed, 2026-08-21), restoring the order both
-    // CLAUDE.md and design/DECISIONS.md have always carried: Membership ·
-    // Decisions · Anonymity · Proposals · The Document. It had drifted to
-    // second, which put the whole section's arrival directly beneath the
-    // Membership clauses the founder was still working through.
+    // **Proposals reads second** (Q871, Q872, Ed 2026-08-26: *Proposals above
+    // Decisions* — reversing *Proposals reads fourth*, Ed 2026-08-21). That
+    // ruling was itself a restoration: the section had drifted to second and
+    // was put back to fourth because its whole arrival landed directly beneath
+    // the Membership clauses the founder was still working through. What has
+    // changed since is that the section no longer arrives at once — Q748 made
+    // its opening one clause wearing four tabs, and ORDER (not a wave graph)
+    // paces the two settings under it one at a time — so the objection the
+    // fourth-place ruling was answering no longer holds. What is left is the
+    // reading order, and it reads better this way: who may propose, and how
+    // often, before how the room decides what is proposed. Membership ·
+    // Proposals · Decisions · Anonymity · The Document.
     // The gates lead it (Ed, 2026-08-18); the preamble opens it
     // (Ed, 2026-08-19 — moved from the head of the constitution, redrafted
     // in his words); no intro lines — the sections are not big enough to
@@ -2601,6 +2631,22 @@
       body: (H) => ['rate', 'machines'].map(card)
         .filter((c) => c && visible(c)).map((c) => H.para(c) + H.tasks(c)).join(''),
       keys: ['begin', 'canpropose', 'canjudge', 'rate', 'machines'] },
+    { key: 'deciding', title: 'Decisions',
+      text: '',
+      // ⏰ when it ends, 🌡️ how sure the room must be at that point, 🪜 how
+      // that number gets there, 👥 how many must have judged. The threshold
+      // and its pacing are one thought on two cards, so they are adjacent;
+      // quorum is a different kind of number and reads last (Ed, 2026-08-21).
+      keys: ['ending', 'closing', 'bar', 'quorum'],
+      // 🪜 is in neither `keys` nor ORDER (Q512, finding 598): it has no
+      // clause and no rail entry — it arrives answered, is stated inside the
+      // threshold clause, and is changed on a tab in 🌡️'s own stack.
+      body: (h) => ['ending', 'closing', 'bar', 'quorum'].map(card)
+        .filter((c) => c && visible(c)).map((c) => h.para(c) + h.tasks(c)).join('') },
+    // "Anonymity" (Ed, 2026-08-19), not "Privacy"
+    { key: 'privacy', title: 'Anonymity',
+      text: '',
+      keys: ['authorship', 'judgments'] },
     // rail-only: the title is the heading, the link leads the constitution,
     // and the starting text anchors the prose (Ed, 2026-08-18)
     { key: 'doc', title: 'The Document', railOnly: true,
@@ -6644,6 +6690,28 @@
   // membership as it is. Live only — the fixture has its own applicant
   // seat and no server to race against.
   const admitCardOf = (apId) => raceCardOf('admit:' + apId);
+  // **Applicants under the Members heading is a second view, not a move**
+  // (Q869, Ed 2026-08-26: *separate subheadings under Members for applicants
+  // and invitees*). The two are different objects wearing one word. This one is
+  // **document text** — the Members section saying who is asking, a name and a
+  // face in the same compact dress as the rows above it — and it belongs to
+  // `SEC[0].body`, where Ed pointed. `liveApplicantsHtml` below is the **🪪
+  // card's clause**, where the judging lives: the lanes, the ✏️ Propose them
+  // button, the admit race. Moving that into the document would put controls in
+  // the prose; copying the controls would put the same race in front of a
+  // member twice. They are never on screen together — an open 🪪 replaces the
+  // paragraph the list stands in — so one source, read two ways, is the whole
+  // of it. Only the people still **asking** stand here: an admitted applicant
+  // is a member row above, and a refused one is not asking.
+  function memApplicantsHtml(memhead) {
+    if (!cs || !cs.isRemote) return '';
+    const aps = ((cs.v.view && cs.v.view.applicants) || [])
+      .filter((ap) => ap.status !== 'admitted' && ap.status !== 'refused');
+    if (!aps.length) return '';
+    return memhead('Applicants') + aps.map((ap) =>
+      '<div class="memrow">' + avHtml({ n: ap.name, pic: ap.picture }) +
+      '<span class="mn">' + esc(ap.name || ap.email || 'Anonymous') + '</span></div>').join('');
+  }
   function liveApplicantsHtml() {
     if (!cs || !cs.isRemote) return '';
     const aps = (cs.v.view && cs.v.view.applicants) || [];

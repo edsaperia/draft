@@ -269,29 +269,31 @@ The refund flight and every grant's inbound flight take 640 ms.
 | 4 | grant-pen | ✒️ | grant | lead — a tab on the Founded line, no clause | yes | the save | Your Pen |
 | 5 | grant-shield | 🛡️ | grant | lead — a tab on the Founded line, no clause | no | the save | Your Shield |
 | 6 | chamber | 🌍 | constitutional · judge-gate | lead, penultimate | yes | the pen's OK | Visibility |
-| 7 | policy | 🤝 | constitutional | members, first — above *Members* (Q617) | yes | chamber | Applications |
+| 7 | policy | 🤝 | constitutional | members, first — above *Members*, ahead of 💤 🥾 (Q617) | yes | chamber | Applications |
 | 8 | hat | 🎩 | decision, not a setting | members — a tab on the list; no sentence | yes | policy | Is the Founder a Member? |
 | 9 | myname | ✋ | personal | members — your own row | yes | hat | Your Name |
 | 10 | mypic | 🖼️ | personal | members — your own row | yes | myname | Your Picture |
-| 11 | roster | 🪪 | constitutional, the register | members — the list is the clause | yes | mypic | Membership · and again as the **remedy** while 🍾 waits on `one-voice` (F19) |
-| 12 | lapse | 💤 | constitutional · judge-gate | members | yes | roster | Do Memberships Lapse? |
-| 13 | removal | 🥾 | constitutional | members, last | yes | lapse | How Is a Member Removed? |
-| 14 | ending | ⏰ | constitutional, route inside it | deciding, first | yes | removal | When Does It End? |
-| 15 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | How Sure Must the Room Be? |
-| 16 | quorum | 👥 | constitutional · judge-gate | deciding, last | yes | bar | Quorum |
-| 17 | authorship | 👤 | constitutional · judge-gate | privacy | yes | quorum | Anonymous Proposals |
-| 18 | judgments | 👁️ | constitutional · judge-gate | privacy | yes | authorship | When Are Judgments Revealed? |
-| 19 | canpropose | 💡 | gate (and the ✏️ grant) | rate — in the preamble's stack | no | 🍾 | Proposing |
-| 20 | canjudge | ⚖️ | gate | rate — in the preamble's stack | no | 🍾 | Judging |
-| 21 | grant-voice | 🏛️ | grant | rate — in the preamble's stack (Y23) | no | its clause is pinned; the **news** still arrives with the first blind question you are asked — else, **before the start, under 🪪**, and under ⚖️ after it (Q605, narrowed by Q750, widened by Q829) | Your Voice |
-| 22 | rate | ⏱️ | ordinary, delegable | rate | yes | judgments | Proposal Rate |
-| 23 | machines | 🤖 | ordinary, delegable | rate, last | yes | rate | AI Proposals |
-| 24 | text | 📄 | ordinary | doc — the charter heading under the hairline | yes | machines | Text |
+| 11 | lapse | 💤 | constitutional · judge-gate | members — above *Members*, with 🤝 (Q865) | yes | mypic | Do Memberships Lapse? |
+| 12 | removal | 🥾 | constitutional | members — the last rule above *Members* | yes | lapse | How Is a Member Removed? |
+| 13 | roster | 🪪 | constitutional, the register | members — the list is the clause, and *Members* opens on it | yes | removal | Membership · and again as the **remedy** while 🍾 waits on `one-voice` (F19) |
+| 14 | canpropose | 💡 | gate (and the ✏️ grant) | rate — in the preamble's stack | no | 🍾 | Proposing |
+| 15 | canjudge | ⚖️ | gate | rate — in the preamble's stack | no | 🍾 | Judging |
+| 16 | grant-voice | 🏛️ | grant | rate — in the preamble's stack (Y23) | no | its clause is pinned; the **news** still arrives with the first blind question you are asked — else, **before the start, under 🪪**, and under ⚖️ after it (Q605, narrowed by Q750, widened by Q829) | Your Voice |
+| 17 | rate | ⏱️ | ordinary, delegable | rate | yes | roster | Proposal Rate |
+| 18 | machines | 🤖 | ordinary, delegable | rate, last | yes | rate | AI Proposals |
+| 19 | ending | ⏰ | constitutional, route inside it | deciding, first | yes | machines | When Does It End? |
+| 20 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | How Sure Must the Room Be? |
+| 21 | quorum | 👥 | constitutional · judge-gate | deciding, last | yes | bar | Quorum |
+| 22 | authorship | 👤 | constitutional · judge-gate | privacy | yes | quorum | Anonymous Proposals |
+| 23 | judgments | 👁️ | constitutional · judge-gate | privacy | yes | authorship | When Are Judgments Revealed? |
+| 24 | text | 📄 | ordinary | doc — the charter heading under the hairline | yes | judgments | Text |
 | 25 | begin | 🍾 | decision, not a setting | rate — the preamble's stack, first (Y21, Y23) | no | until the founder can press it — `readiness().ready` and 🏛️ not still being served — **or until nothing but the 🪪 remedy is being served** (F5, F9, F18, F19); members never see it pre-start | Begin |
 
 Outside `ORDER`: 🪜 (a tab in 🌡️'s stack; no clause, no rail entry — Q512, and therefore **answered by 🌡️'s commit on both its branches**, F18); the `ans-*` answer tasks (**a tab in the delegated setting's own stack, and no clause of their own** — Q786–Q788: the setting's clause already counts the answers, the answerer's among them, so a second sentence saying whether *you* have answered is the same fact twice; `stackOrder` puts the question in front while it is asking and the watcher in front once it is answered); ✉️ ❌ (doors in the 🪪 pile from the moment judging opens); the ✒️/🛡️ power tabs under every held-able setting (*Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* — Q615); 🥂.
 
-**The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link, 📧 pre-save, 🌍, the Founded line wearing the two grants' ✒️ 🛡️ — then **Membership** (`members`: 🤝 · *Members* · the list with 🪪 ✉️ ❌ 🎩 and your row wearing ✋ 🖼️ 📧 · 💤 · 🥾), **Decisions** (`deciding`: ⏰ · 🥂 when closed · 🌡️ with 🪜 in its stack · 👥), **Anonymity** (`privacy`: 👤 👁️), **Proposals** (`rate`: the preamble wearing 🍾 💡 ⚖️ 🏛️ · ⏱️ · 🤖), the hairline, the charter under its own name with 📄 beside it. **The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📄. Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
+**The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link, 📧 pre-save, 🌍, the Founded line wearing the two grants' ✒️ 🛡️ — then **Membership** (`members`: 🤝 · 💤 · 🥾 · *Members* · the list with 🪪 ✉️ ❌ 🎩 and your row wearing ✋ 🖼️ 📧, then **Invitees** and **Applicants** — F21), **Proposals** (`rate`: the preamble wearing 🍾 💡 ⚖️ 🏛️ · ⏱️ · 🤖), **Decisions** (`deciding`: ⏰ · 🥂 when closed · 🌡️ with 🪜 in its stack · 👥), **Anonymity** (`privacy`: 👤 👁️), the hairline, the charter under its own name with 📄 beside it.
+
+**The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📄. Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
 
 ### 8.1 Rules
 
@@ -319,6 +321,10 @@ Outside `ORDER`: 🪜 (a tab in 🌡️'s stack; no clause, no rail entry — Q5
 - **F19 A wait the founding cannot end says why, and 🪪 is the remedy**: `readiness()` gives a reason beside each waiting question — `judge-gate`, `invitation-open`, `one-voice`, `collecting`, `text-unconfirmed` — and **`one-voice` is the only one no amount of answering will clear**, a question handed to a membership of one having been handed to nobody. In that state 🍾 names it and both acts that end it, **🪪 stands as a task** whose card leads with why the founder is there, and the two are served **together**: the remedy is the dead end wearing a card, so it neither counts as *something else being served* (F5) nor as one of the *other tasks* that pace a founder's own delegated questions (F7). The 🪪 task is derived and acknowledges nothing — no OK, no `ACK_KEYS` key, nothing owed (F8) — and leaves the instant an invitation goes out (the reason becomes `invitation-open`) or the setting is taken back. → why: Ed, 2026-08-25, founding alone — *I did all my open tasks and then got served Begin while being unable to action it. My guess is this is because I delegated things to the members and I'm the only member.* He had to guess: the readout said *1 of 1 have answered*, which is a question that looks finished beside a start that will not come (Q826–Q830).
 
 - **F20 A grant a founder-member holds is served to them before the start** (F3's *stands beside the current question*, made reachable): 🏛️'s host is the first blind question asking you, else 🪪 before the start and ⚖️ after it — never ⚖️ alone, which is hidden until 🍾 and so put the grant behind the very press it stands in front of. → why: Ed, 2026-08-25 — *when I (as a founder-member) was granted 🏛️ I did not get a task. The 🏛️ tab was grey.* A founder who delegates nothing has no blind question to hang it on and was therefore never served the voice they have held since the save; a founder who does delegate has one only once F7's exception lets it through. The grant now arrives at its own place in `ORDER`, after 👁️ (Q829).
+
+- **F21 The Members list is three groups, and only the first is the membership**: your own row, then everybody else who has **arrived**, then an **Invitees** subheading, then an **Applicants** subheading — each standing only where it has rows, and the *invited* chip retired, a heading saying what it used to say. *(nobody else here yet)* counts the arrived rows alone, so it stands above your row while an invitation is out. Applicants under *Members* is a **second view** of `view.applicants`, names and faces and the still-asking only; the 🪪 card's own clause keeps the admit judgment and its controls, and the two are never on screen together, an open 🪪 replacing the paragraph the list stands in. → why: membership begins at first arrival, so a flat list told apart by a chip read as *these are your members, some of them faintly* — the chip was doing a heading's job (Q868–Q870; Ed, 2026-08-26: *separate subheadings under Members for applicants and invitees*).
+
+- **F22 The rules about a membership stand above the register, and Proposals reads before Decisions**: 🤝 how people join, 💤 and 🥾 the two ways they leave, and only then *Members* and the list; and the whole Proposals run — 💡 ⚖️ 🏛️ ⏱️ 🤖 — above ⏰ 🌡️ 👥 👤 👁️, 🍾 keeping its place last in `ORDER` though its clause opens Proposals, and 📄 last but one. → why: Q865 and Q871 (Ed, 2026-08-26: *💤 and 🥾 sections should be above the Members heading*; *Proposals above Decisions*), reversing the second half of Q617 (a) — *a register is the fact, and those are rules about it*, true of a finished document but not of the founding, where the register is the founder's own name and every rule under it will be in force before the first invitation — and *Proposals reads fourth* (Ed, 2026-08-21), whose objection was a whole section arriving at once, which Q748's four-tab preamble and `ORDER`'s single file had already dissolved.
 
 Exceptions beyond §3: 🪜 arrives answered (F6 · the ramp is part of what the threshold says · Q512); the founder alone is served the delegated questions once nothing else is outstanding (F7 · an empty rail while the room fills is worse · Q408/Q413); 📧 post-save speaks in the second person (C10 · your own row · Y8); 🎩 ✋ 🖼️ 🪪 write no sentence (F13 · the answer is the list or a chip); 🌍 is asked sixth, ahead of Membership (F1 · it is the penultimate clause of the opening run); the hat's radios stay visible but disabled post-start (C9 · a locked decision still has to be readable).
 
