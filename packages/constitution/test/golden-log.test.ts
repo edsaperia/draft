@@ -23,8 +23,7 @@ import { SCHEMA_VERSION, versionOf } from '../src/types.js';
 import { goldenWalk, snapshotOf } from './golden/walk.js';
 
 const dir = join(import.meta.dirname, 'golden');
-/** founding-v0.jsonl's own rolling hash, as the code of 2026-08-20 wrote and read it. */
-const V0_ROLLING_HASH = '7c7dc4b22774191694ea4f4f86fd4a24f1768747a4c65f887955a63e71a8e112';
+
 const frozenLines = readFileSync(join(dir, 'founding.jsonl'), 'utf8')
   .split('\n').filter((l) => l.length > 0);
 const frozenState = JSON.parse(readFileSync(join(dir, 'founding.state.json'), 'utf8')) as
@@ -67,22 +66,19 @@ describe('the golden log', () => {
     // where it did the morning it was written — and to today's golden: the
     // start's lay-down of the Text's powers is derived at the fold, never
     // emitted, so a log written before 2026-08-21 replays to a valid state.
-    expect(s.rollingHash()).toBe(V0_ROLLING_HASH);
     expect(s.settingState('startingText').powers).toEqual({ unilateral: false, assent: false });
 
-    // **This log no longer chains to today's golden, and that is the point.**
-    // Until 2026-08-21 the two hashes were equal, because the walk had not
-    // changed since the morning v0 was frozen. Then §9.0a was amended so that
-    // nothing arrives delegated: the walk gained three `setting-delegated`
-    // events and lost the `setting-reclaimed` ones the founder no longer
-    // needs, so the two logs are now different walks. What this fixture is
-    // for survives untouched — an unversioned log still verifies, still
-    // reads as version 1, and still replays into a session this build can
-    // work with. Coupling it to whatever the current walk happens to be
-    // would only re-break it the next time the founding changes shape.
+    // **It chains to exactly today's golden, and that is the point.** The
+    // version rides outside the hash, so the same walk with the field
+    // stripped must land on the same rolling hash — which is the whole of
+    // what *absent means 1* claims. Until 2026-08-25 this file was the
+    // literal bytes of 2026-08-20 and the two hashes deliberately differed;
+    // it stopped being replayable when 'signing' left the catalogue (Q767),
+    // and a hash-chained file is rebuilt or discarded, never patched, so
+    // freeze.ts now derives it from the walk beside it.
     const today = JSON.parse(readFileSync(join(dir, 'founding.state.json'), 'utf8')) as
       { entries: number; rollingHash: string };
-    expect(today.rollingHash).not.toBe(V0_ROLLING_HASH);
+    expect(s.rollingHash()).toBe(today.rollingHash);
     // it replays into something coherent, not into wreckage
     expect(s.constitutedAtT).not.toBeNull();
     expect(s.E()).toBeGreaterThan(0);

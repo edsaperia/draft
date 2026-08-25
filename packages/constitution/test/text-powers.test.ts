@@ -39,7 +39,7 @@ describe('the Text carries a crown pair (Q440)', () => {
     // the start lays both powers down, derived at the fold — no event
     expect(s.settingState('startingText').powers).toEqual({ unilateral: false, assent: false });
     for (const id of ['title', 'link', 'pace', 'rate', 'machines', 'quorum', 'authorship',
-      'signing', 'judgments', 'applications', 'removal', 'lapse'] as const) {
+      'judgments', 'applications', 'removal', 'lapse'] as const) {
       s.delegate(3, id);
     }
     expect(s.crowned()).toBe(false); // nothing held anywhere, the Text included

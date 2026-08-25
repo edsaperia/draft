@@ -41,7 +41,6 @@ const constituted = (opts: { reserveRate?: boolean } = {}) => {
     pace: { shape: 'fixed' },
     quorum: { form: 'share', n: 60 },
     authorship: { rung: 'sealed' },
-    signing: { rung: 'each' },
     judgments: { rung: 'after' },
     applications: { holder: 'members', joinPolicy: 'invite' },
     machines: { enabled: false, budget: 0 },
@@ -177,7 +176,7 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
     const values = {
       pace: { shape: 'fixed' },
       quorum: { form: 'share', n: 60 }, authorship: { rung: 'sealed' },
-      signing: { rung: 'each' }, judgments: { rung: 'after' },
+      judgments: { rung: 'after' },
       chamber: { rung: 'link' },
       applications: { holder: 'reserved-unilateral', joinPolicy: 'invite' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
@@ -287,8 +286,8 @@ describe('the crown (§9.7 v0.49): reserved is assent, at the end of either rout
     expect(s.motionRecords().get(m)!.status).toBe('awaiting-crown');
     expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 60 });
     // the 🏛️ stays out while the crown considers
-    expect(() => s.openMotion(6, bo, { kind: 'set', setting: 'signing',
-      value: { rung: 'nobody' } })).toThrow(/one 🏛️/);
+    expect(() => s.openMotion(6, bo, { kind: 'set', setting: 'chamber',
+      value: { rung: 'closed' } })).toThrow(/one 🏛️/);
     const q = [...s.crownQuestionRecords().values()].find((x) => x.motion === m)!;
     s.answerCrownQuestion(7, q.id, 'accept');
     expect(s.settingState('quorum').value).toEqual({ form: 'share', n: 80 });

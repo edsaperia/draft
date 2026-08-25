@@ -23,7 +23,7 @@ const openDoc = (isMember = true) =>
  * tests about what creation produces still test creation.
  */
 const DELEGABLE_CONSTITUTIONAL = ['ending', 'bar', 'quorum', 'authorship',
-  'signing', 'judgments', 'chamber', 'lapse', 'removal', 'applications'] as const;
+  'judgments', 'chamber', 'lapse', 'removal', 'applications'] as const;
 const openDelegated = (isMember = true) => {
   const s = openDoc(isMember);
   for (const id of DELEGABLE_CONSTITUTIONAL) s.delegate(0, id);
@@ -42,7 +42,7 @@ const settleAllReserved = (s: ConstitutionSession, t: number,
     pace: { shape: 'ramp', startPct: 55 },
     quorum: { form: 'share', n: 60 },
     authorship: { rung: 'sealed' },
-    signing: { rung: 'each' },
+
     judgments: { rung: 'after' },
     chamber: { rung: 'link' },
     applications: { holder: 'members', joinPolicy: 'invite' },
@@ -281,7 +281,7 @@ describe('owed OKs (§9.6a): inheritance as unacknowledged decisions', () => {
     settleAllReserved(s, 2);                  // …which the settle constitutes
     s.arrive(3, bo);                          // arrival inherits (§9.6a)
     const owed = s.memberRecords().get(bo)!.okOwed;
-    for (const id of ['ending', 'bar', 'quorum', 'authorship', 'signing',
+    for (const id of ['ending', 'bar', 'quorum', 'authorship',
       'judgments', 'chamber', 'lapse', 'applications']) {
       expect(owed.has(id as never), id).toBe(true);
     }
@@ -301,7 +301,7 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
     const answers = {
       ending: { endsAtMs: 1_000_000 }, bar: { pct: 66 },
       quorum: { form: 'share', n: 60 },
-      authorship: { rung: 'sealed' }, signing: { rung: 'each' },
+      authorship: { rung: 'sealed' },
       judgments: { rung: 'after' }, chamber: { rung: 'link' },
       applications: { holder: 'members', joinPolicy: 'invite' },
       removal: { rung: 'everyone' }, // delegated too, so the room must answer it (Q626)

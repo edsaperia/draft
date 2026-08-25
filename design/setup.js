@@ -1211,14 +1211,11 @@ window.SETUP = (function () {
       '<p class="why">Rationales are always visible; what varies is whether a name is attached. The <b>most private</b> answer wins: one person who wants no names keeps the document unnamed.</p>' +
       ladder(A, 'authorship', [
         { v: 'anonymous', t: 'Nobody’s name, ever', e: 'Not during the session and not in the closing record.' },
+        { v: 'anonymousElective', t: 'Nobody’s name unless they choose', e: 'Nobody is named who does not sign, so an unsigned proposal among signed ones says something.' },
         { v: 'sealed', t: 'Names at the close', e: 'Hidden while the document is being written; published with the record.' },
+        { v: 'sealedElective', t: 'Names at the close, or earlier by choice', e: 'Published with the record, and sooner for anybody who signs.' },
         { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' }]) +
       '<p class="blindnote">Nothing is preselected — anonymity holds unless everyone is content with more.</p>',
-    signing: (A) =>
-      '<p class="why">Whether an author may put their name to a proposal that is otherwise unattributed.</p>' +
-      ladder(A, 'signing', [
-        { v: 'nobody', t: 'Nobody signs', e: 'The only setting under which an unsigned proposal says nothing about whoever wrote it.' },
-        { v: 'each', t: 'Each author chooses', e: 'An unsigned proposal among signed ones says something.' }]) + BLINDNOTE,
     judgments: (A) =>
       '<p class="why">Never revealed while a question is live, whichever is chosen — a room that can read itself judges itself. This settles only whether they are published with the closing record.</p>' +
       ladder(A, 'judgments', [

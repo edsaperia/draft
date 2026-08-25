@@ -19,4 +19,18 @@ writeFileSync(join(dir, 'founding.jsonl'),
   s.logEntries().map((e) => JSON.stringify(e)).join('\n') + '\n');
 writeFileSync(join(dir, 'founding.state.json'),
   JSON.stringify(snapshotOf(s), null, 2) + '\n');
+// **founding-v0.jsonl is the same walk with the field stripped** (Q767,
+// 2026-08-25). It had been the literal bytes the code of 2026-08-20 wrote,
+// and stayed correct until a setting was deleted from the catalogue: a log
+// naming a setting this build does not have cannot be replayed, and a
+// hash-chained file cannot be hand-patched. What the fixture is *for* is a
+// log that genuinely lacks `schemaVersion`, so it is rebuilt from today's
+// entries with the field removed — and because the version rides outside
+// the hash, the stripped copy must chain to exactly the hash above, which
+// is now the assertion rather than an accident of history.
+writeFileSync(join(dir, 'founding-v0.jsonl'),
+  s.logEntries().map((e) => {
+    const { schemaVersion: _v, ...rest } = e as unknown as Record<string, unknown>;
+    return JSON.stringify(rest);
+  }).join('\n') + '\n');
 console.log(`froze ${s.logEntries().length} entries; rolling hash ${s.rollingHash()}`);

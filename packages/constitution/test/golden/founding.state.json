@@ -1,6 +1,6 @@
 {
-  "entries": 70,
-  "rollingHash": "9262dd37dcce1d008ed94ae07c93ba08eb85084cf48083b7909bd84d23fea36f",
+  "entries": 67,
+  "rollingHash": "256552ee7943fdc0dbd7b6a2580f3a9f3b4db1cbc10f145bcc77445299f29afa",
   "chainVerifies": true,
   "constitutedAtT": 8,
   "E": 3,
@@ -114,16 +114,6 @@
     "authorship": {
       "value": {
         "rung": "sealed"
-      },
-      "holder": "convenor",
-      "powers": {
-        "unilateral": true,
-        "assent": true
-      }
-    },
-    "signing": {
-      "value": {
-        "rung": "each"
       },
       "holder": "convenor",
       "powers": {

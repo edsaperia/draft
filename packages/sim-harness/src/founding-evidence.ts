@@ -63,13 +63,16 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
   say('  t=8   the disclosure family: one privater answer wins each ladder');
   const everybody = ['ada', bo, cy, dee, eve, fay, gus, hex];
   const answers: Record<string, Record<string, unknown>> = {
-    authorship: { [bo]: { rung: 'anonymous' } },
-    signing: { [cy]: { rung: 'nobody' } },
+    // Q767: 👤 is one ladder of five now, ✍️ folded into it. Two members
+    // answer it — cy takes an elective rung, bo the foot — so the run shows
+    // the order is total across the merged steps rather than only across the
+    // three it had before.
+    authorship: { [bo]: { rung: 'anonymous' }, [cy]: { rung: 'anonymousElective' } },
     judgments: { [dee]: { rung: 'never' } },
     chamber: { [eve]: { rung: 'closed' } },
   };
   const defaults: Record<string, unknown> = {
-    authorship: { rung: 'public' }, signing: { rung: 'each' },
+    authorship: { rung: 'public' },
     judgments: { rung: 'after' }, chamber: { rung: 'public' },
   };
   for (const setting of Object.keys(answers)) {
@@ -80,8 +83,8 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
   }
   eq(s.settingState('authorship').value, { rung: 'anonymous' },
     'authorship: one anonym keeps the whole document unnamed');
-  eq(s.settingState('signing').value, { rung: 'nobody' },
-    'signing: nobody-signs beats seven each-author-chooses (Q768: everybody is gone)');
+    // and one elective answer does not lift it: the foot of the ladder binds
+
   eq(s.settingState('judgments').value, { rung: 'never' },
     'judgments: never-revealed beats seven afters');
   eq(s.settingState('chamber').value, { rung: 'closed' },
@@ -135,7 +138,7 @@ say('\n== clerk variant: an anonymous convenor who administers and never writes 
   s.answer(2, bo, 'ending', { endsAtMs: null });
   for (const [id, v] of Object.entries({
     bar: { pct: 66 }, pace: { shape: 'fixed' }, quorum: { form: 'count', n: 1 },
-    authorship: { rung: 'sealed' }, signing: { rung: 'each' },
+    authorship: { rung: 'sealed' },
     judgments: { rung: 'after' }, chamber: { rung: 'link' },
     applications: { holder: 'members', joinPolicy: 'invite' },
     machines: { enabled: false, budget: 0 }, removal: { rung: 'everyone' },
@@ -336,7 +339,7 @@ function threeRoom(opts: { lapse?: { afterMs: number | null } } = {}) {
   for (const [id, v] of Object.entries({
     pace: { shape: 'fixed' },
     quorum: { form: 'share', n: 60 },
-    authorship: { rung: 'sealed' }, signing: { rung: 'each' },
+    authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
     applications: { holder: 'members', joinPolicy: 'invite' },
     machines: { enabled: false, budget: 0 },

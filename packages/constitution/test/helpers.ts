@@ -51,7 +51,6 @@ export function buildConstituted(opts: {
     pace: { shape: 'fixed' },
     quorum: opts.quorum ?? { form: 'share', n: 60 },
     authorship: { rung: 'sealed' },
-    signing: { rung: 'each' },
     judgments: { rung: 'after' },
     applications: opts.applications ?? { holder: 'members', joinPolicy: 'invite' },
     removal: opts.removal ?? { rung: 'everyone' },

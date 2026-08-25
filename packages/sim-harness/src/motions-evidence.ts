@@ -34,7 +34,6 @@ function fixture(): { s: ConstitutionSession; bo: string; cy: string; dee: strin
     pace: { shape: 'fixed' },
     quorum: { form: 'share', n: 60 },
     authorship: { rung: 'sealed' },
-    signing: { rung: 'each' },
     judgments: { rung: 'after' },
     applications: { holder: 'members', joinPolicy: 'invite' },
     machines: { enabled: false, budget: 0 },

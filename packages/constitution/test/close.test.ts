@@ -57,7 +57,7 @@ describe('the constitution closes on its ending (SPEC §4.6)', () => {
       ending: { endsAtMs: 500_000 }, bar: { pct: 60 }, chamber: { rung: 'public' },
       rate: { grant: 4, cap: 8, dripMinutes: 240 },
       pace: { shape: 'fixed' }, quorum: { form: 'count', n: 1 },
-      authorship: { rung: 'sealed' }, signing: { rung: 'each' }, judgments: { rung: 'after' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { holder: 'members', joinPolicy: 'invite' }, removal: { rung: 'everyone' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
     })) { s2.reclaim(2, id as never); s2.setSetting(2, id as never, v as never); }
@@ -158,7 +158,7 @@ describe('a refused event never reaches the log (Q679)', () => {
     const values: [string, unknown][] = [
       ['bar', { pct: 66 }], ['pace', { shape: 'fixed' }],
       ['quorum', { form: 'count', n: 1 }], ['authorship', { rung: 'sealed' }],
-      ['signing', { rung: 'each' }], ['judgments', { rung: 'after' }],
+      ['judgments', { rung: 'after' }],
       ['chamber', { rung: 'link' }], ['lapse', { afterMs: null }],
       ['applications', { joinPolicy: 'invite' }], ['removal', { rung: 'everyone' }],
       ['machines', { enabled: false, budget: 0 }],

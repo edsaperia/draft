@@ -262,7 +262,6 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
       pace: { shape: 'fixed' },
       quorum: { form: 'share', n: 60 },
       authorship: { rung: 'sealed' },
-      signing: { rung: 'each' },
       judgments: { rung: 'after' },
       applications: { holder: 'members', joinPolicy: 'apply' },
       machines: { enabled: false, budget: 0 },
@@ -1079,7 +1078,7 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
       pace: { shape: 'fixed' }, quorum: { form: 'count', n: 2 },
-      authorship: { rung: 'sealed' }, signing: { rung: 'each' },
+      authorship: { rung: 'sealed' },
       judgments: { rung: 'after' }, applications: { joinPolicy: 'invite' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
     };

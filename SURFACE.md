@@ -28,7 +28,7 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 <!-- spec-check: events -->
 | # | Event | Audience | Channel | Ask | Close | Persistence | Keys |
 |---|---|---|---|---|---|---|---|
-| E1 | A founding question opens (delegated) | every arrived member, founder if a member | rail ask entry; task paragraph under the watching clause | an answer | ✓ | entry leaves; card shows the count; revisable until resolved | chamber policy lapse removal ending bar quorum authorship signing judgments rate machines |
+| E1 | A founding question opens (delegated) | every arrived member, founder if a member | rail ask entry; task paragraph under the watching clause | an answer | ✓ | entry leaves; card shows the count; revisable until resolved | chamber policy lapse removal ending bar quorum authorship judgments rate machines |
 | E2 | A founding question resolves | everyone who answered | clause; distribution strip | nothing (pre-start: no OK owed) | — | clause states the rule | — |
 | E3 | A setting is set pre-start | nobody | clause fades in | nothing | — | clause | title slug text hat myname mypic roster |
 | E4 | The document begins 🍾 | every member | 💡 ⚖️ gate news cards, the Founded line; 🏛️ for anybody not yet handed a voice (E8) | OK each | OK | `ACK_KEYS` per seat; grants staged behind the constitutional OKs | begin canpropose canjudge |
@@ -116,7 +116,6 @@ The page speaks its own keys; the spec speaks the catalogue's ids. This table is
 | pace | pace |
 | quorum | quorum |
 | authorship | authorship |
-| signing | signing |
 | judgments | judgments |
 | chamber | chamber |
 | rate | rate |
@@ -278,20 +277,19 @@ The refund flight and every grant's inbound flight take 640 ms.
 | 14 | ending | ⏰ | constitutional, route inside it | deciding, first | yes | removal | When Does It End? |
 | 15 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | How Sure Must the Room Be? |
 | 16 | quorum | 👥 | constitutional · judge-gate | deciding, last | yes | bar | Quorum |
-| 17 | signing | ✍️ | constitutional · judge-gate | privacy | yes | quorum | Can Members Make Anonymous Proposals? |
-| 18 | authorship | 👤 | constitutional · judge-gate | privacy | yes | signing | Are Anonymous Proposers Revealed? |
-| 19 | judgments | 👁️ | constitutional · judge-gate | privacy | yes | authorship | When Are Judgments Revealed? |
-| 20 | canpropose | 💡 | gate (and the ✏️ grant) | rate — in the preamble's stack | no | 🍾 | Proposing |
-| 21 | canjudge | ⚖️ | gate | rate — in the preamble's stack | no | 🍾 | Judging |
-| 22 | grant-voice | 🏛️ | grant | rate — in the preamble's stack (Y23) | no | its clause is pinned; the **news** still arrives with the first blind question you are asked, else under ⚖️ (Q605, narrowed by Q750) | Your Voice |
-| 23 | rate | ⏱️ | ordinary, delegable | rate | yes | judgments | Proposal Rate |
-| 24 | machines | 🤖 | ordinary, delegable | rate, last | yes | rate | AI Proposals |
-| 25 | text | 📄 | ordinary | doc — the charter heading under the hairline | yes | machines | Text |
-| 26 | begin | 🍾 | decision, not a setting | rate — the preamble's stack, first (Y21, Y23) | no | until the founder can press it — `readiness().ready` and 🏛️ not still being served (F5, F9); members never see it pre-start | Begin |
+| 17 | authorship | 👤 | constitutional · judge-gate | privacy | yes | quorum | Anonymous Proposals |
+| 18 | judgments | 👁️ | constitutional · judge-gate | privacy | yes | authorship | When Are Judgments Revealed? |
+| 19 | canpropose | 💡 | gate (and the ✏️ grant) | rate — in the preamble's stack | no | 🍾 | Proposing |
+| 20 | canjudge | ⚖️ | gate | rate — in the preamble's stack | no | 🍾 | Judging |
+| 21 | grant-voice | 🏛️ | grant | rate — in the preamble's stack (Y23) | no | its clause is pinned; the **news** still arrives with the first blind question you are asked, else under ⚖️ (Q605, narrowed by Q750) | Your Voice |
+| 22 | rate | ⏱️ | ordinary, delegable | rate | yes | judgments | Proposal Rate |
+| 23 | machines | 🤖 | ordinary, delegable | rate, last | yes | rate | AI Proposals |
+| 24 | text | 📄 | ordinary | doc — the charter heading under the hairline | yes | machines | Text |
+| 25 | begin | 🍾 | decision, not a setting | rate — the preamble's stack, first (Y21, Y23) | no | until the founder can press it — `readiness().ready` and 🏛️ not still being served (F5, F9); members never see it pre-start | Begin |
 
 Outside `ORDER`: 🪜 (a tab in 🌡️'s stack; no clause, no rail entry — Q512); the `ans-*` answer tasks (a task paragraph under the watching clause); ✉️ ❌ (doors in the 🪪 pile from the moment judging opens); the ✒️/🛡️ power tabs under every held-able setting (*Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* — Q615); 🥂.
 
-**The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link, 📧 pre-save, 🌍, the Founded line wearing the two grants' ✒️ 🛡️ — then **Membership** (`members`: 🤝 · *Members* · the list with 🪪 ✉️ ❌ 🎩 and your row wearing ✋ 🖼️ 📧 · 💤 · 🥾), **Decisions** (`deciding`: ⏰ · 🥂 when closed · 🌡️ with 🪜 in its stack · 👥), **Anonymity** (`privacy`: ✍️ 👤 👁️), **Proposals** (`rate`: the preamble wearing 🍾 💡 ⚖️ 🏛️ · ⏱️ · 🤖), the hairline, the charter under its own name with 📄 beside it. **The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📄. Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
+**The band** (`SEC`): the opening run (`lead`) — title wearing 🪶 ✒️ 🛡️, the link, 📧 pre-save, 🌍, the Founded line wearing the two grants' ✒️ 🛡️ — then **Membership** (`members`: 🤝 · *Members* · the list with 🪪 ✉️ ❌ 🎩 and your row wearing ✋ 🖼️ 📧 · 💤 · 🥾), **Decisions** (`deciding`: ⏰ · 🥂 when closed · 🌡️ with 🪜 in its stack · 👥), **Anonymity** (`privacy`: 👤 👁️), **Proposals** (`rate`: the preamble wearing 🍾 💡 ⚖️ 🏛️ · ⏱️ · 🤖), the hairline, the charter under its own name with 📄 beside it. **The Document** (`doc`) is a rail-only group: 🪶 📍 🌍 📄. Before 🌍 is decided the clause states the interim rule: *Until the Founder decides, only members can see the document* / *Until the members decide, …* (Q618).
 
 ### 8.1 Rules
 

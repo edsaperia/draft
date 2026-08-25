@@ -8,15 +8,16 @@ import type { SettingValue } from '../src/values.js';
 import { eqValue, validateValue } from '../src/values.js';
 
 describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
-  it('holds the nineteen settings, ids unique, email deliberately absent', () => {
-    expect(CATALOGUE.length).toBe(19);
-    expect(new Set(CATALOGUE.map((e) => e.id)).size).toBe(19);
+  // eighteen since Q767: ✍️ signing folded into 👤's own ladder
+  it('holds the eighteen settings, ids unique, email deliberately absent', () => {
+    expect(CATALOGUE.length).toBe(18);
+    expect(new Set(CATALOGUE.map((e) => e.id)).size).toBe(18);
     expect(CATALOGUE_BY_ID.has('email' as SettingId)).toBe(false);
   });
 
-  it('judge gate is exactly the seven of §9.0b (machines left with Q352)', () => {
+  it('judge gate is exactly the six of §9.0b (machines Q352, signing Q767)', () => {
     expect([...JUDGE_GATES].sort()).toEqual(
-      ['authorship', 'bar', 'chamber', 'judgments', 'lapse', 'quorum', 'signing'].sort(),
+      ['authorship', 'bar', 'chamber', 'judgments', 'lapse', 'quorum'].sort(),
     );
   });
 
@@ -141,10 +142,15 @@ describe('the consent rule (SPEC §9.0a): maxima along the protective direction'
       [{ rung: 'public' }, { rung: 'closed' }]).value).toEqual({ rung: 'closed' });
     expect(resolveConsent(entryOf('judgments'),
       [{ rung: 'after' }, { rung: 'never' }]).value).toEqual({ rung: 'never' });
-    // Q768: ✍️ is two rungs now — `everybody` was the same fact as 👤 public
-    expect(entryOf('signing').rungs).toEqual(['nobody', 'each']);
-    expect(resolveConsent(entryOf('signing'),
-      [{ rung: 'each' }, { rung: 'nobody' }]).value).toEqual({ rung: 'nobody' });
+    // Q767: one ladder of five, ✍️ folded into it — the elective rungs sit
+    // between never-named and named-at-the-close, and the order is total
+    expect(entryOf('authorship').rungs).toEqual(
+      ['anonymous', 'anonymousElective', 'sealed', 'sealedElective', 'public']);
+    expect(resolveConsent(entryOf('authorship'),
+      [{ rung: 'sealedElective' }, { rung: 'sealed' }]).value).toEqual({ rung: 'sealed' });
+    expect(resolveConsent(entryOf('authorship'),
+      [{ rung: 'sealed' }, { rung: 'anonymousElective' }]).value)
+      .toEqual({ rung: 'anonymousElective' });
   });
 
   it('rate: the most generous wins (§9.0)', () => {

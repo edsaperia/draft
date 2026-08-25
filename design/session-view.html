@@ -564,7 +564,6 @@
     quorum: () => (S.quorumForm === 'count'
       ? { form: 'count', n: +S.quorumN } : { form: 'share', n: +S.quorumPct }),
     authorship: () => ({ rung: S.authorship }),
-    signing: () => ({ rung: S.signing }),
     judgments: () => ({ rung: S.judgments }),
     chamber: () => ({ rung: S.chamber }),
     rate: () => ({ grant: +S.grant, cap: Math.max(+S.cap, +S.grant), dripMinutes: +S.dripMin }),
@@ -579,7 +578,6 @@
     bar: (v) => ({ pct: +v }),
     ending: (v) => (v === 'never' ? { endsAtMs: null } : { endsAtMs: Date.parse(v) }),
     authorship: (v) => ({ rung: v }),
-    signing: (v) => ({ rung: v }),
     judgments: (v) => ({ rung: v }),
     chamber: (v) => ({ rung: v }),
     policy: (v) => ({ joinPolicy: v }),
@@ -595,7 +593,7 @@
     ending: (v) => (v.endsAtMs === null ? 'never' : msToLocal(v.endsAtMs)),
     lapse: (v) => (v.afterMs === null ? 'never' : Math.round(v.afterMs / 86400000)),
     machines: (v) => v.enabled,
-    authorship: (v) => v.rung, signing: (v) => v.rung,
+    authorship: (v) => v.rung,
     judgments: (v) => v.rung, chamber: (v) => v.rung, policy: (v) => v.joinPolicy,
     removal: (v) => v.rung,
     policy: (v) => v.joinPolicy,
@@ -638,7 +636,7 @@
   };
   // which page field carries a setting's delegation radio ('roster' = the members')
   const DKEY = { ending: 'ending', bar: 'barBy', quorum: 'quorumBy',
-    authorship: 'authorship', signing: 'signing', judgments: 'judgments',
+    authorship: 'authorship', judgments: 'judgments',
     chamber: 'chamber', rate: 'rateBy', lapse: 'lapse', removal: 'removal',
     machines: 'auditor',
     // v0.52: these three only ever read 'roster' once their options render
@@ -685,7 +683,7 @@
   // whether the bin has anything to throw away.
   const REVERTKEYS = () => ['title', 'slug', 'ending', 'endsAt', 'tClose', 'shape', 'tStart',
     'quorumForm', 'quorumPct', 'quorumN', 'joinBy', 'policyBy', 'titleBy', 'slugBy',
-    'lapse', 'lapseDays', 'removal', 'authorship', 'signing', 'judgments',
+    'lapse', 'lapseDays', 'removal', 'authorship', 'judgments',
     'grant', 'dripMin', 'cap', 'chamber', 'auditor', 'auditorBudget',
     'barBy', 'quorumBy', 'rateBy', 'myname', 'mypic', 'myemail', 'hatPick',
     // the title's provisional lane rides the snapshot like every other
@@ -793,7 +791,7 @@
     joinBy: '',
     lapse: '', lapseDays: '',
     removal: '',
-    authorship: '', signing: '', judgments: '',
+    authorship: '', judgments: '',
     rateBy: '', grant: '', dripMin: '', cap: '',
     chamber: '', auditor: null, auditorBudget: '',
     // the reason for a change, per setting, until its ✒️ commits it (Q530) —
@@ -1200,7 +1198,7 @@
   // `key` is the state field that carries delegation, and it is what decides
   // which **pile** a card stands in: taking a setting back moves its tab from
   // the members' pile to the founder's, in front of you.
-  const DELEGABLE = ['ending', 'barBy', 'quorumBy', 'authorship', 'signing',
+  const DELEGABLE = ['ending', 'barBy', 'quorumBy', 'authorship',
     'judgments', 'rateBy', 'chamber', 'auditor', 'lapse', 'removal', 'policyBy'];
   const delegated = (key) => DELEGABLE.includes(key) && S[key] === 'roster';
 
@@ -1464,14 +1462,18 @@
       rule: 'Each member says the lowest they will accept, and the document takes the highest.',
       takes: 'The document takes the highest', result: '10 of 14',
       dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', 'all of them'] },
-    { k: 'authorship', g: '👤', t: 'Are Anonymous Proposers Revealed?', kind: 'constitutional', gate: 'judge', key: 'authorship', p: 0.5,
+    // **One card, one clause, one ladder of five** (Q767, Ed 2026-08-25: *I
+    // think five rungs is fine; there is definitely a ladder going from
+    // anonymous forever to open forever*). ✍️ *Can Members Make Anonymous
+    // Proposals?* stood beside this one asking a question this one already
+    // ordered, and its top rung was this one's *Names from the start* said a
+    // second time — which is what made *nobody is ever named* and *everybody
+    // signs* both settable at once. The opt-in is not a second axis; it is
+    // two steps on this ladder, and the ladder is total.
+    { k: 'authorship', g: '👤', t: 'Anonymous Proposals', kind: 'constitutional', gate: 'judge', key: 'authorship', p: 0.5,
       rule: 'This one is about privacy, so it runs the other way: the document takes the <b>most private</b> answer, and one member who wants to stay unnamed keeps everybody unnamed.',
       takes: 'The document takes the most private', result: 'Nobody’s name, ever',
-      dist: [8, 4, 2], distTop: 0, distEnds: ['No names, ever', 'Names from the start'] },
-    { k: 'signing', g: '✍️', t: 'Can Members Make Anonymous Proposals?', kind: 'constitutional', gate: 'judge', key: 'signing', p: 0.5,
-      rule: 'Also about privacy, so the <b>most private</b> answer wins.',
-      takes: 'The document takes the most private', result: 'Nobody signs',
-      dist: [9, 3, 2], distTop: 0, distEnds: ['Nobody signs', 'Everybody signs'] },
+      dist: [8, 2, 2, 1, 1], distTop: 0, distEnds: ['No names, ever', 'Names from the start'] },
     { k: 'judgments', g: '👁️', t: 'When Are Judgments Revealed?', kind: 'constitutional', gate: 'judge', key: 'judgments', p: 0.86,
       // Q763: this field is *how answers aggregate* and nothing else — it had
       // been carrying the whichever-you-choose fact, which the card's own `why`
@@ -1647,7 +1649,7 @@
     title: 'the title', slug: 'the link', policy: 'applications', text: 'the text',
     ending: 'the ending', bar: 'the approval threshold',
     pace: 'how the approval threshold rises', quorum: 'quorum',
-    authorship: 'proposer naming', signing: 'signing', judgments: 'judgment reveal',
+    authorship: 'anonymous proposals', judgments: 'judgment reveal',
     chamber: 'visibility', rate: 'the proposal rate', lapse: 'membership lapse',
     removal: 'member removal', machines: 'AI proposals',
   };
@@ -1936,7 +1938,6 @@
     policy: () => !!S.joinBy,
     removal: () => !!S.removal,
     authorship: () => !!S.authorship,
-    signing: () => !!S.signing,
     judgments: () => !!S.judgments,
     lapse: () => S.lapse === 'never' || (!!S.lapse && isNum(S.lapseDays)),
     ending: () => S.ending === 'perpetual' || (!!S.ending && !!S.endsAt),
@@ -2126,7 +2127,7 @@
   const ORDER = ['title', 'slug', 'myemail', 'grant-pen', 'grant-shield', 'chamber',
     'policy', 'hat', 'myname', 'mypic', 'roster', 'lapse', 'removal',
     'ending', 'bar', 'quorum',
-    'signing', 'authorship', 'judgments',
+    'authorship', 'judgments',
     'canpropose', 'canjudge', 'grant-voice', 'rate', 'machines',
     'text', 'begin'];
   // a card in the order waits for everything above it and nothing else: the
@@ -2327,7 +2328,7 @@
     // "Anonymity" (Ed, 2026-08-19), not "Privacy"
     { key: 'privacy', title: 'Anonymity',
       text: '',
-      keys: ['signing', 'authorship', 'judgments'] },
+      keys: ['authorship', 'judgments'] },
     // **Proposals reads fourth** (Ed, 2026-08-21), restoring the order both
     // CLAUDE.md and design/DECISIONS.md have always carried: Membership ·
     // Decisions · Anonymity · Proposals · The Document. It had drifted to
@@ -2496,10 +2497,7 @@
     quorum: () => (S.quorumForm === 'count'
       ? Math.min(takenOf('quorum') || S.quorumN, E()) + ' of ' + E()
       : (takenOf('quorum') || S.quorumPct) + '% — ' + quorumCount() + ' of ' + E()),
-    authorship: () => ({ anonymous: 'Nobody’s name, ever', sealed: 'Names at the close',
-      public: 'Names from the start' }[takenOf('authorship') || (S.authorship === 'roster' ? 'anonymous' : S.authorship)]),
-    signing: () => ({ nobody: 'Nobody signs', each: 'Each author chooses' }[
-      takenOf('signing') || (S.signing === 'roster' ? 'nobody' : S.signing)]),
+    authorship: () => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[takenOf('authorship') || (S.authorship === 'roster' ? 'anonymous' : S.authorship)],
     judgments: () => ({ never: 'Never revealed', after: 'Revealed after the decision' }[
       takenOf('judgments') || (S.judgments === 'roster' ? 'never' : S.judgments)]),
     rate: () => { const v = takenValOf('rate');
@@ -2528,8 +2526,7 @@
     ending: (v) => (v === 'never' ? 'You said never'
       : 'You said ' + (isNaN(Date.parse(v)) ? v
         : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }))),
-    authorship: (v) => 'You said ' + ({ anonymous: 'no names, ever', sealed: 'names at the close', public: 'names from the start' }[v] || v),
-    signing: (v) => 'You said ' + ({ nobody: 'nobody signs', each: 'each author chooses' }[v] || v),
+    authorship: (v) => 'You said ' + ({'anonymous':'no names, ever','anonymousElective':'no names unless somebody chooses','sealed':'names at the close','sealedElective':'names at the close, or earlier by choice','public':'names from the start'})[v] || v,
     judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
     policy: (v) => 'You said ' + ({ invite: 'invitation only', proposed: 'applications must be proposed by members', apply: 'anyone may apply', open: 'open' }[v] || v),
@@ -2541,7 +2538,7 @@
   };
   const ANSASK = { quorum: 'The lowest you will accept', bar: 'The lowest you will accept',
     ending: 'The latest you will accept', authorship: 'The most you will accept',
-    signing: 'The most you will accept', judgments: 'The most you will accept',
+    judgments: 'The most you will accept',
     chamber: 'The most you will accept', machines: 'The most you will accept',
     policy: 'The most open you will accept',
     lapse: 'The shortest you will accept',
@@ -2756,8 +2753,13 @@
     // catalogue still holds it, so a document that took it before today
     // still states its own rule truthfully rather than printing a raw value.
     chamber: { 'Members only': { rung: 'closed' }, 'Anyone with the link': { rung: 'link' } },
-    authorship: { 'Nobody’s name, ever': { rung: 'anonymous' }, 'Names at the close': { rung: 'sealed' }, 'Names from the start': { rung: 'public' } },
-    signing: { 'Nobody signs': { rung: 'nobody' }, 'Each author chooses': { rung: 'each' } },
+    authorship: {
+      'Nobody’s name, ever': { rung: 'anonymous' },
+      'Nobody’s name unless they choose': { rung: 'anonymousElective' },
+      'Names at the close': { rung: 'sealed' },
+      'Names at the close, or earlier by choice': { rung: 'sealedElective' },
+      'Names from the start': { rung: 'public' },
+    },
     judgments: { 'Never revealed': { rung: 'never' }, 'Revealed after the decision': { rung: 'after' } },
   };
   // **A change carries a reason, and says who made it** (Q530, Ed
@@ -2799,9 +2801,11 @@
     pace: (v) => (v.shape === 'ramp' ? 'rising from ' + v.startPct + '%'
       : 'the same number throughout'),
     quorum: (v) => (v.form === 'share' ? v.n + '% of the members' : v.n + ' members'),
-    authorship: (v) => ({ anonymous: 'nobody ever named', sealed: 'names at the close',
+    authorship: (v) => ({ anonymous: 'nobody ever named',
+      anonymousElective: 'nobody named unless they choose to be',
+      sealed: 'names at the close',
+      sealedElective: 'names at the close, or earlier by choice',
       public: 'names from the start' }[v.rung] || v.rung),
-    signing: (v) => ({ nobody: 'nobody signs', each: 'each author chooses' }[v.rung] || v.rung),
     judgments: (v) => ({ never: 'never revealed',
       after: 'revealed after the decision' }[v.rung] || v.rung),
     rate: (v) => v.grant + ' ✏️ to start, up to ' + v.cap +
@@ -2943,8 +2947,7 @@
   const STANDS = {
     chamber: (v) => ({ closed: 'Members only', link: 'Anyone with the link', public: 'Public' })[v],
     policy: (v) => ({ invite: 'Invitation only', proposed: 'Applications must be proposed by members', apply: 'Anyone may apply', open: 'Open' })[v],
-    authorship: (v) => ({ anonymous: 'Nobody’s name, ever', sealed: 'Names at the close', public: 'Names from the start' })[v],
-    signing: (v) => ({ nobody: 'Nobody signs', each: 'Each author chooses' })[v],
+    authorship: (v) => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed after the decision' })[v],
     lapse: (v) => (v === 'never' ? 'Never — however long you are away' : 'After ' + v + ' days without logging in'),
     removal: (v) => ({ everyone: 'Everyone has to agree, including them',
@@ -3041,11 +3044,10 @@
         esc((d.to.match(/\d+/) || [])[0] || S.lapseDays) + '"> days without logging in.'),
     authorship: (d) => lanesFor(d, [
       ['Nobody’s name, ever', 'A proposer is never named — not even in the closing record.'],
+      ['Nobody’s name unless they choose', 'A proposer is never named unless they sign the proposal themselves.'],
       ['Names at the close', 'Proposers are named in the closing record, never before.'],
+      ['Names at the close, or earlier by choice', 'Proposers are named in the closing record, and sooner if they sign.'],
       ['Names from the start', 'Every proposal carries its proposer’s name from the moment it is made.']], 'authorship'),
-    signing: (d) => lanesFor(d, [
-      ['Nobody signs', 'No proposal carries a signature.'],
-      ['Each author chooses', 'A proposer may sign or stay unsigned, proposal by proposal.']], 'signing'),
     judgments: (d) => lanesFor(d, [
       ['Never revealed', 'Judgments are never revealed — not even in the closing record.'],
       ['Revealed after the decision', 'Judgments are published with the record of each decision, never before.']], 'judgments'),
@@ -3179,7 +3181,7 @@
         barBy: 'roster', tClose: 78, shape: 'ramp', tStart: 55,
         quorumBy: 'roster', quorumForm: 'share', quorumPct: 33, quorumN: 5,
         joinBy: 'invite', policyBy: 'roster', lapse: 'roster', lapseDays: 90,
-        removal: 'roster', authorship: 'roster', signing: 'roster', judgments: 'roster',
+        removal: 'roster', authorship: 'roster', judgments: 'roster',
         rateBy: 'founder', grant: 4, dripMin: 180, cap: 8,
         // **🌍 stays with the founder, and that is the tooling fix** (Ed,
         // 2026-08-22, asking whether ⏩ could be more useful for working on
@@ -3211,7 +3213,7 @@
       // dependency order (ending first: the bar question waits on it)
       const FILL = { ending: S.endsAt || '2026-08-20T18:00',
         quorum: (S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
-        bar: S.tClose, authorship: 'anonymous', signing: 'nobody',
+        bar: S.tClose, authorship: 'anonymous',
         judgments: 'never', chamber: 'closed', machines: false, policy: 'invite',
         lapse: 'never', removal: 'everyone', rate: S.grant };
       for (const k of Object.keys(FILL)) {
@@ -3332,7 +3334,6 @@
     bar: 'how sure the room must be at the close',
     pace: 'how the approval threshold climbs to the close',
     authorship: 'whether anonymous proposers are revealed',
-    signing: 'whether members can make anonymous proposals',
     judgments: 'whether judgments are revealed with the record',
     chamber: 'who may read the document',
     lapse: 'whether an inactive membership lapses',
@@ -3376,12 +3377,11 @@
         ? 'The approval threshold stays the same all the way through.'
         : 'The approval threshold starts at ' + start2 + '% and rises to ' + (takenOf('bar') || S.tClose) + '% by the end.'); },
     authorship: () => ({ anonymous: 'Nobody who proposes a change is ever named, even after the document is finished.',
+      anonymousElective: 'Nobody who proposes a change is named unless they choose to sign it themselves.',
       sealed: 'Whoever proposes a change is named when the document is finished, and not before.',
+      sealedElective: 'Whoever proposes a change is named when the document is finished — sooner, if they choose to sign it.',
       public: 'Whoever proposes a change is named from the moment they propose it.' })[
       takenOf('authorship') || (S.authorship === 'roster' ? 'anonymous' : S.authorship)],
-    signing: () => ({ nobody: 'Nobody may sign a proposal.',
-      each: 'Each author chooses whether to sign.' })[
-      takenOf('signing') || (S.signing === 'roster' ? 'nobody' : S.signing)],
     judgments: () => ({ never: 'What somebody preferred is never made public.',
       after: 'What somebody preferred is made public when the document is finished, and not before.' })[
       takenOf('judgments') || (S.judgments === 'roster' ? 'never' : S.judgments)],
@@ -4220,18 +4220,13 @@
       '<div class="choice" role="radiogroup">' +
       theyDecide('authorship') +
       // one vocabulary with the member ladder (copy pass, 2026-08-19: the
-      // same three rungs wore three wordings across the two seats)
+      // same rungs wore different wordings across the two seats)
       opt(S, 'authorship', 'anonymous', 'Nobody’s name, ever', 'No proposal ever carries a name, even after the document is finished.') +
+      opt(S, 'authorship', 'anonymousElective', 'Nobody’s name unless they choose', 'Nobody is named unless they sign a proposal themselves — which means an unsigned one stands out.') +
       opt(S, 'authorship', 'sealed', 'Names at the close', 'Hidden while the document is being written, and published with it at the end.') +
+      opt(S, 'authorship', 'sealedElective', 'Names at the close, or earlier by choice', 'Published with the document at the end, and sooner for anybody who signs.') +
       opt(S, 'authorship', 'public', 'Names from the start', 'Every proposal carries its writer’s name from the moment it is made.') +
       '</div><p class="setnote">If you choose this yourself, members can end up named without having agreed to it.</p>',
-    signing: () =>
-      '<p class="why">Whether somebody can choose to put their name on a proposal that would otherwise carry no name.</p>' +
-      '<div class="choice" role="radiogroup">' +
-      theyDecide('signing') +
-      opt(S, 'signing', 'nobody', 'Nobody signs', 'No proposal carries a name, so no proposal says anything about who wrote it.') +
-      opt(S, 'signing', 'each', 'Each author chooses', 'Anyone may sign — which means a proposal with no name on it stands out.') +
-      '</div>',
     judgments: () =>
       '<p class="why">Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.</p>' +
       '<div class="choice" role="radiogroup">' +
@@ -5969,7 +5964,6 @@
       pace: (x) => { S.shape = x.shape; if (x.startPct) S.tStart = x.startPct; },
       quorum: (x) => { if (x.form === 'share') S.quorumPct = x.n; else S.quorumN = x.n; },
       authorship: (x) => { S.authorship = x.rung; },
-      signing: (x) => { S.signing = x.rung; },
       judgments: (x) => { S.judgments = x.rung; },
       chamber: (x) => { S.chamber = x.rung; },
       rate: (x) => { S.grant = x.grant; S.cap = x.cap; S.dripMin = x.dripMinutes; },
@@ -6009,7 +6003,7 @@
     // holds where the radio and the value are separate fields
     const val = (mid) => { const st = cs.settingState(mid); return st && st.value; };
     const del = (mid) => { const st = cs.settingState(mid); return !!st && st.holder === 'members'; };
-    for (const mid of ['ending', 'authorship', 'signing', 'judgments', 'chamber',
+    for (const mid of ['ending', 'authorship', 'judgments', 'chamber',
       'removal', 'lapse', 'machines']) {
       if (del(mid) && !val(mid)) S[DKEY[pkeyOf(mid)]] = 'roster';
     }

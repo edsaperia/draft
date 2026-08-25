@@ -423,43 +423,6 @@
   {
    "step": "commit quorum",
    "rail": [
-    "signing"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
-    "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
-    "bar: The members must be 50% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have judged a question before it can ",
-    "signing: The Founder is deciding whether members can make anonymous p"
-   ]
-  },
-  {
-   "step": "open signing",
-   "rail": [
-    "signing"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
-    "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the",
-    "ending: The drafting process will end on Weekday at HH:MM. The Found",
-    "bar: The members must be 50% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have judged a question before it can "
-   ]
-  },
-  {
-   "step": "commit signing",
-   "rail": [
     "authorship"
    ],
    "clauses": [
@@ -473,7 +436,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: The Founder is deciding whether anonymous proposers are reve"
    ]
   },
@@ -492,8 +454,7 @@
     "removal: Removing a member needs every member to agree, including the",
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
-    "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi"
+    "quorum: 5% of the members must have judged a question before it can "
    ]
   },
   {
@@ -512,7 +473,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: The Founder is deciding whether judgments are revealed with "
    ]
@@ -533,7 +493,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d"
    ]
   },
@@ -553,7 +512,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "begin: When the document begins, members may propose changes to rul",
@@ -576,7 +534,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "begin: When the document begins, members may propose changes to rul"
@@ -598,7 +555,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "begin: When the document begins, members may propose changes to rul",
@@ -622,7 +578,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "begin: When the document begins, members may propose changes to rul",
@@ -645,7 +600,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "begin: When the document begins, members may propose changes to rul",
@@ -669,7 +623,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "begin: When the document begins, members may propose changes to rul",
@@ -693,7 +646,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "begin: When the document begins, members may propose changes to rul",
@@ -717,7 +669,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
@@ -742,7 +693,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "begin: Members may propose changes to rules as soon as they arrive,",
@@ -768,7 +718,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
@@ -792,7 +741,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "begin: Members may propose changes to rules as soon as they arrive,",
@@ -817,7 +765,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
@@ -840,7 +787,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "begin: Members may propose changes to rules as soon as they arrive,",
@@ -864,7 +810,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
@@ -885,7 +830,6 @@
     "ending: The drafting process will end on Weekday at HH:MM. The Found",
     "bar: The members must be 50% sure a proposal is better for it to ",
     "quorum: 5% of the members must have judged a question before it can ",
-    "signing: Nobody may sign a proposal. The Founder may amend this at wi",
     "authorship: Nobody who proposes a change is ever named, even after the d",
     "judgments: What somebody preferred is never made public. The Founder ma",
     "begin: Members may propose changes to rules as soon as they arrive,",

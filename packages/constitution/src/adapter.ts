@@ -68,11 +68,21 @@ export function engineFieldsFor(
       const r = value as RateValue;
       return { tokenGrant: r.grant, tokenCap: r.cap, tokenDripMinutes: r.dripMinutes };
     }
-    case 'authorship':
-      return {
-        authorshipVisibility: (value as LadderValue).rung as
-          Constitution['authorshipVisibility'],
-      };
+    case 'authorship': {
+      // **The elective rungs ride their base** (Q767, Ed 2026-08-25). The
+      // engine's `authorshipVisibility` is a three-value fact about what the
+      // document does *by default*, and the two opt-in rungs do not change
+      // it: what they add is a per-proposal choice on top, which is Q770 and
+      // is not built. So *nobody named unless they ask* is `anonymous` to the
+      // engine and *named at the close, or earlier by choice* is `sealed` —
+      // and until the sign control exists those are the whole of their
+      // behaviour, which is what makes offering them honest rather than
+      // merely offerable.
+      const rung = (value as LadderValue).rung;
+      const base = rung === 'anonymousElective' ? 'anonymous'
+        : rung === 'sealedElective' ? 'sealed' : rung;
+      return { authorshipVisibility: base as Constitution['authorshipVisibility'] };
+    }
     default:
       return {};
   }

@@ -40,7 +40,7 @@ export type RaisedRoute = Exclude<MotionRoute, 'pen'>;
 export type SettingId =
   | 'title' | 'link' | 'startingText'
   | 'ending' | 'bar' | 'pace' | 'quorum'
-  | 'authorship' | 'signing' | 'judgments' | 'chamber'
+  | 'authorship' | 'judgments' | 'chamber'
   | 'rate' | 'lapse' | 'machines' | 'removal'
   | 'membership' | 'applications'
   | 'displayName' | 'picture';
@@ -146,37 +146,32 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
     },
     deps: [], judgeGate: true },
 
+  // **One setting, five rungs** (Ed, 2026-08-25, closing Q634 and Q767: *I
+  // think five rungs is fine; there is definitely a ladder going from
+  // anonymous forever to open forever*). ✍️ signing was a second setting on a
+  // second card asking a question this one already ordered. Its top rung
+  // `everybody` was the same fact as `public` here, which made
+  // `anonymous` + `everybody` a reachable self-contradiction (Q634 iii); its
+  // middle rung `each` is an **opt-in**, and an opt-in is not an axis — it is
+  // a step on this ladder, between never-named and named-at-the-close.
+  //
+  // The order is total and runs most-private-first, which is what makes one
+  // consent resolution correct where two were needed before: a document that
+  // never names you unless you ask is strictly more private than one that
+  // names everybody at the close, and one that names everybody at the close
+  // but lets you volunteer earlier is strictly more private than one that
+  // names you as you propose. So the room's answers resolve down the single
+  // ladder, and nobody is handed an exposure they did not accept.
+  //
+  // The two elective rungs are the ones the per-proposal sign control belongs
+  // to (Q770, not built): until it exists they behave as their base rung,
+  // which is what `adapter.ts` maps them to.
   { id: 'authorship', glyph: '👤', kind: 'constitutional',
     delegable: true, valueType: 'ladder',
-    rungs: ['anonymous', 'sealed', 'public'],
+    rungs: ['anonymous', 'anonymousElective', 'sealed', 'sealedElective', 'public'],
     consent: {
       ask: 'the most exposure of proposers you will accept',
-      order: ladderOrder(['anonymous', 'sealed', 'public']),
-    },
-    deps: [], judgeGate: true },
-
-  // **✍️ is about proposals, and it stops lying** (Q768, Ed 2026-08-23,
-  // closing Q634 and Q638 (i)). Its third rung `everybody` said *every
-  // proposal carries its writer's name*, which is the same fact as 👤
-  // `public` — so `authorship: anonymous` with `signing: everybody` was a
-  // reachable self-contradiction the module would happily settle on. Deleting
-  // the rung removes the contradiction **structurally rather than guarding
-  // it**: every surviving pair is coherent — `each` + `anonymous` reads
-  // *nobody is named unless they choose to be*, `each` + `sealed` reads
-  // *named at the close, or earlier by choice*, and under `public` the opt-in
-  // simply changes nothing, since every proposal is named already.
-  //
-  // It stays a **setting**, and stays its own axis, because Ed's ruling that
-  // the opt-in resolves most-private-wins is exactly what an independently
-  // consented question is: a member who accepts `sealed` without elective
-  // signing must not be handed elective signing because somebody else asked
-  // for it. What merged is the *card* and the *clause* (Q767), not the axes.
-  { id: 'signing', glyph: '✍️', kind: 'constitutional',
-    delegable: true, valueType: 'ladder',
-    rungs: ['nobody', 'each'],
-    consent: {
-      ask: 'the most signing you will accept',
-      order: ladderOrder(['nobody', 'each']),
+      order: ladderOrder(['anonymous', 'anonymousElective', 'sealed', 'sealedElective', 'public']),
     },
     deps: [], judgeGate: true },
 

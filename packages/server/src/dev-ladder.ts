@@ -652,8 +652,8 @@ async function motions(host: LadderHost, doc: LoadedDoc, bridge: EngineBridge,
 
   say('a motion withdrawn by its mover', () => {
     const mover = cast[5]!;
-    const m = cs.openMotion(pen.next(), mover, { kind: 'set', setting: 'signing',
-      value: otherRung('signing') }, 'On reflection this is the wrong question to ask.');
+    const m = cs.openMotion(pen.next(), mover, { kind: 'set', setting: 'chamber',
+      value: otherRung('chamber') }, 'On reflection this is the wrong question to ask.');
     cs.withdrawMotion(pen.next(), mover, m);
   });
 
