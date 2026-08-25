@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.71
+# Group Drafting Engine — Specification v0.72
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -213,7 +213,7 @@ Rules only. The reasoning behind each — the dated rulings, what they replaced,
 - each member states their **minimum** — the least they will accept, read along the setting's protective order (the lowest quorum; the lowest threshold at the close; the most exposure; the shortest quiet spell; the easiest removal; the least generous rate) — and the document takes the **most protective** answer. A consent rule rather than a vote: the result satisfies every stated minimum by construction, which is what escapes the bootstrap (*by what quorum do you decide the quorum?*). → why: R-012, R-013
 - **delegate the decision, not the field** (Q341): a question collects exactly the binding scalar — the threshold at the close, the quorum number in the convenor's chosen form — while the machinery it rides on (the ramp's shape and start, quorum's form) stays with the convenor and is ordinary. A question whose meaning depends on another setting is not served until that setting settles (`deps`, §9.7.1). → why: R-014
 - the **distribution is published without names**; while the question runs only the count of answers shows, to the convenor and the members alike.
-- the electorate is **E**. A question **does not resolve while an invitation is outstanding, and never on one voice**. → why: R-015
+- the electorate is **E minus those who have signed out abstaining**: an abstainer has left the base and neither answers nor blocks. A question **does not resolve while an invitation is outstanding, and never on one voice**. → why: R-015, R-049
 - **the roster is the ground of every answer**: an arrival or removal while a question runs is a ground shift — answers stand, their authors are told and may revise until the question settles. → why: R-017
 - members who join later **inherit** the constitution and are owed an acknowledgement of every constitutional setting they had no say in (§9.6a). → why: R-016
 
