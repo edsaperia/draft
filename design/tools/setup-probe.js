@@ -184,10 +184,18 @@
     ['open-visibility', () => openTab('chamber')],
     ['choose-visibility', () => click('.setupcard [data-set="chamber"][data-val="closed"]')],
     ['confirm-visibility', () => click('.setupcard [data-confirm]')],
-    // 🎩 follows 🌍 in the constitution's order: the Membership section
-    // opens with the people (Ed, 2026-08-21), so this is the next card born
-    // 🤝 comes before the register now (Ed, 2026-08-21): how people become
-    // members, then who they are
+    // 🪪 Admissions opens the Membership section, and the scenario never
+    // learned it was there (Q910). Entry 94 (2026-08-26) re-typed 🪪 from
+    // the register of members into the *price of admission* and moved it
+    // above 🤝 — and since ORDER **is** the dependency list, an unanswered
+    // 🪪 kept 🤝, 🎩, ✋ and 🖼️ from ever being born. One missing step, and
+    // thirteen below it missed as one: the whole of the founding from the
+    // Membership section down had no probe coverage.
+    ['open-admissions', () => openTab('roster')],
+    ['choose-admission', () => click('.setupcard [data-set="admission"][data-val="assembly"]')],
+    ['confirm-admissions', () => click('.setupcard [data-confirm]')],
+    // then 🤝, which asks only whether strangers may apply at all: what an
+    // application costs is 🪪's, answered above
     ['open-applications', () => openTab('policy')],
     ['choose-join', () => click('.setupcard [data-set="joinBy"][data-val="invite"]')],
     ['confirm-applications', () => click('.setupcard [data-confirm]')],

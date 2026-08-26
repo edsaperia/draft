@@ -27,8 +27,8 @@ describe('entry 96: what the Applicants pile is built from', () => {
     const asking = (v.applicants ?? [])
       .filter((a) => a.status !== 'admitted' && a.status !== 'refused');
     expect(asking).toHaveLength(1);
-    expect(asking[0].name).toBe('Rowan Vale');
-    expect(asking[0].id).toBe(id);
+    expect(asking[0]!.name).toBe('Rowan Vale');
+    expect(asking[0]!.id).toBe(id);
     const admit = s.motionRecords().get(s.applicantRecords().get(id)!.motion!)!;
     expect(admit.route).toBe('ordinary');
     expect(admit.status).toBe('running');

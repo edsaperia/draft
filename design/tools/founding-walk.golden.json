@@ -41,7 +41,7 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The"
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T"
    ]
   },
   {
@@ -51,7 +51,7 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The"
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T"
    ]
   },
   {
@@ -61,7 +61,7 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "myemail: The Founder is checking their email for a link."
    ]
   },
@@ -72,7 +72,7 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "founded: Founded by Anonymous 👑."
    ]
   },
@@ -83,7 +83,7 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "grant-pen: Founded by Anonymous 👑."
    ]
   },
@@ -95,7 +95,7 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Until the Founder decides, only members can see the document",
     "founded: Founded by Anonymous 👑."
    ]
@@ -108,7 +108,7 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Until the Founder decides, only members can see the document",
     "grant-shield: Founded by Anonymous 👑."
    ]
@@ -120,7 +120,7 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Until the Founder decides, only members can see the document",
     "founded: Founded by Anonymous 👑."
    ]
@@ -132,21 +132,47 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "founded: Founded by Anonymous 👑."
    ]
   },
   {
    "step": "commit chamber",
    "rail": [
+    "roster"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "founded: Founded by Anonymous 👑.",
+    "roster: The Founder is deciding how new members are admitted."
+   ]
+  },
+  {
+   "step": "open roster",
+   "rail": [
+    "roster"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
+    "chamber: Only members can see the document. The Founder may amend thi",
+    "founded: Founded by Anonymous 👑."
+   ]
+  },
+  {
+   "step": "commit roster",
+   "rail": [
     "policy"
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by Anonymous 👑.",
-    "policy: The Founder is deciding how people become members."
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: The Founder is deciding whether strangers may apply to join."
    ]
   },
   {
@@ -156,9 +182,10 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by Anonymous 👑."
+    "founded: Founded by Anonymous 👑.",
+    "roster: Members may propose to invite people to join the membership,"
    ]
   },
   {
@@ -168,10 +195,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by Anonymous 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and"
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this"
    ]
   },
   {
@@ -181,10 +209,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by Anonymous 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and"
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this"
    ]
   },
   {
@@ -194,10 +223,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by Anonymous 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and"
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this"
    ]
   },
   {
@@ -207,10 +237,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by Anonymous 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and"
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this"
    ]
   },
   {
@@ -220,10 +251,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and"
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this"
    ]
   },
   {
@@ -233,10 +265,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and"
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this"
    ]
   },
   {
@@ -246,10 +279,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: The Founder is deciding whether an inactive membership lapse"
    ]
   },
@@ -260,10 +294,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and"
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this"
    ]
   },
   {
@@ -273,10 +308,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: The Founder is deciding how a member is removed."
    ]
@@ -288,55 +324,27 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i"
    ]
   },
   {
    "step": "commit removal",
    "rail": [
-    "roster"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
-    "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the"
-   ]
-  },
-  {
-   "step": "open roster",
-   "rail": [
-    "roster"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
-    "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
-    "lapse: Somebody stops being a member after 7 days without logging i",
-    "removal: Removing a member needs every member to agree, including the"
-   ]
-  },
-  {
-   "step": "commit roster",
-   "rail": [
     "grant-voice",
     "rate"
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -351,10 +359,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "rate: The Founder is deciding how often members may propose."
@@ -367,10 +376,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -384,10 +394,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul"
@@ -400,10 +411,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -418,10 +430,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -435,10 +448,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -454,10 +468,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -472,10 +487,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -492,10 +508,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -511,10 +528,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -532,10 +550,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -552,10 +571,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -574,10 +594,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -595,10 +616,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -617,10 +639,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -638,10 +661,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -661,10 +685,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -683,10 +708,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -706,10 +732,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -729,10 +756,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -752,10 +780,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: When the document begins, members may propose changes to rul",
@@ -775,10 +804,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
@@ -798,10 +828,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: Members may propose changes to rules as soon as they arrive,",
@@ -822,10 +853,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
@@ -844,10 +876,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: Members may propose changes to rules as soon as they arrive,",
@@ -867,10 +900,11 @@
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "rate: Members start with 4 ✏️ each, up to a maximum of 6. They get",
@@ -887,10 +921,11 @@
    "rail": [],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/hollow-oak-club-charter. The",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
     "founded: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
-    "policy: Membership is by invitation only. The Founder may invite and",
+    "roster: Members may propose to invite people to join the membership,",
+    "policy: Membership is by invitation only. The Founder may amend this",
     "lapse: Somebody stops being a member after 7 days without logging i",
     "removal: Removing a member needs every member to agree, including the",
     "begin: Members may propose changes to rules as soon as they arrive,",

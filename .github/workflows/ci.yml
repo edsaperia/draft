@@ -107,11 +107,17 @@ jobs:
   # rots silently — the setup reference had drifted 200 diffs from HEAD
   # before the merge noticed. This job serves design/ and walks both probes
   # against the frozen reference in a headless Chromium at one viewport.
-  # ADVISORY until it has run green for a week (continue-on-error): it does
-  # not gate the deploy, which hangs off the `ci` job above. --strict since
-  # 2026-08-21: the setup-probe's founding scenario was re-derived against
-  # the one-at-a-time founding (Q504(a)) and no step is dead any more, so a
-  # step whose target goes missing is a failure rather than a warning.
+  # --strict since 2026-08-21: no step is dead, so a step whose target goes
+  # missing is a failure rather than a warning.
+  #
+  # ADVISORY (continue-on-error), and the week it was waiting on has not
+  # happened: it went red on 2026-08-25 with 136 diffs (the reference stale
+  # after the plan-queue batch) and stayed red through 2026-08-26 with the
+  # thirteen dead steps of Q910 — four days of a red job inside runs that
+  # read green. Both were the probe doing its job. Note it could not gate
+  # the deploy even non-advisory: the deploy is a *step* of the `ci` job
+  # above, which runs in parallel with this one, so promoting this job makes
+  # a failure visible on the commit and nothing more (Q910 (b)).
   probe:
     runs-on: ubuntu-latest
     continue-on-error: true

@@ -22,9 +22,15 @@
  * the load-time clock, so a minute boundary between the two sides changes
  * every band hash from ⏩ onward — is retried once, and said so.
  *
- * Why --strict is off in CI for now: the setup-probe's founding scenario has
- * been dead from step 6 since the commit-row grammar landed (Q504(a)); until
- * that scenario is re-derived the misses are printed, not fatal.
+ * --strict IS on in CI, and has been since 2026-08-21 (ci.yml's `probe`
+ * job). What makes a red probe invisible is the job's own
+ * `continue-on-error: true` — advisory until it has run green for a week —
+ * so the job goes red, the run reads green, and nobody looks. It swallowed
+ * a real failure on every push from 2026-08-25 onward: first 136 diffs (the
+ * reference stale after the plan-queue batch), then the thirteen dead steps
+ * of Q910. This paragraph used to say --strict was off, which is how Q910
+ * came to be written against a premise four days out of date; the flag and
+ * the sentence about it now live one file apart, so check ci.yml, not here.
  */
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -175,7 +181,7 @@ async function main() {
       for (const d of v.diffs) console.log(`  DIFF: ${d}`);
       for (const e of [...ref.errors, ...live.errors]) console.log(`  page error: ${e}`);
       if (dead.length) {
-        console.log(`  ${STRICT ? 'DEAD' : 'warning — dead'} steps on the live side (${dead.length}; Q504(a)):`);
+        console.log(`  ${STRICT ? 'DEAD' : 'warning — dead'} steps on the live side (${dead.length}; Q910):`);
         for (const d of dead) console.log(`    ${d}`);
       }
       if (!v.ok || ref.errors.length || live.errors.length || (STRICT && dead.length)) failed = true;
