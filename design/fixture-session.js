@@ -60,7 +60,11 @@ window.FIXTURE_SESSION = (function () {
     { t: 'p', key: 'garden', x: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.' },
     { t: 'p', x: 'The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, allotted each spring by the Garden Steward.' },
     { t: 'p', x: 'Produce belongs to the member who grew it, but a good crop has always been shared and the Club would think less of anyone who stopped.' },
-    { t: 'h', level: 3, x: 'The Shed, the Cellar and the Space Under the Stairs' },
+    // The one heading the fixture argues about (Q897). A heading is an
+    // addressable block like any other, so it carries an explicit key and
+    // `quick-shedhead` below points at it — which is what makes the charter
+    // walk able to open a heading's card and notice when it opens nothing.
+    { t: 'h', level: 3, key: 'shedhead', x: 'The Shed, the Cellar and the Space Under the Stairs' },
     { t: 'p', x: 'The shed holds garden tools and the rota. The cellar holds everything the house cannot bear to throw away and does not wish to look at.' },
     { t: 'p', key: 'cellar', x: 'Once a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go.' },
 
@@ -376,6 +380,18 @@ window.FIXTURE_SESSION = (function () {
       pct: 52, cap: 'gathering — needs roughly 3 more judgments',
       marked: 'Power tools are not used when the member is alone in the house<ins>, unless another member knows they are there and when they expect to finish</ins>, and not after the beginning of quiet hours.',
       rationale: 'The flat ban means the only person who can use the lathe on a weekday is somebody who does not work. Telling one person where you are gets the same safety at a fraction of the cost.'
+    },
+    // A proposal on a **heading** (Q897): the same quick card as any other,
+    // pointed at a section title rather than at a paragraph. It is in the
+    // fixture because it is the case the charter walk could not reach — the
+    // document render dropped every heading before it reached the branch that
+    // emits a card, so this one opened nothing at all.
+    {
+      id: 'quick-shedhead', kind: 'quick', keys: ['shedhead'], state: 'needs',
+      qLabel: '§ The Shed, the Cellar and the Space Under the Stairs', urgency: 0.24,
+      pct: 26, cap: 'gathering — needs roughly 4 more judgments',
+      marked: 'The <del>Shed, the Cellar and the Space Under the Stairs</del> <ins>Outdoor Stores</ins>',
+      rationale: 'The contents rail is a column of headings, and this one wraps to three lines in it. Naming the section for what it is leaves the joke where it belongs, in the clause underneath.'
     },
     {
       id: 'quick-twiceyear', kind: 'quick', keys: ['twiceyear'], state: 'needs',

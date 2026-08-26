@@ -759,8 +759,9 @@
     color: var(--muted); margin: 22px 0 var(--s2); position: relative;
   }
   .doc h2.docline.lvl1 {
+    --head-rule: 14px;
     font-size: var(--t-body); color: var(--fg); letter-spacing: 0.08em;
-    margin: 46px 0 14px; padding-top: 14px; border-top: 1px solid var(--border);
+    margin: 46px 0 14px; padding-top: var(--head-rule); border-top: 1px solid var(--border);
   }
   .doc h2.docline.lvl2 { font-size: var(--t-small); color: var(--fg); margin: 30px 0 10px; }
   .doc h2.docline.lvl3 { font-size: var(--t-cap); color: var(--muted); margin: 22px 0 var(--s2); }
@@ -771,7 +772,29 @@
     margin-left: 10px; font-weight: 400; text-transform: none; letter-spacing: 0;
     font-size: var(--t-cap); color: var(--muted); font-style: italic;
   }
-  @media (max-width: 900px) { .doc h2.docline .sectoggle { position: static; margin: 0 6px 0 0; } }
+  /* **A heading wears its marks in the same gutter column as any other block**
+     (Q897), and the extra `--s3` is what puts it there: a `.anch` paragraph
+     hangs 12px further left than its own text (the negative margin that gives
+     its padding back to the measure) and a heading has no such box, so a
+     heading's chipcol left to itself stood 12px inside the column every other
+     mark keeps — and jumped that 12px the moment the card opened and the
+     `.headclause` took the paragraph's geometry back. The tab you click does
+     not move.
+
+     It is the fold triangle that steps outside the marks, not the marks that
+     step outside the triangle, for the same reason: the marks make one
+     unbroken column down the page, and that column is the whole of why the
+     gutter reads as a margin index. */
+  .doc h2.docline .chipcol { margin-right: calc(14px + var(--s3)); }
+  .doc h2.docline.marked .sectoggle { margin-right: calc(14px + var(--s3) + 34px + var(--s1)); }
+  /* A part heading's rule and the air under it sit above its words, so its
+     marks clear both — the chipcol is positioned against the padding box. */
+  .doc h2.docline.lvl1 .chipcol { top: calc(var(--head-rule) + 0.15em); }
+  @media (max-width: 900px) {
+    .doc h2.docline .sectoggle { position: static; margin: 0 6px 0 0; }
+    .doc h2.docline.marked .sectoggle { margin-right: 6px; }
+    .doc h2.docline .chipcol { margin: 0 0 var(--s1); }
+  }
 
   /* A challenged clause wears its queue card's own lifecycle hue and has no
      left rule (Ed, 200): paragraph, gutter glyph and rail entry are one object

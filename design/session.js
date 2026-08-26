@@ -2761,6 +2761,95 @@ document.addEventListener('pointercancel', () => flyStop(false));
       const d = draftOf();
       return d && d.unproposed && (openId === d.id || pendingId === d.id) ? d : null;
     })();
+
+    // In `stacked`, an open card **replaces** its clause rather than sprouting
+    // beneath a copy of it (Ed, QA 2026-08-16). That is what the composer has
+    // always done, and doing it everywhere is what makes the clause and the
+    // card one object instead of two: the thing being proposed about appears
+    // exactly once, at the head of the card that is arguing about it. It also
+    // settles 265, which asked why the two behaved differently.
+    //
+    // **A filed record opens from a clause that also has live decisions.** It
+    // could not before, and there was no bug to see, because there was no way
+    // to *reach* one from here — the gutter hid every filed mark the moment
+    // anything live shared the clause, which is the whole of what 294
+    // complained about. The filed pile put eight of them one click away and the
+    // document quietly rendered nothing for all eight, because the branch that
+    // swallows a clause into its record only ran where the clause had nothing
+    // live on it.
+    //
+    // A helper rather than a run of statements inside the paragraph branch
+    // since Q897, and that is the whole of the heading fix: **a heading is an
+    // addressable block like any other**, and this ran for paragraphs only, so
+    // a submitted proposal on a section title had nowhere to open and the rail
+    // re-rendered into the same emptiness. The composer's half was lifted over
+    // the heading branch on 2026-08-17 for exactly this reason; the
+    // submitted-proposal half was never lifted with it.
+    const swallowOpen = (key, live) => {
+      const openSugg = live.find((x) => x.id === openId);
+      const openFiled = filedFor(key).find((x) => x.id === openId);
+      const card = (s, k) => ({ html: '</div>' + suggCardHtml(s, k) + PROSE(), swallowed: true });
+      if (openFiled && !cardDone) { cardDone = true; return card(openFiled, undefined); }
+      if (!openSugg) return { html: '', swallowed: false };
+      if (openSugg.kind === 'patch') {
+        // a card at *every* place a patch touches (Ed, 181)
+        if (!openSugg.sites.some((x) => x.key === key)) return { html: '', swallowed: false };
+        cardDone = true;
+        return card(openSugg, key);
+      }
+      if (openSugg.kind === 'draft') {
+        // a site is a run of clauses; the card stands where the run began and
+        // the rest of the run is inside it
+        const site = siteFor(openSugg, key);
+        if (!site) return { html: '', swallowed: false };
+        if (site.keys[0] !== key) return { html: '', swallowed: true };
+        cardDone = true;
+        return card(openSugg, key);
+      }
+      if (cardDone) return { html: '', swallowed: false };
+      // the key matters to a diagonal, which spans two clauses and needs to say
+      // which of them it is standing in
+      cardDone = true;
+      return card(openSugg, key);
+    };
+
+    // **The tab stack** (Ed, 2026-08-17). A clause used to give every live
+    // decision a tab at full height, which is fine at one and a lie at four:
+    // § Bringing a Guest ran a 129px column down the side of a 36px clause, so
+    // three of its four marks stood beside prose they had nothing to do with,
+    // and the overhang landed *on top of* the held-open gap's own mark below —
+    // two tabs rendering as one blob.
+    //
+    // Ed's answer is the physical one, and it is right because the tab metaphor
+    // already contains it: **a strip of tabs seen closed is a pile.** The front
+    // one is the object; the rest are slivers of their own lifecycle colour
+    // behind it. So the gutter says *there are four here, and one of them is
+    // urgent* in the space of one tab, and the full strip — which already
+    // exists, and already works, because a card is 380px tall — is one click
+    // away down the side of the card.
+    //
+    // The slivers are inert. The stack has exactly one target, which is what
+    // "opens the card they refer to" means, and a 3px sliver is not a control
+    // anybody should be asked to hit.
+    const chipStackHtml = (live, key) => {
+      const stack = stackOrder(live);
+      const chips = stack.map((g, i) => {
+        const siteIdx = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === key) : -1;
+        const where = g.kind === 'patch' ? ' · place ' + (siteIdx + 1) + ' of ' + g.sites.length : '';
+        const behind = i > 0;
+        return '<span class="achip' + (behind ? ' behind' : '') + '"' +
+          (behind ? ' aria-hidden="true"' : ' role="button" tabindex="0"') +
+          ' data-anchor="' + g.id + '"' + chipStyle(g, 'z-index:' + (stack.length - i)) +
+          (behind ? '' : ' title="' + esc(plainLabel(g.qLabel)) + where +
+            (stack.length > 1
+              ? ' — open it; the ' + (stack.length - 1) + ' behind it are down the side of the card'
+              : ' — open it') + '"') +
+          '>' + mkHtml(markKindOf(g)) + '</span>';
+      }).join('');
+      return '<span class="chipcol' + (stack.length > 1 ? ' stack' : '') +
+        '" contenteditable="false">' + chips + '</span>';
+    };
+
     for (const line of DOC) {
       if (line.t === 'title') { html += '<div class="doctitle">' + esc(line.x) + '</div>'; continue; }
       let secN = -1;
@@ -2787,9 +2876,20 @@ document.addEventListener('pointercancel', () => flyStop(false));
       }
 
       if (line.t === 'h') {
+        // A heading is an addressable block like any other (Q897), so a
+        // proposal on a section title opens where the title stands and wears
+        // its mark in the same gutter column as every other block's. Both
+        // halves used to live below this branch's `continue`, which is why a
+        // heading-targeted proposal had no mark to press and opened nothing
+        // when the rail pressed it for you.
+        const hlive = line.key ? suggFor(line.key) : [];
+        const swallow = hlive.length ? swallowOpen(line.key, hlive) : null;
+        if (swallow && swallow.swallowed) { html += swallow.html; continue; }
+        const marks = hlive.length ? chipStackHtml(hlive, line.key) : '';
         const inside = collapsed.has(secN) ? suggestionsInSection(secN) : 0;
-        html += '<h2 class="docline editable lvl' + (line.level ?? 1) + '" id="sec-' + secN + '"' +
-          ' data-key="' + line.key + '">' +
+        html += '<h2 class="docline editable' + (marks ? ' marked' : '') +
+          ' lvl' + (line.level ?? 1) + '" id="sec-' + secN + '"' +
+          ' data-key="' + line.key + '">' + marks +
           '<span class="nocaret" contenteditable="false">' + toggleHtml(secN) + '</span>' + esc(line.x) +
           (inside ? '<span class="sechint" contenteditable="false">' + inside +
             (inside === 1 ? ' suggestion' : ' suggestions') + ' inside</span>' : '') +
@@ -2805,92 +2905,15 @@ document.addEventListener('pointercancel', () => flyStop(false));
 
       if (live.length) {
         const primary = live.find((x) => x.id === openId) ?? live[0];
-        const openSugg = live.find((x) => x.id === openId);
-        // In `stacked`, an open card **replaces** its clause rather than
-        // sprouting beneath a copy of it (Ed, QA 2026-08-16). That is what the
-        // composer has always done, and doing it everywhere is what makes the
-        // clause and the card one object instead of two: the thing being
-        // proposed about appears exactly once, at the head of the card that is
-        // arguing about it. It also settles 265, which asked why the two
-        // behaved differently.
-        let swallowed = false;
-        // **A filed record opens from a clause that also has live decisions.**
-        // It could not before, and there was no bug to see, because there was no
-        // way to *reach* one from here — the gutter hid every filed mark the
-        // moment anything live shared the clause, which is the whole of what 294
-        // complained about. The filed pile put eight of them one click away and
-        // the document quietly rendered nothing for all eight, because the
-        // branch that swallows a clause into its record only ran where the
-        // clause had nothing live on it.
-        const openFiled = filedFor(line.key).find((x) => x.id === openId);
-        if (openFiled && !cardDone) {
-          html += '</div>' + suggCardHtml(openFiled) + PROSE();
-          cardDone = swallowed = true;
-        } else if (openSugg) {
-          if (openSugg.kind === 'patch') {
-            // a card at *every* place a patch touches (Ed, 181)
-            if (openSugg.sites.some((x) => x.key === line.key)) {
-              html += '</div>' + suggCardHtml(openSugg, line.key) + PROSE();
-              cardDone = swallowed = true;
-            }
-          } else if (openSugg.kind === 'draft') {
-            const site = siteFor(openSugg, line.key);
-            if (site) {
-              // a site is a run of clauses; the card stands where the run began
-              // and the rest of the run is inside it
-              if (site.keys[0] === line.key) {
-                html += '</div>' + suggCardHtml(openSugg, line.key) + PROSE();
-                cardDone = true;
-              }
-              swallowed = true;
-            }
-          } else if (!cardDone) {
-            // the key matters to a diagonal, which spans two clauses and needs
-            // to say which of them it is standing in
-            html += '</div>' + suggCardHtml(openSugg, line.key) + PROSE();
-            cardDone = swallowed = true;
-          }
-        }
+        const swallow = swallowOpen(line.key, live);
+        html += swallow.html;
 
-        if (!swallowed) {
-          // **The tab stack** (Ed, 2026-08-17). A clause used to give every live
-          // decision a tab at full height, which is fine at one and a lie at
-          // four: § Bringing a Guest ran a 129px column down the side of a 36px
-          // clause, so three of its four marks stood beside prose they had
-          // nothing to do with, and the overhang landed *on top of* the held-open
-          // gap's own mark below — two tabs rendering as one blob.
-          //
-          // Ed's answer is the physical one, and it is right because the tab
-          // metaphor already contains it: **a strip of tabs seen closed is a
-          // pile.** The front one is the object; the rest are slivers of their
-          // own lifecycle colour behind it. So the gutter says *there are four
-          // here, and one of them is urgent* in the space of one tab, and the
-          // full strip — which already exists, and already works, because a card
-          // is 380px tall — is one click away down the side of the card.
-          //
-          // The slivers are inert. The stack has exactly one target, which is
-          // what "opens the card they refer to" means, and a 3px sliver is not a
-          // control anybody should be asked to hit.
-          const stack = stackOrder(live);
-          const chips = stack.map((g, i) => {
-            const siteIdx = g.kind === 'patch' ? g.sites.findIndex((x) => x.key === line.key) : -1;
-            const where = g.kind === 'patch' ? ' · place ' + (siteIdx + 1) + ' of ' + g.sites.length : '';
-            const behind = i > 0;
-            return '<span class="achip' + (behind ? ' behind' : '') + '"' +
-              (behind ? ' aria-hidden="true"' : ' role="button" tabindex="0"') +
-              ' data-anchor="' + g.id + '"' + chipStyle(g, 'z-index:' + (stack.length - i)) +
-              (behind ? '' : ' title="' + esc(plainLabel(g.qLabel)) + where +
-                (stack.length > 1
-                  ? ' — open it; the ' + (stack.length - 1) + ' behind it are down the side of the card'
-                  : ' — open it') + '"') +
-              '>' + mkHtml(markKindOf(g)) + '</span>';
-          }).join('');
+        if (!swallow.swallowed) {
           html +=
             '<p class="anch editable' + (openId === primary.id ? ' active' : '') + '" data-key="' + line.key +
             '" data-anchor="' + primary.id + '"' +
             anchWash(primary, openId === primary.id, line.key) + '>' +
-            '<span class="chipcol' + (stack.length > 1 ? ' stack' : '') +
-            '" contenteditable="false">' + chips + '</span>' + esc(line.x) + '</p>';
+            chipStackHtml(live, line.key) + esc(line.x) + '</p>';
         }
       } else {
         // a settled clause opens its record the same way — the record's head is

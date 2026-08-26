@@ -900,12 +900,22 @@ async function walkCharter(page, base, cards, errors, { closed } = {}) {
   const ids = await page.evaluate(() => window.SESSION.SUGGS.map((s) => s.id));
   for (const id of ids) {
     const before = await page.evaluate((k) => window.__CA.closedGeo(k), id);
+    // **A way in, and then a card** — the two halves `openAndMeasure` has
+    // always told apart and this walk never did (Q897). It drives `toggle()`
+    // rather than a click, so it can open something the surface offers no
+    // route to, and an unserved salience diagonal is exactly that: not in the
+    // rail and not in the gutter either, by SPEC §8.3a. Where there *is* a way
+    // in, opening it and getting no card is the defect that presents as
+    // *nothing happens*, and it was the one shape this walk could not see.
+    const wayIn = await page.evaluate((k) => !!document.querySelector(
+      '[data-card="' + CSS.escape(k) + '"], [data-tab="' + CSS.escape(k) + '"], [data-anchor="' + CSS.escape(k) + '"]'), id);
     const threw = await page.evaluate((k) => { try { window.SESSION.toggle(k, false); return null; } catch (e) { return String(e); } }, id);
     if (threw) { errors.push(walk + ': ' + id + ' threw on toggle — ' + threw); continue; }
     await wait(page, 200);
     const m = await page.evaluate((a) => window.__CA.measure(a[0], a[1], a[2]),
       ['.sugg[data-card="' + id + '"]', id, before]);
     if (m) { m.walk = walk; cards.push(m); }
+    else if (wayIn) errors.push(walk + ': ' + id + ' opened nothing');
     await page.evaluate((k) => { try { window.SESSION.toggle(k, false); } catch (e) { /* already closed */ } }, id);
     await wait(page, 120);
   }

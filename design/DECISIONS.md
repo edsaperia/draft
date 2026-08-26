@@ -1498,3 +1498,65 @@ which is Q413's ruling that a founder does not delegate to themselves), so the f
 settles and `begin` refuses. The founder keeps every setting here and sets it directly, which is
 the right document for this test anyway: the visitor is the second member, and their arrival is
 what is being measured.
+
+## A proposal on a heading opens its card (2026-08-26, Q897–Q899)
+
+Backlog 74, a live-path bug Ed reported in one sentence: *when there is a proposal to edit a heading
+in the document, the decision-card for that proposal won't open.* Surface only — the engine has no
+heading concept at all, `engine-core/src/text/*` being line diff and line patch, and a heading is
+one of its lines like any other.
+
+**The heading branch returned before the branch that draws cards.** `renderDoc` in
+`design/session.js` walks `DOC` block by block; the `if (line.t === 'h')` arm emitted its `<h2>` and
+`continue`d, and everything that turns a suggestion into something you can see — the open-card
+swallow and the `.achip` gutter marks — stood below it, in the paragraph arm. So a heading-targeted
+proposal had no mark to press, and when the rail pressed it for you by setting `openId`, the render
+emitted nothing and `toggle()` re-rendered into the same emptiness. Nothing threw, nothing logged;
+the card simply did not exist.
+
+**This is the second half of a fix made a year of commits ago.** The composer's branch —
+`writing && siteFor(...)` — was deliberately hoisted *above* the heading arm on 2026-08-17, and its
+comment says why in as many words: *it used to sit below the heading branch, which is why a draft on
+a section title opened nothing at all.* The submitted-proposal half was never lifted with it. That
+is the shape worth keeping: **when a fix is "move this above that", the thing above is rarely the
+only thing that needed to be there** — the branch was the bug, not the one caller.
+
+**So the swallow and the marks are helpers now, called by both arms.** `swallowOpen(key, live)` and
+`chipStackHtml(live, key)` are the paragraph arm's own code, unchanged in behaviour and lifted whole
+so that a second caller is a line rather than a copy. A copy is what would rot: the two arms would
+have drifted the next time a card kind was added, and this defect is precisely what that drift looks
+like from the outside.
+
+**Headings were already addressable everywhere else**, which is why the fix is this small. `bindData`
+keys every unkeyed block, headings with `'h' + i`, and its comment states the rule — *a heading
+edited together with its paragraph is one candidate, which it can only be if the heading is an
+addressable block like any other*. Live, `blocksOf` keys a `# ` line `L<i>` beside its paragraphs.
+`suggFor` and `currentTextFor` resolve a heading key with no special case, and `suggCardHtml` renders
+a heading-target card perfectly well; it was simply never called for one.
+
+**The tab you click does not move, and a heading nearly broke that promise.** A `.anch` paragraph
+carries `margin-left: calc(-1 * var(--s3))` — the negative margin that gives its own padding back to
+the measure — so its `.chipcol`, positioned at `right: 100%`, hangs 12px further left than the text
+does. An `<h2>` has no such box, so a heading's marks sat 12px inside the column every other mark
+keeps, and jumped that 12px the moment the card opened and the `.headclause` took the paragraph's
+geometry back. `card-audit` said so in numbers before anybody looked: P2 read −10px against every
+other card's 2px, P3 −18px against −6px, both deltas exactly `--s3`. The heading's chipcol takes the
+12px explicitly, and the fold triangle steps outside the marks rather than the marks stepping
+outside the triangle — the marks are one unbroken column down the page, and that column is the whole
+of why the gutter reads as a margin index.
+
+**The walk could not have caught this, and now can.** `walkCharter` toggles every `SUGGS` id open and
+measures its card, and two things stopped it seeing the defect. There was no heading-targeted
+proposal in the fixture — `quick-shedhead` is one now, a rename of § The Shed, the Cellar and the
+Space Under the Stairs, on a heading given an explicit key. And the walk swallowed its own null:
+`if (m) { … }` with no else, so a suggestion that opened no card was dropped from the count rather
+than reported, which made *nothing happens* the one shape of defect this instrument was blind to.
+`openAndMeasure` has always had that else; the walk now has it too.
+
+**With one distinction the naive else gets wrong.** `walkCharter` drives `toggle()` rather than a
+click, so it can open something the surface offers no route to — and an unserved salience diagonal is
+exactly that, absent from rail and gutter alike by SPEC §8.3a, so `diag-quorum-keys` opens nothing on
+a busy fixture and is right to. The else is conditioned on a way in existing (`[data-card]`,
+`[data-tab]` or `[data-anchor]` for that id, before the toggle), which is the same two-step
+`openAndMeasure` makes: *no way in* and *opened nothing* are different reports because they are
+different bugs.
