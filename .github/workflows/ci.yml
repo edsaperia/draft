@@ -160,6 +160,17 @@ jobs:
       # 52 differences stale when finally run by hand.
       - run: npm run founding-golden
         if: always()
+      # the copy golden (entry 128): every card's strings on every walk, keyed
+      # by walk and card key, against design/tools/card-copy.golden.json. A
+      # STYLE.md pass is a snapshot and nothing pinned a card's words between
+      # passes, so the next change silently undid the last audit; now a copy
+      # change is red here until `npm run copy-freeze`, and that freeze's diff
+      # is what the next pass reads. **Expect red after an intentional copy
+      # change** — that is the point, not a defect. ~3 min of headless walking,
+      # which is why it is in this job and not in `ci`, and `if: always()` for
+      # the same reason as its neighbours (Q913).
+      - run: npm run copy-check
+        if: always()
       # which cards the setup-probe actually opens (Q914 (9), Q915). --strict
       # cannot do this job: a dead step needs a *miss*, and a card nobody
       # tries to open produces none — a grant blocks nothing in ORDER, so the

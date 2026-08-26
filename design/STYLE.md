@@ -189,6 +189,8 @@ Scanned: every string literal in `session.js`, `setup.js` and the page, comments
 
 Lifted from CLAUDE.md's glossary and the code in spec pass 2 (Q585 a); the numbered items above are the audit, these are the rules it audits against. Each names where it is enforced.
 
+Since entry 128 the strings these rules govern are **pinned**: `npm run copy-check` diffs every card's words on every walk against `design/tools/card-copy.golden.json` at every push, so a copy change is a red build rather than a remark noticed at the next pass. A pass that moves copy ends with `npm run copy-freeze`, and that freeze's diff is the pass's own list of what changed.
+
 | # | Rule | Example |
 |---|---|---|
 | T1 | Task titles are Title Case; bare nouns drop the article | *Title*, *Link*, *Text*; *Is the Founder a Member?* |

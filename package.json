@@ -26,6 +26,8 @@
     "slider-walk": "node scripts/slider-walk.mjs",
     "ladder": "node scripts/ladder-walk.mjs",
     "founding-golden": "node scripts/founding-golden.mjs",
+    "copy-check": "node scripts/copy-check.mjs",
+    "copy-freeze": "node scripts/copy-check.mjs --update",
     "emoji-data": "node scripts/emoji-data.mjs",
     "founder-answers": "node scripts/founding-walk.mjs --delegate=chamber",
     "spec-check": "node scripts/spec-check.mjs",
