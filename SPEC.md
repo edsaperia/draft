@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.75
+# Group Drafting Engine — Specification v0.76
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -244,7 +244,7 @@ Three rules keep this honest. **Plain silence is not sign-out** — a quiet memb
 
 **9.6 The two kinds, and the routes.** The test: **a constitutional decision is one that would make past decisions mean something different.** The list follows from it (→ why: R-033):
 
-- **constitutional** — the disclosure family (§3.5a) and 🌍 visibility (a judgment was cast under a promise about who would see it); quorum and the threshold at the close (every past adoption means *this cleared that bar with that many behind it*); the membership, its join policy, removal and lapse (quorum is a fraction of the roster); whether the document ends at all (windowed-to-perpetual abolishes the ramp, and the ramp is the bar).
+- **constitutional** — the disclosure family (§3.5a) and 🌍 visibility (a judgment was cast under a promise about who would see it); quorum and the threshold at the close (every past adoption means *this cleared that bar with that many behind it*); admission, applications, removal and lapse (each governs who is in the room, and quorum is a fraction of the roster); whether the document ends at all (windowed-to-perpetual abolishes the ramp, and the ramp is the bar).
 - **ordinary** — everything else: the title, the link, the text, the closing *date*, the threshold's pacing, the proposal rate, AI proposals. **The line can fall inside one setting**: the window is one question whose answers include *never*, so moving the close is ordinary and removing the ending is constitutional — **the route belongs to what a motion changes, not to what card it sits on.**
 - **personal** — a member's own name and picture: they bind nobody, so there is nothing to pass.
 
