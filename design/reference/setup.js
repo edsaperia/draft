@@ -1254,9 +1254,9 @@ window.SETUP = (function () {
       ladder(A, 'judgments', [
         { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
         { v: 'after', t: 'Revealed after the decision', e: 'Published with the record, never before it.' }]) + BLINDNOTE,
-    policy: (A) =>
+    applications: (A) =>
       '<p class="why">How somebody who is not a member can become one. The <b>least open</b> answer wins: one member who wants invitation only keeps it so.</p>' +
-      ladder(A, 'policy', [
+      ladder(A, 'applications', [
         { v: 'invite', t: 'Invitation only', e: 'Nobody joins unless a member brings them in.' },
         { v: 'apply', t: 'Anyone may apply', e: 'An application is a stranger proposing their own invitation — decided the way Admissions says, at no cost to the applicant.' }]) + BLINDNOTE,
     chamber: (A) =>
@@ -1269,9 +1269,9 @@ window.SETUP = (function () {
     // **One price scale** (entry 94): 🪪 and 🥾 are answered in the same
     // three verbs, most protective first, and 🥾 keeps the one rung
     // admission has no analogue for
-    roster: (A) =>
+    admission: (A) =>
       '<p class="why">What it costs to bring somebody into the membership — a member’s invitation or a stranger’s application alike. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
-      ladder(A, 'roster', [
+      ladder(A, 'admission', [
         { v: 'assembly', t: 'Everyone must agree', e: 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.' },
         { v: 'proposal', t: 'The membership decides', e: 'A proposed member is judged at the approval threshold ✏️, like any change.' },
         { v: 'pen', t: 'Any member may invite', e: 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.' }]) + BLINDNOTE,

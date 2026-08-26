@@ -3198,7 +3198,7 @@
     : rec.payload.kind === 'remove' ? 'remove'
     : rec.payload.kind === 'admit' ? 'adm:' + rec.payload.applicant
     : pkeyOf(rec.payload.kind === 'set' || rec.payload.kind === 'reserve'
-      ? rec.payload.setting : 'membership');
+      ? rec.payload.setting : 'admission');
   // the members a removal is running against (entry 94): the ❌ door's
   // pending list, read off the motions like everything else on the page
   const removalPendingIds = () => {
@@ -7052,7 +7052,7 @@
       rate: (x) => { S.grant = x.grant; S.cap = x.cap; S.dripMin = x.dripMinutes; },
       lapse: (x) => { S.lapse = x.afterMs === null ? 'never' : String(Math.round(x.afterMs / 86400000)); },
       removal: (x) => { S.removal = x.price; },
-      membership: (x) => { S.admission = x.price; },
+      admission: (x) => { S.admission = x.price; },
       machines: (x) => { S.auditor = x.enabled; if (x.enabled) S.auditorBudget = x.budget; },
       applications: (x) => { S.joinBy = mayApply(x) ? 'apply' : 'invite'; },
     };

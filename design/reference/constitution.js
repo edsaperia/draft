@@ -551,8 +551,12 @@ var CONSTITUTION = (() => {
     // is only whether that door is open), and at `pen` any member's word.
     // The founder's own powers over the *act* are the ✉️ door's, not this
     // setting's. Not judge-gated, for 🤝's reason.
+    //
+    // The id was `membership` until Q903 (Ed, 2026-08-26): it named the
+    // register this setting stopped being at entry 94, and a log written
+    // under the old id folds to this one at load (`foldLegacyId`).
     {
-      id: "membership",
+      id: "admission",
       glyph: "🪪",
       kind: "constitutional",
       delegable: true,
@@ -733,6 +737,25 @@ var CONSTITUTION = (() => {
   var CONSTITUTIONAL = new Set(
     CATALOGUE.filter((e) => e.kind === "constitutional").map((e) => e.id)
   );
+  var LEGACY_SETTING_IDS = /* @__PURE__ */ new Map([
+    ["membership", "admission"]
+  ]);
+  function foldLegacyIds(event) {
+    const e = event;
+    let out = null;
+    const touch = () => out ?? (out = { ...event });
+    if (e.setting !== void 0 && LEGACY_SETTING_IDS.has(e.setting)) {
+      touch()["setting"] = LEGACY_SETTING_IDS.get(e.setting);
+    }
+    if (e.settings !== void 0 && e.settings.some((s) => LEGACY_SETTING_IDS.has(s))) {
+      touch()["settings"] = e.settings.map((s) => LEGACY_SETTING_IDS.get(s) ?? s);
+    }
+    const ps = e.payload?.setting;
+    if (ps !== void 0 && LEGACY_SETTING_IDS.has(ps)) {
+      touch()["payload"] = { ...e.payload, setting: LEGACY_SETTING_IDS.get(ps) };
+    }
+    return out === null ? event : out;
+  }
   var SEEN_EVERY_MS = 60 * 6e4;
   var ConstitutionSession = class _ConstitutionSession {
     constructor() {
@@ -821,7 +844,8 @@ var CONSTITUTION = (() => {
       this.log.push({ seq, hash, prevHash, event, schemaVersion: SCHEMA_VERSION });
       this.apply(event, seq);
     }
-    apply(event, _seq) {
+    apply(rawEvent, _seq) {
+      const event = foldLegacyIds(rawEvent);
       if (event.t < this.lastT) throw new Error("timestamps must be non-decreasing");
       this.lastT = event.t;
       switch (event.type) {
@@ -1459,7 +1483,7 @@ var CONSTITUTION = (() => {
           st.value = { apply: mayApply(v) };
         }
         if (v.joinPolicy === "open") {
-          const adm = this.settings.get("membership");
+          const adm = this.settings.get("admission");
           if (adm.value === null) {
             adm.value = { price: "pen" };
             adm.collecting = false;
@@ -1479,7 +1503,7 @@ var CONSTITUTION = (() => {
     priceOf(id) {
       const st = this.settings.get(id);
       const v = st ? st.value : null;
-      return v?.price ?? (id === "membership" ? "assembly" : "consent");
+      return v?.price ?? (id === "admission" ? "assembly" : "consent");
     }
     touch(member, t) {
       const m = this.members.get(member);
@@ -1722,10 +1746,10 @@ var CONSTITUTION = (() => {
         if (this.constitutedT === null) {
           throw new Error("before the start the founder invites (§9.6a)");
         }
-        if (this.priceOf("membership") !== "pen") {
+        if (this.priceOf("admission") !== "pen") {
           throw new Error("admission is not at ✒️ — propose the invitation at 🪪's price (§9.7½)");
         }
-      } else if (this.constitutedT !== null && !this.doorPen("door:invite") && this.priceOf("membership") !== "pen") {
+      } else if (this.constitutedT !== null && !this.doorPen("door:invite") && this.priceOf("admission") !== "pen") {
         throw new Error("after the start an invitation is a motion at 🪪's price (§9.6a)");
       }
       this.requireEmailFree(email);
@@ -2035,7 +2059,7 @@ var CONSTITUTION = (() => {
         if (re.kind === "personal") {
           throw new Error(`'${payload.setting}' is never held, so it cannot be reserved (§9.7)`);
         }
-        if (payload.setting === "membership") {
+        if (payload.setting === "admission") {
           throw new Error("the register's crown is the applications setting's -- reserve that (§9.7½)");
         }
         const rst = this.settings.get(payload.setting);
@@ -2047,7 +2071,7 @@ var CONSTITUTION = (() => {
         route = "constitutional";
       } else if (payload.kind === "invite") {
         this.requireEmailFree(payload.email);
-        const price = this.priceOf("membership");
+        const price = this.priceOf("admission");
         if (price === "pen") throw new Error("admission is at ✒️ — invite directly, nothing to propose (§9.7½)");
         route = price === "assembly" ? "constitutional" : "ordinary";
       } else if (payload.kind === "remove") {
@@ -2055,7 +2079,7 @@ var CONSTITUTION = (() => {
         if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
         route = this.priceOf("removal") === "proposal" ? "ordinary" : "constitutional";
       } else {
-        route = this.priceOf("membership") === "assembly" ? "constitutional" : "ordinary";
+        route = this.priceOf("admission") === "assembly" ? "constitutional" : "ordinary";
       }
       if (route === "constitutional" && this.heldOutBy(by)) {
         throw new Error("one 🏛️ out per member at a time (§9.6)");
@@ -2467,7 +2491,7 @@ var CONSTITUTION = (() => {
       if (fields.picture !== void 0) e.picture = fields.picture;
       if (fields.words !== void 0) e.words = fields.words;
       this.emit(e);
-      if (this.priceOf("membership") === "pen") {
+      if (this.priceOf("admission") === "pen") {
         const id = `m-${this.nextMemberN}`;
         this.emit({ type: "member-admitted", t, applicant, member: id });
         this.afterRosterChange(t, "arrival", id);
@@ -2478,7 +2502,7 @@ var CONSTITUTION = (() => {
           motion: `mo-${this.nextMotionN}`,
           by: null,
           payload: { kind: "admit", applicant },
-          route: this.priceOf("membership") === "assembly" ? "constitutional" : "ordinary",
+          route: this.priceOf("admission") === "assembly" ? "constitutional" : "ordinary",
           stake: 0
         });
       }

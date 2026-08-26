@@ -25,6 +25,59 @@
  ],
  "cards": {
   "answers": {
+   "admission": {
+    "eyebrow": "",
+    "head": "Admissions",
+    "lock": "",
+    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is judged at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+    "options": [
+     {
+      "set": "admission",
+      "val": "assembly",
+      "label": "Everyone must agree"
+     },
+     {
+      "set": "admission",
+      "val": "proposal",
+      "label": "The membership decides"
+     },
+     {
+      "set": "admission",
+      "val": "pen",
+      "label": "Any member may invite"
+     },
+     {
+      "set": "admission",
+      "val": "roster",
+      "label": "Delegate to the membership"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "✒️",
+      "title": "Not answered yet"
+     }
+    ],
+    "hints": [
+     "Admissions — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands",
+     "Not answered yet"
+    ],
+    "helpers": [
+     "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
+     "A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.",
+     "A proposed member is judged at the approval threshold ✏️, like any change.",
+     "An invitation is sent on a member’s word ✒️ — nobody else has to agree.",
+     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked."
+    ]
+   },
    "ans-chamber": {
     "eyebrow": "",
     "head": "Visibility",
@@ -65,6 +118,53 @@
      "Who may read the document besides the members — readers only, never counted. The most private answer wins: one member who wants the room closed closes it.",
      "Nobody outside the membership sees anything at all.",
      "The chamber view only, to whoever the link reaches."
+    ]
+   },
+   "applications": {
+    "eyebrow": "",
+    "head": "Applications",
+    "lock": "",
+    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Invitation onlyNobody joins unless a member brings them in.Anyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.",
+    "options": [
+     {
+      "set": "joinBy",
+      "val": "invite",
+      "label": "Invitation only"
+     },
+     {
+      "set": "joinBy",
+      "val": "apply",
+      "label": "Anyone may apply"
+     },
+     {
+      "set": "policyBy",
+      "val": "roster",
+      "label": "Delegate to the membership"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "✒️",
+      "title": "Not answered yet"
+     }
+    ],
+    "hints": [
+     "Applications — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands",
+     "Not answered yet"
+    ],
+    "helpers": [
+     "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.",
+     "Nobody joins unless a member brings them in.",
+     "An application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.",
+     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so."
     ]
    },
    "authorship": {
@@ -729,53 +829,6 @@
      "With no picture you appear as your initials."
     ]
    },
-   "policy": {
-    "eyebrow": "",
-    "head": "Applications",
-    "lock": "",
-    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Invitation onlyNobody joins unless a member brings them in.Anyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.",
-    "options": [
-     {
-      "set": "joinBy",
-      "val": "invite",
-      "label": "Invitation only"
-     },
-     {
-      "set": "joinBy",
-      "val": "apply",
-      "label": "Anyone may apply"
-     },
-     {
-      "set": "policyBy",
-      "val": "roster",
-      "label": "Delegate to the membership"
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Not answered yet"
-     }
-    ],
-    "hints": [
-     "Applications — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands",
-     "Not answered yet"
-    ],
-    "helpers": [
-     "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.",
-     "Nobody joins unless a member brings them in.",
-     "An application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.",
-     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so."
-    ]
-   },
    "quorum": {
     "eyebrow": "",
     "head": "Quorum",
@@ -938,59 +991,6 @@
      "Somebody can be removed even if they object, but only if every other member agrees 🏛️.",
      "A removal is proposed and judged at the approval threshold ✏️, like a change to the text.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked."
-    ]
-   },
-   "roster": {
-    "eyebrow": "",
-    "head": "Admissions",
-    "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is judged at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
-    "options": [
-     {
-      "set": "admission",
-      "val": "assembly",
-      "label": "Everyone must agree"
-     },
-     {
-      "set": "admission",
-      "val": "proposal",
-      "label": "The membership decides"
-     },
-     {
-      "set": "admission",
-      "val": "pen",
-      "label": "Any member may invite"
-     },
-     {
-      "set": "admission",
-      "val": "roster",
-      "label": "Delegate to the membership"
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Not answered yet"
-     }
-    ],
-    "hints": [
-     "Admissions — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands",
-     "Not answered yet"
-    ],
-    "helpers": [
-     "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
-     "A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.",
-     "A proposed member is judged at the approval threshold ✏️, like any change.",
-     "An invitation is sent on a member’s word ✒️ — nobody else has to agree.",
-     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked."
     ]
    },
    "slug": {
@@ -3257,6 +3257,108 @@
    }
   },
   "delegated": {
+   "admission": {
+    "eyebrow": "",
+    "head": "Admissions",
+    "lock": "",
+    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is judged at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+    "options": [
+     {
+      "set": "admission",
+      "val": "assembly",
+      "label": "Everyone must agree"
+     },
+     {
+      "set": "admission",
+      "val": "proposal",
+      "label": "The membership decides"
+     },
+     {
+      "set": "admission",
+      "val": "pen",
+      "label": "Any member may invite"
+     },
+     {
+      "set": "admission",
+      "val": "roster",
+      "label": "Delegate to the membership"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "✒️",
+      "title": "Set it"
+     }
+    ],
+    "hints": [
+     "Admissions — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands",
+     "Set it"
+    ],
+    "helpers": [
+     "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
+     "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
+     "A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.",
+     "A proposed member is judged at the approval threshold ✏️, like any change.",
+     "An invitation is sent on a member’s word ✒️ — nobody else has to agree.",
+     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked."
+    ]
+   },
+   "applications": {
+    "eyebrow": "",
+    "head": "Applications",
+    "lock": "",
+    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Invitation onlyNobody joins unless a member brings them in.Anyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.",
+    "options": [
+     {
+      "set": "joinBy",
+      "val": "invite",
+      "label": "Invitation only"
+     },
+     {
+      "set": "joinBy",
+      "val": "apply",
+      "label": "Anyone may apply"
+     },
+     {
+      "set": "policyBy",
+      "val": "roster",
+      "label": "Delegate to the membership"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "✒️",
+      "title": "Set it"
+     }
+    ],
+    "hints": [
+     "Applications — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands",
+     "Set it"
+    ],
+    "helpers": [
+     "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.",
+     "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
+     "Nobody joins unless a member brings them in.",
+     "An application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.",
+     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so."
+    ]
+   },
    "bar": {
     "eyebrow": "",
     "head": "How Sure Must the Room Be?",
@@ -3539,54 +3641,6 @@
     ],
     "helpers": []
    },
-   "policy": {
-    "eyebrow": "",
-    "head": "Applications",
-    "lock": "",
-    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Invitation onlyNobody joins unless a member brings them in.Anyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.",
-    "options": [
-     {
-      "set": "joinBy",
-      "val": "invite",
-      "label": "Invitation only"
-     },
-     {
-      "set": "joinBy",
-      "val": "apply",
-      "label": "Anyone may apply"
-     },
-     {
-      "set": "policyBy",
-      "val": "roster",
-      "label": "Delegate to the membership"
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Set it"
-     }
-    ],
-    "hints": [
-     "Applications — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands",
-     "Set it"
-    ],
-    "helpers": [
-     "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.",
-     "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
-     "Nobody joins unless a member brings them in.",
-     "An application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.",
-     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so."
-    ]
-   },
    "quorum": {
     "eyebrow": "",
     "head": "Quorum",
@@ -3754,60 +3808,6 @@
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked."
     ]
    },
-   "roster": {
-    "eyebrow": "",
-    "head": "Admissions",
-    "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is judged at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
-    "options": [
-     {
-      "set": "admission",
-      "val": "assembly",
-      "label": "Everyone must agree"
-     },
-     {
-      "set": "admission",
-      "val": "proposal",
-      "label": "The membership decides"
-     },
-     {
-      "set": "admission",
-      "val": "pen",
-      "label": "Any member may invite"
-     },
-     {
-      "set": "admission",
-      "val": "roster",
-      "label": "Delegate to the membership"
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Set it"
-     }
-    ],
-    "hints": [
-     "Admissions — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands",
-     "Set it"
-    ],
-    "helpers": [
-     "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
-     "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
-     "A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.",
-     "A proposed member is judged at the approval threshold ✏️, like any change.",
-     "An invitation is sent on a member’s word ✒️ — nobody else has to agree.",
-     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked."
-    ]
-   },
    "slug": {
     "eyebrow": "",
     "head": "Link",
@@ -3868,6 +3868,106 @@
    }
   },
   "founding": {
+   "admission": {
+    "eyebrow": "",
+    "head": "Admissions",
+    "lock": "",
+    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is judged at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+    "options": [
+     {
+      "set": "admission",
+      "val": "assembly",
+      "label": "Everyone must agree"
+     },
+     {
+      "set": "admission",
+      "val": "proposal",
+      "label": "The membership decides"
+     },
+     {
+      "set": "admission",
+      "val": "pen",
+      "label": "Any member may invite"
+     },
+     {
+      "set": "admission",
+      "val": "roster",
+      "label": "Delegate to the membership"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "✒️",
+      "title": "Not answered yet"
+     }
+    ],
+    "hints": [
+     "Admissions — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands",
+     "Not answered yet"
+    ],
+    "helpers": [
+     "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
+     "A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.",
+     "A proposed member is judged at the approval threshold ✏️, like any change.",
+     "An invitation is sent on a member’s word ✒️ — nobody else has to agree.",
+     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked."
+    ]
+   },
+   "applications": {
+    "eyebrow": "",
+    "head": "Applications",
+    "lock": "",
+    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Invitation onlyNobody joins unless a member brings them in.Anyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.",
+    "options": [
+     {
+      "set": "joinBy",
+      "val": "invite",
+      "label": "Invitation only"
+     },
+     {
+      "set": "joinBy",
+      "val": "apply",
+      "label": "Anyone may apply"
+     },
+     {
+      "set": "policyBy",
+      "val": "roster",
+      "label": "Delegate to the membership"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "✒️",
+      "title": "Not answered yet"
+     }
+    ],
+    "hints": [
+     "Applications — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands",
+     "Not answered yet"
+    ],
+    "helpers": [
+     "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.",
+     "Nobody joins unless a member brings them in.",
+     "An application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.",
+     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so."
+    ]
+   },
    "authorship": {
     "eyebrow": "",
     "head": "Anonymous Proposals",
@@ -4550,53 +4650,6 @@
      "With no picture you appear as your initials."
     ]
    },
-   "policy": {
-    "eyebrow": "",
-    "head": "Applications",
-    "lock": "",
-    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Invitation onlyNobody joins unless a member brings them in.Anyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.",
-    "options": [
-     {
-      "set": "joinBy",
-      "val": "invite",
-      "label": "Invitation only"
-     },
-     {
-      "set": "joinBy",
-      "val": "apply",
-      "label": "Anyone may apply"
-     },
-     {
-      "set": "policyBy",
-      "val": "roster",
-      "label": "Delegate to the membership"
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Not answered yet"
-     }
-    ],
-    "hints": [
-     "Applications — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands",
-     "Not answered yet"
-    ],
-    "helpers": [
-     "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.",
-     "Nobody joins unless a member brings them in.",
-     "An application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.",
-     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so."
-    ]
-   },
    "quorum": {
     "eyebrow": "",
     "head": "Quorum",
@@ -4761,59 +4814,6 @@
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked."
     ]
    },
-   "roster": {
-    "eyebrow": "",
-    "head": "Admissions",
-    "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is judged at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
-    "options": [
-     {
-      "set": "admission",
-      "val": "assembly",
-      "label": "Everyone must agree"
-     },
-     {
-      "set": "admission",
-      "val": "proposal",
-      "label": "The membership decides"
-     },
-     {
-      "set": "admission",
-      "val": "pen",
-      "label": "Any member may invite"
-     },
-     {
-      "set": "admission",
-      "val": "roster",
-      "label": "Delegate to the membership"
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Not answered yet"
-     }
-    ],
-    "hints": [
-     "Admissions — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands",
-     "Not answered yet"
-    ],
-    "helpers": [
-     "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
-     "A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.",
-     "A proposed member is judged at the approval threshold ✏️, like any change.",
-     "An invitation is sent on a member’s word ✒️ — nobody else has to agree.",
-     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked."
-    ]
-   },
    "slug": {
     "eyebrow": "",
     "head": "Link",
@@ -4898,6 +4898,94 @@
    }
   },
   "seat:1": {
+   "admission": {
+    "eyebrow": "",
+    "head": "Members may propose to invite people to join the membership, and everyone must agree 🏛️.",
+    "lock": "The members decide.",
+    "body": "What the room saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Everyone must agreeAny member may inviteWhat everyone asked for, without names.Answered3 of 3The document takes the dearestEveryone must agree",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Discard this motion"
+     },
+     {
+      "label": "🏛️ Hold to ask everyone",
+      "title": "A full ten-second hold"
+     }
+    ],
+    "hints": [
+     "The value you are proposing",
+     "We should change this because…",
+     "Admissions — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "This is how your reason will reach everybody else: with your name off it.",
+     "3",
+     "1",
+     "0",
+     "Discard this motion",
+     "A full ten-second hold"
+    ],
+    "helpers": [
+     "The value you are proposing",
+     "We should change this because…",
+     "The members decide.",
+     "Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+     "What everyone asked for, without names."
+    ]
+   },
+   "applications": {
+    "eyebrow": "",
+    "head": "Membership is by invitation only.",
+    "lock": "The members decide.",
+    "body": "Anyone may apply, but an application must be proposed ✏️ by a member.Prefer thisAnyone may apply to join.Prefer thisAnyone with the link joins on arrival.Prefer thisOne motion proposes one rule; what you do not touch stands.What the room saidThe members decide.Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Answered3 of 3The document takes—",
+    "options": [
+     {
+      "set": null,
+      "val": "Applications must be proposed by members",
+      "label": "Prefer this"
+     },
+     {
+      "set": null,
+      "val": "Anyone may apply",
+      "label": "Prefer this"
+     },
+     {
+      "set": null,
+      "val": "Open",
+      "label": "Prefer this"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Discard this motion"
+     },
+     {
+      "label": "🏛️ Hold to ask everyone",
+      "title": "A full ten-second hold"
+     }
+    ],
+    "hints": [
+     "We should change this because…",
+     "Applications — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "This is how your reason will reach everybody else: with your name off it.",
+     "Discard this motion",
+     "A full ten-second hold"
+    ],
+    "helpers": [
+     "One motion proposes one rule; what you do not touch stands.",
+     "We should change this because…",
+     "The members decide.",
+     "Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so."
+    ]
+   },
    "authorship": {
     "eyebrow": "",
     "head": "Nobody who proposes a change is ever named, even after the document is finished.",
@@ -5533,54 +5621,52 @@
      "If it passes it goes to the Founder, who may assent or refuse."
     ]
    },
-   "policy": {
+   "pw:a:admission": {
     "eyebrow": "",
-    "head": "Membership is by invitation only.",
-    "lock": "The members decide.",
-    "body": "Anyone may apply, but an application must be proposed ✏️ by a member.Prefer thisAnyone may apply to join.Prefer thisAnyone with the link joins on arrival.Prefer thisOne motion proposes one rule; what you do not touch stands.What the room saidThe members decide.Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Answered3 of 3The document takes—",
-    "options": [
-     {
-      "set": null,
-      "val": "Applications must be proposed by members",
-      "label": "Prefer this"
-     },
-     {
-      "set": null,
-      "val": "Anyone may apply",
-      "label": "Prefer this"
-     },
-     {
-      "set": null,
-      "val": "Open",
-      "label": "Prefer this"
-     }
-    ],
+    "head": "The Founder may not refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
+    "options": [],
     "inputs": [],
     "foot": [
      {
       "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "title": "Put it back as it stands"
      }
     ],
     "hints": [
-     "We should change this because…",
-     "Applications — close it",
+     "Admissions — settled",
      "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "A full ten-second hold"
+     "Does the Founder Have a Veto? — close it",
+     "Put it back as it stands"
     ],
     "helpers": [
-     "One motion proposes one rule; what you do not touch stands.",
-     "We should change this because…",
-     "The members decide.",
-     "Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so."
+     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
+     "Given up. The road back is a constitutional motion, the members’ to move."
+    ]
+   },
+   "pw:a:applications": {
+    "eyebrow": "",
+    "head": "The Founder may not refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     }
+    ],
+    "hints": [
+     "Applications — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — close it",
+     "Put it back as it stands"
+    ],
+    "helpers": [
+     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
+     "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
    "pw:a:authorship": {
@@ -5776,30 +5862,6 @@
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
-   "pw:a:policy": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "Applications — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
-     "Given up. The road back is a constitutional motion, the members’ to move."
-    ]
-   },
    "pw:a:quorum": {
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
@@ -5896,30 +5958,6 @@
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
-   "pw:a:roster": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "Admissions — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
-     "Given up. The road back is a constitutional motion, the members’ to move."
-    ]
-   },
    "pw:a:slug": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
@@ -5990,6 +6028,54 @@
     "helpers": [
      "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
+    ]
+   },
+   "pw:u:admission": {
+    "eyebrow": "",
+    "head": "The Founder may not amend this at will.",
+    "lock": "",
+    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     }
+    ],
+    "hints": [
+     "Admissions — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": [
+     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
+     "Given up. The road back is a constitutional motion, the members’ to move."
+    ]
+   },
+   "pw:u:applications": {
+    "eyebrow": "",
+    "head": "The Founder may not amend this at will.",
+    "lock": "",
+    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     }
+    ],
+    "hints": [
+     "Applications — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": [
+     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
+     "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
    "pw:u:authorship": {
@@ -6185,30 +6271,6 @@
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
-   "pw:u:policy": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "Applications — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
-     "Given up. The road back is a constitutional motion, the members’ to move."
-    ]
-   },
    "pw:u:quorum": {
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
@@ -6303,30 +6365,6 @@
     "helpers": [
      "Whether the Founder may remove a member at will, with nobody’s agreement — at once, their standing answers leaving with them. Anyone may always propose a removal, at the price Removal sets.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
-    ]
-   },
-   "pw:u:roster": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "Admissions — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
-     "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
    "pw:u:slug": {
@@ -6565,44 +6603,6 @@
      "Whoever it is will see the proposal — nobody is removed in secret.",
      "We should change this because…",
      "If it passes it goes to the Founder, who may assent or refuse."
-    ]
-   },
-   "roster": {
-    "eyebrow": "",
-    "head": "Members may propose to invite people to join the membership, and everyone must agree 🏛️.",
-    "lock": "The members decide.",
-    "body": "What the room saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Everyone must agreeAny member may inviteWhat everyone asked for, without names.Answered3 of 3The document takes the dearestEveryone must agree",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
-     }
-    ],
-    "hints": [
-     "The value you are proposing",
-     "We should change this because…",
-     "Admissions — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "3",
-     "1",
-     "0",
-     "Discard this motion",
-     "A full ten-second hold"
-    ],
-    "helpers": [
-     "The value you are proposing",
-     "We should change this because…",
-     "The members decide.",
-     "Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
-     "What everyone asked for, without names."
     ]
    },
    "slug": {
@@ -6868,6 +6868,94 @@
    }
   },
   "settled": {
+   "admission": {
+    "eyebrow": "",
+    "head": "Members may propose to invite people to join the membership, and everyone must agree 🏛️.",
+    "lock": "The members decide.",
+    "body": "What the room saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Everyone must agreeAny member may inviteWhat everyone asked for, without names.Answered3 of 3The document takes the dearestEveryone must agree",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Discard this motion"
+     },
+     {
+      "label": "🏛️ Hold to ask everyone",
+      "title": "A full ten-second hold"
+     }
+    ],
+    "hints": [
+     "The value you are proposing",
+     "We should change this because…",
+     "Admissions — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "This is how your reason will reach everybody else: with your name off it.",
+     "3",
+     "1",
+     "0",
+     "Discard this motion",
+     "A full ten-second hold"
+    ],
+    "helpers": [
+     "The value you are proposing",
+     "We should change this because…",
+     "The members decide.",
+     "Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+     "What everyone asked for, without names."
+    ]
+   },
+   "applications": {
+    "eyebrow": "",
+    "head": "Membership is by invitation only.",
+    "lock": "The members decide.",
+    "body": "Anyone may apply, but an application must be proposed ✏️ by a member.Prefer thisAnyone may apply to join.Prefer thisAnyone with the link joins on arrival.Prefer thisOne motion proposes one rule; what you do not touch stands.What the room saidThe members decide.Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Answered3 of 3The document takes—",
+    "options": [
+     {
+      "set": null,
+      "val": "Applications must be proposed by members",
+      "label": "Prefer this"
+     },
+     {
+      "set": null,
+      "val": "Anyone may apply",
+      "label": "Prefer this"
+     },
+     {
+      "set": null,
+      "val": "Open",
+      "label": "Prefer this"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Discard this motion"
+     },
+     {
+      "label": "🏛️ Hold to ask everyone",
+      "title": "A full ten-second hold"
+     }
+    ],
+    "hints": [
+     "We should change this because…",
+     "Applications — close it",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "This is how your reason will reach everybody else: with your name off it.",
+     "Discard this motion",
+     "A full ten-second hold"
+    ],
+    "helpers": [
+     "One motion proposes one rule; what you do not touch stands.",
+     "We should change this because…",
+     "The members decide.",
+     "Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so."
+    ]
+   },
    "authorship": {
     "eyebrow": "",
     "head": "Nobody who proposes a change is ever named, even after the document is finished.",
@@ -7597,54 +7685,52 @@
      "I am changing this because…"
     ]
    },
-   "policy": {
+   "pw:a:admission": {
     "eyebrow": "",
-    "head": "Membership is by invitation only.",
-    "lock": "The members decide.",
-    "body": "Anyone may apply, but an application must be proposed ✏️ by a member.Prefer thisAnyone may apply to join.Prefer thisAnyone with the link joins on arrival.Prefer thisOne motion proposes one rule; what you do not touch stands.What the room saidThe members decide.Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Answered3 of 3The document takes—",
-    "options": [
-     {
-      "set": null,
-      "val": "Applications must be proposed by members",
-      "label": "Prefer this"
-     },
-     {
-      "set": null,
-      "val": "Anyone may apply",
-      "label": "Prefer this"
-     },
-     {
-      "set": null,
-      "val": "Open",
-      "label": "Prefer this"
-     }
-    ],
+    "head": "The Founder may not refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
+    "options": [],
     "inputs": [],
     "foot": [
      {
       "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "title": "Put it back as it stands"
      }
     ],
     "hints": [
-     "We should change this because…",
-     "Applications — close it",
+     "Admissions — settled",
      "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion",
-     "A full ten-second hold"
+     "Does the Founder Have a Veto? — close it",
+     "Put it back as it stands"
     ],
     "helpers": [
-     "One motion proposes one rule; what you do not touch stands.",
-     "We should change this because…",
-     "The members decide.",
-     "Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so."
+     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
+     "Given up — one way. The road back is the members’ reserve motion."
+    ]
+   },
+   "pw:a:applications": {
+    "eyebrow": "",
+    "head": "The Founder may not refuse proposals that the membership pass.",
+    "lock": "",
+    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     }
+    ],
+    "hints": [
+     "Applications — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — close it",
+     "Put it back as it stands"
+    ],
+    "helpers": [
+     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
+     "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
    "pw:a:authorship": {
@@ -7891,30 +7977,6 @@
      "Nothing waits on the Founder. One way — the road back is the members’ to give."
     ]
    },
-   "pw:a:policy": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "Applications — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
-     "Given up — one way. The road back is the members’ reserve motion."
-    ]
-   },
    "pw:a:quorum": {
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
@@ -8045,30 +8107,6 @@
      "A removal the membership passes needs nobody’s assent. One way — the road back is the members’ to give."
     ]
    },
-   "pw:a:roster": {
-    "eyebrow": "",
-    "head": "The Founder may not refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "Admissions — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
-     "Given up — one way. The road back is the members’ reserve motion."
-    ]
-   },
    "pw:a:slug": {
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
@@ -8173,6 +8211,54 @@
      "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Each one comes as a 👑 question — assent or refuse.",
      "Nothing waits on the Founder. One way — the road back is the members’ to give."
+    ]
+   },
+   "pw:u:admission": {
+    "eyebrow": "",
+    "head": "The Founder may not amend this at will.",
+    "lock": "",
+    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     }
+    ],
+    "hints": [
+     "Admissions — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": [
+     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
+     "Given up — one way. The road back is the members’ reserve motion."
+    ]
+   },
+   "pw:u:applications": {
+    "eyebrow": "",
+    "head": "The Founder may not amend this at will.",
+    "lock": "",
+    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     }
+    ],
+    "hints": [
+     "Applications — settled",
+     "Can the Founder Make Amendments at Will? — close it",
+     "Does the Founder Have a Veto? — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": [
+     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
+     "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
    "pw:u:authorship": {
@@ -8419,30 +8505,6 @@
      "The Founder proposes like a member. One way — the road back is the members’ to give."
     ]
    },
-   "pw:u:policy": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "Applications — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
-     "Given up — one way. The road back is the members’ reserve motion."
-    ]
-   },
    "pw:u:quorum": {
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
@@ -8571,30 +8633,6 @@
      "Whether the Founder may remove a member at will, with nobody’s agreement — at once, their standing answers leaving with them. Anyone may always propose a removal, at the price Removal sets.",
      "A member the Founder removes is gone at once — nobody else has to agree.",
      "The Founder proposes a removal like anybody, at the price the document sets. One way — the road back is the members’ to give."
-    ]
-   },
-   "pw:u:roster": {
-    "eyebrow": "",
-    "head": "The Founder may not amend this at will.",
-    "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "Admissions — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
-     "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
    "pw:u:slug": {
@@ -8870,44 +8908,6 @@
     ],
     "helpers": [
      "Removing a member is yours to do at will ✒️: they leave the moment you press, their standing answers go with them, and nobody else is asked."
-    ]
-   },
-   "roster": {
-    "eyebrow": "",
-    "head": "Members may propose to invite people to join the membership, and everyone must agree 🏛️.",
-    "lock": "The members decide.",
-    "body": "What the room saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Everyone must agreeAny member may inviteWhat everyone asked for, without names.Answered3 of 3The document takes the dearestEveryone must agree",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
-     }
-    ],
-    "hints": [
-     "The value you are proposing",
-     "We should change this because…",
-     "Admissions — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "3",
-     "1",
-     "0",
-     "Discard this motion",
-     "A full ten-second hold"
-    ],
-    "helpers": [
-     "The value you are proposing",
-     "We should change this because…",
-     "The members decide.",
-     "Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
-     "What everyone asked for, without names."
     ]
    },
    "slug": {
