@@ -278,6 +278,30 @@ if (admEntry) {
     say('FAIL: the card does not name the applicant');
     stuck.push('the card names them');
   }
+
+  /* **The OK sticks across a reload** (Q912 (a), Ed 2026-08-26). At ✒️ the
+   * card is news, and its OK confers no power — so W6's *every
+   * acknowledgement that confers a power persists* does not reach it and it
+   * was session-local. C8 governs instead: a decision you had no say in is
+   * owed an OK, and reading is not enough — which an OK that comes back
+   * after every reload makes a nonsense of, asking the same member to
+   * acknowledge the same joiner for ever. `adm:<applicant>` cannot be a
+   * literal in ACK_KEYS, there being one per joiner, so this is the only
+   * thing standing between that rule and a quiet regression. */
+  if (PRICE === 'pen' && card && card.ok) {
+    await page.evaluate(() => {
+      const b = document.querySelector('.setupcard [data-ok]');
+      if (b) b.click();
+    });
+    await T(900);
+    await page.reload({ waitUntil: 'load' });
+    await T(2500);
+    const backAgain = await page.evaluate(() => [...document.querySelectorAll('#rail .qitem')]
+      .some((li) => /^adm:/.test((li.querySelector('[data-card]') || { dataset: {} }).dataset.card || '')));
+    say('the OK     · ' + (backAgain ? 'FAIL: the news came back after a reload'
+      : 'dismissed, and still gone after a reload'));
+    if (backAgain) stuck.push('the news returns after a reload');
+  }
 }
 
 if (errors.length) { say('page errors· ' + JSON.stringify(errors)); stuck.push('page errors'); }

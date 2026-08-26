@@ -1079,6 +1079,17 @@
   // a reload too, or a refresh would quietly take judging away again.
   const GRANT_KEYS = ['canpropose', 'grant-pen', 'grant-shield', 'grant-voice'];
   const ACK_KEYS = GRANT_KEYS.concat(['canjudge']);
+  // **What is remembered is a set plus a family** (Q912 (a), Ed 2026-08-26).
+  // At 🪪 `pen` an application is news rather than a task — opening the link
+  // *is* the joining (Q894–Q896) — and its OK confers no power, so W6's
+  // *every acknowledgement that confers a power persists* does not reach it.
+  // C8 governs instead: **a decision you had no say in is owed an OK, and
+  // reading is not enough** — so an OK that came back after a reload was
+  // asking the same member to acknowledge the same joiner for ever.
+  // `adm:<applicant>` cannot be a literal in ACK_KEYS, there being one per
+  // joiner, so the two callers ask this instead; ACK_KEYS stays the literal
+  // list `spec-check` reads out of this file.
+  const ackPersists = (k) => ACK_KEYS.includes(k) || /^adm:/.test(k);
   // grants stage behind the constitutional OKs (Q453c): a gate or grant
   // asks nothing of you while a decision you are owed still waits
   const owedNews = () => CARDS.some((c) => !c.isGate && visible(c) && news(c));
@@ -5991,7 +6002,7 @@
       // only the three that *have* an object; every acknowledgment that
       // confers a power is remembered, flight or no flight
       if (GRANT_KEYS.includes(kk)) pendingGrant = { k: kk, from: okb.getBoundingClientRect() };
-      if (ACK_KEYS.includes(kk)) saveGrants();
+      if (ackPersists(kk)) saveGrants();
       if (cs && kk.startsWith('set-') && viewerId()) {
         // held in flight until the command's own refresh lands, so the view
         // this press was made against cannot put the task straight back
@@ -8539,7 +8550,7 @@
   const grantsKey = () => 'draft:grants:' + LIVESLUG + ':' + ((cs && cs.v && cs.v.me) || '');
   const loadGrants = () => { try { return JSON.parse(localStorage.getItem(grantsKey()) || '[]'); } catch (e) { return []; } };
   const saveGrants = () => { if (!LIVEMODE) return;
-    try { localStorage.setItem(grantsKey(), JSON.stringify([...S.okd].filter((k) => ACK_KEYS.includes(k)))); } catch (e) { /* private mode */ } };
+    try { localStorage.setItem(grantsKey(), JSON.stringify([...S.okd].filter(ackPersists))); } catch (e) { /* private mode */ } };
   // what the wallet holds, from the view — the rules from the rate setting
   function syncWallet() {
     if (!LIVEMODE || !cs || !cs.v) return;
