@@ -1,6 +1,6 @@
 {
   "entries": 70,
-  "rollingHash": "c6c1997ea1ae8ffe47b259496e41654d9c06a7075b8c0239df1f9c4865aaeae9",
+  "rollingHash": "cf8d5f27661c50bfbc2e15ce66324386c69633270a69e21caa22fa9d4388a192",
   "chainVerifies": true,
   "constitutedAtT": 8,
   "E": 3,
@@ -141,7 +141,7 @@
         "assent": false
       }
     },
-    "membership": {
+    "admission": {
       "value": {
         "price": "proposal"
       },

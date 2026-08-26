@@ -53,6 +53,10 @@ describe('the golden log', () => {
       readFileSync(join(dir, 'founding.state.json'), 'utf8')));
   });
 
+  // **It proves the versioning fold and nothing else.** Since Q767 this
+  // fixture is derived from today's walk rather than frozen at its own date,
+  // so it can never carry a retired setting id or a retired value shape —
+  // reach for `legacy-ids.test.ts` for those (Q903, 2026-08-27).
   it('reads a log written before versioning existed (Q480)', () => {
     // founding-v0.jsonl is this same walk as the code wrote it on the
     // morning of 2026-08-20, before entries carried schemaVersion — the
