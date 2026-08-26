@@ -907,8 +907,15 @@ async function walkCharter(page, base, cards, errors, { closed } = {}) {
     // rail and not in the gutter either, by SPEC §8.3a. Where there *is* a way
     // in, opening it and getting no card is the defect that presents as
     // *nothing happens*, and it was the one shape this walk could not see.
+    //
+    // `data-q` is in the list because it is the charter rail's own key — the
+    // band and the founding rail say `data-card`, a `.qitem` says `data-q`,
+    // and leaving it out made this test answer *no way in* for the very bug it
+    // was written for: a heading proposal has no gutter mark until the fix,
+    // but it has had a rail entry all along.
     const wayIn = await page.evaluate((k) => !!document.querySelector(
-      '[data-card="' + CSS.escape(k) + '"], [data-tab="' + CSS.escape(k) + '"], [data-anchor="' + CSS.escape(k) + '"]'), id);
+      ['data-card', 'data-tab', 'data-anchor', 'data-q']
+        .map((a) => '[' + a + '="' + CSS.escape(k) + '"]').join(', ')), id);
     const threw = await page.evaluate((k) => { try { window.SESSION.toggle(k, false); return null; } catch (e) { return String(e); } }, id);
     if (threw) { errors.push(walk + ': ' + id + ' threw on toggle — ' + threw); continue; }
     await wait(page, 200);
