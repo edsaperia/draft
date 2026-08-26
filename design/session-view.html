@@ -1806,19 +1806,25 @@
     if (!mm) return undefined;
     const id = mm[1];
     if (!ADMCACHE[k]) ADMCACHE[k] = { k, admit: id, g: '🪪', kind: 'constitutional',
-      t: 'Admit ' + (applicantById(id) ? applicantName(applicantById(id)) : 'an Applicant') + '?',
-      early: () => true, ready: () => true,
-      hide: () => admissionPrice() === 'pen' || !applicantById(id) };
-    // the title follows the name the applicant gave, which arrives with the
-    // submission rather than with the seat
-    ADMCACHE[k].t = 'Admit ' +
-      (applicantById(id) ? applicantName(applicantById(id)) : 'an Applicant') + '?';
+      early: () => true, hide: () => !applicantById(id) };
+    // the name arrives with the submission rather than with the seat, and at
+    // ✒️ there is nothing to ask — the card reports rather than asks
+    const ap = applicantById(id);
+    const nm = ap ? applicantName(ap) : 'an applicant';
+    ADMCACHE[k].t = admissionPrice() === 'pen' ? nm + ' Has Joined' : 'Admit ' + nm + '?';
     return ADMCACHE[k];
   };
-  const applicantById = (id) => applicantsAsking().find((ap) => ap.id === id);
+  const applicantById = (id) => allApplicants().find((ap) => ap.id === id);
   const applicantName = (ap) => ap.name || ap.email || 'Anonymous';
-  // the keys the *Applicants* pile draws, in the order the room met them
-  const admitKeys = () => (admissionPrice() === 'pen' ? []
+  // **An open door makes news, not a task** (Ed, 2026-08-26). At ✒️ an
+  // application is admitted the moment it is submitted, so nobody is being
+  // asked anything — what is left is that somebody joined, which every member
+  // is told once and acknowledges. At either other price the application
+  // *raises* the judgment, and that is a task (Ed: *applications should
+  // generate a task when they are made — or news if admissions is open*).
+  const admitKeys = () => (admissionPrice() === 'pen'
+    ? allApplicants().filter((ap) => ap.status === 'admitted' && !S.okd.has('adm:' + ap.id))
+      .map((ap) => 'adm:' + ap.id)
     : applicantsAsking().map((ap) => 'adm:' + ap.id));
   // the held pair as truth: {u, a} — false/false IS delegated (Q403)
   const pwPair = (k) => {
@@ -2319,6 +2325,10 @@
     // verified is the whole of what this card asks (a member's address is
     // verified by arrival; changing it un-verifies and asks again)
     if (c.k === 'myemail') return S.emailVerified;
+    // an admission: at ✒️ it is news, settled by your OK; otherwise it is the
+    // judgment 🪪's price asks for, settled when you have given it
+    if (c.admit) return admissionPrice() === 'pen'
+      ? S.okd.has(c.k) : (motionOn(c) ? answeredMotion(c) : true);
     if (c.door) return true;                                   // doors, not decisions
     if (c.isBegin) return constituted();                       // 🍾: settled by the press
     if (c.isClosing) return signedClose();                     // 🥂: settled by your signature
@@ -2606,6 +2616,8 @@
     { key: 'members', title: 'Membership',
       text: '',
       keys: ['roster', 'invite', 'remove', 'hat', 'policy', 'lapse', 'removal', 'myemail', 'myname', 'mypic'],
+      // one admit card per applicant — a task at 🏛️/✏️, news at ✒️ (entry 96)
+      extraKeys: () => admitKeys(),
       // **Members and Applications are subsections** (Ed, 2026-08-18):
       // Members IS the list — 🪪, the tab for invitations, stands beside
       // it, and the bottom row is your own membership wearing the ✋ and
@@ -2661,9 +2673,16 @@
         // first, and the two subheadings are the only new furniture: no chip
         // survives that its own heading now says (the *invited* chip goes, the
         // *applicant* chip stays out of this view, which never had one).
+        // **A row says what is true of it, wherever it stands** (Ed,
+        // 2026-08-26): somebody both lapsed and proposed for removal stands
+        // under *Proposed for removal* — the motion being the more urgent fact
+        // — and wears a **lapsed** pill there, so the subsection they are not
+        // in is not the only place that fact could have been read.
         const memRow = (p) => '<div class="memrow">' + avHtml(p) +
           '<span class="mn">' + esc(p.n || (!p.in && p.e) || 'Anonymous') +
-          (p.founder ? ' <span class="chip founder">founder</span>' : '') + '</span></div>';
+          (p.founder ? ' <span class="chip founder">founder</span>' : '') +
+          (p.lapsed && p.in ? ' <span class="chip pending">lapsed</span>' : '') +
+          '</span></div>';
         // **One subsection per status** (entry 95, Ed 2026-08-26: *these are
         // sections of the constitution, one per status, and the document's own
         // text — not a card's*). Q868–Q870 had already found that a flat list
@@ -2716,12 +2735,22 @@
         // **The ones that carry a control stand when empty** (entry 95) — a
         // control needs a fixed home, and inviting matters most when nobody
         // has been invited yet. *Lapsed* has none, so it stands on its rows.
+        // **Every heading in the document folds** (Ed, 2026-08-26, closing the
+        // lvl3 half of Q406). The constitution's sections and the charter's
+        // prose headings already did; its subsections did not, which made them
+        // the one kind of heading that behaved differently from the rest. They
+        // carry the same `cs-`-prefixed id the section headings do, so the
+        // heading-click handler and `secToggleHtml` reach them unchanged — and
+        // like every other fold, **a section never folds over the open card**.
         const memSub = (title, rows, pileKeys, raw) => {
           const cards = (pileKeys || []).map(card)
             .filter((c) => c && visible(c) && (!c.base || cs));
           const open = cards.find((c) => S.open === c.k);
-          const head = '<h2 class="docline lvl3">' + title + '</h2>';
+          const id = 'cs-mem-' + title.toLowerCase().replace(/[^a-z]+/g, '-');
+          const head = '<h2 class="docline lvl3" id="' + id + '">' +
+            secToggleHtml(id) + esc(title) + '</h2>';
           if (open) return head + h.paraWith(open, cards);
+          if (S.folded.has(id)) return head;
           return head + '<div class="cpara' + (cards.length ? '' : ' notab') + '">' +
             (cards.length ? h.pile(cards) : '') +
             (raw ? rows
@@ -2827,8 +2856,13 @@
     { key: 'doc', title: 'The Document', railOnly: true,
       text: '', keys: ['title', 'slug', 'chamber', 'text'] },
   ];
+  // `extraKeys` is how a section enumerates cards it cannot name in a literal
+  // — the admit cards, one per applicant (entry 96). It has to be here rather
+  // than only in the band, because this is what the rail reads: a card the
+  // section does not enumerate is a card nothing can ever serve (Q775).
   const secLive = () => SEC.map((s2) => ({ ...s2,
-    cards: s2.keys.map(card).filter((c) => c && visible(c)) }))
+    cards: s2.keys.concat(s2.extraKeys ? s2.extraKeys() : [])
+      .map(card).filter((c) => c && visible(c)) }))
     .filter((s2) => s2.cards.length);
   // **The founder's own answer is a tab on the setting's clause** (Q786–Q788,
   // Ed 2026-08-25: *whether the founder specifically has answered their member
@@ -2858,7 +2892,7 @@
   // put it in front of the founder, and `otherTasksLeft` counting it held every
   // delegated question shut for ever. Whatever makes a task owed must make it
   // served; where it cannot, the task must not block.
-  const railable = (c) => !!c && (!!c.ansFor ||
+  const railable = (c) => !!c && (!!c.ansFor || !!c.admit ||
     SEC.some((s2) => s2.keys.includes(c.k)) ||
     c.k === 'grant-pen' || c.k === 'grant-shield' || c.k === 'grant-voice');
   // **The rail's own set, in one place** (Q773). The rail is what tells a
@@ -3140,9 +3174,18 @@
   // exist only once the constitution is settled and judging is open.
   const motionsLive = () => canJudge();
   // ---- motions live in the module (9c): the page renders records --------
+  // **An admit motion targets its own card** (entry 96): before this it fell
+  // through to `pkeyOf('membership')` and landed on 🪪 — which was harmless
+  // only because nothing drew it, and would now put every applicant's
+  // judgment on the price card. Pointing it at `adm:<applicant>` is also what
+  // hands the whole generic motion path to these cards: `liveMotionRec`,
+  // `motionOn`, `answeredMotion` and `mustAct` all key on this, so an
+  // application raises a task the way any other motion does (Ed, 2026-08-26:
+  // *applications should generate a task when they are made*).
   const motionTargets = (rec) =>
     rec.payload.kind === 'invite' ? 'invite'
     : rec.payload.kind === 'remove' ? 'remove'
+    : rec.payload.kind === 'admit' ? 'adm:' + rec.payload.applicant
     : pkeyOf(rec.payload.kind === 'set' || rec.payload.kind === 'reserve'
       ? rec.payload.setting : 'membership');
   // the members a removal is running against (entry 94): the ❌ door's
@@ -3872,7 +3915,8 @@
   const signedClose = () => !!(cs && cs.closed && (!viewerIsMember() || mySignature() !== null));
   const closeSignatures = () => (!cs || !cs.closed ? []
     : cs.isRemote ? ((cs.v.view.closed && cs.v.view.closed.signatures) || []) : cs.closingSignatures());
-  const news = (c) => (motionOn(c) ? false
+  const news = (c) => (c.admit ? admissionPrice() === 'pen' && !S.okd.has(c.k)
+    : motionOn(c) ? false
     : c.isBegin ? false
     // the close is news to every member until they have signed (§4.6: the
     // acknowledgment IS the signature) — a clerk reads it settled
@@ -5188,25 +5232,45 @@
         const said = '<div class="memrow">' + avHtml({ n: ap.name, pic: ap.picture }) +
           '<span class="mn">' + esc(applicantName(ap)) + '</span></div>' +
           '<p class="why">' + esc(ap.email) + (words ? ' · <i>' + esc(words) + '</i>' : '') + '</p>';
-        // at `assembly` an admission is everybody's consent, so it is the
-        // constitutional motion the room already knows; at `proposal` it is
-        // its own one-candidate race against the membership as it stands
+        // **✒️ — news.** They are already in; the card says so and asks only to
+        // have been seen, like every other thing that happened rather than
+        // being decided.
+        if (price === 'pen') {
+          return cardHtml(c, ctx, said +
+            '<p class="why">Anybody may join on their own word here, so ' +
+            esc(applicantName(ap)) + ' is a member from the moment they asked.</p>',
+            binBtn() + '<button class="btn btn-approve" data-ok="' + esc(c.k) + '">OK</button>',
+            g.cards);
+        }
+        // **🏛️ — everybody's consent**, which is the constitutional motion the
+        // room already knows: the shared picks, and the generic commit path,
+        // reached because `motionTargets` points this motion at this card.
+        if (price === 'assembly') {
+          return cardHtml(c, ctx, said +
+            '<p class="why">Everyone must agree before somebody joins — one refusal keeps them out.</p>' +
+            consentPicks(c.k, [
+              ['no', 'I would rather they did not', 'They stay out. Nobody is told who said so.'],
+              ['yes', 'I accept them joining', 'They start with the ✏️s everyone got, and quorum recomputes.'],
+              ['abstain', 'Abstain', 'An answer, not a block: they can join without your consent counting either way.'],
+            ]) + BLINDNOTE,
+            binBtn() + '<button class="btn btn-approve glyphbtn"' +
+            (motionPicked(c) ? '' : ' disabled') + ' data-confirm="1">' + TICK + '</button>',
+            g.cards);
+        }
+        // **✏️ — the membership decides**, its own one-candidate race against
+        // the membership as it stands
         const rc = admitCardOf(c.admit);
         const pick = S['adm:' + c.admit] || null;
         const lane = (v, label) => '<button class="lanepick" aria-pressed="' +
           (pick === v) + '" data-admitpick="' + esc(c.admit) + '" data-v="' + v + '">' +
           '<span class="dot"></span><span>' + label + '</span></button>';
-        const judged = !rc
-          ? '<p class="setnote">Before the members — you have judged it.</p>' : '';
-        const body3 = said +
-          '<p class="why">' + (price === 'assembly'
-            ? 'Everyone must agree before somebody joins — one refusal keeps them out.'
-            : 'The membership decides this at the approval threshold.') + '</p>' +
+        return cardHtml(c, ctx, said +
+          '<p class="why">The membership decides this at the approval threshold.</p>' +
           (rc ? '<div class="choice" role="radiogroup" aria-label="Admit them?">' +
             lane('admit', 'Admit them') +
             lane('stands', 'Keep the membership as it is') +
-            lane('either', 'Indifferent') + '</div>' : judged);
-        return cardHtml(c, ctx, body3,
+            lane('either', 'Indifferent') + '</div>'
+            : '<p class="setnote">Before the members — you have judged it.</p>'),
           binBtn() + '<button class="btn btn-approve glyphbtn" data-admitgo="' +
           esc(c.admit) + '"' + (rc && pick ? '' : ' disabled') + '>' + TICK + '</button>',
           g.cards);
@@ -7082,12 +7146,12 @@
   // paragraph the list stands in — so one source, read two ways, is the whole
   // of it. Only the people still **asking** stand here: an admitted applicant
   // is a member row above, and a refused one is not asking.
+  const allApplicants = () => (cs && cs.isRemote
+    ? ((cs.v.view && cs.v.view.applicants) || []) : []);
   // the people still **asking**: an admitted applicant is a member row above,
   // and a refused one is not asking
-  const applicantsAsking = () => (cs && cs.isRemote
-    ? ((cs.v.view && cs.v.view.applicants) || [])
-      .filter((ap) => ap.status !== 'admitted' && ap.status !== 'refused')
-    : []);
+  const applicantsAsking = () => allApplicants()
+    .filter((ap) => ap.status !== 'admitted' && ap.status !== 'refused');
   // **Applicants is a subsection of the constitution** (entry 95): its rows are
   // document text — a name and a face in the compact dress the rows above wear
   // — and the heading stands whether or not anybody is asking, because entry

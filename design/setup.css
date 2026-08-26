@@ -569,7 +569,6 @@ button.cline:hover b { text-decoration: underline; }
    nothing but layout here: a full-width break in a wrapping row of faces, with
    a little more air above than the 5px row gap, so a heading reads as belonging
    to what is under it rather than to what is over it. */
-.memlist .memhead { flex-basis: 100%; margin: 4px 0 0; }
 /* "you" — the one sanctioned per-reader difference (Ed): in the members list
    you are at the top, on your own line, your identity pile in the gutter
    beside you; the min-height is the 30px front tab of that pile */
