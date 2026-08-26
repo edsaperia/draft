@@ -25,6 +25,7 @@
     "slug-walk": "node scripts/slug-walk.mjs",
     "slider-walk": "node scripts/slider-walk.mjs",
     "ladder": "node scripts/ladder-walk.mjs",
+    "seat-matrix": "node scripts/seat-matrix.mjs",
     "founding-golden": "node scripts/founding-golden.mjs",
     "copy-check": "node scripts/copy-check.mjs",
     "copy-freeze": "node scripts/copy-check.mjs --update",
