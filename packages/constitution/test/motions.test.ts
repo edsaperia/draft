@@ -42,7 +42,8 @@ const constituted = (opts: { reserveRate?: boolean } = {}) => {
     quorum: { form: 'share', n: 60 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
-    applications: { holder: 'members', joinPolicy: 'invite' },
+    applications: { apply: false },
+    membership: { price: 'assembly' },
     machines: { enabled: false, budget: 0 },
     lapse: { afterMs: null },
   } as const;
@@ -54,6 +55,13 @@ const constituted = (opts: { reserveRate?: boolean } = {}) => {
     s.setSetting(2, id as never, v as never);
   }
   void opts;
+  // the doors laid down before the start (entry 94): carried invitations
+  // and removals land without the crown, as they did when the register was
+  // the members'
+  for (const door of ['door:invite', 'door:remove'] as const) {
+    s.relinquish(2, door, 'unilateral');
+    s.relinquish(2, door, 'assent');
+  }
   s.begin(2); // 🍾 (Q443)
   expect(s.constitutedAtT).toBe(2);
   return { s, bo, cy };
@@ -178,7 +186,8 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
       quorum: { form: 'share', n: 60 }, authorship: { rung: 'sealed' },
       judgments: { rung: 'after' },
       chamber: { rung: 'link' },
-      applications: { holder: 'reserved-unilateral', joinPolicy: 'invite' },
+      applications: { holder: 'reserved-unilateral', apply: false },
+      membership: { price: 'assembly' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
     } as const;
     for (const [id, v] of Object.entries(values)) {
@@ -405,9 +414,9 @@ describe('guards', () => {
   });
 });
 
-describe('the 🥾 removal setting (Q401a, v0.60): three rungs, one new decision class', () => {
-  it("'everyone' is today's rule — the default when nothing was set", () => {
-    const { s, bo, cy } = buildConstituted(); // helpers set removal: everyone
+describe('the 🥾 removal setting (Q401a, v0.60; entry 94 prices): three rungs, one new decision class', () => {
+  it("'consent' is today's rule — the default when nothing was set", () => {
+    const { s, bo, cy } = buildConstituted(); // helpers set removal: consent
     const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
     expect(s.motionRecords().get(m)!.route).toBe('constitutional');
     s.answerMotion(4, 'ada', m, 'accept');
@@ -416,8 +425,8 @@ describe('the 🥾 removal setting (Q401a, v0.60): three rungs, one new decision
     expect(s.motionRecords().get(m)!.status).toBe('carried');
   });
 
-  it("'others': unanimity minus the subject — they see it, cannot answer, and it settles without them", () => {
-    const { s, bo, cy } = buildConstituted({ removal: { rung: 'others' } });
+  it("'assembly': unanimity minus the subject — they see it, cannot answer, and it settles without them", () => {
+    const { s, bo, cy } = buildConstituted({ removal: { price: 'assembly' } });
     const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
     expect(s.motionRecords().get(m)!.route).toBe('constitutional');
     expect(() => s.answerMotion(4, cy, m, 'keep')).toThrow(/not asked on this route/);
@@ -427,8 +436,8 @@ describe('the 🥾 removal setting (Q401a, v0.60): three rungs, one new decision
     expect(s.E()).toBe(2);
   });
 
-  it("'ordinary': a removal races at the bar through the adjudicator seam, staking the ✏️", () => {
-    const { s, bo, cy } = buildConstituted({ removal: { rung: 'ordinary' } });
+  it("'proposal': a removal races at the bar through the adjudicator seam, staking the ✏️", () => {
+    const { s, bo, cy } = buildConstituted({ removal: { price: 'proposal' } });
     const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
     const rec = s.motionRecords().get(m)!;
     expect(rec.route).toBe('ordinary');
@@ -439,11 +448,11 @@ describe('the 🥾 removal setting (Q401a, v0.60): three rungs, one new decision
   });
 
   it('a rung change mid-motion is a ground shift — the electorate is read live', () => {
-    const { s, bo, cy } = buildConstituted({ removal: { rung: 'others' } });
+    const { s, bo, cy } = buildConstituted({ removal: { price: 'assembly' } });
     const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
     expect(() => s.answerMotion(4, cy, m, 'keep')).toThrow(); // outside, for now
     // the room hands removal back to unanimity-including: cy's answer is owed
-    const m2 = s.openMotion(5, 'ada', { kind: 'set', setting: 'removal', value: { rung: 'everyone' } });
+    const m2 = s.openMotion(5, 'ada', { kind: 'set', setting: 'removal', value: { price: 'consent' } });
     s.answerMotion(6, bo, m2, 'accept');
     s.answerMotion(7, cy, m2, 'accept');
     // removal is convenor-held in this fixture, so the carried change waits

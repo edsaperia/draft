@@ -47,10 +47,10 @@ describe('the Text carries a crown pair (Q440)', () => {
     // the start lays both powers down, derived at the fold — no event
     expect(s.settingState('startingText').powers).toEqual({ unilateral: false, assent: false });
     for (const id of ['title', 'link', 'pace', 'rate', 'machines', 'quorum', 'authorship',
-      'judgments', 'applications', 'removal', 'lapse'] as const) {
+      'judgments', 'applications', 'membership', 'removal', 'lapse'] as const) {
       s.delegate(3, id);
     }
-    expect(s.crowned()).toBe(false); // nothing held anywhere, the Text included
+    expect(s.crowned()).toBe(false); // nothing held anywhere, the Text and the doors included
     expect(() => s.openMotion(4, bo, { kind: 'set', setting: 'startingText',
       value: { text: 'x' } })).toThrow(/not moved this way/);
     const m = s.openMotion(4, bo, { kind: 'reserve', setting: 'startingText', power: 'assent' });
@@ -130,7 +130,7 @@ describe('🤝 keeps its crown pair on the setting (Q506)', () => {
   it('a legacy value’s holder folds onto the powers and leaves the value', () => {
     const { s } = buildConstituted({
       applications: { holder: 'reserved-unilateral', joinPolicy: 'invite' } });
-    expect(s.settingState('applications').value).toEqual({ joinPolicy: 'invite' });
+    expect(s.settingState('applications').value).toEqual({ apply: false });
     expect(s.settingState('applications').powers).toEqual({ unilateral: true, assent: false });
     expect(s.registerPowers()).toEqual({ unilateral: true, assent: false });
     expect(s.membershipReserved()).toBe(true);
@@ -140,27 +140,32 @@ describe('🤝 keeps its crown pair on the setting (Q506)', () => {
       .toEqual({ unilateral: true, assent: false });
   });
 
-  it('new style: the policy is the value and the pair changes like any setting’s', () => {
-    const { s, bo, cy } = buildConstituted({ applications: { joinPolicy: 'invite' } });
+  it('new style: the policy is the value and the pair changes like any setting’s — the door apart', () => {
+    const { s, bo, cy } = buildConstituted({ applications: { apply: false },
+      doors: { invite: { unilateral: true, assent: true } } });
     // buildConstituted reclaims before it sets, so both powers are held
-    expect(s.registerPowers()).toEqual({ unilateral: true, assent: true });
-    s.invite(3, 'dee@example.org'); // the pen on the register: a direct invitation
+    expect(s.settingState('applications').powers).toEqual({ unilateral: true, assent: true });
+    s.invite(3, 'dee@example.org'); // the pen on the door: a direct invitation
     s.relinquish(3, 'applications', 'unilateral');
-    expect(() => s.invite(4, 'eve@example.org')).toThrow(/constitutional motion/);
     s.relinquish(4, 'applications', 'assent');
-    expect(s.membershipReserved()).toBe(false);
+    expect(s.settingState('applications').holder).toBe('members');
+    // 🤝's pair is the policy's alone (entry 94): the door still invites
+    expect(s.doorPowers('door:invite')).toEqual({ unilateral: true, assent: true });
+    expect(() => s.invite(4, 'eve@example.org')).not.toThrow();
     // the road back is a reserve motion on the setting itself
     const m = s.openMotion(5, bo, { kind: 'reserve', setting: 'applications' });
     s.answerMotion(6, 'ada', m, 'accept');
     s.answerMotion(7, cy, m, 'accept');
-    expect(s.registerPowers()).toEqual({ unilateral: true, assent: true });
+    expect(s.settingState('applications').powers).toEqual({ unilateral: true, assent: true });
   });
 
   it('an old log and a fresh session reach the same state', () => {
     const legacy = buildConstituted({
       applications: { holder: 'reserved-assent', joinPolicy: 'apply' } }).s;
     const replayed = ConstitutionSession.replay([...legacy.logEntries()]);
-    const fresh = buildConstituted({ applications: { joinPolicy: 'apply' } }).s;
+    // a legacy holder was the register's crown, so it folds onto ✉️ too
+    const fresh = buildConstituted({ applications: { apply: true },
+      doors: { invite: { unilateral: false, assent: true } } }).s;
     fresh.relinquish(3, 'applications', 'unilateral');
     const pick = (x: ConstitutionSession) => {
       const st = x.settingState('applications');
@@ -171,11 +176,13 @@ describe('🤝 keeps its crown pair on the setting (Q506)', () => {
     expect(replayed.rollingHash()).toBe(legacy.rollingHash());
   });
 
-  it('handing the setting over un-crowns the register in the same act', () => {
+  it('handing the setting over leaves the door crowned (entry 94: two pairs)', () => {
     const { s } = buildConstituted({
       applications: { holder: 'reserved', joinPolicy: 'invite' } });
+    expect(s.doorPowers('door:invite')).toEqual({ unilateral: true, assent: true });
     s.delegate(3, 'applications');
-    expect(s.registerPowers()).toEqual({ unilateral: false, assent: false });
-    expect(s.settingState('applications').value).toEqual({ joinPolicy: 'invite' });
+    expect(s.settingState('applications').powers).toEqual({ unilateral: false, assent: false });
+    expect(s.doorPowers('door:invite')).toEqual({ unilateral: true, assent: true });
+    expect(s.settingState('applications').value).toEqual({ apply: false });
   });
 });

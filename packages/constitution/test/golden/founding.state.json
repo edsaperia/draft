@@ -1,6 +1,6 @@
 {
-  "entries": 67,
-  "rollingHash": "256552ee7943fdc0dbd7b6a2580f3a9f3b4db1cbc10f145bcc77445299f29afa",
+  "entries": 70,
+  "rollingHash": "c6c1997ea1ae8ffe47b259496e41654d9c06a7075b8c0239df1f9c4865aaeae9",
   "chainVerifies": true,
   "constitutedAtT": 8,
   "E": 3,
@@ -133,7 +133,7 @@
     },
     "applications": {
       "value": {
-        "joinPolicy": "apply"
+        "apply": true
       },
       "holder": "members",
       "powers": {
@@ -141,9 +141,19 @@
         "assent": false
       }
     },
+    "membership": {
+      "value": {
+        "price": "proposal"
+      },
+      "holder": "convenor",
+      "powers": {
+        "unilateral": true,
+        "assent": true
+      }
+    },
     "removal": {
       "value": {
-        "rung": "everyone"
+        "price": "consent"
       },
       "holder": "convenor",
       "powers": {

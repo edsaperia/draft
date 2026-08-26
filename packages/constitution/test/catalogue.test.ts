@@ -74,10 +74,9 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
       ],
       lapse: [{ afterMs: null }, { afterMs: 1000 }],
       machines: [{ enabled: false, budget: 0 }, { enabled: true, budget: 4 }],
-      applications: [
-        { holder: 'members', joinPolicy: 'invite' },
-        { holder: 'members', joinPolicy: 'open' },
-      ],
+      applications: [{ apply: false }, { apply: true }],
+      membership: [{ price: 'assembly' }, { price: 'proposal' }, { price: 'pen' }],
+      removal: [{ price: 'consent' }, { price: 'assembly' }, { price: 'proposal' }],
     };
     for (const [id, values] of Object.entries(samples)) {
       const order = entryOf(id as SettingId).consent!.order;
@@ -110,7 +109,9 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
     expect(validateFor(entryOf('link'), { slug: 'Hollow Oak' })).toMatch(/slug/);
     expect(validateFor(entryOf('pace'), { shape: 'fixed', startPct: 60 })).toMatch(/no startPct/);
     expect(validateFor(entryOf('rate'), { grant: 9, cap: 8, dripMinutes: 240 })).toMatch(/cap/);
-    expect(validateFor(entryOf('membership'), { anything: 1 })).toMatch(/command/);
+    expect(validateFor(entryOf('membership'), { price: 'consent' })).toMatch(/not one of/);
+    expect(validateFor(entryOf('removal'), { price: 'pen' })).toMatch(/not one of/);
+    expect(validateFor(entryOf('applications'), { anything: 1 })).toMatch(/apply/);
     expect(validateValue('ending', { endsAtMs: null })).toBeNull();
   });
 
@@ -182,11 +183,19 @@ describe('the consent rule (SPEC §9.0a): maxima along the protective direction'
     ]).value).toEqual({ enabled: false, budget: 0 });
   });
 
-  it('applications: the most restrictive rung wins', () => {
+  it('applications: one refusal keeps the door shut (entry 94: no beats yes)', () => {
     expect(resolveConsent(entryOf('applications'), [
-      { holder: 'members', joinPolicy: 'open' },
-      { holder: 'members', joinPolicy: 'proposed' },
-    ]).value).toEqual({ holder: 'members', joinPolicy: 'proposed' });
+      { apply: true }, { apply: false }, { apply: true },
+    ]).value).toEqual({ apply: false });
+  });
+
+  it('the prices (entry 94): the dearest admission and the hardest removal win', () => {
+    expect(resolveConsent(entryOf('membership'), [
+      { price: 'pen' }, { price: 'proposal' }, { price: 'assembly' },
+    ]).value).toEqual({ price: 'assembly' });
+    expect(resolveConsent(entryOf('removal'), [
+      { price: 'proposal' }, { price: 'consent' }, { price: 'assembly' },
+    ]).value).toEqual({ price: 'consent' });
   });
 
   it('is deterministic under ties (canonical tiebreak)', () => {

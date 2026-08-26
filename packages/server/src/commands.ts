@@ -225,13 +225,23 @@ const HANDLERS: Record<string, Handler> = {
     founderOnly(a);
     cs.setQuorumForm(t, str(args, 'form') as 'count' | 'share');
   },
+  // a direct invitation is the founder's, or any member's while 🪪 stands at
+  // ✒️ (entry 94) — the module holds the one gate, the seat says whose word
   'invite': (cs, a, t, args) => {
-    founderOnly(a);
-    return cs.invite(t, emailOk(str(args, 'email')));
+    return cs.invite(t, emailOk(str(args, 'email')), a.memberId);
   },
   'uninvite': (cs, a, t, args) => {
     founderOnly(a);
     cs.uninvite(t, str(args, 'member'));
+  },
+  // ❌'s ✒️: exile at will, immediate (entry 94)
+  'remove': (cs, a, t, args) => {
+    founderOnly(a);
+    cs.remove(t, str(args, 'member'));
+  },
+  // resignation: free, immediate, nobody's to refuse (entry 94)
+  'resign': (cs, a, t) => {
+    cs.resign(t, a.memberId);
   },
   'answer-crown-question': (cs, a, t, args) => {
     founderOnly(a);
@@ -299,15 +309,6 @@ const HANDLERS: Record<string, Handler> = {
   'withdraw-text': (cs, a, t, args, bridge) => {
     if (bridge === null) throw new Error('the document has not begun');
     bridge.withdrawText(t, a.memberId, str(args, 'candidate'));
-  },
-  'propose-applicant': (cs, a, t, args, bridge) => {
-    const why = typeof args.why === 'string' && args.why.trim() !== ''
-      ? cap(args.why, LIMITS.why, 'the rationale') : undefined;
-    if (bridge !== null) {
-      bridge.proposeApplicant(t, a.memberId, str(args, 'applicant'), why);
-    } else {
-      cs.proposeApplicant(t, a.memberId, str(args, 'applicant'), why);
-    }
   },
   /* -- the close (SPEC §4.6): OK on the 🥂 card is the signature, the
      comment its rationale — freely blank, once, on the member's own clock */

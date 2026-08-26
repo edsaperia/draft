@@ -29,8 +29,9 @@ const readyToBegin = (): ConstitutionSession => {
     ending: { endsAtMs: 1_000_000 }, bar: { pct: 66 }, chamber: { rung: 'link' },
     rate: { grant: 4, cap: 8, dripMinutes: 240 }, pace: { shape: 'fixed' },
     quorum: { form: 'share', n: 60 }, authorship: { rung: 'sealed' },
-    judgments: { rung: 'after' }, applications: { joinPolicy: 'invite' },
-    removal: { rung: 'everyone' }, machines: { enabled: false, budget: 0 },
+    judgments: { rung: 'after' }, applications: { apply: false },
+    membership: { price: 'assembly' },
+    removal: { price: 'consent' }, machines: { enabled: false, budget: 0 },
     lapse: { afterMs: null },
   };
   for (const [id, v] of Object.entries(values)) s.setSetting(1, id as never, v as never);
@@ -210,7 +211,7 @@ describe('the road back may restore one power (Q394)', () => {
 describe("the register's powers (Ed's own example, §9.7½ v0.54)", () => {
   it('reserved-unilateral: the founder invites directly, carried motions need no accept', () => {
     const { s, bo, cy } = buildConstituted({
-      applications: { holder: 'reserved-unilateral', joinPolicy: 'invite' },
+      applications: { holder: 'reserved-unilateral', apply: false },
     });
     const dee = s.invite(10, 'dee@example.org'); // unilateral invite, post-start
     expect(typeof dee).toBe('string');
@@ -223,10 +224,10 @@ describe("the register's powers (Ed's own example, §9.7½ v0.54)", () => {
 
   it('reserved-assent: no direct invite, and a carried invitation waits on the crown', () => {
     const { s, bo, cy } = buildConstituted({
-      applications: { holder: 'reserved-assent', joinPolicy: 'invite' },
+      applications: { holder: 'reserved-assent', apply: false },
     });
     expect(() => s.invite(10, 'dee@example.org'))
-      .toThrow(/constitutional motion/);
+      .toThrow(/motion at 🪪/);
     const m = s.openMotion(20, bo, { kind: 'invite', email: 'eve@example.org' }, 'eve chairs the sister club');
     s.answerMotion(21, 'ada', m, 'accept');
     s.answerMotion(22, cy, m, 'accept');

@@ -23,7 +23,7 @@ const openDoc = (isMember = true) =>
  * tests about what creation produces still test creation.
  */
 const DELEGABLE_CONSTITUTIONAL = ['ending', 'bar', 'quorum', 'authorship',
-  'judgments', 'chamber', 'lapse', 'removal', 'applications'] as const;
+  'judgments', 'chamber', 'lapse', 'removal', 'membership', 'applications'] as const;
 const openDelegated = (isMember = true) => {
   const s = openDoc(isMember);
   for (const id of DELEGABLE_CONSTITUTIONAL) s.delegate(0, id);
@@ -45,10 +45,11 @@ const settleAllReserved = (s: ConstitutionSession, t: number,
 
     judgments: { rung: 'after' },
     chamber: { rung: 'link' },
-    applications: { holder: 'members', joinPolicy: 'invite' },
+    applications: { holder: 'members', apply: false },
+    membership: { price: 'assembly' },
     rate: { grant: 4, cap: 8, dripMinutes: 240 },
     machines: { enabled: false, budget: 0 },
-    removal: { rung: 'everyone' },
+    removal: { price: 'consent' },
     lapse: { afterMs: null },
   } as const;
   for (const [id, v] of Object.entries(values)) {
@@ -310,8 +311,9 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
       quorum: { form: 'share', n: 60 },
       authorship: { rung: 'sealed' },
       judgments: { rung: 'after' }, chamber: { rung: 'link' },
-      applications: { holder: 'members', joinPolicy: 'invite' },
-      removal: { rung: 'everyone' }, // delegated too, so the room must answer it (Q626)
+      applications: { holder: 'members', apply: false },
+      membership: { price: 'assembly' },
+      removal: { price: 'consent' }, // delegated too, so the room must answer it (Q626)
       lapse: { afterMs: null }, rate: { grant: 4, cap: 8, dripMinutes: 240 },
       machines: { enabled: false, budget: 0 },
     } as const;
@@ -326,6 +328,9 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
     s.delegate(3, 'link');
     s.delegate(3, 'pace');  // the founder's by default since Q415
     s.delegate(3, 'startingText'); // the Text is held like anything else (Q440)
+    expect(s.crowned()).toBe(true);   // the doors are still ada's (entry 94)
+    s.delegate(3, 'door:invite');
+    s.delegate(3, 'door:remove');
     expect(s.crowned()).toBe(false);  // 📯 — a name in the record
   });
 });
@@ -338,7 +343,7 @@ describe('constituted (§9.6a): the moment judging opens', () => {
     // a delegated question on any setting blocks the start, gate or not (Q626)
     expect(() => s.begin(1)).toThrow(/'applications' is still being decided/);
     s.reclaim(1, 'applications');
-    s.setSetting(1, 'applications', { holder: 'members', joinPolicy: 'invite' });
+    s.setSetting(1, 'applications', { holder: 'members', apply: false });
     s.begin(1); // 🍾 (Q443): nothing starts until the founder says so
     expect(s.constitutedAtT).toBe(1);
     expect(s.canJudge()).toBe(true);
@@ -348,7 +353,7 @@ describe('constituted (§9.6a): the moment judging opens', () => {
     expect(s.settingState('bar').holder).toBe('members');
     expect(() => s.reclaim(2, 'bar')).toThrow(/pre-start/);
     expect(() => s.uninvite(2, 'ada')).toThrow(/pre-start/);
-    expect(() => s.invite(2, 'new@example.org')).toThrow(/constitutional motion/);
+    expect(() => s.invite(2, 'new@example.org')).toThrow(/motion at 🪪/);
     expect(() => s.confirmStartingText(2, 'x')).toThrow(/proposing in the document/);
   });
 
@@ -360,38 +365,37 @@ describe('constituted (§9.6a): the moment judging opens', () => {
   // 🛡️. The door was drawn on `membershipReserved()`, which counted either
   // power, and refused by the narrow test, which counts only the pen. So the
   // three states are asserted together: the two gates must agree in all of
-  // them, since that agreement is the whole of the fix.
+  // them, since that agreement is the whole of the fix. Since entry 94 the
+  // pair is ✉️'s own — `door:invite` — not 🤝's.
   const registerAt = (lay: 'nothing' | 'pen' | 'both') => {
     const s = openDelegated();
     s.confirmStartingText(1, 'x');
     settleAllReserved(s, 1, ['applications']);
     s.reclaim(1, 'applications');
-    s.setSetting(1, 'applications', { joinPolicy: 'invite' }); // both powers held
-    if (lay !== 'nothing') s.relinquish(1, 'applications', 'unilateral');
+    s.setSetting(1, 'applications', { apply: false });
+    if (lay !== 'nothing') s.relinquish(1, 'door:invite', 'unilateral');
     s.begin(1); // 🍾 spends the pending release
-    // the second power goes after the start: laying both down pre-start IS
-    // delegation (Q403), which opens the question and 🍾 waits on it
-    if (lay === 'both') s.relinquish(2, 'applications', 'assent');
+    if (lay === 'both') s.relinquish(2, 'door:invite', 'assent');
     return s;
   };
 
   it('the pen invites directly; the shield alone does not, and says so', () => {
     const kept = registerAt('nothing');
-    expect(kept.registerPowers()).toEqual({ unilateral: true, assent: true });
-    expect(kept.membershipReserved()).toBe(true);
+    expect(kept.doorPowers('door:invite')).toEqual({ unilateral: true, assent: true });
+    expect(kept.doorPen('door:invite')).toBe(true);
     expect(() => kept.invite(2, 'bo@example.org')).not.toThrow();
     expect(() => kept.invite(2, 'cy@example.org')).not.toThrow(); // and again
 
     // the pen laid down at Begin, the veto kept: the door is shut, and
-    // `membershipReserved()` — what the surface draws it on — says so
+    // `doorPen` — what the surface draws it on — says so
     const shield = registerAt('pen');
-    expect(shield.registerPowers()).toEqual({ unilateral: false, assent: true });
-    expect(shield.membershipReserved()).toBe(false);
-    expect(() => shield.invite(2, 'bo@example.org')).toThrow(/constitutional motion/);
+    expect(shield.doorPowers('door:invite')).toEqual({ unilateral: false, assent: true });
+    expect(shield.doorPen('door:invite')).toBe(false);
+    expect(() => shield.invite(2, 'bo@example.org')).toThrow(/motion at 🪪/);
 
     const none = registerAt('both');
-    expect(none.membershipReserved()).toBe(false);
-    expect(() => none.invite(2, 'bo@example.org')).toThrow(/constitutional motion/);
+    expect(none.doorPen('door:invite')).toBe(false);
+    expect(() => none.invite(2, 'bo@example.org')).toThrow(/motion at 🪪/);
   });
 
   it('a ceremony resolves it when the last gate question completes', () => {

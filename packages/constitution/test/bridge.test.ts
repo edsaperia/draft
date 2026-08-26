@@ -166,16 +166,17 @@ describe('roster truth flows cs → engine', () => {
 });
 
 describe('an admit motion is its own race (§9.7½ v0.56, Q397)', () => {
-  /** The constituted room, re-set to a given join policy pre-start. */
-  const withPolicy = (joinPolicy: 'apply' | 'proposed') =>
+  /** The constituted room, the door open at a given 🪪 price pre-start. */
+  const withPrice = (price: 'proposal' | 'assembly') =>
     buildConstituted({
       bar: 55,
       quorum: { form: 'count', n: 2 },
-      applications: { holder: 'members', joinPolicy },
+      applications: { holder: 'members', apply: true },
+      membership: { price },
     });
 
-  it("apply: the applicant authors their own race and never joins another applicant's", () => {
-    const { s, bo, cy } = withPolicy('apply');
+  it("at ✏️: the applicant authors their own race and never joins another applicant's", () => {
+    const { s, bo, cy } = withPrice('proposal');
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'admit-apply' });
     const ap = s.startApplication(10, 'dee@example.org');
     s.verifyApplication(11, ap);
@@ -214,24 +215,17 @@ describe('an admit motion is its own race (§9.7½ v0.56, Q397)', () => {
     expect(s.applicantRecords().get(ap)!.status).toBe('admitted');
   });
 
-  it('proposed: the seconder authors, stakes, and writes the case', () => {
-    const { s, bo } = withPolicy('proposed');
-    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'admit-proposed' });
+  it('at 🏛️: the application collects consent in the module and never enters the engine', () => {
+    const { s } = withPrice('assembly');
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'admit-assembly' });
     const ap = s.startApplication(10, 'dee@example.org');
     s.verifyApplication(11, ap);
     s.submitApplication(12, ap, { words: 'I keep minutes.' });
     bridge.sync(12);
-    // No second yet: no race.
+    // a constitutional motion is not a race: no engine entry, nothing staked
     expect(bridge.engine.races().some((r) => r.settingId === `admit:${ap}`)).toBe(false);
-
-    bridge.proposeApplicant(13, bo, ap, 'dee ran the sister club for two years');
-    const race = bridge.engine.races().find((r) => r.settingId === `admit:${ap}`)!;
-    const cand = bridge.engine.log.map((e) => e.event).find((e) =>
-      e.type === 'candidate-submitted' && e.id === race.members[0]) as
-      { author: string; rationale: string };
-    expect(cand.author).toBe(bo);
-    expect(cand.rationale).toBe('dee ran the sister club for two years');
-    expect(bridge.engine.balance(bo, 13)).toBe(3); // the ✏️ left the wallet
+    const rec = s.applicantRecords().get(ap)!;
+    expect(s.motionRecords().get(rec.motion!)!.route).toBe('constitutional');
   });
 });
 

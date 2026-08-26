@@ -226,16 +226,6 @@ export class EngineBridge {
     }
   }
 
-  /** A second stakes the ✏️ (§9.7½): priced at the door like any entry. */
-  proposeApplicant(t: number, by: MemberId, applicant: string, why?: string): void {
-    this.sync(t);
-    if (this.engine.balance(by, t) < this.engine.constitution.stake) {
-      throw new Error('insufficient ✏️ for the stake (§7)');
-    }
-    this.cs.proposeApplicant(t, by, applicant, why);
-    this.sync(t);
-  }
-
   /** Withdrawal returns the stake whole on both ledgers (§3.3a). */
   withdrawMotion(t: number, by: MemberId, motion: MotionId): void {
     this.cs.withdrawMotion(t, by, motion);

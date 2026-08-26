@@ -2,21 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { buildConstituted } from './helpers.js';
 import { view } from '../src/view.js';
 
-describe('applications (§9.7½): four rungs, one identity rule', () => {
+describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one identity rule', () => {
   it('invitation only refuses the front door', () => {
-    const { s } = buildConstituted(); // joinPolicy: invite
+    const { s } = buildConstituted(); // apply: false
     expect(() => s.startApplication(3, 'dee@example.org')).toThrow(/invitation-only/);
   });
 
   it('a member address is told to log in instead — one address, one member', () => {
     const { s } = buildConstituted({
-      applications: { holder: 'members', joinPolicy: 'apply' } });
+      applications: { holder: 'members', apply: true }, membership: { price: 'proposal' } });
     expect(() => s.startApplication(3, 'bo@example.org')).toThrow(/log in/);
   });
 
-  it('apply: verified before anything can be submitted; straight to the bar, free', () => {
+  it('at ✏️: verified before anything can be submitted; straight to the bar, free', () => {
     const { s } = buildConstituted({
-      applications: { holder: 'members', joinPolicy: 'apply' } });
+      applications: { holder: 'members', apply: true }, membership: { price: 'proposal' } });
     const ap = s.startApplication(3, 'dee@example.org');
     expect(() => s.submitApplication(4, ap)).toThrow(/magic link/);
     s.verifyApplication(4, ap);
@@ -38,7 +38,7 @@ describe('applications (§9.7½): four rungs, one identity rule', () => {
 
   it('a refused application is told so', () => {
     const { s } = buildConstituted({
-      applications: { holder: 'members', joinPolicy: 'apply' } });
+      applications: { holder: 'members', apply: true }, membership: { price: 'proposal' } });
     const ap = s.startApplication(3, 'dee@example.org');
     s.verifyApplication(4, ap);
     s.submitApplication(5, ap); // an empty application is a real application
@@ -47,25 +47,37 @@ describe('applications (§9.7½): four rungs, one identity rule', () => {
     expect(s.E()).toBe(3);
   });
 
-  it('proposed: the application waits for a member’s second, who stakes the ✏️', () => {
-    const { s, bo } = buildConstituted({
-      applications: { holder: 'members', joinPolicy: 'proposed' } });
+  it('at 🏛️: the application is its own constitutional motion, nobody’s mover, free', () => {
+    const { s, bo, cy } = buildConstituted({
+      applications: { holder: 'members', apply: true } }); // 🪪 at assembly by default
     const ap = s.startApplication(3, 'dee@example.org');
     s.verifyApplication(4, ap);
-    s.submitApplication(5, ap);
-    expect(s.applicantRecords().get(ap)!.motion).toBeNull(); // waiting for a second
-    s.proposeApplicant(6, bo, ap, 'dee ran the sister club for two years');
+    s.submitApplication(5, ap, { words: 'dee ran the sister club for two years' });
     const rec = s.applicantRecords().get(ap)!;
-    expect(s.motionRecords().get(rec.motion!)!.why)
-      .toBe('dee ran the sister club for two years');
-    expect(rec.status).toBe('proposed');
-    expect(s.motionRecords().get(rec.motion!)!.stake).toBe(1);
-    expect(s.motionRecords().get(rec.motion!)!.by).toBe(bo);
+    const motion = s.motionRecords().get(rec.motion!)!;
+    expect(motion.route).toBe('constitutional');
+    expect(motion.stake).toBe(0);
+    expect(motion.by).toBeNull(); // the applicant stands as nobody's mover
+    s.answerMotion(6, 'ada', rec.motion!, 'accept');
+    s.answerMotion(7, bo, rec.motion!, 'accept');
+    expect(s.applicantRecords().get(ap)!.status).toBe('submitted'); // cy still owed
+    s.answerMotion(8, cy, rec.motion!, 'accept');
+    expect(s.applicantRecords().get(ap)!.status).toBe('admitted');
+    expect(s.E()).toBe(4);
   });
 
-  it('open: anyone with the link joins on arrival — identity still verified', () => {
+  it('a legacy log’s `open` folds to the door open at ✒️ (entry 94)', () => {
     const { s } = buildConstituted({
       applications: { holder: 'members', joinPolicy: 'open' } });
+    expect(s.settingState('applications').value).toEqual({ apply: true });
+    // buildConstituted set 🪪 to assembly before 🤝, so the legacy seed does
+    // not override a standing value — the migration only fills an empty one
+    expect(s.settingState('membership').value).toEqual({ price: 'assembly' });
+  });
+
+  it('open: 🤝 yes and 🪪 at ✒️ — anyone with the link joins on arrival, identity still verified', () => {
+    const { s } = buildConstituted({
+      applications: { holder: 'members', apply: true }, membership: { price: 'pen' } });
     const ap = s.startApplication(3, 'dee@example.org');
     s.verifyApplication(4, ap);
     s.submitApplication(5, ap, { name: 'Dee' });

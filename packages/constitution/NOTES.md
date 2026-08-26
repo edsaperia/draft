@@ -15,11 +15,19 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   T_end over the shorter remainder — steeper, never discontinuous. Confirmed
   by Ed 2026-08-18 (*a bar shouldn't need to jump if timings are changed*);
   now §4.3, v0.49.
-- **`applications` is not judge-gated.** §9.0b's reason for the gate is that
-  a judgment is *recorded under a disclosure setting* and *counted towards a
-  quorum*; the join policy touches neither, and the mock's ceremony gate was
-  already exactly the other eight. A delegated applications question still
+- **`applications` is not judge-gated — nor are `membership` and `removal`**
+  (entry 94). §9.0b's reason for the gate is that a judgment is *recorded
+  under a disclosure setting* and *counted towards a quorum*; the join
+  policy and the two prices touch neither, and the mock's ceremony gate was
+  already exactly the other eight. A delegated question on any of them still
   blocks judging while it collects, like any delegated question.
+- **The doors are born with both powers, like every setting** (entry 94,
+  Ed 2026-08-26: *the founder just starts with it*). So a carried invitation,
+  admission or removal waits on the 👑 until the founder lays the door's 🛡️
+  down — deliberate, and the reason `buildConstituted` lays both doors down
+  by default: the old members-held register carried without assent, and
+  most tests are about something else. A legacy `applications.holder` folds
+  onto ✉️'s pair as well as 🤝's, because it was the register's crown.
 - **`routeOf(ending)` is symmetric across never**: giving a perpetual
   document a close is constitutional too, not just removing one — §9.6 makes
   *whether the document ends at all* the constitutional fact, and installing

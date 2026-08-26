@@ -264,7 +264,8 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
       quorum: { form: 'share', n: 60 },
       authorship: { rung: 'sealed' },
       judgments: { rung: 'after' },
-      applications: { holder: 'members', joinPolicy: 'apply' },
+      applications: { holder: 'members', apply: true },
+      membership: { price: 'proposal' },
       machines: { enabled: false, budget: 0 },
       lapse: { afterMs: null },
     };
@@ -1080,7 +1081,8 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     const values: Record<string, unknown> = {
       pace: { shape: 'fixed' }, quorum: { form: 'count', n: 2 },
       authorship: { rung: 'sealed' },
-      judgments: { rung: 'after' }, applications: { joinPolicy: 'invite' },
+      judgments: { rung: 'after' }, applications: { apply: false },
+      membership: { price: 'assembly' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
     };
     for (const [setting, value] of Object.entries(values)) {
@@ -1164,7 +1166,7 @@ type StrangerPayload = {
   founder: { name: string | null; picture: string | null };
   canRead: boolean; text: string | null;
   textShape: Array<{ heading: number; chars: number }>;
-  joinPolicy: string; applyOpen: boolean; joinOpen: boolean;
+  mayApply: boolean; admission: string; applyOpen: boolean; joinOpen: boolean;
   members: { arrived: number; list: Array<{ name: string | null; picture: string | null }> | null };
   view: { settings: Array<{ setting: string; kind: string; value: unknown; settledBy: string | null;
     holder: string; collecting: boolean; powers: { unilateral: boolean; assent: boolean } }>;
@@ -1297,7 +1299,7 @@ describe("the stranger's door (Q452/455/456)", () => {
     expect(known.ok).toBe(true);
     // applications: closed until the document begins, whatever the policy
     expect(k.body.applyOpen).toBe(false);
-    expect(k.body.joinPolicy).toBe('invite');
+    expect(k.body.mayApply).toBe(false);
   });
 });
 
@@ -1467,7 +1469,7 @@ describe('the open join link admits (backlog 73)', () => {
       pace: { shape: 'fixed' }, bar: { pct: 66 },
       quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
-      applications: { joinPolicy: 'open' },
+      applications: { apply: true }, membership: { price: 'pen' }, // open: yes, at ✒️
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
     };
     for (const [setting, value] of Object.entries(values)) {

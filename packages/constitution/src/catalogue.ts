@@ -10,7 +10,7 @@
  */
 
 import type { ApplicationsValue, EndingValue, LapseValue, MachinesValue,
-  PercentValue, QuorumValue, RateValue, SettingValue,
+  PercentValue, PriceValue, QuorumValue, RateValue, SettingValue,
   ValueTypeName } from './values.js';
 import { validateValue } from './values.js';
 
@@ -78,6 +78,23 @@ export interface CatalogueEntry {
 const ladderOrder = (rungs: readonly string[]) =>
   (a: SettingValue, b: SettingValue): number =>
     rungs.indexOf((b as { rung: string }).rung) - rungs.indexOf((a as { rung: string }).rung);
+
+/** A price's order is its entry's rung list, most protective first — the same shape as a ladder's. */
+const priceOrder = (rungs: readonly string[]) =>
+  (a: SettingValue, b: SettingValue): number =>
+    rungs.indexOf((b as PriceValue).price) - rungs.indexOf((a as PriceValue).price);
+
+/**
+ * 🤝 read through its legacy: a value written before entry 94 carried a
+ * four-rung `joinPolicy`, of which `invite` is the door shut and the rest
+ * are the door open. Exported for the fold and the server, so the mapping
+ * lives in one place.
+ */
+export function mayApply(v: ApplicationsValue | null): boolean {
+  if (v === null) return false;
+  if (v.apply !== undefined) return v.apply;
+  return v.joinPolicy !== undefined && v.joinPolicy !== 'invite';
+}
 
 /** null reads as +∞ — never is the most protective duration/date. */
 const neverIsHighest = (of: (v: SettingValue) => number | null) =>
@@ -218,22 +235,23 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
     },
     deps: [], judgeGate: true },
 
-  // **How a member is removed** (Q401, Ed 2026-08-19). Three rungs, and the
-  // middle one is a decision class of its own — unanimity excluding the
-  // subject (the live-electorate settle check minus one member), which is
-  // what real constitutions mostly do (partnerships expel by unanimity of
-  // the others). 'everyone' includes the subject's own answer, which makes
-  // it effectively a no-expulsion rule — the most protective, and today's
-  // default. The subject always *sees* a motion running against them (Ed's
-  // ruling); whether they may judge their own *ordinary* removal race is
-  // open (Q401b). Not judge-gated: like the join policy, it touches no
-  // recorded judgment.
+  // **The price of removal** (Q401, Ed 2026-08-19; on the one price scale
+  // since entry 94, 2026-08-26). `assembly` is a decision class of its own —
+  // unanimity excluding the subject (the live-electorate settle check minus
+  // one member), which is what real constitutions mostly do (partnerships
+  // expel by unanimity of the others). `consent` includes the subject's own
+  // answer, which makes it a no-expulsion rule — a member can only ever
+  // leave — the most protective, and today's default. No `pen` rung: exile
+  // at will is the founder's ✒️ on the ❌ door, not a price the room sets.
+  // The subject always *sees* a motion running against them (Ed's ruling);
+  // whether they may judge their own `proposal` removal is open (Q401b).
+  // Not judge-gated: like the join policy, it touches no recorded judgment.
   { id: 'removal', glyph: '🥾', kind: 'constitutional',
-    delegable: true, valueType: 'ladder',
-    rungs: ['everyone', 'others', 'ordinary'],
+    delegable: true, valueType: 'price',
+    rungs: ['consent', 'assembly', 'proposal'],
     consent: {
       ask: 'the easiest removal of a member you will accept',
-      order: ladderOrder(['everyone', 'others', 'ordinary']),
+      order: priceOrder(['consent', 'assembly', 'proposal']),
     },
     deps: [], judgeGate: false },
 
@@ -254,28 +272,38 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
     },
     deps: [], judgeGate: false },
 
-  // The register itself — changed by command (invite, arrive, remove),
-  // never by a scalar motion. Who holds it lives on 'applications' (§9.7½).
+  // **The price of admission** (entry 94, Ed 2026-08-26). Until then 🪪 was
+  // the register itself, an unvalued setting whose crown lived on 🤝; the
+  // register is now a fact of the document — who is a member — and 🪪 is
+  // what it costs to bring somebody in, on the same scale as 🥾. Every
+  // route in pays it: a member's invitation, a stranger's application (🤝
+  // is only whether that door is open), and at `pen` any member's word.
+  // The founder's own powers over the *act* are the ✉️ door's, not this
+  // setting's. Not judge-gated, for 🤝's reason.
   { id: 'membership', glyph: '🪪', kind: 'constitutional',
-    delegable: false, valueType: 'register', deps: [], judgeGate: false },
+    delegable: true, valueType: 'price',
+    rungs: ['assembly', 'proposal', 'pen'],
+    consent: {
+      ask: 'the cheapest admission you will accept',
+      order: priceOrder(['assembly', 'proposal', 'pen']),
+    },
+    deps: [], judgeGate: false },
 
   // Not judge-gated: the mock's ceremony gate is exactly the eight settings
   // a judgment is recorded under or counted towards (§9.0b); the join
   // policy touches neither. A delegated applications question still blocks
-  // judging while it collects, like any delegated question.
+  // judging while it collects, like any delegated question. Since entry 94
+  // the value is one switch — may strangers apply? — and *no* is the
+  // protective answer; the price they pay is 🪪's.
   { id: 'applications', glyph: '🤝', kind: 'constitutional',
     delegable: true, valueType: 'applications',
     consent: {
-      ask: 'the most open join policy you will accept',
+      ask: 'whether you will accept strangers applying to join',
       order: (a, b) => {
-        const rungs = ['invite', 'proposed', 'apply', 'open'];
-        const byPolicy = rungs.indexOf((b as ApplicationsValue).joinPolicy) -
-          rungs.indexOf((a as ApplicationsValue).joinPolicy);
-        if (byPolicy !== 0) return byPolicy;
-        // Q506 (2026-08-21): the pair left the value, so the policy is the
-        // whole order -- delegate the decision, not the field (Q341). The
-        // old Q395 holder tiebreak went with it.
-        return byPolicy;
+        const aa = mayApply(a as ApplicationsValue);
+        const ab = mayApply(b as ApplicationsValue);
+        if (aa === ab) return 0;
+        return aa ? -1 : 1;
       },
     },
     deps: [], judgeGate: false },
@@ -304,8 +332,10 @@ export const JUDGE_GATES: readonly SettingId[] =
 export function validateFor(entry: CatalogueEntry, v: unknown): string | null {
   const err = validateValue(entry.valueType, v);
   if (err) return err;
-  if (entry.valueType === 'ladder') {
-    const rung = (v as { rung: string }).rung;
+  if (entry.valueType === 'ladder' || entry.valueType === 'price') {
+    const rung = entry.valueType === 'ladder'
+      ? (v as { rung: string }).rung
+      : (v as PriceValue).price;
     if (!entry.rungs?.includes(rung))
       return `${entry.id}: '${rung}' is not one of [${entry.rungs?.join(', ')}]`;
   }

@@ -13,9 +13,19 @@ export function buildConstituted(opts: {
   lapse?: LapseValue;
   applications?: ApplicationsValue;
   quorum?: { form: 'count' | 'share'; n: number };
-  removal?: { rung: 'everyone' | 'others' | 'ordinary' };
+  removal?: { price: 'consent' | 'assembly' | 'proposal' };
+  /** 🪪 the price of admission (entry 94); default everyone must agree. */
+  membership?: { price: 'assembly' | 'proposal' | 'pen' };
   /** The resolved bar (every member answers it); default resolves to 66. */
   bar?: number;
+  /**
+   * The founder's powers over the acts at the doors (entry 94), spent at 🍾:
+   * default neither door holds anything, so a carried invitation or removal
+   * lands without the crown, as the old members-held register did. A legacy
+   * `applications.holder` defines ✉️'s pair itself and wins over this.
+   */
+  doors?: { invite?: { unilateral: boolean; assent: boolean };
+    remove?: { unilateral: boolean; assent: boolean } };
 } = {}) {
   const s = ConstitutionSession.open({
     title: 'Hollow Oak Club Charter',
@@ -52,14 +62,24 @@ export function buildConstituted(opts: {
     quorum: opts.quorum ?? { form: 'share', n: 60 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
-    applications: opts.applications ?? { holder: 'members', joinPolicy: 'invite' },
-    removal: opts.removal ?? { rung: 'everyone' },
+    applications: opts.applications ?? { apply: false },
+    membership: opts.membership ?? { price: 'assembly' },
+    removal: opts.removal ?? { price: 'consent' },
     machines: { enabled: false, budget: 0 },
     lapse: opts.lapse ?? { afterMs: null },
   } as const;
   for (const [id, v] of Object.entries(values)) {
     s.reclaim(2, id as never);
     s.setSetting(2, id as never, v as never);
+  }
+  // the doors: laid down before the start, spent at 🍾 (R-048)
+  const legacyHolder = opts.applications?.holder !== undefined;
+  for (const door of ['door:invite', 'door:remove'] as const) {
+    if (door === 'door:invite' && legacyHolder) continue;
+    const keep = (door === 'door:invite' ? opts.doors?.invite : opts.doors?.remove)
+      ?? { unilateral: false, assent: false };
+    if (!keep.unilateral) s.relinquish(2, door, 'unilateral');
+    if (!keep.assent) s.relinquish(2, door, 'assent');
   }
   s.begin(2); // 🍾 — the founder's explicit start (Q443)
   expect(s.constitutedAtT).toBe(2);

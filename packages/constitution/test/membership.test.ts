@@ -84,15 +84,19 @@ describe('the 👑 marks any reservation (Q379 wide)', () => {
   });
 });
 
-describe('delegating applications releases both holds (§9.7 v0.52)', () => {
-  it('the membership crown goes with the policy, and inviting turns constitutional', () => {
-    const { s } = buildConstituted({ applications: { holder: 'reserved', joinPolicy: 'invite' } });
-    expect(s.membershipReserved()).toBe(true);
+describe('the invite door holds its own pair (entry 94; was 🤝’s, §9.7 v0.52)', () => {
+  it('handing ✉️ over shuts the direct door; handing 🤝 over does not touch it', () => {
+    const { s } = buildConstituted({ applications: { apply: false },
+      doors: { invite: { unilateral: true, assent: true } } });
+    expect(s.doorPen('door:invite')).toBe(true);
     s.invite(3, 'dee@example.org'); // the crown invites unilaterally (§9.7)
-    s.delegate(4, 'applications');
-    expect(s.membershipReserved()).toBe(false);
+    s.delegate(4, 'applications');   // the policy's pair goes…
     expect(s.settingState('applications').holder).toBe('members');
-    expect(() => s.invite(5, 'em@example.org')).toThrow(/constitutional motion/);
+    expect(s.doorPen('door:invite')).toBe(true); // …and the door's stays
+    s.delegate(5, 'door:invite');
+    expect(s.doorPen('door:invite')).toBe(false);
+    expect(s.settingState('door:invite').holder).toBe('members');
+    expect(() => s.invite(6, 'em@example.org')).toThrow(/motion at 🪪/);
   });
 });
 

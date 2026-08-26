@@ -10,7 +10,7 @@
 export { sha256Hex, stableStringify, chainHash } from './hash.js';
 export * from './values.js';
 export {
-  CATALOGUE, CATALOGUE_BY_ID, JUDGE_GATES, entryOf, motionRouteOf, validateFor,
+  CATALOGUE, CATALOGUE_BY_ID, JUDGE_GATES, entryOf, mayApply, motionRouteOf, validateFor,
 } from './catalogue.js';
 export type {
   CatalogueEntry, ConsentSpec, MotionRoute, SettingId, SettingKind,

@@ -16,8 +16,8 @@ import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
-import { CATALOGUE, ConstitutionSession, sha256Hex, view } from '../../constitution/src/index.js';
-import type { LogEntry } from '../../constitution/src/index.js';
+import { CATALOGUE, ConstitutionSession, mayApply, sha256Hex, view } from '../../constitution/src/index.js';
+import type { ApplicationsValue, LogEntry, Price, PriceValue } from '../../constitution/src/index.js';
 import { authorshipBase } from '../../constitution/src/adapter.js';
 import { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
@@ -861,9 +861,7 @@ export async function createDraftServer(cfg: ServerConfig,
       // read-only (stage 3, defect 8): an unauthenticated POST writes
       // nothing to the log — the write moved to POST /auth/apply, where
       // the address has proved it works
-      const apps = doc.cs.settingState('applications').value as
-        { joinPolicy?: 'invite' | 'proposed' | 'apply' | 'open' } | null;
-      if ((apps?.joinPolicy ?? 'invite') === 'invite') {
+      if (!mayApply(doc.cs.settingState('applications').value as ApplicationsValue | null)) {
         json(res, 400, { error: 'this document is invitation-only (§9.7½)' });
         return;
       }
@@ -935,11 +933,10 @@ export async function createDraftServer(cfg: ServerConfig,
       // submits for them (the page renders an `open` applicant no rail at all,
       // believing landing already admitted them), so `open` membership was
       // unreachable by any road. An empty application is a real application
-      // (§9.7½), which is what makes the admit here honest. The other rungs
-      // land verify-only and keep their later submit and their motion.
-      const apps = doc.cs.settingState('applications').value as
-        { joinPolicy?: 'invite' | 'proposed' | 'apply' | 'open' } | null;
-      if ((apps?.joinPolicy ?? 'invite') === 'open' && !doc.cs.closed &&
+      // (§9.7½), which is what makes the admit here honest. Open is 🤝 yes
+      // with 🪪 at ✒️ (entry 94); the other prices land verify-only and
+      // keep their later submit and their motion.
+      if (admissionPrice(doc.cs) === 'pen' && !doc.cs.closed &&
           doc.cs.applicantRecords().get(applicantId)?.status === 'verified') {
         doc.cs.submitApplication(t, applicantId);
       }
@@ -1018,8 +1015,8 @@ export async function createDraftServer(cfg: ServerConfig,
     } else {
       holding = { kind: 'open', sentence: null };
     }
-    const apps = cs.settingState('applications').value as { joinPolicy?: string } | null;
-    const joinPolicy = apps?.joinPolicy ?? 'invite';
+    const applyAllowed = mayApply(cs.settingState('applications').value as ApplicationsValue | null);
+    const admission = admissionPrice(cs);
     const begun = cs.constitutedAtT !== null;
     const lines = text.length === 0 ? [] : text.split('\n');
     return {
@@ -1039,9 +1036,12 @@ export async function createDraftServer(cfg: ServerConfig,
         const m = l.match(/^(#{1,3})\s+/);
         return { heading: m ? m[1]!.length : 0, chars: m ? l.length - m[0].length : l.length };
       }),
-      joinPolicy,
-      applyOpen: begun && !cs.closed && (joinPolicy === 'proposed' || joinPolicy === 'apply'),
-      joinOpen: begun && !cs.closed && joinPolicy === 'open',
+      // entry 94: may strangers apply, and at what price — `joinOpen` is the
+      // door open *and* free (🪪 at ✒️), `applyOpen` open at a price
+      mayApply: applyAllowed,
+      admission,
+      applyOpen: begun && !cs.closed && applyAllowed && admission !== 'pen',
+      joinOpen: begun && !cs.closed && applyAllowed && admission === 'pen',
       // **Q508(c)** (Ed, 2026-08-21): the membership rides 🌍. Where a
       // stranger may read the document they may read who is in the room —
       // the Members list is a section of the constitution, and at that
@@ -1464,6 +1464,12 @@ function devCrossSite(req: IncomingMessage, res: ServerResponse, expected: strin
     return true;
   }
   return false;
+}
+
+/** 🪪 as it stands — unset reads as the most protective price, as the fold does. */
+function admissionPrice(cs: ConstitutionSession): Price {
+  const v = cs.settingState('membership').value as PriceValue | null;
+  return v?.price ?? 'assembly';
 }
 
 function json(res: ServerResponse, code: number, payload: unknown): void {

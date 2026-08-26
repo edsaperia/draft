@@ -8,7 +8,8 @@ import { ConstitutionSession } from '../src/session.js';
 const FOUNDER_SET = {
   pace: { shape: 'fixed' }, quorum: { form: 'share', n: 60 },
   authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
-  applications: { joinPolicy: 'invite' }, removal: { rung: 'everyone' },
+  applications: { apply: false }, removal: { price: 'consent' },
+  membership: { price: 'assembly' },
   machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
 } as const;
 

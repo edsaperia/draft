@@ -66,8 +66,9 @@ export function goldenWalk(): ConstitutionSession {
     ['quorum', { form: 'share', n: 60 }],
     ['authorship', { rung: 'sealed' }],
     ['judgments', { rung: 'after' }],
-    ['applications', { holder: 'members', joinPolicy: 'apply' }],
-    ['removal', { rung: 'everyone' }],
+    ['applications', { holder: 'members', apply: true }],
+    ['membership', { price: 'proposal' }],
+    ['removal', { price: 'consent' }],
     ['machines', { enabled: false, budget: 0 }],
     ['lapse', { afterMs: null }],
   ];

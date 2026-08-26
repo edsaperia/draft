@@ -9,7 +9,6 @@
 
 import type { ConstitutionSession } from './session.js';
 import type { Arrival, MemberId, MotionPayload, PowerSource } from './types.js';
-import { holderOf } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf } from './catalogue.js';
 import type { SettingValue } from './values.js';
@@ -96,6 +95,8 @@ export interface MemberRowView {
   arrived: boolean;
   lapsed: boolean;
   isConvenor: boolean;
+  /** The removal motion running against them, if one is (entry 94): the ❌ door's pending list. */
+  removalPending: string | null;
   /**
    * How this member got in, and whose act it was (Q524). Public like the rest
    * of the register — a constitution that lists its members can say how each
@@ -116,10 +117,17 @@ export interface ApplicantRowView {
   motion: string | null;
 }
 
+/** A door's crown pair (entry 94): ✒️ acts at will, 🛡️ refuses any one act. */
+export interface DoorView {
+  holder: 'convenor' | 'members';
+  powers: { unilateral: boolean; assent: boolean };
+  powerFrom: { unilateral: PowerSource | null; assent: PowerSource | null };
+  pendingRelease: { unilateral: boolean; assent: boolean };
+}
+/** @deprecated entry 94 — ✉️'s pair under its old name; the page reads it until the 🪪 card is rewritten. */
 export interface RegisterView {
   holder: 'convenor' | 'members';
   powers: { unilateral: boolean; assent: boolean };
-  /** The register's pair is the applications setting's, pending releases included (R-048). */
   pendingRelease: { unilateral: boolean; assent: boolean };
 }
 
@@ -130,6 +138,8 @@ export interface MemberView {
   settings: SettingView[];
   members: MemberRowView[];
   register: RegisterView;
+  /** ✉️ and ❌ (entry 94): the founder's powers over the act, per door. */
+  doors: { invite: DoorView; remove: DoorView };
   applicants: ApplicantRowView[];
   owedOks: SettingId[];
   motions: MotionView[];
@@ -157,7 +167,7 @@ export interface MemberView {
 }
 
 const MANAGED = CATALOGUE.filter((e) =>
-  e.kind !== 'personal' && e.id !== 'membership' && e.id !== 'startingText');
+  e.kind !== 'personal' && e.id !== 'startingText');
 
 export function view(s: ConstitutionSession, member: MemberId): MemberView {
   const me = s.memberRecords().get(member) ?? null;
@@ -243,12 +253,29 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     });
   }
 
-  const rp = s.registerPowers();
-  const register: RegisterView = {
-    holder: holderOf(rp),
-    powers: rp,
-    pendingRelease: { ...s.settingState('applications').pendingRelease },
+  const doorView = (door: 'door:invite' | 'door:remove'): DoorView => {
+    const st = s.settingState(door);
+    return {
+      holder: st.holder,
+      powers: { ...st.powers },
+      powerFrom: { ...st.powerFrom },
+      pendingRelease: { ...st.pendingRelease },
+    };
   };
+  const doors = { invite: doorView('door:invite'), remove: doorView('door:remove') };
+  const register: RegisterView = {
+    holder: doors.invite.holder,
+    powers: { ...doors.invite.powers },
+    pendingRelease: { ...doors.invite.pendingRelease },
+  };
+  // a removal running against a member is the pending case the ❌ door
+  // lists under *Members* (entry 94)
+  const removalPending = new Map<MemberId, string>();
+  for (const rec of s.motionRecords().values()) {
+    if (rec.payload.kind !== 'remove') continue;
+    if (rec.status !== 'running' && rec.status !== 'awaiting-crown') continue;
+    removalPending.set(rec.payload.member, rec.id);
+  }
 
   const applicants: ApplicantRowView[] = [];
   for (const a of s.applicantRecords().values()) {
@@ -270,6 +297,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       lapsed: rec.lapsed,
       isConvenor: rec.id === convenorId,
       arrival: { ...rec.arrival },
+      removalPending: removalPending.get(rec.id) ?? null,
     });
   }
 
@@ -284,6 +312,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     settings,
     members,
     register,
+    doors,
     applicants,
     owedOks: me ? [...me.okOwed] : [],
     motions,

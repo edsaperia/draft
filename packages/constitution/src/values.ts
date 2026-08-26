@@ -27,15 +27,35 @@ export type RateValue = { grant: number; cap: number; dripMinutes: number };
 export type LapseValue = { afterMs: number | null };
 /** 🤖 — the coherence auditor: proposes only, never judges (§10). */
 export type MachinesValue = { enabled: boolean; budget: number };
-/** 🤝 — the join policy (§9.7½). Since Q506 (2026-08-21) the register's
- * crown no longer rides inside the value: 🤝 is in the governance-tabs
- * pattern like every held-able setting, its pair on `SettingState.powers`.
- * `holder` survives only as a **legacy** field that older logs (and the
- * golden walk) carry; the fold maps it onto the powers and strips it. */
+/**
+ * **The price of an act** — the one scale for what it costs to bring
+ * somebody in (🪪) or put somebody out (🥾), in the document's own verbs
+ * (entry 94, Ed 2026-08-26): `assembly` everyone must agree (🏛️),
+ * `proposal` the membership decides at the threshold (✏️), `pen` no
+ * proposal — the act is its own consent (✒️, which means *any* unilateral
+ * act in the document; the founder only starts with it). 🥾 adds `consent`
+ * — unanimity *including* the subject, so a member can only ever leave —
+ * and has no `pen` rung, because one member exiling another alone is not a
+ * price a room could choose. Which rungs an entry allows is its `rungs`
+ * list, checked in catalogue.ts exactly as a ladder's are.
+ */
+export type Price = 'consent' | 'assembly' | 'proposal' | 'pen';
+export type PriceValue = { price: Price };
+/** 🤝 — may strangers apply? (§9.7½, entry 94). An application is a
+ * stranger proposing their own invitation, admitted at 🪪's price; this
+ * setting is only the switch on that door. Since Q506 (2026-08-21) the
+ * register's crown no longer rides inside the value: 🤝 is in the
+ * governance-tabs pattern like every held-able setting, its pair on
+ * `SettingState.powers`. `holder` and `joinPolicy` survive only as
+ * **legacy** fields that older logs (and the golden walk) carry; the fold
+ * maps them and strips them, so an old log and a fresh session agree. */
 export type ApplicationsValue = {
   /** @deprecated legacy (pre-Q506) — read by the fold, never written anew. */
   holder?: 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent';
-  joinPolicy: 'invite' | 'proposed' | 'apply' | 'open';
+  /** @deprecated legacy (pre-entry-94) — `invite` folds to apply:false, the
+   * rest to apply:true; `open` also seeds 🪪 to `pen` where 🪪 stands unset. */
+  joinPolicy?: 'invite' | 'proposed' | 'apply' | 'open';
+  apply?: boolean;
 };
 
 export type SettingValue =
@@ -49,6 +69,7 @@ export type SettingValue =
   | RateValue
   | LapseValue
   | MachinesValue
+  | PriceValue
   | ApplicationsValue;
 
 export type ValueTypeName =
@@ -62,8 +83,8 @@ export type ValueTypeName =
   | 'rate'
   | 'lapse'
   | 'machines'
-  | 'applications'
-  | 'register';
+  | 'price'
+  | 'applications';
 
 const isObj = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -129,12 +150,19 @@ export function validateValue(type: ValueTypeName, v: unknown): string | null {
       if (v.holder !== undefined && v.holder !== 'members' && v.holder !== 'reserved' &&
           v.holder !== 'reserved-unilateral' && v.holder !== 'reserved-assent')
         return "applications: holder (legacy) must be 'members' | 'reserved' | 'reserved-unilateral' | 'reserved-assent'";
-      return v.joinPolicy === 'invite' || v.joinPolicy === 'proposed' ||
-        v.joinPolicy === 'apply' || v.joinPolicy === 'open'
+      if (v.joinPolicy !== undefined && v.joinPolicy !== 'invite' && v.joinPolicy !== 'proposed' &&
+          v.joinPolicy !== 'apply' && v.joinPolicy !== 'open')
+        return 'applications: joinPolicy (legacy) must be invite | proposed | apply | open';
+      if (v.apply === undefined && v.joinPolicy === undefined)
+        return 'applications: { apply: boolean } required';
+      return v.apply === undefined || typeof v.apply === 'boolean'
         ? null
-        : 'applications: joinPolicy must be invite | proposed | apply | open';
-    case 'register':
-      return 'membership has no scalar value — the register changes by command (invite, remove)';
+        : 'applications: apply must be a boolean';
+    case 'price':
+      return v.price === 'consent' || v.price === 'assembly' ||
+        v.price === 'proposal' || v.price === 'pen'
+        ? null
+        : 'price: price must be consent | assembly | proposal | pen';
   }
 }
 

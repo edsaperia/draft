@@ -11,13 +11,13 @@ import { chainHash } from './hash.js';
 import type {
   ApplicantRecord, ConstitutionEvent, ConvenorInput, CrownQuestionId, CrownQuestionRecord,
   LogEntry, MemberId, MemberRecord, MotionAnswer, MotionId, MotionPayload,
-  MotionRecord, Power, Powers, SettingState, Arrival, PowerSource,
+  MotionRecord, Power, Powers, SettingState, Arrival, PowerSource, DoorId, PowerKey,
 } from './types.js';
-import { holderOf, SCHEMA_VERSION } from './types.js';
+import { DOORS, holderOf, isDoor, SCHEMA_VERSION } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
-import { CATALOGUE, entryOf, motionRouteOf, validateFor } from './catalogue.js';
-import type { ApplicationsValue, EndingValue, LadderValue, LapseValue, PaceValue,
-  PercentValue, QuorumValue, SettingValue, SlugValue, TextValue } from './values.js';
+import { CATALOGUE, entryOf, mayApply, motionRouteOf, validateFor } from './catalogue.js';
+import type { ApplicationsValue, EndingValue, LapseValue, PaceValue,
+  PercentValue, Price, PriceValue, QuorumValue, SettingValue, SlugValue, TextValue } from './values.js';
 import { eqValue } from './values.js';
 import { resolveConsent } from './consent.js';
 import { eOf, inE, motionElectorateOf, quorumBaseOf, quorumCount,
@@ -43,16 +43,18 @@ export interface OpenInput {
 export type WaitingWhy = 'judge-gate' | 'invitation-open' | 'one-voice'
   | 'collecting' | 'text-unconfirmed';
 
-/** The settings the map manages: everything except the register, the text and the personal pair. */
+/** The settings the map manages: everything except the text and the personal pair.
+ *  🪪 is among them since entry 94 — a price, not the register. */
 const MANAGED: readonly SettingId[] = CATALOGUE
-  .filter((e) => e.kind !== 'personal' && e.id !== 'membership' && e.id !== 'startingText')
+  .filter((e) => e.kind !== 'personal' && e.id !== 'startingText')
   .map((e) => e.id);
 
-/** Everything that carries a crown pair: the managed map plus the Text (Q440, 2026-08-21). */
-const HELD: readonly SettingId[] = [...MANAGED, 'startingText'];
+/** Everything that carries a crown pair: the managed map, the Text (Q440, 2026-08-21)
+ *  and the two doors (entry 94, 2026-08-26). */
+const HELD: readonly PowerKey[] = [...MANAGED, 'startingText', ...DOORS];
 
 const CONSTITUTIONAL: ReadonlySet<SettingId> = new Set(
-  CATALOGUE.filter((e) => e.kind === 'constitutional' && e.id !== 'membership').map((e) => e.id),
+  CATALOGUE.filter((e) => e.kind === 'constitutional').map((e) => e.id),
 );
 
 /** Q459: a read refreshes the activity clock at most this often. */
@@ -84,7 +86,7 @@ export class ConstitutionSession {
     lastActivityT: number; lapseWarned: boolean };
   private crownLapsedFlag = false;
   private members = new Map<MemberId, MemberRecord>();
-  private settings = new Map<SettingId, SettingState>();
+  private settings = new Map<PowerKey, SettingState>();
   private quorumFormValue: 'count' | 'share' = 'share';
   private startingText: string | null = null;
   private textConfirmedFlag = false;
@@ -384,10 +386,15 @@ export class ConstitutionSession {
         break;
       }
       case 'member-invited': {
+        // a motion carried it, one member's word did (🪪 at ✒️), or the
+        // convenor's own drafting power did
+        const arrival: Arrival = event.viaMotion !== undefined
+          ? { via: 'invitation', by: 'members' }
+          : event.by !== undefined
+            ? { via: 'invitation', by: 'member', inviter: event.by }
+            : { via: 'invitation', by: 'convenor' };
         this.members.set(event.member,
-          this.freshMember(event.member, event.email, event.t, null,
-            // a motion carried it, or the convenor's own drafting power did
-            { via: 'invitation', by: event.viaMotion === undefined ? 'convenor' : 'members' }));
+          this.freshMember(event.member, event.email, event.t, null, arrival));
         this.nextMemberN += 1;
         break;
       }
@@ -405,6 +412,7 @@ export class ConstitutionSession {
       case 'member-removed': {
         const m = this.members.get(event.member)!;
         m.removed = true;
+        m.removedBy = event.by ?? 'members';
         break;
       }
       case 'answer-given': {
@@ -763,7 +771,7 @@ export class ConstitutionSession {
     st.settledBy = by;
     st.settledAtT = t;
     st.collecting = false;
-    this.foldApplications(st);
+    this.foldLegacy(st, t);
     if (id === 'quorum') this.quorumFormValue = (value as QuorumValue).form;
     if (id === 'link') {
       const slug = (value as SlugValue).slug;
@@ -783,7 +791,9 @@ export class ConstitutionSession {
     // a reserve motion's target is the members' by construction — it lands
     // without assent, the crown's release being delegation (§9.7 v0.52)
     if (rec.payload.kind === 'reserve') return false;
-    return this.registerPowers().assent;
+    // an act at a door waits on that door's 🛡️ (entry 94): admissions of
+    // every kind on ✉️'s, removals on ❌'s
+    return this.doorPowers(rec.payload.kind === 'remove' ? 'door:remove' : 'door:invite').assent;
   }
 
   /** §9.7 v0.54: holder derives from powers — the convenor's iff any is held. */
@@ -815,7 +825,7 @@ export class ConstitutionSession {
     arrivedAtT: number | null, arrival: Arrival): MemberRecord {
     return {
       id, email, invitedAtT, arrivedAtT, arrival,
-      removed: false, lapsed: false, lapseWarned: false, signedOut: null,
+      removed: false, removedBy: null, lapsed: false, lapseWarned: false, signedOut: null,
       name: null, picture: null, nameSet: false, pictureSet: false,
       lastActivityT: arrivedAtT ?? invitedAtT,
       okOwed: new Set(), okGiven: new Set(),
@@ -832,26 +842,64 @@ export class ConstitutionSession {
     st.value = value;
     st.settledBy = by === 'crown' ? 'crown' : 'convenor';
     st.settledAtT = t;
-    this.foldApplications(st);
+    this.foldLegacy(st, t);
   }
 
   /**
-   * Q506 migration (2026-08-21): a legacy applications value carried the
-   * register's crown as `holder`; the pair now lives on the setting's own
-   * powers like every held-able setting. The event keeps its bytes -- the
-   * fold reads the holder onto the powers and strips it from what stands,
-   * so an old log and a fresh session reach the same state.
+   * Legacy values, read onto the present shapes and stripped from what
+   * stands, so an old log and a fresh session reach the same state; the
+   * event keeps its bytes. Two migrations live here:
+   *
+   * - **Q506 (2026-08-21):** a legacy applications value carried the
+   *   register's crown as `holder`; the pair now lives on the setting's own
+   *   powers like every held-able setting.
+   * - **Entry 94 (2026-08-26):** 🤝's four-rung `joinPolicy` became the one
+   *   switch `apply`, the price moved to 🪪, and 🥾's rungs moved onto the
+   *   same price scale. `open` was "the door is open *and* free", so it also
+   *   seeds 🪪 to `pen` where 🪪 has no value yet — the only way a legacy log
+   *   keeps meaning what it meant.
    */
-  private foldApplications(st: SettingState): void {
-    if (st.id !== 'applications' || st.value === null) return;
-    const v = st.value as ApplicationsValue;
-    if (v.holder === undefined) return;
-    const h = v.holder;
-    this.setPowers(st, {
-      unilateral: h === 'reserved' || h === 'reserved-unilateral',
-      assent: h === 'reserved' || h === 'reserved-assent',
-    });
-    st.value = { joinPolicy: v.joinPolicy };
+  private foldLegacy(st: SettingState, t: number): void {
+    if (st.value === null) return;
+    if (st.id === 'applications') {
+      const v = st.value as ApplicationsValue;
+      if (v.holder !== undefined) {
+        const h = v.holder;
+        const powers = {
+          unilateral: h === 'reserved' || h === 'reserved-unilateral',
+          assent: h === 'reserved' || h === 'reserved-assent',
+        };
+        this.setPowers(st, powers);
+        // the legacy holder was the *register's* crown, which since entry 94
+        // is ✉️'s pair — so a log that laid it down laid the door's down
+        this.setPowers(this.settings.get('door:invite')!, powers);
+      }
+      if (v.apply === undefined || v.holder !== undefined || v.joinPolicy !== undefined) {
+        st.value = { apply: mayApply(v) };
+      }
+      if (v.joinPolicy === 'open') {
+        const adm = this.settings.get('membership')!;
+        if (adm.value === null) {
+          adm.value = { price: 'pen' };
+          adm.collecting = false;
+          adm.settledBy = st.settledBy;
+          adm.settledAtT = t;
+        }
+      }
+    } else if (st.id === 'removal') {
+      const rung = (st.value as { rung?: string }).rung;
+      if (rung === undefined) return;
+      const price: Price = rung === 'everyone' ? 'consent' : rung === 'others' ? 'assembly' : 'proposal';
+      st.value = { price };
+    }
+  }
+
+  /** What an act on the membership costs, as the document stands — unset
+   *  reads as the most protective rung, exactly as a legacy log did. */
+  private priceOf(id: 'membership' | 'removal'): Price {
+    const st = this.settings.get(id);
+    const v = st ? (st.value as PriceValue | null) : null;
+    return v?.price ?? (id === 'membership' ? 'assembly' : 'consent');
   }
 
   private touch(member: MemberId, t: number): void {
@@ -1001,17 +1049,16 @@ export class ConstitutionSession {
    * stands and only the holder changes. One-way, the founder's own free
    * act; the road back is a constitutional motion (the reserve payload).
    */
-  delegate(t: number, setting: SettingId): void {
+  delegate(t: number, setting: PowerKey): void {
     this.requireOpen('delegating');
-    const entry = entryOf(setting);
-    if (entry.kind === 'personal') {
+    // a door has no question to open — delegating it is the hand-over
+    // below, both powers off, like the Text's (entry 94)
+    const entry = isDoor(setting) ? null : entryOf(setting);
+    if (entry?.kind === 'personal') {
       throw new Error(`'${setting}' is a member's own (§9.0c) — never held, never delegated`);
     }
-    if (setting === 'membership') {
-      throw new Error("the register is held through 'applications' -- delegate that (§9.7½)");
-    }
     const st = this.settings.get(setting)!;
-    if (this.constitutedT === null && entry.delegable) {
+    if (this.constitutedT === null && entry?.delegable && !isDoor(setting)) {
       if (st.holder === 'members') return;
       this.emit({ type: 'setting-delegated', t, setting });
       return;
@@ -1033,6 +1080,7 @@ export class ConstitutionSession {
    */
   private everSet(st: SettingState): boolean {
     if (st.id === 'startingText') return this.textConfirmedFlag;
+    if (isDoor(st.id)) return true; // a door has no value to have been set (entry 94)
     return st.value !== null;
   }
 
@@ -1053,14 +1101,13 @@ export class ConstitutionSession {
    * has set has nothing to hand over, and the text's own confirmation is one
    * setting's value among nineteen rather than the whole document's clock.
    */
-  relinquish(t: number, setting: SettingId, power: Power): void {
+  relinquish(t: number, setting: PowerKey, power: Power): void {
     this.requireOpen('giving up a power');
-    const entry = entryOf(setting);
-    if (entry.kind === 'personal') {
+    // a door's pair is laid down like a setting's; it just never delegates
+    // into a question, having none (entry 94)
+    const entry = isDoor(setting) ? null : entryOf(setting);
+    if (entry?.kind === 'personal') {
       throw new Error(`'${setting}' is a member's own (§9.0c) — never held`);
-    }
-    if (setting === 'membership') {
-      throw new Error("the register's powers are the applications setting's -- relinquish there (§9.7½)");
     }
     const st = this.settings.get(setting)!;
     if (!this.stillHeld(st, power)) {
@@ -1076,7 +1123,7 @@ export class ConstitutionSession {
       // the founder happens to press them in must not decide whether they
       // end up delegating.
       const other: Power = power === 'unilateral' ? 'assent' : 'unilateral';
-      if (!this.stillHeld(st, other) && entry.delegable) {
+      if (!this.stillHeld(st, other) && entry?.delegable && !isDoor(setting)) {
         this.emit({ type: 'setting-delegated', t, setting });
         return;
       }
@@ -1088,7 +1135,7 @@ export class ConstitutionSession {
     this.emit({ type: 'power-relinquished', t, setting, power });
   }
 
-  reclaim(t: number, setting: SettingId): void {
+  reclaim(t: number, setting: PowerKey): void {
     this.requireOpen('reclaiming');
     this.requirePreStart('reclaiming');
     const st = this.settings.get(setting);
@@ -1124,19 +1171,78 @@ export class ConstitutionSession {
   // -------------------------------------------------------------------------
   // The roster (§9.6a)
 
-  invite(t: number, email: string): MemberId {
+  /**
+   * A direct invitation — the act that is its own consent (entry 94). Whose
+   * word suffices is one gate, named once, and what the surface draws the
+   * door on is what refuses here (Q812): before the start, the founder's;
+   * after it, the founder's while they hold ✉️'s ✒️, and **any member's**
+   * while 🪪 stands at `pen`. Anything else is a motion at 🪪's price.
+   * `by` names the member whose word it is; absent, the founder's.
+   */
+  invite(t: number, email: string, by?: MemberId): MemberId {
     this.requireOpen('inviting');
-    // one gate, named once: what the surface draws the door on is what
-    // refuses here (Q812)
-    if (this.constitutedT !== null && !this.membershipReserved()) {
-      throw new Error('after the start an invitation is a constitutional motion (§9.6a)');
+    const byMember = by !== undefined && by !== this.convenor.id;
+    if (byMember) {
+      const m = this.members.get(by);
+      if (!m || !inE(m)) throw new Error(`'${by}' is not an arrived member`);
+      if (this.constitutedT === null) {
+        throw new Error('before the start the founder invites (§9.6a)');
+      }
+      if (this.priceOf('membership') !== 'pen') {
+        throw new Error('admission is not at ✒️ — propose the invitation at 🪪\'s price (§9.7½)');
+      }
+    } else if (this.constitutedT !== null && !this.doorPen('door:invite') &&
+      this.priceOf('membership') !== 'pen') {
+      throw new Error('after the start an invitation is a motion at 🪪\'s price (§9.6a)');
     }
     this.requireEmailFree(email);
     const id = `m-${this.nextMemberN}`;
-    this.emit({ type: 'member-invited', t, member: id, email });
+    this.emit({ type: 'member-invited', t, member: id, email,
+      ...(byMember ? { by } : {}) });
     // An invitee counts toward nothing until they arrive — no roster
     // follow-ons: E is unchanged (§9.6a).
     return id;
+  }
+
+  /**
+   * Exile at will — ❌'s ✒️, arguably a 👑's biggest power (Ed, 2026-08-26),
+   * and immediate: the member is gone, their standing answers leave with
+   * them, and every motion they were holding up re-settles now. That is the
+   * power, not a defect in it; a room that does not want it takes the pen
+   * off the door.
+   */
+  remove(t: number, member: MemberId): void {
+    this.requireOpen('removing');
+    if (!this.doorPen('door:remove')) {
+      throw new Error('removal at will needs ❌\'s ✒️ — propose it at 🥾\'s price instead');
+    }
+    const m = this.members.get(member);
+    if (!m || m.removed) throw new Error(`unknown member '${member}'`);
+    if (member === this.convenor.id) {
+      throw new Error('the convenor unticks their own row instead (§9.6a)');
+    }
+    const wasInE = inE(m);
+    this.emit({ type: 'member-removed', t, member, by: 'convenor' });
+    if (wasInE) this.afterRosterChange(t, 'departure', member);
+  }
+
+  /**
+   * Resignation (entry 94): free, immediate, refusable by nobody — a
+   * person's consent to their own leaving is the purest case of ✒️. It is
+   * not a removal, so ❌'s 🛡️ does not reach it, and under 🥾 at `consent`
+   * it is the only way out, which is the point of that rung. The lapse
+   * clock was always a silent exit; this is the spoken one.
+   */
+  resign(t: number, member: MemberId): void {
+    this.requireOpen('resigning');
+    const m = this.members.get(member);
+    if (!m || m.removed) throw new Error(`unknown member '${member}'`);
+    if (member === this.convenor.id) {
+      throw new Error('the convenor unticks their own row instead (§9.6a)');
+    }
+    const wasInE = inE(m);
+    this.emit({ type: 'member-removed', t, member, by: 'self' });
+    if (wasInE) this.afterRosterChange(t, 'departure', member);
   }
 
   uninvite(t: number, member: MemberId): void {
@@ -1484,17 +1590,22 @@ export class ConstitutionSession {
       route = 'constitutional'; // returning a decision to one hand needs everyone (§9.7 v0.52)
     } else if (payload.kind === 'invite') {
       this.requireEmailFree(payload.email);
-      route = 'constitutional'; // membership's own kind — reservation adds assent, never a route (§9.7 v0.49)
+      // The route is 🪪's price (entry 94): at `pen` nobody proposes — the
+      // invite command admits outright — so a motion here is a mistake.
+      const price = this.priceOf('membership');
+      if (price === 'pen') throw new Error('admission is at ✒️ — invite directly, nothing to propose (§9.7½)');
+      route = price === 'assembly' ? 'constitutional' : 'ordinary';
     } else if (payload.kind === 'remove') {
       const target = this.members.get(payload.member);
       if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
-      // The route is the 🥾 removal setting's (Q401, Ed 2026-08-19):
-      // 'ordinary' races at the bar; 'others' and 'everyone' are consent —
-      // the difference lives in the settle check, not the route.
-      route = this.removalRung() === 'ordinary' ? 'ordinary' : 'constitutional';
+      // The route is 🥾's price (Q401, Ed 2026-08-19; entry 94): `proposal`
+      // races at the bar; `assembly` and `consent` are consent — the
+      // difference lives in the settle check, not the route.
+      route = this.priceOf('removal') === 'proposal' ? 'ordinary' : 'constitutional';
     } else {
-      // admit rides submitApplication/proposeApplicant (§9.7½)
-      route = 'ordinary';
+      // admit rides submitApplication (§9.7½): an application is a stranger
+      // proposing their own invitation, so it pays 🪪's price like one.
+      route = this.priceOf('membership') === 'assembly' ? 'constitutional' : 'ordinary';
     }
     if (route === 'constitutional' && this.heldOutBy(by)) {
       throw new Error('one 🏛️ out per member at a time (§9.6)');
@@ -1583,19 +1694,13 @@ export class ConstitutionSession {
     }
   }
 
-  /** 🥾 (Q401): the removal rung as it stands — unset reads as today's rule,
-   *  everyone's consent with the subject's own answer counted. */
-  private removalRung(): 'everyone' | 'others' | 'ordinary' {
-    const st = this.settings.get('removal');
-    const v = st ? (st.value as LadderValue | null) : null;
-    return (v?.rung as 'everyone' | 'others' | 'ordinary' | undefined) ?? 'everyone';
-  }
-
-  /** Under 'others', the subject of a removal stands outside its electorate
-   *  (Q401a) — they see the motion, and it settles without them. Read live,
-   *  like the electorate itself: a rung change mid-motion is a ground shift. */
+  /** Under `assembly`, the subject of a removal stands outside its electorate
+   *  (Q401a) — they see the motion, and it settles without them; under
+   *  `consent` their own answer counts, which is what makes it leave-only.
+   *  Read live, like the electorate itself: a price change mid-motion is a
+   *  ground shift. */
   private motionExcludes(rec: MotionRecord): MemberId | null {
-    return rec.payload.kind === 'remove' && this.removalRung() === 'others'
+    return rec.payload.kind === 'remove' && this.priceOf('removal') === 'assembly'
       ? rec.payload.member : null;
   }
 
@@ -1621,7 +1726,7 @@ export class ConstitutionSession {
       settled = false;
       for (const rec of this.motions.values()) {
         if (rec.status !== 'running' || rec.route !== 'constitutional') continue;
-        // 🏛️ without [avatar] (Q401a): a removal under 'others' settles by
+        // 🏛️ without [avatar] (Q401a): a removal under `assembly` settles by
         // the live electorate minus its subject — everyone but them.
         const excl = this.motionExcludes(rec);
         const electorate = motionElectorateOf(this.members.values())
@@ -1871,14 +1976,14 @@ export class ConstitutionSession {
   // -------------------------------------------------------------------------
   // Applications (§9.7½)
 
-  private joinPolicy(): 'invite' | 'proposed' | 'apply' | 'open' {
-    const apps = this.settings.get('applications')!.value as ApplicationsValue | null;
-    return apps ? apps.joinPolicy : 'invite';
+  /** 🤝 as it stands — unset reads as the door shut, as a legacy log did. */
+  private mayApply(): boolean {
+    return mayApply(this.settings.get('applications')!.value as ApplicationsValue | null);
   }
 
   startApplication(t: number, email: string): string {
     this.requireOpen('applying');
-    if (this.joinPolicy() === 'invite') {
+    if (!this.mayApply()) {
       throw new Error('this document is invitation-only (§9.7½)');
     }
     this.requireEmailFree(email);
@@ -1912,61 +2017,47 @@ export class ConstitutionSession {
     if (fields.picture !== undefined) (e as { picture?: string }).picture = fields.picture;
     if (fields.words !== undefined) (e as { words?: string }).words = fields.words;
     this.emit(e);
-    const policy = this.joinPolicy();
-    if (policy === 'open') {
-      // anyone with the link joins on arrival — no motion in the way
+    // An application is a stranger proposing their own invitation (entry
+    // 94), so it pays 🪪's price: at `pen` the act is its own consent and
+    // they are admitted on submit; otherwise it opens the admit race at
+    // that price, free — the bar (or the room) is its filter, and the
+    // applicant stands as nobody's mover. The old second (a member staking
+    // a ✏️ to propose an applicant) went with the `proposed` rung: the
+    // application *is* the proposal.
+    if (this.priceOf('membership') === 'pen') {
       const id = `m-${this.nextMemberN}`;
       this.emit({ type: 'member-admitted', t, applicant, member: id });
       this.afterRosterChange(t, 'arrival', id);
-    } else if (policy === 'apply') {
-      // straight to the bar, free — the tasks its price, the bar its filter
+    } else {
       this.emit({ type: 'motion-opened', t, motion: `mo-${this.nextMotionN}`,
         by: null, payload: { kind: 'admit', applicant },
-        route: 'ordinary', stake: 0 });
+        route: this.priceOf('membership') === 'assembly' ? 'constitutional' : 'ordinary',
+        stake: 0 });
     }
-    // under 'proposed' the application waits for a member's second
-  }
-
-  /** A second is a proposed application (§9.7½, Q348a): the member stakes the ✏️.
-   *  The rationale is theirs to write or leave blank (v0.57) — the lane is
-   *  offered by the surface, never demanded by the mechanism. */
-  proposeApplicant(t: number, member: MemberId, applicant: string, why?: string): void {
-    this.requireOpen('proposing');
-    if (this.joinPolicy() !== 'proposed') {
-      throw new Error("this document's applications are not proposed (§9.7½)");
-    }
-    const m = this.members.get(member);
-    if (!m || !inE(m)) throw new Error(`'${member}' is not an arrived member`);
-    const a = this.applicants.get(applicant);
-    if (!a || a.status !== 'submitted') throw new Error('no submitted application to propose');
-    this.emit({ type: 'application-proposed', t, applicant, by: member });
-    const e: ConstitutionEvent = { type: 'motion-opened', t,
-      motion: `mo-${this.nextMotionN}`, by: member,
-      payload: { kind: 'admit', applicant }, route: 'ordinary', stake: 1 };
-    if (why !== undefined && why.trim() !== '') (e as { why?: string }).why = why;
-    this.emit(e);
   }
 
   // -------------------------------------------------------------------------
   // Reads used by projections (view.ts owns the member-facing surface)
 
-  /** The register's crown as the two powers (§9.7 v0.54), lapse ignored —
-   *  a sleeping crown still holds; callers check the lapse where it bites. */
-  registerPowers(): Powers {
-    return { ...this.settings.get('applications')!.powers }; // Q506: one pair, on the setting
+  /** A door's crown pair (entry 94), lapse ignored — a sleeping crown still
+   *  holds; callers check the lapse where it bites. */
+  doorPowers(door: DoorId): Powers {
+    return { ...this.settings.get(door)!.powers };
   }
 
   /**
-   * The direct-invite gate, and **exactly `invite()`'s own test** (Q812).
-   * It read `unilateral || assent` while `invite` refuses on anything but
-   * the unilateral power, so a founder holding only the 🛡️ was shown the
-   * door and refused at it — two gates wearing one name. The pen is what
-   * acts alone; the shield only refuses, so it can never be what opens a
-   * door (§9.6a, R-048).
+   * The door's pen as a gate, and **exactly the act's own test** (Q812): the
+   * pen is what acts alone; the shield only refuses, so it can never be what
+   * opens a door (§9.6a, R-048). A sleeping crown does not act.
    */
-  membershipReserved(): boolean {
-    return this.registerPowers().unilateral && !this.crownLapsedFlag;
+  doorPen(door: DoorId): boolean {
+    return this.doorPowers(door).unilateral && !this.crownLapsedFlag;
   }
+
+  /** @deprecated entry 94 — ✉️'s pair; the page reads it until step 5 rewrites the 🪪 card. */
+  registerPowers(): Powers { return this.doorPowers('door:invite'); }
+  /** @deprecated entry 94 — `doorPen('door:invite')`. */
+  membershipReserved(): boolean { return this.doorPen('door:invite'); }
 
   /**
    * 👑 by any reservation (Ed, 2026-08-18, Q379 wide): the mark reads what
@@ -2090,7 +2181,7 @@ export class ConstitutionSession {
   }
 
   memberRecords(): ReadonlyMap<MemberId, MemberRecord> { return this.members; }
-  settingState(id: SettingId): Readonly<SettingState> {
+  settingState(id: PowerKey): Readonly<SettingState> {
     const st = this.settings.get(id);
     if (!st) throw new Error(`'${id}' has no setting state`);
     return st;

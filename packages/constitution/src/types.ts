@@ -28,6 +28,26 @@ export type MotionAnswer = 'accept' | 'keep' | 'abstain';
 export type Power = 'unilateral' | 'assent';
 export interface Powers { unilateral: boolean; assent: boolean }
 
+/**
+ * **The doors** (entry 94, Ed 2026-08-26): ✉️ where invitations are made
+ * and ❌ where removals are. A door is not a setting — it has no value, and
+ * what an act at it costs is a setting of its own (🪪, 🥾) — but it holds
+ * the founder's ✒️/🛡️ pair exactly as a setting does, over the *act*
+ * rather than the rule: ✒️ invites or exiles at will, 🛡️ refuses any one
+ * invitation or removal. So a door is a `SettingState` in the same map,
+ * born with both powers, relinquished one-way, lapsing into assent, and
+ * every reader of powers meets it without learning a second kind of thing
+ * — the Text (Q440) set the precedent. The pen is any unilateral act in
+ * the document; the founder only starts with it.
+ */
+export type DoorId = 'door:invite' | 'door:remove';
+export const DOORS: readonly DoorId[] = ['door:invite', 'door:remove'];
+/** Anything that carries a crown pair: a managed setting, the Text, a door. */
+export type PowerKey = SettingId | DoorId;
+export function isDoor(key: PowerKey): key is DoorId {
+  return key === 'door:invite' || key === 'door:remove';
+}
+
 /** §9.7 v0.54: holder derives from powers — the convenor's iff any is held. */
 export function holderOf(powers: Powers): 'convenor' | 'members' {
   return powers.unilateral || powers.assent ? 'convenor' : 'members';
@@ -67,20 +87,26 @@ export type ConstitutionEvent =
   | { type: 'setting-set'; t: number; setting: SettingId; value: SettingValue;
       by: 'convenor' | 'crown'; why?: string }
   | { type: 'setting-delegated'; t: number; setting: SettingId }
-  | { type: 'setting-reclaimed'; t: number; setting: SettingId }
-  /** One crown power given up — free, separate, one-way (§9.7 v0.54). */
-  | { type: 'power-relinquished'; t: number; setting: SettingId; power: Power }
+  | { type: 'setting-reclaimed'; t: number; setting: PowerKey }
+  /** One crown power given up — free, separate, one-way (§9.7 v0.54). On a door, over the act. */
+  | { type: 'power-relinquished'; t: number; setting: PowerKey; power: Power }
   | { type: 'starting-text-confirmed'; t: number; text: string }
   /** The form is the convenor's even when the number is the room's (§9.0a). */
   | { type: 'quorum-form-set'; t: number; form: 'count' | 'share' }
   | { type: 'identity-set'; t: number; member: MemberId;
       name?: string | null; picture?: string | null }
   /* -- the roster (§9.6a: membership begins at first arrival) ------------- */
+  /** `viaMotion` where a motion carried it; `by` where a member's own word
+   *  did, 🪪 standing at ✒️ (entry 94, Q2b); neither is the founder's pen. */
   | { type: 'member-invited'; t: number; member: MemberId; email: string;
-      viaMotion?: MotionId }
+      viaMotion?: MotionId; by?: MemberId }
   | { type: 'member-uninvited'; t: number; member: MemberId }
   | { type: 'member-arrived'; t: number; member: MemberId }
-  | { type: 'member-removed'; t: number; member: MemberId; viaMotion: MotionId }
+  /** `viaMotion` where a motion carried it; `by` 'convenor' for exile at
+   *  will (❌'s ✒️), 'self' for a resignation; absent both, an old log's
+   *  motion. Immediate in every case: standing answers leave with them. */
+  | { type: 'member-removed'; t: number; member: MemberId; viaMotion?: MotionId;
+      by?: 'convenor' | 'self' }
   /* -- the ceremony (§9.0a) ----------------------------------------------- */
   | { type: 'answer-given'; t: number; member: MemberId; setting: SettingId;
       value: SettingValue }
@@ -114,7 +140,7 @@ export type ConstitutionEvent =
   | { type: 'crown-question-answered'; t: number; question: CrownQuestionId;
       outcome: 'accept' | 'reject' }
   | { type: 'crown-question-auto-passed'; t: number; question: CrownQuestionId }
-  | { type: 'setting-handed-over'; t: number; setting: SettingId }
+  | { type: 'setting-handed-over'; t: number; setting: PowerKey }
   | { type: 'crown-lapsed'; t: number }
   | { type: 'crown-returned'; t: number }
   /* -- presence and the freeze (§9.5, §9.5a) ------------------------------ */
@@ -198,14 +224,21 @@ export function versionOf(entry: Pick<LogEntry, 'schemaVersion'>): number {
  *  founding    — the convenor, who made the document and was in it from the
  *                first moment; `by` is null, because nobody let them in.
  *  invitation  — invited: `by` is 'convenor' where the convenor's own
- *                drafting power did it, 'members' where a motion carried it.
- *  application — admitted on their own application, always by the membership.
+ *                drafting power did it, 'members' where a motion carried it,
+ *                'member' where one member's word did (🪪 at ✒️, entry 94) —
+ *                and then `inviter` names them, because the promise-coverage
+ *                audit of 🪪 wants to know who exercised the price (Ed, Q2b).
+ *  application — admitted on their own application, by the membership.
  */
 export type ArrivalVia = 'founding' | 'invitation' | 'application';
 export interface Arrival {
   via: ArrivalVia;
-  by: 'convenor' | 'members' | null;
+  by: 'convenor' | 'members' | 'member' | null;
+  inviter?: MemberId;
 }
+
+/** How a member left (entry 94): a motion, the founder's exile at will, or their own resignation. */
+export type DepartureBy = 'members' | 'convenor' | 'self';
 
 /** Where a held crown power came from (Q524): the birth, or a reserve motion. */
 export type PowerSource = 'founding' | 'motion';
@@ -218,6 +251,8 @@ export interface MemberRecord {
   /** How this member got in, and whose act it was (Q524). */
   arrival: Arrival;
   removed: boolean;
+  /** Whose act the removal was, null while they are here (entry 94). */
+  removedBy: DepartureBy | null;
   lapsed: boolean;
   lapseWarned: boolean;
   signedOut: 'holding' | 'abstaining' | null;
@@ -249,7 +284,8 @@ export interface MemberRecord {
 export type SettledBy = 'convenor' | 'ceremony' | 'motion' | 'crown';
 
 export interface SettingState {
-  id: SettingId;
+  /** A managed setting, the Text, or a door (entry 94) — whatever carries a crown pair. */
+  id: PowerKey;
   /** Derived from powers: the convenor's iff any power is held (§9.7 v0.54). */
   holder: 'convenor' | 'members';
   /** The crown powers held on this setting (§9.7 v0.54). */

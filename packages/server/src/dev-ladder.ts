@@ -156,11 +156,11 @@ function shuffle(rnd: () => number, endsAtMs: number): {
   const values = new Map<SettingId, SettingValue>();
   const delegated = new Set<SettingId>();
   const ladderOwns = new Set<SettingId>(['ending', 'applications']);
-  const skip = new Set<SettingId>(['title', 'link', 'startingText', 'membership',
+  const skip = new Set<SettingId>(['title', 'link', 'startingText',
     'displayName', 'picture']);
 
   values.set('ending', { endsAtMs });
-  values.set('applications', { joinPolicy: pick(rnd, ['proposed', 'apply'] as const) });
+  values.set('applications', { apply: true });
 
   for (const entry of CATALOGUE) {
     if (skip.has(entry.id) || ladderOwns.has(entry.id)) continue;
@@ -194,6 +194,8 @@ function drawFor(id: SettingId, valueType: string, rungs: readonly string[] | un
       return { enabled: rnd() < 0.5, budget: between(rnd, 4, 10) };
     case 'ladder':
       return { rung: pick(rnd, rungs ?? ['closed']) };
+    case 'price': // 🪪 🥾 — any rung but the cheapest, so the doors have something to show
+      return { price: pick(rnd, (rungs ?? ['assembly']).slice(0, -1)) as 'assembly' };
     default:
       throw new Error(`the shuffler has no draw for '${id}' (${valueType})`);
   }
@@ -612,12 +614,16 @@ async function motions(host: LadderHost, doc: LoadedDoc, bridge: EngineBridge,
   // **A motion has to propose something else.** The module refuses one that
   // proposes what already stands, and the shuffler has just drawn every
   // value at random — so nothing here may name a rung outright.
-  const otherRung = (id: SettingId): { rung: string } => {
-    const rungs = CATALOGUE.find((e) => e.id === id)?.rungs ?? [];
-    const standing = (cs.settingState(id)?.value as { rung?: string } | null)?.rung;
+  const otherRung = (id: SettingId): SettingValue => {
+    const entry = CATALOGUE.find((e) => e.id === id);
+    const rungs = entry?.rungs ?? [];
+    const isPrice = entry?.valueType === 'price';
+    const v = cs.settingState(id)?.value as { rung?: string; price?: string } | null;
+    const standing = isPrice ? v?.price : v?.rung;
     const other = rungs.filter((r) => r !== standing);
     if (other.length === 0) throw new Error(`${id} has no other rung to propose`);
-    return { rung: pick(rnd, other) };
+    const drawn = pick(rnd, other);
+    return isPrice ? { price: drawn as 'assembly' } : { rung: drawn };
   };
 
   // ordinary, and therefore a race in the engine
@@ -679,16 +685,14 @@ async function application(host: LadderHost, doc: LoadedDoc,
     cs.verifyApplication(pen.next(), applicant);
     cs.submitApplication(pen.next(), applicant, { name: 'Thea Ollerenshaw',
       words: 'I live four doors down, I can fix a sash window, and I would like to join.' });
-    // What a submitted application *is* depends on 🤝, and the two rungs
-    // give two different things to look at. Under **proposed** it waits for
-    // a member to second it, which is the state worth seeing — the second is
-    // `proposeApplicant`, and leaving it unspent is what makes the waiting
-    // visible. Under **apply** the submission is already its own one-candidate
-    // race against the membership as it stands, and seconding it is refused.
-    const policy = (cs.settingState('applications')?.value as
-      { joinPolicy: string } | null)?.joinPolicy;
-    ctx.built.push(policy === 'proposed'
-      ? 'an application submitted, waiting for a member to second it'
+    // A submitted application is a stranger proposing their own invitation
+    // (entry 94): it races at 🪪's price — a one-candidate race against the
+    // membership as it stands under `proposal`, everyone's consent under
+    // `assembly`; the shuffler never draws `pen`, where it would simply be in.
+    const price = (cs.settingState('membership')?.value as
+      { price?: string } | null)?.price ?? 'assembly';
+    ctx.built.push(price === 'assembly'
+      ? 'an application submitted, collecting everyone\'s consent'
       : 'an application submitted, racing on its own');
     await host.commit(doc, pen.now);
   } catch (e) {
