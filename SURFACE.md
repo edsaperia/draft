@@ -269,17 +269,17 @@ The refund flight and every grant's inbound flight take 640 ms.
 | 4 | grant-pen | ✒️ | grant | lead — a tab on the Founded line, no clause | yes | the save | Your Pen |
 | 5 | grant-shield | 🛡️ | grant | lead — a tab on the Founded line, no clause | no | the save | Your Shield |
 | 6 | chamber | 🌍 | constitutional · judge-gate | lead, penultimate | yes | the pen's OK | Visibility |
-| 7 | policy | 🤝 | constitutional | members, first — above *Members*, ahead of 💤 🥾 (Q617) | yes | chamber | Applications |
-| 8 | hat | 🎩 | decision, not a setting | members — a tab on the list; no sentence | yes | policy | Is the Founder a Member? |
-| 9 | myname | ✋ | personal | members — your own row | yes | hat | Your Name |
-| 10 | mypic | 🖼️ | personal | members — your own row | yes | myname | Your Picture |
-| 11 | lapse | 💤 | constitutional · judge-gate | members — above *Members*, with 🤝 (Q865) | yes | mypic | Do Memberships Lapse? |
-| 12 | removal | 🥾 | constitutional | members — the last rule above *Members* | yes | lapse | How Is a Member Removed? |
-| 13 | roster | 🪪 | constitutional — **the price of admission** (entry 94) | members — its own clause, above 🤝 | yes | removal | Admissions (the ✉️ door is the **remedy** while 🍾 waits on `one-voice`, F19) |
+| 7 | roster | 🪪 | constitutional — **the price of admission** (entry 94) | members, first — its own clause, above 🤝, because an application pays it (Ed, 2026-08-26) | yes | chamber | Admissions (the ✉️ door is the **remedy** while 🍾 waits on `one-voice`, F19) |
+| 8 | policy | 🤝 | constitutional | members — above *Members*, ahead of 💤 🥾 (Q617) | yes | roster | Applications |
+| 9 | hat | 🎩 | decision, not a setting | members — a tab on the list; no sentence | yes | policy | Is the Founder a Member? |
+| 10 | myname | ✋ | personal | members — your own row | yes | hat | Your Name |
+| 11 | mypic | 🖼️ | personal | members — your own row | yes | myname | Your Picture |
+| 12 | lapse | 💤 | constitutional · judge-gate | members — above *Members*, with 🤝 (Q865) | yes | mypic | Do Memberships Lapse? |
+| 13 | removal | 🥾 | constitutional | members — the last rule above *Members* | yes | lapse | How Is a Member Removed? |
 | 14 | canpropose | 💡 | gate (and the ✏️ grant) | rate — in the preamble's stack | no | 🍾 | Proposing |
 | 15 | canjudge | ⚖️ | gate | rate — in the preamble's stack | no | 🍾 | Judging |
 | 16 | grant-voice | 🏛️ | grant | rate — in the preamble's stack (Y23) | no | its clause is pinned; the **news** still arrives with the first blind question you are asked — else, **before the start, under 🪪**, and under ⚖️ after it (Q605, narrowed by Q750, widened by Q829) | Your Voice |
-| 17 | rate | ⏱️ | ordinary, delegable | rate | yes | roster | Proposal Rate |
+| 17 | rate | ⏱️ | ordinary, delegable | rate | yes | removal | Proposal Rate |
 | 18 | machines | 🤖 | ordinary, delegable | rate, last | yes | rate | AI Proposals |
 | 19 | ending | ⏰ | constitutional, route inside it | deciding, first | yes | machines | When Does It End? |
 | 20 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | How Sure Must the Room Be? |

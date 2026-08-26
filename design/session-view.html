@@ -2423,8 +2423,10 @@
   // Anonymity, so *what may be proposed* is decided before *how the room
   // decides it*. 🍾 stays last in the file though its clause opens Proposals
   // (Ed: *Begin can be in the middle*), and 📄 the text stays last but one.
+  // 🪪 before 🤝 (Ed, 2026-08-26): an application pays the price, so the
+  // price is decided before whether strangers may apply
   const ORDER = ['title', 'slug', 'myemail', 'grant-pen', 'grant-shield', 'chamber',
-    'policy', 'hat', 'myname', 'mypic', 'lapse', 'removal', 'roster',
+    'roster', 'policy', 'hat', 'myname', 'mypic', 'lapse', 'removal',
     'canpropose', 'canjudge', 'grant-voice', 'rate', 'machines',
     'ending', 'bar', 'quorum',
     'authorship', 'judgments',
@@ -4885,9 +4887,9 @@
       '<p class="why">How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('removal') +
-      opt(S, 'removal', 'everyone', 'Everyone has to agree, including them', 'One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.') +
-      opt(S, 'removal', 'others', 'Everyone else has to agree', 'Somebody can be removed even if they object, but only if every other member agrees.') +
-      opt(S, 'removal', 'ordinary', 'A proposal ✏️ like any other', 'A removal is proposed and judged the same way as a change to the text.') +
+      opt(S, 'removal', 'consent', 'Everyone must agree, including them', 'One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.') +
+      opt(S, 'removal', 'assembly', 'Everyone else must agree', 'Somebody can be removed even if they object, but only if every other member agrees 🏛️.') +
+      opt(S, 'removal', 'proposal', 'The membership decides', 'A removal is proposed and judged at the approval threshold ✏️, like a change to the text.') +
       '</div>',
     machines: () =>
       '<p class="why">An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.</p>' +
