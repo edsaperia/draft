@@ -16,6 +16,7 @@ and their copy was read side by side for the first time.
 | **approval threshold** | the bar, θ | And it is a **confidence**, not a vote share — the copy has to keep saying so. |
 | **proposal rate**, ✏️ | tokens, the economy, credits | The currency is the act. |
 | ✏️ *anybody may propose changing it* / 🏛️ *a constitutional change* | ordinary | "Ordinary" is engine vocabulary; the kind pair is glyphic. *Constitutional* survives. |
+| ✒️ *any unilateral act in the document* | the Founder's pen | **✒️ means any unilateral act; the Founder only starts with it** — 🪪 at ✒️ is every member's word admitting whom they like, and a resignation is always ✒️ (Ed, 2026-08-26, entry 94). The same three verbs price every act on the membership: 🏛️ everyone must agree · ✏️ the membership decides · ✒️ the act is its own consent. |
 | *everyone answers, and when everyone is ready the document begins* | ceremony | What is left is what happens. |
 | **inactive** | quiet (of a membership) | |
 | **Anonymity** | Privacy (the section) | |
@@ -191,7 +192,7 @@ Lifted from CLAUDE.md's glossary and the code in spec pass 2 (Q585 a); the numbe
 | # | Rule | Example |
 |---|---|---|
 | T1 | Task titles are Title Case; bare nouns drop the article | *Title*, *Link*, *Text*; *Is the Founder a Member?* |
-| T2 | A title says what kind of answer it wants; Quorum and Approval threshold stay nouns | *How Sure Must the Room Be?* / *Quorum*; the power tabs: *Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* (Q615) |
+| T2 | A title says what kind of answer it wants; Quorum and Approval threshold stay nouns | *How Sure Must the Room Be?* / *Quorum* / *Admissions*; the power tabs: *Can the Founder Make Amendments at Will?* / *Does the Founder Have a Veto?* (Q615); on the doors, the act: *Can the Founder Invite at Will?* / *Does the Founder Have a Veto over Invitations?* / *Can the Founder Remove at Will?* / *Does the Founder Have a Veto over Removals?* (entry 94) |
 | T3 | A settled card's head is the rule, not the task's name; open questions, 🪪, 📄, personal cards and answers keep the title | `headFor` |
 | T4 | A task you have to do carries no subtitle; subtitles survive on a motion (the value) and on news (what happened) | `summary` |
 | T5 | A rename reaches the option labels; **one label per rung, everywhere** — the founder's radio, the member's ladder and the composer's lane say the same words (Q620) | *AI proposals are permitted*; *Revealed after the decision*; *Everyone has to agree, including them*; *Applications must be proposed by members* |
