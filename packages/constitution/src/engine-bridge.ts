@@ -52,7 +52,7 @@ import type { MemberId, MotionId } from './types.js';
 import type { SettingValue } from './values.js';
 
 /** Settings that never carry a raceable standing value. */
-const UNRACED: ReadonlySet<string> = new Set(['membership', 'startingText']);
+const UNRACED: ReadonlySet<string> = new Set(['admission', 'startingText']);
 
 /**
  * What a host must keep beside the engine log to resume a bridge: the

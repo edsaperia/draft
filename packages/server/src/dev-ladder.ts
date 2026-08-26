@@ -689,7 +689,7 @@ async function application(host: LadderHost, doc: LoadedDoc,
     // (entry 94): it races at 🪪's price — a one-candidate race against the
     // membership as it stands under `proposal`, everyone's consent under
     // `assembly`; the shuffler never draws `pen`, where it would simply be in.
-    const price = (cs.settingState('membership')?.value as
+    const price = (cs.settingState('admission')?.value as
       { price?: string } | null)?.price ?? 'assembly';
     ctx.built.push(price === 'assembly'
       ? 'an application submitted, collecting everyone\'s consent'

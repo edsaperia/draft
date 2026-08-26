@@ -265,7 +265,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
       authorship: { rung: 'sealed' },
       judgments: { rung: 'after' },
       applications: { holder: 'members', apply: true },
-      membership: { price: 'proposal' },
+      admission: { price: 'proposal' },
       machines: { enabled: false, budget: 0 },
       lapse: { afterMs: null },
     };
@@ -1082,7 +1082,7 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
       pace: { shape: 'fixed' }, quorum: { form: 'count', n: 2 },
       authorship: { rung: 'sealed' },
       judgments: { rung: 'after' }, applications: { apply: false },
-      membership: { price: 'assembly' },
+      admission: { price: 'assembly' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
     };
     for (const [setting, value] of Object.entries(values)) {
@@ -1469,7 +1469,7 @@ describe('the open join link admits (backlog 73)', () => {
       pace: { shape: 'fixed' }, bar: { pct: 66 },
       quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
-      applications: { apply: true }, membership: { price: 'pen' }, // open: yes, at ✒️
+      applications: { apply: true }, admission: { price: 'pen' }, // open: yes, at ✒️
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
     };
     for (const [setting, value] of Object.entries(values)) {

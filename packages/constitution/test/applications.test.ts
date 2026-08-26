@@ -13,7 +13,7 @@ describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one iden
   // and what was not lodged is refused at the door like any stranger.
   it('the door shutting: a submitted application goes on, an unsubmitted one is refused', () => {
     const { s, bo, cy } = buildConstituted({
-      applications: { apply: true }, membership: { price: 'proposal' } });
+      applications: { apply: true }, admission: { price: 'proposal' } });
     const lodged = s.startApplication(3, 'dee@example.org');
     s.verifyApplication(4, lodged);
     s.submitApplication(5, lodged, { name: 'Dee' });
@@ -32,13 +32,13 @@ describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one iden
 
   it('a member address is told to log in instead — one address, one member', () => {
     const { s } = buildConstituted({
-      applications: { holder: 'members', apply: true }, membership: { price: 'proposal' } });
+      applications: { holder: 'members', apply: true }, admission: { price: 'proposal' } });
     expect(() => s.startApplication(3, 'bo@example.org')).toThrow(/log in/);
   });
 
   it('at ✏️: verified before anything can be submitted; straight to the bar, free', () => {
     const { s } = buildConstituted({
-      applications: { holder: 'members', apply: true }, membership: { price: 'proposal' } });
+      applications: { holder: 'members', apply: true }, admission: { price: 'proposal' } });
     const ap = s.startApplication(3, 'dee@example.org');
     expect(() => s.submitApplication(4, ap)).toThrow(/magic link/);
     s.verifyApplication(4, ap);
@@ -60,7 +60,7 @@ describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one iden
 
   it('a refused application is told so', () => {
     const { s } = buildConstituted({
-      applications: { holder: 'members', apply: true }, membership: { price: 'proposal' } });
+      applications: { holder: 'members', apply: true }, admission: { price: 'proposal' } });
     const ap = s.startApplication(3, 'dee@example.org');
     s.verifyApplication(4, ap);
     s.submitApplication(5, ap); // an empty application is a real application
@@ -94,12 +94,12 @@ describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one iden
     expect(s.settingState('applications').value).toEqual({ apply: true });
     // buildConstituted set 🪪 to assembly before 🤝, so the legacy seed does
     // not override a standing value — the migration only fills an empty one
-    expect(s.settingState('membership').value).toEqual({ price: 'assembly' });
+    expect(s.settingState('admission').value).toEqual({ price: 'assembly' });
   });
 
   it('open: 🤝 yes and 🪪 at ✒️ — anyone with the link joins on arrival, identity still verified', () => {
     const { s } = buildConstituted({
-      applications: { holder: 'members', apply: true }, membership: { price: 'pen' } });
+      applications: { holder: 'members', apply: true }, admission: { price: 'pen' } });
     const ap = s.startApplication(3, 'dee@example.org');
     s.verifyApplication(4, ap);
     s.submitApplication(5, ap, { name: 'Dee' });

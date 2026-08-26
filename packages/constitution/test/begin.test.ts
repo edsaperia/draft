@@ -9,7 +9,7 @@ const FOUNDER_SET = {
   pace: { shape: 'fixed' }, quorum: { form: 'share', n: 60 },
   authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
   applications: { apply: false }, removal: { price: 'consent' },
-  membership: { price: 'assembly' },
+  admission: { price: 'assembly' },
   machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
 } as const;
 

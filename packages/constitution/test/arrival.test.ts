@@ -46,7 +46,7 @@ describe('how a member got in (Q524)', () => {
 
   it('an admitted applicant came in on their own application, by the membership', () => {
     const { s } = buildConstituted({
-      applications: { holder: 'members', apply: true }, membership: { price: 'proposal' } });
+      applications: { holder: 'members', apply: true }, admission: { price: 'proposal' } });
     const ap = s.startApplication(3, 'dee@example.org');
     s.verifyApplication(4, ap);
     s.submitApplication(5, ap, { name: 'Dee', words: 'I keep bees.' });

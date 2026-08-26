@@ -57,6 +57,50 @@ const CONSTITUTIONAL: ReadonlySet<SettingId> = new Set(
   CATALOGUE.filter((e) => e.kind === 'constitutional').map((e) => e.id),
 );
 
+/**
+ * Setting ids a log may name that the catalogue no longer has (Q903, Ed
+ * 2026-08-26): 🪪 was `membership` while it *was* the register, and entry 94
+ * made it the price of admission. Every log written before the rename names
+ * the old id, so it is read onto the new one at the fold — the same
+ * migration `foldLegacy` performs for 🤝's four-rung `joinPolicy`, one level
+ * up, on the id rather than the value.
+ */
+const LEGACY_SETTING_IDS: ReadonlyMap<string, SettingId> = new Map([
+  ['membership', 'admission' as SettingId],
+]);
+
+/**
+ * One event read through `LEGACY_SETTING_IDS`, or the event itself where
+ * nothing is legacy. **The entry keeps its bytes**: only the copy handed to
+ * the fold is rewritten, so the hash chain is exactly what was written and
+ * an old log verifies as it always did.
+ *
+ * It rewrites by shape rather than by listing the event types, because the
+ * shapes are the whole set: `setting` (setting-set · setting-delegated ·
+ * setting-reclaimed · power-relinquished · answer-given · question-resolved ·
+ * ok-given), `settings` (ok-owed · ceremony-ground-shifted) and
+ * `payload.setting` (motion-opened, on a `set` or a `reserve`). A door key in
+ * a `setting` field simply never matches.
+ */
+function foldLegacyIds(event: ConstitutionEvent): ConstitutionEvent {
+  const e = event as unknown as
+    { setting?: string; settings?: string[]; payload?: { setting?: string } };
+  let out: Record<string, unknown> | null = null;
+  const touch = (): Record<string, unknown> =>
+    (out ??= { ...(event as unknown as Record<string, unknown>) });
+  if (e.setting !== undefined && LEGACY_SETTING_IDS.has(e.setting)) {
+    touch()['setting'] = LEGACY_SETTING_IDS.get(e.setting);
+  }
+  if (e.settings !== undefined && e.settings.some((s) => LEGACY_SETTING_IDS.has(s))) {
+    touch()['settings'] = e.settings.map((s) => LEGACY_SETTING_IDS.get(s) ?? s);
+  }
+  const ps = e.payload?.setting;
+  if (ps !== undefined && LEGACY_SETTING_IDS.has(ps)) {
+    touch()['payload'] = { ...e.payload, setting: LEGACY_SETTING_IDS.get(ps) };
+  }
+  return out === null ? event : (out as unknown as ConstitutionEvent);
+}
+
 /** Q459: a read refreshes the activity clock at most this often. */
 const SEEN_EVERY_MS = 60 * 60_000;
 
@@ -161,7 +205,8 @@ export class ConstitutionSession {
     this.apply(event, seq);
   }
 
-  private apply(event: ConstitutionEvent, _seq: number): void {
+  private apply(rawEvent: ConstitutionEvent, _seq: number): void {
+    const event = foldLegacyIds(rawEvent);
     if (event.t < this.lastT) throw new Error('timestamps must be non-decreasing');
     this.lastT = event.t;
     switch (event.type) {
@@ -878,7 +923,7 @@ export class ConstitutionSession {
         st.value = { apply: mayApply(v) };
       }
       if (v.joinPolicy === 'open') {
-        const adm = this.settings.get('membership')!;
+        const adm = this.settings.get('admission')!;
         if (adm.value === null) {
           adm.value = { price: 'pen' };
           adm.collecting = false;
@@ -896,10 +941,10 @@ export class ConstitutionSession {
 
   /** What an act on the membership costs, as the document stands — unset
    *  reads as the most protective rung, exactly as a legacy log did. */
-  private priceOf(id: 'membership' | 'removal'): Price {
+  private priceOf(id: 'admission' | 'removal'): Price {
     const st = this.settings.get(id);
     const v = st ? (st.value as PriceValue | null) : null;
-    return v?.price ?? (id === 'membership' ? 'assembly' : 'consent');
+    return v?.price ?? (id === 'admission' ? 'assembly' : 'consent');
   }
 
   private touch(member: MemberId, t: number): void {
@@ -1189,11 +1234,11 @@ export class ConstitutionSession {
       if (this.constitutedT === null) {
         throw new Error('before the start the founder invites (§9.6a)');
       }
-      if (this.priceOf('membership') !== 'pen') {
+      if (this.priceOf('admission') !== 'pen') {
         throw new Error('admission is not at ✒️ — propose the invitation at 🪪\'s price (§9.7½)');
       }
     } else if (this.constitutedT !== null && !this.doorPen('door:invite') &&
-      this.priceOf('membership') !== 'pen') {
+      this.priceOf('admission') !== 'pen') {
       throw new Error('after the start an invitation is a motion at 🪪\'s price (§9.6a)');
     }
     this.requireEmailFree(email);
@@ -1577,7 +1622,7 @@ export class ConstitutionSession {
       if (re.kind === 'personal') {
         throw new Error(`'${payload.setting}' is never held, so it cannot be reserved (§9.7)`);
       }
-      if (payload.setting === 'membership') {
+      if (payload.setting === 'admission') {
         throw new Error("the register's crown is the applications setting's -- reserve that (§9.7½)");
       }
       const rst = this.settings.get(payload.setting)!;
@@ -1593,7 +1638,7 @@ export class ConstitutionSession {
       this.requireEmailFree(payload.email);
       // The route is 🪪's price (entry 94): at `pen` nobody proposes — the
       // invite command admits outright — so a motion here is a mistake.
-      const price = this.priceOf('membership');
+      const price = this.priceOf('admission');
       if (price === 'pen') throw new Error('admission is at ✒️ — invite directly, nothing to propose (§9.7½)');
       route = price === 'assembly' ? 'constitutional' : 'ordinary';
     } else if (payload.kind === 'remove') {
@@ -1606,7 +1651,7 @@ export class ConstitutionSession {
     } else {
       // admit rides submitApplication (§9.7½): an application is a stranger
       // proposing their own invitation, so it pays 🪪's price like one.
-      route = this.priceOf('membership') === 'assembly' ? 'constitutional' : 'ordinary';
+      route = this.priceOf('admission') === 'assembly' ? 'constitutional' : 'ordinary';
     }
     if (route === 'constitutional' && this.heldOutBy(by)) {
       throw new Error('one 🏛️ out per member at a time (§9.6)');
@@ -2066,14 +2111,14 @@ export class ConstitutionSession {
     // applicant stands as nobody's mover. The old second (a member staking
     // a ✏️ to propose an applicant) went with the `proposed` rung: the
     // application *is* the proposal.
-    if (this.priceOf('membership') === 'pen') {
+    if (this.priceOf('admission') === 'pen') {
       const id = `m-${this.nextMemberN}`;
       this.emit({ type: 'member-admitted', t, applicant, member: id });
       this.afterRosterChange(t, 'arrival', id);
     } else {
       this.emit({ type: 'motion-opened', t, motion: `mo-${this.nextMotionN}`,
         by: null, payload: { kind: 'admit', applicant },
-        route: this.priceOf('membership') === 'assembly' ? 'constitutional' : 'ordinary',
+        route: this.priceOf('admission') === 'assembly' ? 'constitutional' : 'ordinary',
         stake: 0 });
     }
   }

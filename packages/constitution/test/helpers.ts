@@ -15,7 +15,7 @@ export function buildConstituted(opts: {
   quorum?: { form: 'count' | 'share'; n: number };
   removal?: { price: 'consent' | 'assembly' | 'proposal' };
   /** 🪪 the price of admission (entry 94); default everyone must agree. */
-  membership?: { price: 'assembly' | 'proposal' | 'pen' };
+  admission?: { price: 'assembly' | 'proposal' | 'pen' };
   /** The resolved bar (every member answers it); default resolves to 66. */
   bar?: number;
   /**
@@ -63,7 +63,7 @@ export function buildConstituted(opts: {
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
     applications: opts.applications ?? { apply: false },
-    membership: opts.membership ?? { price: 'assembly' },
+    admission: opts.admission ?? { price: 'assembly' },
     removal: opts.removal ?? { price: 'consent' },
     machines: { enabled: false, budget: 0 },
     lapse: opts.lapse ?? { afterMs: null },

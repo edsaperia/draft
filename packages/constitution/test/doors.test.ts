@@ -31,7 +31,7 @@ describe('✉️ — the invite door', () => {
   });
 
   it('with 🪪 at ✒️ any member’s word admits, and the record names them', () => {
-    const { s, bo } = buildConstituted({ membership: { price: 'pen' } });
+    const { s, bo } = buildConstituted({ admission: { price: 'pen' } });
     const dee = s.invite(3, 'dee@example.org', bo);
     expect(s.memberRecords().get(dee)!.arrival)
       .toEqual({ via: 'invitation', by: 'member', inviter: bo });
@@ -41,10 +41,10 @@ describe('✉️ — the invite door', () => {
   });
 
   it('a member’s word is refused above ✒️, and the founder’s needs the door’s pen', () => {
-    const { s, bo } = buildConstituted({ membership: { price: 'proposal' } });
+    const { s, bo } = buildConstituted({ admission: { price: 'proposal' } });
     expect(() => s.invite(3, 'dee@example.org', bo)).toThrow(/not at ✒️/);
     expect(() => s.invite(3, 'dee@example.org')).toThrow(/motion at 🪪/);
-    const held = buildConstituted({ membership: { price: 'proposal' },
+    const held = buildConstituted({ admission: { price: 'proposal' },
       doors: { invite: { unilateral: true, assent: false } } }).s;
     expect(() => held.invite(3, 'dee@example.org')).not.toThrow();
   });

@@ -75,7 +75,7 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
       lapse: [{ afterMs: null }, { afterMs: 1000 }],
       machines: [{ enabled: false, budget: 0 }, { enabled: true, budget: 4 }],
       applications: [{ apply: false }, { apply: true }],
-      membership: [{ price: 'assembly' }, { price: 'proposal' }, { price: 'pen' }],
+      admission: [{ price: 'assembly' }, { price: 'proposal' }, { price: 'pen' }],
       removal: [{ price: 'consent' }, { price: 'assembly' }, { price: 'proposal' }],
     };
     for (const [id, values] of Object.entries(samples)) {
@@ -109,7 +109,7 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
     expect(validateFor(entryOf('link'), { slug: 'Hollow Oak' })).toMatch(/slug/);
     expect(validateFor(entryOf('pace'), { shape: 'fixed', startPct: 60 })).toMatch(/no startPct/);
     expect(validateFor(entryOf('rate'), { grant: 9, cap: 8, dripMinutes: 240 })).toMatch(/cap/);
-    expect(validateFor(entryOf('membership'), { price: 'consent' })).toMatch(/not one of/);
+    expect(validateFor(entryOf('admission'), { price: 'consent' })).toMatch(/not one of/);
     expect(validateFor(entryOf('removal'), { price: 'pen' })).toMatch(/not one of/);
     expect(validateFor(entryOf('applications'), { anything: 1 })).toMatch(/apply/);
     expect(validateValue('ending', { endsAtMs: null })).toBeNull();
@@ -190,7 +190,7 @@ describe('the consent rule (SPEC §9.0a): maxima along the protective direction'
   });
 
   it('the prices (entry 94): the dearest admission and the hardest removal win', () => {
-    expect(resolveConsent(entryOf('membership'), [
+    expect(resolveConsent(entryOf('admission'), [
       { price: 'pen' }, { price: 'proposal' }, { price: 'assembly' },
     ]).value).toEqual({ price: 'assembly' });
     expect(resolveConsent(entryOf('removal'), [

@@ -1074,7 +1074,7 @@ export async function createDraftServer(cfg: ServerConfig,
           : null,
       },
       view: {
-        settings: CATALOGUE.filter((e) => e.kind !== 'personal' && e.id !== 'membership').map((e) => {
+        settings: CATALOGUE.filter((e) => e.kind !== 'personal' && e.id !== 'admission').map((e) => {
           const st = cs.settingState(e.id);
           return { setting: e.id, glyph: e.glyph, kind: e.kind, value: st.value,
             settledBy: st.settledBy, holder: st.holder, collecting: st.collecting,
@@ -1483,7 +1483,7 @@ function devCrossSite(req: IncomingMessage, res: ServerResponse, expected: strin
 
 /** 🪪 as it stands — unset reads as the most protective price, as the fold does. */
 function admissionPrice(cs: ConstitutionSession): Price {
-  const v = cs.settingState('membership').value as PriceValue | null;
+  const v = cs.settingState('admission').value as PriceValue | null;
   return v?.price ?? 'assembly';
 }
 

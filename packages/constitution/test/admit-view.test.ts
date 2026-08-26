@@ -19,7 +19,7 @@ import { view } from '../src/view.js';
 describe('entry 96: what the Applicants pile is built from', () => {
   it('at 🪪 proposal an asking applicant carries a running ordinary admit motion', () => {
     const { s } = buildConstituted({
-      applications: { apply: true }, membership: { price: 'proposal' } });
+      applications: { apply: true }, admission: { price: 'proposal' } });
     const id = s.startApplication(3, 'rowan@example.org');
     s.verifyApplication(4, id);
     s.submitApplication(5, id, { name: 'Rowan Vale', words: 'I bake.' });
@@ -36,7 +36,7 @@ describe('entry 96: what the Applicants pile is built from', () => {
 
   it('at 🪪 assembly the same application is a constitutional question', () => {
     const { s } = buildConstituted({
-      applications: { apply: true }, membership: { price: 'assembly' } });
+      applications: { apply: true }, admission: { price: 'assembly' } });
     const id = s.startApplication(3, 'rowan@example.org');
     s.verifyApplication(4, id);
     s.submitApplication(5, id, { name: 'Rowan Vale' });
@@ -48,7 +48,7 @@ describe('entry 96: what the Applicants pile is built from', () => {
   // and the subsection carries no card at all
   it('at 🪪 pen the applicant is admitted on submit, with no motion to judge', () => {
     const { s } = buildConstituted({
-      applications: { apply: true }, membership: { price: 'pen' } });
+      applications: { apply: true }, admission: { price: 'pen' } });
     const id = s.startApplication(3, 'rowan@example.org');
     s.verifyApplication(4, id);
     s.submitApplication(5, id, { name: 'Rowan Vale' });

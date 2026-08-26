@@ -43,7 +43,7 @@ const constituted = (opts: { reserveRate?: boolean } = {}) => {
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
     applications: { apply: false },
-    membership: { price: 'assembly' },
+    admission: { price: 'assembly' },
     machines: { enabled: false, budget: 0 },
     lapse: { afterMs: null },
   } as const;
@@ -187,7 +187,7 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
       judgments: { rung: 'after' },
       chamber: { rung: 'link' },
       applications: { holder: 'reserved-unilateral', apply: false },
-      membership: { price: 'assembly' },
+      admission: { price: 'assembly' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
     } as const;
     for (const [id, v] of Object.entries(values)) {

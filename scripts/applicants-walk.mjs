@@ -145,7 +145,7 @@ const SETTINGS = [
   ['rate', { grant: 4, cap: 8, dripMinutes: 240 }],
   ['machines', { enabled: false, budget: 0 }],
   ['applications', { apply: true }],
-  ['membership', { price: PRICE }],
+  ['admission', { price: PRICE }],
 ];
 for (const [id, value] of SETTINGS) {
   const r = await cmd('set-setting', { setting: id, value });

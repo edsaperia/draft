@@ -42,7 +42,7 @@ export type SettingId =
   | 'ending' | 'bar' | 'pace' | 'quorum'
   | 'authorship' | 'judgments' | 'chamber'
   | 'rate' | 'lapse' | 'machines' | 'removal'
-  | 'membership' | 'applications'
+  | 'admission' | 'applications'
   | 'displayName' | 'picture';
 
 export interface ConsentSpec {
@@ -280,7 +280,11 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   // is only whether that door is open), and at `pen` any member's word.
   // The founder's own powers over the *act* are the ✉️ door's, not this
   // setting's. Not judge-gated, for 🤝's reason.
-  { id: 'membership', glyph: '🪪', kind: 'constitutional',
+  //
+  // The id was `membership` until Q903 (Ed, 2026-08-26): it named the
+  // register this setting stopped being at entry 94, and a log written
+  // under the old id folds to this one at load (`foldLegacyId`).
+  { id: 'admission', glyph: '🪪', kind: 'constitutional',
     delegable: true, valueType: 'price',
     rungs: ['assembly', 'proposal', 'pen'],
     consent: {

@@ -67,7 +67,7 @@ export function goldenWalk(): ConstitutionSession {
     ['authorship', { rung: 'sealed' }],
     ['judgments', { rung: 'after' }],
     ['applications', { holder: 'members', apply: true }],
-    ['membership', { price: 'proposal' }],
+    ['admission', { price: 'proposal' }],
     ['removal', { price: 'consent' }],
     ['machines', { enabled: false, budget: 0 }],
     ['lapse', { afterMs: null }],

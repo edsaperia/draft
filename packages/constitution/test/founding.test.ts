@@ -23,7 +23,7 @@ const openDoc = (isMember = true) =>
  * tests about what creation produces still test creation.
  */
 const DELEGABLE_CONSTITUTIONAL = ['ending', 'bar', 'quorum', 'authorship',
-  'judgments', 'chamber', 'lapse', 'removal', 'membership', 'applications'] as const;
+  'judgments', 'chamber', 'lapse', 'removal', 'admission', 'applications'] as const;
 const openDelegated = (isMember = true) => {
   const s = openDoc(isMember);
   for (const id of DELEGABLE_CONSTITUTIONAL) s.delegate(0, id);
@@ -46,7 +46,7 @@ const settleAllReserved = (s: ConstitutionSession, t: number,
     judgments: { rung: 'after' },
     chamber: { rung: 'link' },
     applications: { holder: 'members', apply: false },
-    membership: { price: 'assembly' },
+    admission: { price: 'assembly' },
     rate: { grant: 4, cap: 8, dripMinutes: 240 },
     machines: { enabled: false, budget: 0 },
     removal: { price: 'consent' },
@@ -312,7 +312,7 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
       authorship: { rung: 'sealed' },
       judgments: { rung: 'after' }, chamber: { rung: 'link' },
       applications: { holder: 'members', apply: false },
-      membership: { price: 'assembly' },
+      admission: { price: 'assembly' },
       removal: { price: 'consent' }, // delegated too, so the room must answer it (Q626)
       lapse: { afterMs: null }, rate: { grant: 4, cap: 8, dripMinutes: 240 },
       machines: { enabled: false, budget: 0 },

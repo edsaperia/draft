@@ -172,7 +172,7 @@ describe('an admit motion is its own race (§9.7½ v0.56, Q397)', () => {
       bar: 55,
       quorum: { form: 'count', n: 2 },
       applications: { holder: 'members', apply: true },
-      membership: { price },
+      admission: { price },
     });
 
   it("at ✏️: the applicant authors their own race and never joins another applicant's", () => {
@@ -191,7 +191,7 @@ describe('an admit motion is its own race (§9.7½ v0.56, Q397)', () => {
     expect(cand.author).toBe(ap); // the applicant, a voice for this one act
     expect(cand.rationale).toBe('I keep minutes.');
     // ...and suspended in the same breath: E is still the three members.
-    expect(bridge.engine.races().every((r) => r.settingId !== 'membership')).toBe(true);
+    expect(bridge.engine.races().every((r) => r.settingId !== 'admission')).toBe(true);
 
     // A second applicant is a second race — never the same one (Ed's words).
     const ap2 = s.startApplication(13, 'eve@example.org');
