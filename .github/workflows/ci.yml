@@ -160,3 +160,14 @@ jobs:
       # 52 differences stale when finally run by hand.
       - run: npm run founding-golden
         if: always()
+      # which cards the setup-probe actually opens (Q914 (9), Q915). --strict
+      # cannot do this job: a dead step needs a *miss*, and a card nobody
+      # tries to open produces none — a grant blocks nothing in ORDER, so the
+      # founding runs straight past an unacknowledged one. The hole is
+      # structural, and it swallowed three cards in five days: 🖼️ (Q732, an
+      # emoji face at 7px for four days with every check green), 🪪 (Q910,
+      # which took thirteen steps down with it) and 🛡️ (Q914). Coverage is
+      # 25 of 25 now, so a card added to ORDER without a probe step reddens
+      # the build here rather than surfacing weeks later as a bug.
+      - run: npm run probe-coverage
+        if: always()
