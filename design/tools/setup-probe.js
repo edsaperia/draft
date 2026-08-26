@@ -226,6 +226,82 @@
     ['search-emoji', () => typeInto('.setupcard [data-emojisearch]', 'fox')],
     ['choose-emoji', () => click('.setupcard .avopt[data-pic="e🦊"]')],
     ['confirm-picture', () => click('.setupcard [data-confirm]')],
+    /* **The rest of the founding, card by card** (Q915, Ed 2026-08-26).
+     * `npm run probe-coverage` reported the scenario opened 12 of the
+     * founding's 25 cards, and the thirteen it never opened were exactly
+     * the tail below 🖼️ — because ⏩ was pressed here and the stagehand
+     * settled the lot. Those thirteen were only ever seen as already-
+     * answered clauses, so **their rendering was never compared against
+     * the reference at all**: the 🖼️-at-7px hole (Q732), thirteen times.
+     *
+     * `founding-golden` does not cover this. It walks all 25 and asserts
+     * the founder's *experience* — order, rail, the first words of every
+     * clause — where the probe asserts live-vs-frozen equality of geometry
+     * and markup. A card only the golden walk opens is a card whose
+     * rendering nothing compares.
+     *
+     * Values are chosen to exercise each card's own fields rather than for
+     * what they say, with one deliberate exception: ⏰ takes **perpetual**.
+     * A windowed document puts a live countdown in the topbar, and the two
+     * sides of a comparison are measured seconds apart — so `ends` would
+     * make the topbar hash differ whenever a tick fell between them, which
+     * is the *Founded at* flake this runner already has to retry for.
+     */
+    ['open-lapse', () => openTab('lapse')],
+    ['choose-lapse', () => click('.setupcard [data-set="lapse"][data-val="days"]')],
+    ['type-lapse-days', () => typeInto('.setupcard input[data-num="lapseDays"]', '30')],
+    ['confirm-lapse', () => click('.setupcard [data-confirm]')],
+    ['open-removal', () => openTab('removal')],
+    ['choose-removal', () => click('.setupcard [data-set="removal"][data-val="proposal"]')],
+    ['confirm-removal', () => click('.setupcard [data-confirm]')],
+    // 🏛️ is a grant, so it OKs rather than commits — and it is news to a
+    // founder who is a member, which this one is (🎩 above)
+    ['open-the-voice', () => openTab('grant-voice')],
+    ['ok-the-voice', () => click('.setupcard [data-ok]')],
+    // ⏱️ is the one card carrying three numbers: the grant, the cap and the
+    // drip, which is the whole of the proposal rate in one sentence
+    ['open-rate', () => openTab('rate')],
+    ['choose-rate-holder', () => click('.setupcard [data-set="rateBy"][data-val="founder"]')],
+    ['type-rate-grant', () => typeInto('.setupcard input[data-num="grant"]', '5')],
+    ['type-rate-cap', () => typeInto('.setupcard input[data-num="cap"]', '8')],
+    ['type-rate-drip', () => typeInto('.setupcard input[data-num="dripMin"]', '45')],
+    ['confirm-rate', () => click('.setupcard [data-confirm]')],
+    ['open-machines', () => openTab('machines')],
+    ['choose-machines', () => click('.setupcard [data-set="auditor"][data-val="true"]')],
+    ['type-machines-budget', () => typeInto('.setupcard input[data-num="auditorBudget"]', '20')],
+    ['confirm-machines', () => click('.setupcard [data-confirm]')],
+    ['open-ending', () => openTab('ending')],
+    ['choose-ending', () => click('.setupcard [data-set="ending"][data-val="perpetual"]')],
+    ['confirm-ending', () => click('.setupcard [data-confirm]')],
+    ['open-bar', () => openTab('bar')],
+    ['choose-bar-holder', () => click('.setupcard [data-set="barBy"][data-val="founder"]')],
+    ['type-bar', () => typeInto('.setupcard input[data-num="tClose"]', '78')],
+    ['confirm-bar', () => click('.setupcard [data-confirm]')],
+    // 👥 is the card with two eyebrows — *Asked as* and *The number* — so
+    // both are driven, which no other settings card asks for
+    ['open-quorum', () => openTab('quorum')],
+    ['choose-quorum-form', () => click('.setupcard [data-set="quorumForm"][data-val="count"]')],
+    ['choose-quorum-holder', () => click('.setupcard [data-set="quorumBy"][data-val="founder"]')],
+    ['type-quorum', () => typeInto('.setupcard input[data-num="quorumN"]', '3')],
+    ['confirm-quorum', () => click('.setupcard [data-confirm]')],
+    ['open-authorship', () => openTab('authorship')],
+    ['choose-authorship', () => click('.setupcard [data-set="authorship"][data-val="sealed"]')],
+    ['confirm-authorship', () => click('.setupcard [data-confirm]')],
+    ['open-judgments', () => openTab('judgments')],
+    ['choose-judgments', () => click('.setupcard [data-set="judgments"][data-val="after"]')],
+    ['confirm-judgments', () => click('.setupcard [data-confirm]')],
+    // 📄 is an acknowledgement, so its one control is the commit
+    ['open-text', () => openTab('text')],
+    ['confirm-text', () => click('.setupcard [data-confirm]')],
+    // 🍾 commits with its own glyph on its own commit (Q516)
+    ['open-begin', () => openTab('begin')],
+    ['confirm-begin', () => click('.setupcard [data-confirm]')],
+    // 💡 and ⚖️ take their place in ORDER but are only *served* once the
+    // constitution is decided, so they arrive after 🍾 rather than before
+    ['open-proposing', () => openTab('canpropose')],
+    ['ok-proposing', () => click('.setupcard [data-ok]')],
+    ['open-judging', () => openTab('canjudge')],
+    ['ok-judging', () => click('.setupcard [data-ok]')],
     ['fast-forward', () => click('#devff')],
     ['seat-bo', () => setSeat('1')],
     ['seat-founder', () => setSeat('0')],
