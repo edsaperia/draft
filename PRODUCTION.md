@@ -579,9 +579,54 @@ a big-bang first deploy.
 | 16 | Rollback, go-live checklist, soft launch | 2–3d | live |
 | 17 | **Mobile read + judge** — `design/MOBILE.md` stages 0–4 (planned 2026-08-23; decisions 655–673 answered the same day) | 5–8d | a cohort can judge on phones |
 | 18 | **PWA · push · offline** — `design/MOBILE.md` stage 5 | 4–6d | a phone member learns the room wants them |
+| 19 | **Supervised beta** — the seat matrix and the copy freeze (plan-queue batch N), promise-coverage (batch L), the fix batch sized from L, then scripted sittings until the criterion below holds | 2–3 weeks of sittings | a supervised cohort can use it |
 
 Roughly 10–13 weeks solo. Stages 1 and 9–10 partly overlap with waiting time
 (DNS and DKIM propagation).
+
+### Stage 19 — the beta criterion (Ed, 2026-08-26)
+
+Agreed 2026-08-26, when Ed asked how to approach a project in which every
+informal test finds bugs fast (*cards don't do what they expect, copy on cards
+is stale, people don't get tasks they should get*). The diagnosis: the fold is
+the best-tested part and testers never touch it; the surface is where every
+finding lands and has no test at the granularity findings occur — every walk
+guards one path after one bite, and none enumerates the space. The three
+symptom classes are the three dimensions no walk covers: control × epoch,
+event × audience, and copy over time.
+
+**Beta-ready means:** every cell of the scenario matrix — role × epoch ×
+setting-value — has been visited by an automated seat (plan-queue entry 127,
+the seat matrix) or by a scripted human, **and** the last two supervised
+sittings produced no finding of the class *a control did the wrong thing*.
+Copy is frozen (entry 128), so a stale sentence is a red build rather than a
+remark.
+
+Rules that follow:
+
+- **Sittings are scripted, not free-play.** Each tester gets a role and a
+  numbered sequence drawn from the matrix; the observer logs every finding
+  against a cell. A finding then says something about one cell and silence
+  says something about the rest — free play only ever reports the cells the
+  tester wandered into. Findings go to the plan-queue backlog as entries.
+- **Fixes wait for the net.** The seat matrix lands before promise-coverage
+  (batch L) and before the fix batch, so each fix in a 545 KB page has an
+  assertion under it and L's *lock what holds* has somewhere to put a surface
+  row.
+- **A cell with no rule to assert against is a spec gap** and gets a Q
+  number — the harness is the generator of spec questions, not another
+  extraction pass.
+- **Code quality is not audited by reading, and nothing is refactored before
+  beta** (batch D, the session-view split, stays withdrawn). One targeted
+  review of the seams that changed since review #2 — the command whitelist,
+  cookie auth, the poll/re-render path, `PgPersistence` — is enough, since
+  those are where a fault is a security or data fault rather than a UX one.
+- **Load waits until behaviour is as expected** (Ed, 2026-08-26). When it
+  comes it is one measurement, not a build: N seats × the 4 s poll × `view()`
+  cost, and `replay` time against log length. The log being the only
+  persistence makes read cost a function of log length — a curve measured
+  once — rather than of concurrency; the real scaling risk is replay-on-boot,
+  not requests per second. Stage 14.
 
 ### Why the housekeeping sits where it does
 
