@@ -2288,7 +2288,7 @@
     : c.isClosing ? false
     // 🪪 is the remedy for a `one-voice` wait, and while that is what the
     // document is waiting for it is asking something (Q828, `oneVoiceRemedy`)
-    : c.k === 'roster' && oneVoiceRemedy() ? true
+    : c.k === 'invite' && oneVoiceRemedy() ? true
     : c.isGate ? (c.open() && staged(c) && !S.okd.has(c.k))
     : c.ansFor || c.own === 'you' || amFounder() ? !settled(c)
     : false);
@@ -3814,6 +3814,7 @@
   // decision has a what-phrase for its open states and a declarative
   // sentence once decided, all in the founder's own frame.
   const WHAT = {
+    roster: 'how new members are admitted',
     ending: 'when the drafting process will end',
     quorum: 'how many members must weigh in before a question can pass',
     bar: 'how sure the room must be at the close',
@@ -3825,7 +3826,7 @@
     removal: 'how a member is removed',
     machines: 'whether an AI makes proposals',
     rate: 'how often members may propose',
-    policy: 'how people become members',
+    policy: 'whether strangers may apply to join',
     slug: 'the document’s address',
     text: 'the text the document starts from',
   };
@@ -4102,7 +4103,7 @@
       // itself), and since Q639 the two grants, whose clause is the Founded
       // line they hang their tabs on — and open questions, which their title
       // names better than a rule that does not exist yet.
-      if (c.k === 'text' || c.k === 'roster' || onFoundedLine(c)) return null;
+      if (c.k === 'text' || onFoundedLine(c)) return null;
       if (c.isGate) return linkify(esc(decisionLine(c)));
       if (c.ansFor || c.kind === 'personal') return null;
       if (settled(c)) return linkify(esc(decisionLine(c)));
@@ -4772,7 +4773,7 @@
     // the constitutional act; each application that arrives through it is
     // its ordinary consequence.
     policy: () =>
-      '<p class="why">How somebody who is not a member can become one. An application is judged like any other proposal.</p>' +
+      '<p class="why">Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.</p>' +
       // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
       // the gate the Apply card hangs off. An application becomes an
       // ordinary proposal to grant membership, judged like any other.
@@ -5901,7 +5902,6 @@
           // Anonymous and an empty picture is your initials, both real answers
           if (was === 'myname') { S.nameSet = true; cs.setIdentity(now(), viewerId(), { name: S.myname || null }); return; }
           if (was === 'mypic') { S.picSet = true; cs.setIdentity(now(), viewerId(), { picture: S.mypic || null }); return; }
-          if (was === 'roster') return; // the register commits row by row
           // 🎩 commits here like every other setting (Q522, Ed 2026-08-21).
           // It used to carry a commit control of its own, which is how it
           // came to be the one card that did not close on being set.
@@ -6879,7 +6879,7 @@
     const owed = new Set(v.view.owedOks);
     CARDS.forEach((c) => {
       if (c.isGate || c.ansFor) return;
-      if (c.k === 'title' || c.k === 'slug' || c.k === 'myemail' || c.k === 'roster') { S.seen.add(c.k); return; }
+      if (c.k === 'title' || c.k === 'slug' || c.k === 'myemail') { S.seen.add(c.k); return; }
       if (c.k === 'text') { if (v.textConfirmed) S.seen.add(c.k); return; }
       // ✋ and 🖼️ answer for themselves now, per seat, off `view.identity`'s
       // own flags (Q645) — this line used to declare them settled on every
