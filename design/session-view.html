@@ -2606,39 +2606,73 @@
         // first, and the two subheadings are the only new furniture: no chip
         // survives that its own heading now says (the *invited* chip goes, the
         // *applicant* chip stays out of this view, which never had one).
-        const memhead = (t) => '<div class="memhead eyebrow">' + t + '</div>';
         const memRow = (p) => '<div class="memrow">' + avHtml(p) +
           '<span class="mn">' + esc(p.n || (!p.in && p.e) || 'Anonymous') +
           (p.founder ? ' <span class="chip founder">founder</span>' : '') + '</span></div>';
-        // a member with a removal running against them stands under their
-        // own heading (Ed, 2026-08-26): the ❌ door's pending list, the way
-        // *Invitees* is ✉️'s
+        // **One subsection per status** (entry 95, Ed 2026-08-26: *these are
+        // sections of the constitution, one per status, and the document's own
+        // text — not a card's*). Q868–Q870 had already found that a flat list
+        // told apart by a chip reads as *these are your members, some of them
+        // faintly*, and answered it with eyebrow subheadings **inside** the
+        // list; the chip was doing a heading's job, and so, it turns out, was
+        // the eyebrow. These are headings, at lvl3 under Membership, and the
+        // rows under each are document text like any other.
+        //
+        // **A removal running names them, whatever else is true of them**: a
+        // motion about somebody is the more urgent fact than a quiet spell, so
+        // *Proposed for removal* takes precedence over *Lapsed* where a member
+        // is both, and neither leaves *Members* by leaving the room.
         const pendingOut = removalPendingIds();
-        const here = others.filter((p) => p.in && !pendingOut.has(p.mid));
         const proposedOut = others.filter((p) => p.in && pendingOut.has(p.mid));
+        // **A lapsed member is still here** (Y10; entry 94 ruling 5): they move
+        // out of *Members* into *Lapsed* and count all the same — lapse is a
+        // stall, not a departure, and they abstain rather than leave.
+        const lapsedOut = others.filter((p) => p.in && p.lapsed && !pendingOut.has(p.mid));
+        const here = others.filter((p) => p.in && !p.lapsed && !pendingOut.has(p.mid));
         const invited = others.filter((p) => !p.in);
         // **Leaving is free** (entry 94): a member's own row carries the one
         // act nobody may refuse; the founder unticks their row instead
         const leaveBtn = constituted() && viewerIsMember() && !amFounder() && !isStranger()
           ? ' <button class="btn small" data-act="resign" title="Leave the membership now — nobody has to agree">Leave</button>' : '';
+        // *(nobody else here yet)* counts the arrived rows alone (Q870), and
+        // now that every other status has a heading of its own it is a
+        // statement about *Members* and nothing else.
         const nobody = here.length ? ''
           : '<div class="memrow nobody">(nobody' + (showMe ? ' else' : '') + ' here yet)</div>';
-        // a stranger reads how many, never who (Q508 — shipped private)
-        const list = isStranger() ? (strMemberList() || '<div class="memlist"><div class="memrow nobody">' + strMembersLine() + '</div></div>')
-          // **You are at the top** (Ed, 2026-08-21). A membership starts as
-          // one person, and that person is reading this: the list opens with
-          // your own row — the only one wearing your ✋🖼️ tabs. (It used to
-          // end with you, under a room that had not been invited.)
-          : '<div class="memlist">' + nobody +
-          (showMe ? '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
+        // **You are at the top** (Ed, 2026-08-21). A membership starts as one
+        // person, and that person is reading this: the list opens with your
+        // own row — the only one wearing your ✋🖼️ tabs.
+        const meBlock = showMe
+          ? '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
             '<span class="mn">' + esc(S.myname || 'Anonymous') +
             (S.roster[meIdx].founder ? ' <span class="chip founder">founder</span>' : '') +
-            ' <span class="chip">you</span>' + leaveBtn + '</span></div>' : '') +
-          here.map(memRow).join('') +
-          (invited.length ? memhead('Invitees') + invited.map(memRow).join('') : '') +
-          memApplicantsHtml(memhead) +
-          (proposedOut.length ? memhead('Proposed for removal') + proposedOut.map(memRow).join('') : '') +
-          '</div>';
+            ' <span class="chip">you</span>' + leaveBtn + '</span></div>'
+          : '';
+        // a stranger reads the register as the door serves it, under *Members*
+        // alone — the per-subsection counts entry 95 asks for are unbuilt, and
+        // tangled with Q508's own question about what a door may show at all
+        const strangerRows = strMemberList() ||
+          '<div class="memlist"><div class="memrow nobody">' + strMembersLine() + '</div></div>';
+        // **A heading for a status the document cannot produce would be a rule
+        // stated as furniture** (entry 95): *Applicants* stands only where 🤝
+        // allows applications, *Lapsed* only where 💤 lapses.
+        const lapsesOn = () => { const v = takenValOf('lapse');
+          return v ? v.afterMs !== null : !!S.lapse && S.lapse !== 'never'; };
+        // **The ones that carry a control stand when empty** (entry 95) — a
+        // control needs a fixed home, and inviting matters most when nobody
+        // has been invited yet. *Lapsed* has none, so it stands on its rows.
+        const memSub = (title, rows, pileKeys, raw) => {
+          const cards = (pileKeys || []).map(card)
+            .filter((c) => c && visible(c) && (!c.base || cs));
+          const open = cards.find((c) => S.open === c.k);
+          const head = '<h2 class="docline lvl3">' + title + '</h2>';
+          if (open) return head + h.paraWith(open, cards);
+          return head + '<div class="cpara' + (cards.length ? '' : ' notab') + '">' +
+            (cards.length ? h.pile(cards) : '') +
+            (raw ? rows
+              : '<div class="memlist' + (cards.length ? '' : ' nopile') + '">' + rows + '</div>') +
+            '</div>';
+        };
         const openId = my.find((c) => S.open === c.k);
         // **🤝 how they join, 💤 and 🥾 how they leave, and only then who they
         // are** (Q865, Q867, Ed 2026-08-26: *💤 and 🥾 sections should be above
@@ -2663,19 +2697,22 @@
           (visible(card('policy')) ? h.para(card('policy')) + h.tasks(card('policy')) : '') +
           (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
           (visible(card('removal')) ? h.para(card('removal')) + h.tasks(card('removal')) : '') +
-          '<h2 class="docline lvl3">Members</h2>' +
-          // each door wears its ✒️/🛡️ pair in the same pile (entry 94):
-          // the tabs are the door's, the way a setting's are the setting's
-          (() => { const pileCards = ['invite', 'pw:u:invite', 'pw:a:invite',
-            'remove', 'pw:u:remove', 'pw:a:remove', 'hat']
-            .map(card).filter((c) => c && visible(c) && (!c.base || cs));
-          // the list stands as soon as any of its tabs does — 🎩 arrives
-          // before 🪪 now, and a tab with no paragraph has nowhere to live
-          return (pileCards.some((c) => S.open === c.k)
-            ? h.paraWith(card(S.open), pileCards)
-            : pileCards.length
-            ? '<div class="cpara">' + h.pile(pileCards) + list + '</div>'
-            : ''); })() +
+          // **Members · Invitees · Applicants · Lapsed · Proposed for removal**
+          // (entry 95). Each door still wears its ✒️/🛡️ pair in the Members
+          // pile here; entry 96 is what moves each door to stand by its own
+          // result. The stranger reads the register as the door serves it,
+          // under *Members* alone.
+          (isStranger()
+            ? memSub('Members', strangerRows, [], true)
+            : memSub('Members', nobody + meBlock + here.map(memRow).join(''),
+              ['invite', 'pw:u:invite', 'pw:a:invite',
+                'remove', 'pw:u:remove', 'pw:a:remove', 'hat']) +
+              memSub('Invitees', invited.map(memRow).join(''), []) +
+              (policyNow() === 'apply'
+                ? memSub('Applicants', memApplicantRows(), []) : '') +
+              (lapsesOn() && lapsedOut.length
+                ? memSub('Lapsed', lapsedOut.map(memRow).join(''), []) : '') +
+              memSub('Proposed for removal', proposedOut.map(memRow).join(''), [])) +
           (openId ? h.paraWith(openId, my) : '');
       } },
     // **Proposals reads second** (Q871, Q872, Ed 2026-08-26: *Proposals above
@@ -3395,6 +3432,10 @@
       if (!row && !rec.removed) {
         S.roster.push({ n: rec.name || rec.email.split('@')[0], pic: rec.picture || '',
           e: rec.email,
+          // **the row carries its own lapse** (entry 95): *Lapsed* is a
+          // subsection of the register, so the fact has to be on the row the
+          // list is built from, not only on the member record behind it
+          lapsed: !!rec.lapsed,
           role: 'member', in: rec.arrivedAtT !== null, mid: mid2, ans: {}, okd: new Set() });
       } else if (row && rec.removed && !row.founder) {
         const at = S.roster.indexOf(row);
@@ -3402,6 +3443,10 @@
         if (S.viewer === at) S.viewer = 0;
       } else if (row) {
         if (rec.arrivedAtT !== null && !row.in) row.in = true;
+        // lapse is re-read whenever 💤 changes (entry 97), so this is a
+        // straight assignment rather than a one-way latch: a member the room
+        // has just put back leaves *Lapsed* on the next render
+        row.lapsed = !!rec.lapsed;
         syncIdentity(row, rec);
       }
     }
@@ -6934,12 +6979,18 @@
   // paragraph the list stands in — so one source, read two ways, is the whole
   // of it. Only the people still **asking** stand here: an admitted applicant
   // is a member row above, and a refused one is not asking.
-  function memApplicantsHtml(memhead) {
-    if (!cs || !cs.isRemote) return '';
-    const aps = ((cs.v.view && cs.v.view.applicants) || [])
-      .filter((ap) => ap.status !== 'admitted' && ap.status !== 'refused');
-    if (!aps.length) return '';
-    return memhead('Applicants') + aps.map((ap) =>
+  // the people still **asking**: an admitted applicant is a member row above,
+  // and a refused one is not asking
+  const applicantsAsking = () => (cs && cs.isRemote
+    ? ((cs.v.view && cs.v.view.applicants) || [])
+      .filter((ap) => ap.status !== 'admitted' && ap.status !== 'refused')
+    : []);
+  // **Applicants is a subsection of the constitution** (entry 95): its rows are
+  // document text — a name and a face in the compact dress the rows above wear
+  // — and the heading stands whether or not anybody is asking, because entry
+  // 96 gives it a control and a control needs a fixed home.
+  function memApplicantRows() {
+    return applicantsAsking().map((ap) =>
       '<div class="memrow">' + avHtml({ n: ap.name, pic: ap.picture }) +
       '<span class="mn">' + esc(ap.name || ap.email || 'Anonymous') + '</span></div>').join('');
   }
