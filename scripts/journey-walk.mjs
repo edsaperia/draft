@@ -269,15 +269,42 @@ const GUEST2 = 'cy' + STAMP + '@example.org';
 // what a row *says* about a person is as checkable as that it is there.
 // `.nm` carries the chips too, so the name is its first text node; the face
 // is an `.emojiface` glyph or the `.av` that stood in for one.
-const ROW_READ = `[...document.querySelectorAll('.roster.clauselist .rperson')].map((r) => ({
-    e: ((r.querySelector('.em') || {}).textContent || '').trim(),
-    n: (((r.querySelector('.nm') || {}).childNodes || [])[0] || { textContent: '' })
-      .textContent.trim(),
-    face: ((r.querySelector('.emojiface') || {}).textContent ||
-      ((r.querySelector('.av') || {}).className || '(no avatar)')).trim(),
-    chips: [...r.querySelectorAll('.chip')].map((c) => c.textContent.trim()).join(' / '),
-  }))`;
-const rosterRows = () => page.evaluate(ROW_READ);
+/* **The register is the document's own text now** (entry 95, Q916). This
+ * read `.roster.clauselist .rperson` inside the 🪪 card, and once that
+ * markup went it matched nothing at all — so every row assertion in this
+ * walk was reading an empty array. Membership is one lvl-3 subsection per
+ * status, `.memrow` beneath each. Three consequences worth knowing:
+ *
+ *  · `memSub` renders **the card instead of its rows** whenever a card in
+ *    that subsection's pile is open, so a row can only be read with the
+ *    card shut — hence `closeCard` before every read below.
+ *  · **status is the heading, not a chip.** Somebody is an invitee because
+ *    they sit under *Invitees*; there is no `invited` chip to test.
+ *  · `memRow` prints an address only until a name arrives, so an invitee is
+ *    found by address and a joined member by name — never both. */
+const MEM_SEC = { members: 'cs-mem-members', invitees: 'cs-mem-invitees',
+  applicants: 'cs-mem-applicants', removal: 'cs-mem-proposed-for-removal' };
+const closeCard = async () => {
+  await page.evaluate(() => {
+    const a = document.querySelector('.setupcard .chipcol .achip');
+    if (a) a.click();
+  });
+  await T(420);
+};
+/** Rows under one Membership subsection, or null if the heading is absent. */
+const rowsUnder = (which) => page.evaluate((id) => {
+  const h = document.getElementById(id);
+  if (!h) return null;
+  const body = h.nextElementSibling;
+  if (!body) return [];
+  return [...body.querySelectorAll('.memrow')]
+    .filter((r) => !r.classList.contains('nobody'))
+    .map((r) => ({
+      t: ((r.querySelector('.mn') || {}).textContent || '').replace(/\s+/g, ' ').trim(),
+      face: ((r.querySelector('.emojiface') || {}).textContent ||
+        ((r.querySelector('.av') || {}).className || '(no avatar)')).trim(),
+    }));
+}, MEM_SEC[which]);
 const refusalLine = () => page.evaluate(() =>
   ((document.querySelector('.setupcard .why.refusal') || {}).textContent || '').trim());
 const inviteFrom = async (addr, byEnter) => {
@@ -295,12 +322,18 @@ const inviteFrom = async (addr, byEnter) => {
 const inviteDoorPreBegin = async () => {
   await inviteFrom(GUEST1, false);
   await inviteFrom(GUEST2, true);
-  const rows = await rosterRows();
-  const listed = [GUEST1, GUEST2].filter((a) =>
-    rows.some((r) => r.e === a && /invited/.test(r.chips)));
-  say('invite ×2  · ' + JSON.stringify(rows.map((r) => r.e)) +
-    (listed.length === 2 ? '' : '  FAIL: both should be listed as invited'));
+  // the rows live under *Invitees*, which the open ✉️ card is standing in
+  // front of — so it is shut to read them, and opened again to carry on
+  await closeCard();
+  const rows = (await rowsUnder('invitees')) || [];
+  // an invitee has given no name, so `memRow` shows the address — as its
+  // local part, which is what the row prints and all there is to match on
+  const isRowFor = (r, a) => r.t.includes(a) || r.t === a.split('@')[0];
+  const listed = [GUEST1, GUEST2].filter((a) => rows.some((r) => isRowFor(r, a)));
+  say('invite ×2  · ' + JSON.stringify(rows.map((r) => r.t)) +
+    (listed.length === 2 ? '' : '  FAIL: both should be listed under Invitees'));
   if (listed.length !== 2) stuck.push('two invitations from the single-name field');
+  await open('invite');
 
   const ob = await (await fetch(BASE + '/api/dev/outbox')).json();
   const posted = JSON.stringify(ob.mails || ob);
@@ -473,17 +506,19 @@ const identityReachesEverySeat = async () => {
     stuck.push('set-identity for the member'); return;
   }
   await T(5500);
-  // the register is the 🪪 card's own body, so it has to be open to be read —
-  // the band's Membership clause is the members *list*, which carries no
-  // address to pick a row out by
-  if (!(await open('roster'))) {
-    say('their seat · FAIL: no 🪪 tab to read the register from');
-    stuck.push('the 🪪 tab for the register'); return;
+  // the register is document text now (entry 95), so it is read with every
+  // card shut — and by this point the guest has joined and named themselves,
+  // so they are under *Members* and found by name: `memRow` prints an
+  // address only while there is no name to print instead
+  await closeCard();
+  const rows = await rowsUnder('members');
+  if (rows === null) {
+    say('their seat · FAIL: no Members subsection to read the register from');
+    stuck.push('the Members subsection'); return;
   }
-  const rows = await rosterRows();
-  const row = rows.find((r) => r.e === GUEST1);
-  const reached = !!row && row.n === GUEST_NAME && row.face === GUEST_FACE.slice(1);
-  say('their seat · ' + JSON.stringify(row || rows.map((r) => r.e)) +
+  const row = rows.find((r) => r.t.includes(GUEST_NAME));
+  const reached = !!row && row.face === GUEST_FACE.slice(1);
+  say('their seat · ' + JSON.stringify(row || rows.map((r) => r.t)) +
     (reached ? '' : '  FAIL: a name and a face chosen after the row existed did not reach the founder'));
   if (!reached) stuck.push('the member’s name and face in the founder’s register');
 };
@@ -894,42 +929,57 @@ await secondSeatOnAmendment();
 // and with two seats standing, each of them is the other's face in the topbar
 await topbarFaces();
 
-/* ---- the door, once the pen is laid down (Q812/Q813) -------------------
- * The state the backlog report was made in: the founder gives up the ✒️ on
- * the register and keeps the 🛡️. `invite()` has always refused on anything
- * but the pen, while the 🪪 card drew its box on *either* power — so the
- * founder was shown a field that could not send, and pressing it did
- * nothing whatever. The box must be gone, and the card must say where to go
- * instead. Driven through the ✒️ power tab, because that is the control a
- * founder actually uses. */
+/* ---- each door, once its own pen is laid down (Q812/Q813, Q916) --------
+ * The state the backlog report was made in: the founder gives up the ✒️ and
+ * keeps the 🛡️, and the card goes on drawing a control that cannot act — a
+ * field that could not send, and pressing it did nothing whatever. The
+ * direct control must be gone, and the card must say where to go instead.
+ *
+ * **Both doors, on their own pens** (Ed, 2026-08-26). Until entry 94 this
+ * laid down the *register's* pen and then inspected 🪪 — and both halves of
+ * that stopped being true on the same day: 🪪 is the price of admission now
+ * and never draws a door control at all, while ✉️ and ❌ each carry their
+ * own ✒️/🛡️ pair over the act (`door:invite`, `door:remove`). So the check
+ * lays down each door's own pen and asks that door.
+ *
+ * It has to run **after 🍾**: before the start `directInvite` and
+ * `directRemove` are both plain `amFounder()` — §9.6a, the convenor
+ * re-shapes the roster freely — so no pen laid down pre-begin shuts
+ * anything, and the check would pass while asserting nothing. */
 // the power tabs are inert peeks on a closed pile — no `data-tab` until the
-// pile is the open card's own strip — so 🤝 is opened first and the ✒️ tab
-// clicked from its strip, which is the founder's own route to it
-await open('policy');
-if (await open('pw:u:policy')) {
-  const chose = await clickIn('[data-set="pw:u:policy"][data-val="given"]');
+// pile is the open card's own strip — so the door is opened first and its
+// ✒️ tab clicked from that strip, which is the founder's own route to it
+const doorShuts = async (k, glyph, direct, label) => {
+  await open(k);
+  if (!(await open('pw:u:' + k))) {
+    say('the pen    · FAIL: no ✒️ tab on ' + glyph + ' to lay its pen down with');
+    stuck.push('the ' + glyph + ' pen tab'); return;
+  }
+  const chose = await clickIn('[data-set="pw:u:' + k + '"][data-val="given"]');
   const laid = chose ? await press(1250) : null;
-  say('the pen    · ' + (laid ? 'laid down on 🤝 (' + laid + ')'
-    : 'FAIL: the ✒️ tab would not commit'));
-  if (!laid) stuck.push('laying the register pen down');
-  await open('roster');
-  const door = await page.evaluate(() => {
+  say('the pen    · ' + (laid ? 'laid down on ' + glyph + ' (' + laid + ')'
+    : 'FAIL: ' + glyph + '’s ✒️ tab would not commit'));
+  if (!laid) stuck.push('laying ' + glyph + '’s pen down');
+  await open(k);
+  const door = await page.evaluate((sel) => {
     const c = document.querySelector('.setupcard');
-    return { box: !!(c && c.querySelector('[data-add]')),
-      says: ((c && c.querySelector('.why')) || {}).textContent || '' };
-  });
-  const doorOk = !door.box && /✉️/.test(door.says) && /proposal/i.test(door.says);
-  say('shut door  · ' + (doorOk ? 'no box, and the card names ✉️'
-    : 'FAIL: box ' + door.box + ' · says ' + JSON.stringify(door.says.slice(0, 140))));
-  if (!doorOk) stuck.push('the 🪪 door after the pen goes');
+    // the whole card, not its `.why`: once the pen is down the door draws a
+    // composer, and a missing `.why` would otherwise read as a shut door —
+    // which is the very confusion this check exists to catch
+    return { found: !!c, direct: !!(c && c.querySelector(sel)),
+      says: ((c || {}).textContent || '').replace(/\s+/g, ' ').trim() };
+  }, direct);
+  // what is left must be the collective route: the card is still there, no
+  // control that acts alone, and a sentence saying who decides instead
+  const ok = door.found && !door.direct && /propos|every/i.test(door.says);
+  say('shut ' + label.padEnd(5) + ' · ' + (ok ? 'no ' + label + ', and the card says who decides instead'
+    : 'FAIL: found ' + door.found + ' · ' + label + ' ' + door.direct +
+      ' · says ' + JSON.stringify(door.says.slice(0, 160))));
+  if (!ok) stuck.push('the ' + glyph + ' door after its pen goes');
   await clickIn('.setupcard [data-revert]');
-} else {
-  const tabs = await page.evaluate(() => [...document.querySelectorAll('[data-tab],[data-card]')]
-    .map((n) => n.dataset.tab || n.dataset.card).filter((k) => /policy|roster|invite/.test(k)));
-  say('the pen    · FAIL: no ✒️ tab on 🤝 to lay the register pen down with · ' +
-    'register tabs on the page ' + JSON.stringify(tabs));
-  stuck.push('the 🤝 pen tab');
-}
+};
+await doorShuts('invite', '✉️', '[data-add]', 'box');
+await doorShuts('remove', '❌', '[data-exile]', 'exile');
 
 /* ---- a caret on the column itself, not in a clause (Ed, 2026-08-22) ----
  * Clicking the charter's whitespace, an empty charter, or select-all puts the
