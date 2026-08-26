@@ -35,6 +35,14 @@ Unicode's own with a search box and category tabs. That run also caught
 `constitution.js` having drifted from the previous freeze, which is
 exactly the rot this file warns about below: re-freeze **every** copy,
 not the ones you happened to edit.
+And at **`refs-membership-2026-08-26`** after entries 94, 95 and 96 rebuilt
+the membership — 🪪 became the price of admission, Membership became one
+lvl-3 subsection per status, and each door came to stand by its own result.
+The freeze it replaced was four days old and the setup-probe was reporting
+**319 diffs**, which is a probe telling you nothing: essentially every step
+already differed, so a new defect could not have moved the number. Six of
+the nine copies had drifted, not the two that had been edited — the same
+lesson as the run above, learned again.
 It marks the same commit
 and is authoritative if EOL normalisation ever makes a copy differ byte-wise.
 

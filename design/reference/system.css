@@ -248,6 +248,44 @@
   .navbar .clock:hover:not([disabled]) { text-decoration-color: currentColor; }
   .navbar .clock[disabled] { cursor: default; }
   .navbar .clock:empty { display: none; }
+  /* the quorum reading, which is a sentence only once there is a quorum to
+     read: before 🍾 the row of faces beside it is the whole of what the middle
+     says about the room */
+  .navbar .room .count:empty { display: none; }
+  /* `room-faces` (Q858–Q862): who is in the room, where the count used to be a
+     sentence. Everybody but you — your own face is `me` at the right-hand end
+     — overlapping left to right, so each extra member costs a fixed sliver
+     rather than a whole avatar's width. The ring is the navbar's own ground
+     showing through between two discs, not an outline: nothing here is open,
+     and open is said by depth.
+     22px, deliberately under `me`'s 26: **the navbar's height is load-bearing**
+     — the sockets are 24 because the avatar is 26 — so a second family of
+     faces in the bar must never be the tallest thing in it. */
+  .navbar .facestack { display: inline-flex; align-items: center; }
+  .navbar .facestack:empty { display: none; }
+  .navbar .facestack .seat { display: inline-flex; margin-left: -7px; }
+  .navbar .facestack .seat:first-child { margin-left: 0; }
+  /* `background-color`, never the `background` shorthand: an uploaded picture
+     is an inline `background-image` and `.av.photo`'s own `cover` is a weaker
+     selector than this one, so a shorthand here would silently paint a 256px
+     photograph at its natural size in a 22px hole. */
+  .navbar .facestack .av {
+    width: 22px; height: 22px; border-radius: 50%;
+    background-color: var(--primary); color: #fff;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.02em;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 2px var(--light);
+  }
+  /* **An emoji is not a disc** (Q735), so every rule that sizes an `.av` in a
+     new context needs its twin — or the glyph takes a size chosen for two
+     initial letters. A face in a stack has no text around it to take a size
+     from, so it states one, exactly as `me` and the assembly's seats do. */
+  .navbar .facestack .emojiface { font-size: 17px; line-height: 22px; }
+  /* everybody the row could not fit, counted rather than drawn */
+  .navbar .facestack .more {
+    margin-left: 5px; font-size: var(--t-micro); font-weight: 700;
+    color: var(--muted); font-variant-numeric: tabular-nums;
+  }
   /* You, at the right-hand end. Initials rather than a photograph: this is a
      mockup with no accounts behind it, and a stock face would be a claim the
      product cannot yet make. */
@@ -667,7 +705,26 @@
   /* ===================================================================
      The document. Its wide left padding is the chip-gutter (see .chipcol).
      =================================================================== */
+  /* **One measure, and the gutter beside it** (Ed, 2026-08-25: *the text area
+     for "Text" is wider than the constitution text; they should be the same*).
+     The prose column and the constitution rows had each been handed `70ch`
+     separately, and they agreed only where the column was wide enough for both
+     to reach it: a row carries its tab gutter *inside* its max-width and the
+     prose carried none, so wherever the document column was the narrower of
+     the two the prose spread a whole gutter further out on each side. Both
+     take these two now — max-width is the measure plus two gutters, padding is
+     one gutter — so the clause text and the prose text share both edges at
+     every width, by construction rather than by two numbers agreeing.
+
+     Registered, so `70ch` is resolved **here**, at document type, and inherits
+     as a length. An unregistered custom property substitutes its tokens and
+     resolves `ch` against whoever *uses* it — which is how `.doctitle`'s own
+     `70ch`, read at `--t-lead`, came to be a different width from the prose's
+     and to never bind at all. */
+  @property --measure { syntax: "<length>"; inherits: true; initial-value: 0px; }
   .doc {
+    --measure: 70ch;
+    --measure-gutter: var(--s5);
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
@@ -679,7 +736,11 @@
     padding: 36px 44px 95vh 132px;
   }
   @media (max-width: 900px) { .doc { padding: var(--s5) 20px 95vh; } }
-  .doc .prose { max-width: 70ch; margin: 0 auto; }
+  .doc .prose {
+    max-width: calc(var(--measure) + 2 * var(--measure-gutter));
+    padding: 0 var(--measure-gutter);
+    margin: 0 auto;
+  }
   .doc .doctitle { font-size: var(--t-lead); font-weight: 600; margin: 0 0 18px; text-wrap: balance; }
   .doc p { margin: 0 0 var(--s3); position: relative; }
   /* **An empty document has one clause, and it is empty** (Q649 (a), Ed
@@ -698,8 +759,9 @@
     color: var(--muted); margin: 22px 0 var(--s2); position: relative;
   }
   .doc h2.docline.lvl1 {
+    --head-rule: 14px;
     font-size: var(--t-body); color: var(--fg); letter-spacing: 0.08em;
-    margin: 46px 0 14px; padding-top: 14px; border-top: 1px solid var(--border);
+    margin: 46px 0 14px; padding-top: var(--head-rule); border-top: 1px solid var(--border);
   }
   .doc h2.docline.lvl2 { font-size: var(--t-small); color: var(--fg); margin: 30px 0 10px; }
   .doc h2.docline.lvl3 { font-size: var(--t-cap); color: var(--muted); margin: 22px 0 var(--s2); }
@@ -710,7 +772,29 @@
     margin-left: 10px; font-weight: 400; text-transform: none; letter-spacing: 0;
     font-size: var(--t-cap); color: var(--muted); font-style: italic;
   }
-  @media (max-width: 900px) { .doc h2.docline .sectoggle { position: static; margin: 0 6px 0 0; } }
+  /* **A heading wears its marks in the same gutter column as any other block**
+     (Q897), and the extra `--s3` is what puts it there: a `.anch` paragraph
+     hangs 12px further left than its own text (the negative margin that gives
+     its padding back to the measure) and a heading has no such box, so a
+     heading's chipcol left to itself stood 12px inside the column every other
+     mark keeps — and jumped that 12px the moment the card opened and the
+     `.headclause` took the paragraph's geometry back. The tab you click does
+     not move.
+
+     It is the fold triangle that steps outside the marks, not the marks that
+     step outside the triangle, for the same reason: the marks make one
+     unbroken column down the page, and that column is the whole of why the
+     gutter reads as a margin index. */
+  .doc h2.docline .chipcol { margin-right: calc(14px + var(--s3)); }
+  .doc h2.docline.marked .sectoggle { margin-right: calc(14px + var(--s3) + 34px + var(--s1)); }
+  /* A part heading's rule and the air under it sit above its words, so its
+     marks clear both — the chipcol is positioned against the padding box. */
+  .doc h2.docline.lvl1 .chipcol { top: calc(var(--head-rule) + 0.15em); }
+  @media (max-width: 900px) {
+    .doc h2.docline .sectoggle { position: static; margin: 0 6px 0 0; }
+    .doc h2.docline.marked .sectoggle { margin-right: 6px; }
+    .doc h2.docline .chipcol { margin: 0 0 var(--s1); }
+  }
 
   /* A challenged clause wears its queue card's own lifecycle hue and has no
      left rule (Ed, 200): paragraph, gutter glyph and rail entry are one object
@@ -718,8 +802,16 @@
      on whatever is open, including all of a patch's clauses at once. A filed
      clause washes nothing — the document should look settled where it is.
      The extra class beats `.doc p`, which also sets margin. */
+  /* The negative margins are what put the *text* on the measure: the block is
+     a highlight box with its own air, and each side's padding is given back so
+     the words start and end exactly where the column does. The left side has
+     always done this; the right side was giving up 8px of measure, which is
+     what made a charter paragraph wrap 8px earlier than a constitution clause
+     (Ed, 2026-08-25). Both selectors move together, as they must — the
+     card-opening motion is measured against the two boxes being identical. */
   .doc .anch, .clausehead .headclause {
-    padding: 6px var(--s2) 6px var(--s3); margin-left: calc(-1 * var(--s3));
+    padding: 6px var(--s2) 6px var(--s3);
+    margin-left: calc(-1 * var(--s3)); margin-right: calc(-1 * var(--s2));
     border-radius: var(--r-sm);
   }
   .anch.active:hover { box-shadow: none; }
@@ -938,8 +1030,13 @@
     box-shadow: var(--shadow-xl);
     /* --s5 rather than --s4 of side padding: the lifecycle mark hangs in the
        left one, so the rationale below the lanes stays column-aligned with
-       them instead of being pushed right by its own glyph. */
-    padding: 14px var(--s5);
+       them instead of being pushed right by its own glyph.
+
+       `--measure-gutter` rather than the `--s5` it is equal to: the card's
+       side padding is load-bearing for the measure, not only for the mark —
+       it is what puts the head's text on the prose's own edges (see .sugg's
+       max-width below), so it has to move with the gutter and not beside it. */
+    padding: 14px var(--measure-gutter);
     background: var(--bg);
   }
   .sugg .foot { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s2); }
@@ -1167,8 +1264,10 @@
      clause does not shift sideways when it becomes a head — and the `.chipcol`
      inside the head therefore lands in exactly the gutter column the document
      puts its marks in. Width is the prose measure plus the card's own padding
-     and border; `margin: auto` centres it on the same axis .prose centres on. */
-  .sugg { max-width: calc(70ch + 2 * var(--s5) + 3px); }
+     and border; `margin: auto` centres it on the same axis .prose centres on.
+     Its side padding *is* `--measure-gutter`, so its content column is the
+     measure itself and the head lands on the prose's own text edges. */
+  .sugg { max-width: calc(var(--measure) + 2 * var(--measure-gutter)); }
   /* Marks belonging to *other* live suggestions at this clause travel into the
      head's own chip column, where they stack under the card's mark exactly as
      they stacked beside the paragraph. No label needed any more: the column
@@ -1784,7 +1883,7 @@
   .navbar .notheld::after {
     content: ''; position: absolute; left: 50%; top: 50%;
     width: 23px; height: 2px; margin: -1px 0 0 -11.5px; border-radius: 1px;
-    background: var(--slash); transform: rotate(-45deg);
+    background: var(--slash); transform: rotate(45deg);
   }
   /* The strike is red because Ed asked to see it red (Q532(2)). It is the only
      red on the surface, and it is worth knowing why that is a real question:

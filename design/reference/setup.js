@@ -299,7 +299,12 @@ window.SETUP = (function () {
      which is what leaves the head of the document holding the constitution. */
   const chipHtml = (c, ctx, o) => {
     const st = stateOf(c, ctx);
+    // `data-chip` names the card on every chip, clickable or not; `data-tab`
+    // is the *click* hook and stays off the inert ones. Anything that needs to
+    // find a tab's own paragraph reads `data-chip`, since a pile behind the
+    // front tab has no other handle (the surface's `anchorOf`).
     return '<span class="achip st-' + st + (o.active ? ' wmark' : '') + (o.inert ? ' behind' : '') + '"' +
+    ' data-chip="' + c.k + '"' +
     (o.inert ? ' aria-hidden="true"' : ' role="button" tabindex="0" data-tab="' + c.k + '"') +
     ' style="--chiphue: var(--lc-' + HUE[st] + ')' + (o.z ? '; z-index:' + o.z : '') + '"' +
     (o.inert ? '' : ' title="' + esc(c.t + (o.active ? ' — close it'
@@ -388,8 +393,11 @@ window.SETUP = (function () {
           return openHere
             ? '<div class="cpara open" data-para="' + c.k + '">' + cardFor({ ...g, cards: chips }) + '</div>'
             : c.inDoc ? ''  // the document displays this itself (the title heading)
+            // the lone tab is the **group's**, not necessarily the host's:
+            // a group whose other members are not being served yet leaves one
+            // chip standing on the host's paragraph, and it must be that one
             : '<div class="cpara" data-para="' + c.k + '">' + (chips.length > 1 ? pileHtml(chips, ctx)
-              : '<span class="chipcol">' + chipHtml(c, ctx, {}) + '</span>') +
+              : '<span class="chipcol">' + (chips.length ? chipHtml(chips[0], ctx, {}) : '') + '</span>') +
               '<div class="cptext"><p class="cpv">' +
               (ctx.decisionLine ? ctx.decisionLine(c) : ctx.summary(c)) + '</p></div></div>';
         };
@@ -400,9 +408,6 @@ window.SETUP = (function () {
           paraWith: (c, sibs) => (ctx.open === c.k
             ? '<div class="cpara open">' + cardFor({ ...g, cards: sibs }) + '</div>' : ''),
           tasks: (c) => (ctx.tasksFor ? ctx.tasksFor(c).map(para).join('') : '') };
-        const wants = g.sections.reduce((n, sec) => n + sec.cards
-          .reduce((m, c) => m + (ctx.mustAct(c) ? 1 : 0) +
-            (ctx.tasksFor ? ctx.tasksFor(c).filter((t) => ctx.mustAct(t)).length : 0), 0), 0);
         // **the whole constitution folds** (Ed, 2026-08-19): its heading is
         // a heading like any other — folded, it keeps the heading and the
         // document text below; the surface decides (ctx.foldedGroup), so an
@@ -460,7 +465,6 @@ window.SETUP = (function () {
             (sec.who ? '<div class="pilewho">' + sec.who() + '</div>' : '') +
             (sec.body ? sec.body(H) : sec.cards.map(withTasks).join('')) +
             (sec.block ? sec.block() : '')) + '</div>'; }).join('') +
-          '<span class="pilen">' + esc(g.note(wants)) + '</span>' +
           // **the starting text is a task beside the text proper** (Ed,
           // 2026-08-18): a zero-height anchor at the band's end, its 📄 tab
           // hanging in the gutter beside the first block of the prose that
@@ -469,7 +473,6 @@ window.SETUP = (function () {
       }
       const holds = g.cards.some((c) => ctx.open === c.k);
       if (holds) return '<div class="setrow open" id="pile-' + g.key + '">' + cardFor(g) + '</div>';
-      const left = g.cards.filter((c) => ctx.mustAct(c)).length;
       // **The heading is the people** (Ed, 2026-08-18: *"Founder" heading gets a
       // name and picture under it as soon as they exist; "Membership" heading
       // gets the roster's names and pictures under it as those appear*). Which
@@ -485,8 +488,7 @@ window.SETUP = (function () {
         // the Constitution heading carries a statement of itself — the
         // constitutional settings' current values, legible without opening
         // a single tab (Ed, 2026-08-18)
-        (g.block ? g.block() : '') +
-        '<span class="pilen">' + esc(g.note(left)) + '</span></div></div>';
+        (g.block ? g.block() : '') + '</div></div>';
     }).join('');
   }
 
@@ -1044,16 +1046,55 @@ window.SETUP = (function () {
      rather than opt()'s `data-set`, because on the founder surface data-set
      already means "set the delegation", and one attribute must not mean two
      things on one page. */
+  /* The formatters of whichever sliders are on screen, kept so the readout can
+     be repainted **without re-running the body** — see `syncSlider`. Rewritten
+     every time the body renders, so the entry is always the current question's
+     (quorum's wording follows the founder's chosen form, and its second half
+     follows E). */
+  const SLIDERS = {};
   const slider = (A, key, min, max, fmt, mean, step) => {
     const v = A[key], st = step || 1;
-    const at = (v === null ? Math.round((min + max) / 2 / st) * st : v);
-    return '<div class="cs' + (v === null ? ' unset' : '') + '">' +
-      '<div class="csval' + (v === null ? ' unset' : '') + '">' + (v === null ? 'Drag to answer' : fmt(v)) + '</div>' +
+    // **Unset is "no value", not "null"** (Q779). This tested `v === null`
+    // alone, and a question nobody has answered arrives as `undefined`: a
+    // member's answers object starts empty and the live hydration skips a
+    // `myAnswer` of null outright, so on every real document the unset branch
+    // never fired. What the founder-member met on 👥 was `value="undefined"` —
+    // invalid, so the browser parks the thumb at the midpoint — under a
+    // readout reading `undefined% — NaN of 5`. That is a **suggested value**,
+    // painted in the live colour, which is the one thing a blind collection
+    // must not show; and a click on the thumb where it already sits fires no
+    // `input` at all, so the control read as dead.
+    const unset = v === null || v === undefined;
+    const at = (unset ? Math.round((min + max) / 2 / st) * st : v);
+    SLIDERS[key] = { fmt: fmt, mean: mean, min: min, max: max };
+    return '<div class="cs' + (unset ? ' unset' : '') + '">' +
+      '<div class="csval' + (unset ? ' unset' : '') + '">' + (unset ? 'Drag to answer' : fmt(v)) + '</div>' +
       '<input type="range" min="' + min + '" max="' + max + '" step="' + st + '" value="' + at + '"' +
-      ' style="--n:' + Math.max(1, Math.round((max - min) / st)) + ';--pct:' + (v === null ? 0 : (v - min) / (max - min) * 100) + '"' +
+      ' style="--n:' + Math.max(1, Math.round((max - min) / st)) + ';--pct:' +
+      (unset ? 0 : max > min ? (v - min) / (max - min) * 100 : 100) + '"' +
       ' data-slide="' + key + '">' +
       '<div class="csends"><span>' + fmt(min) + '</span><span>' + fmt(max) + '</span></div>' +
-      '<div class="csmean">' + (v === null ? mean(min) + '<br>' + mean(max) : mean(v)) + '</div></div>';
+      '<div class="csmean">' + (unset ? mean(min) + '<br>' + mean(max) : mean(v)) + '</div></div>';
+  };
+  /* **Nothing rebuilds under a press**, and a drag is a press held down. The
+     surface answers a slider by re-rendering, and a re-render replaces the very
+     `<input>` the pointer is capturing — so the thumb moved once and then
+     froze, which is the other half of what read as a dead control. This paints
+     the readout, the mean and the fill **in place** from the element's own
+     value, so the drag survives; the caller repaints the rail and the commit
+     around it, and leaves the full render to `change`. */
+  const syncSlider = (sl) => {
+    const f = sl && SLIDERS[sl.dataset.slide], cs = sl && sl.closest('.cs');
+    if (!f || !cs) return;
+    const v = +sl.value;
+    cs.classList.remove('unset');
+    const val = cs.querySelector('.csval');
+    if (val) { val.classList.remove('unset'); val.textContent = f.fmt(v); }
+    const mn = cs.querySelector('.csmean');
+    if (mn) mn.textContent = f.mean(v);
+    // a one-answer track (👥 as a count in a room of one) has no span to
+    // divide by, so the fill is full rather than `NaN`, which CSS drops
+    sl.style.setProperty('--pct', f.max > f.min ? (v - f.min) / (f.max - f.min) * 100 : 100);
   };
 
   const ansRow = (on, key, val, ttl, exp, extra, inner) =>
@@ -1203,15 +1244,11 @@ window.SETUP = (function () {
       '<p class="why">Rationales are always visible; what varies is whether a name is attached. The <b>most private</b> answer wins: one person who wants no names keeps the document unnamed.</p>' +
       ladder(A, 'authorship', [
         { v: 'anonymous', t: 'Nobody’s name, ever', e: 'Not during the session and not in the closing record.' },
+        { v: 'anonymousElective', t: 'Nobody’s name unless they choose', e: 'Nobody is named who does not sign, so an unsigned proposal among signed ones says something.' },
         { v: 'sealed', t: 'Names at the close', e: 'Hidden while the document is being written; published with the record.' },
+        { v: 'sealedElective', t: 'Names at the close, or earlier by choice', e: 'Published with the record, and sooner for anybody who signs.' },
         { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' }]) +
       '<p class="blindnote">Nothing is preselected — anonymity holds unless everyone is content with more.</p>',
-    signing: (A) =>
-      '<p class="why">Whether an author may put their name to a proposal that is otherwise unattributed.</p>' +
-      ladder(A, 'signing', [
-        { v: 'nobody', t: 'Nobody signs', e: 'The only setting under which an unsigned proposal says nothing about whoever wrote it.' },
-        { v: 'each', t: 'Each author chooses', e: 'An unsigned proposal among signed ones says something.' },
-        { v: 'everybody', t: 'Everybody signs', e: 'Uniform in the other direction.' }]) + BLINDNOTE,
     judgments: (A) =>
       '<p class="why">Never revealed while a question is live, whichever is chosen — a room that can read itself judges itself. This settles only whether they are published with the closing record.</p>' +
       ladder(A, 'judgments', [
@@ -1221,9 +1258,7 @@ window.SETUP = (function () {
       '<p class="why">How somebody who is not a member can become one. The <b>least open</b> answer wins: one member who wants invitation only keeps it so.</p>' +
       ladder(A, 'policy', [
         { v: 'invite', t: 'Invitation only', e: 'Nobody joins unless a member brings them in.' },
-        { v: 'proposed', t: 'Applications must be proposed by members', e: 'Anybody can apply, but nothing happens until a member takes the application up and proposes it.' },
-        { v: 'apply', t: 'Anyone may apply', e: 'An application goes straight to the members, who judge it like any other proposal.' },
-        { v: 'open', t: 'Open', e: 'Anyone with the link becomes a member the moment they open it.' }]) + BLINDNOTE,
+        { v: 'apply', t: 'Anyone may apply', e: 'An application is a stranger proposing their own invitation — decided the way Admissions says, at no cost to the applicant.' }]) + BLINDNOTE,
     chamber: (A) =>
       '<p class="why">Who may read the document besides the members — readers only, never counted. The <b>most private</b> answer wins: one member who wants the room closed closes it.</p>' +
       ladder(A, 'chamber', [
@@ -1231,12 +1266,21 @@ window.SETUP = (function () {
         // Public left every ladder on 2026-08-22 (Q603): offered nowhere,
         // read back everywhere a document that took it still states it
         { v: 'link', t: 'Anyone with the link', e: 'The chamber view only, to whoever the link reaches.' }]) + BLINDNOTE,
+    // **One price scale** (entry 94): 🪪 and 🥾 are answered in the same
+    // three verbs, most protective first, and 🥾 keeps the one rung
+    // admission has no analogue for
+    roster: (A) =>
+      '<p class="why">What it costs to bring somebody into the membership — a member’s invitation or a stranger’s application alike. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
+      ladder(A, 'roster', [
+        { v: 'assembly', t: 'Everyone must agree', e: 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.' },
+        { v: 'proposal', t: 'The membership decides', e: 'A proposed member is judged at the approval threshold ✏️, like any change.' },
+        { v: 'pen', t: 'Any member may invite', e: 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.' }]) + BLINDNOTE,
     removal: (A) =>
-      '<p class="why">How this room may remove a member. Whichever is chosen, the member always sees a removal proposed against them. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
+      '<p class="why">What it costs to remove a member. Whichever is chosen, the member always sees a removal proposed against them, and anybody may leave at any time. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'removal', [
-        { v: 'everyone', t: 'Everyone has to agree, including them', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
-        { v: 'others', t: 'Everyone else has to agree', e: 'The whole room, minus the member in question, must agree.' },
-        { v: 'ordinary', t: 'A proposal ✏️ like any other', e: 'Judged at the approval threshold like any change, with quorum.' }]) + BLINDNOTE,
+        { v: 'consent', t: 'Everyone must agree, including them', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
+        { v: 'assembly', t: 'Everyone else must agree', e: 'The whole room, minus the member in question, must agree 🏛️.' },
+        { v: 'proposal', t: 'The membership decides', e: 'Judged at the approval threshold ✏️ like any change, with quorum.' }]) + BLINDNOTE,
     machines: (A) =>
       '<p class="why">An AI that patrols the document for drift and proposes fixes — it never judges, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
       ladder(A, 'machines', [
@@ -1245,7 +1289,14 @@ window.SETUP = (function () {
     ending: (A) =>
       '<p class="why">When the document should close. The <b>latest</b> answer anybody gives is taken, and <b>never</b> is the latest of all — so nobody is cut off before they were ready.</p>' +
       '<div class="choice" role="radiogroup">' +
-      ansRow(A.ending !== null && A.ending !== 'never', 'ending', 'date', 'At a set time', '',
+      // **Unset is "no value", not "null"** (Q779) — the same defect the
+      // consent slider carried, in the one other answer body that tests for
+      // null by hand. An unanswered question arrives as `undefined` (the live
+      // hydration skips a `myAnswer` of null outright), so `!== null` read
+      // true and painted *At a set time* as chosen, beside an empty date and
+      // a dark ✓: a suggested answer on a blind collection.
+      ansRow(A.ending !== null && A.ending !== undefined && A.ending !== 'never',
+        'ending', 'date', 'At a set time', '',
         '', '<span class="fld"><label>Ends</label><input type="datetime-local" data-ansdate="ending"' +
         (A.ending && A.ending !== 'never' ? ' value="' + esc(A.ending) + '"' : '') + '></span>') +
       ansRow(A.ending === 'never', 'ending', 'never', 'Never', 'It runs until it is frozen.') +
@@ -1274,7 +1325,9 @@ window.SETUP = (function () {
     verify: (title, to, slug) => ({
       to, from: 'docs.vote',
       subject: 'Create “' + title + '”',
-      body: 'You have named a document <b>' + esc(title) + '</b> and chosen its address, <b>docs.vote/' + esc(slug || '…') + '</b>.',
+      // the address as the server serves it, `/d/<slug>` — this body is the
+      // mockup twin of mailer.ts's `create` and must state the same one
+      body: 'You have named a document <b>' + esc(title) + '</b> and chosen its address, <b>docs.vote/d/' + esc(slug || '…') + '</b>.',
       action: 'Open the link to create it there',
     }),
     applyVerify: (title, to) => ({
@@ -1436,5 +1489,5 @@ window.SETUP = (function () {
     anyEmojiRow, wireFreeEmoji, emojiFaceOf, setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     wireEmojiPicker,
     motionBody, motionReopen, routeFor, motionCommitHtml,
-    slider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
+    slider, syncSlider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

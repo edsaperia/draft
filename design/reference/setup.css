@@ -46,8 +46,8 @@
      `fitBand` floors it against the pile beside it. */
   .setrow {
     position: relative; box-sizing: border-box;
-    max-width: calc(70ch + 2 * var(--s5) + 3px);
-    margin: 0 auto var(--s4); padding: 0 var(--s5);
+    max-width: calc(var(--measure) + 2 * var(--measure-gutter));
+    margin: 0 auto var(--s4); padding: 0 var(--measure-gutter);
   }
   .setrow .pilelab { display: flex; flex-direction: column; gap: 2px; padding-top: 3px; }
   /* **Founder and Membership are document headings** (Ed, 2026-08-18: *the
@@ -61,7 +61,6 @@
     font-size: var(--t-body); font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.08em; color: var(--fg);
   }
-  .setrow .pilen { font-size: var(--t-small); color: var(--muted); }
 
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden;
     clip: rect(0 0 0 0); white-space: nowrap; }
@@ -79,7 +78,9 @@
   .setupcard .setnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
   .setupcard .body { border-top: 1px solid var(--border); padding-top: var(--s3); margin-top: var(--s3); }
   /* the hairline between the constitution and the document proper, and the
-     title standing again as the charter's own heading (Ed, 2026-08-19) */
+     title as the charter's own heading (Ed, 2026-08-19). Both stand from the
+     save (backlog 33), and the title stands there alone: the big heading
+     above the constitution is the pre-save one and leaves at the save. */
   .cpara.docsep { border-top: 1px solid var(--border); margin: var(--s5) 0 var(--s4); padding: 0; }
   .unlocks { font-size: var(--t-cap); color: var(--primary-emphasis); background: var(--primary-subtle);
     border-radius: var(--r-sm); padding: var(--s2) var(--s3); margin: 0 0 var(--s4); }
@@ -143,6 +144,19 @@
    accept* only reads as a ladder if you can see what you are refusing.
    --------------------------------------------------------------------------- */
   .choice { display: flex; flex-direction: column; gap: var(--s3); }
+  /* **A second radio group stacked under the first is set apart** (Q761).
+     `.choice` spaces its own rungs, and nothing spaced the *containers* — so
+     the delegate rung sat flush against the values above it, 0px, and the two
+     pills simply touched. Loudest where the value group holds one rung, since
+     then the --s3 gap never paints anywhere on the card and there is no
+     internal rhythm for the seam to be read against: ⏱️, 🌡️ and 👥's number.
+     --s4 exceeds --s3, which is what makes the second group read as *apart
+     from* the first rather than as another rung of it — the relationship
+     quorum's own eyebrow had been asserting with an inline style. One number
+     for one relationship, and the users are named in the selector, per
+     `.eyebrow` in system.css. */
+  .choice.delegrung,
+  .choice + .eyebrow.fieldlab { margin-top: var(--s4); }
   .pick .exp { display: block; color: var(--muted); font-size: var(--t-small);
     margin-top: var(--s1); padding-left: 2px; max-width: 58ch; }
   .pick .inner { display: none; margin-top: var(--s3); padding-left: 2px; }
@@ -415,7 +429,10 @@
      the s5 side padding and auto-centring were the indent). */
   /* the headings only: the fixture charter's own div.doctitle (session.js)
      keeps system.css's box, as it did on its own page */
-  .doc h1.doctitle, .doc h2.doctitle { max-width: 70ch; margin: 0 0 var(--s5);
+  /* `--measure` rather than a second `70ch`: read at `--t-lead` the literal
+     resolved to a wider column than the prose's and so never bound at all
+     (Ed, 2026-08-25) — the row it sits in was the only thing holding it. */
+  .doc h1.doctitle, .doc h2.doctitle { max-width: var(--measure); margin: 0 0 var(--s5);
     padding: 0; text-wrap: balance; }
   .doc h1.doctitle.ph { color: var(--muted); font-weight: 400; min-height: 1.15em; }
 
@@ -523,13 +540,39 @@ button.cline:hover b { text-decoration: underline; }
 .doctitle[data-card]:hover { text-decoration: underline dotted 1.5px; text-underline-offset: 4px; }
 
 /* Members / Applications subsections (Ed, 2026-08-18): Members IS the list,
-   🪪 the invitations tab beside it, your own row last wearing ✋ and 🖼️;
-   Applicants is the list under the Applications decision. */
+   🪪 the invitations tab beside it, your own row first wearing ✋ 🖼️ 📧;
+   Applicants is the list under the Applications decision.
+   **The clearance is the list's, not the row's** (Q757). The Members block is
+   one paragraph carrying two tab columns in one gutter — 🪪 (with ✉️ ❌ 🎩) at
+   the paragraph's head, and your ✋🖼️📧 riding your own row, which is the
+   first list row since you moved to the top (Ed, 2026-08-21: *membership tab
+   and your name tab overlap*). At 12px they collided by 18px, and `fitStacks`
+   cannot help: it shrinks a *pile's* peek and bails under two tabs, and a lone
+   tab is 30px and cannot shrink (Q308's stated residual). So the whole list is
+   dropped clear of the head pile — 42px is the tallest that pile gets (38px
+   stacked) plus the gutter's own 4px. It hangs here rather than on the you-row
+   because the placeholder now stands above you (Q753) and a margin on the row
+   would double-count with it. **Padding, not margin**: the list is the first
+   in-flow child of a `.cpara` with no top border or padding, so a top *margin*
+   collapses straight out to the paragraph and carries the 🪪 pile down with
+   it — the head tab is `position: absolute` against `.cpara` — leaving the gap
+   exactly as it was. Measured: with a margin the clearance reads −3px.
+   It is the **you-row** that needs clearing, so the padding hangs on lists
+   that have one: a clerk founder has no row here (Q758) and a stranger reads
+   a list with no identity tabs at all, and neither has a second tab column
+   to clear — unscoped, both opened with 42px of nothing. */
+.constsec .cpara .memlist:has(.memrow.meRow) { padding-top: 42px; }
 .memlist { display: flex; flex-wrap: wrap; gap: 5px 18px; }
+/* **The list's own subheadings** (Q868, Q869): Invitees, then Applicants —
+   groups of people who are not members yet, under a Members heading that is
+   about people who are. They take the eyebrow treatment from `.eyebrow` and
+   nothing but layout here: a full-width break in a wrapping row of faces, with
+   a little more air above than the 5px row gap, so a heading reads as belonging
+   to what is under it rather than to what is over it. */
 /* "you" — the one sanctioned per-reader difference (Ed): in the members list
-   you are always at the bottom, on your own line, your identity pile in the
-   gutter beside you */
-.memrow.meRow { flex-basis: 100%; }
+   you are at the top, on your own line, your identity pile in the gutter
+   beside you; the min-height is the 30px front tab of that pile */
+.memrow.meRow { flex-basis: 100%; min-height: 30px; }
 /* only avatars and names keep the compact dress (Ed) */
 .memrow { display: flex; align-items: center; gap: 8px; font-size: var(--t-small);
   position: relative; }
@@ -537,19 +580,11 @@ button.cline:hover b { text-decoration: underline; }
 /* the identity tabs are regular gutter clause tabs: a pile at your row */
 .memrow .chipcol { top: -3px; }
 /* nobody else yet (407a): a full-width muted row where the members would
-   stand — list furniture, not a clause, so it speaks quietly; it also gives
-   the you-row a row's clearance from the 🪪 pile above (the Q308 floor) */
+   stand — list furniture, not a clause, so it speaks quietly. It stands
+   **above** your row (Q753), where it is a statement about the list rather
+   than a caption on you; the clearance job it used to do as well is the
+   list's own padding now. */
 .memrow.nobody { flex-basis: 100%; color: var(--muted); min-height: 22px; }
-/* **Your own row clears the paragraph's own tab** (Ed, 2026-08-21: *membership
-   tab and your name tab overlap*). The Members block is one paragraph carrying
-   two tab columns in one gutter — 🪪 (with ✉️ ❌ 🎩) at the paragraph's head,
-   and your ✋🖼️📧 riding the first list row, which is yours since you moved to
-   the top of the list. At 12px they collided by 18px. `fitStacks` cannot help:
-   it shrinks a *pile's* peek and bails under two tabs, and a lone tab is 30px
-   and cannot shrink (Q308's stated residual). So the row is spaced to clear a
-   full tab instead — 42px is the tallest the head pile gets (38px stacked) plus
-   the gutter's own 4px. */
-.memrow.meRow { margin-top: 42px; min-height: 30px; }
 .memrow .chip { font-size: var(--t-micro); }
 
 /* **The card overhangs the text axis** (Ed's QA, 2026-08-18: the tabs were
@@ -567,7 +602,11 @@ button.cline:hover b { text-decoration: underline; }
    box is 30px, so flush tops centre one on the other. It had been `top:10px`,
    from when this row was empty and the tab hung beside the first block of
    prose below it — the title moved in and the constant stayed. Everywhere
-   else the gutter's own -3px does the same job against a 24px line. */
+   else the gutter's own -3px does the same job against a 24px line.
+   **The pile is empty from the save until 📄's turn** (backlog 33), and the
+   title must sit at the same x either way — which it does for free, the
+   `.chipcol` being `position: absolute` out in the gutter, so nothing about
+   the title's box depends on whether a tab is standing beside it. */
 .cpara.textanchor { min-height: 0; margin: 0; }
 .cpara.textanchor .dochead { margin: 0 0 var(--s3); padding-left: 0; }
 .cpara.textanchor .chipcol { top: 0; }   /* see the note above: 30px tab, 30px title line */
