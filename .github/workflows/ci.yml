@@ -110,17 +110,25 @@ jobs:
   # --strict since 2026-08-21: no step is dead, so a step whose target goes
   # missing is a failure rather than a warning.
   #
-  # ADVISORY (continue-on-error), and the week it was waiting on has not
-  # happened: it went red on 2026-08-25 with 136 diffs (the reference stale
-  # after the plan-queue batch) and stayed red through 2026-08-26 with the
-  # thirteen dead steps of Q910 — four days of a red job inside runs that
-  # read green. Both were the probe doing its job. Note it could not gate
-  # the deploy even non-advisory: the deploy is a *step* of the `ci` job
-  # above, which runs in parallel with this one, so promoting this job makes
-  # a failure visible on the commit and nothing more (Q910 (b)).
+  # NO LONGER ADVISORY (Ed, 2026-08-26, Q910 (b) — *let's see if what it
+  # picks up is useful*). It was `continue-on-error: true` from 2026-08-21,
+  # meant to last a week; what that week actually held was two real failures
+  # thrown away — 136 diffs on 2026-08-25 (the reference stale after the
+  # plan-queue batch) and the thirteen dead steps of Q910 on 2026-08-26 —
+  # four days of a red job inside runs that read green.
+  #
+  # What promoting it buys is a red X on the commit and nothing more: the
+  # deploy is a *step* of the `ci` job above, which runs in parallel with
+  # this one, so nothing here can gate a deploy. Gating would mean lifting
+  # the deploy into its own job with `needs: [ci, probe]`.
+  #
+  # **Expect red after an intentional page change.** Both probes compare
+  # against a frozen reference, so a deliberate design change reddens this
+  # job until `design/reference/` is re-frozen and tagged. That is the cost
+  # of the signal, and it is now visible rather than swallowed. A scenario
+  # change needs no re-freeze — only a page change does (Q914).
   probe:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
