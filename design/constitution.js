@@ -1585,6 +1585,7 @@ var CONSTITUTION = (() => {
         ...reason === void 0 ? {} : { why: reason }
       });
       if (CONSTITUTIONAL.has(setting) || changed) this.oweOks(t, setting);
+      if (setting === "lapse") this.rereadLapse(t);
     }
     setQuorumForm(t, form) {
       this.requireOpen("the quorum's form");
@@ -2222,6 +2223,7 @@ var CONSTITUTION = (() => {
           if (m.okOwed.has(rec.payload.setting)) continue;
           this.emit({ type: "ok-owed", t, member: m.id, settings: [rec.payload.setting] });
         }
+        if (rec.payload.setting === "lapse") this.rereadLapse(t);
       }
       if (rec.payload.kind === "admit") {
         const id = `m-${this.nextMemberN}`;
@@ -2278,6 +2280,34 @@ var CONSTITUTION = (() => {
       if (wasLapsed) this.afterRosterChange(t, "arrival", member);
       else this.maybeSettleMotions(t);
       this.maybeFreezeOrThaw(t);
+    }
+    /**
+     * **Lapse is a reading of the rule, re-read when the rule changes** (entry
+     * 97, Ed 2026-08-26). A change of rule never moves a person — but a lapsed
+     * member is in that status by no act of their own; the clock put them there
+     * under the old spell. So when 💤 turns off, or lengthens past their quiet,
+     * the reading is simply no longer true and they are returned at once, the
+     * crown included: the room chose to count them again, and the cost of that
+     * is the room's. A shorter spell needs nothing here — the next tick lapses
+     * whoever is now due. Before this the sweep just stopped when 💤 went to
+     * *never*, and the lapsed stayed lapsed in a status no rule produced until
+     * they happened to log in. A sign-out is untouched: that one is an act.
+     */
+    rereadLapse(t) {
+      const lapse = this.settings.get("lapse").value;
+      const afterMs = lapse ? lapse.afterMs : null;
+      const stillDue = (lastT, at) => afterMs !== null && t >= lapseDue(lastT, afterMs)[at];
+      for (const m of [...this.members.values()]) {
+        if (m.removed || m.arrivedAtT === null || m.signedOut !== null) continue;
+        const revive = m.lapsed ? !stillDue(m.lastActivityT, "lapseAtT") : m.lapseWarned && !stillDue(m.lastActivityT, "warnAtT");
+        if (!revive) continue;
+        const wasLapsed = m.lapsed;
+        this.emit({ type: "member-returned", t, member: m.id });
+        if (wasLapsed) this.afterRosterChange(t, "arrival", m.id);
+      }
+      if (this.crownLapsedFlag && !stillDue(this.convenor.lastActivityT, "lapseAtT")) {
+        this.emit({ type: "crown-returned", t });
+      }
     }
     /**
      * All clock-driven events flow through one host-called tick (the package
@@ -2425,6 +2455,9 @@ var CONSTITUTION = (() => {
     /** Nothing is sent before Submit; an empty application is a real application. */
     submitApplication(t, applicant, fields = {}) {
       this.requireOpen("applying");
+      if (!this.mayApply()) {
+        throw new Error("the door has shut since you began — this document is now invitation-only (§9.7½)");
+      }
       const a = this.applicants.get(applicant);
       if (!a || a.status !== "verified") {
         throw new Error("an application is verified by magic link before it can be submitted (§9.7½)");

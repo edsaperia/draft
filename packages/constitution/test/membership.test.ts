@@ -63,6 +63,49 @@ describe('lapsing (§9.5a): sign-out applied by clock', () => {
     expect(s.E()).toBe(3);
   });
 
+  // **Lapse is a reading of the rule, re-read when the rule changes** (entry
+  // 97): a lapsed member is in that status by no act of their own, so a rule
+  // that no longer puts them there returns them at once.
+  it('💤 turned off returns every lapsed member at once — no status a rule cannot produce', () => {
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    s.setIdentity(9_000, 'ada', { name: 'Ada' });
+    s.setIdentity(9_000, bo, { name: 'Bo' });
+    s.tick(10_500);
+    expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
+    expect(s.E()).toBe(2);
+    s.setSetting(11_000, 'lapse', { afterMs: null }); // the crown's pen
+    expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
+    expect(s.E()).toBe(3);
+    s.tick(50_000_000); // and nothing lapses them again
+    expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
+  });
+
+  it('a longer spell returns whoever now falls within it; a shorter one waits for the clock', () => {
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    s.setIdentity(9_000, 'ada', { name: 'Ada' });
+    s.setIdentity(9_000, bo, { name: 'Bo' });
+    s.tick(10_500);
+    expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
+    s.setSetting(11_000, 'lapse', { afterMs: 100_000 }); // cy's quiet is now well within the spell
+    expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
+    expect(s.memberRecords().get(cy)!.lapseWarned).toBe(false);
+    expect(s.E()).toBe(3);
+    // shortening moves nobody at the change — the next sweep does, as ever
+    s.setSetting(12_000, 'lapse', { afterMs: 5_000 });
+    expect(s.E()).toBe(3);
+    s.tick(20_000); // cy returned at 11_000 and has been quiet since
+    expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
+  });
+
+  it('a sign-out is an act, and the rule change leaves it alone', () => {
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    s.signOut(3, cy, 'abstaining');
+    s.setIdentity(9_000, 'ada', { name: 'Ada' });
+    s.setIdentity(9_000, bo, { name: 'Bo' });
+    s.setSetting(11_000, 'lapse', { afterMs: null });
+    expect(s.memberRecords().get(cy)!.signedOut).toBe('abstaining');
+  });
+
   it('a lapsed member leaving can complete a motion, like any departure', () => {
     const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });

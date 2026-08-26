@@ -8,6 +8,28 @@ describe('applications (§9.7½, entry 94): one switch, 🪪’s price, one iden
     expect(() => s.startApplication(3, 'dee@example.org')).toThrow(/invitation-only/);
   });
 
+  // **Submission is the act** (entry 97): a change of rule never moves a
+  // person, so what was lodged before the door shut goes on to its judgment,
+  // and what was not lodged is refused at the door like any stranger.
+  it('the door shutting: a submitted application goes on, an unsubmitted one is refused', () => {
+    const { s, bo, cy } = buildConstituted({
+      applications: { apply: true }, membership: { price: 'proposal' } });
+    const lodged = s.startApplication(3, 'dee@example.org');
+    s.verifyApplication(4, lodged);
+    s.submitApplication(5, lodged, { name: 'Dee' });
+    const late = s.startApplication(5, 'eve@example.org');
+    s.verifyApplication(6, late);
+    s.setSetting(7, 'applications', { apply: false }); // the crown shuts the door
+    expect(() => s.submitApplication(8, late)).toThrow(/invitation-only/);
+    expect(s.applicantRecords().get(late)!.status).toBe('verified'); // lodged nothing; moved nowhere
+    const motion = s.applicantRecords().get(lodged)!.motion!;
+    expect(s.motionRecords().get(motion)!.status).toBe('running'); // the room has this one
+    s.adjudicateOrdinaryMotion(9, motion, 'carried');
+    expect(s.applicantRecords().get(lodged)!.status).toBe('admitted');
+    expect(s.E()).toBe(4);
+    void bo; void cy;
+  });
+
   it('a member address is told to log in instead — one address, one member', () => {
     const { s } = buildConstituted({
       applications: { holder: 'members', apply: true }, membership: { price: 'proposal' } });

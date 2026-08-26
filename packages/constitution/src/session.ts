@@ -1023,6 +1023,7 @@ export class ConstitutionSession {
     // keys on `changed`, which is also Ed's own exception: the founder
     // deciding something for the first time is not a change at all.
     if (CONSTITUTIONAL.has(setting) || changed) this.oweOks(t, setting);
+    if (setting === 'lapse') this.rereadLapse(t); // entry 97: the rule is re-read
   }
 
   setQuorumForm(t: number, form: 'count' | 'share'): void {
@@ -1778,6 +1779,7 @@ export class ConstitutionSession {
         if (m.okOwed.has(rec.payload.setting)) continue;
         this.emit({ type: 'ok-owed', t, member: m.id, settings: [rec.payload.setting] });
       }
+      if (rec.payload.setting === 'lapse') this.rereadLapse(t); // entry 97
     }
     if (rec.payload.kind === 'admit') {
       const id = `m-${this.nextMemberN}`;
@@ -1843,6 +1845,37 @@ export class ConstitutionSession {
     if (wasLapsed) this.afterRosterChange(t, 'arrival', member); // E grew back
     else this.maybeSettleMotions(t); // a returned abstainer re-enters the electorate
     this.maybeFreezeOrThaw(t);
+  }
+
+  /**
+   * **Lapse is a reading of the rule, re-read when the rule changes** (entry
+   * 97, Ed 2026-08-26). A change of rule never moves a person — but a lapsed
+   * member is in that status by no act of their own; the clock put them there
+   * under the old spell. So when 💤 turns off, or lengthens past their quiet,
+   * the reading is simply no longer true and they are returned at once, the
+   * crown included: the room chose to count them again, and the cost of that
+   * is the room's. A shorter spell needs nothing here — the next tick lapses
+   * whoever is now due. Before this the sweep just stopped when 💤 went to
+   * *never*, and the lapsed stayed lapsed in a status no rule produced until
+   * they happened to log in. A sign-out is untouched: that one is an act.
+   */
+  private rereadLapse(t: number): void {
+    const lapse = this.settings.get('lapse')!.value as LapseValue | null;
+    const afterMs = lapse ? lapse.afterMs : null;
+    const stillDue = (lastT: number, at: 'lapseAtT' | 'warnAtT'): boolean =>
+      afterMs !== null && t >= lapseDue(lastT, afterMs)![at];
+    for (const m of [...this.members.values()]) {
+      if (m.removed || m.arrivedAtT === null || m.signedOut !== null) continue;
+      const revive = m.lapsed ? !stillDue(m.lastActivityT, 'lapseAtT')
+        : m.lapseWarned && !stillDue(m.lastActivityT, 'warnAtT');
+      if (!revive) continue;
+      const wasLapsed = m.lapsed;
+      this.emit({ type: 'member-returned', t, member: m.id });
+      if (wasLapsed) this.afterRosterChange(t, 'arrival', m.id); // E grew back
+    }
+    if (this.crownLapsedFlag && !stillDue(this.convenor.lastActivityT, 'lapseAtT')) {
+      this.emit({ type: 'crown-returned', t });
+    }
   }
 
   /**
@@ -2008,6 +2041,15 @@ export class ConstitutionSession {
   submitApplication(t: number, applicant: string,
     fields: { name?: string; picture?: string; words?: string } = {}): void {
     this.requireOpen('applying');
+    // **Submission is the act** (entry 97, Ed 2026-08-26). A change of rule
+    // never moves a person: an application already submitted when 🤝 shuts
+    // goes on to its judgment, because the room has it. One only started or
+    // verified has lodged nothing, so the shut door refuses it here exactly
+    // as it does at the start — before this, an application begun under the
+    // open rule could still be submitted into an admit motion after it.
+    if (!this.mayApply()) {
+      throw new Error('the door has shut since you began — this document is now invitation-only (§9.7½)');
+    }
     const a = this.applicants.get(applicant);
     if (!a || a.status !== 'verified') {
       throw new Error('an application is verified by magic link before it can be submitted (§9.7½)');
