@@ -318,7 +318,7 @@ const inviteDoorPreBegin = async () => {
   const refusalOk = /already on the membership/i.test(said);
   say('refusal    · ' + (refusalOk ? '“' + said + '”'
     : 'FAIL: a duplicate address said ' + JSON.stringify(said)));
-  if (!refusalOk) stuck.push('the refusal sentence on 🪪');
+  if (!refusalOk) stuck.push('the refusal sentence on ✉️');
   // and it is about what is in the field, so the next keystroke retires it
   await typeIn('.setupcard [data-add]', '');
   await T(220);
@@ -708,13 +708,20 @@ for (let i = 0; i < 60; i++) {
     stuck.push('owedUnservable at ' + next + ': ' + owed.join(','));
   }
   if (!(await open(next))) { stuck.push(next + ' (would not open)'); continue; }
-  // **🪪 is a band tab, never a rail task** — it is always settled, having
-  // no value to settle — so the door is walked at the last moment before
-  // 🍾, which is the state it is drawn in: pre-start, both register powers
-  // still in the founder's hand.
+  // **The door is ✉️, and it stopped being 🪪 on 2026-08-26** (entry 94,
+  // Q916). This opened `roster` and typed into an invitation box that used
+  // to be drawn there; 🪪 is the *price of admission* now — a constitutional
+  // setting with four rungs on `data-set="admission"`, so the old comment
+  // here (*🪪 is always settled, having no value to settle*) was doubly
+  // wrong — and the box belongs to ✉️, which carries its own ✒️/🛡️ pair
+  // over the act. The walk died at `.setupcard [data-add]` for a day.
+  //
+  // Still walked at the last moment before 🍾, which is the state the door
+  // is drawn in: pre-start, `constituted()` false, so ✉️ shows the box
+  // rather than the composer whatever the price says.
   if (next === 'begin' && !DELEGATE_ALL && !doorWalked) {
     doorWalked = true;
-    if (await open('roster')) {
+    if (await open('invite')) {
       await inviteDoorPreBegin();
       await clickIn('.setupcard [data-revert]');
       // the founder is still alone in the room at this exact moment, which is
@@ -727,8 +734,8 @@ for (let i = 0; i < 60; i++) {
       // other is (Q850–Q853)
       await identityReachesEverySeat();
     } else {
-      say('invite ×2  · FAIL: no 🪪 tab in the band to invite from');
-      stuck.push('the 🪪 tab');
+      say('invite ×2  · FAIL: no ✉️ tab in the band to invite from');
+      stuck.push('the ✉️ tab');
     }
     await open('begin');
   }
