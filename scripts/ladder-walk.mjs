@@ -21,6 +21,7 @@
  * rAF never fires.
  */
 import { chromium } from 'playwright';
+import { assertServerBuild } from './lib/assert-server.mjs';
 
 const BASE = process.argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8140';
 const arg = (name) => {
@@ -37,6 +38,11 @@ const check = (rung, what, ok, detail = '') => {
   say(`   ${ok ? '·' : '✗'} ${what}${detail ? ` — ${detail}` : ''}`);
   if (!ok) fails.push(`${rung}: ${what}${detail ? ` (${detail})` : ''}`);
 };
+
+// Q911: a walk on a default port will drive whatever process is listening,
+// and a stale one serves today's page over a week-old engine — so the first
+// thing this does is refuse a server that is not this tree.
+await assertServerBuild(BASE, 'ladder-walk');
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });

@@ -24,6 +24,7 @@
  * first: a pointer cannot press what is off screen.
  */
 import { chromium } from 'playwright';
+import { assertServerBuild } from './lib/assert-server.mjs';
 
 const BASE = process.argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8199';
 // --empty-text: found the document on a confirmed-empty text (Q649 (a)) and
@@ -44,6 +45,11 @@ const DELEGATE_ALL = process.argv.includes('--delegate-all');
 const PROPOSALS_FIRST = process.argv.includes('--proposals-first');
 const PROPOSALS = ['begin', 'canpropose', 'canjudge', 'grant-voice'];
 const say = (...a) => console.log(...a);
+// Q911: a walk on a default port will drive whatever process is listening,
+// and a stale one serves today's page over a week-old engine — so the first
+// thing this does is refuse a server that is not this tree.
+await assertServerBuild(BASE, 'journey-walk');
+
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });
 const errors = [];

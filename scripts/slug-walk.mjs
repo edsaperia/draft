@@ -31,10 +31,16 @@
  * is taken*, which is the only reason to trust it. Q535 (a).
  */
 import { chromium } from 'playwright';
+import { assertServerBuild } from './lib/assert-server.mjs';
 
 const BASE = process.argv[2] || 'http://127.0.0.1:8140';
 const TAKEN = process.argv[3] || 'test-charter';
 const say = (...a) => console.log(...a);
+// Q911: a walk on a default port will drive whatever process is listening,
+// and a stale one serves today's page over a week-old engine — so the first
+// thing this does is refuse a server that is not this tree.
+await assertServerBuild(BASE, 'slug-walk');
+
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });
 const errors = [];

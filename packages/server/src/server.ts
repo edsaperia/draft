@@ -542,9 +542,24 @@ export async function createDraftServer(cfg: ServerConfig,
         console.error('outbox counts failed:', e);
         return null;
       });
+      // **The catalogue this process was booted with** (Q911, Ed 2026-08-26).
+      // A running server holds two copies of the work at different ages: the
+      // page is served from disk and is therefore always current, while the
+      // mechanism — this module, the engine, the catalogue — is loaded at
+      // boot and can be days old. So a stale server serves today's page over
+      // a week-old engine, and its failures read as confident product bugs;
+      // that is exactly what cost an hour on 2026-08-26, against a process
+      // old enough to still know the `signing` setting v0.70 retired.
+      //
+      // Nothing served off disk can reveal this — only the running process
+      // can say what the running process knows. The ids rather than a hash,
+      // so a walk can name what differs instead of reporting inequality.
+      // Public by Ed's call: the catalogue already ships in the browser
+      // bundle, so this discloses nothing the page does not.
       json(res, 200, {
         ok: true,
         build: cfg.buildSha,
+        catalogue: CATALOGUE.map((e) => e.id).sort(),
         store: cfg.store,
         documents: [...store.all()].length,
         uptimeSeconds: Math.floor((nowMs - bootedAtMs) / 1000),

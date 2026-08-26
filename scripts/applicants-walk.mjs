@@ -32,6 +32,7 @@
  *               no name, having never filled an application in.
  */
 import { chromium } from 'playwright';
+import { assertServerBuild } from './lib/assert-server.mjs';
 
 const BASE = process.argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8199';
 const PRICE = (process.argv.find((a) => a.startsWith('--price=')) || '--price=proposal')
@@ -43,6 +44,11 @@ if (!['proposal', 'assembly', 'pen'].includes(PRICE)) {
 const say = (...a) => console.log(...a);
 const stuck = [];
 const T = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Q911: a walk on a default port will drive whatever process is listening,
+// and a stale one serves today's page over a week-old engine — so the first
+// thing this does is refuse a server that is not this tree.
+await assertServerBuild(BASE, 'applicants-walk');
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });
