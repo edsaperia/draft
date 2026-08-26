@@ -20,6 +20,7 @@
     "probe": "node scripts/probe.mjs",
     "card-audit": "node design/tools/card-audit.mjs",
     "journey": "node scripts/journey-walk.mjs",
+    "applicants-walk": "node scripts/applicants-walk.mjs",
     "slug-walk": "node scripts/slug-walk.mjs",
     "slider-walk": "node scripts/slider-walk.mjs",
     "ladder": "node scripts/ladder-walk.mjs",
