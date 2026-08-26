@@ -614,7 +614,27 @@
   const directInvite = () => (!constituted() ? amFounder()
     : (amFounder() && (cs && cs.membershipReserved ? !!cs.membershipReserved() : regPair().u)) ||
       (viewerIsMember() && admissionPrice() === 'pen'));
-  const directRemove = () => constituted() && amFounder() && pwPair('remove').u;
+  // **Before the start the founder's word removes** (entry 96, §9.6a: the
+  // convenor re-shapes the roster freely until judging opens), and after it
+  // only the door's own ✒️ does — the same shape as `directInvite`.
+  const directRemove = () => (!constituted() ? amFounder()
+    : amFounder() && pwPair('remove').u);
+  // **Members and invitees alike** (entry 96): withdrawing an invitation is a
+  // kind of removal, priced as one, so the two stand in one list. Neither the
+  // founder's own row nor your own is offered — the founder unticks 🎩 and
+  // anybody else presses *Leave*, which is free and nobody's to refuse.
+  const removableRows = () => S.roster.filter((p) =>
+    p.mid && !p.founder && p !== viewerRow());
+  const removeSubjectPicker = () => {
+    const rows = removableRows();
+    if (!rows.length) return '<p class="setnote">There is nobody to remove.</p>';
+    return '<span class="fld"><select data-removewho="1" style="min-width:18rem">' +
+      '<option value=""' + (S.removeWho ? '' : ' selected') + '>Choose somebody…</option>' +
+      rows.map((p) => '<option value="' + esc(p.mid) + '"' +
+        (S.removeWho === p.mid ? ' selected' : '') + '>' +
+        esc(p.n || p.e || 'Anonymous') + (p.in ? '' : ' — invited, not yet here') +
+        '</option>').join('') + '</select></span>';
+  };
   // **A door that will not open says why** (Q811). Every act on this card
   // was fire-and-forget — `api.cmd` warns to the console and the page
   // re-renders as though it had worked — so a refusal looked exactly like
@@ -806,7 +826,7 @@
   // whether the bin has anything to throw away.
   const REVERTKEYS = () => ['title', 'slug', 'ending', 'endsAt', 'tClose', 'shape', 'tStart',
     'quorumForm', 'quorumPct', 'quorumN', 'joinBy', 'policyBy', 'titleBy', 'slugBy',
-    'lapse', 'lapseDays', 'removal', 'admission', 'authorship', 'judgments',
+    'lapse', 'lapseDays', 'removal', 'removeWho', 'admission', 'authorship', 'judgments',
     'grant', 'dripMin', 'cap', 'chamber', 'auditor', 'auditorBudget',
     'barBy', 'quorumBy', 'rateBy', 'myname', 'mypic', 'myemail', 'hatPick',
     // the title's provisional lane rides the snapshot like every other
@@ -846,6 +866,8 @@
     el.querySelectorAll('[data-ans]').forEach((b) => ks.add('ans:' + b.dataset.ans));
     if (el.querySelector('[data-setwhy]')) ks.add('setWhy');
     if (el.querySelector('[data-titlelane]')) ks.add('titleDraft');
+    // ❌'s subject is provisional input like any other, so 🗑️ puts it back
+    if (el.querySelector('[data-removewho]')) ks.add('removeWho');
     // **The picture card names itself by its uploader, not by its grid.**
     // `[data-pic]` used to be the always-present row of grounds; since Q732
     // the only `[data-pic]` elements are the open category's buttons and the
@@ -915,7 +937,8 @@
     quorumBy: '', quorumForm: '', quorumPct: '', quorumN: '',
     joinBy: '', admission: '',
     lapse: '', lapseDays: '',
-    removal: '',
+    // ❌'s chosen subject (entry 96), provisional until the act
+    removal: '', removeWho: '',
     authorship: '', judgments: '',
     rateBy: '', grant: '', dripMin: '', cap: '',
     chamber: '', auditor: null, auditorBudget: '',
@@ -1577,9 +1600,13 @@
       ready: () => true, door: true },
     // the door composes by whatever price the 🥾 setting decides (Q401):
     // `proposal` races at the bar, either consent rung is constitutional
+    // **❌ stands from the birth, as ✉️ does** (entry 96): withdrawing an
+    // invitation is a kind of removal, so the door has work to do before the
+    // start — where the founder re-shapes the roster freely (§9.6a) — and it
+    // was hidden until judging opened.
     { k: 'remove', g: '❌', t: 'Remove a Member', kind: 'constitutional',
       routeOf: () => (removalPrice() === 'proposal' ? 'ordinary' : 'constitutional'),
-      hide: () => !motionsLive(), ready: () => true, door: true },
+      ready: () => true, door: true },
     { k: 'hat', g: '🎩', t: 'Is the Founder a Member?', kind: 'personal', changeable: true },
     // **The register and the door are two decisions** (Ed, 2026-08-18: *We
     // should separate "Membership" which is the register of people who are
@@ -1720,7 +1747,7 @@
       dist: [9, 5], distTop: 0, distEnds: ['No AI proposals', 'AI proposals are permitted'] },
   ];
   const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
-    GATES.find((c) => c.k === k) || powerCard(k);
+    GATES.find((c) => c.k === k) || powerCard(k) || admitCard(k);
   // **The governance tab group** (403/405, Ed 2026-08-19): every held-able
   // setting is three questions — the value, ✒️ who-has-the-pen, 🛡️ do-carried-changes-need-the-Founder’s-OK — drawn as a
   // pile: the value’s tab in front, the two power tabs beneath. The tabs
@@ -1765,6 +1792,34 @@
     }
     return PWCACHE[k];
   };
+  // **The admit judgment stands under *Applicants*** (entry 96, Ed 2026-08-26:
+  // *a door stands by its result*). One card per person still asking, wearing
+  // 🪪 because an admission is what it decides, and taking the form 🪪's price
+  // gives it: a race at `proposal`, a 🏛️ question at `assembly`, and none at
+  // all at `pen`, where an application is admitted the moment it is submitted
+  // and there is nothing left to ask anybody. It lived on the 🪪 card's clause
+  // until entry 94 re-typed 🪪 into a price and left it behind with no caller
+  // at all (Q900) — so this is the way back in as much as it is the move.
+  const ADMCACHE = {};
+  const admitCard = (k) => {
+    const mm = /^adm:(.+)$/.exec(k);
+    if (!mm) return undefined;
+    const id = mm[1];
+    if (!ADMCACHE[k]) ADMCACHE[k] = { k, admit: id, g: '🪪', kind: 'constitutional',
+      t: 'Admit ' + (applicantById(id) ? applicantName(applicantById(id)) : 'an Applicant') + '?',
+      early: () => true, ready: () => true,
+      hide: () => admissionPrice() === 'pen' || !applicantById(id) };
+    // the title follows the name the applicant gave, which arrives with the
+    // submission rather than with the seat
+    ADMCACHE[k].t = 'Admit ' +
+      (applicantById(id) ? applicantName(applicantById(id)) : 'an Applicant') + '?';
+    return ADMCACHE[k];
+  };
+  const applicantById = (id) => applicantsAsking().find((ap) => ap.id === id);
+  const applicantName = (ap) => ap.name || ap.email || 'Anonymous';
+  // the keys the *Applicants* pile draws, in the order the room met them
+  const admitKeys = () => (admissionPrice() === 'pen' ? []
+    : applicantsAsking().map((ap) => 'adm:' + ap.id));
   // the held pair as truth: {u, a} — false/false IS delegated (Q403)
   const pwPair = (k) => {
     const st = pwState(k);
@@ -2697,22 +2752,23 @@
           (visible(card('policy')) ? h.para(card('policy')) + h.tasks(card('policy')) : '') +
           (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
           (visible(card('removal')) ? h.para(card('removal')) + h.tasks(card('removal')) : '') +
-          // **Members · Invitees · Applicants · Lapsed · Proposed for removal**
-          // (entry 95). Each door still wears its ✒️/🛡️ pair in the Members
-          // pile here; entry 96 is what moves each door to stand by its own
-          // result. The stranger reads the register as the door serves it,
-          // under *Members* alone.
+          // **A door stands by its result** (entry 96, Ed 2026-08-26): ✉️ on
+          // *Invitees*, ❌ on *Proposed for removal*, the admit judgment on
+          // *Applicants* — each still wearing its own ✒️/🛡️ pair, and each a
+          // pile rather than a button in a row. 🎩 stays on *Members*, being
+          // about the founder's own place in it. The stranger reads the
+          // register as the door serves it, under *Members* alone.
           (isStranger()
             ? memSub('Members', strangerRows, [], true)
-            : memSub('Members', nobody + meBlock + here.map(memRow).join(''),
-              ['invite', 'pw:u:invite', 'pw:a:invite',
-                'remove', 'pw:u:remove', 'pw:a:remove', 'hat']) +
-              memSub('Invitees', invited.map(memRow).join(''), []) +
+            : memSub('Members', nobody + meBlock + here.map(memRow).join(''), ['hat']) +
+              memSub('Invitees', invited.map(memRow).join(''),
+                ['invite', 'pw:u:invite', 'pw:a:invite']) +
               (policyNow() === 'apply'
-                ? memSub('Applicants', memApplicantRows(), []) : '') +
+                ? memSub('Applicants', memApplicantRows(), admitKeys()) : '') +
               (lapsesOn() && lapsedOut.length
                 ? memSub('Lapsed', lapsedOut.map(memRow).join(''), []) : '') +
-              memSub('Proposed for removal', proposedOut.map(memRow).join(''), [])) +
+              memSub('Proposed for removal', proposedOut.map(memRow).join(''),
+                ['remove', 'pw:u:remove', 'pw:a:remove'])) +
           (openId ? h.paraWith(openId, my) : '');
       } },
     // **Proposals reads second** (Q871, Q872, Ed 2026-08-26: *Proposals above
@@ -3594,15 +3650,18 @@
       '<p class="setnote">An invitation is constitutional, because who is in the room is what quorum is a fraction of: everyone consents, and one member who says no keeps them out.</p>',
     // ❌: the membership, in front of you, with an ✕ beside each — which
     // is what “propose a removal” means
-    remove: (d) =>
-      '<div class="roster">' + S.roster.map((p, i) =>
-        '<div class="rperson' + (d.to === (p.n || p.e) + ' leaves the membership' ? ' picked' : '') + '">' +
-        avHtml(p) + '<span><span class="nm">' + esc(p.n || p.e || '—') +
-        (i === S.viewer ? ' <span class="chip">you</span>' : '') + '</span></span>' +
-        (i === S.viewer ? '<span class="xdrop"> </span>'
-          : '<button class="xdrop" data-mval="' + esc((p.n || p.e) + ' leaves the membership') + '"' +
-            ' title="Propose that they leave">✕</button>') +
-        '</div>').join('') + '</div>' +
+    // **One control names the subject** (entry 96): the same dropdown the pen
+    // branch uses, members and invitees alike, in place of a ✕ on every row.
+    remove: (d) => (() => {
+      const rows = removableRows();
+      if (!rows.length) return '<p class="setnote">There is nobody to remove.</p>';
+      const val = (p) => (p.n || p.e) + ' leaves the membership';
+      return '<span class="fld"><select data-mval-sel="1" style="min-width:18rem">' +
+        '<option value=""' + (d.to ? '' : ' selected') + '>Choose somebody…</option>' +
+        rows.map((p) => '<option value="' + esc(val(p)) + '"' +
+          (d.to === val(p) ? ' selected' : '') + '>' +
+          esc(p.n || p.e || 'Anonymous') + (p.in ? '' : ' — invited, not yet here') +
+          '</option>').join('') + '</select></span>'; })() +
       // no route note: the 🥾 clause states how a removal is decided, and
       // hardcoding one rung here lied under the other two (copy pass,
       // 2026-08-19)
@@ -3770,33 +3829,11 @@
     } catch (e) { console.warn('[cs devff]', e && e.message); }
   }
 
-  // UNREACHABLE (Q900, found 2026-08-26): nothing calls `rosterClause`, and
-  // since it is `liveApplicantsHtml`'s only caller the admit judgment — the
-  // lanes, ✏️ Propose them, the admit race — has no way in on the surface.
-  // Entry 94 re-typed 🪪 from the register card into the price of admission
-  // and the register's list moved to the Members paragraph; the judging did
-  // not move with it. Ed, 2026-08-26: re-home it on ✉️. Do not revive this in
-  // place — it also reads `value.joinPolicy`, which entry 94 replaced.
-  // the membership list, as the 🪪 card's clause — the current text of the
-  // rule, with the ✕ that edits it, replacing the copy that lived in the body
-  // **The hat is a row in this list** (Ed, 2026-08-18: *does the founder
-  // invite themselves? … make it a default, pre-checked*). Your own row is
-  // first and ticked; unticking it makes you the clerk — administering
-  // without writing — and you did not have to be the first member you
-  // invited. Only yours to flip until judging starts; after that you join
-  // the way anybody joins.
-  const rosterClause = () => (isStranger()
-    ? '<div class="roster clauselist"><p class="cpv">' + strMembersLine() + '</p></div>' : '') ||
-    '<div class="roster clauselist">' + S.roster.map((p, i) =>
-      '<div class="rperson">' + avHtml(p) +
-      '<span><span class="nm">' + esc(p.n || 'Anonymous') + (p.founder ? ' <span class="chip founder">founder</span>' : '') +
-      '</span><br><span class="em">' + esc(p.e || '—') + '</span></span>' +
-      (p.founder
-        ? '<span class="chip">' + (iDraft() ? 'member' : 'clerk') + '</span>'
-        : '<span class="chip' + (p.in ? '' : ' pending') + '">' +
-          (p.role === 'clerk' ? 'clerk' : 'member') + (p.in ? '' : ' · invited') + '</span>') +
-      (p.founder ? '<span class="xdrop"> </span>' : '<button class="xdrop" data-drop="' + i + '">✕</button>') +
-      '</div>').join('') + '</div>' + liveApplicantsHtml();
+  // **No card draws the roster** (entry 96): the register is the constitution’s
+  // own subsections (entry 95), so the 🪪 clause that used to list every member
+  // with a ✕ beside them is gone, and with it the last place a card claimed to
+  // be the register. Withdrawing an invitation is a kind of removal now, and it
+  // is ❌ that composes it.
 
   // **The constitution, stated** (Ed, 2026-08-18): who convened it, when it
   // was constituted — the moment judging opens — and every constitutional
@@ -4818,17 +4855,24 @@
     // **❌ with the pen is exile at will** (Ed, 2026-08-26): immediate, and
     // every answer the member was standing on leaves with them — the card
     // says so in the sentence, and the button is the whole of the act
+    // **❌ names its subject with one control** (entry 96, Ed 2026-08-26): a
+    // dropdown of **members and invitees alike** — withdrawing an invitation
+    // is a kind of removal — in place of the per-row *❌ Remove* list, which
+    // put the same act on as many buttons as there were people.
     remove: () => (directRemove()
-      ? '<p class="why">Removing a member is yours to do at will ✒️: they leave the moment you press, their standing answers go with them, and nobody else is asked.</p>' +
-        '<div class="roster">' + S.roster.filter((p) => p.in && !p.founder && p.mid).map((p) =>
-          '<div class="addrow">' + avHtml(p) + '<span class="mn">' + esc(p.n || p.e || 'Anonymous') + '</span>' +
-          '<button class="btn" data-exile="' + esc(p.mid) + '">❌ Remove</button></div>').join('') +
-        '</div>' + doorErrHtml('remove')
+      ? '<p class="why">' + (constituted()
+          ? 'Removing a member is yours to do at will ✒️: they leave the moment you press, their standing answers go with them, and nobody else is asked.'
+          : 'Until the document begins, taking somebody off the list is yours alone — an invitation withdrawn is nobody else’s business yet.') +
+        '</p>' + removeSubjectPicker() +
+        '<div style="margin-top:var(--s2)"><button class="btn" data-exile="1"' +
+        (S.removeWho ? '' : ' disabled') + '>❌ Remove</button></div>' +
+        doorErrHtml('remove')
       : '<p class="why">' + ({
           consent: 'Removing a member is a proposal every member answers, including them — nobody leaves against their will.',
           assembly: 'Removing a member is a proposal every other member answers; they see it running.',
           proposal: 'Removing a member is a proposal the membership decides at the approval threshold.' })[removalPrice()] +
         ' Anybody may leave at any time.</p>' + doorErrHtml('remove')),
+
     // **The door, apart from the register** (Ed, 2026-08-18). The policy is
     // the constitutional act; each application that arrives through it is
     // its ordinary consequence.
@@ -5129,6 +5173,42 @@
             : binBtn() +
               '<button class="btn btn-approve emojibtn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
               ' title="' + (can ? 'Hold to begin the document' : 'The document cannot begin yet') + '">🍾 Begin</button>',
+          g.cards);
+      }
+      // **The admit judgment, on its own card** (entry 96): the applicant at
+      // the head in their own words, then the judgment 🪪's price asks for.
+      // The lanes and `liveJudgeAdmit` are the ones the 🪪 clause used to
+      // carry; what is new is that anything reaches them at all (Q900).
+      if (c.admit) {
+        const ap = applicantById(c.admit);
+        if (!ap) return cardHtml(c, ctx, '<p class="why">This application is no longer open.</p>',
+          binBtn(), g.cards);
+        const price = admissionPrice();
+        const words = (ap.words || '').trim();
+        const said = '<div class="memrow">' + avHtml({ n: ap.name, pic: ap.picture }) +
+          '<span class="mn">' + esc(applicantName(ap)) + '</span></div>' +
+          '<p class="why">' + esc(ap.email) + (words ? ' · <i>' + esc(words) + '</i>' : '') + '</p>';
+        // at `assembly` an admission is everybody's consent, so it is the
+        // constitutional motion the room already knows; at `proposal` it is
+        // its own one-candidate race against the membership as it stands
+        const rc = admitCardOf(c.admit);
+        const pick = S['adm:' + c.admit] || null;
+        const lane = (v, label) => '<button class="lanepick" aria-pressed="' +
+          (pick === v) + '" data-admitpick="' + esc(c.admit) + '" data-v="' + v + '">' +
+          '<span class="dot"></span><span>' + label + '</span></button>';
+        const judged = !rc
+          ? '<p class="setnote">Before the members — you have judged it.</p>' : '';
+        const body3 = said +
+          '<p class="why">' + (price === 'assembly'
+            ? 'Everyone must agree before somebody joins — one refusal keeps them out.'
+            : 'The membership decides this at the approval threshold.') + '</p>' +
+          (rc ? '<div class="choice" role="radiogroup" aria-label="Admit them?">' +
+            lane('admit', 'Admit them') +
+            lane('stands', 'Keep the membership as it is') +
+            lane('either', 'Indifferent') + '</div>' : judged);
+        return cardHtml(c, ctx, body3,
+          binBtn() + '<button class="btn btn-approve glyphbtn" data-admitgo="' +
+          esc(c.admit) + '"' + (rc && pick ? '' : ' disabled') + '>' + TICK + '</button>',
           g.cards);
       }
       if (c.isClosing) {
@@ -5647,6 +5727,20 @@
     return null;
   });
   document.addEventListener('change', (ev) => {
+    // ❌'s subject picker (entry 96) — a select answers on `change`, and the
+    // choice is provisional like every other value in `S` until the act. Two
+    // of them: the pen branch writes `S.removeWho` and acts on the button;
+    // the composer branch writes the draft the way `data-mval` does, so the
+    // route, the commit glyph and the rationale lane all follow as before.
+    if (ev.target.matches('[data-removewho]')) {
+      S.removeWho = ev.target.value; return render(); }
+    if (ev.target.matches('[data-mval-sel]')) {
+      const v = ev.target.value;
+      if (!v) { S.draft = null; return render(); }
+      if (!S.draft || S.draft.k !== S.open) S.draft = { k: S.open, to: '', why: '' };
+      S.draft.to = v;
+      S.draft.val = mvalTyped(S.open, v);
+      return render(); }
     if (ev.target.matches('[data-ansdate]')) {
       S.myAns[ev.target.dataset.ansdate] = ev.target.value || null; return render(); }
     if (ev.target.matches('[data-ansnum]')) {
@@ -6051,9 +6145,18 @@
     // no dialog, the module refuses what is not allowed and the door says why
     const exile = ev.target.closest('[data-exile]');
     if (exile) {
+      // **The subject comes from the picker** (entry 96), and **withdrawing an
+      // invitation is a kind of removal**: somebody who has not arrived is
+      // uninvited rather than removed — the same act to the founder, two
+      // different acts to the module, since an invitee is in no electorate to
+      // leave. Either way the row goes and the picker empties.
+      const who = S.removeWho;
+      const row = who && S.roster.find((p) => p.mid === who);
+      if (!row) return render();
       try {
-        const r = cs.remove(now(), exile.dataset.exile);
+        const r = row.in ? cs.remove(now(), who) : cs.uninvite(now(), who);
         if (r && typeof r.then === 'function') r.then((res) => { if (res && res.error) setDoorErr('remove', plainRefusal(res.error)); });
+        S.removeWho = '';
       } catch (e) { setDoorErr('remove', plainRefusal(e.message)); }
       return render(); }
     if (ev.target.closest('[data-act="resign"]')) {
@@ -6994,45 +7097,10 @@
       '<div class="memrow">' + avHtml({ n: ap.name, pic: ap.picture }) +
       '<span class="mn">' + esc(ap.name || ap.email || 'Anonymous') + '</span></div>').join('');
   }
-  function liveApplicantsHtml() {
-    if (!cs || !cs.isRemote) return '';
-    const aps = (cs.v.view && cs.v.view.applicants) || [];
-    if (!aps.length) return '';
-    const stp = csState('policy');
-    const policy = (stp && stp.value && stp.value.joinPolicy) || 'invite';
-    const rows = aps.map((ap) => {
-      const nm = ap.name || 'Anonymous'; // the email stands on its own line
-      const motion = ap.motion && ((cs.v.view.motions || []).find((m) => m.id === ap.motion) || null);
-      const why = (motion && motion.why) || ap.words || '';
-      const rc = admitCardOf(ap.id);
-      const pick = S['adm:' + ap.id] || null;
-      let tail = '';
-      if (ap.status === 'admitted') tail = '<span class="chip">member</span>';
-      else if (ap.status === 'refused') tail = '<span class="chip pending">not admitted</span>';
-      else if (ap.status === 'submitted' && policy === 'proposed' && !motion) {
-        tail = '<span class="chip pending">waiting for a member to propose them</span>' +
-          (viewerIsMember()
-            ? '<div style="display:flex;gap:.4rem;margin-top:.35rem;align-items:center">' +
-              '<input data-apwhy="' + ap.id + '" placeholder="Why should they join?" style="flex:1;min-width:10rem">' +
-              '<button class="btn" data-appropose="' + ap.id + '" title="Costs one ✏️, returned in full if withdrawn">✏️ Propose them</button></div>'
-            : '');
-      } else if (motion && motion.status === 'running') {
-        tail = rc
-          ? '<div style="display:flex;gap:.4rem;margin-top:.35rem;flex-wrap:wrap;align-items:center">' +
-            '<button class="lanepick" aria-pressed="' + (pick === 'admit') + '" data-admitpick="' + ap.id + '" data-v="admit"><span class="dot"></span><span>Admit</span></button>' +
-            '<button class="lanepick" aria-pressed="' + (pick === 'stands') + '" data-admitpick="' + ap.id + '" data-v="stands"><span class="dot"></span><span>Keep the membership as it is</span></button>' +
-            '<button class="lanepick" aria-pressed="' + (pick === 'either') + '" data-admitpick="' + ap.id + '" data-v="either"><span class="dot"></span><span>Indifferent</span></button>' +
-            '<button class="btn btn-approve glyphbtn" data-admitgo="' + ap.id + '"' + (pick ? '' : ' disabled') + '>' + TICK + '</button></div>'
-          : '<span class="chip">before the members — you have judged it</span>';
-      }
-      return '<div class="rperson" style="display:block"><span class="nm">' + esc(nm) +
-        ' <span class="chip pending">applicant</span></span><br>' +
-        '<span class="em">' + esc(ap.email) + (why ? ' · <i>' + esc(why) + '</i>' : '') + '</span>' +
-        (tail ? '<div style="margin-top:.3rem">' + tail + '</div>' : '') + '</div>';
-    }).join('');
-    return '<div class="roster clauselist" style="margin-top:.5rem">' +
-      '<div class="rechead">Applicants</div>' + rows + '</div>';
-  }
+  // `liveApplicantsHtml` — the 🪪 clause’s admit judgment — is gone with the
+  // clause it hung off (entry 96). Its lanes and its `liveJudgeAdmit` commit are
+  // the `adm:` card’s now, on the *Applicants* subsection, where a door stands
+  // by its result. It had been unreachable since entry 94 (Q900).
   // The admit judgment is the same pairwise act as any ordinary motion's
   // (liveJudge): admit prefers the candidate side, keep the incumbent.
   function liveJudgeAdmit(apId) {
