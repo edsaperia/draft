@@ -563,6 +563,13 @@ button.cline:hover b { text-decoration: underline; }
    to clear — unscoped, both opened with 42px of nothing. */
 .constsec .cpara .memlist:has(.memrow.meRow) { padding-top: 42px; }
 .memlist { display: flex; flex-wrap: wrap; gap: 5px 18px; }
+/* **The list's own subheadings** (Q868, Q869): Invitees, then Applicants —
+   groups of people who are not members yet, under a Members heading that is
+   about people who are. They take the eyebrow treatment from `.eyebrow` and
+   nothing but layout here: a full-width break in a wrapping row of faces, with
+   a little more air above than the 5px row gap, so a heading reads as belonging
+   to what is under it rather than to what is over it. */
+.memlist .memhead { flex-basis: 100%; margin: 4px 0 0; }
 /* "you" — the one sanctioned per-reader difference (Ed): in the members list
    you are at the top, on your own line, your identity pile in the gutter
    beside you; the min-height is the 30px front tab of that pile */
