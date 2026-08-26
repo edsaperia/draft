@@ -211,7 +211,7 @@ async function runDocument(hat) {
     }
     if (note) say('   · ' + note);
     if (step.kind === 'ladder' && step.to === 'closed') D.closed = true;
-    const snap = await snapshot(D, step);
+    const snap = await snapshot(D);
     D.steps.push({ id: step.id, epoch: step.epoch, events: evs.map((e) => ({ id: e.id, key: e.key })), seats: snap });
     assertStep(D, step, evs, snap);
     if (TO !== null && step.epoch === TO && (STEPS[i + 1] === undefined || STEPS[i + 1].epoch !== TO)) {
@@ -508,7 +508,7 @@ const railOf = (page) => page.evaluate(() => ({
     return f ? { served: f.served, okd: f.okd, owed: f.owed, amFounder: f.amFounder,
       viewerIsMember: f.viewerIsMember, constituted: f.constituted, readiness: f.readiness } : null; })(),
 }));
-async function snapshot(D, step) {
+async function snapshot(D) {
   if (!D.slug) return {};
   await keepAlive(D);
   await sleep(SETTLE_MS);
