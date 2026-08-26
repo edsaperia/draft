@@ -1258,9 +1258,7 @@ window.SETUP = (function () {
       '<p class="why">How somebody who is not a member can become one. The <b>least open</b> answer wins: one member who wants invitation only keeps it so.</p>' +
       ladder(A, 'policy', [
         { v: 'invite', t: 'Invitation only', e: 'Nobody joins unless a member brings them in.' },
-        { v: 'proposed', t: 'Applications must be proposed by members', e: 'Anybody can apply, but nothing happens until a member takes the application up and proposes it.' },
-        { v: 'apply', t: 'Anyone may apply', e: 'An application goes straight to the members, who judge it like any other proposal.' },
-        { v: 'open', t: 'Open', e: 'Anyone with the link becomes a member the moment they open it.' }]) + BLINDNOTE,
+        { v: 'apply', t: 'Anyone may apply', e: 'An application is a stranger proposing their own invitation — decided the way Admissions says, at no cost to the applicant.' }]) + BLINDNOTE,
     chamber: (A) =>
       '<p class="why">Who may read the document besides the members — readers only, never counted. The <b>most private</b> answer wins: one member who wants the room closed closes it.</p>' +
       ladder(A, 'chamber', [
@@ -1268,12 +1266,21 @@ window.SETUP = (function () {
         // Public left every ladder on 2026-08-22 (Q603): offered nowhere,
         // read back everywhere a document that took it still states it
         { v: 'link', t: 'Anyone with the link', e: 'The chamber view only, to whoever the link reaches.' }]) + BLINDNOTE,
+    // **One price scale** (entry 94): 🪪 and 🥾 are answered in the same
+    // three verbs, most protective first, and 🥾 keeps the one rung
+    // admission has no analogue for
+    roster: (A) =>
+      '<p class="why">What it costs to bring somebody into the membership — a member’s invitation or a stranger’s application alike. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
+      ladder(A, 'roster', [
+        { v: 'assembly', t: 'Everyone must agree', e: 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.' },
+        { v: 'proposal', t: 'The membership decides', e: 'A proposed member is judged at the approval threshold ✏️, like any change.' },
+        { v: 'pen', t: 'Any member may invite', e: 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.' }]) + BLINDNOTE,
     removal: (A) =>
-      '<p class="why">How this room may remove a member. Whichever is chosen, the member always sees a removal proposed against them. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
+      '<p class="why">What it costs to remove a member. Whichever is chosen, the member always sees a removal proposed against them, and anybody may leave at any time. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'removal', [
-        { v: 'everyone', t: 'Everyone has to agree, including them', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
-        { v: 'others', t: 'Everyone else has to agree', e: 'The whole room, minus the member in question, must agree.' },
-        { v: 'ordinary', t: 'A proposal ✏️ like any other', e: 'Judged at the approval threshold like any change, with quorum.' }]) + BLINDNOTE,
+        { v: 'consent', t: 'Everyone must agree, including them', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
+        { v: 'assembly', t: 'Everyone else must agree', e: 'The whole room, minus the member in question, must agree 🏛️.' },
+        { v: 'proposal', t: 'The membership decides', e: 'Judged at the approval threshold ✏️ like any change, with quorum.' }]) + BLINDNOTE,
     machines: (A) =>
       '<p class="why">An AI that patrols the document for drift and proposes fixes — it never judges, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
       ladder(A, 'machines', [
