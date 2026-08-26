@@ -913,9 +913,16 @@ async function walkCharter(page, base, cards, errors, { closed } = {}) {
     // and leaving it out made this test answer *no way in* for the very bug it
     // was written for: a heading proposal has no gutter mark until the fix,
     // but it has had a rail entry all along.
-    const wayIn = await page.evaluate((k) => !!document.querySelector(
-      ['data-card', 'data-tab', 'data-anchor', 'data-q']
-        .map((a) => '[' + a + '="' + CSS.escape(k) + '"]').join(', ')), id);
+    // The key goes into a **quoted attribute value**, not into a selector
+    // identifier, so `CSS.escape` is the wrong escaper for it: it would turn a
+    // digit-leading id into a `\3X ` numeric escape, which inside quotes means
+    // some other character entirely and matches nothing. Quotes and backslashes
+    // are the whole of what a CSS string has to be protected from.
+    const wayIn = await page.evaluate((k) => {
+      const q = String(k).replace(/["\\]/g, '\\$&');
+      return !!document.querySelector(['data-card', 'data-tab', 'data-anchor', 'data-q']
+        .map((a) => '[' + a + '="' + q + '"]').join(', '));
+    }, id);
     const threw = await page.evaluate((k) => { try { window.SESSION.toggle(k, false); return null; } catch (e) { return String(e); } }, id);
     if (threw) { errors.push(walk + ': ' + id + ' threw on toggle — ' + threw); continue; }
     await wait(page, 200);

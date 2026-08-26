@@ -2882,10 +2882,32 @@ document.addEventListener('pointercancel', () => flyStop(false));
         // halves used to live below this branch's `continue`, which is why a
         // heading-targeted proposal had no mark to press and opened nothing
         // when the rail pressed it for you.
+        //
+        // **And a decided one, the same way.** `suggFor` drops a sealed
+        // entry, so keying the whole branch off it left the heading's *record*
+        // exactly where its live proposal had been: no mark in the gutter, and
+        // a rail entry that opened nothing the moment the thing it points at
+        // was filed. A paragraph has had the `wasResolved` half for as long as
+        // it has had the live one, so the heading takes both or neither.
         const hlive = line.key ? suggFor(line.key) : [];
-        const swallow = hlive.length ? swallowOpen(line.key, hlive) : null;
-        if (swallow && swallow.swallowed) { html += swallow.html; continue; }
-        const marks = hlive.length ? chipStackHtml(hlive, line.key) : '';
+        const hDecided = line.key && !hlive.length
+          ? SUGGS.find((g) => (resolved.has(g.id) || g.state === 'sealed') && (g.keys ?? []).includes(line.key))
+          : undefined;
+        let marks = '';
+        if (hlive.length) {
+          const swallow = swallowOpen(line.key, hlive);
+          if (swallow.swallowed) { html += swallow.html; continue; }
+          marks = chipStackHtml(hlive, line.key);
+        } else if (hDecided) {
+          if (openId === hDecided.id && !cardDone) {
+            html += '</div>' + suggCardHtml(hDecided) + PROSE();
+            cardDone = true;
+            continue;
+          }
+          marks = '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' +
+            chipStyle(hDecided) + ' data-anchor="' + hDecided.id + '" title="' +
+            esc(plainLabel(hDecided.qLabel)) + ' — decided">' + mkHtml(markKindOf(hDecided)) + '</span></span>';
+        }
         const inside = collapsed.has(secN) ? suggestionsInSection(secN) : 0;
         html += '<h2 class="docline editable' + (marks ? ' marked' : '') +
           ' lvl' + (line.level ?? 1) + '" id="sec-' + secN + '"' +
