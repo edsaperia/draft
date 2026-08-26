@@ -381,7 +381,7 @@ const inviteDoorPreBegin = async () => {
 // the constitutional settings, in the page's own keys: what a founder settles
 // during the founding and what a late arrival used to be handed nine of
 const PREDATING = ['ending', 'bar', 'quorum', 'authorship', 'judgments',
-  'chamber', 'lapse', 'policy', 'removal'];
+  'chamber', 'lapse', 'applications', 'removal'];
 const AMENDED = 'chamber'; // 🌍, constitutional and founder-held after this founding
 let guestPage = null;
 let guestOks = 0;
@@ -680,13 +680,13 @@ const stuckAtBegin = async () => {
   if (!saysWhy) stuck.push("🍾's hold sentence");
   // 3 — and the remedy is in the rail, not only in a sentence
   say('remedy     · rail ' + JSON.stringify(st.rail) +
-    (st.rail.includes('roster') ? '' : '  FAIL: 🪪 is not served while the waiting is one-voice'));
-  if (!st.rail.includes('roster')) stuck.push('🪪 is not served as the remedy');
+    (st.rail.includes('admission') ? '' : '  FAIL: 🪪 is not served while the waiting is one-voice'));
+  if (!st.rail.includes('admission')) stuck.push('🪪 is not served as the remedy');
   // 4 — and it works: one address is enough to end the wait it names
-  if (await open('roster')) {
+  if (await open('admission')) {
     await inviteFrom(GUEST1, false);
     const after = await oneVoiceState();
-    const gone = !after.holds.some((h) => h.why === 'one-voice') && !after.rail.includes('roster');
+    const gone = !after.holds.some((h) => h.why === 'one-voice') && !after.rail.includes('admission');
     say('invited    · ' + (gone ? 'the 🪪 task leaves and the reason is no longer one-voice'
       : 'FAIL: holds ' + JSON.stringify(after.holds) + ' · rail ' + JSON.stringify(after.rail)));
     if (!gone) stuck.push('the 🪪 remedy did not clear after an invitation');
@@ -744,7 +744,7 @@ for (let i = 0; i < 60; i++) {
   }
   if (!(await open(next))) { stuck.push(next + ' (would not open)'); continue; }
   // **The door is ✉️, and it stopped being 🪪 on 2026-08-26** (entry 94,
-  // Q916). This opened `roster` and typed into an invitation box that used
+  // Q916). This opened `admission` and typed into an invitation box that used
   // to be drawn there; 🪪 is the *price of admission* now — a constitutional
   // setting with four rungs on `data-set="admission"`, so the old comment
   // here (*🪪 is always settled, having no value to settle*) was doubly

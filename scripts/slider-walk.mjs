@@ -134,7 +134,7 @@ const walkTo = async (stop, delegate) => {
         return [...c.querySelectorAll('[data-set][data-val]')].map((e) => e.dataset.set + '=' + e.dataset.val +
           (e.closest('.pick').classList.contains('on') ? '*' : ''));
       })));
-    } else if (next === 'roster') {
+    } else if (next === 'admission') {
       // **A room, so the questions come when they are delegated.** With the
       // founder alone `roomExists()` is false and an answer task waits until
       // nothing else is outstanding, which for 🌡️ is never — so the walk

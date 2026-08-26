@@ -28,9 +28,9 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 <!-- spec-check: events -->
 | # | Event | Audience | Channel | Ask | Close | Persistence | Keys |
 |---|---|---|---|---|---|---|---|
-| E1 | A founding question opens (delegated) | every arrived member, founder if a member | rail ask entry; task paragraph under the watching clause | an answer | ✓ | entry leaves; card shows the count; revisable until resolved | chamber policy lapse removal ending bar quorum authorship judgments rate machines |
+| E1 | A founding question opens (delegated) | every arrived member, founder if a member | rail ask entry; task paragraph under the watching clause | an answer | ✓ | entry leaves; card shows the count; revisable until resolved | chamber applications lapse removal ending bar quorum authorship judgments rate machines |
 | E2 | A founding question resolves | everyone who answered | clause; distribution strip | nothing (pre-start: no OK owed) | — | clause states the rule | — |
-| E3 | A setting is set pre-start | nobody | clause fades in | nothing | — | clause | title slug text hat myname mypic roster |
+| E3 | A setting is set pre-start | nobody | clause fades in | nothing | — | clause | title slug text hat myname mypic admission |
 | E4 | The document begins 🍾 | every member | 💡 ⚖️ gate news cards, the Founded line; 🏛️ for anybody not yet handed a voice (E8) | OK each | OK | `ACK_KEYS` per seat; grants staged behind the constitutional OKs | begin canpropose canjudge |
 | E5 | A constitutional setting set or changed post-start (pen or carried) | every member who had no say **and arrived when it was set**, lapsed included; a later joiner reads it as the document | news entry pinned ✔; clause change line (was / now, who, why) | OK | OK | clause keeps *Last amended*; the record's Amendments | — |
 | E6 | An ordinary setting first set | nobody | clause | nothing | — | clause | — |
@@ -47,7 +47,7 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 | E17 | A race deadlocks | each member, once it has nothing left to ask them | ⚔️ entry ranked by bounty | a draft | — | — | — |
 | E18 | A salience diagonal | a member with nothing else to judge, once the document holds at least E live questions | 🌶️ card, served not offered | which matters more | ✓ | no progress state | — |
 | E19 | A proposal of your own | the author | ✏️ card, then one line; pinned | withdraw is the remaining act — **unless nobody else in the room could judge it** (Q835): where every member of the race is an author, at E = 1 always, the judgment is offered beside the withdrawal | Propose (stays pinned) | ✏️ throughout | — |
-| E20 | Somebody arrives during the founding | founding answerers (ground shift) | **an acknowledgement task on their own answer card, marked ↻** — *one more member has arrived; your answer stands* (Q567, Q572); no mail | OK, revising optional | OK | register | roster |
+| E20 | Somebody arrives during the founding | founding answerers (ground shift) | **an acknowledgement task on their own answer card, marked ↻** — *one more member has arrived; your answer stands* (Q567, Q572); no mail | OK, revising optional | OK | register | admission |
 | E21 | An application is submitted | the membership | a row under *Applicants*, and its own admit card in that subsection's pile (entry 96) | **at 🪪's price**: a judgment at *proposal* (a race) · an answer at *assembly* (a 🏛️ question) · **nothing at *pen*, where it is news** — they are already in, so the card reports and asks only to have been seen | ✓, or OK where it is news | record | apply appmail appname apppic apptext |
 | E22 | A membership is about to lapse / lapses | the member | mail: warning, then the package | nothing; revival is logging in | — | — | — |
 | E23 | The document freezes | every member | the session clock, *Frozen — n must return*; **nothing else** (Q573) | return | — | proposals made while frozen park and reach the record | — |
@@ -111,6 +111,8 @@ Y1 — *a submitted judgment does not close its card* — was retired by Q576 (E
 
 The page speaks its own keys; the spec speaks the catalogue's ids. This table is the map (`MID` in `session-view.html` carries the non-identical pairs), and the checker asserts it.
 
+**Two pairs stopped being asymmetric** (Q903, Ed 2026-08-26). 🪪's id was `membership` and its page key `roster`, both naming the register it stopped being at entry 94; 🤝's page key was `policy`, naming a four-rung ladder that is now one switch. Both are now `admission` and `applications` on either side, so `MID` carries neither, and a log written under the old id folds at load (`foldLegacyIds` in `session.ts`). The page's word `'roster'` still means *the membership holds this setting* — that is the delegation sentinel, not a key.
+
 <!-- spec-check: keys -->
 | page key | setting |
 |---|---|
@@ -128,8 +130,8 @@ The page speaks its own keys; the spec speaks the catalogue's ids. This table is
 | lapse | lapse |
 | removal | removal |
 | machines | machines |
-| roster | membership |
-| policy | applications |
+| admission | admission |
+| applications | applications |
 | myname | displayName |
 | mypic | picture |
 
@@ -274,9 +276,9 @@ The refund flight and every grant's inbound flight take 640 ms.
 | 4 | grant-pen | ✒️ | grant | lead — a tab on the Founded line, no clause | yes | the save | Your Pen |
 | 5 | grant-shield | 🛡️ | grant | lead — a tab on the Founded line, no clause | no | the save | Your Shield |
 | 6 | chamber | 🌍 | constitutional · judge-gate | lead, penultimate | yes | the pen's OK | Visibility |
-| 7 | roster | 🪪 | constitutional — **the price of admission** (entry 94) | members, first — its own clause, above 🤝, because an application pays it (Ed, 2026-08-26) | yes | chamber | Admissions (the ✉️ door is the **remedy** while 🍾 waits on `one-voice`, F19) |
-| 8 | policy | 🤝 | constitutional | members — above *Members*, ahead of 💤 🥾 (Q617) | yes | roster | Applications |
-| 9 | hat | 🎩 | decision, not a setting | members — a tab on the list; no sentence | yes | policy | Is the Founder a Member? |
+| 7 | admission | 🪪 | constitutional — **the price of admission** (entry 94) | members, first — its own clause, above 🤝, because an application pays it (Ed, 2026-08-26) | yes | chamber | Admissions (the ✉️ door is the **remedy** while 🍾 waits on `one-voice`, F19) |
+| 8 | applications | 🤝 | constitutional | members — above *Members*, ahead of 💤 🥾 (Q617) | yes | admission | Applications |
+| 9 | hat | 🎩 | decision, not a setting | members — a tab on the list; no sentence | yes | applications | Is the Founder a Member? |
 | 10 | myname | ✋ | personal | members — your own row | yes | hat | Your Name |
 | 11 | mypic | 🖼️ | personal | members — your own row | yes | myname | Your Picture |
 | 12 | lapse | 💤 | constitutional · judge-gate | members — above *Members*, with 🤝 (Q865) | yes | mypic | Do Memberships Lapse? |

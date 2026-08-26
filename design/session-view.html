@@ -577,10 +577,10 @@
   // the two doors are power-holders in the module's own map (entry 94), so
   // they ride the same key map as a setting and every power helper meets
   // them without learning a second kind of thing
-  const MID = { slug: 'link', text: 'startingText', policy: 'applications', roster: 'membership',
+  const MID = { slug: 'link', text: 'startingText',
     invite: 'door:invite', remove: 'door:remove', myname: 'displayName', mypic: 'picture' };
   const midOf = (k) => MID[k] || k;
-  const PKEY = { link: 'slug', startingText: 'text', applications: 'policy', membership: 'roster',
+  const PKEY = { link: 'slug', startingText: 'text',
     'door:invite': 'invite', 'door:remove': 'remove' };
   const pkeyOf = (mid2) => PKEY[mid2] || mid2;
   const PKEYOF = PKEY;
@@ -654,7 +654,7 @@
   const setDoorErr = (k, m) => { S.doorErr = m ? { k: k, m: m } : null; render(); };
   // which card a control sits on, from the card itself rather than from
   // whatever happens to be open
-  const cardKeyAt = (el) => (el && el.dataset && el.dataset.setupcard) || S.open || 'roster';
+  const cardKeyAt = (el) => (el && el.dataset && el.dataset.setupcard) || S.open || 'admission';
   const msToLocal = (ms) => {
     const d2 = new Date(ms);
     const p2 = (x) => String(x).padStart(2, '0');
@@ -695,9 +695,9 @@
     rate: () => ({ grant: +S.grant, cap: Math.max(+S.cap, +S.grant), dripMinutes: +S.dripMin }),
     lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: +S.lapseDays * 86400000 }),
     removal: () => ({ price: S.removal }),
-    roster: () => ({ price: S.admission }),
+    admission: () => ({ price: S.admission }),
     machines: () => (S.auditor === true ? { enabled: true, budget: +S.auditorBudget } : { enabled: false, budget: 0 }),
-    policy: () => ({ apply: S.joinBy === 'apply' }),
+    applications: () => ({ apply: S.joinBy === 'apply' }),
   };
   // 🤝 read through its legacy (entry 94): a value written before the switch
   // carried a four-rung joinPolicy, of which only `invite` was the door shut
@@ -711,9 +711,9 @@
     authorship: (v) => ({ rung: v }),
     judgments: (v) => ({ rung: v }),
     chamber: (v) => ({ rung: v }),
-    policy: (v) => ({ apply: v === 'apply' }),
+    applications: (v) => ({ apply: v === 'apply' }),
     removal: (v) => ({ price: v }),
-    roster: (v) => ({ price: v }),
+    admission: (v) => ({ price: v }),
     machines: (v) => (v === true ? { enabled: true, budget: +S.auditorBudget || 4 } : { enabled: false, budget: 0 }),
     lapse: (v) => (v === 'never' ? { afterMs: null } : { afterMs: +v * 86400000 }),
     rate: (v) => ({ grant: +v, cap: Math.max(+v, +S.cap || RATE_START.cap),
@@ -728,8 +728,8 @@
     authorship: (v) => v.rung,
     judgments: (v) => v.rung, chamber: (v) => v.rung,
     removal: (v) => v.price,
-    roster: (v) => v.price,
-    policy: (v) => (mayApply(v) ? 'apply' : 'invite'),
+    admission: (v) => v.price,
+    applications: (v) => (mayApply(v) ? 'apply' : 'invite'),
   };
   // what the document is called now, and what the lane is proposing
   const cs_titleNow = () => (cs ? cs.titleOf : S.title);
@@ -773,8 +773,8 @@
     chamber: 'chamber', rate: 'rateBy', lapse: 'lapse', removal: 'removal',
     machines: 'auditor',
     // v0.52: these three only ever read 'roster' once their options render
-    // (title/link after the text confirms, policy after the start)
-    title: 'titleBy', slug: 'slugBy', policy: 'policyBy', roster: 'admission' };
+    // (title/link after the text confirms, applications after the start)
+    title: 'titleBy', slug: 'slugBy', applications: 'policyBy', admission: 'admission' };
   const wantsDelegate = (k) => { const dk = DKEY[k]; return !!dk && S[dk] === 'roster'; };
   // a radio's value comes off the DOM as a string; two settings hold booleans
   const setVal = (v) => (v === 'true' ? true : v === 'false' ? false : v);
@@ -1597,7 +1597,7 @@
     // clause above 🤝. The register it used to be is a fact of the document
     // — the list under *Members* — and the Founder's powers over the act of
     // inviting are the ✉️ door's, not this setting's.
-    { k: 'roster', g: '🪪', t: 'Admissions', kind: 'constitutional', key: 'admission', p: 0.40, changeable: true,
+    { k: 'admission', g: '🪪', t: 'Admissions', kind: 'constitutional', key: 'admission', p: 0.40, changeable: true,
       rule: 'Each member says the <b>cheapest</b> admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.',
       takes: 'The document takes the dearest', result: 'Everyone must agree',
       dist: [3, 1, 0], distTop: 3, distEnds: ['Everyone must agree', 'Any member may invite'] },
@@ -1625,7 +1625,7 @@
     // after the ceremony*). The one-card test agrees: who is in the room
     // now, and how anybody gets in later, can be answered differently and
     // on their own.
-    { k: 'policy', g: '🤝', t: 'Applications', kind: 'constitutional', key: 'policyBy', p: 0.41, changeable: true,
+    { k: 'applications', g: '🤝', t: 'Applications', kind: 'constitutional', key: 'policyBy', p: 0.41, changeable: true,
       rule: 'Each member says the <b>most open</b> door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.' },
     // optional for a clerk (Ed, 2026-08-18): an anonymous founder is a
     // perfectly ordinary thing — they can simply not set a name or picture
@@ -1949,13 +1949,13 @@
   // "about". The fallback is *this*, so a setting added to the catalogue
   // without a noun states something true rather than "undefined".
   const PW_NOUN = {
-    title: 'the title', slug: 'the link', policy: 'applications', text: 'the text',
+    title: 'the title', slug: 'the link', text: 'the text',
     ending: 'the ending', bar: 'the approval threshold',
     pace: 'how the approval threshold rises', quorum: 'quorum',
     authorship: 'anonymous proposals', judgments: 'judgment reveal',
     chamber: 'visibility', rate: 'the proposal rate', lapse: 'membership lapse',
     removal: 'member removal', machines: 'AI proposals',
-    roster: 'the price of admission', policy: 'applications',
+    admission: 'the price of admission', applications: 'applications',
     invite: 'invitations', remove: 'removals',
   };
   const pwNoun = (k) => PW_NOUN[k] || 'this';
@@ -2272,9 +2272,9 @@
   const isNum = (v) => v !== '' && v !== null && v !== undefined && isFinite(+v);
   const CHOSEN = {
     chamber: () => !!S.chamber,
-    policy: () => !!S.joinBy,
+    applications: () => !!S.joinBy,
     removal: () => !!S.removal,
-    roster: () => !!S.admission,
+    admission: () => !!S.admission,
     authorship: () => !!S.authorship,
     judgments: () => !!S.judgments,
     lapse: () => S.lapse === 'never' || (!!S.lapse && isNum(S.lapseDays)),
@@ -2502,7 +2502,7 @@
   // 🪪 before 🤝 (Ed, 2026-08-26): an application pays the price, so the
   // price is decided before whether strangers may apply
   const ORDER = ['title', 'slug', 'myemail', 'grant-pen', 'grant-shield', 'chamber',
-    'roster', 'policy', 'hat', 'myname', 'mypic', 'lapse', 'removal',
+    'admission', 'applications', 'hat', 'myname', 'mypic', 'lapse', 'removal',
     'canpropose', 'canjudge', 'grant-voice', 'rate', 'machines',
     'ending', 'bar', 'quorum',
     'authorship', 'judgments',
@@ -2586,7 +2586,7 @@
   // and the rail entry follows its own chip (`anchorOf`), so nothing changes
   // where the founder looks.
   const voiceHost = () => { const a = firstAsked();
-    return a ? a.ansFor : (cs && !constituted() ? 'roster' : 'canjudge'); };
+    return a ? a.ansFor : (cs && !constituted() ? 'admission' : 'canjudge'); };
   // **The two grants whose clause is the Founded line** (Q639 (a), Ed
   // 2026-08-22). They are still tasks of the 📍 link for every purpose that
   // counts them — the rail enumerates from `tasksFor`, and so does the
@@ -2626,7 +2626,7 @@
     // no intro line (Ed, 2026-08-18) — the sentences are the section
     { key: 'members', title: 'Membership',
       text: '',
-      keys: ['roster', 'invite', 'remove', 'hat', 'policy', 'lapse', 'removal', 'myemail', 'myname', 'mypic'],
+      keys: ['admission', 'invite', 'remove', 'hat', 'applications', 'lapse', 'removal', 'myemail', 'myname', 'mypic'],
       // one admit card per applicant — a task at 🏛️/✏️, news at ✒️ (entry 96)
       extraKeys: () => admitKeys(),
       // **Members and Applications are subsections** (Ed, 2026-08-18):
@@ -2788,8 +2788,8 @@
         // order somebody actually does it in.
         // **🪪 leads** (Ed, 2026-08-26, entry 94): what admission costs comes
         // before whether strangers may apply, since an application pays it
-        return (visible(card('roster')) ? h.para(card('roster')) + h.tasks(card('roster')) : '') +
-          (visible(card('policy')) ? h.para(card('policy')) + h.tasks(card('policy')) : '') +
+        return (visible(card('admission')) ? h.para(card('admission')) + h.tasks(card('admission')) : '') +
+          (visible(card('applications')) ? h.para(card('applications')) + h.tasks(card('applications')) : '') +
           (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
           (visible(card('removal')) ? h.para(card('removal')) + h.tasks(card('removal')) : '') +
           // **A door stands by its result** (entry 96, Ed 2026-08-26): ✉️ on
@@ -3030,8 +3030,8 @@
     mypic: () => (S.mypic ? 'Chosen' : 'Your initials'),
     // an invitee is not a member yet (§9.6a): the line counts the arrived,
     // and says who is still only invited
-    roster: () => PRICE_WORDS.admission[admissionPrice()],
-    policy: () => POLICY_WORDS[policyNow()],
+    admission: () => PRICE_WORDS.admission[admissionPrice()],
+    applications: () => POLICY_WORDS[policyNow()],
     chamber: () => ({ link: 'Anyone with the link', closed: 'Members only',
       public: 'Public' }[takenOf('chamber') || S.chamber]),
     ending: () => (perpetual() ? 'Never — it runs until too few members are active'
@@ -3081,7 +3081,7 @@
     // 🤝's four-rung joinPolicy, and the module folds every legacy value to
     // `{apply}` on load, so neither branch can fire. Left labelled rather than
     // deleted so the removal is one deliberate sweep — see `STANDS` below.
-    policy: (v) => 'You said ' + ({ invite: 'invitation only', proposed: 'applications must be proposed by members', apply: 'anyone may apply', open: 'open' }[v] || v),
+    applications: (v) => 'You said ' + ({ invite: 'invitation only', proposed: 'applications must be proposed by members', apply: 'anyone may apply', open: 'open' }[v] || v),
     machines: (v) => 'You said ' + (v ? 'AI proposals are permitted' : 'no AI proposals'),
     lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days without logging in'),
     removal: (v) => 'You said ' + ({ everyone: 'everyone has to agree, including them',
@@ -3092,7 +3092,7 @@
     ending: 'The latest you will accept', authorship: 'The most you will accept',
     judgments: 'The most you will accept',
     chamber: 'The most you will accept', machines: 'The most you will accept',
-    policy: 'The most open you will accept',
+    applications: 'The most open you will accept',
     lapse: 'The shortest you will accept',
     removal: 'The easiest you will accept',
     rate: 'The most generous you will accept' };
@@ -3229,8 +3229,8 @@
     if (k === 'slug') return docAddr(p.value.slug);
     if (k === 'pace') return (p.value.shape === 'fixed' ? 'The same number throughout'
       : 'Rising from ' + p.value.startPct + '%');
-    if (k === 'policy') return POLICY_WORDS[mayApply(p.value) ? 'apply' : 'invite'];
-    if (k === 'roster') return PRICE_WORDS.admission[p.value.price];
+    if (k === 'applications') return POLICY_WORDS[mayApply(p.value) ? 'apply' : 'invite'];
+    if (k === 'admission') return PRICE_WORDS.admission[p.value.price];
     if (k === 'removal') return PRICE_WORDS.removal[p.value.price];
     if (k === 'rate') return p.value.grant + ' each, up to ' + p.value.cap +
       ', one every ' + p.value.dripMinutes + ' minutes';
@@ -3319,10 +3319,10 @@
     removal: { 'Everyone must agree, including them': { price: 'consent' },
       'Everyone else must agree': { price: 'assembly' },
       'The membership decides': { price: 'proposal' } },
-    roster: { 'Everyone must agree': { price: 'assembly' },
+    admission: { 'Everyone must agree': { price: 'assembly' },
       'The membership decides': { price: 'proposal' },
       'Any member may invite': { price: 'pen' } },
-    policy: { 'Invitation only': { apply: false }, 'Anyone may apply': { apply: true } },
+    applications: { 'Invitation only': { apply: false }, 'Anyone may apply': { apply: true } },
     machines: { 'No AI proposals': { enabled: false, budget: 0 } },
     // **Public has left the ladder** (Ed, 2026-08-22). It is offered nowhere
     // — not here, not on the founder's card, not in a member's answer — but
@@ -3365,8 +3365,8 @@
     slug: (v) => docAddr(v.slug),
     chamber: (v) => ({ closed: 'members only', link: 'anyone with the link',
       public: 'public' }[v.rung] || v.rung),
-    policy: (v) => (mayApply(v) ? 'anyone may apply' : 'invitation only'),
-    roster: (v) => ({ assembly: 'everyone agreeing', proposal: 'the membership deciding',
+    applications: (v) => (mayApply(v) ? 'anyone may apply' : 'invitation only'),
+    admission: (v) => ({ assembly: 'everyone agreeing', proposal: 'the membership deciding',
       pen: 'any member’s word' }[v.price] || v.price),
     lapse: (v) => (v.afterMs === null ? 'never'
       : Math.round(v.afterMs / 86400000) + ' days'),
@@ -3579,7 +3579,7 @@
     // for the same reason as in the answer readback above — the two live rungs
     // are `POLICY_WORDS`', and these two labels are the only place the retired
     // four still speak. To be removed with them.
-    policy: (v) => ({ invite: 'Invitation only', proposed: 'Applications must be proposed by members', apply: 'Anyone may apply', open: 'Open' })[v],
+    applications: (v) => ({ invite: 'Invitation only', proposed: 'Applications must be proposed by members', apply: 'Anyone may apply', open: 'Open' })[v],
     authorship: (v) => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed after the decision' })[v],
     lapse: (v) => (v === 'never' ? 'Never — however long you are away' : 'After ' + v + ' days without logging in'),
@@ -3694,7 +3694,7 @@
       inputBlock('AI proposals are permitted, with a budget of ' +
         '<input class="num" type="number" min="1" max="40" data-mnum=" ✏️s for the coherence auditor" value="' +
         esc(S.auditorBudget) + '"> ✏️s.'),
-    policy: (d) => lanesFor(d, POLICY_TEXTS, 'policy') +
+    applications: (d) => lanesFor(d, POLICY_TEXTS, 'applications') +
       '<p class="setnote">One motion proposes one rule; what you do not touch stands.</p>',
     // ✉️: whom to bring in — the invite half of what was one roster
     // composer (Ed, 2026-08-19, 400a)
@@ -3853,8 +3853,8 @@
       const FILL = { ending: S.endsAt || '2026-08-20T18:00',
         quorum: (S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
         bar: S.tClose, authorship: 'anonymous',
-        judgments: 'never', chamber: 'closed', machines: false, policy: 'invite',
-        lapse: 'never', removal: 'consent', roster: 'assembly', rate: S.grant };
+        judgments: 'never', chamber: 'closed', machines: false, applications: 'invite',
+        lapse: 'never', removal: 'consent', admission: 'assembly', rate: S.grant };
       for (const k of Object.keys(FILL)) {
         const st = csState(k);
         if (!st || !st.collecting) continue;
@@ -3966,7 +3966,7 @@
   // decision has a what-phrase for its open states and a declarative
   // sentence once decided, all in the founder's own frame.
   const WHAT = {
-    roster: 'how new members are admitted',
+    admission: 'how new members are admitted',
     ending: 'when the drafting process will end',
     quorum: 'how many members must weigh in before a question can pass',
     bar: 'how sure the room must be at the close',
@@ -3978,7 +3978,7 @@
     removal: 'how a member is removed',
     machines: 'whether an AI makes proposals',
     rate: 'how often members may propose',
-    policy: 'whether strangers may apply to join',
+    applications: 'whether strangers may apply to join',
     slug: 'the document’s address',
     text: 'the text the document starts from',
   };
@@ -3996,9 +3996,9 @@
   const removalPrice = () => (takenValOf('removal') || {}).price ||
     (S.removal === 'roster' ? 'consent' : S.removal);
   // the 🪪 price as it stands — unset reads as the most protective, like the fold
-  const admissionPrice = () => (takenValOf('roster') || {}).price ||
+  const admissionPrice = () => (takenValOf('admission') || {}).price ||
     (S.admission === 'roster' || !S.admission ? 'assembly' : S.admission);
-  const policyNow = () => { const v = takenValOf('policy');
+  const policyNow = () => { const v = takenValOf('applications');
     return v ? (mayApply(v) ? 'apply' : 'invite') : (S.joinBy || 'invite'); };
   const endFmt = () => new Date((endingVal() !== 'never' && endingVal()) || S.endsAt)
     .toLocaleString(undefined,
@@ -4065,7 +4065,7 @@
         (v ? v.cap : S.cap) + '. They get an additional ✏️ every ' + (v ? v.dripMinutes : S.dripMin) +
         ' minutes. A proposal that passes gives its ✏️ back.'; },
     // 🤝 is one switch; what an application costs is 🪪's sentence (entry 94)
-    policy: () => (policyNow() === 'apply'
+    applications: () => (policyNow() === 'apply'
       ? (admissionPrice() === 'pen' ? 'Anyone with the link joins on arrival.'
         : 'Anyone may apply to join — an application is judged like an invitation.')
       : 'Membership is by invitation only.'),
@@ -4073,7 +4073,7 @@
     // **The admissions clause** (Ed, 2026-08-26): what it costs to bring
     // somebody in, in the room's words; the Founder's own sentence follows
     // from the powers held on the ✉️ door, in the power clause
-    roster: () => ({
+    admission: () => ({
       assembly: 'Members may propose to invite people to join the membership, and everyone must agree 🏛️.',
       proposal: 'Members may propose to invite people to join the membership, and the membership decides ✏️.',
       pen: 'Members may invite people to join the membership ✒️.',
@@ -4116,7 +4116,7 @@
   // (Ed, 2026-08-21) — which is also what keeps the birth's first sentences
   // to the one fact that is true at the birth: the founder holds this.
   const membershipDecided = () =>
-    ['hat', 'roster', 'policy', 'lapse', 'removal'].some((k) => settled(card(k)));
+    ['hat', 'admission', 'applications', 'lapse', 'removal'].some((k) => settled(card(k)));
   const holderLine = (k) => {
     if (!PW_KEYS.includes(k)) return '';
     // at the birth the founder holds everything by construction — there is no
@@ -4931,7 +4931,7 @@
     // **The door, apart from the register** (Ed, 2026-08-18). The policy is
     // the constitutional act; each application that arrives through it is
     // its ordinary consequence.
-    policy: () =>
+    applications: () =>
       '<p class="why">Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.</p>' +
       // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
       // the gate the Apply card hangs off. An application becomes an
@@ -4940,17 +4940,17 @@
       // default like every constitutional setting, so the members' option
       // leads the list the way it does on ⏰ or 🌍.
       '<div class="choice" role="radiogroup" aria-label="Who may join">' +
-      theyDecide('policy') +
+      theyDecide('applications') +
       opt(S, 'joinBy', 'invite', 'Invitation only', 'Nobody joins unless a member brings them in.') +
       opt(S, 'joinBy', 'apply', 'Anyone may apply', 'An application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.') +
       '</div>',
     // **Admissions** (Ed, 2026-08-26, entry 94): one price for every route
     // in — a member's invitation, a stranger's application — on the same
     // three-verb scale as 🥾. The Founder's own hand is the ✉️ door's.
-    roster: () =>
+    admission: () =>
       '<p class="why">What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.</p>' +
       '<div class="choice" role="radiogroup" aria-label="The price of admission">' +
-      theyDecide('roster') +
+      theyDecide('admission') +
       opt(S, 'admission', 'assembly', 'Everyone must agree', 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.') +
       opt(S, 'admission', 'proposal', 'The membership decides', 'A proposed member is judged at the approval threshold ✏️, like any change.') +
       opt(S, 'admission', 'pen', 'Any member may invite', 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.') +
@@ -5073,7 +5073,7 @@
     const rec = a && a.motion ? cs.motionRecords().get(a.motion) : null;
     if (!rec) return 0;
     if (rec.status === 'carried') return E();
-    return S.roster.filter((r) => r.mAnsOk && r.mAnsOk.has('roster')).length;
+    return S.roster.filter((r) => r.mAnsOk && r.mAnsOk.has('admission')).length;
   } };
   const MEMBER_EMAILS = { has: (e2) => S.roster.some((r) => (r.e || '').toLowerCase() === e2) };
   const APPCARDS = () => {
@@ -6207,12 +6207,12 @@
       if (cs && row && row.mid) {
         let sent = null;
         try { sent = cs.uninvite(now(), row.mid); }
-        catch (e) { S.open = 'roster';
-          return setDoorErr('roster', 'That could not be undone: ' +
+        catch (e) { S.open = 'admission';
+          return setDoorErr('admission', 'That could not be undone: ' +
             plainRefusal(e && e.message) + '.'); }
         if (sent && sent.then) sent.then((res) => { if (res && res.error) {
-          S.open = 'roster';
-          setDoorErr('roster', 'That could not be undone: ' + plainRefusal(res.error) + '.');
+          S.open = 'admission';
+          setDoorErr('admission', 'That could not be undone: ' + plainRefusal(res.error) + '.');
         } });
       }
       S.roster.splice(+d.dataset.drop, 1); return render(); }
@@ -6345,7 +6345,7 @@
   // so a refusal is printed under the field that tried (Q811). Called from
   // the *Several at once* box too, one address at a time.
   function invite(em, k) {
-    const key = k || 'roster';
+    const key = k || 'admission';
     const at = String(em == null ? '' : em).trim();
     // **The two silences on this field** (Q815). An empty press returned
     // without a word, and the dedupe compared raw addresses while the store

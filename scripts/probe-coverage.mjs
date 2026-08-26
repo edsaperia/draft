@@ -9,7 +9,7 @@
  *
  * **It measures opening, not naming.** A step's selector can name a card that
  * still exists and never reach it: that is precisely what Q910 was, where
- * `data-card="policy"` was present in the source the whole time and the card
+ * `data-card="applications"` was present in the source the whole time and the card
  * was simply never born. So this runs the real `setup-probe.js` against the
  * live page and records every `data-setupcard` key that appears in the DOM
  * while it runs. A card is covered when the probe opened it. Nothing else

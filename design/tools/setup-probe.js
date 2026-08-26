@@ -200,12 +200,12 @@
     // 🪪 kept 🤝, 🎩, ✋ and 🖼️ from ever being born. One missing step, and
     // thirteen below it missed as one: the whole of the founding from the
     // Membership section down had no probe coverage.
-    ['open-admissions', () => openTab('roster')],
+    ['open-admissions', () => openTab('admission')],
     ['choose-admission', () => click('.setupcard [data-set="admission"][data-val="assembly"]')],
     ['confirm-admissions', () => click('.setupcard [data-confirm]')],
     // then 🤝, which asks only whether strangers may apply at all: what an
     // application costs is 🪪's, answered above
-    ['open-applications', () => openTab('policy')],
+    ['open-applications', () => openTab('applications')],
     ['choose-join', () => click('.setupcard [data-set="joinBy"][data-val="invite"]')],
     ['confirm-applications', () => click('.setupcard [data-confirm]')],
     ['open-hat', () => openTab('hat')],

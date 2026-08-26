@@ -90,7 +90,7 @@ await click('.setupcard [data-ok]');
 await tab('chamber');
 await click('.setupcard [data-set="chamber"][data-val="closed"]');
 await click('.setupcard [data-confirm]');
-await tab('policy');
+await tab('applications');
 await click('.setupcard [data-set="joinBy"][data-val="invite"]');
 await click('.setupcard [data-confirm]');
 await tab('hat');
