@@ -2939,6 +2939,10 @@
     authorship: (v) => 'You said ' + ({ anonymous: 'no names, ever', anonymousElective: 'no names unless somebody chooses', sealed: 'names at the close', sealedElective: 'names at the close, or earlier by choice', public: 'names from the start' }[v] || v),
     judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
+    // DEAD RUNGS (entry 94, Q904): `proposed` and `open` were retired with
+    // 🤝's four-rung joinPolicy, and the module folds every legacy value to
+    // `{apply}` on load, so neither branch can fire. Left labelled rather than
+    // deleted so the removal is one deliberate sweep — see `STANDS` below.
     policy: (v) => 'You said ' + ({ invite: 'invitation only', proposed: 'applications must be proposed by members', apply: 'anyone may apply', open: 'open' }[v] || v),
     machines: (v) => 'You said ' + (v ? 'AI proposals are permitted' : 'no AI proposals'),
     lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days without logging in'),
@@ -3416,6 +3420,10 @@
   // stands filters itself out
   const STANDS = {
     chamber: (v) => ({ closed: 'Members only', link: 'Anyone with the link', public: 'Public' })[v],
+    // DEAD RUNGS (entry 94, Q904): `proposed` and `open` are unreachable here
+    // for the same reason as in the answer readback above — the two live rungs
+    // are `POLICY_WORDS`', and these two labels are the only place the retired
+    // four still speak. To be removed with them.
     policy: (v) => ({ invite: 'Invitation only', proposed: 'Applications must be proposed by members', apply: 'Anyone may apply', open: 'Open' })[v],
     authorship: (v) => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed after the decision' })[v],
@@ -3717,6 +3725,13 @@
     } catch (e) { console.warn('[cs devff]', e && e.message); }
   }
 
+  // UNREACHABLE (Q900, found 2026-08-26): nothing calls `rosterClause`, and
+  // since it is `liveApplicantsHtml`'s only caller the admit judgment — the
+  // lanes, ✏️ Propose them, the admit race — has no way in on the surface.
+  // Entry 94 re-typed 🪪 from the register card into the price of admission
+  // and the register's list moved to the Members paragraph; the judging did
+  // not move with it. Ed, 2026-08-26: re-home it on ✉️. Do not revive this in
+  // place — it also reads `value.joinPolicy`, which entry 94 replaced.
   // the membership list, as the 🪪 card's clause — the current text of the
   // rule, with the ✕ that edits it, replacing the copy that lived in the body
   // **The hat is a row in this list** (Ed, 2026-08-18: *does the founder
