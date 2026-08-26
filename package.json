@@ -18,6 +18,7 @@
     "start": "node dist/server.mjs",
     "verify": "node scripts/verify-deploy.mjs",
     "probe": "node scripts/probe.mjs",
+    "probe-coverage": "node scripts/probe-coverage.mjs",
     "card-audit": "node design/tools/card-audit.mjs",
     "journey": "node scripts/journey-walk.mjs",
     "applicants-walk": "node scripts/applicants-walk.mjs",

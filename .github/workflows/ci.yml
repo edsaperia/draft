@@ -144,4 +144,11 @@ jobs:
       # the golden founding walk (spec pass 2, Q586 c; re-asked as Q625): the
       # order the founder meets, the rail at each step and the first words of
       # every clause, against design/tools/founding-walk.golden.json
+      #
+      # `if: always()` because these guards share one job for the Chromium
+      # cache and nothing else — a red probe above must not mean this never
+      # runs (Q913). It already had: behind the advisory flag the probe was
+      # red from 2026-08-25, so this step did not execute for days and was
+      # 52 differences stale when finally run by hand.
       - run: npm run founding-golden
+        if: always()

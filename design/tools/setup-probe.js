@@ -181,6 +181,15 @@
     ['click-magic-link', () => click('[data-act="clickmail"]')],
     ['open-the-pen', () => openTab('grant-pen')],
     ['ok-the-pen', () => click('.setupcard [data-ok]')],
+    // 🛡️ takes its own place in ORDER, right behind the pen, and had never
+    // been opened here (Q914). It is not a dead step and never could be: a
+    // grant blocks nothing in ORDER, so the founding runs past an
+    // unacknowledged shield and --strict has no miss to report — which is
+    // exactly the shape that hid 🖼️ for four days (Q732). The two grants
+    // are not interchangeable: the shield's card is the one carrying the
+    // veto radios that name the setting they refuse (STYLE T6–T9).
+    ['open-the-shield', () => openTab('grant-shield')],
+    ['ok-the-shield', () => click('.setupcard [data-ok]')],
     ['open-visibility', () => openTab('chamber')],
     ['choose-visibility', () => click('.setupcard [data-set="chamber"][data-val="closed"]')],
     ['confirm-visibility', () => click('.setupcard [data-confirm]')],
