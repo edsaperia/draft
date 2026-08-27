@@ -411,7 +411,7 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 ### 9.2 Composer rules
 
 - **K1 The settled card is the composer**: what stands at the head, the alternatives as the setting's own controls, a rationale lane, 🗑️ and the route's commit. Picking an option starts the motion.
-- **K2 The founder's direct hand is the pen**; where it is given up they compose like a member.
+- **K2 The founder's direct hand is the pen**; where it is given up they compose like a member — and where they compose nothing (a clerk) the card is the settled one, read-only. **On a closed document nobody composes and the founder's hand is off every setting**: the tabs open the settled card and nothing on it commits.
 - **K3 A motion composes with the setting's own control, never a free-text lane**; `PROPOSE` covers every composable setting; the rationale is always a lane.
 - **K4 What stands is never offered back** (filtered by value); on a power card it stays, marked *Chosen*, because a two-state toggle needs its other half.
 - **K5 Text composes nowhere** — the text is changed by proposing in the document itself.

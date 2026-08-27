@@ -1791,3 +1791,67 @@ plan.
 the constitution's `DEFAULT_TUNING` (`adapter.ts`), so on the live path no room under six members
 ever samples a rival pair — the same unreachable-constant shape as the one this entry is about, in
 the next corner over. Noted here so the next reader does not think it went unnoticed.
+
+## A laid-down pen is laid down (2026-08-27, entry 62)
+
+Ed, batch-B QA 2026-08-25: *"After the document is closed, as the founder, after giving up the
+pen on Title, I can still edit the title. Please check that giving up powers actually gives them
+up, on all settings where they can be given up."* And that evening: *literally closed — "I didn't
+test after begin."* Two readings, both real, and this took both — as an audit with a walk behind
+it rather than a fix for one card.
+
+**The module and the server were right the whole time.** `setSetting` refuses once
+`powers.unilateral` is false post-start (*the unilateral power is given up; propose like a
+member*), `requireOpen` refuses every command after the close, and `commands.ts` adds no second
+gate and wants none. What was wrong was one substitution on the page: the founder's ✒️ commit
+asked **`mayPen()`**, which is `holdsPenAnywhere()` — *do you hold a pen on any setting* — where
+it meant *do you hold the pen on **this** setting*. The comment beside `holdsPenAnywhere` says so
+in as many words (*per-setting permission is the lock's, never the wallet's*); the lock existed,
+in `composerOn`'s swap, and simply was not asked at the commit.
+
+So the shape of the defect is a **wallet question standing in for a lock** — and its cost was
+the shape Q811 had already named on the doors and fixed there alone: the control stayed live,
+pressing it posted a `set-setting` the server answered 400, `api.cmd` warned to a console nobody
+reads, the page rendered as though it had worked, and the next 4s poll put the old value back
+without a word. A refusal that reads as a success is worse than a control that is simply dark.
+
+**Which readers get the `closed` term, and which do not** (Ed, B25 (a), asked as a blocking
+question because the plan asked for both). `mayPen()` stays exactly the wallet question: the
+topbar socket reads it, and `socket()` draws a **struck** ✒️ when it is false — so a `closed`
+term there would tell a founder who never gave the pen up that they had. The blank socket is a
+different term (`farewellDone || signedClose() || !viewerIsMember()`), and whether the closed
+page should show empty sockets at all is Q532's own held residual. The lock carries the close
+instead: `mayPenOn(k)` is `mayPen() && docOpen() && pwPair(k).u`, and the two commits that keep
+asking the wallet — 🎩, which has no power pair, and the ✒️/🛡️ power tabs, which are not
+pen-gated (SURFACE Y7) — take `docOpen()` of their own.
+
+**And the body follows the lock, not the seat.** The read-only branch in `cardFor` tested
+`!amFounder()`, so a founder whose pen was down still met the lane and the radios that pen paid
+for. A founder-*member* was saved from this by `composerOn` and never saw it; a **clerk** was
+not, `composerOn` requiring `viewerIsMember()`, and fell through to a live founder card with
+nothing to catch it. That is why the walk has `--hat`. `founderHandOff(c)` is the composer swap's
+own question put to the body and to the commit row, so a hand-off founder gets what a member
+gets: the settled sentence, the watch half, a bin.
+
+**Two things the close turned out to need that no reading predicted.** `composerOn` had to grow
+its own `docOpen()`: `motionsLive()` is `cs.canJudge()`, which is `constitutedAtT !== null &&
+!frozen` and has never asked about the close — so **every settled card on a closed page was
+drawing a live motion composer**. And making `founderDirect` false on a closed document *inverts*
+inside `composerOn`, where a false `founderDirect` means *compose instead* — so the order matters
+and the two terms are not interchangeable. `founderDirect`'s only other reader is nothing:
+`crownWaits` and `changeHalf` ask their own questions, and `changeHalf`'s history half is gated
+on `!amFounder()`, so no record is hidden by any of it.
+
+**What the walk found that the plan did not name.** 📄's OK was unconditionally enabled, so on a
+closed page it posted a `confirm-starting-text` the module refuses — the last card still drawing
+a control for an act that cannot happen. Gated on `docOpen()`. Its **post-start** half is left
+standing and recorded rather than fixed: the same OK is refused after 🍾 too, and 📄's road on is
+proposing (K5), which is a different plan's subject.
+
+**The refusal line, extended from the doors to every settings card.** `S.doorErr` keeps its name;
+what changes is that `commitSetting` and the `title`/`slug` branches read the promise they were
+dropping, and the module's throw is caught into the same channel. It **re-opens the card**, which
+the doors never had to: their act leaves the card standing and a settings commit closes it, so a
+line rendered into a card nobody is looking at is the console warning again by another name.
+After the locks above it, nothing on the founder's card can reach it — it is there so the *next*
+gap of this class shows on the page instead of in a console.
