@@ -1172,6 +1172,102 @@ if (caret) {
     : 'FAIL: propose-text ' + proposeStatus + ' · wallet ' + mid.edits + '→' + after.edits +
       ' · held ' + mid.holding + ' · flying ' + mid.flying));
   if (!ok) stuck.push('propose hold');
+
+  /* ---- 👤 the sealed speaker: somebody else's proposal, read by a member --
+   * Promise coverage for 👤 (backlog 83, batch L). What the rung governs is
+   * what everybody *else* sees, so the assertion needs a proposer who is not
+   * the reader. The founder proposed above, so here the **guest** proposes and
+   * the **founder's** page is the reader — the founder as an ordinary member,
+   * which §3.5a gives no exception to. Y9 exempts the founder's own ✒️
+   * rationale from the seal and is not in play: this block is the guest's.
+   *
+   * The guest proposes **at the wire**, the way `secondSeatOnAmendment` amends
+   * at the wire and for the same reason — what is under test is the *reader's*
+   * card, and driving the guest's composer would be a second thing to go wrong
+   * in one check. (It is also the only route open: the ⚖️ gate is never served
+   * to a member who reloads past 🍾, so their charter withholds every race —
+   * a finding of its own, filed, and nothing to do with 👤.)
+   *
+   * **The assertion is rung-blind, deliberately.** `design/session.js` calls
+   * `speakerHtml(c.why)` with no `who` for every live proposal block at every
+   * rung — no code path draws a name on a live card, `public` included, though
+   * `raceCards` carries the author id under `public` (locked in
+   * `packages/server/test/server.test.ts`). So this guards the seal itself and
+   * prints the rung standing, so a reader can see which promise it was under. */
+  if (guestPage && ok) {
+    // **Its own clause, deliberately.** The founder proposed on line 0 above,
+    // and a rival on the same lines joins that race — where the reader's
+    // served card is their own candidate against the incumbent, so the guest's
+    // block is never drawn. On the second line the guest's proposal is a race
+    // of its own, and the founder's card for it holds exactly one block: theirs.
+    const line = EMPTY_TEXT ? 0 : 1;
+    const sent = await guestPage.evaluate((n) => {
+      const api = location.pathname.replace('/d/', '/api/d/');
+      return fetch(api + '/view').then((r) => r.json()).then((v) => fetch(api + '/cmd', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ cmd: 'propose-text', args: { baseVersion: v.textVersion,
+          hunks: [{ start: n, end: n + 1, lines: ['Every member may bring two guests.'] }],
+          why: 'Sundays are the point' } }),
+      })).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) }));
+    }, line);
+    if (sent && sent.error) {
+      say('their draft· FAIL: the member could not propose · ' + JSON.stringify(sent.error));
+      stuck.push('the second seat’s proposal');
+    } else {
+      // **The poll does not land under an open card** (`remoteCS`), and the
+      // propose step leaves the founder's own editing card open — so the card
+      // is closed *first* and the poll waited for afterwards, or the reader's
+      // `SUGGS` still holds the field as it stood before the guest proposed.
+      await closeCard();
+      await T(5600);                               // one poll in the founder's seat
+      say('their draft· the member proposes at the wire · ' +
+        JSON.stringify(sent.result || sent).slice(0, 60));
+      // Every card in the column, until the one carrying the guest's own
+      // rationale. `toggle` is the page's own opener and the one `card-audit`
+      // drives; a click needs a live gutter tab, which the reader may have
+      // scrolled past, and what is under test is the card's contents.
+      const ids = await page.evaluate(() => (window.SESSION.SUGGS || []).map((x) => x.id));
+      let seen = { ids, theirs: false };
+      const all = [];
+      for (const id of ids) {
+        await page.evaluate((k) => { try { window.SESSION.toggle(k, false); } catch (e) {} }, id);
+        await T(900);
+        const r = await page.evaluate(([k, name]) => {
+          const q = String(k).replace(/["\\]/g, '\\$&');
+          const card = document.querySelector('.sugg[data-card="' + q + '"]');
+          if (!card) return { id: k, card: false };
+          // what the card is, in one line, so a failure names the card it read
+          const said = card.textContent.replace(/\s+/g, ' ').trim().slice(0, 90);
+          // **Every** speaker in the card, not one of them: the rung is a
+          // promise about the whole card, and reading one block would let a
+          // named one hide behind an unnamed incumbent.
+          const sps = [...card.querySelectorAll('.speaker')];
+          const rung = (document.querySelector('.cpara[data-para="authorship"]') || {}).textContent;
+          return { id: k, card: true, said, speakers: sps.length,
+            revealed: sps.some((s) => s.classList.contains('revealed')),
+            who: sps.some((s) => !!s.querySelector('.who')),
+            face: sps.some((s) => !!s.querySelector('.av, .emojiface')),
+            named: sps.some((s) => s.textContent.includes(name)),
+            // the guest's rationale is visible at every rung (§3.5a), and
+            // finding it is what says this block is theirs, not the incumbent's
+            theirs: sps.some((s) => s.textContent.includes('Sundays are the point')),
+            rung: (rung || '').replace(/\s+/g, ' ').trim().slice(0, 80) };
+        }, [id, GUEST_NAME]);
+        await page.evaluate((k) => { try { window.SESSION.toggle(k, false); } catch (e) {} }, id);
+        all.push(r);
+        if (r && r.theirs) { seen = r; break; }
+      }
+      if (!seen.theirs) seen = { ids, all };
+      const blank = seen.card && seen.theirs &&
+        !seen.revealed && !seen.who && !seen.face && !seen.named;
+      say('speaker    · ' + (blank
+        ? 'blank on the reader’s page — the guest’s reason is there, their name is not' +
+          ' (' + seen.speakers + ' speakers, none revealed) · rung: “' + seen.rung + '”'
+        : 'FAIL: ' + JSON.stringify(seen)));
+      if (!blank) stuck.push('the sealed speaker on somebody else’s proposal');
+      await closeCard();
+    }
+  }
 }
 say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
 say('refused    · ' + (refused.length ? refused.join(' / ') : 'none'));
