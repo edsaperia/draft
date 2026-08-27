@@ -273,8 +273,9 @@ const fillFields = () => page.evaluate(() =>
       // A consent slider always has a value and still needs touching — it is
       // greyed until it is, because a range control with no default still
       // paints its thumb somewhere. So it cannot be skipped for having a
-      // `.value` the way every other field is. Snapped to its own step: 🌡️
-      // runs 50–95 by 5s, and an off-grid answer is not one a member could give.
+      // `.value` the way every other field is. Snapped to its own step: 👥's
+      // share runs 5–100 by 5s, and an off-grid answer is not one a member
+      // could give. (🌡️ was the other one until entry 165 made it rungs.)
       const lo = +n.min || 0; const hi = +n.max || 100; const st = +n.step || 1;
       n.value = String(Math.min(hi, lo + Math.round((hi - lo) / 2 / st) * st));
       return fire();
