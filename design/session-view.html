@@ -8414,9 +8414,16 @@
     // it leaves the founder to find it standing there afterwards. The remedy is
     // still this card's — the deps hold summons nothing of its own.
     const beh = depsHolds().filter((h) => h.on.some((d) => ov.indexOf(d) >= 0));
+    // the pronoun tracks the questions the queued ones are *actually* waiting
+    // on, not the whole stuck list: with two stuck and one dependent on only
+    // one of them, *waiting on them* claims a wait that is not there — so
+    // where the card names more than one, the dependency is named too
+    const behOn = beh.reduce((a, h) => a.concat(h.on.filter(
+      (d) => ov.indexOf(d) >= 0 && a.indexOf(d) < 0)), []);
     const behind = beh.length ? ' ' + beh.map((h) => settingNamed(h.setting)).join(' and ') +
-      (beh.length === 1 ? ' is' : ' are') + ' waiting on ' + (one ? 'it' : 'them') +
-      ' in turn, and will follow once ' + (one ? 'it settles' : 'they settle') + '.' : '';
+      (beh.length === 1 ? ' is' : ' are') + ' waiting on ' +
+      (one ? 'it' : behOn.map(settingNamed).join(' and ')) +
+      ' in turn, and will follow once ' + (behOn.length === 1 ? 'it settles' : 'they settle') + '.' : '';
     return '<p class="why"><b>' + ov.map(settingNamed).join(' and ') + (one ? ' is' : ' are') +
       ' waiting for somebody to answer ' + (one ? 'it' : 'them') + '.</b> You handed ' +
       (one ? 'it' : 'them') + ' to the membership, and you are its only member — ' +

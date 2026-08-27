@@ -733,19 +733,20 @@ const stuckAtBegin = async () => {
   say('says why   · ' + (saysWhy ? 'names the delegation, the room of one and both remedies'
     : 'FAIL: the 🍾 card does not say why it cannot be pressed · ' + JSON.stringify(st.card.slice(0, 300))));
   if (!saysWhy) stuck.push("🍾's hold sentence");
-  // 3 — and the remedy is in the rail, not only in a sentence
+  // 3 — and the remedy is in the rail, not only in a sentence. Entry 94 moved
+  // the invitation box off 🪪 and onto the door, so the remedy task is ✉️.
   say('remedy     · rail ' + JSON.stringify(st.rail) +
-    (st.rail.includes('admission') ? '' : '  FAIL: 🪪 is not served while the waiting is one-voice'));
-  if (!st.rail.includes('admission')) stuck.push('🪪 is not served as the remedy');
+    (st.rail.includes('invite') ? '' : '  FAIL: ✉️ is not served while the waiting is one-voice'));
+  if (!st.rail.includes('invite')) stuck.push('✉️ is not served as the remedy');
   // 4 — and it works: one address is enough to end the wait it names
-  if (await open('admission')) {
+  if (await open('invite')) {
     await inviteFrom(GUEST1, false);
     const after = await oneVoiceState();
-    const gone = !after.holds.some((h) => h.why === 'one-voice') && !after.rail.includes('admission');
-    say('invited    · ' + (gone ? 'the 🪪 task leaves and the reason is no longer one-voice'
+    const gone = !after.holds.some((h) => h.why === 'one-voice') && !after.rail.includes('invite');
+    say('invited    · ' + (gone ? 'the ✉️ task leaves and the reason is no longer one-voice'
       : 'FAIL: holds ' + JSON.stringify(after.holds) + ' · rail ' + JSON.stringify(after.rail)));
-    if (!gone) stuck.push('the 🪪 remedy did not clear after an invitation');
-  } else { say('invited    · FAIL: no 🪪 to invite from'); stuck.push('the 🪪 tab at the dead end'); }
+    if (!gone) stuck.push('the ✉️ remedy did not clear after an invitation');
+  } else { say('invited    · FAIL: no ✉️ to invite from'); stuck.push('the ✉️ tab at the dead end'); }
 };
 
 const seen = new Set();
