@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Session, makeConstitution } from '../src/session.js';
+import { ParticipantApi, authorVisible } from '../src/participant-api.js';
 import type { Event } from '../src/types.js';
 import { roster } from './helpers.js';
 
@@ -1169,5 +1170,96 @@ describe('a document of one (Q837)', () => {
     const want = Math.abs(2 * (race.leaderP as number) - 1) / (2 * 0.9 - 1);
     expect(want).toBeLessThan(1);
     expect(race.closeness).toBeCloseTo(want, 10);
+  });
+});
+
+describe('the sign control and honour (SPEC §3.5a, Q770 and entry 31)', () => {
+  type Base = 'public' | 'sealed' | 'anonymous';
+  const fold = (signed: boolean, base: Base) => {
+    const s = openHeld();
+    s.amend(500, { authorshipVisibility: base });
+    const { id } = s.submitCandidate(1000, {
+      author: 'p1', patch: rewrite(0, 1, 'Membership needs a sponsor.'), rationale: 'r', signed,
+    });
+    return { s, c: s.getCandidate(id) };
+  };
+
+  it('folds `signed` and the base the candidate was made under, and replays to the same hash', () => {
+    const { s, c } = fold(true, 'sealed');
+    expect(c.signed).toBe(true);
+    expect(c.disclosure).toBe('sealed');
+    const ev = s.log[s.log.length - 1]!.event;
+    expect(ev).toMatchObject({ type: 'candidate-submitted', signed: true, disclosure: 'sealed' });
+    // **The hash covers the new fields.** A log from before this landed
+    // replays unchanged, because its events carry neither field; a candidate
+    // submitted since hashes *with* them — "hashes as before" is false for
+    // any new candidate, and deliberately so: the stamp is part of the
+    // record, not a note beside it. The lock is that replay agrees.
+    const replayed = Session.replay(s.log);
+    expect(replayed.rollingHash()).toBe(s.rollingHash());
+    expect(replayed.getCandidate(c.id)).toMatchObject({ signed: true, disclosure: 'sealed' });
+  });
+
+  it('an unsigned candidate carries no `signed` at all, as `machineAuthored` does', () => {
+    const { s, c } = fold(false, 'anonymous');
+    expect(c).not.toHaveProperty('signed');
+    expect(c.disclosure).toBe('anonymous');
+    expect(s.log[s.log.length - 1]!.event).not.toHaveProperty('signed');
+  });
+
+  it('a setting candidate takes the same stamp (Q390) — one shape, and nothing reads it there', () => {
+    const s = Session.open({ text: DOC, roster: roster(5), constitution: makeConstitution({
+      windowStartMs: 0, windowEndMs: 10 * HOUR, rngSeed: 'stamp', cooldownMs: 0 }),
+      settings: { ending: 1 } }, 0);
+    const { id } = s.submitCandidate(1000, { author: 'p1', rationale: '',
+      setting: { settingId: 'ending', value: 2 } });
+    expect(s.getCandidate(id).disclosure).toBe('sealed');
+  });
+
+  it('a proposal keeps the base it was made under when the constitution moves (entry 31)', () => {
+    const { s, c } = fold(false, 'anonymous');
+    s.amend(2000, { authorshipVisibility: 'public' });
+    const { id } = s.submitCandidate(3000, {
+      author: 'p2', patch: rewrite(0, 2, 'Decisions are by vote.'), rationale: 'r',
+    });
+    expect(s.getCandidate(c.id).disclosure).toBe('anonymous'); // untouched by the move
+    expect(s.getCandidate(id).disclosure).toBe('public');
+    expect(authorVisible(s.getCandidate(c.id), s.constitution, { closed: false })).toBe(false);
+    expect(authorVisible(s.getCandidate(id), s.constitution, { closed: false })).toBe(true);
+    // and the option view reads the rule, never the constitution's current value
+    const opts = new ParticipantApi(s, 'p3').nextCards(8, 3500).flatMap((k) => [k.a, k.b]);
+    expect(opts.find((o) => o.id === c.id)?.author).toBeUndefined();
+    expect(opts.find((o) => o.id === id)?.author).toBe('p2');
+  });
+
+  it('`authorVisible` — the twelve cells: three bases × signed × closed', () => {
+    const table: Array<[Base, boolean, boolean, boolean]> = [
+      // base        signed  closed  visible
+      ['anonymous',  false,  false,  false],
+      ['anonymous',  false,  true,   false],
+      ['anonymous',  true,   false,  true],
+      ['anonymous',  true,   true,   true],
+      ['sealed',     false,  false,  false],
+      ['sealed',     false,  true,   true],
+      ['sealed',     true,   false,  true],
+      ['sealed',     true,   true,   true],
+      ['public',     false,  false,  true],
+      ['public',     false,  true,   true],
+      ['public',     true,   false,  true],
+      ['public',     true,   true,   true],
+    ];
+    // the constitution's current value is a red herring for a stamped candidate
+    const now = makeConstitution({ authorshipVisibility: 'public' });
+    for (const [base, signed, closed, want] of table) {
+      const c = { ...(signed ? { signed: true as const } : {}), disclosure: base };
+      expect(authorVisible(c, now, { closed }), `${base} signed=${signed} closed=${closed}`).toBe(want);
+    }
+    // a candidate with no stamp — a log older than the field — reads the
+    // constitution as it stands (decision 3)
+    const at = (v: Base) => makeConstitution({ authorshipVisibility: v });
+    expect(authorVisible({}, at('public'), { closed: false })).toBe(true);
+    expect(authorVisible({}, at('sealed'), { closed: false })).toBe(false);
+    expect(authorVisible({}, at('sealed'), { closed: true })).toBe(true);
+    expect(authorVisible({}, at('anonymous'), { closed: true })).toBe(false);
   });
 });

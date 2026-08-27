@@ -28,7 +28,8 @@ const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
 type Hunk = { start: number; end: number; lines: string[] };
 type CandidateOutcome = { candidateId: string; outcome: string; p: number | null;
   threshold: number | null; hunks: Hunk[]; rationale: string; judgedByMe: boolean;
-  author?: { id: string; name: string | null } };
+  author?: { id: string; name: string | null };
+  madeUnder?: string; signed?: boolean };
 type RaceRecord = { raceId: string; candidateId: string; outcome: string; when: number;
   p: number | null; threshold: number | null; version: number; footprint: unknown;
   displaced: string[]; judges: number; judgedByMe: boolean; field: CandidateOutcome[] };
@@ -52,11 +53,13 @@ type MemberViewPayload = {
   clauses: Array<{ id: string; contested: Array<{ start: number; end: number }>;
     incumbentId: string; deadlocked: boolean; closeness: number; judges: number; floor: number;
     judged: boolean; shifted: boolean;
-    candidates: Array<{ id: string; mine: boolean; rationale: string; hunks: Hunk[] }> }>;
-  mine: Array<{ id: string; state: string; rationale: string; patch: unknown; footprint: unknown }>;
+    candidates: Array<{ id: string; mine: boolean; rationale: string; hunks: Hunk[];
+      author?: { id: string; name: string | null } }> }>;
+  mine: Array<{ id: string; state: string; rationale: string; patch: unknown; footprint: unknown;
+    signed: boolean }>;
   records: RaceRecord[];
   raceCards: Array<{ kind: string; raceId?: string; urgency: number; a: CardOption; b: CardOption }>;
-  record: null | { closedAt: number; text: string; adopted: RaceRecord[];
+  record: null | { closedAt: number; text: string; rungNow: string; adopted: RaceRecord[];
     undecided: RaceRecord[]; carriedButUnassented: Array<{ candidateId: string; summary: string }>;
     signatures: Array<{ member: string; name: string | null; comment: string; t: number }> };
   view: {
@@ -1077,10 +1080,12 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     const cy = await follow('cy@example.org');
     await cmd(ada, 'set-identity', { name: 'Ada' });
     await cmd(bo, 'set-identity', { name: 'Bo' });
+    await cmd(cy, 'set-identity', { name: 'Cy' });
     await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
       pace: { shape: 'fixed' }, quorum: { form: 'count', n: 2 },
-      authorship: { rung: 'sealed' },
+      // the elective rung (Q770): sealed by default, signed by choice
+      authorship: { rung: 'sealedElective' },
       judgments: { rung: 'after' }, applications: { apply: false },
       admission: { price: 'assembly' },
       machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
@@ -1102,6 +1107,20 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     // a proposal nobody judges: the close will leave it undecided
     await cmd(bo, 'propose-text', { baseVersion: 0,
       hunks: [{ start: 1, end: 2, lines: ['The rota is posted daily.'] }], why: 'weekly is too slow' });
+    // …and a second, on its own line, **signed** by cy (Q770): named from the
+    // moment it is proposed, on the race card and in the `mine` entry, while
+    // bo's unsigned one stays sealed until the record
+    const cySigned = await cmd(cy, 'propose-text', { baseVersion: 0,
+      hunks: [{ start: 0, end: 1, lines: ['The watch is kept from dusk till dawn.'] }],
+      why: 'say when it ends', signed: true }) as { id: string };
+    const boLive = await viewOf(bo);
+    const cyCand = boLive.clauses.flatMap((c) => c.candidates).find((c) => c.id === cySigned.id)!;
+    expect(cyCand.author).toEqual(expect.objectContaining({ name: 'Cy' }));
+    const boCand = boLive.clauses.flatMap((c) => c.candidates).find((c) => c.id !== cySigned.id)!;
+    expect(boCand).not.toHaveProperty('author');                 // never Bo, live
+    expect(JSON.stringify((await viewOf(cy)).clauses)).not.toMatch(/"Bo"/);
+    expect((await viewOf(cy)).mine.find((m) => m.id === cySigned.id)!.signed).toBe(true);
+    expect(boLive.mine[0]!.signed).toBe(false);
     // before the close there is nothing to sign
     expect((await send(bo, 'acknowledge-close', { comment: 'early' })).error)
       .toContain('has not closed');
@@ -1120,10 +1139,15 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     expect(rec.closedAt).toBe(ends);
     expect(rec.text).toBe('The watch is kept from dusk.\nThe rota is posted weekly.');
     expect(rec.adopted).toEqual([]);
-    expect(rec.undecided).toHaveLength(1);
-    expect(rec.undecided[0]!.displaced).toEqual(['The rota is posted weekly.']);
-    // sealed authorship unseals at the record (§3.5a): the field names its author
-    expect(rec.undecided[0]!.field[0]!.author).toEqual(expect.objectContaining({ name: 'Bo' }));
+    expect(rec.undecided).toHaveLength(2);
+    const rota = rec.undecided.find((u) => u.displaced[0] === 'The rota is posted weekly.')!;
+    const watch = rec.undecided.find((u) => u.displaced[0] === 'The watch is kept from dusk.')!;
+    // sealed authorship unseals at the record (§3.5a): the field names its
+    // author — both of them, each with the base it was made under and
+    // whether it was signed, beside the rung that stands (entry 31)
+    expect(rota.field[0]).toMatchObject({ author: { name: 'Bo' }, madeUnder: 'sealed', signed: false });
+    expect(watch.field[0]).toMatchObject({ author: { name: 'Cy' }, madeUnder: 'sealed', signed: true });
+    expect(rec.rungNow).toBe('sealed');
     expect(rec.carriedButUnassented).toEqual([]);
     expect(rec.signatures).toEqual([]);
 
@@ -1143,7 +1167,7 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     const signed = await viewOf(bo);
     expect(signed.view.closed!.mySignature).toEqual(expect.objectContaining({ comment: 'I still think daily.' }));
     expect(signed.record!.signatures.map((s) => [s.name, s.comment]))
-      .toEqual([['Bo', 'I still think daily.'], [null, '']]);
+      .toEqual([['Bo', 'I still think daily.'], ['Cy', '']]);
 
     // -- the mail: every member and invitee, once, and not again next minute
     const closedMails = () => readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
@@ -1509,6 +1533,61 @@ describe('👤 authorship on the wire (SPEC §3.5a)', () => {
     await el.draft.tick(el.ends + 1_000);
     const rec = (await el.viewOf(el.cy)).record!;
     for (const f of rec.adopted[0]!.field) expect(f).not.toHaveProperty('author');
+  });
+
+  it('honour: a proposal keeps the rung it was made under when 👤 moves by motion (entry 31)', async () => {
+    const el = await foundAt('anonymousElective');
+    // the founder lays both powers down so the room's motion needs no crown
+    for (const power of ['unilateral', 'assent']) {
+      await el.cmd(el.ada, 'relinquish', { setting: 'authorship', power });
+    }
+    // bo's two proposals stand under `anonymous`; the room now moves 👤 to
+    // `public` — unanimously, the constitutional route
+    const motion = await el.cmd(el.bo, 'open-motion', {
+      payload: { kind: 'set', setting: 'authorship', value: { rung: 'public' } },
+      why: 'we know each other',
+    }) as string;
+    for (const cookie of [el.ada, el.bo, el.cy]) {
+      await el.cmd(cookie, 'answer-motion', { motion, answer: 'accept' });
+    }
+    const after = await el.viewOf(el.cy);
+    expect(after.view.motions.find((m) => m.id === motion)!.status).toBe('carried');
+    // a third proposal, made under `public`: named live; the earlier two stay unnamed
+    const third = await el.cmd(el.bo, 'propose-text', { baseVersion: 1,
+      hunks: [{ start: 0, end: 1, lines: ['The clubhouse is open every day.'] }],
+      why: 'shorter' }) as { id: string };
+    const live = await el.viewOf(el.cy);
+    const cands = live.clauses.flatMap((c) => c.candidates);
+    expect(cands.find((c) => c.id === third.id)!.author).toEqual(expect.objectContaining({ name: 'Bo Marlowe' }));
+    expect(cands.find((c) => c.id === el.live.id)).not.toHaveProperty('author');
+    expect(JSON.stringify(live.records)).not.toMatch(/author/);   // the adopted one was made under anonymous
+    // at the record: the third is named, the first two never are, and every
+    // entry says the rung it was made under beside the rung that stands
+    await el.draft.tick(el.ends + 1_000);
+    const rec = (await el.viewOf(el.cy)).record!;
+    expect(rec.rungNow).toBe('public');
+    const fields = [...rec.adopted, ...rec.undecided].flatMap((r) => r.field);
+    expect(fields).toHaveLength(3);
+    for (const f of fields) {
+      if (f.candidateId === third.id) {
+        expect(f).toMatchObject({ madeUnder: 'public', author: { name: 'Bo Marlowe' } });
+      } else {
+        expect(f.madeUnder).toBe('anonymous');
+        expect(f).not.toHaveProperty('author');
+      }
+    }
+  });
+
+  it('signing is refused under a rung that does not offer it (Q770, the narrow gate)', async () => {
+    const sealed = await foundAt('sealed');
+    const res = await post(sealed.base, `/api/d/${sealed.slug}/cmd`, { cmd: 'propose-text',
+      args: { baseVersion: 1, hunks: [{ start: 0, end: 1, lines: ['Signed under sealed.'] }],
+        why: '', signed: true } }, sealed.cy);
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error)
+      .toMatch(/signing is not offered under this document's anonymity rule \(§3\.5a\)/);
+    // and nothing was proposed — the refusal left no candidate behind
+    expect((await sealed.viewOf(sealed.cy)).mine).toEqual([]);
   });
 });
 
