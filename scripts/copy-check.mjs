@@ -53,7 +53,20 @@ if (run.status !== 0) {
   console.error('\ncard-audit did not complete — the instrument failed, which is not a copy change');
   process.exit(2);
 }
-const raw = JSON.parse(run.stdout.slice(run.stdout.indexOf('{')));
+// the payload, or exit 2: a stdout that will not parse is the instrument
+// failing, and an uncaught SyntaxError would exit **1** — the code that means
+// *the copy moved*, which is exactly the verdict this file must never guess at
+const brace = run.stdout.indexOf('{');
+let raw = null;
+try {
+  if (brace < 0) throw new Error('no JSON payload on stdout');
+  raw = JSON.parse(run.stdout.slice(brace));
+} catch (e) {
+  console.error(run.stdout.slice(0, 2000) || '(no output)');
+  console.error('\ncard-audit printed no readable payload (' + String(e && e.message) +
+    ') — the instrument failed, which is not a copy change');
+  process.exit(2);
+}
 
 const errors = (raw.errors || []).map((e) => String(e));
 const broken = errors.filter((e) => /page error:|walk threw/.test(e));

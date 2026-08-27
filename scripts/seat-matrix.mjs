@@ -179,7 +179,20 @@ const STEPS = [
   { id: 'ladder-closed', epoch: 'closed', kind: 'ladder', seat: 'founder', to: 'closed',
     events: [{ id: 'E24', key: 'closing', at: 'ladder-closed', oracle: 'closed', orSigned: true }] },
 ];
-const stepIndex = (id) => STEPS.findIndex((s) => s.id === id);
+/**
+ * A step id → its position. **It refuses an unknown id** rather than handing
+ * back −1: `at` is what every audience predicate compares `stoodAt` against,
+ * so a mistyped step would put every seat outside every audience and report
+ * whoever *did* carry the entry as a finding — a table typo dressed as a
+ * product defect.
+ */
+const stepIndex = (id) => {
+  const i = STEPS.findIndex((s) => s.id === id);
+  if (i < 0) throw new Error(`no step '${id}' in STEPS — an event's \`at\` names a step that does not exist`);
+  return i;
+};
+// checked at load, so a typo is a refusal before a browser is launched
+for (const s of STEPS) for (const e of s.events) stepIndex(e.at ?? s.id);
 
 /* ======================================================================== */
 
@@ -195,7 +208,7 @@ async function runDocument(hat) {
   const mine = SEATS.filter((s) => s.document === 'both' || s.document === hat);
   for (const s of mine) {
     const name = s.role === 'founder' ? 'founder' : s.name; // one founder row per document
-    D.seats[name] = { def: s, ctx: null, page: null, stood: false, quiet: false, okd: 0,
+    D.seats[name] = { def: s, ctx: null, page: null, stood: false, quiet: false,
       email: name === 'founder' ? 'ada@example.org' : `${name}${D.stamp}@example.org` };
   }
   for (let i = 0; i < STEPS.length; i++) {
@@ -244,8 +257,9 @@ function attachNets(D, name, page) {
       new URL(r.url()).pathname + ' ' + String(r.request().postData() || '').slice(0, 120)) - 1;
     r.text().then((b) => { D.refused[at] += ' → ' + b.slice(0, 160); }).catch(() => {});
   } });
-  page.on('response', (r) => { if (r.request().method() === 'POST' &&
-    /give-ok/.test(r.request().postData() || '')) D.seats[name].okd += 1; });
+  // no `give-ok` tally here: what an acknowledgement *was about* is the
+  // question, and `window.__founding().okd` — the seat's own key list, read
+  // in `railOf` — answers it, where a count of POSTs cannot.
 }
 /** A command over the wire as a named seat, from inside its page so the cookie rides. */
 const cmdAs = (D, name, op, args) => D.seats[name].page.evaluate(async ([slug, op2, args2]) => {
@@ -262,10 +276,18 @@ const landOn = async (page, url) => {
   for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await page.waitForTimeout(500);
   await page.waitForTimeout(2600);
 };
-/** Open a card from the rail or the band on a page. */
+/**
+ * Open a card from the rail or from its tab, wherever that tab stands. The
+ * page's own `tabFor` looks in **both** `#band` and `#titlepara` — the two
+ * grants stand on the Founded line, which is `#titlepara` and has no clause
+ * (SURFACE §8 rows 4–5) — and `railOf` below reads both for the same reason,
+ * so opening must too: a task that stands only as a Founded-line tab is
+ * precisely the Q639 case this harness exists to catch.
+ */
 const openCard = async (page, k) => {
   const ok = await page.evaluate((kk) => {
-    const el = document.querySelector('#rail [data-card="' + kk + '"], #band [data-tab="' + kk + '"]');
+    const el = document.querySelector('#rail [data-card="' + kk + '"], ' +
+      '#band .achip[data-tab="' + kk + '"], #titlepara .achip[data-tab="' + kk + '"]');
     if (!el) return false;
     el.scrollIntoView({ block: 'center' });
     el.click();
@@ -495,7 +517,9 @@ const railOf = (page) => page.evaluate(() => ({
   rail: [...document.querySelectorAll('#rail li')].map((li) => {
     const b = li.querySelector('button');
     const st = b ? [...b.classList].find((c) => c.startsWith('st-')) : null;
-    return { key: li.dataset.q ?? (li.querySelector('[data-card]') || { dataset: {} }).dataset.card ?? '?',
+    // `||`, not `??`: journey-walk reads it that way, and an empty `data-q`
+    // has to fall through to the card key rather than stand as ''
+    return { key: li.dataset.q || (li.querySelector('[data-card]') || { dataset: {} }).dataset.card || '?',
       kind: st ? st.slice(3) : null,
       mark: (li.querySelector('.subj') || {}).textContent ? li.querySelector('.subj').textContent.trim() : null,
       site: li.dataset.site ?? null };
@@ -629,7 +653,13 @@ say(`seat-matrix against ${BASE} · build ${health.build ?? 'unreported'} · hat
   (TO ? ` · to=${TO}` : ''));
 say(`tables     · SURFACE §2 events ${EVENTS.length} rows · seats ${SEATS.length} · steps ${STEPS.length}` +
   ` · audience cells ${Object.keys(AUDIENCE).length} · 🍾 hold ${BEGIN_HOLD_MS}ms`);
-if (EVENTS.length !== 33) say('  ✗ expected 33 event rows — SURFACE §2 has changed shape');
+// **A shape change is a no-rule, not a remark.** SURFACE §2 growing or losing
+// a row means there are events this table does not cover, which is the same
+// condition as an unread audience cell — so it goes to the same exit code
+// rather than printing a ✗ into a run that then reports itself green.
+const shape = EVENTS.length === 33 ? []
+  : [`SURFACE §2 has ${EVENTS.length} event rows, not the 33 this table was written against`];
+for (const s of shape) say('  ? ' + s);
 
 const browser = await chromium.launch();
 const runs = [];
@@ -652,6 +682,7 @@ if (noRule.length) {
   say(`no rule    · ${noRule.length} — SURFACE states an audience the harness cannot read; file it`);
   for (const n of noRule) say(`  ? ${n.hat} · ${n.event} "${n.cell}" at step ${n.step}` + (n.why ? ` — ${n.why}` : ''));
 }
+for (const s of shape) say('shape      · ? ' + s);
 if (unstood.length) { say('unstood    · ' + unstood.length); for (const u of unstood) say('  ✗ ' + u); }
 say('errors     · ' + (errors.length ? errors.slice(0, 6).join(' / ') : 'none'));
 say('refused    · ' + (refused.length ? refused.slice(0, 6).join(' / ') : 'none'));
@@ -660,14 +691,14 @@ const payload = {
   base: BASE, build: health.build ?? null, hat: HAT, to: TO,
   seats: SEATS, epochs: EPOCHS,
   documents: runs.map((r) => ({ hat: r.hat, slug: '<slug>', steps: r.steps })),
-  findings, noRule, unstood, errors, refused,
+  findings, noRule, shape, unstood, errors, refused,
 };
 await writeFile(OUT, JSON.stringify(payload, null, 1));
 say('written    · ' + OUT);
 if (BASELINE !== null) await diffAgainst(BASELINE, payload);
 
 const red = findings.length || errors.length || refused.length || unstood.length;
-const code = red ? 1 : noRule.length ? 3 : 0;
-say(`\nseat-matrix: findings=${findings.length} noRule=${noRule.length} errors=${errors.length}` +
-  ` refused=${refused.length} unstood=${unstood.length} exit=${code}`);
+const code = red ? 1 : (noRule.length || shape.length) ? 3 : 0;
+say(`\nseat-matrix: findings=${findings.length} noRule=${noRule.length} shape=${shape.length}` +
+  ` errors=${errors.length} refused=${refused.length} unstood=${unstood.length} exit=${code}`);
 process.exit(code);

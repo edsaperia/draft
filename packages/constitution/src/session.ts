@@ -77,8 +77,8 @@ const LEGACY_SETTING_IDS: ReadonlyMap<string, SettingId> = new Map([
  *
  * It rewrites by shape rather than by listing the event types, because the
  * shapes are the whole set: `setting` (setting-set · setting-delegated ·
- * setting-reclaimed · power-relinquished · answer-given · question-resolved ·
- * ok-given), `settings` (ok-owed · ceremony-ground-shifted) and
+ * setting-reclaimed · setting-handed-over · power-relinquished · answer-given ·
+ * question-resolved · ok-given), `settings` (ok-owed · ceremony-ground-shifted) and
  * `payload.setting` (motion-opened, on a `set` or a `reserve`). A door key in
  * a `setting` field simply never matches.
  */
