@@ -107,18 +107,24 @@ export async function createDraftServer(cfg: ServerConfig,
    * a module refusal is the product working, and counting it would bury the
    * signal under ordinary traffic (a member proposing without a pen).
    *
-   * `last` is the message and the moment, not a stack: the endpoint is
-   * public by the same call that made the catalogue public, and a stack
-   * names paths on the host. The message is already what the log line
-   * carries, and it is enough to say *which* thing broke.
+   * `last` is a **kind** and a moment, not a message and not a stack: the
+   * endpoint is public by the same call that made the catalogue public, and
+   * the throws counted here are exactly the ones carrying a system code —
+   * whose messages are the ones that quote a path (`ENOENT: … open
+   * '/var/data/docs/<id>/log.jsonl'`), naming both the host's layout and an
+   * opaque document id. So the wire gets the code (or the error's class),
+   * which says *which* thing broke, and the full message stays where it was
+   * always going anyway: the server's own log line.
    */
   const errors = { total: 0, request: 0, tick: 0, outbox: 0,
-    last: null as null | { at: number; where: string; message: string } };
+    last: null as null | { at: number; where: string; kind: string } };
   const noteError = (where: 'request' | 'tick' | 'outbox', e: unknown): void => {
     errors.total += 1;
     errors[where] += 1;
+    const code = (e as { code?: unknown }).code;
     errors.last = { at: Date.now(), where,
-      message: e instanceof Error ? e.message : String(e) };
+      kind: typeof code === 'string' ? code
+        : e instanceof Error ? e.constructor.name : typeof e };
   };
   const persistence = injected ?? await openPersistence(cfg);
   const store = new DocStore(persistence);

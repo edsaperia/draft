@@ -152,11 +152,14 @@ error reporting exists in this service — Sentry is stage 16 — so this is the
 whole of it: `{ total, request, tick, outbox, last }`, counted since boot,
 where `request` is a route that ended 500, `tick` is a document the minute
 metronome could not advance, and `outbox` is a sender pass that threw.
-`last` carries the moment, the where and the message — no stack, because the
-route is public. **A refusal is not an error**: a 400 or a 404 is the
-product working, and counting those would bury the signal under ordinary
-traffic. Watch `total` between sessions; anything above zero has a matching
-`console.error` in the process log with the same message.
+`last` carries the moment, the where and a **kind** — the error's system code
+(`ENOENT`, `ECONNREFUSED`) or its class — and deliberately neither the
+message nor a stack, because the route is public and the messages of exactly
+these throws are the ones that quote a path and an opaque document id.
+**A refusal is not an error**: a 400 or a 404 is the product working, and
+counting those would bury the signal under ordinary traffic. Watch `total`
+between sessions; anything above zero has a matching `console.error` in the
+process log carrying the full message.
 
 ## 5. The data directory
 

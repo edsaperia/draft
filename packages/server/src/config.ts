@@ -153,8 +153,12 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     throw new Error('DRAFT_STORE=pg requires DATABASE_URL');
   }
   // §4.2's own ceiling, refused rather than clamped (see engineTuning)
-  const cooldownMs = env.DRAFT_COOLDOWN_MS === undefined
-    ? null : Number(env.DRAFT_COOLDOWN_MS);
+  // An empty value is *unset*, not zero. `Number('')` is 0, and a platform
+  // dashboard with a blank box beside the name would otherwise hand the room
+  // a cooldown of nothing — the metronome off — while reading, to whoever
+  // set it, exactly like not having set it.
+  const cooldownRaw = (env.DRAFT_COOLDOWN_MS ?? '').trim();
+  const cooldownMs = cooldownRaw === '' ? null : Number(cooldownRaw);
   if (cooldownMs !== null
     && (!Number.isFinite(cooldownMs) || cooldownMs < 0 || cooldownMs > COOLDOWN_MAX_MS)) {
     throw new Error(

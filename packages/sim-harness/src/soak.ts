@@ -282,9 +282,24 @@ async function main(): Promise<void> {
         // A refusal here is the mechanism working, and it is the thing this
         // harness exists to see: the loser is told, in a sentence, rather
         // than silently racing the winner into the log.
-        collisions += 1;
+        //
+        // But **only a collision counts as a collision.** A bare `catch`
+        // here swallowed every other refusal into the same tally — an
+        // exhausted ✏️ wallet, a dedup rejection, a member who may not
+        // propose at all — and asserted nothing about them beyond the
+        // message being non-empty, so the run stayed green through failures
+        // that have nothing to do with concurrency. Anything not about the
+        // base the draft was written against is a finding, on the same
+        // footing as the mid-round branch below.
         const why = e instanceof Error ? e.message : String(e);
-        check(!/^\s*$/.test(why), `a refused simultaneous proposal says why (${why.slice(0, 60)})`);
+        if (/version|stale|base|conflict|duplicate/i.test(why)) {
+          collisions += 1;
+          check(!/^\s*$/.test(why),
+            `a refused simultaneous proposal says why (${why.slice(0, 60)})`);
+        } else {
+          check(false, `a proposal was refused for something other than a `
+            + `collision: ${why.slice(0, 90)}`);
+        }
       }
     });
     const settled = await Promise.allSettled(acts);

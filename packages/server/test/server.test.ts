@@ -910,7 +910,7 @@ describe('stage 7: health and graceful shutdown', () => {
   it('/healthz counts the throws nobody handled, and does not count a refusal', async () => {
     const { base } = await boot();
     type Health = { errors: { total: number; request: number; tick: number; outbox: number;
-      last: null | { where: string; message: string } }; cooldownMs: number };
+      last: null | { where: string; kind: string } }; cooldownMs: number };
     const health = async (): Promise<Health> =>
       (await (await fetch(base + '/healthz')).json()) as Health;
 
