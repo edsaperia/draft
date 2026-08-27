@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 282,
+  "cards": 285,
   "walks": [
    "answers",
    "charter",
@@ -1010,6 +1010,57 @@
      "Somebody can be removed even if they object, but only if every other member agrees 🏛️.",
      "A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked."
+    ]
+   },
+   "shape": {
+    "eyebrow": "",
+    "head": "What Type of Document Is This?",
+    "lock": "",
+    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.A conferenceA few days with people coming and going: a third of the room is enough to move, one proposal an hour each.OngoingNo end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.CustomDecide everything yourself — every rule is a card.",
+    "options": [
+     {
+      "set": "docShape",
+      "val": "meeting",
+      "label": "A meeting"
+     },
+     {
+      "set": "docShape",
+      "val": "conference",
+      "label": "A conference"
+     },
+     {
+      "set": "docShape",
+      "val": "ongoing",
+      "label": "Ongoing"
+     },
+     {
+      "set": "docShape",
+      "val": "custom",
+      "label": "Custom"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "🪶",
+      "title": "Choose it"
+     }
+    ],
+    "hints": [
+     "What Type of Document Is This? — close it",
+     "Put it back as it stands",
+     "Choose it"
+    ],
+    "helpers": [
+     "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.",
+     "A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.",
+     "A few days with people coming and going: a third of the room is enough to move, one proposal an hour each.",
+     "No end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.",
+     "Decide everything yourself — every rule is a card."
     ]
    },
    "slug": {
@@ -3844,6 +3895,57 @@
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked."
     ]
    },
+   "shape": {
+    "eyebrow": "",
+    "head": "What Type of Document Is This?",
+    "lock": "",
+    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.A conferenceA few days with people coming and going: a third of the room is enough to move, one proposal an hour each.OngoingNo end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.CustomDecide everything yourself — every rule is a card.",
+    "options": [
+     {
+      "set": "docShape",
+      "val": "meeting",
+      "label": "A meeting"
+     },
+     {
+      "set": "docShape",
+      "val": "conference",
+      "label": "A conference"
+     },
+     {
+      "set": "docShape",
+      "val": "ongoing",
+      "label": "Ongoing"
+     },
+     {
+      "set": "docShape",
+      "val": "custom",
+      "label": "Custom"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "🪶",
+      "title": "Choose it"
+     }
+    ],
+    "hints": [
+     "What Type of Document Is This? — close it",
+     "Put it back as it stands",
+     "Choose it"
+    ],
+    "helpers": [
+     "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.",
+     "A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.",
+     "A few days with people coming and going: a third of the room is enough to move, one proposal an hour each.",
+     "No end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.",
+     "Decide everything yourself — every rule is a card."
+    ]
+   },
    "slug": {
     "eyebrow": "",
     "head": "Link",
@@ -4865,6 +4967,57 @@
      "Somebody can be removed even if they object, but only if every other member agrees 🏛️.",
      "A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked."
+    ]
+   },
+   "shape": {
+    "eyebrow": "",
+    "head": "What Type of Document Is This?",
+    "lock": "",
+    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.A conferenceA few days with people coming and going: a third of the room is enough to move, one proposal an hour each.OngoingNo end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.CustomDecide everything yourself — every rule is a card.",
+    "options": [
+     {
+      "set": "docShape",
+      "val": "meeting",
+      "label": "A meeting"
+     },
+     {
+      "set": "docShape",
+      "val": "conference",
+      "label": "A conference"
+     },
+     {
+      "set": "docShape",
+      "val": "ongoing",
+      "label": "Ongoing"
+     },
+     {
+      "set": "docShape",
+      "val": "custom",
+      "label": "Custom"
+     }
+    ],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "🪶",
+      "title": "Choose it"
+     }
+    ],
+    "hints": [
+     "What Type of Document Is This? — close it",
+     "Put it back as it stands",
+     "Choose it"
+    ],
+    "helpers": [
+     "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.",
+     "A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.",
+     "A few days with people coming and going: a third of the room is enough to move, one proposal an hour each.",
+     "No end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.",
+     "Decide everything yourself — every rule is a card."
     ]
    },
    "slug": {

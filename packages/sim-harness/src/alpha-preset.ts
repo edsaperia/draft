@@ -27,6 +27,9 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Constitution } from '../../engine-core/src/index.js';
+import { SHAPES } from '../../constitution/src/index.js';
+import type { EndingValue, PaceValue, PercentValue, SettingValue } from '../../constitution/src/index.js';
+import { engineFieldsFor } from '../../constitution/src/adapter.js';
 import { ScriptedPersona } from './persona.js';
 import { clubhouseScenario } from './clubhouse.js';
 import { runSession } from './runner.js';
@@ -81,6 +84,36 @@ const CANDIDATES: Candidate[] = [
     },
   },
 ];
+
+/**
+ * **The shape table is the sweep's input** (entry 166): one derived row per
+ * 🧭 shape, folded through `engineFieldsFor` over the row's own `sets` — never
+ * typed here, so a cell edited in `shapes.ts` is what the sweep measures. A
+ * shape is a tested constitution once its cell is green; today these are
+ * **reported only**, no `check` on them, because every number in the table is
+ * a placeholder until this sweep has been read (Q960). The ramp start rides
+ * `adoptionThresholdStart` exactly as `toEngineConstitution` reads it: a
+ * ramp's `startPct`, else the bar itself; the perpetual pin is 0 since the
+ * sweep's window is the cell's.
+ */
+function shapeCandidates(): Candidate[] {
+  return SHAPES.map((row) => {
+    const sets = row.sets as Record<string, SettingValue>;
+    let overrides: Partial<Constitution> = {};
+    for (const id of ['bar', 'rate', 'authorship'] as const) {
+      if (sets[id]) overrides = { ...overrides, ...engineFieldsFor(id, sets[id]!, 0) };
+    }
+    const pace = sets.pace as PaceValue | undefined;
+    const bar = sets.bar as PercentValue | undefined;
+    if (bar) {
+      overrides.adoptionThresholdStart =
+        (pace && pace.shape === 'ramp' && !(sets.ending && (sets.ending as EndingValue).endsAtMs === null)
+          ? pace.startPct : bar.pct) / 100;
+    }
+    return { name: `shape: ${row.name}`, note: row.say, overrides };
+  });
+}
+CANDIDATES.push(...shapeCandidates());
 
 /** The name in CANDIDATES the sanity target is asserted against. */
 const RECOMMENDED = 'ALPHA PRESET';

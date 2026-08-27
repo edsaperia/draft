@@ -64,6 +64,15 @@ const AUTHORSHIP_LABEL = {
 }[AUTHORSHIP];
 const ELECTIVE = AUTHORSHIP === 'anonymousElective' || AUTHORSHIP === 'sealedElective';
 const PROPOSALS_FIRST = process.argv.includes('--proposals-first');
+// **One founding per shape** (entry 166): `--shape=<meeting|conference|ongoing>`
+// picks that rung on 🧭 at the birth; CI's `walks` job loops the three. Per
+// shape the walk asserts that 🍾 is reachable after the unavoidable cards,
+// that every shaped clause carries *As for a meeting.* while it is still the
+// shape's, that touching 👥 by hand removes that clause's sentence and 🍾's
+// line names 👥, and that no clause carries it after the press. Default
+// custom, which is today's founding untouched.
+const SHAPE = (process.argv.find((a) => a.startsWith('--shape=')) || '').split('=')[1] || 'custom';
+const SHAPED_RUN = SHAPE !== 'custom';
 const PROPOSALS = ['begin', 'canpropose', 'canjudge', 'grant-voice'];
 const say = (...a) => console.log(...a);
 // Q911: a walk on a default port will drive whatever process is listening,
@@ -189,6 +198,12 @@ await open('title');
 await typeIn('.setupcard [data-titlelane]', TITLE);
 await press(1250);
 await open('slug');
+await press(1250);
+await open('shape');
+if (!(await clickIn('.setupcard [data-set="docShape"][data-val="' + SHAPE + '"]'))) {
+  say('FAIL: 🧭 offers no rung named ' + SHAPE);
+  stuck.push('the 🧭 rung ' + SHAPE);
+}
 await press(1250);
 await open('myemail');
 await typeIn('.setupcard input[type="email"]', 'ada@example.org');
@@ -760,6 +775,55 @@ const stuckAtBegin = async () => {
   } else { say('invited    · FAIL: no ✉️ to invite from'); stuck.push('the ✉️ tab at the dead end'); }
 };
 
+/* ---- the shape's provenance (entry 166) ---------------------------------
+ * Read off the band: every clause's text by its page key. The shaped keys are
+ * the row's own `sets` off the bundle, less 🪜 (no clause of its own) and
+ * whatever the row hides. Asserted at the moment 🍾 is served, which is the
+ * first moment every section of the constitution is on the page. */
+const clauses = () => page.evaluate(() => Object.fromEntries(
+  [...document.querySelectorAll('#band .cpara')].map((el) => [
+    el.dataset.para || (el.querySelector('[data-tab]') || { dataset: {} }).dataset.tab,
+    ((el.querySelector('.cpv') || {}).textContent || '').replace(/\s+/g, ' ').trim()])
+  .filter(([k, t]) => k && t)));
+const shapedKeys = () => page.evaluate((name) => {
+  const row = window.CONSTITUTION.shapeOf(name);
+  return Object.keys(row.sets).filter((id) => id !== 'pace' && !row.hides.includes(id));
+}, SHAPE);
+const PROVENANCE = /\bAs for (a meeting|a conference|an ongoing document)\./;
+let shapeTouched = false;
+const shapeAtBegin = async () => {
+  const keys = await shapedKeys();
+  const cl = await clauses();
+  const missing = keys.filter((k) => !PROVENANCE.test(cl[k] || ''));
+  say('provenance · ' + keys.length + ' shaped clauses' +
+    (missing.length ? '  FAIL: no *As for…* on ' + JSON.stringify(missing.map((k) => [k, cl[k] || '(no clause)'])) : ''));
+  if (missing.length) stuck.push('provenance missing at 🍾 on ' + missing.join(','));
+  // 💤 hidden where the row says so: no clause, no rail entry
+  const hidden = await page.evaluate((name) => window.CONSTITUTION.shapeOf(name).hides, SHAPE);
+  const shown = hidden.filter((k) => cl[k] || false);
+  if (shown.length) { say('hidden     · FAIL: ' + shown.join(',') + ' has a clause under ' + SHAPE); stuck.push('hidden card drawn: ' + shown.join(',')); }
+  // touch 👥 by hand: the sentence leaves that clause and 🍾 names it
+  if (!(await open('quorum'))) { say('touch      · FAIL: no 👥 tab to touch'); stuck.push('👥 tab'); return; }
+  await page.evaluate(() => {
+    const n = document.querySelector('.setupcard [data-num="quorumPct"], .setupcard [data-num="quorumN"]');
+    if (!n) return;
+    n.value = String(+n.value === 40 ? 45 : 40);
+    for (const e of ['input', 'change']) n.dispatchEvent(new Event(e, { bubbles: true }));
+  });
+  await T(250);
+  const label = await press(1250);
+  const after = await clauses();
+  const gone = !!label && !PROVENANCE.test(after.quorum || '');
+  say('touch 👥   · ' + (gone ? 'its sentence left with the founder’s hand' : 'FAIL: ' + (label ? 'still ' + JSON.stringify(after.quorum) : 'could not commit 👥')));
+  if (!gone) stuck.push('👥 kept its provenance after being touched');
+  shapeTouched = gone;
+  await open('begin');
+  const line = await page.evaluate(() => ((document.querySelector('.setupcard .shapeline') || {}).textContent || '').trim());
+  const lineOk = /^The rules are as for /.test(line) && /except .*Quorum, which the Founder changed\.$/.test(line);
+  say('🍾 line    · ' + (lineOk ? '“' + line + '”' : 'FAIL: ' + JSON.stringify(line)));
+  if (!lineOk) stuck.push('🍾 does not state the diff');
+};
+
 const seen = new Set();
 const order = [];
 const handedOver = [];
@@ -821,6 +885,7 @@ for (let i = 0; i < 60; i++) {
   // Still walked at the last moment before 🍾, which is the state the door
   // is drawn in: pre-start, `constituted()` false, so ✉️ shows the box
   // rather than the composer whatever the price says.
+  if (next === 'begin' && SHAPED_RUN && !shapeTouched) await shapeAtBegin();
   if (next === 'begin' && !DELEGATE_ALL && !doorWalked) {
     doorWalked = true;
     if (await open('invite')) {
@@ -929,6 +994,16 @@ for (let i = 0; i < 60; i++) {
   } else say('  committed· ' + next + ' (' + label + ')' + (chose ? ' — ' + chose : ''));
 }
 say('founding   · rail ' + JSON.stringify(await rail()) + (stuck.length ? ' STUCK: ' + stuck.join(', ') : ''));
+if (SHAPED_RUN && order.includes('begin')) {
+  // after the press nothing is the shape's: the marks are gone from every clause
+  const cl = await clauses();
+  const still = Object.entries(cl).filter(([, t]) => PROVENANCE.test(t)).map(([k]) => k);
+  say('after 🍾   · ' + (still.length ? 'FAIL: still shaped ' + still.join(',') : 'no clause is the shape’s any more'));
+  if (still.length) stuck.push('provenance survived 🍾 on ' + still.join(','));
+  // and the unavoidable cards were the whole of what the founder was asked
+  const asked = order.filter((k) => !k.startsWith('grant-') && !['begin', 'canpropose', 'canjudge'].includes(k));
+  say('asked      · ' + JSON.stringify(asked));
+}
 
 if (DELEGATE_ALL) {
   // **A founder who delegates is asked each question back, in ORDER** (Q776).

@@ -15,7 +15,7 @@
  * except it.
  *
  * **The numbers are placeholders** until `alpha-preset` sweeps each shape on
- * *alive* (Q964): changing one is editing one cell. The meeting row's ⏱️ is
+ * *alive* (Q960): changing one is editing one cell. The meeting row's ⏱️ is
  * the one cell with evidence behind it — it is the sweep's own *ALPHA PRESET*.
  *
  * `spec-check`'s `checkShapes` asserts the table off the bundle: every row
@@ -43,7 +43,7 @@ export interface Shape {
   hides: readonly SettingId[];
 }
 
-/** The settings **every** shape must set. 🥾 is here on the plan's proposal, not Ed's list (Q964). */
+/** The settings **every** shape must set. 🥾 is here on the plan's proposal, not Ed's list (Q960). */
 export const SHAPED: readonly SettingId[] = [
   'bar', 'pace', 'quorum', 'authorship', 'judgments', 'chamber', 'rate', 'lapse', 'machines', 'removal',
 ];

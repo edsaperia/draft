@@ -791,6 +791,11 @@ async function walkFounding(page, base, cards, errors, opts = {}) {
   await clickIn('.setupcard [data-confirm]'); await wait(page, 320);
   await openAndMeasure(page, 'slug', '.setupcard', walk, cards, errors);
   await clickIn('.setupcard [data-confirm]'); await wait(page, 320);
+  // 🧭 (entry 166): measured unanswered, then answered *custom*, so the rest
+  // of the walk is today's founding and the card's strings reach the golden
+  await openAndMeasure(page, 'shape', '.setupcard', walk, cards, errors);
+  await clickIn('.setupcard [data-set="docShape"][data-val="custom"]'); await wait(page, 200);
+  await clickIn('.setupcard [data-confirm]'); await wait(page, 320);
   await openAndMeasure(page, 'myemail', '.setupcard', walk, cards, errors);
   await typeIn('.setupcard input[type="email"]', 'ada@example.org');
   await clickIn('.setupcard [data-confirm]'); await wait(page, 400);
@@ -798,7 +803,7 @@ async function walkFounding(page, base, cards, errors, opts = {}) {
 
   // then whatever the rail asks for, one at a time, exactly as the founder
   // meets it — the order IS the dependency list
-  const seen = new Set(['title', 'slug', 'myemail']);
+  const seen = new Set(['title', 'slug', 'shape', 'myemail']);
   for (let i = 0; i < 40; i++) {
     const next = await page.evaluate((done) => {
       const li = [...document.querySelectorAll('#rail li')].map((el) => el.dataset.q ||

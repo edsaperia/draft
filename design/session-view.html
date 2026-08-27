@@ -749,6 +749,8 @@
     }
     if (key === 'tClose') S.barBy = 'founder';
     if (key === 'tStart') S.shape = 'ramp';
+    // a ⏰ chip is the *At a set time* rung's own field (entry 166, F6)
+    if (key === 'endsAt') S.ending = 'ends';
     const rungPct = (v) => M.BAR_RUNGS.some((r) => r.pct === +v);
     if (key === 'barBy' && val === 'founder' && rungPct(S.tClose)) S.tClose = '';
   };
@@ -897,7 +899,7 @@
   // has to be remembered rather than derived: one snapshot per opening,
   // taken in render after the module has had its say, and compared to decide
   // whether the bin has anything to throw away.
-  const REVERTKEYS = () => ['title', 'slug', 'ending', 'endsAt', 'tClose', 'shape', 'tStart',
+  const REVERTKEYS = () => ['title', 'slug', 'docShape', 'ending', 'endsAt', 'tClose', 'shape', 'tStart',
     'quorumForm', 'quorumPct', 'quorumN', 'joinBy', 'policyBy', 'titleBy', 'slugBy',
     'lapse', 'lapseDays', 'removal', 'removeWho', 'admission', 'authorship', 'judgments',
     'grant', 'dripMin', 'cap', 'chamber', 'auditor', 'auditorBudget',
@@ -987,6 +989,9 @@
     // string. titleDraft is the provisional value — the lane's, and nothing
     // else's — dropped whenever the open card changes.
     title: '', titleDraft: null, slug: '',
+    // 🧭 the document's shape, chosen before 📧 (entry 166): '' until chosen,
+    // then a row's name or 'custom'. **Never `S.shape`, which is 🪜's.**
+    docShape: '',
     folded: new Set(),  // folded headings: 'cs-<section>' and 'ph:<prose heading>'
     // **No defaults** (Ed, 2026-08-21: *we should remove the defaults, each
     // should start as “The Founder is deciding [parameter]”*). Every setting
@@ -1652,6 +1657,17 @@
     // nothing has refused it *yet*, and the send would be the first to ask
     { k: 'slug', g: '📍', t: 'Link', kind: 'ordinary',
       ready: () => SLUG_OK.test(S.slug) && !slugRefused() && slugKnown(), changeable: true },
+    // **The founder chooses a shape before the birth** (Ed, 2026-08-27, entry
+    // 166): a meeting, a conference, ongoing, or custom — folded at the save
+    // as the founder's own sets (`shapes.ts`), so the values are given, never
+    // defaulted. Not a setting and no object survives it: hidden once the
+    // document exists, seen at hydrate, never re-offered. Hidden by `cs`
+    // rather than `BIRTH` because the fixture's birth is a birth too.
+    // …and once the document exists the choice is made whatever the page
+    // remembers — a reload has no `S.docShape`, and a hidden card that is
+    // not settled still blocks the order (`blocksOrder`)
+    { k: 'shape', g: '🧭', t: 'What Type of Document Is This?', kind: 'ordinary', changeable: true,
+      ready: () => !!S.docShape || !!cs, hide: () => !!cs },
     // — the rest, together once the document exists ----------------------
     // 🎩 folded into 🪪 (Ed, 2026-08-18): whether the founder is a
     // member is just whether they invite themselves, asked as their own
@@ -1827,7 +1843,10 @@
     // against them, whichever route holds.
     { k: 'removal', g: '🥾', t: 'How Is a Member Removed?', kind: 'constitutional', key: 'removal', p: 0.24,
       rule: 'Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.' },
+    // hidden outright where the shape says so (entry 166): a meeting and a
+    // conference have no lapse question — a decision nobody has
     { k: 'lapse', g: '💤', t: 'Do Memberships Lapse?', kind: 'constitutional', gate: 'judge', key: 'lapse', p: 0.29,
+      hide: () => shapeHides('lapse'),
       rule: 'Each member says the shortest gap they would accept, and the document takes the longest — <b>never</b> being longer than any of them — so nobody loses their membership faster than they accepted.',
       takes: 'The document takes the longest', result: 'Never', taken: { afterMs: null },
       dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
@@ -2750,7 +2769,7 @@
   // (Ed: *Begin can be in the middle*), and 📄 the text stays last but one.
   // 🪪 before 🤝 (Ed, 2026-08-26): an application pays the price, so the
   // price is decided before whether strangers may apply
-  const ORDER = ['title', 'slug', 'myemail', 'grant-pen', 'grant-shield', 'chamber',
+  const ORDER = ['title', 'slug', 'shape', 'myemail', 'grant-pen', 'grant-shield', 'chamber',
     'admission', 'applications', 'hat', 'myname', 'mypic', 'lapse', 'removal',
     'canpropose', 'canjudge', 'grant-voice', 'rate', 'machines',
     'ending', 'bar', 'quorum',
@@ -3118,7 +3137,7 @@
     // rail-only: the title is the heading, the link leads the constitution,
     // and the starting text anchors the prose (Ed, 2026-08-18)
     { key: 'doc', title: 'The Document', railOnly: true,
-      text: '', keys: ['title', 'slug', 'chamber', 'text'] },
+      text: '', keys: ['title', 'slug', 'shape', 'chamber', 'text'] },
   ];
   // `extraKeys` is how a section enumerates cards it cannot name in a literal
   // — the admit cards, one per applicant (entry 96). It has to be here rather
@@ -3215,6 +3234,11 @@
         // carries do not — they are drawn on the Founded line below (Q639)
         (visible(card('slug')) ? h.para(card('slug')) +
           tasksFor(card('slug')).filter((t) => !onFoundedLine(t)).map((t) => h.para(t)).join('') : '') +
+        // 🧭 stands in the lead with a clause of its own during the birth
+        // (entry 166): blank until chosen, then *The rules will be as for a
+        // meeting.*; post-save the band is rendered from the module and no
+        // such setting exists, so the clause is gone by construction
+        (!cs && visible(card('shape')) ? h.para(card('shape')) : '') +
         // **The birth's third clause** (Ed, 2026-08-21): the document says
         // what is happening and wears the 📧 tab, so the card does not have
         // to say *Sent to…* and the founder can get back to their own
@@ -4195,6 +4219,20 @@
 
   // dev only (with the dropdown, Ed 362): complete the founding in one press,
   // because motions live on the far side of it and the mock has no persistence
+  // **One door for the shape** (entry 166): the fixture's save and ⏩ pass the
+  // chosen row into `open` exactly as `/auth/create` does, so `founding-walk`
+  // sees what the live save does. Custom passes nothing.
+  const shapeInput = () => (SHAPE_NOUN[S.docShape] ? { shape: S.docShape } : {});
+  // …and the fixture then reads the fold back the way the live boot does:
+  // values into the radio layer, the shaped cards seen, the holder radios
+  // reporting the act (*founder*, since held and set)
+  const seedFromShape = () => { const r = shapeRow(); if (!r) return;
+    hydrateFromModule(null);
+    S.quorumForm = cs.quorumForm;
+    for (const mid of Object.keys(r.sets)) S.seen.add(pkeyOf(mid));
+    if (r.sets.bar) S.barBy = 'founder';
+    if (r.sets.quorum) S.quorumBy = 'founder';
+    if (r.sets.rate) S.rateBy = 'founder'; };
   // ⏩ settle the founding — now a scripted drive of REAL module commands
   // (plan 367a: the strongest single assertion — the module-driven page must
   // render what the state-poked page rendered)
@@ -4208,7 +4246,9 @@
     try {
       if (!cs) {
         cs = window.cs = M.ConstitutionSession.open({ title: S.title, slug: S.slug,
-          convenor: { id: FOUNDER, email: f.e, isMember: f.role !== 'clerk' } }, now());
+          convenor: { id: FOUNDER, email: f.e, isMember: f.role !== 'clerk' },
+          ...shapeInput() }, now());
+        seedFromShape();
       }
       // **⏩ answers ✋ and 🖼️ too** (Q645). Both are real tasks now rather
       // than cards `hydrateS` declared settled, so a stagehand that only names
@@ -4407,8 +4447,42 @@
     rate: 'how often members may propose',
     applications: 'whether strangers may apply to join',
     slug: 'the document’s address',
+    shape: 'what type of document this is',
     text: 'the text the document starts from',
   };
+  // ---- 🧭 the shape (entry 166) — read from the bundle's table, never a
+  // number of the page's own ----------------------------------------------
+  // the shape as a noun phrase, for the provenance and the 🍾 line
+  const SHAPE_NOUN = { meeting: 'a meeting', conference: 'a conference', ongoing: 'an ongoing document' };
+  // the row the document was born with — the module's, or the page's own
+  // choice before the save; null for custom
+  const shapeRow = () => { const n = cs ? cs.shape : S.docShape;
+    return n && SHAPE_NOUN[n] ? M.shapeOf(n) : null; };
+  // a shaped setting's card is not shown at all where the row hides it — a
+  // decision nobody has (the 🎲 rule)
+  const shapeHides = (k) => { const r = shapeRow(); return !!(cs && r && r.hides.includes(midOf(k))); };
+  // *given by the shape and untouched, before the start* — the module's own
+  // test (`SettingView.shaped`), read through whichever `cs` this is
+  const shapedOn = (k) => { if (!cs || !MANAGED_KEYS.includes(k)) return false;
+    if (cs.isRemote) { const st = csState(k); return !!(st && st.shaped); }
+    return cs.shaped(midOf(k)); };
+  // the provenance sentence: third person, a fact about the document, gone
+  // the moment the founder touches the clause or presses 🍾
+  const shapedLine = (k) => (shapedOn(k) ? ' As for ' + SHAPE_NOUN[cs.shape] + '.' : '');
+  // ⏰'s chips, in the shape's unit (Ed: the shape is ⏰'s unit, never its
+  // answer): computed from now at render, never stored, nothing preselected
+  const endChips = () => { const r = shapeRow();
+    if (!r || !r.unit || !cs || cs.constitutedAtT !== null) return [];
+    const now2 = new Date();
+    if (r.unit === 'hours') return [1, 2, 3].map((h2) => ({
+      label: 'in ' + h2 + (h2 === 1 ? ' hour' : ' hours'),
+      val: msToLocal(now2.getTime() + h2 * 3600000) }));
+    return [1, 2, 3].map((d2) => { const at = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate() + d2, 18, 0);
+      return { label: d2 === 1 ? 'tomorrow evening' : 'in ' + d2 + ' days', val: msToLocal(at.getTime()) }; }); };
+  const endChipsHtml = () => { const chips = endChips();
+    return chips.length ? '<span class="setrow2 endchips">' + chips.map((c2) =>
+      '<button class="btn' + (S.endsAt === c2.val ? ' on' : '') + '" data-set="endsAt" data-val="' + c2.val + '">' +
+      esc(c2.label) + '</button>').join('') + '</span>' : ''; };
   // **The one price scale** (entry 94): what an act on the membership costs,
   // in the document's three verbs — the same words on 🪪 and 🥾, so a reader
   // learns them once. 🥾 keeps the rung admission has no analogue for.
@@ -4620,6 +4694,10 @@
     // `insert-anchor` is a held-open gap with its mark beside it. Nothing
     // has been decided, and a document does not narrate that somebody is
     // about to type.
+    // 🧭's clause (entry 166): blank until chosen, as 📧's is until sent;
+    // custom says nothing, being the absence of a shape
+    if (c.k === 'shape') return S.seen.has('shape') && SHAPE_NOUN[S.docShape]
+      ? 'The rules will be as for ' + SHAPE_NOUN[S.docShape] + '.' : '';
     if (c.k === 'myemail') return !cs
       ? (S.emailSent ? 'The Founder is checking their email for a link.' : '')
       : S.emailVerified ? 'Your address is verified.'
@@ -4630,7 +4708,7 @@
       const st = csState(c.k);
       const collecting = st ? st.collecting : !((c.in || 0) >= E() && E() > 0);
       return !collecting && (!st || st.value !== null)
-        ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c)) + holderLine(c.k)
+        ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c)) + shapedLine(c.k) + holderLine(c.k)
         // while the founder is the only person the document knows about, an
         // answer count would be counting the founder alone (pacing pass,
         // 2026-08-19) — the honest tail is that the question waits for a room
@@ -4646,7 +4724,9 @@
             : roomExists() ? Math.min(c.in || 0, E()) + ' of ' + E() + ' have answered.'
             : 'waiting for members.');
     }
-    return settled(c) ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c)) + holderLine(c.k)
+    // the provenance rides between the rule and the powers (entry 166): *…
+    // As for a meeting. The Founder may amend this at will.*
+    return settled(c) ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c)) + shapedLine(c.k) + holderLine(c.k)
       // the same interim rule while the Founder holds 🌍 undecided (Q618 (a))
       : c.k === 'chamber' ? 'Until the Founder decides, only members can see the document.'
       : 'The Founder is deciding ' + (WHAT[c.k] || 'this') + '.';
@@ -5378,6 +5458,16 @@
         '</div>' +
         (started ? '<p class="setnote"><b>Settled.</b> Now that people are voting, the Founder joins the same way as anybody else.</p>' : '');
     },
+    // 🧭 (entry 166): the three rows from the bundle's table and a fourth,
+    // custom, whose two strings live here. Nothing preselected (F6); each
+    // rung its title in bold and its consequence beneath. No number is typed
+    // into the page — a row's `say` is the row's.
+    shape: () =>
+      '<p class="why">A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      M.SHAPES.map((r) => opt(S, 'docShape', r.name, esc(r.title), esc(r.say))).join('') +
+      opt(S, 'docShape', 'custom', 'Custom', 'Decide everything yourself — every rule is a card.') +
+      '</div>',
     title: () =>
       '<div class="lanebox"><div class="lp editlane titlelane' + (titlePending() ? '' : ' blank') + '"' +
       ' contenteditable="plaintext-only" spellcheck="false" data-titlelane="1"' +
@@ -5544,7 +5634,11 @@
       '<p class="why">When drafting stops and the text is final. <b>Never</b> is one of the answers: a document with no end date stops only when too few members are active.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('ending') +
+      // under a shaped document that did not set ⏰ (a meeting, a conference)
+      // the rung grows chips in the shape's unit above the field (entry 166,
+      // F6: picking a chip fills the rung's own field); the field stays
       opt(S, 'ending', 'ends', 'At a set time', '',
+        endChipsHtml() +
         '<span class="fld"><label>Ends</label><input type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '"></span>') +
       opt(S, 'ending', 'perpetual', 'Never', 'It runs until too few members are still active.') +
       '</div>',
@@ -6408,6 +6502,8 @@
     : c.k === 'text' ? (proseCounts().blocks
       ? 'The document begins from what is in the column'
       : 'The document begins empty')
+    // 🧭 reads *Choose it* while dark, in the birth cards' own manner
+    : c.k === 'shape' && !ready(c) ? 'Choose it'
     : ready(c) ? (c.ansFor ? 'Answer' : c.kind === 'personal' ? 'Save' : 'Set it')
     : 'Not answered yet');
   // **The whole commit row follows the typing** (Ed, 2026-08-21: *the 🗑️
@@ -6919,8 +7015,10 @@
       // founder arrives in it (live: /auth/create does exactly this)
       if (!cs) {
         cs = window.cs = M.ConstitutionSession.open({ title: S.title, slug: S.slug,
-          convenor: { id: FOUNDER, email: S.myemail, isMember: S.roster[0].role !== 'clerk' } }, now());
+          convenor: { id: FOUNDER, email: S.myemail, isMember: S.roster[0].role !== 'clerk' },
+          ...shapeInput() }, now());
         if (S.myname) cs.setIdentity(now(), FOUNDER, { name: S.myname });
+        seedFromShape();
       }
       S.open = null; return render(); }
     // …and `'own'` needs nothing added here (entry 165): a rung's value is
@@ -7044,6 +7142,8 @@
       // none, and the server mints one.
       api.post('/api/docs', { title: S.title || 'Untitled', slug: S.slug, email: S.myemail,
         isMember: S.roster[0].role !== 'clerk',
+        // the shape rides every send (entry 166); custom is dropped by the server
+        shape: S.docShape || 'custom',
         ...(api.birth && api.birth.pendingId ? { pendingId: api.birth.pendingId } : {}) })
         .then((res) => {
           birthSending = false;
@@ -7686,6 +7786,8 @@
       acknowledgeClose: (t, member, comment) => api.cmd('acknowledge-close', { comment }),
       get titleOf() { return self.v.title; },
       get slug() { return self.v.slug; },
+      get shape() { return (self.v.view && self.v.view.shape) || null; },
+      shaped: (mid) => { const st = index().settings.get(mid); return !!(st && st.shaped); },
       get quorumForm() { return self.v.quorumForm; },
       get text() { return self.v.text; },
       E: () => self.v.electorateSize,
@@ -7715,7 +7817,7 @@
         const mine = q ? q.myAnswer !== null : false;
         return { holder: st.holder, powers: st.powers, powerFrom: st.powerFrom,
           pendingRelease: st.pendingRelease || { unilateral: false, assent: false },
-          value: st.value,
+          value: st.value, shaped: !!st.shaped,
           settledBy: st.settledBy, settledAtT: st.settledAtT,
           collecting: st.collecting,
           distribution: res ? res.distribution : null,
@@ -7828,7 +7930,13 @@
       judgments: (x) => { S.judgments = x.rung; },
       chamber: (x) => { S.chamber = x.rung; },
       rate: (x) => { S.grant = x.grant; S.cap = x.cap; S.dripMin = x.dripMinutes; },
-      lapse: (x) => { S.lapse = x.afterMs === null ? 'never' : String(Math.round(x.afterMs / 86400000)); },
+      // the rung and its number are two fields (entry 166): this wrote the
+      // day count into the rung's own key, so a finite 💤 — which no walk had
+      // ever founded until the ongoing shape set one — read as unanswered
+      // (`CHOSEN.lapse` wants `'days'` and a numeric `lapseDays`) and was
+      // served to the founder as a task on every reload
+      lapse: (x) => { if (x.afterMs === null) S.lapse = 'never';
+        else { S.lapse = 'days'; S.lapseDays = Math.round(x.afterMs / 86400000); } },
       removal: (x) => { S.removal = x.price; },
       admission: (x) => { S.admission = x.price; },
       machines: (x) => { S.auditor = x.enabled; if (x.enabled) S.auditorBudget = x.budget; },
@@ -7895,7 +8003,8 @@
     const owed = new Set(v.view.owedOks);
     CARDS.forEach((c) => {
       if (c.isGate || c.ansFor) return;
-      if (c.k === 'title' || c.k === 'slug' || c.k === 'myemail') { S.seen.add(c.k); return; }
+      // 🧭 is a birth act like the three beside it: seen, never re-offered
+      if (c.k === 'title' || c.k === 'slug' || c.k === 'myemail' || c.k === 'shape') { S.seen.add(c.k); return; }
       if (c.k === 'text') { if (v.textConfirmed) S.seen.add(c.k); return; }
       // ✋ and 🖼️ answer for themselves now, per seat, off `view.identity`'s
       // own flags (Q645) — this line used to declare them settled on every
@@ -8985,8 +9094,18 @@
     'Voting opens, and the approval threshold begins its course.',
     'The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.',
   ];
+  // **🍾 states the diff, not the list** (entry 166): the clauses above already
+  // say the values, so the card says which of the founder's touches mattered
+  // — every shaped clause still the shape's, or the ones they changed, named
+  // through `settingNamed` and joined by `listOf`. Custom: no line.
+  const shapeLine = () => { const r = shapeRow(); if (!r || !cs || constituted()) return '';
+    const changed = Object.keys(r.sets).filter((mid) => !shapedOn(pkeyOf(mid)));
+    const noun = SHAPE_NOUN[cs.shape];
+    return '<p class="setnote shapeline">The rules are as for ' + noun +
+      (changed.length ? ', except ' + listOf(changed.map(settingNamed)) + ', which the Founder changed.' : '.') + '</p>'; };
   const beginBody = (c, rd) => {
-    const batch = '<div class="unlocks"><b>' + (constituted() ? 'What beginning did.' : 'What beginning does, all at once.') + '</b></div>' +
+    const batch = shapeLine() +
+      '<div class="unlocks"><b>' + (constituted() ? 'What beginning did.' : 'What beginning does, all at once.') + '</b></div>' +
       '<ul class="batch">' + BEGIN_BATCH.map((l) => '<li>' + l + '</li>').join('') + '</ul>';
     if (constituted()) return batch;   // the head already says when
     if (!rd) return batch + '<p class="setnote">Only the Founder can begin the document.</p>';

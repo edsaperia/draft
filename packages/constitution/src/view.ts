@@ -13,7 +13,6 @@ import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf } from './catalogue.js';
 import type { SettingValue } from './values.js';
 import type { ShapeName } from './shapes.js';
-import { shapeOf } from './shapes.js';
 
 export interface QuestionView {
   setting: SettingId;
@@ -208,13 +207,6 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       value: null, previousValue: null, setWhy: null, settledBy: null,
       settledAtT: null, collecting: false, shaped: false });
   }
-  const shapeRow = s.shape === null ? null : shapeOf(s.shape);
-  const shaped = (id: SettingId): boolean => {
-    if (shapeRow === null || !(id in shapeRow.sets)) return false;
-    const st = s.settingState(id);
-    return st.settledBy === 'convenor' && st.previousValue === null &&
-      st.settledAtT === s.createdAtT && s.constitutedAtT === null;
-  };
   for (const entry of MANAGED) {
     const st = s.settingState(entry.id);
     settings.push({
@@ -231,7 +223,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       settledBy: st.settledBy,
       settledAtT: st.settledAtT,
       collecting: st.collecting,
-      shaped: shaped(entry.id),
+      shaped: s.shaped(entry.id),
     });
     if (st.collecting) {
       const answerable = entry.deps.every((d) => s.settingState(d).settledBy !== null);

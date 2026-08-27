@@ -30,7 +30,7 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 |---|---|---|---|---|---|---|---|
 | E1 | A founding question opens (delegated) | every arrived member, founder if a member | rail ask entry; task paragraph under the watching clause | an answer | ✓ | entry leaves; card shows the count; revisable until resolved | chamber applications lapse removal ending bar quorum authorship judgments rate machines |
 | E2 | A founding question resolves | everyone who answered | clause; distribution strip | nothing (pre-start: no OK owed) | — | clause states the rule | — |
-| E3 | A setting is set pre-start | nobody | clause fades in | nothing | — | clause | title slug text hat myname mypic admission |
+| E3 | A setting is set pre-start | nobody | clause fades in | nothing | — | clause | title slug shape text hat myname mypic admission |
 | E4 | The document begins 🍾 | every member | 💡 ⚖️ gate news cards, the Founded line; 🏛️ for anybody not yet handed a voice (E8) | OK each | OK | `ACK_KEYS` per seat; grants staged behind the constitutional OKs | begin canpropose canjudge |
 | E5 | A constitutional setting set or changed post-start (pen or carried) | every member who had no say **and arrived when it was set**, lapsed included; a later joiner reads it as the document | news entry pinned ✔; clause change line (was / now, who, why) | OK | OK | clause keeps *Last amended*; the record's Amendments | — |
 | E6 | An ordinary setting first set | nobody | clause | nothing | — | clause | — |
@@ -273,7 +273,8 @@ The refund flight and every grant's inbound flight take 640 ms.
 |---|---|---|---|---|---|---|---|
 | 1 | title | 🪶 | birth · ordinary | lead | yes | — | Title |
 | 2 | slug | 📍 | birth · ordinary | lead | yes | title | Link |
-| 3 | myemail | 📧 | birth · identity | lead (pre-save); your own row after | yes | slug | Your Email |
+| 2a | shape | 🧭 | birth · decision, not a setting | lead — its own clause until the save, none after | yes | slug | What Type of Document Is This? |
+| 3 | myemail | 📧 | birth · identity | lead (pre-save); your own row after | yes | shape | Your Email |
 | 4 | grant-pen | ✒️ | grant | lead — a tab on the Founded line, no clause | yes | the save | Your Pen |
 | 5 | grant-shield | 🛡️ | grant | lead — a tab on the Founded line, no clause | no | the save | Your Shield |
 | 6 | chamber | 🌍 | constitutional · judge-gate | lead, penultimate | yes | the pen's OK | Visibility |
@@ -308,7 +309,7 @@ Outside `ORDER`: 🪜 (a tab in 🌡️'s stack; no clause, no rail entry — Q5
 ### 8.1 Rules
 
 - **F1 The founding runs in single file, in the document's own order** (C14).
-- **F2 The birth order is 🪶 → 📍 → 📧, and the magic link is the instantiation**: nothing is saved anywhere until it is followed; the rail at the save holds the pen alone.
+- **F2 The birth order is 🪶 → 📍 → 🧭 → 📧, and the magic link is the instantiation**: nothing is saved anywhere until it is followed; the rail at the save holds the pen alone. 🧭 chooses a **shape** (entry 166) — *a meeting* · *a conference* · *ongoing* · *custom* — folded at the save as the Founder's own pre-start sets (SPEC §9.0a): every shaped clause reads *As for a meeting.* until the Founder touches it or presses 🍾, 🍾 states which they changed, 💤 is not shown at all under a meeting or a conference, and ⏰ offers chips in the shape's unit. The table is `packages/constitution/src/shapes.ts`; custom is the absence of a shape.
 - **F3 A non-gate card blocks until settled; a gate or grant holds its place without blocking and stands beside the current question; the pen is the one grant that blocks.**
 - **F4 The gate clauses wait for 🍾**, where they are decided (Y5); 🍾 is the only step that delivers more than one clause.
 - **F5 🍾 is the founder's, invisible to members before the start, and it does not appear until it can be pressed — or until nothing else is being served** (F9, F18): shown once the module's own `readiness()` is ready and 🏛️ is not still being served, hidden before that rather than greyed, **except that it is shown with its commit dark when the rail would otherwise hold nothing but the ✉️ remedy** (F19 — the remedy is the dead end wearing a card, not the next task, so it never counts as *something else being served*). Its card states the whole batch, the readiness readout — which informs and never blocks — and, where `readiness()` gives the reason `one-voice`, the sentence naming both acts that end it. → why: the readout's *except while a judge-gate question is still collecting* was outgrown twice — R-045/Q626 widened `waitingOn` past the judge-gates, and Q745 stopped the card appearing at all before then; the last-resort door is Q773, and it restores the ruling the 🪪 card already carries — *whether a document can begin with nobody in it is 🍾's question, and 🍾 has a readout that names what it is waiting for* (Ed, 2026-08-21).

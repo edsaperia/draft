@@ -284,6 +284,15 @@ jobs:
       # four read first, ahead of any fallback port of their own.
       - run: npm run journey -- "$WALK_BASE"
         if: always()
+      # 🧭 one founding per shape (entry 166): the same journey, the rung
+      # chosen at the birth — provenance on every shaped clause at the save,
+      # gone from a touched one and named on 🍾, gone from all after the press
+      - run: npm run journey -- "$WALK_BASE" --shape=meeting
+        if: always()
+      - run: npm run journey -- "$WALK_BASE" --shape=conference
+        if: always()
+      - run: npm run journey -- "$WALK_BASE" --shape=ongoing
+        if: always()
       - run: npm run applicants-walk -- "$WALK_BASE"
         if: always()
       # 🪪's other two prices: the walk's three assertions are one per price

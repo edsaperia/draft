@@ -2900,6 +2900,19 @@ var CONSTITUTION = (() => {
     get shape() {
       return this.shapeName;
     }
+    /**
+     * **Given by the shape and untouched, before the start** (entry 166): the
+     * row named this setting, the convenor's set is the birth's own, nothing
+     * has re-set it since (`previousValue` still null), and the document has
+     * not begun. The band's provenance sentence and 🍾's diff both read this;
+     * nothing is stored for it.
+     */
+    shaped(id) {
+      if (this.shapeName === null) return false;
+      if (!(id in shapeOf(this.shapeName).sets)) return false;
+      const st = this.settings.get(id);
+      return !!st && st.settledBy === "convenor" && st.previousValue === null && st.settledAtT === this.createdT && this.constitutedT === null;
+    }
     get frozen() {
       return this.frozenFlag;
     }
@@ -3213,12 +3226,6 @@ var CONSTITUTION = (() => {
         shaped: false
       });
     }
-    const shapeRow = s.shape === null ? null : shapeOf(s.shape);
-    const shaped = (id) => {
-      if (shapeRow === null || !(id in shapeRow.sets)) return false;
-      const st = s.settingState(id);
-      return st.settledBy === "convenor" && st.previousValue === null && st.settledAtT === s.createdAtT && s.constitutedAtT === null;
-    };
     for (const entry of MANAGED2) {
       const st = s.settingState(entry.id);
       settings.push({
@@ -3235,7 +3242,7 @@ var CONSTITUTION = (() => {
         settledBy: st.settledBy,
         settledAtT: st.settledAtT,
         collecting: st.collecting,
-        shaped: shaped(entry.id)
+        shaped: s.shaped(entry.id)
       });
       if (st.collecting) {
         const answerable = entry.deps.every((d) => s.settingState(d).settledBy !== null);

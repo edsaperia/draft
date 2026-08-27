@@ -2326,6 +2326,20 @@ export class ConstitutionSession {
   get createdAtT(): number { return this.createdT ?? 0; }
   /** The 🧭 shape chosen at the birth, or null for custom (entry 166). */
   get shape(): ShapeName | null { return this.shapeName; }
+  /**
+   * **Given by the shape and untouched, before the start** (entry 166): the
+   * row named this setting, the convenor's set is the birth's own, nothing
+   * has re-set it since (`previousValue` still null), and the document has
+   * not begun. The band's provenance sentence and 🍾's diff both read this;
+   * nothing is stored for it.
+   */
+  shaped(id: SettingId): boolean {
+    if (this.shapeName === null) return false;
+    if (!(id in shapeOf(this.shapeName).sets)) return false;
+    const st = this.settings.get(id);
+    return !!st && st.settledBy === 'convenor' && st.previousValue === null &&
+      st.settledAtT === this.createdT && this.constitutedT === null;
+  }
   get frozen(): boolean { return this.frozenFlag; }
   get closed(): boolean { return this.closedFlag; }
   get closedAt(): number | null { return this.closedT; }

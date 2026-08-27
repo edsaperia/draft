@@ -39,6 +39,15 @@ const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
 
 // ---- oracles ----------------------------------------------------------------
 
+// *judgment* and the maths behind it (entry 164, Ed 2026-08-27: the surface
+// says **vote**; the argument for the threshold being a confidence lives at
+// docs.vote/pairwise). Deliberately not `bradley`: 🌡️'s one linking sentence
+// (entry 163) names the method, and it is the sole place it may stand.
+// Shared by `checkBannedWords` (the four page files) and `checkShapes`, whose
+// strings live in the bundle (entry 166).
+const BANNED = [/SPEC §/, /\(§\d/, /\broster\b/, /\bparticipant\b/, /\bthe Founder[’']s OK\b/, /\bcarried change/,
+  /\bjudg(?:e|es|ed|ing|ment|ments)\b/i, /\bcomparisons?\b/i, /\bconfidence\b/i];
+
 function loadCatalogue() {
   const ctx = {};
   vm.runInNewContext(read('design/constitution.js'), ctx);
@@ -146,6 +155,42 @@ function checkGovernance() {
   return M;
 }
 
+// ---- the shapes (entry 166) -------------------------------------------------
+
+/**
+ * The 🧭 table off the bundle: every row sets every id in `SHAPED`, every
+ * value passes `validateFor`, no row names an unavoidable, no key outside
+ * `SHAPED ∪ { ending }`, `hides ⊆ keys(sets)`, a perpetual row fixes 🪜, a
+ * row with a unit leaves ⏰ for the card, and each `say` is under H4's 200
+ * and carries none of `BANNED` — the table's copy reaches the page through
+ * the bundle, outside `checkBannedWords`' four-file corpus.
+ */
+function checkShapes(M) {
+  note('Shapes — the 🧭 table against the catalogue');
+  const rows = M.SHAPES;
+  const allowed = new Set([...M.SHAPED, 'ending']);
+  for (const r of rows) {
+    for (const id of M.SHAPED) if (!(id in r.sets)) find('shapes', `${r.name} does not set '${id}'`);
+    for (const [id, v] of Object.entries(r.sets)) {
+      if (!M.CATALOGUE_BY_ID.has(id)) { find('shapes', `${r.name} names '${id}', which is not a setting`); continue; }
+      const err = M.validateFor(M.entryOf(id), v);
+      if (err) find('shapes', `${r.name}.${id}: ${err}`);
+      if (M.UNSHAPED.includes(id)) find('shapes', `${r.name} names '${id}', which is unavoidable and never shaped`);
+      if (!allowed.has(id)) find('shapes', `${r.name} names '${id}', outside SHAPED ∪ { ending }`);
+    }
+    for (const h of r.hides) if (!(h in r.sets)) find('shapes', `${r.name} hides '${h}' without setting it`);
+    const ending = r.sets.ending;
+    if (ending && ending.endsAtMs === null && !(r.sets.pace && r.sets.pace.shape === 'fixed'))
+      find('shapes', `${r.name} is perpetual but 🪜 is not fixed`);
+    if (r.unit !== null && ending !== undefined) find('shapes', `${r.name} has a unit and sets ⏰ — the shape is ⏰'s unit, never its answer`);
+    if (r.unit === null && ending === undefined) find('shapes', `${r.name} has no unit and leaves ⏰ unset`);
+    if (r.say.length > 200) find('shapes', `${r.name}.say is ${r.say.length} characters (H4: 200)`);
+    for (const b of BANNED) if (b.test(r.say)) find('shapes', `${r.name}.say — ${b}`);
+    if (r.say.length < 12) find('shapes', `${r.name}.say says nothing`);
+  }
+  note(`  ${rows.length} shapes, ${M.SHAPED.length} shaped settings, ${M.UNSHAPED.length} unavoidable`);
+}
+
 // ---- the page-key map -------------------------------------------------------
 
 function checkKeys(M, pm) {
@@ -188,6 +233,7 @@ function checkCommunication(pm, settingKeys) {
 }
 
 const M = checkGovernance();
+checkShapes(M);
 const pm = pageMaps();
 const settingKeys = checkKeys(M, pm);
 checkCommunication(pm, settingKeys);
@@ -307,7 +353,7 @@ function checkOrder(pm) {
   // there is a section to name. It is deliberately not in `SEC.rate.keys`
   // (admitting it would make the whole section live from its place in ORDER),
   // hence an override rather than a `secOf` lookup.
-  const hosts = { 'grant-pen': 'lead', 'grant-shield': 'lead', 'grant-voice': 'rate', title: 'lead', slug: 'lead', myemail: 'lead', chamber: 'lead' };
+  const hosts = { 'grant-pen': 'lead', 'grant-shield': 'lead', 'grant-voice': 'rate', title: 'lead', slug: 'lead', shape: 'lead', myemail: 'lead', chamber: 'lead' };
   for (const r of rows) {
     const want = r.section.split(/[,—(]/)[0].trim();
     const got = (r.key in hosts) ? hosts[r.key] : secOf(r.key);
@@ -460,7 +506,9 @@ function checkComposer(M, pm) {
   note('The composer maps — PROPOSE · ANSWER · the rung values · PW_*');
   const page = js('design/session-view.html'); const setup = js('design/setup.js');
   const cards = [...page.matchAll(/\{ k: '([a-z-]+)', g: [^,]+, t: '[^']*',[^\n]*?kind: '([a-z]+)'/g)].map((m) => ({ k: m[1], kind: m[2] }));
-  const composable = cards.filter((c) => c.kind !== 'personal' && c.k !== 'text' && c.k !== 'admission').map((c) => c.k);
+  // 🧭 is a decision at the birth, not a setting (entry 166): no motion about
+  // meeting-ness, nothing to compose
+  const composable = cards.filter((c) => c.kind !== 'personal' && c.k !== 'text' && c.k !== 'admission' && c.k !== 'shape').map((c) => c.k);
   const propose = topKeys(objLit(page, 'PROPOSE'));
   for (const k of composable) if (!propose.includes(k)) find('composer', `'${k}' is composable but has no PROPOSE entry`);
   for (const k of propose) if (!composable.includes(k)) find('composer', `PROPOSE has '${k}', which is not a composable card`);
@@ -547,12 +595,7 @@ function checkPicture() {
 function checkBannedWords() {
   note('Banned words — STYLE.md §1–2 over every file a member reads from');
   const files = ['design/cards.js', 'design/session.js', 'design/setup.js', 'design/session-view.html'];
-  // *judgment* and the maths behind it (entry 164, Ed 2026-08-27: the surface
-  // says **vote**; the argument for the threshold being a confidence lives at
-  // docs.vote/pairwise). Deliberately not `bradley`: 🌡️'s one linking sentence
-  // (entry 163) names the method, and it is the sole place it may stand.
-  const banned = [/SPEC §/, /\(§\d/, /\broster\b/, /\bparticipant\b/, /\bthe Founder[’']s OK\b/, /\bcarried change/,
-    /\bjudg(?:e|es|ed|ing|ment|ments)\b/i, /\bcomparisons?\b/i, /\bconfidence\b/i];
+  const banned = BANNED;
   for (const f of files) {
     // comments are exempt (CLAUDE.md: code comments may cite the spec); class names in markup are not copy
     const src = js(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/([^:])\/\/ .*$/gm, '$1');
