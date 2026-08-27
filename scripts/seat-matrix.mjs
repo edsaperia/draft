@@ -316,7 +316,7 @@ const SETTINGS = [
   ['rate', { grant: 4, cap: 8, dripMinutes: 240 }],
   ['machines', { enabled: false, budget: 0 }],
   ['applications', { apply: true }],
-  ['membership', { price: 'proposal' }],
+  ['admission', { price: 'proposal' }],
 ];
 const RUN = {
   /** The birth through the surface: the three cards and the magic link. */
