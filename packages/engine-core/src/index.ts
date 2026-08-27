@@ -49,5 +49,6 @@ export {
 export { rebaseHunks } from './text/rebase.js';
 export { composeTextual } from './text/compose.js';
 export { fitDavidson } from './ranking/davidson.js';
+export { ceilingPct, unanimousCeiling } from './ranking/ceiling.js';
 export { makeRng, type Rng } from './rng.js';
 export { chainHash, sha256Hex, stableStringify } from './hash.js';
