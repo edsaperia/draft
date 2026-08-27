@@ -257,6 +257,29 @@ const STEPS = [
   { id: 'amend', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
     args: () => ({ setting: 'chamber', value: { rung: 'public' }, why: 'so the cohort can read along' }),
     events: [E5('chamber', 'amend')] },
+  // 🌡️ **the bar** (promise-coverage entry 86, batch L). `bar` stands at 60 in
+  // `SETTINGS` and is the founder's by pen, so this is a real §9.7-rule-5
+  // amendment — `setSetting` post-start emits `by: 'crown'` and owes every
+  // arrived member who had no say an OK, which is exactly E5's audience.
+  // Placed here, **before** `invite-late`/`seat-late`, so `late` is not yet
+  // stood and reads the new bar as the document rather than as news; that is
+  // the half of the cell `amend` already asserts on the seats that were here,
+  // and this row asserts it on a second setting whose news card is a different
+  // one. Order against `lay-down` does not matter either way: that row
+  // relinquishes the pen on ⏱️ `rate`, never on 🌡️.
+  // **Expected red at HEAD, under Q919**, for the same reason the E4 and E10
+  // rows on this document are — and this row is the sharpest evidence of it
+  // anywhere in the table, because it puts both halves in one snapshot:
+  // `chamber` is `ORDER[5]` and 🌡️ is `ORDER[19]`, below 💤 at `ORDER[11]`,
+  // so after `amend` and this step together a member's rail reads exactly
+  // `["chamber"]` — the news above 💤 filed, the news below it withheld,
+  // while `view.owedOks` carries **both**. The oracle is what says it is the
+  // page's fault and not the module's. It should go green with the rest of
+  // Q919; if it ever goes green alone, 🌡️ has been special-cased.
+  { id: 'raise-bar', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
+    args: () => ({ setting: 'bar', value: { pct: 75 },
+      why: 'a permanent change should be surer than that' }),
+    events: [E5('bar', 'raise-bar')] },
   { id: 'invite-late', epoch: 'live', kind: 'invite', seat: 'founder', who: ['late'], events: [E5('chamber', 'amend')] },
   // E20 does not apply post-start; what is asserted on the arrival is *no
   // `chamber` for late*, which the E5 predicate says by `stoodAt`
