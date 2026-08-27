@@ -12,6 +12,7 @@ import type {
   ApplicantRecord, ConstitutionEvent, ConvenorInput, CrownQuestionId, CrownQuestionRecord,
   LogEntry, MemberId, MemberRecord, MotionAnswer, MotionId, MotionPayload,
   MotionRecord, Power, Powers, SettingState, Arrival, PowerSource, DoorId, PowerKey,
+  DepartureBy,
 } from './types.js';
 import { DOORS, holderOf, isDoor, SCHEMA_VERSION } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
@@ -130,6 +131,8 @@ export class ConstitutionSession {
     lastActivityT: number; lapseWarned: boolean };
   private crownLapsedFlag = false;
   private members = new Map<MemberId, MemberRecord>();
+  /** The departures, folded (Q901): see `departures()`. */
+  private departed: Array<{ member: MemberId; t: number; by: DepartureBy }> = [];
   private settings = new Map<PowerKey, SettingState>();
   private quorumFormValue: 'count' | 'share' = 'share';
   private startingText: string | null = null;
@@ -458,6 +461,14 @@ export class ConstitutionSession {
         const m = this.members.get(event.member)!;
         m.removed = true;
         m.removedBy = event.by ?? 'members';
+        // Q901 / E31–E32: a departure is a fact about the membership and the
+        // record keeps no time for it, so it is folded here — once per event,
+        // at replay or at the act — rather than read off the log by every
+        // `view()`. An invitee who never arrived is not a departure: nobody
+        // left the membership (entry 96).
+        if (m.arrivedAtT !== null) {
+          this.departed.push({ member: event.member, t: event.t, by: m.removedBy });
+        }
         break;
       }
       case 'answer-given': {
@@ -2305,6 +2316,15 @@ export class ConstitutionSession {
   }
 
   memberRecords(): ReadonlyMap<MemberId, MemberRecord> { return this.members; }
+  /**
+   * Every member who left the membership after arriving, in log order, with
+   * the time and whose act it was (Q901, SURFACE E31–E32). Folded from
+   * `member-removed`, so reading it costs nothing per view; uninvited
+   * invitees are not in it, and neither is the convenor's own 🎩 change.
+   */
+  departures(): ReadonlyArray<{ member: MemberId; t: number; by: DepartureBy }> {
+    return this.departed;
+  }
   settingState(id: PowerKey): Readonly<SettingState> {
     const st = this.settings.get(id);
     if (!st) throw new Error(`'${id}' has no setting state`);

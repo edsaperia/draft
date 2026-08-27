@@ -169,6 +169,20 @@ ${link}
       `signs the document.`,
     link,
   }),
+  /**
+   * Exile at will (SURFACE E31, Q901): the one event whose audience is
+   * outside the document. No login link — a token would be minted for a
+   * seat that no longer exists — but the document's own address, since where
+   * 🌍 lets strangers read they may still read. The office, never the name
+   * (C10); no reason, since `remove` takes none.
+   */
+  removed: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `You are no longer a member of “${title}”`,
+    text: `The Founder has removed you from the membership of “${title}”. ` +
+      `Your answers and judgments no longer count in it.\n\n` +
+      `The document is here, if its visibility lets you read it:\n${link}`,
+    link,
+  }),
   lapsed: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Your membership of “${title}” has lapsed`,
     text: `Your membership of “${title}” has lapsed. Your judgments still ` +

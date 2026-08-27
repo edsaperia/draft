@@ -774,6 +774,8 @@ var CONSTITUTION = (() => {
       __publicField(this, "convenor");
       __publicField(this, "crownLapsedFlag", false);
       __publicField(this, "members", /* @__PURE__ */ new Map());
+      /** The departures, folded (Q901): see `departures()`. */
+      __publicField(this, "departed", []);
       __publicField(this, "settings", /* @__PURE__ */ new Map());
       __publicField(this, "quorumFormValue", "share");
       __publicField(this, "startingText", null);
@@ -1071,6 +1073,9 @@ var CONSTITUTION = (() => {
           const m = this.members.get(event.member);
           m.removed = true;
           m.removedBy = event.by ?? "members";
+          if (m.arrivedAtT !== null) {
+            this.departed.push({ member: event.member, t: event.t, by: m.removedBy });
+          }
           break;
         }
         case "answer-given": {
@@ -2697,6 +2702,15 @@ var CONSTITUTION = (() => {
     memberRecords() {
       return this.members;
     }
+    /**
+     * Every member who left the membership after arriving, in log order, with
+     * the time and whose act it was (Q901, SURFACE E31–E32). Folded from
+     * `member-removed`, so reading it costs nothing per view; uninvited
+     * invitees are not in it, and neither is the convenor's own 🎩 change.
+     */
+    departures() {
+      return this.departed;
+    }
     settingState(id) {
       const st = this.settings.get(id);
       if (!st) throw new Error(`'${id}' has no setting state`);
@@ -2909,6 +2923,16 @@ var CONSTITUTION = (() => {
         removalPending: removalPending.get(rec.id) ?? null
       });
     }
+    const departures = s.departures().map((d) => {
+      const rec = s.memberRecords().get(d.member);
+      return {
+        id: d.member,
+        name: rec?.name ?? null,
+        picture: rec?.picture ?? null,
+        t: d.t,
+        by: d.by
+      };
+    });
     return {
       gates: {
         reading: true,
@@ -2919,6 +2943,7 @@ var CONSTITUTION = (() => {
       resolutions,
       settings,
       members,
+      departures,
       register,
       doors,
       applicants,

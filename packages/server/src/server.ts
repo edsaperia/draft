@@ -197,6 +197,17 @@ export async function createDraftServer(cfg: ServerConfig,
         };
         tell(cs.convenorRecord().email);
         for (const m of cs.memberRecords().values()) if (!m.removed) tell(m.email);
+      } else if (event.type === 'member-removed' && event.by === 'convenor') {
+        // exile at will (SURFACE E31, Q901): the removed member is outside
+        // the document by now, so mail is the channel — with the document's
+        // address and **no token**, the `closed` arm's shape, since a login
+        // link would be minted for a seat that no longer exists. A carried
+        // removal (`viaMotion`, E10/E11's outcome) and a resignation (the
+        // member's own act) relay nothing.
+        const m = cs.memberRecords().get(event.member);
+        if (m !== undefined && m.email.length > 0) {
+          push(m.email, MAILS.removed(title, `${cfg.baseUrl}/d/${cs.slug}`));
+        }
       } else if (event.type === 'lapse-warned' || event.type === 'member-lapsed') {
         const m = cs.memberRecords().get(event.member);
         const email = m?.email ?? (event.member === cs.convenorRecord().id
@@ -1023,8 +1034,25 @@ export async function createDraftServer(cfg: ServerConfig,
    * character count — is served so the redaction can stand at real
    * metrics; the words only where 🌍 says link or public.
    */
-  const strangerView = (doc: LoadedDoc, nowMs: number): Record<string, unknown> => {
+  const strangerView = (doc: LoadedDoc, nowMs: number,
+    session: { memberId: string; applicantId: string | null } | null = null): Record<string, unknown> => {
     const cs = doc.cs;
+    // **A seat that dies mid-session becomes the door, and the door says
+    // why** (SURFACE E31–E32, Q901). The cookie still names whose seat it
+    // was; if that member left the membership, one sentence on the door
+    // says so, by whose act and when. **Not gated by 🌍**: a removed member
+    // reading their own door under `closed` must still be told they were
+    // removed — that is the whole point of the sentence — and it carries
+    // nothing about the document. Never for an applicant cookie: a refused
+    // applicant is E21's story, not this one.
+    let departed: { by: string; t: number } | null = null;
+    if (session !== null && session.applicantId === null) {
+      const rec = cs.memberRecords().get(session.memberId);
+      if (rec !== undefined && rec.removed && rec.removedBy !== null) {
+        const d = cs.departures().find((x) => x.member === session.memberId);
+        if (d !== undefined) departed = { by: d.by, t: d.t };
+      }
+    }
     const ed = asEngineDoc(doc);
     const text = ed.bridge !== null ? ed.bridge.engine.document() : (cs.text ?? '');
     const chamber = cs.settingState('chamber');
@@ -1075,8 +1103,9 @@ export async function createDraftServer(cfg: ServerConfig,
       // door open *and* free (🪪 at ✒️), `applyOpen` open at a price
       mayApply: applyAllowed,
       admission,
-      applyOpen: begun && !cs.closed && applyAllowed && admission !== 'pen',
+      applyOpen: applyOpenFor(cs),
       joinOpen: begun && !cs.closed && applyAllowed && admission === 'pen',
+      departed,
       // **Q508(c)** (Ed, 2026-08-21): the membership rides 🌍. Where a
       // stranger may read the document they may read who is in the room —
       // the Members list is a section of the constitution, and at that
@@ -1091,6 +1120,14 @@ export async function createDraftServer(cfg: ServerConfig,
           ? [...cs.memberRecords().values()]
             .filter((m) => m.arrivedAtT !== null && !m.removed)
             .map((m) => ({ name: m.name, picture: m.picture }))
+          : null,
+        // the departure lines are register text (E31–E32), so a stranger
+        // reads them exactly where 🌍 lets them read the register
+        departures: canRead
+          ? cs.departures().map((d) => {
+            const m = cs.memberRecords().get(d.member);
+            return { name: m?.name ?? null, picture: m?.picture ?? null, t: d.t, by: d.by };
+          })
           : null,
       },
       view: {
@@ -1126,7 +1163,7 @@ export async function createDraftServer(cfg: ServerConfig,
             json(res, 200, { seq, eseq });
             return;
           }
-          json(res, 200, { seq, eseq, devMail: mailer.dev, ...strangerView(doc, nowMs) });
+          json(res, 200, { seq, eseq, devMail: mailer.dev, ...strangerView(doc, nowMs, session) });
           return;
         }
         json(res, 401, { error: 'log in first' });
@@ -1197,6 +1234,10 @@ export async function createDraftServer(cfg: ServerConfig,
             text: mayRead ? raceView(doc, memberId, nowMs).text : null,
             raceCards: [],
             wallet: null,
+            // E33 (Q901): whether the door is still open, computed as the
+            // stranger's door computes it, so the card can say so before
+            // the press and not only after the refusal
+            applyOpen: applyOpenFor(doc.cs),
           });
           return;
         }
@@ -1505,6 +1546,17 @@ function devCrossSite(req: IncomingMessage, res: ServerResponse, expected: strin
 function admissionPrice(cs: ConstitutionSession): Price {
   const v = cs.settingState('admission').value as PriceValue | null;
   return v?.price ?? 'assembly';
+}
+
+/**
+ * May a stranger apply right now, at a price (entry 94)? Begun, not closed,
+ * 🤝 open and 🪪 above ✒️ — at ✒️ the link itself admits (`joinOpen`). One
+ * expression for the stranger's door and the applicant's own view (E33), so
+ * the two cannot disagree.
+ */
+function applyOpenFor(cs: ConstitutionSession): boolean {
+  const applyAllowed = mayApply(cs.settingState('applications').value as ApplicationsValue | null);
+  return cs.constitutedAtT !== null && !cs.closed && applyAllowed && admissionPrice(cs) !== 'pen';
 }
 
 function json(res: ServerResponse, code: number, payload: unknown): void {

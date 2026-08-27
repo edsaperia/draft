@@ -14,7 +14,7 @@ import { FilePersistence, WriteChain } from '../src/persistence.js';
 import { Auth } from '../src/auth.js';
 import { Stash } from '../src/stash.js';
 import { DocStore, uniqueSlug } from '../src/store.js';
-import { deliverable, makeMailer } from '../src/mailer.js';
+import { MAILS, deliverable, makeMailer } from '../src/mailer.js';
 
 const tmp = () => mkdtempSync(join(tmpdir(), 'draft-unit-'));
 
@@ -281,5 +281,19 @@ describe('mail to a reserved address is refused at the mailer (Q680)', () => {
     const lines = readFileSync(join(dir, 'outbox.jsonl'), 'utf8')
       .split('\n').filter((l) => l.length > 0).map((l) => JSON.parse(l) as { to: string });
     expect(lines.map((m) => m.to)).toEqual(['ada@example.org']);
+  });
+});
+
+describe('the exile mail names the office and carries no login (Q901, E31)', () => {
+  it('says who did it by office, offers the document’s address, and mints no token', () => {
+    const m = MAILS.removed('Gate Charter', 'https://docs.vote/d/gate');
+    expect(m.subject).toBe('You are no longer a member of “Gate Charter”');
+    expect(m.text).toContain('The Founder has removed you from the membership of “Gate Charter”.');
+    expect(m.text).toContain('Your answers and judgments no longer count in it.');
+    expect(m.text).toContain('https://docs.vote/d/gate');
+    expect(m.text).not.toContain('?token=');
+    expect(m.link).not.toContain('?token=');
+    // no reason travels: `remove` takes none
+    expect(m.text).not.toMatch(/because|reason/i);
   });
 });

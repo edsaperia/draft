@@ -6,6 +6,7 @@
  * counts as abstaining (ruling 5).
  */
 import { describe, expect, it } from 'vitest';
+import { ConstitutionSession } from '../src/session.js';
 import { view } from '../src/view.js';
 import { buildConstituted } from './helpers.js';
 
@@ -119,6 +120,49 @@ describe('resignation — always at ✒️', () => {
     expect([...s.crownQuestionRecords().values()].filter((q) => q.status === 'pending')).toHaveLength(0);
     expect(() => s.resign(4, cy)).toThrow(/unknown member/);
     expect(() => s.resign(4, 'ada')).toThrow(/unticks their own row/);
+  });
+});
+
+/**
+ * **The register tells the room** (Q901, SURFACE E31–E32): a departure is a
+ * fact about the membership, so the view lists who left after arriving, when
+ * and by whose act — the room reads a sentence, not a row going missing.
+ * Withdrawing an invitation is a kind of removal to the founder (entry 96)
+ * but nobody left the membership, so it is not one.
+ */
+describe('departures — what the view says about who left (Q901)', () => {
+  it('after exile the view lists one departure by the convenor, with the time', () => {
+    const { s, bo, cy } = buildConstituted({
+      doors: { remove: { unilateral: true, assent: false } } });
+    expect(view(s, bo).departures).toEqual([]);
+    s.remove(7, cy);
+    const v = view(s, bo);
+    expect(v.departures).toEqual([{ id: cy, name: v.departures[0]!.name,
+      picture: v.departures[0]!.picture, t: 7, by: 'convenor' }]);
+    expect(v.members.some((m) => m.id === cy)).toBe(false);
+    // no email: the address of somebody who is gone is nobody's business
+    expect(Object.keys(v.departures[0]!)).not.toContain('email');
+  });
+
+  it('after resignation the view lists one departure by the member themself', () => {
+    const { s, bo, cy } = buildConstituted();
+    s.resign(3, cy);
+    expect(view(s, bo).departures.map((d) => [d.id, d.t, d.by])).toEqual([[cy, 3, 'self']]);
+    // the module's own reader says the same, in log order
+    expect(s.departures()).toEqual([{ member: cy, t: 3, by: 'self' }]);
+  });
+
+  it('an uninvited invitee is not a departure — nobody left the membership', () => {
+    // pre-start, since withdrawing an invitation is a pre-start act
+    const s = ConstitutionSession.open({
+      title: 'Hollow Oak Club Charter', slug: 'hollow-oak',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+    }, 0);
+    const dee = s.invite(1, 'dee@example.org');
+    s.uninvite(2, dee);
+    expect(s.memberRecords().get(dee)!.removed).toBe(true);
+    expect(s.departures()).toEqual([]);
+    expect(view(s, 'ada').departures).toEqual([]);
   });
 });
 

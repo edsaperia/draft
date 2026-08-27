@@ -1948,3 +1948,163 @@ describe('👁️ the door tells a stranger nothing of anybody’s judgments (en
     expect(raw).not.toContain('@example.org');
   }, 120_000);
 });
+
+/**
+ * **Three acts nobody was told about** (Q901, SURFACE E31–E33, backlog 98).
+ * Exile at will mails the removed member — the one event whose audience is
+ * outside the document — with the document's address and **no token**, since
+ * a login link would be minted for a seat that no longer exists; their dead
+ * seat's door then says why. A resignation mails nothing (it was their own
+ * act) but the door says the same. And an applicant's own view carries
+ * `applyOpen`, computed as the stranger's door computes it, so the card can
+ * say the door has shut before the press and not only after the refusal.
+ */
+describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', () => {
+  it('exile mails the member without a token, and the dead seat’s door names the act', async () => {
+    const { base, dataDir, draft } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Gate Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      const body = await res.json() as { ok?: boolean; error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    const seat = async (email: string) => {
+      await cmd(ada, 'invite', { email });
+      return cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+    };
+    await cmd(ada, 'confirm-starting-text', { text: 'The gate is kept shut at night.' });
+    const bo = await seat('bo@example.org');
+    const cy = await seat('cy@example.org');
+    await cmd(bo, 'set-identity', { name: 'Bo Marlowe' });
+    await cmd(ada, 'set-setting',
+      { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: null }, pace: { shape: 'fixed' }, bar: { pct: 66 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'begin', {}); // 🍾 — the founder keeps ❌'s ✒️
+    const boId = (await viewOf(ada)).view.members.find((m) => m.email === 'bo@example.org')!.id;
+    const cyId = (await viewOf(ada)).view.members.find((m) => m.email === 'cy@example.org')!.id;
+
+    // -- exile at will ------------------------------------------------------
+    await cmd(ada, 'remove', { member: boId });
+    await draft.outbox.drain();
+    const mails = readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
+      .split('\n').filter((l) => l.length > 0)
+      .map((l) => JSON.parse(l) as { to: string; subject: string; text: string; link?: string })
+      .filter((m) => m.to === 'bo@example.org' && m.subject === 'You are no longer a member of “Gate Charter”');
+    expect(mails).toHaveLength(1);
+    // the office, never the name; the document's address, never a token
+    expect(mails[0]!.text).toContain('The Founder has removed you');
+    expect(mails[0]!.text).not.toContain('Ada');
+    expect(mails[0]!.link).toBe(`${base}/d/${slug}`);
+    expect(mails[0]!.link).not.toContain('token=');
+    expect(mails[0]!.text).not.toContain('token=');
+    // the dead seat is the door, and the door says why — under 🌍 closed,
+    // since the sentence is about them and not about the document
+    const boDoor = await (await fetch(`${base}/api/d/${slug}/view`,
+      { headers: { cookie: bo } })).json() as
+      { stranger: true; canRead: boolean; departed: { by: string; t: number } | null;
+        members: { departures: unknown } };
+    expect(boDoor.stranger).toBe(true);
+    expect(boDoor.canRead).toBe(false);
+    expect(boDoor.departed).toMatchObject({ by: 'convenor' });
+    expect(typeof boDoor.departed!.t).toBe('number');
+    expect(boDoor.members.departures).toBeNull(); // the register rides 🌍
+    // a forged or absent cookie has no departure to be told of
+    const bare = await (await fetch(`${base}/api/d/${slug}/view`)).json() as { departed: unknown };
+    expect(bare.departed).toBeNull();
+    const forged = await (await fetch(`${base}/api/d/${slug}/view`,
+      { headers: { cookie: bo.replace(/=.*/, '=forged') } })).json() as { departed: unknown };
+    expect(forged.departed).toBeNull();
+    // the room is told in the register: name, time and whose act
+    const room = (await viewOf(ada)).view as unknown as
+      { departures: Array<{ id: string; name: string | null; t: number; by: string }> };
+    expect(room.departures).toHaveLength(1);
+    expect(room.departures[0]).toMatchObject({ id: boId, name: 'Bo Marlowe', by: 'convenor' });
+    expect(JSON.stringify(room.departures)).not.toContain('bo@example.org');
+
+    // -- resignation: no mail, the same door sentence -----------------------
+    await cmd(cy, 'resign', {});
+    await draft.outbox.drain();
+    const cyMails = readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
+      .split('\n').filter((l) => l.length > 0)
+      .map((l) => JSON.parse(l) as { to: string; subject: string })
+      .filter((m) => m.to === 'cy@example.org' && /no longer a member/.test(m.subject));
+    expect(cyMails).toHaveLength(0);
+    const cyDoor = await (await fetch(`${base}/api/d/${slug}/view`,
+      { headers: { cookie: cy } })).json() as { departed: { by: string } | null };
+    expect(cyDoor.departed).toMatchObject({ by: 'self' });
+    expect(((await viewOf(ada)).view as unknown as { departures: Array<{ id: string; by: string }> })
+      .departures.map((d) => [d.id, d.by])).toEqual([[boId, 'convenor'], [cyId, 'self']]);
+
+    // -- where 🌍 lets a stranger read the register, the departures ride it --
+    await cmd(ada, 'set-setting', { setting: 'chamber', value: { rung: 'link' } });
+    const open = await (await fetch(`${base}/api/d/${slug}/view`)).json() as
+      { members: { departures: Array<{ name: string | null; by: string }> | null } };
+    expect(open.members.departures!.map((d) => d.by)).toEqual(['convenor', 'self']);
+    expect(JSON.stringify(open)).not.toContain('@example.org');
+  }, 60_000);
+
+  it('an applicant’s view says whether the door is still open, and flips when 🤝 shuts', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Latch Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      return await res.json() as { ok?: boolean; error?: string; result?: unknown };
+    };
+    const ok = async (cookie: string, name: string, args: unknown) => {
+      const body = await cmd(cookie, name, args);
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+    };
+    await ok(ada, 'confirm-starting-text', { text: 'The latch lifts from inside.' });
+    await ok(ada, 'set-setting',
+      { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: null }, pace: { shape: 'fixed' }, bar: { pct: 66 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: true }, admission: { price: 'proposal' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await ok(ada, 'reclaim', { setting });
+      await ok(ada, 'set-setting', { setting, value });
+    }
+    await ok(ada, 'begin', {});
+    const knock = await (await post(base, `/api/d/${slug}/apply`,
+      { email: 'dee@example.org' })).json() as { ok: boolean; devLink: string };
+    expect(knock.ok).toBe(true);
+    void dataDir;
+    const dee = cookieOf(await consume(knock.devLink));
+    const appView = async () => (await (await fetch(`${base}/api/d/${slug}/view`,
+      { headers: { cookie: dee } })).json()) as { applicant: { status: string }; applyOpen: boolean };
+    expect((await appView()).applicant.status).toBe('verified');
+    expect((await appView()).applyOpen).toBe(true);
+    // 🤝 shuts after they verified and before they submitted (entry 97)
+    await ok(ada, 'set-setting', { setting: 'applications', value: { apply: false } });
+    expect((await appView()).applyOpen).toBe(false);
+    // and the submit is refused at the door, as a plain `{ error }`
+    const refused = await cmd(dee, 'submit-application', { name: 'Dee' });
+    expect(refused.error).toMatch(/door has shut since you began/);
+    expect((await appView()).applicant.status).toBe('verified');
+  }, 60_000);
+});

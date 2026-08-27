@@ -8,7 +8,7 @@
  */
 
 import type { ConstitutionSession } from './session.js';
-import type { Arrival, MemberId, MotionPayload, PowerSource } from './types.js';
+import type { Arrival, DepartureBy, MemberId, MotionPayload, PowerSource } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf } from './catalogue.js';
 import type { SettingValue } from './values.js';
@@ -137,6 +137,14 @@ export interface MemberView {
   resolutions: ResolutionView[];
   settings: SettingView[];
   members: MemberRowView[];
+  /**
+   * Who has left the membership since arriving, and whose act it was (Q901,
+   * SURFACE E31–E32): the register tells the room in a sentence rather than
+   * by a row going missing. Name and picture are register facts (§9.0c); no
+   * email, since the address of somebody who is gone is nobody's business.
+   */
+  departures: Array<{ id: MemberId; name: string | null; picture: string | null;
+    t: number; by: DepartureBy }>;
   register: RegisterView;
   /** ✉️ and ❌ (entry 94): the founder's powers over the act, per door. */
   doors: { invite: DoorView; remove: DoorView };
@@ -300,6 +308,11 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       removalPending: removalPending.get(rec.id) ?? null,
     });
   }
+  const departures = s.departures().map((d) => {
+    const rec = s.memberRecords().get(d.member);
+    return { id: d.member, name: rec?.name ?? null, picture: rec?.picture ?? null,
+      t: d.t, by: d.by };
+  });
 
   return {
     gates: {
@@ -311,6 +324,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     resolutions,
     settings,
     members,
+    departures,
     register,
     doors,
     applicants,
