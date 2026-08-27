@@ -1,7 +1,13 @@
 /**
- * **The two blind sliders, dragged** (Q779–Q782). A founder who is also a
- * member delegates 🌡️ and 👥, is served their own answer cards, and answers
- * them with the control a member actually uses — a pointer on a range input.
+ * **The two blind number questions, driven** (Q779–Q782). A founder who is
+ * also a member delegates 🌡️ and 👥, is served their own answer cards, and
+ * answers them with the control a member actually uses.
+ *
+ * **Since entry 165 only one of them is a slider.** 🌡️ is three rungs and a
+ * number of your own, so its half of this walk drives rungs and a number box
+ * (see *the rungs*, below) and everything about a pointer on a track belongs
+ * to 👥 alone. The three assertions below still describe 🌡️'s half exactly;
+ * only the control they are made against changed.
  *
  *   node scripts/slider-walk.mjs        # npm run slider-walk
  *
@@ -221,9 +227,9 @@ const dragTo = async (s, frac) => {
 };
 
 /* ---- the two answer cards ---------------------------------------------- */
-// what each card's readout must look like once it carries a value: 🌡️ a bare
-// percentage, 👥 the founder's chosen form — a share, and what it comes to
-const SHAPE = { bar: /^\d+%$/, quorum: /^\d+% — \d+ of \d+$/ };
+// what the readout must look like once it carries a value: the founder's
+// chosen form — a share, and what it comes to
+const SHAPE = { quorum: /^\d+% — \d+ of \d+$/ };
 // **The track the member is offered, read off the DOM** (promise-coverage 👥,
 // backlog entry 85). The two blind questions are the only place a member
 // states a number, so what the track can *express* is half of what the
@@ -239,10 +245,99 @@ const SHAPE = { bar: /^\d+%$/, quorum: /^\d+% — \d+ of \d+$/ };
 // count form's bounds are locked in the fold instead
 // (`packages/constitution/test/promise-quorum.test.ts`).
 const BOUNDS = {
-  bar: { min: 50, max: 95, step: 5 },
   quorum: { min: 5, max: 100, step: 5 },
 };
-for (const key of ['bar', 'quorum']) {
+
+/* ---- 🌡️: the rungs ------------------------------------------------------
+   Since entry 165 🌡️'s blind answer is not a slider at all: three rungs and a
+   fourth holding the precise number. So its half of this walk drives rungs,
+   and what it asserts is the same three things transposed — **born untouched**
+   (no rung on, and the number box not in the DOM at all, because it lives
+   inside a rung nobody has chosen), **the control does what the pointer says**
+   (a rung lights, a number reaches the ✓), and **the range is the question's
+   own** (50–99 off the box, where the slider's ends used to be read off the
+   track). One thing is new and is the point of the entry: each rung carries a
+   sentence about *this room*, and it must be there rather than a percent
+   repeated back. */
+const readRungs = () => page.evaluate(() => {
+  const c = document.querySelector('.setupcard');
+  if (!c) return null;
+  const picks = [...c.querySelectorAll('.pick')].map((p) => {
+    const b = p.querySelector('[data-ans]');
+    return {
+      val: b ? b.dataset.ansval : null,
+      on: p.classList.contains('on'),
+      label: (b ? b.textContent : '').replace(/\s+/g, ' ').trim(),
+      exp: ((p.querySelector('.exp') || {}).textContent || '').trim(),
+    };
+  });
+  const box = c.querySelector('[data-ansnum]');
+  const commit = c.querySelector('[data-confirm]');
+  return {
+    picks,
+    box: box ? { value: box.value, min: +box.min, max: +box.max } : null,
+    commitOff: !commit || commit.disabled,
+  };
+});
+
+{
+  const want = 'ans-bar';
+  console.log('\n' + want);
+  seen = new Set();
+  await birth();
+  const at = await walkTo(want, 'bar');
+  if (at !== want) {
+    check('the founder is served ' + want, false, 'rail: ' + (await rail()).join(', '));
+  } else {
+    seen.add(want);
+    check('the founder is served ' + want, await openCard(want));
+
+    const born = await readRungs();
+    const rungs = born.picks.filter((p) => p.val && p.val !== 'own');
+    check('it offers three rungs and a number of your own', rungs.length === 3 &&
+      born.picks.some((p) => p.val === 'own'), born.picks.map((p) => p.val).join(', '));
+    check('most protective first', rungs.map((p) => p.val).join(',') === '90,80,60',
+      rungs.map((p) => p.val).join(','));
+    check('each rung says what it would mean for this room',
+      rungs.every((p) => /^In a room of one, /.test(p.exp)),
+      rungs.map((p) => p.exp).join(' | '));
+    check('born untouched', !born.picks.some((p) => p.val && p.on),
+      born.picks.filter((p) => p.on).map((p) => p.val).join(','));
+    check('and the number box is not even in the DOM', born.box === null);
+    check('the commit is dark until it is touched', born.commitOff);
+
+    await clickIn('.setupcard [data-ans="bar"][data-ansval="own"]');
+    const own = await readRungs();
+    check('a number of my own opens an empty box', own.box !== null && own.box.value === '',
+      own.box ? JSON.stringify(own.box) : 'no box');
+    check('the box is the range the question offers',
+      !!own.box && own.box.min === 50 && own.box.max === 99,
+      own.box ? own.box.min + '…' + own.box.max : '');
+    check('choosing where to answer is not answering', own.commitOff);
+
+    await typeIn('.setupcard [data-ansnum="bar"]', '72');
+    const typed = await readRungs();
+    const ownRow = typed.picks.find((p) => p.val === 'own');
+    check('a typed number wakes the ✓', !typed.commitOff);
+    check('and says what it would mean, rather than repeating itself',
+      !!ownRow && /^In a room of one, /.test(ownRow.exp) && !/72/.test(ownRow.exp), ownRow && ownRow.exp);
+
+    await clickIn('.setupcard [data-ans="bar"][data-ansval="80"]');
+    const rung = await readRungs();
+    check('a rung takes the answer back off the box', rung.box === null);
+    check('the rung is the one that is on',
+      rung.picks.filter((p) => p.on).map((p) => p.val).join(',') === '80',
+      rung.picks.filter((p) => p.on).map((p) => p.val).join(','));
+    check('the ✓ is live', !rung.commitOff);
+
+    await clickIn('.setupcard [data-confirm]');
+    await page.waitForTimeout(400);
+    check('the ✓ files the answer', !(await rail()).includes(want), 'rail: ' + (await rail()).join(', '));
+  }
+}
+
+/* ---- 👥: the slider, still ---------------------------------------------- */
+for (const key of ['quorum']) {
   const want = 'ans-' + key;
   console.log('\n' + want);
   seen = new Set();

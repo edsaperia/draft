@@ -700,7 +700,8 @@ window.SETUP = (function () {
         '<p class="setnote">Nobody sees anybody’s answer until every one is in — you included. Only the count can show without anchoring the rest.</p>';
       return h;
     }
-    h += distHtml(c) +
+    h += (c.strip === 'rungs' && c.distribution && c.distribution.length
+      ? rungStripHtml(c.distribution) : distHtml(c)) +
       '<div class="statline"><span class="k">Answered</span><span class="v">' + ctx.E + ' of ' + ctx.E + '</span></div>' +
       '<div class="statline"><span class="k">' + esc(c.takes || 'The document takes') + '</span>' +
       '<span class="v">' + esc(c.result || '—') + '</span></div>' +
@@ -726,6 +727,44 @@ window.SETUP = (function () {
       // 'the fourteen' was a fixture literal that lied on every roster but
       // one (copy pass, 2026-08-19) — the strip says the same true thing
       // whatever the membership is
+      '<p class="setnote">What everyone asked for, without names.</p>';
+  }
+
+  /* The same strip, drawn over **rungs** rather than over a fixture's buckets
+     (entry 165). Two differences from `distHtml`, and both follow from the
+     ladder above it:
+
+     - The columns are the ladder's own, so a rung nobody chose still stands —
+       at zero, visibly — and the shape of the room's answer is read against
+       the choices it had rather than against an anonymous run of bars. Any
+       number somebody named that is not a rung takes a column of its own,
+       in its place by value.
+     - It reads the **room's real answers** (`csState('bar').distribution`),
+       not a literal on the card record. That is why it is a second function
+       and not a flag on the first: every other card's strip is still the
+       Hollow Oak histogram on every document, which is a defect of its own
+       and a plan of its own.
+
+     Ordered most-protective-first to match the ladder, so a member's eye
+     travels the same way twice. The taken value is `distribution[0]` by
+     construction — `resolveConsent` sorts and takes the head — so the accent
+     column is not a second claim about who won. */
+  function rungStripHtml(dist) {
+    const rungs = window.CONSTITUTION.BAR_RUNGS;
+    const counts = new Map();
+    rungs.forEach((r) => counts.set(r.pct, 0));
+    dist.forEach((v) => { const p = +v.pct;
+      counts.set(p, (counts.get(p) || 0) + 1); });
+    const cols = [...counts.keys()].sort((a, b) => b - a);
+    const max = Math.max(...counts.values(), 1);
+    const taken = dist.length ? +dist[0].pct : null;
+    const labelOf = (p) => { const r = rungs.find((x) => x.pct === p); return r ? r.label : ''; };
+    return '<div class="dist">' + cols.map((p) =>
+      '<span' + (p === taken ? ' class="top"' : '') + ' style="height:' +
+      Math.max(2, Math.round(counts.get(p) / max * 54)) + 'px" title="' +
+      counts.get(p) + '"></span>').join('') + '</div>' +
+      '<div class="distl">' + cols.map((p) =>
+        '<span>' + p + '%' + (labelOf(p) ? '<br>' + esc(labelOf(p)) : '') + '</span>').join('') + '</div>' +
       '<p class="setnote">What everyone asked for, without names.</p>';
   }
 
@@ -1125,10 +1164,17 @@ window.SETUP = (function () {
   // accept" only reads as a ladder if you can see what you are refusing.
   // String() on both sides because the machines question stores booleans, and
   // 'false' === false is how its rung quietly never lit (found in this move).
-  const ladder = (A, key, rungs) => '<div class="choice" role="radiogroup">' + rungs.map((r, i) => {
+  // `tail` is rows that belong to the same radiogroup but **not to the
+  // ladder's own ordering** (entry 165): 🌡️'s *A number of my own* is the
+  // ladder's escape rather than a rung of it, so it sits inside the one
+  // `.choice` — a second `.choice` would read as a second question — and takes
+  // no part in the above/below dimming, which is a statement about refusing
+  // more than you have to and says nothing about naming a number.
+  const ladder = (A, key, rungs, tail) => '<div class="choice" role="radiogroup">' + rungs.map((r, i) => {
     const at = rungs.findIndex((x) => String(x.v) === String(A[key]));
-    return ansRow(String(A[key]) === String(r.v), key, r.v, r.t, r.e, (at >= 0 && i > at) ? ' above' : '');
-  }).join('') + '</div>';
+    return ansRow(String(A[key]) === String(r.v), key, r.v, r.t, r.e, (at >= 0 && i > at) ? ' above' : '',
+      r.inner);
+  }).join('') + (tail || '') + '</div>';
 
   // A gate card says one thing: what it is waiting for, and whether that has
   // happened. What it is waiting *on* is drawn as the cards themselves, so a
@@ -1300,6 +1346,42 @@ window.SETUP = (function () {
       pct + '% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.</p>';
   };
 
+  /* 🌡️'s blind answer, as a ladder (entry 165).
+
+     **`'own'` is a rung, not an answer.** Choosing *A number of my own* is
+     choosing where to answer, and the page's `filled()` refuses it exactly as
+     it refuses an untouched control: the ✓ stays dark until a number is in the
+     box. It is the same two-act rule the whole ceremony keeps (K26) — touching
+     a control is not answering with it.
+
+     The meaning under each rung is read live from the room as it stands, like
+     `ceilingNote` above and for the same reason: a sentence about a room of
+     five stops being true when a sixth arrives, and naming the room in the
+     sentence is what lets the reader see that it moved. */
+  const rungPct = (v) => window.CONSTITUTION.BAR_RUNGS.some((r) => r.pct === +v);
+  const ownBar = (v) => v === 'own' || (typeof v === 'number' && !rungPct(v));
+  const barMeaning = (pct, E) =>
+    window.CONSTITUTION.meaningOf('bar', { pct: +pct }, { e: E }) || '';
+  const pctLabel = (label, pct) => esc(label) + '<span class="pct">' + pct + '%</span>';
+  const barLadder = (A, E) => ladder(A, 'bar',
+    window.CONSTITUTION.BAR_RUNGS.map((r) => ({
+      v: r.pct, t: pctLabel(r.label, r.pct), e: barMeaning(r.pct, E),
+    })),
+    // **The box is rendered only inside the rung that is chosen**, rather than
+    // rendered always and hidden by `.pick > .inner` the way `opt`'s fields
+    // are. A blind answer is the one place that distinction is load-bearing: a
+    // number field standing in the DOM under an unchosen rung is a value the
+    // page is holding for a question the member has not said they will answer
+    // that way, and every harness that reads the card would find it.
+    ansRow(ownBar(A.bar), 'bar', 'own', esc(window.CONSTITUTION.OWN_RUNG_LABEL), '', '',
+      !ownBar(A.bar) ? '' :
+        '<span class="fld"><span class="numrow">' +
+        '<input class="num" type="number" data-ansnum="bar" min="50" max="99"' +
+        (typeof A.bar === 'number' ? ' value="' + A.bar + '"' : '') + '>' +
+        '<span class="setnote" style="margin:0">%</span></span></span>' +
+        '<span class="exp" data-meaning="bar">' +
+        (typeof A.bar === 'number' ? esc(barMeaning(A.bar, E)) : '') + '</span>'));
+
   /* One body per delegable question — the copy a member answers against,
      identical on both surfaces because it is the same question. */
   const ANSWER = {
@@ -1318,15 +1400,17 @@ window.SETUP = (function () {
     },
     bar: (A, E) =>
       '<p class="why">How sure the room must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. A confidence, not a vote share. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the founder’s pacing.</p>' +
-      // the out-of-reach branch comes first: a bar above the ceiling is not a
-      // slow document, it is a document that cannot move at all, and that is
-      // the more important thing to say about the value under the thumb
-      slider(A, 'bar', 50, 95, (v) => v + '%', (v) =>
-        v > window.CONSTITUTION.barCeilingPct(E) ? 'Out of reach for a room of ' + roomOf(E) + ': nothing could pass at this bar.'
-        : v >= 85 ? 'Only near-agreement changes anything. Expect the document to move slowly and keep most of what it started with.'
-        : v <= 60 ? 'A modest preference is enough. The document will move quickly, and reverse itself more often.'
-        : 'A clear preference is needed, but not agreement.', 5) +
-      ceilingNote(E, 95) +
+      // **Three rungs and a number** (entry 165, Ed 2026-08-27: *we need to
+      // help them with 3 preset buttons, and they can edit the precise % if
+      // they really want to*). The slider that stood here asked for a percent
+      // and offered a sentence about what living at it feels like; a rung asks
+      // for a judgment and says what it would cost this room in votes, which
+      // is a thing a member can actually hold an opinion about. Same rungs,
+      // same order and same labels as the founder's card, from the one list
+      // (T5, Q620) — and the same `.above` dimming as 👁️, so *the most I will
+      // accept* still reads as a ladder of what you are refusing.
+      barLadder(A, E) +
+      ceilingNote(E, 99) +
       methodNote() +
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given.</p>',
     authorship: (A) =>

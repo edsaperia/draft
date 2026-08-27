@@ -735,10 +735,23 @@
   // the rung keeps their 12; and **only on the transition** into the rung, so
   // a field they deliberately cleared is not refilled behind them. Called
   // before the assignment, which is what makes the transition visible.
+  // …and since entry 165 the traffic runs both ways on a percent ladder,
+  // because there the rung **is** the value. A preset carries its own holder
+  // with it — picking *Broad agreement* is picking the number and taking the
+  // question back in one press — and picking *A number of my own* off a preset
+  // has to empty the field, or the fourth rung would light with 80 in it and
+  // read as the preset it is not. A number typed back to 80 lands on *Broad
+  // agreement* again, which is the same rule seen from the other side: the
+  // rung is the value, matched by value and never by label (Q620).
   const fillRung = (key, val) => {
     if (key === 'rateBy' && val === 'founder' && S.rateBy !== 'founder') {
       for (const k of Object.keys(RATE_START)) if (unset(S[k])) S[k] = RATE_START[k];
     }
+    if (key === 'tClose') S.barBy = 'founder';
+    if (key === 'tStart') S.shape = 'ramp';
+    const rungPct = (v) => M.BAR_RUNGS.some((r) => r.pct === +v);
+    if (key === 'barBy' && val === 'founder' && rungPct(S.tClose)) S.tClose = '';
+    if (key === 'shape' && val === 'ramp' && rungPct(S.tStart)) S.tStart = '';
   };
   // the founder's provisional radio state → the typed value the module takes
   const TYPED = {
@@ -1728,10 +1741,19 @@
     // Q341). Consent is about the bar **at the close**, where an adoption is
     // permanent — one number. How it gets there is *pacing*, ordinary by §9.6's
     // own test, on the next card.
+    // **Its strip is drawn over the rungs, from the room's own answers**
+    // (entry 165): `strip: 'rungs'` is what `watchBody` reads, and
+    // `distribution` is a list of the answers themselves rather than a
+    // histogram — a fixture literal here, overwritten by `resolveCounts` from
+    // the module on any document that has one. Every other card on this page
+    // still draws the Hollow Oak histogram wherever it is opened, which is a
+    // defect of its own and not this entry's to fix.
     { k: 'bar', g: '🌡️', t: 'How Sure Must the Room Be?', kind: 'constitutional', gate: 'judge', key: 'barBy', p: 0.64,
       rule: 'Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.',
-      takes: 'The document takes the highest', result: '80%',
-      dist: [0, 1, 2, 3, 2, 1, 2, 1, 1, 1], distTop: 8, distEnds: ['50%', '95%'] },
+      takes: 'The document takes the highest', result: 'Broad agreement — 80%', strip: 'rungs',
+      distribution: [{ pct: 80 }, { pct: 80 }, { pct: 72 }, { pct: 72 }, { pct: 72 },
+        { pct: 60 }, { pct: 60 }, { pct: 60 }, { pct: 60 }, { pct: 60 },
+        { pct: 60 }, { pct: 60 }, { pct: 60 }, { pct: 60 }] },
     // **Not a task** (Q512, Ed 2026-08-21: *I don't think it should be in the
     // queue; just default it to 55%*). It is the one setting that arrives
     // answered — a deliberate exception to *nothing is pre-answered*, because
@@ -2428,7 +2450,30 @@
   // the control fills a provisional value (which is what wakes the ✓); the ✓
   // commits it, and only committed answers count anywhere — the tally, the
   // gates, the resolution. Every other card already works this way.
-  const filled = (c) => S.myAns[ansKey(c)] !== null && S.myAns[ansKey(c)] !== undefined;
+  // …and `'own'` is the third thing that is not an answer (entry 165): on
+  // 🌡️'s ladder it is the rung that says *I will name a number*, so it records
+  // where the answer is going to be given and not what it is. The ✓ stays dark
+  // until the box beside it has one, exactly as it does before any rung is
+  // touched at all.
+  const filled = (c) => { const v = S.myAns[ansKey(c)];
+    return v !== null && v !== undefined && v !== 'own'; };
+  // **One rule for the answer boxes, whichever event brings it** (entry 165):
+  // the keystroke repaints in place and the blur re-renders, but what the
+  // number *means* must not depend on which of the two got there first.
+  // Emptying the box falls back to the rung the box lives in where there is
+  // one — on 🌡️ that is *A number of my own*, which is a place to answer and
+  // not an answer — and to nothing where there is not (💤, ⏱️).
+  const setAnsNum = (t) => {
+    const k = t.dataset.ansnum;
+    const pick = t.closest('.pick');
+    const own = pick && pick.querySelector('[data-ansval="own"]');
+    S.myAns[k] = t.value === '' ? (own ? 'own' : null) : +t.value;
+    const slot = pick && pick.querySelector('[data-meaning="' + k + '"]');
+    if (slot) {
+      slot.textContent = isNum(t.value) && ANSTYPED[k]
+        ? (M.meaningOf(k, ANSTYPED[k](t.value), { e: E() }) || '') : '';
+    }
+  };
   // committed = the answer reached the module; provisional stays page-side
   const answered = (c) => { const st = csState(ansKey(c));
     return !!st && st.answers.has(viewerId()); };
@@ -2546,12 +2591,26 @@
   // the p-fixture arithmetic died with the shadow engine (plan 367a)
   const resolveCounts = () => CARDS.forEach((c) => { if (c.key || c.p != null) {
     const st = csState(c.k);
+    if (st) liveStrip(c, st);
     if (!st) { c.in = 0; return; }
     if (st.settledBy === 'ceremony') { c.in = E(); return; }
     if (st.answeredCount !== undefined) { c.in = st.answeredCount; return; }
     const eIds = cs.motionElectorate();
     c.in = eIds.filter((id) => st.answers.has(id)).length;
   } });
+  // **The strip and the statline under it are the room's, not the fixture's**
+  // (entry 165). `c.in` has always been written onto the record from the
+  // module here; `distribution` and `result` join it on the one card whose
+  // strip is drawn over rungs, so what a member reads after the question
+  // closes is what the room actually answered. A document with no resolution
+  // yet leaves the literals where they are, which is what the fixture reads.
+  const liveStrip = (c, st) => {
+    if (c.strip !== 'rungs' || !st.distribution || !st.distribution.length) return;
+    c.distribution = st.distribution;
+    const pct = st.value && st.value.pct != null ? +st.value.pct : +st.distribution[0].pct;
+    const rung = M.BAR_RUNGS.find((r) => r.pct === pct);
+    c.result = (rung ? rung.label + ' — ' : '') + pct + '%';
+  };
 
   // **A card with a dependency does not appear until its dependency is settled**
   // (Ed, 2026-08-18: *if there are dependencies, just don't show them the next
@@ -5113,6 +5172,69 @@
     return ' at ' + p2(d0.getHours()) + ':' + p2(d0.getMinutes()) + ' on ' +
       d0.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
   };
+  // **A rung that carries a percent, and says what the percent would do**
+  // (entry 165, Ed 2026-08-27: *3 preset buttons, and they can edit the
+  // precise % if they really want to*). `opt`'s exact markup — the same
+  // `.pick` · `.lanepick` · `.exp` · `.inner` a settings choice is drawn with
+  // — plus two things only a percent ladder has: the number itself in small
+  // type after the rung's name, and an `.exp` that is not fixed copy but the
+  // module's sentence about **this room as it stands**, re-read on every
+  // render the way `ceilingNote` is.
+  //
+  // An options object rather than `opt`'s positionals because the four rungs
+  // of one ladder disagree about three things at once — the own rung sets a
+  // different key from the three presets, states its own `on` (*whatever is
+  // not a preset*), and is the only one carrying a field.
+  const pctRung = (o) => {
+    const on = !!o.on;
+    return '<div class="pick' + (on ? ' on' : '') + (o.off ? ' off' : '') + '">' +
+      '<button class="lanepick" aria-pressed="' + on + '"' + (o.off ? ' disabled' : '') +
+      (o.off ? '' : ' data-set="' + o.set + '" data-val="' + o.val + '"') + '>' +
+      '<span class="dot"></span><span>' + esc(o.label) +
+      (o.pct ? '<span class="pct">' + o.pct + '%</span>' : '') + '</span></button>' +
+      (o.exp ? '<span class="exp">' + esc(o.exp) + '</span>' : '') +
+      (o.inner ? '<span class="inner">' + o.inner + '</span>' : '') + '</div>';
+  };
+  // what a percent would mean for the room as it stands, or nothing
+  const meaning = (k, v) => M.meaningOf(k, v, { e: E() }) || '';
+  const isRungPct = (v) => M.BAR_RUNGS.some((r) => r.pct === +v);
+  // 🌡️'s ladder: the three presets, then the number itself. The three set
+  // `tClose` directly (`fillRung` takes `barBy` with them); the fourth is the
+  // card's original *I set it* rung under its own name, so the field, its
+  // `data-num` and the probe's two steps are exactly where they were.
+  const barRungs = () =>
+    M.BAR_RUNGS.map((r) => pctRung({
+      set: 'tClose', val: r.pct, label: r.label, pct: r.pct,
+      on: S.barBy === 'founder' && +S.tClose === r.pct,
+      exp: meaning('bar', { pct: r.pct }),
+    })).join('') +
+    pctRung({
+      set: 'barBy', val: 'founder', label: M.OWN_RUNG_LABEL,
+      on: S.barBy === 'founder' && !isRungPct(S.tClose),
+      exp: isNum(S.tClose) && !isRungPct(S.tClose) ? meaning('bar', { pct: +S.tClose }) : '',
+      inner: '<span class="setrow2">' + num(S, 'tClose', 'At the end', 50, 99, '%') + '</span>',
+    });
+  // 🪜's, inside *Rising*: the same three percents read as a starting bar, and
+  // a rung is dimmed where it would not actually start below the close — a
+  // ramp that starts at its own ceiling is not a ramp. The close is the
+  // founder's own field where they have set one, else what the room settled;
+  // with neither known nothing is dimmed, because nothing is yet false.
+  const startRungs = () => {
+    const close = isNum(S.tClose) ? +S.tClose : takenOf('bar');
+    const dim = (pct) => isNum(close) && pct >= +close;
+    return M.BAR_RUNGS.map((r) => pctRung({
+      set: 'tStart', val: r.pct, label: r.label, pct: r.pct, off: dim(r.pct),
+      on: S.shape === 'ramp' && +S.tStart === r.pct,
+      exp: meaning('pace', { shape: 'ramp', startPct: r.pct }),
+    })).join('') +
+      pctRung({
+        set: 'shape', val: 'ramp', label: M.OWN_RUNG_LABEL,
+        on: S.shape === 'ramp' && !isRungPct(S.tStart),
+        exp: isNum(S.tStart) && !isRungPct(S.tStart)
+          ? meaning('pace', { shape: 'ramp', startPct: +S.tStart }) : '',
+        inner: '<span class="setrow2">' + num(S, 'tStart', 'When judging opens', 50, 99, '%') + '</span>',
+      });
+  };
   const BODY = {
     // the retrospective branch keys on the **start**, not on the OK (Q820):
     // until 🍾 the column below is still the founder's and still the answer,
@@ -5337,14 +5459,13 @@
       methodNote() +
       '<div class="choice" role="radiogroup">' +
       theyDecide('bar') +
-      opt(S, 'barBy', 'founder', 'I set it', '',
-        '<span class="setrow2">' + num(S, 'tClose', 'At the end', 50, 99, '%') + '</span>') +
-      '</div>',
+      barRungs() +
+      '</div>' + ceilingNote(E(), 99),
     pace: () =>
       '<p class="why">Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.</p>' +
       '<div class="choice" role="radiogroup">' +
       opt(S, 'shape', 'ramp', 'Rising', 'Starts lower when people begin judging and climbs to the number at the end.',
-        '<span class="setrow2">' + num(S, 'tStart', 'When judging opens', 50, 99, '%') + '</span>', perpetual()) +
+        '<div class="choice">' + startRungs() + '</div>', perpetual()) +
       opt(S, 'shape', 'fixed', 'Fixed', 'The same number all the way through.') +
       '</div>' + (perpetual() ? '<p class="setnote">With no end date there is nothing to climb towards, so the number stays fixed.</p>' : ''),
     quorum: () =>
@@ -6277,7 +6398,7 @@
     if (ev.target.matches('[data-ansdate]')) {
       S.myAns[ev.target.dataset.ansdate] = ev.target.value || null; return render(); }
     if (ev.target.matches('[data-ansnum]')) {
-      S.myAns[ev.target.dataset.ansnum] = ev.target.value === '' ? null : +ev.target.value;
+      setAnsNum(ev.target);
       return render(); }
     // a motion's own control writes the value it proposes — on `change`, not
     // every keystroke, because a date picker rebuilt under the pointer is a
@@ -6676,6 +6797,9 @@
         if (S.myname) cs.setIdentity(now(), FOUNDER, { name: S.myname });
       }
       S.open = null; return render(); }
+    // …and `'own'` needs nothing added here (entry 165): a rung's value is
+    // stored as the string it carries, and `filled()` is what knows that this
+    // particular string is a place to answer rather than an answer.
     const an = ev.target.closest('[data-ans]');
     if (an) { const v = an.dataset.ansval;
       S.myAns[an.dataset.ans] = (v === 'true') ? true : (v === 'false') ? false
@@ -6685,7 +6809,10 @@
     const o = ev.target.closest('[data-set]');
     if (o) { const nv = setVal(o.dataset.val);
       fillRung(o.dataset.set, nv);
-      S[o.dataset.set] = nv;
+      // a percent rung writes the field the number box writes, so it writes a
+      // **number** — `setVal` speaks in the strings an attribute carries, and
+      // one key with two types is a comparison waiting to go wrong (entry 165)
+      S[o.dataset.set] = (o.dataset.set === 'tClose' || o.dataset.set === 'tStart') ? +nv : nv;
       if (perpetual() && S.shape === 'ramp') S.shape = 'fixed';
       return render(); }
     const pic = ev.target.closest('[data-pic]');
@@ -7102,6 +7229,12 @@
     // commit wakes on the typing (the txt branch above has always done this;
     // the num branch never needed to while every number arrived pre-filled)
     if (t.dataset.num) { S[t.dataset.num] = t.value === '' ? '' : +t.value;
+      renderRail(); SESSION.refreshRail(); refreshCommit(); }
+    // …and the same for a number typed into an **answer** (entry 165), which
+    // 🌡️ now has: a keystroke wakes the ✓ and repaints the meaning under the
+    // box **in place**, with no render, because a card rebuilt under the caret
+    // is the drag bug's cousin. `change` — the blur — does the full one.
+    if (t.dataset.ansnum) { setAnsNum(t);
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
   });
   // …and the render the drag deferred. `change` on a range is the release —
