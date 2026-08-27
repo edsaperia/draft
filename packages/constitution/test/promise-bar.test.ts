@@ -185,6 +185,49 @@ describe('P1 — a proposal is adopted only when the room is this sure', () => {
   });
 });
 
+describe('P2 — the delegated question collects the bar at the close', () => {
+  it('the document takes the highest stated minimum, and publishes the shape without names', () => {
+    const { s } = buildConstituted({ bar: undefined }); // 66 · 55 · 60
+    const st = s.settingState('bar');
+    expect(st.value).toEqual({ pct: 66 }); // the maximum, not the mean
+    expect(st.settledBy).toBe('ceremony');
+    // the strip is the answers themselves, shorn of who gave them
+    expect((st.distribution as PercentValue[]).map((v) => v.pct).slice().sort((a, b) => a - b))
+      .toEqual([55, 60, 66]);
+    // and no reader can get from the strip back to a person
+    const resolved = s.logEntries().map((e) => e.event)
+      .find((e) => e.type === 'question-resolved' && e.setting === 'bar') as
+      { electorate: string[]; distribution: unknown[] };
+    expect(resolved.electorate.length).toBe(resolved.distribution.length);
+    expect(JSON.stringify(resolved.distribution)).not.toMatch(/ada|bo|cy|@/);
+  });
+
+  it('a room of one is not a delegation: 🌡️ does not resolve on a single voice', () => {
+    // `founding.test.ts` covers the rule in general; said here because 🌡️ is
+    // a judge-gate, so a bar resolved on the founder's own answer would let
+    // `begin` through on a question nobody was really asked.
+    const s = ConstitutionSession.open({
+      title: 'Hollow Oak Club Charter', slug: 'hollow-oak',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+    }, 0);
+    s.confirmStartingText(1, 'x');
+    s.setSetting(1, 'ending', { endsAtMs: 1_000_000 });
+    s.delegate(1, 'bar');
+    s.answer(2, 'ada', 'bar', { pct: 66 });
+    expect(s.settingState('bar').settledBy).toBeNull();
+    expect(s.settingState('bar').collecting).toBe(true);
+    expect(s.readiness().holds.find((h) => h.setting === 'bar')!.why).toBe('one-voice');
+
+    // an invitation in flight is the other guard, and it is named first —
+    // it is already the remedy
+    const bo = s.invite(3, 'bo@example.org');
+    expect(s.readiness().holds.find((h) => h.setting === 'bar')!.why).toBe('invitation-open');
+    s.arrive(4, bo);
+    s.answer(4, bo, 'bar', { pct: 80 });
+    expect(s.settingState('bar').value).toEqual({ pct: 80 });
+  });
+});
+
 describe('P3 — changing the bar never re-judges what was adopted (§4.3)', () => {
   /**
    * Both routes, the same assertion. `bridge.test.ts`'s *a constitutional
