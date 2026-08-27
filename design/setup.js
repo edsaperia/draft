@@ -1222,6 +1222,36 @@ window.SETUP = (function () {
 
   const BLINDNOTE = '<p class="blindnote">Nobody sees your answer, and you will see nobody else’s until every one of them is in.</p>';
 
+  /* **The threshold card names the ceiling its own room can reach** (Q840, Ed
+     2026-08-26 (a)). The bar is a confidence, and a confidence is bounded by
+     the evidence the room can produce: an ordinary race holds one comparison
+     per member on the incumbent pair, so a room of one that agrees with
+     itself gets to 79% and no further, and a bar of 80 can never be cleared
+     however long the document runs. The mechanism is untouched — the room may
+     still answer 85%; it is told what 85% will mean for a room this size
+     before it answers.
+
+     The number is `barCeilingPct` from the module bundle, which is
+     engine-core's own fit copied out (the page carries no engine-core). It is
+     read **live, on every render, from the room as it stands** — no snapshot
+     at the founding — so the sentence is present-tense about the room now and
+     says the ceiling rises as members arrive, which is what keeps it true a
+     minute later.
+
+     `max` is what the control the note sits under can express: 95 for the
+     founding slider, 99 for the founder's own number field. A room that can
+     already reach everything its control offers is told nothing, which is most
+     rooms. And it is its own line rather than a third sentence in `.why`,
+     because `.why` is capped at 200 characters (card-audit H4) and 🌡️'s body
+     was cut to fit under Q764. */
+  const roomOf = (E) => (E <= 1 ? 'one' : String(E));
+  const ceilingNote = (E, max) => {
+    const pct = window.CONSTITUTION.barCeilingPct(E);
+    if (pct >= max) return '';
+    return '<p class="ceilingnote">A room of ' + roomOf(E) + ' that agrees without exception can be ' +
+      pct + '% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.</p>';
+  };
+
   /* One body per delegable question — the copy a member answers against,
      identical on both surfaces because it is the same question. */
   const ANSWER = {
@@ -1238,12 +1268,17 @@ window.SETUP = (function () {
         : slider(A, 'quorum', 1, E, (v) => v + ' of ' + E, mean)) +
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given, so it is never lower than yours.</p>';
     },
-    bar: (A) =>
+    bar: (A, E) =>
       '<p class="why">How sure the room must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. A confidence, not a vote share. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the founder’s pacing.</p>' +
+      // the out-of-reach branch comes first: a bar above the ceiling is not a
+      // slow document, it is a document that cannot move at all, and that is
+      // the more important thing to say about the value under the thumb
       slider(A, 'bar', 50, 95, (v) => v + '%', (v) =>
-        v >= 85 ? 'Only near-agreement changes anything. Expect the document to move slowly and keep most of what it started with.'
+        v > window.CONSTITUTION.barCeilingPct(E) ? 'Out of reach for a room of ' + roomOf(E) + ': nothing could pass at this bar.'
+        : v >= 85 ? 'Only near-agreement changes anything. Expect the document to move slowly and keep most of what it started with.'
         : v <= 60 ? 'A modest preference is enough. The document will move quickly, and reverse itself more often.'
         : 'A clear preference is needed, but not agreement.', 5) +
+      ceilingNote(E, 95) +
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given.</p>',
     authorship: (A) =>
       '<p class="why">Rationales are always visible; what varies is whether a name is attached. The <b>most private</b> answer wins: one person who wants no names keeps the document unnamed.</p>' +
@@ -1494,5 +1529,5 @@ window.SETUP = (function () {
     anyEmojiRow, wireFreeEmoji, emojiFaceOf, setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     wireEmojiPicker,
     motionBody, motionReopen, routeFor, motionCommitHtml,
-    slider, syncSlider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
+    slider, syncSlider, ladder, ANSWER, BLINDNOTE, ceilingNote, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

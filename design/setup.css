@@ -260,6 +260,11 @@
 
   .blindnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
 
+  /* the ceiling the room can reach (Q840) — the same size and colour as the
+     blindnote beneath it, and deliberately no hot colour and no glyph: grey
+     means nothing is being asked of you, and this asks nothing */
+  .ceilingnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
+
 /* ---------------------------------------------------------------------------
    THE ROSTER, and the distribution it produces.
 

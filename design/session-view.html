@@ -226,7 +226,7 @@
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, opt, num, someIn, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, readBody,
-    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, syncSlider } = window.SETUP;
+    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, ceilingNote, syncSlider } = window.SETUP;
   // **A setup card opens and closes like a decision card** (Ed, 2026-08-18:
   // *the whole point of building off session-view is that we would have all
   // this stuff*): cards.js own expandCard/collapseCard, which have been
@@ -3856,9 +3856,14 @@
           'The drafting process has no set end — it runs until too few members are active.']], 'ending') +
         (never ? '<p class="setnote">Taking the end date away needs everyone to agree — with no end date the approval threshold cannot rise.</p>' : '');
     },
+    // the ceiling note (Q840) rides the founder's own control as well as the
+    // member's slider — a founder setting 85% alone in the room is told
+    // exactly what a member answering 85% is told. `max` is 99 here, this
+    // field's own ceiling, so the note goes quiet at E ≥ 10.
     bar: (d) => inputBlock('A proposal passes when the members are ' +
       '<input class="num" type="number" min="50" max="99" data-mnum="% sure at the end" value="' +
-      esc((d.to.match(/\d+/) || [])[0] || takenOf('bar') || S.tClose) + '">% sure at the end.'),
+      esc((d.to.match(/\d+/) || [])[0] || takenOf('bar') || S.tClose) + '">% sure at the end.') +
+      ceilingNote(E(), 99),
     quorum: (d) => (S.quorumForm === 'count'
       ? inputBlock('Quorum is <input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
         esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '"> of the membership.')
