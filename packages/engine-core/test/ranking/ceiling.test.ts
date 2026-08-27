@@ -11,7 +11,8 @@
  * itself.
  */
 import { describe, expect, it } from 'vitest';
-import { ceilingPct, unanimousCeiling } from '../../src/ranking/ceiling.js';
+import { ceilingPct, unanimousCeiling, winsNeeded } from '../../src/ranking/ceiling.js';
+import { fitDavidson } from '../../src/ranking/davidson.js';
 import { Session, makeConstitution } from '../../src/session.js';
 import { roster } from '../helpers.js';
 
@@ -87,6 +88,59 @@ describe('the ceiling a room can reach (Q840)', () => {
     }
     expect(Math.floor(100 * unanimousCeiling(30_000))).toBe(100);
     expect(ceilingPct(30_000)).toBe(99);
+  });
+
+  // **How many of the room, at each of the three rungs 🌡️ offers** (entry
+  // 165). The surface prints these numbers in a sentence — *in a room of 5,
+  // 4 of 5 must vote for it by the end* — so they are pinned here rather than
+  // recomputed by whoever reads the card.
+  it('winsNeeded is the smallest k that clears the bar, at the three rungs', () => {
+    const at = (pct: number) => [1, 2, 3, 5, 10, 50].map((e) => winsNeeded(e, pct));
+    expect(at(60)).toEqual([1, 2, 2, 3, 6, 26]);
+    expect(at(80)).toEqual([null, 2, 3, 4, 7, 28]);
+    expect(at(90)).toEqual([null, null, 3, 5, 8, 30]);
+  });
+
+  it('and the k it names is the first one over the bar, never one before it', () => {
+    // the definition, checked against the fit directly: k − 1 must not clear
+    // it, and k must — which is what makes "4 of 5" a claim and not a rounding
+    for (const e of [1, 2, 3, 5, 8, 13]) {
+      for (const pct of [55, 60, 70, 80, 90, 95]) {
+        const k = winsNeeded(e, pct);
+        const p = (wins: number) => {
+          const comps = Array.from({ length: e }, (_, i) =>
+            ({ a: 'c', b: 'inc', outcome: i < wins ? 'a' : 'b' } as const));
+          return fitDavidson(['c', 'inc'], comps).probBeats('c', 'inc');
+        };
+        if (k === null) { expect(p(e), `${e} at ${pct}%`).toBeLessThanOrEqual(pct / 100); continue; }
+        expect(p(k), `${k} of ${e} at ${pct}%`).toBeGreaterThan(pct / 100);
+        if (k > 0) expect(p(k - 1), `${k - 1} of ${e} at ${pct}%`).toBeLessThanOrEqual(pct / 100);
+      }
+    }
+  });
+
+  it('rises with the bar, and is null exactly above the ceiling', () => {
+    for (let e = 1; e <= 40; e++) {
+      let prev = 0;
+      for (let pct = 50; pct <= 99; pct++) {
+        const k = winsNeeded(e, pct);
+        // the identity the two functions have to keep: nothing clears a bar
+        // the room's own unanimous fit does not reach
+        expect(k === null, `e=${e} pct=${pct}`).toBe(pct > ceilingPct(e));
+        if (k === null) continue;
+        expect(k, `e=${e} pct=${pct}`).toBeGreaterThanOrEqual(prev);
+        expect(k).toBeLessThanOrEqual(e);
+        prev = k;
+      }
+    }
+  });
+
+  it('a room smaller than one is not a room', () => {
+    expect(winsNeeded(0, 60)).toBe(null);
+    expect(winsNeeded(-3, 60)).toBe(null);
+    expect(winsNeeded(NaN, 60)).toBe(null);
+    expect(winsNeeded(5, NaN)).toBe(null);
+    expect(winsNeeded(5.9, 60)).toBe(winsNeeded(5, 60)); // floored, never rounded
   });
 
   it('a room of one adopts at its ceiling and cannot adopt one point above it', () => {

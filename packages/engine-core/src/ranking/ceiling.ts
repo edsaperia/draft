@@ -59,3 +59,37 @@ export function unanimousCeiling(e: number, opts: FitOptions = {}): number {
 export function ceilingPct(e: number, opts: FitOptions = {}): number {
   return Math.min(99, Math.floor(100 * unanimousCeiling(e, opts)));
 }
+
+/**
+ * **How many of a room of `e` must vote for a change to carry it at a bar of
+ * `thresholdPct`** — `null` where no number of them can (entry 165).
+ *
+ * `unanimousCeiling` one step more general: `k` wins and `e − k` losses for one
+ * challenger over the standing text on the incumbent pair, fitted the same way,
+ * and the answer is the smallest `k` whose posterior clears the bar
+ * **strictly** — `sweepAdoptions` adopts on `leaderP > threshold`. The claim is
+ * about the *ordinary* race and nothing else: one proposal against the standing
+ * text, at most one usable comparison per member on that pair, everybody
+ * voting. A race that also holds a rival goes higher, and a room where half of
+ * it has not voted yet is a smaller `e`.
+ *
+ * The two functions meet where they must: `winsNeeded(e, p) === null` exactly
+ * when `p > ceilingPct(e)`, since the highest posterior any `k` can reach is
+ * `k = e`, which is `unanimousCeiling(e)`. `test/ranking/ceiling.test.ts`
+ * asserts that identity over every room and every whole percent the surface
+ * can express.
+ *
+ * `e < 1` is not a room and returns null; `e` is floored, as `unanimousCeiling`
+ * floors it.
+ */
+export function winsNeeded(e: number, thresholdPct: number, opts: FitOptions = {}): number | null {
+  if (!Number.isFinite(e) || e < 1 || !Number.isFinite(thresholdPct)) return null;
+  const n = Math.floor(e);
+  const bar = thresholdPct / 100;
+  for (let k = 0; k <= n; k++) {
+    const comps: Comparison[] = [];
+    for (let i = 0; i < n; i++) comps.push({ a: 'c', b: 'inc', outcome: i < k ? 'a' : 'b' });
+    if (fitDavidson(['c', 'inc'], comps, opts).probBeats('c', 'inc') > bar) return k;
+  }
+  return null;
+}
