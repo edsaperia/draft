@@ -8385,6 +8385,16 @@
   // somebody, or take the setting back — and neither is anywhere in a bare id.
   const oneVoiceHolds = () => { const rd = readinessOf();
     return rd && rd.holds ? rd.holds.filter((h) => h.why === 'one-voice').map((h) => h.setting) : []; };
+  // **…and the wait that is upstream** (entry 69). §9.0a serves a question
+  // only once its own dependencies stand — 🌡️ waits on ⏰ — so a founder alone
+  // who handed 🌡️ over while ⏰ was still undecided was told they were its only
+  // member and sent to invite somebody, and inviting would not have moved it:
+  // nobody can answer 🌡️ yet, however many are in the room. The holds are read
+  // whole, because the dependency has to be named, and the module names it —
+  // the page keeps no copy of the catalogue's `deps`.
+  const depsHolds = () => { const rd = readinessOf();
+    return rd && rd.holds ? rd.holds.filter((h) => h.why === 'deps-unsettled' && (h.on || []).length)
+      .map((h) => ({ setting: h.setting, on: h.on })) : []; };
   // …and where that is what the document is waiting for, 🪪 is a **task**, not
   // a settled tab in the band. It is a task by derivation and nothing else: no
   // `S.okd` key, no `ACK_KEYS` entry, no news — it is owed exactly while the
@@ -8399,13 +8409,21 @@
     const ov = oneVoiceHolds();
     if (!ov.length || !amFounder()) return '';
     const one = ov.length === 1;
+    // **and what is queued behind it** (entry 69): a question waiting on one of
+    // these is not a second problem to go and solve, and saying nothing about
+    // it leaves the founder to find it standing there afterwards. The remedy is
+    // still this card's — the deps hold summons nothing of its own.
+    const beh = depsHolds().filter((h) => h.on.some((d) => ov.indexOf(d) >= 0));
+    const behind = beh.length ? ' ' + beh.map((h) => settingNamed(h.setting)).join(' and ') +
+      (beh.length === 1 ? ' is' : ' are') + ' waiting on ' + (one ? 'it' : 'them') +
+      ' in turn, and will follow once ' + (one ? 'it settles' : 'they settle') + '.' : '';
     return '<p class="why"><b>' + ov.map(settingNamed).join(' and ') + (one ? ' is' : ' are') +
       ' waiting for somebody to answer ' + (one ? 'it' : 'them') + '.</b> You handed ' +
       (one ? 'it' : 'them') + ' to the membership, and you are its only member — ' +
       'a question answered by one voice has not been handed to anybody, so one more member ' +
       'is enough to start it. If you would rather not invite anybody, take ' +
       (one ? 'it' : 'them') + ' back on ' + (one ? 'its' : 'their') + ' own card and set ' +
-      (one ? 'it' : 'them') + ' yourself.</p>';
+      (one ? 'it' : 'them') + ' yourself.' + behind + '</p>';
   };
   // **A card with a dependency does not appear until its dependency is
   // settled — never greyed** (SURFACE F9), and 🍾 was the one card that broke
@@ -8548,6 +8566,14 @@
       'a question answered by one voice has not been handed to anybody. Invite somebody at ' +
       '🪪 Membership, or take ' + (one ? 'it' : 'them') + ' back on ' + (one ? 'its' : 'their') +
       ' own card and set ' + (one ? 'it' : 'them') + ' yourself.</p>' : '';
+    // **…and where the block is upstream, it says so instead** (entry 69, Ed:
+    // *the copy should say this waits on that, which must settle first, never
+    // invite someone*). A delegated 🌡️ under an undecided ⏰ read as a room of
+    // one and sent the founder to the door; the wait is the dependency's, and
+    // ✉️ is not served for it — `oneVoiceHolds` filters the other reason.
+    const deps = depsHolds().map((h) => '<p class="setnote hold">' +
+      settingNamed(h.setting) + ' is waiting on ' + h.on.map(settingNamed).join(' and ') +
+      ', which must settle first — it cannot be answered until then.</p>').join('');
     const qs = (rd.questions || []).map((q) => '<span class="gaterow">' +
       '<span class="gg">' + glyphOfSetting(q.setting) + '</span>' +
       esc(card(pkeyOf(q.setting)) ? card(pkeyOf(q.setting)).t : q.setting) +
@@ -8557,7 +8583,7 @@
       esc(m.name || 'Anonymous') + '<span class="rsub"> · ' +
       (!m.arrived ? 'invited, not yet arrived' : m.owed === 0 ? 'nothing owed'
         : m.answered >= m.owed ? 'answered everything' : m.answered + ' of ' + m.owed + ' answered') + '</span></span>').join('');
-    return batch + hold + why +
+    return batch + hold + why + deps +
       '<div class="readiness"><div class="fieldlab">The questions</div><div class="gatelist">' + qs + '</div>' +
       '<div class="fieldlab">The people</div><div class="gatelist">' + ms + '</div></div>' +
       '<p class="setnote">' + (rd.ready

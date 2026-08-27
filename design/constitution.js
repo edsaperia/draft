@@ -1952,6 +1952,15 @@ var CONSTITUTION = (() => {
      * just the same order: `soleVoice` counts the electorate (E minus
      * abstainers, R-049), so a readout that says `collecting` while the resolver
      * is refusing on one voice — the Q826 defect over again — cannot arise.
+     *
+     * The deps loop is `maybeResolve`'s **first** gate, before the invitation
+     * check and before the electorate is counted, so `deps-unsettled` is the
+     * first reason after the judge-gate (entry 69). It is a wait the founding
+     * leaves by itself: what ends it is the dependency's own hold, or the
+     * founder's own task where the dependency is theirs and undecided. A room of
+     * one with 🌡️ handed over and ⏰ undecided therefore reads `deps-unsettled`
+     * and not `one-voice` — a second member could not answer it either, so
+     * *invite somebody* is the wrong remedy to have been served.
      */
     waitingWith() {
       const invitationOut = [...this.members.values()].some((m) => m.arrivedAtT === null && !m.removed);
@@ -1963,8 +1972,13 @@ var CONSTITUTION = (() => {
         return st.collecting || e.judgeGate && st.settledBy === null;
       }).map((e) => {
         const st = this.settings.get(e.id);
-        const why = e.id === "startingText" ? "text-unconfirmed" : !st.collecting ? "judge-gate" : invitationOut ? "invitation-open" : soleVoice ? "one-voice" : "collecting";
-        return { setting: e.id, why };
+        const why = e.id === "startingText" ? "text-unconfirmed" : !st.collecting ? "judge-gate" : !this.answerable(e.id) ? "deps-unsettled" : invitationOut ? "invitation-open" : soleVoice ? "one-voice" : "collecting";
+        if (why !== "deps-unsettled") return { setting: e.id, why };
+        const on = entryOf(e.id).deps.filter((dep) => {
+          const d = this.settings.get(dep);
+          return !!d && d.settledBy === null;
+        });
+        return { setting: e.id, why, on: [...on] };
       }).sort((a, b) => (a.setting === "startingText" ? 1 : 0) - (b.setting === "startingText" ? 1 : 0));
     }
     /**

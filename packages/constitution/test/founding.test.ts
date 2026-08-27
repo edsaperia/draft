@@ -472,18 +472,34 @@ describe('proposing is yours (§9.0b)', () => {
   });
 
   /**
-   * **The readout says *why*, not just *which*** (Q826). The four reasons want
-   * four different acts of the founder, and `one-voice` is the only one no
+   * **The readout says *why*, not just *which*** (Q826). The five reasons want
+   * five different acts of the founder, and `one-voice` is the only one no
    * amount of answering will clear — so the surface cannot word the remedy
-   * from a bare id. Checked as the same question moving through three of them.
+   * from a bare id. Checked as the same question moving through four of them.
+   *
+   * **`deps-unsettled` comes first, and names what it waits on** (entry 69):
+   * 🌡️ is served only once ⏰ stands (§9.0a), so a 🌡️ handed over under an
+   * undecided ⏰ is not held up by the room of one — a second member could not
+   * answer it either — and the readout must not send the founder to the door
+   * for it. It is the deps loop's own place in `maybeResolve`: first.
    */
-  it('readiness names why each question is waiting (Q826)', () => {
+  it('readiness names why each question is waiting (Q826, entry 69)', () => {
     const s = openDoc();                          // the founder alone, a member
+    s.delegate(0, 'ending');
     s.delegate(0, 'bar');
-    const whyOf = (id: string) =>
-      (s.readiness().holds.find((h) => h.setting === id) || { why: null }).why;
-    // handed to a membership of one: the remedy is a second member or taking
-    // it back, and neither is anywhere in the bare id
+    const holdOf = (id: string) => s.readiness().holds.find((h) => h.setting === id);
+    const whyOf = (id: string) => (holdOf(id) || { why: null }).why;
+    // 🌡️ waits on ⏰ before it waits on anybody, and the dependency is named
+    expect(whyOf('bar')).toBe('deps-unsettled');
+    expect(holdOf('bar')!.on).toEqual(['ending']);
+    // …while ⏰ itself, depending on nothing, is the one handed to a membership
+    // of one: the remedy is a second member or taking it back, and neither is
+    // anywhere in the bare id
+    expect(whyOf('ending')).toBe('one-voice');
+    expect(holdOf('ending')!.on).toBeUndefined();
+    // and once the dependency stands, 🌡️ falls through to the next rung
+    s.reclaim(1, 'ending');
+    s.setSetting(1, 'ending', { endsAtMs: 1_000_000 });
     expect(whyOf('bar')).toBe('one-voice');
     // an invitation in flight stops the resolution before the electorate is
     // counted, and it is already the remedy — so it is the reason given
@@ -499,6 +515,8 @@ describe('proposing is yours (§9.0b)', () => {
 
   it('a delegated question with a membership of one never resolves (Q826)', () => {
     const s = openDoc();
+    // ⏰ set first is what keeps 🌡️ off the `deps-unsettled` rung (entry 69) —
+    // this case is about the one-voice rung below it (§9.0a)
     s.setSetting(0, 'ending', { endsAtMs: 1_000_000 });   // 🌡️ waits on ⏰ (§9.0a)
     s.delegate(0, 'bar');
     s.answer(1, 'ada', 'bar', { pct: 60 });

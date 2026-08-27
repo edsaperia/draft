@@ -34,15 +34,30 @@ export interface OpenInput {
 }
 
 /**
- * Why 🍾 is waiting on one question (Q826). Four of the five are a state the
+ * Why 🍾 is waiting on one question (Q826). Five of the six are a state the
  * founding will leave by itself; **`one-voice` is the one that needs an act** —
  * a delegated question with a membership of one has not been delegated to
  * anybody (`maybeResolve`), and no amount of answering will clear it.
  * `text-unconfirmed` is the text's own prerequisite (§9.0b), which is not a
- * question anybody is being asked.
+ * question anybody is being asked. `deps-unsettled` (entry 69) is a wait on
+ * *another question* — §9.0a serves a dependent only once its dependency has
+ * settled — so the block is upstream and the dependency's own hold names the
+ * reason: a wait, never a dead end, and never a reason to invite anybody.
  */
 export type WaitingWhy = 'judge-gate' | 'invitation-open' | 'one-voice'
-  | 'collecting' | 'text-unconfirmed';
+  | 'collecting' | 'text-unconfirmed' | 'deps-unsettled';
+
+/**
+ * One hold on 🍾: which question, why, and — for `deps-unsettled` alone — the
+ * settings it is waiting on, in catalogue order (entry 69). Named so that the
+ * page and the tests read the module's own `on` rather than keeping a second
+ * copy of the catalogue's `deps`.
+ */
+export interface WaitingHold {
+  setting: SettingId;
+  why: WaitingWhy;
+  on?: SettingId[];
+}
 
 /** The settings the map manages: everything except the text and the personal pair.
  *  🪪 is among them since entry 94 — a price, not the register. */
@@ -1476,8 +1491,17 @@ export class ConstitutionSession {
    * just the same order: `soleVoice` counts the electorate (E minus
    * abstainers, R-049), so a readout that says `collecting` while the resolver
    * is refusing on one voice — the Q826 defect over again — cannot arise.
+   *
+   * The deps loop is `maybeResolve`'s **first** gate, before the invitation
+   * check and before the electorate is counted, so `deps-unsettled` is the
+   * first reason after the judge-gate (entry 69). It is a wait the founding
+   * leaves by itself: what ends it is the dependency's own hold, or the
+   * founder's own task where the dependency is theirs and undecided. A room of
+   * one with 🌡️ handed over and ⏰ undecided therefore reads `deps-unsettled`
+   * and not `one-voice` — a second member could not answer it either, so
+   * *invite somebody* is the wrong remedy to have been served.
    */
-  private waitingWith(): Array<{ setting: SettingId; why: WaitingWhy }> {
+  private waitingWith(): WaitingHold[] {
     const invitationOut = [...this.members.values()]
       .some((m) => m.arrivedAtT === null && !m.removed);
     const soleVoice = motionElectorateOf(this.members.values()).length < 2;
@@ -1497,10 +1521,18 @@ export class ConstitutionSession {
         const st = this.settings.get(e.id)!;
         const why: WaitingWhy = e.id === 'startingText' ? 'text-unconfirmed'
           : !st.collecting ? 'judge-gate'
+          : !this.answerable(e.id) ? 'deps-unsettled'
           : invitationOut ? 'invitation-open'
           : soleVoice ? 'one-voice'
           : 'collecting';
-        return { setting: e.id, why };
+        if (why !== 'deps-unsettled') return { setting: e.id, why };
+        // the dependency is named beside the reason, so the surface never
+        // needs its own copy of the catalogue's `deps`
+        const on = entryOf(e.id).deps.filter((dep) => {
+          const d = this.settings.get(dep);
+          return !!d && d.settledBy === null;
+        });
+        return { setting: e.id, why, on: [...on] };
       })
       // the text is the founding's last clause, so it is named last
       .sort((a, b) => (a.setting === 'startingText' ? 1 : 0) - (b.setting === 'startingText' ? 1 : 0));
@@ -1525,10 +1557,11 @@ export class ConstitutionSession {
   readiness(): {
     ready: boolean;
     waiting: SettingId[];
-    /** the same list with `waitingWith`'s reason beside each id (Q826) —
-     *  `waiting` is kept as bare ids because `begin`'s own refusal and every
-     *  existing reader want exactly that */
-    holds: Array<{ setting: SettingId; why: WaitingWhy }>;
+    /** the same list with `waitingWith`'s reason beside each id (Q826), and
+     *  the dependencies beside a `deps-unsettled` one (entry 69) — `waiting`
+     *  is kept as bare ids because `begin`'s own refusal and every existing
+     *  reader want exactly that */
+    holds: WaitingHold[];
     questions: Array<{ setting: SettingId; settled: boolean; collecting: boolean;
       answered: number; electorate: number }>;
     members: Array<{ id: MemberId; name: string | null; arrived: boolean;

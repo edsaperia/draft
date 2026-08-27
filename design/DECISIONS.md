@@ -1126,6 +1126,24 @@ nothing happen, and answer it again for ever. It is the only reason that names a
 wait, and both acts already exist — invite somebody, or take the setting back. That asymmetry is
 what the whole of the rest follows from.
 
+**The sixth reason, and the one that was wearing the fifth's clothes** (entry 69, 2026-08-27). Five
+reasons was one short. §9.0a serves a question only once its own dependencies have settled —
+`maybeResolve` returns on the deps loop before it counts a voice — and 🌡️ depends on ⏰, so a founder
+alone who handed 🌡️ over while ⏰ was still undecided read `one-voice` against it and was sent to the
+door. Inviting would not have moved it: nobody can answer 🌡️ yet, however many are in the room. The
+block was upstream and the readout named the wrong floor of it, which is the Q826 defect over again
+one rung down. `deps-unsettled` says so, and **carries `on`** — the unsettled dependencies by id — so
+the page can name what must settle first without keeping a second copy of the catalogue's `deps`.
+Where the rung sits is not a choice: the reasons are computed in the order `maybeResolve`'s own gates
+run, the deps loop is its **first** gate, so `deps-unsettled` comes directly after `judge-gate` and
+before the invitation check and the electorate count. **Only one of the six is a dead end**, still
+`one-voice`: a deps hold ends when the dependency's own hold ends, or when the founder answers the
+dependency as an ordinary task in their own rail, so what it is really doing is pointing at whichever
+hold *is* the dead end instead of impersonating it. And it summons nothing: ✉️ is served for
+`one-voice` alone, which is what makes *not "invite someone"* true by construction rather than by
+copy — the ✉️ card that stands for the **dependency** is where the queued question gets its one
+sentence, so the founder is not left to find it standing there afterwards.
+
 **The remedy is a task, because a sentence is not a way out.** 🪪 stands in the rail while the
 document waits on a `one-voice` question, its card leading with which questions are stuck and both
 ways to unstick them. It is a task by **derivation and nothing else**: no `S.okd` key, no `ACK_KEYS`

@@ -309,24 +309,27 @@ describe('promise 6 — when the founding cannot go on, 🍾 says why (Q826, F19
   });
 
   /**
-   * **Pins today’s wording, pending entry 69** (`WaitingWhy` gains
+   * **Entry 69 landed, and the two are told apart** (`WaitingWhy` gained
    * `deps-unsettled`). A delegated 🌡️ waits on ⏰ by `deps`, so it is not
-   * answerable at all — and `waitingWith` reports it as `collecting`, the
-   * same word it gives the question that *is* being answered. When entry 69
-   * lands this expectation changes to `deps-unsettled`; until then a lock on
-   * the wording is still a lock.
+   * answerable at all — and `waitingWith` used to report it as `collecting`,
+   * the same word it gives the question that *is* being answered. It now
+   * reports the dependency by name, which is the whole point: the block is
+   * upstream, and no answer to 🌡️ — nor any invitation — will move it.
    */
-  it('a delegated 🌡️ whose ⏰ is still collecting reads `collecting`, not a dependency reason (entry 69)', () => {
+  it('a delegated 🌡️ whose ⏰ is still collecting reads `deps-unsettled`, and names ⏰ (entry 69)', () => {
     const { s, bo } = openFounding();
     s.delegate(2, 'ending');
     s.delegate(2, 'bar');
     expect(s.settingState('ending').settledBy).toBeNull();
     expect(() => s.answer(2, bo, 'bar', { pct: 70 })).toThrow(/waits on 'ending'/);
-    const why = (id: string) => s.readiness().holds.find((h) => h.setting === id)!.why;
-    expect(why('ending')).toBe('collecting');
-    expect(why('bar')).toBe('collecting'); // ← entry 69: the two are told apart nowhere
-    expect((['judge-gate', 'invitation-open', 'one-voice', 'collecting', 'text-unconfirmed'])
-      .includes(why('bar'))).toBe(true);
+    const hold = (id: string) => s.readiness().holds.find((h) => h.setting === id)!;
+    expect(hold('ending').why).toBe('collecting');
+    expect(hold('bar').why).toBe('deps-unsettled');
+    expect(hold('bar').on).toEqual(['ending']);
+    // the reason the room is being asked for is still the plain one
+    expect(hold('ending').on).toBeUndefined();
+    expect((['judge-gate', 'invitation-open', 'one-voice', 'collecting',
+      'text-unconfirmed', 'deps-unsettled']).includes(hold('bar').why)).toBe(true);
   });
 });
 
