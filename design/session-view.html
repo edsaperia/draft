@@ -3443,11 +3443,20 @@
     if (rec.route === 'constitutional') return rec.answers.has(viewerId());
     return motionPicked(c) && myMAnsOk().has(c.k);
   };
+  // **Two routes, two counts, spelled once** (entry 138). A constitutional
+  // motion's answers are on the record — `rec.answers.size`, which the remote
+  // shim serves as `answeredCount` — while an ordinary one is a race, and the
+  // module keeps race judgments blind (`view.ts` serves 0), so the only count
+  // the page has is its own `mAnsOk` marker. A pure function of the record
+  // and the card key: it never looks a record up, so a caller already holding
+  // one (the applicant's own readout) need not go back through `card(k)`.
+  const judgedOn = (rec, k) => (rec.route === 'constitutional'
+    ? rec.answers.size
+    : S.roster.filter((r) => r.mAnsOk && r.mAnsOk.has(k)).length);
   const motionJudged = (k) => {
     const rec = liveMotionRec(card(k));
     if (!rec) return 0;
-    if (rec.route === 'constitutional') return rec.answers.size;
-    return S.roster.filter((r) => r.mAnsOk && r.mAnsOk.has(k)).length;
+    return judgedOn(rec, k);
   };
   // one 🏛️ out per member at a time (Ed, Q327): withdrawn, it comes back whole
   const myHeldOut = () => {
@@ -5286,7 +5295,11 @@
     const rec = a && a.motion ? cs.motionRecords().get(a.motion) : null;
     if (!rec) return 0;
     if (rec.status === 'carried') return E();
-    return S.roster.filter((r) => r.mAnsOk && r.mAnsOk.has('admission')).length;
+    // **The count is on the applicant's own motion** (entry 138): this read
+    // the setting key `'admission'`, which entry 96 moved every admit motion
+    // off — its key is `adm:<applicant>` now, and `motionTargets` is the one
+    // place that is spelled, so the readout cannot drift from the card again.
+    return judgedOn(rec, motionTargets(rec));
   } };
   const MEMBER_EMAILS = { has: (e2) => S.roster.some((r) => (r.e || '').toLowerCase() === e2) };
   const APPCARDS = () => {

@@ -430,6 +430,32 @@ function checkSoloJudgment() {
   else note('  the `mine` exemption carries its E > 1 condition');
 }
 
+/**
+ * Entry 138. The applicant's own 🪪 card says *Submitted. N of E have judged
+ * it*, and N counted the roster rows whose `mAnsOk` held `'admission'` — the
+ * **setting** key of the price card. Entry 96 moved every admit motion off
+ * that card onto `adm:<applicant>`, so nothing has written the setting key
+ * for an admit motion since: the readout could only read 0 until the motion
+ * carried and then jump to E. The failure is silent — a fraction that reads
+ * zero looks like a room that has not judged yet — and no walk renders the
+ * applicant's own card (`applicants-walk` is a founder's eye, and the live
+ * shim's `startApplication` throws, Q346), so this page-source assertion is
+ * the only thing holding the two keys together.
+ */
+function checkApplicantJudged() {
+  note('The applicant’s judged readout — entry 138 against the page');
+  const page = js('design/session-view.html');
+  const at = page.indexOf('const APPLICANT = {');
+  // the whole getter, comment included; too short a window loses the
+  // `judgedOn` call and goes red, never silently green
+  const body = at < 0 ? '' : page.slice(at, at + 900);
+  if (/mAnsOk\.has\('admission'\)/.test(body))
+    find('events', "the applicant's readout counts `mAnsOk.has('admission')` again — entry 96 keys an applicant's motion `adm:<applicant>`, so the setting key can never fill the readout (entry 138)");
+  else if (!/judgedOn\(rec, motionTargets\(rec\)\)/.test(body))
+    find('events', "the applicant's readout no longer counts through `judgedOn(rec, motionTargets(rec))` — `motionTargets` is the one place an admit motion's key is spelled, and the readout must not spell it a second time (entry 138)");
+  else note('  the readout counts on the motion’s own key');
+}
+
 function checkComposer(M, pm) {
   note('The composer maps — PROPOSE · ANSWER · the rung values · PW_*');
   const page = js('design/session-view.html'); const setup = js('design/setup.js');
@@ -715,6 +741,7 @@ checkMarks();
 checkWallets(pm);
 checkOrder(pm);
 checkSoloJudgment();
+checkApplicantJudged();
 checkComposer(M, pm);
 checkPicture();
 checkBannedWords();

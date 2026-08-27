@@ -44,6 +44,27 @@ describe('entry 96: what the Applicants pile is built from', () => {
     expect(admit.route).toBe('constitutional');
   });
 
+  // **What the applicant's own readout counts** (entry 138). *Submitted. N of
+  // E have judged it* used to count the roster rows marked on 🪪's setting
+  // key, which entry 96 moved every admit motion off; it counts on the
+  // motion now, and at `assembly` that number is exactly this field — the
+  // page reads it as `rec.answers.size`, and the remote shim serves the same
+  // number as `answeredCount`. At `proposal` this field is 0 by design: an
+  // ordinary motion is a race and a race is blind (§9.0a), so the page counts
+  // its own marker there and nothing here should be "fixed" to fill it.
+  it('at 🪪 assembly an answered admit motion is counted on the record', () => {
+    const { s } = buildConstituted({
+      applications: { apply: true }, admission: { price: 'assembly' } });
+    const id = s.startApplication(3, 'rowan@example.org');
+    s.verifyApplication(4, id);
+    s.submitApplication(5, id, { name: 'Rowan Vale' });
+    const motionId = s.applicantRecords().get(id)!.motion!;
+    s.answerMotion(6, 'ada', motionId, 'accept');
+    const m = view(s, 'ada').motions.find((x) => x.id === motionId)!;
+    expect(m.route).toBe('constitutional');
+    expect(m.answeredCount).toBe(1);
+  });
+
   // at `pen` the act is its own consent, so there is nothing to ask anybody
   // and the subsection carries no card at all
   it('at 🪪 pen the applicant is admitted on submit, with no motion to judge', () => {
