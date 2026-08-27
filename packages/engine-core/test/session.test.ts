@@ -1249,14 +1249,14 @@ describe('the sign control and honour (SPEC §3.5a, Q770 and entry 31)', () => {
       ['public',     true,   true,   true],
     ];
     // the constitution's current value is a red herring for a stamped candidate
-    const now = makeConstitution({ authorshipVisibility: 'public' });
+    const now = { authorshipVisibility: 'public' as const };
     for (const [base, signed, closed, want] of table) {
       const c = { ...(signed ? { signed: true as const } : {}), disclosure: base };
       expect(authorVisible(c, now, { closed }), `${base} signed=${signed} closed=${closed}`).toBe(want);
     }
     // a candidate with no stamp — a log older than the field — reads the
     // constitution as it stands (decision 3)
-    const at = (v: Base) => makeConstitution({ authorshipVisibility: v });
+    const at = (v: Base) => ({ authorshipVisibility: v });
     expect(authorVisible({}, at('public'), { closed: false })).toBe(true);
     expect(authorVisible({}, at('sealed'), { closed: false })).toBe(false);
     expect(authorVisible({}, at('sealed'), { closed: true })).toBe(true);
