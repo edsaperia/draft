@@ -81,8 +81,12 @@
      the charter stands as bars at real metrics: grey, because grey means
      nothing is being asked of you; ?bars=black is the experiment Ed asked to
      look at */
-  /* both stand on the prose's own column (.doc .prose: 70ch, centred) */
-  .doc .holding { font-size: var(--t-body); color: var(--muted); margin: var(--s4) auto var(--s5); max-width: 70ch; font-style: italic; }
+  /* both stand on the prose's own column (.doc .prose: 70ch, centred).
+     Keyed on the **id**, never the class: `holding` is the propose hold's own
+     class (session.js's flyStart), and this rule on a class matched the ✏️
+     button too — `margin: auto` on a flex item in the commit row slid it to
+     the middle of the row for the length of a hold (entry 59) */
+  .doc #holding { font-size: var(--t-body); color: var(--muted); margin: var(--s4) auto var(--s5); max-width: 70ch; font-style: italic; }
   .redacted { padding-bottom: var(--s5); max-width: 70ch; margin: 0 auto; }
   .redacted .rblock { margin: 0 0 1em; }
   .redacted .rblock.h1 { margin: 1.6em 0 .6em; } .redacted .rblock.h2 { margin: 1.4em 0 .5em; } .redacted .rblock.h3 { margin: 1.2em 0 .4em; }
@@ -199,7 +203,7 @@
              writes in #prose below and this stands empty -->
         <!-- the stranger's door (Q455/456): one sentence at the head of the
              charter column, and the charter as bars at real metrics -->
-        <p class="holding" id="holding" hidden></p>
+        <p id="holding" hidden></p>
         <div id="charter"></div>
         <div class="redacted" id="redacted" hidden></div>
         <div class="prose empty" id="prose" contenteditable="false" spellcheck="false"></div>

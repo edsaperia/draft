@@ -1187,20 +1187,42 @@ if (caret) {
   await page.mouse.move(bx.x + bx.width / 2, bx.y + bx.height / 2);
   await page.mouse.down();
   await T(500);
-  const mid = await page.evaluate(() => ({ holding: window.SESSION.holding,
-    flying: !!document.querySelector('.flypencil'), edits: window.SESSION.editsHeld }));
+  /* **and the held button does not move** (entry 59). Two things on this page
+   * answered to `holding` — the hold's own class and the stranger's sentence,
+   * whose `margin: … auto …` rule centred the ✏️ in its own commit row for the
+   * length of the hold. Sampled here, *before* the forced render: after it the
+   * node under the pointer is a new one, and what this asserts is the held
+   * button. Both axes of the box, because the sentence's rule also carried a
+   * max-width — a button that keeps its centre and loses its width has moved
+   * just as surely. */
+  const mid = await page.evaluate(() => {
+    const b = document.querySelector('[data-act="draft-propose"]');
+    const r = b && b.getBoundingClientRect();
+    return { holding: window.SESSION.holding,
+      flying: !!document.querySelector('.flypencil'), edits: window.SESSION.editsHeld,
+      cx: r ? r.x + r.width / 2 : null, w: r ? r.width : null };
+  });
+  // scale(0.97) moves each edge by under a pixel and the centre by none, so
+  // 2px is a margin rather than a tolerance for drift; the width is allowed
+  // the 3% the transform takes off it
+  const movedX = mid.cx === null ? Infinity : Math.abs(mid.cx - (bx.x + bx.width / 2));
+  const movedW = mid.w === null ? Infinity : Math.abs(mid.w - bx.width);
+  const stillThere = movedX < 2 && movedW < bx.width * 0.05 + 1;
   await page.evaluate(() => window.SESSION && window.SESSION.renderAll());
   await T(3200);
   await page.mouse.up();
   await T(900);
   const after = await page.evaluate(() => ({ edits: window.SESSION.editsHeld,
     mine: (window.SESSION.SUGGS || []).filter((x) => x.mine && x.unproposed !== true).length }));
-  const ok = proposeStatus !== null && proposeStatus < 400 && after.edits < mid.edits;
+  const ok = proposeStatus !== null && proposeStatus < 400 && after.edits < mid.edits
+    && stillThere;
   say('propose    · ' + (ok
     ? 'held through a render · propose-text ' + proposeStatus + ' · wallet ' +
-      mid.edits + '→' + after.edits + ' · ' + after.mine + ' of mine standing'
+      mid.edits + '→' + after.edits + ' · ' + after.mine + ' of mine standing · stayed put'
     : 'FAIL: propose-text ' + proposeStatus + ' · wallet ' + mid.edits + '→' + after.edits +
-      ' · held ' + mid.holding + ' · flying ' + mid.flying));
+      ' · held ' + mid.holding + ' · flying ' + mid.flying +
+      (stillThere ? '' : ' · moved ' + Math.round(movedX) + 'px while held (width ' +
+        Math.round(bx.width) + '→' + Math.round(mid.w) + ')')));
   if (!ok) stuck.push('propose hold');
 
   /* ---- 👤 the sealed speaker: somebody else's proposal, read by a member --
