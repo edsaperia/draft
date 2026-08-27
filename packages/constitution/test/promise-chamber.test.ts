@@ -36,7 +36,7 @@
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import { view } from '../src/view.js';
-import type { ChamberValue } from '../src/values.js';
+import type { LadderValue } from '../src/values.js';
 
 /**
  * A constituted document differing from its siblings in exactly one thing:
@@ -107,7 +107,7 @@ describe('🌍 the fold is rung-blind: `view()` is the same read at every rung',
       const v = view(s, bo);
       // the rung is data on its own row, and nothing else moves
       expect(v.settings.find((x) => x.setting === 'chamber')!.value)
-        .toEqual({ rung } as ChamberValue);
+        .toEqual({ rung } satisfies LadderValue);
       return withoutChamber(v);
     });
     expect(seen[1]).toEqual(seen[0]);
