@@ -22,6 +22,10 @@
  *     `max`. This is the assertion a re-render under the press fails: the
  *     first step moves the thumb, the render replaces the element the pointer
  *     is capturing, and every move after that goes nowhere.
+ *  3. **The track is the question's own range.** The ends and the step read
+ *     off the DOM against what `ANSWER` states (`BOUNDS` below): what a blind
+ *     control can express is half of what the setting promises, and nothing
+ *     else here reads those literals.
  *
  * Like every walk here it drives the fixture, because what it checks is pure
  * page logic — the same `slider()` and the same `input` handler serve the live
@@ -187,7 +191,7 @@ const readSlider = () => page.evaluate(() => {
   const r = sl.getBoundingClientRect();
   const commit = c.querySelector('[data-confirm]');
   return {
-    key: sl.dataset.slide, min: +sl.min, max: +sl.max, value: +sl.value,
+    key: sl.dataset.slide, min: +sl.min, max: +sl.max, step: +sl.step, value: +sl.value,
     unset: !!c.querySelector('.cs.unset'), readout: (c.querySelector('.csval') || {}).textContent,
     pct: sl.style.getPropertyValue('--pct').trim(),
     commitOff: !commit || commit.disabled,
@@ -211,6 +215,24 @@ const dragTo = async (s, frac) => {
 // what each card's readout must look like once it carries a value: 🌡️ a bare
 // percentage, 👥 the founder's chosen form — a share, and what it comes to
 const SHAPE = { bar: /^\d+%$/, quorum: /^\d+% — \d+ of \d+$/ };
+// **The track the member is offered, read off the DOM** (promise-coverage 👥,
+// backlog entry 85). The two blind questions are the only place a member
+// states a number, so what the track can *express* is half of what the
+// setting promises: 👥's share cannot state 0 (a quorum nobody has to meet)
+// and cannot leave the 0–100 `validateValue` accepts; 🌡️'s cannot state a
+// bar below the coin flip. Both are deliberate narrowings of the fold's own
+// range, and neither is asserted anywhere else — `ANSWER` in setup.js is one
+// literal per bound and a typo in it is silent.
+//
+// **The count form is not walked**, and cannot cheaply be: `slider(A,
+// 'quorum', 1, E, …)` is bounded at E, the walk's founding has one arrived
+// member, and a track whose min and max are both 1 has no drag in it. The
+// count form's bounds are locked in the fold instead
+// (`packages/constitution/test/promise-quorum.test.ts`).
+const BOUNDS = {
+  bar: { min: 50, max: 95, step: 5 },
+  quorum: { min: 5, max: 100, step: 5 },
+};
 for (const key of ['bar', 'quorum']) {
   const want = 'ans-' + key;
   console.log('\n' + want);
@@ -236,6 +258,15 @@ for (const key of ['bar', 'quorum']) {
     high.value + ' of ' + high.min + '…' + high.max);
   const mid = await dragTo(high, 0.5);
   check('and stops in between', mid.value > mid.min && mid.value < mid.max, String(mid.value));
+
+  // the ends of the track are the ends `ANSWER` states, and the member
+  // cannot walk off either of them
+  const track = BOUNDS[key];
+  check('the track starts where the question does', low.min === track.min,
+    low.min + ' want ' + track.min);
+  check('and ends where it does', high.max === track.max,
+    high.max + ' want ' + track.max);
+  check('in the steps it offers', mid.step === track.step, mid.step + ' want ' + track.step);
 
   check('the readout carries the value', SHAPE[key].test(mid.readout || ''), mid.readout);
   check('the touched control is no longer unset', !mid.unset && mid.pct !== '0', '--pct=' + mid.pct);
