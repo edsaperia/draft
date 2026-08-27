@@ -93,14 +93,19 @@ const CANDIDATES: Candidate[] = [
  * **reported only**, no `check` on them, because every number in the table is
  * a placeholder until this sweep has been read (Q960). The ramp start rides
  * `adoptionThresholdStart` exactly as `toEngineConstitution` reads it: a
- * ramp's `startPct`, else the bar itself; the perpetual pin is 0 since the
- * sweep's window is the cell's.
+ * ramp's `startPct`, else the bar itself.
+ *
+ * Four ids are folded — 🌡️ ⏱️ 👤 👥 — which is every id `engineFieldsFor`
+ * knows bar ⏰, and ⏰ is deliberately left out: the window is the sweep
+ * cell's own, not the shape's, so folding `ending` would overwrite the very
+ * axis being swept. Everything else a shape sets (🪜 aside, which rides the
+ * ramp start below) is governance the engine has no field for.
  */
 function shapeCandidates(): Candidate[] {
   return SHAPES.map((row) => {
     const sets = row.sets as Record<string, SettingValue>;
     let overrides: Partial<Constitution> = {};
-    for (const id of ['bar', 'rate', 'authorship'] as const) {
+    for (const id of ['bar', 'rate', 'authorship', 'quorum'] as const) {
       if (sets[id]) overrides = { ...overrides, ...engineFieldsFor(id, sets[id]!, 0) };
     }
     const pace = sets.pace as PaceValue | undefined;

@@ -899,7 +899,7 @@
   // has to be remembered rather than derived: one snapshot per opening,
   // taken in render after the module has had its say, and compared to decide
   // whether the bin has anything to throw away.
-  const REVERTKEYS = () => ['title', 'slug', 'docShape', 'ending', 'endsAt', 'tClose', 'shape', 'tStart',
+  const REVERTKEYS = () => ['title', 'slug', 'docShape', 'ending', 'endsAt', 'endChip', 'tClose', 'shape', 'tStart',
     'quorumForm', 'quorumPct', 'quorumN', 'joinBy', 'policyBy', 'titleBy', 'slugBy',
     'lapse', 'lapseDays', 'removal', 'removeWho', 'admission', 'authorship', 'judgments',
     'grant', 'dripMin', 'cap', 'chamber', 'auditor', 'auditorBudget',
@@ -992,6 +992,9 @@
     // 🧭 the document's shape, chosen before 📧 (entry 166): '' until chosen,
     // then a row's name or 'custom'. **Never `S.shape`, which is 🪜's.**
     docShape: '',
+    // which ⏰ chip was pressed (entry 166), by the chip's own id — the values
+    // move with the clock, so the highlight cannot be read off `endsAt`
+    endChip: '',
     folded: new Set(),  // folded headings: 'cs-<section>' and 'ph:<prose heading>'
     // **No defaults** (Ed, 2026-08-21: *we should remove the defaults, each
     // should start as “The Founder is deciding [parameter]”*). Every setting
@@ -4471,17 +4474,26 @@
   const shapedLine = (k) => (shapedOn(k) ? ' As for ' + SHAPE_NOUN[cs.shape] + '.' : '');
   // ⏰'s chips, in the shape's unit (Ed: the shape is ⏰'s unit, never its
   // answer): computed from now at render, never stored, nothing preselected
+  // **A chip is lit by which chip was pressed, never by its own value.** The
+  // values are recomputed from `now` on every render and `msToLocal` carries
+  // minutes, so *in 2 hours* means a different string a minute later — a
+  // press matched by value went dark by itself inside a minute (and the live
+  // page re-renders on a 4s poll), leaving the field filled and no chip on.
+  // `S.endChip` is the chip's own stable id, cleared whenever the date is
+  // written by anything else.
   const endChips = () => { const r = shapeRow();
     if (!r || !r.unit || !cs || cs.constitutedAtT !== null) return [];
     const now2 = new Date();
     if (r.unit === 'hours') return [1, 2, 3].map((h2) => ({
+      id: 'h' + h2,
       label: 'in ' + h2 + (h2 === 1 ? ' hour' : ' hours'),
       val: msToLocal(now2.getTime() + h2 * 3600000) }));
     return [1, 2, 3].map((d2) => { const at = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate() + d2, 18, 0);
-      return { label: d2 === 1 ? 'tomorrow evening' : 'in ' + d2 + ' days', val: msToLocal(at.getTime()) }; }); };
+      return { id: 'd' + d2, label: d2 === 1 ? 'tomorrow evening' : 'in ' + d2 + ' days', val: msToLocal(at.getTime()) }; }); };
   const endChipsHtml = () => { const chips = endChips();
     return chips.length ? '<span class="setrow2 endchips">' + chips.map((c2) =>
-      '<button class="btn' + (S.endsAt === c2.val ? ' on' : '') + '" data-set="endsAt" data-val="' + c2.val + '">' +
+      '<button class="btn' + (S.endChip === c2.id ? ' on' : '') + '" data-set="endsAt"' +
+      ' data-chip="' + c2.id + '" data-val="' + c2.val + '">' +
       esc(c2.label) + '</button>').join('') + '</span>' : ''; };
   // **The one price scale** (entry 94): what an act on the membership costs,
   // in the document's three verbs — the same words on 🪪 and 🥾, so a reader
@@ -7040,6 +7052,8 @@
       // rung clearing the field, and `+''` is 0, which is a bar nobody set.
       S[o.dataset.set] = ((o.dataset.set === 'tClose' || o.dataset.set === 'tStart') && nv !== '')
         ? +nv : nv;
+      // a ⏰ chip lights by its own id, not by the date it happens to carry
+      if (o.dataset.set === 'endsAt') S.endChip = o.dataset.chip || '';
       if (perpetual() && S.shape === 'ramp') S.shape = 'fixed';
       return render(); }
     const pic = ev.target.closest('[data-pic]');
@@ -7453,6 +7467,8 @@
       if (sv) { sv.disabled = !EMAIL_OK.test(S.myemail); sv.title = resendTitle(); }
       renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (t.dataset.txt) { S[t.dataset.txt] = t.value;
+      // a date typed by hand is not a chip any more (entry 166)
+      if (t.dataset.txt === 'endsAt') S.endChip = '';
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
     // refreshCommit too: with no defaults a number IS the answer, so the
     // commit wakes on the typing (the txt branch above has always done this;

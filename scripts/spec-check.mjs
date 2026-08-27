@@ -164,6 +164,13 @@ function checkGovernance() {
  * row with a unit leaves ⏰ for the card, and each `say` is under H4's 200
  * and carries none of `BANNED` — the table's copy reaches the page through
  * the bundle, outside `checkBannedWords`' four-file corpus.
+ *
+ * …and the page's `SHAPE_NOUN` is asserted to name every row and nothing
+ * else. It is the one part of the table the page keeps a copy of — the noun
+ * phrase the provenance and 🍾's line are built from — and the copy fails
+ * silently in both directions: an unnamed row prints *As for undefined.* on
+ * every shaped clause, and `shapeInput()`, which gates on the same map, drops
+ * the founder's choice on the way into `open`.
  */
 function checkShapes(M) {
   note('Shapes — the 🧭 table against the catalogue');
@@ -187,6 +194,14 @@ function checkShapes(M) {
     if (r.say.length > 200) find('shapes', `${r.name}.say is ${r.say.length} characters (H4: 200)`);
     for (const b of BANNED) if (b.test(r.say)) find('shapes', `${r.name}.say — ${b}`);
     if (r.say.length < 12) find('shapes', `${r.name}.say says nothing`);
+  }
+  const nm = readFileSync(join(ROOT, 'design/session-view.html')).toString('utf8')
+    .match(/const SHAPE_NOUN = \{([^}]*)\}/);
+  if (!nm) find('shapes', 'SHAPE_NOUN not found in session-view.html');
+  else {
+    const nouns = [...nm[1].matchAll(/([a-z]+)\s*:/g)].map((x) => x[1]);
+    for (const r of rows) if (!nouns.includes(r.name)) find('shapes', `SHAPE_NOUN has no phrase for '${r.name}'`);
+    for (const n of nouns) if (!rows.some((r) => r.name === n)) find('shapes', `SHAPE_NOUN names '${n}', which is not a shape`);
   }
   note(`  ${rows.length} shapes, ${M.SHAPED.length} shaped settings, ${M.UNSHAPED.length} unavoidable`);
 }
