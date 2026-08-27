@@ -3186,7 +3186,8 @@
   const motionsLive = () => canJudge();
   // ---- motions live in the module (9c): the page renders records --------
   // **An admit motion targets its own card** (entry 96): before this it fell
-  // through to `pkeyOf('membership')` and landed on 🪪 — which was harmless
+  // through to 🪪's own key (`membership` as the id was then spelled, Q903)
+  // and landed on the price card — which was harmless
   // only because nothing drew it, and would now put every applicant's
   // judgment on the price card. Pointing it at `adm:<applicant>` is also what
   // hands the whole generic motion path to these cards: `liveMotionRec`,
