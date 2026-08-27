@@ -237,12 +237,27 @@
     "eyebrow": "",
     "head": "How Sure Must the Room Be?",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.I set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone90%In a room of one, nothing can pass at this bar until more members arrive.Broad agreement80%In a room of one, nothing can pass at this bar until more members arrive.A bare majority60%In a room of one, the one vote must be for it.A number of my ownA room of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
     "options": [
+     {
+      "set": "tClose",
+      "val": "90",
+      "label": "Nearly everyone90%"
+     },
+     {
+      "set": "tClose",
+      "val": "80",
+      "label": "Broad agreement80%"
+     },
+     {
+      "set": "tClose",
+      "val": "60",
+      "label": "A bare majority60%"
+     },
      {
       "set": "barBy",
       "val": "founder",
-      "label": "I set it"
+      "label": "A number of my own"
      },
      {
       "set": "barBy",
@@ -275,6 +290,9 @@
     ],
     "helpers": [
      "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.",
+     "In a room of one, nothing can pass at this bar until more members arrive.",
+     "In a room of one, nothing can pass at this bar until more members arrive.",
+     "In a room of one, the one vote must be for it.",
      "%",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted."
     ]
@@ -3365,12 +3383,27 @@
     "eyebrow": "",
     "head": "How Sure Must the Room Be?",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.I set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nearly everyone90%In a room of one, nothing can pass at this bar until more members arrive.Broad agreement80%In a room of one, nothing can pass at this bar until more members arrive.A bare majority60%In a room of one, the one vote must be for it.A number of my ownA room of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
     "options": [
+     {
+      "set": "tClose",
+      "val": "90",
+      "label": "Nearly everyone90%"
+     },
+     {
+      "set": "tClose",
+      "val": "80",
+      "label": "Broad agreement80%"
+     },
+     {
+      "set": "tClose",
+      "val": "60",
+      "label": "A bare majority60%"
+     },
      {
       "set": "barBy",
       "val": "founder",
-      "label": "I set it"
+      "label": "A number of my own"
      },
      {
       "set": "barBy",
@@ -3404,6 +3437,9 @@
     "helpers": [
      "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
+     "In a room of one, nothing can pass at this bar until more members arrive.",
+     "In a room of one, nothing can pass at this bar until more members arrive.",
+     "In a room of one, the one vote must be for it.",
      "%",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted."
     ]
@@ -4040,12 +4076,27 @@
     "eyebrow": "",
     "head": "How Sure Must the Room Be?",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.I set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone90%In a room of one, nothing can pass at this bar until more members arrive.Broad agreement80%In a room of one, nothing can pass at this bar until more members arrive.A bare majority60%In a room of one, the one vote must be for it.A number of my ownA room of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
     "options": [
+     {
+      "set": "tClose",
+      "val": "90",
+      "label": "Nearly everyone90%"
+     },
+     {
+      "set": "tClose",
+      "val": "80",
+      "label": "Broad agreement80%"
+     },
+     {
+      "set": "tClose",
+      "val": "60",
+      "label": "A bare majority60%"
+     },
      {
       "set": "barBy",
       "val": "founder",
-      "label": "I set it"
+      "label": "A number of my own"
      },
      {
       "set": "barBy",
@@ -4078,6 +4129,9 @@
     ],
     "helpers": [
      "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.",
+     "In a room of one, nothing can pass at this bar until more members arrive.",
+     "In a room of one, nothing can pass at this bar until more members arrive.",
+     "In a room of one, the one vote must be for it.",
      "%",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted."
     ]
@@ -5050,7 +5104,7 @@
     "eyebrow": "",
     "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when judging opens.",
     "lock": "The members decide.",
-    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.50%95%What everyone asked for, without names.Answered3 of 3The document takes the highest80%",
+    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.90%Nearly everyone80%Broad agreement78%60%A bare majorityWhat everyone asked for, without names.Answered3 of 3The document takes the highest78%",
     "options": [],
     "inputs": [
      {
@@ -5077,8 +5131,6 @@
      "Passed: 82% sure at the end — settled",
      "This is how your reason will reach everybody else: with your name off it.",
      "0",
-     "1",
-     "2",
      "3",
      "Discard this motion",
      "A full ten-second hold"
@@ -7074,7 +7126,7 @@
     "eyebrow": "",
     "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when judging opens.",
     "lock": "The members decide.",
-    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.50%95%What everyone asked for, without names.Answered3 of 3The document takes the highest80%",
+    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.90%Nearly everyone80%Broad agreement78%60%A bare majorityWhat everyone asked for, without names.Answered3 of 3The document takes the highest78%",
     "options": [],
     "inputs": [
      {
@@ -7101,8 +7153,6 @@
      "Passed: 82% sure at the end — settled",
      "This is how your reason will reach everybody else: with your name off it.",
      "0",
-     "1",
-     "2",
      "3",
      "Discard this motion",
      "A full ten-second hold"
@@ -7697,12 +7747,22 @@
     "eyebrow": "",
     "head": "The approval threshold starts at 55% and rises to 82% by the end. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.RisingStarts lower when people begin judging and climbs to the number at the end.When judging opens%FixedThe same number all the way through.Why are you changing this?ABAsh Bellamy 👑",
+    "body": "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.RisingStarts lower when people begin judging and climbs to the number at the end.Nearly everyone90%In a room of 3, all 3 must vote for it when voting opens; the bar rises from there.Broad agreement80%In a room of 3, all 3 must vote for it when voting opens; the bar rises from there.A bare majority60%In a room of 3, n of m is enough when voting opens; the bar rises from there.A number of my ownIn a room of 3, n of m is enough when voting opens; the bar rises from there.When judging opens%FixedThe same number all the way through.Why are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
       "set": "shape",
       "val": "ramp",
       "label": "Rising"
+     },
+     {
+      "set": "tStart",
+      "val": "60",
+      "label": "A bare majority60%"
+     },
+     {
+      "set": "shape",
+      "val": "ramp",
+      "label": "A number of my own"
      },
      {
       "set": "shape",
@@ -7740,6 +7800,10 @@
     "helpers": [
      "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.",
      "Starts lower when people begin judging and climbs to the number at the end.",
+     "In a room of 3, all 3 must vote for it when voting opens; the bar rises from there.",
+     "In a room of 3, all 3 must vote for it when voting opens; the bar rises from there.",
+     "In a room of 3, n of m is enough when voting opens; the bar rises from there.",
+     "In a room of 3, n of m is enough when voting opens; the bar rises from there.",
      "%",
      "The same number all the way through.",
      "I am changing this because…"

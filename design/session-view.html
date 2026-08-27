@@ -2607,7 +2607,14 @@
   const liveStrip = (c, st) => {
     if (c.strip !== 'rungs' || !st.distribution || !st.distribution.length) return;
     c.distribution = st.distribution;
-    const pct = st.value && st.value.pct != null ? +st.value.pct : +st.distribution[0].pct;
+    // **What the strip is about is the resolution, not the value.** The
+    // statline beside it says *The document takes the highest*, which is a
+    // sentence about the blind collection — and a motion carried since then
+    // has moved `st.value` away from it, so reading the value here would put a
+    // number under that sentence the room never answered. `distribution[0]` is
+    // the taken answer by construction (`resolveConsent` sorts and takes the
+    // head), which is also the column the strip accents: one fact, twice.
+    const pct = +st.distribution[0].pct;
     const rung = M.BAR_RUNGS.find((r) => r.pct === pct);
     c.result = (rung ? rung.label + ' — ' : '') + pct + '%';
   };
