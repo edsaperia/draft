@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run && tsx src/founding-evidence.ts && tsx src/motions-evidence.ts",
     "typecheck": "tsc --noEmit",
     "sim": "tsx src/cli.ts",
     "sweep": "tsx src/sweep.ts",

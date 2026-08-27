@@ -20,8 +20,15 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
     convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
   }, 0);
   say('  t=0   ada creates the document and is its first member');
-  check(s.settingState('bar').holder === 'members',
-    'constitutional settings default to the members (§9.7)');
+  // **Nothing arrives delegated** (Ed, 2026-08-21, amending §9.0a and
+  // closing Q511): the old rule here — constitutional settings default to
+  // the members — was retired, because a default holder states an answer
+  // the founder has not given. Every setting is born convenor-held with its
+  // question shut, and *delegation is the act that opens a blind question*.
+  // This walk was written against the old rule and had been red ever since;
+  // entry 77 repaired it on the way to putting the walk in `npm test`.
+  check(s.settingState('bar').holder === 'convenor',
+    'nothing arrives delegated — every setting is born convenor-held (§9.0a, Q511)');
   check(s.settingState('pace').holder === 'convenor',
     'pacing is the founder’s and never a founding question (Q415)');
   check(s.settingState('rate').holder === 'convenor',
@@ -46,6 +53,15 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
   }
   say('  t=2–6 the seven arrive in ones and twos; E grows to 8');
   eq(s.E(), 8, 'E = 8 arrived members');
+
+  // **Delegation is the act that opens a blind question** (Q511): before
+  // 2026-08-21 the constitutional questions collected from the moment the
+  // document existed, and this walk answered them without ever handing one
+  // over. Every question it puts to the room is handed over here.
+  for (const q of ['ending', 'authorship', 'judgments', 'chamber', 'quorum',
+    'bar', 'lapse', 'applications', 'removal'] as const) {
+    s.delegate(6, q);
+  }
 
   say('  t=7   everyone answers ⏰ blind; gus answers never');
   s.answer(7, 'ada', 'ending', { endsAtMs: 800_000 });
@@ -97,7 +113,10 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
     s.answer(9, m, 'lapse', { afterMs: m === gus ? null : 90 * 86_400_000 });
     s.answer(9, m, 'machines', { enabled: false, budget: 0 });
     s.answer(9, m, 'applications', { holder: 'members', joinPolicy: 'invite' });
-    s.answer(9, m, 'removal', { rung: m === dee ? 'everyone' : 'others' });
+    // 🥾 is a **price** since Q401/entry 94 — consent · assembly · proposal,
+    // consent (the subject included) being the most protective — where this
+    // walk was written against the retired everyone/others ladder
+    s.answer(9, m, 'removal', { price: m === dee ? 'consent' : 'assembly' });
     s.answer(9, m, 'rate', { grant: m === bo ? 6 : 4, cap: 8, dripMinutes: 240 });
   }
   eq(s.settingState('quorum').value, { form: 'share', n: 75 },
@@ -106,11 +125,19 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
     'the bar: hex needed 82, so 82 it is');
   eq(s.settingState('lapse').value, { afterMs: null },
     'lapse: never is the longest quiet spell of all');
-  eq(s.settingState('removal').value, { rung: 'everyone' },
-    "removal (🥾 Q401a): one member who wants their own say keeps everyone's answer counted");
+  eq(s.settingState('removal').value, { price: 'consent' },
+    'removal (🥾): one member who will only accept consent keeps the subject included');
   eq(s.settingState('rate').value, { grant: 6, cap: 8, dripMinutes: 240 },
     'rate: the most generous grant wins (§9.0)');
-  check(s.constitutedAtT === 9, 'the document constituted when the last gate resolved');
+  // **🍾 is the founder's explicit act** (Q443, R-045): the last gate
+  // resolving used to constitute the document by itself, and this walk was
+  // written then. `begin` is the only thing that emits `constituted` now,
+  // and it refuses while any delegated question is still collecting.
+  check(s.constitutedAtT === null, 'every gate resolved, and still nothing has begun');
+  s.confirmStartingText(9, 'The clubhouse shall be kept open.');
+  check(s.readiness()!.ready, 'the readiness readout says the founder may start');
+  s.begin(9);
+  check(s.constitutedAtT === 9, 'the document constituted when the founder pressed 🍾');
   check(s.canJudge(), 'judging opened at that moment (§9.0b)');
 
   const dist = view(s, bo).resolutions.find((r) => r.setting === 'bar')!;
@@ -135,19 +162,25 @@ say('\n== clerk variant: an anonymous convenor who administers and never writes 
   s.arrive(1, bo);
   s.confirmStartingText(2, '');
   check(s.textConfirmed, 'an empty starting text somebody chose is a real state (§9.0b)');
-  s.answer(2, bo, 'ending', { endsAtMs: null });
+  // The clerk settles every question by hand, ⏰ included. It used to
+  // *delegate* this one and take bo's answer, and that road is shut: a
+  // delegated question with **one voice** never resolves (the one-voice
+  // gate), so a document of one member cannot be founded by handing
+  // anything over — which is precisely the claim this scenario makes, from
+  // the other side.
   for (const [id, v] of Object.entries({
+    ending: { endsAtMs: null },
     bar: { pct: 66 }, pace: { shape: 'fixed' }, quorum: { form: 'count', n: 1 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' }, chamber: { rung: 'link' },
-    applications: { holder: 'members', joinPolicy: 'invite' },
-    machines: { enabled: false, budget: 0 }, removal: { rung: 'everyone' },
+    applications: { apply: false },
+    machines: { enabled: false, budget: 0 }, removal: { price: 'consent' },
     lapse: { afterMs: null },
   })) {
-    s.reclaim(2, id as never);
     s.setSetting(2, id as never, v as never);
   }
   s.setSetting(2, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
+  s.begin(2);
   check(s.constitutedAtT !== null, 'a convenor may settle the constitution alone (§9.0a)');
   check(!s.canPropose('kit'), 'a clerk cannot propose — no wallet, no judgments, no quorum');
   check(s.canPropose(bo), 'the one member can');
@@ -323,6 +356,9 @@ function threeRoom(opts: { lapse?: { afterMs: number | null } } = {}) {
   const cy = s.invite(1, 'cy@example.org');
   s.arrive(1, bo);
   s.arrive(1, cy);
+  // nothing arrives delegated (§9.0a, Q511) — the hand-over is what opens
+  // these three for answering
+  for (const q of ['ending', 'bar', 'chamber'] as const) s.delegate(1, q);
   s.answer(1, 'ada', 'ending', { endsAtMs: 500_000 });
   s.answer(1, bo, 'ending', { endsAtMs: 1_000_000 });
   s.answer(1, cy, 'ending', { endsAtMs: 800_000 }); // resolved — bar may follow
@@ -341,13 +377,23 @@ function threeRoom(opts: { lapse?: { afterMs: number | null } } = {}) {
     quorum: { form: 'share', n: 60 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
-    applications: { holder: 'members', joinPolicy: 'invite' },
+    applications: { apply: false },
+    admission: { price: 'assembly' },
+    removal: { price: 'consent' },
     machines: { enabled: false, budget: 0 },
     lapse: opts.lapse ?? { afterMs: null },
   })) {
-    s.reclaim(2, id as never);
     s.setSetting(2, id as never, v as never);
   }
+  // the doors carry the reserved pair over the *act* since entry 94 (SPEC
+  // §9.7 rule 9) and are born held, so a carried invitation would sit at
+  // `awaiting-crown` until the founder assented. Laid down before the
+  // start, which is where this walk's invitation scenario expects to be.
+  for (const door of ['door:invite', 'door:remove'] as const) {
+    s.relinquish(2, door, 'unilateral');
+    s.relinquish(2, door, 'assent');
+  }
+  s.begin(2); // 🍾 — the founder's explicit start (Q443)
   return { s, bo, cy };
 }
 

@@ -23,14 +23,18 @@
  * every band hash from ⏩ onward — is retried once, and said so.
  *
  * --strict IS on in CI, and has been since 2026-08-21 (ci.yml's `probe`
- * job). What makes a red probe invisible is the job's own
- * `continue-on-error: true` — advisory until it has run green for a week —
- * so the job goes red, the run reads green, and nobody looks. It swallowed
- * a real failure on every push from 2026-08-25 onward: first 136 diffs (the
- * reference stale after the plan-queue batch), then the thirteen dead steps
- * of Q910. This paragraph used to say --strict was off, which is how Q910
- * came to be written against a premise four days out of date; the flag and
- * the sentence about it now live one file apart, so check ci.yml, not here.
+ * job). The job was `continue-on-error: true` alongside it — advisory until
+ * it had run green for a week — so it went red, the run read green, and
+ * nobody looked: it swallowed a real failure on every push from 2026-08-25
+ * onward, first 136 diffs (the reference stale after the plan-queue batch),
+ * then the thirteen dead steps of Q910. **Ed promoted it on 2026-08-26
+ * (Q910 (b)) and the job gates now.**
+ *
+ * This paragraph has been wrong twice — it said --strict was off, which is
+ * how Q910 came to be written against a premise four days out of date, and
+ * then it said the job was advisory for a day after it stopped being. Both
+ * facts live in `.github/workflows/ci.yml` and neither lives here: **check
+ * ci.yml, not this comment.**
  */
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
