@@ -35,7 +35,9 @@
  * from a failure so a gate can tell the two apart — and once filed, `filed:
  * 'Qn'` on the event's row reports it under `filed` and the run is green
  * again) · 2 is `assert-server`'s.
- * The last line is machine-readable: `seat-matrix: findings=… noRule=… …`.
+ * The last line is machine-readable: `seat-matrix: findings=… noRule=… filed=… …`
+ * — `filed` is in it because a run carried green over a growing pile of filed
+ * rows is exactly what a gate needs to be able to see.
  *
  * Two things learned building it (2026-08-27), both load-bearing:
  *  · **Presence is stamped hourly** (`SEEN_EVERY_MS` in session.ts), so a
@@ -52,6 +54,7 @@
  * — **red on two findings about the page and the module, not on the harness**:
  *   member: `seat-matrix: findings=15 noRule=0 shape=0 errors=0 refused=0 unstood=0 exit=1`
  *   clerk:  `seat-matrix: findings=25 noRule=0 shape=0 errors=0 refused=0 unstood=4 exit=1`
+ * (quoted as they were printed; the line gained `filed=` afterwards).
  * Wall time about 8 minutes per hat (the lapse wait is 80–115 s of it); a
  * second member run `--baseline`d against the first reported *no rail
  * differences*, so `mask` folds every volatile field. Seats
@@ -61,7 +64,8 @@
  * module, so every card below it in `ORDER` is withheld from members) and
  * every clerk-hat one is **Q920** (`view.convenor.isMember` stays `true` for
  * a clerk, so 🏛️ is served and 🍾 waits on it); with those two built the
- * expected line is `findings=0 … unstood=0 exit=0` with `filed · 1 — Q918`.
+ * expected line is `findings=0 … filed=1 … unstood=0 exit=0`, the one filed row
+ * being Q918.
  * Four harness faults were fixed to get here, each noted at its row: the
  * founder's page reloads after the wire founding (`reload` on `text`), every
  * seat introduces itself with a name and a face (`face`), 💤 is answered on
@@ -109,6 +113,11 @@ const EVENT = Object.fromEntries(EVENTS.map((r) => [r['#'], r]));
 const HOLDS = tableAfter('SURFACE.md', 'holds');
 const beginRow = HOLDS.find((r) => (r.control || '').startsWith('🍾'));
 const BEGIN_HOLD_MS = beginRow ? Number(beginRow['hold ms']) + 250 : 1250;
+// a setting answered on its own card commits on the founder's ✒️, whose hold is
+// the table's too — a literal here would silently under-hold the day SURFACE
+// lengthens it, and an under-held commit rewinds in silence (§7.2)
+const penRow = HOLDS.find((r) => (r.control || '').startsWith('✒️'));
+const PEN_HOLD_MS = penRow ? Number(penRow['hold ms']) + 250 : 1250;
 
 /* ---- table 1: the seats ----------------------------------------------- *
  * Data only. `document` says which founder's run a seat belongs to; where in
@@ -184,16 +193,6 @@ const STEPS = [
   // One reload after the last wire act is what a founder's own next visit does.
   { id: 'text', epoch: 'before', kind: 'cmd', seat: 'founder', cmd: 'confirm-starting-text', reload: true,
     args: () => ({ text: 'The clubhouse shall be kept open.\nEvery member may bring one guest.' }), events: [] },
-  // 💤 is the one setting the page cannot rebuild from the module: `hydrateS`
-  // writes the day count into `S.lapse` (the rung field) and never `S.lapseDays`,
-  // so a reloaded founder is asked 💤 again and everything below it in `ORDER`
-  // waits (first run, 2026-08-27: `no begin card to hold … rail ["lapse"]`;
-  // a page finding, Q919 — not fixed here). And the one-minute lapse the
-  // `lapsed` seat needs is not expressible on the card (7–365 days). So 💤 is
-  // answered **on the card, after the reload**, which is what the page counts
-  // as seen, and the minute is then set over the wire without a reload. The
-  // two rows stand after `ok-shield`: 💤 is below the grants in `ORDER`, so its
-  // card is not in the rail until both are acknowledged.
   { id: 'invite-early', epoch: 'before', kind: 'invite', seat: 'founder', who: ['early', 'lapsed'], events: [] },
   // the snapshot where a re-introduced Q639 shows: the pen as a ⏳ tab on a
   // member's band. 🛡️ is staged behind the pen's OK on the founder's page
@@ -208,7 +207,17 @@ const STEPS = [
     events: [E8('grant-pen'), { id: 'E25', key: 'strlogin', at: 'seat-stranger' }] },
   { id: 'ok-pen', epoch: 'before', kind: 'ok', seat: 'founder', key: 'grant-pen', events: [E8('grant-pen'), E8('grant-shield')] },
   { id: 'ok-shield', epoch: 'before', kind: 'ok', seat: 'founder', key: 'grant-shield', events: [E8('grant-pen'), E8('grant-shield')] },
-  { id: 'lapse-card', epoch: 'before', kind: 'card', seat: 'founder', key: 'lapse',
+  // 💤 is the one setting the page cannot rebuild from the module: `hydrateS`
+  // writes the day count into `S.lapse` (the rung field) and never `S.lapseDays`,
+  // so a reloaded founder is asked 💤 again and everything below it in `ORDER`
+  // waits (first run, 2026-08-27: `no begin card to hold … rail ["lapse"]`;
+  // a page finding, Q919 — not fixed here). And the one-minute lapse the
+  // `lapsed` seat needs is not expressible on the card (7–365 days). So 💤 is
+  // answered **on the card, after the reload**, which is what the page counts
+  // as seen, and the minute is then set over the wire without a reload. These
+  // two rows stand after `ok-shield`: 💤 is below the grants in `ORDER`, so its
+  // card is not in the rail until both are acknowledged.
+  { id: 'lapse-card', epoch: 'before', kind: 'card', seat: 'founder', key: 'lapse', setting: 'lapse',
     pick: { set: 'lapse', val: 'days' }, fields: { lapseDays: '7' }, events: [] },
   { id: 'lapse-minute', epoch: 'before', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
     args: () => ({ setting: 'lapse', value: { afterMs: 60_000 } }), events: [] },
@@ -304,7 +313,9 @@ async function runDocument(hat) {
     if (note) say('   · ' + note);
     if (step.kind === 'ladder' && step.to === 'closed') D.closed = true;
     const snap = await snapshot(D);
-    D.steps.push({ id: step.id, epoch: step.epoch, events: evs.map((e) => ({ id: e.id, key: e.key })), seats: snap });
+    D.steps.push({ id: step.id, epoch: step.epoch, seats: snap,
+      // `filed` rides along so the payload says why a row was not asserted
+      events: evs.map((e) => ({ id: e.id, key: e.key, ...(e.filed ? { filed: e.filed } : {}) })) });
     assertStep(D, step, evs, snap);
     if (TO !== null && step.epoch === TO && (STEPS[i + 1] === undefined || STEPS[i + 1].epoch !== TO)) {
       say(`   stopped after the ${TO} epoch: ${D.docbase}/d/${D.slug}`);
@@ -472,10 +483,19 @@ const RUN = {
       if (!(await typeIn(page, '.setupcard [data-num="' + k + '"]', v))) throw new Error(`${step.key}: no field ${k} on the card`);
     }
     await page.waitForTimeout(300);
-    const label = await press(page, 1250);
+    const label = await press(page, PEN_HOLD_MS);
     if (label === null) throw new Error(`${step.key}: the card offers no live commit`);
     await page.waitForTimeout(900);
-    return `${step.key} answered on the card (${label})`;
+    // a press is not a commit: a hold that rewinds leaves the card exactly as it
+    // was and this step would report success, the failure surfacing steps later
+    // as a card that will not settle. Read the value back off the module.
+    const id = step.setting ?? step.key;
+    const v = await viewAs(D, step.seat);
+    const sv = ((((v || {}).view) || {}).settings || []).find((x) => x.setting === id);
+    if (!sv || sv.value === null || sv.value === undefined) {
+      throw new Error(`${step.key}: the commit (${label}) did not land — ${id} is still unset in the module`);
+    }
+    return `${step.key} answered on the card (${label}) · ${id} = ${JSON.stringify(sv.value)}`;
   },
   cmd: async (step, D) => {
     const r = await cmdAs(D, step.seat, step.cmd, step.args(D));
@@ -507,16 +527,18 @@ const RUN = {
       await landOn(s.page, link);
       if (!s.page.url().includes('/d/')) throw new Error(`seat ${step.seat} could not be stood: landed at ${s.page.url()}`);
     }
-    s.stood = true; D.stoodAt[step.seat] = stepIndex(step.id);
     if (s.def.role === 'member') {
       // ✋🖼️ answered over the wire, then one reload: `nameSet`/`picSet` are
       // hydrated at boot only, and unanswered they stand above the gates in
-      // `ORDER` (see `face` on SEATS)
+      // `ORDER` (see `face` on SEATS). It happens **before** `stood`: a seat
+      // that never introduced itself carries no card below ✋🖼️, so asserting
+      // its rail would report the founding order as a page finding per step.
       const r = await cmdAs(D, step.seat, 'set-identity', { name: s.def.person, picture: s.def.face });
-      if (r.status !== 200) throw new Error(`seat ${step.seat}: set-identity → ${r.status} ${JSON.stringify(r.body)}`);
+      if (r.status !== 200) throw new Error(`seat ${step.seat} could not be stood: set-identity → ${r.status} ${JSON.stringify(r.body)}`);
       await s.page.reload({ waitUntil: 'domcontentloaded' });
       await s.page.waitForTimeout(2600);
     }
+    s.stood = true; D.stoodAt[step.seat] = stepIndex(step.id);
     return `${step.seat} at ${s.page.url()}`;
   },
   /** Open a card by key on the founder's page and click its OK. */
@@ -834,6 +856,7 @@ if (BASELINE !== null) await diffAgainst(BASELINE, payload);
 
 const red = findings.length || errors.length || refused.length || unstood.length;
 const code = red ? 1 : (noRule.length || shape.length) ? 3 : 0;
-say(`\nseat-matrix: findings=${findings.length} noRule=${noRule.length} shape=${shape.length}` +
+say(`\nseat-matrix: findings=${findings.length} noRule=${noRule.length} filed=${filed.length}` +
+  ` shape=${shape.length}` +
   ` errors=${errors.length} refused=${refused.length} unstood=${unstood.length} exit=${code}`);
 process.exit(code);
