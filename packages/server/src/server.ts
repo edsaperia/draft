@@ -18,7 +18,7 @@ import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { CATALOGUE, ConstitutionSession, mayApply, sha256Hex, view } from '../../constitution/src/index.js';
 import type { ApplicationsValue, LogEntry, Price, PriceValue } from '../../constitution/src/index.js';
-import { authorshipBase } from '../../constitution/src/adapter.js';
+import { DEFAULT_TUNING, authorshipBase } from '../../constitution/src/adapter.js';
 import { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
 import { DocStore, slugify, uniqueSlug } from './store.js';
@@ -91,6 +91,35 @@ export async function createDraftServer(cfg: ServerConfig,
   injected?: Persistence): Promise<DraftServer> {
   const bootedAtMs = Date.now();
   let closing: Promise<void> | null = null;
+
+  /**
+   * **Operator visibility during a session** (entry 77, the alpha-readiness
+   * pass). There is no error reporting anywhere in this repo — Sentry is
+   * PRODUCTION.md stage 16 and is not this — and for a supervised room the
+   * minimum is being able to see *that the server threw*, on one endpoint,
+   * between sessions. So: a count of the throws nobody handled, by where
+   * they happened, served on `/healthz` beside the outbox's two numbers.
+   *
+   * What counts. A request that ends 500 is one — the route threw something
+   * carrying a system code, and the member was told nothing. A tick failure
+   * is one — §4.6's metronome missed a document, once a minute, and the
+   * repeat is the alarm. An outbox pass failure is one. A **400 is not**:
+   * a module refusal is the product working, and counting it would bury the
+   * signal under ordinary traffic (a member proposing without a pen).
+   *
+   * `last` is the message and the moment, not a stack: the endpoint is
+   * public by the same call that made the catalogue public, and a stack
+   * names paths on the host. The message is already what the log line
+   * carries, and it is enough to say *which* thing broke.
+   */
+  const errors = { total: 0, request: 0, tick: 0, outbox: 0,
+    last: null as null | { at: number; where: string; message: string } };
+  const noteError = (where: 'request' | 'tick' | 'outbox', e: unknown): void => {
+    errors.total += 1;
+    errors[where] += 1;
+    errors.last = { at: Date.now(), where,
+      message: e instanceof Error ? e.message : String(e) };
+  };
   const persistence = injected ?? await openPersistence(cfg);
   const store = new DocStore(persistence);
   await store.loadAll();
@@ -436,6 +465,7 @@ export async function createDraftServer(cfg: ServerConfig,
         doc.cs.tick(tOf(doc.cs, nowMs));
         await commit(doc, nowMs);
       } catch (e) {
+        noteError('tick', e);
         console.error(`tick failed for document '${doc.id}':`, e);
       }
     }
@@ -444,6 +474,7 @@ export async function createDraftServer(cfg: ServerConfig,
     // elapsed. Awaited, so a tick that overlaps a shutdown drains with it.
     if (closing === null) {
       await outbox.run(nowMs).catch((e: unknown) => {
+        noteError('outbox', e);
         console.error('outbox pass failed:', e);
         return { sent: 0, failed: 0, held: false };
       });
@@ -468,7 +499,11 @@ export async function createDraftServer(cfg: ServerConfig,
       // through; anything carrying a system code (fs, net) is internal
       // and says nothing about itself (stage 3, defect 9)
       const internal = typeof (e as { code?: unknown }).code === 'string';
-      if (internal) console.error('internal error:', e);
+      if (internal) {
+        noteError('request', e);
+        console.error(`internal error (#${errors.total}) ${req.method ?? '-'} `
+          + `${(req.url ?? '/').split('?')[0]}:`, e);
+      }
       const message = e instanceof Error ? e.message : String(e);
       if (!res.headersSent) {
         if (internal) json(res, 500, { error: 'something went wrong' });
@@ -596,6 +631,13 @@ export async function createDraftServer(cfg: ServerConfig,
         uptimeSeconds: Math.floor((nowMs - bootedAtMs) / 1000),
         mail: cfg.mailOff ? 'off' : 'on',
         outbox: mail,
+        // the throws nobody handled since boot (entry 77) — see `errors`
+        // above. `total` is the one number to watch between sessions.
+        errors,
+        // the adoption metronome this process is pacing at (§4.2, entry
+        // 77): stated because it is an operator knob a restart changes and
+        // nothing else on the surface reports it.
+        cooldownMs: cfg.engineTuning?.cooldownMs ?? DEFAULT_TUNING.cooldownMs,
       });
       return;
     }

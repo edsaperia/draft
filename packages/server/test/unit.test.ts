@@ -189,6 +189,37 @@ describe('stage 7: the two cutover switches, read inertly', () => {
     expect(existsSync(ghost)).toBe(false);
   });
 
+  /**
+   * **The cooldown knob** (entry 77, Q946). The adoption cooldown is engine
+   * tuning and never constitutional (§4.2), so it is correctly not a setting
+   * — and was therefore not adjustable at all, which at the shipped five
+   * minutes gives a 15-minute room three moments when the document can
+   * change. Ed's answer is one minute; this is the only way to say so.
+   */
+  it('DRAFT_COOLDOWN_MS: absent means the engine default, present means the room is paced', async () => {
+    const { configFromEnv, COOLDOWN_MAX_MS } = await import('../src/config.js');
+    const env = { DRAFT_DATA_DIR: tmp(), DRAFT_SECRET: 's' };
+    // absent: the field is not there at all, so `engineTuning` stays
+    // undefined and `DEFAULT_TUNING` is what the engine gets
+    expect(configFromEnv(env).engineTuning).toBeUndefined();
+    expect(configFromEnv({ ...env, DRAFT_COOLDOWN_MS: '60000' }).engineTuning)
+      .toEqual({ cooldownMs: 60_000 });
+    // 0 is legal and is not "absent": a test host wants adoptions in one
+    // second, and `??` on the value would have read it as unset
+    expect(configFromEnv({ ...env, DRAFT_COOLDOWN_MS: '0' }).engineTuning)
+      .toEqual({ cooldownMs: 0 });
+    expect(COOLDOWN_MAX_MS).toBe(5 * 60_000);
+    // §4.2's ceiling is a refusal, not a clamp: an operator asking for ten
+    // minutes has misread the rule, and a silent clamp leaves them thinking
+    // it took
+    expect(() => configFromEnv({ ...env, DRAFT_COOLDOWN_MS: '600000' }))
+      .toThrow(/DRAFT_COOLDOWN_MS/);
+    expect(() => configFromEnv({ ...env, DRAFT_COOLDOWN_MS: '-1' }))
+      .toThrow(/DRAFT_COOLDOWN_MS/);
+    expect(() => configFromEnv({ ...env, DRAFT_COOLDOWN_MS: 'soon' }))
+      .toThrow(/DRAFT_COOLDOWN_MS/);
+  });
+
   it('drain resolves once every chain has settled', async () => {
     const chain = new WriteChain();
     const landed: string[] = [];

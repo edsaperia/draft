@@ -899,6 +899,37 @@ describe('stage 7: health and graceful shutdown', () => {
     expect(((await (await fetch(base + '/healthz')).json()) as { documents: number }).documents).toBe(0);
   });
 
+  /**
+   * **Operator visibility during a session** (entry 77). No error reporting
+   * exists anywhere in this repo, and for a supervised alpha the minimum is
+   * one endpoint that says whether the server threw. The distinction that
+   * makes the number worth watching is the one asserted here: a member being
+   * refused is not an error, and if it counted, the signal would be buried
+   * under ordinary traffic within a minute of the room starting.
+   */
+  it('/healthz counts the throws nobody handled, and does not count a refusal', async () => {
+    const { base } = await boot();
+    type Health = { errors: { total: number; request: number; tick: number; outbox: number;
+      last: null | { where: string; message: string } }; cooldownMs: number };
+    const health = async (): Promise<Health> =>
+      (await (await fetch(base + '/healthz')).json()) as Health;
+
+    const fresh = await health();
+    expect(fresh.errors).toMatchObject({ total: 0, request: 0, tick: 0, outbox: 0, last: null });
+    // the metronome this process is pacing at, stated because a restart is
+    // the only way to change it and nothing else reports it
+    expect(fresh.cooldownMs).toBe(0); // boot()'s own override
+
+    // a module refusal: the product working. 400, and not an error.
+    const refused = await post(base, '/api/docs', { title: '', email: 'nope' });
+    expect(refused.status).toBe(400);
+    expect((await health()).errors.total).toBe(0);
+
+    // an unknown route is a 404, which is also not an error
+    expect((await fetch(base + '/api/nothing-here')).status).toBe(404);
+    expect((await health()).errors.total).toBe(0);
+  });
+
   it('close() lets an in-flight commit land, then refuses new connections', async () => {
     const { base, draft, reopen } = await boot();
     const created = await (await post(base, '/api/docs', {
