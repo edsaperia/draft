@@ -264,9 +264,13 @@ export async function createDraftServer(cfg: ServerConfig,
     // so a signed proposal is named on its race card and in the records
     // while the document is open, and an unsigned one exactly when its own
     // rung says.
+    // the members map first: a founder who is a member keeps their identity
+    // there (`identity-set`'s fold), and the convenor record only for a clerk
     const nameOf = (id: string): string | null => {
+      const m = doc.cs.memberRecords().get(id);
+      if (m) return m.name ?? null;
       if (id === doc.cs.convenorRecord().id) return doc.cs.convenorRecord().name ?? null;
-      return doc.cs.memberRecords().get(id)?.name ?? null;
+      return null;
     };
     const namedAuthor = (c: Candidate): { id: string; name: string | null } | undefined =>
       authorVisible(c, engine.constitution, { closed: engine.closed })

@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.77
+# Group Drafting Engine — Specification v0.78
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -76,6 +76,10 @@ Because withdrawal changes the field, it is a **ground shift** for that race (§
 **Candidate authorship** runs on a ladder from most private to least: **anonymous** (never revealed) · **sealed** (hidden during the session, revealed at close) · **public** (visible live). Rationales are always visible whatever the setting — what varies is only whether a name is attached to one.
 
 **Who may sign is two rungs of that ladder, not a second setting** (v0.70). Elective signing — *each author chooses per candidate* — sits **above** its base rung and **below** the next: a document that names nobody unless they volunteer is more private than one that names everybody at the close, and one that names everybody at the close but lets you volunteer sooner is more private than one that names you as you propose. It was its own setting until v0.70, with rungs *nobody · each · everybody*; *everybody* was the same fact as **public** above, which made *nobody named* and *everybody signs* both settable at once, and *nobody* and *each* are what the two pairs of rungs now say. Elective signing is a real option and a costly one: in a small roster an unsigned candidate among signed ones says something about its author, so a document that allows the choice is not neutral between the two. That is a cost for the roster to weigh rather than a reason to withhold the option (Ed, 2026-08-17). → why: R-047
+
+**Elective signing is a control on the proposal** (v0.78): under an elective rung the author chooses, per proposal and before proposing, and a signed proposal is named from the moment it is made; the choice is part of the proposal's record and is not revised. Under a fixed rung there is no choice and none is offered — nor accepted at the door. → why: R-050
+
+**A proposal keeps the disclosure rung it was made under** (Ed, 2026-08-26, v0.78). The authorship rung can move by motion after the start; a change binds proposals made after it and none made before, and the record shows the rung each was made under beside the rung that stands. One rule reveals an author everywhere — the live view and the record alike: signed, or made under *public*, or, at the record only, made under *sealed*; never otherwise. → why: R-050
 
 **A signature is always named.** Acknowledging the close signs the final document (§4.6), and the signature carries the signer's own name whatever this setting says. Signing is the opposite act to proposing under a disclosure rule: deliberate, after every decision is made, and an unnamed signature is an anonymous comment rather than a signature. → why: R-047
 

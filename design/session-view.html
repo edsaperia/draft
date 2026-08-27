@@ -3957,9 +3957,14 @@
       ['abstain', 'Abstain', 'An answer, not a block.'],
     ]) + BLINDNOTE;
   };
+  // **Honour, said where the vote is cast** (entry 31, Ed 2026-08-26): a
+  // motion on 👤 binds proposals made after it and none made before, so the
+  // voter reads that before answering. Nowhere else — the settled card's
+  // `why` is about the choice, not the change.
   const consentBody = (c, m) => (m.invite ? inviteBody(m)
     : m.removee !== undefined ? removeBody(m) :
-    '<p class="why">Whether <b>' + esc(m.to) + '</b> replaces <i>' + esc(standsOf(c.k)) + '</i>. Nothing is being judged: you state what you will accept, and one refusal keeps what stands.</p>' +
+    '<p class="why">' + (c.k === 'authorship' ? '<b>Proposals keep the privacy they were made under.</b> ' : '') +
+    'Whether <b>' + esc(m.to) + '</b> replaces <i>' + esc(standsOf(c.k)) + '</i>. Nothing is being judged: you state what you will accept, and one refusal keeps what stands.</p>' +
     consentPicks(c.k, [
       ['no', 'Keep what stands', 'Nobody is told who said so.'],
       ['yes', 'I accept the change', 'It passes once all ' + E() + ' stand at accept — or abstain.'],
@@ -7913,17 +7918,20 @@
       const others = r.candidates.filter((c) => !c.mine);
       const slate = r.deadlocked
         ? { slate: r.candidates.map((x) => ({ text: textOf(x), rationale: x.rationale })) } : {};
+      // a name the server attached is one the reveal rule allowed (a signed
+      // proposal, Q770, or one made under `public`): the live card shows it
+      const byOf = (c) => (c.author && c.author.name) || null;
       if (r.candidates.length === 1 || (rc && (rc.a.incumbent || rc.b.incumbent))) {
         // one challenger against what stands: the quick card
         const c = (rc ? byId(rc.a.incumbent ? rc.b.id : rc.a.id) : null) || r.candidates[0];
         items.push({ ...base, kind: 'quick', marked: markedOf(inc, textOf(c)),
-          rationale: c.rationale, candId: c.id, ...slate });
+          rationale: c.rationale, by: byOf(c), candId: c.id, ...slate });
       } else {
         const a = (rc ? byId(rc.a.id) : null) || others[0] || r.candidates[0];
         const b = (rc ? byId(rc.b.id) : null) || others[1] || r.candidates[1];
         items.push({ ...base, kind: 'race',
-          race: { a: { id: a.id, text: textOf(a), rationale: a.rationale },
-                  b: { id: b.id, text: textOf(b), rationale: b.rationale } }, ...slate });
+          race: { a: { id: a.id, text: textOf(a), rationale: a.rationale, by: byOf(a) },
+                  b: { id: b.id, text: textOf(b), rationale: b.rationale, by: byOf(b) } }, ...slate });
       }
     }
     for (const m of v.mine || []) {
@@ -7936,9 +7944,12 @@
           origin: ks.map((k) => { const l = SESSION.DOC.find((x) => x.key === k) || {};
             return { key: k, text: l.x || '', note: null, t: l.t, level: l.level }; }) };
       });
+      // once proposed the sign choice is part of its record (Q770): the line
+      // says *signed* and offers no switch
       items.push({ id: localIdOf.get(m.id) || ('mine:' + m.id), kind: 'draft', mine: true, keys,
         state: 'needs', qLabel: sites[0].label, urgency: 0, pct: 0,
-        cap: 'yours · in the race', rationale: m.rationale, sites, candidate: m.id });
+        cap: 'yours · in the race' + (m.signed ? ' · signed' : ''), signed: !!m.signed,
+        rationale: m.rationale, sites, candidate: m.id });
     }
     // one record per race (Q503c): the whole field, the text it displaced
     // as it stood, and how many weighed in
@@ -8015,7 +8026,9 @@
           lines: ls.map((ln, i) => headOf(site.origin[i]) + ln) };
       });
       const local = d.id;
-      api.cmd('propose-text', { baseVersion: cs.v.textVersion, hunks, why: d.rationale || '' })
+      // `signed` is the draft's own choice (Q770); the server is the gate that
+      // refuses it under a rung that offers no choice
+      api.cmd('propose-text', { baseVersion: cs.v.textVersion, hunks, why: d.rationale || '', signed: !!d.signed })
         .then((res) => {
           if (res && res.ok && res.result && res.result.id) {
             localIdOf.set(res.result.id, local); proposedAs.set(local, res.result.id);
@@ -8469,24 +8482,41 @@
     const undecided = rec ? rec.undecided.length : SESSION.SUGGS.filter((g) => g.undecided).length;
     const carried = cs ? [...cs.motionRecords().values()].filter((m) => m.status === 'carried').length : 0;
     const unassented = rec ? rec.carriedButUnassented.length : 0;
-    const auth = csState('authorship');
-    // **The elective rungs ride their base** (Q767), the page's own half of
-    // `authorshipBase` in adapter.ts — 👤 is a ladder of five, and a raw
-    // `=== 'anonymous'` test tells a document that took *Nobody’s name unless
-    // they choose* that its record names every author, which is the opposite
-    // of what the record does and of what the rung promises.
-    const rawRung = auth && auth.value ? auth.value.rung || auth.value : null;
-    const reveal = rawRung === 'anonymousElective' ? 'anonymous'
-      : rawRung === 'sealedElective' ? 'sealed' : rawRung;
-    const names = reveal === 'anonymous' ? 'Authorship stays sealed: the record names nobody.'
-      : reveal === 'public' ? 'Authorship was public throughout.'
-      : 'Authorship is unsealed: the record names who proposed what.';
+    const n = (k, one, many) => k + ' ' + (k === 1 ? one : many);
+    // **The record says who is named; the card reads the record** (Q770,
+    // entry 31). A sentence derived from the rung alone is wrong the moment
+    // one person signs, so live the count comes from the field entries the
+    // server has already passed through the one reveal rule. The fixture has
+    // no record and keeps a plain sentence from the standing rung — the
+    // elective rungs riding their base (Q767).
+    const fields = rec ? [...(rec.adopted || []), ...(rec.undecided || [])].flatMap((r) => r.field || []) : null;
+    let names;
+    if (fields) {
+      const named = fields.filter((f) => f.author).length;
+      names = fields.length === 0 ? 'Nothing was proposed, so the record names nobody.'
+        : named === 0 ? 'The record names nobody: every proposal keeps the privacy it was made under.'
+        : named === fields.length ? 'The record names every one of the ' + n(fields.length, 'proposer', 'proposers') + '.'
+        : 'The record names ' + named + ' of the ' + n(fields.length, 'proposer', 'proposers') + '.';
+      // **honour**: the rule moved while the document was open — some
+      // proposals were made under one rung and stand under another
+      const under = new Set(fields.map((f) => f.madeUnder).filter(Boolean));
+      if (under.size > 1 || (rec.rungNow && [...under].some((u) => u !== rec.rungNow))) {
+        names += ' Proposals keep the privacy they were made under: the rule moved while the document was open.';
+      }
+    } else {
+      const auth = csState('authorship');
+      const rawRung = auth && auth.value ? auth.value.rung || auth.value : null;
+      const reveal = rawRung === 'anonymousElective' ? 'anonymous'
+        : rawRung === 'sealedElective' ? 'sealed' : rawRung;
+      names = reveal === 'anonymous' ? 'Authorship stays sealed: the record names nobody.'
+        : reveal === 'public' ? 'Authorship was public throughout.'
+        : 'Authorship is unsealed: the record names who proposed what.';
+    }
     const sigs = closeSignatures();
     const sigList = sigs.length ? '<div class="gatelist sigs">' + sigs.map((sg) =>
       '<span class="gaterow">' + (sg.name ? esc(sg.name) : '<span class="disc small" aria-hidden="true"></span>a member') +
       (sg.comment ? '<span class="rsub"> · ' + esc(sg.comment) + '</span>' : '') + '</span>').join('') + '</div>' : '';
     const mine = mySignature();
-    const n = (k, one, many) => k + ' ' + (k === 1 ? one : many);
     return '<div class="unlocks"><b>The document is final as of' + esc(closedAtWords().replace(/^ at /, ' ')) + '.</b></div>' +
       '<ul class="batch">' +
       '<li>' + n(adopted, 'proposal was adopted', 'proposals were adopted') + ' into the text.</li>' +
@@ -8856,6 +8886,25 @@
     // with no remount (**a power is not held until it is acknowledged**)
     mayPropose: () => mayPropose(),
     mayJudge: () => mayJudge(),
+    // the sign control (Q770): the elective 👤 rung's base, or null — read at
+    // call time, so a 👤 motion carrying while a draft is open changes what the
+    // next draft offers and nothing about the one being typed
+    signing: () => {
+      const auth = csState('authorship');
+      const r = auth && auth.value ? auth.value.rung || auth.value : null;
+      return r === 'anonymousElective' ? 'anonymous' : r === 'sealedElective' ? 'sealed' : null;
+    },
+    // what the signature will read as: the module's record where there is
+    // one (the name the wire will attach), the provisional row before it
+    signerName: () => {
+      const id = viewerId();
+      if (cs && id) {
+        const m = cs.memberRecords().get(id);
+        const n = m ? m.name : (id === FOUNDER ? cs.convenorRecord().name : null);
+        if (typeof n === 'string') return n;
+      }
+      return viewerRow().n || '';
+    },
     extra, hooks: hookProxy,
   });
   const FIXTURE = new URLSearchParams(location.search).get('fixture');

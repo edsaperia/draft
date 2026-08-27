@@ -42,6 +42,20 @@ const EMPTY_TEXT = process.argv.includes('--empty-text');
 // one voice — so it ends at a served 🍾 that says what it is waiting for,
 // which is the whole of what Q773 asks for and is asserted as such.
 const DELEGATE_ALL = process.argv.includes('--delegate-all');
+// **The sign control** (Q770, plan-queue 59): `--authorship=<rung>` is the 👤
+// rung the founding takes, `sealedElective` by default — the rung under which
+// the editing card carries the sign choice. The propose step asserts the
+// control is there, signs, and reads the founder's name back off the wire;
+// under a fixed rung (`--authorship=sealed`) it asserts the control is absent
+// and the proposal unsigned. The labels are the 👤 card's own (`opt`), one
+// per rung (K27).
+const AUTHORSHIP = (process.argv.find((a) => a.startsWith('--authorship=')) || '').split('=')[1] || 'sealedElective';
+const AUTHORSHIP_LABEL = {
+  anonymous: 'Nobody’s name, ever', anonymousElective: 'Nobody’s name unless they choose',
+  sealed: 'Names at the close', sealedElective: 'Names at the close, or earlier by choice',
+  public: 'Names from the start',
+}[AUTHORSHIP];
+const ELECTIVE = AUTHORSHIP === 'anonymousElective' || AUTHORSHIP === 'sealedElective';
 const PROPOSALS_FIRST = process.argv.includes('--proposals-first');
 const PROPOSALS = ['begin', 'canpropose', 'canjudge', 'grant-voice'];
 const say = (...a) => console.log(...a);
@@ -863,7 +877,13 @@ for (let i = 0; i < 60; i++) {
   // for: that every question a founder hands over comes back to them.
   const wantDelegate = DELEGATE_ALL && !next.startsWith('ans-') && next !== 'ending';
   let chose = null;
-  for (const label of await options(wantDelegate)) {
+  let offered = await options(wantDelegate);
+  // 👤 takes the rung the run asked for (Q770), tried first; the rest stay
+  // as the walk's ordinary fallback
+  if (next === 'authorship' && !wantDelegate && AUTHORSHIP_LABEL && offered.includes(AUTHORSHIP_LABEL)) {
+    offered = [AUTHORSHIP_LABEL, ...offered.filter((l) => l !== AUTHORSHIP_LABEL)];
+  }
+  for (const label of offered) {
     const at = await pickOption(label);
     if (!at) continue;
     await page.mouse.click(at.x, at.y);
@@ -1172,6 +1192,45 @@ if (caret) {
   }));
   say('typing     · ' + (r.editCard ? 'opens the editing card' : 'FAIL: no editing card') +
     ' · propose control ' + (r.proposeBtn ? 'present and live' : 'MISSING'));
+  /* ---- the sign control (Q770): there under an elective 👤 rung, absent
+   * under a fixed one; pressing *Signed* flips the draft without a render
+   * (the lane keeps its caret) and the ✏️ hold's title says what leaves. */
+  const sc = await page.evaluate(() => {
+    const ctl = document.querySelector('.sugg.editcard .signctl');
+    const picks = ctl ? [...ctl.querySelectorAll('[data-act="draft-sign"]')] : [];
+    return { present: !!ctl, base: ctl ? ctl.dataset.signbase : null,
+      labels: picks.map((b) => b.textContent.trim()),
+      on: picks.map((b) => b.getAttribute('aria-pressed')) };
+  });
+  if (ELECTIVE) {
+    const shape = sc.present && sc.labels.length === 2 && sc.on[0] === 'true' && sc.on[1] === 'false' &&
+      sc.labels[0] === 'Anonymous' && /^Signed — as /.test(sc.labels[1]);
+    say('sign ctl   · ' + (shape ? 'present under ' + AUTHORSHIP + ' (base ' + sc.base + '), Anonymous by default · ' +
+      JSON.stringify(sc.labels) : 'FAIL: no sign control · ' + JSON.stringify(sc)));
+    if (!shape) stuck.push('no sign control');
+    if (shape) {
+      const signBtn = await page.$('.sugg.editcard [data-act="draft-sign"][data-signed="1"]');
+      await signBtn.scrollIntoViewIfNeeded();
+      await signBtn.click();
+      await T(300);
+      const flipped = await page.evaluate(() => {
+        const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+        const pb = document.querySelector('.sugg.editcard [data-act="draft-propose"]');
+        const lane = document.querySelector('.sugg.editcard [data-lane]');
+        return { signed: !!(d && d.signed), title: pb ? pb.title : '',
+          pressed: [...document.querySelectorAll('.sugg.editcard [data-act="draft-sign"]')].map((b) => b.getAttribute('aria-pressed')),
+          laneText: lane ? lane.textContent : null };
+      });
+      const okFlip = flipped.signed && / — signed — /.test(flipped.title) && flipped.pressed.join() === 'false,true';
+      say('signed     · ' + (okFlip ? 'the draft is signed, the card patched in place · title “' + flipped.title.slice(0, 60) + '…”'
+        : 'FAIL: ' + JSON.stringify(flipped)));
+      if (!okFlip) stuck.push('the sign choice did not take');
+    }
+  } else {
+    say('sign ctl   · ' + (!sc.present ? 'absent under ' + AUTHORSHIP + ', as a fixed rung offers no choice'
+      : 'FAIL: a sign control under ' + AUTHORSHIP + ' · ' + JSON.stringify(sc)));
+    if (sc.present) stuck.push('a sign control under a fixed rung');
+  }
   /* **And now the hold itself** (2026-08-22). This step used to say the
    * gesture could not be exercised here, and the bug it could not see cost
    * two live proposals: the hold released on `pointerleave`, so a render
@@ -1224,6 +1283,32 @@ if (caret) {
       (stillThere ? '' : ' · moved ' + Math.round(movedX) + 'px while held (width ' +
         Math.round(bx.width) + '→' + Math.round(mid.w) + ')')));
   if (!ok) stuck.push('propose hold');
+
+  /* ---- what left (Q770): the standing `mine` item carries the choice, and
+   * the wire names the founder on that clause's candidate exactly when it was
+   * signed — the one reveal rule, read at the server, never on the page. */
+  if (ok) {
+    await T(1200);                                 // the propose's own refresh
+    const wire = await page.evaluate(() => {
+      const mine = (window.SESSION.SUGGS || []).filter((x) => x.mine && x.unproposed !== true);
+      const api = location.pathname.replace('/d/', '/api/d/');
+      return fetch(api + '/view').then((r) => r.json()).then((v) => ({
+        mine: mine.map((m) => ({ signed: !!m.signed, cap: m.cap })),
+        wireMine: (v.mine || []).map((m) => ({ id: m.id, signed: !!m.signed })),
+        authors: (v.clauses || []).flatMap((c) => c.candidates).map((c) => (c.author && c.author.name) || null),
+      }));
+    });
+    const named = wire.authors.filter(Boolean);
+    const okWire = ELECTIVE
+      ? wire.mine.length > 0 && wire.mine.every((m) => m.signed && / · signed$/.test(m.cap)) &&
+        wire.wireMine.every((m) => m.signed) && named.length === wire.authors.length && named.length > 0
+      : wire.mine.every((m) => !m.signed) && wire.wireMine.every((m) => !m.signed) && named.length === 0;
+    say('named      · ' + (okWire
+      ? (ELECTIVE ? 'signed: the mine line says so and the wire names ' + JSON.stringify(named)
+        : 'unsigned under ' + AUTHORSHIP + ': the wire names nobody')
+      : 'FAIL: ' + JSON.stringify(wire)));
+    if (!okWire) stuck.push('the signed proposal on the wire');
+  }
 
   /* ---- 👤 the sealed speaker: somebody else's proposal, read by a member --
    * Promise coverage for 👤 (backlog 83, batch L). What the rung governs is
