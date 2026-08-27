@@ -1582,7 +1582,12 @@ export class ConstitutionSession {
     const members = [...this.members.values()]
       .filter((m) => !m.removed && !m.invitationExpired)
       .map((m) => {
-        const out = m.arrivedAtT === null || m.signedOut === 'abstaining';
+        // …and the **same** set the questions above are counted over: `eIds`
+        // is the electorate, so a member outside it (not yet arrived, lapsed,
+        // or signed out abstaining) owes nothing. Counting a lapsed member's
+        // owed questions while `answered`/`electorate` exclude them reported
+        // somebody holding the founding up whom `maybeResolve` never waits for.
+        const out = !eIds.has(m.id);
         return { id: m.id, name: m.name, arrived: m.arrivedAtT !== null,
           owed: out ? 0 : open.length,
           answered: out ? 0

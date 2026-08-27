@@ -7061,9 +7061,15 @@
     // the card under the caret (Q811)
     // …and any field on the card the refusal belongs to retires it the same
     // way (entry 62), now that a settings card can carry one too
+    // …and it has to be a field **on a card**: `cardKeyAt` falls back to
+    // `S.open`, which `refuseSet` has just set to the refused key — so with
+    // the fallback, a keystroke anywhere off a card (the prose column is a
+    // contenteditable on the same document listener) retired somebody else's
+    // refusal sentence and removed the first `.why.refusal` in the page.
+    const errCard = t.closest && t.closest('.setupcard');
     if (t.matches && S.doorErr &&
         (t.matches('[data-add]') || t.matches('[data-emails]') ||
-         cardKeyAt(t.closest('.setupcard')) === S.doorErr.k)) {
+         (errCard && cardKeyAt(errCard) === S.doorErr.k))) {
       S.doorErr = null;
       const line = (t.closest('.setupcard') || document).querySelector('.why.refusal');
       if (line) line.remove();
