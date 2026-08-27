@@ -2290,3 +2290,41 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     expect((await appView()).applicant.status).toBe('verified');
   }, 60_000);
 });
+
+/**
+ * 🧭 **The shape rides the pending creation to the save** (entry 166): a
+ * row's name on `/api/docs` reaches `store.create` through the token's
+ * `pending`, and the save folds it as the founder's own sets — so the
+ * document's view names the shape and every shaped clause reads as given.
+ * `custom` and a word the table does not know are both no shape.
+ */
+describe('🧭 the shape chosen before the birth (entry 166)', () => {
+  const found = async (base: string, shape: string) => {
+    const created = await (await post(base, '/api/docs', {
+      title: 'Shaped ' + shape, email: `${shape}@example.org`, shape,
+    })).json() as { slug: string; devLink: string };
+    const cookie = cookieOf(await consume(created.devLink));
+    return (await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie } })).json()) as {
+        view: { shape: string | null;
+          settings: Array<{ setting: string; settledBy: string | null; shaped: boolean }> } };
+  };
+  it('a conference is saved as a conference, its shaped clauses given', async () => {
+    const { base } = await boot();
+    const v = await found(base, 'conference');
+    expect(v.view.shape).toBe('conference');
+    const quorum = v.view.settings.find((s) => s.setting === 'quorum')!;
+    expect(quorum.settledBy).toBe('convenor');
+    expect(quorum.shaped).toBe(true);
+    // ⏰ is a conference's own card, not the shape's
+    expect(v.view.settings.find((s) => s.setting === 'ending')!.settledBy).toBe(null);
+  });
+  it('custom and nonsense are both no shape', async () => {
+    const { base } = await boot();
+    for (const word of ['custom', 'nonsense']) {
+      const v = await found(base, word);
+      expect(v.view.shape).toBe(null);
+      expect(v.view.settings.every((s) => !s.shaped)).toBe(true);
+    }
+  });
+});

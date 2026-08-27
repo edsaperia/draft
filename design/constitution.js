@@ -34,6 +34,9 @@ var CONSTITUTION = (() => {
     MEANING_MAX: () => MEANING_MAX,
     OWN_RUNG_LABEL: () => OWN_RUNG_LABEL,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
+    SHAPED: () => SHAPED,
+    SHAPES: () => SHAPES,
+    UNSHAPED: () => UNSHAPED,
     VOTES_NEEDED: () => VOTES_NEEDED,
     VOTES_NEEDED_HI_PCT: () => VOTES_NEEDED_HI_PCT,
     VOTES_NEEDED_LO_PCT: () => VOTES_NEEDED_LO_PCT,
@@ -51,6 +54,7 @@ var CONSTITUTION = (() => {
     holderOf: () => holderOf,
     inE: () => inE,
     isDoor: () => isDoor,
+    isShapeName: () => isShapeName,
     lapseDue: () => lapseDue,
     mayApply: () => mayApply,
     meaningOf: () => meaningOf,
@@ -64,6 +68,7 @@ var CONSTITUTION = (() => {
     roomSettings: () => roomSettings,
     seedAnchors: () => seedAnchors,
     sha256Hex: () => sha256Hex,
+    shapeOf: () => shapeOf,
     slugify: () => slugify,
     smoothstep: () => smoothstep,
     stableStringify: () => stableStringify,
@@ -861,6 +866,117 @@ var CONSTITUTION = (() => {
     };
   }
 
+  // src/shapes.ts
+  var SHAPED = [
+    "bar",
+    "pace",
+    "quorum",
+    "authorship",
+    "judgments",
+    "chamber",
+    "rate",
+    "lapse",
+    "machines",
+    "removal"
+  ];
+  var UNSHAPED = [
+    "title",
+    "link",
+    "startingText",
+    "admission",
+    "applications",
+    "displayName",
+    "picture"
+  ];
+  var DAY_MS = 24 * 3600 * 1e3;
+  var SHAPES = [
+    {
+      name: "meeting",
+      title: "A meeting",
+      say: "A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.",
+      unit: "hours",
+      sets: {
+        // Ed: ramp 60→80; 80 is 🌡️'s *Broad agreement* rung. Mind Q840: a room
+        // of one tops out at 79, and 🌡️'s ceiling note already says so.
+        bar: { pct: 80 },
+        pace: { shape: "ramp", startPct: 60 },
+        // as a share (Ed); everyone is in the room at a meeting
+        quorum: { form: "share", n: 50 },
+        // names at the end, or earlier by choice — the rung the sign control belongs to
+        authorship: { rung: "sealedElective" },
+        // the most protective rung; votes stay private unless a room decides otherwise
+        judgments: { rung: "never" },
+        // a meeting's document is passed round by its address
+        chamber: { rung: "link" },
+        // **is** alpha-preset's measured *ALPHA PRESET*: the one cell with evidence
+        rate: { grant: 6, cap: 8, dripMinutes: 5 },
+        // Ed: hidden for a meeting — a decision nobody has
+        lapse: { afterMs: null },
+        // Ed: off
+        machines: { enabled: false, budget: 0 },
+        // nobody is put out of a meeting — leave only
+        removal: { price: "consent" }
+      },
+      hides: ["lapse"]
+    },
+    {
+      name: "conference",
+      title: "A conference",
+      say: "A few days with people coming and going: a third of the room is enough to move, one proposal an hour each.",
+      unit: "days",
+      sets: {
+        bar: { pct: 80 },
+        pace: { shape: "ramp", startPct: 60 },
+        quorum: { form: "share", n: 33 },
+        authorship: { rung: "sealedElective" },
+        // placeholder — QA may prefer *after* for a conference
+        judgments: { rung: "never" },
+        chamber: { rung: "link" },
+        // drip in hours
+        rate: { grant: 4, cap: 8, dripMinutes: 60 },
+        lapse: { afterMs: null },
+        machines: { enabled: false, budget: 0 },
+        removal: { price: "consent" }
+      },
+      hides: ["lapse"]
+    },
+    {
+      name: "ongoing",
+      title: "Ongoing",
+      say: "No end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.",
+      unit: null,
+      sets: {
+        // Ed: *never* is what *ongoing* already said — folded first, because
+        // the module refuses a ramp under a perpetual ending
+        ending: { endsAtMs: null },
+        // fixed 80 for ongoing (perpetual forces fixed)
+        bar: { pct: 80 },
+        pace: { shape: "fixed" },
+        quorum: { form: "share", n: 25 },
+        authorship: { rung: "sealedElective" },
+        judgments: { rung: "never" },
+        // an ongoing document is the members'
+        chamber: { rung: "closed" },
+        // drip in days
+        rate: { grant: 4, cap: 6, dripMinutes: 1440 },
+        // Ed: about 30 days for ongoing
+        lapse: { afterMs: 30 * DAY_MS },
+        machines: { enabled: false, budget: 0 },
+        // an ongoing room needs the door
+        removal: { price: "assembly" }
+      },
+      hides: []
+    }
+  ];
+  function shapeOf(name) {
+    const row = SHAPES.find((s) => s.name === name);
+    if (!row) throw new Error(`'${name}' is not a shape`);
+    return row;
+  }
+  function isShapeName(v) {
+    return typeof v === "string" && SHAPES.some((s) => s.name === v);
+  }
+
   // src/session.ts
   var MANAGED = CATALOGUE.filter((e) => e.kind !== "personal" && e.id !== "startingText").map((e) => e.id);
   var HELD = [...MANAGED, "startingText", ...DOORS];
@@ -902,6 +1018,9 @@ var CONSTITUTION = (() => {
       __publicField(this, "startingText", null);
       __publicField(this, "textConfirmedFlag", false);
       __publicField(this, "slugHistory", []);
+      /** The birth's own `t` and its 🧭 shape (entry 166), read off `created` so `replay` rebuilds both. */
+      __publicField(this, "createdT", null);
+      __publicField(this, "shapeName", null);
       __publicField(this, "constitutedT", null);
       __publicField(this, "closedFlag", false);
       __publicField(this, "closedT", null);
@@ -942,13 +1061,23 @@ var CONSTITUTION = (() => {
       if (!input.title.trim()) throw new Error("a document begins with its title (§9.7a)");
       const slugErr = validateFor(entryOf("link"), { slug: input.slug });
       if (slugErr) throw new Error(slugErr);
+      const shape = input.shape === void 0 ? null : shapeOf(input.shape);
       s.emit({
         type: "created",
         t,
         title: input.title,
         slug: input.slug,
-        convenor: input.convenor
+        convenor: input.convenor,
+        ...shape === null ? {} : { shape: shape.name }
       });
+      if (shape !== null) {
+        const ids = Object.keys(shape.sets);
+        const ordered = [
+          ...ids.filter((id) => id === "ending"),
+          ...CATALOGUE.map((e) => e.id).filter((id) => id !== "ending" && ids.includes(id))
+        ];
+        for (const id of ordered) s.setSetting(t, id, shape.sets[id]);
+      }
       return s;
     }
     /** Rebuild a session by replaying a log (verifies the hash chain). */
@@ -983,6 +1112,8 @@ var CONSTITUTION = (() => {
       switch (event.type) {
         case "created": {
           const c = event.convenor;
+          this.createdT = event.t;
+          this.shapeName = event.shape ?? null;
           this.convenor = {
             ...c,
             name: c.name ?? null,
@@ -2761,6 +2892,14 @@ var CONSTITUTION = (() => {
     get constitutedAtT() {
       return this.constitutedT;
     }
+    /** When the document was born — the `t` a shape's sets share (entry 166). */
+    get createdAtT() {
+      return this.createdT ?? 0;
+    }
+    /** The 🧭 shape chosen at the birth, or null for custom (entry 166). */
+    get shape() {
+      return this.shapeName;
+    }
     get frozen() {
       return this.frozenFlag;
     }
@@ -3070,9 +3209,16 @@ var CONSTITUTION = (() => {
         setWhy: null,
         settledBy: null,
         settledAtT: null,
-        collecting: false
+        collecting: false,
+        shaped: false
       });
     }
+    const shapeRow = s.shape === null ? null : shapeOf(s.shape);
+    const shaped = (id) => {
+      if (shapeRow === null || !(id in shapeRow.sets)) return false;
+      const st = s.settingState(id);
+      return st.settledBy === "convenor" && st.previousValue === null && st.settledAtT === s.createdAtT && s.constitutedAtT === null;
+    };
     for (const entry of MANAGED2) {
       const st = s.settingState(entry.id);
       settings.push({
@@ -3088,7 +3234,8 @@ var CONSTITUTION = (() => {
         setWhy: st.setWhy,
         settledBy: st.settledBy,
         settledAtT: st.settledAtT,
-        collecting: st.collecting
+        collecting: st.collecting,
+        shaped: shaped(entry.id)
       });
       if (st.collecting) {
         const answerable = entry.deps.every((d) => s.settingState(d).settledBy !== null);
@@ -3223,6 +3370,7 @@ var CONSTITUTION = (() => {
         pictureSet: s.convenorRecord().pictureSet
       } : { name: null, picture: null, nameSet: false, pictureSet: false },
       lapseWarned: me ? me.lapseWarned : isConvenor ? s.convenorRecord().lapseWarned : false,
+      shape: s.shape,
       frozen: s.frozen,
       mustReturn: s.mustReturn(),
       closed: s.closed ? {

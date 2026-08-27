@@ -12,6 +12,8 @@ import type { Arrival, DepartureBy, MemberId, MotionPayload, PowerSource } from 
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf } from './catalogue.js';
 import type { SettingValue } from './values.js';
+import type { ShapeName } from './shapes.js';
+import { shapeOf } from './shapes.js';
 
 export interface QuestionView {
   setting: SettingId;
@@ -58,6 +60,15 @@ export interface SettingView {
   settledBy: 'convenor' | 'ceremony' | 'motion' | 'crown' | null;
   settledAtT: number | null;
   collecting: boolean;
+  /**
+   * **Given by the shape and untouched, before the start** (entry 166): the
+   * 🧭 row named this setting, the convenor's set is the birth's own and
+   * nothing has re-set it since, and the document has not begun. The band
+   * appends *As for a meeting.* while this is true and nothing while it is
+   * not; nothing is stored for it. Decided here rather than on the page
+   * because the fixture and the live path both render off `view()`.
+   */
+  shaped: boolean;
 }
 
 export interface MotionView {
@@ -163,6 +174,8 @@ export interface MemberView {
   identity: { name: string | null; picture: string | null;
     nameSet: boolean; pictureSet: boolean };
   lapseWarned: boolean;
+  /** The 🧭 shape the document was born with, or null for custom (entry 166). */
+  shape: ShapeName | null;
   frozen: boolean;
   /** The freeze's shortfall (§9.5): how many must return to thaw; null while not frozen. */
   mustReturn: number | null;
@@ -193,8 +206,15 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       holder: st.holder, powers: { ...st.powers }, powerFrom: { ...st.powerFrom },
       pendingRelease: { ...st.pendingRelease },
       value: null, previousValue: null, setWhy: null, settledBy: null,
-      settledAtT: null, collecting: false });
+      settledAtT: null, collecting: false, shaped: false });
   }
+  const shapeRow = s.shape === null ? null : shapeOf(s.shape);
+  const shaped = (id: SettingId): boolean => {
+    if (shapeRow === null || !(id in shapeRow.sets)) return false;
+    const st = s.settingState(id);
+    return st.settledBy === 'convenor' && st.previousValue === null &&
+      st.settledAtT === s.createdAtT && s.constitutedAtT === null;
+  };
   for (const entry of MANAGED) {
     const st = s.settingState(entry.id);
     settings.push({
@@ -211,6 +231,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       settledBy: st.settledBy,
       settledAtT: st.settledAtT,
       collecting: st.collecting,
+      shaped: shaped(entry.id),
     });
     if (st.collecting) {
       const answerable = entry.deps.every((d) => s.settingState(d).settledBy !== null);
@@ -345,6 +366,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
             pictureSet: s.convenorRecord().pictureSet }
         : { name: null, picture: null, nameSet: false, pictureSet: false },
     lapseWarned: me ? me.lapseWarned : isConvenor ? s.convenorRecord().lapseWarned : false,
+    shape: s.shape,
     frozen: s.frozen,
     mustReturn: s.mustReturn(),
     closed: s.closed

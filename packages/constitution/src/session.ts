@@ -26,11 +26,15 @@ import { eOf, inE, motionElectorateOf, quorumBaseOf, quorumCount,
 import type { ThresholdAnchors } from './threshold.js';
 import { barAt, reAnchor, seedAnchors } from './threshold.js';
 import { lapseDue } from './clocks.js';
+import type { ShapeName } from './shapes.js';
+import { shapeOf } from './shapes.js';
 
 export interface OpenInput {
   title: string;
   slug: string;
   convenor: ConvenorInput;
+  /** The 🧭 shape chosen before the birth (entry 166); absent is custom. */
+  shape?: ShapeName;
 }
 
 /**
@@ -153,6 +157,9 @@ export class ConstitutionSession {
   private startingText: string | null = null;
   private textConfirmedFlag = false;
   private slugHistory: string[] = [];
+  /** The birth's own `t` and its 🧭 shape (entry 166), read off `created` so `replay` rebuilds both. */
+  private createdT: number | null = null;
+  private shapeName: ShapeName | null = null;
   private constitutedT: number | null = null;
   private closedFlag = false;
   private closedT: number | null = null;
@@ -174,8 +181,29 @@ export class ConstitutionSession {
     if (!input.title.trim()) throw new Error('a document begins with its title (§9.7a)');
     const slugErr = validateFor(entryOf('link'), { slug: input.slug });
     if (slugErr) throw new Error(slugErr);
+    // a shape the table does not know is refused here, before anything is
+    // written — the server has already dropped anything but a row's name
+    const shape = input.shape === undefined ? null : shapeOf(input.shape);
     s.emit({ type: 'created', t, title: input.title, slug: input.slug,
-      convenor: input.convenor });
+      convenor: input.convenor,
+      ...(shape === null ? {} : { shape: shape.name }) });
+    // **The shape is folded as the founder's own sets** (entry 166, SPEC
+    // §9.0a): ordinary `setting-set` events at the birth's own `t`, so the
+    // values are *given* rather than defaulted — every setting stays
+    // convenor-held with both powers and its question shut, nothing is
+    // delegated (Q511's damage was *delegated from creation*), and nothing
+    // is owed: `oweOks` skips the convenor and nobody else has arrived.
+    // ⏰ first where the row has one, because `setSetting` refuses a 🪜
+    // ramp under a perpetual ending and reads ⏰ to know; then the rest in
+    // catalogue order, which is the order the band states them in.
+    if (shape !== null) {
+      const ids = Object.keys(shape.sets) as SettingId[];
+      const ordered = [
+        ...ids.filter((id) => id === 'ending'),
+        ...CATALOGUE.map((e) => e.id).filter((id) => id !== 'ending' && ids.includes(id)),
+      ];
+      for (const id of ordered) s.setSetting(t, id, shape.sets[id]!);
+    }
     return s;
   }
 
@@ -230,6 +258,8 @@ export class ConstitutionSession {
     switch (event.type) {
       case 'created': {
         const c = event.convenor;
+        this.createdT = event.t;
+        this.shapeName = event.shape ?? null;
         this.convenor = { ...c, name: c.name ?? null, picture: c.picture ?? null,
           // a founder who arrives already carrying one has answered it (Q645)
           nameSet: c.name !== undefined, pictureSet: c.picture !== undefined,
@@ -2292,6 +2322,10 @@ export class ConstitutionSession {
   get slug(): string { return (this.settings.get('link')!.value as SlugValue).slug; }
   get slugs(): readonly string[] { return this.slugHistory; }
   get constitutedAtT(): number | null { return this.constitutedT; }
+  /** When the document was born — the `t` a shape's sets share (entry 166). */
+  get createdAtT(): number { return this.createdT ?? 0; }
+  /** The 🧭 shape chosen at the birth, or null for custom (entry 166). */
+  get shape(): ShapeName | null { return this.shapeName; }
   get frozen(): boolean { return this.frozenFlag; }
   get closed(): boolean { return this.closedFlag; }
   get closedAt(): number | null { return this.closedT; }

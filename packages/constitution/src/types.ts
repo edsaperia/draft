@@ -11,6 +11,7 @@
 
 import type { MotionRoute, SettingId } from './catalogue.js';
 import type { SettingValue } from './values.js';
+import type { ShapeName } from './shapes.js';
 
 export type MemberId = string;
 export type ApplicantId = string;
@@ -74,7 +75,15 @@ export interface ConvenorInput {
 
 export type ConstitutionEvent =
   /* -- creation and the pre-start free hand (§9.6a, §9.7a) ---------------- */
-  | { type: 'created'; t: number; title: string; slug: string; convenor: ConvenorInput }
+  /**
+   * `shape` (entry 166) is the 🧭 choice the founder made before the birth,
+   * **optional on purpose** like `why` below: absent, the event serialises
+   * exactly as it did before the field existed and every older log replays
+   * bit-identically. The shape's own values are not on this event — the
+   * save folds them as the convenor's `setting-set` events right after it.
+   */
+  | { type: 'created'; t: number; title: string; slug: string; convenor: ConvenorInput;
+      shape?: ShapeName }
   | { type: 'convenor-membership-set'; t: number; isMember: boolean }
   /**
    * The convenor's own hand on a setting. `why` is the reason they gave for
