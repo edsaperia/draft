@@ -320,7 +320,7 @@ describe('the exile mail names the office and carries no login (Q901, E31)', () 
     const m = MAILS.removed('Gate Charter', 'https://docs.vote/d/gate');
     expect(m.subject).toBe('You are no longer a member of “Gate Charter”');
     expect(m.text).toContain('The Founder has removed you from the membership of “Gate Charter”.');
-    expect(m.text).toContain('Your answers and judgments no longer count in it.');
+    expect(m.text).toContain('Your answers and votes no longer count in it.');
     expect(m.text).toContain('https://docs.vote/d/gate');
     expect(m.text).not.toContain('?token=');
     expect(m.link).not.toContain('?token=');

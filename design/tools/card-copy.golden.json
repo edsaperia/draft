@@ -29,7 +29,7 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is judged at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is voted on at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
     "options": [
      {
       "set": "admission",
@@ -73,7 +73,7 @@
     "helpers": [
      "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
      "A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.",
-     "A proposed member is judged at the approval threshold ✏️, like any change.",
+     "A proposed member is voted on at the approval threshold ✏️, like any change.",
      "An invitation is sent on a member’s word ✒️ — nobody else has to agree.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked."
     ]
@@ -237,7 +237,7 @@
     "eyebrow": "",
     "head": "How Sure Must the Room Be?",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone90%In a room of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a room of one, nothing can pass at 80% until more members arrive.A bare majority60%In a room of one, the one vote must be for it.A number of my ownA room of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone90%In a room of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a room of one, nothing can pass at 80% until more members arrive.A bare majority60%In a room of one, the one vote must be for it.A number of my ownA room of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
     "options": [
      {
       "set": "tClose",
@@ -289,7 +289,7 @@
      "Not answered yet"
     ],
     "helpers": [
-     "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.",
+     "How sure the members have to be that a change is better than the words it replaces, at the end.",
      "In a room of one, nothing can pass at 90% until more members arrive.",
      "In a room of one, nothing can pass at 80% until more members arrive.",
      "In a room of one, the one vote must be for it.",
@@ -299,9 +299,9 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Judging opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.The questions🌍 Visibility · n of m have answeredThe peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
+    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.The questions🌍 Visibility · n of m have answeredThe peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -332,7 +332,7 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Who else can read the document. Readers are not members — they cannot propose or judge, and nothing about them is known.Members onlyAnyone with the linkDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.",
+    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Members onlyAnyone with the linkDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.",
     "options": [
      {
       "set": "chamber",
@@ -369,7 +369,7 @@
      "Not answered yet"
     ],
     "helpers": [
-     "Who else can read the document. Readers are not members — they cannot propose or judge, and nothing about them is known.",
+     "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed."
     ]
    },
@@ -486,7 +486,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "You hold a voice in every constitutional question.",
     "body": "You founded this document, and every member holds a voice in it.Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
@@ -516,7 +516,7 @@
     "eyebrow": "",
     "head": "Is the Founder a Member?",
     "lock": "",
-    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you judge, you count towards quorum, and you answer the founding questions like anybody.Clerk — not draftingNo ✏️s, no judging, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.",
+    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.Clerk — not draftingNo ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.",
     "options": [
      {
       "set": "hatPick",
@@ -547,8 +547,8 @@
     ],
     "helpers": [
      "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.",
-     "You get ✏️s, you judge, you count towards quorum, and you answer the founding questions like anybody.",
-     "No ✏️s, no judging, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed."
+     "You get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.",
+     "No ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed."
     ]
    },
    "invite": {
@@ -595,7 +595,7 @@
    },
    "judgments": {
     "eyebrow": "",
-    "head": "When Are Judgments Revealed?",
+    "head": "When Are Votes Revealed?",
     "lock": "",
     "body": "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.Never revealedWhat you preferred stays yours, permanently.Revealed at the endPublished with the document at the end, never before.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.",
     "options": [
@@ -627,7 +627,7 @@
      }
     ],
     "hints": [
-     "When Are Judgments Revealed? — close it",
+     "When Are Votes Revealed? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -696,7 +696,7 @@
     "eyebrow": "",
     "head": "AI Proposals",
     "lock": "",
-    "body": "An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.No AI proposalsPeople write everything in this document.AI proposals are permittedAn AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out.",
+    "body": "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.No AI proposalsPeople write everything in this document.AI proposals are permittedAn AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out.",
     "options": [
      {
       "set": "auditor",
@@ -738,7 +738,7 @@
      "Not answered yet"
     ],
     "helpers": [
-     "An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.",
+     "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.",
      "People write everything in this document.",
      "An AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out."
@@ -853,7 +853,7 @@
     "eyebrow": "",
     "head": "Quorum",
     "lock": "",
-    "body": "How many members have to have judged something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.A fixed numberThe number stays the same however the membership changes.The numberI set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.",
+    "body": "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.A fixed numberThe number stays the same however the membership changes.The numberI set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.",
     "options": [
      {
       "set": "quorumForm",
@@ -900,7 +900,7 @@
      "Not answered yet"
     ],
     "helpers": [
-     "How many members have to have judged something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.",
+     "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.",
      "The number goes up and down as members join and leave.",
      "The number stays the same however the membership changes.",
      "of 1",
@@ -964,7 +964,7 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.Everyone must agree, including themOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Everyone else must agreeSomebody can be removed even if they object, but only if every other member agrees 🏛️.The membership decidesA removal is proposed and judged at the approval threshold ✏️, like a change to the text.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
+    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.Everyone must agree, including themOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Everyone else must agreeSomebody can be removed even if they object, but only if every other member agrees 🏛️.The membership decidesA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
     "options": [
      {
       "set": "removal",
@@ -1009,7 +1009,7 @@
      "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.",
      "One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.",
      "Somebody can be removed even if they object, but only if every other member agrees 🏛️.",
-     "A removal is proposed and judged at the approval threshold ✏️, like a change to the text.",
+     "A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked."
     ]
    },
@@ -1333,7 +1333,7 @@
      }
     ],
     "hints": [
-     "n of m weighed in · quorum was 5 · you never judged this",
+     "n of m weighed in · quorum was 5 · you never voted on this",
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record.",
      "It leaves your margin and stays in the record"
@@ -1415,7 +1415,7 @@
      "I can’t split them"
     ],
     "helpers": [
-     "the clause changed after you judged it"
+     "the clause changed after you voted"
     ]
    },
    "quick-guestkey": {
@@ -1762,7 +1762,7 @@
      }
     ],
     "hints": [
-     "n of m weighed in · quorum was 5 · you never judged this",
+     "n of m weighed in · quorum was 5 · you never voted on this",
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record.",
      "It leaves your margin and stays in the record"
@@ -1778,7 +1778,7 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "n of m weighed in · quorum was 5 · you never judged this",
+     "n of m weighed in · quorum was 5 · you never voted on this",
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record."
     ],
@@ -2023,7 +2023,7 @@
      }
     ],
     "hints": [
-     "n of m weighed in · quorum was 5 · you judged three pairs — twice for the wording that stood",
+     "n of m weighed in · quorum was 5 · you voted on three pairs — twice for the wording that stood",
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record.",
      "It leaves your margin and stays in the record"
@@ -2433,7 +2433,7 @@
      }
     ],
     "hints": [
-     "n of m weighed in · quorum was 5 · you never judged this",
+     "n of m weighed in · quorum was 5 · you never voted on this",
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record.",
      "It leaves your margin and stays in the record"
@@ -2515,7 +2515,7 @@
      "I can’t split them"
     ],
     "helpers": [
-     "the clause changed after you judged it"
+     "the clause changed after you voted"
     ]
    },
    "quick-guestkey": {
@@ -2862,7 +2862,7 @@
      }
     ],
     "hints": [
-     "n of m weighed in · quorum was 5 · you never judged this",
+     "n of m weighed in · quorum was 5 · you never voted on this",
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record.",
      "It leaves your margin and stays in the record"
@@ -2878,7 +2878,7 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "n of m weighed in · quorum was 5 · you never judged this",
+     "n of m weighed in · quorum was 5 · you never voted on this",
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record."
     ],
@@ -3123,7 +3123,7 @@
      }
     ],
     "hints": [
-     "n of m weighed in · quorum was 5 · you judged three pairs — twice for the wording that stood",
+     "n of m weighed in · quorum was 5 · you voted on three pairs — twice for the wording that stood",
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record.",
      "It leaves your margin and stays in the record"
@@ -3250,7 +3250,7 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "n of m weighed in · quorum was 5 · you you judged this",
+     "n of m weighed in · quorum was 5 · you voted on this",
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record."
     ],
@@ -3267,7 +3267,7 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "n of m weighed in · quorum was 5 · you never judged this",
+     "n of m weighed in · quorum was 5 · you never voted on this",
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record."
     ],
@@ -3281,7 +3281,7 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is judged at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is voted on at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
     "options": [
      {
       "set": "admission",
@@ -3326,7 +3326,7 @@
      "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
      "A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.",
-     "A proposed member is judged at the approval threshold ✏️, like any change.",
+     "A proposed member is voted on at the approval threshold ✏️, like any change.",
      "An invitation is sent on a member’s word ✒️ — nobody else has to agree.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked."
     ]
@@ -3383,7 +3383,7 @@
     "eyebrow": "",
     "head": "How Sure Must the Room Be?",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nearly everyone90%In a room of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a room of one, nothing can pass at 80% until more members arrive.A bare majority60%In a room of one, the one vote must be for it.A number of my ownA room of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nearly everyone90%In a room of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a room of one, nothing can pass at 80% until more members arrive.A bare majority60%In a room of one, the one vote must be for it.A number of my ownA room of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
     "options": [
      {
       "set": "tClose",
@@ -3435,7 +3435,7 @@
      "Set it"
     ],
     "helpers": [
-     "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.",
+     "How sure the members have to be that a change is better than the words it replaces, at the end.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
      "In a room of one, nothing can pass at 90% until more members arrive.",
      "In a room of one, nothing can pass at 80% until more members arrive.",
@@ -3448,7 +3448,7 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Who else can read the document. Readers are not members — they cannot propose or judge, and nothing about them is known.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Members onlyAnyone with the linkDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.",
+    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Members onlyAnyone with the linkDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.",
     "options": [
      {
       "set": "chamber",
@@ -3485,7 +3485,7 @@
      "Set it"
     ],
     "helpers": [
-     "Who else can read the document. Readers are not members — they cannot propose or judge, and nothing about them is known.",
+     "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed."
     ]
@@ -3600,7 +3600,7 @@
     "eyebrow": "",
     "head": "AI Proposals",
     "lock": "",
-    "body": "An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.No AI proposalsPeople write everything in this document.AI proposals are permittedAn AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out.",
+    "body": "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.No AI proposalsPeople write everything in this document.AI proposals are permittedAn AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out.",
     "options": [
      {
       "set": "auditor",
@@ -3642,7 +3642,7 @@
      "Set it"
     ],
     "helpers": [
-     "An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.",
+     "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
      "People write everything in this document.",
      "An AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.",
@@ -3683,7 +3683,7 @@
     "eyebrow": "",
     "head": "Quorum",
     "lock": "",
-    "body": "How many members have to have judged something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.A fixed numberThe number stays the same however the membership changes.The numberAsked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.I set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.",
+    "body": "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.A fixed numberThe number stays the same however the membership changes.The numberAsked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.I set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.",
     "options": [
      {
       "set": "quorumForm",
@@ -3730,7 +3730,7 @@
      "Set it"
     ],
     "helpers": [
-     "How many members have to have judged something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.",
+     "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.",
      "The number goes up and down as members join and leave.",
      "The number stays the same however the membership changes.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
@@ -3796,7 +3796,7 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Everyone must agree, including themOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Everyone else must agreeSomebody can be removed even if they object, but only if every other member agrees 🏛️.The membership decidesA removal is proposed and judged at the approval threshold ✏️, like a change to the text.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
+    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Everyone must agree, including themOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Everyone else must agreeSomebody can be removed even if they object, but only if every other member agrees 🏛️.The membership decidesA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
     "options": [
      {
       "set": "removal",
@@ -3842,7 +3842,7 @@
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
      "One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.",
      "Somebody can be removed even if they object, but only if every other member agrees 🏛️.",
-     "A removal is proposed and judged at the approval threshold ✏️, like a change to the text.",
+     "A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked."
     ]
    },
@@ -3910,7 +3910,7 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is judged at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is voted on at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
     "options": [
      {
       "set": "admission",
@@ -3954,7 +3954,7 @@
     "helpers": [
      "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
      "A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.",
-     "A proposed member is judged at the approval threshold ✏️, like any change.",
+     "A proposed member is voted on at the approval threshold ✏️, like any change.",
      "An invitation is sent on a member’s word ✒️ — nobody else has to agree.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked."
     ]
@@ -4076,7 +4076,7 @@
     "eyebrow": "",
     "head": "How Sure Must the Room Be?",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone90%In a room of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a room of one, nothing can pass at 80% until more members arrive.A bare majority60%In a room of one, the one vote must be for it.A number of my ownA room of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone90%In a room of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a room of one, nothing can pass at 80% until more members arrive.A bare majority60%In a room of one, the one vote must be for it.A number of my ownA room of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
     "options": [
      {
       "set": "tClose",
@@ -4128,7 +4128,7 @@
      "Not answered yet"
     ],
     "helpers": [
-     "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.",
+     "How sure the members have to be that a change is better than the words it replaces, at the end.",
      "In a room of one, nothing can pass at 90% until more members arrive.",
      "In a room of one, nothing can pass at 80% until more members arrive.",
      "In a room of one, the one vote must be for it.",
@@ -4138,9 +4138,9 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Judging opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin.",
+    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4166,9 +4166,9 @@
    },
    "canjudge": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — the constitution is settled.",
-    "body": "The Founder began the document, granting every member the right to judge what is proposed.A judgment counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the judgment meant, so they come first.Open — the constitution is settled.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "The Founder began the document, granting every member the right to vote on what is proposed.A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.Open — the constitution is settled.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4182,22 +4182,22 @@
      }
     ],
     "hints": [
-     "Judging — close it",
+     "Voting — close it",
      "Begin — settled",
      "Proposing — settled",
      "Your Voice — settled",
      "Put it back as it stands"
     ],
     "helpers": [
-     "The Founder began the document, granting every member the right to judge what is proposed.",
-     "A judgment counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the judgment meant, so they come first.",
+     "The Founder began the document, granting every member the right to vote on what is proposed.",
+     "A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.",
      "Open — the constitution is settled.",
      "Nothing is being asked here — OK files it and it leaves your queue."
     ]
    },
    "canpropose": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
     "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.Nothing is being asked here — OK files it and it leaves your queue.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
     "options": [],
@@ -4214,7 +4214,7 @@
     ],
     "hints": [
      "Proposing — close it",
-     "Judging — decided; it waits for your OK",
+     "Voting — decided; it waits for your OK",
      "Begin — settled",
      "Your Voice — settled",
      "Put it back as it stands"
@@ -4231,7 +4231,7 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Who else can read the document. Readers are not members — they cannot propose or judge, and nothing about them is known.Members onlyAnyone with the linkDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.",
+    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Members onlyAnyone with the linkDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.",
     "options": [
      {
       "set": "chamber",
@@ -4268,7 +4268,7 @@
      "Not answered yet"
     ],
     "helpers": [
-     "Who else can read the document. Readers are not members — they cannot propose or judge, and nothing about them is known.",
+     "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed."
     ]
    },
@@ -4385,7 +4385,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "You hold a voice in every constitutional question.",
     "body": "You founded this document, and every member holds a voice in it.Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
@@ -4415,7 +4415,7 @@
     "eyebrow": "",
     "head": "Is the Founder a Member?",
     "lock": "",
-    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you judge, you count towards quorum, and you answer the founding questions like anybody.Clerk — not draftingNo ✏️s, no judging, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.",
+    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.Clerk — not draftingNo ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.",
     "options": [
      {
       "set": "hatPick",
@@ -4446,13 +4446,13 @@
     ],
     "helpers": [
      "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.",
-     "You get ✏️s, you judge, you count towards quorum, and you answer the founding questions like anybody.",
-     "No ✏️s, no judging, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed."
+     "You get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.",
+     "No ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed."
     ]
    },
    "judgments": {
     "eyebrow": "",
-    "head": "When Are Judgments Revealed?",
+    "head": "When Are Votes Revealed?",
     "lock": "",
     "body": "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.Never revealedWhat you preferred stays yours, permanently.Revealed at the endPublished with the document at the end, never before.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.",
     "options": [
@@ -4484,7 +4484,7 @@
      }
     ],
     "hints": [
-     "When Are Judgments Revealed? — close it",
+     "When Are Votes Revealed? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -4553,7 +4553,7 @@
     "eyebrow": "",
     "head": "AI Proposals",
     "lock": "",
-    "body": "An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.No AI proposalsPeople write everything in this document.AI proposals are permittedAn AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out.",
+    "body": "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.No AI proposalsPeople write everything in this document.AI proposals are permittedAn AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out.",
     "options": [
      {
       "set": "auditor",
@@ -4595,7 +4595,7 @@
      "Not answered yet"
     ],
     "helpers": [
-     "An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.",
+     "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.",
      "People write everything in this document.",
      "An AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out."
@@ -4710,7 +4710,7 @@
     "eyebrow": "",
     "head": "Quorum",
     "lock": "",
-    "body": "How many members have to have judged something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.A fixed numberThe number stays the same however the membership changes.The numberI set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.",
+    "body": "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.A fixed numberThe number stays the same however the membership changes.The numberI set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.",
     "options": [
      {
       "set": "quorumForm",
@@ -4757,7 +4757,7 @@
      "Not answered yet"
     ],
     "helpers": [
-     "How many members have to have judged something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.",
+     "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.",
      "The number goes up and down as members join and leave.",
      "The number stays the same however the membership changes.",
      "of 1",
@@ -4821,7 +4821,7 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.Everyone must agree, including themOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Everyone else must agreeSomebody can be removed even if they object, but only if every other member agrees 🏛️.The membership decidesA removal is proposed and judged at the approval threshold ✏️, like a change to the text.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
+    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.Everyone must agree, including themOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Everyone else must agreeSomebody can be removed even if they object, but only if every other member agrees 🏛️.The membership decidesA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
     "options": [
      {
       "set": "removal",
@@ -4866,7 +4866,7 @@
      "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.",
      "One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.",
      "Somebody can be removed even if they object, but only if every other member agrees 🏛️.",
-     "A removal is proposed and judged at the approval threshold ✏️, like a change to the text.",
+     "A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked."
     ]
    },
@@ -5102,7 +5102,7 @@
    },
    "bar": {
     "eyebrow": "",
-    "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when judging opens.",
+    "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when voting opens.",
     "lock": "The members decide.",
     "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.90%Nearly everyone80%Broad agreement78%60%A bare majorityWhat everyone asked for, without names.Answered3 of 3The document takes the highest78%",
     "options": [],
@@ -5144,9 +5144,9 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Judging opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
+    "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5158,7 +5158,7 @@
     "hints": [
      "Begin — close it",
      "Proposing — settled",
-     "Judging — settled",
+     "Voting — settled",
      "Your Voice — settled",
      "Put it back as it stands"
     ],
@@ -5166,9 +5166,9 @@
    },
    "canjudge": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — the constitution is settled.",
-    "body": "The Founder began the document, granting every member the right to judge what is proposed.A judgment counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the judgment meant, so they come first.Open — the constitution is settled.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "The Founder began the document, granting every member the right to vote on what is proposed.A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.Open — the constitution is settled.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5184,20 +5184,20 @@
     "hints": [
      "Begin — settled",
      "Proposing — settled",
-     "Judging — close it",
+     "Voting — close it",
      "Your Voice — settled",
      "Put it back as it stands"
     ],
     "helpers": [
-     "The Founder began the document, granting every member the right to judge what is proposed.",
-     "A judgment counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the judgment meant, so they come first.",
+     "The Founder began the document, granting every member the right to vote on what is proposed.",
+     "A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.",
      "Open — the constitution is settled.",
      "Nothing is being asked here — OK files it and it leaves your queue."
     ]
    },
    "canpropose": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
     "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.Nothing is being asked here — OK files it and it leaves your queue.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
     "options": [],
@@ -5215,7 +5215,7 @@
     "hints": [
      "Begin — settled",
      "Proposing — close it",
-     "Judging — settled",
+     "Voting — settled",
      "Your Voice — settled",
      "Put it back as it stands"
     ],
@@ -5315,7 +5315,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "You hold a voice in every constitutional question.",
     "body": "The Founder invited you into the membership, and a voice in every constitutional question came with it.Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
@@ -5333,7 +5333,7 @@
     "hints": [
      "Begin — settled",
      "Proposing — settled",
-     "Judging — settled",
+     "Voting — settled",
      "Your Voice — close it",
      "Put it back as it stands"
     ],
@@ -5407,7 +5407,7 @@
     "eyebrow": "",
     "head": "What somebody preferred is never made public.",
     "lock": "The members decide.",
-    "body": "Judgments are published with the closing record, never before.Prefer thisWhat the room saidThe members decide.Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.NeverAt the endWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNever revealed",
+    "body": "Votes are published with the closing record, never before.Prefer thisWhat the room saidThe members decide.Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.NeverAt the endWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNever revealed",
     "options": [
      {
       "set": null,
@@ -5428,7 +5428,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "When Are Judgments Revealed? — close it",
+     "When Are Votes Revealed? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Say you prefer this proposal — nothing leaves the card until you submit",
@@ -5861,7 +5861,7 @@
      }
     ],
     "hints": [
-     "When Are Judgments Revealed? — settled",
+     "When Are Votes Revealed? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -6272,7 +6272,7 @@
      }
     ],
     "hints": [
-     "When Are Judgments Revealed? — settled",
+     "When Are Votes Revealed? — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -6501,7 +6501,7 @@
    },
    "quorum": {
     "eyebrow": "",
-    "head": "33% of the members must have judged a question before it can change the document.",
+    "head": "33% of the members must have voted on a question before it can change the document.",
     "lock": "The members decide.",
     "body": "Quorum is % of the membership.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest.1 of 14all of themWhat everyone asked for, without names.Answered3 of 3The document takes the highest10 of 14",
     "options": [],
@@ -6636,7 +6636,7 @@
     "eyebrow": "",
     "head": "Removing a member needs every member to agree, including them 🏛️.",
     "lock": "The members decide.",
-    "body": "Removing a member needs everyone to agree, including them.Prefer thisRemoving a member needs every other member to agree.Prefer thisA member is removed by a proposal, judged like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
+    "body": "Removing a member needs everyone to agree, including them.Prefer thisRemoving a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
     "options": [
      {
       "set": null,
@@ -7124,7 +7124,7 @@
    },
    "bar": {
     "eyebrow": "",
-    "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when judging opens.",
+    "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when voting opens.",
     "lock": "The members decide.",
     "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.90%Nearly everyone80%Broad agreement78%60%A bare majorityWhat everyone asked for, without names.Answered3 of 3The document takes the highest78%",
     "options": [],
@@ -7166,9 +7166,9 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Judging opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
+    "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7180,7 +7180,7 @@
     "hints": [
      "Begin — close it",
      "Proposing — settled",
-     "Judging — settled",
+     "Voting — settled",
      "Your Voice — settled",
      "Put it back as it stands"
     ],
@@ -7188,9 +7188,9 @@
    },
    "canjudge": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — the constitution is settled.",
-    "body": "The Founder began the document, granting every member the right to judge what is proposed.A judgment counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the judgment meant, so they come first.Open — the constitution is settled.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "The Founder began the document, granting every member the right to vote on what is proposed.A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.Open — the constitution is settled.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7206,20 +7206,20 @@
     "hints": [
      "Begin — settled",
      "Proposing — settled",
-     "Judging — close it",
+     "Voting — close it",
      "Your Voice — settled",
      "Put it back as it stands"
     ],
     "helpers": [
-     "The Founder began the document, granting every member the right to judge what is proposed.",
-     "A judgment counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the judgment meant, so they come first.",
+     "The Founder began the document, granting every member the right to vote on what is proposed.",
+     "A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.",
      "Open — the constitution is settled.",
      "Nothing is being asked here — OK files it and it leaves your queue."
     ]
    },
    "canpropose": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
     "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.Nothing is being asked here — OK files it and it leaves your queue.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
     "options": [],
@@ -7237,7 +7237,7 @@
     "hints": [
      "Begin — settled",
      "Proposing — close it",
-     "Judging — settled",
+     "Voting — settled",
      "Your Voice — settled",
      "Put it back as it stands"
     ],
@@ -7253,7 +7253,7 @@
     "eyebrow": "",
     "head": "Only members can see the document. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Who else can read the document. Readers are not members — they cannot propose or judge, and nothing about them is known.Members onlyAnyone with the linkWhy are you changing this?ABAsh Bellamy 👑",
+    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Members onlyAnyone with the linkWhy are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
       "set": "chamber",
@@ -7287,7 +7287,7 @@
      "Set it"
     ],
     "helpers": [
-     "Who else can read the document. Readers are not members — they cannot propose or judge, and nothing about them is known.",
+     "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.",
      "I am changing this because…"
     ]
    },
@@ -7401,7 +7401,7 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may judge proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "You hold a voice in every constitutional question.",
     "body": "You founded this document, and every member holds a voice in it.Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
@@ -7419,7 +7419,7 @@
     "hints": [
      "Begin — settled",
      "Proposing — settled",
-     "Judging — settled",
+     "Voting — settled",
      "Your Voice — close it",
      "Put it back as it stands"
     ],
@@ -7434,7 +7434,7 @@
     "eyebrow": "",
     "head": "Is the Founder a Member?",
     "lock": "",
-    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you judge, you count towards quorum, and you answer the founding questions like anybody.Clerk — not draftingNo ✏️s, no judging, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.Settled. Now that people are judging, the Founder joins the same way as anybody else.",
+    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.Clerk — not draftingNo ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.Settled. Now that people are voting, the Founder joins the same way as anybody else.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7454,9 +7454,9 @@
     ],
     "helpers": [
      "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.",
-     "You get ✏️s, you judge, you count towards quorum, and you answer the founding questions like anybody.",
-     "No ✏️s, no judging, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.",
-     "Settled. Now that people are judging, the Founder joins the same way as anybody else."
+     "You get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.",
+     "No ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.",
+     "Settled. Now that people are voting, the Founder joins the same way as anybody else."
     ]
    },
    "invite": {
@@ -7504,7 +7504,7 @@
     "eyebrow": "",
     "head": "What somebody preferred is never made public.",
     "lock": "The members decide.",
-    "body": "Judgments are published with the closing record, never before.Prefer thisWhat the room saidThe members decide.Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.NeverAt the endWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNever revealed",
+    "body": "Votes are published with the closing record, never before.Prefer thisWhat the room saidThe members decide.Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.NeverAt the endWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNever revealed",
     "options": [
      {
       "set": null,
@@ -7525,7 +7525,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "When Are Judgments Revealed? — close it",
+     "When Are Votes Revealed? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Say you prefer this proposal — nothing leaves the card until you submit",
@@ -7588,7 +7588,7 @@
     "eyebrow": "",
     "head": "There are no AI proposals. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
-    "body": "An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.No AI proposalsPeople write everything in this document.AI proposals are permittedAn AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.Why are you changing this?ABAsh Bellamy 👑",
+    "body": "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.No AI proposalsPeople write everything in this document.AI proposals are permittedAn AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.Why are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
       "set": "auditor",
@@ -7627,7 +7627,7 @@
      "Set it"
     ],
     "helpers": [
-     "An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.",
+     "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.",
      "People write everything in this document.",
      "An AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.",
      "I am changing this because…"
@@ -7747,7 +7747,7 @@
     "eyebrow": "",
     "head": "The approval threshold starts at 55% and rises to 82% by the end. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.RisingStarts lower when people begin judging and climbs to the number at the end.Nearly everyone90%In a room of 3, all 3 must vote for it when voting opens, and the approval threshold climbs from there.Broad agreement80%In a room of 3, all 3 must vote for it when voting opens, and the approval threshold climbs from there.A bare majority60%In a room of 3, n of m is enough when voting opens, and the approval threshold climbs from there.A number of my ownIn a room of 3, n of m is enough when voting opens, and the approval threshold climbs from there.When judging opens%FixedThe same number all the way through.Why are you changing this?ABAsh Bellamy 👑",
+    "body": "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.RisingStarts lower when people begin voting and climbs to the number at the end.Nearly everyone90%In a room of 3, all 3 must vote for it when voting opens, and the approval threshold climbs from there.Broad agreement80%In a room of 3, all 3 must vote for it when voting opens, and the approval threshold climbs from there.A bare majority60%In a room of 3, n of m is enough when voting opens, and the approval threshold climbs from there.A number of my ownIn a room of 3, n of m is enough when voting opens, and the approval threshold climbs from there.When voting opens%FixedThe same number all the way through.Why are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
       "set": "shape",
@@ -7799,7 +7799,7 @@
     ],
     "helpers": [
      "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.",
-     "Starts lower when people begin judging and climbs to the number at the end.",
+     "Starts lower when people begin voting and climbs to the number at the end.",
      "In a room of 3, all 3 must vote for it when voting opens, and the approval threshold climbs from there.",
      "In a room of 3, all 3 must vote for it when voting opens, and the approval threshold climbs from there.",
      "In a room of 3, n of m is enough when voting opens, and the approval threshold climbs from there.",
@@ -8027,7 +8027,7 @@
      }
     ],
     "hints": [
-     "When Are Judgments Revealed? — settled",
+     "When Are Votes Revealed? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
      "Put it back as it stands"
@@ -8557,7 +8557,7 @@
      }
     ],
     "hints": [
-     "When Are Judgments Revealed? — settled",
+     "When Are Votes Revealed? — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands"
@@ -8871,7 +8871,7 @@
    },
    "quorum": {
     "eyebrow": "",
-    "head": "33% of the members must have judged a question before it can change the document.",
+    "head": "33% of the members must have voted on a question before it can change the document.",
     "lock": "The members decide.",
     "body": "Quorum is % of the membership.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest.1 of 14all of themWhat everyone asked for, without names.Answered3 of 3The document takes the highest10 of 14",
     "options": [],
@@ -9013,7 +9013,7 @@
     "eyebrow": "",
     "head": "Removing a member needs every member to agree, including them 🏛️.",
     "lock": "The members decide.",
-    "body": "Removing a member needs everyone to agree, including them.Prefer thisRemoving a member needs every other member to agree.Prefer thisA member is removed by a proposal, judged like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
+    "body": "Removing a member needs everyone to agree, including them.Prefer thisRemoving a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
     "options": [
      {
       "set": null,

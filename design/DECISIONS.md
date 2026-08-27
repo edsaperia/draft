@@ -1855,3 +1855,33 @@ the doors never had to: their act leaves the card standing and a settings commit
 line rendered into a card nobody is looking at is the console warning again by another name.
 After the locks above it, nothing on the founder's card can reach it — it is there so the *next*
 gap of this class shows on the page instead of in a console.
+
+## The surface says vote (2026-08-27, entry 164)
+
+Ed, reading the draft of the approval-threshold explainer: *trying to use the term
+"judgements" is extremely confusing; even though it's technically misleading, most people
+just want to come and click buttons and the math is something they never need to think
+about; for them "vote" just means anything democracy shaped.* Ruled everywhere a member
+reads.
+
+**The rule inverted STYLE.md's own earlier row.** §1's approval-threshold row had said
+*it is a **confidence**, not a vote share — the copy has to keep saying so*, and the copy
+had been keeping it: 🌡️ carried an apology for the maths on both surfaces — *not a vote,
+but how clear the comparison must be* on the founder's card, *A confidence, not a vote
+share* on the answer card. Both are cut and nothing replaces them. The row now says the
+opposite — **vote is the member's word; the maths never appears on the surface** — with
+*confidence*, *comparison* and *Bradley–Terry* joining *participant* and *ordinary* as
+engine vocabulary a member never reads.
+
+**The argument did not disappear; it moved.** It lives at `docs.vote/pairwise` (entry
+163), and 🌡️'s one linking sentence naming the method is the sole place on the surface
+the method may be named — which is why neither of the two automated word guards this
+entry extends bans *Bradley*. A guard that goes red on the one sanctioned sentence
+teaches everyone to ignore the guard.
+
+**Nothing under the copy moved.** `canjudge`, `judge-race`, `canJudge`, `mayJudge`,
+`judgedByMe`, `comparisons` and the `gate: 'judge'` marker are symbols and keep their
+names; SPEC, SURFACE's rule text and `design/SPEC-REASONING.md` keep *judgment*, which is
+correct there; and the Hollow Oak charter's own clauses are document text a fictional
+room wrote. What a member reads is the whole of what changed, and the re-frozen
+`design/tools/card-copy.golden.json` is the list of it.
