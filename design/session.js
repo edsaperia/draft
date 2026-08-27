@@ -1657,8 +1657,19 @@
     const und = !!s.undecided;
     const tag = (c) => (c.incumbent && held ? '<span class="rsub">the text that stood</span>'
       : c.incumbent && und ? '<span class="rsub">the text that stands</span>' : '');
-    // the record names an author where the anonymity ladder allows it
-    const spk = (c) => (c.why || c.by ? speakerHtml(c.why, undefined, c.by) : '');
+    // the record names an author where the anonymity ladder allows it — and
+    // says which rung *this* proposal was made under where the room moved the
+    // ladder while the document was open (entry 31, R-050: a proposal keeps
+    // the privacy it was made under). Silent where the rungs agree, which is
+    // every ordinary record; the words arrive finished from the page.
+    const under = (c) => (c.underNote ? '<span class="rsub">' + esc(c.underNote) + '</span>' : '');
+    // the note sits **under a speaker** (SURFACE §9's sealed-record row), so a
+    // proposal that carries one draws the speaker even where it has neither a
+    // rationale nor a name — an unsigned anonymous-era proposal with an empty
+    // reason, whose note would otherwise float under the wording with nothing
+    // above it to be *under*.
+    const spk = (c) => (c.why || c.by || c.underNote
+      ? speakerHtml(c.why, undefined, c.by) + under(c) : '');
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +

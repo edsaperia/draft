@@ -2017,7 +2017,7 @@ var CONSTITUTION = (() => {
         };
       });
       const members = [...this.members.values()].filter((m) => !m.removed && !m.invitationExpired).map((m) => {
-        const out = m.arrivedAtT === null || m.signedOut === "abstaining";
+        const out = !eIds.has(m.id);
         return {
           id: m.id,
           name: m.name,

@@ -3771,9 +3771,17 @@
   // Scoped to the catalogue settings the founder's card sets: gates, the
   // personal cards, 🎩 and 📄 are none of them a `powers.unilateral` question,
   // and the two doors have carried their own gate since Q811.
+  // **A delegated setting is not a pen laid down.** `setting-delegated` clears
+  // both powers, so `founderDirect` is false there too — and read-only on a
+  // members-held card takes the delegate rung and the value radios away with
+  // it, which pre-start are the *only* way back: `commitSetting` reclaims when
+  // the founder picks a value, and 🍾's own hold sentence tells them to do
+  // exactly that (*take it back on its own card and set it yourself*). So
+  // `membersHold` is excluded: this is about the founder's own hand coming off
+  // a setting they still hold, never about one they handed to the room.
   const founderHandOff = (c) => amFounder() && !c.ansFor && !c.isGate && !c.door &&
     !c.power && !c.record && c.kind !== 'personal' &&
-    MANAGED_KEYS.includes(c.k) && !founderDirect(c);
+    MANAGED_KEYS.includes(c.k) && !membersHold(c) && !founderDirect(c);
   // **One 🏛️ out per member, on every card including the one it is out on**
   // (Q816). The exemption for `c.k` was a guess about which card could still
   // be composing, and the module makes no such exemption: `openMotion`
@@ -6333,8 +6341,13 @@
       // puts the sentence under the control that tried, and only a clean
       // answer marks it submitted. Written against `api.cmd`'s contract, so
       // it holds when the live applicant seat is wired (Q346).
-      const done = (err) => {
-        if (err) { S.app.submitted = false; setDoorErr('apply', plainRefusal(err)); }
+      // **A refusal with nothing to say is still a refusal**: `failed` is the
+      // fact and `err` only the words, because a rejection or a throw whose
+      // error carries no `message` would otherwise reach here as `undefined`
+      // and mark the application submitted — the very defect this replaced.
+      const done = (failed, err) => {
+        if (failed) { S.app.submitted = false;
+          setDoorErr('apply', plainRefusal(err) || 'Your application could not be sent'); }
         else { S.app.submitted = true; S.doorErr = null; render(); }
       };
       if (cs && S.app.csId) {
@@ -6343,12 +6356,13 @@
             { name: S.app.name || undefined, picture: S.app.pic || undefined,
               words: S.app.text || undefined });
           if (r && typeof r.then === 'function') {
-            r.then((res) => done(res && res.error ? res.error : null), (e) => done(e && e.message));
+            r.then((res) => done(!!(res && res.error), res && res.error),
+              (e) => done(true, e && e.message));
             return;
           }
-          done(null);
-        } catch (e) { done(e && e.message); }
-      } else done(null);
+          done(false);
+        } catch (e) { done(true, e && e.message); }
+      } else done(false);
       return; }
     const tn0 = ev.target.closest('[data-tone]');
     if (tn0) { window.SETUP.setFaceTone(tn0.getAttribute('data-tone')); return render(); }
@@ -7047,9 +7061,15 @@
     // the card under the caret (Q811)
     // …and any field on the card the refusal belongs to retires it the same
     // way (entry 62), now that a settings card can carry one too
+    // …and it has to be a field **on a card**: `cardKeyAt` falls back to
+    // `S.open`, which `refuseSet` has just set to the refused key — so with
+    // the fallback, a keystroke anywhere off a card (the prose column is a
+    // contenteditable on the same document listener) retired somebody else's
+    // refusal sentence and removed the first `.why.refusal` in the page.
+    const errCard = t.closest && t.closest('.setupcard');
     if (t.matches && S.doorErr &&
         (t.matches('[data-add]') || t.matches('[data-emails]') ||
-         cardKeyAt(t.closest('.setupcard')) === S.doorErr.k)) {
+         (errCard && cardKeyAt(errCard) === S.doorErr.k))) {
       S.doorErr = null;
       const line = (t.closest('.setupcard') || document).querySelector('.why.refusal');
       if (line) line.remove();
@@ -8174,9 +8194,29 @@
     // one record per race (Q503c): the whole field, the text it displaced
     // as it stood, and how many weighed in
     const unsealed = new Map();
+    // **The record shows the rung then and the rung now** (entry 31, Ed
+    // 2026-08-26, R-050). *Now* is what the 👤 clause states and what the 🥂
+    // card counts off the record; *then* is per proposal, and prints only
+    // where it differs from what stands — a record whose every entry repeated
+    // the standing rule would be noise. The server states both on the closed
+    // record: `madeUnder` per field entry, `rungNow` once.
+    const madeUnder = new Map();
     if (v.record) for (const o of (v.record.adopted || []).concat(v.record.undecided || [])) {
-      for (const f of o.field || []) if (f.author && f.author.name) unsealed.set(f.id || f.candidateId, f.author.name);
+      for (const f of o.field || []) {
+        if (f.author && f.author.name) unsealed.set(f.id || f.candidateId, f.author.name);
+        if (f.madeUnder) madeUnder.set(f.id || f.candidateId, f.madeUnder);
+      }
     }
+    // the words are `STANDS.authorship`'s — one label per rung everywhere
+    // (Q620) — and they are resolved here rather than in `session.js`, which
+    // draws the card and has no access to `S`
+    const rungNow = v.record ? v.record.rungNow : null;
+    const underNoteOf = (f) => {
+      const u = f && madeUnder.get(f.id || f.candidateId);
+      if (!u || !rungNow || u === rungNow) return undefined;
+      const w = STANDS.authorship(u);
+      return w ? 'made under ' + w + ', before the rule changed' : undefined;
+    };
     for (const o of v.records || []) {
       const field = o.field || [];
       const hs = field.flatMap((f) => f.hunks);
@@ -8196,6 +8236,7 @@
       const replaced = (o.displaced || []).filter((l) => l.trim()).map(unhead).join('\n') || undefined;
       const slate = field.length > 1
         ? { slate: field.map((f) => ({ text: textOfF(f), rationale: f.rationale, by: byName(f),
+            underNote: underNoteOf(f),
             p: f.p == null ? undefined : f.p, won: f === winner && (adopted || undecided) })) } : {};
       items.push({ id: 'rec:' + (o.raceId || o.candidateId), kind: 'quick', keys, state: 'sealed',
         qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
@@ -8205,7 +8246,7 @@
         undecided,
         won: adopted || undecided ? 'b' : undefined,
         optionB: textOfF(winner), replaced,
-        rationale: winner.rationale, by: byName(winner),
+        rationale: winner.rationale, by: byName(winner), underNote: underNoteOf(winner),
         verdict: o.judgedByMe ? 'you judged this' : undefined,
         unread: !undecided, ...slate });
     }
