@@ -1702,3 +1702,72 @@ one on ⏱️. The pairing is forced by the module, not chosen: **a constitution
 as rejected** — a `keep` answer simply leaves it running until the close, `maybeSettleMotions` only
 ever carrying — so the rejected half has to be an ordinary one adjudicated `held` through the dev
 seam. Seeded before the seat switch, so the `seat:` walks read the record from a member's chair too.
+
+## The ceiling a room can reach (2026-08-27, Q840)
+
+Ed, 2026-08-26, answering the four candidates in Q840: *(a) Name the ceiling on the threshold card
+at the founding.* So the mechanism is untouched — no cap on the bar by E, no per-pair evidence
+accumulation, no special price for a document of one. The room may still answer 85%; it is told
+what 85% will mean for a room this size **before** it answers.
+
+**The numbers, and where they come from.** The approval threshold is a *confidence*, and a
+confidence is bounded by how much evidence the room can physically produce. An ordinary race — one
+proposal against the standing text — holds at most one usable comparison per member on the
+incumbent pair, because `usableComparisons` keeps each participant's latest judgment per pair per
+ground. Fit E unanimous wins with the engine's own `fitDavidson` at the default prior (σ = 2, the
+one `fitRaceMembers` uses) and the posterior P(challenger beats incumbent) is:
+
+| E | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10+ |
+|---|---|---|---|---|---|---|---|---|---|---|
+| posterior | 0.798 | 0.892 | 0.934 | 0.956 | 0.969 | 0.978 | 0.983 | 0.987 | 0.990 | 0.992+ |
+| ceiling % | 79 | 89 | 93 | 95 | 96 | 97 | 98 | 98 | 98 | 99 |
+
+**One challenger, not any race.** A race that also holds a rival goes higher — 0.919 at E = 1 —
+because the rival's comparisons inform the incumbent pair transitively. The ceiling stated is the
+*ordinary* race's, which is why the copy says *a proposal* and never *any race*.
+
+**Floored, never rounded.** `sweepAdoptions` wants `leaderP > threshold`, strictly. 0.7978 must
+therefore read 79%, because a bar of 80 is not clearable; rounding would print 80 and be wrong by a
+whole rung, and the whole point of the sentence is that the printed number is one the room *can*
+clear. The 99 cap in `ceilingPct` is a backstop and not the table: measured, the floor alone gives
+99 from E = 10 out past E = 20,000, and the cap fires only where the normal-CDF approximation in
+`davidson.ts` saturates at 1, somewhere under E = 30,000. Worth the distinction, because *99
+because we clamped it* and *99 because that is the number* are different claims and the surface
+repeats the second.
+
+**Two copies of the number, on purpose.** The function lives in engine-core
+(`ranking/ceiling.ts`); the table lives in `packages/constitution/src/threshold.ts`. That is not
+duplication by neglect — `design/constitution.js` deliberately carries no engine-core so the page
+bundle stays engine-free, so the page *cannot* call the fit. What keeps the copy honest is a case in
+`packages/constitution/test/threshold.test.ts`, which imports the real `ceilingPct` and asserts every
+entry against it out to E = 40. If the fit ever moves, that case goes red and the table follows it,
+never the reverse.
+
+**A note, not a body sentence.** `.why` is capped at 200 characters (card-audit **H4**: subject plus
+one consequence) and 🌡️'s body was already cut to fit under Q764, so a third sentence there would
+have pushed the audit red or pushed something true out. The ceiling is its own grey line under the
+control — no hot colour and no glyph, because grey means nothing is being asked of you and this
+asks nothing. It is shown only while the control can express a value above the ceiling: to a room
+of 3 under the founding slider's max of 95, to 9 under the founder's own number field's 99. Most
+rooms are told nothing, which is the right amount.
+
+**Live, not a snapshot.** The open half of Ed's ruling was *when does it re-state itself*, since E
+moves as people arrive and a ceiling named at the founding is stale by the first invitation. The
+page already passes `E()` into every answer body and re-renders on every poll, and §9.0a already
+makes an arrival while a question is collecting a **ground shift** — answers stand, their authors
+are told, they may revise. So there is nothing to invent: the sentence is written in the present
+tense about the room *now* and says the number rises as members arrive, which is what makes it true
+a minute later. No new notification, no snapshot, no second mechanism.
+
+**What the golden can and cannot see.** Two cards moved in the copy golden, both the founder's own
+🌡️ set card (`seat:1` and `settled`, a room of 3, *93%*). **No `card-audit` walk renders the
+member's `ans-bar` body at all** — `founding` and `answers` leave 🌡️ founder-held and `delegated`
+serves the founder the watching half — so the slider's note and its *out of reach* mean are frozen
+by nothing. `slider-walk` is the only harness that opens that card, and it asserts the track rather
+than the copy. Recorded rather than fixed: building a walk for it is a bigger decision than this
+plan.
+
+**Left alone, deliberately.** `rivalGateMinComparisons` is 3 in engine-core's defaults and **6** in
+the constitution's `DEFAULT_TUNING` (`adapter.ts`), so on the live path no room under six members
+ever samples a rival pair — the same unreachable-constant shape as the one this entry is about, in
+the next corner over. Noted here so the next reader does not think it went unnoticed.
