@@ -370,6 +370,36 @@ const inviteDoorPreBegin = async () => {
   say('cleared    · ' + (cleared ? 'the next keystroke retires it'
     : 'FAIL: the refusal outlived the field'));
   if (!cleared) stuck.push('the refusal did not clear');
+
+  // **The mark sits on the act, and the row only closes** (entry 37). The
+  // direct ✉️ sends from the field, so the ✒️ belongs on the send; the row's
+  // own ✒️ was a pen over a card with no value to set — `invite` is a
+  // `DOOR_KEY`, never a `MANAGED_KEY`, so `[data-confirm]` closed the card
+  // having done nothing, after running the hold and flying the pen out of the
+  // wallet. What is asserted is the whole of the correction: the send wears
+  // ✒️, and the row holds 🗑️ and a ✓ that closes and **no** `[data-confirm]`.
+  // The button's height rides along because a 52×40 glyph button in a flex row
+  // beside a `flex: 1` input is the one thing that could come out a different
+  // size from every other pen button on the page.
+  const marks = await page.evaluate(() => {
+    const c = document.querySelector('.setupcard');
+    const send = c && c.querySelector('.addrow button');
+    const row = c && c.querySelector('.commitrow');
+    return {
+      send: send ? (send.textContent || '').trim() : '(no send button)',
+      h: send ? Math.round(send.getBoundingClientRect().height) : 0,
+      title: send ? send.title : '',
+      bin: !!(row && row.querySelector('[data-revert]')),
+      close: !!(row && row.querySelector('[data-close]')),
+      confirm: !!(row && row.querySelector('[data-confirm]')),
+    };
+  });
+  const marksOk = marks.send === '✒️' && marks.bin && marks.close && !marks.confirm;
+  say('the mark   · send ' + JSON.stringify(marks.send) + ' (' + marks.h + 'px, “' +
+    marks.title + '”) · row 🗑️ ' + marks.bin + ' ✓ ' + marks.close +
+    ' confirm ' + marks.confirm +
+    (marksOk ? '' : '  FAIL: the ✒️ belongs on the send, and the row only closes'));
+  if (!marksOk) stuck.push('the ✒️ on ✉️’s send and the closing ✓ on its row');
 };
 
 /* ---- a second seat (backlog 50, Q842–Q848) ------------------------------

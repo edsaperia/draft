@@ -4896,15 +4896,29 @@
       // card leads with *why you are here* (Q828) — the remedy above the door
       : oneVoiceAsk() +
       '<p class="why">An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as <i>invited</i> until then.</p>' +
+      // **The send wears the mark of the act** (Ed, entry 37): *it is the
+      // Invite / Send invitations buttons that should be ✒️, as each invite is
+      // the proposal.* In the direct form the viewer's own word sends (Y24),
+      // and that is the ✒️ verb — nobody has to agree, because you hold the
+      // power (the four verbs, SURFACE §7). It is a **click, not a hold**: the
+      // ladder is for what comes out of a wallet, and a direct invitation
+      // spends nothing — a member inviting at 🪪 *pen* holds no pen wallet at
+      // all. And it is never disabled on an empty field, because the refusal
+      // sentence (Y25) is what an empty field is owed.
+      // The word goes, as it did on 📨 (Ed, 2026-08-21): a label beside a glyph
+      // and a tooltip does nothing they were not already doing, and the
+      // *Several at once* eyebrow already names the second box.
       '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1" value="' + esc(S.inviteOne) + '">' +
-      '<button class="btn" data-act="add">Invite</button></div></div>' +
+      '<button class="btn btn-approve glyphbtn emojibtn" data-act="add"' +
+      ' title="Send the invitation">✒️</button></div></div>' +
       doorErrHtml('invite') +
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
             // the boxes keep what is in them across a close, like every other
       // field here: a pasted list of addresses is the most expensive thing
       // anybody types on this card (Ed, 2026-08-21)
       '<textarea placeholder="Paste addresses here, one per line" data-emails="1">' + esc(S.inviteMany) + '</textarea>' +
-      '<div style="margin-top:var(--s2)"><button class="btn" data-act="invite">Send invitations</button></div>' +
+      '<div style="margin-top:var(--s2)"><button class="btn btn-approve glyphbtn emojibtn"' +
+      ' data-act="invite" title="Send them all">✒️</button></div>' +
       '<p class="setnote">' + arrived() + ' of ' + S.roster.length + ' have opened it so far. ' +
       'Nobody has to be here for the document to exist, and anybody who arrives later ' +
       'starts with the same ✏️s as everybody else.</p>'),
@@ -5499,7 +5513,26 @@
       // One expression now decides both: an emoji needs a quiet ground
       // wherever it sits, and the ✓ stays the one solid green thing.
       const commitGlyph = !cs ? '🪶' : (c.ansFor || c.kind === 'personal') ? TICK : '✒️';
-      const foot = (!amFounder() && c.own !== 'you' && !c.ansFor)
+      // **A door whose act is in the body has nothing left to commit** (Ed,
+      // entry 37: *the main action in the bottom right is just ✔️, closing the
+      // card*). ✉️ in its direct form sends from the field — so the row's ✒️
+      // was a pen over a card with no value to set: its press walked the
+      // `[data-confirm]` keys, found `invite` in `DOOR_KEYS` and not in
+      // `MANAGED_KEYS`, and closed the card having done nothing — after
+      // running the one-second hold and flying the pen out of `#penwallet`,
+      // a flight for an act that does not happen. What is left is the drawn ✓
+      // on `data-close`, which is the applicant's cards' own foot: the bin
+      // puts back what is typed, the ✓ closes and **keeps** it (the boxes keep
+      // what is in them across a close, Ed 2026-08-21).
+      // The test is `c.k === 'invite' && doorDirect(c)`, and it stands ahead of
+      // the non-founder branch below — a member inviting at 🪪 *pen* is not the
+      // founder, and would otherwise get the bin alone. ❌'s direct form keeps
+      // its ✒️ for now: its act is a dropdown plus *❌ Remove*, and that is a
+      // change of its own.
+      const foot = (c.k === 'invite' && doorDirect(c))
+        ? binBtn() +
+          '<button class="btn btn-approve glyphbtn" data-close="1" title="Done">' + TICK + '</button>'
+        : (!amFounder() && c.own !== 'you' && !c.ansFor)
         ? (stateOf(c, ctx) === 'news'
           ? binBtn() +
             '<button class="btn btn-approve" data-ok="' + newsKey + '">OK</button>'
