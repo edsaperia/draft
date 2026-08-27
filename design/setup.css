@@ -159,6 +159,10 @@
   .choice + .eyebrow.fieldlab { margin-top: var(--s4); }
   .pick .exp { display: block; color: var(--muted); font-size: var(--t-small);
     margin-top: var(--s1); padding-left: 2px; max-width: 58ch; }
+  /* a rung whose sentence is written by the keystroke (`data-meaning`) keeps
+     its slot in the DOM while it has nothing to say, and collapses to nothing
+     rather than reserving a line — `.meaning:empty`'s rule, same reason */
+  .pick .exp:empty { display: none; }
   /* **Direct children, since 🪜's rungs put a ladder inside a rung** (entry
      165). `.inner` has always been the option's own child and nothing else,
      but as a descendant rule `.pick.on .inner` reached *through* an open

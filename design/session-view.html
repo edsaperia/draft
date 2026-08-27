@@ -4096,7 +4096,10 @@
       inputBlock('A membership lapses after ' +
         '<input class="num" type="number" min="7" max="720" data-mnum=" days without logging in" value="' +
         esc((d.to.match(/\d+/) || [])[0] || S.lapseDays) + '"> days without logging in.',
-        meanLine('lapse', d.val && d.val.afterMs ? d.val : null)),
+        // presence, not truthiness: `afterMs: null` is 💤's *Never*, a real
+        // value with a real sentence, and the other keys all test for the
+        // field being there rather than for it being non-zero
+        meanLine('lapse', d.val && d.val.afterMs !== undefined ? d.val : null)),
     authorship: (d) => lanesFor(d, [
       ['Nobody’s name, ever', 'A proposer is never named — not even in the closing record.'],
       ['Nobody’s name unless they choose', 'A proposer is never named unless they sign the proposal themselves.'],
@@ -5225,7 +5228,14 @@
       (o.off ? '' : ' data-set="' + o.set + '" data-val="' + o.val + '"') + '>' +
       '<span class="dot"></span><span>' + esc(o.label) +
       (o.pct ? '<span class="pct">' + o.pct + '%</span>' : '') + '</span></button>' +
-      (o.exp ? '<span class="exp">' + esc(o.exp) + '</span>' : '') +
+      // `mean` is the rung whose sentence is about a number being typed rather
+      // than about a fixed preset, so it carries the `data-meaning` hook
+      // `syncMeaning` writes into — without it the sentence under the caret
+      // keeps saying what the *previous* number meant until the field blurs.
+      // The slot is rendered even while empty, which `.exp:empty` hides.
+      (o.exp || o.mean
+        ? '<span class="exp"' + (o.mean ? ' data-meaning="' + esc(o.mean) + '"' : '') + '>' +
+          esc(o.exp || '') + '</span>' : '') +
       (o.inner ? '<span class="inner">' + o.inner + '</span>' : '') + '</div>';
   };
   // **The room every meaning is about, built once per read** (entry 167).
@@ -5277,7 +5287,7 @@
       exp: meaning('bar', { pct: r.pct }),
     })).join('') +
     pctRung({
-      set: 'barBy', val: 'founder', label: M.OWN_RUNG_LABEL,
+      set: 'barBy', val: 'founder', label: M.OWN_RUNG_LABEL, mean: 'bar',
       on: S.barBy === 'founder' && !isRungPct(S.tClose),
       exp: isNum(S.tClose) && !isRungPct(S.tClose) ? meaning('bar', { pct: +S.tClose }) : '',
       inner: '<span class="setrow2">' + num(S, 'tClose', 'At the end', 50, 99, '%') + '</span>',
@@ -5294,9 +5304,15 @@
     // where the climb ends as well as where it starts, and *starts at broad
     // agreement and climbs to broad agreement* is what a ramp that does not
     // ramp would say — the dimming is already the whole of that fact
+    // **A dimmed rung is never the chosen one, and what it leaves behind falls
+    // to the own-number rung.** Lowering 🌡️ under a start already taken from a
+    // preset dims every rung at or above it — including the one that is on —
+    // and a disabled rung cannot be clicked off, so the box has to come back or
+    // the card has no way left to change its own number.
+    const stray = (v) => isRungPct(v) && dim(+v);
     return M.BAR_RUNGS.map((r) => pctRung({
       set: 'tStart', val: r.pct, label: r.label, pct: r.pct, off: dim(r.pct),
-      on: S.shape === 'ramp' && +S.tStart === r.pct,
+      on: S.shape === 'ramp' && +S.tStart === r.pct && !dim(r.pct),
       exp: dim(r.pct) ? '' : meaning('pace', { shape: 'ramp', startPct: r.pct }),
     })).join('') +
       // **The own rung sets the field it is about, not the shape**, and it is
@@ -5307,9 +5323,9 @@
       // make up its mind. So it clears the start instead, which is also what
       // choosing it means: an empty box to type your own number into.
       pctRung({
-        set: 'tStart', val: '', label: M.OWN_RUNG_LABEL,
-        on: S.shape === 'ramp' && !isRungPct(S.tStart),
-        exp: isNum(S.tStart) && !isRungPct(S.tStart)
+        set: 'tStart', val: '', label: M.OWN_RUNG_LABEL, mean: 'pace',
+        on: S.shape === 'ramp' && (!isRungPct(S.tStart) || stray(S.tStart)),
+        exp: isNum(S.tStart) && (!isRungPct(S.tStart) || stray(S.tStart))
           ? meaning('pace', { shape: 'ramp', startPct: +S.tStart }) : '',
         inner: '<span class="setrow2">' + num(S, 'tStart', 'When voting opens', 50, 99, '%') + '</span>',
       });
