@@ -1750,6 +1750,7 @@
     { k: 'bar', g: '🌡️', t: 'How Sure Must the Room Be?', kind: 'constitutional', gate: 'judge', key: 'barBy', p: 0.64,
       rule: 'Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.',
       takes: 'The document takes the highest', result: 'Broad agreement — 80%', strip: 'rungs',
+      taken: { pct: 80 },
       distribution: [{ pct: 80 }, { pct: 80 }, { pct: 72 }, { pct: 72 }, { pct: 72 },
         { pct: 60 }, { pct: 60 }, { pct: 60 }, { pct: 60 }, { pct: 60 },
         { pct: 60 }, { pct: 60 }, { pct: 60 }, { pct: 60 }] },
@@ -1765,7 +1766,7 @@
     // a fixed number or a proportion of membership size*; §9.0a).
     { k: 'quorum', g: '👥', t: 'Quorum', kind: 'constitutional', gate: 'judge', key: 'quorumBy', p: 0.79,
       rule: 'Each member says the lowest they will accept, and the document takes the highest.',
-      takes: 'The document takes the highest', result: '10 of 14',
+      takes: 'The document takes the highest', result: '10 of 14', taken: { form: 'count', n: 10 },
       dist: [0, 0, 1, 1, 2, 3, 2, 2, 1, 1, 1, 0, 0, 0], distTop: 9, distEnds: ['1 of 14', 'all of them'] },
     // **One card, one clause, one ladder of five** (Q767, Ed 2026-08-25: *I
     // think five rungs is fine; there is definitely a ladder going from
@@ -1804,6 +1805,7 @@
       // delegated note owns, and the reason `meanwhile` exists (Q763)
       meanwhile: 'Until it is settled everybody gets the standard rate.',
       takes: 'The document takes the most generous', result: '5 each, one back every 120 minutes',
+      taken: { grant: 5, cap: 8, dripMinutes: 120 },
       dist: [1, 2, 4, 3, 2, 1, 1], distTop: 4, distEnds: ['sparing', 'generous'] },
 
     // — the room around it ------------------------------------------------
@@ -1827,7 +1829,7 @@
       rule: 'Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.' },
     { k: 'lapse', g: '💤', t: 'Do Memberships Lapse?', kind: 'constitutional', gate: 'judge', key: 'lapse', p: 0.29,
       rule: 'Each member says the shortest gap they would accept, and the document takes the longest — <b>never</b> being longer than any of them — so nobody loses their membership faster than they accepted.',
-      takes: 'The document takes the longest', result: 'Never',
+      takes: 'The document takes the longest', result: 'Never', taken: { afterMs: null },
       dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
     // **Not a member** (Ed, 2026-08-18): it never judges and counts toward
     // nothing — it only proposes, so it lives with the proposal settings.
@@ -2467,10 +2469,15 @@
     const pick = t.closest('.pick');
     const own = pick && pick.querySelector('[data-ansval="own"]');
     S.myAns[k] = t.value === '' ? (own ? 'own' : null) : +t.value;
-    const slot = pick && pick.querySelector('[data-meaning="' + k + '"]');
+    // …and the sentence under the box follows the keystroke. Since entry 167
+    // the box is not always inside a rung — 💤's and ⏱️'s answers are a bare
+    // field — so the slot is looked for in the rung first and then on the
+    // card, which is the whole difference between the two shapes.
+    const slot = (pick && pick.querySelector('[data-meaning="' + k + '"]')) ||
+      (t.closest('.setupcard') || document).querySelector('[data-meaning="' + k + '"]');
     if (slot) {
       slot.textContent = isNum(t.value) && ANSTYPED[k]
-        ? (M.meaningOf(k, ANSTYPED[k](t.value), { e: E() }) || '') : '';
+        ? (M.meaningOf(k, ANSTYPED[k](t.value), roomNow()) || '') : '';
     }
   };
   // committed = the answer reached the module; provisional stays page-side
@@ -2604,7 +2611,15 @@
   // closes is what the room actually answered. A document with no resolution
   // yet leaves the literals where they are, which is what the fixture reads.
   const liveStrip = (c, st) => {
-    if (c.strip !== 'rungs' || !st.distribution || !st.distribution.length) return;
+    if (!st.distribution || !st.distribution.length) return;
+    // **What the room took, as a typed value** (entry 167). The statline says
+    // *The document takes …* and the meaning under it says what that would
+    // mean for the room now, so it needs the value itself rather than the
+    // sentence — `distribution[0]` by construction, exactly as `c.result`
+    // below. Every consent-resolved card gets it; the fixture cards carry
+    // their own literal for the walk that never reaches a module.
+    c.taken = st.distribution[0];
+    if (c.strip !== 'rungs') return;
     c.distribution = st.distribution;
     // **What the strip is about is the resolution, not the value.** The
     // statline beside it says *The document takes the highest*, which is a
@@ -4033,13 +4048,17 @@
         'The approval threshold stays the same all the way through.']], 'pace') +
       inputBlock('The approval threshold starts at ' +
         '<input class="num" type="number" min="50" max="99" data-mpace="1" value="' +
-        esc((/^Rising/.test(d.to) && (d.to.match(/\d+/) || [])[0]) || S.tStart) + '">% and rises to the number at the end.'),
+        esc((/^Rising/.test(d.to) && (d.to.match(/\d+/) || [])[0]) || S.tStart) + '">% and rises to the number at the end.',
+        // a motion is composed with the setting's own control (K1), so the
+        // meaning belongs beside it exactly as on the founder's card
+        meanLine('pace', d.val && d.val.shape ? d.val : null)),
     rate: (d) => {
       const n = d.to.match(/\d+/g) || [];
       return inputBlock('Members start with ' +
         '<input class="num" type="number" min="0" max="40" data-mrate="x" value="' + esc(n[0] || S.grant) + '"> ✏️ each, up to a maximum of ' +
         '<input class="num" type="number" min="1" max="99" data-mrate="y" value="' + esc(n[1] || S.cap) + '">. They get an additional ✏️ every ' +
-        '<input class="num" type="number" min="5" max="2880" data-mrate="z" value="' + esc(n[2] || S.dripMin) + '"> minutes.');
+        '<input class="num" type="number" min="5" max="2880" data-mrate="z" value="' + esc(n[2] || S.dripMin) + '"> minutes.',
+        meanLine('rate', d.val && d.val.grant !== undefined ? d.val : null));
     },
     ending: (d) => {
       const never = /never/i.test(d.to);
@@ -4055,16 +4074,19 @@
     // field's own ceiling, so the note goes quiet at E ≥ 10.
     bar: (d) => inputBlock('A proposal passes when the members are ' +
       '<input class="num" type="number" min="50" max="99" data-mnum="% sure at the end" value="' +
-      esc((d.to.match(/\d+/) || [])[0] || takenOf('bar') || S.tClose) + '">% sure at the end.') +
+      esc((d.to.match(/\d+/) || [])[0] || takenOf('bar') || S.tClose) + '">% sure at the end.',
+      meanLine('bar', d.val && d.val.pct !== undefined ? d.val : null)) +
       // and the method note with it (entry 163): the pen's set card is the
       // founder card in its second epoch, so a founder who first meets 🌡️
       // after the save would otherwise never be offered the explainer
       ceilingNote(E(), 99) + methodNote(),
     quorum: (d) => (S.quorumForm === 'count'
       ? inputBlock('Quorum is <input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
-        esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '"> of the membership.')
+        esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '"> of the membership.',
+        meanLine('quorum', d.val && d.val.form ? d.val : null))
       : inputBlock('Quorum is <input class="num" type="number" min="1" max="100" data-mnum="% of the membership" value="' +
-        esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct) + '">% of the membership.')),
+        esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct) + '">% of the membership.',
+        meanLine('quorum', d.val && d.val.form ? d.val : null))),
     removal: (d) => lanesFor(d, [
       ['Everyone has to agree, including them', 'Removing a member needs everyone to agree, including them.'],
       ['Everyone else has to agree', 'Removing a member needs every other member to agree.'],
@@ -4073,7 +4095,8 @@
         'A membership never lapses, however long somebody is away.']], 'lapse') +
       inputBlock('A membership lapses after ' +
         '<input class="num" type="number" min="7" max="720" data-mnum=" days without logging in" value="' +
-        esc((d.to.match(/\d+/) || [])[0] || S.lapseDays) + '"> days without logging in.'),
+        esc((d.to.match(/\d+/) || [])[0] || S.lapseDays) + '"> days without logging in.',
+        meanLine('lapse', d.val && d.val.afterMs ? d.val : null)),
     authorship: (d) => lanesFor(d, [
       ['Nobody’s name, ever', 'A proposer is never named — not even in the closing record.'],
       ['Nobody’s name unless they choose', 'A proposer is never named unless they sign the proposal themselves.'],
@@ -4628,6 +4651,10 @@
 
   const ctx = {
     get open() { return S.open; }, get E() { return E(); },
+    // the room a meaning is about, read on every render like `E` — the
+    // settled strip's *takes* line says what the value means for the room
+    // **as it stands now**, never for the room at the resolution (entry 167)
+    get room() { return roomNow(); },
     // a setup entry's wash alpha rides the charter's urgency ramp (Q623 (a)):
     // the urgency is the rail's own `RAIL_U`, so the two columns agree
     urgencyOf: (c) => RAIL_U[stateOf(c, ctx)],
@@ -5201,8 +5228,43 @@
       (o.exp ? '<span class="exp">' + esc(o.exp) + '</span>' : '') +
       (o.inner ? '<span class="inner">' + o.inner + '</span>' : '') + '</div>';
   };
-  // what a percent would mean for the room as it stands, or nothing
-  const meaning = (k, v) => M.meaningOf(k, v, { e: E() }) || '';
+  // **The room every meaning is about, built once per read** (entry 167).
+  // Four fields and no more, because a sentence may depend on the room and on
+  // nothing else: the arrived membership, ⏰'s answer as it stands, this
+  // page's own clock (the module reads none), and 🌡️'s number — the
+  // founder's field where they have set one, else what the room settled,
+  // which is the same source `startRungs`' dimming reads.
+  // **An unanswered ⏰ is absent, not *never***: `endsAtMsOf` returns null for
+  // both, and a sentence that read the two alike would promise *for as long
+  // as it runs* on a card the founder meets **before** ⏰ in the order.
+  const endingKnown = () => { const st = csState('ending');
+    return !!(st && st.value) || S.ending === 'perpetual' || isNum(Date.parse(S.endsAt)); };
+  const roomNow = () => ({
+    e: E(),
+    endsAtMs: endingKnown() ? endsAtMsOf() : undefined,
+    nowMs: serverNow(),
+    barPct: isNum(S.tClose) ? +S.tClose : ((takenValOf('bar') || {}).pct ?? null),
+  });
+  // what a value would mean for the room as it stands, or nothing
+  const meaning = (k, v) => M.meaningOf(k, v, roomNow()) || '';
+  // …and the line it is printed on, which is `setup.js`'s (`.meaning`, one
+  // class, one home). This surface only has to hand it the room.
+  const meanLine = (k, v) => window.SETUP.meaningLine(k, v, roomNow());
+  // **…and it follows the keystroke in place** (entry 167). The founder's
+  // number fields store straight into `S`, and `TYPED[k]()` reads `S`, so
+  // this asks the same question the render would have asked and writes only
+  // the one line — because **nothing rebuilds under a press**, and a card
+  // rebuilt under the caret is the drag bug's cousin. The full render still
+  // waits for `change`, as the slider's does.
+  const syncMeaning = (el) => {
+    const k = S.open;
+    if (!k || !TYPED[k] || !el.closest) return;
+    const card = el.closest('.setupcard') || document;
+    const slot = (el.closest('.pick') || card).querySelector('[data-meaning="' + k + '"]') ||
+      card.querySelector('[data-meaning="' + k + '"]');
+    if (!slot) return;
+    slot.textContent = (!CHOSEN[k] || CHOSEN[k]()) ? meaning(k, TYPED[k]()) : '';
+  };
   const isRungPct = (v) => M.BAR_RUNGS.some((r) => r.pct === +v);
   // 🌡️'s ladder: the three presets, then the number itself. The three set
   // `tClose` directly (`fillRung` takes `barBy` with them); the fourth is the
@@ -5228,10 +5290,14 @@
   const startRungs = () => {
     const close = isNum(S.tClose) ? +S.tClose : takenOf('bar');
     const dim = (pct) => isNum(close) && pct >= +close;
+    // a dimmed rung carries no sentence: since entry 167 the sentence names
+    // where the climb ends as well as where it starts, and *starts at broad
+    // agreement and climbs to broad agreement* is what a ramp that does not
+    // ramp would say — the dimming is already the whole of that fact
     return M.BAR_RUNGS.map((r) => pctRung({
       set: 'tStart', val: r.pct, label: r.label, pct: r.pct, off: dim(r.pct),
       on: S.shape === 'ramp' && +S.tStart === r.pct,
-      exp: meaning('pace', { shape: 'ramp', startPct: r.pct }),
+      exp: dim(r.pct) ? '' : meaning('pace', { shape: 'ramp', startPct: r.pct }),
     })).join('') +
       // **The own rung sets the field it is about, not the shape**, and it is
       // T5 that says so: 🌡️'s fourth rung can wear `barBy=founder` because
@@ -5477,9 +5543,22 @@
     pace: () =>
       '<p class="why">Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.</p>' +
       '<div class="choice" role="radiogroup">' +
-      opt(S, 'shape', 'ramp', 'Rising', 'Starts lower when people begin voting and climbs to the number at the end.',
+      // **Fixed first** (entry 167, rule 4): it is the more demanding shape —
+      // a change made an hour in faces the same number as one made at the
+      // close — so it heads the ladder, as *the most I will accept* does
+      // everywhere else. Both explanations come from the family now: *The
+      // same number all the way through.* and *Starts lower…* restated the
+      // rung's own name, where the sentence says what the number would be.
+      // Both explanations are the family's now, and where it has nothing true
+      // to say — 🌡️ unset, so there is no number to hold or climb to — the
+      // rung carries its name alone rather than a stand-in of the card's own.
+      opt(S, 'shape', 'fixed', 'Fixed', meaning('pace', { shape: 'fixed' })) +
+      // *Rising* carries no sentence of its own: what a rise would mean
+      // depends on where it starts, and every rung inside it says so — the
+      // fourth one included. A sentence here would be one of theirs, printed
+      // twice on one card (T36).
+      opt(S, 'shape', 'ramp', 'Rising', '',
         '<div class="choice">' + startRungs() + '</div>', perpetual()) +
-      opt(S, 'shape', 'fixed', 'Fixed', 'The same number all the way through.') +
       '</div>' + (perpetual() ? '<p class="setnote">With no end date there is nothing to climb towards, so the number stays fixed.</p>' : ''),
     quorum: () =>
       '<p class="why">How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.</p>' +
@@ -5494,10 +5573,14 @@
       '<div class="eyebrow fieldlab">The number</div>' +
       '<div class="choice" role="radiogroup" aria-label="Number">' +
       theyDecide('quorum') +
+      // the `suffix` on the share field stays: it is the **readout** — what
+      // the percent comes to today — where the `.meaning` under it is the
+      // **consequence**, and the two are different jobs (entry 167)
       opt(S, 'quorumBy', 'founder', 'I set it', '',
         '<span class="setrow2">' + (S.quorumForm === 'share'
           ? num(S, 'quorumPct', 'Share', 1, 100, '% — ' + quorumCount() + ' of ' + E() + ' today')
-          : num(S, 'quorumN', 'Members', 1, 40, 'of ' + E())) + '</span>') +
+          : num(S, 'quorumN', 'Members', 1, 40, 'of ' + E())) + '</span>' +
+        meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null)) +
       '</div>',
     authorship: () =>
       '<p class="why">Whoever proposes a change writes a reason for it, and everybody can read that. This is only about whether their name is on it.</p>' +
@@ -5525,7 +5608,11 @@
       opt(S, 'rateBy', 'founder', 'I set it', '',
         '<span class="setrow2">' + num(S, 'grant', '✏️ to start with', 0, 40) +
         num(S, 'cap', 'up to a maximum of', 1, 99) +
-        num(S, 'dripMin', 'an additional ✏️ every N minutes', 5, 2880) + '</span>') +
+        num(S, 'dripMin', 'an additional ✏️ every N minutes', 5, 2880) + '</span>' +
+        // three numbers say nothing on their own: what a member weighs is how
+        // many proposals they come to over the session, which is why ⏱️'s
+        // meaning names the window (entry 167, rule 1)
+        meanLine('rate', CHOSEN.rate() ? TYPED.rate() : null)) +
       '</div>' +
       // the commit waits on all three numbers, and on the maximum being a
       // maximum: without this the button just stays dark and says nothing
@@ -5543,9 +5630,15 @@
       '<p class="why">Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('lapse') +
-      opt(S, 'lapse', 'days', 'They lapse', 'After a gap you choose.',
-        '<span class="setrow2">' + num(S, 'lapseDays', 'Days without logging in', 7, 365) + '</span>') +
-      opt(S, 'lapse', 'never', 'Never', 'You stay a member however long you are away.') +
+      // **Most-protective-first** (entry 167, rule 4): *never* is what the
+      // document takes — the longest spell of all — so it is topmost, as
+      // 👁️ and 🪪 already read, and *They lapse* follows it. Its old `exp`
+      // (*After a gap you choose.*) said only that the field below is a
+      // field; what it means is now the `.meaning` under that field.
+      opt(S, 'lapse', 'never', 'Never', meaning('lapse', { afterMs: null })) +
+      opt(S, 'lapse', 'days', 'They lapse', '',
+        '<span class="setrow2">' + num(S, 'lapseDays', 'Days without logging in', 7, 365) + '</span>' +
+        meanLine('lapse', isNum(S.lapseDays) ? { afterMs: +S.lapseDays * 86400000 } : null)) +
       '</div>',
     removal: () =>
       '<p class="why">How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.</p>' +
@@ -5922,7 +6015,11 @@
           ' title="Discard this motion">🗑️</button>' +
           commitFor(c), g.cards);
       }
-      const body = c.ansFor ? ANSWER[c.ansFor](S.myAns, E(), c.ansFor === 'quorum' ? S.quorumForm : undefined)
+      // the room reaches the answer bodies as a fourth argument (entry 167):
+      // `setup.js` writes the controls but must not learn where a room comes
+      // from, so the caller hands it one built by `roomNow`
+      const body = c.ansFor ? ANSWER[c.ansFor](S.myAns, E(),
+          c.ansFor === 'quorum' ? S.quorumForm : undefined, roomNow(), ANSTYPED)
         // a card that is not yours to answer reads as the rule it is —
         // the founder's settings are read-only from any other chair
         // **…and from the founder's own, once the pen on it is down** (entry
@@ -7245,6 +7342,7 @@
     // commit wakes on the typing (the txt branch above has always done this;
     // the num branch never needed to while every number arrived pre-filled)
     if (t.dataset.num) { S[t.dataset.num] = t.value === '' ? '' : +t.value;
+      syncMeaning(t);
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
     // …and the same for a number typed into an **answer** (entry 165), which
     // 🌡️ now has: a keystroke wakes the ✓ and repaints the meaning under the

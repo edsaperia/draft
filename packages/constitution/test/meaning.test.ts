@@ -266,6 +266,17 @@ describe('the meaning family', () => {
     expect(meaningOf('rate', { grant: 4, cap: 6, dripMinutes: 2 }, room)).toMatch(/every few minutes/);
   });
 
+  it('…and ⏱️ says nothing at all until ⏰ has been answered', () => {
+    const v: RateValue = { grant: 4, cap: 6, dripMinutes: 30 };
+    // **absent is not `null`**: the founder meets ⏱️ before ⏰ in the founding
+    // order, and *for as long as it runs* would answer a question they have
+    // not been asked
+    expect(meaningOf('rate', v, { e: 5, nowMs: NOW })).toBe(null);
+    expect(meaningOf('rate', v, { e: 5, endsAtMs: null, nowMs: NOW })).toMatch(/^With no end date, /);
+    // and a window already behind us measures a session that is over
+    expect(meaningOf('rate', v, { e: 5, endsAtMs: NOW - 3600000, nowMs: NOW })).toBe(null);
+  });
+
   it('and never says “judgment”, which is 164’s vocabulary', () => {
     for (let e = 1; e <= 12; e++) {
       for (const [, endsAtMs] of WINDOWS) {

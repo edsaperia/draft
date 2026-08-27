@@ -644,17 +644,17 @@
     "eyebrow": "",
     "head": "Do Memberships Lapse?",
     "lock": "",
-    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.They lapseAfter a gap you choose.NeverYou stay a member however long you are away.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.",
+    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.NeverNobody ever drops out of the count, however long they are away.They lapseDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.",
     "options": [
-     {
-      "set": "lapse",
-      "val": "days",
-      "label": "They lapse"
-     },
      {
       "set": "lapse",
       "val": "never",
       "label": "Never"
+     },
+     {
+      "set": "lapse",
+      "val": "days",
+      "label": "They lapse"
      },
      {
       "set": "lapse",
@@ -687,8 +687,7 @@
     ],
     "helpers": [
      "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.",
-     "After a gap you choose.",
-     "You stay a member however long you are away.",
+     "Nobody ever drops out of the count, however long they are away.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted."
     ]
    },
@@ -3547,17 +3546,17 @@
     "eyebrow": "",
     "head": "Do Memberships Lapse?",
     "lock": "",
-    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.They lapseAfter a gap you choose.NeverYou stay a member however long you are away.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.",
+    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.NeverNobody ever drops out of the count, however long they are away.They lapseDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.",
     "options": [
-     {
-      "set": "lapse",
-      "val": "days",
-      "label": "They lapse"
-     },
      {
       "set": "lapse",
       "val": "never",
       "label": "Never"
+     },
+     {
+      "set": "lapse",
+      "val": "days",
+      "label": "They lapse"
      },
      {
       "set": "lapse",
@@ -3591,8 +3590,7 @@
     "helpers": [
      "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
-     "After a gap you choose.",
-     "You stay a member however long you are away.",
+     "Nobody ever drops out of the count, however long they are away.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted."
     ]
    },
@@ -4501,17 +4499,17 @@
     "eyebrow": "",
     "head": "Do Memberships Lapse?",
     "lock": "",
-    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.They lapseAfter a gap you choose.NeverYou stay a member however long you are away.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.",
+    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.NeverNobody ever drops out of the count, however long they are away.They lapseDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.",
     "options": [
-     {
-      "set": "lapse",
-      "val": "days",
-      "label": "They lapse"
-     },
      {
       "set": "lapse",
       "val": "never",
       "label": "Never"
+     },
+     {
+      "set": "lapse",
+      "val": "days",
+      "label": "They lapse"
      },
      {
       "set": "lapse",
@@ -4544,8 +4542,7 @@
     ],
     "helpers": [
      "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.",
-     "After a gap you choose.",
-     "You stay a member however long you are away.",
+     "Nobody ever drops out of the count, however long they are away.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted."
     ]
    },
@@ -5104,7 +5101,7 @@
     "eyebrow": "",
     "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when voting opens.",
     "lock": "The members decide.",
-    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.90%Nearly everyone80%Broad agreement78%60%A bare majorityWhat everyone asked for, without names.Answered3 of 3The document takes the highest78%",
+    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.90%Nearly everyone80%Broad agreement78%60%A bare majorityWhat everyone asked for, without names.Answered3 of 3The document takes the highest78%In a room of 3, all 3 must vote for it by the end.",
     "options": [],
     "inputs": [
      {
@@ -5449,7 +5446,7 @@
     "eyebrow": "",
     "head": "Nobody stops being a member, however long they are away.",
     "lock": "The members decide.",
-    "body": "A membership lapses after days without logging in.What the room saidThe members decide.Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.30 daysNeverWhat everyone asked for, without names.Answered3 of 3The document takes the longestNever",
+    "body": "A membership lapses after days without logging in.What the room saidThe members decide.Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.30 daysNeverWhat everyone asked for, without names.Answered3 of 3The document takes the longestNeverNobody ever drops out of the count, however long they are away.",
     "options": [],
     "inputs": [
      {
@@ -6503,7 +6500,7 @@
     "eyebrow": "",
     "head": "33% of the members must have voted on a question before it can change the document.",
     "lock": "The members decide.",
-    "body": "Quorum is % of the membership.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest.1 of 14all of themWhat everyone asked for, without names.Answered3 of 3The document takes the highest10 of 14",
+    "body": "Quorum is % of the membership.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest.1 of 14all of themWhat everyone asked for, without names.Answered3 of 3The document takes the highest10 of 1433% of a room of 3 is 1: one vote meets quorum, so a change never waits for more people to arrive.",
     "options": [],
     "inputs": [
      {
@@ -7126,7 +7123,7 @@
     "eyebrow": "",
     "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when voting opens.",
     "lock": "The members decide.",
-    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.90%Nearly everyone80%Broad agreement78%60%A bare majorityWhat everyone asked for, without names.Answered3 of 3The document takes the highest78%",
+    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.90%Nearly everyone80%Broad agreement78%60%A bare majorityWhat everyone asked for, without names.Answered3 of 3The document takes the highest78%In a room of 3, all 3 must vote for it by the end.",
     "options": [],
     "inputs": [
      {
@@ -7546,7 +7543,7 @@
     "eyebrow": "",
     "head": "Nobody stops being a member, however long they are away.",
     "lock": "The members decide.",
-    "body": "A membership lapses after days without logging in.What the room saidThe members decide.Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.30 daysNeverWhat everyone asked for, without names.Answered3 of 3The document takes the longestNever",
+    "body": "A membership lapses after days without logging in.What the room saidThe members decide.Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.30 daysNeverWhat everyone asked for, without names.Answered3 of 3The document takes the longestNeverNobody ever drops out of the count, however long they are away.",
     "options": [],
     "inputs": [
      {
@@ -7747,8 +7744,13 @@
     "eyebrow": "",
     "head": "The approval threshold starts at 55% and rises to 82% by the end. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.RisingStarts lower when people begin voting and climbs to the number at the end.Nearly everyone90%In a room of 3, all 3 must vote for it when voting opens, and the approval threshold climbs from there.Broad agreement80%In a room of 3, all 3 must vote for it when voting opens, and the approval threshold climbs from there.A bare majority60%In a room of 3, n of m is enough when voting opens, and the approval threshold climbs from there.A number of my ownIn a room of 3, n of m is enough when voting opens, and the approval threshold climbs from there.When voting opens%FixedThe same number all the way through.Why are you changing this?ABAsh Bellamy 👑",
+    "body": "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.FixedStays at 78% from the moment voting opens to the end.RisingNearly everyone90%Broad agreement80%A bare majority60%Starts at a bare majority (60%) when voting opens and climbs to 78% by the end — early changes pass more easily.A number of my ownStarts at 55% when voting opens and climbs to 78% by the end — early changes pass more easily.When voting opens%Why are you changing this?ABAsh Bellamy 👑",
     "options": [
+     {
+      "set": "shape",
+      "val": "fixed",
+      "label": "Fixed"
+     },
      {
       "set": "shape",
       "val": "ramp",
@@ -7763,11 +7765,6 @@
       "set": "tStart",
       "val": null,
       "label": "A number of my own"
-     },
-     {
-      "set": "shape",
-      "val": "fixed",
-      "label": "Fixed"
      }
     ],
     "inputs": [
@@ -7799,13 +7796,10 @@
     ],
     "helpers": [
      "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.",
-     "Starts lower when people begin voting and climbs to the number at the end.",
-     "In a room of 3, all 3 must vote for it when voting opens, and the approval threshold climbs from there.",
-     "In a room of 3, all 3 must vote for it when voting opens, and the approval threshold climbs from there.",
-     "In a room of 3, n of m is enough when voting opens, and the approval threshold climbs from there.",
-     "In a room of 3, n of m is enough when voting opens, and the approval threshold climbs from there.",
+     "Stays at 78% from the moment voting opens to the end.",
+     "Starts at a bare majority (60%) when voting opens and climbs to 78% by the end — early changes pass more easily.",
+     "Starts at 55% when voting opens and climbs to 78% by the end — early changes pass more easily.",
      "%",
-     "The same number all the way through.",
      "I am changing this because…"
     ]
    },
@@ -8873,7 +8867,7 @@
     "eyebrow": "",
     "head": "33% of the members must have voted on a question before it can change the document.",
     "lock": "The members decide.",
-    "body": "Quorum is % of the membership.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest.1 of 14all of themWhat everyone asked for, without names.Answered3 of 3The document takes the highest10 of 14",
+    "body": "Quorum is % of the membership.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest.1 of 14all of themWhat everyone asked for, without names.Answered3 of 3The document takes the highest10 of 1433% of a room of 3 is 1: one vote meets quorum, so a change never waits for more people to arrive.",
     "options": [],
     "inputs": [
      {

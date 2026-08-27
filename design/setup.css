@@ -279,6 +279,15 @@
      means nothing is being asked of you, and this asks nothing */
   .ceilingnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
 
+  /* what choosing this value would do, in this room (entry 167) — a note
+     under a number field, so it takes the `.exp` treatment a rung's own
+     explanation has rather than the ceiling note's smaller cap size: it sits
+     beside controls, not under the whole card. Grey and asking nothing (T19),
+     and empty until there is a value, which is why it collapses to nothing
+     rather than reserving a line. */
+  .meaning { font-size: var(--t-small); color: var(--muted); margin-top: var(--s2); }
+  .meaning:empty { display: none; }
+
   /* the one place the method is named, and the link out to /pairwise (entry
      163) — the ceiling note's own size and colour, for the same reason: grey
      means nothing is being asked of you. The anchor takes the .doclink

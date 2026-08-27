@@ -208,6 +208,7 @@ const readSlider = () => page.evaluate(() => {
   return {
     key: sl.dataset.slide, min: +sl.min, max: +sl.max, step: +sl.step, value: +sl.value,
     unset: !!c.querySelector('.cs.unset'), readout: (c.querySelector('.csval') || {}).textContent,
+    mean: ((c.querySelector('.csmean') || {}).textContent || '').trim(),
     pct: sl.style.getPropertyValue('--pct').trim(),
     commitOff: !commit || commit.disabled,
     x: r.x, y: r.y, w: r.width, h: r.height,
@@ -373,6 +374,16 @@ for (const key of ['quorum']) {
   check('in the steps it offers', mid.step === track.step, mid.step + ' want ' + track.step);
 
   check('the readout carries the value', SHAPE[key].test(mid.readout || ''), mid.readout);
+  // **…and under it, what that value would do in this room** (entry 167).
+  // The three fixed band sentences that stood here named no room at all —
+  // *A small part of the room can carry a change while the rest are
+  // elsewhere.* is true of any small quorum anywhere — so a member arriving
+  // never moved them. `syncSlider` repaints this from the stored `mean` on
+  // every step of the drag, which is the *nothing rebuilds under a press*
+  // path, so it is asserted after a drag rather than after a render.
+  for (const [where, s] of [['at min', low], ['at max', high], ['in between', mid]]) {
+    check('the meaning names the room ' + where, /room of/.test(s.mean || ''), s.mean);
+  }
   check('the touched control is no longer unset', !mid.unset && mid.pct !== '0', '--pct=' + mid.pct);
   check('the ✓ wakes', !mid.commitOff);
 

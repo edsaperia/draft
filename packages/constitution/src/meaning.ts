@@ -247,11 +247,20 @@ function rateMeaning(v: RateValue, room: Room): string | null {
   const drip = dripPhrase(dripMinutes);
   const end = room.endsAtMs;
   const now = room.nowMs;
-  const windowMs = (typeof end === 'number' && typeof now === 'number' && end > now) ? end - now : null;
-  if (windowMs === null) {
+  // **⏰ unanswered is not ⏰ answered *never***, and the difference is the
+  // whole sentence: the founder meets ⏱️ before ⏰ in the founding order, so
+  // promising *for as long as it runs* there would answer a question they
+  // have not been asked. Absent → nothing said; `null` → never; a date
+  // already past → nothing said either, the session it measured being over.
+  if (end === undefined) return null;
+  if (end === null) {
     return fit('With no end date, ' + grant + ' proposals to start with and one more every ' + drip +
       ' for as long as it runs, never more than ' + cap + ' in hand.');
   }
+  if (typeof now !== 'number' || !(end > now)) return null;
+  const windowMs = end - now;
+  // *about*, because a proposal that carries is refunded: the real number is
+  // at least this one, never fewer
   const total = grant + Math.floor(windowMs / 60000 / dripMinutes);
   const whole = 'Over a session of ' + spanPhrase(windowMs) + ', about ' + total +
     ' proposals each — ' + grant + ' to start with and one more every ' + drip +

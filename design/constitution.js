@@ -2998,10 +2998,12 @@ var CONSTITUTION = (() => {
     const drip = dripPhrase(dripMinutes);
     const end = room.endsAtMs;
     const now = room.nowMs;
-    const windowMs = typeof end === "number" && typeof now === "number" && end > now ? end - now : null;
-    if (windowMs === null) {
+    if (end === void 0) return null;
+    if (end === null) {
       return fit("With no end date, " + grant + " proposals to start with and one more every " + drip + " for as long as it runs, never more than " + cap + " in hand.");
     }
+    if (typeof now !== "number" || !(end > now)) return null;
+    const windowMs = end - now;
     const total = grant + Math.floor(windowMs / 6e4 / dripMinutes);
     const whole = "Over a session of " + spanPhrase(windowMs) + ", about " + total + " proposals each — " + grant + " to start with and one more every " + drip + ", never more than " + cap + " in hand.";
     return fit(whole) ?? fit("Over a session of " + spanPhrase(windowMs) + ", about " + total + " proposals each.");

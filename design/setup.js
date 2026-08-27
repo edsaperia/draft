@@ -705,6 +705,11 @@ window.SETUP = (function () {
       '<div class="statline"><span class="k">Answered</span><span class="v">' + ctx.E + ' of ' + ctx.E + '</span></div>' +
       '<div class="statline"><span class="k">' + esc(c.takes || 'The document takes') + '</span>' +
       '<span class="v">' + esc(c.result || '—') + '</span></div>' +
+      // **…and what that would mean for the room as it stands now** (entry
+      // 167), not for the room at the resolution: a settled 👥 card read next
+      // month says *in a room of 7* where it was 5 at the founding, which is
+      // the whole point of a sentence that names its own dependence.
+      meaningLine(c.k, c.taken, ctx.room) +
       // 🌡️'s settled card is where a member first meets the number as a fact
       // about the document rather than as a question, so the explainer is
       // linked here too (entry 163). Not on the still-collecting branch, which
@@ -1338,7 +1343,38 @@ window.SETUP = (function () {
     '<p class="methodnote">Uses the Bradley–Terry method to allow for a decision with few votes — ' +
     '<a href="/pairwise" target="_blank" rel="noopener">read more</a>.</p>';
 
-  const roomOf = (E) => (E <= 1 ? 'one' : String(E));
+  /* **What choosing this would do, in this room** (entry 167). One line, one
+     class, one home for the sentence: the module writes it and every surface
+     that offers a value prints it — the founder's card, the member's answer
+     card, the composer's lane and the settled strip — so none of them writes
+     one of its own.
+
+     `.meaning`, deliberately **not** `.why`: `.why` is the card's body, which
+     `card-audit`'s H4 measures at 200 characters, and this is a note under a
+     control. Under a *rung* the sentence is the rung's own `.exp` instead,
+     which is the slot a rung explanation has always used; `.meaning` is for
+     the bare number fields, which have no rung to hang off. Its own budget is
+     the module's `fit()` and `meaning.test.ts`.
+
+     Empty until there is a value: a sentence about a number nobody has typed
+     is a suggested answer, and painting one is what these cards exist not to
+     do. The `data-meaning` hook is how the `input` handlers repaint it in
+     place — **nothing rebuilds under a press**. */
+  /* A member's answer is stated in the page's vocabulary — a number of days,
+     a count, a grant — and what the module wants is the typed value. That
+     mapping is the caller's (`ANSTYPED` in session-view.html, the one place
+     it is spelled either way), so it is handed in rather than copied here: a
+     ⏱️ answer states the grant alone and the cap and drip come from
+     elsewhere, which is exactly the kind of thing setup.js must not learn.
+     An unanswered question is `null` and gets no sentence. */
+  const ansValue = (typed, key, v) =>
+    ((typeof v === 'number' && typed && typed[key]) ? typed[key](v) : null);
+
+  const meaningLine = (key, value, room) =>
+    '<p class="meaning" data-meaning="' + esc(key) + '">' +
+    esc((value && window.CONSTITUTION.meaningOf(key, value, room || { e: 1 })) || '') + '</p>';
+
+  const roomOf = (E) => window.CONSTITUTION.roomPhrase(E);
   const ceilingNote = (E, max) => {
     const pct = window.CONSTITUTION.barCeilingPct(E);
     if (pct >= max) return '';
@@ -1360,12 +1396,12 @@ window.SETUP = (function () {
      sentence is what lets the reader see that it moved. */
   const rungPct = (v) => window.CONSTITUTION.BAR_RUNGS.some((r) => r.pct === +v);
   const ownBar = (v) => v === 'own' || (typeof v === 'number' && !rungPct(v));
-  const barMeaning = (pct, E) =>
-    window.CONSTITUTION.meaningOf('bar', { pct: +pct }, { e: E }) || '';
+  const barMeaning = (pct, room) =>
+    window.CONSTITUTION.meaningOf('bar', { pct: +pct }, room) || '';
   const pctLabel = (label, pct) => esc(label) + '<span class="pct">' + pct + '%</span>';
-  const barLadder = (A, E) => ladder(A, 'bar',
+  const barLadder = (A, room) => ladder(A, 'bar',
     window.CONSTITUTION.BAR_RUNGS.map((r) => ({
-      v: r.pct, t: pctLabel(r.label, r.pct), e: barMeaning(r.pct, E),
+      v: r.pct, t: pctLabel(r.label, r.pct), e: barMeaning(r.pct, room),
     })),
     // **The box is rendered only inside the rung that is chosen**, rather than
     // rendered always and hidden by `.pick > .inner` the way `opt`'s fields
@@ -1380,25 +1416,30 @@ window.SETUP = (function () {
         (typeof A.bar === 'number' ? ' value="' + A.bar + '"' : '') + '>' +
         '<span class="setnote" style="margin:0">%</span></span></span>' +
         '<span class="exp" data-meaning="bar">' +
-        (typeof A.bar === 'number' ? esc(barMeaning(A.bar, E)) : '') + '</span>'));
+        (typeof A.bar === 'number' ? esc(barMeaning(A.bar, room)) : '') + '</span>'));
 
   /* One body per delegable question — the copy a member answers against,
-     identical on both surfaces because it is the same question. */
+     identical on both surfaces because it is the same question.
+     `room` is the fourth argument since entry 167: what a value would mean is
+     the module's to say, and it needs the room to say it. */
   const ANSWER = {
-    quorum: (A, E, form) => {
+    quorum: (A, E, form, room) => {
       const share = form === 'share';
       const asN = (v) => (share ? Math.max(1, Math.ceil(v / 100 * E)) : v);
-      const mean = (v) => (asN(v) >= E
-        ? 'Nothing moves unless every member has weighed in. A document that cannot change without all of them is a perfectly reasonable thing to want.'
-        : asN(v) <= Math.ceil(E / 4) ? 'A small part of the room can carry a change while the rest are elsewhere.'
-        : 'Rather more than half the room has to have looked at a question before it can move.');
+      // **The three band sentences are retired** (entry 167). *A small part of
+      // the room can carry a change while the rest are elsewhere.* was true of
+      // any small quorum in any room, which is the one thing a meaning must
+      // not be: it named no room, so a member arriving never changed it, and
+      // the reader could not tell what their answer would actually cost.
+      const mean = (v) => window.CONSTITUTION.meaningOf('quorum',
+        { form: share ? 'share' : 'count', n: +v }, room || { e: E }) || '';
       return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in before a question can change the document — short of that it waits; silence is never a vote. Asked as a <b>' + (share ? 'share of the membership' : 'count') + '</b>: the wording is the founder’s, the number is the room’s.</p>' +
       (share
         ? slider(A, 'quorum', 5, 100, (v) => v + '% — ' + asN(v) + ' of ' + E, mean, 5)
         : slider(A, 'quorum', 1, E, (v) => v + ' of ' + E, mean)) +
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given, so it is never lower than yours.</p>';
     },
-    bar: (A, E) =>
+    bar: (A, E, _form, room) =>
       '<p class="why">How sure the room must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the founder’s pacing.</p>' +
       // **Three rungs and a number** (entry 165, Ed 2026-08-27: *we need to
       // help them with 3 preset buttons, and they can edit the precise % if
@@ -1409,7 +1450,7 @@ window.SETUP = (function () {
       // same order and same labels as the founder's card, from the one list
       // (T5, Q620) — and the same `.above` dimming as 👁️, so *the most I will
       // accept* still reads as a ladder of what you are refusing.
-      barLadder(A, E) +
+      barLadder(A, room || { e: E }) +
       ceilingNote(E, 99) +
       methodNote() +
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given.</p>',
@@ -1474,18 +1515,34 @@ window.SETUP = (function () {
         (A.ending && A.ending !== 'never' ? ' value="' + esc(A.ending) + '"' : '') + '></span>') +
       ansRow(A.ending === 'never', 'ending', 'never', 'Never', 'It runs until it is frozen.') +
       '</div>' + BLINDNOTE,
-    lapse: (A) =>
+    // **Never first** (entry 167, rule 4): the document takes the *longest*
+    // asked for and *never* is the longest of all, so it heads the ladder as
+    // the most-protective answer does everywhere else — the rung's own
+    // sentence is the family's now, and the field below carries a `.meaning`
+    // that repaints as the number is typed.
+    lapse: (A, E, _form, room, typed) =>
       '<p class="why">Whether a membership <b>lapses</b> after a period of inactivity — and how long. A lapsed member leaves the quorum base like an abstainer: the room can finish without them, their votes keep counting, and coming back is just logging in. They are warned by email first, and sent the document and record when it happens.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      ansRow(A.lapse === 'never', 'lapse', 'never', 'Never',
+        esc(window.CONSTITUTION.meaningOf('lapse', { afterMs: null }, room || { e: E }) || '')) +
+      '</div>' +
       '<span class="fld"><label>The shortest period of inactivity you will accept</label>' +
       '<span class="setrow2"><input class="num" type="number" min="7" max="365"' +
       ' data-ansnum="lapse"' + (typeof A.lapse === 'number' ? ' value="' + A.lapse + '"' : '') + '>' +
       '<span class="setnote" style="margin:0">days</span></span></span>' +
-      ansRow(A.lapse === 'never', 'lapse', 'never', 'Never', 'Memberships do not lapse, however long inactive.') +
+      meaningLine('lapse', ansValue(typed, 'lapse', A.lapse), room) +
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>longest</b> asked for, <b>never</b> the longest of all.</p>',
-    rate: (A) =>
+    rate: (A, E, _form, room, typed) =>
       '<p class="why">The most sparing proposal rate you would accept. The document takes the <b>most generous</b> answer given.</p>' +
       '<span class="fld"><label>The fewest ✏️ to start with</label><input class="num" type="number" min="0" max="40"' +
-      ' data-ansnum="rate"' + (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '></span>' + BLINDNOTE,
+      ' data-ansnum="rate"' + (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '></span>' +
+      // ⏱️ is the one answer card that carried no meaning at all: a number
+      // field and a body. What the number comes to over the session is the
+      // consequence the answer turns on (entry 167). The answer states the
+      // grant alone, so the whole typed value comes from the caller's own
+      // `ANSTYPED` — setup.js writes the control and never the vocabulary.
+      meaningLine('rate', ansValue(typed, 'rate', A.rate), room) +
+      BLINDNOTE,
   };
 
   /* ---- the mails -----------------------------------------------------------
@@ -1662,5 +1719,5 @@ window.SETUP = (function () {
     anyEmojiRow, wireFreeEmoji, emojiFaceOf, setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     wireEmojiPicker,
     motionBody, motionReopen, routeFor, motionCommitHtml,
-    slider, syncSlider, ladder, ANSWER, BLINDNOTE, ceilingNote, methodNote, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
+    slider, syncSlider, ladder, ANSWER, BLINDNOTE, ceilingNote, methodNote, meaningLine, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();
