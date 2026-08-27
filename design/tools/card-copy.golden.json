@@ -537,7 +537,7 @@
     "eyebrow": "",
     "head": "Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
     "lock": "",
-    "body": "🌍 Visibility is waiting for somebody to answer it. You handed it to the membership, and you are its only member — a question answered by one voice has not been handed to anybody, so one more member is enough to start it. If you would rather not invite anybody, take it back on its own card and set it yourself.An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as invited until then.InviteSeveral at onceSend invitations1 of 1 have opened it so far. Nobody has to be here for the document to exist, and anybody who arrives later starts with the same ✏️s as everybody else.",
+    "body": "🌍 Visibility is waiting for somebody to answer it. You handed it to the membership, and you are its only member — a question answered by one voice has not been handed to anybody, so one more member is enough to start it. If you would rather not invite anybody, take it back on its own card and set it yourself.An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as invited until then.✒️Several at once✒️n of m have opened it so far. Nobody has to be here for the document to exist, and anybody who arrives later starts with the same ✏️s as everybody else.",
     "options": [],
     "inputs": [
      {
@@ -555,8 +555,8 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "✒️",
-      "title": "Set it"
+      "label": "Done",
+      "title": "Done"
      }
     ],
     "hints": [
@@ -564,8 +564,10 @@
      "Invite a Member — close it",
      "Can the Founder Invite at Will? — settled",
      "Does the Founder Have a Veto over Invitations? — settled",
+     "Send the invitation",
+     "Send them all",
      "Put it back as it stands",
-     "Set it"
+     "Done"
     ],
     "helpers": [
      "🌍 Visibility is waiting for somebody to answer it. You handed it to the membership, and you are its only member — a question answered by one voice has not been handed to anybody, so one more member is enough to start it. If you would rather not invite anybody, take it back on its own card and set it yourself.",
@@ -7356,7 +7358,7 @@
     "eyebrow": "",
     "head": "Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
     "lock": "",
-    "body": "An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as invited until then.InviteSeveral at onceSend invitations3 of 3 have opened it so far. Nobody has to be here for the document to exist, and anybody who arrives later starts with the same ✏️s as everybody else.",
+    "body": "An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as invited until then.✒️Several at once✒️n of m have opened it so far. Nobody has to be here for the document to exist, and anybody who arrives later starts with the same ✏️s as everybody else.",
     "options": [],
     "inputs": [
      {
@@ -7374,8 +7376,8 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "✒️",
-      "title": "Set it"
+      "label": "Done",
+      "title": "Done"
      }
     ],
     "hints": [
@@ -7383,8 +7385,10 @@
      "Invite a Member — close it",
      "Can the Founder Invite at Will? — settled",
      "Does the Founder Have a Veto over Invitations? — settled",
+     "Send the invitation",
+     "Send them all",
      "Put it back as it stands",
-     "Set it"
+     "Done"
     ],
     "helpers": [
      "An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as invited until then.",
