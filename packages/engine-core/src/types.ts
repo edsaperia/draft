@@ -146,7 +146,7 @@ export interface Candidate {
   /**
    * The author chose to sign it (SPEC §3.5a, Q770): named from the moment
    * it is proposed, whatever the disclosure rung. Present only when true —
-   * an unsigned candidate carries no field, exactly as `machineAuthored`.
+   * an unsigned candidate carries no field, exactly as the machine flag above.
    */
   signed?: true;
   /**
