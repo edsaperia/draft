@@ -6002,7 +6002,12 @@
         // types into the column at this step, and a `data-ok` here would be
         // clicked by the walk's own OK branch before it ever got there.
         : (c.k === 'text'
-        ? '<button class="btn btn-approve" data-confirm="1" title="' + commitTitle(c) + '">OK</button>'
+        // …and not on a closed document (entry 62, found by `powers-walk`).
+        // 📄's OK is `confirmStartingText`, which `requireOpen` refuses — so
+        // on the closed page this was a live control for an act that cannot
+        // happen, the one card left drawing one after the locks above.
+        ? '<button class="btn btn-approve"' + (docOpen() ? '' : ' disabled') +
+          ' data-confirm="1" title="' + commitTitle(c) + '">OK</button>'
         : binBtn() +
         // ✒️ is the founder's pen (Ed, 360): a set of a setting binds the
         // document. Q449 (Ed, 2026-08-20): an answer to a shared question
