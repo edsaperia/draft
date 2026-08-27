@@ -342,6 +342,8 @@ export class Session {
           peakW: 0,
           redrafts: 0,
           ...(event.machineAuthored ? { machineAuthored: true } : {}),
+          ...(event.signed ? { signed: true } : {}),
+          ...(event.disclosure ? { disclosure: event.disclosure } : {}),
         });
         this.supporters.set(event.id, new Set([event.author]));
         spend(
@@ -833,6 +835,13 @@ export class Session {
       author: string;
       rationale: string;
       machineAuthored?: boolean;
+      /**
+       * The author signs it (SPEC §3.5a, Q770): named from submission. The
+       * engine records the choice and does not judge whether the document
+       * offers it — that gate is the host's (`propose-text`), which knows
+       * the rung's elective half; the engine knows only the base.
+       */
+      signed?: boolean;
       /** A text proposal (SPEC §2.1) — exactly one of patch/setting. */
       patch?: PatchSet;
       /** An ordinary motion's proposed value (SPEC §9.6, Q390). */
@@ -892,6 +901,11 @@ export class Session {
       ...(input.setting ? { setting: input.setting } : {}),
       rationale: input.rationale,
       ...(input.machineAuthored ? { machineAuthored: true } : {}),
+      ...(input.signed ? { signed: true } : {}),
+      // the base standing now, stamped on the candidate for good (entry 31):
+      // a later 👤 motion never re-reads it. A setting candidate (Q390) takes
+      // the same stamp; nothing reads it there, and one shape beats two.
+      disclosure: this.constitutionValue.authorshipVisibility,
     });
     this.fitCache.clear();
     const race = this.raceOf(id);

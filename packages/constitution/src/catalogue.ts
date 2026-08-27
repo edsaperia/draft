@@ -181,8 +181,9 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   // ladder, and nobody is handed an exposure they did not accept.
   //
   // The two elective rungs are the ones the per-proposal sign control belongs
-  // to (Q770, not built): until it exists they behave as their base rung,
-  // which is what `adapter.ts` maps them to.
+  // to (Q770, built): by default they behave as their base rung, which is what
+  // `adapter.ts` maps them to, and a signed proposal is named from the moment
+  // it is made (`authorVisible` in engine-core; the gate is `propose-text`).
   { id: 'authorship', glyph: '👤', kind: 'constitutional',
     delegable: true, valueType: 'ladder',
     rungs: ['anonymous', 'anonymousElective', 'sealed', 'sealedElective', 'public'],

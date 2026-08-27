@@ -46,11 +46,13 @@ export const DEFAULT_TUNING: EngineTuning = {
  * **The elective rungs ride their base** (Q767, Ed 2026-08-25). 👤 is a ladder
  * of five, but what a document *does by default* is still the three-value fact
  * the engine and the closing record are written against: the two opt-in rungs
- * add a per-proposal choice on top (Q770, not built) and change nothing else.
- * So *nobody named unless they ask* is `anonymous` and *named at the close, or
- * earlier by choice* is `sealed` — which is what makes offering them honest
- * rather than merely offerable. **Every reader of the rung goes through here**,
- * so no site can quietly treat `anonymousElective` as *not anonymous*.
+ * add a per-proposal choice on top (Q770, built: the sign control, whose gate
+ * is `propose-text`) and change nothing else. So *nobody named unless they
+ * ask* is `anonymous` and *named at the close, or earlier by choice* is
+ * `sealed` — which is what makes offering them honest rather than merely
+ * offerable. This answers *what does this rung do by default*, which is the
+ * door's question; *is this author visible* is engine-core's `authorVisible`,
+ * read against the base a candidate was made under (entry 31).
  */
 export function authorshipBase(rung: string): Constitution['authorshipVisibility'] {
   const base = rung === 'anonymousElective' ? 'anonymous'

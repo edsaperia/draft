@@ -240,14 +240,16 @@ export class EngineBridge {
    * its race, the stake leaves the engine wallet, adoption rewrites the
    * engine's document. The constitution is not told: it knows the text
    * only as the starting text (§9.7a), and the live text is the engine's.
+   * `signed` is the author's per-proposal choice under an elective 👤 rung
+   * (Q770); whether the rung offers it is the host's gate, not this door's.
    */
-  proposeText(t: number, by: MemberId, patch: PatchSet, why: string):
+  proposeText(t: number, by: MemberId, patch: PatchSet, why: string, signed = false):
     { id: string; raceId: string } {
     this.sync(t);
     if (this.engine.balance(by, t) < this.engine.constitution.stake) {
       throw new Error('insufficient ✏️ for the stake (§7)');
     }
-    const out = this.engine.submitCandidate(t, { author: by, patch, rationale: why });
+    const out = this.engine.submitCandidate(t, { author: by, patch, rationale: why, signed });
     this.sync(t);
     return out;
   }
