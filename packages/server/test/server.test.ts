@@ -1517,3 +1517,111 @@ describe('the open join link admits (backlog 73)', () => {
     expect(adaView.view.members.some((m) => m.email === 'dee@example.org')).toBe(true);
   }, 60_000);
 });
+
+/**
+ * **💤's two mails, over the wire** (promise-coverage entry 81, batch L).
+ * `packages/constitution/test/promise-lapse.test.ts` locks the fold; this is
+ * the half only the host can keep: `server.ts` relays `lapse-warned` to
+ * `MAILS.lapseWarning` and `member-lapsed` to `MAILS.lapsed`, each with a
+ * fresh login link, and no test exercised either relay.
+ *
+ * **It asserts what the mail *is*, not that it is right.** SPEC §9.5a and
+ * SURFACE E22 promise *mail: warning, then the package* — the document and
+ * the record. `MAILS.lapsed` carries a login link and nothing else, which is
+ * filed as a batch-L finding (*💤's lapse mail is a link, not the package*).
+ * The assertion below is the peg that finding points at: change the mail and
+ * this case is what says so.
+ *
+ * The plan asked for this case beside the block that delegates 💤; that block
+ * is the stranger's door on an **unconstituted** document, where no clock
+ * runs at all, so it stands on its own founding instead.
+ */
+describe('💤 the lapse mails (§9.5a, SURFACE E22)', () => {
+  it('warns by mail first, then sends the lapse — each with a login link', async () => {
+    const { base, dataDir, draft } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Quiet Meadow Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      const body = await res.json() as { ok?: boolean; error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+
+    await cmd(ada, 'confirm-starting-text', { text: 'The meadow is mown in June.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    const boLink = (await lastMailTo(dataDir, 'bo@example.org')).link!;
+    const bo = cookieOf(await consume(boLink));
+    await cmd(ada, 'set-setting',
+      { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    // the founder keeps every question (a delegated one never resolves on a
+    // single voice), and the spell is a minute — expressible only here, since
+    // the card collects whole days, 7–365
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: null }, // perpetual: the tick must not close instead
+      pace: { shape: 'fixed' }, bar: { pct: 66 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: 60_000 },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'begin', {}); // 🍾
+    const t0 = Date.now();
+    expect((await viewOf(ada)).constitutedAtT).not.toBeNull();
+
+    const mailsTo = (to: string, subject: string) =>
+      readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
+        .split('\n').filter((l) => l.length > 0)
+        .map((l) => JSON.parse(l) as { to: string; subject: string; link?: string })
+        .filter((m) => m.to === to && m.subject === subject);
+    const WARN = 'Your membership of “Quiet Meadow Charter” is about to lapse';
+    const GONE = 'Your membership of “Quiet Meadow Charter” has lapsed';
+
+    // -- 75% of the spell: the warning, and only the warning ---------------
+    await draft.tick(t0 + 50_000);
+    await draft.outbox.drain();
+    expect(mailsTo('bo@example.org', WARN)).toHaveLength(1);
+    expect(mailsTo('bo@example.org', WARN)[0]!.link).toContain('/auth/login?token=');
+    expect(mailsTo('bo@example.org', GONE)).toHaveLength(0);
+    const live = draft.store.bySlug(slug)!;
+    const boRec = [...live.cs.memberRecords().values()]
+      .find((m) => m.email === 'bo@example.org')!;
+    expect(boRec.lapseWarned).toBe(true);
+    expect(boRec.lapsed).toBe(false);
+
+    // -- past the spell: the lapse, once, with its own link ----------------
+    await draft.tick(t0 + 70_000);
+    await draft.outbox.drain();
+    expect(boRec.lapsed).toBe(true);
+    const gone = mailsTo('bo@example.org', GONE);
+    expect(gone).toHaveLength(1);
+    expect(gone[0]!.link).toContain('/auth/login?token=');
+    // **the package is a link** (the finding): the body names the login and
+    // nothing else — no document, no record, no attachment
+    const body = readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
+      .split('\n').filter((l) => l.length > 0)
+      .map((l) => JSON.parse(l) as { to: string; subject: string; text: string })
+      .filter((m) => m.to === 'bo@example.org' && m.subject === GONE)[0]!.text;
+    expect(body).toContain('Reviving is logging in');
+    expect(body).not.toContain('The meadow is mown in June.');
+
+    // -- and the sweep does not re-send next minute ------------------------
+    await draft.tick(t0 + 130_000);
+    await draft.outbox.drain();
+    expect(mailsTo('bo@example.org', GONE)).toHaveLength(1);
+    expect(mailsTo('bo@example.org', WARN)).toHaveLength(1);
+
+    // -- revival is logging in: any act by the lapsed member does it -------
+    await cmd(bo, 'set-identity', { name: 'Bo' });
+    expect(boRec.lapsed).toBe(false);
+  }, 60_000);
+});
