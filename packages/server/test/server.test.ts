@@ -1182,6 +1182,143 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
   });
 });
 
+/* **A laid-down pen is laid down** (entry 62, Ed's batch-B QA 2026-08-25:
+   *check that giving up powers actually gives them up, on all settings where
+   they can be given up*). The module and the server have always been right —
+   what was wrong was the page, which asked *do you hold a pen anywhere* where
+   it meant *do you hold this one*. So this pins the answer the page's controls
+   now have to agree with, per setting, on the HTTP status and the error text:
+   the thing `powers-walk` cannot prove from the surface.
+
+   Three epochs in one walk. **Pre-start** a release is recorded and not yet
+   spent (R-048), so the founder still sets — and that is the case the walk
+   asserts as *correct*, not as a defect. **Post-🍾** the `constituted` fold has
+   spent every pending release, so each of those settings refuses; ⏰ keeps its
+   pen and is the control that proves the refusals are about the power and not
+   about the epoch. **Closed** everything refuses, including on ⏰, and
+   including the act of laying a power down at all. */
+describe('a laid-down pen is laid down (entry 62)', () => {
+  // the refusal happens on the powers test, above `validateFor` — so the same
+  // legal value serves for the set that lands pre-start and the one refused
+  // after it, and nothing here turns on a value being novel
+  const VALUES: Array<readonly [string, unknown]> = [
+    // ⏰ leads: 🌡️ depends on it, and a ramp needs an endpoint
+    ['ending', { endsAtMs: 0 }],   // filled in below, once the clock is read
+    ['title', { text: 'The Rota, Renamed' }],
+    ['link', { slug: 'the-rota-renamed' }],
+    ['bar', { pct: 66 }],
+    ['pace', { shape: 'fixed' }],
+    ['quorum', { form: 'count', n: 2 }],
+    ['authorship', { rung: 'sealed' }],
+    ['judgments', { rung: 'after' }],
+    ['chamber', { rung: 'link' }],
+    ['rate', { grant: 4, cap: 8, dripMinutes: 240 }],
+    ['lapse', { afterMs: null }],
+    ['removal', { price: 'assembly' }],
+    ['machines', { enabled: false, budget: 0 }],
+    ['admission', { price: 'assembly' }],
+    ['applications', { apply: false }],
+  ];
+
+  it('refuses every set whose pen is down, keeps the one that is not, and refuses everything once closed', async () => {
+    const { base, dataDir, draft } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Night Watch Rota', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const send = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      return { status: res.status, body: await res.json() as { ok?: boolean; error?: string } };
+    };
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const r = await send(cookie, name, args);
+      expect(r.body.error, `${name}: ${r.body.error}`).toBeUndefined();
+      return r;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    // `view()` carries every setting's pair and its pending release; the
+    // payload type above is hand-kept and does not declare that half
+    type SettingRow = { setting: string; powers: { unilateral: boolean; assent: boolean };
+      pendingRelease: { unilateral: boolean; assent: boolean } };
+    const rowOf = async (cookie: string, setting: string): Promise<SettingRow> => {
+      const rows = ((await viewOf(cookie)).view as unknown as { settings: SettingRow[] }).settings;
+      const row = rows.find((r) => r.setting === setting);
+      expect(row, `no ${setting} in the view`).toBeDefined();
+      return row!;
+    };
+
+    await cmd(ada, 'confirm-starting-text', { text: 'The watch is kept from dusk.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    await cmd(ada, 'invite', { email: 'cy@example.org' });
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+    const bo = await follow('bo@example.org');
+    await follow('cy@example.org');
+
+    // -- every setting gets a value, all of them founder-held ---------------
+    const ends = Date.now() + 3600_000;
+    const values = VALUES.map(([k, v]) =>
+      [k, k === 'ending' ? { endsAtMs: ends } : v] as const);
+    for (const [setting, value] of values) await cmd(ada, 'set-setting', { setting, value });
+
+    // -- and every pen but ⏰'s goes down, which pre-start is a promise ------
+    const laid = values.map(([k]) => k).filter((k) => k !== 'ending');
+    for (const setting of [...laid, 'startingText']) {
+      await cmd(ada, 'relinquish', { setting, power: 'unilateral' });
+    }
+    // R-048: recorded, not yet spent — the founder still holds it, and so
+    // still sets. The page's control staying live here is *correct*.
+    const before = await rowOf(ada, 'title');
+    expect(before.powers.unilateral).toBe(true);
+    expect(before.pendingRelease.unilateral).toBe(true);
+    await cmd(ada, 'set-setting', { setting: 'title', value: { text: 'Still Mine To Set' } });
+
+    await cmd(ada, 'begin', {}); // 🍾 — the fold spends every pending release
+    expect((await viewOf(ada)).constitutedAtT).not.toBeNull();
+    const after = await rowOf(ada, 'title');
+    expect(after.powers.unilateral).toBe(false);
+    expect(after.powers.assent).toBe(true);   // only the pen was laid down
+
+    // -- post-🍾: each laid-down setting refuses, and says which power -------
+    for (const [setting, value] of values) {
+      if (setting === 'ending') continue;
+      const r = await send(ada, 'set-setting', { setting, value });
+      expect(r.status, `${setting} answered ${r.status}`).toBe(400);
+      expect(r.body.error, `${setting}: ${r.body.error}`)
+        .toContain('the unilateral power is given up');
+    }
+    // 📄's pen goes down at the start by itself (§9.7 rule 8); the road back
+    // is proposing, and the module says so rather than naming a power
+    expect((await send(ada, 'confirm-starting-text', { text: 'no' })).body.error)
+      .toContain('after the start the text changes by proposing');
+    // …and the control: ⏰ kept its pen, so the founder still sets it. This is
+    // what makes the fifteen refusals above about the *power* and not the epoch.
+    await cmd(ada, 'set-setting', { setting: 'ending', value: { endsAtMs: ends + 60_000 } });
+
+    // -- closed: nothing moves, including on the setting whose pen is held --
+    const soon = Date.now() + 1_000;
+    await cmd(ada, 'set-setting', { setting: 'ending', value: { endsAtMs: soon } });
+    await draft.tick(soon + 1_000);
+    expect((await viewOf(ada)).view.closed).not.toBeNull();
+
+    const shut = await send(ada, 'set-setting', { setting: 'ending', value: { endsAtMs: soon + 60_000 } });
+    expect(shut.status).toBe(400);
+    expect(shut.body.error).toContain('the document has closed');
+    // laying a power down is a command like any other, and `relinquish`
+    // calls `requireOpen` before it asks whether the power is held
+    const gone = await send(ada, 'relinquish', { setting: 'rate', power: 'assent' });
+    expect(gone.status).toBe(400);
+    expect(gone.body.error).toContain('the document has closed');
+    // a member's road in is shut for the same reason, so the page's composer
+    // has nothing left to post either
+    expect((await send(bo, 'open-motion', {
+      payload: { kind: 'set', setting: 'rate', value: { grant: 9, cap: 9, dripMinutes: 9 } }, why: '',
+    })).body.error).toContain('the document has closed');
+  });
+});
+
 type StrangerPayload = {
   stranger: true; seq: number; eseq: number; devMail: boolean; title: string; slug: string;
   constitutedAtT: number | null; closed: { at: number } | null; frozen: boolean;
