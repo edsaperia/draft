@@ -43,8 +43,8 @@
  * whole content is that nothing can be sealed — asserted below.
  *
  * **What is not locked here, and why.** `public` promises *visible live*; the
- * engine keeps that half (below) and no read the member surface makes carries
- * it — filed, not asserted. The two elective rungs promise a per-proposal
+ * engine keeps that half (below), and of the server's three reads only
+ * `raceCards` carries the id on — filed, not asserted. The two elective rungs promise a per-proposal
  * choice; the *ride the base* half is kept and locked, the *choose* half is
  * entry 30 (Q770), unbuilt. A rung that loosens mid-session follows rather
  * than honours; that is entry 31, and the case for it is `it.todo` — a test
@@ -220,8 +220,8 @@ describe('public — “visible live”', () => {
     expect(o!.author).toMatch(/^m-\d+$/);            // a member id, not a handle
     expect(JSON.stringify(o)).not.toMatch(/example\.org/);
   });
-  // The surface half of *visible live* is a gap: none of `raceView`'s three
-  // reads carries the id on, and no page code renders one. Filed, not asserted.
+  // The wire keeps this half in `raceCards` alone (`server.test.ts`); the
+  // surface renders no name from a live card at any rung. Filed, not asserted.
 });
 
 describe('what every rung keeps, whatever it says', () => {

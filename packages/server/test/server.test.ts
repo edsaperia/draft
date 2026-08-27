@@ -1347,6 +1347,171 @@ describe('the founder reads their own document (2026-08-22)', () => {
   });
 });
 
+/**
+ * 👤 **Anonymous Proposals** on the wire — promise coverage (backlog 83,
+ * batch L). The fold half is `packages/constitution/test/promise-authorship
+ * .test.ts`; this is the member's own read, `raceView`, which has three of
+ * them on an open document — `clauses`, `records` and `raceCards` — and one
+ * more once it closes. The blindness lock beside the founding walk covers
+ * `clauses` alone; a rung kept in one read and broken in another is exactly
+ * the shape a single-read assertion cannot see, so these cover all of them.
+ *
+ * The clerk is here because X12 gives the convenor a read independent of 🌍
+ * and §3.5a gives them no authorship exception: the audit's question is
+ * whether that read is the same blind read, and it is.
+ */
+describe('👤 authorship on the wire (SPEC §3.5a)', () => {
+  /**
+   * A begun document standing at `rung`, with one adopted race (so `records`
+   * has an entry) and one live race (so `clauses` and `raceCards` do).
+   * `clerk: true` founds it with a convenor who is not a member.
+   */
+  const foundAt = async (rung: string, opts: { clerk?: boolean } = {}) => {
+    const { base, dataDir, draft } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Authorship ' + rung + (opts.clerk ? ' clerk' : ''),
+      email: 'ada@example.org', ...(opts.clerk ? { isMember: false } : {}),
+    })).json() as { slug: string; devLink: string };
+    const slug = created.slug;
+    const ada = cookieOf(await consume(created.devLink));
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+
+    await cmd(ada, 'confirm-starting-text', { text: 'The clubhouse is open.\nThe rota is weekly.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    await cmd(ada, 'invite', { email: 'cy@example.org' });
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+    await cmd(bo, 'set-identity', { name: 'Bo Marlowe' });
+    await cmd(cy, 'set-identity', { name: 'Cy Marlowe' });
+    await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      pace: { shape: 'fixed' }, quorum: { form: 'count', n: 2 },
+      authorship: { rung }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    for (const setting of ['ending', 'bar', 'chamber']) await cmd(ada, 'delegate', { setting });
+    const ends = Date.now() + 3600_000;
+    const electors = opts.clerk ? [bo, cy] : [ada, bo, cy];
+    for (const [setting, value] of [
+      ['ending', { endsAtMs: ends }], ['bar', { pct: 66 }], ['chamber', { rung: 'link' }],
+    ] as const) {
+      for (const cookie of electors) await cmd(cookie, 'answer', { setting, value });
+    }
+    await cmd(ada, 'begin', {});
+
+    // one race that resolves — the `records` entry — and one that is still live
+    const first = await cmd(bo, 'propose-text', { baseVersion: 0,
+      hunks: [{ start: 0, end: 1, lines: ['The clubhouse is open all week.'] }],
+      why: 'weekends too' }) as { id: string };
+    const cyCards = (await viewOf(cy)).raceCards;
+    const card = cyCards.find((c) => c.a.id === first.id || c.b.id === first.id)!;
+    await cmd(cy, 'judge-race', { a: card.a.id, b: card.b.id,
+      outcome: card.a.id === first.id ? 'a' : 'b' });
+    const live = await cmd(bo, 'propose-text', { baseVersion: 1,
+      hunks: [{ start: 1, end: 2, lines: ['The rota is daily.'] }],
+      why: 'weekly is too slow' }) as { id: string };
+    return { base, slug, draft, ada, bo, cy, ends, cmd, viewOf, first, live };
+  };
+
+  /** The three reads of an open document, as one string each. */
+  const readsOf = (v: MemberViewPayload) => ({
+    clauses: JSON.stringify(v.clauses),
+    records: JSON.stringify(v.records),
+    raceCards: JSON.stringify(v.raceCards),
+  });
+
+  it('sealed: no author in any of the three live reads, for a member or for a clerk founder', async () => {
+    const sealed = await foundAt('sealed');
+    const cyView = await sealed.viewOf(sealed.cy);
+    expect(cyView.records).toHaveLength(1);          // the adopted race is on the record
+    expect(cyView.clauses).toHaveLength(1);          // and one race is still live
+    for (const [read, json] of Object.entries(readsOf(cyView))) {
+      expect(json, `${read} named an author under sealed`).not.toMatch(/author/);
+      expect(json, `${read} named Bo under sealed`).not.toMatch(/Marlowe/);
+    }
+    // the proposer's own read: `mine` says which are theirs, and nothing names
+    const boView = await sealed.viewOf(sealed.bo);
+    expect(boView.mine.map((m) => m.id)).toContain(sealed.live.id);
+    expect(boView.clauses[0]!.candidates[0]!.mine).toBe(true);
+    for (const json of Object.values(readsOf(boView))) expect(json).not.toMatch(/author/);
+
+    // the clerk founder reads the same blind reads — X12 gives them a read,
+    // §3.5a gives them no exception, and being out of E leaves them no feed
+    const clerk = await foundAt('sealed', { clerk: true });
+    const adaView = await clerk.viewOf(clerk.ada);
+    expect(adaView.isFounder).toBe(true);
+    expect(adaView.records.length).toBeGreaterThan(0);
+    expect(adaView.raceCards).toEqual([]);           // no wallet, no feed
+    for (const json of Object.values(readsOf(adaView))) expect(json).not.toMatch(/author/);
+  });
+
+  it('public: “visible live” — the author id reaches the member’s own feed', async () => {
+    // `raceCards` is `api.nextCards(...)` passed through whole, so the id
+    // `optionView` attaches under `public` survives onto the wire. This is
+    // the one read that keeps the rung's live promise, and it is the read
+    // the leak of a *loosened* rung travels by too (entry 31): the engine
+    // holds one value for the whole field, so a candidate proposed under
+    // `sealed` is named here the moment 👤 moves.
+    const pub = await foundAt('public');
+    const cyView = await pub.viewOf(pub.cy);
+    const boId = (await pub.viewOf(pub.bo)).me;
+    const opts = cyView.raceCards.flatMap((c) => [c.a, c.b]);
+    const named = opts.find((o) => o.id === pub.live.id) as { author?: string } | undefined;
+    expect(named).toBeTruthy();
+    expect(named!.author).toBe(boId);
+    // `clauses` and `records` carry none of it, and no page code reads an
+    // author off a live card — so `public` is kept on the wire and not on
+    // the surface. Filed, not asserted: a gap is a backlog entry, not a lock.
+  });
+
+  it('anonymous: the closed record carries no author at all — not a name of null', async () => {
+    const anon = await foundAt('anonymous');
+    await anon.draft.tick(anon.ends + 1_000);
+    const rec = (await anon.viewOf(anon.cy)).record!;
+    expect(rec.closedAt).toBe(anon.ends);
+    expect(rec.adopted).toHaveLength(1);
+    expect(rec.undecided).toHaveLength(1);
+    for (const r of [...rec.adopted, ...rec.undecided]) {
+      for (const f of r.field) expect(f).not.toHaveProperty('author');
+    }
+    expect(JSON.stringify(rec)).not.toMatch(/Marlowe/);
+    // and the live `records` never named anybody either, closed or not
+    expect(JSON.stringify((await anon.viewOf(anon.cy)).records)).not.toMatch(/author/);
+  });
+
+  it('sealedElective: rides sealed at the record, so the reveal happens (Q767)', async () => {
+    // The elective rungs' *ride the base* half is the half that is built
+    // (entry 30 is the other half): a raw `rung === 'anonymous'` test would
+    // unseal `anonymousElective` and seal `sealedElective`, both backwards.
+    const el = await foundAt('sealedElective');
+    await el.draft.tick(el.ends + 1_000);
+    const rec = (await el.viewOf(el.cy)).record!;
+    expect(rec.adopted[0]!.field[0]!.author)
+      .toEqual(expect.objectContaining({ name: 'Bo Marlowe' }));
+  });
+
+  it('anonymousElective: rides anonymous at the record, so nobody is named (Q767)', async () => {
+    const el = await foundAt('anonymousElective');
+    await el.draft.tick(el.ends + 1_000);
+    const rec = (await el.viewOf(el.cy)).record!;
+    for (const f of rec.adopted[0]!.field) expect(f).not.toHaveProperty('author');
+  });
+});
+
 describe('the phase ladder (Q674–Q678)', () => {
   it('walks one real document from birth to a closed session with signatures', async () => {
     const { base } = await boot();
