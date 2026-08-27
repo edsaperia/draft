@@ -211,7 +211,7 @@ Every power is an object you hold, kept where you can see it, spent by flying it
 | ✏️ propose | proposing | enough of the room, at the threshold | wallet | many; 1 per Propose, refunded whole on withdraw, dripped on real minutes, capped; past four, three glyphs and +n | 3000 | canpropose | 🍾, per member at their OK · *The Founder began the document, granting every member the right to propose changes to it* | arc → button; the storm from the OK; farewell storm → 🥂 |
 | 🏛️ voice | consensus | everybody | voicewallet | one at a time, returned whole | 10000 | grant-voice | with the first blind question you are asked (Q605) · four sentences by arrival | grant OK → socket; farewell → 🥂; the motion hold flies nothing — the assembly is the meter |
 | 🍾 begin | a moment, not a capacity | the founder alone | — | — | 1000 | — | 🍾 is its own task | the cork → the document title |
-| ⚖️ judge | a right, not an object | — | — | — | — | canjudge | 🍾 · *…granting every member the right to judge what is proposed* | nothing flies |
+| ⚖️ judge | a right, not an object | — | — | — | — | canjudge | 🍾 · *…granting every member the right to vote on what is proposed* | nothing flies |
 
 ### 7.1 Socket states
 
@@ -284,7 +284,7 @@ The refund flight and every grant's inbound flight take 640 ms.
 | 12 | lapse | 💤 | constitutional · judge-gate | members — above *Members*, with 🤝 (Q865) | yes | mypic | Do Memberships Lapse? |
 | 13 | removal | 🥾 | constitutional | members — the last rule above *Members* | yes | lapse | How Is a Member Removed? |
 | 14 | canpropose | 💡 | gate (and the ✏️ grant) | rate — in the preamble's stack | no | 🍾 | Proposing |
-| 15 | canjudge | ⚖️ | gate | rate — in the preamble's stack | no | 🍾 | Judging |
+| 15 | canjudge | ⚖️ | gate | rate — in the preamble's stack | no | 🍾 | Voting |
 | 16 | grant-voice | 🏛️ | grant | rate — in the preamble's stack (Y23) | no | its clause is pinned; the **news** still arrives with the first blind question you are asked — else, **before the start, under 🪪**, and under ⚖️ after it (Q605, narrowed by Q750, widened by Q829) | Your Voice |
 | 17 | rate | ⏱️ | ordinary, delegable | rate | yes | removal | Proposal Rate |
 | 18 | machines | 🤖 | ordinary, delegable | rate, last | yes | rate | AI Proposals |
@@ -292,7 +292,7 @@ The refund flight and every grant's inbound flight take 640 ms.
 | 20 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | How Sure Must the Room Be? |
 | 21 | quorum | 👥 | constitutional · judge-gate | deciding, last | yes | bar | Quorum |
 | 22 | authorship | 👤 | constitutional · judge-gate | privacy | yes | quorum | Anonymous Proposals |
-| 23 | judgments | 👁️ | constitutional · judge-gate | privacy | yes | authorship | When Are Judgments Revealed? |
+| 23 | judgments | 👁️ | constitutional · judge-gate | privacy | yes | authorship | When Are Votes Revealed? |
 | 24 | text | 📄 | ordinary | doc — the charter heading under the hairline | yes | judgments | Text |
 | 25 | begin | 🍾 | decision, not a setting | rate — the preamble's stack, first (Y21, Y23) | no | until the founder can press it — `readiness().ready` and 🏛️ not still being served — **or until nothing but the ✉️ remedy is being served** (F5, F9, F18, F19); members never see it pre-start | Begin |
 
