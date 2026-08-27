@@ -244,6 +244,33 @@ const STEPS = [
   { id: 'wait-lapsed', epoch: 'live', kind: 'wait', seat: 'lapsed', events: [E5('chamber', 'amend')] },
   { id: 'knock', epoch: 'live', kind: 'knock', seat: 'applicant',
     events: [{ id: 'E21', key: 'adm:', at: 'knock' }] },
+  // 🥾 stands at `proposal` in `SETTINGS`, so a removal put by one member
+  // against another is E11 — *an ordinary motion is put, a removal too* —
+  // and the ❌ card is where the page carries it (`motionTargets` returns the
+  // door key `remove` for a `remove` payload). §2's audience for E11 is
+  // *whoever the router serves*, which has no `AUDIENCE` predicate and cannot
+  // have one until `view()` states the router's choice — so the row is
+  // reported as *no rule* on the audience side, deliberately (entry 80).
+  // What the row is here for beyond that is the snapshot: every member seat's
+  // rail and `view()` with a live removal running, which is what fills the
+  // ❌ door's *Proposed for removal* subsection (`removalPendingIds`).
+  // `ifHat: 'member'` is **not** about the hat: it is about the clerk document
+  // never reaching the live epoch at HEAD (Q920 — 🍾 waits on a voice a clerk
+  // does not hold), so a motion put on it is refused *before the start
+  // nothing is amended* and reports a 400 that says nothing about 🥾. When
+  // Q920 is built, drop the mark and let the row stand on both hats.
+  { id: 'remove-motion', epoch: 'live', kind: 'cmd', seat: 'early', cmd: 'open-motion', ifHat: 'member',
+    // the subject is named by id, and the harness knows the seats by address:
+    // read `late`'s row off the mover's own view rather than assuming `m-n`
+    args: async (D) => {
+      const v = await viewAs(D, 'early');
+      const row = (((v || {}).view || {}).members || [])
+        .find((m) => m.email === D.seats.late.email);
+      if (!row) throw new Error("no `late` row in the early seat's view — nothing to name as the removal's subject");
+      return { payload: { kind: 'remove', member: row.id },
+        why: 'the clubhouse keys were never returned' };
+    },
+    events: [{ id: 'E11', key: 'remove', at: 'remove-motion' }] },
   // ✒️ laid down on ⏱️ `rate`, not ⏰ (B14, 2026-08-27): the ladder drives
   // `ending` with the founder's pen and would stall on a relinquished one.
   // The page exposes no key for E9's news (Q571 unbuilt; `relinquish` owes
@@ -498,7 +525,15 @@ const RUN = {
     return `${step.key} answered on the card (${label}) · ${id} = ${JSON.stringify(sv.value)}`;
   },
   cmd: async (step, D) => {
-    const r = await cmdAs(D, step.seat, step.cmd, step.args(D));
+    // `ifHat` is the table's one conditional, and it belongs to any step kind
+    // that can be a hat's alone — the `ok` runner has honoured it since the
+    // first run, and a live-epoch command on a document that never begins is
+    // the same shape of thing
+    if (step.ifHat && step.ifHat !== D.hat) return `skipped: the founder is a ${D.hat}`;
+    // `await`: a row whose arguments have to be looked up first (a member id
+    // read off a seat's own view) returns a promise, and every existing row's
+    // plain object awaits to itself
+    const r = await cmdAs(D, step.seat, step.cmd, await step.args(D));
     if (r.status !== 200) throw new Error(`${step.cmd} as ${step.seat} → ${r.status} ${JSON.stringify(r.body)}`);
     if (step.reload) {
       const page = D.seats[step.seat].page;
