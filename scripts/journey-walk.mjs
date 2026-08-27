@@ -1030,27 +1030,46 @@ const invitationStandsAfterBegin = async () => {
   }
   say('❌ invitee · offered as ' + JSON.stringify(offered.label));
   expectRefused.push(/"cmd":"uninvite"/);
-  await page.evaluate((v) => {
-    const sel = document.querySelector('.setupcard [data-removewho]');
-    sel.value = v;
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
-  }, offered.value);
-  await T(420);
-  await clickIn('.setupcard [data-exile]');
-  await T(1600);
-  const said = await refusalLine();
-  const refusedOk = /pre-start only/.test(said);
-  say('withdrawn? · ' + (refusedOk ? 'refused, and the door says why: “' + said + '”'
-    : 'FAIL: the press said ' + JSON.stringify(said)));
-  if (!refusedOk) stuck.push('the ❌ door’s refusal on an invitee after 🍾');
-  await closeCard();
-  const left = (await rowsUnder('invitees')) || [];
-  const stands = left.some((r) => r.t.includes(GUEST2.split('@')[0]));
-  say('stands     · ' + (stands
-    ? 'the invitation is still there — nothing withdraws it until the close expires it'
-    : 'FAIL: the row went, so the act landed after all'));
-  if (!stands) stuck.push('the invitee row after a refused withdrawal');
-  expectRefused.length = 0;
+  try {
+    // the 4s poll can re-render between the two evaluates, so the select is
+    // re-found and its absence reported — a bare `sel.value` would throw
+    // inside the page and take the whole walk down with it
+    const chosen = await page.evaluate((v) => {
+      const sel = document.querySelector('.setupcard [data-removewho]');
+      if (!sel) return false;
+      sel.value = v;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+      return sel.value === v;
+    }, offered.value);
+    await T(420);
+    // **an unsent press is not a refusal** — the ❌ button is disabled until
+    // the picker has a subject, and a press that never left the page would
+    // otherwise read as an empty refusal line and blame the door's wording
+    const pressed = chosen && await clickIn('.setupcard [data-exile]');
+    if (!pressed) {
+      say('withdrawn? · FAIL: ❌ Remove could not be pressed on the invitee' +
+        (chosen ? '' : ' — the picker would not take them'));
+      stuck.push('the ❌ press on an invitee after 🍾');
+      await closeCard();
+      return;
+    }
+    await T(1600);
+    const said = await refusalLine();
+    const refusedOk = /pre-start only/.test(said);
+    say('withdrawn? · ' + (refusedOk ? 'refused, and the door says why: “' + said + '”'
+      : 'FAIL: the press said ' + JSON.stringify(said)));
+    if (!refusedOk) stuck.push('the ❌ door’s refusal on an invitee after 🍾');
+    await closeCard();
+    const left = (await rowsUnder('invitees')) || [];
+    const stands = left.some((r) => r.t.includes(GUEST2.split('@')[0]));
+    say('stands     · ' + (stands
+      ? 'the invitation is still there — nothing withdraws it until the close expires it'
+      : 'FAIL: the row went, so the act landed after all'));
+    if (!stands) stuck.push('the invitee row after a refused withdrawal');
+  } finally {
+    // the allowance is the step's, and it ends with the step however it ends
+    expectRefused.length = 0;
+  }
 };
 await invitationStandsAfterBegin();
 
