@@ -555,6 +555,20 @@ function rulesFor(card, tok) {
   }
   if (/§\s*\d/.test(said)) at('T14', 'copy', 'no spec references in surface copy', 'cites a §-number', excerpt(said, '§'));
 
+  // **T38 — the retired grant sentences** (entry 58, Ed's QA of batch B,
+  // 2026-08-25: *don't mix "pen" and "key" metaphors … redraft it so that
+  // someone who has just started using the product a minute ago won't be
+  // confused*). These are the specific sentences ✒️ and 🛡️ were carrying at
+  // the save, listed by hand so that a re-addition is a finding rather than
+  // something somebody has to remember. **Not** a general vocabulary rule —
+  // T15 above is that; this is the sentences themselves.
+  for (const phrase of RETIRED) {
+    if (said.toLowerCase().includes(phrase)) {
+      at('T38', 'copy', 'a grant reads for someone one minute in — the retired pen and shield phrases (entry 58)',
+        'says "' + phrase + '"', excerpt(said, phrase));
+    }
+  }
+
   // **T36 — one fact, one home** (Q765/Q766). A sentence stating a rule of the
   // mechanism appears once on a card. This lens read every string on every
   // card and measured nothing about them, so ⏱️, 👥 and 🥾 could each say one
@@ -591,6 +605,23 @@ function rulesFor(card, tok) {
 
   return out;
 }
+/**
+ * The sentences Ed retired from the ✒️ and 🛡️ grant bodies on 2026-08-25
+ * (entry 58): the second metaphor a pen "turns" in, the not-spent mechanic,
+ * and the vocabulary a founder one minute in has not met. Lower case; the
+ * comparison is too. They survive in `design/DECISIONS.md`, which is design
+ * reasoning and exempt, and in two code comments, which nobody reads off the
+ * surface — this list is only ever matched against a card's own copy.
+ */
+const RETIRED = [
+  'a pen is not spent',
+  'a shield is not spent',
+  'one pen, many locks',
+  'one shield, many locks',
+  'where it turns',
+  'amends a setting at will',
+  'the shield refuses',
+];
 const GLYPH_ONLY = /^[^\p{L}\p{N}]{1,4}$/u;
 const excerpt = (s, needle) => {
   const i = s.toLowerCase().indexOf(String(needle).toLowerCase());
