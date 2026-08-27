@@ -1,0 +1,55 @@
+sweep: scenario "clubhouse", roster 8, 25 seeds, 0.25h window
+baseline done (25 runs, 1s)
+adoptionThresholdStart done (6s elapsed)
+adoptionThresholdEnd done (11s elapsed)
+tokenGrant done (17s elapsed)
+tokenDripMinutes done (22s elapsed)
+tokenCap done (27s elapsed)
+cooldownMs done (35s elapsed)
+hotSetSize done (41s elapsed)
+explorationEvery done (48s elapsed)
+salienceEvery done (54s elapsed)
+
+=== sweep summary (575 runs, CSV: C:\Users\edsap\.plan-queue\C-Users-edsap-Dev-draft\worktrees\77-alpha-readiness-and-qa-the-plan\packages\sim-harness\runs\sweep-clubhouse.csv) ===
+baseline (engine defaults):
+  baseline                           welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+adoptionThresholdStart (baseline 0.6):
+  adoptionThresholdStart=0.6         welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  adoptionThresholdStart=0.5         welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  adoptionThresholdStart=0.7         welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  adoptionThresholdStart=0.8         welfare 0.045±0.050 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+adoptionThresholdEnd (baseline 0.95):
+  adoptionThresholdEnd=0.95          welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  adoptionThresholdEnd=0.85          welfare 0.065±0.062 · optimal 0.7 · adoptions 0.9 · overturns 0.0 · backlog 1.1 · judgments 5
+  adoptionThresholdEnd=0.9           welfare 0.058±0.057 · optimal 0.6 · adoptions 0.8 · overturns 0.0 · backlog 1.2 · judgments 5
+  adoptionThresholdEnd=0.99          welfare 0.038±0.050 · optimal 0.4 · adoptions 0.5 · overturns 0.0 · backlog 1.5 · judgments 5
+tokenGrant (baseline 4):
+  tokenGrant=4                       welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  tokenGrant=2                       welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  tokenGrant=6                       welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  tokenGrant=8                       welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+tokenDripMinutes (baseline 240):
+  tokenDripMinutes=240               welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  tokenDripMinutes=1000000000        welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  tokenDripMinutes=48                welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+tokenCap (baseline 8):
+  tokenCap=8                         welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  tokenCap=4                         welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  tokenCap=16                        welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+cooldownMs (baseline 300000):
+  cooldownMs=300000                  welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  cooldownMs=0                       welfare 0.049±0.054 · optimal 0.6 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  cooldownMs=900000                  welfare 0.039±0.039 · optimal 0.4 · adoptions 0.5 · overturns 0.0 · backlog 1.5 · judgments 5
+  cooldownMs=1800000                 welfare 0.039±0.039 · optimal 0.4 · adoptions 0.5 · overturns 0.0 · backlog 1.5 · judgments 5
+hotSetSize (baseline 3):
+  hotSetSize=3                       welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  hotSetSize=6                       welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  hotSetSize=10                      welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+explorationEvery (baseline 7):
+  explorationEvery=7                 welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  explorationEvery=4                 welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  explorationEvery=12                welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+salienceEvery (baseline 10):
+  salienceEvery=10                   welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  salienceEvery=5                    welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
+  salienceEvery=20                   welfare 0.046±0.049 · optimal 0.5 · adoptions 0.6 · overturns 0.0 · backlog 1.4 · judgments 5
