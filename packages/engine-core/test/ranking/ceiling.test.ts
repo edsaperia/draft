@@ -72,7 +72,7 @@ describe('the ceiling a room can reach (Q840)', () => {
     // STYLE §2: floored, never rounded — 0.7978 reads 79 because a bar of 80
     // is not clearable. Rounding would print 80 and be wrong by a whole rung.
     expect(ceilingPct(1)).toBe(79);
-    expect([2, 3, 4, 5, 6, 7, 8, 9, 10].map(ceilingPct)).toEqual([89, 93, 95, 96, 97, 98, 98, 98, 99]);
+    expect([2, 3, 4, 5, 6, 7, 8, 9, 10].map((e) => ceilingPct(e))).toEqual([89, 93, 95, 96, 97, 98, 98, 98, 99]);
   });
 
   it('99 past E = 10 is the floor’s own answer, not the cap', () => {

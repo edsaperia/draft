@@ -67,7 +67,7 @@ describe('threshold anchors (§4.3, v0.48)', () => {
    */
   it('BAR_CEILING_PCT is engine-core’s ceilingPct, entry for entry', () => {
     for (let e = 1; e <= 40; e++) expect(barCeilingPct(e)).toBe(ceilingPct(e));
-    expect([...BAR_CEILING_PCT]).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(ceilingPct));
+    expect([...BAR_CEILING_PCT]).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((e) => ceilingPct(e)));
     // past the table's end the answer is 99, and it is exact rather than a
     // clamp: E = 10 already floors to 99 and the series is monotone
     expect(barCeilingPct(11)).toBe(99);
