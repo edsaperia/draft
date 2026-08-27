@@ -550,6 +550,12 @@ describe('the arithmetic behind every one of them', () => {
    * field (`min="1" max="100"`, no step) though not on the blind slider,
    * whose step is 5. The room is told *28 % — 7 of 25* on the card and held
    * to 8 in the fold.
+   *
+   * Whether the wrong number reaches a race depends on the other term: at
+   * E = 25 the floor is `max(Q, min(⌈25/3⌉ = 9, 12))`, so 28 % is masked
+   * (9 either way) and **56 % is not** (15 against the promised 14). That
+   * half is filed in `packages/engine-core/test/adoption-threshold.test.ts`,
+   * which keeps its own copy of the expression.
    */
   it.fails('28 % of 25 is 7, and the fold says 8 (FINDING: the share arithmetic, all epochs)', () => {
     expect(quorumCount({ form: 'share', n: 28 }, 25)).toBe(7);
