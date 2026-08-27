@@ -1,0 +1,335 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>How docs.vote decides — the approval threshold</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪶</text></svg>">
+<link rel="stylesheet" href="system.css">
+<script src="constitution.js"></script>
+<style>
+/* ============================================================================
+   /pairwise — **the explainer for the approval threshold** (entry 163).
+
+   🌡️ asks for a number nobody can answer with conviction, because the number
+   is not what it looks like: it is a confidence, not a share of the votes, and
+   what one confidence means in people depends on how many votes a change has
+   collected. Ed's ruling was to leave the question and the input alone and
+   explain it once, properly, on a page of its own — so this is the first page
+   docs.vote serves that is not a document.
+
+   Self-contained on session-view.html's own rule: `system.css` and
+   `constitution.js` relatively, everything else inline. At /pairwise the two
+   resolve to /system.css and /constitution.js, which the server's root asset
+   route already serves; under `npm run design` they sit beside this file.
+
+   **The page holds no number of its own.** The chart and the readout are drawn
+   from `window.CONSTITUTION.votesNeeded`, which is engine-core's own Davidson
+   fit copied into the bundle and pinned to it by
+   packages/constitution/test/threshold.test.ts. The static table below the
+   chart carries the same numbers in its markup, because it is what a reader
+   with scripts off gets — and the script rewrites every one of its cells from
+   the bundle on load, so the live page can never show a stale one.
+   ========================================================================== */
+
+  .page { max-width: 46rem; margin: 0 auto; padding: 0 var(--s4) var(--s5); }
+
+  /* the brand, and the way back to the product */
+  .top { display: flex; align-items: center; gap: var(--s2);
+    padding: var(--s4) 0 var(--s5); }
+  .top a { color: inherit; text-decoration: none; font-weight: 600;
+    font-size: var(--t-body); }
+  .top a:hover { text-decoration: underline; }
+
+  h1 { font-size: var(--t-lead); margin: 0 0 var(--s2); }
+  .lede { color: var(--muted); margin: 0 0 var(--s5); }
+  h2 { font-size: var(--t-body); font-weight: 700; margin: var(--s5) 0 var(--s3);
+    padding-top: var(--s4); border-top: 1px solid var(--border); }
+  h3 { font-size: var(--t-ui); font-weight: 700; margin: var(--s4) 0 var(--s2); }
+  p { margin: 0 0 var(--s3); }
+  .page a { color: inherit; text-decoration: underline;
+    text-decoration-thickness: 1px; text-underline-offset: 2.5px;
+    text-decoration-color: var(--muted); }
+  .page a:hover { text-decoration-color: currentColor; text-decoration-thickness: 1.5px; }
+
+  /* the chart: one ink, nine weights. The design system has one accent and it
+     belongs to the control the reader is holding, so the lines are graded ink
+     and the marker column is the blue */
+  .chart { margin: var(--s4) 0 var(--s3); }
+  .chart svg { display: block; width: 100%; height: auto; }
+  .axlab { font-size: var(--t-cap); fill: var(--muted); }
+  .grid { stroke: var(--border); stroke-width: 1; }
+  .curve { fill: none; stroke: var(--fg); stroke-width: 1.75;
+    stroke-linejoin: round; stroke-linecap: round; }
+  .marker { stroke: var(--primary); stroke-width: 1.5; }
+  .dot { fill: var(--primary); }
+  .legend { display: flex; flex-wrap: wrap; gap: var(--s3);
+    font-size: var(--t-cap); color: var(--muted); margin: 0 0 var(--s4); }
+  .legend span { display: inline-flex; align-items: center; gap: var(--s1); }
+  .legend i { display: inline-block; width: 16px; height: 2px; background: var(--fg); }
+
+  /* the control, and the sentences it rewrites */
+  .pull { border: 1px solid var(--border); border-radius: var(--r-lg);
+    padding: var(--s4); margin: var(--s4) 0 var(--s5); }
+  .pull label { display: block; font-size: var(--t-micro); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
+    margin-bottom: var(--s2); }
+  .pull input[type="range"] { width: 100%; accent-color: var(--primary); }
+  .said { margin: var(--s3) 0 var(--s2); }
+  .readout { list-style: none; margin: 0; padding: 0;
+    font-variant-numeric: tabular-nums; }
+  .readout li { padding: 2px 0; font-size: var(--t-small); }
+  .readout li.waits { color: var(--muted); }
+
+  table { border-collapse: collapse; width: 100%; margin: var(--s3) 0;
+    font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+  caption { text-align: left; font-size: var(--t-micro); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
+    padding-bottom: var(--s2); }
+  th, td { border-bottom: 1px solid var(--border); padding: 4px 6px;
+    text-align: right; }
+  th[scope="row"] { text-align: left; font-weight: 400; }
+  thead th { font-weight: 700; }
+  td.none { color: var(--muted); }
+  .note { font-size: var(--t-cap); color: var(--muted); margin: var(--s2) 0 0; }
+
+  .refs { list-style: none; margin: 0; padding: 0; }
+  .refs li { padding: 3px 0; }
+
+  .alphaflag { position: fixed; bottom: 10px; left: 10px; z-index: 55;
+    font-size: var(--t-small); color: var(--muted); background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--r-sm);
+    padding: 3px 8px; pointer-events: none; }
+  .alphaflag b { font-weight: 600; color: var(--fg); }
+</style>
+
+<div class="page">
+  <div class="top">🪶 <a href="/">docs.vote</a></div>
+
+  <h1>The approval threshold</h1>
+  <p class="lede">How a document decides that a change is better than the words it replaces.</p>
+
+  <h2>The question the card asks</h2>
+  <p>🌡️ asks <b>how sure the members have to be that a change is better than the words
+    it replaces</b>, at the close, where an adoption is permanent.</p>
+  <p>Sure of what, exactly? Not of a share of the votes. The number is how confident the
+    document can be, from the votes cast so far, that the new wording really is the better
+    one. A vote on docs.vote is a choice between two wordings — this one, or the one it
+    would replace — and the document adds those choices up into a single probability that
+    the change wins.</p>
+  <p>Almost nobody needs to think about this. The card asks for one number and the
+    document does the rest. This page is for the people who want to know what the number
+    is doing.</p>
+
+  <h2>What one number means in votes</h2>
+  <p>The same number is a different count of people in different rooms, and a different
+    count again as more votes arrive. Below, every whole percent from 55 to 95, against the
+    votes cast on one change — and every number here is the number <b>at the close</b>.</p>
+
+  <div class="chart">
+    <svg id="chart" viewBox="0 0 720 360" role="img"
+         aria-label="The share of votes that must be for a change, against the number of votes cast on it, at nine approval thresholds. The share falls toward half as more votes arrive. The same numbers are in the table below."></svg>
+  </div>
+  <div class="legend" id="legend"></div>
+
+  <div class="pull">
+    <label for="n">Votes cast on this change</label>
+    <input type="range" id="n" min="1" max="100" value="5" step="1"
+           aria-describedby="said">
+    <p class="said" id="said">Of <b>5 votes</b> cast on a change, at the close:</p>
+    <ul class="readout" id="readout"></ul>
+  </div>
+
+  <!-- the scripts-off fallback, and what a screen reader is given. The script
+       rewrites every cell from `votesNeeded` on load, so these values are a
+       floor on staleness rather than a second source of truth. -->
+  <table id="grid">
+    <caption>Votes that must be for the change, at the close</caption>
+    <thead>
+      <tr><th scope="col">Approval threshold</th>
+        <th scope="col">1</th><th scope="col">2</th><th scope="col">3</th>
+        <th scope="col">4</th><th scope="col">5</th><th scope="col">6</th>
+        <th scope="col">8</th><th scope="col">10</th><th scope="col">15</th>
+        <th scope="col">20</th><th scope="col">30</th><th scope="col">50</th>
+        <th scope="col">100</th></tr>
+    </thead>
+    <tbody>
+      <tr data-pct="55"><th scope="row">55%</th><td>1</td><td>2</td><td>2</td><td>3</td><td>3</td><td>4</td><td>5</td><td>6</td><td>8</td><td>11</td><td>16</td><td>26</td><td>51</td></tr>
+      <tr data-pct="60"><th scope="row">60%</th><td>1</td><td>2</td><td>2</td><td>3</td><td>3</td><td>4</td><td>5</td><td>6</td><td>8</td><td>11</td><td>16</td><td>26</td><td>52</td></tr>
+      <tr data-pct="66"><th scope="row">66%</th><td>1</td><td>2</td><td>2</td><td>3</td><td>3</td><td>4</td><td>5</td><td>6</td><td>9</td><td>11</td><td>17</td><td>27</td><td>53</td></tr>
+      <tr data-pct="70"><th scope="row">70%</th><td>1</td><td>2</td><td>2</td><td>3</td><td>4</td><td>4</td><td>5</td><td>6</td><td>9</td><td>12</td><td>17</td><td>27</td><td>53</td></tr>
+      <tr data-pct="75"><th scope="row">75%</th><td>1</td><td>2</td><td>3</td><td>3</td><td>4</td><td>4</td><td>5</td><td>7</td><td>9</td><td>12</td><td>17</td><td>28</td><td>54</td></tr>
+      <tr data-pct="80"><th scope="row">80%</th><td class="none">—</td><td>2</td><td>3</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>10</td><td>12</td><td>18</td><td>28</td><td>55</td></tr>
+      <tr data-pct="85"><th scope="row">85%</th><td class="none">—</td><td>2</td><td>3</td><td>4</td><td>4</td><td>5</td><td>6</td><td>7</td><td>10</td><td>13</td><td>18</td><td>29</td><td>56</td></tr>
+      <tr data-pct="90"><th scope="row">90%</th><td class="none">—</td><td class="none">—</td><td>3</td><td>4</td><td>5</td><td>5</td><td>6</td><td>8</td><td>10</td><td>13</td><td>19</td><td>30</td><td>57</td></tr>
+      <tr data-pct="95"><th scope="row">95%</th><td class="none">—</td><td class="none">—</td><td class="none">—</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>11</td><td>14</td><td>20</td><td>31</td><td>59</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Columns are votes cast on one change; a room of ten where four have voted
+    is four. An em dash means that many votes cannot make the document that sure however
+    they fall, so the change waits rather than passing — and 🌡️ itself says the highest
+    number a room of your size can reach.</p>
+
+  <h2>Why it is done this way</h2>
+
+  <h3>Few votes, and it waits</h3>
+  <p>Three votes for and none against is not proof that a wording is better; it is three
+    people agreeing. A document that treated it as proof would replace its own text on thin
+    evidence and spend the rest of its life changing its mind. This one waits instead: the
+    change stays in the race, and the votes keep arriving, until there are enough of them
+    to be sure. That is why the share needed falls as votes come in — the rule has not
+    moved, the evidence has.</p>
+
+  <h3>A share of what?</h3>
+  <p>Votes here are between two wordings at a time. Where three wordings are in one race
+    there is no <i>votes for this one</i> to take a share of: it may have beaten one rival
+    and lost to another, and two members may have been shown different pairs. <i>How sure
+    are we that this beats the current text</i> is defined whatever the field looks like,
+    and it is the thing the document actually has to know before it replaces anything.</p>
+
+  <h3>One number, every room</h3>
+  <p>80% is near-unanimity in a cohort of five and a comfortable majority in a convention
+    of fifty. One setting serves both, and it goes on meaning the same thing as the
+    membership grows. A share of the votes would have to be chosen again for every room,
+    and chosen again every time somebody joined.</p>
+
+  <h2>And it rises toward the close</h2>
+  <p>An early change can still be challenged; a late one is what the document ends up
+    saying. So where the founder chose a rising threshold it starts lower when voting opens
+    — <i>starting at 55% when voting opens</i> is the clause's own wording — and climbs to
+    the number 🌡️ asks for.</p>
+  <p>Every number on this page is the number at the close, which is the highest it
+    gets. Earlier in the document's life a change needs fewer votes than the table
+    says.</p>
+
+  <h2>Votes of no preference</h2>
+  <p>A member who prefers neither wording says so, and that is evidence too: it says the
+    two are about the same, which pulls toward waiting rather than toward either one. The
+    chart and the table above count votes for and against only.</p>
+
+  <h2>Further reading</h2>
+  <ul class="refs">
+    <li><a href="https://github.com/edsaperia/draft/blob/main/SPEC.md" target="_blank" rel="noopener">SPEC.md §4.1–§4.3</a>
+      — how preferences are ranked, when a change is adopted, and how the threshold moves
+      on the clock. The repository is public.</li>
+    <li><a href="https://en.wikipedia.org/wiki/Bradley%E2%80%93Terry_model" target="_blank" rel="noopener">The Bradley–Terry model</a>
+      — the method that turns a pile of this-beats-that into a strength for each wording.</li>
+    <li>Davidson, R. R. (1970), <i>On extending the Bradley-Terry model to accommodate ties
+      in paired comparison experiments</i>, Journal of the American Statistical Association
+      65(329), 317–328 — the extension that lets a vote of no preference count as evidence.</li>
+  </ul>
+</div>
+
+<div class="alphaflag"><b>Warning:</b> docs.vote is in alpha!</div>
+
+<script>
+(function () {
+  'use strict';
+  var C = window.CONSTITUTION;
+  if (!C || typeof C.votesNeeded !== 'function') return; // the static table stands
+
+  var BARS = [55, 60, 66, 70, 75, 80, 85, 90, 95];
+  var MAX_N = 100;
+
+  /* The lines are drawn at the counts the table below has columns for, and
+     for two reasons. One is that chart and table then agree cell for cell, so
+     a reader can check either against the other. The other is the shape of
+     the data: `votesNeeded` is a whole number of votes, so its *share*
+     sawtooths — 3 of 4 is 75% and 3 of 5 is 60% — and nine sawtooths over one
+     another is a hatching pattern, not a chart. Every point drawn is a real
+     cell; what is left out is the wobble between them. */
+  var COLS = [1, 2, 3, 4, 5, 6, 8, 10, 15, 20, 30, 50, 100];
+
+  /* The horizontal axis is a square root of the vote count, not the count
+     itself. Everything interesting happens between one vote and ten — on a
+     plain linear axis the whole story is a wall against the left edge and the
+     remaining nine tenths of the width is nine flat lines. The ticks are
+     labelled with the real counts, which is what a reader takes the spacing
+     from. */
+  var W = 720, H = 360, L = 46, R = 30, T = 28, B = 34;
+  var PW = W - L - R, PH = H - T - B;
+  var x = function (n) { return L + PW * (Math.sqrt(n) - 1) / (Math.sqrt(MAX_N) - 1); };
+  // the vertical axis runs 50% to 100%: below half is not a share any change
+  // clears, and 100% is where every threshold starts
+  var y = function (share) { return T + PH * (1 - (share - 0.5) / 0.5); };
+
+  var svg = document.getElementById('chart');
+  var bits = [];
+
+  // horizontal rules and the share axis
+  [50, 60, 70, 80, 90, 100].forEach(function (p) {
+    var yy = y(p / 100);
+    bits.push('<line class="grid" x1="' + L + '" y1="' + yy + '" x2="' + (L + PW) + '" y2="' + yy + '"></line>');
+    bits.push('<text class="axlab" x="' + (L - 8) + '" y="' + (yy + 4) + '" text-anchor="end">' + p + '%</text>');
+  });
+  [1, 2, 5, 10, 20, 50, 100].forEach(function (n) {
+    bits.push('<text class="axlab" x="' + x(n) + '" y="' + (H - B + 18) + '" text-anchor="middle">' + n + '</text>');
+  });
+  bits.push('<text class="axlab" x="' + (L + PW / 2) + '" y="' + (H - 4) + '" text-anchor="middle">votes cast on this change</text>');
+  bits.push('<text class="axlab" x="' + (L - 8) + '" y="' + (T - 12) + '" text-anchor="start">share of the votes that must be for the change</text>');
+
+  // one line per threshold, in one ink at nine weights: the accent belongs to
+  // the control the reader is holding, not to the information
+  BARS.forEach(function (pct, i) {
+    var d = '', started = false;
+    COLS.forEach(function (n) {
+      var k = C.votesNeeded(n, pct);
+      if (k === 0) return;                // out of reach at this many votes
+      d += (started ? 'L' : 'M') + x(n).toFixed(1) + ' ' + y(k / n).toFixed(1) + ' ';
+      started = true;
+    });
+    bits.push('<path class="curve" d="' + d.trim() + '" opacity="' +
+      (0.3 + 0.7 * i / (BARS.length - 1)).toFixed(2) + '"></path>');
+  });
+
+  // the marker column, redrawn as the slider moves
+  bits.push('<g id="mark"></g>');
+  svg.innerHTML = bits.join('');
+
+  document.getElementById('legend').innerHTML = BARS.map(function (pct, i) {
+    return '<span><i style="opacity:' + (0.3 + 0.7 * i / (BARS.length - 1)).toFixed(2) +
+      '"></i>' + pct + '%</span>';
+  }).join('');
+
+  // the static table is rewritten from the bundle, so the page cannot show a
+  // number the fit no longer produces
+  var cols = Array.prototype.map.call(document.querySelectorAll('#grid thead th'), function (th) {
+    return +th.textContent;
+  }).slice(1);
+  Array.prototype.forEach.call(document.querySelectorAll('#grid tbody tr'), function (row) {
+    var pct = +row.getAttribute('data-pct');
+    Array.prototype.forEach.call(row.querySelectorAll('td'), function (td, i) {
+      var k = C.votesNeeded(cols[i], pct);
+      td.textContent = k === 0 ? '—' : String(k);
+      td.className = k === 0 ? 'none' : '';
+    });
+  });
+
+  var slider = document.getElementById('n');
+  var said = document.getElementById('said');
+  var readout = document.getElementById('readout');
+  var mark = document.getElementById('mark');
+
+  function draw() {
+    var n = +slider.value;
+    said.innerHTML = 'Of <b>' + n + ' vote' + (n === 1 ? '' : 's') +
+      '</b> cast on a change, at the close:';
+    readout.innerHTML = BARS.map(function (pct) {
+      var k = C.votesNeeded(n, pct);
+      if (k === 0) {
+        return '<li class="waits">At ' + pct + '%, ' + (n === 1 ? 'one vote' : n + ' votes') +
+          ' cannot make it that sure — it waits.</li>';
+      }
+      return '<li>At ' + pct + '%, ' + k + ' of ' + n + ' vote' + (n === 1 ? '' : 's') +
+        ' must be for the change.</li>';
+    }).join('');
+    // a column, not points on the lines: the lines are drawn at the counts the
+    // table has columns for, and a dot on a count between two of them would
+    // sit off the line it belongs to. What the column says is *you are here*;
+    // the sentences beneath say what that means, exactly, at every count.
+    mark.innerHTML = '<line class="marker" x1="' + x(n).toFixed(1) + '" y1="' + T +
+      '" x2="' + x(n).toFixed(1) + '" y2="' + (T + PH) + '"></line>';
+  }
+
+  slider.addEventListener('input', draw);
+  draw();
+})();
+</script>

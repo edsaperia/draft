@@ -1419,6 +1419,17 @@ export async function createDraftServer(cfg: ServerConfig,
       serveFile(res, join(cfg.designDir, 'session-view.html'));
       return;
     }
+    // The explainer for the approval threshold (entry 163): what one
+    // confidence means in votes, why it is a confidence and not a share.
+    // The first page this host serves that is not a document — 🌡️'s
+    // `methodNote` links here, and the page's own numbers come from
+    // `votesNeeded` in the bundle it loads. Exact path only: no trailing
+    // slash and no /pairwise.html alias, the root asset regex above
+    // deliberately not matching .html.
+    if (req.method === 'GET' && path === '/pairwise') {
+      serveFile(res, join(cfg.designDir, 'pairwise.html'));
+      return;
+    }
 
     json(res, 404, { error: 'not found' });
   }

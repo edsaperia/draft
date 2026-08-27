@@ -677,7 +677,14 @@ window.SETUP = (function () {
      `distribution-strip` — the shape of what people asked for, without names.
      A consent rule is worth seeing the shape of: the number the document took
      is one person's, and the strip is what says how far it sat from the rest. */
-  function watchBody(c, ctx) {
+  /* `withMethod` is the caller saying *nothing above me has named the method*
+     (entry 163). The watch half is appended under three different upper
+     halves, and two of them — the founder's own card and the pen's set card —
+     carry 🌡️'s method note already; only the read-only body does not, and a
+     card that said the same sentence twice is exactly what T36 is about. The
+     knowledge is the caller's because only the caller knows what it put above
+     the strip (T20). */
+  function watchBody(c, ctx, withMethod) {
     const inN = c.in || 0, done = inN >= ctx.E;
     // No heading of its own: this half is always appended under a card that has
     // already said what it is about, and a second <h2> repeating the card's own
@@ -696,7 +703,12 @@ window.SETUP = (function () {
     h += distHtml(c) +
       '<div class="statline"><span class="k">Answered</span><span class="v">' + ctx.E + ' of ' + ctx.E + '</span></div>' +
       '<div class="statline"><span class="k">' + esc(c.takes || 'The document takes') + '</span>' +
-      '<span class="v">' + esc(c.result || '—') + '</span></div>';
+      '<span class="v">' + esc(c.result || '—') + '</span></div>' +
+      // 🌡️'s settled card is where a member first meets the number as a fact
+      // about the document rather than as a question, so the explainer is
+      // linked here too (entry 163). Not on the still-collecting branch, which
+      // has its blind note and its count and asks nothing more.
+      (withMethod && c.k === 'bar' ? methodNote() : '');
     return h;
   }
 
@@ -1258,6 +1270,28 @@ window.SETUP = (function () {
      rooms. And it is its own line rather than a third sentence in `.why`,
      because `.why` is capped at 200 characters (card-audit H4) and 🌡️'s body
      was cut to fit under Q764. */
+  /* **The one place the method is named** (entry 163). 🌡️ asks for a number
+     nobody can answer with conviction, because the number is not what it looks
+     like: it is a confidence rather than a share of the votes, and what one
+     confidence means in people depends on how many votes a change has
+     collected. Ed's ruling was to leave the question and the input alone and
+     explain it once, properly, on a page of its own — so this sentence names
+     the method, says in plain words what it buys, and links out.
+
+     Its own element, never inside `.why`: `.why` is capped at 200 characters
+     (card-audit H4) and 🌡️'s body was cut to fit under Q764, which is exactly
+     why `ceilingNote` sits outside it too.
+
+     **A new tab**, because the founder card is met during the birth, when the
+     page holds unsaved state a same-tab navigation would lose (`birth-pass`,
+     the stash) — the charter's `linkify` anchors open the same way. Inert
+     markup with no handler and no state, so the 4s poll re-rendering the card
+     wholesale costs it nothing, and an anchor is a real control to the
+     dead-click nudge, which is structural. */
+  const methodNote = () =>
+    '<p class="methodnote">Uses the Bradley–Terry method to allow for a decision with few votes — ' +
+    '<a href="/pairwise" target="_blank" rel="noopener">read more</a>.</p>';
+
   const roomOf = (E) => (E <= 1 ? 'one' : String(E));
   const ceilingNote = (E, max) => {
     const pct = window.CONSTITUTION.barCeilingPct(E);
@@ -1293,6 +1327,7 @@ window.SETUP = (function () {
         : v <= 60 ? 'A modest preference is enough. The document will move quickly, and reverse itself more often.'
         : 'A clear preference is needed, but not agreement.', 5) +
       ceilingNote(E, 95) +
+      methodNote() +
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given.</p>',
     authorship: (A) =>
       '<p class="why">Rationales are always visible; what varies is whether a name is attached. The <b>most private</b> answer wins: one person who wants no names keeps the document unnamed.</p>' +
@@ -1543,5 +1578,5 @@ window.SETUP = (function () {
     anyEmojiRow, wireFreeEmoji, emojiFaceOf, setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     wireEmojiPicker,
     motionBody, motionReopen, routeFor, motionCommitHtml,
-    slider, syncSlider, ladder, ANSWER, BLINDNOTE, ceilingNote, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
+    slider, syncSlider, ladder, ANSWER, BLINDNOTE, ceilingNote, methodNote, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

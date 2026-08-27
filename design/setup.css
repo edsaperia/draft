@@ -265,6 +265,17 @@
      means nothing is being asked of you, and this asks nothing */
   .ceilingnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
 
+  /* the one place the method is named, and the link out to /pairwise (entry
+     163) — the ceiling note's own size and colour, for the same reason: grey
+     means nothing is being asked of you. The anchor takes the .doclink
+     treatment rather than the accent, so the only hot thing on the card stays
+     the control */
+  .methodnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
+  .methodnote a { color: inherit; text-decoration: underline;
+    text-decoration-thickness: 1px; text-underline-offset: 2.5px;
+    text-decoration-color: var(--border); }
+  .methodnote a:hover { text-decoration-color: currentColor; text-decoration-thickness: 1.5px; }
+
 /* ---------------------------------------------------------------------------
    THE ROSTER, and the distribution it produces.
 

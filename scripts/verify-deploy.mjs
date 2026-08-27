@@ -138,6 +138,14 @@ await check('design assets serve, design notes do not', async () => {
   return 'assets 200 · notes 404';
 });
 
+await check('the approval-threshold explainer serves at /pairwise (entry 163)', async () => {
+  const r = await get('/pairwise');
+  expect(r.status === 200, `/pairwise status ${r.status}`);
+  expect((r.headers.get('content-type') ?? '').includes('text/html'),
+    `/pairwise content-type ${r.headers.get('content-type')}`);
+  return '200 text/html';
+});
+
 await check('an unknown document 404s in json', async () => {
   const r = await get('/d/no-such-document-' + Date.now().toString(36));
   expect(r.status === 404, `status ${r.status}`);
