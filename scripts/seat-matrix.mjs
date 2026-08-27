@@ -52,7 +52,9 @@
  * — **red on two findings about the page and the module, not on the harness**:
  *   member: `seat-matrix: findings=15 noRule=0 shape=0 errors=0 refused=0 unstood=0 exit=1`
  *   clerk:  `seat-matrix: findings=25 noRule=0 shape=0 errors=0 refused=0 unstood=4 exit=1`
- * Wall time about 8 minutes per hat (the lapse wait is 80–115 s of it). Seats
+ * Wall time about 8 minutes per hat (the lapse wait is 80–115 s of it); a
+ * second member run `--baseline`d against the first reported *no rail
+ * differences*, so `mask` folds every volatile field. Seats
  * stood per document: founder, early, lapsed, stranger before 🍾; late and the
  * applicant live; six of the seven rows, the clerk row on its own document.
  * Every member-hat finding is **Q919** (💤 cannot be rehydrated from the
