@@ -1222,6 +1222,20 @@ window.SETUP = (function () {
 
   const BLINDNOTE = '<p class="blindnote">Nobody sees your answer, and you will see nobody else’s until every one of them is in.</p>';
 
+  /* **One joiner for every sentence that names several things** (Q630, Ed
+     2026-08-26). The shape of a list of three is a copy decision and it is
+     STYLE.md §1's — *A, B and C*, no serial comma — so it is made once here
+     rather than at each site. Takes whatever the caller already has (escaped
+     text, a glyph and a title, a count phrase) and adds no markup of its own:
+     it is punctuation between strings, never an escaper. An empty list is the
+     empty string, every caller having guarded that case before it calls. */
+  const listOf = (items) => {
+    const xs = (items || []).filter((x) => x !== null && x !== undefined && x !== '');
+    if (!xs.length) return '';
+    if (xs.length === 1) return xs[0];
+    return xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1];
+  };
+
   /* **The threshold card names the ceiling its own room can reach** (Q840, Ed
      2026-08-26 (a)). The bar is a confidence, and a confidence is bounded by
      the evidence the room can produce: an ordinary race holds one comparison
@@ -1529,5 +1543,5 @@ window.SETUP = (function () {
     anyEmojiRow, wireFreeEmoji, emojiFaceOf, setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     wireEmojiPicker,
     motionBody, motionReopen, routeFor, motionCommitHtml,
-    slider, syncSlider, ladder, ANSWER, BLINDNOTE, ceilingNote, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
+    slider, syncSlider, ladder, ANSWER, BLINDNOTE, ceilingNote, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

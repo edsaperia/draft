@@ -226,7 +226,7 @@
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, opt, num, someIn, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, readBody,
-    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, ceilingNote, syncSlider } = window.SETUP;
+    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, ceilingNote, listOf, syncSlider } = window.SETUP;
   // **A setup card opens and closes like a decision card** (Ed, 2026-08-18:
   // *the whole point of building off session-view is that we would have all
   // this stuff*): cards.js own expandCard/collapseCard, which have been
@@ -825,8 +825,8 @@
     const c = proseCounts();
     if (!c.blocks) return 'Nothing written yet.';
     const n = (x, w) => x + ' ' + w + (x === 1 ? '' : 's');
-    return [c.paras ? n(c.paras, 'paragraph') : '', c.heads ? n(c.heads, 'heading') : '']
-      .filter(Boolean).join(' and ') + ', below.';
+    return listOf([c.paras ? n(c.paras, 'paragraph') : '', c.heads ? n(c.heads, 'heading') : ''])
+      + ', below.';
   };
   // which page field carries a setting's delegation radio ('roster' = the members')
   const DKEY = { ending: 'ending', bar: 'barBy', quorum: 'quorumBy',
@@ -8547,11 +8547,11 @@
     // where the card names more than one, the dependency is named too
     const behOn = beh.reduce((a, h) => a.concat(h.on.filter(
       (d) => ov.indexOf(d) >= 0 && a.indexOf(d) < 0)), []);
-    const behind = beh.length ? ' ' + beh.map((h) => settingNamed(h.setting)).join(' and ') +
+    const behind = beh.length ? ' ' + listOf(beh.map((h) => settingNamed(h.setting))) +
       (beh.length === 1 ? ' is' : ' are') + ' waiting on ' +
-      (one ? 'it' : behOn.map(settingNamed).join(' and ')) +
+      (one ? 'it' : listOf(behOn.map(settingNamed))) +
       ' in turn, and will follow once ' + (behOn.length === 1 ? 'it settles' : 'they settle') + '.' : '';
-    return '<p class="why"><b>' + ov.map(settingNamed).join(' and ') + (one ? ' is' : ' are') +
+    return '<p class="why"><b>' + listOf(ov.map(settingNamed)) + (one ? ' is' : ' are') +
       ' waiting for somebody to answer ' + (one ? 'it' : 'them') + '.</b> You handed ' +
       (one ? 'it' : 'them') + ' to the membership, and you are its only member — ' +
       'a question answered by one voice has not been handed to anybody, so one more member ' +
@@ -8682,7 +8682,7 @@
     // informs, never blocks — except the questions judging cannot do without
     const hold = rd.waiting && rd.waiting.length
       ? '<p class="setnote hold">The document cannot begin while ' +
-        rd.waiting.map(settingNamed).join(' and ') +
+        listOf(rd.waiting.map(settingNamed)) +
         (rd.waiting.length === 1 ? ' is' : ' are') + ' still being decided.</p>' : '';
     // **…and it says what to do about it** (Q827, Ed 2026-08-25: *I did all my
     // open tasks and then got served Begin while being unable to action it. My
@@ -8695,7 +8695,7 @@
     // choose: a second member, or the setting back in their own hand.
     const ov = oneVoiceHolds();
     const one = ov.length === 1;
-    const why = ov.length ? '<p class="setnote hold">' + ov.map(settingNamed).join(' and ') +
+    const why = ov.length ? '<p class="setnote hold">' + listOf(ov.map(settingNamed)) +
       (one ? ' is' : ' are') + ' delegated to the membership, and you are its only member: ' +
       'a question answered by one voice has not been handed to anybody. Invite somebody at ' +
       '🪪 Membership, or take ' + (one ? 'it' : 'them') + ' back on ' + (one ? 'its' : 'their') +
@@ -8706,7 +8706,7 @@
     // one and sent the founder to the door; the wait is the dependency's, and
     // ✉️ is not served for it — `oneVoiceHolds` filters the other reason.
     const deps = depsHolds().map((h) => '<p class="setnote hold">' +
-      settingNamed(h.setting) + ' is waiting on ' + h.on.map(settingNamed).join(' and ') +
+      settingNamed(h.setting) + ' is waiting on ' + listOf(h.on.map(settingNamed)) +
       ', which must settle first — it cannot be answered until then.</p>').join('');
     const qs = (rd.questions || []).map((q) => '<span class="gaterow">' +
       '<span class="gg">' + glyphOfSetting(q.setting) + '</span>' +
