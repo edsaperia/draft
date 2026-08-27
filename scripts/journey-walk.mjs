@@ -10,7 +10,11 @@
  * has hit was invisible to them.
  *
  *   npm run server          # in another shell, with a dev outbox
- *   node scripts/journey-walk.mjs [http://127.0.0.1:8199]
+ *   node scripts/journey-walk.mjs [<base-url>]
+ *
+ * The base defaults to `DRAFT_BASE_URL`, then `PORT`, then 8140 — the
+ * server's own default. Under plan-queue the environment names the slot's
+ * own server, which is the one to walk.
  *
  * CI's `walks` job runs this at every push, against a dev server it boots
  * itself and hands to all four walks (Q917 (a)).
@@ -27,9 +31,9 @@
  * first: a pointer cannot press what is off screen.
  */
 import { chromium } from 'playwright';
-import { assertServerBuild } from './lib/assert-server.mjs';
+import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
 
-const BASE = process.argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8199';
+const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 // --empty-text: found the document on a confirmed-empty text (Q649 (a)) and
 // propose its first paragraph into the one empty clause the charter renders.
 const EMPTY_TEXT = process.argv.includes('--empty-text');
@@ -65,7 +69,10 @@ const say = (...a) => console.log(...a);
 // Q911: a walk on a default port will drive whatever process is listening,
 // and a stale one serves today's page over a week-old engine — so the first
 // thing this does is refuse a server that is not this tree.
-await assertServerBuild(BASE, 'journey-walk');
+const health = await assertServerBuild(BASE, 'journey-walk');
+// which server this run drove, said out loud: the base is now the
+// environment's as often as it is a person's (entry 105)
+say(`journey-walk against ${BASE} · build ${health.build ?? 'unreported'}`);
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });

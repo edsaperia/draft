@@ -18,7 +18,12 @@
  *     naming the nearest free address, nothing sent at the wire.
  *
  *   npm run server                                  # in another shell
- *   npm run slug-walk -- [base] [slug]              # slug must be reserved
+ *   npm run slug-walk -- [<base-url>] [<slug>]      # slug must be reserved
+ *
+ * Neither argument is positional: the base is the first `http(s)://`
+ * argument, defaulting to `DRAFT_BASE_URL`, then `PORT`, then 8140, and the
+ * slug is the first argument that is neither a URL nor a flag — so naming
+ * only one of the two is unambiguous.
  *
  * Reserve one first, if the server is fresh:
  *   curl -X POST <base>/api/docs -H 'content-type: application/json' \
@@ -34,10 +39,14 @@
  * is taken*, which is the only reason to trust it. Q535 (a).
  */
 import { chromium } from 'playwright';
-import { assertServerBuild } from './lib/assert-server.mjs';
+import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
 
-const BASE = process.argv[2] || 'http://127.0.0.1:8140';
-const TAKEN = process.argv[3] || 'test-charter';
+const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
+// the slug is a search too, not `argv[3]`: once the base can come from the
+// environment, a positional slug behind a positional base reads the URL's
+// old seat as the slug the moment somebody omits the URL
+const TAKEN = process.argv.slice(2)
+  .find((a) => !/^https?:\/\//.test(a) && !a.startsWith('-')) || 'test-charter';
 const say = (...a) => console.log(...a);
 // Q911: a walk on a default port will drive whatever process is listening,
 // and a stale one serves today's page over a week-old engine — so the first

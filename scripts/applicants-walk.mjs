@@ -12,7 +12,8 @@
  * guard is for.
  *
  *   npm run server            # in another shell, with a dev outbox
- *   node scripts/applicants-walk.mjs [http://127.0.0.1:8199]
+ *   node scripts/applicants-walk.mjs [<base-url>]
+ *        # the base defaults to DRAFT_BASE_URL, then PORT, then 8140
  *   node scripts/applicants-walk.mjs --price=assembly
  *   node scripts/applicants-walk.mjs --price=pen
  *
@@ -37,9 +38,9 @@
  *               no name, having never filled an application in.
  */
 import { chromium } from 'playwright';
-import { assertServerBuild } from './lib/assert-server.mjs';
+import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
 
-const BASE = process.argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8199';
+const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const PRICE = (process.argv.find((a) => a.startsWith('--price=')) || '--price=proposal')
   .split('=')[1];
 if (!['proposal', 'assembly', 'pen'].includes(PRICE)) {

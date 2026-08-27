@@ -14,7 +14,8 @@
  * must carry the entry and the seats outside it must not.
  *
  *   npm run server                      # in another shell, with a dev outbox
- *   npm run seat-matrix -- http://127.0.0.1:8199 [--hat=member|clerk|both]
+ *   npm run seat-matrix -- [<base-url>] [--hat=member|clerk|both]
+ *        # the base defaults to DRAFT_BASE_URL, then PORT, then 8140
  *        [--to=before|live|closed] [--out=<file>] [--baseline=<file>]
  *
  * Three tables and one dispatcher: `SEATS` (who), `STEPS` (what happens, in
@@ -81,11 +82,11 @@
  */
 import { writeFile, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
-import { assertServerBuild } from './lib/assert-server.mjs';
+import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
 import { tableAfter } from './lib/surface-tables.mjs';
 
 /* ---- arguments -------------------------------------------------------- */
-const BASE = process.argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8199';
+const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const arg = (name, dflt) => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
   return hit === undefined ? dflt : hit.slice(name.length + 3);

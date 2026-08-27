@@ -561,6 +561,67 @@ function checkBannedWords() {
 }
 
 /**
+ * The list-joiner — STYLE.md §1, Q630 (Ed, 2026-08-26: *add one shared
+ * list-joiner and use it at every site that names several settings*). Since
+ * Q626 the founder's 🍾 readout can name several delegated questions at once,
+ * and seven sentences on the page joined them by hand with `' and '`, so
+ * three of anything read *A and B and C*. The shape of a list of three is a
+ * copy decision — commas and a final *and*, no serial comma — and a decision
+ * made at seven sites is seven decisions, so `listOf` in `design/setup.js` is
+ * the only speller of it.
+ *
+ * Three claims. The **hand-rolled join is gone** from every file a member
+ * reads from, which is the same four-file corpus `checkBannedWords` audits
+ * and is stripped of comments the same way (block comments blanked rather
+ * than deleted, so the line number a finding reports is the line in the
+ * file). `listOf` **is defined and exported** by `design/setup.js`, since the
+ * page destructures it off `window.SETUP`. And the helper's own **behaviour**
+ * is asserted by lifting its source and running it in a `vm`, the way the
+ * catalogue bundle is loaded above — no walk can reach a three-item list (the
+ * `card-audit` walks all found a document of one), so this is the only place
+ * the comma is pinned at all.
+ *
+ * The corpus is deliberately the member-facing four rather than only the
+ * files with sites today: the rule is about copy, not about a function. A
+ * join in one of them that is *not* copy would go red here and want a word in
+ * the finding rather than a silent exemption.
+ */
+function checkListJoiner() {
+  note('The list-joiner — STYLE.md §1 over every file a member reads from (Q630)');
+  const files = ['design/cards.js', 'design/session.js', 'design/setup.js', 'design/session-view.html'];
+  let sites = 0; let hand = 0;
+  for (const f of files) {
+    // comments exempt, and **line numbers preserved**, which is why the block
+    // comment is blanked rather than deleted and the line comment's own
+    // indent is `[ \t]*` rather than `\s*` — `\s` eats the newlines above it,
+    // and a finding that names the wrong line sends the reader to the wrong
+    // sentence
+    const src = js(f).replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+      .replace(/^[ \t]*\/\/.*$/gm, '').replace(/([^:])\/\/ .*$/gm, '$1');
+    for (const m of src.matchAll(/\.join\((['"]) and \1\)/g)) {
+      hand++;
+      const line = src.slice(0, m.index).split('\n').length;
+      find('copy', `${f}:${line} joins a list with ' and ' by hand — three of anything reads "A and B and C"; the shape is STYLE.md §1's and \`listOf\` is its only speller (Q630)`);
+    }
+    sites += [...src.matchAll(/\blistOf\(/g)].length;
+  }
+  const setup = js('design/setup.js');
+  const def = setup.match(/ {2}const listOf = [\s\S]*?\n {2}\};/);
+  if (!def) { find('copy', 'design/setup.js no longer defines `listOf` — the one joiner every list sentence goes through (Q630)'); return; }
+  if (!/\blistOf\b/.test(setup.slice(setup.lastIndexOf('  return {')))) {
+    find('copy', 'design/setup.js defines `listOf` but does not export it on `window.SETUP` — the page destructures it there');
+  }
+  const ctx = {};
+  vm.runInNewContext(def[0].replace(/^ {2}const/, 'const') + '\nout = [listOf([]), listOf([\'A\']), listOf([\'A\',\'B\']), listOf([\'A\',\'B\',\'C\']), listOf([\'A\',\'\',\'C\'])];', ctx);
+  const want = ['', 'A', 'A and B', 'A, B and C', 'A and C'];
+  const got = ctx.out;
+  for (let i = 0; i < want.length; i++) {
+    if (got[i] !== want[i]) find('copy', `listOf case ${i} gives "${got[i]}", not "${want[i]}" — STYLE.md §1 says A, B and C, with no serial comma (Q630)`);
+  }
+  note(`  ${sites} call sites, ${hand} hand-rolled; the joiner gives ${want.map((w) => `"${w}"`).join(' · ')}`);
+}
+
+/**
  * Every tracked source file, read once, as one haystack — the oracle a
  * `[symbol]` entry has to appear in. **Markdown is excluded deliberately**:
  * `design/DECISIONS.md` carries the glossary's own prose, so grepping it
@@ -745,6 +806,7 @@ checkApplicantJudged();
 checkComposer(M, pm);
 checkPicture();
 checkBannedWords();
+checkListJoiner();
 checkClaudeMd();
 checkMergeable();
 

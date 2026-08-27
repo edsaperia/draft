@@ -24,6 +24,7 @@ and their copy was read side by side for the first time.
 | **document**, **charter** | draft (for the thing being made) | `draft` means a candidate patch everywhere in this project. |
 | **the record** | rolling log hash, audit log (as a noun a member meets) | No engine jargon on a card. |
 | **the standard rate** | v1 defaults | No project-speak. |
+| *A, B and C* | *A and B and C*, *A, B, and C* | Three or more things in one sentence take commas and a final *and*, with no serial comma — the register these documents already write in. The shape is a decision and it is made **once**: `listOf` in `design/setup.js` is the only joiner, never a join written at the site (Q630). |
 
 Glyph names are stable: title 🪶, link 📍, membership 🪪, applications 🤝,
 lapse 💤, removal 🥾, rate ⏱️, machines 🤖, ending ⏰, quorum 👥, threshold 🌡️,
