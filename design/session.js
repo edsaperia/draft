@@ -1663,7 +1663,13 @@
     // the privacy it was made under). Silent where the rungs agree, which is
     // every ordinary record; the words arrive finished from the page.
     const under = (c) => (c.underNote ? '<span class="rsub">' + esc(c.underNote) + '</span>' : '');
-    const spk = (c) => (c.why || c.by ? speakerHtml(c.why, undefined, c.by) + under(c) : under(c));
+    // the note sits **under a speaker** (SURFACE §9's sealed-record row), so a
+    // proposal that carries one draws the speaker even where it has neither a
+    // rationale nor a name — an unsigned anonymous-era proposal with an empty
+    // reason, whose note would otherwise float under the wording with nothing
+    // above it to be *under*.
+    const spk = (c) => (c.why || c.by || c.underNote
+      ? speakerHtml(c.why, undefined, c.by) + under(c) : '');
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
