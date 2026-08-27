@@ -277,9 +277,6 @@ if (admEntry) {
   if (!card) { say('FAIL: the entry opened no card'); stuck.push('the card opens'); }
   else if (PRICE === 'pen') {
     if (!card.ok) { say('FAIL: at ✒️ the card is news and commits with OK'); stuck.push('the OK'); }
-  } else if (card.lanes.length !== 3) {
-    say('FAIL: expected three lanes, saw ' + JSON.stringify(card.lanes));
-    stuck.push('the three lanes');
   }
   /* **Three lanes is not three of the same lanes** (entry 78, promise-coverage
    * 🪪/🤝). Both priced forms of the admit card draw three `.lanepick`s, so a
@@ -298,19 +295,24 @@ if (admEntry) {
       commit: 'admitgo', called: 'a judgment at the threshold' },
   }[PRICE];
   if (FORM && card) {
+    let formOk = true;
     if (JSON.stringify(card.lanes) !== JSON.stringify(FORM.want)) {
       say('FAIL: at 🪪 ' + PRICE + ' the card should be ' + FORM.called + ' — ' +
         JSON.stringify(FORM.want) + ', saw ' + JSON.stringify(card.lanes));
       stuck.push('the ' + PRICE + ' lanes');
+      formOk = false;
     }
     if (card.commit !== FORM.commit) {
       say('FAIL: at 🪪 ' + PRICE + ' the card should commit as ' + FORM.commit +
         ', saw ' + JSON.stringify(card.commit));
       stuck.push('the ' + PRICE + ' commit');
+      formOk = false;
     }
-    if (!stuck.length) say('form       · ' + FORM.called + ', committing on ' + card.commit);
+    // the readout is about *this* pair of checks: an unrelated failure earlier
+    // in the walk must not silence what the form turned out to be
+    if (formOk) say('form       · ' + FORM.called + ', committing on ' + card.commit);
   }
-  if (!card.text.includes(CALLED)) {
+  if (card && !card.text.includes(CALLED)) {
     say('FAIL: the card does not name the applicant');
     stuck.push('the card names them');
   }
