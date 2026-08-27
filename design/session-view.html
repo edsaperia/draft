@@ -226,7 +226,7 @@
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, opt, num, someIn, ANSWER, stateOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, readBody,
-    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, ceilingNote, listOf, syncSlider } = window.SETUP;
+    motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, ceilingNote, methodNote, listOf, syncSlider } = window.SETUP;
   // **A setup card opens and closes like a decision card** (Ed, 2026-08-18:
   // *the whole point of building off session-view is that we would have all
   // this stuff*): cards.js own expandCard/collapseCard, which have been
@@ -3991,7 +3991,10 @@
     bar: (d) => inputBlock('A proposal passes when the members are ' +
       '<input class="num" type="number" min="50" max="99" data-mnum="% sure at the end" value="' +
       esc((d.to.match(/\d+/) || [])[0] || takenOf('bar') || S.tClose) + '">% sure at the end.') +
-      ceilingNote(E(), 99),
+      // and the method note with it (entry 163): the pen's set card is the
+      // founder card in its second epoch, so a founder who first meets 🌡️
+      // after the save would otherwise never be offered the explainer
+      ceilingNote(E(), 99) + methodNote(),
     quorum: (d) => (S.quorumForm === 'count'
       ? inputBlock('Quorum is <input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
         esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount()) + '"> of the membership.')
@@ -5330,6 +5333,8 @@
       '</div>',
     bar: () =>
       '<p class="why">How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be <b>at the end</b>.</p>' +
+      // read before choosing whether to set it or hand it over (entry 163)
+      methodNote() +
       '<div class="choice" role="radiogroup">' +
       theyDecide('bar') +
       opt(S, 'barBy', 'founder', 'I set it', '',
@@ -5793,7 +5798,9 @@
         // reads. `founderHandOff` is the same question the composer swap has
         // always asked, put to the body.
         : ((!amFounder() || founderHandOff(c)) && c.own !== 'you' && !doorDirect(c))
-        ? readBody(c, ctx) + (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '')
+        // the read-only body is the one upper half that has not named 🌡️'s
+        // method, so the watch half carries it here and nowhere else
+        ? readBody(c, ctx) + (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx, true) + '</div>' : '')
         : BODY[c.k]() + delegateRung(c) +
           (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
       // **The route left the card bodies** (Ed's copy pass, 2026-08-19,

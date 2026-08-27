@@ -237,7 +237,7 @@
     "eyebrow": "",
     "head": "How Sure Must the Room Be?",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.I set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.I set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
     "options": [
      {
       "set": "barBy",
@@ -3365,7 +3365,7 @@
     "eyebrow": "",
     "head": "How Sure Must the Room Be?",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.I set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.I set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
     "options": [
      {
       "set": "barBy",
@@ -4040,7 +4040,7 @@
     "eyebrow": "",
     "head": "How Sure Must the Room Be?",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.I set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.I set itDelegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
     "options": [
      {
       "set": "barBy",
@@ -5050,7 +5050,7 @@
     "eyebrow": "",
     "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when judging opens.",
     "lock": "The members decide.",
-    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.50%95%What everyone asked for, without names.Answered3 of 3The document takes the highest80%",
+    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.50%95%What everyone asked for, without names.Answered3 of 3The document takes the highest80%",
     "options": [],
     "inputs": [
      {
@@ -7074,7 +7074,7 @@
     "eyebrow": "",
     "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when judging opens.",
     "lock": "The members decide.",
-    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.50%95%What everyone asked for, without names.Answered3 of 3The document takes the highest80%",
+    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.50%95%What everyone asked for, without names.Answered3 of 3The document takes the highest80%",
     "options": [],
     "inputs": [
      {
