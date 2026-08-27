@@ -17,9 +17,16 @@
  */
 import { describe, expect, it } from 'vitest';
 import { winsNeeded } from '../../engine-core/src/ranking/ceiling.js';
-import { BAR_RUNGS, OWN_RUNG_LABEL, meaningOf, winsNeededPct } from '../src/meaning.js';
+import type { Room } from '../src/meaning.js';
+import { BAR_RUNGS, MEANING_MAX, OWN_RUNG_LABEL, meaningOf, roomPhrase, winsNeededPct } from '../src/meaning.js';
 import { VOTES_NEEDED_MAX_N, barCeilingPct } from '../src/threshold.js';
-import { CATALOGUE_BY_ID, validateFor } from '../src/catalogue.js';
+import { CATALOGUE, CATALOGUE_BY_ID, validateFor } from '../src/catalogue.js';
+import { quorumCount } from '../src/populations.js';
+import type { LapseValue, PaceValue, QuorumValue, RateValue, SettingValue } from '../src/values.js';
+
+/** A fixed clock: this package reads none, and a test that did would drift. */
+const NOW = Date.UTC(2026, 7, 27, 9, 0, 0);
+const ROOM: Room = { e: 5, endsAtMs: null, nowMs: NOW, barPct: 80 };
 
 describe('winsNeededPct is engine-core’s own fit', () => {
   it('agrees with winsNeeded for every room and every bar the surface offers', () => {
@@ -62,7 +69,9 @@ describe('winsNeededPct is engine-core’s own fit', () => {
 
 describe('meaningOf', () => {
   const bar = (pct: number, e: number) => meaningOf('bar', { pct }, { e });
-  const ramp = (startPct: number, e: number) => meaningOf('pace', { shape: 'ramp', startPct }, { e });
+  const ramp = (startPct: number, closeAt: number) =>
+    meaningOf('pace', { shape: 'ramp', startPct }, { e: 5, barPct: closeAt });
+  const fixed = (closeAt: number) => meaningOf('pace', { shape: 'fixed' }, { e: 5, barPct: closeAt });
 
   it('names its own dependence, so an arriving member is visibly what moved', () => {
     expect(bar(80, 5)).toBe('In a room of 5, 4 of 5 must vote for it by the end.');
@@ -85,11 +94,25 @@ describe('meaningOf', () => {
     expect(bar(80, 1)).not.toBe(bar(90, 1));
   });
 
-  it('🪜 says the same arithmetic in the opening tense', () => {
-    expect(ramp(60, 5)).toBe('In a room of 5, 3 of 5 is enough when voting opens, and the approval threshold climbs from there.');
-    expect(ramp(90, 3)).toBe('In a room of 3, all 3 must vote for it when voting opens, and the approval threshold climbs from there.');
-    expect(ramp(60, 1)).toBe('In a room of one, the one vote is enough when voting opens, and the approval threshold climbs from there.');
-    expect(ramp(90, 1)).toBe('In a room of one, nothing can pass at a 90% start until more members arrive.');
+  it('🪜 names where the climb starts and where it ends', () => {
+    // **Entry 167 replaced 165's sentence rather than folding it.** 165's
+    // counted votes at the start — *in a room of 5, 3 of 5 is enough when
+    // voting opens* — which is 🌡️'s own sentence in the opening tense and
+    // left the number it climbs *to* on another card. 🪜's dependence is
+    // 🌡️'s number (rule 1), so the sentence names both ends.
+    expect(ramp(60, 80)).toBe('Starts at a bare majority (60%) when voting opens and climbs to broad agreement (80%) by the end — early changes pass more easily.');
+    expect(ramp(55, 78)).toBe('Starts at 55% when voting opens and climbs to 78% by the end — early changes pass more easily.');
+    expect(ramp(80, 90)).toBe('Starts at broad agreement (80%) when voting opens and climbs to nearly everyone (90%) by the end — early changes pass more easily.');
+  });
+
+  it('and a fixed pace says the number never moves', () => {
+    expect(fixed(80)).toBe('Stays at broad agreement (80%) from the moment voting opens to the end.');
+    expect(fixed(78)).toBe('Stays at 78% from the moment voting opens to the end.');
+  });
+
+  it('🪜 says nothing at all until 🌡️ has a number to climb towards', () => {
+    expect(meaningOf('pace', { shape: 'ramp', startPct: 60 }, { e: 5 })).toBe(null);
+    expect(meaningOf('pace', { shape: 'fixed' }, { e: 5, barPct: null })).toBe(null);
   });
 
   it('and never says “the bar”, which is card-audit’s T15', () => {
@@ -97,35 +120,194 @@ describe('meaningOf', () => {
     // live outside `spec-check`'s four-file corpus, so this is the guard
     for (let e = 1; e <= 12; e++) {
       for (const pct of [55, 60, 72, 80, 90, 99]) {
-        for (const s of [bar(pct, e), ramp(pct, e)]) {
+        for (const s of [bar(pct, e), ramp(pct, 90), fixed(pct)]) {
           expect(s === null || !/(^|[^a-z])the bars?([^a-z]|$)/i.test(s), `${s}`).toBe(true);
         }
       }
     }
   });
 
-  it('a fixed pace has no start to explain', () => {
-    expect(meaningOf('pace', { shape: 'fixed' }, { e: 5 })).toBe(null);
-  });
-
   it('says nothing where it cannot say anything true', () => {
     expect(bar(60, VOTES_NEEDED_MAX_N + 1)).toBe(null);
     expect(meaningOf('bar', null, { e: 5 })).toBe(null);
-    expect(meaningOf('quorum', { form: 'count', n: 3 }, { e: 5 })).toBe(null);
-    expect(meaningOf('lapse', { afterMs: null }, { e: 5 })).toBe(null);
+  });
+
+  it('and nothing at all for a setting the family does not cover', () => {
+    // the ladders whose rungs already say what they mean in words (👤 👁️ 🌍
+    // 🪪 🥾 🤝 🤖) and ⏰, which is a date
+    for (const id of ['authorship', 'judgments', 'chamber', 'ending', 'admission',
+      'removal', 'applications', 'machines', 'title', 'text']) {
+      expect(meaningOf(id, { rung: 'anonymous' }, ROOM), id).toBe(null);
+    }
   });
 
   it('every sentence fits the card’s own budget', () => {
     // card-audit's H4 caps a helper line at 200 characters, and these are read
-    // under a rung on three surfaces
+    // under a rung on four surfaces
     for (let e = 1; e <= VOTES_NEEDED_MAX_N; e++) {
       for (let pct = 50; pct <= 99; pct++) {
-        for (const s of [bar(pct, e), ramp(pct, e)]) {
+        for (const s of [bar(pct, e), ramp(pct, 90), fixed(pct)]) {
           if (s === null) continue;
-          expect(s.length, `${s}`).toBeLessThanOrEqual(200);
+          expect(s.length, `${s}`).toBeLessThanOrEqual(MEANING_MAX);
         }
       }
     }
+  });
+});
+
+/**
+ * **The family, over every value the surface can state** (entry 167). The
+ * table is the point: a wording change that overflows H4's budget at one
+ * roster, or drops a sentence for one value, is red here rather than on a
+ * card. Nothing else reads these strings — `spec-check`'s banned-word corpus
+ * is four page files and this module is not one of them.
+ */
+describe('the meaning family', () => {
+  const HOURS2 = 2 * 3600000, DAYS3 = 3 * 86400000;
+  const WINDOWS: [string, number | null][] = [
+    ['two hours', NOW + HOURS2], ['three days', NOW + DAYS3], ['never', null],
+  ];
+  const QUORUMS = (e: number): QuorumValue[] => [
+    ...Array.from({ length: e }, (_, i) => ({ form: 'count' as const, n: i + 1 })),
+    ...[25, 34, 50, 67, 100].map((n) => ({ form: 'share' as const, n })),
+  ];
+  // the page's own `RATE_START` is 4 · 6 · 10 — copied, never imported: this
+  // module must not learn what a page holds
+  const RATES: RateValue[] = [
+    { grant: 4, cap: 6, dripMinutes: 10 },
+    { grant: 1, cap: 1, dripMinutes: 1440 },
+    { grant: 0, cap: 40, dripMinutes: 5 },
+  ];
+  const LAPSES: LapseValue[] = [
+    ...[7, 14, 30, 90].map((d): LapseValue => ({ afterMs: d * 86400000 })),
+    { afterMs: null },
+  ];
+  const PACES: PaceValue[] = [{ shape: 'fixed' },
+    ...BAR_RUNGS.map((r) => ({ shape: 'ramp' as const, startPct: r.pct })),
+    { shape: 'ramp', startPct: 55 }];
+
+  const rows = (e: number, endsAtMs: number | null) => {
+    const room: Room = { e, endsAtMs, nowMs: NOW, barPct: 78 };
+    return [
+      ...QUORUMS(e).map((v) => ['quorum', v, room] as const),
+      ...RATES.map((v) => ['rate', v, room] as const),
+      ...LAPSES.map((v) => ['lapse', v, room] as const),
+      ...PACES.map((v) => ['pace', v, room] as const),
+      ...[...BAR_RUNGS.map((r) => ({ pct: r.pct })), { pct: 65 }, { pct: 95 }]
+        .map((v) => ['bar', v, room] as const),
+    ];
+  };
+
+  it('every value in the table has a sentence, and it fits', () => {
+    for (let e = 1; e <= 12; e++) {
+      for (const [, endsAtMs] of WINDOWS) {
+        for (const [id, v, room] of rows(e, endsAtMs)) {
+          const s = meaningOf(id, v, room);
+          // 🌡️ and 🪜 are allowed their one silence — a bar this room cannot
+          // reach — and it is the only one in the table
+          if (s === null) { expect(id === 'bar' || id === 'pace', `${id} ${JSON.stringify(v)} e=${e}`).toBe(true); continue; }
+          expect(s.length, `${id} ${JSON.stringify(v)} e=${e}: ${s}`).toBeLessThanOrEqual(MEANING_MAX);
+        }
+      }
+    }
+  });
+
+  it('names its own dependence — and only its own', () => {
+    for (let e = 1; e <= 12; e++) {
+      const room: Room = { e, endsAtMs: NOW + DAYS3, nowMs: NOW, barPct: 80 };
+      for (const v of QUORUMS(e)) {
+        expect(meaningOf('quorum', v, room), `quorum ${JSON.stringify(v)} e=${e}`).toMatch(/room of/);
+      }
+      for (const r of BAR_RUNGS) {
+        const s = meaningOf('bar', { pct: r.pct }, room);
+        if (s !== null) expect(s, `bar ${r.pct} e=${e}`).toMatch(/room of/);
+      }
+      // ⏱️ names the window it is measured over…
+      for (const v of RATES) {
+        expect(meaningOf('rate', v, room), `rate e=${e}`).toMatch(/^Over a session of 3 days, /);
+        expect(meaningOf('rate', v, { ...room, endsAtMs: null }), `rate ∞ e=${e}`)
+          .toMatch(/^With no end date, /);
+      }
+      // …and 💤 names no room, because a lapse does not depend on one
+      for (const v of LAPSES) {
+        expect(meaningOf('lapse', v, room), `lapse ${JSON.stringify(v)}`).not.toMatch(/room of/);
+      }
+    }
+  });
+
+  it('👥’s arithmetic is `quorumCount`’s, and the freeze clause follows it', () => {
+    const room: Room = { e: 9, endsAtMs: null, nowMs: NOW, barPct: 80 };
+    const share: QuorumValue = { form: 'share', n: 34 };
+    expect(quorumCount(share, 9)).toBe(4);
+    expect(meaningOf('quorum', share, room))
+      .toBe('34% of a room of 9 is 4: at least 4 of you must have voted on a change before it can pass; with fewer than 4 still here the document freezes.');
+    const count: QuorumValue = { form: 'count', n: 9 };
+    expect(quorumCount(count, 9)).toBe(9);
+    expect(meaningOf('quorum', count, room))
+      .toBe('In a room of 9, all 9 of you must have voted on a change before it can pass — one member away and the document freezes.');
+    // a quorum of one never freezes a room with anybody in it, so the
+    // consequence that cannot happen is not stated (T37)
+    expect(meaningOf('quorum', { form: 'count', n: 1 }, room)).not.toMatch(/freezes/);
+    // …and a count larger than the room says so rather than pretending
+    expect(meaningOf('quorum', { form: 'count', n: 12 }, room))
+      .toMatch(/nothing can pass until more members arrive\.$/);
+  });
+
+  it('💤’s spells are words, and ⏱️’s spans are too', () => {
+    expect(meaningOf('lapse', { afterMs: 7 * 86400000 })).toMatch(/for a week /);
+    expect(meaningOf('lapse', { afterMs: 14 * 86400000 })).toMatch(/for two weeks /);
+    expect(meaningOf('lapse', { afterMs: 30 * 86400000 })).toMatch(/for a month /);
+    expect(meaningOf('lapse', { afterMs: 90 * 86400000 })).toMatch(/for 90 days /);
+    expect(meaningOf('lapse', { afterMs: null })).toBe('Nobody ever drops out of the count, however long they are away.');
+    const room: Room = { e: 5, endsAtMs: NOW + 3 * 3600000, nowMs: NOW, barPct: 80 };
+    expect(meaningOf('rate', { grant: 4, cap: 6, dripMinutes: 30 }, room))
+      .toBe('Over a session of 3 hours, about 10 proposals each — 4 to start with and one more every 30 minutes, never more than 6 in hand.');
+    // a drip faster than five minutes is a rhythm, not a figure
+    expect(meaningOf('rate', { grant: 4, cap: 6, dripMinutes: 2 }, room)).toMatch(/every few minutes/);
+  });
+
+  it('and never says “judgment”, which is 164’s vocabulary', () => {
+    for (let e = 1; e <= 12; e++) {
+      for (const [, endsAtMs] of WINDOWS) {
+        for (const [id, v, room] of rows(e, endsAtMs)) {
+          const s = meaningOf(id, v, room);
+          if (s !== null) expect(s, `${id}: ${s}`).not.toMatch(/judg/i);
+        }
+      }
+    }
+  });
+});
+
+/**
+ * **Rule 4, asserted where it is actually stated.** Every ladder on the
+ * surface lists its rungs most-protective-first, so *the most I will accept*
+ * reads as a ladder and *the highest taken* is topmost. The catalogue says so
+ * in a doc comment on `CatalogueEntry.rungs` and its `consent.order` is the
+ * machine-readable half of the same claim — and nothing compared the two.
+ */
+describe('every ladder is most-protective-first', () => {
+  it('the rung list agrees with the entry’s own consent order', () => {
+    let checked = 0;
+    for (const entry of CATALOGUE) {
+      const rungs = entry.rungs;
+      if (!rungs || !entry.consent) continue;
+      // a rung is either a ladder's `{rung}` or a price's `{price}` — which,
+      // is the entry's own business, so it is asked rather than assumed
+      const asValue = (r: string): SettingValue =>
+        (validateFor(entry, { rung: r }) === null ? { rung: r } : { price: r as never });
+      for (let i = 0; i + 1 < rungs.length; i++) {
+        const a = asValue(rungs[i]!), b = asValue(rungs[i + 1]!);
+        expect(validateFor(entry, a), `${entry.id}: ${rungs[i]}`).toBe(null);
+        expect(entry.consent.order(a, b), `${entry.id}: ${rungs[i]} before ${rungs[i + 1]}`)
+          .toBeGreaterThan(0);
+        checked++;
+      }
+    }
+    expect(checked).toBeGreaterThan(8);
+  });
+
+  it('…and 🌡️’s rungs, which are a list of their own', () => {
+    expect(BAR_RUNGS.map((r) => r.pct)).toEqual([...BAR_RUNGS.map((r) => r.pct)].sort((a, b) => b - a));
   });
 });
 
@@ -141,5 +323,14 @@ describe('BAR_RUNGS', () => {
   it('and the fourth rung is the number itself', () => {
     expect(OWN_RUNG_LABEL).toBe('A number of my own');
     expect(BAR_RUNGS.some((r) => r.label === OWN_RUNG_LABEL)).toBe(false);
+  });
+
+  it('and *one* is a word, wherever the room is named', () => {
+    // `ceilingNote` on the page builds the same phrase, and takes it from
+    // here rather than keeping a second copy (T5)
+    expect(roomPhrase(0)).toBe('one');
+    expect(roomPhrase(1)).toBe('one');
+    expect(roomPhrase(2)).toBe('2');
+    expect(roomPhrase(14.7)).toBe('14');
   });
 });

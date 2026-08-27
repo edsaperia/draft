@@ -31,6 +31,7 @@ var CONSTITUTION = (() => {
     ConstitutionSession: () => ConstitutionSession,
     DOORS: () => DOORS,
     JUDGE_GATES: () => JUDGE_GATES,
+    MEANING_MAX: () => MEANING_MAX,
     OWN_RUNG_LABEL: () => OWN_RUNG_LABEL,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
     VOTES_NEEDED: () => VOTES_NEEDED,
@@ -59,6 +60,7 @@ var CONSTITUTION = (() => {
     quorumCount: () => quorumCount,
     reAnchor: () => reAnchor,
     resolveConsent: () => resolveConsent,
+    roomPhrase: () => roomPhrase,
     roomSettings: () => roomSettings,
     seedAnchors: () => seedAnchors,
     sha256Hex: () => sha256Hex,
@@ -2934,7 +2936,12 @@ var CONSTITUTION = (() => {
     const k = votesNeeded(n, Math.floor(pct));
     return k === 0 ? null : k;
   }
-  var roomOf = (e) => e <= 1 ? "one" : String(Math.floor(e));
+  function roomPhrase(e) {
+    return e <= 1 ? "one" : String(Math.floor(e));
+  }
+  var roomOf = roomPhrase;
+  var MEANING_MAX = 200;
+  var fit = (s) => s.length <= MEANING_MAX ? s : null;
   function winsClause(e, pct) {
     const k = winsNeededPct(e, pct);
     if (k === void 0 || k === null) return k;
@@ -2944,37 +2951,97 @@ var CONSTITUTION = (() => {
     const w = winsClause(room.e, pct);
     if (w === void 0) return null;
     if (w === null) {
-      return "In a room of " + roomOf(room.e) + ", nothing can pass at " + Math.floor(pct) + "% until more members arrive.";
+      return fit("In a room of " + roomOf(room.e) + ", nothing can pass at " + Math.floor(pct) + "% until more members arrive.");
     }
-    if (w.n === 1) return "In a room of one, the one vote must be for it.";
-    if (w.k === w.n) return "In a room of " + w.n + ", all " + w.n + " must vote for it by the end.";
-    return "In a room of " + w.n + ", " + w.k + " of " + w.n + " must vote for it by the end.";
+    if (w.n === 1) return fit("In a room of one, the one vote must be for it.");
+    if (w.k === w.n) return fit("In a room of " + w.n + ", all " + w.n + " must vote for it by the end.");
+    return fit("In a room of " + w.n + ", " + w.k + " of " + w.n + " must vote for it by the end.");
   }
-  var CLIMBS = ", and the approval threshold climbs from there.";
-  function paceMeaning(startPct, room) {
-    const w = winsClause(room.e, startPct);
-    if (w === void 0) return null;
-    if (w === null) {
-      return "In a room of " + roomOf(room.e) + ", nothing can pass at a " + Math.floor(startPct) + "% start until more members arrive.";
-    }
-    if (w.n === 1) return "In a room of one, the one vote is enough when voting opens" + CLIMBS;
-    if (w.k === w.n) {
-      return "In a room of " + w.n + ", all " + w.n + " must vote for it when voting opens" + CLIMBS;
-    }
-    return "In a room of " + w.n + ", " + w.k + " of " + w.n + " is enough when voting opens" + CLIMBS;
+  function spanPhrase(ms) {
+    const mins = Math.round(ms / 6e4);
+    if (mins < 120) return mins === 1 ? "1 minute" : mins + " minutes";
+    const hours = Math.round(ms / 36e5);
+    if (hours < 48) return hours + " hours";
+    return Math.round(ms / 864e5) + " days";
   }
-  function meaningOf(setting, value, room) {
+  var dripPhrase = (dripMinutes) => dripMinutes < 5 ? "few minutes" : spanPhrase(dripMinutes * 6e4);
+  function spellPhrase(afterMs) {
+    const days = Math.round(afterMs / 864e5);
+    if (days === 7) return "a week";
+    if (days === 14) return "two weeks";
+    if (days >= 28 && days <= 31) return "a month";
+    return spanPhrase(afterMs);
+  }
+  function quorumBody(q, n) {
+    if (q > n) {
+      return q + " of you must have voted before a change can pass, so nothing can pass until more members arrive.";
+    }
+    if (n === 1) return "your own vote is the whole quorum, and nothing waits on anybody else.";
+    if (q >= n) {
+      return "all " + n + " of you must have voted on a change before it can pass — one member away and the document freezes.";
+    }
+    if (q <= 1) return "one vote meets quorum, so a change never waits for more people to arrive.";
+    return "at least " + q + " of you must have voted on a change before it can pass; with fewer than " + q + " still here the document freezes.";
+  }
+  function quorumMeaning(v, room) {
+    if (typeof v.n !== "number" || !Number.isFinite(v.n)) return null;
+    const n = Math.max(1, Math.floor(room.e));
+    const q = quorumCount(v, n);
+    if (!Number.isFinite(q)) return null;
+    const body = quorumBody(q, n);
+    return fit(v.form === "share" ? Math.round(v.n) + "% of a room of " + roomOf(n) + " is " + q + ": " + body : "In a room of " + roomOf(n) + ", " + body);
+  }
+  function rateMeaning(v, room) {
+    const { grant, cap, dripMinutes } = v;
+    if (![grant, cap, dripMinutes].every((x) => typeof x === "number" && Number.isFinite(x))) return null;
+    if (dripMinutes <= 0) return null;
+    const drip = dripPhrase(dripMinutes);
+    const end = room.endsAtMs;
+    const now = room.nowMs;
+    const windowMs = typeof end === "number" && typeof now === "number" && end > now ? end - now : null;
+    if (windowMs === null) {
+      return fit("With no end date, " + grant + " proposals to start with and one more every " + drip + " for as long as it runs, never more than " + cap + " in hand.");
+    }
+    const total = grant + Math.floor(windowMs / 6e4 / dripMinutes);
+    const whole = "Over a session of " + spanPhrase(windowMs) + ", about " + total + " proposals each — " + grant + " to start with and one more every " + drip + ", never more than " + cap + " in hand.";
+    return fit(whole) ?? fit("Over a session of " + spanPhrase(windowMs) + ", about " + total + " proposals each.");
+  }
+  function lapseMeaning(v) {
+    if (v.afterMs === null) return fit("Nobody ever drops out of the count, however long they are away.");
+    if (typeof v.afterMs !== "number" || !Number.isFinite(v.afterMs) || v.afterMs <= 0) return null;
+    return fit("A member who says nothing for " + spellPhrase(v.afterMs) + " drops out of the count — the document can go on without them, and they are back the moment they log in.");
+  }
+  var rungName = (pct) => {
+    const r = BAR_RUNGS.find((x) => x.pct === Math.floor(pct));
+    return r ? r.label.charAt(0).toLowerCase() + r.label.slice(1) + " (" + Math.floor(pct) + "%)" : Math.floor(pct) + "%";
+  };
+  function paceMeaning(v, room) {
+    const close = room.barPct;
+    if (typeof close !== "number" || !Number.isFinite(close)) return null;
+    if (v.shape === "fixed") {
+      return fit("Stays at " + rungName(close) + " from the moment voting opens to the end.");
+    }
+    if (typeof v.startPct !== "number" || !Number.isFinite(v.startPct)) return null;
+    return fit("Starts at " + rungName(v.startPct) + " when voting opens and climbs to " + rungName(close) + " by the end — early changes pass more easily.");
+  }
+  function meaningOf(setting, value, room = { e: 1 }) {
     if (!value) return null;
-    if (setting === "bar") {
-      const pct = value.pct;
-      return typeof pct === "number" ? barMeaning(pct, room) : null;
+    switch (setting) {
+      case "bar": {
+        const pct = value.pct;
+        return typeof pct === "number" ? barMeaning(pct, room) : null;
+      }
+      case "pace":
+        return paceMeaning(value, room);
+      case "quorum":
+        return quorumMeaning(value, room);
+      case "rate":
+        return rateMeaning(value, room);
+      case "lapse":
+        return lapseMeaning(value);
+      default:
+        return null;
     }
-    if (setting === "pace") {
-      const v = value;
-      if (v.shape !== "ramp" || typeof v.startPct !== "number") return null;
-      return paceMeaning(v.startPct, room);
-    }
-    return null;
   }
 
   // src/view.ts
