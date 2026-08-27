@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
+import { view } from '../src/view.js';
 import type { ConstitutionEvent } from '../src/types.js';
 
 /**
@@ -551,5 +552,120 @@ describe('replay (SPEC §11)', () => {
     for (const r of receipt) {
       expect(s.logEntries()[r.seq]!.hash).toBe(r.hash);
     }
+  });
+});
+
+/**
+ * **A founding question's electorate is E minus abstainers** (§9.0a,
+ * → why: R-015, R-049; Ed 2026-08-25, closing Q647 as (b) against the
+ * recommendation, as a change to the consent rule and not a bug fix).
+ *
+ * The defect it settles: two counts of one electorate disagreed. The founding
+ * card has always shown *n of E have answered* over `motionElectorate()` — E
+ * minus abstainers — while the resolver waited on the whole of E, so a member
+ * who signed out **abstaining** left the line everybody watches and stayed in
+ * the set the resolver waited on. The room saw a question that read complete
+ * and could never settle, with no surface naming who was holding it up.
+ *
+ * What is fixed and asserted below: abstainers leave, **holders stay** (§9.5),
+ * an abstention completes the question at the act rather than at the next
+ * unrelated answer, *never on one voice* is read against the smaller set, and
+ * an abstainer's own answer is still recorded and simply not counted (Q648).
+ */
+describe('a founding question\'s electorate drops abstainers (R-049)', () => {
+  /** ada (the founder, a member) plus two arrived invitees. */
+  const room = () => {
+    const s = openDelegated();
+    const bo = s.invite(1, 'bo@example.org');
+    const cy = s.invite(1, 'cy@example.org');
+    s.arrive(1, bo);
+    s.arrive(1, cy);
+    return { s, bo, cy };
+  };
+
+  const eventsOf = <K extends ConstitutionEvent['type']>(s: ConstitutionSession, type: K) =>
+    s.logEntries().map((e) => e.event)
+      .filter((e): e is Extract<ConstitutionEvent, { type: K }> => e.type === type);
+
+  it('an abstention completes the question at the act, on the smaller set', () => {
+    const { s, bo, cy } = room();
+    s.answer(2, 'ada', 'ending', { endsAtMs: 500_000 });
+    s.answer(2, bo, 'ending', { endsAtMs: 400_000 });
+    expect(s.settingState('ending').collecting).toBe(true);   // cy still owes
+    s.signOut(3, cy, 'abstaining');
+    expect(s.settingState('ending').collecting).toBe(false);
+    expect(s.settingState('ending').settledBy).toBe('ceremony');
+    expect(s.settingState('ending').value).toEqual({ endsAtMs: 500_000 });
+    const resolved = eventsOf(s, 'question-resolved').filter((e) => e.setting === 'ending');
+    expect(resolved.length).toBe(1);
+    expect(resolved[0]!.t).toBe(3);                           // on the sign-out
+    expect(resolved[0]!.electorate).toEqual(['ada', bo].sort());
+    // and nobody is told their ground moved: the roster has not changed and
+    // the abstainer is still a member (decision 2 of the plan, R-049)
+    expect(eventsOf(s, 'ceremony-ground-shifted').length).toBe(0);
+    // the log still replays to itself
+    expect(ConstitutionSession.replay([...s.logEntries()]).rollingHash()).toBe(s.rollingHash());
+  });
+
+  it('signing out **holding** leaves the question collecting (§9.5)', () => {
+    const { s, bo, cy } = room();
+    s.answer(2, 'ada', 'ending', { endsAtMs: 500_000 });
+    s.answer(2, bo, 'ending', { endsAtMs: 400_000 });
+    s.signOut(3, cy, 'holding');
+    expect(s.settingState('ending').collecting).toBe(true);
+    expect(s.settingState('ending').value).toBeNull();
+    expect(s.motionElectorate()).toContain(cy);
+    // and the holder's own answer still completes it
+    s.answer(4, cy, 'ending', { endsAtMs: 900_000 });
+    expect(s.settingState('ending').value).toEqual({ endsAtMs: 900_000 });
+  });
+
+  it('a room of two where one abstains never resolves on the survivor', () => {
+    const s = openDelegated();
+    const bo = s.invite(1, 'bo@example.org');
+    s.arrive(1, bo);
+    s.answer(2, 'ada', 'ending', { endsAtMs: 500_000 });
+    s.signOut(3, bo, 'abstaining');
+    expect(s.motionElectorate()).toEqual(['ada']);
+    expect(s.settingState('ending').collecting).toBe(true);
+    expect(s.settingState('ending').value).toBeNull();
+    // …and the readout says *why*, on the same set the resolver refused on
+    // (Q826: a readout saying which and not why leaves the founder guessing)
+    expect(s.readiness().holds.find((h) => h.setting === 'ending')!.why).toBe('one-voice');
+  });
+
+  it('an abstainer\'s answer is recorded and not counted, and both readouts agree', () => {
+    const { s, bo, cy } = room();
+    s.answer(2, cy, 'ending', { endsAtMs: 100_000 });
+    s.signOut(3, cy, 'abstaining');
+    s.answer(4, 'ada', 'ending', { endsAtMs: 500_000 });      // bo has not said
+    expect(s.settingState('ending').collecting).toBe(true);
+    expect(s.settingState('ending').answers.size).toBe(2);    // recorded (decision 5)
+    const q = s.readiness().questions.find((x) => x.setting === 'ending')!;
+    expect(q).toEqual({ setting: 'ending', settled: false, collecting: true,
+      answered: 1, electorate: 2 });
+    // the entry exists for this pair of lines: one electorate, two readers
+    const seen = view(s, 'ada').questions.find((x) => x.setting === 'ending')!;
+    expect(seen.answeredCount).toBe(q.answered);
+    expect(seen.electorateSize).toBe(q.electorate);
+    // the abstainer is still served their own answer, which is what makes the
+    // asymmetry visible to exactly one person (decision 5)
+    expect(view(s, cy).questions.find((x) => x.setting === 'ending')!.myAnswer)
+      .toEqual({ endsAtMs: 100_000 });
+  });
+
+  it('lists the abstainer among the members, owing nothing', () => {
+    const { s, bo, cy } = room();
+    s.answer(2, cy, 'ending', { endsAtMs: 100_000 });
+    s.signOut(3, cy, 'abstaining');
+    s.answer(4, 'ada', 'ending', { endsAtMs: 500_000 });
+    const rows = s.readiness().members;
+    expect(rows.map((r) => r.id)).toEqual(['ada', bo, cy]);
+    expect(rows.find((r) => r.id === cy)).toEqual(
+      { id: cy, name: null, arrived: true, owed: 0, answered: 0 });
+    const ada = rows.find((r) => r.id === 'ada')!;
+    expect(ada.owed).toBeGreaterThan(0);
+    expect(ada.answered).toBe(1);
+    expect(rows.find((r) => r.id === bo)!.owed).toBe(ada.owed);
   });
 });

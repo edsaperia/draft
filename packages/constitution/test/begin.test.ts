@@ -60,6 +60,33 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
     expect(s.readiness().ready).toBe(false); // nothing left to begin
   });
 
+  // Q648 (Ed, 2026-08-25, riding R-049): the readout's `answered` stops being
+  // the raw `answers.size` and counts only the electorate's answers, the way
+  // `view()` already did. An abstainer's answer stays in the fold — it is
+  // recorded and simply not counted — so the two numbers part company the
+  // moment somebody who answered signs out abstaining, and the founder's
+  // readout must be the one that matches the card.
+  it('counts the electorate\'s answers, not the fold\'s (Q648)', () => {
+    const s = ConstitutionSession.open({ title: 'T', slug: 't7',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 0);
+    const bo = s.invite(1, 'bo@example.org');
+    const cy = s.invite(1, 'cy@example.org');
+    s.arrive(1, bo);
+    s.arrive(1, cy);
+    s.confirmStartingText(1, 'x');
+    setAllBut(s, ['chamber']);
+    s.delegate(1, 'chamber');
+    s.answer(2, 'ada', 'chamber', { rung: 'link' });
+    s.answer(2, cy, 'chamber', { rung: 'closed' });
+    expect(s.readiness().questions.find((q) => q.setting === 'chamber')).toEqual(
+      { setting: 'chamber', settled: false, collecting: true, answered: 2, electorate: 3 });
+    s.signOut(3, cy, 'abstaining');
+    expect(s.settingState('chamber').answers.size).toBe(2); // still in the fold
+    expect(s.readiness().questions.find((q) => q.setting === 'chamber')).toEqual(
+      { setting: 'chamber', settled: false, collecting: true, answered: 1, electorate: 2 });
+    expect(s.readiness().waiting).toEqual(['chamber']);     // bo alone holds it
+  });
+
   it('spends every pending release in the same act (R-048)', () => {
     const s = ConstitutionSession.open({ title: 'T', slug: 't2',
       convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 0);

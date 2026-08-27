@@ -1386,12 +1386,24 @@ export class ConstitutionSession {
     // already exists: until judging opens the roster is theirs to re-shape,
     // so an invitation that will never be opened can simply be withdrawn.
     if ([...this.members.values()].some((m) => m.arrivedAtT === null && !m.removed)) return;
-    const electorate = eOf(this.members.values());
+    // **The electorate is E minus those who have signed out abstaining**
+    // (§9.0a, → why: R-015, R-049; Ed 2026-08-25 closing Q647 as (b)). An
+    // abstainer has said they are done and are not to be counted, so waiting
+    // on their answer waits on somebody who has declared they will not give
+    // one — a question that reads complete on the card and can never settle,
+    // with nothing on the surface naming who holds it up. A member signed out
+    // **holding** stays in: holding is *I am done and still count*. It is the
+    // live set, re-read on every answer and every departure, the same set the
+    // motion side has resolved against since v0.48 and the same one `view()`
+    // counts *n of E* over. Both gates below read it.
+    const electorate = motionElectorateOf(this.members.values());
     // **and never on one voice**, which is the other half of the same reason:
     // a consent rule computed over a single answer is that answer, so a
     // delegated question with a membership of one has not been delegated to
     // anybody. The founder's remedy is either half of the choice they already
-    // have — invite somebody, or take the setting back and set it.
+    // have — invite somebody, or take the setting back and set it. Read
+    // against the smaller set, so a room of two where one abstains does not
+    // resolve on the survivor's single answer either.
     if (electorate.length < 2) return;
     if (!electorate.every((m) => st.answers.has(m.id))) return;
     const answers = electorate.map((m) => st.answers.get(m.id)!);
@@ -1449,12 +1461,15 @@ export class ConstitutionSession {
    * actually holding the resolution: an invitation in flight stops it before
    * the electorate is even counted, so a room of one with an unopened
    * invitation reads `invitation-open` and not `one-voice` — which is right,
-   * since the invitation is already the remedy.
+   * since the invitation is already the remedy. And it is the same *set*, not
+   * just the same order: `soleVoice` counts the electorate (E minus
+   * abstainers, R-049), so a readout that says `collecting` while the resolver
+   * is refusing on one voice — the Q826 defect over again — cannot arise.
    */
   private waitingWith(): Array<{ setting: SettingId; why: WaitingWhy }> {
     const invitationOut = [...this.members.values()]
       .some((m) => m.arrivedAtT === null && !m.removed);
-    const soleVoice = eOf(this.members.values()).length < 2;
+    const soleVoice = motionElectorateOf(this.members.values()).length < 2;
     return CATALOGUE
       .filter((e) => {
         const st = this.settings.get(e.id);
@@ -1486,6 +1501,15 @@ export class ConstitutionSession {
    * Per question: whether it stands, and how many have answered. Per person:
    * how many of the questions they owe they have answered. **Participation
    * itemised by name, never preference** — no value, no running maximum.
+   *
+   * **Counted over the electorate, not over E** (R-049, Q648): `electorate`
+   * is E minus abstainers and `answered` counts only that set's answers, the
+   * way `view()` has counted a collecting question's `answeredCount` all
+   * along — the two readouts of one question now read one electorate. An
+   * abstainer is still **listed** among the members (they are arrived and not
+   * removed) and simply owes nothing: `owed` and `answered` are both 0, since
+   * the itemisation is of participation in a question they are no longer part
+   * of. They may still call `answer()`; it is recorded and not counted.
    */
   readiness(): {
     ready: boolean;
@@ -1499,21 +1523,27 @@ export class ConstitutionSession {
     members: Array<{ id: MemberId; name: string | null; arrived: boolean;
       owed: number; answered: number }>;
   } {
-    const E = eOf(this.members.values());
+    const E = motionElectorateOf(this.members.values());
+    const eIds = new Set(E.map((m) => m.id));
     const open = MANAGED.filter((id) => this.settings.get(id)!.collecting);
     const questions = MANAGED
       .filter((id) => { const st = this.settings.get(id)!; return st.collecting || st.distribution !== null; })
       .map((id) => {
         const st = this.settings.get(id)!;
+        let answered = 0;
+        for (const member of st.answers.keys()) if (eIds.has(member)) answered += 1;
         return { setting: id, settled: st.settledBy !== null, collecting: st.collecting,
-          answered: st.answers.size, electorate: E.length };
+          answered, electorate: E.length };
       });
     const members = [...this.members.values()]
       .filter((m) => !m.removed && !m.invitationExpired)
-      .map((m) => ({ id: m.id, name: m.name, arrived: m.arrivedAtT !== null,
-        owed: m.arrivedAtT === null ? 0 : open.length,
-        answered: m.arrivedAtT === null ? 0
-          : open.filter((id) => this.settings.get(id)!.answers.has(m.id)).length }));
+      .map((m) => {
+        const out = m.arrivedAtT === null || m.signedOut === 'abstaining';
+        return { id: m.id, name: m.name, arrived: m.arrivedAtT !== null,
+          owed: out ? 0 : open.length,
+          answered: out ? 0
+            : open.filter((id) => this.settings.get(id)!.answers.has(m.id)).length };
+      });
     const holds = this.waitingWith();
     const waiting = holds.map((w) => w.setting);
     return { ready: this.constitutedT === null && waiting.length === 0, waiting, holds, questions, members };
@@ -1861,8 +1891,15 @@ export class ConstitutionSession {
     if (!m || !inE(m)) throw new Error(`'${member}' is not an arrived member`);
     this.emit({ type: 'signed-out', t, member, mode });
     // An abstainer leaves the quorum base: motions can complete, the
-    // document can freeze — plain silence never does either (§9.5).
+    // document can freeze — plain silence never does either (§9.5). Since
+    // R-049 a founding question's electorate is that same live set, so an
+    // abstention that shrinks it to exactly the people who have answered
+    // completes the question here, at the act, rather than waiting on the
+    // next unrelated answer. No ground shift is emitted: the roster has not
+    // moved and the abstainer is still a member, so nobody's answer has had
+    // its ground changed under it.
     this.maybeSettleMotions(t);
+    this.maybeResolveAll(t);
     this.maybeFreezeOrThaw(t);
   }
 

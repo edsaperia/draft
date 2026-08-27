@@ -1874,7 +1874,7 @@ var CONSTITUTION = (() => {
         if (depSt && depSt.settledBy === null) return;
       }
       if ([...this.members.values()].some((m) => m.arrivedAtT === null && !m.removed)) return;
-      const electorate = eOf(this.members.values());
+      const electorate = motionElectorateOf(this.members.values());
       if (electorate.length < 2) return;
       if (!electorate.every((m) => st.answers.has(m.id))) return;
       const answers = electorate.map((m) => st.answers.get(m.id));
@@ -1934,11 +1934,14 @@ var CONSTITUTION = (() => {
      * actually holding the resolution: an invitation in flight stops it before
      * the electorate is even counted, so a room of one with an unopened
      * invitation reads `invitation-open` and not `one-voice` — which is right,
-     * since the invitation is already the remedy.
+     * since the invitation is already the remedy. And it is the same *set*, not
+     * just the same order: `soleVoice` counts the electorate (E minus
+     * abstainers, R-049), so a readout that says `collecting` while the resolver
+     * is refusing on one voice — the Q826 defect over again — cannot arise.
      */
     waitingWith() {
       const invitationOut = [...this.members.values()].some((m) => m.arrivedAtT === null && !m.removed);
-      const soleVoice = eOf(this.members.values()).length < 2;
+      const soleVoice = motionElectorateOf(this.members.values()).length < 2;
       return CATALOGUE.filter((e) => {
         const st = this.settings.get(e.id);
         if (!st) return false;
@@ -1956,30 +1959,45 @@ var CONSTITUTION = (() => {
      * Per question: whether it stands, and how many have answered. Per person:
      * how many of the questions they owe they have answered. **Participation
      * itemised by name, never preference** — no value, no running maximum.
+     *
+     * **Counted over the electorate, not over E** (R-049, Q648): `electorate`
+     * is E minus abstainers and `answered` counts only that set's answers, the
+     * way `view()` has counted a collecting question's `answeredCount` all
+     * along — the two readouts of one question now read one electorate. An
+     * abstainer is still **listed** among the members (they are arrived and not
+     * removed) and simply owes nothing: `owed` and `answered` are both 0, since
+     * the itemisation is of participation in a question they are no longer part
+     * of. They may still call `answer()`; it is recorded and not counted.
      */
     readiness() {
-      const E = eOf(this.members.values());
+      const E = motionElectorateOf(this.members.values());
+      const eIds = new Set(E.map((m) => m.id));
       const open = MANAGED.filter((id) => this.settings.get(id).collecting);
       const questions = MANAGED.filter((id) => {
         const st = this.settings.get(id);
         return st.collecting || st.distribution !== null;
       }).map((id) => {
         const st = this.settings.get(id);
+        let answered = 0;
+        for (const member of st.answers.keys()) if (eIds.has(member)) answered += 1;
         return {
           setting: id,
           settled: st.settledBy !== null,
           collecting: st.collecting,
-          answered: st.answers.size,
+          answered,
           electorate: E.length
         };
       });
-      const members = [...this.members.values()].filter((m) => !m.removed && !m.invitationExpired).map((m) => ({
-        id: m.id,
-        name: m.name,
-        arrived: m.arrivedAtT !== null,
-        owed: m.arrivedAtT === null ? 0 : open.length,
-        answered: m.arrivedAtT === null ? 0 : open.filter((id) => this.settings.get(id).answers.has(m.id)).length
-      }));
+      const members = [...this.members.values()].filter((m) => !m.removed && !m.invitationExpired).map((m) => {
+        const out = m.arrivedAtT === null || m.signedOut === "abstaining";
+        return {
+          id: m.id,
+          name: m.name,
+          arrived: m.arrivedAtT !== null,
+          owed: out ? 0 : open.length,
+          answered: out ? 0 : open.filter((id) => this.settings.get(id).answers.has(m.id)).length
+        };
+      });
       const holds = this.waitingWith();
       const waiting = holds.map((w) => w.setting);
       return { ready: this.constitutedT === null && waiting.length === 0, waiting, holds, questions, members };
@@ -2282,6 +2300,7 @@ var CONSTITUTION = (() => {
       if (!m || !inE(m)) throw new Error(`'${member}' is not an arrived member`);
       this.emit({ type: "signed-out", t, member, mode });
       this.maybeSettleMotions(t);
+      this.maybeResolveAll(t);
       this.maybeFreezeOrThaw(t);
     }
     /**
