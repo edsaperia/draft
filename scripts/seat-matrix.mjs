@@ -245,6 +245,15 @@ const STEPS = [
     events: [E4('canpropose'), E4('canjudge')] },
   { id: 'ok-judge', epoch: 'live', kind: 'ok', seat: 'founder', key: 'canjudge', ifHat: 'member',
     events: [E4('canpropose'), E4('canjudge')] },
+  // 🌍's own promise — *at `public` the stranger reads the text* — is **not
+  // rail-expressible** (entry 82): the door's cards are `strlogin` and
+  // `strapply`, and neither depends on the rung, so the stranger's rail is
+  // the same before and after this step and a row could not say otherwise.
+  // What `amend` leaves behind for 🌍 is the stranger seat's `view` snapshot,
+  // which the harness compares only under `--baseline`; read `canRead` off
+  // the written JSON. The rung × reader × epoch table itself is asserted in
+  // `packages/server/test/promise-chamber.test.ts`, and no code path is
+  // added here to duplicate it.
   { id: 'amend', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
     args: () => ({ setting: 'chamber', value: { rung: 'public' }, why: 'so the cohort can read along' }),
     events: [E5('chamber', 'amend')] },
