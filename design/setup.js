@@ -1253,7 +1253,7 @@ window.SETUP = (function () {
       '<p class="why">Never revealed while a question is live, whichever is chosen — a room that can read itself judges itself. This settles only whether they are published with the closing record.</p>' +
       ladder(A, 'judgments', [
         { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
-        { v: 'after', t: 'Revealed after the decision', e: 'Published with the record, never before it.' }]) + BLINDNOTE,
+        { v: 'after', t: 'Revealed at the end', e: 'Published with the document at the end, never before.' }]) + BLINDNOTE,
     applications: (A) =>
       '<p class="why">How somebody who is not a member can become one. The <b>least open</b> answer wins: one member who wants invitation only keeps it so.</p>' +
       ladder(A, 'applications', [

@@ -579,7 +579,7 @@
     "eyebrow": "",
     "head": "When Are Judgments Revealed?",
     "lock": "",
-    "body": "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.Never revealedWhat you preferred stays yours, permanently.Revealed after the decisionPublished with the document at the end, never before.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.",
+    "body": "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.Never revealedWhat you preferred stays yours, permanently.Revealed at the endPublished with the document at the end, never before.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.",
     "options": [
      {
       "set": "judgments",
@@ -589,7 +589,7 @@
      {
       "set": "judgments",
       "val": "after",
-      "label": "Revealed after the decision"
+      "label": "Revealed at the end"
      },
      {
       "set": "judgments",
@@ -4400,7 +4400,7 @@
     "eyebrow": "",
     "head": "When Are Judgments Revealed?",
     "lock": "",
-    "body": "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.Never revealedWhat you preferred stays yours, permanently.Revealed after the decisionPublished with the document at the end, never before.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.",
+    "body": "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.Never revealedWhat you preferred stays yours, permanently.Revealed at the endPublished with the document at the end, never before.Delegate to the membershipNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.",
     "options": [
      {
       "set": "judgments",
@@ -4410,7 +4410,7 @@
      {
       "set": "judgments",
       "val": "after",
-      "label": "Revealed after the decision"
+      "label": "Revealed at the end"
      },
      {
       "set": "judgments",
@@ -5354,11 +5354,11 @@
     "eyebrow": "",
     "head": "What somebody preferred is never made public.",
     "lock": "The members decide.",
-    "body": "Judgments are published with the record of each decision, never before.Prefer thisWhat the room saidThe members decide.Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.NeverAfter the decisionWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNever revealed",
+    "body": "Judgments are published with the closing record, never before.Prefer thisWhat the room saidThe members decide.Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.NeverAt the endWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNever revealed",
     "options": [
      {
       "set": null,
-      "val": "Revealed after the decision",
+      "val": "Revealed at the end",
       "label": "Prefer this"
      }
     ],
@@ -7399,11 +7399,11 @@
     "eyebrow": "",
     "head": "What somebody preferred is never made public.",
     "lock": "The members decide.",
-    "body": "Judgments are published with the record of each decision, never before.Prefer thisWhat the room saidThe members decide.Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.NeverAfter the decisionWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNever revealed",
+    "body": "Judgments are published with the closing record, never before.Prefer thisWhat the room saidThe members decide.Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.NeverAt the endWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNever revealed",
     "options": [
      {
       "set": null,
-      "val": "Revealed after the decision",
+      "val": "Revealed at the end",
       "label": "Prefer this"
      }
     ],

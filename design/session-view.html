@@ -1703,7 +1703,7 @@
       // states already and which the delegate rung has no use for.
       rule: 'Also about privacy, so the <b>most private</b> answer wins: one member who wants them kept private keeps them private.',
       takes: 'The document takes the most private', result: 'Never revealed',
-      dist: [11, 3], distTop: 0, distEnds: ['Never', 'After the decision'] },
+      dist: [11, 3], distTop: 0, distEnds: ['Never', 'At the end'] },
 
     // — the **proposal rate**: how often anybody may propose ---------------
     // Not an “economy” and not “tokens” (Ed, 2026-08-18). Both words describe
@@ -3047,7 +3047,7 @@
       ? Math.min(takenOf('quorum') || S.quorumN, E()) + ' of ' + E()
       : (takenOf('quorum') || S.quorumPct) + '% — ' + quorumCount() + ' of ' + E()),
     authorship: () => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[takenOf('authorship') || (S.authorship === 'roster' ? 'anonymous' : S.authorship)],
-    judgments: () => ({ never: 'Never revealed', after: 'Revealed after the decision' }[
+    judgments: () => ({ never: 'Never revealed', after: 'Revealed at the end' }[
       takenOf('judgments') || (S.judgments === 'roster' ? 'never' : S.judgments)]),
     rate: () => { const v = takenValOf('rate');
       return (v ? v.grant : S.grant) + ' each · +1 every ' + (v ? v.dripMinutes : S.dripMin) +
@@ -3075,7 +3075,7 @@
       : 'You said ' + (isNaN(Date.parse(v)) ? v
         : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }))),
     authorship: (v) => 'You said ' + ({ anonymous: 'no names, ever', anonymousElective: 'no names unless somebody chooses', sealed: 'names at the close', sealedElective: 'names at the close, or earlier by choice', public: 'names from the start' }[v] || v),
-    judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed after the decision' }[v] || v),
+    judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed at the end' }[v] || v),
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
     // DEAD RUNGS (entry 94, Q904): `proposed` and `open` were retired with
     // 🤝's four-rung joinPolicy, and the module folds every legacy value to
@@ -3338,7 +3338,7 @@
       'Names at the close, or earlier by choice': { rung: 'sealedElective' },
       'Names from the start': { rung: 'public' },
     },
-    judgments: { 'Never revealed': { rung: 'never' }, 'Revealed after the decision': { rung: 'after' } },
+    judgments: { 'Never revealed': { rung: 'never' }, 'Revealed at the end': { rung: 'after' } },
   };
   // **A change carries a reason, and says who made it** (Q530, Ed
   // 2026-08-22). The pen is the only route that changes a rule without
@@ -3386,7 +3386,7 @@
       sealedElective: 'names at the close, or earlier by choice',
       public: 'names from the start' }[v.rung] || v.rung),
     judgments: (v) => ({ never: 'never revealed',
-      after: 'revealed after the decision' }[v.rung] || v.rung),
+      after: 'revealed at the end' }[v.rung] || v.rung),
     rate: (v) => v.grant + ' ✏️ to start, up to ' + v.cap +
       ', one more every ' + v.dripMinutes + ' minutes',
     machines: (v) => (v.enabled ? 'on, with a budget of ' + v.budget + ' ✏️'
@@ -3582,7 +3582,7 @@
     // four still speak. To be removed with them.
     applications: (v) => ({ invite: 'Invitation only', proposed: 'Applications must be proposed by members', apply: 'Anyone may apply', open: 'Open' })[v],
     authorship: (v) => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[v],
-    judgments: (v) => ({ never: 'Never revealed', after: 'Revealed after the decision' })[v],
+    judgments: (v) => ({ never: 'Never revealed', after: 'Revealed at the end' })[v],
     lapse: (v) => (v === 'never' ? 'Never — however long you are away' : 'After ' + v + ' days without logging in'),
     removal: (v) => ({ everyone: 'Everyone has to agree, including them',
       others: 'Everyone else has to agree',
@@ -3687,7 +3687,7 @@
       ['Names from the start', 'Every proposal carries its proposer’s name from the moment it is made.']], 'authorship'),
     judgments: (d) => lanesFor(d, [
       ['Never revealed', 'Judgments are never revealed — not even in the closing record.'],
-      ['Revealed after the decision', 'Judgments are published with the record of each decision, never before.']], 'judgments'),
+      ['Revealed at the end', 'Judgments are published with the closing record, never before.']], 'judgments'),
     chamber: (d) => lanesFor(d, [
       ['Members only', 'Only members can read the document.'],
       ['Anyone with the link', 'Anyone with the link can read it; it is not listed.']], 'chamber'),
@@ -5027,7 +5027,7 @@
       '<div class="choice" role="radiogroup">' +
       theyDecide('judgments') +
       opt(S, 'judgments', 'never', 'Never revealed', 'What you preferred stays yours, permanently.') +
-      opt(S, 'judgments', 'after', 'Revealed after the decision', 'Published with the document at the end, never before.') +
+      opt(S, 'judgments', 'after', 'Revealed at the end', 'Published with the document at the end, never before.') +
       '</div>',
     rate: () =>
       '<p class="why">How often a member can propose something. Each proposal costs one ✏️.</p>' +
