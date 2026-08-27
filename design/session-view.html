@@ -8174,9 +8174,29 @@
     // one record per race (Q503c): the whole field, the text it displaced
     // as it stood, and how many weighed in
     const unsealed = new Map();
+    // **The record shows the rung then and the rung now** (entry 31, Ed
+    // 2026-08-26, R-050). *Now* is what the 👤 clause states and what the 🥂
+    // card counts off the record; *then* is per proposal, and prints only
+    // where it differs from what stands — a record whose every entry repeated
+    // the standing rule would be noise. The server states both on the closed
+    // record: `madeUnder` per field entry, `rungNow` once.
+    const madeUnder = new Map();
     if (v.record) for (const o of (v.record.adopted || []).concat(v.record.undecided || [])) {
-      for (const f of o.field || []) if (f.author && f.author.name) unsealed.set(f.id || f.candidateId, f.author.name);
+      for (const f of o.field || []) {
+        if (f.author && f.author.name) unsealed.set(f.id || f.candidateId, f.author.name);
+        if (f.madeUnder) madeUnder.set(f.id || f.candidateId, f.madeUnder);
+      }
     }
+    // the words are `STANDS.authorship`'s — one label per rung everywhere
+    // (Q620) — and they are resolved here rather than in `session.js`, which
+    // draws the card and has no access to `S`
+    const rungNow = v.record ? v.record.rungNow : null;
+    const underNoteOf = (f) => {
+      const u = f && madeUnder.get(f.id || f.candidateId);
+      if (!u || !rungNow || u === rungNow) return undefined;
+      const w = STANDS.authorship(u);
+      return w ? 'made under ' + w + ', before the rule changed' : undefined;
+    };
     for (const o of v.records || []) {
       const field = o.field || [];
       const hs = field.flatMap((f) => f.hunks);
@@ -8196,6 +8216,7 @@
       const replaced = (o.displaced || []).filter((l) => l.trim()).map(unhead).join('\n') || undefined;
       const slate = field.length > 1
         ? { slate: field.map((f) => ({ text: textOfF(f), rationale: f.rationale, by: byName(f),
+            underNote: underNoteOf(f),
             p: f.p == null ? undefined : f.p, won: f === winner && (adopted || undecided) })) } : {};
       items.push({ id: 'rec:' + (o.raceId || o.candidateId), kind: 'quick', keys, state: 'sealed',
         qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
@@ -8205,7 +8226,7 @@
         undecided,
         won: adopted || undecided ? 'b' : undefined,
         optionB: textOfF(winner), replaced,
-        rationale: winner.rationale, by: byName(winner),
+        rationale: winner.rationale, by: byName(winner), underNote: underNoteOf(winner),
         verdict: o.judgedByMe ? 'you judged this' : undefined,
         unread: !undecided, ...slate });
     }
