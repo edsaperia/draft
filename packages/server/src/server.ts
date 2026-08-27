@@ -31,7 +31,8 @@ import { MAILS, makeMailer } from './mailer.js';
 import { MailOutbox } from './outbox.js';
 import type { QueuedMail } from './outbox.js';
 import { asEngineDoc, driveBridge, persistEngine, resumeBridge } from './engine-host.js';
-import { ParticipantApi } from '../../engine-core/src/participant-api.js';
+import { ParticipantApi, authorVisible } from '../../engine-core/src/participant-api.js';
+import type { Candidate } from '../../engine-core/src/types.js';
 import type { Mail, Mailer } from './mailer.js';
 import { LIMITS, cap, emailOk, runCommand, str } from './commands.js';
 
@@ -257,6 +258,23 @@ export async function createDraftServer(cfg: ServerConfig,
     // never who or which way
     const allJ = engine.judgments();
     const floor = engine.adoptionFloor();
+    // **Who is named, live and at the record, is one rule** (§3.5a, Q770,
+    // entry 31): `authorVisible` — signed, or made under `public`, or closed
+    // and made under `sealed`. Read here for every author the view carries,
+    // so a signed proposal is named on its race card and in the records
+    // while the document is open, and an unsigned one exactly when its own
+    // rung says.
+    // the members map first: a founder who is a member keeps their identity
+    // there (`identity-set`'s fold), and the convenor record only for a clerk
+    const nameOf = (id: string): string | null => {
+      const m = doc.cs.memberRecords().get(id);
+      if (m) return m.name ?? null;
+      if (id === doc.cs.convenorRecord().id) return doc.cs.convenorRecord().name ?? null;
+      return null;
+    };
+    const namedAuthor = (c: Candidate): { id: string; name: string | null } | undefined =>
+      authorVisible(c, engine.constitution, { closed: engine.closed })
+        ? { id: c.author, name: nameOf(c.author) } : undefined;
     const clauses = engine.races().filter((r) => r.settingId === undefined).map((r) => {
       const ids = new Set([...r.members, r.incumbentId]);
       const here = myJ.filter(touches(ids));
@@ -272,8 +290,9 @@ export async function createDraftServer(cfg: ServerConfig,
         floor,
         candidates: r.members.map((id) => {
           const c = engine.getCandidate(id);
+          const author = namedAuthor(c);
           return { id, hunks: c.patch?.hunks ?? [], rationale: c.rationale,
-            mine: c.author === memberId };
+            mine: c.author === memberId, ...(author ? { author } : {}) };
         }),
         judged: standing,
         // a judgment of mine locked by a ground shift, with nothing of mine
@@ -285,7 +304,7 @@ export async function createDraftServer(cfg: ServerConfig,
       const c = engine.getCandidate(m.id);
       if (c.patch === undefined) return []; // motions have their own records
       return [{ id: m.id, state: m.state, rationale: m.rationale,
-        patch: c.patch, footprint: c.footprint }];
+        patch: c.patch, footprint: c.footprint, signed: !!c.signed }];
     });
     // the record, one entry per race (Q503c): the whole field, the text it
     // displaced as it stood at resolution, and the race's judge count
@@ -294,7 +313,8 @@ export async function createDraftServer(cfg: ServerConfig,
       footprint: unknown; displaced: string[]; judges: number; judgedByMe: boolean;
       field: Array<{ candidateId: string; outcome: string; p: number | null;
         threshold: number | null; hunks: Array<{ start: number; end: number; lines: string[] }>;
-        rationale: string; judgedByMe: boolean }> };
+        rationale: string; judgedByMe: boolean;
+        author?: { id: string; name: string | null } }> };
     const byRace = new Map<string, Rec>();
     // an author's derived preference is a mover (§3.3, §8.2): counted, never named
     const authorsOf = new Map<string, Set<string>>();
@@ -302,9 +322,10 @@ export async function createDraftServer(cfg: ServerConfig,
       const c = engine.getCandidate(o.candidateId);
       if (c.patch === undefined) continue;
       const mineJ = myJ.some((j) => j.aId === o.candidateId || j.bId === o.candidateId);
+      const author = namedAuthor(c);
       const entry = { candidateId: o.candidateId, outcome: o.outcome, p: o.p ?? null,
         threshold: o.threshold ?? null, hunks: c.patch.hunks, rationale: c.rationale,
-        judgedByMe: mineJ };
+        judgedByMe: mineJ, ...(author ? { author } : {}) };
       let rec = byRace.get(o.raceId);
       if (!rec) {
         rec = { raceId: o.raceId, candidateId: o.candidateId, outcome: o.outcome, when: o.t,
@@ -336,28 +357,27 @@ export async function createDraftServer(cfg: ServerConfig,
     // **The record** (SPEC §4.6, the shape record-builder renders), once closed:
     // the final text, what adopted, the backlog of undecided races each with
     // its field and the text that stood, the changes carried-but-unassented,
-    // the signatures. Authorship reveals here as the 👤 ladder says (§3.5a):
-    // `sealed` unseals at the record, `public` already was, `anonymous` never.
+    // the signatures. Authorship reveals here as `authorVisible` says (§3.5a):
+    // `sealed` unseals at the record, `public` already was, `anonymous` never,
+    // a signed proposal always — each read against the rung the proposal was
+    // **made under** (entry 31), which every field entry states beside the
+    // rung that stands now (`rungNow`), so a reader can see the rule moved.
     const record = !engine.closed ? null : (() => {
       const r = ed.bridge!.closeRecord();
-      // **The elective rungs are read through `authorshipBase`** (Q767): 👤 is
-      // a ladder of five, and a raw `rung === 'anonymous'` test names every
-      // author in the record on a document that took *Nobody's name unless
-      // they choose* — the opposite of what that rung promises, and with no
-      // sign control built (Q770) nobody has chosen anything.
-      const rung = authorshipBase(
+      // `authorshipBase` is the door's mapper — *what does this rung do by
+      // default* — and the right reading for the rung that stands (Q767).
+      const rungNow = authorshipBase(
         (doc.cs.settingState('authorship').value as { rung?: string } | null)?.rung ?? 'sealed');
-      const nameOf = (id: string): string | null => {
-        if (id === doc.cs.convenorRecord().id) return doc.cs.convenorRecord().name ?? null;
-        return doc.cs.memberRecords().get(id)?.name ?? null;
-      };
-      const withAuthors = (field: Rec['field']) => field.map((f) => rung === 'anonymous' ? f
-        : { ...f, author: { id: engine.getCandidate(f.candidateId).author,
-          name: nameOf(engine.getCandidate(f.candidateId).author) } });
+      const withAuthors = (field: Rec['field']) => field.map((f) => {
+        const c = engine.getCandidate(f.candidateId);
+        const author = namedAuthor(c);
+        return { ...f, madeUnder: c.disclosure ?? rungNow, signed: !!c.signed,
+          ...(author ? { author } : {}) };
+      });
       const all = [...byRace.values()].sort((a, b) => a.when - b.when)
         .map((x) => ({ ...x, field: withAuthors(x.field) }));
       return {
-        closedAt: r.closedAt, text: r.text,
+        closedAt: r.closedAt, text: r.text, rungNow,
         adopted: all.filter((x) => x.outcome === 'adopted'),
         undecided: all.filter((x) => x.outcome === 'undecided'),
         carriedButUnassented: r.carriedButUnassented,

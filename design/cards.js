@@ -598,11 +598,14 @@ window.CARDS = (function () {
 
     // One candidate: what it would make the clause say, who argued for it, and
     // what you can do about it. A reply, in the shape a reply has everywhere.
+    // `by` is a name the reveal rule has already allowed (a signed proposal,
+    // or one made under `public` — Q770): the speaker is revealed, and the
+    // sealed title does not apply to it.
     const proposalHtml = (s, o) =>
       '<div class="propblock">' +
       (o.tag ? '<div class="rtag">' + o.tag + '</div>' : '') +
       '<div class="rtext">' + o.html + '</div>' +
-      speakerHtml(o.why, env.speakerTitle) +
+      speakerHtml(o.why, o.by ? undefined : env.speakerTitle, o.by || undefined) +
       (o.v ? laneBarHtml(s, o.v, { lane: o.lane || o.v, key: o.key, edit: o.edit }) : '') +
       '</div>';
 

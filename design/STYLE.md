@@ -41,6 +41,10 @@ founder-is-member 🎩, proposing gate 💡, judging gate ⚖️, crown 👑, ho
   finer, never seconds).
 - **A count, never a direction**, wherever a question is still running: *4 of 9
   have answered*, never *leaning to keep*.
+- **A ceiling the room can reach is floored to the whole percent, never
+  rounded** — a bar equal to the number printed is one the room can clear, and
+  one above it is not. A room of one reaches 0.7978, which reads *79%*: rounding
+  would print 80, and 80 is the first bar that room can never clear.
 
 ## 3. Person and tense
 

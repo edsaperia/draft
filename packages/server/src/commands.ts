@@ -304,7 +304,18 @@ const HANDLERS: Record<string, Handler> = {
   'propose-text': (cs, a, t, args, bridge) => {
     if (bridge === null) throw new Error('the document has not begun');
     const why = typeof args.why === 'string' ? cap(args.why, LIMITS.why, 'the rationale') : '';
-    return bridge.proposeText(t, a.memberId, patchOf(args), why);
+    // **The server is the narrow gate** (Q770, the Q812 rule): signing is
+    // offered under the two elective rungs and refused under every other, so
+    // a stale page cannot sign a proposal the document names anyway (public)
+    // or promised never to name (anonymous, sealed).
+    const signed = args.signed === true;
+    if (signed) {
+      const rung = (cs.settingState('authorship').value as { rung?: string } | null)?.rung;
+      if (rung !== 'anonymousElective' && rung !== 'sealedElective') {
+        throw new Error("signing is not offered under this document's anonymity rule (§3.5a)");
+      }
+    }
+    return bridge.proposeText(t, a.memberId, patchOf(args), why, signed);
   },
   'withdraw-text': (cs, a, t, args, bridge) => {
     if (bridge === null) throw new Error('the document has not begun');

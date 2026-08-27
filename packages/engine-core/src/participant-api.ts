@@ -5,13 +5,40 @@
  * AI — speaks. It enforces the disclosure discipline (SPEC §3.5):
  * judgment is blind. Cards carry texts and rationales, never standings,
  * splits, camps, or routing values. Resolved outcomes (the gazette) are
- * public. Authorship appears only under the `public` visibility setting.
+ * public. Authorship appears where `authorVisible` says so and nowhere else.
  */
 
 import { INC_PREFIX } from './session.js';
 import type { JudgmentView, Session } from './session.js';
-import type { EdgeSubtype } from './types.js';
+import type { Candidate, Constitution, EdgeSubtype } from './types.js';
 import type { PatchSet, Span } from './text/types.js';
+
+/**
+ * **The one reveal rule** (SPEC §3.5a, Q770 and entry 31). Every reader of
+ * an author — the live option view, the host's clause and record views, the
+ * closing record — asks this and nothing else, so the rung is read in one
+ * place. An author is visible when:
+ *
+ *   - the author **signed** the candidate (the elective rungs' opt-in), or
+ *   - the disclosure base the candidate was **made under** is `public`, or
+ *   - the document is **closed** and that base is `sealed`.
+ *
+ * Never otherwise: `anonymous` reveals nothing, ever, and `sealed` nothing
+ * while the document is open. The base is the candidate's own `disclosure`
+ * stamp, **not** the constitution's current value — *a proposal keeps the
+ * privacy it was made under* — and falls back to the current value only for
+ * a candidate from a log older than the stamp.
+ */
+export function authorVisible(
+  c: Pick<Candidate, 'signed' | 'disclosure'>,
+  constitution: Pick<Constitution, 'authorshipVisibility'>,
+  opts: { closed: boolean },
+): boolean {
+  if (c.signed) return true;
+  const base = c.disclosure ?? constitution.authorshipVisibility;
+  if (base === 'public') return true;
+  return opts.closed && base === 'sealed';
+}
 
 export interface OptionView {
   id: string;
@@ -35,7 +62,10 @@ export interface OptionView {
    */
   setting?: { settingId: string; value: unknown };
   rationale: string;
-  /** Present only when the constitution sets authorship to `public`. */
+  /**
+   * Present when the author signed the candidate, or when the disclosure
+   * the candidate was made under names them now (`authorVisible`).
+   */
   author?: string;
 }
 
@@ -281,7 +311,7 @@ export class ParticipantApi {
       ...(candidate.setting ? { setting: candidate.setting } : {}),
       rationale: candidate.rationale,
     };
-    if (this.session.constitution.authorshipVisibility === 'public') {
+    if (authorVisible(candidate, this.session.constitution, { closed: this.session.closed })) {
       view.author = candidate.author;
     }
     return view;

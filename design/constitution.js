@@ -24,6 +24,7 @@ var CONSTITUTION = (() => {
   // src/browser.ts
   var browser_exports = {};
   __export(browser_exports, {
+    BAR_CEILING_PCT: () => BAR_CEILING_PCT,
     CATALOGUE: () => CATALOGUE,
     CATALOGUE_BY_ID: () => CATALOGUE_BY_ID,
     ConstitutionSession: () => ConstitutionSession,
@@ -34,6 +35,7 @@ var CONSTITUTION = (() => {
     adoptionFloor: () => adoptionFloor,
     adoptionFloorTerm: () => adoptionFloorTerm,
     barAt: () => barAt,
+    barCeilingPct: () => barCeilingPct,
     chainHash: () => chainHash,
     constitutionBlock: () => constitutionBlock,
     eOf: () => eOf,
@@ -417,8 +419,9 @@ var CONSTITUTION = (() => {
     // ladder, and nobody is handed an exposure they did not accept.
     //
     // The two elective rungs are the ones the per-proposal sign control belongs
-    // to (Q770, not built): until it exists they behave as their base rung,
-    // which is what `adapter.ts` maps them to.
+    // to (Q770, built): by default they behave as their base rung, which is what
+    // `adapter.ts` maps them to, and a signed proposal is named from the moment
+    // it is made (`authorVisible` in engine-core; the gate is `propose-text`).
     {
       id: "authorship",
       glyph: "👤",
@@ -709,6 +712,12 @@ var CONSTITUTION = (() => {
     const span = a.endT - a.anchorT;
     const x = span <= 0 ? 1 : (t - a.anchorT) / span;
     return a.anchorPct + (a.endPct - a.anchorPct) * smoothstep(x);
+  }
+  var BAR_CEILING_PCT = [79, 89, 93, 95, 96, 97, 98, 98, 98, 99];
+  function barCeilingPct(e) {
+    if (!Number.isFinite(e) || e < 1) return BAR_CEILING_PCT[0];
+    const i = Math.floor(e) - 1;
+    return i < BAR_CEILING_PCT.length ? BAR_CEILING_PCT[i] : 99;
   }
   function reAnchor(a, tNow, newEndT) {
     const current = barAt(a, tNow);

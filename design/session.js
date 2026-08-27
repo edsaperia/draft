@@ -101,6 +101,9 @@
   let holdInFlight = false;
   let MAY_PROPOSE = () => true;
   let MAY_JUDGE = () => true;
+  // the sign control (Q770): null means no elective 👤 rung — no control
+  let SIGNING = () => null;
+  let SIGNER = () => '';
   const {
     laneBarHtml, clauseHeadHtml, proposalHtml, commitRowHtml, reviseNote,
     laneBoxHtml, collapseCard, expandCard, openCardEls, runOnCards,
@@ -1770,6 +1773,8 @@
         id: DRAFT_ID, kind: 'draft', mine: true, unproposed: true, state: 'needs',
         keys: [], sites: [], rationale: '', qLabel: 'Your draft',
         urgency: 0, pct: 0, cap: '',
+        // the sign choice (Q770): the base is the default, signing the opt-in
+        signed: false,
       };
       SUGGS.push(d);
     }
@@ -2111,6 +2116,52 @@
   let laneMode = 'rich';
   const laneRaw = () => laneMode === 'md';
 
+  // **The sign control** (Q770, Ed 2026-08-25: *a new control that's part of
+  // the rationale composer area that switches between signed and anonymous,
+  // that shows when anonymity is allowed*). Drawn only under an elective 👤
+  // rung — `SIGNING()` returns that rung's base, or null for every fixed rung,
+  // the fixture and a page with no module — because a fixed rung offers no
+  // choice. The base comes first as the default; signing is the opt-in, per
+  // proposal, and fixed at Propose: once submitted the choice is part of the
+  // record (`mine` says *signed* and offers no switch). The radio is the
+  // session-view's own (`.lanepick`), in the `.choice`/`.pick` shape every
+  // settings choice takes, so `card-audit`'s rules read it.
+  // A nameless member signs *as Anonymous* (§9.0c: it is a name, not a gap) —
+  // the label says what the signature will read, and they may go and set one.
+  function signControlHtml(d) {
+    const base = SIGNING();
+    if (!base) return '';
+    const name = (SIGNER() || '').trim() || 'Anonymous';
+    const pick = (on, val, ttl, exp) =>
+      '<div class="pick' + (on ? ' on' : '') + '">' +
+      '<button class="lanepick" type="button" aria-pressed="' + on + '" data-act="draft-sign" data-signed="' + val + '">' +
+      '<span class="dot"></span><span>' + ttl + '</span></button>' +
+      '<span class="exp">' + exp + '</span></div>';
+    return '<div class="choice signctl" role="radiogroup" data-signbase="' + base + '">' +
+      pick(!d.signed, '0', 'Anonymous', 'Nobody is told who proposed this' +
+        (base === 'anonymous' ? ' — ever.' : ' until the document is finished.')) +
+      pick(!!d.signed, '1', 'Signed — as ' + esc(name),
+        'Your name goes on it from the moment you propose it, and stays there.') +
+      '</div>';
+  }
+  // the press flips the draft's choice and patches the card in place — never
+  // a render under a lane being typed in (the caret rule, `setData`'s guard)
+  function setDraftSigned(on) {
+    const d = draftOf();
+    if (!d || !SIGNING()) return;
+    d.signed = !!on;
+    doc.querySelectorAll('.sugg[data-card="' + DRAFT_ID + '"]').forEach((card) => {
+      card.querySelectorAll('.signctl .pick').forEach((p) => {
+        const b = p.querySelector('[data-signed]');
+        const here = b && b.dataset.signed === (d.signed ? '1' : '0');
+        p.classList.toggle('on', !!here);
+        if (b) b.setAttribute('aria-pressed', String(!!here));
+      });
+      const pb = card.querySelector('[data-act="draft-propose"]');
+      if (pb) pb.title = pb.title.replace(/( — signed)?( — one edit)/, (d.signed ? ' — signed' : '') + '$2');
+    });
+  }
+
   function editCardHtml(d, site) {
     const n = d.sites.length;
     const i = d.sites.indexOf(site);
@@ -2141,7 +2192,10 @@
       // then the argument for it behind the same blank disc everybody else's
       // sits behind — which is what the rest of the roster will see (§3.4).
       '<div class="field"><div class="fieldlab">What you are proposing</div>' +
-      '<div class="propblock">' + laneBoxHtml(d, site) + '</div></div>' +
+      '<div class="propblock">' + laneBoxHtml(d, site) + '</div>' +
+      // …and, under an elective 👤 rung, whether your name goes on it (Q770):
+      // part of the rationale composer area, above the row that commits it
+      signControlHtml(d) + '</div>' +
       // **The proposal's lifecycle is one row** (Ed, 2026-08-17). Discard on the
       // very left, commit on the very right, and the row does not move when the
       // draft becomes a proposal — only the right-hand control changes from the
@@ -2165,6 +2219,8 @@
       '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
       (broke ? ' disabled title="No ✏️ left — another arrives as the drip accrues"' : '') +
       ' title="Hold to propose this' + (n > 1 ? ' in all ' + n + ' places' : '') +
+      // the hold's tooltip says what leaves: a signed one leaves with your name
+      (d.signed ? ' — signed' : '') +
       ' — one edit leaves your wallet to pay for it">✏️</button>' +
       '</div>' +
       // Only the two facts that change what pressing ✏️ *does* (Ed, 2026-08-17).
@@ -2564,8 +2620,8 @@
         // two replies to the same post; each states its own change against the
         // clause above, and carries its own argument and controls
         fieldHtml(
-          proposalHtml(s, { v: 'a', html: wordingHtml(cur, s.race.a.text), why: s.race.a.rationale }) +
-          proposalHtml(s, { v: 'b', html: wordingHtml(cur, s.race.b.text), why: s.race.b.rationale }), 2) +
+          proposalHtml(s, { v: 'a', html: wordingHtml(cur, s.race.a.text), why: s.race.a.rationale, by: s.race.a.by }) +
+          proposalHtml(s, { v: 'b', html: wordingHtml(cur, s.race.b.text), why: s.race.b.rationale, by: s.race.b.by }), 2) +
         reviseNote(s) + crownNote(s) +
         // The one thing a race card cannot say any other way: neither of its
         // two candidates has an incumbent radio, so nothing on the card votes
@@ -2602,7 +2658,7 @@
         // recomputing one.
         clauseHeadHtml(s, { text: currentTextFor(site.key), key: site.key, v: 'keep',
                             chips: chipsFor(site.key, s.id) }) +
-        fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, key: site.key })) +
+        fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, by: s.by, key: site.key })) +
         reviseNote(s) +
         '<div class="foot">One judgment for all ' + n +
         ' places — choosing here chooses everywhere.</div>' +
@@ -2629,7 +2685,7 @@
                           label: s.isInsert ? 'The gap as it stands' : undefined,
                           chips: chipsFor(key, s.id) }) +
       groundNote(s) +
-      fieldHtml(proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, edit: noEdit })) +
+      fieldHtml(proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, by: s.by, edit: noEdit })) +
       reviseNote(s) + crownNote(s) +
       commitRowHtml(s) +
       '</div>'
@@ -3219,6 +3275,8 @@ document.addEventListener('pointercancel', () => flyStop(false));
       b.addEventListener('click', (ev) => {
         ev.stopPropagation();
         if (b.dataset.act === 'draft-propose') return;   // held, not clicked
+        // the sign choice patches the open card rather than re-rendering it
+        if (b.dataset.act === 'draft-sign') { setDraftSigned(b.dataset.signed === '1'); return; }
         const id = b.closest('.sugg').dataset.card;
         const what = b.dataset.act === 'submit'
           ? pickOf(SUGGS.find((x) => x.id === id) || {}) : b.dataset.act;
@@ -3470,7 +3528,7 @@ document.addEventListener('pointercancel', () => flyStop(false));
       d.unproposed = false;
       d.qLabel = d.sites[0].label;
       d.pct = 6;
-      d.cap = 'yours · just in, evidence starting';
+      d.cap = 'yours · just in, evidence starting' + (d.signed ? ' · signed' : '');
       if (hooks.propose) { const r = hooks.propose(d); if (typeof r === 'string') d.id = r; }
       if (wasOpen) openId = d.id;
       keepStill(() => renderAll(), '[data-key="' + key + '"]');
@@ -4327,6 +4385,10 @@ document.addEventListener('pointercancel', () => flyStop(false));
     EDIT_RULES = env.EDIT_RULES || { grant: 4, cap: 8, stake: 1 };
     if (env.mayPropose) MAY_PROPOSE = env.mayPropose;
     if (env.mayJudge) MAY_JUDGE = env.mayJudge;
+    // the sign control's two reads (Q770): the elective base, if any, and
+    // what a signature would read as — both at call time, like the two above
+    if (env.signing) SIGNING = env.signing;
+    if (env.signerName) SIGNER = env.signerName;
     SESSION_MINUTES = env.SESSION_MINUTES ?? 8 * 60;
     editsHeld = env.editsHeld ?? 5; editsToNext = env.editsToNext ?? 0.6;
     bindData(env.DOC || [], env.SUGGS || []);

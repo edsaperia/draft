@@ -143,6 +143,21 @@ export interface Candidate {
   /** Informed redrafts consumed by this position (SPEC §6.2). */
   redrafts: number;
   machineAuthored?: boolean;
+  /**
+   * The author chose to sign it (SPEC §3.5a, Q770): named from the moment
+   * it is proposed, whatever the disclosure rung. Present only when true —
+   * an unsigned candidate carries no field, exactly as the machine flag above.
+   */
+  signed?: true;
+  /**
+   * The disclosure base standing when it was submitted (SPEC §3.5a, entry
+   * 31 — *a proposal keeps the privacy it was made under*). The reveal rule
+   * (`authorVisible`) reads this, never the constitution's current value,
+   * so a 👤 motion binds proposals made after it and none made before.
+   * Absent on a candidate from a log older than the field; the rule falls
+   * back to the current value for those.
+   */
+  disclosure?: Constitution['authorshipVisibility'];
   /** Set when the candidate left play; records the cause of death. */
   exit?: { t: number; cause: string; refund: number };
 }
@@ -245,6 +260,10 @@ export type Event =
       setting?: { settingId: string; value: unknown };
       rationale: string;
       machineAuthored?: boolean;
+      /** Emitted only when true (Q770). */
+      signed?: true;
+      /** The disclosure base at submission (entry 31); always emitted since Q770. */
+      disclosure?: Constitution['authorshipVisibility'];
     }
   | {
       /**

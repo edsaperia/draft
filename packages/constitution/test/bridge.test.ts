@@ -254,6 +254,19 @@ describe('a text proposal races in the engine (stage 8, Q418)', () => {
     expect(s.text).toBe('The clubhouse shall be kept open.'); // the starting text, immutable
   });
 
+  it('a signed proposal reaches the engine as `signed`, stamped with the base it was made under (Q770)', () => {
+    const { s, bo } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'text-signed' });
+    const v0 = bridge.engine.currentVersion();
+    const { id } = bridge.proposeText(10, bo, patch(v0, ['Open, signed.']), 'my name on it', true);
+    const c = bridge.engine.getCandidate(id);
+    expect(c.signed).toBe(true);
+    expect(c.disclosure).toBe(bridge.engine.constitution.authorshipVisibility);
+    // the default is unsigned, and unsigned is the absence of the field
+    const other = bridge.proposeText(11, bo, patch(v0, ['Open, unsigned.']), '');
+    expect(bridge.engine.getCandidate(other.id)).not.toHaveProperty('signed');
+  });
+
   it('a rival on the same lines joins the race and is left behind by the adoption', () => {
     const { s, bo, cy } = buildConstituted();
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'text-rival' });

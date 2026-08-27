@@ -103,7 +103,13 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // close and the undecided verdicts, so the chain's tail hashes differently.
   // Both variants still agree, which is the invariant this test defends
   // (was a0e8813425676539adfb2096a79bed27ea8f1d75a92e32e3818cd31d7c6a3523).
-  const PINNED = '2bfc2e2a50bb690e34bdcddb936d53002c3419481678b32263c5d3a053638150';
+  // Re-pinned 2026-08-27 (Q770, entry 31, SPEC §3.5a v0.78): every
+  // `candidate-submitted` event now carries `disclosure` — the authorship base
+  // standing at submission, which is what *a proposal keeps the privacy it was
+  // made under* is read from — so the chain hashes differently from the first
+  // candidate on. Both variants still agree, which is the invariant this test
+  // defends (was 2bfc2e2a50bb690e34bdcddb936d53002c3419481678b32263c5d3a053638150).
+  const PINNED = '3ec36c64ff9501c0f24c7d661323fc818b6598032d9bfd30c533448f77fd66bc';
 
   const run = (withGate: boolean) =>
     runSession({
