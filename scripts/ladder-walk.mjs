@@ -12,7 +12,8 @@
  * each other and are both wrong.
  *
  *   npm run server          # in another shell, without a Resend key
- *   npm run ladder [http://127.0.0.1:8140] [--to=session] [--seed=42]
+ *   npm run ladder [<base-url>] [--to=session] [--seed=42]
+ *        # the base defaults to DRAFT_BASE_URL, then PORT, then 8140
  *
  * `--to` stops at a rung and leaves the document standing, which is the
  * eyeballing mode; bare, it walks the whole ladder and exits non-zero on the
@@ -21,9 +22,9 @@
  * rAF never fires.
  */
 import { chromium } from 'playwright';
-import { assertServerBuild } from './lib/assert-server.mjs';
+import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
 
-const BASE = process.argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8140';
+const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const arg = (name) => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
   return hit === undefined ? null : hit.slice(name.length + 3);

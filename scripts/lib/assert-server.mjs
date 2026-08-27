@@ -28,15 +28,90 @@
  * the bundle matches source, so it is a sound stand-in for the TS a plain
  * .mjs cannot import.
  *
- *   import { assertServerBuild } from './lib/assert-server.mjs';
+ * **Two questions, asked in this order** (entry 105, 2026-08-27). *Which
+ * server?* is `walkBase` below — argv, then the environment, then the port,
+ * then the server's own default — because a walk that picks its server by a
+ * literal port drives whatever answers there, which is how the B2 batch review
+ * started a server on 8160 and walked 8199. *Is it this tree?* is
+ * `assertServerBuild`: the **sha** first when the server reports one — the
+ * same `cfg.buildSha` the `x-build` response header carries, against `git
+ * rev-parse HEAD` here — because a commit pair is the plainer fact; then the
+ * catalogue, which is the only evidence available for the ordinary dev server,
+ * whose `build` is null because nothing sets `RENDER_GIT_COMMIT` or
+ * `DRAFT_BUILD_SHA` for it.
+ *
+ *   import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
+ *   const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
  *   await assertServerBuild(BASE, 'applicants-walk');
  */
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
+
+/**
+ * Which server a walk attaches to, surest first — one ladder for all five
+ * attaching walks, so the answer cannot drift between them.
+ *
+ *   · an `http(s)://` argument — a person named it, and a person outranks
+ *     every default; this is the rung CI uses.
+ *   · `DRAFT_BASE_URL` — the environment named it, and it is the very
+ *     variable the server reads for its own origin (`config.ts`
+ *     `configFromEnv` → `baseUrl`). Under plan-queue it is the build slot's
+ *     own server (slot *n* carries `PORT=816n`), which is what lets the
+ *     slot's port reclaim reach whatever a walk leaves behind.
+ *   · `PORT` — a server started with only the port set.
+ *   · the fallback — the caller passes the server's own default (8140,
+ *     `config.ts`: `env.PORT ? Number(env.PORT) : 8140`), so a bare
+ *     `npm run server` and a bare walk meet.
+ *
+ * Pure and synchronous, argv and env passed in rather than read, so the
+ * precedence can be asserted without a server (`walk-base.test.ts`). One
+ * trailing slash is stripped, as `verify-deploy.mjs` strips it and for the
+ * same reason: every caller appends a path.
+ */
+export function walkBase(argv, env, fallback) {
+  const named = (argv || []).find((a) => /^https?:\/\//.test(a));
+  const base =
+    named ||
+    (env && env.DRAFT_BASE_URL) ||
+    (env && env.PORT ? `http://127.0.0.1:${env.PORT}` : '') ||
+    fallback;
+  return String(base).replace(/\/$/, '');
+}
+
+/**
+ * This tree's HEAD, or null when there is no git to ask — a walk run from an
+ * exported tarball has no HEAD, and the honest answer is *could not read it*
+ * rather than a refusal. In a plan-queue worktree `ROOT` is that worktree's
+ * root, so this is that branch's HEAD, which is the one wanted.
+ */
+function treeHead() {
+  try {
+    return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Do a server-reported build sha and this tree's HEAD name the same commit?
+ * Render and a hand-set `DRAFT_BUILD_SHA` may be 7 characters or 40, so the
+ * shorter is matched as a prefix of the longer — with a **floor of seven**,
+ * below which a sha identifies no commit at all (a one-character one would
+ * match nearly every tree) and is reported as unreadable rather than as a
+ * match. Returns 'same' | 'differs' | 'unreadable'.
+ */
+function shaVerdict(serverSha, head) {
+  const a = String(serverSha).trim().toLowerCase();
+  const b = String(head).trim().toLowerCase();
+  if (!/^[0-9a-f]{7,40}$/.test(a)) return 'unreadable';
+  const same = a.length <= b.length ? b.startsWith(a) : a.startsWith(b);
+  return same ? 'same' : 'differs';
+}
 
 /** The tree's catalogue ids, from the committed bundle (spec-check's route). */
 export function treeCatalogueIds() {
@@ -50,8 +125,19 @@ export function treeCatalogueIds() {
 const die = (label, lines) => {
   console.error(`\n${label}: refusing to run — this server is not your tree.\n`);
   for (const l of lines) console.error('  ' + l);
-  console.error('\nStart a server from this tree, or pass the right base URL.');
+  console.error('\nRestart the server from this tree, or pass the right base URL.');
   process.exit(2);
+};
+
+/** What the server's catalogue has that the tree's has not, and the reverse. */
+const catalogueDiff = (got, want) => {
+  if (!Array.isArray(got)) return [];
+  const serverOnly = got.filter((id) => !want.includes(id));
+  const treeOnly = want.filter((id) => !got.includes(id));
+  return [
+    serverOnly.length ? `it has, and your tree does not: ${serverOnly.join(', ')}` : null,
+    treeOnly.length ? `your tree has, and it does not: ${treeOnly.join(', ')}` : null,
+  ].filter(Boolean);
 };
 
 /**
@@ -69,6 +155,34 @@ export async function assertServerBuild(base, label = 'walk') {
     return die(label, [`no server answering at ${base} (${e && e.message}).`]);
   }
   const got = health.catalogue;
+  // The sha rung, first when it can be asked (entry 105): `health.build` is
+  // the same `cfg.buildSha` the `x-build` response header carries, so a
+  // server that states its commit is judged on it — the plainer fact, and the
+  // catalogue diff is appended so the reader learns what content differs too.
+  // Conditional by design: a plain `npm run server` sets neither
+  // RENDER_GIT_COMMIT nor DRAFT_BUILD_SHA and reports null, which is not a
+  // mismatch, and such a server falls through to the catalogue as before.
+  if (typeof health.build === 'string' && health.build.trim()) {
+    const head = treeHead();
+    const verdict = head === null ? 'no-head' : shaVerdict(health.build, head);
+    if (verdict === 'differs' || verdict === 'unreadable') {
+      return die(label, [
+        verdict === 'unreadable'
+          ? `${base} reports a build sha that names no commit: ${health.build}`
+          : `${base} was built from a different commit.`,
+        `its build: ${health.build}`,
+        `your tree's HEAD: ${head}`,
+        `up ${health.uptimeSeconds}s.`,
+        ...catalogueDiff(got, want),
+      ]);
+    }
+    // no refusal without both sides: an exported tarball has no HEAD to read,
+    // so say what could not be asked and leave the catalogue to answer.
+    if (verdict === 'no-head') {
+      console.error(`${label}: could not read the tree's HEAD, so ${base}'s build ` +
+        `(${health.build}) went unchecked; the catalogue still answers.`);
+    }
+  }
   // a server that predates this check cannot be vouched for, and saying so
   // is the point: silence here is how Q911 happened
   if (!Array.isArray(got)) {
@@ -77,15 +191,13 @@ export async function assertServerBuild(base, label = 'walk') {
       `Its build is ${health.build ?? 'unreported'}; restart it from this tree.`,
     ]);
   }
-  const serverOnly = got.filter((id) => !want.includes(id));
-  const treeOnly = want.filter((id) => !got.includes(id));
-  if (serverOnly.length || treeOnly.length) {
+  const diff = catalogueDiff(got, want);
+  if (diff.length) {
     return die(label, [
       `${base} is running a different catalogue.`,
-      serverOnly.length ? `it has, and your tree does not: ${serverOnly.join(', ')}` : null,
-      treeOnly.length ? `your tree has, and it does not: ${treeOnly.join(', ')}` : null,
+      ...diff,
       `its build: ${health.build ?? 'unreported'}; up ${health.uptimeSeconds}s.`,
-    ].filter(Boolean));
+    ]);
   }
   return health;
 }
