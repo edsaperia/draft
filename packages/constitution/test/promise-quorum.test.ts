@@ -48,11 +48,31 @@ import { ConstitutionSession } from '../src/session.js';
 import { EngineBridge } from '../src/engine-bridge.js';
 import { quorumCount, adoptionFloor, adoptionFloorTerm } from '../src/populations.js';
 import { buildConstituted } from './helpers.js';
-import type { SettingId } from '../src/types.js';
+import type { SettingId } from '../src/catalogue.js';
 
 /** A patch over the whole first line, as `bridge.test.ts` writes one. */
 const patch = (baseVersion: number, lines: string[]) =>
   ({ baseVersion, hunks: [{ start: 0, end: 1, lines }] });
+
+/**
+ * **Keeping a seat alive against the lapse clock.** Not `seen`, which is
+ * stamped at most once an hour (`SEEN_EVERY_MS`, Q459 (a)) and so cannot
+ * hold a seat up inside a fixture whose window is sixteen minutes wide —
+ * and not `touch`, which is private. `arrive` on somebody who is already
+ * here *is* the touch, with no event behind it, which is what the seat
+ * matrix learned the hard way: a page that merely polls does not count as
+ * activity, an act does.
+ */
+const keepAlive = (s: ConstitutionSession, t: number, ...who: string[]) => {
+  for (const m of who) s.arrive(t, m);
+};
+
+/** 💤 at five minutes, inside `buildConstituted`'s own 1,000,000 ms window:
+ *  quiet since the founding lapses at LAPSE_TICK, touched at LAPSE_ALIVE
+ *  does not. A tick past the window would close the document instead. */
+const LAPSE_MS = 300_000;
+const LAPSE_ALIVE = 400_000;
+const LAPSE_TICK = 500_000;
 
 /**
  * **A room of one.** `buildConstituted` cannot make one: a delegated question
@@ -310,7 +330,7 @@ describe('promise 3 — a share is a share of who is here now (§9.3, §8.2)', (
       quorum: { form: 'share', n: 60 },
       admission: { price: 'pen' },
       doors: { remove: { unilateral: true, assent: false } },
-      lapse: { afterMs: 10_000 },
+      lapse: { afterMs: LAPSE_MS },
     });
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'share-tracks' });
     const floorEvents = () => s.logEntries().map((e) => e.event)
@@ -336,14 +356,12 @@ describe('promise 3 — a share is a share of who is here now (§9.3, §8.2)', (
     expect(bridge.engine.adoptionFloor()).toBe(2);
     expect(floorEvents().at(-1)).toMatchObject({ E: 3, quorumN: 2 });
 
-    // a lapse: the same fall, by the clock rather than by a hand. bo goes
-    // quiet at t=3 and the 💤 rule is 10s, so the tick past it lapses them —
-    // and nobody else, the other two having been active a moment before.
-    s.touch('ada', 19_999);
-    s.touch(cy, 19_999);
-    s.touch(bo, 3);
-    s.tick(20_000);
-    bridge.sync(20_000);
+    // a lapse: the same fall, by the clock rather than by a hand. bo has said
+    // nothing since the founding, so the tick past the 💤 rule lapses them —
+    // and nobody else, the other two having just acted.
+    keepAlive(s, LAPSE_ALIVE, 'ada', cy);
+    s.tick(LAPSE_TICK);
+    bridge.sync(LAPSE_TICK);
     expect(s.memberRecords().get(bo)!.lapsed).toBe(true);
     expect(s.E()).toBe(2);
     expect(bridge.engine.adoptionFloor()).toBe(2); // ⌈0.6 × 2⌉ = 2, the term ⌈2/3⌉ = 1
@@ -385,13 +403,13 @@ describe('promise 4 — too few of us left and the document stops (§9.5)', () =
   it('a lapse freezes inside the same tick that applied it', () => {
     const { s, bo, cy } = buildConstituted({
       quorum: { form: 'count', n: 3 },
-      lapse: { afterMs: 10_000 },
+      lapse: { afterMs: LAPSE_MS },
     });
-    s.touch('ada', 20_000);
-    s.touch(bo, 3);
-    s.touch(cy, 3);
+    keepAlive(s, LAPSE_ALIVE, 'ada');
+    expect(bo).toBeDefined();
+    expect(cy).toBeDefined();
     expect(s.frozen).toBe(false);
-    s.tick(20_000);
+    s.tick(LAPSE_TICK); // bo and cy have been quiet since the founding
     expect(s.E()).toBe(1);
     expect(s.frozen).toBe(true);
     expect(s.mustReturn()).toBe(2);
