@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { barAt, reAnchor, seedAnchors, smoothstep } from '../src/threshold.js';
+import { BAR_CEILING_PCT, barAt, barCeilingPct, reAnchor, seedAnchors, smoothstep } from '../src/threshold.js';
 import { adoptionThreshold } from '../../engine-core/src/adoption-threshold.js';
+import { ceilingPct } from '../../engine-core/src/ranking/ceiling.js';
 import type { Constitution } from '../../engine-core/src/types.js';
 import { adoptionFloor, adoptionFloorTerm, quorumCount } from '../src/populations.js';
 
@@ -56,6 +57,23 @@ describe('threshold anchors (§4.3, v0.48)', () => {
     expect(smoothstep(-1)).toBe(0);
     expect(smoothstep(2)).toBe(1);
     expect(smoothstep(0.5)).toBeCloseTo(0.5, 10);
+  });
+
+  /**
+   * The bar ceiling table (Q840). `BAR_CEILING_PCT` is engine-core's
+   * `ceilingPct` copied out for the browser bundle, which carries no
+   * engine-core; this is the case that keeps the copy honest. If it goes red,
+   * the fit moved and the table has to move with it — never the other way.
+   */
+  it('BAR_CEILING_PCT is engine-core’s ceilingPct, entry for entry', () => {
+    for (let e = 1; e <= 40; e++) expect(barCeilingPct(e)).toBe(ceilingPct(e));
+    expect([...BAR_CEILING_PCT]).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(ceilingPct));
+    // past the table's end the answer is 99, and it is exact rather than a
+    // clamp: E = 10 already floors to 99 and the series is monotone
+    expect(barCeilingPct(11)).toBe(99);
+    expect(barCeilingPct(1000)).toBe(99);
+    // a count that arrives empty reads as the sole member, not as no data
+    expect(barCeilingPct(0)).toBe(79);
   });
 });
 
