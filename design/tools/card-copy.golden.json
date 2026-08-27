@@ -411,7 +411,7 @@
     "eyebrow": "",
     "head": "Your PenFounded by Anonymous 👑.",
     "lock": "You hold the pen.",
-    "body": "You founded this document, and the pen came with it.The pen amends a setting at will, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent.You hold the pen.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.You hold the pen.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -431,7 +431,7 @@
     ],
     "helpers": [
      "You founded this document, and the pen came with it.",
-     "The pen amends a setting at will, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent.",
+     "While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.",
      "You hold the pen.",
      "Nothing is being asked here — OK files it and it leaves your queue."
     ]
@@ -440,7 +440,7 @@
     "eyebrow": "",
     "head": "Your ShieldFounded by Anonymous 👑.",
     "lock": "You hold the shield.",
-    "body": "You founded this document, and the shield came with it.The shield refuses: where you hold it, a change the membership passes waits for you to accept it. One shield, many locks, and a shield is not spent.You hold the shield.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.You hold the shield.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -461,7 +461,7 @@
     ],
     "helpers": [
      "You founded this document, and the shield came with it.",
-     "The shield refuses: where you hold it, a change the membership passes waits for you to accept it. One shield, many locks, and a shield is not spent.",
+     "While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.",
      "You hold the shield.",
      "Nothing is being asked here — OK files it and it leaves your queue."
     ]
@@ -4274,7 +4274,7 @@
     "eyebrow": "",
     "head": "Your PenFounded by Anonymous 👑.",
     "lock": "You hold the pen.",
-    "body": "You founded this document, and the pen came with it.The pen amends a setting at will, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent.You hold the pen.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.You hold the pen.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4294,7 +4294,7 @@
     ],
     "helpers": [
      "You founded this document, and the pen came with it.",
-     "The pen amends a setting at will, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent.",
+     "While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.",
      "You hold the pen.",
      "Nothing is being asked here — OK files it and it leaves your queue."
     ]
@@ -4303,7 +4303,7 @@
     "eyebrow": "",
     "head": "Your ShieldFounded by Anonymous 👑.",
     "lock": "You hold the shield.",
-    "body": "You founded this document, and the shield came with it.The shield refuses: where you hold it, a change the membership passes waits for you to accept it. One shield, many locks, and a shield is not spent.You hold the shield.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.You hold the shield.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4324,7 +4324,7 @@
     ],
     "helpers": [
      "You founded this document, and the shield came with it.",
-     "The shield refuses: where you hold it, a change the membership passes waits for you to accept it. One shield, many locks, and a shield is not spent.",
+     "While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.",
      "You hold the shield.",
      "Nothing is being asked here — OK files it and it leaves your queue."
     ]
@@ -7293,7 +7293,7 @@
     "eyebrow": "",
     "head": "Your PenFounded by AB Ash Bellamy 👑 at HH:MM on D Month YYYY.",
     "lock": "You hold the pen.",
-    "body": "You founded this document, and the pen came with it.The pen amends a setting at will, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent.You hold the pen.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.You hold the pen.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7314,7 +7314,7 @@
     ],
     "helpers": [
      "You founded this document, and the pen came with it.",
-     "The pen amends a setting at will, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent.",
+     "While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.",
      "You hold the pen.",
      "Nothing is being asked here — OK files it and it leaves your queue."
     ]
@@ -7323,7 +7323,7 @@
     "eyebrow": "",
     "head": "Your ShieldFounded by AB Ash Bellamy 👑 at HH:MM on D Month YYYY.",
     "lock": "You hold the shield.",
-    "body": "You founded this document, and the shield came with it.The shield refuses: where you hold it, a change the membership passes waits for you to accept it. One shield, many locks, and a shield is not spent.You hold the shield.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.You hold the shield.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7344,7 +7344,7 @@
     ],
     "helpers": [
      "You founded this document, and the shield came with it.",
-     "The shield refuses: where you hold it, a change the membership passes waits for you to accept it. One shield, many locks, and a shield is not spent.",
+     "While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.",
      "You hold the shield.",
      "Nothing is being asked here — OK files it and it leaves your queue."
     ]

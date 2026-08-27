@@ -348,6 +348,15 @@ function checkOrder(pm) {
   // predicates that a refactor could drop without anything else noticing.
   if (/holds the (pen|shield) on '/.test(page))
     find('order', 'the pen or shield clause is back — F16 retires it: the count is already stated per setting and on the wallet');
+  // …and the same block keeps the pair's *retired body* out (entry 58): ✒️ and
+  // 🛡️ are the first two cards a founder ever meets, so their bodies say what
+  // holding one lets you do today and nothing about the mechanism. Comments are
+  // stripped the way `checkBannedWords` strips them — the design-room image
+  // *one shield, many locks, never spent* survives in two code comments on
+  // purpose, and a comment is not copy. `card-audit`'s T38 is the browser half.
+  const pageCopy = page.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  if (/a (pen|shield) is not spent|[Oo]ne (pen|shield), many locks/.test(pageCopy))
+    find('order', 'the retired grant body is back — entry 58 redrafted ✒️ and 🛡️ for a reader one minute in');
   for (const k of ['grant-pen', 'grant-shield']) {
     const def = page.slice(page.indexOf(`{ k: '${k}',`), page.indexOf(`{ k: '${k}',`) + 900);
     if (!/hide: \(\) => !amFounder\(\)/.test(def))

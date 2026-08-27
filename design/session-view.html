@@ -1487,7 +1487,7 @@
     { k: 'grant-pen', g: '✒️', t: 'Your Pen', own: 'you', isGate: true, isGrant: true,
       hide: () => !amFounder(),
       open: () => !!cs && amFounder() && holdsPenAnywhere(),
-      why: 'The pen amends a setting at will, where it turns — each setting’s ✒️ tab says whether it does. One pen, many locks, and a pen is not spent.',
+      why: 'While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.',
       waiting: 'Waiting on the save.',
       done: 'You hold the pen.',
       blockers: () => [] },
@@ -1510,7 +1510,7 @@
     { k: 'grant-shield', g: '🛡️', t: 'Your Shield', own: 'you', isGate: true, isGrant: true,
       hide: () => !amFounder(),   // the holder's, like the pen above
       open: () => !!cs && amFounder() && holdsShieldAnywhere(),
-      why: 'The shield refuses: where you hold it, a change the membership passes waits for you to accept it. One shield, many locks, and a shield is not spent.',
+      why: 'While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.',
       waiting: 'Waiting on the save.',
       done: 'You hold the shield.',
       blockers: () => [] },
