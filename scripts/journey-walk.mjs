@@ -1230,7 +1230,7 @@ if (caret) {
       let seen = { ids, theirs: false };
       const all = [];
       for (const id of ids) {
-        await page.evaluate((k) => { try { window.SESSION.toggle(k, false); } catch (e) {} }, id);
+        await page.evaluate((k) => { try { window.SESSION.toggle(k, false); } catch { /* already open, or already shut */ } }, id);
         await T(900);
         const r = await page.evaluate(([k, name]) => {
           const q = String(k).replace(/["\\]/g, '\\$&');
@@ -1253,7 +1253,7 @@ if (caret) {
             theirs: sps.some((s) => s.textContent.includes('Sundays are the point')),
             rung: (rung || '').replace(/\s+/g, ' ').trim().slice(0, 80) };
         }, [id, GUEST_NAME]);
-        await page.evaluate((k) => { try { window.SESSION.toggle(k, false); } catch (e) {} }, id);
+        await page.evaluate((k) => { try { window.SESSION.toggle(k, false); } catch { /* already open, or already shut */ } }, id);
         all.push(r);
         if (r && r.theirs) { seen = r; break; }
       }
