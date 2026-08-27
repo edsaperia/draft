@@ -20,7 +20,7 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 - **C12 Blind while running.** A founding question or a constitutional motion shows only the count of answers; a race shows no standings and no direction; a cleared race is never shown waiting.
 - **C13 A task you have to do carries no subtitle**; a motion's subtitle is the value proposed, news's is what happened.
 - **C14 The founding runs in single file**, one clause per step, in the document's own order (🪶 📍 📧, then the constitution's sections — §8); **a grant or gate holds its place without blocking and stands beside the current question**; ✒️ blocks; each answer lands as its own fading clause. A member's answer tasks ride the same order (Q619).
-- **C15 Mail rides the fold** for every event a member is owed off-surface — the verification mail, the lapse warning and package, the close — and the link is the login. Nothing else mails (Q575).
+- **C15 Mail rides the fold** for every event a member is owed off-surface — the verification mail, the lapse warning and package, the close, and exile — the one event whose audience is outside the document (E31), so its link is the document's address and not a login — and otherwise the link is the login. Nothing else mails (Q575).
 - **C16 The topbar reads the document · the room · you**: 🪶 and the title; the pulse, the session clock, the quorum reading and the faces of everybody else who has arrived; your wallets and `me`. The row is the register's arrived rows minus your own — yours is `me` — capped, the excess counted as `+n`, and the head count it replaced survives as its title. **A face there says only that somebody is present**: never what they are doing, never which way (§3.5), never whose a proposal is (§3.5a). Before the start the row is the whole of what the middle says about the room; from 🍾 the quorum reading stands beside it, and that count is the electorate's where the row is the register's. Every wallet is a socket, shown to everybody from the start, struck when not held, empty when spent.
 
 ## 2. The event matrix
@@ -58,9 +58,9 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 | E28 | An adoption lands | everybody | **gazette + chime — unbuilt** (Q465) | nothing | — | — | — |
 | E29 | The floor recomputes | everybody | **gazette — unbuilt** (Q465) | nothing | — | — | — |
 | E30 | Digest: dominated / nearing resolution / deadlocked | the author / the judge | **§8.4 digest — unbuilt** (Q465) | — | — | — | — |
-| E31 | A member is exiled at will (❌'s ✒️ — immediate, and every answer they were standing on leaves with them) | the removed member; every member | **undesigned and unbuilt** (Q901); the register drops them | — | — | record | remove |
-| E32 | A member resigns (*Leave* — free, immediate, nobody's to refuse) | the member; every member | **undesigned and unbuilt** (Q901); the register drops them | — | — | record | — |
-| E33 | An application is refused at the door — 🤝 shut after the applicant verified but before they submitted (entry 97) | the applicant | **undesigned and unbuilt** (Q901) | — | — | — | — |
+| E31 | A member is exiled at will (❌'s ✒️ — immediate, and every answer they were standing on leaves with them) | the removed member; every member | mail (the document's address, no login link) and, on their next visit, the door's departure sentence — by the office, with the date, whatever 🌍 says; every member: a departure line under *Members*, grey (Q901) | nothing | — | the register's text: the closed page and the record | remove |
+| E32 | A member resigns (*Leave* — free, immediate, nobody's to refuse) | the member; every member | the door's departure sentence on their next poll; every member: the departure line under *Members* (Q901) | nothing | — | as E31 | — |
+| E33 | An application is refused at the door — 🤝 shut after the applicant verified but before they submitted (entry 97) | the applicant | one sentence under Submit, before the press (`applyOpen`) and after it (the wire's refusal), Y25's shape; Submit dark; the task reads *Applications closed* (Q901) | nothing | retired when the door opens again, or on a keystroke | — | apply |
 
 The card lifecycle, as the rows of the matrix a single card passes through:
 

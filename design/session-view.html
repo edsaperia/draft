@@ -665,6 +665,42 @@
     return d2.getFullYear() + '-' + p2(d2.getMonth() + 1) + '-' + p2(d2.getDate()) +
       'T' + p2(d2.getHours()) + ':' + p2(d2.getMinutes());
   };
+  // **Three acts nobody was told about** (Q901, SURFACE E31–E32). A departure
+  // is a fact about the membership, so the register says it in one grey
+  // sentence per departure — the office, never the name (C10); nothing is
+  // asked (C7) — and the door says the same to the person it happened to.
+  // A day-only date: the act is news for a day, not a timestamp to audit.
+  const dayOf = (ms) => new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'long' });
+  const DEPARTED = {
+    convenor: (d) => 'The Founder removed you from this document on ' + dayOf(d.t) + '.',
+    self: (d) => 'You left this document on ' + dayOf(d.t) + '.',
+    members: (d) => 'The membership removed you from this document on ' + dayOf(d.t) + '.',
+  };
+  const departedSentence = () => {
+    const p = isStranger() ? strPayload() : null;
+    const d = p && p.departed;
+    return d && DEPARTED[d.by] ? DEPARTED[d.by](d) : '';
+  };
+  // the room's list: live from the view, the fixture from the module, the
+  // stranger from the door where 🌍 lets them read the register
+  const departuresOf = () => {
+    if (isStranger()) { const p = strPayload(); return (p && p.members && p.members.departures) || []; }
+    if (!cs) return [];
+    if (cs.isRemote) return (cs.v && cs.v.view && cs.v.view.departures) || [];
+    return cs.departures ? cs.departures().map((d) => {
+      const r = cs.memberRecords().get(d.member);
+      return { id: d.member, name: r ? r.name : null, picture: r ? r.picture : null, t: d.t, by: d.by };
+    }) : [];
+  };
+  const departureLine = (d) => {
+    const who = esc(d.name || 'a member');
+    return d.by === 'self' ? who + ' left on ' + dayOf(d.t) + '.'
+      : d.by === 'members' ? 'The membership removed ' + who + ' on ' + dayOf(d.t) + '.'
+      : 'The Founder removed ' + who + ' on ' + dayOf(d.t) + '.';
+  };
+  // newest first, whole — v1 rosters are 5–10, so no cap
+  const departureLines = () => departuresOf().slice().reverse()
+    .map((d) => '<p class="setnote departure">' + departureLine(d) + '</p>').join('');
   // **the standard proposal rate**, one literal (Q740, Ed 2026-08-23). The
   // founding pre-answers nothing (F6), and this is not a pre-answer: the card
   // still opens with three empty boxes, and these numbers are what the machine
@@ -2897,9 +2933,13 @@
           // pile rather than a button in a row. 🎩 stays on *Members*, being
           // about the founder's own place in it. The stranger reads the
           // register as the door serves it, under *Members* alone.
+          // **The register tells the room who left** (Q901, E31–E32): one grey
+          // sentence per departure after the rows — document text, so it
+          // reads on the closed page and in the record, and the stranger
+          // reads it where 🌍 lets them read *Members*
           (isStranger()
-            ? memSub('Members', strangerRows, [], true)
-            : memSub('Members', nobody + meBlock + here.map(memRow).join(''), ['hat']) +
+            ? memSub('Members', strangerRows + departureLines(), [], true)
+            : memSub('Members', nobody + meBlock + here.map(memRow).join('') + departureLines(), ['hat']) +
               memSub('Invitees', invited.map(memRow).join(''),
                 ['invite', 'pw:u:invite', 'pw:a:invite']) +
               (policyNow() === 'apply'
@@ -5328,6 +5368,19 @@
       { k: 'apptext', g: '📝', t: 'Your Application', own: 'you', kind: 'personal', optional: true, done: () => !!a.text.trim() },
     ]);
   };
+  // **An application refused at the door** (Q901, SURFACE E33, entry 97): 🤝
+  // shut after the applicant verified and before they submitted. The poll
+  // can know — the applicant's view carries `applyOpen`, computed as the
+  // stranger's door computes it — so the card says so *before* the press
+  // (Y25's shape: one sentence under the control that tried) and Submit is
+  // dark. The fixture reads the same expression `renderRail` uses.
+  const APPLY_SHUT = 'The rule has changed since you began: this document is now invitation-only, so your application cannot be submitted.';
+  const applyShutOnMe = () => {
+    const a = S.app;
+    if (!a.emailVerified || a.submitted) return false;
+    if (cs && cs.isRemote) return cs.v && cs.v.applyOpen === false;
+    return !(policyNow() === 'apply' && admissionPrice() !== 'pen');
+  };
   const appCtx = {
     get open() { return S.open; }, get E() { return E(); },
     mustAct: (c) => !c.done() && !(c.optional && S.app.submitted),
@@ -5336,7 +5389,7 @@
     fillOf: (c) => (c.k === 'apply' && S.app.submitted
       ? Math.round(APPLICANT.judged / E() * 100) + '%' : '100%'),
     summary: (c) => (c.k === 'apply'
-      ? (S.app.submitted ? 'Before the members — a proposal like any other' : S.app.started ? (['appname', 'apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
+      ? (S.app.submitted ? 'Before the members — a proposal like any other' : applyShutOnMe() ? 'Applications closed' : S.app.started ? (['appname', 'apppic'].every((k2) => APPCARDS().find((x) => x.k === k2).done()) ? 'Ready to submit' : 'Three small tasks') : 'Membership is by application')
       : c.k === 'appmail' ? (S.app.emailVerified ? S.app.email + ' · verified'
         : S.app.emailSent ? 'Check your inbox' : 'Your identity here')
       : c.k === 'appname' ? (S.app.name || 'What members will call you')
@@ -5389,20 +5442,31 @@
     if (!c) return '';
     const a = S.app;
     let foot;
+    let body = APPBODY[c.k]();
     if (c.k === 'apply') {
+      const shut = applyShutOnMe();
+      // the door has shut (E33): the sentence stands before the press; a
+      // refusal from the wire lands in the same place through `doorErrHtml`;
+      // both retire the way Y25 says — the door opening again, or a keystroke
+      if (!shut && S.doorErr && S.doorErr.k === 'apply') S.doorErr = null;
       foot = a.submitted ? binBtn()
         : !a.started ? '<button class="btn btn-approve" data-appstart="1">Begin</button>'
         // a word, not 🏛️: an application becomes an ordinary motion, and
         // the 🏛️ glyph belongs to the assembly-press hold — a plain click
         // wearing it claimed the constitutional route it does not take
         : binBtn() +
-          '<button class="btn btn-approve"' + (a.name.trim() && a.pic ? '' : ' disabled') +
+          '<button class="btn btn-approve"' + (a.name.trim() && a.pic && !shut ? '' : ' disabled') +
           ' data-appsubmit="1" title="Your application goes before the members">Submit</button>';
+      if (a.started && !a.submitted) {
+        body += shut && !doorErrOn('apply')
+          ? '<p class="why refusal"><b>' + esc(APPLY_SHUT) + '</b></p>'
+          : doorErrHtml('apply');
+      }
     } else {
       foot = binBtn() +
         '<button class="btn btn-approve glyphbtn"' + (c.done() || c.optional ? '' : ' disabled') + ' data-close="1">' + TICK + '</button>';
     }
-    return cardHtml(c, appCtx, APPBODY[c.k](), foot, [c]);
+    return cardHtml(c, appCtx, body, foot, [c]);
   }
 
   // ---- the band: two piles, and the card one of them opens into ----------
@@ -6146,11 +6210,31 @@
     const ast = ev.target.closest('[data-appstart]');
     if (ast) { S.app.started = true; return render(); }
     const asu = ev.target.closest('[data-appsubmit]');
-    if (asu) { S.app.submitted = true; S.open = 'apply';
-      if (cs && S.app.csId) { try { cs.submitApplication(now(), S.app.csId,
-        { name: S.app.name || undefined, picture: S.app.pic || undefined,
-          words: S.app.text || undefined }); } catch (e) { console.warn('[cs]', e && e.message); } }
-      return render(); }
+    if (asu && !asu.disabled) { S.open = 'apply';
+      // **The wire's answer decides whether it was submitted** (Q901, E33).
+      // This used to set `submitted` ahead of the call and swallow the
+      // answer, so a refusal at the door read as *Submitted. 0 of N have
+      // judged it*. Now a `{ error }` — or the fixture's synchronous throw —
+      // puts the sentence under the control that tried, and only a clean
+      // answer marks it submitted. Written against `api.cmd`'s contract, so
+      // it holds when the live applicant seat is wired (Q346).
+      const done = (err) => {
+        if (err) { S.app.submitted = false; setDoorErr('apply', plainRefusal(err)); }
+        else { S.app.submitted = true; S.doorErr = null; render(); }
+      };
+      if (cs && S.app.csId) {
+        try {
+          const r = cs.submitApplication(now(), S.app.csId,
+            { name: S.app.name || undefined, picture: S.app.pic || undefined,
+              words: S.app.text || undefined });
+          if (r && typeof r.then === 'function') {
+            r.then((res) => done(res && res.error ? res.error : null), (e) => done(e && e.message));
+            return;
+          }
+          done(null);
+        } catch (e) { done(e && e.message); }
+      } else done(null);
+      return; }
     const tn0 = ev.target.closest('[data-tone]');
     if (tn0) { window.SETUP.setFaceTone(tn0.getAttribute('data-tone')); return render(); }
     const ap2 = ev.target.closest('[data-apppic]');
@@ -6803,9 +6887,13 @@
       if (sb) sb.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S.app.email) ||
         MEMBER_EMAILS.has(S.app.email.toLowerCase());
       return; }
-    if (t.dataset.appname !== undefined) { S.app.name = t.value; return; }
+    // a refusal at the apply door is about the application as it was, so a
+    // keystroke into it retires the sentence (Y25; E33) — no render here,
+    // the card under the caret must not rebuild
+    const retireApply = () => { if (S.doorErr && S.doorErr.k === 'apply') S.doorErr = null; };
+    if (t.dataset.appname !== undefined) { S.app.name = t.value; retireApply(); return; }
     const at = t.closest && t.closest('[data-apptext]');
-    if (at) { S.app.text = at.textContent.trim(); at.classList.toggle('blank', !S.app.text); return; }
+    if (at) { S.app.text = at.textContent.trim(); at.classList.toggle('blank', !S.app.text); retireApply(); return; }
     const sw = t.closest && t.closest('[data-setwhy]');
     if (sw) {
       if (!S.setWhy) S.setWhy = {};
@@ -7017,7 +7105,9 @@
     // the sentence is plain text in the payload (its other consumer sets it
     // with textContent, and the founder's name is a member's own string):
     // it is escaped here, at the one place it becomes markup
-    return '<p class="why">' + esc(p && p.holding.sentence ? p.holding.sentence : 'The text is readable.') + '</p>' +
+    // a dead seat's door says why, above the holding sentence (E31–E32)
+    return (departedSentence() ? '<p class="why">' + esc(departedSentence()) + '</p>' : '') +
+      '<p class="why">' + esc(p && p.holding.sentence ? p.holding.sentence : 'The text is readable.') + '</p>' +
       (p && p.canRead ? '<div class="doctext">' + textDivs(p.text || '') + '</div>' : '');
   };
   // the charter column: the text where 🌍 permits (read-only — typing opens
@@ -7030,7 +7120,10 @@
     // surface uses — a second copy of it would be a second truth)
     if (cs) hydrateFromModule();
     const hold = document.getElementById('holding'), red = document.getElementById('redacted');
-    const sentence = p ? p.holding.sentence : '';
+    // **A seat that dies mid-session becomes the door, and the door says
+    // why** (Q901, E31–E32): the departure sentence stands above the holding
+    // one, grey, asking nothing — the seat is gone whatever 🌍 says
+    const sentence = [departedSentence(), p ? p.holding.sentence : ''].filter(Boolean).join(' ');
     hold.textContent = sentence;
     hold.hidden = !sentence;
     const key = 'stranger:' + (p ? (p.canRead ? 'read:' + p.text : 'shape:' + JSON.stringify(p.textShape)) : '');
