@@ -143,8 +143,17 @@ const walkTo = async (stop, delegate) => {
       // founder alone `roomExists()` is false and an answer task waits until
       // nothing else is outstanding, which for 🌡️ is never — so the walk
       // invites somebody, which is the ordinary case anyway.
+      //
+      // **And 🪪 is a price, not the register** (entry 94): its ✓ reads
+      // `!!S.admission`, so a card with an invitee on it and no rung chosen
+      // never commits. This branch invited and stopped there, which stalled
+      // the whole walk one task in and left both sliders unreached — found
+      // by promise-coverage 👥 (entry 85), red on the batch's base commit
+      // `2154ccb` as well as on HEAD, so it is the card that moved under the
+      // walk and not the walk that broke.
       await typeIn('.setupcard [data-add]', 'ben@example.org');
       await clickIn('.setupcard [data-act="add"]');
+      await clickIn('.setupcard [data-set="admission"][data-val="pen"]');
     } else {
       const opt = await page.evaluate(() => {
         const c = document.querySelector('.setupcard');
