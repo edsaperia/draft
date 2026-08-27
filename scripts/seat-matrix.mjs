@@ -108,6 +108,11 @@ const AUDIENCE = {
   'the membership': (s) => isMember(s),
   // no invitee seat stands in this table: every invited seat follows its link
   'every member and invitee': (s) => isMember(s),
+  // E25's audience is the people who are *not* in the room. The applicant
+  // seat is a stranger who has knocked, and its rail is the applicant's own
+  // (`APPCARDS`), never `STRCARDS` — so the door's two keys belong to the
+  // stranger seat alone (entry 78).
+  strangers: (s) => s.role === 'stranger',
 };
 
 /* ---- table 2: the steps ------------------------------------------------ *
@@ -144,11 +149,17 @@ const STEPS = [
   // (`blocksOrder`), so its rows begin at `ok-pen`.
   { id: 'seat-early', epoch: 'before', kind: 'seat', seat: 'early', events: [E8('grant-pen')] },
   { id: 'seat-lapsed', epoch: 'before', kind: 'seat', seat: 'lapsed', events: [E8('grant-pen')] },
-  { id: 'seat-stranger', epoch: 'before', kind: 'seat', seat: 'stranger', events: [E8('grant-pen')] },
+  // E25's two keys are split across the epochs on purpose (entry 78): 📧 Log
+  // In stands at the door from the first knock, but Apply is `applyOpen` in
+  // `strangerView`, which is `begun && …` — so `strapply` is asserted at the
+  // first live step and would be red here for the right reason.
+  { id: 'seat-stranger', epoch: 'before', kind: 'seat', seat: 'stranger',
+    events: [E8('grant-pen'), { id: 'E25', key: 'strlogin', at: 'seat-stranger' }] },
   { id: 'ok-pen', epoch: 'before', kind: 'ok', seat: 'founder', key: 'grant-pen', events: [E8('grant-pen'), E8('grant-shield')] },
   { id: 'ok-shield', epoch: 'before', kind: 'ok', seat: 'founder', key: 'grant-shield', events: [E8('grant-pen'), E8('grant-shield')] },
   // ---- live ---------------------------------------------------------------
-  { id: 'begin', epoch: 'live', kind: 'hold', seat: 'founder', key: 'begin', events: [E4('canpropose'), E4('canjudge')] },
+  { id: 'begin', epoch: 'live', kind: 'hold', seat: 'founder', key: 'begin',
+    events: [E4('canpropose'), E4('canjudge'), { id: 'E25', key: 'strapply', at: 'begin' }] },
   { id: 'ok-propose', epoch: 'live', kind: 'ok', seat: 'founder', key: 'canpropose', ifHat: 'member',
     events: [E4('canpropose'), E4('canjudge')] },
   { id: 'ok-judge', epoch: 'live', kind: 'ok', seat: 'founder', key: 'canjudge', ifHat: 'member',

@@ -24,8 +24,10 @@
  *
  * What it asserts, per 🪪's price:
  *   proposal  — the applicant raises a **task**: a rail entry naming them, a
- *               row under *Applicants*, and a card offering the three lanes.
- *   assembly  — the same task, in its 🏛️ form: the consent picks.
+ *               row under *Applicants*, and a card offering the three lanes —
+ *               *Admit them* against the membership as it stands, ✓ to file it.
+ *   assembly  — the same task, in its 🏛️ form: the consent picks, with a
+ *               refusal among them, committing on the assembly hold (entry 78).
  *   pen       — no task and no applicant row; **news**, with an OK, they having
  *               joined the moment they opened the link (Q894–Q896), which is
  *               also why the card names them by their address: they have given
@@ -263,6 +265,11 @@ if (admEntry) {
       lanes: [...c.querySelectorAll('.lanepick span:last-child')].map((s) => s.textContent.trim()),
       ok: !!c.querySelector('[data-ok]'),
       tick: !!c.querySelector('[data-admitgo], [data-confirm]'),
+      // which commit the card offers is the whole difference between the two
+      // priced forms: a 🏛️ hold answers a question, a ✓ files a judgment
+      commit: c.querySelector('[data-admitgo]') ? 'admitgo'
+        : c.querySelector('[data-confirm]') ? 'confirm'
+        : c.querySelector('[data-ok]') ? 'ok' : null,
       text: (c.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 160),
     };
   });
@@ -273,6 +280,35 @@ if (admEntry) {
   } else if (card.lanes.length !== 3) {
     say('FAIL: expected three lanes, saw ' + JSON.stringify(card.lanes));
     stuck.push('the three lanes');
+  }
+  /* **Three lanes is not three of the same lanes** (entry 78, promise-coverage
+   * 🪪/🤝). Both priced forms of the admit card draw three `.lanepick`s, so a
+   * bare count cannot tell 🪪 *assembly* from 🪪 *proposal* — and the promise
+   * each price makes is a different promise. At *assembly* nobody joins
+   * without everyone's consent: the card is a 🏛️ question with a refusal
+   * among its answers and it commits on the assembly hold. At *proposal* the
+   * membership decides at the threshold: the card is a judgment between the
+   * applicant and the membership as it stands, and it commits with ✓. The
+   * seat matrix cannot say this — it asserts *who carries the entry*, not what
+   * the card asks — so it is asserted here, per price. */
+  const FORM = {
+    assembly: { want: ['I would rather they did not', 'I accept them joining', 'Abstain'],
+      commit: 'confirm', called: 'a 🏛️ question' },
+    proposal: { want: ['Admit them', 'Keep the membership as it is', 'Indifferent'],
+      commit: 'admitgo', called: 'a judgment at the threshold' },
+  }[PRICE];
+  if (FORM && card) {
+    if (JSON.stringify(card.lanes) !== JSON.stringify(FORM.want)) {
+      say('FAIL: at 🪪 ' + PRICE + ' the card should be ' + FORM.called + ' — ' +
+        JSON.stringify(FORM.want) + ', saw ' + JSON.stringify(card.lanes));
+      stuck.push('the ' + PRICE + ' lanes');
+    }
+    if (card.commit !== FORM.commit) {
+      say('FAIL: at 🪪 ' + PRICE + ' the card should commit as ' + FORM.commit +
+        ', saw ' + JSON.stringify(card.commit));
+      stuck.push('the ' + PRICE + ' commit');
+    }
+    if (!stuck.length) say('form       · ' + FORM.called + ', committing on ' + card.commit);
   }
   if (!card.text.includes(CALLED)) {
     say('FAIL: the card does not name the applicant');
