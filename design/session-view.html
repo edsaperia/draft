@@ -656,6 +656,27 @@
   // an answer that arrives after the act has to repaint by itself: a
   // refusal from the wire lands one round trip and one refresh later
   const setDoorErr = (k, m) => { S.doorErr = m ? { k: k, m: m } : null; render(); };
+  // **And a refused *set* says why too** (entry 62). Q811 gave this to the two
+  // doors and stopped there, so every settings card's ✒️ was still
+  // fire-and-forget: the server refuses, `api.cmd` warns to a console nobody
+  // reads, the page renders as though the set had landed, and the next 4s poll
+  // puts the old value silently back. Two channels, because there are two: the
+  // module throws where the page holds it, and the wire resolves `{ error }`.
+  //
+  // **It re-opens the card**, which the doors do not have to: their act leaves
+  // the card standing, and a settings commit closes it — so a line rendered
+  // into a card nobody is looking at is the console warning again by another
+  // name. After the locks above this nothing on the founder's own card can
+  // reach here; it is defence, so that the *next* gap of this class shows up
+  // on the page instead of in a console.
+  const refuseSet = (k, m) =>
+    { S.open = k; setDoorErr(k, 'That could not be set: ' + plainRefusal(m) + '.'); };
+  const watchSet = (k, r) => {
+    if (r && typeof r.then === 'function') {
+      r.then((res) => { if (res && res.error) refuseSet(k, res.error); });
+    }
+    return r;
+  };
   // which card a control sits on, from the card itself rather than from
   // whatever happens to be open
   const cardKeyAt = (el) => (el && el.dataset && el.dataset.setupcard) || S.open || 'admission';
@@ -846,7 +867,7 @@
     }
     if (wantsDelegate(k)) { cs.delegate(now(), mid); return; }
     if (csDelegated(k)) cs.reclaim(now(), mid);
-    cs.setSetting(now(), mid, TYPED[k](), (S.setWhy && S.setWhy[k]) || undefined);
+    watchSet(k, cs.setSetting(now(), mid, TYPED[k](), (S.setWhy && S.setWhy[k]) || undefined));
     if (S.setWhy) delete S.setWhy[k];
     // taking a value back restores both powers (reclaim) — drop any unsent
     // tab choices so the ✒️/🛡️ tabs show what now stands
@@ -2123,7 +2144,12 @@
     const key = 'pw:' + c.power + ':' + k;
     const why = pwWhy(k, c.power);
     const L = pwOpts(k, c.power);
-    if (!amFounder()) {
+    // **On a closed document this is the read-only sentence too** (entry 62).
+    // The radios below post `relinquish`/`reclaim`, which `requireOpen`
+    // refuses, so on a closed page they were a control for an act that cannot
+    // happen. No new copy: what an inert card says is what stands, and that is
+    // the sentence this branch already draws.
+    if (!amFounder() || !docOpen()) {
       // a release made before the start is recorded now and lands at 🍾
       // (R-048), so it is not *given up* yet — and the clause beside this
       // card says so in the same breath
@@ -3302,6 +3328,19 @@
   const mayJudge = () => canJudge() && viewerIsMember() && acked('canjudge');
   const mayVoice = () => !!cs && viewerIsMember() && !!viewerRow().in && acked('grant-voice');
   const mayPen = () => !!cs && amFounder() && holdsPenAnywhere() && acked('grant-pen');
+  // **The wallet says you hold a pen; the lock says you hold *this* one**
+  // (entry 62, Ed's batch-B QA 2026-08-25: *after giving up the pen on Title,
+  // I can still edit the title*). `mayPen()` is the wallet question and stays
+  // it — `holdWallet`, the spend-preview and the topbar socket ask it, and on
+  // a closed document a founder who never gave the pen up still holds it, so
+  // a `closed` term here would draw a struck ✒️ and say they had (Ed, B25 (a)).
+  // Every **commit** asks this instead: the grant accepted, the document still
+  // open, and the pen on the setting being set. `pwPair` reads the hand
+  // actually on the setting, and a release made before 🍾 still reads held —
+  // which is R-048's rule and what makes the pre-start control correct here
+  // without a special case.
+  const docOpen = () => !(cs && cs.closed);
+  const mayPenOn = (k) => mayPen() && docOpen() && pwPair(k).u;
   // **The shield has a grant of its own** (`grant-shield`, since d20f67a — the
   // purer reading of *no power arrives without acknowledgment* that Q532 asked
   // for): it used to ride the pen's OK, since both powers arrive in the
@@ -3316,7 +3355,12 @@
   // discipline disappearing exactly where the founder is being taught it.
   // Gates hold a position in the founding order without blocking it, so a
   // settings card really can arrive before ✒️ has been accepted.
-  const penOkFor = (glyph) => glyph !== '✒️' || mayPen();
+  // **With a card it asks the lock; without one it asks the wallet.** The
+  // disabled test passes the card, so a pen laid down on *this* setting greys
+  // its commit; the tooltip does not, because `penWaitTitle` explains the
+  // wallet and there is nothing to explain where the setting's own pen is
+  // down — that card has already stopped being the founder's to edit (step 3).
+  const penOkFor = (glyph, c) => glyph !== '✒️' || (c ? mayPenOn(c.k) : mayPen());
   const penWaitTitle = 'Your pen is waiting in your tasks — accept it and this turns.';
 
   // ---- motions (stage D of the merge, Ed 361) ---------------------------
@@ -3675,7 +3719,17 @@
   // setting body itself rather than a composer.
   // §9.7 v0.54: the founder's direct hand IS the unilateral power — where
   // it is given up (assent-only state) the founder composes like a member
+  // **And a closed document takes no direct hand at all** (entry 62, Q470:
+  // *the closed page asks nothing but the signature*). `requireOpen` refuses
+  // every command after the close, so the founder's hand is off every setting
+  // whether or not they kept its pen. Its one existing caller is `composerOn`
+  // just below, where a false `founderDirect` means *compose instead* — so
+  // that one carries its own `docOpen()` and this cannot turn a closed card
+  // into a live composer. Nothing else reads it: `crownWaits` and `changeHalf`
+  // ask their own questions, and `changeHalf`'s history half is gated on
+  // `!amFounder()`, so no record is hidden by this.
   const founderDirect = (c) => {
+    if (!docOpen()) return false;
     // a door's direct hand is its own ✒️ (entry 94): ✉️ invites, ❌ exiles
     if (c.door) return pwPair(c.k).u;
     const st = csState(c.k);
@@ -3691,9 +3745,27 @@
   // invitations and removals had no door.
   // a door whose act the viewer's own word performs is a box, not a composer
   const doorDirect = (c) => !!c.door && (c.k === 'invite' ? directInvite() : directRemove());
-  const composerOn = (c) => motionsLive() && viewerIsMember() && !c.isGate && !c.ansFor &&
+  // **On a closed document nobody composes** (entry 62, SURFACE K2). This is
+  // its own term rather than something `motionsLive()` provides: `canJudge()`
+  // is `constitutedAtT !== null && !frozen` and has never asked about the
+  // close, so every settled card on a closed page was drawing a live motion
+  // composer whose commit the server would refuse.
+  const composerOn = (c) => motionsLive() && docOpen() && viewerIsMember() && !c.isGate && !c.ansFor &&
     c.kind !== 'personal' && c.k !== 'text' && settled(c) && !motionOn(c) &&
     !doorDirect(c) && !(amFounder() && !membersHold(c) && founderDirect(c));
+  // **The founder's editing body follows the setting's own pen** (entry 62).
+  // True exactly where the founder is being shown the card and no longer has
+  // the hand it is drawn for: the value radios, the title lane, the delegate
+  // rung and the *why are you changing this* lane all hang off this. A
+  // founder-member falls through to `composerOn` and composes like anybody
+  // else; a **clerk** founder has no composer to fall to (`viewerIsMember()`),
+  // and lands on the settled card — the sentence, the watch half, a bin.
+  // Scoped to the catalogue settings the founder's card sets: gates, the
+  // personal cards, 🎩 and 📄 are none of them a `powers.unilateral` question,
+  // and the two doors have carried their own gate since Q811.
+  const founderHandOff = (c) => amFounder() && !c.ansFor && !c.isGate && !c.door &&
+    !c.power && !c.record && c.kind !== 'personal' &&
+    MANAGED_KEYS.includes(c.k) && !founderDirect(c);
   // **One 🏛️ out per member, on every card including the one it is out on**
   // (Q816). The exemption for `c.k` was a guess about which card could still
   // be composing, and the module makes no such exemption: `openMotion`
@@ -5614,7 +5686,10 @@
       // half of a setting's governance, its head the rule as it stands
       if (c.power) {
         const pHeld = c.power === 'u' ? pwPair(c.base).u : pwPair(c.base).a;
-        const editable = amFounder() && !(cs && cs.constitutedAtT !== null && !pHeld);
+        // …and never on a closed document (entry 62): `relinquish` and
+        // `reclaim` both `requireOpen`, so this ✒️ posted a command the server
+        // answers 400. It is not pen-gated (SURFACE Y7) and stays so.
+        const editable = amFounder() && docOpen() && !(cs && cs.constitutedAtT !== null && !pHeld);
         // ✒️, not ✓: giving up a power is the founder's unilateral set,
         // and ✒️ is the pen every unilateral set on this surface commits
         // with — the ✓ is reserved for answering a shared question
@@ -5694,7 +5769,13 @@
       const body = c.ansFor ? ANSWER[c.ansFor](S.myAns, E(), c.ansFor === 'quorum' ? S.quorumForm : undefined)
         // a card that is not yours to answer reads as the rule it is —
         // the founder's settings are read-only from any other chair
-        : (!amFounder() && c.own !== 'you' && !doorDirect(c))
+        // **…and from the founder's own, once the pen on it is down** (entry
+        // 62). The seat was the whole test, so a founder who had laid a pen
+        // down still met the lane and the radios that pen paid for — live,
+        // pressable, and refused by the server with a console warning nobody
+        // reads. `founderHandOff` is the same question the composer swap has
+        // always asked, put to the body.
+        : ((!amFounder() || founderHandOff(c)) && c.own !== 'you' && !doorDirect(c))
         ? readBody(c, ctx) + (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '')
         : BODY[c.k]() + delegateRung(c) +
           (wasAsked(c) && settled(c) ? '<div class="body">' + watchBody(c, ctx) + '</div>' : '');
@@ -5752,7 +5833,10 @@
         const k = cc.k;
         if (cc.ansFor || cc.isGate || cc.door || !PW_KEYS.includes(k) || k === 'text') return '';
         // the founder, about to change something that already stands: a lane
-        if (amFounder() && cs && isChange(k) && !motionOn(cc) && !membersHold(cc)) {
+        // — where they still can (entry 62). A rationale field on a setting
+        // whose pen is down, or on a closed document, is asking for the reason
+        // for a change that cannot be made.
+        if (amFounder() && cs && founderDirect(cc) && isChange(k) && !motionOn(cc) && !membersHold(cc)) {
           const v = (S.setWhy && S.setWhy[k]) || '';
           return '<div class="body whyset"><p class="eyebrow fieldlab">Why are you changing this?</p>' +
             founderSpeakerLane(v) + '</div>';
@@ -5826,7 +5910,10 @@
       const foot = (c.k === 'invite' && doorDirect(c))
         ? binBtn() +
           '<button class="btn btn-approve glyphbtn" data-close="1" title="Done">' + TICK + '</button>'
-        : (!amFounder() && c.own !== 'you' && !c.ansFor)
+        // …and the same for a founder whose hand is off this setting (entry
+        // 62): the body above is already the settled card, and a settled card
+        // commits nothing. 🗑️ is the band's always-live close (Q613 (a)).
+        : ((!amFounder() || founderHandOff(c)) && c.own !== 'you' && !c.ansFor)
         ? (stateOf(c, ctx) === 'news'
           ? binBtn() +
             '<button class="btn btn-approve" data-ok="' + newsKey + '">OK</button>'
@@ -5851,7 +5938,11 @@
         // value now, so this card keeps the shared bin (2026-08-21)
         ? binBtn() +
           '<button class="btn btn-approve glyphbtn emojibtn"' +
-          (commitReady(c) && (!cs || mayPen()) ? '' : ' disabled') +
+          // the lock, not the wallet (entry 62): 🪶 at the birth, and after it
+          // the pen **on the title**. The tooltip still asks the wallet, since
+          // *your pen is waiting in your tasks* is only ever the right
+          // explanation when the wallet is what is missing.
+          (commitReady(c) && (!cs || mayPenOn('title')) ? '' : ' disabled') +
           ' data-confirm="1" title="' + (!cs || mayPen() ? commitTitle(c) : penWaitTitle) + '">' +
           (cs ? '✒️' : '🪶') + '</button>'
         // 📧 in flight: the act is resending, and it spends nothing, so it is
@@ -5876,7 +5967,12 @@
               !(cs && cs.constitutedAtT !== null);
             return binBtn() +
               '<button class="btn btn-approve glyphbtn emojibtn"' +
-              (dirty && mayPen() ? '' : ' disabled') +
+              // 🎩 has no power pair, so it keeps the wallet question — plus
+              // `docOpen()`, since `set-convenor-membership` is refused after
+              // the close like everything else (entry 62, Ed B25 (a)). Its
+              // own `dirty` term already dies at 🍾, so this is belt to that
+              // brace and the one term a later change could not lose quietly.
+              (dirty && mayPen() && docOpen() ? '' : ' disabled') +
               ' data-confirm="1" title="' + (mayPen() ? 'Set it' : penWaitTitle) + '">✒️</button>'; })()
         : stateOf(c, ctx) === 'news'
         ? binBtn() +
@@ -5913,10 +6009,15 @@
         // and a setting about yourself — your name, picture, email — bind
         // nobody (§9.0c), so they commit with ✓, never the pen.
         '<button class="btn btn-approve glyphbtn' + (commitGlyph === TICK ? '' : ' emojibtn') + '"' +
-        (ready(c) && penOkFor(commitGlyph) ? '' : ' disabled') +
+        // the card decides the ✒️, the wallet decides the sentence (entry 62)
+        (ready(c) && penOkFor(commitGlyph, c) ? '' : ' disabled') +
         ' data-confirm="1" title="' +
         (penOkFor(commitGlyph) ? commitTitle(c) : penWaitTitle) + '">' + commitGlyph + '</button>');
-      return cardHtml(c, ctx, body + changeHalf(c) + kindLine, foot, g.cards);
+      // the refusal line, under the body and beside the commit row that tried
+      // (entry 62). The two doors draw it inside their own bodies already, so
+      // they are excluded here rather than carrying it twice.
+      return cardHtml(c, ctx,
+        body + changeHalf(c) + kindLine + (c.door ? '' : doorErrHtml(c.k)), foot, g.cards);
     };
     // the title card opens in the title's own paragraph, whatever else
     // the band is doing — the clause, opened, with its tab in its strip
@@ -6468,11 +6569,13 @@
           // a power tab commits its own half of a setting's governance
           // (403/405, Ed 2026-08-19)
           if (/^pw:(u|a):/.test(was)) { commitPower(was); return; }
+          // the two special-cased settings read their own refusal like the
+          // generic branch does through `commitSetting` (entry 62)
           if (was === 'title') {
-            if (S.title !== cs.titleOf) cs.setSetting(now(), 'title', { text: S.title });
+            if (S.title !== cs.titleOf) watchSet('title', cs.setSetting(now(), 'title', { text: S.title }));
             return; }
           if (was === 'slug') {
-            if (S.slug !== cs.slug) cs.setSetting(now(), 'link', { slug: S.slug });
+            if (S.slug !== cs.slug) watchSet('slug', cs.setSetting(now(), 'link', { slug: S.slug }));
             return; }
           if (was === 'text') { cs.confirmStartingText(now(), proseText()); return; }
           // committing is the act, whatever the value — an empty name is
@@ -6491,7 +6594,13 @@
             S.hatPick = null;
             return; }
           if (MANAGED_KEYS.includes(was) && amFounder()) commitSetting(was);
-        } catch (e) { console.warn('[cs]', e && e.message); }
+        } catch (e) {
+          console.warn('[cs]', e && e.message);
+          // the module's half of entry 62: where the page holds the session
+          // itself a refusal is a throw, and it lands here rather than in a
+          // `.then`. Only for a card that can carry the line.
+          if (cw && !cw.power && !cw.record) refuseSet(was, e && e.message);
+        }
       }); }
     if (ev.target.closest('button[data-close]')) return closeThen(() => { S.open = null; });
     // the shared bin, under the one rule above: put this card back, then
@@ -6922,7 +7031,11 @@
     // a refusal is about what was in the field, so the next keystroke
     // retires it — repainted in place, since a render here would rebuild
     // the card under the caret (Q811)
-    if (t.matches && (t.matches('[data-add]') || t.matches('[data-emails]')) && S.doorErr) {
+    // …and any field on the card the refusal belongs to retires it the same
+    // way (entry 62), now that a settings card can carry one too
+    if (t.matches && S.doorErr &&
+        (t.matches('[data-add]') || t.matches('[data-emails]') ||
+         cardKeyAt(t.closest('.setupcard')) === S.doorErr.k)) {
       S.doorErr = null;
       const line = (t.closest('.setupcard') || document).querySelector('.why.refusal');
       if (line) line.remove();
