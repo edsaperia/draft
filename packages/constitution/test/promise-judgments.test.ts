@@ -51,7 +51,9 @@ import { EngineBridge } from '../src/engine-bridge.js';
 import { CATALOGUE } from '../src/catalogue.js';
 import { view } from '../src/view.js';
 import type { MemberView } from '../src/view.js';
-import { buildConstituted } from './helpers.js';
+// `test/helpers.ts`'s `buildConstituted` is deliberately not used: it bakes
+// `judgments: { rung: 'after' }`, and every case here needs the rung as a
+// parameter. `built` below is that helper's recipe with the one value moved.
 
 type Rung = 'never' | 'after';
 const RUNGS: Rung[] = ['never', 'after'];

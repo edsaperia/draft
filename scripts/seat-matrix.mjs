@@ -156,6 +156,17 @@ const AUDIENCE = {
   // (`APPCARDS`), never `STRCARDS` — so the door's two keys belong to the
   // stranger seat alone (entry 78).
   strangers: (s) => s.role === 'stranger',
+  // E10, a constitutional motion put (promise-coverage entry 84). Two things
+  // narrow *active* from `every member`, and both are the table's own
+  // arithmetic rather than an opinion about the page:
+  //  · **the lapsed seat is out** — a lapsed membership leaves the motion
+  //    electorate (§9.5a), so nothing is being asked of it;
+  //  · **the mover is not asked** — §9.6 stands the mover at accept from the
+  //    moment the motion is put (R-021), and §2's own Close column for this
+  //    row is *answered entry leaves*, so the seat that put it carries no ask.
+  'every active member': (s, step, ctx, ev) => isMember(s) &&
+    s.name !== ctx.actorOf(ev) &&
+    !(s.lapses === true && ev.at > stepIndex('wait-lapsed')),
 };
 
 /* ---- table 2: the steps ------------------------------------------------ *
@@ -285,6 +296,70 @@ const STEPS = [
         why: 'the clubhouse keys were never returned' };
     },
     events: [{ id: 'E11', key: 'remove', at: 'remove-motion' }] },
+  // **👁️ judgments** (promise-coverage entry 84, batch L). Four rows that put
+  // real judgments on the wire, so every seat's `view()` snapshot from here on
+  // has something to leak and a later run can diff against these: a running
+  // 🏛️ motion with two answers standing (E10), and one text race judged (E13).
+  // Two of the four assert nothing — they are the acts that make the other two
+  // possible, like `invite-early` before `seat-early`.
+  //
+  // What is deliberately *not* here is the assertion this pair most wants —
+  // *no seat's snapshot carries another seat's answer*. That is an oracle over
+  // the `view()` snapshot, a change to this harness's shape rather than a row
+  // in its table, so entry 84 files it for whoever owns the harness and leaves
+  // the snapshots behind as the evidence a later run can read.
+  { id: 'judgments-motion', epoch: 'live', kind: 'cmd', seat: 'early', cmd: 'open-motion', ifHat: 'member',
+    // 👁️ stands at `after` in `SETTINGS` and is the founder's by pen, so a
+    // motion to `never` is a real constitutional change with a real crown
+    // behind it. `ifHat` for `remove-motion`'s reason: the clerk document
+    // never reaches the live epoch at HEAD (Q920).
+    // **Expected red at HEAD, under Q919**: every member seat's rail is empty
+    // from 💤 down (the page cannot rehydrate it), so `late` — inside the
+    // audience, owed the ask — carries nothing and is reported as a finding.
+    // It is the same defect the E4 rows already report on this document, on
+    // one more key; when Q919 is built this row should go green with them.
+    args: () => ({ payload: { kind: 'set', setting: 'judgments', value: { rung: 'never' } },
+      why: 'how I judged should stay mine, and the record should not name it' }),
+    events: [{ id: 'E10', key: 'judgments', at: 'judgments-motion' }] },
+  // one keep, and the motion stands running for the rest of the run: a keep
+  // does not settle a 🏛️ motion, it blocks it (§9.6, `maybeSettleMotions`),
+  // which is exactly the state worth snapshotting — two answers on the wire,
+  // neither seat told the other's.
+  { id: 'judgments-keep', epoch: 'live', kind: 'cmd', seat: 'late', cmd: 'answer-motion', ifHat: 'member',
+    args: async (D) => {
+      const v = await viewAs(D, 'late');
+      const m = (((v || {}).view || {}).motions || []).find((x) => x.status === 'running' &&
+        x.route === 'constitutional' && ((x.payload || {}).setting) === 'judgments');
+      if (!m) throw new Error("no running 🏛️ motion on `judgments` in the late seat's view — the motion step did not land");
+      return { motion: m.id, answer: 'keep' };
+    },
+    events: [] },
+  // a text race for E13 to be about: the admit and removal races the live
+  // epoch already carries are *setting* races, and E13 is a **text** race
+  { id: 'propose-text', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'propose-text', ifHat: 'member',
+    args: async (D) => {
+      const v = await viewAs(D, 'founder');
+      return { baseVersion: v.textVersion,
+        hunks: [{ start: 1, end: 2, lines: ['Every member may bring two guests.'] }],
+        why: 'one guest is thin for a clubhouse this size' };
+    },
+    events: [] },
+  // E13's audience is *whoever the router serves*, which has no `AUDIENCE`
+  // predicate and cannot have one until `view()` states the router's choice —
+  // the same cell E11 reports, and reported here the same way. The row's
+  // worth is that a judgment was really cast: `early` is served the pair from
+  // its own feed and answers it, so every snapshot after this one carries a
+  // document with a live judgment in it.
+  { id: 'judge-text', epoch: 'live', kind: 'cmd', seat: 'early', cmd: 'judge-race', ifHat: 'member',
+    args: async (D) => {
+      const v = await viewAs(D, 'early');
+      const text = new Set(((v || {}).clauses || []).map((c) => c.id));
+      const card = ((v || {}).raceCards || []).find((c) => text.has(c.raceId));
+      if (!card) throw new Error('no text race card served to the early seat — nothing to judge');
+      return { a: card.a.id, b: card.b.id, outcome: 'a' };
+    },
+    events: [{ id: 'E13', key: null, at: 'judge-text',
+      noKey: 'E13\'s audience is *whoever the router serves*: the page files the entry the feed hands it, and no seat-side key states the router\'s choice' }] },
   // ✒️ laid down on ⏱️ `rate`, not ⏰ (B14, 2026-08-27): the ladder drives
   // `ending` with the founder's pen and would stall on a relinquished one.
   // The page exposes no key for E9's news (Q571 unbuilt; `relinquish` owes
