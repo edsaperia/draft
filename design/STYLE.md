@@ -60,6 +60,10 @@ founder-is-member 🎩, proposing gate 💡, judging gate ⚖️, crown 👑, ho
   your own line (Ed, 2026-08-21), with *(nobody else here yet)* **above** you
   until somebody arrives — a statement about the list, not a caption on you
   (Q753). A clerk has no row there, so the list reads *(nobody here yet)*.
+- And the birth's title clause, where the Founder meets the word for the first
+  time, says *(that’s you!)* once and only there (Ed, 2026-08-27, entry 140) —
+  only the Founder ever sees the birth, and after the save the same clause is
+  byte-identical to what every other reader gets.
 
 ## 4. Titles and labels
 
@@ -219,7 +223,7 @@ Since entry 128 the strings these rules govern are **pinned**: `npm run copy-che
 | T7 | A power option is a proposal block, not a radio label: the rule at document size with a full stop, its consequence as a note, a lane bar reading *Choose this / Chosen* | `powerLane` |
 | T8 | The power clause is one sentence in Ed's vocabulary: a member proposes; the membership passes and rejects; the Founder assents, refuses and amends. *pass* not *carry*; *refuse* is the Founder's word | `PW_PHRASE`; the 👑 question's buttons are *Refuse / Accept* |
 | T9 | One voice, only the object changing: per-setting phrases only where the generic would be untrue (policy, text) | `PW_PHRASE`, `PW_OPTS`, `PW_NOUN` |
-| T10 | The constitution's sentences are third person; "you" belongs to tasks and cards; one exception — you at the top of the members list | *The Founder is checking their email for a link.* |
+| T10 | The constitution's sentences are third person; "you" belongs to tasks and cards; two exceptions — you at the top of the members list, and the birth's title clause | *The Founder is checking their email for a link.* · *The Founder (that’s you!) may amend this at will.* (birth only) |
 | T11 | A paragraph states the document's rule, never your own answer | the watch half shows a count, never a value |
 | T12 | A count, never a direction, while a question runs | *4 of 9 have answered* |
 | T13 | A value, never a guess: an undecided rule says who is deciding it, and what applies meanwhile where something does | *The Founder is deciding [x]*; *Until the Founder decides, only members can see the document* (Q618) |

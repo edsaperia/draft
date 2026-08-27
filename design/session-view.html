@@ -1982,7 +1982,15 @@
     text: { u: 'amend the text at will', a: 'refuse changes to the text that the membership pass' },
   };
   const pwPhrase = (k, power) => (PW_PHRASE[k] || PW_PHRASE['*'])[power];
-  const founderMay = (parts) => (parts.length ? 'The Founder may ' + parts.join(', and ') + '.' : '');
+  // the aside is the birth's title clause and nothing else (Ed, 2026-08-27,
+  // backlog 140): it is *the sentence that first names one*, so it is where
+  // the Founder learns the word means them — and *repeated, it would read as
+  // a tic*, so no other clause and no card head ever passes the flag. Second
+  // person inside a constitutional sentence is STYLE.md §3's second recorded
+  // exception, not something for the next copy pass to tidy away.
+  const founderMay = (parts, aside) => (parts.length
+    ? 'The Founder' + (aside ? ' (that' + Q + 's you!)' : '') +
+      ' may ' + parts.join(', and ') + '.' : '');
   // the same grammar for a power laid down *from the start* (R-048): the
   // negative under a date, so a reader can tell a power already given from
   // one given up the moment the document begins
@@ -4438,7 +4446,8 @@
     if (!PW_KEYS.includes(k)) return '';
     // at the birth the founder holds everything by construction — there is no
     // module yet, and nobody else to hold anything
-    if (!cs) return ' ' + founderMay([pwPhrase(k, 'u')]);
+    // — and the title's is the one that says whose hand that is (backlog 140)
+    if (!cs) return ' ' + founderMay([pwPhrase(k, 'u')], k === 'title');
     const st = pwState(k);
     if (!st || st.holder === 'members') return '';
     const p = st.powers;

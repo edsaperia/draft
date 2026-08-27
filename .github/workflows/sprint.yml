@@ -1,0 +1,54 @@
+# The sprint-end checks (Q625): run once per shipped batch, on the
+# `batch/<letter>-<date>` tag `pq ship` pushes, and by hand from the Actions
+# tab. These are checks against a frozen golden that a day's work
+# legitimately moves, so they are compared when a batch is closed and
+# re-frozen as part of closing it, not at every push.
+#
+# A tag push checks out **the tag**, so the golden compared is the one that
+# shipped with the batch. That is the intent — but it also means a re-run
+# after a re-freeze needs either a new tag or a `workflow_dispatch` aimed at
+# the ref that carries the fix. A red run here is a finding about the batch
+# that shipped, not a broken workflow.
+name: Sprint
+on:
+  push:
+    tags: ['batch/**']
+  workflow_dispatch: {}
+
+jobs:
+  golden:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: playwright version, for the browser cache key
+        id: pw
+        run: echo "v=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: browser
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ steps.pw.outputs.v }}
+      - if: steps.browser.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.browser.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      # the golden founding walk (spec pass 2, Q586 c; re-asked as Q625): the
+      # order the founder meets, the rail at each step and the first words of
+      # every clause, against design/tools/founding-walk.golden.json.
+      #
+      # Here rather than in ci.yml's probe job because Ed answered Q625 on
+      # 2026-08-26 with *run it at the end of each sprint*: a founding change
+      # is legitimate and reddens this walk until the golden is re-frozen, so
+      # at every push it was red for days at a time and 52 differences stale
+      # when finally run by hand. **Expect red after a founding change**, and
+      # re-freeze with `node scripts/founding-golden.mjs --update` as part of
+      # closing the batch.
+      #
+      # A red here gates nothing: the deploy already happened on the push of
+      # main that this tag was cut from.
+      - run: npm run founding-golden

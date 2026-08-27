@@ -9,7 +9,9 @@
  * The static checker (spec-check) reads ORDER and SEC; this is the one
  * assertion that catches a regression in a predicate (blocksOrder, hide,
  * ansGate) that the static read cannot see. Spec pass 2, Q586 (c),
- * 2026-08-22; whether it stays at every push is Q625.
+ * 2026-08-22. It runs once per shipped batch, from
+ * .github/workflows/sprint.yml on the batch tag, and by hand — never at
+ * the push (Q625, Ed 2026-08-26: *run it at the end of each sprint*).
  *
  *   node scripts/founding-golden.mjs            # compare, exit 1 on a diff
  *   node scripts/founding-golden.mjs --update   # refresh the golden on purpose

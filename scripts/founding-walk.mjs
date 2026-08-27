@@ -217,6 +217,50 @@ const record = async (step, note) => {
   return s;
 };
 
+/**
+ * **At the birth the title clause says who the Founder is** (Ed, 2026-08-27,
+ * backlog 140). The birth's first clause is the founder's first meeting with
+ * the word *Founder*, and until this sentence nothing on the page has told
+ * them it means them — so it carries *(that’s you!)*, once, on the title and
+ * nowhere else. Three assertions, because the aside has three ways to be
+ * wrong: absent at the birth, still there after the save (where the clause is
+ * read by members who are *not* the Founder, and must be byte-identical to
+ * what it always was), or repeated down the band, where it reads as a tic.
+ * The apostrophe is the page's own curly `Q`, which `snap()` preserves — it
+ * only collapses whitespace — so a straight quote here would pass vacuously.
+ */
+const BIRTH_TITLE =
+  /^The document is titled “Hollow Oak Club Charter”\. The Founder \(that’s you!\) may amend this at will\.$/;
+const SAVED_TITLE =
+  'The document is titled “Hollow Oak Club Charter”. The Founder may amend this at will.';
+const ASIDE = 'that’s you';
+const titleClauseAtBirth = async () => {
+  const said = await clauseText('title');
+  if (!BIRTH_TITLE.test(said || '')) {
+    errors.push('the birth’s title clause does not tell the founder who the Founder is: ' +
+      (said === null ? '(no title clause in the band)' : said));
+  }
+};
+const titleClauseAfterSave = async (s) => {
+  const said = await clauseText('title');
+  if (said !== SAVED_TITLE) {
+    errors.push('the aside outlived the birth: ' +
+      (said === null ? '(no title clause in the band)' : said));
+  }
+  const carried = (s.paras || []).filter((p) => String(p.text).includes(ASIDE));
+  if (carried.length) {
+    errors.push('the aside outlived the birth: ' +
+      carried.map((p) => p.k).join(', ') + ' still say it after the save');
+  }
+};
+const asideOnTitleAlone = (s) => {
+  const carried = (s.paras || []).filter((p) => String(p.text).includes(ASIDE));
+  if (carried.length !== 1 || carried[0].k !== 'title') {
+    errors.push('the aside is on ' + carried.length + ' clauses at the birth (' +
+      (carried.map((p) => p.k).join(', ') || 'none') + '), and it belongs on the title alone');
+  }
+};
+
 await record('arrive');
 
 /* ---- the birth ------------------------------------------------------- */
@@ -225,11 +269,13 @@ await record('open title');
 await typeIn('.setupcard [data-titlelane]', 'Hollow Oak Club Charter');
 await clickIn('.setupcard [data-confirm]');
 await record('commit title');
+await titleClauseAtBirth();
 
 await openCard('slug');
 await record('open slug');
 await clickIn('.setupcard [data-confirm]');
-await record('commit slug');
+const atCommitSlug = await record('commit slug');
+asideOnTitleAlone(atCommitSlug);
 
 await openCard('myemail');
 await record('open myemail');
@@ -238,7 +284,8 @@ await clickIn('.setupcard [data-confirm]');
 await record('commit myemail (sends)');
 await clickIn('[data-act="clickmail"]');
 await page.waitForTimeout(600);
-await record('follow the magic link');
+const atMagicLink = await record('follow the magic link');
+await titleClauseAfterSave(atMagicLink);
 
 /* ---- then whatever the rail asks for, one at a time ------------------- */
 const PEN_RELEASE = 'quorum';         // 👥, whose value the walk sets itself
