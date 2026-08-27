@@ -45,4 +45,26 @@ export interface Fit {
   winProb(i: string, j: string): number;
   /** Posterior variance of (strength_i - strength_j). */
   varDiff(i: string, j: string): number;
+  /**
+   * Why the MAP optimisation stopped. Three paths used to be
+   * indistinguishable to the caller (entry 77): `tolerance` is the healthy
+   * one, `no-ascent` means no step along Newton or the gradient increased
+   * the objective (ordinarily also converged — the fit is at a numerical
+   * optimum — but it is not the same event), and `max-iterations` means the
+   * cap ran out with the gradient still moving.
+   */
+  stop: 'tolerance' | 'no-ascent' | 'max-iterations';
+  /** Newton steps actually taken. */
+  iterations: number;
+  /** max |grad| of the log-posterior at the returned point. */
+  gradMax: number;
+  /**
+   * Whether the optimiser had anything left to do: false exactly when the
+   * iteration cap ran out with the gradient still above `tolerance`. A
+   * `no-ascent` stop counts as converged — perfect separation reaches it
+   * routinely at a `gradMax` well above tolerance, and the fit is then as
+   * good as double precision allows. What a caller near an adoption
+   * decision should do with a false is Q945.
+   */
+  converged: boolean;
 }
