@@ -791,6 +791,20 @@ describe('the surface is served', () => {
     expect(sneaky.status).toBe(404);
   });
 
+  // the explainer at /pairwise (entry 163). The body assertion is the point:
+  // the page must reach for `votesNeeded` in the bundle rather than carry a
+  // copy of the table, or the chart and the fit can drift apart in silence.
+  it('serves the approval-threshold explainer at /pairwise', async () => {
+    const { base } = await boot();
+    const page = await fetch(`${base}/pairwise`);
+    expect(page.status).toBe(200);
+    expect(page.headers.get('content-type')).toContain('text/html');
+    expect(await page.text()).toContain('votesNeeded');
+    // exact path only — no alias and no trailing-slash variant
+    expect((await fetch(`${base}/pairwise.html`)).status).toBe(404);
+    expect((await fetch(`${base}/pairwise/`)).status).toBe(404);
+  });
+
   it('serves the top of the design tree only — no notes, references or tooling', async () => {
     const { base } = await boot();
     for (const path of ['/design/STYLE.md', '/design/tools/session-probe.js',
