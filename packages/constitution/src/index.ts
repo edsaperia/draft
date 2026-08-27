@@ -22,7 +22,8 @@ export { ConstitutionSession } from './session.js';
 export type { OpenInput, WaitingHold, WaitingWhy } from './session.js';
 export { eOf, inE, quorumBaseOf, motionElectorateOf, quorumCount,
   adoptionFloorTerm, adoptionFloor } from './populations.js';
-export { BAR_CEILING_PCT, barAt, barCeilingPct, reAnchor, seedAnchors, smoothstep } from './threshold.js';
+export { BAR_CEILING_PCT, VOTES_NEEDED, VOTES_NEEDED_HI_PCT, VOTES_NEEDED_LO_PCT, VOTES_NEEDED_MAX_N,
+  barAt, barCeilingPct, reAnchor, seedAnchors, smoothstep, votesNeeded } from './threshold.js';
 export type { ThresholdAnchors } from './threshold.js';
 export { lapseDue, WARN_FRACTION } from './clocks.js';
 export { view, constitutionBlock, roomSettings } from './view.js';

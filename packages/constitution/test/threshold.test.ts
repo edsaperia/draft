@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { BAR_CEILING_PCT, barAt, barCeilingPct, reAnchor, seedAnchors, smoothstep } from '../src/threshold.js';
+import { BAR_CEILING_PCT, barAt, barCeilingPct, reAnchor, seedAnchors, smoothstep, votesNeeded } from '../src/threshold.js';
 import { adoptionThreshold } from '../../engine-core/src/adoption-threshold.js';
-import { ceilingPct } from '../../engine-core/src/ranking/ceiling.js';
+import { ceilingPct, unanimousCeiling } from '../../engine-core/src/ranking/ceiling.js';
+import { fitDavidson } from '../../engine-core/src/ranking/davidson.js';
+import type { Comparison } from '../../engine-core/src/ranking/types.js';
 import type { Constitution } from '../../engine-core/src/types.js';
 import { adoptionFloor, adoptionFloorTerm, quorumCount } from '../src/populations.js';
 
@@ -74,6 +76,79 @@ describe('threshold anchors (§4.3, v0.48)', () => {
     expect(barCeilingPct(1000)).toBe(99);
     // a count that arrives empty reads as the sole member, not as no data
     expect(barCeilingPct(0)).toBe(79);
+  });
+
+  /**
+   * The votes table (entry 163), pinned the same way and for the same reason:
+   * `/pairwise` draws its chart from `votesNeeded` because the bundle carries
+   * no engine-core, so this is the case that keeps the copy honest. Every cell
+   * is re-derived from `fitDavidson` — `k − 1` votes for must **not** clear the
+   * bar and `k` must, strictly, which is `sweepAdoptions`' own `>`.
+   *
+   * The posteriors are computed once per vote count and shared across the fifty
+   * bars: two fits per cell, memoised, not two fits per assertion.
+   */
+  it('VOTES_NEEDED is the smallest k that clears the bar, cell by cell', () => {
+    const posterior = (k: number, n: number) => {
+      const comps: Comparison[] = [];
+      for (let i = 0; i < n; i++) comps.push({ a: 'c', b: 'inc', outcome: i < k ? 'a' : 'b' });
+      return fitDavidson(['c', 'inc'], comps).probBeats('c', 'inc');
+    };
+    // every vote count to 30, then every tenth: the shape of the curve is
+    // settled by 30 and the tail is where a transcription slip would hide
+    const counts = [...Array.from({ length: 30 }, (_, i) => i + 1), 40, 50, 60, 70, 80, 90, 100];
+    for (const n of counts) {
+      const ps = Array.from({ length: n + 1 }, (_, k) => posterior(k, n));
+      for (let pct = 50; pct <= 99; pct++) {
+        const k = votesNeeded(n, pct);
+        const bar = pct / 100;
+        if (k === 0) {
+          // the unreachable cell: not even every vote makes the room that sure
+          expect(ps[n]! > bar, `${n} votes, ${pct}%: unanimity clears it after all`).toBe(false);
+        } else {
+          expect(ps[k]! > bar, `${n} votes, ${pct}%: ${k} for does not clear it`).toBe(true);
+          expect(ps[k - 1]! > bar, `${n} votes, ${pct}%: ${k - 1} for already clears it`).toBe(false);
+        }
+      }
+    }
+  });
+
+  /**
+   * The two facts the page's chart and its em dash rely on, asserted over the
+   * whole table rather than the sample above.
+   */
+  it('the table is monotone along a row, and 0 is exactly Q840’s ceiling', () => {
+    for (let pct = 50; pct <= 99; pct++) {
+      let seenReachable = false;
+      for (let n = 1; n <= 100; n++) {
+        const k = votesNeeded(n, pct);
+        // the share needed falls, but the count never does
+        if (k !== 0) {
+          expect(k, `${n} votes at ${pct}%`).toBeGreaterThanOrEqual(votesNeeded(n - 1, pct));
+          seenReachable = true;
+        } else {
+          // unreachable cells are a prefix: a bar out of reach at n votes is
+          // out of reach at every smaller n too
+          expect(seenReachable, `${pct}% went unreachable again at ${n} votes`).toBe(false);
+        }
+        // 0 is the ceiling seen from the other side (Q840)
+        expect(k === 0, `${n} votes at ${pct}%`).toBe(unanimousCeiling(n) <= pct / 100);
+      }
+    }
+  });
+
+  it('votesNeeded floors and clamps like barCeilingPct', () => {
+    expect(votesNeeded(0, 60)).toBe(votesNeeded(1, 60));   // below one vote reads as one
+    expect(votesNeeded(5.9, 60)).toBe(votesNeeded(5, 60)); // floored, never rounded
+    expect(votesNeeded(5, 49)).toBe(votesNeeded(5, 50));   // a bar off either edge
+    expect(votesNeeded(5, 100)).toBe(votesNeeded(5, 99));  // reads as the nearest one held
+    expect(votesNeeded(1000, 60)).toBe(votesNeeded(100, 60));
+    expect(votesNeeded(Number.NaN, 60)).toBe(votesNeeded(1, 60));
+    // the plan's own worked cells, so the file states them in the open
+    expect(votesNeeded(5, 80)).toBe(4);
+    expect(votesNeeded(10, 80)).toBe(7);
+    expect(votesNeeded(100, 80)).toBe(55);
+    expect(votesNeeded(1, 80)).toBe(0);
   });
 });
 
