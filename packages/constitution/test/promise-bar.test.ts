@@ -103,6 +103,17 @@ function penHeld(opts: { bar?: number; perpetual?: boolean; ramp?: number } = {}
   return { s, bo, cy };
 }
 
+/**
+ * Every `adopted` the engine has recorded, with its `p` and the `threshold` it
+ * cleared. **`flatMap`, not a hand-written `e is …` predicate**: engine-core's
+ * `Event` is a discriminated union, so the union member narrows by itself here
+ * — a predicate naming only the two fields this file reads is not assignable
+ * to `Event` and is red under `tsconfig.test.json`.
+ */
+function adoptions(bridge: EngineBridge): Array<{ p: number; threshold: number }> {
+  return bridge.engine.log.flatMap((e) => (e.event.type === 'adopted' ? [e.event] : []));
+}
+
 /** A pre-start document with everything but `bar` settled by the founder's pen. */
 function preStartAllButBar(opts: { endingSettled?: boolean } = {}) {
   const s = ConstitutionSession.open({
@@ -176,8 +187,7 @@ describe('P1 — a proposal is adopted only when the room is this sure', () => {
     const { candidate } = bridge.openSetMotion(10, bo, 'ending', { endsAtMs: 2_000_000 });
     const race = bridge.engine.races().find((r) => r.settingId === 'ending')!;
     bridge.judge(20, cy, candidate!, race.incumbentId, 'a');
-    const adopted = bridge.engine.log.map((e) => e.event)
-      .filter((e): e is { type: 'adopted'; p: number; threshold: number } => e.type === 'adopted');
+    const adopted = adoptions(bridge);
     expect(adopted.length).toBe(1);
     // the recorded bar is the document's own, and the winner cleared it
     expect(adopted[0]!.threshold).toBeCloseTo(0.66, 10);
@@ -187,7 +197,7 @@ describe('P1 — a proposal is adopted only when the room is this sure', () => {
 
 describe('P2 — the delegated question collects the bar at the close', () => {
   it('the document takes the highest stated minimum, and publishes the shape without names', () => {
-    const { s } = buildConstituted({ bar: undefined }); // 66 · 55 · 60
+    const { s } = buildConstituted(); // the helper's own answers: 66 · 55 · 60
     const st = s.settingState('bar');
     expect(st.value).toEqual({ pct: 66 }); // the maximum, not the mean
     expect(st.settledBy).toBe('ceremony');
@@ -252,9 +262,7 @@ describe('P3 — changing the bar never re-judges what was adopted (§4.3)', () 
     const { candidate } = bridge.openSetMotion(10, bo, 'ending', { endsAtMs: 2_000_000 });
     const race = bridge.engine.races().find((r) => r.settingId === 'ending')!;
     bridge.judge(20, cy, candidate!, race.incumbentId, 'a');
-    const before = bridge.engine.log.map((e) => e.event)
-      .filter((e): e is { type: 'adopted'; threshold: number } => e.type === 'adopted')
-      .map((e) => e.threshold);
+    const before = adoptions(bridge).map((e) => e.threshold);
     expect(before).toEqual([expect.closeTo(0.66, 10)]);
 
     // 🌡️ is the room's here, so unanimity carries it into the document
@@ -272,9 +280,7 @@ describe('P3 — changing the bar never re-judges what was adopted (§4.3)', () 
 
     // **nothing already adopted is re-tested**: the recorded threshold is the
     // bar that adoption actually cleared, and it does not move with the rule
-    const after = bridge.engine.log.map((e) => e.event)
-      .filter((e): e is { type: 'adopted'; threshold: number } => e.type === 'adopted')
-      .map((e) => e.threshold);
+    const after = adoptions(bridge).map((e) => e.threshold);
     expect(after).toEqual(before);
   });
 
