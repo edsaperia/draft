@@ -16,6 +16,9 @@
  *   node scripts/applicants-walk.mjs --price=assembly
  *   node scripts/applicants-walk.mjs --price=pen
  *
+ * CI's `walks` job runs all three prices at every push, against a dev server
+ * it boots itself and hands to all four walks (Q917 (a)).
+ *
  * It drives the **birth** through the surface, because the save is a real POST
  * and a real magic link and no fixture reaches it; then it sets the rest of the
  * constitution over the wire with the founder's own pen, because this walk is

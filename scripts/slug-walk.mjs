@@ -24,6 +24,9 @@
  *   curl -X POST <base>/api/docs -H 'content-type: application/json' \
  *     -d '{"title":"Test Charter","slug":"test-charter","email":"a@b.com"}'
  *
+ * CI's `walks` job runs this at every push, against a dev server it boots
+ * itself; that curl is the job's own reservation step (Q917 (a)).
+ *
  * Why it is not part of `journey-walk.mjs`: the journey births with a unique
  * title, so it can never meet a taken address; and both probes drive the
  * fixture, where the check is synchronous and the live path is never reached.

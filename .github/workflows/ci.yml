@@ -1,6 +1,11 @@
 # The one gate (PRODUCTION.md stage 1): everything that lands on main has
-# linted, typechecked, tested, built, and booted. The test suite includes the
-# constitution browser bundle's byte-freshness check, so a stale
+# linted, typechecked, tested, built, booted — and, in the `walks` job at the
+# foot of this file, been walked end to end against a server that job starts.
+# `walks` and `probe` are the two jobs that can be red without holding the
+# deploy, which is a step of `ci` and runs in parallel with both.
+#
+# The test suite includes the constitution browser bundle's byte-freshness
+# check, so a stale
 # design/constitution.js fails here too. Auto-deploy stays off at the
 # platform, because the deploy hangs off the end of this workflow instead
 # (decision 476): the hook and the base URL are both configured, so a push
@@ -171,3 +176,131 @@ jobs:
       # the build here rather than surfacing weeks later as a bug.
       - run: npm run probe-coverage
         if: always()
+
+  # The four walks that need a running product server (entry 142, Q917 (a),
+  # Ed 2026-08-27): `journey`, `applicants-walk`, `slug-walk` and `ladder`
+  # were run by hand and nowhere else. That gap is how Q916 happened —
+  # `journey-walk` was dead for a day against entry 94's door rework while
+  # CLAUDE.md named it as the guard for five gotchas, and nothing went red.
+  #
+  # **Per push, not per sprint**, and that is the difference from the copy and
+  # founding goldens: a golden reddens on every intentional *change*, which is
+  # why `founding-golden` is a sprint-end comparison (Q625) and is not here.
+  # These four assert *behaviour* — the rail, the rows, the wire — so they go
+  # red only when something is broken, which is the property a per-push guard
+  # needs. A per-sprint schedule would re-create the hole, since somebody has
+  # to remember to trigger it, and Q917's own text names relying on
+  # remembering as the option it rejected.
+  #
+  # Why the dev path and not `dist/server.mjs`: the walks read magic links
+  # back from `GET /api/dev/outbox` and the ladder drives the ⏭ bar, and both
+  # live under the `DEV:` label the production build strips bodily — the `ci`
+  # job's boot smoke asserts the outbox is 404 there. So this boots
+  # `npm run server` (`tsx src/main.ts`). Q911's `assertServerBuild` is what
+  # makes that safe: every one of these walks asks `/healthz` for the
+  # catalogue the process booted with and exits 2 on a server that is not this
+  # tree, so a walk here can only ever drive the server this job started.
+  #
+  # Like `probe`, this job runs in parallel with `ci` and cannot gate the
+  # deploy — the deploy is a *step* of `ci`. A red here is a red X on the
+  # commit and nothing more. Gating would mean lifting the deploy into its own
+  # job with `needs: [ci, probe, walks]`, which is a separate decision and
+  # wants the walks' flake rate measured first; per push, ungated, is that
+  # measurement.
+  walks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # the same four Chromium steps `probe` uses — the walks call
+      # chromium.launch(). Two copies rather than a composite action, which
+      # would be the tidy shape and is not worth a new file yet.
+      - name: playwright version, for the browser cache key
+        id: pw
+        run: echo "v=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: browser
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ steps.pw.outputs.v }}
+      - if: steps.browser.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.browser.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      # Five variables and one absence. DRAFT_DATA_DIR keeps the log out of
+      # packages/server/data; DRAFT_BASE_URL must name 127.0.0.1 rather than
+      # the default localhost, because the magic links the outbox hands back
+      # are built from cfg.baseUrl and the walks attach at 127.0.0.1 — a link
+      # on the other origin lands the page on a different origin from the one
+      # the walk started at, which is the cookie trap applicants-walk's
+      # DOCBASE comment describes. DRAFT_BUILD_SHA names the commit in
+      # x-build; nothing reads it today, but a walk that refuses a server
+      # whose x-build is not the tree's HEAD is coming, and a job that did not
+      # set it would go red the day it lands. And **no RESEND_API_KEY**: its
+      # absence is what selects the dev outbox and makes devMail true, and the
+      # ladder bar's ⏭ exists only then.
+      - name: boot a dev server for the walks, and reserve slug-walk's address
+        run: |
+          export PORT=8161
+          export DRAFT_DATA_DIR="$RUNNER_TEMP/walk-data"
+          export DRAFT_BASE_URL="http://127.0.0.1:$PORT"
+          export DRAFT_BUILD_SHA="$GITHUB_SHA"
+          npm run server > "$RUNNER_TEMP/walk-server.log" 2>&1 &
+          echo "WALK_PID=$!" >> "$GITHUB_ENV"
+          echo "WALK_BASE=$DRAFT_BASE_URL" >> "$GITHUB_ENV"
+          # poll rather than sleep: a fixed wait is either slow or flaky
+          for i in $(seq 1 60); do
+            if curl -fsS -o /dev/null "$DRAFT_BASE_URL/healthz"; then up=1; break; fi
+            sleep 0.5
+          done
+          if [ -z "$up" ]; then
+            echo "the server never answered /healthz — its log follows"
+            cat "$RUNNER_TEMP/walk-server.log"
+            exit 1
+          fi
+          # slug-walk asserts what happens when an address is *taken*, so one
+          # has to be taken first — the curl its own header documents. -fsS,
+          # so a refusal fails this step and names itself rather than
+          # surfacing later as a walk that cannot find its collision.
+          curl -fsS -o /dev/null -X POST "$DRAFT_BASE_URL/api/docs" \
+            -H 'content-type: application/json' \
+            -d '{"title":"Test Charter","slug":"test-charter","email":"a@b.com"}'
+
+      # `if: always()` for the same reason as probe's neighbours (Q913): one
+      # walk's failure must not hide the next one's. They share the one
+      # server, which is fine because each founds its own document under its
+      # own title, and each takes the base URL as an argument — the form all
+      # four read first, ahead of any fallback port of their own.
+      - run: npm run journey -- "$WALK_BASE"
+        if: always()
+      - run: npm run applicants-walk -- "$WALK_BASE"
+        if: always()
+      # 🪪's other two prices: the walk's three assertions are one per price
+      # (proposal above, then the 🏛️ assembly hold, then the founder's pen)
+      - run: npm run applicants-walk -- "$WALK_BASE" --price=assembly
+        if: always()
+      - run: npm run applicants-walk -- "$WALK_BASE" --price=pen
+        if: always()
+      - run: npm run slug-walk -- "$WALK_BASE" test-charter
+        if: always()
+      - run: npm run ladder -- "$WALK_BASE"
+        if: always()
+
+      # The server's side of the story, beside the walk's: a red walk with
+      # only the walk's stdout is the one-hour hunt Q911 describes.
+      - name: stop the server
+        if: always()
+        run: |
+          kill -TERM "$WALK_PID" || true
+          pkill -f 'src/main.ts' || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: walk-server-log
+          path: ${{ runner.temp }}/walk-server.log
+          if-no-files-found: warn

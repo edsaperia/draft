@@ -14,6 +14,9 @@
  *   npm run server          # in another shell, without a Resend key
  *   npm run ladder [http://127.0.0.1:8140] [--to=session] [--seed=42]
  *
+ * CI's `walks` job runs this at every push, against a dev server it boots
+ * itself with no Resend key, which is what gives the bar its ⏭ (Q917 (a)).
+ *
  * `--to` stops at a rung and leaves the document standing, which is the
  * eyeballing mode; bare, it walks the whole ladder and exits non-zero on the
  * first rung that fails. Like every walk here it cannot assert anything that

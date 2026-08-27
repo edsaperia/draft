@@ -12,6 +12,9 @@
  *   npm run server          # in another shell, with a dev outbox
  *   node scripts/journey-walk.mjs [http://127.0.0.1:8199]
  *
+ * CI's `walks` job runs this at every push, against a dev server it boots
+ * itself and hands to all four walks (Q917 (a)).
+ *
  * What it does NOT prove: anything that depends on an animation completing.
  * The automation tab runs backgrounded — rAF never fires, transitions never
  * advance — so no flight is asserted here. The **holds themselves** are a
