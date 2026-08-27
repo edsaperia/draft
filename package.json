@@ -20,6 +20,7 @@
     "probe": "node scripts/probe.mjs",
     "probe-coverage": "node scripts/probe-coverage.mjs",
     "card-audit": "node design/tools/card-audit.mjs",
+    "clock-check": "node design/tools/clock-check.mjs",
     "journey": "node scripts/journey-walk.mjs",
     "applicants-walk": "node scripts/applicants-walk.mjs",
     "powers-walk": "node scripts/powers-walk.mjs",

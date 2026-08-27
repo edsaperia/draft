@@ -284,18 +284,39 @@ export function fitDavidson(ids: string[], comparisons: Comparison[], opts: FitO
   const tolerance = opts.tolerance ?? 1e-9;
 
   let last = derivs(x);
+  // Which of the three exits ran, and how far it got. Before entry 77 all
+  // three broke the same loop and said nothing, so a fit that ran out of
+  // iterations with the gradient still moving was reported exactly like one
+  // that met its tolerance on step two — and an adoption decision is taken
+  // off the numbers such a fit produces.
+  let stop: Fit['stop'] = 'max-iterations';
+  let iterations = 0;
   for (let iter = 0; iter < maxIterations; iter++) {
     let gmax = 0;
     for (const g of last.grad) gmax = Math.max(gmax, Math.abs(g));
-    if (gmax < tolerance) break;
+    if (gmax < tolerance) { stop = 'tolerance'; break; }
 
     const newton = solveLinear(last.negHess, last.grad);
     let next = newton === null ? null : lineSearch(x, newton, last.obj);
     if (next === null) next = lineSearch(x, last.grad, last.obj); // damped gradient ascent
-    if (next === null) break; // no ascent direction makes progress: numerically converged
+    if (next === null) { stop = 'no-ascent'; break; } // nothing left to try
     x = next;
     last = derivs(x);
+    iterations += 1;
   }
+  // Measured at the point actually returned, whichever exit ran, so
+  // `converged` is a fact about the answer rather than about the road to it.
+  let gradMax = 0;
+  for (const g of last.grad) gradMax = Math.max(gradMax, Math.abs(g));
+  // **`no-ascent` is convergence, and measuring it by the gradient alone
+  // would say otherwise.** Perfect separation is the ordinary case here:
+  // the prior stops the strengths running away, the line search then finds
+  // no step in double precision that increases the objective, and the fit
+  // is as good as this arithmetic gets — with `gradMax` around 3e-8, thirty
+  // times the default tolerance. So the flag asks whether the optimiser has
+  // anything left to do, and `gradMax` is published beside it for a caller
+  // that wants the stricter test.
+  const converged = stop === 'no-ascent' || gradMax < tolerance;
 
   // --- Laplace approximation ----------------------------------------------
   // Invert the FULL negative Hessian (including tau if fitted) and take the
@@ -377,5 +398,6 @@ export function fitDavidson(ids: string[], comparisons: Comparison[], opts: FitO
     return pa / (pa + pb + nu * Math.sqrt(pa * pb));
   };
 
-  return { ids: idsCopy, strengths, nu, cov, probBeats, winProb, varDiff };
+  return { ids: idsCopy, strengths, nu, cov, probBeats, winProb, varDiff,
+    stop, iterations, gradMax, converged };
 }

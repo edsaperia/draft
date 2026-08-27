@@ -47,6 +47,12 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run spec-check
+      # the session-clock's ladder at its boundaries (Q471), and the rule
+      # that no distance on it ever says seconds. It has a runner of its own
+      # because design/ has no test runner, and until entry 77 nothing ran
+      # it: no npm script named it and no workflow called it, so 26 cases
+      # sat in the tree being nobody's job. Node-only and instant.
+      - run: npm run clock-check
       - name: the server walk again, over Postgres (stage 6)
         run: DRAFT_TEST_STORE=pg npm test -w @draft/server
       - run: npm run build

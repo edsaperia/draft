@@ -423,6 +423,83 @@ last, being the one irreversible thing):
   lockline (Q510a). **Q509(a) answered and not built** — minting a membership
   from a login link is next session's first job.
 
+### The `alpha-preset` — measured 2026-08-27 (plan-queue 77, backlog entry 77)
+
+**The operating point at fifteen minutes had never been measured.** The
+sweep runs 8-hour windows and the sim CLI defaults to 72; the alpha is five
+to ten people for ten to twenty minutes. `npm run preset -w
+@draft/sim-harness` measures it — whole candidate constitutions rather than
+one factor at a time, at the window and roster the day will have, scored on
+**`alive`: the share of seeds in which the document changed at least once**,
+because Ed's bar is *everyone gets in and presses things* and a room that
+watches a perfect ranking converge on a text it never adopts has had the
+worse afternoon.
+
+**The preset.** Found at the ⏰/🌡️/🪜/⏱️ cards, plus one operator variable:
+
+| what | value | where the founder sets it |
+| --- | --- | --- |
+| 🌡️ the bar | **85%** | the threshold card |
+| 🪜 the pace | **fixed** | *Rising Approval Threshold?* → no |
+| ⏱️ the rate | **6 to start, cap 8, one every 5 minutes** | the proposal-rate card |
+| ⏰ the window | **20 minutes if the room allows it, 15 otherwise** | the ending card |
+| the cooldown | **`DRAFT_COOLDOWN_MS=60000`** | **not a setting** — §4.2 engine tuning, an operator env knob since entry 77 |
+
+**The numbers behind it** (clubhouse scenario, 25 seeds, scripted personas,
+roster 8 at 15 minutes unless stated). Each row is the row above it with one
+thing changed:
+
+| candidate | alive | adoptions | judgments |
+| --- | --- | --- | --- |
+| shipped defaults (95% ramping from 60, 5-min cooldown, 1 ✏️/4h) | 52% | 0.64 | 5 |
+| fixed bar at 95 | 40% | 0.48 | 6 |
+| **fixed bar at 85** | **60%** | **0.92** | 5 |
+| fixed 85 + 1-minute cooldown | 60% | 0.92 | 5 |
+| ALPHA PRESET (+ the rate above) | 60% | 0.92 | 5 |
+
+And the preset across the day's shapes:
+
+| | roster 5 | roster 8 | roster 10 |
+| --- | --- | --- | --- |
+| 10 min | 36% | 44% | 44% |
+| 15 min | 68% | 60% | 76% |
+| 20 min | 76% | 72% | **84%** |
+
+**Three findings, and two of them are not what the plan expected.**
+
+1. **The bar is the only knob that moves anything at this scale.** 0.95 →
+   0.85 takes `alive` from 40% to 60% and nearly doubles adoptions. Every
+   other single change is inside the noise.
+2. **The cooldown and the rate change nothing in the simulation** — the
+   three rows carrying them are numerically identical to the row above. The
+   reason is the last column: **five judgments in fifteen minutes across
+   eight people**. The room never reaches the cooldown and never spends its
+   wallet, so pacing and generosity have nothing to bind on. The plan
+   expected the cooldown to be "most of the answer to the dead-session risk
+   on its own"; against scripted personas it is not the lever. It stays in
+   the preset because a *human* room proposes far faster than this model
+   does, and one minute cannot be worse than five.
+3. **The plan's fear of a dead session was right, and the fix is the
+   clock, not the constitution.** Ten minutes is where it breaks down — 36–44%
+   alive at every roster — and twenty minutes with ten people is the best
+   cell measured. **Prefer 20 minutes and the larger room**; a 10-minute
+   session is a demonstration of the surface, not of the mechanism.
+
+**What this does not measure.** Scripted personas judge from a latent
+utility model and propose at a fixed draftiness; they do not hesitate, read,
+or talk to each other. The judgment count is the number to distrust most —
+a real room of eight will cast far more than five in fifteen minutes, and
+every cell above is therefore a floor rather than a forecast.
+
+Assertions, not just numbers: `npm run preset` exits non-zero if the
+preset's target cell falls below a majority, if it stops beating the shipped
+defaults, or if any of the nine shapes goes inert — so an engine change that
+kills the alpha room is a red run rather than a surprise in front of
+friends. Also fixed on the way past: `sweep.ts`'s `hotSetSize` baseline was
+**6 while the engine default is 3**, so every `hotSetSize` row of every
+sweep since the default moved had been scored against the old value as its
+control.
+
 ## Decisions
 
 | # | Decision | State |

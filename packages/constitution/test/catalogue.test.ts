@@ -5,7 +5,7 @@ import {
 import type { SettingId } from '../src/catalogue.js';
 import { authorshipBase } from '../src/adapter.js';
 import { resolveConsent } from '../src/consent.js';
-import type { SettingValue } from '../src/values.js';
+import type { Price, SettingValue } from '../src/values.js';
 import { eqValue, validateValue } from '../src/values.js';
 
 describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
@@ -84,6 +84,114 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
         expect(Math.sign(order(a, b)) + 0, `${id}`).toBe(-Math.sign(order(b, a)) + 0);
       }
     }
+  });
+
+  /**
+   * **Antisymmetry is not enough, and the failure is silent** (entry 77, the
+   * alpha-readiness pass). `resolveConsent` takes the founding maximum with
+   * `Array.sort`, and `Array.prototype.sort` is only specified for a
+   * comparator that is a *consistent total preorder*: give it a
+   * non-transitive one and the result is implementation-defined, so the
+   * founding takes a maximum nobody stated and binds the room to a rule
+   * nobody consented to — with every existing test still green, because the
+   * value it lands on is a real member's answer and the distribution it
+   * publishes is a real permutation. The sample-based antisymmetry check
+   * above cannot see it: a comparator can be perfectly antisymmetric on
+   * every pair and still cycle on a triple.
+   *
+   * These sets are enumerable, so this is exhaustive rather than sampled —
+   * every value of every family in the value's own grid, every ordered
+   * triple. A new consent question with no entry here fails the first case,
+   * which is the point: the check has to be complete to mean anything.
+   */
+  describe('consent orders are transitive (exhaustive over each family)', () => {
+    const range = (from: number, to: number, step = 1): number[] => {
+      const out: number[] = [];
+      for (let v = from; v <= to; v += step) out.push(v);
+      return out;
+    };
+    /** Every value the control can express, per family. */
+    const FAMILIES: Partial<Record<SettingId, SettingValue[]>> = {
+      // the ladders and the prices are their own full sets
+      authorship: entryOf('authorship').rungs!.map((rung) => ({ rung })),
+      judgments: entryOf('judgments').rungs!.map((rung) => ({ rung })),
+      chamber: entryOf('chamber').rungs!.map((rung) => ({ rung })),
+      admission: entryOf('admission').rungs!.map((price) => ({ price: price as Price })),
+      removal: entryOf('removal').rungs!.map((price) => ({ price: price as Price })),
+      // the sliders, at the granularity the surface offers (§9.7.1: the bar
+      // is 50–99, and moves in fives on the card — every whole value here,
+      // since a motion may state any of them)
+      bar: range(50, 99).map((pct) => ({ pct })),
+      // both forms and both ends of each, because the order reads `n` alone
+      quorum: [
+        ...range(0, 10).map((n) => ({ form: 'count' as const, n })),
+        ...range(0, 100, 10).map((n) => ({ form: 'share' as const, n })),
+      ],
+      // null is *never*, which the order puts highest
+      ending: [{ endsAtMs: null }, ...range(0, 5).map((k) => ({ endsAtMs: k * 3_600_000 }))],
+      lapse: [{ afterMs: null }, ...range(0, 5).map((k) => ({ afterMs: k * 86_400_000 }))],
+      // three fields, so the grid rather than one axis at a time: this is
+      // the only family whose comparator has more than one tie-break in it
+      rate: range(1, 4).flatMap((grant) =>
+        range(4, 8, 2).flatMap((cap) =>
+          [30, 60, 240].map((dripMinutes) => ({ grant, cap, dripMinutes })))),
+      machines: [false, true].flatMap((enabled) =>
+        range(0, 4, 2).map((budget) => ({ enabled, budget }))),
+      // the legacy `holder` field rides along deliberately: an old log
+      // carries it, the fold strips it, and the order must not read it
+      applications: [
+        { apply: false }, { apply: true },
+        { apply: false, holder: 'members' as const }, { apply: true, holder: 'members' as const },
+      ],
+    };
+
+    it('every consent question in the catalogue has a value set here', () => {
+      const asked = CATALOGUE.filter((e) => e.consent).map((e) => e.id).sort();
+      expect(Object.keys(FAMILIES).sort()).toEqual(asked);
+    });
+
+    for (const [id, values] of Object.entries(FAMILIES)) {
+      it(`${id}: every ordered triple`, () => {
+        const order = entryOf(id as SettingId).consent!.order;
+        const vs = values!;
+        // `+ 0` for the same reason as the sample check above: Math.sign
+        // keeps the sign of zero, and -0 is not 0 under Object.is
+        const sgn = (a: SettingValue, b: SettingValue) => Math.sign(order(a, b)) + 0;
+        for (const a of vs) for (const b of vs) {
+          // antisymmetry again, but over the whole set rather than a sample
+          expect(sgn(a, b), `${id}: antisymmetry ${JSON.stringify([a, b])}`)
+            .toBe(-sgn(b, a) + 0);
+          for (const c of vs) {
+            // a ≼ b and b ≼ c must give a ≼ c, or `sort` is undefined
+            if (sgn(a, b) <= 0 && sgn(b, c) <= 0) {
+              expect(sgn(a, c), `${id}: ${JSON.stringify([a, b, c])}`)
+                .toBeLessThanOrEqual(0);
+            }
+            // and equivalence must be an equivalence relation, or two
+            // members who stated the same thing sort against each other
+            if (sgn(a, b) === 0 && sgn(b, c) === 0) {
+              expect(sgn(a, c), `${id}: equivalence ${JSON.stringify([a, b, c])}`).toBe(0);
+            }
+          }
+        }
+      });
+    }
+
+    it('and the maximum resolveConsent takes is the set maximum, whatever the input order', () => {
+      // the property the transitivity is *for*: the value taken must be the
+      // one no answer is ordered above, found the slow honest way and
+      // compared against what `sort` produced from three different shufflings
+      for (const [id, values] of Object.entries(FAMILIES)) {
+        const entry = entryOf(id as SettingId);
+        const order = entry.consent!.order;
+        const vs = values!;
+        const top = vs.reduce((best, v) => (order(v, best) > 0 ? v : best), vs[0]!);
+        for (const rotate of [0, 1, Math.floor(vs.length / 2)]) {
+          const shuffled = [...vs.slice(rotate), ...vs.slice(0, rotate)];
+          expect(order(resolveConsent(entry, shuffled).value, top), id).toBe(0);
+        }
+      }
+    });
   });
 
   it('routeOf: moving the close is ordinary, touching whether it ends is constitutional', () => {

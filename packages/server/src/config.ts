@@ -21,6 +21,10 @@ import { join } from 'node:path';
  *  environment. */
 export const PROD_BUILD = process.env.DRAFT_BUILD === 'prod';
 
+/** SPEC §4.2: the adoption cooldown "must stay short (≤5 min)". The knob's
+ *  ceiling, and the reason it is a refusal rather than a clamp. */
+export const COOLDOWN_MAX_MS = 5 * 60_000;
+
 export interface ServerConfig {
   port: number;
   /** Document logs, tokens, outbox, secret. */
@@ -92,10 +96,27 @@ export interface ServerConfig {
    */
   proxyHops?: number;
   /**
-   * Engine tuning overrides (tests and dev only — production runs the
-   * defaults; deliberately not read from the environment). The one known
-   * use is pacing: a test that adopts twice in one second needs
-   * cooldownMs 0, where a room needs the §4.2 cooldown as shipped.
+   * Engine tuning overrides. Mostly the tests' — a test that adopts twice
+   * in one second needs `cooldownMs` 0, where a room needs the §4.2
+   * cooldown as shipped — but since entry 77 **the cooldown alone is also
+   * an operator knob**, `DRAFT_COOLDOWN_MS`.
+   *
+   * The cooldown is engine tuning and never constitutional (§4.2): it
+   * paces the adoption metronome and re-rates no past decision, so it is
+   * correctly not a setting, not in the catalogue, and not in the record as
+   * something the room agreed. What it *was* is unadjustable, and at the
+   * shipped five minutes a 15-minute alpha session has three moments when
+   * the document can change. Ed's answer (2026-08-21) is **one minute**,
+   * comfortably inside §4.2's "must stay short (≤5 min)", which turns those
+   * three into roughly fifteen. Whether its long-term home is an env knob
+   * or a creation-time engine parameter beside grant and drip is Q946; the
+   * env knob is what stands.
+   *
+   * Read at boot like everything else here, so changing it is a restart and
+   * a document's *running* engine keeps whatever it was born with until
+   * then. Refused above §4.2's ceiling rather than clamped: an operator who
+   * asks for ten minutes has misunderstood the rule, and a silent clamp
+   * would leave them believing it took.
    */
   engineTuning?: Partial<import('../../constitution/src/adapter.js').EngineTuning>;
 }
@@ -131,6 +152,15 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
   if (storeRaw === 'pg' && databaseUrl === null) {
     throw new Error('DRAFT_STORE=pg requires DATABASE_URL');
   }
+  // §4.2's own ceiling, refused rather than clamped (see engineTuning)
+  const cooldownMs = env.DRAFT_COOLDOWN_MS === undefined
+    ? null : Number(env.DRAFT_COOLDOWN_MS);
+  if (cooldownMs !== null
+    && (!Number.isFinite(cooldownMs) || cooldownMs < 0 || cooldownMs > COOLDOWN_MAX_MS)) {
+    throw new Error(
+      `DRAFT_COOLDOWN_MS must be 0..${COOLDOWN_MAX_MS} (§4.2: the cooldown must stay short, `
+      + `≤5 min) — got '${env.DRAFT_COOLDOWN_MS}'`);
+  }
   return {
     port,
     dataDir,
@@ -155,6 +185,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
       ? env.DRAFT_TRUST_PROXY === '1' : PROD_BUILD,
     proxyHops: env.DRAFT_PROXY_HOPS ? Math.max(1, Number(env.DRAFT_PROXY_HOPS)) : 1,
     buildSha: env.RENDER_GIT_COMMIT ?? env.DRAFT_BUILD_SHA ?? null,
+    ...(cooldownMs === null ? {} : { engineTuning: { cooldownMs } }),
   };
 }
 

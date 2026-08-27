@@ -54,6 +54,7 @@ in the repo).
 | `DATABASE_URL` | Postgres connection string; required when `DRAFT_STORE=pg` | unset | Dashboard, when it exists — the frankfurt database's **internal** connection string |
 | `DRAFT_TRUST_PROXY` | `1`/`0`. Trust `x-forwarded-*` for the client IP and the original protocol | On in the built artifact, off in dev | Not set — the build's default is already right on Render |
 | `DRAFT_PROXY_HOPS` | How many proxies **append** to `x-forwarded-for`, i.e. how far from the right the client's own entry sits. Only consulted when the proxy states the client no other way | `1` | Not set. **Never raise it "to be safe"** — a count larger than the real chain reads an entry the client supplied, which is the spoof the count exists to prevent |
+| `DRAFT_COOLDOWN_MS` | The adoption metronome (SPEC §4.2) — how long after one adoption before the document can change again. Engine tuning, **never a room decision**: not a setting, not in the catalogue, not in the record. Above 5 min is a **boot refusal**, not a clamp | `300000` (5 min) | Not set day to day. **`60000` for a supervised alpha session** — at the default a 15-minute room has three moments when the document can change, and at a minute it has fifteen. Read at boot, so changing it is a restart, and a running document keeps what it was born with until then. `/healthz` states the value in force |
 | `DRAFT_DESIGN_DIR` | Where `design/` is | `./design`, else `../../design`, whichever exists | Not set |
 | `RENDER_GIT_COMMIT` | The commit the process was built from, served as the `x-build` header | — | Render sets it |
 | `DRAFT_BUILD_SHA` | The same, anywhere that is not Render | unset | Not set |
@@ -142,9 +143,20 @@ the health route rather than that anything is wrong; check `x-build` against
 `git log` before treating it as an incident.
 
 `/healthz` is also the service's own health check path, and answers
-`{ ok, build, store, documents, uptimeSeconds }`. It is the one route
-excluded from the access log, so a health check every few seconds does not
-drown it.
+`{ ok, build, catalogue, store, documents, uptimeSeconds, mail, outbox,
+errors, cooldownMs }`. It is the one route excluded from the access log, so
+a health check every few seconds does not drown it.
+
+**`errors` is the one to watch during a supervised session** (entry 77). No
+error reporting exists in this service — Sentry is stage 16 — so this is the
+whole of it: `{ total, request, tick, outbox, last }`, counted since boot,
+where `request` is a route that ended 500, `tick` is a document the minute
+metronome could not advance, and `outbox` is a sender pass that threw.
+`last` carries the moment, the where and the message — no stack, because the
+route is public. **A refusal is not an error**: a 400 or a 404 is the
+product working, and counting those would bury the signal under ordinary
+traffic. Watch `total` between sessions; anything above zero has a matching
+`console.error` in the process log with the same message.
 
 ## 5. The data directory
 

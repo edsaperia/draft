@@ -4,10 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run && tsx src/founding-evidence.ts && tsx src/motions-evidence.ts",
     "typecheck": "tsc --noEmit",
     "sim": "tsx src/cli.ts",
     "sweep": "tsx src/sweep.ts",
+    "preset": "tsx src/alpha-preset.ts",
+    "soak": "tsx src/soak.ts",
     "evidence": "tsx src/deferred-evidence.ts",
     "score": "tsx src/score.ts",
     "founding": "tsx src/founding-evidence.ts",

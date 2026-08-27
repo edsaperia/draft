@@ -5,7 +5,7 @@
  * so the sweep costs only CPU.
  *
  *   npm run sweep -w @draft/sim-harness -- [--seeds N] [--hours H]
- *       [--scenario clubhouse|charter] [--out runs/sweep.csv]
+ *       [--scenario clubhouse|charter] [--roster N] [--out runs/sweep.csv]
  *
  * Output: a CSV of every run, plus a per-knob summary table on stdout.
  */
@@ -37,7 +37,12 @@ const KNOBS: KnobSpec[] = [
   { knob: 'tokenDripMinutes', values: [240, 1_000_000_000, 48] },
   { knob: 'tokenCap', values: [8, 4, 16] },
   { knob: 'cooldownMs', values: [5 * 60_000, 0, 15 * 60_000, 30 * 60_000] },
-  { knob: 'hotSetSize', values: [6, 3, 10] },
+  // **The baseline must be the engine's own default, or the sweep measures
+  // its own history as the control** (entry 77). `hotSetSize` shipped at 6
+  // and moved to 3; this list kept 6 first, so every `hotSetSize` row in
+  // every sweep since was scored against a value the engine had stopped
+  // using — and 3, the real default, was reported as a *variant*.
+  { knob: 'hotSetSize', values: [3, 6, 10] },
   { knob: 'explorationEvery', values: [7, 4, 12] },
   { knob: 'salienceEvery', values: [10, 5, 20] },
 ];
@@ -54,16 +59,36 @@ interface Row {
   judgments: number;
 }
 
-function parseArgs(argv: string[]): { seeds: number; hours: number; scenario: string; out: string } {
-  const args = { seeds: 25, hours: 8, scenario: 'clubhouse', out: '' };
+function parseArgs(argv: string[]):
+{ seeds: number; hours: number; scenario: string; out: string; roster: number } {
+  // roster 0 means "the scenario's own", which is 14 in both
+  const args = { seeds: 25, hours: 8, scenario: 'clubhouse', out: '', roster: 0 };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--seeds') args.seeds = Number(argv[++i]) || 25;
     else if (a === '--hours') args.hours = Number(argv[++i]) || 8;
     else if (a === '--scenario') args.scenario = argv[++i] ?? 'clubhouse';
     else if (a === '--out') args.out = argv[++i] ?? '';
+    else if (a === '--roster') args.roster = Number(argv[++i]) || 0;
   }
   return args;
+}
+
+/**
+ * **The room, at the size it will actually be** (entry 77). Both scenarios
+ * ship fourteen personas and the sweep had no way to say otherwise, so the
+ * one thing the alpha most needed measuring — a room of five to ten, for
+ * fifteen minutes — could not be asked for. Truncating the persona list is
+ * the honest version of a smaller room: the latent utility model, the
+ * couplings and the issues are the scenario's and do not change, so a
+ * roster-8 run is the same document with six fewer people in it.
+ *
+ * Everything downstream follows by itself: E, the adoption floor ⌈E/3⌉ and
+ * a share quorum all read the roster the session was opened with.
+ */
+function atRoster(scenario: typeof clubhouseScenario, n: number): typeof clubhouseScenario {
+  if (n <= 0 || n >= scenario.personas.length) return scenario;
+  return { ...scenario, personas: scenario.personas.slice(0, n) };
 }
 
 async function runOne(
@@ -124,14 +149,16 @@ function summarize(rows: Row[], key: (r: Row) => string): string[] {
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
-  const scenario = args.scenario === 'charter' ? charterScenario : clubhouseScenario;
+  const scenario = atRoster(
+    args.scenario === 'charter' ? charterScenario : clubhouseScenario, args.roster);
   const windowMs = args.hours * 3600_000;
   const seeds = Array.from({ length: args.seeds }, (_, i) => `sweep-${i}`);
   const rows: Row[] = [];
   const t0 = Date.now();
 
   // Shared baseline: every knob's first value is the engine default.
-  console.log(`sweep: scenario "${scenario.name}", ${args.seeds} seeds, ${args.hours}h window`);
+  console.log(`sweep: scenario "${scenario.name}", roster ${scenario.personas.length}, `
+    + `${args.seeds} seeds, ${args.hours}h window`);
   for (const seed of seeds) {
     rows.push(toRow('baseline', NaN, seed, await runOne(scenario, windowMs, seed, {})));
   }

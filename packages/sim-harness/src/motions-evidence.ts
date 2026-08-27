@@ -23,7 +23,11 @@ function fixture(): { s: ConstitutionSession; bo: string; cy: string; dee: strin
   const dee = s.invite(1, 'dee@example.org');
   const eve = s.invite(1, 'eve@example.org');
   for (const m of [bo, cy, dee, eve]) s.arrive(1, m);
+  // **Nothing arrives delegated** (Ed, 2026-08-21, §9.0a, Q511): the
+  // hand-over is the act that opens a blind question, and this fixture was
+  // written when the three collected from the moment the document existed.
   for (const q of ['ending', 'bar', 'chamber'] as const) {
+    s.delegate(1, q);
     for (const m of ['ada', bo, cy, dee, eve]) {
       s.answer(1, m, q,
         q === 'ending' ? { endsAtMs: 1_000_000 }
@@ -35,16 +39,23 @@ function fixture(): { s: ConstitutionSession; bo: string; cy: string; dee: strin
     quorum: { form: 'share', n: 60 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
-    applications: { holder: 'members', joinPolicy: 'invite' },
+    applications: { apply: false },
+    admission: { price: 'assembly' },
+    removal: { price: 'consent' },
     machines: { enabled: false, budget: 0 },
     lapse: { afterMs: null },
   } as const;
   s.confirmStartingText(2, 'The clubhouse shall be kept open.');
   s.setSetting(2, 'rate', { grant: 4, cap: 8, dripMinutes: 240 }); // reserved
   for (const [id, v] of Object.entries(values)) {
-    s.reclaim(2, id as never);
     s.setSetting(2, id as never, v as never);
   }
+  // the doors are born held (§9.7 rule 9) and are laid down before the start
+  for (const door of ['door:invite', 'door:remove'] as const) {
+    s.relinquish(2, door, 'unilateral');
+    s.relinquish(2, door, 'assent');
+  }
+  s.begin(2); // 🍾 — the founder's explicit start (Q443)
   if (s.constitutedAtT !== 2) throw new Error('fixture failed to constitute');
   return { s, bo, cy, dee, eve };
 }
