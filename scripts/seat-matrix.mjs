@@ -241,7 +241,21 @@ const STEPS = [
   // E20 does not apply post-start; what is asserted on the arrival is *no
   // `chamber` for late*, which the E5 predicate says by `stoodAt`
   { id: 'seat-late', epoch: 'live', kind: 'seat', seat: 'late', events: [E5('chamber', 'amend')] },
-  { id: 'wait-lapsed', epoch: 'live', kind: 'wait', seat: 'lapsed', events: [E5('chamber', 'amend')] },
+  // E22's channel is **mail** and nothing else (SURFACE §2: *mail: warning,
+  // then the package*; Ask `nothing; revival is logging in`), so the page
+  // files no rail entry for either half and the row has no key: it is
+  // reported as *no rule* on the page's side, which is the honest report and
+  // not a defect. What the row buys is the record that the step was **stood**
+  // — the lapsed seat really did lapse on the clock, with no page open — so a
+  // later run can tell *E22 was exercised and the page said nothing* from
+  // *E22 was never reached* (promise-coverage entry 81, batch L). The E5
+  // assertions already riding this row are the lock on the other half of
+  // 💤's promise: *lapsed included* in the audience of a change made while
+  // they were away.
+  { id: 'wait-lapsed', epoch: 'live', kind: 'wait', seat: 'lapsed',
+    events: [E5('chamber', 'amend'),
+      { id: 'E22', key: null, at: 'wait-lapsed',
+        noKey: 'E22 is mail: the page files no entry for a warning or a lapse, and the lapsed seat is the audience' }] },
   { id: 'knock', epoch: 'live', kind: 'knock', seat: 'applicant',
     events: [{ id: 'E21', key: 'adm:', at: 'knock' }] },
   // 🥾 stands at `proposal` in `SETTINGS`, so a removal put by one member
