@@ -548,7 +548,12 @@ function rulesFor(card, tok) {
       at('G1', 'copy', 'the glyph names are stable (STYLE §1)', g + ' is not in the table');
     }
   }
-  for (const word of ['ordinary', 'roster', 'participant', 'ceremony', 'token', 'the bar', 'economy', 'queue-card', 'convenor', 'admin']) {
+  // *judgment* and the maths behind it join the list (entry 164, Ed 2026-08-27:
+  // the surface says **vote**). **Not** `bradley`: 🌡️'s one linking sentence
+  // (entry 163) is designed to name the method, and a guard that goes red on
+  // the one sanctioned sentence teaches everyone to ignore the guard.
+  for (const word of ['ordinary', 'roster', 'participant', 'ceremony', 'token', 'the bar', 'economy', 'queue-card', 'convenor', 'admin',
+    'judgment', 'judge', 'judged', 'judging', 'comparison', 'confidence']) {
     // the plural is the same breach: *never "tokens"*, *never "participants"*
     const re = new RegExp('(^|[^a-z])' + word + 's?([^a-z]|$)', 'i');
     if (re.test(said)) at('T15', 'copy', 'no project-speak, no engine jargon', 'says "' + word + '"', excerpt(said, word));

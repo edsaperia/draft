@@ -547,7 +547,12 @@ function checkPicture() {
 function checkBannedWords() {
   note('Banned words — STYLE.md §1–2 over every file a member reads from');
   const files = ['design/cards.js', 'design/session.js', 'design/setup.js', 'design/session-view.html'];
-  const banned = [/SPEC §/, /\(§\d/, /\broster\b/, /\bparticipant\b/, /\bthe Founder[’']s OK\b/, /\bcarried change/];
+  // *judgment* and the maths behind it (entry 164, Ed 2026-08-27: the surface
+  // says **vote**; the argument for the threshold being a confidence lives at
+  // docs.vote/pairwise). Deliberately not `bradley`: 🌡️'s one linking sentence
+  // (entry 163) names the method, and it is the sole place it may stand.
+  const banned = [/SPEC §/, /\(§\d/, /\broster\b/, /\bparticipant\b/, /\bthe Founder[’']s OK\b/, /\bcarried change/,
+    /\bjudg(?:e|es|ed|ing|ment|ments)\b/i, /\bcomparisons?\b/i, /\bconfidence\b/i];
   for (const f of files) {
     // comments are exempt (CLAUDE.md: code comments may cite the spec); class names in markup are not copy
     const src = js(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/([^:])\/\/ .*$/gm, '$1');

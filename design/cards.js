@@ -464,8 +464,8 @@ window.CARDS = (function () {
   }
 
   const groundNote = (s) => (!s.shifted || !s.wasGround ? ''
-    : '<div class="replaced"><div class="rtag">The text you judged against' +
-      '<span class="rsub">the clause changed after you judged it</span></div>' +
+    : '<div class="replaced"><div class="rtag">The text you voted on' +
+      '<span class="rsub">the clause changed after you voted</span></div>' +
       '<div class="rtext">' + esc(s.wasGround) + '</div></div>');
 
   // ---- geometry, the pure half --------------------------------------------
@@ -661,21 +661,21 @@ window.CARDS = (function () {
           (pick ? '' : ' disabled') +
           ' data-act="submit" aria-pressed="' + env.isCast(s) + '" title="' +
           (env.isCast(s) ? 'Recorded — choose again to change it'
-            : pick ? 'Submit this judgment' : 'Choose one of the three first') + '">' + TICK + '</button>') +
+            : pick ? 'Submit this vote' : 'Choose one of the three first') + '">' + TICK + '</button>') +
         '</span>' +
         '</div>';
     }
 
     function reviseNote(s) {
       if (!env.isJudged(s)) return '';
-      const said = '<span class="rl">You ' + (env.verdictOf(s) || s.verdict || 'judged') + '</span>';
+      const said = '<span class="rl">You ' + (env.verdictOf(s) || s.verdict || 'voted') + '</span>';
       if (s.shifted) {
         return '<div class="srationale locked">' + said + esc(s.shifted) +
-          ' You cannot change it, because it was not a judgment about this text.</div>';
+          ' You cannot change it, because it was not a vote about this text.</div>';
       }
       if (s.locked) {
         return '<div class="srationale locked">' + said +
-          'This one is settled, so your judgment is on the record as it stands.</div>';
+          'This one is settled, so your vote is on the record as it stands.</div>';
       }
       // **The unlocked case says nothing at all** (Ed, 2026-08-17). It had been
       // trimmed once already, to what you said plus the fact it can change, and

@@ -475,7 +475,7 @@
     // Quoting two of eight arguments there is picking a side by accident and
     // saying nothing about the state the entry is actually in.
     if (stuck(g)) return ['Deadlocked — ' + (g.judges ?? 0) + ' people can’t agree on a proposal even ' +
-      'after ' + (g.comparisons ?? 0) + ' judgments. Can you propose something everyone will agree on?'];
+      'after ' + (g.comparisons ?? 0) + ' votes. Can you propose something everyone will agree on?'];
     if (g.kind === 'race') return [g.race && g.race.a && g.race.a.rationale, g.race && g.race.b && g.race.b.rationale].filter(Boolean);
     // A diagonal quotes nothing (Ed, 2026-08-17). A teaser is a *rationale* —
     // somebody's argument for their wording — and a diagonal has none, because
@@ -1689,7 +1689,7 @@
       // are still there for anybody who wants them and cost no ink.
       '<div class="rechead" title="' +
       esc((d.judges ?? 0) + ' of ' + ROSTER + ' weighed in · quorum was ' + FLOOR +
-        ' · ' + (yours ? 'you ' + yours : 'you never judged this')) + '">' +
+        ' · ' + (yours ? 'you ' + yours : 'you never voted on this')) + '">' +
       '<span>' + (und ? 'Undecided at the close' : 'Decided') + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
       // an undecided race with no reading prints no numbers: 0% > 0% is a
       // sentence about nothing
@@ -2671,7 +2671,7 @@
                             chips: chipsFor(site.key, s.id) }) +
         fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, by: s.by, key: site.key })) +
         reviseNote(s) +
-        '<div class="foot">One judgment for all ' + n +
+        '<div class="foot">One vote for all ' + n +
         ' places — choosing here chooses everywhere.</div>' +
         commitRowHtml(s) +
         '</div>'
@@ -3258,7 +3258,7 @@ document.addEventListener('pointercancel', () => flyStop(false));
           const cast = isJudged(s) && now !== null && now === committedOf(s);
           submit.setAttribute('aria-pressed', String(cast));
           submit.title = cast ? 'Recorded — choose again to change it'
-            : now ? 'Submit this judgment' : 'Choose one of the three first';
+            : now ? 'Submit this vote' : 'Choose one of the three first';
         }
       });
     };

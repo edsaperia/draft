@@ -163,7 +163,7 @@
     <div class="stats">
       <!-- room-pulse: one content-free beat per action by anybody (session-view's) -->
       <span class="pulse" id="pulse" aria-hidden="true"
-            title="The room is working — this blinks when anybody judges or proposes anything. It never says who, what, or which way."></span>
+            title="The room is working — this blinks when anybody votes or proposes anything. It never says who, what, or which way."></span>
       <!-- `session-clock` (Q466/Q471): the topbar reads the document · the
            room · you. The middle is one plain line — pulse, clock, quorum —
            cold at every distance; the clock is the door to ⏰.
@@ -1503,10 +1503,10 @@
       waiting: 'Waiting on the start.',
       done: 'Open — members can propose as soon as they arrive.',
       blockers: () => (constituted() ? [] : [card('text'), card('begin')].filter((c) => c && !settled(c))) },
-    { k: 'canjudge', g: '⚖️', t: 'Judging', own: 'you', isGate: true,
+    { k: 'canjudge', g: '⚖️', t: 'Voting', own: 'you', isGate: true,
       hide: () => !constituted(),
       open: () => canJudge(),
-      why: 'A judgment counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the judgment meant, so they come first.',
+      why: 'A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.',
       waiting: 'Waiting on the constitution.',
       done: 'Open — the constitution is settled.',
       blockers: () => ceremony().filter((c) => !settled(c) || (isRoom(c) && (c.in || 0) < E())) },
@@ -1758,7 +1758,7 @@
       rule: 'This one is about privacy, so it runs the other way: the document takes the <b>most private</b> answer, and one member who wants to stay unnamed keeps everybody unnamed.',
       takes: 'The document takes the most private', result: 'Nobody’s name, ever',
       dist: [8, 2, 2, 1, 1], distTop: 0, distEnds: ['No names, ever', 'Names from the start'] },
-    { k: 'judgments', g: '👁️', t: 'When Are Judgments Revealed?', kind: 'constitutional', gate: 'judge', key: 'judgments', p: 0.86,
+    { k: 'judgments', g: '👁️', t: 'When Are Votes Revealed?', kind: 'constitutional', gate: 'judge', key: 'judgments', p: 0.86,
       // Q763: this field is *how answers aggregate* and nothing else — it had
       // been carrying the whichever-you-choose fact, which the card's own `why`
       // states already and which the delegate rung has no use for.
@@ -2054,7 +2054,7 @@
     title: 'the title', slug: 'the link', text: 'the text',
     ending: 'the ending', bar: 'the approval threshold',
     pace: 'how the approval threshold rises', quorum: 'quorum',
-    authorship: 'anonymous proposals', judgments: 'judgment reveal',
+    authorship: 'anonymous proposals', judgments: 'vote reveal',
     chamber: 'visibility', rate: 'the proposal rate', lapse: 'membership lapse',
     removal: 'member removal', machines: 'AI proposals',
     admission: 'the price of admission', applications: 'applications',
@@ -2345,14 +2345,14 @@
     // clause; *the document begins*, never *the session*, which is engine
     // vocabulary the surface otherwise avoids.
     let s1;
-    if (!constituted()) s1 = 'When the document begins, members may propose changes to rules and judge proposals.';
+    if (!constituted()) s1 = 'When the document begins, members may propose changes to rules and vote on proposals.';
     // the defensive branch — begun, with proposing shut (a constituted
     // document whose text never confirmed). 💡's own sentence, with what is
     // true said first rather than a new one invented — and ⚖️ keeps its own
     // condition here as it does below: judging is not open just because the
     // document has begun.
-    else if (!canPropose()) s1 = (canJudge() ? 'Members may judge proposals.'
-      : 'Members may begin judging proposals when the whole constitution has been decided.') +
+    else if (!canPropose()) s1 = (canJudge() ? 'Members may vote on proposals.'
+      : 'Members may begin voting on proposals when the whole constitution has been decided.') +
       ' They may propose changes to rules when the document begins.';
     else {
       // a delegated ordinary question may still be collecting after the
@@ -2361,8 +2361,8 @@
       const prop = 'Members may propose changes to rules ' + (LIVE().some(owesAnswer)
         ? 'once they have answered the questions the Founder delegated'
         : 'as soon as they arrive');
-      s1 = canJudge() ? prop + ', and may judge proposals.'
-        : prop + '. They may begin judging proposals when the whole constitution has been decided.';
+      s1 = canJudge() ? prop + ', and may vote on proposals.'
+        : prop + '. They may begin voting on proposals when the whole constitution has been decided.';
     }
     // sentence 2 — what it takes to pass, with 🏛️'s fragment on its tail.
     // Singular, because *each member holding one voice* only scans against a
@@ -4000,7 +4000,7 @@
     removal: (d) => lanesFor(d, [
       ['Everyone has to agree, including them', 'Removing a member needs everyone to agree, including them.'],
       ['Everyone else has to agree', 'Removing a member needs every other member to agree.'],
-      ['A proposal ✏️ like any other', 'A member is removed by a proposal, judged like any other.']], 'removal'),
+      ['A proposal ✏️ like any other', 'A member is removed by a proposal, voted on like any other.']], 'removal'),
     lapse: (d) => lanesFor(d, [['Never — however long you are away',
         'A membership never lapses, however long somebody is away.']], 'lapse') +
       inputBlock('A membership lapses after ' +
@@ -4013,8 +4013,8 @@
       ['Names at the close, or earlier by choice', 'Proposers are named in the closing record, and sooner if they sign.'],
       ['Names from the start', 'Every proposal carries its proposer’s name from the moment it is made.']], 'authorship'),
     judgments: (d) => lanesFor(d, [
-      ['Never revealed', 'Judgments are never revealed — not even in the closing record.'],
-      ['Revealed at the end', 'Judgments are published with the closing record, never before.']], 'judgments'),
+      ['Never revealed', 'Votes are never revealed — not even in the closing record.'],
+      ['Revealed at the end', 'Votes are published with the closing record, never before.']], 'judgments'),
     chamber: (d) => lanesFor(d, [
       ['Members only', 'Only members can read the document.'],
       ['Anyone with the link', 'Anyone with the link can read it; it is not listed.']], 'chamber'),
@@ -4081,7 +4081,7 @@
       : 'and their own answer counts among everyone’s.') + '</p>' +
     consentPicks('remove', [
       ['no', 'They stay', 'Nobody is told who said so.'],
-      ['yes', 'I accept their leaving', 'Their judgments already cast keep counting; quorum recomputes.'],
+      ['yes', 'I accept their leaving', 'Their votes already cast keep counting; quorum recomputes.'],
       ['abstain', 'Abstain', 'An answer, not a block.'],
     ]) + BLINDNOTE;
   };
@@ -4092,7 +4092,7 @@
   const consentBody = (c, m) => (m.invite ? inviteBody(m)
     : m.removee !== undefined ? removeBody(m) :
     '<p class="why">' + (c.k === 'authorship' ? '<b>Proposals keep the privacy they were made under.</b> ' : '') +
-    'Whether <b>' + esc(m.to) + '</b> replaces <i>' + esc(standsOf(c.k)) + '</i>. Nothing is being judged: you state what you will accept, and one refusal keeps what stands.</p>' +
+    'Whether <b>' + esc(m.to) + '</b> replaces <i>' + esc(standsOf(c.k)) + '</i>. There is no vote here: you state what you will accept, and one refusal keeps what stands.</p>' +
     consentPicks(c.k, [
       ['no', 'Keep what stands', 'Nobody is told who said so.'],
       ['yes', 'I accept the change', 'It passes once all ' + E() + ' stand at accept — or abstain.'],
@@ -4305,7 +4305,7 @@
     bar: 'how sure the room must be at the close',
     pace: 'how the approval threshold climbs to the close',
     authorship: 'whether anonymous proposers are revealed',
-    judgments: 'whether judgments are revealed with the record',
+    judgments: 'whether votes are revealed with the record',
     chamber: 'who may read the document',
     lapse: 'whether an inactive membership lapses',
     removal: 'how a member is removed',
@@ -4341,7 +4341,7 @@
       : 'The drafting process will end on ' + endFmt() + '.'),
     quorum: () => (S.quorumForm === 'count'
       ? Math.min(takenOf('quorum') || S.quorumN, E()) + ' of the ' + E() + ' members'
-      : (takenOf('quorum') || S.quorumPct) + '% of the members') + ' must have judged a question before it can change the document.',
+      : (takenOf('quorum') || S.quorumPct) + '% of the members') + ' must have voted on a question before it can change the document.',
     // **The ramp is part of what the threshold says** (Q512, Ed 2026-08-21:
     // *if there is no ramp, the clause can just be blank — maybe the ramp can
     // be in the threshold setting stack, rather than a whole separate
@@ -4354,7 +4354,7 @@
       // a ramp that starts where it ends is not a ramp (Ed: *if there is no
       // ramp, the clause can just be blank*)
       return (!perpetual() && shape2 === 'ramp' && isNum(start2) && +start2 < +pct
-        ? 'The members must be ' + pct + '% sure a proposal is better for it to pass by the end, starting at ' + start2 + '% when judging opens.'
+        ? 'The members must be ' + pct + '% sure a proposal is better for it to pass by the end, starting at ' + start2 + '% when voting opens.'
         : 'The members must be ' + pct + '% sure a proposal is better for it to pass.'); },
     pace: () => { const v = takenValOf('pace');
       const shape2 = v ? v.shape : S.shape;
@@ -4391,7 +4391,7 @@
       const on = tv ? tv.enabled : (S.auditor === 'roster' ? false : S.auditor === true);
       const budget = tv && tv.enabled ? tv.budget : S.auditorBudget;
       return (on
-      ? 'An AI makes proposals here, with ' + budget + ' ✏️s of its own. It never judges and counts towards nothing.'
+      ? 'An AI makes proposals here, with ' + budget + ' ✏️s of its own. It never votes and counts towards nothing.'
       : 'There are no AI proposals.'); },
     rate: () => { const v = takenValOf('rate');
       return 'Members start with ' + (v ? v.grant : S.grant) + ' ✏️ each, up to a maximum of ' +
@@ -4400,7 +4400,7 @@
     // 🤝 is one switch; what an application costs is 🪪's sentence (entry 94)
     applications: () => (policyNow() === 'apply'
       ? (admissionPrice() === 'pen' ? 'Anyone with the link joins on arrival.'
-        : 'Anyone may apply to join — an application is judged like an invitation.')
+        : 'Anyone may apply to join — an application is voted on like an invitation.')
       : 'Membership is by invitation only.'),
     slug: () => 'The document lives at ' + docAddr(S.slug) + '.',
     // **The admissions clause** (Ed, 2026-08-26): what it costs to bring
@@ -5152,11 +5152,11 @@
       return '<p class="why">Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.</p>' +
         '<div class="choice" role="radiogroup">' +
         opt(o, 'hatPick', 'member', 'Member — drafting too',
-          'You get ✏️s, you judge, you count towards quorum, and you answer the founding questions like anybody.', '', started) +
+          'You get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.', '', started) +
         opt(o, 'hatPick', 'clerk', 'Clerk — not drafting',
-          'No ✏️s, no judging, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.', '', started) +
+          'No ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.', '', started) +
         '</div>' +
-        (started ? '<p class="setnote"><b>Settled.</b> Now that people are judging, the Founder joins the same way as anybody else.</p>' : '');
+        (started ? '<p class="setnote"><b>Settled.</b> Now that people are voting, the Founder joins the same way as anybody else.</p>' : '');
     },
     title: () =>
       '<div class="lanebox"><div class="lp editlane titlelane' + (titlePending() ? '' : ' blank') + '"' +
@@ -5317,7 +5317,7 @@
       '<div class="choice" role="radiogroup" aria-label="The price of admission">' +
       theyDecide('admission') +
       opt(S, 'admission', 'assembly', 'Everyone must agree', 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.') +
-      opt(S, 'admission', 'proposal', 'The membership decides', 'A proposed member is judged at the approval threshold ✏️, like any change.') +
+      opt(S, 'admission', 'proposal', 'The membership decides', 'A proposed member is voted on at the approval threshold ✏️, like any change.') +
       opt(S, 'admission', 'pen', 'Any member may invite', 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.') +
       '</div>',
     ending: () =>
@@ -5329,7 +5329,7 @@
       opt(S, 'ending', 'perpetual', 'Never', 'It runs until too few members are still active.') +
       '</div>',
     bar: () =>
-      '<p class="why">How sure the members have to be that a change is better than the words it replaces — not a vote, but how clear the comparison must be <b>at the end</b>.</p>' +
+      '<p class="why">How sure the members have to be that a change is better than the words it replaces, <b>at the end</b>.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('bar') +
       opt(S, 'barBy', 'founder', 'I set it', '',
@@ -5338,12 +5338,12 @@
     pace: () =>
       '<p class="why">Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.</p>' +
       '<div class="choice" role="radiogroup">' +
-      opt(S, 'shape', 'ramp', 'Rising', 'Starts lower when people begin judging and climbs to the number at the end.',
-        '<span class="setrow2">' + num(S, 'tStart', 'When judging opens', 50, 99, '%') + '</span>', perpetual()) +
+      opt(S, 'shape', 'ramp', 'Rising', 'Starts lower when people begin voting and climbs to the number at the end.',
+        '<span class="setrow2">' + num(S, 'tStart', 'When voting opens', 50, 99, '%') + '</span>', perpetual()) +
       opt(S, 'shape', 'fixed', 'Fixed', 'The same number all the way through.') +
       '</div>' + (perpetual() ? '<p class="setnote">With no end date there is nothing to climb towards, so the number stays fixed.</p>' : ''),
     quorum: () =>
-      '<p class="why">How many members have to have judged something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.</p>' +
+      '<p class="why">How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.</p>' +
       // **The form is the wording, the number is the decision** (§9.0a): count
       // or share is how the question tracks a changing membership, and it is
       // the founder's even when the number is the room's.
@@ -5394,7 +5394,7 @@
       (isNum(S.grant) && isNum(S.cap) && +S.cap < +S.grant
         ? '<p class="setnote">The maximum cannot be lower than the number they start with.</p>' : ''),
     chamber: () =>
-      '<p class="why">Who else can read the document. Readers are <b>not members</b> — they cannot propose or judge, and nothing about them is known.</p>' +
+      '<p class="why">Who else can read the document. Readers are <b>not members</b> — they cannot propose or vote, and nothing about them is known.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('chamber') +
       // most-private-first, the order every ladder on the surface reads in
@@ -5414,10 +5414,10 @@
       theyDecide('removal') +
       opt(S, 'removal', 'consent', 'Everyone must agree, including them', 'One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.') +
       opt(S, 'removal', 'assembly', 'Everyone else must agree', 'Somebody can be removed even if they object, but only if every other member agrees 🏛️.') +
-      opt(S, 'removal', 'proposal', 'The membership decides', 'A removal is proposed and judged at the approval threshold ✏️, like a change to the text.') +
+      opt(S, 'removal', 'proposal', 'The membership decides', 'A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.') +
       '</div>',
     machines: () =>
-      '<p class="why">An AI that proposes and nothing else — it never judges, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.</p>' +
+      '<p class="why">An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('machines') +
       // most-restrictive-first, matching the member ladder's order
@@ -5492,7 +5492,7 @@
       const ready2 = a.started && a.emailVerified && a.name.trim() && a.pic;
       return '<p class="why">Your application goes before the members as a proposal (✏️) — it passes if the room is sure enough.</p>' +
         (a.submitted
-          ? '<div class="lockline">' + TICK + '<span>Submitted. ' + APPLICANT.judged + ' of ' + E() + ' have judged it — you will get an email either way.</span></div>'
+          ? '<div class="lockline">' + TICK + '<span>Submitted. ' + APPLICANT.judged + ' of ' + E() + ' have voted on it — you will get an email either way.</span></div>'
           : a.started
           ? '<p class="setnote">' + (ready2 ? 'Everything needed is in — the words are optional.' : 'The email, the name and the picture are needed; the words are optional.') + '</p>'
           : '<p class="setnote">Nothing is collected before you begin, and nothing is sent until you submit.</p>');
@@ -5674,7 +5674,7 @@
             lane('admit', 'Admit them') +
             lane('stands', 'Keep the membership as it is') +
             lane('either', 'Indifferent') + '</div>'
-            : '<p class="setnote">Before the members — you have judged it.</p>'),
+            : '<p class="setnote">Before the members — you have voted on it.</p>'),
           binBtn() + '<button class="btn btn-approve glyphbtn" data-admitgo="' +
           esc(c.admit) + '"' + (rc && pick ? '' : ' disabled') + '>' + TICK + '</button>',
           g.cards);
@@ -8027,7 +8027,7 @@
         qLabel: 'Backlog', urgency: 0, pct: 100, cap: 'undecided at the close — the text stood',
         decided: { outcome: 'undecided', when: whenOf(o.when), p: best.p, bar: o.threshold, judges: o.judges },
         undecided: true, won: 'b', optionB: best.hunks[0].lines[0], replaced: o.displaced[0],
-        rationale: best.rationale, verdict: o.judgedByMe ? 'you judged this' : undefined, unread: false,
+        rationale: best.rationale, verdict: o.judgedByMe ? 'voted on this' : undefined, unread: false,
         slate: o.field.map((f) => ({ text: f.hunks[0].lines[0], rationale: f.rationale, p: f.p, won: f === best })) };
     }) };
     // the two picked races leave the live set: they are filed now
@@ -8137,7 +8137,7 @@
         urgency: rc && rc.urgency != null ? rc.urgency : 0.3,
         pct: Math.round((r.closeness || 0) * 100),
         judges: r.judges || 0, floor: r.floor,
-        cap: r.judged ? 'you have judged this — it is still running' : 'wants your judgment',
+        cap: r.judged ? 'you have voted on this — it is still running' : 'wants your vote',
         shifted: !!r.shifted, deadlocked: !!r.deadlocked,
         crownWaits: textAssent,
         // the served pair, for the judgment that goes back
@@ -8247,7 +8247,7 @@
         won: adopted || undecided ? 'b' : undefined,
         optionB: textOfF(winner), replaced,
         rationale: winner.rationale, by: byName(winner), underNote: underNoteOf(winner),
-        verdict: o.judgedByMe ? 'you judged this' : undefined,
+        verdict: o.judgedByMe ? 'voted on this' : undefined,
         unread: !undecided, ...slate });
     }
     // the draft being typed is the page's own, never the view's — it survives
@@ -8712,7 +8712,7 @@
   const BEGIN_BATCH = [
     'The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.',
     'Members gain ✏️s on it, at the proposal rate.',
-    'Judging opens, and the approval threshold begins its course.',
+    'Voting opens, and the approval threshold begins its course.',
     'The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.',
   ];
   const beginBody = (c, rd) => {
@@ -8912,7 +8912,7 @@
     }
     // 💡 and ⚖️ both open at 🍾, which is always the founder's own press
     if (c.k === 'canpropose') return 'The Founder began the document, granting every member the right to propose changes to it.';
-    if (c.k === 'canjudge') return 'The Founder began the document, granting every member the right to judge what is proposed.';
+    if (c.k === 'canjudge') return 'The Founder began the document, granting every member the right to vote on what is proposed.';
     return '';
   };
   // The provenance goes **first on the card**, above the explanation of what

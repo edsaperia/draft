@@ -315,7 +315,7 @@ window.SETUP = (function () {
     (o.inert ? '' : ' title="' + esc(c.t + (o.active ? ' — close it'
       : st === 'ask' ? ' — waiting on you' : st === 'wait' ? ' — waiting on others'
       : st === 'news' ? ' — decided; it waits for your OK'
-      : st === 'yours' ? ' — yours, being judged' : ' — settled')) + '"') +
+      : st === 'yours' ? ' — yours, being voted on' : ' — settled')) + '"') +
     '><span aria-hidden="true">' + markOf(c, ctx, true) + '</span>' +
     (o.inert ? '' : '<span class="sr">' + esc(c.t) + '</span>') + '</span>';
   };
@@ -990,7 +990,7 @@ window.SETUP = (function () {
         ? ' It is <b>reserved</b>: carrying does not change it by itself — it goes to the founder as a <b>👑 question</b>, theirs to assent to or refuse.'
         : '') + '</div>' +
       CB.proposalHtml(m, { tag: 'As proposed', html: esc(m.to), why: m.why, v: 'proposed', edit: false }) +
-      '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have judged it.</p>';
+      '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have voted on it.</p>';
   }
 
   /* A **constitutional motion**, which is not a judgment and has no card of its
@@ -1001,7 +1001,7 @@ window.SETUP = (function () {
   const motionReopen = (c, ctx, m) =>
     '<div class="unlocks"><b>Re-opened.</b> A member has proposed an amendment' +
     (m.why ? ' — <i>' + esc(m.why) + '</i>' : '') + '. ' +
-    'It is constitutional, so it takes everyone: nothing is judged and nothing is ranked — ' +
+    'It is constitutional, so it takes everyone: there is no vote and nothing is ranked — ' +
     'you accept the amendment or keep what stands, and one refusal keeps what stands. ' +
     'Until every one of the ' + ctx.E + ' has answered, what stands stands.</div>' +
     '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have answered. ' +
@@ -1283,7 +1283,7 @@ window.SETUP = (function () {
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given, so it is never lower than yours.</p>';
     },
     bar: (A, E) =>
-      '<p class="why">How sure the room must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. A confidence, not a vote share. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the founder’s pacing.</p>' +
+      '<p class="why">How sure the room must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the founder’s pacing.</p>' +
       // the out-of-reach branch comes first: a bar above the ceiling is not a
       // slow document, it is a document that cannot move at all, and that is
       // the more important thing to say about the value under the thumb
@@ -1304,7 +1304,7 @@ window.SETUP = (function () {
         { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' }]) +
       '<p class="blindnote">Nothing is preselected — anonymity holds unless everyone is content with more.</p>',
     judgments: (A) =>
-      '<p class="why">Never revealed while a question is live, whichever is chosen — a room that can read itself judges itself. This settles only whether they are published with the closing record.</p>' +
+      '<p class="why">Never revealed while a question is live, whichever is chosen — a room that can see its own votes votes differently. This settles only whether they are published with the closing record.</p>' +
       ladder(A, 'judgments', [
         { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
         { v: 'after', t: 'Revealed at the end', e: 'Published with the document at the end, never before.' }]) + BLINDNOTE,
@@ -1327,19 +1327,19 @@ window.SETUP = (function () {
       '<p class="why">What it costs to bring somebody into the membership — a member’s invitation or a stranger’s application alike. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'admission', [
         { v: 'assembly', t: 'Everyone must agree', e: 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.' },
-        { v: 'proposal', t: 'The membership decides', e: 'A proposed member is judged at the approval threshold ✏️, like any change.' },
+        { v: 'proposal', t: 'The membership decides', e: 'A proposed member is voted on at the approval threshold ✏️, like any change.' },
         { v: 'pen', t: 'Any member may invite', e: 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.' }]) + BLINDNOTE,
     removal: (A) =>
       '<p class="why">What it costs to remove a member. Whichever is chosen, the member always sees a removal proposed against them, and anybody may leave at any time. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'removal', [
         { v: 'consent', t: 'Everyone must agree, including them', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
         { v: 'assembly', t: 'Everyone else must agree', e: 'The whole room, minus the member in question, must agree 🏛️.' },
-        { v: 'proposal', t: 'The membership decides', e: 'Judged at the approval threshold ✏️ like any change, with quorum.' }]) + BLINDNOTE,
+        { v: 'proposal', t: 'The membership decides', e: 'Voted on at the approval threshold ✏️ like any change, with quorum.' }]) + BLINDNOTE,
     machines: (A) =>
-      '<p class="why">An AI that patrols the document for drift and proposes fixes — it never judges, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
+      '<p class="why">An AI that patrols the document for drift and proposes fixes — it never votes, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
       ladder(A, 'machines', [
         { v: false, t: 'No AI proposals', e: 'People write everything in this document.' },
-        { v: true, t: 'AI proposals are permitted', e: 'They compete on the same terms as anybody’s and can be out-judged like anybody’s.' }]) + BLINDNOTE,
+        { v: true, t: 'AI proposals are permitted', e: 'They compete on the same terms as anybody’s and can be out-voted like anybody’s.' }]) + BLINDNOTE,
     ending: (A) =>
       '<p class="why">When the document should close. The <b>latest</b> answer anybody gives is taken, and <b>never</b> is the latest of all — so nobody is cut off before they were ready.</p>' +
       '<div class="choice" role="radiogroup">' +
@@ -1356,7 +1356,7 @@ window.SETUP = (function () {
       ansRow(A.ending === 'never', 'ending', 'never', 'Never', 'It runs until it is frozen.') +
       '</div>' + BLINDNOTE,
     lapse: (A) =>
-      '<p class="why">Whether a membership <b>lapses</b> after a period of inactivity — and how long. A lapsed member leaves the quorum base like an abstainer: the room can finish without them, their judgments keep counting, and coming back is just logging in. They are warned by email first, and sent the document and record when it happens.</p>' +
+      '<p class="why">Whether a membership <b>lapses</b> after a period of inactivity — and how long. A lapsed member leaves the quorum base like an abstainer: the room can finish without them, their votes keep counting, and coming back is just logging in. They are warned by email first, and sent the document and record when it happens.</p>' +
       '<span class="fld"><label>The shortest period of inactivity you will accept</label>' +
       '<span class="setrow2"><input class="num" type="number" min="7" max="365"' +
       ' data-ansnum="lapse"' + (typeof A.lapse === 'number' ? ' value="' + A.lapse + '"' : '') + '>' +

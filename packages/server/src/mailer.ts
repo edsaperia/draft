@@ -179,13 +179,13 @@ ${link}
   removed: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `You are no longer a member of “${title}”`,
     text: `The Founder has removed you from the membership of “${title}”. ` +
-      `Your answers and judgments no longer count in it.\n\n` +
+      `Your answers and votes no longer count in it.\n\n` +
       `The document is here, if its visibility lets you read it:\n${link}`,
     link,
   }),
   lapsed: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Your membership of “${title}” has lapsed`,
-    text: `Your membership of “${title}” has lapsed. Your judgments still ` +
+    text: `Your membership of “${title}” has lapsed. Your votes still ` +
       `count; you have simply left the quorum base. Reviving is logging in:\n${link}`,
     link,
   }),
