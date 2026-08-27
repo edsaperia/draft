@@ -70,7 +70,18 @@ page.on('response', (r) => { if (r.request().method() === 'POST' &&
 // …and it says **which** command and why. `400 POST /cmd` names the wire and
 // nothing else, which on a page that posts every act through one route is a
 // line you have to go and reproduce by hand.
+/**
+ * **A refusal a step is *about*** (plan-queue 43). The rule above stands for
+ * everything else; what this excuses is the one act the walk performs in
+ * order to be refused — the ❌ door pressed against an invitee after 🍾,
+ * whose 400 *is* the assertion. It excuses by naming the command in the
+ * body, never by a blanket allowance, and only for as long as the step that
+ * pushed the pattern is running: the step that adds one takes it back out.
+ */
+const expectRefused = [];
 page.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400) {
+  const body = String(r.request().postData() || '');
+  if (expectRefused.some((re) => re.test(body))) return;
   const at = refused.push(r.status() + ' ' + r.request().method() + ' ' + new URL(r.url()).pathname +
     ' ' + String(r.request().postData() || '').slice(0, 120)) - 1;
   r.text().then((b) => { refused[at] += ' → ' + b.slice(0, 160); }).catch(() => {});
@@ -978,6 +989,71 @@ const doorShuts = async (k, glyph, direct, label) => {
   if (!ok) stuck.push('the ' + glyph + ' door after its pen goes');
   await clickIn('.setupcard [data-revert]');
 };
+/* ---- an invitation cannot be withdrawn after the start (plan-queue 43) ---
+ * **Nobody enters or leaves except by the routes the document names** (SPEC
+ * §9.7 rule 9, X4). ❌'s subject picker lists members and invitees alike
+ * (entry 96) and `data-exile` routes somebody who has not arrived to
+ * `cs.uninvite` — which the fold refuses after the start (*uninviting is
+ * pre-start only — after the start it is a motion*), while there is no
+ * `uninvite` motion payload for the sentence to point at. So an outstanding
+ * invitation stands until the close expires it, and the control invites the
+ * act all the same.
+ *
+ * The step **states the fact rather than the wish**: the invitee is offered,
+ * the press is refused, the refusal is printed under the control (Y25), and
+ * the row is still there afterwards. If the surface ever shuts the door —
+ * the invitee dropped from the picker, or a route built for it — this goes
+ * red and is rewritten to the new fact rather than deleted.
+ *
+ * GUEST2 is the one address this walk invites and never stands up, so it is
+ * an invitee for the whole run; and this must precede `doorShuts`, which
+ * lays ❌'s pen down for good and takes the picker with it. */
+const invitationStandsAfterBegin = async () => {
+  if (!(await open('remove'))) {
+    say('❌ invitee · FAIL: no ❌ card after 🍾');
+    stuck.push('the ❌ card after 🍾'); return;
+  }
+  const offered = await page.evaluate((local) => {
+    const sel = document.querySelector('.setupcard [data-removewho]');
+    if (!sel) return null;
+    const o = [...sel.options].find((x) => x.textContent.includes(local));
+    return o ? { value: o.value, label: o.textContent.trim() } : { value: '', label: '' };
+  }, GUEST2.split('@')[0]);
+  if (!offered) {
+    say('❌ invitee · FAIL: ❌ draws no subject picker for a founder holding its ✒️');
+    stuck.push('the ❌ subject picker'); return;
+  }
+  if (!offered.value) {
+    say('❌ invitee · FAIL: the picker no longer offers the invitee — the fact has ' +
+      'changed, so rewrite this step against the new one');
+    stuck.push('the ❌ picker’s invitee row'); return;
+  }
+  say('❌ invitee · offered as ' + JSON.stringify(offered.label));
+  expectRefused.push(/"cmd":"uninvite"/);
+  await page.evaluate((v) => {
+    const sel = document.querySelector('.setupcard [data-removewho]');
+    sel.value = v;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  }, offered.value);
+  await T(420);
+  await clickIn('.setupcard [data-exile]');
+  await T(1600);
+  const said = await refusalLine();
+  const refusedOk = /pre-start only/.test(said);
+  say('withdrawn? · ' + (refusedOk ? 'refused, and the door says why: “' + said + '”'
+    : 'FAIL: the press said ' + JSON.stringify(said)));
+  if (!refusedOk) stuck.push('the ❌ door’s refusal on an invitee after 🍾');
+  await closeCard();
+  const left = (await rowsUnder('invitees')) || [];
+  const stands = left.some((r) => r.t.includes(GUEST2.split('@')[0]));
+  say('stands     · ' + (stands
+    ? 'the invitation is still there — nothing withdraws it until the close expires it'
+    : 'FAIL: the row went, so the act landed after all'));
+  if (!stands) stuck.push('the invitee row after a refused withdrawal');
+  expectRefused.length = 0;
+};
+await invitationStandsAfterBegin();
+
 await doorShuts('invite', '✉️', '[data-add]', 'box');
 await doorShuts('remove', '❌', '[data-exile]', 'exile');
 
