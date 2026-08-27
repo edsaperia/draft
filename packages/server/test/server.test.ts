@@ -1625,3 +1625,82 @@ describe('💤 the lapse mails (§9.5a, SURFACE E22)', () => {
     expect(boRec.lapsed).toBe(false);
   }, 60_000);
 });
+
+/**
+ * **👁️ judgments — the wire a stranger is served** (backlog entry 84, batch L,
+ * promise-coverage). The setting says judgments are *never revealed* or
+ * *revealed after the decision*; the audit's fold half is
+ * `packages/constitution/test/promise-judgments.test.ts`, and this is the one
+ * assertion that belongs on this side of the seam: **the seatless door**, which
+ * is what `GET /api/d/:slug/view` answers with when there is no seat.
+ *
+ * Asserted over the **whole body** rather than field by field, because the
+ * promise is about the wire: a field added later that carries a judge's id is
+ * exactly what a field list would miss. The ladder is the fixture because it is
+ * the only one that produces real judgments — twenty seats, thirty proposals,
+ * cards judged — without a hundred lines of driving.
+ */
+describe('👁️ the door tells a stranger nothing of anybody’s judgments (entry 84)', () => {
+  it('a live document with real judgments cast serves the seatless door no judge, no answer, no id', async () => {
+    const { base } = await boot();
+    interface Step { slug: string; phase: string;
+      seats: { id: string; name: string; founder: boolean }[];
+      skipped: string[]; error?: string }
+    let last: Step | null = null;
+    let cookie = '';
+    const press = async (to: string): Promise<Step> => {
+      const res = await post(base, '/api/dev/ladder',
+        { to, ...(last === null ? { seed: 9 } : { slug: last.slug }) });
+      const body = await res.json() as Step;
+      expect(body.error, `press to ${to} — ${res.status}: ${JSON.stringify(body)}`).toBeUndefined();
+      cookie = cookieOf(res);
+      last = body;
+      return body;
+    };
+
+    const born = await press('constitution');
+    await press('ready');
+    const live = await press('session');
+    expect(live.phase).toBe('session');
+    const slug = live.slug;
+
+    // the founder's own view first: this document really does hold judgments,
+    // so the door's silence below is a withholding and not an empty room
+    const member = await (await fetch(`${base}/api/d/${slug}/view`,
+      { headers: { cookie } })).json() as MemberViewPayload;
+    const judged = member.clauses.reduce((n, c) => n + c.judges, 0) +
+      member.records.reduce((n, r) => n + r.judges, 0);
+    expect(judged).toBeGreaterThan(0);
+    expect(member.view.motions.length).toBeGreaterThan(0);
+
+    // 🌍 open, so the door is asserted at its most generous: the ladder seeds
+    // it `closed`, where a redacted door proves little. It is the founder's
+    // own by pen here, so this is an amendment and not a motion.
+    const opened = await post(base, `/api/d/${slug}/cmd`,
+      { cmd: 'set-setting', args: { setting: 'chamber', value: { rung: 'public' } } }, cookie);
+    expect((await opened.json() as { error?: string }).error).toBeUndefined();
+
+    // the door, with no cookie at all
+    const res = await fetch(`${base}/api/d/${slug}/view`);
+    const raw = await res.text();
+    const door = JSON.parse(raw) as { stranger: true; canRead: boolean;
+      members: { arrived: number; list: unknown[] | null } };
+    expect(res.status).toBe(200);
+    expect(door.stranger).toBe(true);
+    // the whole document, the whole membership — and still not one judgment
+    expect(door.canRead).toBe(true);
+    expect(door.members.list).toHaveLength(door.members.arrived);
+    // no judgment of anybody's, under any name the fold or the engine uses
+    expect(raw).not.toMatch(
+      /participantId|"answers"|"myAnswer"|"answeredCount"|"judged"|"judgedByMe"|"judges"|"comparisons"/);
+    // and no member id: the register the door serves under 🌍 is names and
+    // pictures (Q508(c)), never the ids every answer and every comparison is
+    // keyed by — so no arithmetic over this body can reach one. The founder's
+    // seat is exempt from the sweep only because the door's own `founder` key
+    // is that word (Q455's holding sentence), not because it carries an id.
+    for (const seat of born.seats.filter((s) => !s.founder)) {
+      expect(raw, `seat ${seat.id}`).not.toContain(`"${seat.id}"`);
+    }
+    expect(raw).not.toContain('@example.org');
+  }, 120_000);
+});
