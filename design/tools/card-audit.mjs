@@ -843,15 +843,60 @@ async function walkSettled(page, base, cards, errors, seat) {
   await wait(page, 300);
   await page.click('#devff');
   await wait(page, 900);
-  if (seat) {
-    await page.evaluate((v) => {
-      const sel = document.getElementById('devwho');
-      sel.value = v;
-      sel.dispatchEvent(new Event('change', { bubbles: true }));
-    }, seat);
-    await wait(page, 600);
-  }
   const walk = seat ? 'seat:' + seat : 'settled';
+  /**
+   * **Two settled motions, so the band's record chips have something to
+   * hold** (Q942, entry 72). ⏩ leaves a document with no motion in its life
+   * at all, so the record card — a chip filed behind its rule's tab — had no
+   * instance on any walk and nothing to measure or read.
+   *
+   * The pair is chosen by what the module will actually do. 🌡️ `bar` is
+   * delegated by ⏩'s own `FILL`, so a carried constitutional motion on it
+   * lands in the document rather than parking at the 👑; and a **constitutional
+   * motion never settles as rejected** — a `keep` answer simply leaves it
+   * running until the close — so the rejected half has to be an *ordinary*
+   * one, adjudicated `held` through the dev seam, which is ⏱️ `rate`.
+   *
+   * Seeded **before the seat switch**, so the `seat:` walks measure the record
+   * from a member's chair too, where the mover is the sealed string.
+   */
+  const seeded = await page.evaluate(() => {
+    try {
+      const cs = window.cs;
+      if (!cs || cs.constitutedAtT === null) return { error: 'no constituted session on the page' };
+      let t = Date.now();
+      const tick = () => (t += 1000);
+      const voters = cs.motionElectorate();
+      if (voters.length < 2) return { error: 'an electorate of ' + voters.length + ' cannot carry a motion' };
+      const mover = voters.find((id) => id !== 'founder') || voters[0];
+      const bar = cs.settingState('bar').value || { pct: 78 };
+      const m1 = cs.openMotion(tick(), mover,
+        { kind: 'set', setting: 'bar', value: { pct: Math.min(95, bar.pct + 4) } },
+        'The charter should not change on a bare majority of the evidence.');
+      for (const id of voters) if (id !== mover) cs.answerMotion(tick(), id, m1, 'accept');
+      const rate = cs.settingState('rate').value || { grant: 4, cap: 8, dripMinutes: 180 };
+      const m2 = cs.openMotion(tick(), mover,
+        { kind: 'set', setting: 'rate',
+          value: { grant: rate.grant + 2, cap: rate.cap, dripMinutes: rate.dripMinutes } },
+        'Two more to start would let people write before they have to choose.');
+      cs.adjudicateOrdinaryMotion(tick(), m2, 'held');
+      return { carried: [m1, cs.motionRecords().get(m1).status],
+        held: [m2, cs.motionRecords().get(m2).status] };
+    } catch (e) { return { error: String((e && e.message) || e) }; }
+  });
+  if (seeded.error) errors.push(walk + ': the motion seed failed — ' + seeded.error);
+  else {
+    if (seeded.carried[1] !== 'carried') errors.push(walk + ': the seeded ' + seeded.carried[0] + ' is ' + seeded.carried[1] + ', not carried');
+    if (seeded.held[1] !== 'held') errors.push(walk + ': the seeded ' + seeded.held[0] + ' is ' + seeded.held[1] + ', not held');
+  }
+  // a render, so the seeded records reach the piles before anything is
+  // measured: the seat switch is one, and the seatless walk asks for one
+  await page.evaluate((v) => {
+    const sel = document.getElementById('devwho');
+    if (v) sel.value = v;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  }, seat || null);
+  await wait(page, 600);
   const keys = await page.evaluate(() => window.__CA.offered());
   const seen = new Set(keys);
   const strip = () => page.evaluate(() =>

@@ -1758,7 +1758,7 @@
       dist: [9, 5], distTop: 0, distEnds: ['No AI proposals', 'AI proposals are permitted'] },
   ];
   const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
-    GATES.find((c) => c.k === k) || powerCard(k) || admitCard(k);
+    GATES.find((c) => c.k === k) || powerCard(k) || admitCard(k) || recordCard(k);
   // **The governance tab group** (403/405, Ed 2026-08-19): every held-able
   // setting is three questions — the value, ✒️ who-has-the-pen, 🛡️ do-carried-changes-need-the-Founder’s-OK — drawn as a
   // pile: the value’s tab in front, the two power tabs beneath. The tabs
@@ -1824,6 +1824,39 @@
     const nm = ap ? applicantName(ap) : 'an applicant';
     ADMCACHE[k].t = admissionPrice() === 'pen' ? nm + ' Has Joined' : 'Admit ' + nm + '?';
     return ADMCACHE[k];
+  };
+  // **A settled motion files behind the rule it was about** (Q942, entry 72,
+  // Ed 2026-08-25: *when a proposal for a change in a setting passes or is
+  // rejected, it should leave a tab, the same as with a text amendment*). The
+  // band's 2026-08-18 rule was that a settled setting stays in the closed pile
+  // *because it is the rule, not history* — and that half stands. What is new
+  // is the other half: a settled motion **is** history at that clause, so it
+  // files there exactly as a filed decision does in the gutter, behind the
+  // rule's own tab. A synthetic card like `powerCard`, so nothing but
+  // `chipsFor` has to know these exist.
+  //
+  // **Keyed by its place in its pile, not by the motion id.** A raised motion
+  // is `mo-3`, but a ✒️ amendment is folded rather than emitted and its id
+  // carries the wall clock (`pen:pace:1787813159193`) — which would put a
+  // fresh key in the copy golden on every run, and a card key is a golden
+  // key. The pile's own order is stable: records are immutable and append in
+  // settle order, so index `n` names the same record for as long as it exists.
+  const RECCACHE = {};
+  const recordCard = (k) => {
+    const mm = /^rec:(.+):(\d+)$/.exec(k);
+    if (!mm || !cs) return undefined;
+    // a record that is no longer filed — or a page that has moved on from the
+    // document it was read against — resolves to nothing, so a stale `S.open`
+    // simply closes rather than throwing inside `cardFor`
+    const rec = settledMotionsFor(mm[1])[+mm[2]];
+    if (!rec) return undefined;
+    if (!RECCACHE[k]) RECCACHE[k] = { k, kind: 'constitutional', base: mm[1] };
+    // recomputed rather than frozen, for `admitCard`'s reason: the words a
+    // motion is described in are the page's, and the page's copy moves
+    RECCACHE[k].record = rec.id;
+    RECCACHE[k].g = rec.status === 'carried' ? TICK : window.CARDS.CROSS;
+    RECCACHE[k].t = (rec.status === 'carried' ? 'Passed: ' : 'Rejected: ') + motionDisplay(rec);
+    return RECCACHE[k];
   };
   const applicantById = (id) => allApplicants().find((ap) => ap.id === id);
   const applicantName = (ap) => ap.name || ap.email || 'Anonymous';
@@ -2093,6 +2126,68 @@
       (blockAHeld ? '<p class="setnote">A veto can only be held where the Founder still amends it at will — take back the ✒️ first.</p>' : '') +
       (blockGive ? '<p class="setnote">Opens once this setting has a value.</p>' : '') +
       (!live ? '<p class="setnote">Revisable until the document begins. Giving both up hands the question to the members — delegation is exactly the state of holding neither.</p>' : '');
+  };
+  /**
+   * **What a settled motion says about itself** (Q942): passed or rejected and
+   * when, what was proposed (the head), what changed, and the reason. The
+   * office by route, never the mover — a raised motion's author is sealed
+   * (§3.4) and stays sealed in the record, so the reason wears the featureless
+   * disc and a ✒️ amendment wears the founder's own face, exactly the rule
+   * `changeHalf` and `amendmentBlocks` already apply.
+   *
+   * **The date carries its year, and leads.** `changeHalf`'s *Last amended*
+   * line sits on a clause somebody is reading now; a record is read long
+   * after, so it dates itself absolutely. It leads for the instrument's sake:
+   * `copy-check` normalises `D Month YYYY` out of the golden, and its pattern
+   * needs a word boundary after the year — which a date at the *end* of an
+   * eyebrow does not get, the audit's text walk running one block straight
+   * into the next with no separator. A dateline is the right reading of the
+   * label anyway.
+   */
+  const recordBody = (c) => {
+    const rec = recOf(c);
+    if (!rec) return '<p class="why">This record is no longer on the document.</p>';
+    const carried = rec.status === 'carried';
+    const at = recAt(rec);
+    const when = at ? esc(new Date(at).toLocaleDateString(undefined,
+      { day: 'numeric', month: 'long', year: 'numeric' })) + ' · ' : '';
+    const eyebrow = '<p class="eyebrow fieldlab">' + when + (carried ? 'Passed' : 'Rejected') + '</p>';
+    const speaker = rec.route === 'pen' ? founderSpeaker(rec.why)
+      : window.CARDS.speakerHtml(rec.why);
+    let said;
+    if (rec.payload.kind === 'reserve') {
+      const rc = card(pkeyOf(rec.payload.setting));
+      const what = rc ? LD + rc.t + RD : rec.payload.setting;
+      said = '<p class="cpv">The membership ' + (carried
+        ? 'returned ' + esc(what) + ' to the founder' + Q + 's reserve.'
+        : 'kept ' + esc(what) + ' with the membership.') + '</p>';
+    } else {
+      const k = pkeyOf(rec.payload.setting);
+      const what = esc(WHAT[k] || (k === 'title' ? 'the document' + Q + 's title'
+        : (card(k) ? card(k).t.toLowerCase() : 'this rule')));
+      const who = rec.route === 'pen' ? 'The Founder ' : 'The membership ';
+      const was = wordsFor(k, stoodBefore(rec));
+      const now2 = wordsFor(k, rec.payload.value);
+      if (!carried) {
+        said = '<p class="cpv">The membership kept ' + what +
+          (was ? ' as it stood: ' + esc(was) : ' as it stood') + '.</p>';
+      } else if (!was) {
+        // no earlier value on the record: say what it became rather than
+        // guessing at what it left
+        said = '<p class="cpv">' + who + 'changed ' + what +
+          (now2 ? ' to ' + esc(now2) : '') + '.</p>';
+      } else if (was.length > 32 || (now2 || '').length > 32) {
+        // the same *long values are shown, not narrated* rule `changeHalf`
+        // switches to past 32 characters
+        said = '<p class="cpv">' + who + 'changed ' + what + '.</p>' +
+          '<p class="waswas"><span>was</span>' + esc(was) + '</p>' +
+          (now2 ? '<p class="waswas"><span>now</span>' + esc(now2) + '</p>' : '');
+      } else {
+        said = '<p class="cpv">' + who + 'changed ' + what + ' from ' + esc(was) +
+          (now2 ? ' to ' + esc(now2) : '') + '.</p>';
+      }
+    }
+    return '<div class="body changed">' + eyebrow + said + speaker + '</div>';
   };
   function commitPower(key) {
     const mm = /^pw:(u|a):(.+)$/.exec(key);
@@ -3107,6 +3202,8 @@
   const value = (c) => (c.ansFor
     ? esc(filled(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
     : c.power ? esc(powerHeadLine(c))
+    // a record has no VALUE of its own either — its title *is* what it says
+    : c.record ? esc(c.t)
     : esc(VALUE[c.k] ? VALUE[c.k]() : ''));
   // **A task you have to do needs no subtitle** (Ed, 2026-08-19: *subtitles
   // are there to help me make choices — if I have to do them, they don't need
@@ -3250,6 +3347,90 @@
     return null;
   };
   const motionOn = (c) => { const rec = liveMotionRec(c); return rec ? pageMotion(rec) : null; };
+  // **A record is a settled motion on a setting** (Q942). Withdrawn and
+  // kept-at-close motions file nothing — Ed's words are *passes or is
+  // rejected* — and `awaiting-crown` is still live, with a card of its own.
+  // The membership payloads file nothing here either: a door stands by its
+  // result (entries 94–96), which is the *Invitees* / *Applicants* /
+  // *Proposed for removal* subsections, not the band's constitutional piles.
+  const settledRecord = (rec) => !!rec && !!rec.payload &&
+    (rec.status === 'carried' || rec.status === 'held') &&
+    (rec.payload.kind === 'set' || rec.payload.kind === 'reserve');
+  // 🪜 has no pile of its own, so a motion on it files behind 🌡️ — the same
+  // fold `chipsFor` makes for the setting itself
+  const pileKeyOf = (rec) => { const k = motionTargets(rec); return k === 'pace' ? 'bar' : k; };
+  // the module hands back `settledAtT` and the wire hands back `at`, the same
+  // pair `lastAmendment` normalises
+  const recAt = (rec) => (rec.at !== undefined && rec.at !== null ? rec.at
+    : (rec.settledAtT || 0));
+  // the record a record card stands for, by id
+  const recOf = (c) => {
+    if (!c || !c.record || !cs) return null;
+    try { return cs.motionRecords().get(c.record) || null; } catch (e) { return null; }
+  };
+  // what the module folded beside a ✒️ amendment as the value it replaced;
+  // a raised motion never has one (`amendedFrom` is the pen's own projection)
+  const recFrom = (rec) => {
+    if (rec.from !== undefined && rec.from !== null) return rec.from;
+    try { return (cs && cs.amendedFrom) ? cs.amendedFrom(rec.id) : null; } catch (e) { return null; }
+  };
+  /**
+   * **A record states a change, so a set that changed nothing is not one.**
+   * `openMotion` refuses a motion proposing what already stands, but the pen
+   * path has no such gate — the founder's ⏩ commits 🪜 twice with the same
+   * value, and the module folds an amendment for the second — and *changed it
+   * from rising from 55% to rising from 55%* is not history at that clause,
+   * it is a sentence about nothing. Conservative on purpose: only an equality
+   * it can prove drops a record.
+   */
+  const noChange = (rec) => {
+    if (rec.payload.kind !== 'set') return false;
+    const was = recFrom(rec);
+    if (was === null || was === undefined) return false;
+    try { return JSON.stringify(was) === JSON.stringify(rec.payload.value); } catch (e) { return false; }
+  };
+  /**
+   * Every settled motion filed at one pile, oldest first. **Not gated on
+   * `motionsLive()`**: that predicate asks whether *this viewer* may judge,
+   * and a record is legible to everyone the rule binds.
+   */
+  const settledMotionsFor = (k) => {
+    if (!cs) return [];
+    try {
+      const out = [];
+      for (const rec of cs.motionRecords().values()) {
+        if (!settledRecord(rec) || pileKeyOf(rec) !== k || noChange(rec)) continue;
+        out.push(rec);
+      }
+      return out.sort((a, b) => recAt(a) - recAt(b));
+    } catch (e) { return []; }
+  };
+  /**
+   * What stood at this setting when this motion was put. **Derived from the
+   * records themselves**, never from `previousValue`, which holds only the
+   * latest change and would put today's *was* on a record from a month ago:
+   * the last carried motion on the same setting before this one, or — for the
+   * first, and only on a ✒️ amendment — the `from` the module folds beside it
+   * (`amendedFrom`, which a raised motion never has). Null where neither
+   * exists, and the copy then says less rather than something untrue.
+   */
+  const stoodBefore = (rec) => {
+    const list = settledMotionsFor(pileKeyOf(rec));
+    const i = list.findIndex((r) => r.id === rec.id);
+    const sameSetting = (p) => p.payload.kind === 'set' &&
+      p.payload.setting === rec.payload.setting && p.status === 'carried';
+    for (let j = i - 1; j >= 0; j -= 1) if (sameSetting(list[j])) return list[j].payload.value;
+    const was = recFrom(rec);
+    if (was !== null && was !== undefined) return was;
+    // **A rejected motion changed nothing, so if nothing carried after it
+    // either, what stood then is what stands now** — the one case where the
+    // living value is the right answer about a past moment.
+    if (rec.status === 'held' && !list.slice(i + 1).some(sameSetting)) {
+      const st = csState(pkeyOf(rec.payload.setting));
+      return st ? st.value : null;
+    }
+    return null;
+  };
   const routeOfM = (m) => m.kind;
   // the same two-act gesture (363a): the radio is provisional, the ✓ commits.
   // Constitutional commits are answerMotion; ordinary judging is a page-side
@@ -4238,6 +4419,10 @@
     inDocOpenSlot: false,
     headFor: (c) => {
       if (c.power) return esc(powerHeadLine(c));
+      // **A record's head is what was proposed** (Q942) — the way the top of
+      // the ranking is a sealed text record's head (SURFACE §9). The outcome
+      // and its date are the field's first line, not the clause.
+      if (c.record) { const rec = recOf(c); return rec ? esc(motionDisplay(rec)) : esc(c.t); }
       // post-save the title card opens at its own clause, so its head is
       // the clause sentence (the headdoct span stays: refreshCommit types
       // into it live); at the birth it is still the big heading itself
@@ -4265,7 +4450,7 @@
     },
     // reserved = held by the founder: the room may pass a change, and it
     // then goes to the founder as a 👑 question (accept or reject)
-    reserved: (c) => !c.power && !c.isGate && !c.ansFor && c.kind !== 'personal' && !membersHold(c),
+    reserved: (c) => !c.power && !c.record && !c.isGate && !c.ansFor && c.kind !== 'personal' && !membersHold(c),
     // a section never folds while it holds the open card or its tasks —
     // including a card pinned to its `lead` rather than enumerated by its
     // own keys: 🏛️ hangs on the Proposals preamble (Q750) and appears in
@@ -4280,29 +4465,35 @@
     // never while any card is open — a fold must not swallow the open card
     foldedGroup: () => S.folded.has('cs-constitution') && !S.open,
     groupToggle: () => secToggleHtml('cs-constitution'),
-    // power tabs (403): synthetic cards — never asks, never tasks; their
-    // decision line is the power's own rule sentence
-    mustAct: (c) => (c.power ? false : mustAct(c)),
-    waiting: (c) => (c.power ? false : waiting(c)),
-    news: (c) => (c.power ? false : news(c)),
+    // power tabs (403) and record chips (Q942): synthetic cards — never asks,
+    // never tasks; a power tab's decision line is the power's own rule
+    // sentence, and a record's is what it says it is. **A record is history,
+    // not a task**: nothing is owed an OK, so it is `done` from the moment it
+    // exists and wears the grey the band gives a settled thing.
+    mustAct: (c) => (c.power || c.record ? false : mustAct(c)),
+    waiting: (c) => (c.power || c.record ? false : waiting(c)),
+    news: (c) => (c.power || c.record ? false : news(c)),
     // the paragraph seam, so 🏛️ draws no clause of its own where the
     // preamble is standing to carry it (Q750). The rail reads `tasksFor`
     // itself and is unaffected — the news still travels with its question.
     // Since Q787 an `ans-*` task is filtered here too: it is a chip of its
     // host setting's pile (`chipsFor` below), so a paragraph of its own would
     // be the same tab drawn twice.
-    tasksFor: (c) => (c.power ? []
+    tasksFor: (c) => (c.power || c.record ? []
       : tasksFor(c).filter((t) => !t.ansFor && !(t.k === 'grant-voice' && voiceInStack()))),
     // esc before linkify, like the head path (review #1, finding 20): the
     // sentence carries the title, which is member text — unescaped it was
     // stored XSS into the constitution paragraph
-    decisionLine: (c) => linkify(esc(c.power ? powerHeadLine(c) : decisionLine(c))),
+    // a record draws no paragraph, so this is never asked for one — it
+    // answers with the record's own title rather than throwing if it is
+    decisionLine: (c) => linkify(esc(c.record ? c.t
+      : c.power ? powerHeadLine(c) : decisionLine(c))),
     // 🪜 has no paragraph of its own (Q512): the ramp is part of what the
     // threshold says, so its tab stands in 🌡️'s stack and opening it opens
     // at 🌡️'s own clause — which is also where its rail entry anchors,
     // since anchorOf falls back to the tab's paragraph.
     chipsFor: (c) => {
-      if (c.power || c.ansFor) return [c];
+      if (c.power || c.ansFor || c.record) return [c];
       // the Proposals opening is one clause carrying four tabs (Q748): the
       // group is the same whichever of the four you come in by, and `para`
       // opens the card at 🍾's paragraph for any of them
@@ -4316,8 +4507,15 @@
       // unanswered question leads and an answered one falls in beside the
       // watcher — one place to click, and no clause about the founder.
       const withAns = base.concat(ansTaskFor(card(k)));
-      return (cs && PW_KEYS.includes(k))
+      const withPw = (cs && PW_KEYS.includes(k))
         ? withAns.concat([card('pw:u:' + k), card('pw:a:' + k)]) : withAns;
+      // **and behind all of it, what has already been decided here** (Q942).
+      // `stackOrder` ranks `done` last and sorts stably, so the rule — or its
+      // question, or its power tabs — is always in front and the records stand
+      // behind it in settle order. The ordering is this list's, never a second
+      // sort.
+      return withPw.concat(settledMotionsFor(k)
+        .map((_rec, i) => card('rec:' + k + ':' + i)).filter(Boolean));
     },
     // **The lockline tells the truth about who set it** (Q510(a), Ed
     // 2026-08-21). It had said *Set by the founder when the document was
@@ -5316,6 +5514,11 @@
           '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
           ' data-ok="' + c.k + '">OK</button>', g.cards);
       }
+      // **A record, opened** (Q942): what was proposed at its head, the outcome
+      // and the reason in the field, and 🗑️ alone at the foot — a record asks
+      // nothing, so it has no OK (SURFACE §9, the sealed record's *nothing*).
+      // The bin is the band's one always-live close (Q613 (a)).
+      if (c.record) return cardHtml(c, ctx, recordBody(c), binBtn(), g.cards);
       // 403/405 (Ed, 2026-08-19): a power tab, opened — the ✒️ or 🛡️
       // half of a setting's governance, its head the rule as it stands
       if (c.power) {
@@ -6775,7 +6978,11 @@
   const strangerReadCard = (g) => {
     const c = card(S.open);
     if (!c || !g.cards.some((x) => x.k === c.k)) return '';
-    const body = c.k === 'text' ? strangerTextBody() : strangerReadBody(c);
+    // `strCtx` inherits `chipsFor`, so a door that lets the constitution be
+    // read carries the record chips too — the rules are public wherever the
+    // rules are, and a rule's history is part of what it is (Q942)
+    const body = c.record ? recordBody(c)
+      : c.k === 'text' ? strangerTextBody() : strangerReadBody(c);
     return cardHtml(c, strCtx, body, binBtn(), g.cards);
   };
   const strangerTextBody = () => {

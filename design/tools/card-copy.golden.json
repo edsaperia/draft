@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 278,
+  "cards": 282,
   "walks": [
    "answers",
    "charter",
@@ -5048,7 +5048,7 @@
    },
    "bar": {
     "eyebrow": "",
-    "head": "The members must be 78% sure a proposal is better for it to pass by the end, starting at 55% when judging opens.",
+    "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when judging opens.",
     "lock": "The members decide.",
     "body": "A proposal passes when the members are % sure at the end.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.50%95%What everyone asked for, without names.Answered3 of 3The document takes the highest80%",
     "options": [],
@@ -5074,6 +5074,7 @@
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Passed: 82% sure at the end — settled",
      "This is how your reason will reach everybody else: with your name off it.",
      "0",
      "1",
@@ -5581,7 +5582,7 @@
    },
    "pace": {
     "eyebrow": "",
-    "head": "The approval threshold starts at 55% and rises to 78% by the end. The Founder may amend this at will, and refuse proposals that the membership pass.",
+    "head": "The approval threshold starts at 55% and rises to 82% by the end. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
     "body": "The approval threshold stays the same all the way through.Prefer thisThe approval threshold starts at % and rises to the number at the end.If it passes it goes to the Founder, who may assent or refuse.Last amended 27 AugustThe Founder has changed how the approval threshold climbs to the close from rising from 55% to rising from 55%.ABAsh Bellamy 👑No reason given.",
     "options": [
@@ -5613,6 +5614,7 @@
      "Rising Approval Threshold? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Passed: 82% sure at the end — settled",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "The founder’s own hand — a ✒️ act, not a proposal",
@@ -5713,6 +5715,7 @@
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
+     "Passed: 82% sure at the end — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -5905,6 +5908,7 @@
      "Proposal Rate — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
+     "Rejected: 6 each, up to 8, one every 180 minutes — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -6122,6 +6126,7 @@
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
+     "Passed: 82% sure at the end — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -6314,6 +6319,7 @@
      "Proposal Rate — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
+     "Rejected: 6 each, up to 8, one every 180 minutes — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -6518,6 +6524,7 @@
      "Proposal Rate — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Rejected: 6 each, up to 8, one every 180 minutes — settled",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion"
     ],
@@ -6525,6 +6532,53 @@
      "We should change this because…",
      "If it passes it goes to the Founder, who may assent or refuse."
     ]
+   },
+   "rec:bar:0": {
+    "eyebrow": "",
+    "head": "82% sure at the end",
+    "lock": "",
+    "body": "D Month YYYY · PassedThe membership changed how sure the room must be at the close to 82%.The charter should not change on a bare majority of the evidence.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     }
+    ],
+    "hints": [
+     "How Sure Must the Room Be? — settled",
+     "Rising Approval Threshold? — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: 82% sure at the end — close it",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "rec:rate:0": {
+    "eyebrow": "",
+    "head": "6 each, up to 8, one every 180 minutes",
+    "lock": "",
+    "body": "D Month YYYY · RejectedThe membership kept how often members may propose as it stood: 4 ✏️ to start, up to 8, one more every 180 minutes.Two more to start would let people write before they have to choose.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     }
+    ],
+    "hints": [
+     "Proposal Rate — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Rejected: 6 each, up to 8, one every 180 minutes — close it",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Put it back as it stands"
+    ],
+    "helpers": []
    },
    "removal": {
     "eyebrow": "",
@@ -7018,7 +7072,7 @@
    },
    "bar": {
     "eyebrow": "",
-    "head": "The members must be 78% sure a proposal is better for it to pass by the end, starting at 55% when judging opens.",
+    "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when judging opens.",
     "lock": "The members decide.",
     "body": "A proposal passes when the members are % sure at the end.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.50%95%What everyone asked for, without names.Answered3 of 3The document takes the highest80%",
     "options": [],
@@ -7044,6 +7098,7 @@
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Passed: 82% sure at the end — settled",
      "This is how your reason will reach everybody else: with your name off it.",
      "0",
      "1",
@@ -7640,7 +7695,7 @@
    },
    "pace": {
     "eyebrow": "",
-    "head": "The approval threshold starts at 55% and rises to 78% by the end. The Founder may amend this at will, and refuse proposals that the membership pass.",
+    "head": "The approval threshold starts at 55% and rises to 82% by the end. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
     "body": "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.RisingStarts lower when people begin judging and climbs to the number at the end.When judging opens%FixedThe same number all the way through.Why are you changing this?ABAsh Bellamy 👑",
     "options": [
@@ -7677,6 +7732,7 @@
      "Rising Approval Threshold? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Passed: 82% sure at the end — settled",
      "The founder’s own hand — a ✒️ act, not a proposal",
      "Put it back as it stands",
      "Set it"
@@ -7779,6 +7835,7 @@
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
+     "Passed: 82% sure at the end — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -8037,6 +8094,7 @@
      "Proposal Rate — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
+     "Rejected: 6 each, up to 8, one every 180 minutes — settled",
      "Put it back as it stands",
      "Set it"
     ],
@@ -8307,6 +8365,7 @@
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
+     "Passed: 82% sure at the end — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -8565,6 +8624,7 @@
      "Proposal Rate — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
+     "Rejected: 6 each, up to 8, one every 180 minutes — settled",
      "Put it back as it stands",
      "Set it"
     ],
@@ -8828,6 +8888,7 @@
      "Proposal Rate — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Rejected: 6 each, up to 8, one every 180 minutes — settled",
      "The founder’s own hand — a ✒️ act, not a proposal",
      "Put it back as it stands",
      "Set it"
@@ -8836,6 +8897,53 @@
      "How often a member can propose something. Each proposal costs one ✏️.",
      "I am changing this because…"
     ]
+   },
+   "rec:bar:0": {
+    "eyebrow": "",
+    "head": "82% sure at the end",
+    "lock": "",
+    "body": "D Month YYYY · PassedThe membership changed how sure the room must be at the close to 82%.The charter should not change on a bare majority of the evidence.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     }
+    ],
+    "hints": [
+     "How Sure Must the Room Be? — settled",
+     "Rising Approval Threshold? — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Passed: 82% sure at the end — close it",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Put it back as it stands"
+    ],
+    "helpers": []
+   },
+   "rec:rate:0": {
+    "eyebrow": "",
+    "head": "6 each, up to 8, one every 180 minutes",
+    "lock": "",
+    "body": "D Month YYYY · RejectedThe membership kept how often members may propose as it stood: 4 ✏️ to start, up to 8, one more every 180 minutes.Two more to start would let people write before they have to choose.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     }
+    ],
+    "hints": [
+     "Proposal Rate — settled",
+     "Can the Founder Make Amendments at Will? — settled",
+     "Does the Founder Have a Veto? — settled",
+     "Rejected: 6 each, up to 8, one every 180 minutes — close it",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Put it back as it stands"
+    ],
+    "helpers": []
    },
    "removal": {
     "eyebrow": "",

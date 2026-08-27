@@ -296,7 +296,12 @@ window.SETUP = (function () {
      than in the design: **a settled setting stays in the closed pile**. In the
      document a filed decision leaves, because it is history at that clause; a
      settled setting is not history, it is *the rule*. So it goes grey and stays,
-     which is what leaves the head of the document holding the constitution. */
+     which is what leaves the head of the document holding the constitution —
+     and since entry 72 (Q942, 2026-08-27) the pile also holds, behind the rule,
+     one grey record chip per motion that passed or was rejected at that clause:
+     the rule stays because it is the rule, and the motion files because it is
+     history. Both halves of the 2026-08-18 sentence survive; what changed is
+     that a pile may now hold more than the rule and its power tabs. */
   const chipHtml = (c, ctx, o) => {
     const st = stateOf(c, ctx);
     // `data-chip` names the card on every chip, clickable or not; `data-tab`
