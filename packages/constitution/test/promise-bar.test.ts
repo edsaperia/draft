@@ -29,15 +29,15 @@
  * | founder-held, set     | P6 `waitingWith` judge-gate ✓ · the 🌡️ card's `opt(S,'barBy','founder')` | P3 `setSetting` → `by:'crown'` + `oweOks` ✓ · `founderDirect` composer | P3 `requireOpen` refuses ✓ · card read-only |
  * | founder-held, unset   | P6 `begin` refuses, why `judge-gate` ✓ · rail carries 🌡️ | unreachable (`begin` refused) | unreachable |
  * | delegated, collecting | P2/P6 `begin` refuses, why `collecting`/`one-voice`/`invitation-open` ✓ · `theyDecide('bar')` | unreachable | unreachable |
- * | delegated, by ceremony| P2 `resolveConsent` ascending on `pct` → the maximum ✓ · `ANSWER.bar` slider **gap, see F1** | P3/P4/P5 `openMotion` 🏛️ ✓ · `PROPOSE.bar` | P3 `requireOpen` refuses ✓ |
+ * | delegated, by ceremony| P2 `resolveConsent` ascending on `pct` → the maximum ✓ · `ANSWER.bar`'s rungs and its own-number box (entry 165) | P3/P4/P5 `openMotion` 🏛️ ✓ · `PROPOSE.bar` | P3 `requireOpen` refuses ✓ |
  * | members-held post-start | n/a (hand-over is live)          | P3/P4/P5 as above ✓                 | as above ✓                    |
  *
  * | value shape        | fold                    | the founder's card | the room's answer | verdict |
  * |--------------------|-------------------------|--------------------|-------------------|---------|
  * | `pct` 50           | accepted                | `min="50"`         | slider min 50     | holds   |
- * | `pct` 63 (odd)     | accepted                | any integer        | **step 5** — not statable | **F1** |
- * | `pct` 96–99        | accepted                | `max="99"`         | **slider max 95** | **F1** |
- * | `pct` 100          | accepted                | not statable (99)  | not statable (95) | **F1**, and unadoptable by construction — Q840's ceiling, answered and owed, not refiled |
+ * | `pct` 63 (odd)     | accepted                | any integer        | any integer, in *A number of my own* | holds since entry 165 |
+ * | `pct` 96–99        | accepted                | `max="99"`         | `max="99"`        | holds since entry 165 |
+ * | `pct` 100          | accepted                | not statable (99)  | not statable (99) | unadoptable by construction — Q840's ceiling, answered and owed, not refiled |
  * | the ceremony max   | `resolveConsent` order ascending → the highest stated | — | — | holds |
  *
  * The three epochs, deliberately (step 4 of the plan):
@@ -430,17 +430,25 @@ describe('the closed epoch — after the close nothing changes but the signing (
 
 describe('what does not hold — filed, not fixed', () => {
   /**
-   * **F1 — the room cannot state the minimum the fold would accept.**
-   * `values.ts` takes `pct` 50–100 inclusive, any finite number.
-   * `design/setup.js`'s `ANSWER.bar` is `slider(A, 'bar', 50, 95, …, 5)` — a
-   * step of **5** and a ceiling of **95** — so a member who would only accept
-   * 97, or exactly 63, cannot say so. The consent rule's own promise on the
-   * card, *the document takes the **highest** given*, therefore reads as *the
-   * highest of what the control let anybody say*. The founder's own card and
-   * the composer are a third range again (`min="50" max="99"`, any integer).
-   * Filed for the run; the 100 half of it is Q840's ceiling, answered and owed.
+   * **F1 is closed by entry 165, and its `it.todo` is gone with it.**
+   * It read: *the room cannot state the minimum the fold would accept* —
+   * `ANSWER.bar` was `slider(A, 'bar', 50, 95, …, 5)`, a step of **5** and a
+   * ceiling of **95**, so a member who would only accept 97, or exactly 63,
+   * could not say so, and *the document takes the **highest** given* meant the
+   * highest of what the control let anybody say.
+   *
+   * The slider is gone: 🌡️'s blind answer is three rungs and *A number of my
+   * own*, whose box is `min="50" max="99"` and any integer — the founder's own
+   * range and the composer's, so all three now say the same thing. What is
+   * left of the gap is `pct` 100, which is Q840's ceiling: unadoptable by
+   * construction, answered and owed, and not refiled here.
+   *
+   * **Nothing is asserted from this file**, deliberately. The range is a fact
+   * about a DOM attribute on a page this package cannot load, so the guard is
+   * `npm run slider-walk`, which reads `min` and `max` off the real box —
+   * *the box is the range the question offers*. A literal re-stated here would
+   * be a second copy of the number and would pass whatever the page did.
    */
-  it.todo('F1 · the answer slider caps 🌡️ at 95 in steps of 5 where the fold takes 50–100');
 
   /**
    * **F2 — a bar amendment steps `cs.bar()` down where the engine glides.**
