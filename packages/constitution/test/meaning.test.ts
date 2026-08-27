@@ -76,17 +76,32 @@ describe('meaningOf', () => {
     expect(bar(60, 1)).toBe('In a room of one, the one vote must be for it.');
   });
 
-  it('an unreachable bar says so rather than printing a number', () => {
-    expect(bar(90, 1)).toBe('In a room of one, nothing can pass at this bar until more members arrive.');
-    expect(bar(90, 2)).toBe('In a room of 2, nothing can pass at this bar until more members arrive.');
-    expect(bar(80, 1)).toBe('In a room of one, nothing can pass at this bar until more members arrive.');
+  it('an unreachable bar says so, and names which bar', () => {
+    expect(bar(90, 1)).toBe('In a room of one, nothing can pass at 90% until more members arrive.');
+    expect(bar(90, 2)).toBe('In a room of 2, nothing can pass at 90% until more members arrive.');
+    // …and the two out-of-reach rungs of one room do not read as one sentence
+    // said twice (card-audit T36)
+    expect(bar(80, 1)).toBe('In a room of one, nothing can pass at 80% until more members arrive.');
+    expect(bar(80, 1)).not.toBe(bar(90, 1));
   });
 
   it('🪜 says the same arithmetic in the opening tense', () => {
-    expect(ramp(60, 5)).toBe('In a room of 5, 3 of 5 is enough when voting opens; the bar rises from there.');
-    expect(ramp(90, 3)).toBe('In a room of 3, all 3 must vote for it when voting opens; the bar rises from there.');
-    expect(ramp(60, 1)).toBe('In a room of one, the one vote is enough when voting opens; the bar rises from there.');
-    expect(ramp(90, 1)).toBe('In a room of one, nothing can pass at this starting bar; it rises from there.');
+    expect(ramp(60, 5)).toBe('In a room of 5, 3 of 5 is enough when voting opens, and the approval threshold climbs from there.');
+    expect(ramp(90, 3)).toBe('In a room of 3, all 3 must vote for it when voting opens, and the approval threshold climbs from there.');
+    expect(ramp(60, 1)).toBe('In a room of one, the one vote is enough when voting opens, and the approval threshold climbs from there.');
+    expect(ramp(90, 1)).toBe('In a room of one, nothing can pass at a 90% start until more members arrive.');
+  });
+
+  it('and never says “the bar”, which is card-audit’s T15', () => {
+    // CLAUDE.md: **approval threshold**, never "the bar" — and these sentences
+    // live outside `spec-check`'s four-file corpus, so this is the guard
+    for (let e = 1; e <= 12; e++) {
+      for (const pct of [55, 60, 72, 80, 90, 99]) {
+        for (const s of [bar(pct, e), ramp(pct, e)]) {
+          expect(s === null || !/(^|[^a-z])the bars?([^a-z]|$)/i.test(s), `${s}`).toBe(true);
+        }
+      }
+    }
   });
 
   it('a fixed pace has no start to explain', () => {

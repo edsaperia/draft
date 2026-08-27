@@ -167,6 +167,11 @@
      that rung was the one chosen. */
   .pick > .inner { display: none; margin-top: var(--s3); padding-left: 2px; }
   .pick.on > .inner { display: block; }
+  /* **Every radio on a card lines up down its left edge** (SURFACE §9.1, and
+     card-audit's P1 is the guard). `.inner`'s 2px is an optical nudge for a
+     field; a ladder nested inside its own rung — 🪜's starting percents inside
+     *Rising* — is radios, and takes the edge back. */
+  .pick > .inner > .choice { margin-left: -2px; }
   /* the rung's own percent, after its name: small and quiet, because the name
      is what is being chosen and the number is what it comes to (entry 165) */
   .pick .pct { font-size: var(--t-small); color: var(--muted); margin-left: 0.5em; }

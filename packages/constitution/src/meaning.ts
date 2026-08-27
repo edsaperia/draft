@@ -101,27 +101,37 @@ function barMeaning(pct: number, room: Room): string | null {
   const w = winsClause(room.e, pct);
   if (w === undefined) return null;
   if (w === null) {
+    // **The out-of-reach sentence names its own percent.** Two rungs can be
+    // out of reach of the same room, and *nothing can pass at this one* said
+    // twice under two different numbers is the same sentence twice (T36) as
+    // well as the less useful half of what there is to say.
     return 'In a room of ' + roomOf(room.e) +
-      ', nothing can pass at this bar until more members arrive.';
+      ', nothing can pass at ' + Math.floor(pct) + '% until more members arrive.';
   }
   if (w.n === 1) return 'In a room of one, the one vote must be for it.';
   if (w.k === w.n) return 'In a room of ' + w.n + ', all ' + w.n + ' must vote for it by the end.';
   return 'In a room of ' + w.n + ', ' + w.k + ' of ' + w.n + ' must vote for it by the end.';
 }
 
+/**
+ * **Never *the bar***, on the surface (STYLE T15, and card-audit is what
+ * caught it): the thing that climbs is the approval threshold, and it is named
+ * in full every time even though it is the longer phrase.
+ */
+const CLIMBS = ', and the approval threshold climbs from there.';
+
 function paceMeaning(startPct: number, room: Room): string | null {
   const w = winsClause(room.e, startPct);
   if (w === undefined) return null;
   if (w === null) {
-    return 'In a room of ' + roomOf(room.e) +
-      ', nothing can pass at this starting bar; it rises from there.';
+    return 'In a room of ' + roomOf(room.e) + ', nothing can pass at a ' +
+      Math.floor(startPct) + '% start until more members arrive.';
   }
-  if (w.n === 1) return 'In a room of one, the one vote is enough when voting opens; the bar rises from there.';
+  if (w.n === 1) return 'In a room of one, the one vote is enough when voting opens' + CLIMBS;
   if (w.k === w.n) {
-    return 'In a room of ' + w.n + ', all ' + w.n + ' must vote for it when voting opens; the bar rises from there.';
+    return 'In a room of ' + w.n + ', all ' + w.n + ' must vote for it when voting opens' + CLIMBS;
   }
-  return 'In a room of ' + w.n + ', ' + w.k + ' of ' + w.n +
-    ' is enough when voting opens; the bar rises from there.';
+  return 'In a room of ' + w.n + ', ' + w.k + ' of ' + w.n + ' is enough when voting opens' + CLIMBS;
 }
 
 /**

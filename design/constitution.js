@@ -2944,23 +2944,24 @@ var CONSTITUTION = (() => {
     const w = winsClause(room.e, pct);
     if (w === void 0) return null;
     if (w === null) {
-      return "In a room of " + roomOf(room.e) + ", nothing can pass at this bar until more members arrive.";
+      return "In a room of " + roomOf(room.e) + ", nothing can pass at " + Math.floor(pct) + "% until more members arrive.";
     }
     if (w.n === 1) return "In a room of one, the one vote must be for it.";
     if (w.k === w.n) return "In a room of " + w.n + ", all " + w.n + " must vote for it by the end.";
     return "In a room of " + w.n + ", " + w.k + " of " + w.n + " must vote for it by the end.";
   }
+  var CLIMBS = ", and the approval threshold climbs from there.";
   function paceMeaning(startPct, room) {
     const w = winsClause(room.e, startPct);
     if (w === void 0) return null;
     if (w === null) {
-      return "In a room of " + roomOf(room.e) + ", nothing can pass at this starting bar; it rises from there.";
+      return "In a room of " + roomOf(room.e) + ", nothing can pass at a " + Math.floor(startPct) + "% start until more members arrive.";
     }
-    if (w.n === 1) return "In a room of one, the one vote is enough when voting opens; the bar rises from there.";
+    if (w.n === 1) return "In a room of one, the one vote is enough when voting opens" + CLIMBS;
     if (w.k === w.n) {
-      return "In a room of " + w.n + ", all " + w.n + " must vote for it when voting opens; the bar rises from there.";
+      return "In a room of " + w.n + ", all " + w.n + " must vote for it when voting opens" + CLIMBS;
     }
-    return "In a room of " + w.n + ", " + w.k + " of " + w.n + " is enough when voting opens; the bar rises from there.";
+    return "In a room of " + w.n + ", " + w.k + " of " + w.n + " is enough when voting opens" + CLIMBS;
   }
   function meaningOf(setting, value, room) {
     if (!value) return null;

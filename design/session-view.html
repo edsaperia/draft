@@ -751,7 +751,6 @@
     if (key === 'tStart') S.shape = 'ramp';
     const rungPct = (v) => M.BAR_RUNGS.some((r) => r.pct === +v);
     if (key === 'barBy' && val === 'founder' && rungPct(S.tClose)) S.tClose = '';
-    if (key === 'shape' && val === 'ramp' && rungPct(S.tStart)) S.tStart = '';
   };
   // the founder's provisional radio state → the typed value the module takes
   const TYPED = {
@@ -5234,8 +5233,15 @@
       on: S.shape === 'ramp' && +S.tStart === r.pct,
       exp: meaning('pace', { shape: 'ramp', startPct: r.pct }),
     })).join('') +
+      // **The own rung sets the field it is about, not the shape**, and it is
+      // T5 that says so: 🌡️'s fourth rung can wear `barBy=founder` because
+      // that pair means nothing else on the card, but 🪜 has no holder key and
+      // `shape=ramp` is already *Rising*'s — one rung value with two labels,
+      // which `card-audit`'s cross-card pass reads as one rung that cannot
+      // make up its mind. So it clears the start instead, which is also what
+      // choosing it means: an empty box to type your own number into.
       pctRung({
-        set: 'shape', val: 'ramp', label: M.OWN_RUNG_LABEL,
+        set: 'tStart', val: '', label: M.OWN_RUNG_LABEL,
         on: S.shape === 'ramp' && !isRungPct(S.tStart),
         exp: isNum(S.tStart) && !isRungPct(S.tStart)
           ? meaning('pace', { shape: 'ramp', startPct: +S.tStart }) : '',
@@ -6818,8 +6824,11 @@
       fillRung(o.dataset.set, nv);
       // a percent rung writes the field the number box writes, so it writes a
       // **number** — `setVal` speaks in the strings an attribute carries, and
-      // one key with two types is a comparison waiting to go wrong (entry 165)
-      S[o.dataset.set] = (o.dataset.set === 'tClose' || o.dataset.set === 'tStart') ? +nv : nv;
+      // one key with two types is a comparison waiting to go wrong (entry 165).
+      // The empty string is the one value left alone: it is 🪜's own-number
+      // rung clearing the field, and `+''` is 0, which is a bar nobody set.
+      S[o.dataset.set] = ((o.dataset.set === 'tClose' || o.dataset.set === 'tStart') && nv !== '')
+        ? +nv : nv;
       if (perpetual() && S.shape === 'ramp') S.shape = 'fixed';
       return render(); }
     const pic = ev.target.closest('[data-pic]');
