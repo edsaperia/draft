@@ -640,6 +640,7 @@ describe('a founding question\'s electorate drops abstainers (R-049)', () => {
     s.signOut(3, cy, 'abstaining');
     s.answer(4, 'ada', 'ending', { endsAtMs: 500_000 });      // bo has not said
     expect(s.settingState('ending').collecting).toBe(true);
+    expect(s.motionElectorate()).toEqual(['ada', bo]);         // cy is out of it
     expect(s.settingState('ending').answers.size).toBe(2);    // recorded (decision 5)
     const q = s.readiness().questions.find((x) => x.setting === 'ending')!;
     expect(q).toEqual({ setting: 'ending', settled: false, collecting: true,
