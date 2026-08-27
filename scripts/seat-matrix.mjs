@@ -30,9 +30,11 @@
  * length. One window size, scroll 0.
  *
  * Exit codes: 0 green · 1 any finding, page error, refused command or a seat
- * that could not be stood · 3 **no-rule rows only** (a cell the harness cannot
- * read: red on purpose, so somebody files the Q; distinguishable from a
- * failure so a gate can tell the two apart) · 2 is `assert-server`'s.
+ * that could not be stood · 3 **no-rule rows nobody has filed** (a cell the
+ * harness cannot read: red on purpose, so somebody files the Q; distinguishable
+ * from a failure so a gate can tell the two apart — and once filed, `filed:
+ * 'Qn'` on the event's row reports it under `filed` and the run is green
+ * again) · 2 is `assert-server`'s.
  * The last line is machine-readable: `seat-matrix: findings=… noRule=… …`.
  *
  * Two things learned building it (2026-08-27), both load-bearing:
@@ -43,7 +45,33 @@
  *    re-stating the seat's own name), which is what the module counts.
  *  · **E9's news entry is unbuilt on both sides**: `relinquish` owes no OK and
  *    the page files no news for a laid-down power, so the `lay down` row has
- *    no key and is reported as *no rule* on the page's side.
+ *    no key and is reported as *no rule* on the page's side — filed as Q918,
+ *    which is what `filed: 'Q918'` on the row says.
+ *
+ * First full run, 2026-08-27, against build 7eceef8 (plan-queue 41, entry 139)
+ * — **red on two findings about the page and the module, not on the harness**:
+ *   member: `seat-matrix: findings=15 noRule=0 shape=0 errors=0 refused=0 unstood=0 exit=1`
+ *   clerk:  `seat-matrix: findings=25 noRule=0 shape=0 errors=0 refused=0 unstood=4 exit=1`
+ * Wall time about 8 minutes per hat (the lapse wait is 80–115 s of it). Seats
+ * stood per document: founder, early, lapsed, stranger before 🍾; late and the
+ * applicant live; six of the seven rows, the clerk row on its own document.
+ * Every member-hat finding is **Q919** (💤 cannot be rehydrated from the
+ * module, so every card below it in `ORDER` is withheld from members) and
+ * every clerk-hat one is **Q920** (`view.convenor.isMember` stays `true` for
+ * a clerk, so 🏛️ is served and 🍾 waits on it); with those two built the
+ * expected line is `findings=0 … unstood=0 exit=0` with `filed · 1 — Q918`.
+ * Four harness faults were fixed to get here, each noted at its row: the
+ * founder's page reloads after the wire founding (`reload` on `text`), every
+ * seat introduces itself with a name and a face (`face`), 💤 is answered on
+ * the card and 🏛️ acknowledged (`lapse-card`, `ok-voice`), and the ladder bar
+ * is reloaded before it is pressed. The payload (`--out`): `base`, `build`,
+ * `hat`, `to`, `seats` (the SEATS table), `epochs`, `documents[]` (one per hat:
+ * `hat`, `slug` masked, `steps[]` each `{ id, epoch, events, seats }` where
+ * `seats[<name>]` is `{ rail, band, readout, view }` or `{ unstood }`),
+ * `findings`, `noRule`, `filed`, `shape`, `unstood`, `errors`, `refused`.
+ * The run's JSON is **gitignored by design** (`design/tools/seat-matrix*.json`,
+ * *a run is snapshots, not an artifact*): a later session re-runs the harness
+ * for its baseline rather than looking for a file that is never committed.
  */
 import { writeFile, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
@@ -83,12 +111,16 @@ const BEGIN_HOLD_MS = beginRow ? Number(beginRow['hold ms']) + 250 : 1250;
 /* ---- table 1: the seats ----------------------------------------------- *
  * Data only. `document` says which founder's run a seat belongs to; where in
  * the epochs a seat arrives is the step table's business (`kind: 'seat'`).  */
+// `face`: ✋ and 🖼️ are tasks in `ORDER` above 📄 and 🍾, so a seat that has
+// not answered both blocks its own founding order (first run, 2026-08-27:
+// `no begin card to hold … rail ["mypic"]`). One emoji per member per
+// document (`RESERVED_EMOJI`), hence a distinct one per seat.
 const SEATS = [
-  { name: 'founder', role: 'founder', hat: 'member', document: 'member', person: 'Ada Lovelace' },
-  { name: 'clerk', role: 'founder', hat: 'clerk', document: 'clerk', person: 'Ada Lovelace' },
-  { name: 'early', role: 'member', stands: 'before-rule', document: 'both', person: 'Bo Marlowe' },
-  { name: 'late', role: 'member', stands: 'after-rule', document: 'both', person: 'Dee Latimer' },
-  { name: 'lapsed', role: 'member', stands: 'before-rule', lapses: true, document: 'both', person: 'Cy Quiet' },
+  { name: 'founder', role: 'founder', hat: 'member', document: 'member', person: 'Ada Lovelace', face: 'e🦉' },
+  { name: 'clerk', role: 'founder', hat: 'clerk', document: 'clerk', person: 'Ada Lovelace', face: 'e🦉' },
+  { name: 'early', role: 'member', stands: 'before-rule', document: 'both', person: 'Bo Marlowe', face: 'e🦊' },
+  { name: 'late', role: 'member', stands: 'after-rule', document: 'both', person: 'Dee Latimer', face: 'e🐻' },
+  { name: 'lapsed', role: 'member', stands: 'before-rule', lapses: true, document: 'both', person: 'Cy Quiet', face: 'e🐢' },
   { name: 'stranger', role: 'stranger', document: 'both' },
   { name: 'applicant', role: 'applicant', document: 'both', person: 'Rowan Vale' },
 ];
@@ -141,8 +173,25 @@ const STEPS = [
   { id: 'settings', epoch: 'before', kind: 'settings', seat: 'founder', events: [] },
   { id: 'hat', epoch: 'before', kind: 'cmd', seat: 'founder', cmd: 'set-convenor-membership',
     args: (D) => ({ isMember: D.hat === 'member' }), events: [] },
-  { id: 'text', epoch: 'before', kind: 'cmd', seat: 'founder', cmd: 'confirm-starting-text',
+  // `reload`: the founding here is done **over the wire**, and the page's
+  // `S.seen` — *confirmed, not defaulted* — is rebuilt only by `hydrateS` at
+  // boot; the 4s poll re-hydrates values alone. So on a founder's page that
+  // stayed open through `settings`, 🌍 (first setting in `ORDER` after the
+  // grants) stood as an *ask* for ever and hid 🍾 (first run, 2026-08-27:
+  // `no begin card to hold · readiness {"ready":true …} · rail ["chamber"]`).
+  // One reload after the last wire act is what a founder's own next visit does.
+  { id: 'text', epoch: 'before', kind: 'cmd', seat: 'founder', cmd: 'confirm-starting-text', reload: true,
     args: () => ({ text: 'The clubhouse shall be kept open.\nEvery member may bring one guest.' }), events: [] },
+  // 💤 is the one setting the page cannot rebuild from the module: `hydrateS`
+  // writes the day count into `S.lapse` (the rung field) and never `S.lapseDays`,
+  // so a reloaded founder is asked 💤 again and everything below it in `ORDER`
+  // waits (first run, 2026-08-27: `no begin card to hold … rail ["lapse"]`;
+  // a page finding, Q919 — not fixed here). And the one-minute lapse the
+  // `lapsed` seat needs is not expressible on the card (7–365 days). So 💤 is
+  // answered **on the card, after the reload**, which is what the page counts
+  // as seen, and the minute is then set over the wire without a reload. The
+  // two rows stand after `ok-shield`: 💤 is below the grants in `ORDER`, so its
+  // card is not in the rail until both are acknowledged.
   { id: 'invite-early', epoch: 'before', kind: 'invite', seat: 'founder', who: ['early', 'lapsed'], events: [] },
   // the snapshot where a re-introduced Q639 shows: the pen as a ⏳ tab on a
   // member's band. 🛡️ is staged behind the pen's OK on the founder's page
@@ -157,6 +206,16 @@ const STEPS = [
     events: [E8('grant-pen'), { id: 'E25', key: 'strlogin', at: 'seat-stranger' }] },
   { id: 'ok-pen', epoch: 'before', kind: 'ok', seat: 'founder', key: 'grant-pen', events: [E8('grant-pen'), E8('grant-shield')] },
   { id: 'ok-shield', epoch: 'before', kind: 'ok', seat: 'founder', key: 'grant-shield', events: [E8('grant-pen'), E8('grant-shield')] },
+  { id: 'lapse-card', epoch: 'before', kind: 'card', seat: 'founder', key: 'lapse',
+    pick: { set: 'lapse', val: 'days' }, fields: { lapseDays: '7' }, events: [] },
+  { id: 'lapse-minute', epoch: 'before', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
+    args: () => ({ setting: 'lapse', value: { afterMs: 60_000 } }), events: [] },
+  // 🏛️ is served to a member founder as news once the constitution is settled,
+  // and `beginOffered` holds 🍾 until it is acknowledged (first run, 2026-08-27:
+  // `no begin card to hold … rail ["grant-voice"]`). journey OKs every served
+  // task; this table has to say so. No events: the voice's audience row is
+  // not in this table (E8 here is the founder's pen and shield).
+  { id: 'ok-voice', epoch: 'before', kind: 'ok', seat: 'founder', key: 'grant-voice', ifHat: 'member', events: [] },
   // ---- live ---------------------------------------------------------------
   { id: 'begin', epoch: 'live', kind: 'hold', seat: 'founder', key: 'begin',
     events: [E4('canpropose'), E4('canjudge'), { id: 'E25', key: 'strapply', at: 'begin' }] },
@@ -180,7 +239,7 @@ const STEPS = [
   // no OK), so the row is reported as *no rule* on the page's side.
   { id: 'lay-down', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'relinquish',
     args: () => ({ setting: 'rate', power: 'unilateral' }),
-    events: [{ id: 'E9', key: null, at: 'lay-down',
+    events: [{ id: 'E9', key: null, at: 'lay-down', filed: 'Q918',
       noKey: 'the page files no news entry for a laid-down power and `relinquish` owes no OK (Q571 unbuilt)' }] },
   // ---- closed -------------------------------------------------------------
   // `toClosing` moves ⏰ with the founder's pen: a constitutional setting set
@@ -203,7 +262,14 @@ const stepIndex = (id) => {
   return i;
 };
 // checked at load, so a typo is a refusal before a browser is launched
-for (const s of STEPS) for (const e of s.events) stepIndex(e.at ?? s.id);
+for (const s of STEPS) for (const e of s.events) {
+  stepIndex(e.at ?? s.id);
+  // `filed: 'Qn'` marks a *no rule* row whose question is on the register, so
+  // a run whose every unread cell has a number can exit 0. It is only honest
+  // on a row with no key: a filed row that later gains one should be read
+  // again, not silently asserted under the mark.
+  if (e.filed && e.key !== null) throw new Error(`step '${s.id}' ${e.id} is filed as ${e.filed} but has a key (${e.key}) — drop the mark and let the row be asserted`);
+}
 
 /* ======================================================================== */
 
@@ -212,7 +278,7 @@ async function runDocument(hat) {
   const D = {
     hat, slug: null, docbase: null, title: 'Seat matrix ' + Date.now(),
     stamp: String(Date.now()).slice(-8), applicantId: null, closed: false,
-    seats: {}, stoodAt: {}, findings: [], noRule: [], errors: [], refused: [], unstood: [], steps: [],
+    seats: {}, stoodAt: {}, findings: [], noRule: [], filed: [], errors: [], refused: [], unstood: [], steps: [],
     actorOf: (ev) => (STEPS[ev.at] || {}).seat,
   };
   say(`\n══ document · founder is a ${hat} ══`);
@@ -244,7 +310,7 @@ async function runDocument(hat) {
     }
   }
   for (const s of Object.values(D.seats)) if (s.ctx) await s.ctx.close().catch(() => {});
-  return { hat, findings: D.findings, noRule: D.noRule, errors: D.errors, refused: D.refused,
+  return { hat, findings: D.findings, noRule: D.noRule, filed: D.filed, errors: D.errors, refused: D.refused,
     unstood: D.unstood, steps: D.steps };
 }
 
@@ -344,7 +410,8 @@ const SETTINGS = [
   ['authorship', { rung: 'sealed' }],
   ['judgments', { rung: 'after' }],
   ['chamber', { rung: 'closed' }],          // the setting the amendment moves
-  ['lapse', { afterMs: 60_000 }],           // one minute: the lapsed seat lapses for real
+  // 💤 is not here: it is answered on the card (`lapse-card`) and then set to
+  // one minute over the wire (`lapse-minute`), so the lapsed seat lapses for real
   ['removal', { price: 'proposal' }],
   ['rate', { grant: 4, cap: 8, dripMinutes: 240 }],
   ['machines', { enabled: false, budget: 0 }],
@@ -385,12 +452,38 @@ const RUN = {
       if (r.status !== 200) bad.push(id + ' → ' + r.status + ' ' + JSON.stringify(r.body));
     }
     if (bad.length) throw new Error('set-setting refused: ' + bad.join(' · '));
-    return SETTINGS.length + ' settings set · 🪪 proposal · 🤝 open · 💤 one minute · 🌍 closed';
+    return SETTINGS.length + ' settings set · 🪪 proposal · 🤝 open · 🌍 closed';
+  },
+  /** A setting answered on its own card: open it, pick a rung, fill its fields, commit. */
+  card: async (step, D) => {
+    const page = D.seats[step.seat].page;
+    if (!(await openCard(page, step.key))) throw new Error(`no ${step.key} card to open on the ${step.seat}'s page`);
+    if (step.pick) {
+      const picked = await page.evaluate((p) => {
+        const b = document.querySelector('.setupcard [data-set="' + p.set + '"][data-val="' + p.val + '"]');
+        if (!b) return false; b.click(); return true;
+      }, step.pick);
+      if (!picked) throw new Error(`${step.key}: no rung ${step.pick.set}=${step.pick.val} on the card`);
+      await page.waitForTimeout(300);
+    }
+    for (const [k, v] of Object.entries(step.fields || {})) {
+      if (!(await typeIn(page, '.setupcard [data-num="' + k + '"]', v))) throw new Error(`${step.key}: no field ${k} on the card`);
+    }
+    await page.waitForTimeout(300);
+    const label = await press(page, 1250);
+    if (label === null) throw new Error(`${step.key}: the card offers no live commit`);
+    await page.waitForTimeout(900);
+    return `${step.key} answered on the card (${label})`;
   },
   cmd: async (step, D) => {
     const r = await cmdAs(D, step.seat, step.cmd, step.args(D));
     if (r.status !== 200) throw new Error(`${step.cmd} as ${step.seat} → ${r.status} ${JSON.stringify(r.body)}`);
-    return `${step.cmd} as ${step.seat}`;
+    if (step.reload) {
+      const page = D.seats[step.seat].page;
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(2600);
+    }
+    return `${step.cmd} as ${step.seat}` + (step.reload ? ' · page reloaded, so the wire-set settings are seen' : '');
   },
   invite: async (step, D) => {
     for (const who of step.who) {
@@ -413,6 +506,15 @@ const RUN = {
       if (!s.page.url().includes('/d/')) throw new Error(`seat ${step.seat} could not be stood: landed at ${s.page.url()}`);
     }
     s.stood = true; D.stoodAt[step.seat] = stepIndex(step.id);
+    if (s.def.role === 'member') {
+      // ✋🖼️ answered over the wire, then one reload: `nameSet`/`picSet` are
+      // hydrated at boot only, and unanswered they stand above the gates in
+      // `ORDER` (see `face` on SEATS)
+      const r = await cmdAs(D, step.seat, 'set-identity', { name: s.def.person, picture: s.def.face });
+      if (r.status !== 200) throw new Error(`seat ${step.seat}: set-identity → ${r.status} ${JSON.stringify(r.body)}`);
+      await s.page.reload({ waitUntil: 'domcontentloaded' });
+      await s.page.waitForTimeout(2600);
+    }
     return `${step.seat} at ${s.page.url()}`;
   },
   /** Open a card by key on the founder's page and click its OK. */
@@ -493,6 +595,13 @@ const RUN = {
   /** Press ⏭ on the founder's ladder bar and wait for the page it lands on. */
   ladder: async (step, D) => {
     const page = D.seats.founder.page;
+    // the bar posts the `to` it was **rendered** with (`d.next` from its own
+    // load-time fetch), and the founder's page was last loaded before 🍾 —
+    // so the first ⏭ asked for `session`, already the rung, and did nothing
+    // (first run, 2026-08-27: `⏭ closing: the ladder reports 'session'`).
+    // A press is a reload and a POST; here the reload comes first.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
     const btn = await page.$('#ladnext');
     if (btn === null) throw new Error('the ladder bar has no ⏭ — is the server in dev mail mode?');
     await Promise.all([
@@ -509,14 +618,16 @@ const RUN = {
 /* ---- keeping the non-lapsing seats alive ---------------------------------- *
  * Presence is stamped hourly (`SEEN_EVERY_MS`), so under a one-minute 💤 a
  * polling page keeps nobody alive; only an act does. Every stood member seat
- * that is not the lapsing one re-states its own name before each snapshot —
- * an act that changes nothing the view shows. Not after the close.          */
+ * that is not the lapsing one re-states its own name and face before each
+ * snapshot — an act that changes nothing the view shows, and for the founder
+ * the act that answers ✋🖼️ before the `text` step's reload. Not after the
+ * close.                                                                    */
 async function keepAlive(D) {
   if (!D.slug || D.closed) return;
   for (const [name, s] of Object.entries(D.seats)) {
     if (!s.stood || s.quiet || !s.page) continue;
     if (!(s.def.role === 'member' || s.def.role === 'founder')) continue;
-    const r = await cmdAs(D, name, 'set-identity', { name: s.def.person }).catch(() => null);
+    const r = await cmdAs(D, name, 'set-identity', { name: s.def.person, picture: s.def.face }).catch(() => null);
     if (r && r.status !== 200) D.refused.push(`[${D.hat}/${name}] keep-alive set-identity → ${r.status} ${JSON.stringify(r.body)}`);
   }
 }
@@ -586,8 +697,14 @@ function assertStep(D, step, evs, snap) {
     const cell = row ? row.Audience : null;
     if (!row) { D.noRule.push({ hat: D.hat, step: step.id, event: ev.id, cell: '(no such row)', why: 'SURFACE §2 has no ' + ev.id }); continue; }
     if (ev.key === null) {
-      D.noRule.push({ hat: D.hat, step: step.id, event: ev.id, cell, why: 'page side — ' + ev.noKey });
-      say(`   ? ${ev.id} "${cell}" — no key on the page: ${ev.noKey}`);
+      const entry = { hat: D.hat, step: step.id, event: ev.id, cell, why: 'page side — ' + ev.noKey };
+      if (ev.filed) {
+        D.filed.push({ ...entry, q: ev.filed });
+        say(`   · ${ev.id} "${cell}" — no key on the page, filed as ${ev.filed}`);
+      } else {
+        D.noRule.push(entry);
+        say(`   ? ${ev.id} "${cell}" — no key on the page: ${ev.noKey}`);
+      }
       continue;
     }
     const pred = AUDIENCE[cell];
@@ -681,6 +798,7 @@ await browser.close();
 /* ---- the report --------------------------------------------------------- */
 const findings = runs.flatMap((r) => r.findings);
 const noRule = runs.flatMap((r) => r.noRule);
+const filed = runs.flatMap((r) => r.filed);
 const errors = runs.flatMap((r) => r.errors);
 const refused = runs.flatMap((r) => r.refused);
 const unstood = runs.flatMap((r) => r.unstood);
@@ -689,6 +807,10 @@ if (findings.length) {
   say(`findings   · ${findings.length}`);
   for (const f of findings) say('  ✗ ' + f.line);
 } else say('findings   · none');
+if (filed.length) {
+  say(`filed      · ${filed.length} — filed, red no longer`);
+  for (const n of filed) say(`  · ${n.hat} · ${n.event} "${n.cell}" at step ${n.step} — ${n.q}`);
+}
 if (noRule.length) {
   say(`no rule    · ${noRule.length} — SURFACE states an audience the harness cannot read; file it`);
   for (const n of noRule) say(`  ? ${n.hat} · ${n.event} "${n.cell}" at step ${n.step}` + (n.why ? ` — ${n.why}` : ''));
@@ -702,7 +824,7 @@ const payload = {
   base: BASE, build: health.build ?? null, hat: HAT, to: TO,
   seats: SEATS, epochs: EPOCHS,
   documents: runs.map((r) => ({ hat: r.hat, slug: '<slug>', steps: r.steps })),
-  findings, noRule, shape, unstood, errors, refused,
+  findings, noRule, filed, shape, unstood, errors, refused,
 };
 await writeFile(OUT, JSON.stringify(payload, null, 1));
 say('written    · ' + OUT);
