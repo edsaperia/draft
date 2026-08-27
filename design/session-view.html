@@ -3771,9 +3771,17 @@
   // Scoped to the catalogue settings the founder's card sets: gates, the
   // personal cards, 🎩 and 📄 are none of them a `powers.unilateral` question,
   // and the two doors have carried their own gate since Q811.
+  // **A delegated setting is not a pen laid down.** `setting-delegated` clears
+  // both powers, so `founderDirect` is false there too — and read-only on a
+  // members-held card takes the delegate rung and the value radios away with
+  // it, which pre-start are the *only* way back: `commitSetting` reclaims when
+  // the founder picks a value, and 🍾's own hold sentence tells them to do
+  // exactly that (*take it back on its own card and set it yourself*). So
+  // `membersHold` is excluded: this is about the founder's own hand coming off
+  // a setting they still hold, never about one they handed to the room.
   const founderHandOff = (c) => amFounder() && !c.ansFor && !c.isGate && !c.door &&
     !c.power && !c.record && c.kind !== 'personal' &&
-    MANAGED_KEYS.includes(c.k) && !founderDirect(c);
+    MANAGED_KEYS.includes(c.k) && !membersHold(c) && !founderDirect(c);
   // **One 🏛️ out per member, on every card including the one it is out on**
   // (Q816). The exemption for `c.k` was a guess about which card could still
   // be composing, and the module makes no such exemption: `openMotion`
@@ -6333,8 +6341,13 @@
       // puts the sentence under the control that tried, and only a clean
       // answer marks it submitted. Written against `api.cmd`'s contract, so
       // it holds when the live applicant seat is wired (Q346).
-      const done = (err) => {
-        if (err) { S.app.submitted = false; setDoorErr('apply', plainRefusal(err)); }
+      // **A refusal with nothing to say is still a refusal**: `failed` is the
+      // fact and `err` only the words, because a rejection or a throw whose
+      // error carries no `message` would otherwise reach here as `undefined`
+      // and mark the application submitted — the very defect this replaced.
+      const done = (failed, err) => {
+        if (failed) { S.app.submitted = false;
+          setDoorErr('apply', plainRefusal(err) || 'Your application could not be sent'); }
         else { S.app.submitted = true; S.doorErr = null; render(); }
       };
       if (cs && S.app.csId) {
@@ -6343,12 +6356,13 @@
             { name: S.app.name || undefined, picture: S.app.pic || undefined,
               words: S.app.text || undefined });
           if (r && typeof r.then === 'function') {
-            r.then((res) => done(res && res.error ? res.error : null), (e) => done(e && e.message));
+            r.then((res) => done(!!(res && res.error), res && res.error),
+              (e) => done(true, e && e.message));
             return;
           }
-          done(null);
-        } catch (e) { done(e && e.message); }
-      } else done(null);
+          done(false);
+        } catch (e) { done(true, e && e.message); }
+      } else done(false);
       return; }
     const tn0 = ev.target.closest('[data-tone]');
     if (tn0) { window.SETUP.setFaceTone(tn0.getAttribute('data-tone')); return render(); }
