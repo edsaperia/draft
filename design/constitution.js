@@ -25,11 +25,13 @@ var CONSTITUTION = (() => {
   var browser_exports = {};
   __export(browser_exports, {
     BAR_CEILING_PCT: () => BAR_CEILING_PCT,
+    BAR_RUNGS: () => BAR_RUNGS,
     CATALOGUE: () => CATALOGUE,
     CATALOGUE_BY_ID: () => CATALOGUE_BY_ID,
     ConstitutionSession: () => ConstitutionSession,
     DOORS: () => DOORS,
     JUDGE_GATES: () => JUDGE_GATES,
+    OWN_RUNG_LABEL: () => OWN_RUNG_LABEL,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
     VOTES_NEEDED: () => VOTES_NEEDED,
     VOTES_NEEDED_HI_PCT: () => VOTES_NEEDED_HI_PCT,
@@ -50,6 +52,7 @@ var CONSTITUTION = (() => {
     isDoor: () => isDoor,
     lapseDue: () => lapseDue,
     mayApply: () => mayApply,
+    meaningOf: () => meaningOf,
     motionElectorateOf: () => motionElectorateOf,
     motionRouteOf: () => motionRouteOf,
     quorumBaseOf: () => quorumBaseOf,
@@ -66,7 +69,8 @@ var CONSTITUTION = (() => {
     validateValue: () => validateValue,
     versionOf: () => versionOf,
     view: () => view,
-    votesNeeded: () => votesNeeded
+    votesNeeded: () => votesNeeded,
+    winsNeededPct: () => winsNeededPct
   });
 
   // src/sha256.ts
@@ -2914,6 +2918,63 @@ var CONSTITUTION = (() => {
       }).map((entry) => ({ seq: entry.seq, hash: entry.hash }));
     }
   };
+
+  // src/meaning.ts
+  var BAR_RUNGS = [
+    { pct: 90, label: "Nearly everyone" },
+    { pct: 80, label: "Broad agreement" },
+    { pct: 60, label: "A bare majority" }
+  ];
+  var OWN_RUNG_LABEL = "A number of my own";
+  function winsNeededPct(e, pct) {
+    if (!Number.isFinite(e) || !Number.isFinite(pct)) return void 0;
+    if (pct < VOTES_NEEDED_LO_PCT || pct > VOTES_NEEDED_HI_PCT) return void 0;
+    const n = Math.max(1, Math.floor(e));
+    if (n > VOTES_NEEDED_MAX_N) return void 0;
+    const k = votesNeeded(n, Math.floor(pct));
+    return k === 0 ? null : k;
+  }
+  var roomOf = (e) => e <= 1 ? "one" : String(Math.floor(e));
+  function winsClause(e, pct) {
+    const k = winsNeededPct(e, pct);
+    if (k === void 0 || k === null) return k;
+    return { k, n: Math.max(1, Math.floor(e)) };
+  }
+  function barMeaning(pct, room) {
+    const w = winsClause(room.e, pct);
+    if (w === void 0) return null;
+    if (w === null) {
+      return "In a room of " + roomOf(room.e) + ", nothing can pass at this bar until more members arrive.";
+    }
+    if (w.n === 1) return "In a room of one, the one vote must be for it.";
+    if (w.k === w.n) return "In a room of " + w.n + ", all " + w.n + " must vote for it by the end.";
+    return "In a room of " + w.n + ", " + w.k + " of " + w.n + " must vote for it by the end.";
+  }
+  function paceMeaning(startPct, room) {
+    const w = winsClause(room.e, startPct);
+    if (w === void 0) return null;
+    if (w === null) {
+      return "In a room of " + roomOf(room.e) + ", nothing can pass at this starting bar; it rises from there.";
+    }
+    if (w.n === 1) return "In a room of one, the one vote is enough when voting opens; the bar rises from there.";
+    if (w.k === w.n) {
+      return "In a room of " + w.n + ", all " + w.n + " must vote for it when voting opens; the bar rises from there.";
+    }
+    return "In a room of " + w.n + ", " + w.k + " of " + w.n + " is enough when voting opens; the bar rises from there.";
+  }
+  function meaningOf(setting, value, room) {
+    if (!value) return null;
+    if (setting === "bar") {
+      const pct = value.pct;
+      return typeof pct === "number" ? barMeaning(pct, room) : null;
+    }
+    if (setting === "pace") {
+      const v = value;
+      if (v.shape !== "ramp" || typeof v.startPct !== "number") return null;
+      return paceMeaning(v.startPct, room);
+    }
+    return null;
+  }
 
   // src/view.ts
   var MANAGED2 = CATALOGUE.filter((e) => e.kind !== "personal" && e.id !== "startingText");

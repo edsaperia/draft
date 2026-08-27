@@ -25,6 +25,8 @@ export { eOf, inE, quorumBaseOf, motionElectorateOf, quorumCount,
 export { BAR_CEILING_PCT, VOTES_NEEDED, VOTES_NEEDED_HI_PCT, VOTES_NEEDED_LO_PCT, VOTES_NEEDED_MAX_N,
   barAt, barCeilingPct, reAnchor, seedAnchors, smoothstep, votesNeeded } from './threshold.js';
 export type { ThresholdAnchors } from './threshold.js';
+export { BAR_RUNGS, OWN_RUNG_LABEL, meaningOf, winsNeededPct } from './meaning.js';
+export type { Room } from './meaning.js';
 export { lapseDue, WARN_FRACTION } from './clocks.js';
 export { view, constitutionBlock, roomSettings } from './view.js';
 export type { MemberView, MotionView, QuestionView, ResolutionView,
