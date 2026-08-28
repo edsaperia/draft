@@ -5145,8 +5145,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -5160,7 +5160,7 @@
      "1",
      "0",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "The value you are proposing",
@@ -5199,8 +5199,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -5211,7 +5211,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "One motion proposes one rule; what you do not touch stands.",
@@ -5254,8 +5254,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -5269,7 +5269,7 @@
      "2",
      "1",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -5296,8 +5296,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -5311,7 +5311,7 @@
      "0",
      "3",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -5423,8 +5423,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -5435,7 +5435,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -5560,8 +5560,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -5572,7 +5572,7 @@
      "Does the Founder Have a Veto over Invitations? — settled",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "An invitation is constitutional, because who is in the room is what quorum is a fraction of: all members must agree, and one who says no keeps them out.",
@@ -5599,8 +5599,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -5613,7 +5613,7 @@
      "11",
      "3",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -5640,8 +5640,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -5655,7 +5655,7 @@
      "4",
      "2",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -6685,8 +6685,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -6700,7 +6700,7 @@
      "2",
      "3",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -6824,8 +6824,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -6836,7 +6836,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -6857,8 +6857,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -6868,7 +6868,7 @@
      "Does the Founder Have a Veto over Removals? — settled",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "Whoever it is will see the proposal — nobody is removed in secret.",
@@ -7152,8 +7152,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -7167,7 +7167,7 @@
      "1",
      "0",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "The value you are proposing",
@@ -7206,8 +7206,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -7218,7 +7218,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "One motion proposes one rule; what you do not touch stands.",
@@ -7261,8 +7261,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -7276,7 +7276,7 @@
      "2",
      "1",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -7303,8 +7303,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -7318,7 +7318,7 @@
      "0",
      "3",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -7681,8 +7681,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -7695,7 +7695,7 @@
      "11",
      "3",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -7722,8 +7722,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -7737,7 +7737,7 @@
      "4",
      "2",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -9037,8 +9037,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -9052,7 +9052,7 @@
      "2",
      "3",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -9183,8 +9183,8 @@
       "title": "Discard this motion"
      },
      {
-      "label": "🏛️ Hold to ask everyone",
-      "title": "A full ten-second hold"
+      "label": "🏛️ Ask all members",
+      "title": "A full ten-second assembly"
      }
     ],
     "hints": [
@@ -9195,7 +9195,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second hold"
+     "A full ten-second assembly"
     ],
     "helpers": [
      "We should change this because…",
