@@ -269,6 +269,14 @@ window.SETUP = (function () {
     // where the wait is about **you**: 📧 waiting on your own verification,
     // a gate waiting on its conditions, 🍾 waiting on the founder.
     if (st === 'wait' && c.kind === 'constitutional') return c.g;
+    // **A grant wears the glyph of the power it grants** (entry 180, Ed: *users
+    // don't realise that anything will change when they click OK, it just looks
+    // like information*). Every other news card is decided-and-owed-a-reading;
+    // a grant's press hands you an object, so the tab and the rail entry alike
+    // say *take this* rather than wearing the ✔ that means seen. `ask` still
+    // wears the subject glyph (💡 while blocked shows 💡) and `done` is
+    // untouched, so an acknowledged grant settles exactly as before.
+    if (st === 'news' && c.grants) return c.grants;
     return st === 'ask' ? c.g : st === 'wait' ? '⏳' : st === 'yours' ? '✏️' : TICK;
   };
 
@@ -314,7 +322,7 @@ window.SETUP = (function () {
     ' style="--chiphue: var(--lc-' + HUE[st] + ')' + (o.z ? '; z-index:' + o.z : '') + '"' +
     (o.inert ? '' : ' title="' + esc(c.t + (o.active ? ' — close it'
       : st === 'ask' ? ' — waiting on you' : st === 'wait' ? ' — waiting on others'
-      : st === 'news' ? ' — decided; it waits for your OK'
+      : st === 'news' ? (c.grants ? ' — yours to take' : ' — decided; it waits for your OK')
       : st === 'yours' ? ' — yours, being voted on' : ' — settled')) + '"') +
     '><span aria-hidden="true">' + markOf(c, ctx, true) + '</span>' +
     (o.inert ? '' : '<span class="sr">' + esc(c.t) + '</span>') + '</span>';
@@ -1192,15 +1200,25 @@ window.SETUP = (function () {
   // happened. What it is waiting *on* is drawn as the cards themselves, so a
   // member reads it as “these, and then you can write” rather than as a rule.
   // (One copy since 2026-08-18 — it had been byte-identical in both surfaces.)
+  //
+  // **A grant says what its press does, in the button's own words** (entry
+  // 180): *Nothing is being asked here* is true of ⚖️ and false of a grant,
+  // whose press hands you an object. So an open card carrying `grants` closes
+  // on the take sentence instead — except 💡, whose consequence is already
+  // said by `grantNote` beneath (the pencil count is the whole point of it),
+  // and which would otherwise say it twice (T36).
+  const gateNote = (c) => {
+    if (!c.open()) return 'It comes back to you the moment it opens.';
+    if (!c.grants) return 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.';
+    return c.k === 'canpropose' ? '' : '<b>' + c.grants + ' ' + c.take + '</b> puts it in your wallet.';
+  };
   const gateBody = (c) =>
     '<p class="why">' + c.why + '</p>' +
     '<div class="lockline">' + (c.open() ? TICK : '') + '<span>' +
     (c.open() ? c.done : c.waiting) + '</span></div>' +
     (c.open() ? '' : '<div class="gatelist">' + c.blockers().map((b) =>
       '<span class="gaterow"><span class="gg">' + b.g + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
-    '<p class="setnote">' + (c.open()
-      ? 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.'
-      : 'It comes back to you the moment it opens.') + '</p>';
+    (gateNote(c) ? '<p class="setnote">' + gateNote(c) + '</p>' : '');
 
   /* The uploader, one copy for both surfaces: the file is read locally and
      never sent anywhere; where the data lands stays the caller's, named by

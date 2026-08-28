@@ -172,7 +172,7 @@ One glyph per entry, the same alphabet in all three columns (contents rail · gu
 |---|---|---|---|---|---|---|---|
 | ask | the subject glyph | the subject glyph | an answer or a set | open, by urgency | yes | yes | the setting's card |
 | wait | ⏳ **only where the wait is about you** (📧, a gate, 🍾); a constitutional card waiting on the room keeps its glyph and leaves the rail — the tab says the rule, the queue says nothing | ⏳, or the glyph | nothing; fill = how far the room has got | closed | only where the wait is about you | no | the watching card |
-| news | drawn ✔ | drawn ✔ | OK | changed | yes | yes | the news card |
+| news | drawn ✔; **a grant wears the glyph of the power it grants** (✒️ 🛡️ 🏛️, and ✏️ on 💡 — entry 180) | drawn ✔; **a grant wears the glyph of the power it grants** | OK, or the take | changed | yes | yes | the news card |
 | yours | ✏️ | ✏️ | nothing — withdraw | yours | yes | yes, force-kept | the application |
 | done | drawn grey ✔, and it leaves | **the subject glyph** on grey | nothing | closed | no | — | the settled card (= the composer) |
 
@@ -197,7 +197,7 @@ One glyph per entry, the same alphabet in all three columns (contents rail · gu
 - **M15 Code keys on the mark kind, never the character** — two kinds share ✔, two share ✖.
 - **M16 ⚔️ is tested before ⏳ everywhere**, being the state that replaces it.
 
-Exceptions to these, beyond §3: ⚔️ ranks on bounty near the top though its urgency is nil (M7 · drafting leverage is maximal · Q223); the diagonal's floor (M7 · its urgency buried it · 2026-08-17); ✖ green washes grey with a green glyph (green is for what changed, not for what pinned itself); 🌶️ is one entry at the earlier clause (M5 · one judgment about two questions · Q277); a draft started on the ⚔️ desk has no rail entry until proposed (the desk is on the card you are looking at); setup `ask` wears the subject glyph (a rail of many questions in one state — the informative mark is *which*); a setup 🔥 does not exist (single file, every question mandatory); the applicant's done tasks stay in the rail (its four tasks are the whole surface).
+Exceptions to these, beyond §3: ⚔️ ranks on bounty near the top though its urgency is nil (M7 · drafting leverage is maximal · Q223); the diagonal's floor (M7 · its urgency buried it · 2026-08-17); ✖ green washes grey with a green glyph (green is for what changed, not for what pinned itself); 🌶️ is one entry at the earlier clause (M5 · one judgment about two questions · Q277); a draft started on the ⚔️ desk has no rail entry until proposed (the desk is on the card you are looking at); setup `ask` wears the subject glyph (a rail of many questions in one state — the informative mark is *which*); a grant's news wears the power's glyph (the press takes something, where every other news only wants to have been seen — entry 180); a setup 🔥 does not exist (single file, every question mandatory); the applicant's done tasks stay in the rail (its four tasks are the whole surface).
 
 ## 7. The wallets, the sockets, the holds
 
@@ -207,10 +207,10 @@ Every power is an object you hold, kept where you can see it, spent by flying it
 | wallet | verb | who has to agree | socket | quantity | hold ms | grant key | arrives | flight |
 |---|---|---|---|---|---|---|---|---|
 | 🪶 quill | founding | nobody — nothing exists yet | quill | 4 feathers; 3 spent on the birth (title, link, the send), the 4th permanent and is the logo | 1000 | — | by navigating to docs.vote; no task | feather → button; home on release |
-| ✒️ pen | drafting | nobody — you hold the power | penwallet | one, perpetual, never spent; ∞ in the count slot | 1000 | grant-pen | the save · *You founded this document, and the pen came with it* / *The membership returned the pen to you* | pen → button; grant OK → socket; farewell → 🥂 |
-| 🛡️ shield | the pen's other half | nobody — a refusal power | shieldwallet | one, perpetual; ∞ | — | grant-shield | the save · *…the shield came with it* / *…returned the shield* | grant OK → socket; farewell → 🥂 (Q621) |
-| ✏️ propose | proposing | enough of the room, at the threshold | wallet | many; 1 per Propose, refunded whole on withdraw, dripped on real minutes, capped; past four, three glyphs and +n | 3000 | canpropose | 🍾, per member at their OK · *The Founder began the document, granting every member the right to propose changes to it* | arc → button; the storm from the OK; farewell storm → 🥂 |
-| 🏛️ voice | consensus | all members | voicewallet | one at a time, returned whole | 10000 | grant-voice | with the first blind question you are asked (Q605) · four sentences by arrival | grant OK → socket; farewell → 🥂; the motion hold flies nothing — the assembly is the meter |
+| ✒️ pen | drafting | nobody — you hold the power | penwallet | one, perpetual, never spent; ∞ in the count slot | 1000 | grant-pen | the save · *You founded this document, and the pen came with it* / *The membership returned the pen to you* | pen → button; the take → socket; farewell → 🥂 |
+| 🛡️ shield | the pen's other half | nobody — a refusal power | shieldwallet | one, perpetual; ∞ | — | grant-shield | the save · *…the shield came with it* / *…returned the shield* | the take → socket; farewell → 🥂 (Q621) |
+| ✏️ propose | proposing | enough of the room, at the threshold | wallet | many; 1 per Propose, refunded whole on withdraw, dripped on real minutes, capped; past four, three glyphs and +n | 3000 | canpropose | 🍾, per member at their OK · *The Founder began the document, granting every member the right to propose changes to it* | arc → button; the storm from the take; farewell storm → 🥂 |
+| 🏛️ voice | consensus | all members | voicewallet | one at a time, returned whole | 10000 | grant-voice | with the first blind question you are asked (Q605) · four sentences by arrival | the take → socket; farewell → 🥂; the motion hold flies nothing — the assembly is the meter |
 | 🍾 begin | a moment, not a capacity | the founder alone | — | — | 1000 | — | 🍾 is its own task | the cork → the document title |
 | ⚖️ judge | a right, not an object | — | — | — | — | canjudge | 🍾 · *…granting every member the right to vote on what is proposed* | nothing flies |
 
@@ -240,7 +240,7 @@ An act that spends something out of a wallet is held, and its gravity is the len
 | ✏️ Propose (a draft in the charter) | 3000 | 864 | the last drawn ✏️ | same |
 | ✏️ Propose (a motion) | 3000 | 864 | the last drawn ✏️ (Q614) | same |
 | 🏛️ Hold to ask everyone | 10000 | — | nothing — the members' avatars convene | disperses; nothing sent |
-| OK | a click | — | the grant's object, OK → socket | — |
+| the take (✒️ 🛡️ 🏛️ ✏️ Take …) | a click | — | the grant's object, the take → socket | — |
 
 The refund flight and every grant's inbound flight take 640 ms.
 
@@ -365,8 +365,8 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 | settled motion record | the pile behind the rule's own tab — never the rail, and never `offered()`'s front chip | what was proposed, in the page's words | a dateline — the date, absolute and with its year, then *Passed* / *Rejected*; then what changed by route and outcome — *The Founder changed …* for a ✒️ amendment, *The membership changed …* for a raised one, *The membership kept … as it stood* for a rejected one — then the reason, the featureless disc unless it is the founder's own hand | none | 🗑️ | nothing — a record asks nothing, so it has no OK (Y20) | 🗑️; the tab | a grey ✔ / ✖ behind the rule, and it stays |
 | 👑 question | the setting's card, news-pinned | the title | *Passed — awaiting the 👑…* | none | **Refuse** (Y20) | **Accept** | either press | record |
 | news / owed OK | news entry ✔ | the rule | the read body · the watch half · the change line (was / now, who, why; *Last amended* once acknowledged) | none | 🗑️ | OK | OK | grey; the clause keeps the line |
-| gates 💡 ⚖️ | rail, hidden until 🍾 | the gate's sentence | who gave it · why · the blockers · *OK puts n ✏️s in your wallet* (💡) | none | 🗑️ | OK | OK (persisted) | grey ✔; gone from the rail |
-| grants 🏛️ ✒️ 🛡️ | rail, staged | the sentence | as a gate | none | 🗑️ | OK | OK → the flight | grey |
+| gates 💡 ⚖️ | rail, hidden until 🍾 | the gate's sentence | who gave it · why · the blockers · *✏️ Take them puts n ✏️s in your wallet* (💡) | none | 🗑️ | OK; **💡: ✏️ Take them** (it is the ✏️ grant — Q461a) | OK (persisted) | grey ✔; gone from the rail |
+| grants 🏛️ ✒️ 🛡️ | rail, staged | the sentence | as a gate, closing on *‹the take› puts it in your wallet* | none | 🗑️ | **✒️ Take the pen · 🛡️ Take the shield · 🏛️ Take your voice**, a click | the take → the flight | grey |
 | 🍾 Begin | rail (founder) | the sentence | the batch · the readiness readout · the hold line | none | 🗑️ | 🍾 Begin (hold) | the hold | grey, restating the batch |
 | 🥂 The Close | rail, pinned, per member | the sentence | final as of · the batch · your closing comment | none | 🗑️ | OK = sign | OK → the farewell | — |
 | 🪪 Admissions | band tab, above 🤝 | the rule — the price of admission (entry 94) | why · the three options | All members must agree / The membership decides / Any member may invite | 🗑️ | ✒️ | ✒️ | grey |
@@ -405,7 +405,8 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 | ✏️ (hold) | a draft, or an ordinary motion | the flight | accent-subtle — *blue, not green* | the price is said in words exactly once, here |
 | 🏛️ Hold to ask everyone | a constitutional motion | 10 s | accent-subtle | one 🏛️ out per member |
 | ✏️ Submitted | a proposed draft | — | pressed | the act become the fact; the row does not move |
-| OK | anything that asks only to have been seen — the gates, the grants, news, 🥂, and 📄 Text (Q798) | — | solid accent | a word, not a glyph |
+| OK | anything that asks only to have been seen — ⚖️, news, 🥂, and 📄 Text (Q798) | — | solid accent | a word, not a glyph |
+| ✒️ 🛡️ 🏛️ ✏️ Take … | a grant | — (a click) | accent-subtle | the glyph of the power it hands over, then the verb; OK is for what only wants to have been seen — a grant is taken |
 | Indifferent | the third radio on a judgment | — | radio | labelled, never 🤷; a judgment about the pair, out of the lanes |
 | ❄️ | the 🔥 card, or one already chilled | — | glyph button | a toggle on the flame; pressing closes, un-pressing does not |
 | Refuse / Accept | the 👑 question | — | outline / accent | the Founder's words |

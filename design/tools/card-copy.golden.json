@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 285,
+  "cards": 286,
   "walks": [
    "answers",
    "charter",
@@ -431,7 +431,7 @@
     "eyebrow": "",
     "head": "Your PenFounded by AL Ada Lovell 👑.",
     "lock": "You hold the pen.",
-    "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.You hold the pen.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.You hold the pen.✒️ Take the pen puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -440,7 +440,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "✒️ Take the pen",
       "title": null
      }
     ],
@@ -453,14 +453,14 @@
      "You founded this document, and the pen came with it.",
      "While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.",
      "You hold the pen.",
-     "Nothing is being asked here — OK files it and it leaves your queue."
+     "✒️ Take the pen puts it in your wallet."
     ]
    },
    "grant-shield": {
     "eyebrow": "",
     "head": "Your ShieldFounded by AL Ada Lovell 👑.",
     "lock": "You hold the shield.",
-    "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.You hold the shield.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.You hold the shield.🛡️ Take the shield puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -469,7 +469,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "🛡️ Take the shield",
       "title": null
      }
     ],
@@ -483,14 +483,14 @@
      "You founded this document, and the shield came with it.",
      "While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.",
      "You hold the shield.",
-     "Nothing is being asked here — OK files it and it leaves your queue."
+     "🛡️ Take the shield puts it in your wallet."
     ]
    },
    "grant-voice": {
     "eyebrow": "",
     "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "You hold a voice in every constitutional question.",
-    "body": "You founded this document, and every member holds a voice in it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and every member holds a voice in it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.🏛️ Take your voice puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -499,7 +499,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "🏛️ Take your voice",
       "title": null
      }
     ],
@@ -511,7 +511,7 @@
      "You founded this document, and every member holds a voice in it.",
      "All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
      "You hold a voice in every constitutional question.",
-     "Nothing is being asked here — OK files it and it leaves your queue."
+     "🏛️ Take your voice puts it in your wallet."
     ]
    },
    "hat": {
@@ -4304,7 +4304,7 @@
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
-    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.Nothing is being asked here — OK files it and it leaves your queue.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
+    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.You hold 5 ✏️s to propose with — ✏️ Take them puts them in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4313,7 +4313,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "✏️ Take them",
       "title": null
      }
     ],
@@ -4328,8 +4328,7 @@
      "The Founder began the document, granting every member the right to propose changes to it.",
      "Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.",
      "Open — members can propose as soon as they arrive.",
-     "Nothing is being asked here — OK files it and it leaves your queue.",
-     "You hold 5 ✏️s to propose with — OK puts them in your wallet."
+     "You hold 5 ✏️s to propose with — ✏️ Take them puts them in your wallet."
     ]
    },
    "chamber": {
@@ -4433,7 +4432,7 @@
     "eyebrow": "",
     "head": "Your PenFounded by AL Ada Lovell 👑.",
     "lock": "You hold the pen.",
-    "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.You hold the pen.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.You hold the pen.✒️ Take the pen puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4442,7 +4441,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "✒️ Take the pen",
       "title": null
      }
     ],
@@ -4455,14 +4454,14 @@
      "You founded this document, and the pen came with it.",
      "While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.",
      "You hold the pen.",
-     "Nothing is being asked here — OK files it and it leaves your queue."
+     "✒️ Take the pen puts it in your wallet."
     ]
    },
    "grant-shield": {
     "eyebrow": "",
     "head": "Your ShieldFounded by AL Ada Lovell 👑.",
     "lock": "You hold the shield.",
-    "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.You hold the shield.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.You hold the shield.🛡️ Take the shield puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4471,7 +4470,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "🛡️ Take the shield",
       "title": null
      }
     ],
@@ -4485,14 +4484,14 @@
      "You founded this document, and the shield came with it.",
      "While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.",
      "You hold the shield.",
-     "Nothing is being asked here — OK files it and it leaves your queue."
+     "🛡️ Take the shield puts it in your wallet."
     ]
    },
    "grant-voice": {
     "eyebrow": "",
     "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "You hold a voice in every constitutional question.",
-    "body": "You founded this document, and every member holds a voice in it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and every member holds a voice in it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.🏛️ Take your voice puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4501,7 +4500,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "🏛️ Take your voice",
       "title": null
      }
     ],
@@ -4513,7 +4512,7 @@
      "You founded this document, and every member holds a voice in it.",
      "All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
      "You hold a voice in every constitutional question.",
-     "Nothing is being asked here — OK files it and it leaves your queue."
+     "🏛️ Take your voice puts it in your wallet."
     ]
    },
    "hat": {
@@ -4553,6 +4552,47 @@
      "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.",
      "You get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.",
      "No ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed."
+    ]
+   },
+   "invite": {
+    "eyebrow": "",
+    "head": "Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
+    "lock": "",
+    "body": "An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as invited until then.✒️Several at once✒️n of m have opened it so far. Nobody has to be here for the document to exist, and anybody who arrives later starts with the same ✏️s as everybody else.",
+    "options": [],
+    "inputs": [
+     {
+      "type": "email",
+      "ph": "name@example.com"
+     },
+     {
+      "type": "textarea",
+      "ph": "Paste addresses here, one per line"
+     }
+    ],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "Done",
+      "title": "Done"
+     }
+    ],
+    "hints": [
+     "name@example.com",
+     "Invite a Member — close it",
+     "Can the Founder Invite at Will? — settled",
+     "Does the Founder Have a Veto over Invitations? — settled",
+     "Send the invitation",
+     "Send them all",
+     "Put it back as it stands",
+     "Done"
+    ],
+    "helpers": [
+     "An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as invited until then.",
+     "n of m have opened it so far. Nobody has to be here for the document to exist, and anybody who arrives later starts with the same ✏️s as everybody else."
     ]
    },
    "judgments": {
@@ -5355,7 +5395,7 @@
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
-    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.Nothing is being asked here — OK files it and it leaves your queue.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
+    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.You hold 5 ✏️s to propose with — ✏️ Take them puts them in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5364,7 +5404,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "✏️ Take them",
       "title": null
      }
     ],
@@ -5379,8 +5419,7 @@
      "The Founder began the document, granting every member the right to propose changes to it.",
      "Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.",
      "Open — members can propose as soon as they arrive.",
-     "Nothing is being asked here — OK files it and it leaves your queue.",
-     "You hold 5 ✏️s to propose with — OK puts them in your wallet."
+     "You hold 5 ✏️s to propose with — ✏️ Take them puts them in your wallet."
     ]
    },
    "chamber": {
@@ -5473,7 +5512,7 @@
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "You hold a voice in every constitutional question.",
-    "body": "The Founder invited you into the membership, and a voice in every constitutional question came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "The Founder invited you into the membership, and a voice in every constitutional question came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.🏛️ Take your voice puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5482,7 +5521,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "🏛️ Take your voice",
       "title": null
      }
     ],
@@ -5497,7 +5536,7 @@
      "The Founder invited you into the membership, and a voice in every constitutional question came with it.",
      "All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
      "You hold a voice in every constitutional question.",
-     "Nothing is being asked here — OK files it and it leaves your queue."
+     "🏛️ Take your voice puts it in your wallet."
     ]
    },
    "hat": {
@@ -7372,7 +7411,7 @@
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
-    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.Nothing is being asked here — OK files it and it leaves your queue.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
+    "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.You hold 5 ✏️s to propose with — ✏️ Take them puts them in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7381,7 +7420,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "✏️ Take them",
       "title": null
      }
     ],
@@ -7396,8 +7435,7 @@
      "The Founder began the document, granting every member the right to propose changes to it.",
      "Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.",
      "Open — members can propose as soon as they arrive.",
-     "Nothing is being asked here — OK files it and it leaves your queue.",
-     "You hold 5 ✏️s to propose with — OK puts them in your wallet."
+     "You hold 5 ✏️s to propose with — ✏️ Take them puts them in your wallet."
     ]
    },
    "chamber": {
@@ -7494,7 +7532,7 @@
     "eyebrow": "",
     "head": "Your PenFounded by AB Ash Bellamy 👑 at HH:MM on D Month YYYY.",
     "lock": "You hold the pen.",
-    "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.You hold the pen.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.You hold the pen.✒️ Take the pen puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7503,7 +7541,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "✒️ Take the pen",
       "title": null
      }
     ],
@@ -7517,14 +7555,14 @@
      "You founded this document, and the pen came with it.",
      "While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.",
      "You hold the pen.",
-     "Nothing is being asked here — OK files it and it leaves your queue."
+     "✒️ Take the pen puts it in your wallet."
     ]
    },
    "grant-shield": {
     "eyebrow": "",
     "head": "Your ShieldFounded by AB Ash Bellamy 👑 at HH:MM on D Month YYYY.",
     "lock": "You hold the shield.",
-    "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.You hold the shield.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.You hold the shield.🛡️ Take the shield puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7533,7 +7571,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "🛡️ Take the shield",
       "title": null
      }
     ],
@@ -7547,14 +7585,14 @@
      "You founded this document, and the shield came with it.",
      "While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.",
      "You hold the shield.",
-     "Nothing is being asked here — OK files it and it leaves your queue."
+     "🛡️ Take the shield puts it in your wallet."
     ]
    },
    "grant-voice": {
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "You hold a voice in every constitutional question.",
-    "body": "You founded this document, and every member holds a voice in it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and every member holds a voice in it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.🏛️ Take your voice puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7563,7 +7601,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "🏛️ Take your voice",
       "title": null
      }
     ],
@@ -7578,7 +7616,7 @@
      "You founded this document, and every member holds a voice in it.",
      "All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
      "You hold a voice in every constitutional question.",
-     "Nothing is being asked here — OK files it and it leaves your queue."
+     "🏛️ Take your voice puts it in your wallet."
     ]
    },
    "hat": {

@@ -1524,7 +1524,18 @@
     // What the founder is owed instead — *what is still stopping judging* —
     // is the 🍾 card's readiness readout, which is where they were going to
     // read it anyway.
+    // **A grant wears the glyph of the power it grants** (entry 180, Ed's QA of
+    // batch Q: *users don't realise that anything will change when they click
+    // OK, it just looks like information*). `grants` is the power's own glyph
+    // and `take` the commit's words; between them they move the card out of the
+    // owed-OK family, whose word is OK because it only wants to have been seen
+    // (STYLE T18). 💡 keeps `g: '💡'` — its subject glyph, what the settled tab
+    // wears and what the preamble's stack shows — and keeps no `isGrant`, which
+    // is read for other things; `grants` is the one fact the mark, the tooltip,
+    // the commit and the closing sentence all key on. ⚖️ has neither: a right
+    // is not an object, nothing flies, and OK stays its word.
     { k: 'canpropose', g: '💡', t: 'Proposing', own: 'you', isGate: true,
+      grants: '✏️', take: 'Take them',
       hide: () => !constituted(),
       open: () => !!cs && !!viewerId() && cs.canPropose(viewerId()),
       // proposing opens at the start (§9.0b, Q606, 2026-08-22): the text a
@@ -1561,6 +1572,7 @@
     // paragraph (`voiceHost`) rather than ⚖️'s, because the voice is what
     // the question is answered with. It still blocks nothing (a gate).
     { k: 'grant-voice', g: '🏛️', t: 'Your Voice', own: 'you', isGate: true, isGrant: true,
+      grants: '🏛️', take: 'Take your voice',
       open: () => !!cs && viewerIsMember() && !!viewerRow().in,
       early: () => firstAsked() !== null,
       why: 'All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.',
@@ -1578,6 +1590,7 @@
     // founder holds is stated where it bites — on each setting's own clause,
     // by `holderLine` — which is the whole of Ed's argument for retiring them.
     { k: 'grant-pen', g: '✒️', t: 'Your Pen', own: 'you', isGate: true, isGrant: true,
+      grants: '✒️', take: 'Take the pen',
       hide: () => !amFounder(),
       open: () => !!cs && amFounder() && holdsPenAnywhere(),
       why: 'While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.',
@@ -1601,6 +1614,7 @@
     // always has. That also leaves the rail at the save holding the pen alone,
     // which is a thing the journey walk asserts.
     { k: 'grant-shield', g: '🛡️', t: 'Your Shield', own: 'you', isGate: true, isGrant: true,
+      grants: '🛡️', take: 'Take the shield',
       hide: () => !amFounder(),   // the holder's, like the pen above
       open: () => !!cs && amFounder() && holdsShieldAnywhere(),
       why: 'While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.',
@@ -6158,10 +6172,20 @@
           g.cards);
       }
       if (c.isGate) {
+        // **A grant's commit says take** (entry 180). The press is the one act
+        // on this page after which you hold something you did not hold before —
+        // the object leaves the button for its socket — so it wears the power's
+        // glyph and a verb, on 🍾 Begin's own accent-subtle ground (`emojibtn`).
+        // A gate without `grants` (⚖️) keeps the plain OK. It stays a **click**:
+        // nothing here is destructive, and the hold question is entry 184's.
+        // `data-ok` and the key are deliberately unchanged — the handler,
+        // `pendingGrant`, `saveGrants` and every walk press this selector.
         return cardHtml(c, ctx, grantProv(c) + gateBody(c) + grantNote(c),
           binBtn() +
-          '<button class="btn btn-approve"' + (c.open() ? '' : ' disabled') +
-          ' data-ok="' + c.k + '">OK</button>', g.cards);
+          '<button class="btn btn-approve' + (c.grants ? ' emojibtn' : '') + '"' +
+          (c.open() ? '' : ' disabled') +
+          ' data-ok="' + c.k + '">' +
+          (c.grants ? c.grants + ' ' + c.take : 'OK') + '</button>', g.cards);
       }
       // **A record, opened** (Q942): what was proposed at its head, the outcome
       // and the reason in the field, and 🗑️ alone at the foot — a record asks
@@ -9472,7 +9496,7 @@
     if (c.k !== 'canpropose' || !c.open() || !viewerIsMember()) return '';
     const nHeld = cs && cs.isRemote && cs.v ? Math.floor(cs.v.wallet || 0) : (SESSION.editsHeld || 0);
     return '<p class="setnote grantline">You hold <b>' + nHeld + ' ✏️' + (nHeld === 1 ? '' : 's') +
-      '</b> to propose with — <b>OK</b> puts them in your wallet.</p>';
+      '</b> to propose with — <b>' + c.grants + ' ' + c.take + '</b> puts them in your wallet.</p>';
   };
   // the grant's flight, after the render that took its card away
   function launchGrant() {
