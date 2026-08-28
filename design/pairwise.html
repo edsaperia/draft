@@ -105,36 +105,103 @@
   <div class="top">🪶 <a href="/">docs.vote</a></div>
 
   <h1>The approval threshold</h1>
-  <p class="lede">How a document decides that a change is better than the words it replaces.</p>
+  <p class="lede">How docs.vote decides whether a proposal passes — a change to the text, or a
+    change to one of the rules.</p>
 
   <h2>The question the card asks</h2>
-  <p>🌡️ asks <b>how sure the members have to be that a change is better than the words
-    it replaces</b>, at the close, where an adoption is permanent.</p>
-  <p>Sure of what, exactly? Not of a share of the votes. The number is how confident the
-    document can be, from the votes cast so far, that the new wording really is the better
-    one. A vote on docs.vote is a choice between two wordings — this one, or the one it
-    would replace — and the document adds those choices up into a single probability that
-    the change wins.</p>
+  <p>🌡️ asks <b>how sure the members have to be that a proposal is better than what
+    stands</b>, at the close, where a decision is permanent. The same number governs a
+    change to a paragraph and a change to a rule: whatever a proposal is about, it
+    passes the same way.</p>
+  <p>Sure of what, exactly? Not of a share of the votes. The number is how certain the
+    document can be, from the votes cast so far, that the proposal really is the better
+    one. A vote on docs.vote is a choice between two things — this proposal, or what it
+    would replace — and the document adds those choices up into a single probability
+    that the proposal wins.</p>
   <p>Almost nobody needs to think about this. The card asks for one number and the
     document does the rest. This page is for the people who want to know what the number
-    is doing.</p>
+    is doing, and why it is not the vote threshold they are used to.</p>
+
+  <h2>Why not a vote threshold with a quorum?</h2>
+  <p>The familiar rule is <i>two thirds in favour, with at least half the membership
+    voting</i>. It is a fine rule for a meeting where everybody is in the room at once and
+    one question is on the table. docs.vote is neither, and the approval threshold does
+    better on every count below.</p>
+
+  <h3>It waits for evidence rather than counting heads</h3>
+  <p>Under a vote threshold, three votes for and none against passes the moment the
+    quorum is met. But three people agreeing is not proof that a wording is better; a
+    document that treated it as proof would replace its own text on thin evidence and
+    spend the rest of its life changing its mind. Here the proposal stays open and the
+    votes keep arriving until there are enough of them to be sure. That is why the share
+    needed falls as votes come in — the rule has not moved, the evidence has.</p>
+
+  <h3>Nobody has to be present at once</h3>
+  <p>A vote threshold with a quorum needs a moment when the ballot is called and counted.
+    On docs.vote votes arrive as people arrive, over hours or days, and every vote moves
+    the answer a little; a proposal passes the moment the document is sure enough, and
+    not before. Nothing has to be called. (There is still a quorum on docs.vote — 👥 — but
+    it asks a different question: whether enough of the membership is still here for the
+    document to go on at all. It is about the membership being present, never about how
+    many votes one proposal has.)</p>
+
+  <h3>An absent member is not a vote against</h3>
+  <p>With a quorum, the people who did not turn up decide the outcome: too few and nothing
+    can pass, however lopsided the votes. Here only votes cast are counted, and the number
+    of them is the evidence. A member who has not voted has said nothing, and is treated
+    as having said nothing.</p>
+
+  <h3>A share of what?</h3>
+  <p>A vote threshold assumes one question with a yes and a no. Here several rival
+    wordings can be in one race, votes are between two at a time, and two members may be
+    shown different pairs — so there is no <i>votes for this one</i> to take a share of: a
+    proposal may have beaten one rival and lost to another. <i>How sure are we that this
+    beats what stands</i> is defined whatever the field looks like, and it is the thing the
+    document actually has to know before it replaces anything.</p>
+
+  <h3>One number, whatever the membership</h3>
+  <p>80% is near-unanimity in a membership of five and a comfortable majority in one of
+    fifty. One setting serves both, and it goes on meaning the same thing as the membership
+    changes. A share of the votes and a quorum would have to be chosen again for each size
+    of membership, and chosen again every time somebody joined or left.</p>
+
+  <h3>It is honest about small memberships</h3>
+  <p>A vote threshold lets four people carry a rule by three to one and call it a
+    two-thirds majority. Here four votes cannot make the document 95% sure however they
+    fall, so the proposal waits — and 🌡️ itself says the highest number the membership as
+    it stands can reach, so nobody sets a threshold that nothing could ever clear.</p>
+
+  <h3>A vote of no preference counts</h3>
+  <p>A member who prefers neither wording says so, and that is evidence too: it says the
+    two are about the same, which pulls toward waiting rather than toward either one. A
+    ballot has no way to say that; an abstention there is simply a missing vote.</p>
+
+  <h2>And it rises toward the close</h2>
+  <p>An early change can still be challenged; a late one is what the document ends up
+    saying. So where the founder chose a rising threshold it starts lower when voting opens
+    — <i>starting at 55% when voting opens</i> is the clause's own wording — and climbs to
+    the number 🌡️ asks for. A vote threshold has no natural way to do this.</p>
+  <p>Every number on this page is the number at the close, which is the highest it
+    gets. Earlier in the document's life a proposal needs fewer votes than the table
+    says.</p>
 
   <h2>What one number means in votes</h2>
-  <p>The same number is a different count of people in different rooms, and a different
-    count again as more votes arrive. Below, every whole percent from 55 to 95, against the
-    votes cast on one change — and every number here is the number <b>at the close</b>.</p>
+  <p>The same number is a different count of people for different memberships, and a
+    different count again as more votes arrive. Below, every whole percent from 55 to 95,
+    against the votes cast on one proposal — and every number here is the number <b>at
+    the close</b>. The chart and the table count votes for and against only.</p>
 
   <div class="chart">
     <svg id="chart" viewBox="0 0 720 360" role="img"
-         aria-label="The share of votes that must be for a change, against the number of votes cast on it, at nine approval thresholds. The share falls toward half as more votes arrive. The same numbers are in the table below."></svg>
+         aria-label="The share of votes that must be for a proposal, against the number of votes cast on it, at nine approval thresholds. The share falls toward half as more votes arrive. The same numbers are in the table below."></svg>
   </div>
   <div class="legend" id="legend"></div>
 
   <div class="pull">
-    <label for="n">Votes cast on this change</label>
+    <label for="n">Votes cast on this proposal</label>
     <input type="range" id="n" min="1" max="100" value="5" step="1"
            aria-describedby="said">
-    <p class="said" id="said">Of <b>5 votes</b> cast on a change, at the close:</p>
+    <p class="said" id="said">Of <b>5 votes</b> cast on a proposal, at the close:</p>
     <ul class="readout" id="readout"></ul>
   </div>
 
@@ -142,7 +209,7 @@
        rewrites every cell from `votesNeeded` on load, so these values are a
        floor on staleness rather than a second source of truth. -->
   <table id="grid">
-    <caption>Votes that must be for the change, at the close</caption>
+    <caption>Votes that must be for the proposal, at the close</caption>
     <thead>
       <tr><th scope="col">Approval threshold</th>
         <th scope="col">1</th><th scope="col">2</th><th scope="col">3</th>
@@ -163,52 +230,15 @@
       <tr data-pct="95"><th scope="row">95%</th><td class="none">—</td><td class="none">—</td><td class="none">—</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>11</td><td>14</td><td>20</td><td>31</td><td>59</td></tr>
     </tbody>
   </table>
-  <p class="note">Columns are votes cast on one change; a room of ten where four have voted
-    is four. An em dash means that many votes cannot make the document that sure however
-    they fall, so the change waits rather than passing — and 🌡️ itself says the highest
-    number a room of your size can reach.</p>
-
-  <h2>Why it is done this way</h2>
-
-  <h3>Few votes, and it waits</h3>
-  <p>Three votes for and none against is not proof that a wording is better; it is three
-    people agreeing. A document that treated it as proof would replace its own text on thin
-    evidence and spend the rest of its life changing its mind. This one waits instead: the
-    change stays in the race, and the votes keep arriving, until there are enough of them
-    to be sure. That is why the share needed falls as votes come in — the rule has not
-    moved, the evidence has.</p>
-
-  <h3>A share of what?</h3>
-  <p>Votes here are between two wordings at a time. Where three wordings are in one race
-    there is no <i>votes for this one</i> to take a share of: it may have beaten one rival
-    and lost to another, and two members may have been shown different pairs. <i>How sure
-    are we that this beats the current text</i> is defined whatever the field looks like,
-    and it is the thing the document actually has to know before it replaces anything.</p>
-
-  <h3>One number, every room</h3>
-  <p>80% is near-unanimity in a cohort of five and a comfortable majority in a convention
-    of fifty. One setting serves both, and it goes on meaning the same thing as the
-    membership grows. A share of the votes would have to be chosen again for every room,
-    and chosen again every time somebody joined.</p>
-
-  <h2>And it rises toward the close</h2>
-  <p>An early change can still be challenged; a late one is what the document ends up
-    saying. So where the founder chose a rising threshold it starts lower when voting opens
-    — <i>starting at 55% when voting opens</i> is the clause's own wording — and climbs to
-    the number 🌡️ asks for.</p>
-  <p>Every number on this page is the number at the close, which is the highest it
-    gets. Earlier in the document's life a change needs fewer votes than the table
-    says.</p>
-
-  <h2>Votes of no preference</h2>
-  <p>A member who prefers neither wording says so, and that is evidence too: it says the
-    two are about the same, which pulls toward waiting rather than toward either one. The
-    chart and the table above count votes for and against only.</p>
+  <p class="note">Columns are votes cast on one proposal; a membership of ten where four have
+    voted is four. An em dash means that many votes cannot make the document that sure
+    however they fall, so the proposal waits rather than passing — and 🌡️ itself says the
+    highest number a membership of your size can reach.</p>
 
   <h2>Further reading</h2>
   <ul class="refs">
     <li><a href="https://github.com/edsaperia/draft/blob/main/SPEC.md" target="_blank" rel="noopener">SPEC.md §4.1–§4.3</a>
-      — how preferences are ranked, when a change is adopted, and how the threshold moves
+      — how preferences are ranked, when a proposal passes, and how the threshold moves
       on the clock. The repository is public.</li>
     <li><a href="https://en.wikipedia.org/wiki/Bradley%E2%80%93Terry_model" target="_blank" rel="noopener">The Bradley–Terry model</a>
       — the method that turns a pile of this-beats-that into a strength for each wording.</li>
@@ -263,8 +293,8 @@
   [1, 2, 5, 10, 20, 50, 100].forEach(function (n) {
     bits.push('<text class="axlab" x="' + x(n) + '" y="' + (H - B + 18) + '" text-anchor="middle">' + n + '</text>');
   });
-  bits.push('<text class="axlab" x="' + (L + PW / 2) + '" y="' + (H - 4) + '" text-anchor="middle">votes cast on this change</text>');
-  bits.push('<text class="axlab" x="' + (L - 8) + '" y="' + (T - 12) + '" text-anchor="start">share of the votes that must be for the change</text>');
+  bits.push('<text class="axlab" x="' + (L + PW / 2) + '" y="' + (H - 4) + '" text-anchor="middle">votes cast on this proposal</text>');
+  bits.push('<text class="axlab" x="' + (L - 8) + '" y="' + (T - 12) + '" text-anchor="start">share of the votes that must be for the proposal</text>');
 
   // one line per threshold, in one ink at nine weights: the accent belongs to
   // the control the reader is holding, not to the information
@@ -311,7 +341,7 @@
   function draw() {
     var n = +slider.value;
     said.innerHTML = 'Of <b>' + n + ' vote' + (n === 1 ? '' : 's') +
-      '</b> cast on a change, at the close:';
+      '</b> cast on a proposal, at the close:';
     readout.innerHTML = BARS.map(function (pct) {
       var k = C.votesNeeded(n, pct);
       if (k === 0) {
@@ -319,7 +349,7 @@
           ' cannot make it that sure — it waits.</li>';
       }
       return '<li>At ' + pct + '%, ' + k + ' of ' + n + ' vote' + (n === 1 ? '' : 's') +
-        ' must be for the change.</li>';
+        ' must be for the proposal.</li>';
     }).join('');
     // a column, not points on the lines: the lines are drawn at the counts the
     // table has columns for, and a dot on a count between two of them would
