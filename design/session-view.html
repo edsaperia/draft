@@ -2438,7 +2438,11 @@
     const openHere = (cs || settled(card('title'))) && chips.find((c) => S.open === c.k);
     if (openHere) return h.paraWith(openHere, chips);
     return '<div class="cpara">' + h.pile(chips) +
-      '<div class="cptext"><p class="cpv">The document is titled ' + LD + esc(S.title) + RD + '.' + (holderLine('title') || '') + '</p></div></div>';
+      // the governance sentence on its own line (entry 198), written as a
+      // `<br>` because this string is already HTML — the plain-text clauses
+      // carry a newline and `breakLines` makes the markup for them instead
+      '<div class="cptext"><p class="cpv">The document is titled ' + LD + esc(S.title) + RD + '.' +
+        (holderLine('title') ? '<br>' + holderLine('title') : '') + '</p></div></div>';
   };
   const isRoom = (c) => !!(c.key && delegated(c.key));
   // who holds it (§9.7 v0.52): any setting the founder has delegated —
@@ -4650,6 +4654,18 @@
     const said = [founderMay(parts), founderMayNotYet(going)].filter(Boolean);
     return said.length ? ' ' + said.join(' ') : '';
   };
+  // **A settled clause is the rule, then the deviation** (Ed's QA, entry 198):
+  // the rule and its provenance make line one, and what the Founder may do
+  // about it stands on the line beneath, so a reader who wants the rule alone
+  // stops at the end of the first line. The break is a newline character,
+  // never a `<br>`: this string is plain text and both consumers escape it,
+  // so the markup is made after escaping (`breakLines`). `holderLine`'s own
+  // leading space is kept **before** the break, which is what leaves
+  // `textContent` byte-identical and the frozen strings undisturbed.
+  const clauseText = (rule, k) => {
+    const h = holderLine(k);
+    return rule + shapedLine(k) + (h ? ' \n' + h.slice(1) : '');
+  };
   // **Links in the constitution are real links** (Ed, 2026-08-19):
   // underlined, ink-coloured (.doclink), applied after escaping so a
   // sentence can never smuggle markup in. The `d/` is optional so a member's
@@ -4658,6 +4674,13 @@
   // far as `docs.vote/d` and stops (backlog 70)
   const linkify = (s) => String(s).replace(/\bdocs\.vote\/(?:d\/)?[a-z0-9][a-z0-9-]*/g,
     (m2) => '<a class="doclink" href="https://' + m2 + '" target="_blank" rel="noopener">' + m2 + '</a>');
+  // the clause's own line break, made after escaping for the same reason
+  // `linkify` is: the sentence carries member text, and a `<br>` written into
+  // the plain string would print as characters. Applied **only** to the
+  // clause sentence, never to a record's title or a power head — for those
+  // `esc` stays the whole of the answer, and a newline in member-written text
+  // must not become markup.
+  const breakLines = (s) => String(s).replace(/\n/g, '<br>');
   const decisionLine = (c) => {
     // a grant's paragraph states the document's rule (third person, the same
     // for every reader); the card that opens on it is yours
@@ -4719,7 +4742,7 @@
       const st = csState(c.k);
       const collecting = st ? st.collecting : !((c.in || 0) >= E() && E() > 0);
       return !collecting && (!st || st.value !== null)
-        ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c)) + shapedLine(c.k) + holderLine(c.k)
+        ? clauseText((DECIDED[c.k] ? DECIDED[c.k]() : value(c)), c.k)
         // while the founder is the only person the document knows about, an
         // answer count would be counting the founder alone (pacing pass,
         // 2026-08-19) — the honest tail is that the question waits for a room
@@ -4735,9 +4758,10 @@
             : roomExists() ? Math.min(c.in || 0, E()) + ' of ' + E() + ' have answered.'
             : 'waiting for members.');
     }
-    // the provenance rides between the rule and the powers (entry 166): *…
-    // As for a meeting. The Founder may amend this at will.*
-    return settled(c) ? (DECIDED[c.k] ? DECIDED[c.k]() : value(c)) + shapedLine(c.k) + holderLine(c.k)
+    // the provenance rides between the rule and the powers (entry 166), and
+    // since entry 198 the powers stand on their own line: *… As for a
+    // meeting.* / *The Founder may amend this at will.*
+    return settled(c) ? clauseText((DECIDED[c.k] ? DECIDED[c.k]() : value(c)), c.k)
       // the same interim rule while the Founder holds 🌍 undecided (Q618 (a))
       : c.k === 'chamber' ? 'Until the Founder decides, only members can see the document.'
       : 'The Founder is deciding ' + (WHAT[c.k] || 'this') + '.';
@@ -4783,9 +4807,9 @@
       // line they hang their tabs on — and open questions, which their title
       // names better than a rule that does not exist yet.
       if (c.k === 'text' || onFoundedLine(c)) return null;
-      if (c.isGate) return linkify(esc(decisionLine(c)));
+      if (c.isGate) return breakLines(linkify(esc(decisionLine(c))));
       if (c.ansFor || c.kind === 'personal') return null;
-      if (settled(c)) return linkify(esc(decisionLine(c)));
+      if (settled(c)) return breakLines(linkify(esc(decisionLine(c))));
       if (composerOn(c)) return esc(standsOf(c.k));
       return null;
     },
@@ -4827,8 +4851,12 @@
     // stored XSS into the constitution paragraph
     // a record draws no paragraph, so this is never asked for one — it
     // answers with the record's own title rather than throwing if it is
-    decisionLine: (c) => linkify(esc(c.record ? c.t
-      : c.power ? powerHeadLine(c) : decisionLine(c))),
+    // and `breakLines` only over the clause branch (entry 198): a record's
+    // title and a power head carry no break, and wrapping them would turn a
+    // newline in member-written text into markup after `esc` had made it safe
+    decisionLine: (c) => (c.record ? linkify(esc(c.t))
+      : c.power ? linkify(esc(powerHeadLine(c)))
+      : breakLines(linkify(esc(decisionLine(c))))),
     // 🪜 has no paragraph of its own (Q512): the ramp is part of what the
     // threshold says, so its tab stands in 🌡️'s stack and opening it opens
     // at 🌡️'s own clause — which is also where its rail entry anchors,
