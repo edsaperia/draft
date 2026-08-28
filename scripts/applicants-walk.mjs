@@ -231,7 +231,12 @@ const seen = await page.evaluate(() => ({
     const h = [...document.querySelectorAll('.csec h2.lvl3')]
       .find((x) => /Applicants/.test(x.textContent));
     if (!h || !h.nextElementSibling) return -1;
-    return h.nextElementSibling.querySelectorAll('.memrow').length;
+    // real applicants only: since entry 183 an empty *Applicants* subsection
+    // carries its own `.memrow.nobody` placeholder — *(no applicants at the
+    // moment)* — so counting every `.memrow` reported one applicant where the
+    // document has none, which is exactly the ✒️ case this walk asserts.
+    // `journey-walk` and `ladder-walk` already filter it; this one did not.
+    return h.nextElementSibling.querySelectorAll('.memrow:not(.nobody)').length;
   })(),
 }));
 

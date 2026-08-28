@@ -85,14 +85,20 @@ const FROZEN = [
 
 /** Byte-copy design/<name> over design/reference/<name>, reporting each. */
 function refreeze() {
+  // every source is checked before any copy is made, so *nothing was frozen*
+  // is an honest report: a MISSING name found halfway through would otherwise
+  // leave the reference half re-frozen and say the opposite
+  const missing = FROZEN.filter((name) => !existsSync(join(DESIGN, name)));
+  if (missing.length) {
+    for (const name of missing) {
+      console.log(`  MISSING: design/${name} — FROZEN names a file that is not there`);
+    }
+    return null;
+  }
   let changed = 0;
   for (const name of FROZEN) {
     const from = join(DESIGN, name);
     const to = join(REFERENCE, name);
-    if (!existsSync(from)) {
-      console.log(`  MISSING: design/${name} — FROZEN names a file that is not there`);
-      return null;
-    }
     const differs = !existsSync(to) || !readFileSync(from).equals(readFileSync(to));
     if (differs) { copyFileSync(from, to); changed++; }
     console.log(`  ${differs ? 'copied ' : 'same   '} ${name}`);

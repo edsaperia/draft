@@ -3756,9 +3756,15 @@
     pace: { 'The same number throughout': { shape: 'fixed' } },
     ending: { 'Never — it runs until too few members are active': { endsAtMs: null } },
     lapse: { 'Never — however long you are away': { afterMs: null } },
-    removal: { 'All members must agree, including them': { price: 'consent' },
-      'All other members must agree': { price: 'assembly' },
-      'The membership decides': { price: 'proposal' } },
+    // **The keys are the composer's own lane labels, not 🥾's rung words.**
+    // `mvalTyped` is only ever asked about a `data-mval`, which is the string
+    // `PROPOSE.removal` writes — and these three were `PRICE_WORDS`' spelling
+    // instead, so every 🥾 lane typed `null`, `offersStanding` fell back to the
+    // label comparison Q620 retired, and the ten-second 🏛️ hold ended at *That
+    // could not be proposed: no typed value on the draft*.
+    removal: { 'All members have to agree, including them': { price: 'consent' },
+      'All other members have to agree': { price: 'assembly' },
+      'A proposal ✏️ like any other': { price: 'proposal' } },
     admission: { 'All members must agree': { price: 'assembly' },
       'The membership decides': { price: 'proposal' },
       'Any member may invite': { price: 'pen' } },
