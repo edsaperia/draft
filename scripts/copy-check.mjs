@@ -82,11 +82,19 @@ if (broken.length) {
  * so a reader of the file knows what a green run is silent about. Lifted from
  * `founding-golden`'s own `norm`; **do not widen it** — a wider net hides copy.
  */
-const NORMALISED = ['HH:MM', 'D Month YYYY', 'weekday', 'n of m', 'whitespace'];
+const NORMALISED = ['HH:MM', 'D Month YYYY', 'Last amended D Month', 'weekday', 'n of m', 'whitespace'];
 const norm = (s) => String(s == null ? '' : s)
   // "Founded by AB Ash Bellamy 👑 at 15:19 on 26 August 2026" (the ⏳ grant heads)
   .replace(/\b\d{1,2}:\d{2}\b/g, 'HH:MM')
   .replace(/\b\d{1,2} [A-Z][a-z]+ \d{4}\b/g, 'D Month YYYY')
+  // "Last amended 28 August" — `changeHalf`'s dateline is the one date on the
+  // surface that carries no year (a clause somebody is reading now dates
+  // itself relatively; `recordBody` carries the year and the rule above eats
+  // it), so the year-bearing pattern misses it and the golden would hold the
+  // day it was frozen — red the next morning with no copy having moved. Named
+  // by its own label rather than by a bare "D Month", which would swallow
+  // every month name a sentence uses.
+  .replace(/Last amended \d{1,2} [A-Z][a-z]+/g, 'Last amended D Month')
   // "The drafting process will end on Thursday at 18:00" (⏰, and the clock line)
   .replace(/\b(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day\b/g, 'Weekday')
   // "3 of 3 have opened it", "1 of 1 have answered", "1 of 14"

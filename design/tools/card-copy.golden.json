@@ -14,6 +14,7 @@
   "normalised": [
    "HH:MM",
    "D Month YYYY",
+   "Last amended D Month",
    "weekday",
    "n of m",
    "whitespace"
@@ -5789,7 +5790,7 @@
     "eyebrow": "",
     "head": "The approval threshold starts at 55% and rises to 82% by the end. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
-    "body": "The approval threshold stays the same all the way through.Prefer thisThe approval threshold starts at % and rises to the number at the end.If it passes it goes to the Founder, who may assent or refuse.Last amended 28 AugustThe Founder has changed how the approval threshold climbs to the close from rising from 55% to rising from 55%.ABAsh Bellamy 👑No reason given.",
+    "body": "The approval threshold stays the same all the way through.Prefer thisThe approval threshold starts at % and rises to the number at the end.If it passes it goes to the Founder, who may assent or refuse.Last amended D MonthThe Founder has changed how the approval threshold climbs to the close from rising from 55% to rising from 55%.ABAsh Bellamy 👑No reason given.",
     "options": [
      {
       "set": null,
