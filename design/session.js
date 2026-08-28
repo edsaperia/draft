@@ -2727,6 +2727,7 @@
     holding = null; holdInFlight = false;
     clearTimeout(timer);
     el.classList.remove('holding');
+    el.removeAttribute('aria-disabled');
     // Fired: the edit is spent, and act() renders the wallet one lighter — so
     // the reserved gap is released without a render of its own, or the wallet
     // would show the old count for a frame before the spend lands.
@@ -2784,6 +2785,14 @@
             { duration: HOLD_MS, easing: 'cubic-bezier(.45, .05, .3, 1)', fill: 'both' });
     }
     el.classList.add('holding');
+    // **Inert, never `disabled`** (backlog 184). Under the click gesture the
+    // control is out of play for the length of the flight, and `.holding` is
+    // already what says so; this is the same fact for a screen reader. A real
+    // `disabled` would be the 2026-08-22 bug shape again — a render mid-flight
+    // rebuilds the button anyway, and `holdWallet`'s sibling below refuses a
+    // disabled control, so the timer's click on one is a silent no-op.
+    // `holding` being non-null is the real guard.
+    el.setAttribute('aria-disabled', 'true');
     holdInFlight = true;
     const id = el.closest('.sugg').dataset.card;
     holding = { el, pencil, anim, timer: setTimeout(() => { flyStop(true); act(id, 'draft-propose'); }, HOLD_MS) };
@@ -2808,14 +2817,23 @@
 // already was that it commits through `act(id, …)`, which resolves the
 // draft by id rather than by node: verified by holding through a render and
 // watching the proposal land from a button that no longer existed.
+//
+// **Under the click gesture nothing here starts the flight** (backlog 184).
+// `flyStart`/`flyStop` are the flight and the landing in both positions and
+// are untouched; only who calls them moves. Under `click` the press does
+// nothing at all and the click that follows is the gesture (see the
+// `draft-propose` branch of the `.sugg [data-act]` binding), and no release
+// ends a flight but its own timer — so W16 governs the hold position, where
+// these three listeners are byte-for-byte what they always were.
 document.addEventListener('pointerdown', (ev) => {
+  if (GESTURE !== 'hold') return;
   const b = ev.target.closest && ev.target.closest('[data-act="draft-propose"]');
   if (!b || ev.button !== 0) return;
   ev.preventDefault(); ev.stopPropagation();
   flyStart(b);
 });
-document.addEventListener('pointerup', () => flyStop(false));
-document.addEventListener('pointercancel', () => flyStop(false));
+document.addEventListener('pointerup', () => { if (GESTURE === 'hold') flyStop(false); });
+document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flyStop(false); });
 
   function renderDoc() {
     let html = PROSE();
@@ -3285,7 +3303,18 @@ document.addEventListener('pointercancel', () => flyStop(false));
     doc.querySelectorAll('.sugg [data-act]').forEach((b) =>
       b.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        if (b.dataset.act === 'draft-propose') return;   // held, not clicked
+        if (b.dataset.act === 'draft-propose') {
+          if (GESTURE === 'hold') return;                // held, not clicked
+          // and under `click` the click IS the gesture: it starts the same
+          // flight, and a second one while the pencil is in the air — the
+          // other half of a double click, or an impatient press — is
+          // swallowed. The timer's `flyStop(true); act(id, 'draft-propose')`
+          // is unchanged, so the send still happens exactly when the pencil
+          // lands and still resolves the draft by id rather than by node.
+          if (holding) return;
+          flyStart(b);
+          return;
+        }
         // the sign choice patches the open card rather than re-rendering it
         if (b.dataset.act === 'draft-sign') { setDraftSigned(b.dataset.signed === '1'); return; }
         const id = b.closest('.sugg').dataset.card;
@@ -3395,6 +3424,36 @@ document.addEventListener('pointercancel', () => flyStop(false));
   // scroll, so doing both in one frame makes the page lurch. Collapse the old
   // card, *then* move, *then* expand the new one — three steps, never overlapping.
   const REDUCED = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // **The commit gesture is a switch** (backlog 184, Ed, 2026-08-28: *I'd like
+  // to try this*). Every consequential commit on this product has been a hold:
+  // the token flies for the length of the press and the act lands when it
+  // arrives, and letting go early flies it home with nothing spent. The trial
+  // keeps the whole of that — the same flight, the same length, the same
+  // landing — and moves only what starts it: **a single click starts the
+  // flight, the control is inert while it is in the air, and the act lands
+  // when the flight lands**. Nothing is sent early, letting go no longer
+  // cancels, and a second click during the flight does nothing.
+  //
+  // One constant, because *easy to revert* is the whole point: this word is
+  // the only line to change. It lives here rather than in the page because
+  // both files need it and this one loads first, and the page reads it as
+  // `SESSION.gesture`. `?gesture=hold` is the by-eye comparison; the
+  // `window.COMMIT_GESTURE_OVERRIDE` seam is the walks', a query being the one
+  // thing a `page.addInitScript` cannot carry across a `goto`.
+  //
+  // Two frozen instruments are frozen against `click`: `card-copy.golden.json`
+  // (the 🏛️ label follows the switch) and SURFACE §7.2's bold word, which
+  // `spec-check` reads against this constant. So flipping the trial is this
+  // word, that word, and a `npm run copy-freeze` — not one word.
+  const COMMIT_GESTURE = 'click';
+  const GESTURE = (() => {
+    const ok = (v) => (v === 'hold' || v === 'click' ? v : null);
+    try {
+      const q = ok(new URLSearchParams(location.search).get('gesture'));
+      if (q) return q;
+    } catch (e) { /* no location, no query */ }
+    return ok(window.COMMIT_GESTURE_OVERRIDE) || COMMIT_GESTURE;
+  })();
   // A click during a transition supersedes it rather than being swallowed: each
   // sequence carries a token, and every step drops out if a newer one has begun.
   // `after` runs the moment the new card exists and the margin has been laid
@@ -4623,6 +4682,9 @@ document.addEventListener('pointercancel', () => flyStop(false));
     get openId() { return openId; },
     /** true while a propose hold is in the air — the host must not re-render */
     get holding() { return holdInFlight; },
+    // the commit gesture, resolved once at load — the page and setup.js read
+    // this rather than keeping a second copy of the constant (backlog 184)
+    get gesture() { return GESTURE; },
     get readSeals() { return readSeals; },
     get verdicts() { return verdicts; },
     get editsHeld() { return editsHeld; },

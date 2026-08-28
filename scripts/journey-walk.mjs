@@ -73,6 +73,10 @@ const PROPOSALS_FIRST = process.argv.includes('--proposals-first');
 // custom, which is today's founding untouched.
 const SHAPE = (process.argv.find((a) => a.startsWith('--shape=')) || '').split('=')[1] || 'custom';
 const SHAPED_RUN = SHAPE !== 'custom';
+// **Which gesture this run drives** (backlog 184): no override by default, so
+// the walk follows the page's own `COMMIT_GESTURE`; `--gesture=hold|click`
+// pins it, which is how both positions are walked from one build.
+const GESTURE = (process.argv.find((a) => a.startsWith('--gesture=')) || '').split('=')[1] || '';
 const PROPOSALS = ['begin', 'canpropose', 'canjudge', 'grant-voice'];
 const say = (...a) => console.log(...a);
 // Q911: a walk on a default port will drive whatever process is listening,
@@ -85,6 +89,7 @@ say(`journey-walk against ${BASE} · build ${health.build ?? 'unreported'}`);
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });
+if (GESTURE) await page.addInitScript((g) => { window.COMMIT_GESTURE_OVERRIDE = g; }, GESTURE);
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 // **A refused command is a failure even when the walk recovers from it**
@@ -161,6 +166,14 @@ const typeIn = (sel, v) => page.evaluate((a) => {
   }
   return true;
 }, [sel, v]);
+// **A commit is a press, and what a press *is* depends on the gesture**
+// (backlog 184). Under `hold` it is down · wait · up, as it always was; under
+// `click` the click starts the flight and the wait is the flight's own length,
+// with nothing to let go of. Asked of the page rather than assumed, so this
+// walk follows `COMMIT_GESTURE` wherever it is set — including the
+// `--gesture=` override, which rides `window.COMMIT_GESTURE_OVERRIDE` because
+// an init script survives every `goto` where a query does not.
+const pageGesture = () => page.evaluate(() => (window.SESSION && window.SESSION.gesture) || 'hold');
 // a commit is a press, and a press needs the control under the pointer
 const press = async (holdMs) => {
   const box = await page.evaluate(() => {
@@ -182,9 +195,14 @@ const press = async (holdMs) => {
   if (!box) return null;
   await T(160);
   await page.mouse.move(box.x, box.y);
-  await page.mouse.down();
-  await T(holdMs);
-  await page.mouse.up();
+  if (await pageGesture() === 'click') {
+    await page.mouse.click(box.x, box.y);
+    await T(holdMs);
+  } else {
+    await page.mouse.down();
+    await T(holdMs);
+    await page.mouse.up();
+  }
   await T(460);
   return box.label;
 };
@@ -194,6 +212,9 @@ const stuck = [];
 const TITLE = 'Journey ' + Date.now();
 await page.goto(BASE + '/');
 await T(800);
+// on its own line, so the gesture is on the record without moving any line
+// another check reads (backlog 184)
+say('gesture    · ' + (await pageGesture()) + (GESTURE ? ' (--gesture=' + GESTURE + ')' : ' (the page\'s own)'));
 await open('title');
 await typeIn('.setupcard [data-titlelane]', TITLE);
 await press(1250);
@@ -1402,7 +1423,14 @@ if (caret) {
   await pb.scrollIntoViewIfNeeded();
   const bx = await pb.boundingBox();
   await page.mouse.move(bx.x + bx.width / 2, bx.y + bx.height / 2);
-  await page.mouse.down();
+  /* Under `click` the click is the whole gesture and there is nothing to let
+   * go of (backlog 184), but everything this step asserts is the same in both
+   * positions: 500ms in the flight is in the air (`holding` true, a
+   * `.flypencil` on the page), the forced render happens *under* it, and the
+   * commit lands from a button that render destroyed. */
+  const proposeGesture = await pageGesture();
+  if (proposeGesture === 'click') await page.mouse.click(bx.x + bx.width / 2, bx.y + bx.height / 2);
+  else await page.mouse.down();
   await T(500);
   /* **and the held button does not move** (entry 59). Two things on this page
    * answered to `holding` — the hold's own class and the stranger's sentence,
@@ -1427,7 +1455,7 @@ if (caret) {
   const stillThere = movedX < 2 && movedW < bx.width * 0.05 + 1;
   await page.evaluate(() => window.SESSION && window.SESSION.renderAll());
   await T(3200);
-  await page.mouse.up();
+  if (proposeGesture !== 'click') await page.mouse.up();
   await T(900);
   const after = await page.evaluate(() => ({ edits: window.SESSION.editsHeld,
     mine: (window.SESSION.SUGGS || []).filter((x) => x.mine && x.unproposed !== true).length }));

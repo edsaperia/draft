@@ -535,7 +535,8 @@ const openCard = async (page, k) => {
   await page.waitForTimeout(450);
   return ok;
 };
-/** A commit is a press: the control under a real pointer, held for `ms` (journey's). */
+/** A commit is a press: the control under a real pointer, held for `ms` (journey's) —
+ *  or, under backlog 184's click gesture, clicked, with `ms` the flight's own length. */
 const press = async (page, ms) => {
   const box = await page.evaluate(() => {
     const b = [...document.querySelectorAll('.setupcard .commitrow button')]
@@ -549,9 +550,15 @@ const press = async (page, ms) => {
   if (!box) return null;
   await page.waitForTimeout(160);
   await page.mouse.move(box.x, box.y);
-  await page.mouse.down();
-  await page.waitForTimeout(ms);
-  await page.mouse.up();
+  const g = await page.evaluate(() => (window.SESSION && window.SESSION.gesture) || 'hold');
+  if (g === 'click') {
+    await page.mouse.click(box.x, box.y);
+    await page.waitForTimeout(ms);
+  } else {
+    await page.mouse.down();
+    await page.waitForTimeout(ms);
+    await page.mouse.up();
+  }
   await page.waitForTimeout(460);
   return box.label;
 };

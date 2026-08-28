@@ -266,6 +266,11 @@ const numLit = (src, name) => {
   if (!m) throw new Error(`${name} not found`);
   return +m[1];
 };
+const strLit = (src, name) => {
+  const m = src.match(new RegExp(`const ${name} = '([a-z]+)'`));
+  if (!m) throw new Error(`${name} not found`);
+  return m[1];
+};
 const objLit = (src, name) => {
   const i = src.indexOf(`const ${name} = {`);
   if (i < 0) throw new Error(`${name} not found`);
@@ -351,7 +356,22 @@ function checkWallets(pm) {
   for (const e of ['pointerup', 'pointercancel'])
     if (!holdBind.includes("addEventListener('" + e + "'")) find('holds', `the propose hold does not release on ${e}`);
   if (sess.includes(`doc.querySelectorAll('[data-act="draft-propose"]')`)) find('holds', 'the propose hold is bound per button again — it must be delegated, or a render orphans it');
-  note(`  ${rows.length} wallets; holds 🪶✒️🍾 ${pen} · ✏️ ${propose} · 🏛️ ${assembly}`);
+  // **The commit gesture is a switch, and the documentation of it must not
+  // drift from it** (backlog 184, 2026-08-28). Two frozen instruments follow
+  // `COMMIT_GESTURE` — SURFACE §7.2's bold word, read here, and the 🏛️ label
+  // in `card-copy.golden.json` — so flipping the trial is two edits and a
+  // `npm run copy-freeze`, and this is what says so out loud. Ed's call, B36:
+  // an agreement check, not a legality check, because the only thing that
+  // stops the trial's own documentation going stale is a red build.
+  const gesture = strLit(sess, 'COMMIT_GESTURE');
+  if (gesture !== 'click' && gesture !== 'hold') find('holds', `COMMIT_GESTURE is '${gesture}' — it is 'click' or 'hold'`);
+  const said = (read('SURFACE.md').match(/The commit gesture is \*\*(\w+)\*\*/) || [])[1];
+  if (!said) find('holds', 'SURFACE §7.2 does not say **The commit gesture is <word>**');
+  else if (said !== gesture) find('holds', `COMMIT_GESTURE is '${gesture}'; SURFACE §7.2 says '${said}'`);
+  // and the hold path is still reachable: the release listeners asserted above
+  // are guarded by the switch rather than deleted
+  if (!holdBind.includes('GESTURE')) find('holds', 'the propose hold\'s release is not guarded by GESTURE — the switch is not read here');
+  note(`  ${rows.length} wallets; holds 🪶✒️🍾 ${pen} · ✏️ ${propose} · 🏛️ ${assembly}; gesture ${gesture}`);
 }
 
 function checkOrder(pm) {

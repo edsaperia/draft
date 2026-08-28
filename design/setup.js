@@ -1009,13 +1009,23 @@ window.SETUP = (function () {
   // throw the caret out of the lane. (Moved from founding-ceremony.html,
   // 2026-08-18 — it was the only motion commit-foot on either surface and
   // document-creation will need it; the surface passes what it knows.)
+  // **The label follows the gesture** (backlog 184, entry 187's hand-off).
+  // This is the one control whose words name the gesture that works it, so
+  // under `click` the leading *Hold to* goes and the verb is capitalised. The
+  // noun is entry 187's — *all members*, the phrase that describes the 🏛️
+  // route everywhere else on the surface (STYLE §1) — which 187 deliberately
+  // left standing here for this entry to close. Derived from the same constant
+  // the gesture is, in one place, so the two cannot disagree.
   const motionCommitHtml = (c, dto, heldOut) => {
     const constitutional = routeFor(c, dto) === 'constitutional';
+    const clickGesture = !!(window.SESSION && window.SESSION.gesture === 'click');
     return constitutional
       ? '<button class="btn btn-approve emojibtn holdmotion"' +
         (!dto || heldOut ? ' disabled' : '') +
-        ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first' : 'A full ten-second hold') + '"' +
-        ' data-holdmotion="' + c.k + '">🏛️ Hold to ask everyone</button>'
+        ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first'
+          : clickGesture ? 'A full ten-second assembly' : 'A full ten-second hold') + '"' +
+        ' data-holdmotion="' + c.k + '">🏛️ ' +
+        (clickGesture ? 'Ask all members' : 'Hold to ask everyone') + '</button>'
       // ✏️ on the ordinary commit, to match the 🏛️ on the other route (Ed,
       // 2026-08-19): the two commits are the two routes, and a bare word
       // beside a glyphed hold said only one of them out loud

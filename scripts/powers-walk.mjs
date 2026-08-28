@@ -54,6 +54,8 @@ const BASE = process.argv.find((a) => /^https?:/.test(a))
 const arg = (k, d) => (process.argv.find((a) => a.startsWith('--' + k + '=')) || ('--' + k + '=' + d))
   .split('=').slice(1).join('=');
 const HAT = arg('hat', 'both');
+// which commit gesture to drive (backlog 184); empty follows the page's own
+const GESTURE = arg('gesture', '');
 if (!['member', 'clerk', 'both'].includes(HAT)) {
   console.log('FAIL: --hat must be member, clerk or both');
   process.exit(1);
@@ -101,6 +103,7 @@ let provoked = 0;
 
 const runDocument = async (hat) => {
   const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });
+  if (GESTURE) await page.addInitScript((g) => { window.COMMIT_GESTURE_OVERRIDE = g; }, GESTURE);
   const errors = [];
   page.on('pageerror', (e) => errors.push(hat + ': ' + String(e)));
   page.on('response', (r) => {
@@ -130,7 +133,11 @@ const runDocument = async (hat) => {
     await T(500);
     return ok;
   };
-  // a commit that is a hold needs a real pointer held down, not a .click()
+  // **What a press is depends on the gesture** (backlog 184): under `hold` a
+  // real pointer held down, not a `.click()`; under `click` the click starts
+  // the flight and `ms` is the flight's own length, with nothing to let go of.
+  // Asked of the page, so `--gesture=` and the page's own constant agree.
+  const pageGesture = () => page.evaluate(() => (window.SESSION && window.SESSION.gesture) || 'hold');
   const press = async (ms) => {
     const box = await page.evaluate(() => {
       const b = [...document.querySelectorAll('.setupcard .commitrow button')]
@@ -142,9 +149,14 @@ const runDocument = async (hat) => {
     });
     if (!box) return null;
     await page.mouse.move(box.x, box.y);
-    await page.mouse.down();
-    await T(ms);
-    await page.mouse.up();
+    if (await pageGesture() === 'click') {
+      await page.mouse.click(box.x, box.y);
+      await T(ms);
+    } else {
+      await page.mouse.down();
+      await T(ms);
+      await page.mouse.up();
+    }
     await T(600);
     return box.label;
   };
@@ -213,6 +225,7 @@ const runDocument = async (hat) => {
   // the magic link picks the origin, and a cookie belongs to one
   const DOCBASE = new URL(page.url()).origin;
   say('birth      · ' + DOCBASE + '/d/' + SLUG);
+  say('gesture    · ' + (await pageGesture()) + (GESTURE ? ' (--gesture=' + GESTURE + ')' : ' (the page\'s own)'));
 
   const cmd = (op, args) => page.evaluate(async ([slug, op2, args2]) => {
     const r = await fetch(`/api/d/${slug}/cmd`, {

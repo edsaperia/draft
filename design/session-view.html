@@ -6924,11 +6924,11 @@
       S.open = null; });
     const pm = ev.target.closest('[data-putmotion]');
     if (pm) {
-      // the hold's guard, restated here because this handler sits above the
-      // general one below (Q614): a press let go early, or the trailing click
-      // of a completed hold, is swallowed; the hold's own synthetic click
-      // (`penHoldFired`) and a pointerless click act at once
-      if (isPenCommit(pm) && !penHoldFired && penPointerDown) { penPointerDown = false; return; }
+      // the gesture's guard, asked here because this handler sits above the
+      // general one below (Q614) — under `hold` a press let go early or the
+      // trailing click of a completed hold is swallowed, under `click` the
+      // click itself starts the flight (backlog 184)
+      if (penClickGuard(pm) !== 'act') return;
       if (S.draft && S.draft.to) {
         // **A refused motion is not a sent one** (Q811). The draft was
         // cleared whatever came back, and live `openMotion` is a command
@@ -7048,11 +7048,11 @@
     // window was inverted: for 700ms after a hold completed, `Date.now() >
     // penSwallowUntil` was false and a quick click went straight through.
     // There is no window now — the press itself is the state.
+    // Since backlog 184 the three cases are `penClickGuard`'s, which adds the
+    // click gesture's fourth: a click on a wallet commit with a pointer behind
+    // it *starts the flight* and acts when it lands.
     const held = ev.target.closest('[data-confirm], [data-putmotion]');
-    if (held && isPenCommit(held) && !penHoldFired && penPointerDown) {
-      penPointerDown = false;
-      return;
-    }
+    if (held && penClickGuard(held) !== 'act') return;
     // **and it must not clear the flag its own trailing click is caught by**
     // (Ed, 2026-08-22: *during the birth, after entering the email, the Link
     // card opens immediately*). A completed hold calls `click()` itself, and
@@ -7436,10 +7436,16 @@
       el.appendChild(seat);
     });
     document.body.appendChild(el);
+    // inert while the room convenes (backlog 184): the same `.penholding` the
+    // other wallet commits wear, never `disabled` — a render mid-assembly
+    // rebuilds the button without either, and `assembly` being non-null is
+    // what actually swallows a second click
+    btn.classList.add('penholding');
+    btn.setAttribute('aria-disabled', 'true');
     const seats = [...el.children];
     const timers = seats.map((s2, i) =>
       setTimeout(() => s2.classList.add('in'), 80 + i * (HOLD_MS - 800) / seats.length));
-    assembly = { el, timers, done: setTimeout(() => {
+    assembly = { el, btn, timers, done: setTimeout(() => {
       el.classList.add('done');
       // the 🏛️ half of the same silence (Q811/Q816): ten seconds of the
       // room convening, and then a refusal nobody was told about
@@ -7458,21 +7464,40 @@
         setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(res.error) + '.');
       } });
       assembly = null;
+      btn.classList.remove('penholding'); btn.removeAttribute('aria-disabled');
       setTimeout(() => { el.remove(); render(); }, 420);
     }, HOLD_MS) };
   }
   function disperseAssembly() {
     if (!assembly) return;
     assembly.timers.forEach(clearTimeout); clearTimeout(assembly.done);
-    const el = assembly.el; assembly = null;
+    const el = assembly.el, btn = assembly.btn; assembly = null;
+    if (btn) { btn.classList.remove('penholding'); btn.removeAttribute('aria-disabled'); }
     el.classList.add('gone');
     setTimeout(() => el.remove(), 260);
   }
   document.addEventListener('pointerdown', (ev) => {
+    if (SESSION.gesture !== 'hold') return;
     const b = ev.target.closest('[data-holdmotion]');
     if (b && !b.disabled) { ev.preventDefault(); conveneAssembly(b, b.dataset.holdmotion); }
   });
-  ['pointerup', 'pointercancel'].forEach((t) => document.addEventListener(t, disperseAssembly));
+  ['pointerup', 'pointercancel'].forEach((t) => document.addEventListener(t,
+    () => { if (SESSION.gesture === 'hold') disperseAssembly(); }));
+  // **Under `click` the room convenes on a click and nothing disperses it**
+  // (backlog 184). Bound in the **capture** phase, and stopping there, because
+  // the page's general click handler is a document listener registered earlier
+  // in this file: a bubble-phase listener of ours would run second, after the
+  // general one had already read the click. It has no `[data-holdmotion]`
+  // branch today — 🏛️ has always been a hold, so its click was never seen —
+  // and this keeps that true whatever grows there later.
+  document.addEventListener('click', (ev) => {
+    if (SESSION.gesture !== 'click') return;
+    const b = ev.target.closest && ev.target.closest('[data-holdmotion]');
+    if (!b) return;
+    ev.stopPropagation();
+    if (assembly) return;              // a double click, or an impatient one
+    if (!b.disabled) conveneAssembly(b, b.dataset.holdmotion);
+  }, true);
 
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && SESSION.openId != null) SESSION.closeCard();
@@ -7510,7 +7535,11 @@
   }, true);
   document.addEventListener('pointerup', endSliderHold, true);
   document.addEventListener('pointercancel', endSliderHold, true);
-  const pressInFlight = () => penHold || SESSION.holding ||
+  // **And the assembly is a press too**, which it was never listed as: ten
+  // seconds is by far the longest of them, so a 4 s poll could rebuild the
+  // card under the room convening (backlog 184). It is a real fix rather than
+  // a consequence of the switch, and it holds in both positions.
+  const pressInFlight = () => penHold || SESSION.holding || assembly ||
     (sliderHold && Date.now() - sliderHold < 30_000);
   // A lane rebuilt on every keystroke would lose the caret, so typing repaints
   // the bar and the rail and leaves the card alone — only the commit control,
@@ -9613,6 +9642,38 @@
   };
   let penHold = null, penHoldFired = false, penPointerDown = false, penNudge = null;
   const isPenCommit = (b) => !!holdWallet(b);
+  // **What a click on a wallet commit means, one rule per gesture** (backlog
+  // 184). Both click sites — the `[data-putmotion]` branch and the general one
+  // above `[data-confirm]` — ask this and nothing else, so the two can never
+  // drift apart. It answers `'act'` (fall through and commit), `'swallow'`
+  // (this click is not an act) or `'started'` (the click was the gesture and a
+  // flight is now in the air; nothing acts yet).
+  const penClickGuard = (x) => {
+    if (SESSION.gesture === 'hold') {
+      // today's rule, unchanged: a press let go early, or the trailing click
+      // of a completed hold, is swallowed; the hold's own synthetic click
+      // (`penHoldFired`) and a pointerless click act at once
+      if (isPenCommit(x) && !penHoldFired && penPointerDown) { penPointerDown = false; return 'swallow'; }
+      return 'act';
+    }
+    // (a) the flight's own synthetic click, fired by the timer when the token
+    // lands. This is the act, and the only click under this gesture that is.
+    if (penHoldFired) return 'act';
+    // (b) a flight is in the air — for this control or any other wallet
+    // commit — so this is the second half of a double click, or an impatient
+    // press. Nothing happens, and the pointer flag goes with it.
+    if (penHold) { penPointerDown = false; return 'swallow'; }
+    // (c) the click is the gesture. The flag is consumed here, so it cannot
+    // leak into the next click.
+    if (isPenCommit(x) && penPointerDown) {
+      penPointerDown = false;
+      startPenFlight(x, holdWallet(x));
+      return 'started';
+    }
+    // (d) no pointer behind it — a key, a script, `card-audit`'s `clickIn` —
+    // and it acts at once, exactly as it does under hold.
+    return 'act';
+  };
   // **The spend-preview** (Q531): hovering a commit that spends leans the token
   // that will pay toward the button it will fly to. Gated on `holdWallet`, so
   // the preview and the hold can never disagree about whether this press costs
@@ -9626,15 +9687,16 @@
     const w = holdWallet(b);
     return w && w.sel ? { btn: b, pick: leanPickFor(w) } : null;
   });
-  document.addEventListener('pointerdown', (ev) => {
-    const b = ev.target.closest && ev.target.closest('[data-confirm], [data-putmotion]');
-    const w = holdWallet(b);
-    if (!w || ev.button !== 0) return;
+  // **The flight, lifted out of the press that used to be its only start**
+  // (backlog 184). Under `hold` the pointerdown listener below calls this, as
+  // it always did; under `click` the click guard does, and nothing about the
+  // flight itself — its length, its floor, its easing, its id-resolving timer
+  // — is different between the two.
+  function startPenFlight(b, w) {
     // a press begins: the token is about to leave for real, and any previous
     // token still on its way home is no longer the one being spent
     SESSION.stopLean();
     if (penNudge) { penNudge.cancel(); penNudge = null; }
-    penPointerDown = true;
     // the feather leaves from the last one in the row, as it always has; the
     // cork leaves from the button and lands in the document
     const src = w.sel ? [...document.querySelectorAll(w.sel)].pop() : b;
@@ -9642,6 +9704,10 @@
     const from = (src || b).getBoundingClientRect();
     const to = dst.getBoundingClientRect();
     b.classList.add('penholding');
+    // inert while the token is in the air, and **never `disabled`**: the
+    // timer's `live.click()` on a disabled button is a silent no-op, which is
+    // the exact bug shape of 2026-08-22 (backlog 184)
+    b.setAttribute('aria-disabled', 'true');
     if (w.g === '🪶') quillGhost = true; else if (w.g === '✒️') penGhost = true;
     else if (w.ghost === 'wallet') SESSION.setWalletGhost(true);
     renderPowerWallets();
@@ -9650,7 +9716,8 @@
       { r0: w.r0 ?? -30, r1: w.r1 ?? 0, easing: w.easing || 'linear' });
     penHold = { b, w, flight, timer: setTimeout(() => {
       penHold = null; penHoldFired = true;
-      b.classList.remove('penholding'); penGhost = false; quillGhost = false;
+      b.classList.remove('penholding'); b.removeAttribute('aria-disabled');
+      penGhost = false; quillGhost = false;
       if (w.ghost === 'wallet') SESSION.setWalletGhost(false);
       // penPointerDown stays true on purpose: the real click that arrives on
       // pointerup is the trailing half of this same press, and the guard
@@ -9675,6 +9742,24 @@
       try { if (live) live.click(); } finally { penHoldFired = false; }
       renderPowerWallets();
     }, ms) };
+  }
+  document.addEventListener('pointerdown', (ev) => {
+    const b = ev.target.closest && ev.target.closest('[data-confirm], [data-putmotion]');
+    const w = holdWallet(b);
+    if (!w || ev.button !== 0) {
+      // a press that lands anywhere else clears the flag, because under
+      // `click` a stale true would turn the *next* pointerless click on a
+      // wallet commit into a flight instead of the act it is (backlog 184)
+      if (ev.button === 0 && SESSION.gesture === 'click') penPointerDown = false;
+      return;
+    }
+    // **The flag is the pointer, in both positions.** It is what tells a
+    // click made with a pointer from a pointerless one (a key, a script,
+    // `card-audit`'s `clickIn`), and a pointerless click acts at once whatever
+    // the gesture is. Under `click` that is the whole of the press: nothing
+    // starts here, and the click that follows is the gesture.
+    penPointerDown = true;
+    if (SESSION.gesture === 'hold') startPenFlight(b, w);
   });
   // **Let go early and the token comes home** (Q531). It used to be deleted
   // where it stood — `flight.cancel()` removes the glyph outright — so a tap on
@@ -9698,11 +9783,15 @@
   // flight, that guard would stop firing and an early release would commit the
   // act with no hold at all.
   const penRelease = () => {
+    // **Under `click` there is no release** (backlog 184): letting go is not
+    // part of the gesture, so nothing here cancels and the flight's own timer
+    // is its only end. W16 governs the hold position.
+    if (SESSION.gesture !== 'hold') return;
     if (!penHold) return;
     const { b, w, flight } = penHold;
     clearTimeout(penHold.timer);
     penHold = null;
-    b.classList.remove('penholding');
+    b.classList.remove('penholding'); b.removeAttribute('aria-disabled');
     penNudge = SESSION.nudgeHome(flight, { floorAt: w.floorAt || 250, onDone: () => {
       penNudge = null;
       penGhost = false; quillGhost = false;
