@@ -78,6 +78,11 @@ const typeIn = (sel, v) => page.evaluate((a) => {
   else { el.value = a[1]; el.dispatchEvent(new Event('input', { bubbles: true })); }
   return true;
 }, [sel, v]);
+// **What a press is depends on the gesture** (backlog 184): under `hold` it is
+// down · wait · up, as it always was; under `click` the click starts the
+// flight and `holdMs` is the flight's own length, with nothing to let go of.
+// Asked of the page, so this walk follows `COMMIT_GESTURE` wherever it is set.
+const pageGesture = () => page.evaluate(() => (window.SESSION && window.SESSION.gesture) || 'hold');
 const press = async (holdMs) => {
   const box = await page.evaluate(() => {
     const b = [...document.querySelectorAll('.setupcard .commitrow button')]
@@ -90,7 +95,8 @@ const press = async (holdMs) => {
   if (!box) return null;
   await T(160);
   await page.mouse.move(box.x, box.y);
-  await page.mouse.down(); await T(holdMs); await page.mouse.up();
+  if (await pageGesture() === 'click') { await page.mouse.click(box.x, box.y); await T(holdMs); }
+  else { await page.mouse.down(); await T(holdMs); await page.mouse.up(); }
   await T(460);
   return box.label;
 };

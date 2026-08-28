@@ -143,9 +143,21 @@
     sel.dispatchEvent(new Event('change', { bubbles: true }));
     return null;
   };
+  // **What a press is depends on the commit gesture** (backlog 184). Under
+  // `hold` the assembly convenes on pointerdown and disperses on pointerup, so
+  // the timers are flushed between the two. Under `click` the pointer events
+  // start nothing at all and the click is the whole gesture — dispatching only
+  // the pair would have left `hold-assembly` a silent no-op and taken every
+  // step after it in the `motions` scenario with it. The reference side has no
+  // `SESSION.gesture`, so it takes the hold branch, as it always did.
   const hold = (sel) => {
     const el = $(sel);
     if (!el) return 'no such target: ' + sel;
+    if (window.SESSION && window.SESSION.gesture === 'click') {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flushTimers(); // the assembly convenes and completes inside the queue
+      return null;
+    }
     el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
     flushTimers(); // the assembly convenes and completes inside the queue
     el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));

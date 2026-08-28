@@ -70,16 +70,29 @@ const open = async (k) => {
   await T(450);
   return true;
 };
-// a commit that is a hold needs a real pointer held down, not a .click()
+// **What a press is depends on the gesture** (backlog 184): under `hold` a
+// commit needs a real pointer held down, not a `.click()`; under `click` the
+// click starts the flight and `ms` is the flight's own length, with nothing to
+// let go of. Asked of the page, so this walk follows `COMMIT_GESTURE` wherever
+// it is set. Holding under `click` would still land the act — the browser
+// synthesises a click on mouseup — but a whole flight *later*, so the walk
+// would read the surface before the commit arrived.
+const pageGesture = () => page.evaluate(() => (window.SESSION && window.SESSION.gesture) || 'hold');
 const press = async (ms) => {
   const b = await page.$('.setupcard .commitrow .btn-approve, .setupcard .commitrow [data-confirm]');
   if (!b) return false;
   await b.scrollIntoViewIfNeeded();
   const box = await b.boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await T(ms);
-  await page.mouse.up();
+  const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+  await page.mouse.move(cx, cy);
+  if (await pageGesture() === 'click') {
+    await page.mouse.click(cx, cy);
+    await T(ms);
+  } else {
+    await page.mouse.down();
+    await T(ms);
+    await page.mouse.up();
+  }
   await T(500);
   return true;
 };
