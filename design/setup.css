@@ -607,8 +607,23 @@ button.cline:hover b { text-decoration: underline; }
    It is the **you-row** that needs clearing, so the padding hangs on lists
    that have one: a clerk founder has no row here (Q758) and a stranger reads
    a list with no identity tabs at all, and neither has a second tab column
-   to clear — unscoped, both opened with 42px of nothing. */
-.constsec .cpara .memlist:has(.memrow.meRow) { padding-top: 42px; }
+   to clear — unscoped, both opened with 42px of nothing.
+   **The placeholder stands *inside* that clearance** (entry 183, Ed's QA of
+   batch Q). It was not dropped 42px on purpose: it is the list's first row and
+   the padding pushed it down with everything else, so the one paragraph of the
+   document whose text does not sit level with its own tab was this one. It is
+   lifted out of flow instead — the 42px is already empty and already there —
+   so the list's flow is your row and the arrived rows exactly as before, the
+   42 stays the single clearance number with the single reason above, and the
+   row lands level with the 🎩 pile at the paragraph's head. Only where there
+   *is* a you-row: everywhere else the padding is absent and the row is already
+   the list's first child at y = 0, needing no lifting.
+   **The two rules move together**, both keyed `:has(.memrow.meRow)`: anything
+   that stops the you-row being a `.memrow.meRow` inside this list unmatches
+   the clearance and the lift at once. */
+.constsec .cpara .memlist:has(.memrow.meRow) { padding-top: 42px; position: relative; }
+.constsec .cpara .memlist:has(.memrow.meRow) > .memrow.nobody {
+  position: absolute; top: 0; left: 0; right: 0; }
 .memlist { display: flex; flex-wrap: wrap; gap: 5px 18px; }
 /* **The list's own subheadings** (Q868, Q869): Invitees, then Applicants —
    groups of people who are not members yet, under a Members heading that is
@@ -630,8 +645,18 @@ button.cline:hover b { text-decoration: underline; }
    stand — list furniture, not a clause, so it speaks quietly. It stands
    **above** your row (Q753), where it is a statement about the list rather
    than a caption on you; the clearance job it used to do as well is the
-   list's own padding now. */
+   list's own padding now. Since entry 183 the three subsections that stand
+   when empty carry one each too (F21). */
 .memrow.nobody { flex-basis: 100%; color: var(--muted); min-height: 22px; }
+/* **A placeholder beside a tab is the tab's own height** (entry 183): the head
+   pile sits at `top: 0` of the `.cpara` and a gutter tab is 30px, so a row that
+   starts at y = 0 and is 30px tall centres its text on the tab's centre line —
+   `.memrow` being `align-items: center`. The same number and the same reason as
+   `.memrow.meRow`'s 30px, which is the front tab of the pile beside *it*.
+   Scoped to paragraphs that have a pile: a `.notab` paragraph is the stranger's
+   list and the closed page's, which draw no tab for the row to meet, and there
+   22px is still the right height for a line of muted text. */
+.constsec .cpara:not(.notab) .memrow.nobody { min-height: 30px; }
 .memrow .chip { font-size: var(--t-micro); }
 
 /* **The card overhangs the text axis** (Ed's QA, 2026-08-18: the tabs were

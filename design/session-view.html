@@ -3076,16 +3076,29 @@
           // sentence per departure after the rows — document text, so it
           // reads on the closed page and in the record, and the stranger
           // reads it where 🌍 lets them read *Members*
+          // **And a subsection that stands empty says so** (entry 183, Ed's QA
+          // of batch Q). The three that carry a control stand whether or not
+          // they have rows (F21), so empty each was a heading over a pile and
+          // nothing else — a heading that had lost its paragraph. Each takes
+          // *(nobody else here yet)*'s own treatment: one grey parenthetical
+          // row, no glyph, no full stop. Supplied **here** rather than inside
+          // `memSub`, because the helper also builds *Lapsed*, which stands
+          // only on its rows and must stay bare, and the stranger's raw
+          // branch — a per-title default inside a layout function would be a
+          // table of words hidden where nobody reads copy.
           (isStranger()
             ? memSub('Members', strangerRows + departureLines(), [], true)
             : memSub('Members', nobody + meBlock + here.map(memRow).join('') + departureLines(), ['hat']) +
-              memSub('Invitees', invited.map(memRow).join(''),
+              memSub('Invitees', invited.length ? invited.map(memRow).join('')
+                : '<div class="memrow nobody">(no outstanding invitations)</div>',
                 ['invite', 'pw:u:invite', 'pw:a:invite']) +
               (policyNow() === 'apply'
-                ? memSub('Applicants', memApplicantRows(), admitKeys()) : '') +
+                ? memSub('Applicants', memApplicantRows() ||
+                  '<div class="memrow nobody">(no applicants at the moment)</div>', admitKeys()) : '') +
               (lapsesOn() && lapsedOut.length
                 ? memSub('Lapsed', lapsedOut.map(memRow).join(''), []) : '') +
-              memSub('Proposed for removal', proposedOut.map(memRow).join(''),
+              memSub('Proposed for removal', proposedOut.length ? proposedOut.map(memRow).join('')
+                : '<div class="memrow nobody">(nobody proposed for removal)</div>',
                 ['remove', 'pw:u:remove', 'pw:a:remove'])) +
           (openId ? h.paraWith(openId, my) : '');
       } },
