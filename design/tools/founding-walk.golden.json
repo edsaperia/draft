@@ -88,12 +88,62 @@
   {
    "step": "follow the magic link",
    "rail": [
+    "myname",
+    "mypic",
     "grant-pen"
    ],
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "founded: Founded by Anonymous 👑."
+   ]
+  },
+  {
+   "step": "open myname",
+   "rail": [
+    "myname",
+    "mypic",
+    "grant-pen"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
+    "founded: Founded by Anonymous 👑."
+   ]
+  },
+  {
+   "step": "commit myname",
+   "rail": [
+    "mypic",
+    "grant-pen"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
+    "founded: Founded by AL Ada Lovell 👑."
+   ]
+  },
+  {
+   "step": "open mypic",
+   "rail": [
+    "mypic",
+    "grant-pen"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
+    "founded: Founded by AL Ada Lovell 👑."
+   ]
+  },
+  {
+   "step": "commit mypic",
+   "rail": [
+    "grant-pen"
+   ],
+   "clauses": [
+    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
+    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
+    "founded: Founded by AL Ada Lovell 👑."
    ]
   },
   {
@@ -104,7 +154,7 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "grant-pen: Founded by Anonymous 👑."
+    "grant-pen: Founded by AL Ada Lovell 👑."
    ]
   },
   {
@@ -117,7 +167,7 @@
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Until the Founder decides, only members can see the document",
-    "founded: Founded by Anonymous 👑."
+    "founded: Founded by AL Ada Lovell 👑."
    ]
   },
   {
@@ -130,7 +180,7 @@
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Until the Founder decides, only members can see the document",
-    "grant-shield: Founded by Anonymous 👑."
+    "grant-shield: Founded by AL Ada Lovell 👑."
    ]
   },
   {
@@ -142,7 +192,7 @@
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Until the Founder decides, only members can see the document",
-    "founded: Founded by Anonymous 👑."
+    "founded: Founded by AL Ada Lovell 👑."
    ]
   },
   {
@@ -153,7 +203,7 @@
    "clauses": [
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "founded: Founded by Anonymous 👑."
+    "founded: Founded by AL Ada Lovell 👑."
    ]
   },
   {
@@ -165,7 +215,7 @@
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by Anonymous 👑.",
+    "founded: Founded by AL Ada Lovell 👑.",
     "admission: The Founder is deciding how new members are admitted."
    ]
   },
@@ -178,7 +228,7 @@
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by Anonymous 👑."
+    "founded: Founded by AL Ada Lovell 👑."
    ]
   },
   {
@@ -190,7 +240,7 @@
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by Anonymous 👑.",
+    "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
     "applications: The Founder is deciding whether strangers may apply to join."
    ]
@@ -204,7 +254,7 @@
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by Anonymous 👑.",
+    "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,"
    ]
   },
@@ -217,7 +267,7 @@
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by Anonymous 👑.",
+    "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
     "applications: Membership is by invitation only. The Founder may amend this"
    ]
@@ -231,69 +281,13 @@
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by Anonymous 👑.",
+    "founded: Founded by AL Ada Lovell 👑.",
     "admission: Members may propose to invite people to join the membership,",
     "applications: Membership is by invitation only. The Founder may amend this"
    ]
   },
   {
    "step": "commit hat",
-   "rail": [
-    "myname"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by Anonymous 👑.",
-    "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this"
-   ]
-  },
-  {
-   "step": "open myname",
-   "rail": [
-    "myname"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by Anonymous 👑.",
-    "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this"
-   ]
-  },
-  {
-   "step": "commit myname",
-   "rail": [
-    "mypic"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by AL Ada Lovell 👑.",
-    "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this"
-   ]
-  },
-  {
-   "step": "open mypic",
-   "rail": [
-    "mypic"
-   ],
-   "clauses": [
-    "title: The document is titled “Hollow Oak Club Charter”. The Founde",
-    "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
-    "chamber: Only members can see the document. The Founder may amend thi",
-    "founded: Founded by AL Ada Lovell 👑.",
-    "admission: Members may propose to invite people to join the membership,",
-    "applications: Membership is by invitation only. The Founder may amend this"
-   ]
-  },
-  {
-   "step": "commit mypic",
    "rail": [
     "lapse"
    ],

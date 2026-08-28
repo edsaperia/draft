@@ -429,7 +429,7 @@
    },
    "grant-pen": {
     "eyebrow": "",
-    "head": "Your PenFounded by Anonymous 👑.",
+    "head": "Your PenFounded by AL Ada Lovell 👑.",
     "lock": "You hold the pen.",
     "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.You hold the pen.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
@@ -458,7 +458,7 @@
    },
    "grant-shield": {
     "eyebrow": "",
-    "head": "Your ShieldFounded by Anonymous 👑.",
+    "head": "Your ShieldFounded by AL Ada Lovell 👑.",
     "lock": "You hold the shield.",
     "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.You hold the shield.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
@@ -779,7 +779,7 @@
     "eyebrow": "",
     "head": "Your Name",
     "lock": "",
-    "body": "Your nameLeave it blank and you appear as Anonymous. You can set it later from any seat.",
+    "body": "Your nameThis is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat.",
     "options": [],
     "inputs": [
      {
@@ -800,12 +800,13 @@
     "hints": [
      "Your name",
      "Your Name — close it",
+     "Your Picture — waiting on you",
      "Your Email — settled",
      "Put it back as it stands",
      "Save"
     ],
     "helpers": [
-     "Leave it blank and you appear as Anonymous. You can set it later from any seat."
+     "This is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat."
     ]
    },
    "mypic": {
@@ -4430,7 +4431,7 @@
    },
    "grant-pen": {
     "eyebrow": "",
-    "head": "Your PenFounded by Anonymous 👑.",
+    "head": "Your PenFounded by AL Ada Lovell 👑.",
     "lock": "You hold the pen.",
     "body": "You founded this document, and the pen came with it.While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.You hold the pen.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
@@ -4459,7 +4460,7 @@
    },
    "grant-shield": {
     "eyebrow": "",
-    "head": "Your ShieldFounded by Anonymous 👑.",
+    "head": "Your ShieldFounded by AL Ada Lovell 👑.",
     "lock": "You hold the shield.",
     "body": "You founded this document, and the shield came with it.While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.You hold the shield.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
@@ -4738,7 +4739,7 @@
     "eyebrow": "",
     "head": "Your Name",
     "lock": "",
-    "body": "Your nameLeave it blank and you appear as Anonymous. You can set it later from any seat.",
+    "body": "Your nameThis is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat.",
     "options": [],
     "inputs": [
      {
@@ -4759,12 +4760,13 @@
     "hints": [
      "Your name",
      "Your Name — close it",
+     "Your Picture — waiting on you",
      "Your Email — settled",
      "Put it back as it stands",
      "Save"
     ],
     "helpers": [
-     "Leave it blank and you appear as Anonymous. You can set it later from any seat."
+     "This is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat."
     ]
    },
    "mypic": {
@@ -5714,7 +5716,7 @@
     "eyebrow": "",
     "head": "Your Name",
     "lock": "",
-    "body": "🦉Your nameLeave it blank and you appear as Anonymous. You can set it later from any seat.",
+    "body": "🦉Your nameThis is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat.",
     "options": [],
     "inputs": [
      {
@@ -5741,7 +5743,7 @@
      "Save"
     ],
     "helpers": [
-     "Leave it blank and you appear as Anonymous. You can set it later from any seat."
+     "This is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat."
     ]
    },
    "mypic": {
@@ -6790,13 +6792,8 @@
     "eyebrow": "",
     "head": "Removing a member needs every member to agree, including them 🏛️.",
     "lock": "The members decide.",
-    "body": "Removing a member needs all members to agree, including them.Prefer thisRemoving a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
+    "body": "Removing a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
     "options": [
-     {
-      "set": null,
-      "val": "All members have to agree, including them",
-      "label": "Prefer this"
-     },
      {
       "set": null,
       "val": "All other members have to agree",
@@ -7825,7 +7822,7 @@
     "eyebrow": "",
     "head": "Your Name",
     "lock": "",
-    "body": "ABYour nameLeave it blank and you appear as Anonymous. You can set it later from any seat.",
+    "body": "ABYour nameThis is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat.",
     "options": [],
     "inputs": [
      {
@@ -7852,7 +7849,7 @@
      "Save"
     ],
     "helpers": [
-     "Leave it blank and you appear as Anonymous. You can set it later from any seat."
+     "This is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat."
     ]
    },
    "mypic": {
@@ -9164,13 +9161,8 @@
     "eyebrow": "",
     "head": "Removing a member needs every member to agree, including them 🏛️.",
     "lock": "The members decide.",
-    "body": "Removing a member needs all members to agree, including them.Prefer thisRemoving a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
+    "body": "Removing a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
     "options": [
-     {
-      "set": null,
-      "val": "All members have to agree, including them",
-      "label": "Prefer this"
-     },
      {
       "set": null,
       "val": "All other members have to agree",
