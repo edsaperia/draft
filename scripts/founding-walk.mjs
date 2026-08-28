@@ -350,9 +350,15 @@ const releasePen = async (k) => {
 };
 
 const seen = new Set();
+// **A door is recorded in the rail, never driven** (entry 181). ✉️ stands as the
+// founder's task once the Membership rules stand, and this loop answers whatever
+// it picks up — it would delegate a door, or send an invitation the golden has no
+// business containing. The rail column of every step records it either way, which
+// is the whole of what the golden is for here.
+const DOORS = new Set(['invite', 'remove']);
 for (let i = 0; i < 40; i++) {
   const s = await snap();
-  const next = s.rail.find((e) => e.k && !seen.has(e.k));
+  const next = s.rail.find((e) => e.k && !seen.has(e.k) && !DOORS.has(e.k));
   if (!next) break;
   seen.add(next.k);
   const opened = await openCard(next.k);

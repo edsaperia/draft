@@ -465,6 +465,14 @@ function checkOrder(pm) {
     find('order', "🍾's last-resort door counts the 🪪 remedy again — F5/Q830: serving the remedy shuts the door on the one state it was written for");
   if (!/const oneVoiceRemedy = \(\) => amFounder\(\) && !constituted\(\) && oneVoiceHolds\(\)\.length > 0/.test(page))
     find('order', "🪪 is no longer served as the `one-voice` remedy — Q828: a wait no answering can end, with no card offering the two acts that end it");
+  // …and the plain ✉️ task beside it (entry 181, F23), which the remedy above
+  // never reaches: it only ever finds a founder who delegated something.
+  // **A containment check, deliberately.** The predicate also reads the five
+  // Membership rules and the roster, so a pin asserting the *whole* body would
+  // be a second copy of it, red at every honest edit. What is pinned is that it
+  // exists and that it is still the founder's, and still pre-start.
+  if (!/const inviteTask = \(\) => amFounder\(\) && !constituted\(\)/.test(page))
+    find('order', "the founder's ✉️ task is no longer served once the Membership rules stand — entry 181, F23");
   // the remedy must not pace the questions it is the remedy *for* (Q775's rule,
   // third instance): 🪪 is owed only once a setting has been handed over, so
   // counting it would hold every delegated question shut from the first

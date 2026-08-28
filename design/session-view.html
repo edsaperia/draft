@@ -2627,7 +2627,9 @@
     : c.isClosing ? false
     // 🪪 is the remedy for a `one-voice` wait, and while that is what the
     // document is waiting for it is asking something (Q828, `oneVoiceRemedy`)
-    : c.k === 'invite' && oneVoiceRemedy() ? true
+    // …and it asks the same thing, for its own reason, once the Membership
+    // rules stand and nobody has been invited (entry 181, `inviteTask`)
+    : c.k === 'invite' && (oneVoiceRemedy() || inviteTask()) ? true
     : c.isGate ? (c.open() && staged(c) && !S.okd.has(c.k))
     : c.ansFor || c.own === 'you' || amFounder() ? !settled(c)
     : false);
@@ -2740,7 +2742,13 @@
   // paces like one.
   // the remedy for a one-voice wait is inviting somebody, and since entry 94
   // the box that does that is the ✉️ door's
-  const remedyOnly = (c) => c.k === 'invite' && settled(c) && oneVoiceRemedy();
+  // **And the plain ✉️ task is the same exclusion, for the same reason** (entry
+  // 181). The name covers both derived reasons the door is a task now: neither
+  // is a question the founding is waiting on, both are offered *because* the
+  // founder may want company, and a task offered on those terms must not
+  // withhold the delegated questions (Q775 again) nor shut 🍾's last-resort
+  // door (F18). ✉️ and 🍾 standing side by side pre-start is the picture.
+  const remedyOnly = (c) => c.k === 'invite' && settled(c) && (oneVoiceRemedy() || inviteTask());
   const otherTasksLeft = () => CARDS.concat(GATES)
     .some((c) => !c.isGate && railable(c) && visible(c) && mustAct(c) && !remedyOnly(c));
   const ansDue = () => roomExists() || !otherTasksLeft();
@@ -9072,6 +9080,29 @@
   // becomes `invitation-open`) or the setting is taken back (it stops
   // collecting). Nothing is acknowledged, because nothing has been decided.
   const oneVoiceRemedy = () => amFounder() && !constituted() && oneVoiceHolds().length > 0;
+  // **…and the same card is a task for a second reason** (entry 181, Ed
+  // 2026-08-28: *"Invite Members" task for the founder should appear as soon as
+  // the membership section is completed*). The remedy above only ever finds a
+  // founder who delegated something; one who delegates nothing was never asked
+  // to invite anybody at all, and reached 🍾 with a room of one having been told
+  // nothing about it. So once the Membership section's rules stand, ✉️ stands
+  // too — derived in exactly the same way and acknowledging exactly as much:
+  // no `S.okd` key, no `ACK_KEYS` entry, no news, nothing owed (F8). It blocks
+  // nothing (F3): it stands beside whatever the founding is asking next, and it
+  // leaves by derivation — at the first invitation, or at 🍾.
+  // Ed's own five, and deliberately **not** `SEC[0].keys`, which carries the two
+  // doors and the three identity rows beside them: the section is complete when
+  // its rules are decided, and ✋ 🖼️ are neither rules nor blocking (Q980).
+  // A rule a shape hides is a decision nobody has (entry 166) and completes the
+  // section by not existing — `settled` says false for it, `S.seen` never having
+  // been written, so the hide is tested here rather than left to it.
+  const MEMBERSHIP_RULES = ['admission', 'applications', 'hat', 'lapse', 'removal'];
+  const membershipStands = () => MEMBERSHIP_RULES.every((k) => { const c = card(k);
+    return !c || (c.hide && c.hide()) || settled(c); });
+  // an invitation is a roster row that is not the founder's — invited or arrived
+  // alike, the rows the door pushes carrying no `founder` flag of their own
+  const noneInvited = () => !S.roster.some((p) => !p.founder);
+  const inviteTask = () => amFounder() && !constituted() && membershipStands() && noneInvited();
   // what 🪪 says while it is standing as that remedy: which questions are stuck,
   // why nobody can answer them, and both ways out — the same two acts 🍾's own
   // hold sentence names, said on the card that performs one of them

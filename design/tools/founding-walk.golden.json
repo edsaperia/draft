@@ -350,6 +350,7 @@
    "step": "commit removal",
    "rail": [
     "grant-voice",
+    "invite",
     "rate"
    ],
    "clauses": [
@@ -369,6 +370,7 @@
    "step": "open grant-voice",
    "rail": [
     "grant-voice",
+    "invite",
     "rate"
    ],
    "clauses": [
@@ -386,6 +388,7 @@
   {
    "step": "commit grant-voice",
    "rail": [
+    "invite",
     "rate"
    ],
    "clauses": [
@@ -404,6 +407,7 @@
   {
    "step": "open rate",
    "rail": [
+    "invite",
     "rate"
    ],
    "clauses": [
@@ -421,6 +425,7 @@
   {
    "step": "commit rate",
    "rail": [
+    "invite",
     "machines"
    ],
    "clauses": [
@@ -440,6 +445,7 @@
   {
    "step": "open machines",
    "rail": [
+    "invite",
     "machines"
    ],
    "clauses": [
@@ -458,6 +464,7 @@
   {
    "step": "commit machines",
    "rail": [
+    "invite",
     "ending"
    ],
    "clauses": [
@@ -478,6 +485,7 @@
   {
    "step": "open ending",
    "rail": [
+    "invite",
     "ending"
    ],
    "clauses": [
@@ -497,6 +505,7 @@
   {
    "step": "commit ending",
    "rail": [
+    "invite",
     "bar"
    ],
    "clauses": [
@@ -518,6 +527,7 @@
   {
    "step": "open bar",
    "rail": [
+    "invite",
     "bar"
    ],
    "clauses": [
@@ -538,6 +548,7 @@
   {
    "step": "commit bar",
    "rail": [
+    "invite",
     "quorum"
    ],
    "clauses": [
@@ -560,6 +571,7 @@
   {
    "step": "open quorum",
    "rail": [
+    "invite",
     "quorum"
    ],
    "clauses": [
@@ -581,6 +593,7 @@
   {
    "step": "commit quorum",
    "rail": [
+    "invite",
     "authorship"
    ],
    "clauses": [
@@ -604,6 +617,7 @@
   {
    "step": "open pw:u:quorum",
    "rail": [
+    "invite",
     "authorship"
    ],
    "clauses": [
@@ -626,6 +640,7 @@
   {
    "step": "commit pw:u:quorum",
    "rail": [
+    "invite",
     "authorship"
    ],
    "clauses": [
@@ -649,6 +664,7 @@
   {
    "step": "open authorship",
    "rail": [
+    "invite",
     "authorship"
    ],
    "clauses": [
@@ -671,6 +687,7 @@
   {
    "step": "commit authorship",
    "rail": [
+    "invite",
     "judgments"
    ],
    "clauses": [
@@ -695,6 +712,7 @@
   {
    "step": "open judgments",
    "rail": [
+    "invite",
     "judgments"
    ],
    "clauses": [
@@ -718,6 +736,7 @@
   {
    "step": "commit judgments",
    "rail": [
+    "invite",
     "text"
    ],
    "clauses": [
@@ -742,6 +761,7 @@
   {
    "step": "open text",
    "rail": [
+    "invite",
     "text"
    ],
    "clauses": [
@@ -766,6 +786,7 @@
   {
    "step": "commit text",
    "rail": [
+    "invite",
     "begin"
    ],
    "clauses": [
@@ -790,6 +811,7 @@
   {
    "step": "write after 📄’s OK",
    "rail": [
+    "invite",
     "begin"
    ],
    "clauses": [
@@ -814,6 +836,7 @@
   {
    "step": "open begin",
    "rail": [
+    "invite",
     "begin"
    ],
    "clauses": [

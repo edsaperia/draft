@@ -1885,3 +1885,54 @@ names; SPEC, SURFACE's rule text and `design/SPEC-REASONING.md` keep *judgment*,
 correct there; and the Hollow Oak charter's own clauses are document text a fictional
 room wrote. What a member reads is the whole of what changed, and the re-frozen
 `design/tools/card-copy.golden.json` is the list of it.
+
+## The founder is asked to invite once the Membership stands (2026-08-28, entry 181)
+
+Ed's QA finding: *"Invite Members" task for the founder should appear as soon as the
+membership section is completed.* Until now ✉️ was a **door** and nothing else — a card
+`settled` always reports true for, so it never stood in the rail on its own. The one
+exception was F19's `one-voice` remedy (Q828), which only ever finds a founder who
+**delegated** something. A founder who delegates nothing was never asked to invite
+anybody at all, and reached 🍾 with a room of one having been told nothing about it.
+
+**Five decisions, so the shape is not re-argued.**
+
+**1. *The section is complete* means its five rules stand** — `admission`,
+`applications`, `hat`, `lapse`, `removal`. Deliberately not `SEC[0].keys`, which carries
+the two doors and the three identity rows: the section is complete when its **rules** are
+decided, and ✋ 🖼️ are neither rules nor blocking (Q980 moved them to the save with
+`blocks: false`, so they may well be standing unanswered when 🥾 settles — the predicate
+excludes them by name rather than relying on where `ORDER` puts them). *Settled* is the
+page's own `settled(c)`, which reports a delegated setting as settled: handing a rule to
+the membership completes the section as much as setting it does. A rule a **shape** hides
+(entry 166) is a decision nobody has and completes the section by not existing — and it
+has to be tested here, because `settled` says false for it, `S.seen` never having been
+written.
+
+**2. *The first invitation* is a roster fact, not a readiness reason.** Any row in
+`S.roster` that is not the founder's — invited or arrived alike; the rows the door pushes
+carry no `founder` flag. The remedy reads `readiness()` because it is about a question;
+this task is about the room, and needs no module.
+
+**3. The task paces nothing**, and the exclusion is the remedy's own rather than a second
+predicate beside it: `remedyOnly` widens to cover both derived reasons the door is a task.
+Q775's rule a fourth time — what is offered *because* the founder may want company must
+not be the reason to withhold the delegated questions (F7), and must not shut 🍾's
+last-resort door (F18/F5). ✉️ and 🍾 standing side by side pre-start is the intended
+picture: the entry says the task stands *until … 🍾*, and 🍾 is not gated on an invitation
+having been sent.
+
+**4. No copy moved.** The card's title stays *Invite a Member*; Ed's *Invite Members*
+names the task, not new wording. `oneVoiceAsk()` returns `''` unless a `one-voice` hold
+stands, so the plain task's card already leads with the invitation box — and no *why you
+are here* paragraph is written for it, the box being the explanation.
+
+**5. The walks skip it rather than act on it.** `journey-walk` asserts ✉️ where it first
+appears, with the five rules read off `window.__founding().order`, and keeps it out of
+`order` — that list is the founding's own sequence (Q776), and a task that paces nothing
+takes no place in it. Inviting there would cost two assertions with nowhere else to live:
+`topbarAlone` is the only place in the walk where the founder can be said to be alone in a
+saved document, and in `--delegate-all` an early invitation clears the very dead end the
+run exists to reach. `founding-walk` skips a **door** when picking the next task, so the
+fixture founder is not asked to delegate one; the golden records it in the rail column
+either way, which is the whole of what it is for here.

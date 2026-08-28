@@ -263,10 +263,23 @@ if (!headOk) stuck.push('the prose column head at the save');
 const options = (wantDelegate) => page.evaluate((del) => {
   const all = [...document.querySelectorAll('.setupcard [data-set],.setupcard [data-ans]')]
     .filter((x) => (x.dataset.val || x.dataset.ansval) && x.offsetParent !== null);
-  const isDel = (x) => /delegate/i.test(x.textContent);
+  // **The delegate rung is found by its own class, never by its words.** This
+  // read `/delegate/i` over the label until entry 87 renamed it *Let the
+  // membership decide this* — after which `--delegate-all` silently handed over
+  // nothing at all, answered every question itself, walked to a begun document
+  // and failed at its own last line. Copy is Ed's to change; `.delegrung` is the
+  // page's own name for the rung and survives every rewording of it.
+  const isDel = (x) => !!x.closest('.delegrung');
   const wanted = del ? all.filter(isDel) : all.filter((x) => !isDel(x));
   return (wanted.length ? wanted : all).map((x) => x.textContent.trim().slice(0, 48));
 }, wantDelegate);
+// the same question the other way round: which of the labels on the open card
+// belong to the delegate rung, so *what was chosen* can be told apart from its
+// wording at the two sites below that used to match on it
+const delegLabels = () => page.evaluate(() =>
+  [...document.querySelectorAll('.setupcard .delegrung [data-set],.setupcard .delegrung [data-ans]')]
+    .filter((x) => (x.dataset.val || x.dataset.ansval))
+    .map((x) => x.textContent.trim().slice(0, 48)));
 const pickOption = (label) => page.evaluate((l) => {
   const o = [...document.querySelectorAll('.setupcard [data-set],.setupcard [data-ans]')]
     .filter((x) => (x.dataset.val || x.dataset.ansval) && x.offsetParent !== null)
@@ -830,6 +843,9 @@ const shapeAtBegin = async () => {
 
 const seen = new Set();
 const order = [];
+// Ed's list from entry 181 — the Membership section's rules, whose standing is
+// the whole of what summons the ✉️ task below
+const MEMBERSHIP_RULES = ['admission', 'applications', 'hat', 'lapse', 'removal'];
 const handedOver = [];
 let waitingAtBegin = false;
 let doorWalked = false;
@@ -861,6 +877,32 @@ for (let i = 0; i < 60; i++) {
       stuck.push('the founding ran dry before Begin');
     }
     break;
+  }
+  // **✉️ is a task before 🍾 now, and the walk asserts it rather than acting on
+  // it** (entry 181, F23). Once the Membership rules stand the door stands in
+  // the rail beside whatever is being asked next, until an invitation goes out
+  // or the document begins. Inviting *here* would cost two assertions that have
+  // nowhere else to live: `topbarAlone` below is the only place in this walk
+  // where the founder can be said to be alone in a saved document, and in
+  // `--delegate-all` an early invitation would clear the one-voice dead end the
+  // run exists to reach. So it is asserted where it first appears and walked at
+  // 🍾 exactly as before. It stays out of `order` too — that list is the
+  // founding's own sequence (Q776), and a task that paces nothing (F3, F7) has
+  // no place in it.
+  if (next === 'invite' && !(await page.evaluate(() => !!document.querySelector('.doc.begun')))) {
+    seen.add('invite');
+    const ord = ((await founding()) || {}).order || [];
+    // a hidden rule is a decision nobody has (entry 166) and completes the
+    // section by not existing, so `vis=0` counts as standing
+    const unsettled = MEMBERSHIP_RULES.filter((k) => {
+      const row = ord.find((r) => String(r).split(' ')[0] === k);
+      return row && !/ set=1/.test(row) && !/ vis=0/.test(row);
+    });
+    say('✉️ task    · ' + (unsettled.length
+      ? 'FAIL: standing with ' + unsettled.join(',') + ' not yet settled'
+      : 'standing — the Membership rules stand and nobody has been invited'));
+    if (unsettled.length) stuck.push('the ✉️ task stands with ' + unsettled.join(',') + ' unsettled');
+    continue;
   }
   seen.add(next);
   order.push(next);
@@ -959,6 +1001,7 @@ for (let i = 0; i < 60; i++) {
   const wantDelegate = DELEGATE_ALL && !next.startsWith('ans-') && next !== 'ending';
   let chose = null;
   let offered = await options(wantDelegate);
+  const delegs = await delegLabels();
   // 👤 takes the rung the run asked for (Q770), tried first; the rest stay
   // as the walk's ordinary fallback
   if (next === 'authorship' && !wantDelegate && AUTHORSHIP_LABEL && offered.includes(AUTHORSHIP_LABEL)) {
@@ -974,13 +1017,13 @@ for (let i = 0; i < 60; i++) {
     // taking-back — so the fields are left alone on that branch. Filling them
     // is what made the first `--delegate-all` run hand over five of eleven and
     // look like the page's doing.
-    if (!/delegate/i.test(label)) await fillFields();
+    if (!delegs.includes(label)) await fillFields();
     await T(220);
     if (await committable()) break;
   }
   if (chose === null) await fillFields();
   await T(220);
-  if (chose !== null && /delegate/i.test(chose)) handedOver.push(next);
+  if (chose !== null && delegs.includes(chose)) handedOver.push(next);
   const label = await press(1250);
   const open2 = await page.evaluate((kk) => {
     const c = document.querySelector('.setupcard');
