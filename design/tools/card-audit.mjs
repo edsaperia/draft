@@ -352,9 +352,37 @@ const IN_PAGE = () => {
     const col = tab ? tab.closest('.chipcol') : null;
     const front = !!tab && !tab.classList.contains('behind') &&
       (!col || col.querySelector('.achip') === tab);
-    return { tab: rect(tab), glyph: glyphBox(tab), front,
+    /**
+     * **Was this tab riding a row in the register?** P6 is a promise about the
+     * identity pile on your own row, and ✋ 🖼️ 📧 exist before there is a
+     * register to have a row in — 📧 is answered at the birth, where the card
+     * is the founder's own address and no members list has been drawn. Read
+     * from the *closed* posture, so the rule still fires when the card opens
+     * somewhere else entirely, which is the bug it is for.
+     */
+    const onRow = !!(tab && tab.closest('.memrow'));
+    return { tab: rect(tab), glyph: glyphBox(tab), front, onRow,
              tabW: tab ? R2(tab.getBoundingClientRect().width) : null,
              text: rect(para && (para.querySelector('.cpv') || para)) };
+  };
+
+  /**
+   * **What the card stands above.** A travel of `[0, 0]` says the *tab* did not
+   * move; it does not say the *card* landed where the tab is, because a card
+   * rendered somewhere else grows a tab strip of its own and the promise is
+   * kept about the wrong object. The cheap witness is the next heading in
+   * document order: the identity card drawn in your own row under *Members*
+   * has *Invitees* below it, and one appended after the last subsection has
+   * *Proposed for removal* above it and nothing below. The fold triangle is
+   * skipped — it is furniture inside the heading, not the heading's name.
+   */
+  const nextHeadAfter = (el) => {
+    const h = [...document.querySelectorAll('h2.docline')]
+      .find((x) => el.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING);
+    if (!h) return null;
+    return [...h.childNodes]
+      .filter((n) => !(n.nodeType === 1 && n.classList.contains('sectoggle')))
+      .map((n) => n.textContent).join('').replace(/\s+/g, ' ').trim() || null;
   };
 
   window.__CA = {
@@ -393,12 +421,14 @@ const IN_PAGE = () => {
         // wears 👑 for a different reason entirely
         tabGlyph: openTab ? (txt(openTab) || '').replace(/\s/g, '').slice(0, 3) : null,
         tab: { closed: before && before.tab, open: rect(openTab), front: !!(before && before.front),
+               onRow: !!(before && before.onRow),
                closedW: before && before.tabW, openW: openTab ? Math.round(openTab.getBoundingClientRect().width * 100) / 100 : null,
                boxTravel: travel(before && before.tab, rect(openTab)),
                rightEdge: openTab && card ? R2(openTab.getBoundingClientRect().right - card.getBoundingClientRect().left) : null,
                travel: travel(before && before.glyph, glyphBox(openTab)) },
         clause: { closed: before && before.text, open: rect(openText),
                   travel: travel(before && before.text, rect(openText)) },
+        nextHead: nextHeadAfter(card),
       };
     },
   };
@@ -411,6 +441,10 @@ const IN_PAGE = () => {
    ========================================================================== */
 const near = (a, b, tol = 0.51) => a !== null && b !== null && Math.abs(a - b) <= tol;
 const onGrid = (v) => v === 0 || Math.abs(v % 4) < 0.01 || Math.abs((v % 4) - 4) < 0.01;
+
+/** the three cards that ride your own row in the members list, and what stands under it */
+const ID_KEYS = ['myname', 'mypic', 'myemail'];
+const ID_NEXT_HEAD = 'Invitees';
 
 /** the glyph alphabet STYLE §1 calls stable, plus the lifecycle family */
 const STABLE_GLYPHS = ['🪶', '📍', '🪪', '🤝', '💤', '🥾', '⏱️', '🤖', '⏰', '👥', '🌡️', '🪜',
@@ -506,6 +540,26 @@ function rulesFor(card, tok) {
   if (card.tab.front && card.tab.rightEdge !== null && !near(card.tab.rightEdge, 0, 0.01)) {
     at('P4', 'positioning', 'every tab\'s right edge lands exactly on the card\'s left edge',
       'the open tab overshoots by ' + card.tab.rightEdge + 'px');
+  }
+  // **P6 — the identity card opens in your own row's place** (entry 188). P2 is
+  // deliberately horizontal, and its comment is right about every other card:
+  // a clause head stands under the card's own eyebrow, so a vertical travel
+  // there is the eyebrow's height, which every card has. ✋ 🖼️ 📧 are the
+  // exception, because they have somewhere they are *supposed* to open — the
+  // row wearing their pile — so for those three the vertical half is a
+  // resting-state fact too, and the next heading says the card is in the
+  // Members rows rather than appended after the last subsection. `onRow`
+  // is the precondition, not a convenience: before the save 📧 is the birth's
+  // own address card and there is no register for it to open in.
+  if (ID_KEYS.includes(card.key) && card.tab.front && card.tab.onRow) {
+    if (card.tab.travel && Math.abs(card.tab.travel[1]) > 0.01) {
+      at('P6', 'positioning', 'the identity card opens in your own row\'s place, so its tab does not move',
+        'the glyph moves ' + card.tab.travel[1] + 'px down when the card opens');
+    }
+    if (card.nextHead !== undefined && card.nextHead !== ID_NEXT_HEAD) {
+      at('P6', 'positioning', 'the identity card stands in the Members rows, above “' + ID_NEXT_HEAD + '”',
+        card.nextHead ? 'the card stands above “' + card.nextHead + '”' : 'no subsection heading stands below the card');
+    }
   }
 
   /* --- spacing ---------------------------------------------------------- */

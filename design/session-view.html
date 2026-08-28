@@ -2943,6 +2943,21 @@
         // where there is a row to hang it on: a clerk's rides the Founded
         // line instead (Q759), and an applicant's is in their own rail.
         const my = showMe ? myIdCards() : [];
+        // **The card opens where its tab is** (entry 188, Ed's QA of batch Q:
+        // *if I click on the ✋ stack the decision card opens up beneath the ❌
+        // stack*). It always went at the very end of this group's HTML, which
+        // was a few rows below your own when the register was one flat `.cpara`;
+        // since entry 95 four lvl-3 subsections stand between your row and the
+        // end, so the card landed under the last of them — *Proposed for
+        // removal* and its ❌ pile — while the closed pile stayed on your row.
+        // It is your row's card, so it replaces your row, the way every other
+        // decision card replaces its own paragraph. Declared here rather than
+        // below the helpers because `meBlock` is the thing that needs it, and
+        // it can only be truthy where there is a row: `my` is empty unless
+        // `showMe`, so a clerk (Q758) and a stranger reach neither branch and
+        // keep the routing they already have — the clerk's rides the Founded
+        // line (`idOnFounded`, Q759).
+        const openId = my.find((c) => S.open === c.k);
         // **The placeholder is a statement about the list, so it stands above
         // you** (Q753, Ed 2026-08-23). It was invented doing two jobs (Q407a):
         // saying the true thing about an empty list, and giving the you-row
@@ -3013,12 +3028,12 @@
         // **You are at the top** (Ed, 2026-08-21). A membership starts as one
         // person, and that person is reading this: the list opens with your
         // own row — the only one wearing your ✋🖼️ tabs.
-        const meBlock = showMe
-          ? '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
+        const meBlock = !showMe ? ''
+          : openId ? h.paraWith(openId, my)
+          : '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
             '<span class="mn">' + esc(S.myname || 'Anonymous') +
             (S.roster[meIdx].founder ? ' ' + founderMark() : '') +
-            ' <span class="chip">you</span>' + leaveBtn + '</span></div>'
-          : '';
+            ' <span class="chip">you</span>' + leaveBtn + '</span></div>';
         // a stranger reads the register as the door serves it, under *Members*
         // alone — the per-subsection counts entry 95 asks for are unbuilt, and
         // tangled with Q508's own question about what a door may show at all
@@ -3039,7 +3054,11 @@
         // carry the same `cs-`-prefixed id the section headings do, so the
         // heading-click handler and `secToggleHtml` reach them unchanged — and
         // like every other fold, **a section never folds over the open card**.
-        const memSub = (title, rows, pileKeys, raw) => {
+        // `inRows` is the caller's half of that promise: *Members* carries the
+        // identity card inside its own rows rather than on its pile, so the
+        // pile check above cannot see it and a folded *Members* would fold the
+        // open card away (entry 188).
+        const memSub = (title, rows, pileKeys, raw, inRows) => {
           const cards = (pileKeys || []).map(card)
             .filter((c) => c && visible(c) && (!c.base || cs));
           const open = cards.find((c) => S.open === c.k);
@@ -3047,14 +3066,13 @@
           const head = '<h2 class="docline lvl3" id="' + id + '">' +
             secToggleHtml(id) + esc(title) + '</h2>';
           if (open) return head + h.paraWith(open, cards);
-          if (S.folded.has(id)) return head;
+          if (S.folded.has(id) && !inRows) return head;
           return head + '<div class="cpara' + (cards.length ? '' : ' notab') + '">' +
             (cards.length ? h.pile(cards) : '') +
             (raw ? rows
               : '<div class="memlist' + (cards.length ? '' : ' nopile') + '">' + rows + '</div>') +
             '</div>';
         };
-        const openId = my.find((c) => S.open === c.k);
         // **🤝 how they join, 💤 and 🥾 how they leave, and only then who they
         // are** (Q865, Q867, Ed 2026-08-26: *💤 and 🥾 sections should be above
         // the Members heading* — reversing the second half of Q617 (a)). The
@@ -3100,7 +3118,8 @@
           // table of words hidden where nobody reads copy.
           (isStranger()
             ? memSub('Members', strangerRows + departureLines(), [], true)
-            : memSub('Members', nobody + meBlock + here.map(memRow).join('') + departureLines(), ['hat']) +
+            : memSub('Members', nobody + meBlock + here.map(memRow).join('') + departureLines(),
+                ['hat'], false, !!openId) +
               memSub('Invitees', invited.length ? invited.map(memRow).join('')
                 : '<div class="memrow nobody">(no outstanding invitations)</div>',
                 ['invite', 'pw:u:invite', 'pw:a:invite']) +
@@ -3111,8 +3130,7 @@
                 ? memSub('Lapsed', lapsedOut.map(memRow).join(''), []) : '') +
               memSub('Proposed for removal', proposedOut.length ? proposedOut.map(memRow).join('')
                 : '<div class="memrow nobody">(nobody proposed for removal)</div>',
-                ['remove', 'pw:u:remove', 'pw:a:remove'])) +
-          (openId ? h.paraWith(openId, my) : '');
+                ['remove', 'pw:u:remove', 'pw:a:remove']));
       } },
     // **Proposals reads second** (Q871, Q872, Ed 2026-08-26: *Proposals above
     // Decisions* — reversing *Proposals reads fourth*, Ed 2026-08-21). That
