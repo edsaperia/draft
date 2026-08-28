@@ -2795,7 +2795,18 @@
     el.setAttribute('aria-disabled', 'true');
     holdInFlight = true;
     const id = el.closest('.sugg').dataset.card;
-    holding = { el, pencil, anim, timer: setTimeout(() => { flyStop(true); act(id, 'draft-propose'); }, HOLD_MS) };
+    // **The draft that is proposed is the one the pencil left for.** `act`
+    // resolves by id, and the id is `DRAFT_ID` for every draft in turn — so
+    // under `click`, where the member is free for the whole three seconds,
+    // 🗑️ and a fresh composition would put a *different* draft in and spend
+    // an edit nobody asked to spend. The object identity is the test, and it
+    // survives a data swap, which is what the id-by-node fix was about
+    // (`setData` carries the same unproposed draft across).
+    const d0 = draftOf();
+    holding = { el, pencil, anim, timer: setTimeout(() => {
+      flyStop(true);
+      if (draftOf() === d0) act(id, 'draft-propose');
+    }, HOLD_MS) };
   };
 // **The press outlives the button, here too** (Ed, 2026-08-22: *I cannot
 // submit it even if I hold it — the pencil flies back*). This hold used to

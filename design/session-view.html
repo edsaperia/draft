@@ -7445,8 +7445,19 @@
     const seats = [...el.children];
     const timers = seats.map((s2, i) =>
       setTimeout(() => s2.classList.add('in'), 80 + i * (HOLD_MS - 800) / seats.length));
+    const finish = () => {
+      assembly = null;
+      btn.classList.remove('penholding'); btn.removeAttribute('aria-disabled');
+      setTimeout(() => { el.remove(); render(); }, 420);
+    };
     assembly = { el, btn, timers, done: setTimeout(() => {
       el.classList.add('done');
+      // **The motion that is put is the one the room convened over.** Under
+      // `hold` the pointer is down for the whole ten seconds and `S.draft`
+      // cannot move; under `click` the member is free — 🗑️ clears the draft
+      // and a second composition replaces it — so an unguarded send would put
+      // a motion that had been discarded, or one the mover never asked for.
+      if (S.draft !== d0) return finish();
       // the 🏛️ half of the same silence (Q811/Q816): ten seconds of the
       // room convening, and then a refusal nobody was told about
       let sent = null;
@@ -7463,9 +7474,7 @@
         S.draft = d0; delete S.mAns[d0.k];
         setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(res.error) + '.');
       } });
-      assembly = null;
-      btn.classList.remove('penholding'); btn.removeAttribute('aria-disabled');
-      setTimeout(() => { el.remove(); render(); }, 420);
+      finish();
     }, HOLD_MS) };
   }
   function disperseAssembly() {
@@ -9703,6 +9712,14 @@
     const dst = w.to ? (document.querySelector(w.to) || b) : b;
     const from = (src || b).getBoundingClientRect();
     const to = dst.getBoundingClientRect();
+    // **The fallback below may only find the card the press was made on.**
+    // Under `hold` the pointer is on the button for the whole flight, so the
+    // open card cannot change under it and the fallback always re-finds the
+    // same card's commit. Under `click` the user is free for the length of the
+    // flight: open another card and the first card's button is destroyed by
+    // the render, so an unguarded fallback would click *the new card's*
+    // commit and land the act on a decision nobody asked for.
+    const openAt = S.open;
     b.classList.add('penholding');
     // inert while the token is in the air, and **never `disabled`**: the
     // timer's `live.click()` on a disabled button is a silent no-op, which is
@@ -9736,6 +9753,7 @@
       // report. The hold belongs to the open card, not to one DOM node, so
       // it re-finds the live commit control when its own has gone.
       const live = b.isConnected ? b
+        : S.open !== openAt ? null
         : w.live ? document.querySelector(w.live)
         : (document.querySelector('.setupcard .commitrow [data-confirm]') ||
            document.querySelector('.setupcard [data-confirm]'));
