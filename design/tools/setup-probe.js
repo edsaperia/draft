@@ -268,10 +268,9 @@
     // (Q732, 2026-08-23) — which is how an emoji face rendered at 7px on the
     // Founded line for four days with every check green.
     ['open-picture', () => openTab('mypic')],
-    // the picker is Unicode's now and opens on the first category, so a
-    // named glyph is reached by searching for it — which is the control
-    // Q732 added and the one worth walking
-    ['search-emoji', () => typeInto('.setupcard [data-emojisearch]', 'fox')],
+    // the picker is one flat grid of Unicode's whole list since entry 186, so
+    // every glyph is in the box already and the fox is clicked where it
+    // stands — the search step that used to reach it went with the search
     ['choose-emoji', () => click('.setupcard .avopt[data-pic="e🦊"]')],
     ['confirm-picture', () => click('.setupcard [data-confirm]')],
     /* **The rest of the founding, card by card** (Q915, Ed 2026-08-26).

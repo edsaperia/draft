@@ -81,27 +81,39 @@ await type('.setupcard [data-titlelane]', 'Hollow Oak Club Charter');
 await click('.setupcard [data-confirm]');
 await tab('slug');
 await click('.setupcard [data-confirm]');
+// 🧭 (entry 166) stands between 📍 and 📧 and blocks it, so the walk has to
+// answer it to reach the rest of the founding at all — *custom*, as the
+// card-audit's own founding drive does, so what follows is today's order
+await tab('shape');
+await click('.setupcard [data-set="docShape"][data-val="custom"]');
+await click('.setupcard [data-confirm]');
 await tab('myemail');
 await type('.setupcard input[type="email"]', 'ada@example.org');
 await click('.setupcard [data-confirm]');
 await click('[data-act="clickmail"]');
+// ✋ and 🖼️ arrive together at the save and stand above ✒️ in `ORDER` (entry
+// 182), so the face is given before the pen is taken, not after the doors
+await tab('myname');
+await type('.setupcard input[data-txt="myname"]', 'Ada Lovell');
+await click('.setupcard [data-confirm]');
+await tab('mypic');
+// the whole list is in the box since entry 186, so the fox needs no search
+await click('.setupcard .avopt[data-pic="e🦊"]');
+await click('.setupcard [data-confirm]');
 await tab('grant-pen');
 await click('.setupcard [data-ok]');
 await tab('chamber');
 await click('.setupcard [data-set="chamber"][data-val="closed"]');
+await click('.setupcard [data-confirm]');
+// 🪪 stands above 🤝 in the order and blocks it
+await tab('admission');
+await click('.setupcard [data-set="admission"][data-val="pen"]');
 await click('.setupcard [data-confirm]');
 await tab('applications');
 await click('.setupcard [data-set="joinBy"][data-val="invite"]');
 await click('.setupcard [data-confirm]');
 await tab('hat');
 await click('.setupcard [data-set="hatPick"][data-val="member"]');
-await click('.setupcard [data-confirm]');
-await tab('myname');
-await type('.setupcard input[data-txt="myname"]', 'Ada Lovell');
-await click('.setupcard [data-confirm]');
-await tab('mypic');
-await type('.setupcard [data-emojisearch]', 'fox');
-await click('.setupcard .avopt[data-pic="e🦊"]');
 await click('.setupcard [data-confirm]');
 await click('#devff');
 await page.waitForTimeout(400);

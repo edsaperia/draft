@@ -78,7 +78,7 @@ window.SETUP = (function () {
   const faceToneRow = () =>
     '<div class="avpick">' + FACE_TONES.map((tn) =>
       '<button class="avopt" data-tone="' + tn + '" aria-pressed="' + (FACE_TONE === tn) + '"' +
-      ' title="Skin tone"><span class="emojiface big">\u270B' + tn + '</span></button>').join('') + '</div>';
+      ' title="Skin tone"><span class="emojiface grid">\u270B' + tn + '</span></button>').join('') + '</div>';
   // Any emoji may be a face EXCEPT the surface's own vocabulary (Ed,
   // 2026-08-19): a member whose face is ✏️ would turn every wallet and
   // compose button into a possible mention of them. SURFACE_EMOJI is a scan
@@ -108,58 +108,33 @@ window.SETUP = (function () {
   let FACE_TAKEN = () => null;
   const setFaceTaken = (fn) => { FACE_TAKEN = fn; };
   const faceTakenBy = (e2) => FACE_TAKEN(e2);
-  // one grapheme, pictographic, not furniture — or 'reserved', or null
-  const emojiFaceOf = (raw) => {
-    const s = raw.trim();
-    if (!s) return null;
-    const segs = typeof Intl !== 'undefined' && Intl.Segmenter
-      ? [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(s)].map((x) => x.segment)
-      : [s];
-    if (segs.length !== 1) return null;
-    const g = segs[0];
-    if (!/\p{Extended_Pictographic}/u.test(g)) return null;
-    if (RESERVED_EMOJI.has(normEmoji(g))) return 'reserved';
-    return g;
-  };
-  const anyEmojiRow = (attr) =>
-    '<div class="eyebrow fieldlab">Or any emoji</div>' +
-    '<div class="freemoji"><input class="emojin" ' + attr + '="1" maxlength="20"' +
-    ' placeholder="🦉 🌵 🫖…">' +
-    '<span class="emojinote"></span></div>';
+  /* The page had its own `emojiFaceOf` beside the server's, as the free
+     input's validator: *Or any emoji* existed for a glyph the shortlist did
+     not carry, and it had to be told what a face may be. Entry 186 removes
+     the input — the grid is the whole of Unicode, so there is no such glyph —
+     and the validator goes with it. `packages/server/src/faces.ts` keeps its
+     own, which is the one that guards what is stored. */
   // **Reserved and taken are both greyed, in the picker itself** (Ed,
   // 2026-08-19: *a normal emoji picker, but with reserved and used emoji
   // greyed out*). The two refusals had lived only in the type-any-emoji box,
   // which meant the grid could offer you something it would then refuse.
+  /* The grid's glyphs are `.emojiface.grid` — the size an emoji face takes on
+     a member row (entry 186, Ed: *at the size they currently appear as
+     avatars*), not the 38px `.emojiface.big` the shortlist wore. `.big` stays
+     for the *Currently* line. */
   const faceBtn = (f2, ownPic, dataAttr, n) => {
     const own = (ownPic || '') === 'e' + f2;
     const hol = own ? null : FACE_TAKEN('e' + f2);
     const reserved = !own && RESERVED_EMOJI.has(normEmoji(f2));
     if (reserved) {
       return '<button class="avopt taken" disabled title="Reserved — docs.vote uses this one">' +
-        avHtml({ n, pic: 'e' + f2 }, 'big') + '</button>';
+        avHtml({ n, pic: 'e' + f2 }, 'grid') + '</button>';
     }
     return hol
       ? '<button class="avopt taken" disabled title="Taken — ' + esc(hol) + ' got there first">' +
-        avHtml({ n, pic: 'e' + f2 }, 'big') + '</button>'
+        avHtml({ n, pic: 'e' + f2 }, 'grid') + '</button>'
       : '<button class="avopt" ' + dataAttr + '="' + 'e' + f2 + '" aria-pressed="' + own + '"' +
-        ' title="' + esc(f2) + '">' + avHtml({ n, pic: 'e' + f2 }, 'big') + '</button>';
-  };
-  // Mirrors wirePicDrop: the machinery lives here, where the picked value
-  // lands stays the caller's.
-  const wireFreeEmoji = (attr, onPick) => {
-    document.addEventListener('input', (ev) => {
-      if (!ev.target.matches || !ev.target.matches('[' + attr + ']')) return;
-      const box = ev.target.closest('.freemoji');
-      const note = box && box.querySelector('.emojinote');
-      const g = emojiFaceOf(ev.target.value);
-      const holder = g && g !== 'reserved' ? FACE_TAKEN('e' + g) : null;
-      const msg = g === 'reserved'
-        ? 'That one is part of the furniture — the marks docs.vote itself uses are reserved.'
-        : holder ? 'Taken — ' + holder + ' got there first.' : '';
-      if (note) note.textContent = msg;
-      if (box) box.classList.toggle('bad', msg !== '');
-      if (g && g !== 'reserved' && !holder) onPick(g);
-    });
+        ' title="' + esc(f2) + '">' + avHtml({ n, pic: 'e' + f2 }, 'grid') + '</button>';
   };
   // **Before there is a name there is still a person** (Ed, 2026-08-19: the
   // picture card offers *initials with a colour picker — or, if they have not
@@ -835,115 +810,53 @@ window.SETUP = (function () {
      `design/emoji-data.js` by `scripts/emoji-data.mjs` and committed beside
      its input, on the same discipline as the `design/constitution.js` bundle.
 
-     **Only the open category is rendered.** 1906 buttons is not a thing to
-     build on every keystroke, and this body is rebuilt by every `render()` —
-     the live page polls every four seconds — so the grid is one group at a
-     time, a few hundred at most.
+     **And then the picker is only the grid** (entry 186, Ed's QA of batch Q:
+     the picture card is too large). *Remove the search, the section tabs, the
+     "or any emoji" input, just have all the available emoji in the picker
+     box, at the size they currently appear as avatars.* So the search field,
+     the nine category tabs, the sub-group headings and the free-emoji input
+     are gone, and what is left is one scroll box holding the whole list.
+
+     That **supersedes the other half of Q732**, which ruled that *only the
+     open category may be drawn*, because 1906 buttons is not a thing to build
+     on a keystroke and this body is rebuilt by every `render()` — the live
+     page polling every four seconds. Ed's later instruction wins, and the
+     keystroke half of the reason goes with the search box, since nothing is
+     typed here any more. The poll half is real, and was measured rather than
+     assumed: 1912 options, ~1.2 ms to build the HTML and **~136 ms for the
+     whole render** with the card open, so the cost is putting the buttons in
+     the document, not making them. Against a 4 s poll that is 3% of the
+     interval. A finding for the backlog if it ever bites, not a reason to
+     draw less than was asked for.
 
      Reserved and taken glyphs are greyed **in place** with their reason,
      which `faceBtn` already did and needed no change: the whole of Unicode is
      offered now, so the surface's own marks are in the grid and have to
      refuse themselves where a member meets them. */
   const EMOJI_DATA = () => (typeof window !== 'undefined' && window.EMOJI_DATA) || [];
-  const TONED_GROUP = 'People & Body';
-  const HITS_MAX = 240;
-  /* Which category is open and what is typed are **picker state, like
-     `FACE_TONE`**: they live here, are never stored, and survive the body
-     being rebuilt under them. One picker is open at a time — there is one
-     open card — so one set of them is enough, and `PICKER` remembers the
-     arguments the open one was drawn with so the grid can be refreshed in
-     place without a page render. */
-  let EMOJI_CAT = 0;
-  let EMOJI_Q = '';
-  let PICKER = null;
 
-  /* **Both sides of the comparison are folded.** CLDR names are not lowercase
-     — 388 of them carry a capital, which is every one of the 258 flags
-     (`flag: Ascension Island`), `OK hand`, `person gesturing NO`, the Japanese
-     buttons — and the query was lowercased while the name was not, so typing
-     the country you wanted answered *Nothing here is called that*. The names
-     are search-only (a button's title is its glyph), so folding them here
-     rather than in the generated file keeps `emoji-data.js` faithful to
-     Unicode's own spelling. */
-  const emojiHits = (q) => {
-    const n = q.trim().toLowerCase();
-    const out = [];
-    for (const [, subs] of EMOJI_DATA()) {
-      for (const [, items] of subs) {
-        for (const it of items) if (it[1].toLowerCase().indexOf(n) >= 0) out.push(it);
-      }
-    }
-    return out;
-  };
-
-  const emojiGridHtml = () => {
-    if (!PICKER) return '';
-    const { ownPic, name, dataAttr } = PICKER;
+  /* Flat and complete: every group and every sub-group, in the file's own
+     order so like glyphs stay beside each other, with no boundary drawn
+     between them. The tone row is the first row inside the box, and the
+     chosen tone goes on every glyph whose data row says it takes one — the
+     third element of the item, which is per-glyph, so there is no category to
+     test any more. */
+  const emojiGridHtml = (ownPic, name, dataAttr) => {
     const groups = EMOJI_DATA();
     if (!groups.length) return '<p class="setnote">The emoji list is still loading.</p>';
-    if (EMOJI_Q.trim()) {
-      const hits = emojiHits(EMOJI_Q);
-      if (!hits.length) return '<p class="setnote">Nothing here is called that.</p>';
-      const shown = hits.slice(0, HITS_MAX);
-      return '<div class="avpick">' + shown.map(([g]) =>
-        faceBtn(g, ownPic, dataAttr, name)).join('') + '</div>' +
-        (hits.length > shown.length
-          ? '<p class="setnote">' + (hits.length - shown.length) + ' more — keep typing.</p>'
-          : '');
+    const opts = [];
+    for (const [, subs] of groups) {
+      for (const [, items] of subs) {
+        for (const [g, , tonable] of items) {
+          opts.push(faceBtn(tonable ? faceToned(g) : g, ownPic, dataAttr, name));
+        }
+      }
     }
-    const [label, subs] = groups[Math.min(EMOJI_CAT, groups.length - 1)];
-    // the tone selector belongs to the people, and only to the glyphs in it
-    // that a tone can be put on — the same group holds 🦴 and 👣
-    const toned = label === TONED_GROUP;
-    return (toned ? faceToneRow() : '') + subs.map(([sublabel, items]) =>
-      '<div class="eyebrow fieldlab emojilab">' + esc(sublabel.replace(/-/g, ' ')) + '</div>' +
-      '<div class="avpick">' + items.map(([g, , tonable]) =>
-        faceBtn(toned && tonable ? faceToned(g) : g, ownPic, dataAttr, name)).join('') +
-      '</div>').join('');
+    return faceToneRow() + '<div class="avpick">' + opts.join('') + '</div>';
   };
 
-  const emojiPicker = (ownPic, name, dataAttr, freeAttr) => {
-    PICKER = { ownPic, name, dataAttr };
-    const searching = !!EMOJI_Q.trim();
-    return '<div class="emojisearch"><input type="search" data-emojisearch="1"' +
-      ' value="' + esc(EMOJI_Q) + '" placeholder="Search" autocomplete="off"' +
-      ' spellcheck="false"></div>' +
-      '<div class="emojitabs">' + EMOJI_DATA().map(([label], i) =>
-        '<button type="button" class="emojitab" data-emojicat="' + i + '"' +
-        ' aria-pressed="' + (!searching && i === EMOJI_CAT) + '">' +
-        esc(label) + '</button>').join('') + '</div>' +
-      '<div class="emojibox" data-emojigrid="1">' + emojiGridHtml() + '</div>' +
-      anyEmojiRow(freeAttr);
-  };
-
-  /* The grid refreshes **in place**, never through the page's own render: a
-     render rebuilds the search input, and rebuilding an input under a caret
-     is how you lose what somebody is halfway through typing. Bound once, on
-     the document, like every other delegated control here. */
-  const wireEmojiPicker = () => {
-    const refresh = () => {
-      const box = document.querySelector('[data-emojigrid]');
-      if (box) box.innerHTML = emojiGridHtml();
-      const searching = !!EMOJI_Q.trim();
-      document.querySelectorAll('[data-emojicat]').forEach((b) => {
-        b.setAttribute('aria-pressed', String(!searching && +b.dataset.emojicat === EMOJI_CAT));
-      });
-    };
-    document.addEventListener('input', (ev) => {
-      if (!ev.target.matches || !ev.target.matches('[data-emojisearch]')) return;
-      EMOJI_Q = ev.target.value;
-      refresh();
-    });
-    document.addEventListener('click', (ev) => {
-      const t = ev.target.closest && ev.target.closest('[data-emojicat]');
-      if (!t) return;
-      EMOJI_CAT = +t.dataset.emojicat;
-      EMOJI_Q = '';
-      const box = document.querySelector('[data-emojisearch]');
-      if (box) box.value = '';
-      refresh();
-    });
-  };
+  const emojiPicker = (ownPic, name, dataAttr) =>
+    '<div class="emojibox">' + emojiGridHtml(ownPic, name, dataAttr) + '</div>';
 
   /* One body, two seats (Q733): the applicant's 🖼️ used to hand-roll its own
      copy of the grounds and the picker and carried no uploader at all, which
@@ -952,12 +865,11 @@ window.SETUP = (function () {
   const pictureBody = (me, o) => {
     const opt = o || {};
     const at = opt.picAttr || 'data-pic';
-    const free = opt.freeAttr || 'data-picfree';
     const into = opt.into || 'me';
     const pic = me.pic || '';
     const uploaded = pic[0] === 'u';
     return '<div class="eyebrow fieldlab">Pick an emoji</div>' +
-      emojiPicker(pic, me.n, at, free) +
+      emojiPicker(pic, me.n, at) +
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Or upload an image</div>' +
       '<div class="picdrop" data-picinto="' + into + '"><div class="picact">' +
       '<label class="btn">' + (uploaded ? 'Choose another' : 'Choose a picture') +
@@ -1752,8 +1664,7 @@ window.SETUP = (function () {
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
     nameBody, pictureBody, opt, num, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
-    anyEmojiRow, wireFreeEmoji, emojiFaceOf, setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
-    wireEmojiPicker,
+    setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     motionBody, motionReopen, routeFor, motionCommitHtml,
     slider, syncSlider, ladder, ANSWER, BLINDNOTE, ceilingNote, methodNote, meaningLine, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

@@ -381,7 +381,7 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 | the stranger's two | the door's rail | the title | why · the address · Send the link in the body (Y20) | — | 🗑️ only | (in the body) | send | — |
 | backlog (closed page) | the ⏸ tab | the best wording | as the sealed record, *Undecided at the close* | none | nothing (Y20) | OK if unread | OK | ⏸ grey |
 
-**The picker** (Q732) is Unicode's own list — a search field over the CLDR names, then one tab per Unicode category, and only the open category is drawn. The skin-tone row stands on **People & Body** alone, and only over the glyphs a tone may be put on. A glyph the surface uses for its own vocabulary, and one another member already wears, are both **greyed in the grid with the reason on them** rather than refused after the press. *Or any emoji* stays underneath, for a glyph the list does not have.
+**The picker** (Q732, entry 186) is Unicode's own list and nothing else: one scrolling box holding every glyph of it, in the file's own order, each drawn at the size an emoji face takes on a member row. No search field, no category tabs, no sub-group headings and no *Or any emoji* input — a list that is the whole of Unicode has nothing left to reach past it. The skin-tone row is the first row inside the box, and the chosen tone is put on every glyph that takes one. A glyph the surface uses for its own vocabulary, and one another member already wears, are both **greyed in the grid with the reason on them** rather than refused after the press.
 
 **What a picture may be** (Q734). Two shapes and the absence of one — the grounds for your initials and the drawn marks left the picker on 2026-08-23, and are refused rather than merely un-offered. The initials are not a third answer: they are what the room shows when you have given no picture, which is why the card says so in a sentence instead of offering them in a row.
 
@@ -389,7 +389,7 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 
 | stored as | what it is | how it is drawn | refused when |
 |---|---|---|---|
-| `e`+emoji | one pictographic grapheme, picked from Unicode's own list by search or category, or typed | the glyph itself, at the size of the text it stands in — never a disc | it is one of the surface's own marks · another member already wears it |
+| `e`+emoji | one pictographic grapheme, picked from the grid | the glyph itself, at the size of the text it stands in — never a disc | it is one of the surface's own marks · another member already wears it |
 | `u`+data URI | an image, scaled and re-encoded in the page before it is stored | a photograph filling a disc | it is not an image · it is bigger than the page will encode |
 | — | none | your initials on a disc, an anonymous mark before you have a name | — |
 

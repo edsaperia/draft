@@ -302,12 +302,12 @@ const IN_PAGE = () => {
       card.querySelectorAll('.headlab, .headrule, .headtitle, .lockline, ' +
         '.setnote, .rsub, .qwhy, .exp, .why, .lanepick, .commitrow button, .race-mid button').forEach(add);
       card.querySelectorAll('input[placeholder],[data-placeholder],[data-ph]').forEach((el) => {
-        if (el.closest('.emojibox, .avpick, .freemoji')) return;
+        if (el.closest('.emojibox, .avpick')) return;
         const t = el.getAttribute('placeholder') || el.getAttribute('data-placeholder') || el.getAttribute('data-ph');
         if (t) bits.push(t);
       });
       card.querySelectorAll('button[title],[role="button"][title]').forEach((el) => {
-        if (el.title && !el.closest('.emojibox, .avpick, .freemoji')) bits.push(el.title);
+        if (el.title && !el.closest('.emojibox, .avpick')) bits.push(el.title);
       });
       return bits.join(' · ');
     })(),
@@ -322,12 +322,12 @@ const IN_PAGE = () => {
     hints: (() => {
       const out = [];
       card.querySelectorAll('input[placeholder],[data-placeholder],[data-ph]').forEach((el) => {
-        if (el.closest('.emojibox, .avpick, .freemoji')) return;
+        if (el.closest('.emojibox, .avpick')) return;
         const t = el.getAttribute('placeholder') || el.getAttribute('data-placeholder') || el.getAttribute('data-ph');
         if (t) out.push(t);
       });
       card.querySelectorAll('[title]').forEach((el) => {
-        if (el.title && !el.closest('.emojibox, .avpick, .freemoji')) out.push(el.title);
+        if (el.title && !el.closest('.emojibox, .avpick')) out.push(el.title);
       });
       return [...new Set(out)];
     })(),
