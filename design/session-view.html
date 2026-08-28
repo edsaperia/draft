@@ -3065,13 +3065,24 @@
           const id = 'cs-mem-' + title.toLowerCase().replace(/[^a-z]+/g, '-');
           const head = '<h2 class="docline lvl3" id="' + id + '">' +
             secToggleHtml(id) + esc(title) + '</h2>';
-          if (open) return head + h.paraWith(open, cards);
-          if (S.folded.has(id) && !inRows) return head;
-          return head + '<div class="cpara' + (cards.length ? '' : ' notab') + '">' +
+          // **A subsection is its own birth** (entry 185, Ed's QA of batch Q:
+          // *when I make the first choice on the Applications decision card,
+          // the card flashes*). `.csub` carries no style — it is a plain block,
+          // and the card-audit proves it moves nothing — but it gives
+          // `birthPass` something to fade that is the subsection itself. A bare
+          // heading here was a `.csec > h2[id]` like a section heading, so its
+          // parent was the whole Membership `.csec`: picking *Anyone may apply*
+          // born *Applicants* for the first time and faded the section in, with
+          // the open 🤝 card standing inside it. What is born arrives (F14); the
+          // defect was what its arrival was charged to.
+          const sub = (inner) => '<div class="csub">' + head + inner + '</div>';
+          if (open) return sub(h.paraWith(open, cards));
+          if (S.folded.has(id) && !inRows) return sub('');
+          return sub('<div class="cpara' + (cards.length ? '' : ' notab') + '">' +
             (cards.length ? h.pile(cards) : '') +
             (raw ? rows
               : '<div class="memlist' + (cards.length ? '' : ' nopile') + '">' + rows + '</div>') +
-            '</div>';
+            '</div>');
         };
         // **🤝 how they join, 💤 and 🥾 how they leave, and only then who they
         // are** (Q865, Q867, Ed 2026-08-26: *💤 and 🥾 sections should be above

@@ -1646,6 +1646,17 @@ window.SETUP = (function () {
         found.push({ key: 'p:' + el.dataset.para, el, grow: false }));
       band.querySelectorAll('.csec > h2[id]').forEach((h) =>
         found.push({ key: 's:' + h.id, el: h.parentElement, grow: false }));
+      // **A subsection is its own birth** (entry 185). A section heading's
+      // element is its whole `.csec`, which is right for a section: the thing
+      // arriving is the section. A lvl3 subsection heading had no container of
+      // its own, so it was charged to its section too — and the section that
+      // owns *Applicants* is the one the open 🤝 card stands in, so the first
+      // pick of *Anyone may apply* faded the card the founder was pressing.
+      // `memSub` gives each subsection a `.csub` block (session-view.html), and
+      // its birth is that block: the heading and its rows arrive, the section
+      // around them is not touched.
+      band.querySelectorAll('.csub > h2[id]').forEach((h) =>
+        found.push({ key: 's:' + h.id, el: h.parentElement, grow: false }));
     }
     // first render, or a stagehand act (seat switch, ⏩): absorb, don't act
     if (!bornPrimed || mute) {
