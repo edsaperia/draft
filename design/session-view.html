@@ -1551,7 +1551,7 @@
     { k: 'grant-voice', g: '🏛️', t: 'Your Voice', own: 'you', isGate: true, isGrant: true,
       open: () => !!cs && viewerIsMember() && !!viewerRow().in,
       early: () => firstAsked() !== null,
-      why: 'Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.',
+      why: 'All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.',
       waiting: 'Waiting on your arrival.',
       done: 'You hold a voice in every constitutional question.',
       blockers: () => [] },
@@ -1691,8 +1691,8 @@
     // inviting are the ✉️ door's, not this setting's.
     { k: 'admission', g: '🪪', t: 'Admissions', kind: 'constitutional', key: 'admission', p: 0.40, changeable: true,
       rule: 'Each member says the <b>cheapest</b> admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.',
-      takes: 'The document takes the dearest', result: 'Everyone must agree',
-      dist: [3, 1, 0], distTop: 3, distEnds: ['Everyone must agree', 'Any member may invite'] },
+      takes: 'The document takes the dearest', result: 'All members must agree',
+      dist: [3, 1, 0], distTop: 3, distEnds: ['All members must agree', 'Any member may invite'] },
     // **Inviting and removing are their own cards** (Ed, 2026-08-19, 400a:
     // ✉️ and ❌): doors, not decisions — they compose the membership acts
     // and, since entry 94, **hold the Founder's ✒️/🛡️ pair over the act**:
@@ -2370,9 +2370,8 @@
     ((SEC.find((s2) => s2.key === 'rate') || { keys: [] }).keys
       .some((k) => { const c = card(k); return !!c && visible(c); }));
   // **🏛️'s clause is pinned to the merged paragraph** (Q750): where the
-  // preamble stands, the voice contributes *each member holding one voice* to
-  // it and its tab joins the stack, so where the sentence lives no longer
-  // depends on session state. Q605 is narrowed rather than reversed — the
+  // preamble stands, the voice's own sentence merges into it and its tab joins
+  // the stack, so where the sentence lives no longer depends on session state. Q605 is narrowed rather than reversed — the
   // grant still *arrives* with the first question that needed it, because
   // `tasksFor` is untouched and the rail entry travels as it always did. The
   // one state that keeps the old paragraph is the one with no preamble to
@@ -2409,11 +2408,11 @@
       s1 = canJudge() ? prop + ', and may vote on proposals.'
         : prop + '. They may begin voting on proposals when the whole constitution has been decided.';
     }
-    // sentence 2 — what it takes to pass, with 🏛️'s fragment on its tail.
-    // Singular, because *each member holding one voice* only scans against a
-    // singular subject.
-    const s2 = 'A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone' +
-      Q + 's consent' + (voiceInStack() ? ', each member holding one voice.' : '.');
+    // sentence 2 — what it takes to pass. The *each member holding one voice*
+    // tail went with entry 187: the voice fact's home is the 🏛️ grant card
+    // (its `why`, its `done`, its sockets and its standalone clause), and the
+    // preamble repeating it was a second home (T36).
+    const s2 = 'A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass.';
     // sentence 3 — the governance baseline `holderLine` states deviations from
     return s1 + ' ' + s2 + ' Nobody amends a rule at will, and no passed change waits on anyone' +
       Q + 's assent, unless a rule says so.';
@@ -3364,8 +3363,8 @@
     applications: (v) => 'You said ' + ({ invite: 'invitation only', proposed: 'applications must be proposed by members', apply: 'anyone may apply', open: 'open' }[v] || v),
     machines: (v) => 'You said ' + (v ? 'AI proposals are permitted' : 'no AI proposals'),
     lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days without logging in'),
-    removal: (v) => 'You said ' + ({ everyone: 'everyone has to agree, including them',
-      others: 'everyone but them', ordinary: 'a proposal ✏️ like any other' }[v] || v),
+    removal: (v) => 'You said ' + ({ everyone: 'all members have to agree, including them',
+      others: 'all other members', ordinary: 'a proposal ✏️ like any other' }[v] || v),
     rate: (v) => 'You said ' + v,
   };
   const ANSASK = { quorum: 'The lowest you will accept', bar: 'The lowest you will accept',
@@ -3710,10 +3709,10 @@
     pace: { 'The same number throughout': { shape: 'fixed' } },
     ending: { 'Never — it runs until too few members are active': { endsAtMs: null } },
     lapse: { 'Never — however long you are away': { afterMs: null } },
-    removal: { 'Everyone must agree, including them': { price: 'consent' },
-      'Everyone else must agree': { price: 'assembly' },
+    removal: { 'All members must agree, including them': { price: 'consent' },
+      'All other members must agree': { price: 'assembly' },
       'The membership decides': { price: 'proposal' } },
-    admission: { 'Everyone must agree': { price: 'assembly' },
+    admission: { 'All members must agree': { price: 'assembly' },
       'The membership decides': { price: 'proposal' },
       'Any member may invite': { price: 'pen' } },
     applications: { 'Invitation only': { apply: false }, 'Anyone may apply': { apply: true } },
@@ -3760,12 +3759,12 @@
     chamber: (v) => ({ closed: 'members only', link: 'anyone with the link',
       public: 'public' }[v.rung] || v.rung),
     applications: (v) => (mayApply(v) ? 'anyone may apply' : 'invitation only'),
-    admission: (v) => ({ assembly: 'everyone agreeing', proposal: 'the membership deciding',
+    admission: (v) => ({ assembly: 'all members agreeing', proposal: 'the membership deciding',
       pen: 'any member’s word' }[v.price] || v.price),
     lapse: (v) => (v.afterMs === null ? 'never'
       : Math.round(v.afterMs / 86400000) + ' days'),
-    removal: (v) => ({ consent: 'everyone agreeing, them included',
-      assembly: 'everyone else agreeing', proposal: 'the membership deciding' }[v.price] || v.price),
+    removal: (v) => ({ consent: 'all members agreeing, them included',
+      assembly: 'all other members agreeing', proposal: 'the membership deciding' }[v.price] || v.price),
     ending: (v) => (v.endsAtMs === null ? 'never'
       : new Date(v.endsAtMs).toLocaleString(undefined,
         { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
@@ -4013,8 +4012,8 @@
     authorship: (v) => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed at the end' })[v],
     lapse: (v) => (v === 'never' ? 'Never — however long you are away' : 'After ' + v + ' days without logging in'),
-    removal: (v) => ({ everyone: 'Everyone has to agree, including them',
-      others: 'Everyone else has to agree',
+    removal: (v) => ({ everyone: 'All members have to agree, including them',
+      others: 'All other members have to agree',
       ordinary: 'A proposal ✏️ like any other' })[v],
     machines: (v) => (v ? 'AI proposals are permitted' : 'No AI proposals'),
     quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership' : v + '% of the membership'),
@@ -4093,7 +4092,7 @@
           '<input type="datetime-local" data-mdate="1" value="' + esc(S.endsAt || '') + '">.') +
         lanesFor(d, [['Never — it runs until too few members are active',
           'The drafting process has no set end — it runs until too few members are active.']], 'ending') +
-        (never ? '<p class="setnote">Taking the end date away needs everyone to agree — with no end date the approval threshold cannot rise.</p>' : '');
+        (never ? '<p class="setnote">Taking the end date away needs all members to agree — with no end date the approval threshold cannot rise.</p>' : '');
     },
     // the ceiling note (Q840) rides the founder's own control as well as the
     // member's slider — a founder setting 85% alone in the room is told
@@ -4115,8 +4114,8 @@
         esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct) + '">% of the membership.',
         meanLine('quorum', d.val && d.val.form ? d.val : null))),
     removal: (d) => lanesFor(d, [
-      ['Everyone has to agree, including them', 'Removing a member needs everyone to agree, including them.'],
-      ['Everyone else has to agree', 'Removing a member needs every other member to agree.'],
+      ['All members have to agree, including them', 'Removing a member needs all members to agree, including them.'],
+      ['All other members have to agree', 'Removing a member needs every other member to agree.'],
       ['A proposal ✏️ like any other', 'A member is removed by a proposal, voted on like any other.']], 'removal'),
     lapse: (d) => lanesFor(d, [['Never — however long you are away',
         'A membership never lapses, however long somebody is away.']], 'lapse') +
@@ -4150,7 +4149,7 @@
     invite: (d) =>
       '<div class="roster"><div class="addrow"><input placeholder="Somebody to invite" data-mjoin="1">' +
       '<button class="btn" data-mjoinbtn="1">Invite</button></div></div>' +
-      '<p class="setnote">An invitation is constitutional, because who is in the room is what quorum is a fraction of: everyone consents, and one member who says no keeps them out.</p>',
+      '<p class="setnote">An invitation is constitutional, because who is in the room is what quorum is a fraction of: all members must agree, and one who says no keeps them out.</p>',
     // ❌: the membership, in front of you, with an ✕ beside each — which
     // is what “propose a removal” means
     // **One control names the subject** (entry 96): the same dropdown the pen
@@ -4499,9 +4498,9 @@
   // in the document's three verbs — the same words on 🪪 and 🥾, so a reader
   // learns them once. 🥾 keeps the rung admission has no analogue for.
   const PRICE_WORDS = {
-    admission: { assembly: 'Everyone must agree', proposal: 'The membership decides',
+    admission: { assembly: 'All members must agree', proposal: 'The membership decides',
       pen: 'Any member may invite' },
-    removal: { consent: 'Everyone must agree, including them', assembly: 'Everyone else must agree',
+    removal: { consent: 'All members must agree, including them', assembly: 'All other members must agree',
       proposal: 'The membership decides' },
   };
   const POLICY_WORDS = { invite: 'Invitation only', apply: 'Anyone may apply' };
@@ -4587,7 +4586,7 @@
     // somebody in, in the room's words; the Founder's own sentence follows
     // from the powers held on the ✉️ door, in the power clause
     admission: () => ({
-      assembly: 'Members may propose to invite people to join the membership, and everyone must agree 🏛️.',
+      assembly: 'Members may propose to invite people to join the membership, and all members must agree 🏛️.',
       proposal: 'Members may propose to invite people to join the membership, and the membership decides ✏️.',
       pen: 'Members may invite people to join the membership ✒️.',
     })[admissionPrice()],
@@ -4673,7 +4672,7 @@
       (closeSignatures().length === 0 ? 'Nobody has signed it yet.'
         : closeSignatures().length + (closeSignatures().length === 1 ? ' member has' : ' members have') + ' signed it.');
     // 🏛️'s own sentence survives only where there is no preamble to join
-    // (Q750) — otherwise it is the merged clause's trailing fragment
+    // (Q750) — otherwise the preamble's own sentence 2 states the route
     if (c.k === 'grant-voice') return voiceInStack() ? proposalsClause()
       : 'Each member holds one voice in every constitutional question.';
     // ✒️ and 🛡️ write no sentence (Q639 (a), Ed 2026-08-22). They used to
@@ -5212,7 +5211,7 @@
   // holder rides its value, so delegation IS one of its values); every
   // other setting delegates through the ✒️/🛡️ tabs.
   const POSTLABEL = 'Applications are delegated to the members';
-  const POSTNOTE = 'The rule stays as it is, but from now on the members change it: you propose like anybody else, and nothing waits for your OK. You cannot take this back on your own — that would need everyone to agree.';
+  const POSTNOTE = 'The rule stays as it is, but from now on the members change it: you propose like anybody else, and nothing waits for your OK. You cannot take this back on your own — that would need all members to agree.';
   // 403 (Ed, 2026-08-19): “The members decide” is no longer a value —
   // delegation is the state of holding neither power, said by the ✒️ and
   // 👑 tabs. On a delegated setting the value card explains, and picking
@@ -5559,7 +5558,7 @@
     // and the sentence says what the proposal will cost.
     invite: () => (constituted() && !directInvite()
       ? '<p class="why">' + ({
-          assembly: 'Bringing somebody in is a proposal everybody answers — one refusal keeps them out.',
+          assembly: 'Bringing somebody in is a proposal all members must agree to — one refusal keeps them out.',
           proposal: 'Bringing somebody in is a proposal the membership decides at the approval threshold.',
           pen: 'Any member may invite on their own word.' })[admissionPrice()] +
         ' Proposing that somebody leaves is ❌.</p>' +
@@ -5638,7 +5637,7 @@
       '<p class="why">What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.</p>' +
       '<div class="choice" role="radiogroup" aria-label="The price of admission">' +
       theyDecide('admission') +
-      opt(S, 'admission', 'assembly', 'Everyone must agree', 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.') +
+      opt(S, 'admission', 'assembly', 'All members must agree', 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.') +
       opt(S, 'admission', 'proposal', 'The membership decides', 'A proposed member is voted on at the approval threshold ✏️, like any change.') +
       opt(S, 'admission', 'pen', 'Any member may invite', 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.') +
       '</div>',
@@ -5766,8 +5765,8 @@
       '<p class="why">How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('removal') +
-      opt(S, 'removal', 'consent', 'Everyone must agree, including them', 'One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.') +
-      opt(S, 'removal', 'assembly', 'Everyone else must agree', 'Somebody can be removed even if they object, but only if every other member agrees 🏛️.') +
+      opt(S, 'removal', 'consent', 'All members must agree, including them', 'One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.') +
+      opt(S, 'removal', 'assembly', 'All other members must agree', 'Somebody can be removed even if they object, but only if every other member agrees 🏛️.') +
       opt(S, 'removal', 'proposal', 'The membership decides', 'A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.') +
       '</div>',
     machines: () =>
@@ -6005,7 +6004,7 @@
         // reached because `motionTargets` points this motion at this card.
         if (price === 'assembly') {
           return cardHtml(c, ctx, said +
-            '<p class="why">Everyone must agree before somebody joins — one refusal keeps them out.</p>' +
+            '<p class="why">All members must agree before somebody joins — one refusal keeps them out.</p>' +
             consentPicks(c.k, [
               ['no', 'I would rather they did not', 'They stay out. Nobody is told who said so.'],
               ['yes', 'I accept them joining', 'They start with the ✏️s everyone got, and quorum recomputes.'],
@@ -8878,10 +8877,10 @@
     }
     if (k === 'voicewallet') {
       return { g: '🏛️', t: !mayVoice()
-        ? 'Members can ask everybody to agree to a change.'
+        ? 'Any member can propose a constitutional change 🏛️; all members must agree for it to pass.'
         : heldMotion()
-          ? 'You are asking everybody to agree to a change. This comes back when that question settles, or when you withdraw it.'
-          : 'You can ask everybody to agree to a change. One question at a time.' };
+          ? 'You are asking all members to agree to a constitutional change. This comes back when that question settles, or when you withdraw it.'
+          : 'You can ask all members to agree to a constitutional change. One question at a time.' };
     }
     return { g: '', t: el.title || '' };
   };

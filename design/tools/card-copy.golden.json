@@ -30,12 +30,12 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is voted on at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.All members must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is voted on at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
     "options": [
      {
       "set": "admission",
       "val": "assembly",
-      "label": "Everyone must agree"
+      "label": "All members must agree"
      },
      {
       "set": "admission",
@@ -301,7 +301,7 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
     "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.The questions🌍 Visibility · n of m have answeredThe peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
     "options": [],
@@ -488,9 +488,9 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "You hold a voice in every constitutional question.",
-    "body": "You founded this document, and every member holds a voice in it.Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and every member holds a voice in it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -509,7 +509,7 @@
     ],
     "helpers": [
      "You founded this document, and every member holds a voice in it.",
-     "Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.",
+     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
      "You hold a voice in every constitutional question.",
      "Nothing is being asked here — OK files it and it leaves your queue."
     ]
@@ -965,17 +965,17 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.Everyone must agree, including themOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Everyone else must agreeSomebody can be removed even if they object, but only if every other member agrees 🏛️.The membership decidesA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
+    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.All members must agree, including themOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.All other members must agreeSomebody can be removed even if they object, but only if every other member agrees 🏛️.The membership decidesA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
     "options": [
      {
       "set": "removal",
       "val": "consent",
-      "label": "Everyone must agree, including them"
+      "label": "All members must agree, including them"
      },
      {
       "set": "removal",
       "val": "assembly",
-      "label": "Everyone else must agree"
+      "label": "All other members must agree"
      },
      {
       "set": "removal",
@@ -3333,12 +3333,12 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is voted on at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.All members must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is voted on at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
     "options": [
      {
       "set": "admission",
       "val": "assembly",
-      "label": "Everyone must agree"
+      "label": "All members must agree"
      },
      {
       "set": "admission",
@@ -3848,17 +3848,17 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Everyone must agree, including themOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Everyone else must agreeSomebody can be removed even if they object, but only if every other member agrees 🏛️.The membership decidesA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
+    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.All members must agree, including themOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.All other members must agreeSomebody can be removed even if they object, but only if every other member agrees 🏛️.The membership decidesA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
     "options": [
      {
       "set": "removal",
       "val": "consent",
-      "label": "Everyone must agree, including them"
+      "label": "All members must agree, including them"
      },
      {
       "set": "removal",
       "val": "assembly",
-      "label": "Everyone else must agree"
+      "label": "All other members must agree"
      },
      {
       "set": "removal",
@@ -4013,12 +4013,12 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Everyone must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is voted on at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
+    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.All members must agreeA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.The membership decidesA proposed member is voted on at the approval threshold ✏️, like any change.Any member may inviteAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
     "options": [
      {
       "set": "admission",
       "val": "assembly",
-      "label": "Everyone must agree"
+      "label": "All members must agree"
      },
      {
       "set": "admission",
@@ -4242,7 +4242,7 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
     "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin.",
     "options": [],
@@ -4270,7 +4270,7 @@
    },
    "canjudge": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — the constitution is settled.",
     "body": "The Founder began the document, granting every member the right to vote on what is proposed.A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.Open — the constitution is settled.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
@@ -4301,7 +4301,7 @@
    },
    "canpropose": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
     "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.Nothing is being asked here — OK files it and it leaves your queue.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
     "options": [],
@@ -4489,9 +4489,9 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "You hold a voice in every constitutional question.",
-    "body": "You founded this document, and every member holds a voice in it.Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and every member holds a voice in it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4510,7 +4510,7 @@
     ],
     "helpers": [
      "You founded this document, and every member holds a voice in it.",
-     "Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.",
+     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
      "You hold a voice in every constitutional question.",
      "Nothing is being asked here — OK files it and it leaves your queue."
     ]
@@ -4924,17 +4924,17 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.Everyone must agree, including themOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Everyone else must agreeSomebody can be removed even if they object, but only if every other member agrees 🏛️.The membership decidesA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
+    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.All members must agree, including themOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.All other members must agreeSomebody can be removed even if they object, but only if every other member agrees 🏛️.The membership decidesA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.",
     "options": [
      {
       "set": "removal",
       "val": "consent",
-      "label": "Everyone must agree, including them"
+      "label": "All members must agree, including them"
      },
      {
       "set": "removal",
       "val": "assembly",
-      "label": "Everyone else must agree"
+      "label": "All other members must agree"
      },
      {
       "set": "removal",
@@ -5110,9 +5110,9 @@
   "seat:1": {
    "admission": {
     "eyebrow": "",
-    "head": "Members may propose to invite people to join the membership, and everyone must agree 🏛️.",
+    "head": "Members may propose to invite people to join the membership, and all members must agree 🏛️.",
     "lock": "The members decide.",
-    "body": "What the room saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Everyone must agreeAny member may inviteWhat everyone asked for, without names.Answered3 of 3The document takes the dearestEveryone must agree",
+    "body": "What the room saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All members must agreeAny member may inviteWhat everyone asked for, without names.Answered3 of 3The document takes the dearestAll members must agree",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5298,7 +5298,7 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
     "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
@@ -5320,7 +5320,7 @@
    },
    "canjudge": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — the constitution is settled.",
     "body": "The Founder began the document, granting every member the right to vote on what is proposed.A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.Open — the constitution is settled.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
@@ -5351,7 +5351,7 @@
    },
    "canpropose": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
     "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.Nothing is being asked here — OK files it and it leaves your queue.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
     "options": [],
@@ -5469,9 +5469,9 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "You hold a voice in every constitutional question.",
-    "body": "The Founder invited you into the membership, and a voice in every constitutional question came with it.Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "The Founder invited you into the membership, and a voice in every constitutional question came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5493,7 +5493,7 @@
     ],
     "helpers": [
      "The Founder invited you into the membership, and a voice in every constitutional question came with it.",
-     "Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.",
+     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
      "You hold a voice in every constitutional question.",
      "Nothing is being asked here — OK files it and it leaves your queue."
     ]
@@ -5523,7 +5523,7 @@
     "eyebrow": "",
     "head": "Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
     "lock": "",
-    "body": "InviteAn invitation is constitutional, because who is in the room is what quorum is a fraction of: everyone consents, and one member who says no keeps them out.If it passes it goes to the Founder, who may assent or refuse.",
+    "body": "InviteAn invitation is constitutional, because who is in the room is what quorum is a fraction of: all members must agree, and one who says no keeps them out.If it passes it goes to the Founder, who may assent or refuse.",
     "options": [],
     "inputs": [
      {
@@ -5552,7 +5552,7 @@
      "A full ten-second hold"
     ],
     "helpers": [
-     "An invitation is constitutional, because who is in the room is what quorum is a fraction of: everyone consents, and one member who says no keeps them out.",
+     "An invitation is constitutional, because who is in the room is what quorum is a fraction of: all members must agree, and one who says no keeps them out.",
      "We should change this because…",
      "If it passes it goes to the Founder, who may assent or refuse."
     ]
@@ -6790,16 +6790,16 @@
     "eyebrow": "",
     "head": "Removing a member needs every member to agree, including them 🏛️.",
     "lock": "The members decide.",
-    "body": "Removing a member needs everyone to agree, including them.Prefer thisRemoving a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
+    "body": "Removing a member needs all members to agree, including them.Prefer thisRemoving a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
     "options": [
      {
       "set": null,
-      "val": "Everyone has to agree, including them",
+      "val": "All members have to agree, including them",
       "label": "Prefer this"
      },
      {
       "set": null,
-      "val": "Everyone else has to agree",
+      "val": "All other members have to agree",
       "label": "Prefer this"
      },
      {
@@ -7132,9 +7132,9 @@
   "settled": {
    "admission": {
     "eyebrow": "",
-    "head": "Members may propose to invite people to join the membership, and everyone must agree 🏛️.",
+    "head": "Members may propose to invite people to join the membership, and all members must agree 🏛️.",
     "lock": "The members decide.",
-    "body": "What the room saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Everyone must agreeAny member may inviteWhat everyone asked for, without names.Answered3 of 3The document takes the dearestEveryone must agree",
+    "body": "What the room saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All members must agreeAny member may inviteWhat everyone asked for, without names.Answered3 of 3The document takes the dearestAll members must agree",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7320,7 +7320,7 @@
    },
    "begin": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
     "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
@@ -7342,7 +7342,7 @@
    },
    "canjudge": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — the constitution is settled.",
     "body": "The Founder began the document, granting every member the right to vote on what is proposed.A vote counts towards quorum, and whether your name goes on it is one of the rules being decided. Settling those afterwards would change what the vote meant, so they come first.Open — the constitution is settled.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
@@ -7373,7 +7373,7 @@
    },
    "canpropose": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "Open — members can propose as soon as they arrive.",
     "body": "The Founder began the document, granting every member the right to propose changes to it.Anybody can read the document from the first second. Nobody can propose a change until the document begins, because the start decides the text a proposal is made against.Open — members can propose as soon as they arrive.Nothing is being asked here — OK files it and it leaves your queue.You hold 5 ✏️s to propose with — OK puts them in your wallet.",
     "options": [],
@@ -7555,9 +7555,9 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; a constitutional proposal 🏛️ needs everyone’s consent, each member holding one voice. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
+    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "You hold a voice in every constitutional question.",
-    "body": "You founded this document, and every member holds a voice in it.Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
+    "body": "You founded this document, and every member holds a voice in it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.You hold a voice in every constitutional question.Nothing is being asked here — OK files it and it leaves your queue.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7579,7 +7579,7 @@
     ],
     "helpers": [
      "You founded this document, and every member holds a voice in it.",
-     "Every member holds one voice in every constitutional question. One at a time, and it comes back whole when the question settles or you withdraw it.",
+     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
      "You hold a voice in every constitutional question.",
      "Nothing is being asked here — OK files it and it leaves your queue."
     ]
@@ -9164,16 +9164,16 @@
     "eyebrow": "",
     "head": "Removing a member needs every member to agree, including them 🏛️.",
     "lock": "The members decide.",
-    "body": "Removing a member needs everyone to agree, including them.Prefer thisRemoving a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
+    "body": "Removing a member needs all members to agree, including them.Prefer thisRemoving a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
     "options": [
      {
       "set": null,
-      "val": "Everyone has to agree, including them",
+      "val": "All members have to agree, including them",
       "label": "Prefer this"
      },
      {
       "set": null,
-      "val": "Everyone else has to agree",
+      "val": "All other members have to agree",
       "label": "Prefer this"
      },
      {

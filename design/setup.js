@@ -1057,7 +1057,7 @@ window.SETUP = (function () {
   const motionReopen = (c, ctx, m) =>
     '<div class="unlocks"><b>Re-opened.</b> A member has proposed an amendment' +
     (m.why ? ' — <i>' + esc(m.why) + '</i>' : '') + '. ' +
-    'It is constitutional, so it takes everyone: there is no vote and nothing is ranked — ' +
+    'It is constitutional, so all members must agree: there is no vote and nothing is ranked — ' +
     'you accept the amendment or keep what stands, and one refusal keeps what stands. ' +
     'Until every one of the ' + ctx.E + ' has answered, what stands stands.</div>' +
     '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have answered. ' +
@@ -1486,14 +1486,14 @@ window.SETUP = (function () {
     admission: (A) =>
       '<p class="why">What it costs to bring somebody into the membership — a member’s invitation or a stranger’s application alike. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'admission', [
-        { v: 'assembly', t: 'Everyone must agree', e: 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.' },
+        { v: 'assembly', t: 'All members must agree', e: 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.' },
         { v: 'proposal', t: 'The membership decides', e: 'A proposed member is voted on at the approval threshold ✏️, like any change.' },
         { v: 'pen', t: 'Any member may invite', e: 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.' }]) + BLINDNOTE,
     removal: (A) =>
       '<p class="why">What it costs to remove a member. Whichever is chosen, the member always sees a removal proposed against them, and anybody may leave at any time. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'removal', [
-        { v: 'consent', t: 'Everyone must agree, including them', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
-        { v: 'assembly', t: 'Everyone else must agree', e: 'The whole room, minus the member in question, must agree 🏛️.' },
+        { v: 'consent', t: 'All members must agree, including them', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
+        { v: 'assembly', t: 'All other members must agree', e: 'The whole room, minus the member in question, must agree 🏛️.' },
         { v: 'proposal', t: 'The membership decides', e: 'Voted on at the approval threshold ✏️ like any change, with quorum.' }]) + BLINDNOTE,
     machines: (A) =>
       '<p class="why">An AI that patrols the document for drift and proposes fixes — it never votes, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
