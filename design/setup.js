@@ -1124,13 +1124,16 @@ window.SETUP = (function () {
     if (!c.grants) return 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.';
     return c.k === 'canpropose' ? '' : '<b>' + c.grants + ' ' + c.take + '</b> puts it in your wallet.';
   };
-  const gateBody = (c) =>
-    '<p class="why">' + c.why + '</p>' +
-    '<div class="lockline">' + (c.open() ? TICK : '') + '<span>' +
-    (c.open() ? c.done : c.waiting) + '</span></div>' +
-    (c.open() ? '' : '<div class="gatelist">' + c.blockers().map((b) =>
-      '<span class="gaterow"><span class="gg">' + b.g + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
-    (gateNote(c) ? '<p class="setnote">' + gateNote(c) + '</p>' : '');
+  const gateBody = (c) => {
+    const open = c.open();
+    const note = gateNote(c);
+    return '<p class="why">' + c.why + '</p>' +
+      '<div class="lockline">' + (open ? TICK : '') + '<span>' +
+      (open ? c.done : c.waiting) + '</span></div>' +
+      (open ? '' : '<div class="gatelist">' + c.blockers().map((b) =>
+        '<span class="gaterow"><span class="gg">' + b.g + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
+      (note ? '<p class="setnote">' + note + '</p>' : '');
+  };
 
   /* The uploader, one copy for both surfaces: the file is read locally and
      never sent anywhere; where the data lands stays the caller's, named by

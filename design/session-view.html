@@ -945,10 +945,11 @@
     if (el.querySelector('[data-removewho]')) ks.add('removeWho');
     // **The picture card names itself by its uploader, not by its grid.**
     // `[data-pic]` used to be the always-present row of grounds; since Q732
-    // the only `[data-pic]` elements are the open category's buttons and the
-    // Remove button, and both can be absent at once — remove your picture,
-    // then type a search nothing matches, and the card carries no `[data-pic]`
-    // at all, so 🗑️ would decline to put the removed picture back. The file
+    // the only `[data-pic]` elements are the picker's own buttons and the
+    // Remove button, and neither is guaranteed — the grid says *the emoji
+    // list is still loading* when `EMOJI_DATA` has not arrived, and with no
+    // picture set there is nothing to remove, so the card can carry no
+    // `[data-pic]` at all and 🗑️ would decline to put a picture back. The file
     // drop zone is rendered by `pictureBody` unconditionally and names whose
     // picture it is, so it is the honest marker of "this is *your* picture
     // card" — the applicant's body is the same one and must not reach across
@@ -6751,6 +6752,22 @@
     if (S.viewer !== 'applicant' && S.app.pic === e2) return S.app.name || 'an applicant';
     return null;
   });
+  // **The picker keeps your place** (entry 186's other half). Every press
+  // inside the grid — a glyph, a skin tone — goes through the page's own
+  // `render()`, which rebuilds the card and with it the scroll box: the
+  // options are one flat list of 1912 now, about 3400px of them in a 238px
+  // window, so a founder who scrolled to the flags and picked one was thrown
+  // back to the top and could not see the choice they had just made. It did
+  // not bite while the box held one category at a time behind a search. The
+  // scroll position is picker state like `FACE_TONE` — not a value, not part
+  // of the answer — so it is carried across the render rather than stored.
+  const pickerRender = () => {
+    const was = document.querySelector('.emojibox');
+    const top = was ? was.scrollTop : 0;
+    render();
+    const now = document.querySelector('.emojibox');
+    if (now && top) now.scrollTop = top;
+  };
   document.addEventListener('change', (ev) => {
     // ❌'s subject picker (entry 96) — a select answers on `change`, and the
     // choice is provisional like every other value in `S` until the act. Two
@@ -6864,9 +6881,9 @@
       } else done(false);
       return; }
     const tn0 = ev.target.closest('[data-tone]');
-    if (tn0) { window.SETUP.setFaceTone(tn0.getAttribute('data-tone')); return render(); }
+    if (tn0) { window.SETUP.setFaceTone(tn0.getAttribute('data-tone')); return pickerRender(); }
     const ap2 = ev.target.closest('[data-apppic]');
-    if (ap2) { S.app.pic = ap2.dataset.apppic; return render(); }
+    if (ap2) { S.app.pic = ap2.dataset.apppic; return pickerRender(); }
     const adp = ev.target.closest('[data-admitpick]');
     if (adp) { S['adm:' + adp.getAttribute('data-admitpick')] = adp.getAttribute('data-v'); return render(); }
     const adg = ev.target.closest('[data-admitgo]');
@@ -7194,7 +7211,7 @@
       if (perpetual() && S.shape === 'ramp') S.shape = 'fixed';
       return render(); }
     const pic = ev.target.closest('[data-pic]');
-    if (pic) { S.mypic = pic.dataset.pic; return render(); }
+    if (pic) { S.mypic = pic.dataset.pic; return pickerRender(); }
     const d = ev.target.closest('[data-drop]');
     if (d) { const row = S.roster[+d.dataset.drop];
       // ✕ was as silent as the field beside it (Q811): post-start `uninvite`
