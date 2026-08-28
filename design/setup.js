@@ -790,11 +790,18 @@ window.SETUP = (function () {
     '<div class="idrow">' + avHtml(me, 'big') +
     '<span class="fld"><label for="myname">Your name</label>' +
     '<input id="myname" data-txt="myname" value="' + esc(me.n || '') + '" placeholder="Your name"></span></div>' +
+    // a blank name is a real answer (§9.0c), and since the card can be
+    // saved empty it has to say what saving it empty does. **Both branches
+    // have to be true on their own** (Q980): since ✋ is served at the save it
+    // is served before 🎩 is answered, so almost every founder reads the
+    // member branch first and a clerk meets theirs only by reopening the card.
+    // The old clerk note said *optional* as though the other branch were not —
+    // both are optional, and the branches differ only in where the blank
+    // lands. *Founded by* is the words on the page (the Founded line, F16);
+    // *Convenor* appears in no string a reader can see.
     ((opts && opts.optional)
-      ? '<p class="setnote">You are not a member, so this is <b>optional</b> — leave it blank and the constitution simply shows no name.</p>'
-      // a blank name is a real answer (§9.0c), and since the card can be
-      // saved empty it has to say what saving it empty does
-      : '<p class="setnote">Leave it blank and you appear as <b>Anonymous</b>. You can set it later from any seat.</p>');
+      ? '<p class="setnote">You are not a member, so your name appears only on the <i>Founded by</i> line. Leave it blank and that line shows <b>no name</b>.</p>'
+      : '<p class="setnote">This is how you appear in the room. Leave it blank and you appear as <b>Anonymous</b>. You can set it later from any seat.</p>');
 
   /* **It is an uploader** (Ed, 2026-08-18). The card had offered a ground for
      your initials or a drawn mark, on the reasoning that a mockup has no

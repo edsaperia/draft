@@ -1041,18 +1041,28 @@ if (DELEGATE_ALL) {
 
 // **The founder is asked who they are, before they begin** (Q645, Ed's live
 // walk 2026-08-22: *I'm never offered the "Your Name" and "Your Picture"
-// tasks*). ✋ and 🖼️ are steps 9 and 10 of SURFACE §8's order, immediately
-// after 🎩 — and they were dead on every live document, because `hydrateS`
+// tasks*) — and they were dead on every live document, because `hydrateS`
 // declared them settled rather than ask the module whether they had ever been
 // answered. The assertion belongs **here** and nowhere else: both probes and
 // `founding-walk.mjs` drive the fixture, where the pair always worked, so the
 // bug was invisible to all three. It is checked as *position*, not mere
 // presence, because arriving in the wrong place is its own failure.
-const iHat = order.indexOf('hat');
-const identityOrder = order.slice(iHat + 1, iHat + 3).join(',');
-say('identity   · after 🎩 the rail asks [' + identityOrder + ']' +
-  (identityOrder === 'myname,mypic' ? '' : '  FAIL: expected myname,mypic'));
-if (identityOrder !== 'myname,mypic') stuck.push('identity tasks (got ' + identityOrder + ')');
+// **Served at the save, and never blocking** (Q980): the pair sits between
+// 📧 and ✒️ in `ORDER` and neither holds the file, so the position that can be
+// asserted is *after the save and before 🌍* rather than adjacency to the pen —
+// this walk takes rail entries in document order, so it meets ✒️ first and may
+// meet 🛡️ before ✋. Adjacency to each other and their own order still hold:
+// 🖼️ follows ✋ and ✋ blocks nothing, which is what makes them arrive together.
+const iEmail = order.indexOf('myemail');
+const iName = order.indexOf('myname');
+const iPic = order.indexOf('mypic');
+const iChamber = order.indexOf('chamber');
+const identityOk = iName >= 0 && iPic === iName + 1 &&
+  (iEmail < 0 || iName > iEmail) && (iChamber < 0 || iPic < iChamber);
+say('identity   · the rail asks [' + order.slice(iName, iName + 2).join(',') + '] at ' + iName +
+  ', after 📧 (' + iEmail + ') and before 🌍 (' + iChamber + ')' +
+  (identityOk ? '' : '  FAIL: expected myname,mypic adjacent, after myemail and before chamber'));
+if (!identityOk) stuck.push('identity tasks (order ' + order.join(' ') + ')');
 
 // Asserted, not printed (2026-08-22): this block used to report `begun` and
 // pass whatever it said. A begun document hides the founder's pre-start

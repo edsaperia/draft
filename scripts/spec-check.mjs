@@ -378,10 +378,19 @@ function checkOrder(pm) {
   const blocks = page.match(/const blocksOrder = \(p\) => \(?p\.k === '([a-z-]+)'/);
   const blocker = blocks ? blocks[1] : null;
   const gates = [...page.matchAll(/\{ k: '([a-z-]+)',[^\n]*isGate: true/g)].map((m) => m[1]);
+  // the third state of the *blocks?* column (Q980): a card whose literal says
+  // `blocks: false` takes its position and is skipped as a blocker, which is
+  // what puts ✋ and 🖼️ in the rail at the save without holding the file. The
+  // flag can sit on any line of the literal, so the scan is tempered to stop
+  // at the next `{ k: '` rather than at the end of the first line — and it runs
+  // over a **comment-stripped** copy, since the comments that explain the flag
+  // stand between card literals and each named 🤝 and 🤖 as exempt.
+  const noComments = page.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const noBlock = [...noComments.matchAll(/\{ k: '([a-z-]+)',(?:(?!\{ k: ')[\s\S])*?blocks: false/g)].map((m) => m[1]);
   for (const r of rows) {
     const isGate = gates.includes(r.key);
     const want = r['blocks?'] === 'yes';
-    const got = isGate ? r.key === blocker : true;
+    const got = isGate ? r.key === blocker : !noBlock.includes(r.key);
     if (want !== got) find('order', `${r.key}: table says blocks=${r['blocks?']}, blocksOrder says ${got}`);
   }
   const glyphs = {};

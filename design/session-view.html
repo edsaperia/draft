@@ -1733,11 +1733,17 @@
       rule: 'Each member says the <b>most open</b> door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.' },
     // optional for a clerk (Ed, 2026-08-18): an anonymous founder is a
     // perfectly ordinary thing — they can simply not set a name or picture
+    // **`blocks: false` — served at the save, never in the way** (Q980). The
+    // pair stands in the rail from the moment there is a room to appear in and
+    // the founding walks straight past it: a blank name is Anonymous and a
+    // blank picture is initials (§9.0c), so there is nothing the constitution
+    // is waiting to learn from either. Read by `blocksOrder`; the two arrive
+    // *together* because 🖼️ follows ✋ in `ORDER` and ✋ no longer blocks.
     { k: 'myname', g: '✋', t: 'Your Name', kind: 'personal', own: 'you',       // a blank name is Anonymous (§9.0c), so this card always has something
       // to commit — and with the founding running in single file, a task
       // that cannot be committed is a task nothing can get past
-      ready: () => true, changeable: true },
-    { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you', changeable: true },
+      ready: () => true, changeable: true, blocks: false },
+    { k: 'mypic', g: '🖼️', t: 'Your Picture', kind: 'personal', own: 'you', changeable: true, blocks: false },
     // A document may start empty, which is why this is not a blocker on having
     // content but on having *decided*: a page nobody has looked at and a page
     // somebody chose to leave blank look identical, and only one of them should
@@ -2787,8 +2793,16 @@
   // (Ed: *Begin can be in the middle*), and 📄 the text stays last but one.
   // 🪪 before 🤝 (Ed, 2026-08-26): an application pays the price, so the
   // price is decided before whether strangers may apply
-  const ORDER = ['title', 'slug', 'shape', 'myemail', 'grant-pen', 'grant-shield', 'chamber',
-    'admission', 'applications', 'hat', 'myname', 'mypic', 'lapse', 'removal',
+  // **✋ and 🖼️ stand at the save, above the pen** (Ed, 2026-08-28, Q980):
+  // they are born the moment there is a room to appear in, and they are the
+  // one pair in the file that does not block it (`blocks: false` below). Above
+  // ✒️ rather than below because *at the save* is where Ed put them, and the
+  // pen's own blocking rule — every card below it is committed with the very
+  // pen it hands over — does not reach them: a name and a picture are personal,
+  // bind nobody (§9.0c) and are committed with no power at all.
+  const ORDER = ['title', 'slug', 'shape', 'myemail', 'myname', 'mypic',
+    'grant-pen', 'grant-shield', 'chamber',
+    'admission', 'applications', 'hat', 'lapse', 'removal',
     'canpropose', 'canjudge', 'grant-voice', 'rate', 'machines',
     'ending', 'bar', 'quorum',
     'authorship', 'judgments',
@@ -2820,9 +2834,18 @@
   // never on a founding commit, so it hands over nothing the queue below it
   // needs — and a clerk founder, who is not a member, never opens it at all,
   // so a blocking 🏛️ would strand the founding four questions from its end.
+  //
+  // **And a personal card holds its place without holding the queue either**
+  // (Ed, 2026-08-28, Q980: *✋ and 🖼️ should both appear together after the
+  // birth, and not block the path*). A card whose literal says `blocks: false`
+  // takes its position and is skipped as a blocker — because a blank is a real
+  // answer there (a blank name is Anonymous, a blank picture is initials,
+  // §9.0c), so there is nothing the founding is waiting to learn. Its own flag
+  // rather than `isGate`, which also means news-not-question, hidden from a
+  // stranger, no composer and a dozen other things none of which is true here.
   const blocksOrder = (p) => p.k === 'grant-pen'
     ? amFounder() && !!p.open() && !acked('grant-pen')
-    : !p.isGate && !settled(p);
+    : !p.isGate && p.blocks !== false && !settled(p);
   const orderReady = (c) => {
     const i = ORDER.indexOf(c.k);
     return i < 0 ? (c.dep || []).every((k) => settled(card(k)))
