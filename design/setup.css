@@ -336,6 +336,11 @@
   .emojiface { display: inline-block; font-size: 1em; line-height: 1;
     vertical-align: middle; }
   .emojiface.big { font-size: 38px; }
+  /* 👑/📯 beside the founder's name (entry 197): the same four declarations,
+     so the mark takes the size of the text it stands in — but its own class,
+     since an `.emojiface` inside a member row is read as that member's face. */
+  .founderMark { display: inline-block; font-size: 1em; line-height: 1;
+    vertical-align: middle; }
   .avopt.taken { opacity: 0.3; cursor: not-allowed; }
   .freemoji { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s2); }
   .emojin { width: 120px; padding: 3px 8px; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 20px; line-height: 1.3; }
@@ -370,8 +375,6 @@
   .rperson .em { font-size: var(--t-cap); color: var(--muted); }
   .chip { font-size: var(--t-cap); border: 1px solid var(--border); border-radius: 999px;
     padding: 2px var(--s2); color: var(--muted); background: var(--bg); cursor: pointer; font-family: inherit; }
-  .chip.founder { border-color: var(--primary); color: var(--primary-emphasis);
-    background: var(--primary-subtle); cursor: default; }
   .chip.pending { border-style: dashed; }
   /* the person a motion would remove */
   .rperson.picked { background: color-mix(in srgb, rgb(var(--lc-open)) 22%, var(--bg));

@@ -1052,6 +1052,18 @@
   // the radios' before the save. startingText never counts (no post-start
   // change route); title and link always do, so this is true until Q381.
   const founderCrowned = () => (cs ? cs.crowned() : true);
+  // **The founder is marked by a glyph, never a word** (entry 197): the
+  // Founded line and the register row say the same thing from one predicate,
+  // called once here so the two can never disagree. Not `.emojiface` —
+  // `journey-walk.mjs` reads one inside a row as *the member's face*, and
+  // `avHtml` already puts one there; same rules, different name.
+  const founderMark = () => {
+    const c = founderCrowned();
+    return '<span class="founderMark" title="' + (c
+      ? 'Part of the constitution is reserved: changing it needs the founder’s assent'
+      : 'The Founder reserves nothing — no special part in the document') + '">' +
+      (c ? '👑' : '📯') + '</span>';
+  };
   // Q445: per-setting permission is the lock's, never the wallet's — holding
   // the pen *somewhere* is what puts it in your topbar
   const holdsPenAnywhere = () => !!cs && PW_KEYS.some((k) => pwPair(k).u);
@@ -2965,7 +2977,7 @@
         // in is not the only place that fact could have been read.
         const memRow = (p) => '<div class="memrow">' + avHtml(p) +
           '<span class="mn">' + esc(p.n || (!p.in && p.e) || 'Anonymous') +
-          (p.founder ? ' <span class="chip founder">founder</span>' : '') +
+          (p.founder ? ' ' + founderMark() : '') +
           (p.lapsed && p.in ? ' <span class="chip pending">lapsed</span>' : '') +
           '</span></div>';
         // **One subsection per status** (entry 95, Ed 2026-08-26: *these are
@@ -3004,7 +3016,7 @@
         const meBlock = showMe
           ? '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
             '<span class="mn">' + esc(S.myname || 'Anonymous') +
-            (S.roster[meIdx].founder ? ' <span class="chip founder">founder</span>' : '') +
+            (S.roster[meIdx].founder ? ' ' + founderMark() : '') +
             ' <span class="chip">you</span>' + leaveBtn + '</span></div>'
           : '';
         // a stranger reads the register as the door serves it, under *Members*
@@ -5328,10 +5340,7 @@
     (!cs ? '' : '<p class="cpv founded">Founded by ' +
       avHtml(founderInfo()) + ' ' + esc(founderInfo().n.trim() || 'Anonymous') +
       // 👑 by any reservation (Ed, Q379 wide); 📯 = holds nothing.
-      ' <span title="' + (founderCrowned()
-        ? 'Part of the constitution is reserved: changing it needs the founder’s assent'
-        : 'The Founder reserves nothing — no special part in the document') + '">' +
-      (founderCrowned() ? '👑' : '📯') + '</span>' + esc(foundedAt()) + '.</p>');
+      ' ' + founderMark() + esc(foundedAt()) + '.</p>');
   // the close's moment, the same shape as the founding's
   const closedAtWords = () => {
     if (!cs || !cs.closed || cs.closedAt == null) return '';
