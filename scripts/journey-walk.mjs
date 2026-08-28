@@ -222,14 +222,18 @@ await page.goto(link);
 for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await T(500);
 await T(2200);
 say('birth      · saved at ' + page.url());
-// **The pen is the only thing asked for at the save** (Ed, 2026-08-22).
-// Every card below ✒️ in the founding order commits with the pen it hands
-// over, so until it is acknowledged they are tasks the founder may not
-// action — and a task you may not action is not shown at all.
+// **The pen, ✋ and 🖼️ are what the save asks for** (Ed, 2026-08-22, widened by
+// Q980). Every *setting* below ✒️ in the founding order commits with the pen it
+// hands over, so until it is acknowledged they are tasks the founder may not
+// action — and a task you may not action is not shown at all. The two personal
+// cards are the exception the pen's rule does not reach: they are committed
+// with no power at all, so they stand at the save and block nothing (F2, F3).
 const atSave = await rail();
+const saveWant = ['grant-pen', 'myname', 'mypic'];
+const saveOk = JSON.stringify([...atSave].sort()) === JSON.stringify(saveWant);
 say('at save    · rail ' + JSON.stringify(atSave) +
-  (atSave.length === 1 && atSave[0] === 'grant-pen' ? '' : '  FAIL: the pen should stand alone'));
-if (!(atSave.length === 1 && atSave[0] === 'grant-pen')) stuck.push('rail at save');
+  (saveOk ? '' : '  FAIL: expected the pen with ✋ and 🖼️, and nothing else'));
+if (!saveOk) stuck.push('rail at save');
 // **The column carries the document's name from the save** (backlog 33, Ed:
 // *immediately after the birth, when my named document opens for the first
 // time, the Text area should already have the title and hairline above it*).
