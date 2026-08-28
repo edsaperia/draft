@@ -13,6 +13,12 @@
  *   npm run probe            # both probes; dead steps are warnings
  *   npm run probe -- --strict  # dead steps (a step whose target is
  *                              # missing on the live side) fail too
+ *   npm run probe -- --update  # re-freeze design/reference/ from design/
+ *                              # first, then prove the copy: a diff after a
+ *                              # fresh copy means FROZEN is missing a file
+ *                              # the page has started loading. Normally run
+ *                              # through `npm run qa:freeze`, which never
+ *                              # pairs it with --strict.
  *
  * The probes stay authoritative about what they compare: this file never
  * interprets a diff, it only reads each probe's own report
@@ -37,6 +43,7 @@
  * ci.yml, not this comment.**
  */
 import { createServer } from 'node:http';
+import { copyFileSync, existsSync, readFileSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,8 +51,57 @@ import { chromium } from 'playwright';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const DESIGN = join(ROOT, 'design');
+const REFERENCE = join(DESIGN, 'reference');
 const VIEWPORT = { width: 1600, height: 1000 };
 const STRICT = process.argv.includes('--strict');
+const UPDATE = process.argv.includes('--update');
+
+/**
+ * The merged page and everything it loads — the authoritative list of what
+ * design/reference/ freezes, one byte-copy per name. It lived only in the
+ * reference README's prose until now, which is how six of the nine copies
+ * were missed on 2026-08-26 (the two that had been edited were re-frozen and
+ * the rest were left to rot). A file the page starts loading that is not
+ * named here shows up as a diff immediately after --update, which is what
+ * the post-copy probe run below is for.
+ *
+ * design/reference/session-baseline.json is deliberately NOT here: it is the
+ * session-probe's recorded baseline at the cards.js extraction (2026-08-18),
+ * kept as history, with no design/session-baseline.json to be a copy of and
+ * nothing in the tree that reads or writes it. It is not a reference a batch
+ * moves.
+ */
+const FROZEN = [
+  'session-view.html',
+  'session.js',
+  'fixture-session.js',
+  'setup.js',
+  'setup.css',
+  'cards.js',
+  'system.css',
+  'constitution.js',
+  'emoji-data.js',
+];
+
+/** Byte-copy design/<name> over design/reference/<name>, reporting each. */
+function refreeze() {
+  let changed = 0;
+  for (const name of FROZEN) {
+    const from = join(DESIGN, name);
+    const to = join(REFERENCE, name);
+    if (!existsSync(from)) {
+      console.log(`  MISSING: design/${name} — FROZEN names a file that is not there`);
+      return null;
+    }
+    const differs = !existsSync(to) || !readFileSync(from).equals(readFileSync(to));
+    if (differs) { copyFileSync(from, to); changed++; }
+    console.log(`  ${differs ? 'copied ' : 'same   '} ${name}`);
+  }
+  console.log(changed
+    ? `${changed} of ${FROZEN.length} copies changed`
+    : `every copy already matched (${FROZEN.length})`);
+  return changed;
+}
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -165,10 +221,15 @@ async function runProbe(browser, base, probe) {
 }
 
 async function main() {
+  if (UPDATE) {
+    console.log(`re-freezing design/reference/ from design/ (${FROZEN.length} files):`);
+    if (refreeze() === null) { console.log('FAILED — nothing was frozen'); process.exit(1); }
+  }
   const server = await serveDesign();
   const base = `http://127.0.0.1:${server.address().port}`;
   const browser = await chromium.launch();
   let failed = false;
+  let differed = false;
   const t0 = Date.now();
   try {
     for (const probe of PROBES) {
@@ -188,11 +249,19 @@ async function main() {
         console.log(`  ${STRICT ? 'DEAD' : 'warning — dead'} steps on the live side (${dead.length}; Q910):`);
         for (const d of dead) console.log(`    ${d}`);
       }
+      if (!v.ok || ref.errors.length || live.errors.length) differed = true;
       if (!v.ok || ref.errors.length || live.errors.length || (STRICT && dead.length)) failed = true;
     }
   } finally {
     await browser.close();
     server.close();
+  }
+  // A fresh copy of every file the page loads must come out IDENTICAL. If it
+  // does not, the page is loading something FROZEN does not name — the exact
+  // rot this list exists to catch, and not a surface change to be re-frozen.
+  if (UPDATE && differed) {
+    console.log('a diff SURVIVED a fresh copy: the page loads a file design/reference/ does not freeze.');
+    console.log('add it to FROZEN in scripts/probe.mjs and re-run.');
   }
   console.log(`${failed ? 'FAILED' : 'ok'} in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
   process.exit(failed ? 1 : 0);

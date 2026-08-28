@@ -45,10 +45,23 @@ the nine copies had drifted, not the two that had been edited — the same
 lesson as the run above, learned again.
 It marks the same commit
 and is authoritative if EOL normalisation ever makes a copy differ byte-wise.
+**The litany ends there**: `refs-membership-2026-08-26` is the last per-freeze
+tag, and every freeze after it is found by `git log -- design/reference`
+instead. Do not extend this paragraph.
 
 - **Never edit these files.** When the surface changes intentionally,
-  re-freeze (new copies, new tag) as its own commit, and empty the probes'
-  allowlists again — a freeze needs no allowances.
+  re-freeze with **`npm run qa:freeze`** — which re-freezes all three of the
+  references a batch moves, these copies among them — or with
+  `npm run probe -- --update` for these copies alone. Both re-copy **every**
+  file in the list, which is the point: two freezes in a row re-copied only
+  the files somebody had edited and left the rest to rot. Empty the probes'
+  allowlists again while you are there — a freeze needs no allowances.
+- **The commit is normally not yours.** plan-queue offers the freeze once per
+  batch, after Ed's QA, and `pq freeze` runs `npm run qa:freeze` and commits
+  what it changed as *plan-queue: re-freeze the reference after QA of
+  <batch>*. A per-freeze `refs-*` tag is no longer part of the ritual: the
+  commit is the record, `git log -- design/reference` finds every freeze, and
+  `pq ship`'s `batch/<letter>-<date>` tag already names what shipped.
 - `http://localhost:8137/reference/session-view.html` renders the frozen
   surface standalone (relative hrefs resolve to the frozen copies beside
   it); `?fixture=session` renders the frozen Hollow Oak session.

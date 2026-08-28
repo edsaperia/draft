@@ -46,8 +46,9 @@ jobs:
       # is legitimate and reddens this walk until the golden is re-frozen, so
       # at every push it was red for days at a time and 52 differences stale
       # when finally run by hand. **Expect red after a founding change**, and
-      # re-freeze with `node scripts/founding-golden.mjs --update` as part of
-      # closing the batch.
+      # re-freeze with `npm run qa:freeze` as part of closing the batch —
+      # which takes this golden and the other two references a batch moves in
+      # one command, and is what plan-queue's freeze offer runs after QA.
       #
       # A red here gates nothing: the deploy already happened on the push of
       # main that this tag was cut from.

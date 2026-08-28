@@ -135,7 +135,9 @@ jobs:
   #
   # **Expect red after an intentional page change.** Both probes compare
   # against a frozen reference, so a deliberate design change reddens this
-  # job until `design/reference/` is re-frozen and tagged. That is the cost
+  # job until `design/reference/` is re-frozen by `npm run qa:freeze` (or
+  # `npm run probe -- --update` for these copies alone) — which plan-queue's
+  # freeze offer runs after each batch's QA. That is the cost
   # of the signal, and it is now visible rather than swallowed. A scenario
   # change needs no re-freeze — only a page change does (Q914).
   probe:
