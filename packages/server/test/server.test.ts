@@ -1771,7 +1771,10 @@ describe('👤 authorship on the wire (SPEC §3.5a)', () => {
     // and nothing was proposed — the refusal left no candidate behind
     expect((await sealed.viewOf(sealed.cy)).mine).toEqual([]);
   });
-});
+  // the file's budget, on the describe: each of these founds a real document
+  // over HTTP, and five of the seven timed out at the 5 s default under load
+  // in batch Q (B32/B34)
+}, 60_000);
 
 describe('the phase ladder (Q674–Q678)', () => {
   it('walks one real document from birth to a closed session with signatures', async () => {
