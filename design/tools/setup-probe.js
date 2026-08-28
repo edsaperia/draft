@@ -175,6 +175,20 @@
     ['confirm-title', () => click('.setupcard [data-confirm]')],
     ['open-link', () => openTab('slug')],
     ['confirm-link', () => click('.setupcard [data-confirm]')],
+    /* 🧭 the shape, and the whole founding below it (entry 185's build, found
+     * while adding the step under 🤝). `ORDER` **is** the dependency list, and
+     * 🧭 took its place between 📍 and 📧 at entry 166 — so an unanswered shape
+     * kept 📧 from ever being served and every step from `open-email` down was
+     * dead on the live side: 73 of them, the founding below the address and the
+     * whole of `motions` with it. It is Q910 again, exactly (*an unanswered 🪪
+     * kept 🤝, 🎩, ✋ and 🖼️ from ever being born*), and it hid the same way —
+     * **a step that cannot find its target is recorded as data, and a scenario
+     * that dies early simply has more of it**, so nothing in the run says
+     * *this founding stopped at step 7*. The reference is pre-🧭, so these
+     * three are dead on the ref side until entry 189 re-freezes it. */
+    ['open-shape', () => openTab('shape')],
+    ['choose-shape', () => click('.setupcard [data-set="docShape"][data-val="meeting"]')],
+    ['confirm-shape', () => click('.setupcard [data-confirm]')],
     ['open-email', () => openTab('myemail')],
     ['type-email', () => typeInto('.setupcard input[type="email"]', 'ada@example.org')],
     ['send-verify', () => click('.setupcard [data-confirm]')],
@@ -206,6 +220,40 @@
     // then 🤝, which asks only whether strangers may apply at all: what an
     // application costs is 🪪's, answered above
     ['open-applications', () => openTab('applications')],
+    /* **The pick must not fade the card being pressed** (entry 185, Ed's QA of
+     * batch Q: *when I make the first choice on the Applications decision
+     * card, the card flashes*). *Anyone may apply* is the one pick on the
+     * founding that births a lvl3 subsection — *Applicants* — inside the
+     * section the open card is standing in, and until that subsection had a
+     * `.csub` block of its own `birthPass` charged its birth to the whole
+     * Membership `.csec` and faded the 🤝 card with it.
+     *
+     * The assertion works because the probe stubs `setTimeout`: `birthPass`
+     * writes the inline opacity in the same tick as the click and removes it
+     * in a timer this run has not flushed yet, so reading straight after the
+     * click reads the fade in flight. It cannot be the entry's own *the card's
+     * box is the same element before and after* — the band is rebuilt from
+     * `bandHtml` on every pick for every card, so a new element is by design.
+     *
+     * The step is **present on the live side only** until the reference is
+     * re-frozen (entry 189), so the comparison reports it as present on one
+     * side only and every step after it shifted. The probe is already red
+     * against that stale reference for other reasons and clearing it is 189's,
+     * not this step's — no ALLOWLIST entry, the convention there being that an
+     * allowance is for a change that will be frozen, and 189 is that freeze.
+     *
+     * `choose-join` below then puts 🤝 back to *invite*, which is the value
+     * every golden was frozen on, so nothing downstream of it changes. */
+    ['choose-join-apply-no-flash', () => {
+      const err = click('.setupcard [data-set="joinBy"][data-val="apply"]');
+      if (err) return err;
+      const card = $('.setupcard');
+      if (!card) return 'no card after the pick';
+      for (let el = card; el && el.id !== 'band'; el = el.parentElement) {
+        if (el.style && el.style.opacity) return 'faded ancestor: ' + el.className;
+      }
+      return null;
+    }],
     ['choose-join', () => click('.setupcard [data-set="joinBy"][data-val="invite"]')],
     ['confirm-applications', () => click('.setupcard [data-confirm]')],
     ['open-hat', () => openTab('hat')],
