@@ -891,9 +891,23 @@ for (let i = 0; i < 60; i++) {
   // no place in it.
   if (next === 'invite' && !(await page.evaluate(() => !!document.querySelector('.doc.begun')))) {
     seen.add('invite');
-    const ord = ((await founding()) || {}).order || [];
+    const f = (await founding()) || {};
+    // **Which of the two reasons is it?** ✉️ is a task for F19's `one-voice`
+    // remedy as well, and that one arrives from the founder's first delegation
+    // — well before the Membership rules stand, which is exactly what
+    // `--delegate-all` produces. Asserting the five rules over both reasons
+    // would call the remedy a defect. The remedy names itself in `readiness`,
+    // so the reason is read rather than guessed, and only the plain task is
+    // held to entry 181's condition.
+    const oneVoice = (((f.readiness || {}).holds) || []).filter((h) => h.why === 'one-voice');
+    if (oneVoice.length) {
+      say('✉️ remedy  · standing as F19 while ' +
+        JSON.stringify(oneVoice.map((h) => h.setting)) + ' waits on one voice');
+      continue;
+    }
     // a hidden rule is a decision nobody has (entry 166) and completes the
     // section by not existing, so `vis=0` counts as standing
+    const ord = f.order || [];
     const unsettled = MEMBERSHIP_RULES.filter((k) => {
       const row = ord.find((r) => String(r).split(' ')[0] === k);
       return row && !/ set=1/.test(row) && !/ vis=0/.test(row);
