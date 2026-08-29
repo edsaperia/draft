@@ -233,7 +233,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
   // managed value: its row serves the powers, and nothing else
   {
     const st = s.settingState('startingText');
-    settings.push({ setting: 'startingText', glyph: '📄', kind: 'ordinary',
+    settings.push({ setting: 'startingText', glyph: '📝', kind: 'ordinary',
       holder: st.holder, powers: { ...st.powers }, powerFrom: { ...st.powerFrom },
       pendingRelease: { ...st.pendingRelease },
       value: null, previousValue: null, setWhy: null, settledBy: null,

@@ -19,10 +19,10 @@
  *   state                     | before 🍾            | live                  | closed
  *   --------------------------|----------------------|-----------------------|--------
  *   pre-confirm               | founder writes; the  | unreachable — begin() | —
- *   (powers both founder's,   | write channel is the | refuses while the text|
- *    `everSet` false, so      | stash, then `confirm-| is unconfirmed        |
- *    neither power may go)    | starting-text`       | (`waitingOn`, why:    |
- *                             |                      | 'text-unconfirmed')   |
+ *   (powers both founder's,   | write channel is the | confirms whatever     |
+ *    `everSet` false, so      | stash, then `confirm-| stands, empty, where  |
+ *    neither power may go)    | starting-text`       | nothing ever did      |
+ *                             |                      | (Q1080, 2026-08-29)   |
  *   confirmed, founder-held   | re-confirmation is   | unreachable: the fold | —
  *                             | legal right up to 🍾 | at `constituted` lays |
  *                             | (Q819/Q822); either  | both powers down      |
@@ -161,11 +161,12 @@ describe('promise 1 — the founder’s own door: written before 🍾, locked af
     // that is precisely that repeated confirmation never throws.
   });
 
-  it('an unconfirmed text is what 🍾 waits on, and names', () => {
+  it('an unconfirmed text holds nothing up: 🍾 confirms whatever stands (Q1080)', () => {
     const s = openDoc();
-    expect(s.readiness().holds.find((h) => h.setting === 'startingText')!.why)
-      .toBe('text-unconfirmed');
-    expect(() => s.begin(1)).toThrow(/startingText/);
+    expect(s.readiness().holds.find((h) => h.setting === 'startingText')).toBeUndefined();
+    expect(s.readiness().waiting).not.toContain('startingText');
+    expect(s.textConfirmed).toBe(false);
+    // the start's own confirm is founding.test.ts's *🍾 does not wait on the text*
   });
 
   it('after the start every founder route to the text is refused, by its own sentence', () => {

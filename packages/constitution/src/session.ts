@@ -42,14 +42,14 @@ export interface OpenInput {
  * founding will leave by itself; **`one-voice` is the one that needs an act** —
  * a delegated question with a membership of one has not been delegated to
  * anybody (`maybeResolve`), and no amount of answering will clear it.
- * `text-unconfirmed` is the text's own prerequisite (§9.0b), which is not a
- * question anybody is being asked. `deps-unsettled` (entry 69) is a wait on
+ * The text holds nothing up since Q1080 (2026-08-29): 🍾 confirms whatever
+ * stands where nothing ever did, in `begin`. `deps-unsettled` (entry 69) is a wait on
  * *another question* — §9.0a serves a dependent only once its dependency has
  * settled — so the block is upstream and the dependency's own hold names the
  * reason: a wait, never a dead end, and never a reason to invite anybody.
  */
 export type WaitingWhy = 'judge-gate' | 'invitation-open' | 'one-voice'
-  | 'collecting' | 'text-unconfirmed' | 'deps-unsettled';
+  | 'collecting' | 'deps-unsettled';
 
 /**
  * One hold on 🍾: which question, why, and — for `deps-unsettled` alone — the
@@ -1729,6 +1729,16 @@ export class ConstitutionSession {
     // it lays down — so the batch is a *diff* of every `HELD` key's held pair
     // either side of the emit, and 🍾 reports the new answer with no edit
     // here. One act, so one batch and one OK, whatever it moved.
+    // **🍾 confirms whatever stands if nothing ever did** (Q1080, Ed
+    // 2026-08-29 21:20). 📄's OK was the confirm; with it retired the
+    // founder's ✒️ on the proposal-row confirms every press, and a document
+    // that reaches the start never confirmed is confirmed here — empty, since
+    // the module holds no column; the page flushes its column into
+    // `confirmStartingText` before it sends `begin`. Written *here*, past both
+    // refusals and `laidDown`'s validation, so every caller of `begin` reaches
+    // it (`commands.ts`, the ladder) and a started document is never wedged
+    // with no text and no way to propose one — `canPropose` reads the flag.
+    if (!this.textConfirmedFlag) this.emit({ type: 'starting-text-confirmed', t, text: '' });
     const before = new Map(HELD.map((k) => [k, { ...this.settings.get(k)!.powers }]));
     this.emit(list === undefined ? { type: 'constituted', t }
       : { type: 'constituted', t, laidDown: list });
@@ -1802,12 +1812,13 @@ export class ConstitutionSession {
       .filter((e) => {
         const st = this.settings.get(e.id);
         if (!st) return false;            // the register and the personal pair
-        // The text is the one prerequisite outside the gate rule: §9.0b makes
-        // the start wait on a *confirmed decision* about it (empty is fine),
-        // and a start that landed without one could never be answered after —
-        // confirmStartingText refuses post-start, so the document would be
-        // wedged with no text and no way to propose one (2026-08-22).
-        if (e.id === 'startingText') return !this.textConfirmedFlag;
+        // The text holds nothing up (Q1080, 2026-08-29): 📄's OK — the press
+        // that used to confirm it — is gone, so a text never confirmed by the
+        // founder's ✒️ is confirmed by `begin` itself with whatever stands.
+        // It used to be the one prerequisite outside the gate rule, because a
+        // start without a confirm left the document wedged (2026-08-22); the
+        // start now writes the confirm rather than waiting for it.
+        if (e.id === 'startingText') return false;
         // a retired question holds nothing up: 🍾 answers it on the way
         // through (entry 259). Written ahead of the gate clause as well as
         // the collecting one so a retired judge-gate could not slip past —
@@ -1817,8 +1828,7 @@ export class ConstitutionSession {
       })
       .map((e) => {
         const st = this.settings.get(e.id)!;
-        const why: WaitingWhy = e.id === 'startingText' ? 'text-unconfirmed'
-          : !st.collecting ? 'judge-gate'
+        const why: WaitingWhy = !st.collecting ? 'judge-gate'
           : !this.answerable(e.id) ? 'deps-unsettled'
           : invitationOut ? 'invitation-open'
           : soleVoice ? 'one-voice'
@@ -1831,9 +1841,7 @@ export class ConstitutionSession {
           return !!d && d.settledBy === null;
         });
         return { setting: e.id, why, on: [...on] };
-      })
-      // the text is the founding's last clause, so it is named last
-      .sort((a, b) => (a.setting === 'startingText' ? 1 : 0) - (b.setting === 'startingText' ? 1 : 0));
+      });
   }
 
   /**

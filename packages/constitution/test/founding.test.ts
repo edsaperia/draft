@@ -458,17 +458,28 @@ describe('proposing is yours (§9.0b)', () => {
     expect(s.text).toBe('');
   });
 
-  it('🍾 waits on the confirmed text, and an empty one is enough (§9.0b)', () => {
+  it('🍾 does not wait on the text: a start with nothing confirmed confirms empty, once (Q1080)', () => {
     const s = openDelegated();
     settleAllReserved(s, 2, []);            // every question answered, text unconfirmed
-    expect(s.readiness().waiting).toEqual(['startingText']);
-    expect(s.readiness().holds).toEqual([{ setting: 'startingText', why: 'text-unconfirmed' }]);
-    expect(() => s.begin(3)).toThrow(/startingText/);
-    expect(s.constitutedAtT).toBeNull();
-    s.confirmStartingText(4, '');
     expect(s.readiness().waiting).toEqual([]);
+    expect(s.readiness().holds).toEqual([]);
+    expect(s.textConfirmed).toBe(false);
     s.begin(5);
     expect(s.constitutedAtT).toBe(5);
+    // the start wrote the confirm, so the document is never wedged (§9.0b's
+    // *a confirmed decision, not content* — the decision is the start's)
+    expect(s.textConfirmed).toBe(true);
+    expect(s.text).toBe('');
+    expect(s.logEntries().filter((e) => e.event.type === 'starting-text-confirmed')).toHaveLength(1);
+  });
+
+  it('…and a text the founder did confirm is what the start keeps (Q1080)', () => {
+    const s = openDelegated();
+    settleAllReserved(s, 2, []);
+    s.confirmStartingText(4, 'The clubhouse shall be kept open.');
+    s.begin(5);
+    expect(s.text).toBe('The clubhouse shall be kept open.');
+    expect(s.logEntries().filter((e) => e.event.type === 'starting-text-confirmed')).toHaveLength(1);
   });
 
   /**

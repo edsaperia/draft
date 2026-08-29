@@ -329,7 +329,7 @@ describe('promise 6 — when the founding cannot go on, 🍾 says why (Q826, F19
     // the reason the room is being asked for is still the plain one
     expect(hold('ending').on).toBeUndefined();
     expect((['judge-gate', 'invitation-open', 'one-voice', 'collecting',
-      'text-unconfirmed', 'deps-unsettled']).includes(hold('bar').why)).toBe(true);
+      'deps-unsettled']).includes(hold('bar').why)).toBe(true);
   });
 });
 

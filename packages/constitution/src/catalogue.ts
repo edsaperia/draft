@@ -126,7 +126,7 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   // Confirmed, may be empty (§9.0b); changed post-start by proposing in the
   // document itself, so it has no motion route (motion-controls: a motion
   // button there would be a second door to the same room).
-  { id: 'startingText', glyph: '📄', kind: 'ordinary',
+  { id: 'startingText', glyph: '📝', kind: 'ordinary',
     delegable: false, valueType: 'text', deps: [], judgeGate: false },
 
   { id: 'ending', glyph: '⏰', kind: 'constitutional',
