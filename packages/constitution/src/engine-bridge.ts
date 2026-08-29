@@ -177,6 +177,11 @@ export class EngineBridge {
     this.candidateOfMotion.set(motion, id);
     this.motionOfCandidate.set(id, motion);
     this.reportAdoptions(t, this.engineEventsSince(mark));
+    // and the ground the batch shifted goes back, exactly as `judge` and
+    // `proposeText` relay theirs: a motion that carried in its own submission
+    // has changed a standing, and the engine has to be told before the next
+    // act reads it. Symmetry with the other two doors is the point.
+    this.sync(t);
     return { motion, route: 'ordinary', candidate: id };
   }
 
@@ -524,7 +529,14 @@ export class EngineBridge {
     }
     this.enterMembershipRace(t, motion, `admit:${applicant}`,
       { member: false }, { member: true }, author, why ?? a?.words ?? '');
-    if (transientVoice) this.engine.suspendParticipant(t, applicant);
+    // …and only while they are still an applicant. Since backlog 253 the
+    // submission itself sweeps, so `enterMembershipRace` can carry the admit
+    // race in the very call above — and suspending somebody the same breath
+    // admitted would leave a real member out of E for ever, `sync`'s
+    // `member-admitted` arm being a no-op for an id already in `known`.
+    if (transientVoice && !this.cs.memberRecords().has(applicant)) {
+      this.engine.suspendParticipant(t, applicant);
+    }
   }
 
   /**

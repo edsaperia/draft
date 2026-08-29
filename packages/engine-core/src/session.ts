@@ -1596,6 +1596,24 @@ export class Session {
    * rebasing the field for the next, a leader whose ground shifted
    * mid-batch (rebase-pending) simply skipped to wait like anybody.
    */
+  /**
+   * The E = 1 half of the adoption gate (backlog 253, R-063): *the author is
+   * the room*. True only where the one active participant left is the author
+   * of the candidate about to carry — the case the rule was written for, and
+   * the only one where the missing measurement can never arrive because there
+   * is nobody but the author to make it.
+   */
+  private soleMemberIsLeadersAuthor(r: RaceView): boolean {
+    if (r.leaderId === null) return false;
+    let sole: string | null = null;
+    for (const [id, entry] of this.roster) {
+      if (entry.removed || entry.suspended) continue;
+      if (sole !== null) return false; // more than one voice: not this rule
+      sole = id;
+    }
+    return sole !== null && this.candidates.get(r.leaderId)?.author === sole;
+  }
+
   private sweepAdoptions(t: number, final = false): void {
     if (this.closedFlag) return;
     // T=0 runs the batch regardless of cooldown phase (SPEC §4.6)
@@ -1631,7 +1649,16 @@ export class Session {
           // sole member's proposal adopts on submission. The bar still
           // applies: at θ = ½ the derived edge clears it, higher up it may
           // not, and the ceiling `ceilingNote` names is unchanged.
-          (r.comparisons > 0 || this.eCount() === 1),
+          //
+          // **And *the author is the room* is the whole of the exception**, so
+          // it is asked of the leader and not of E alone. A candidate outlives
+          // its author's membership — only the author may withdraw — so a room
+          // that has shrunk to one can hold a live candidate written by
+          // somebody who has since been removed. There the sole member is not
+          // the author, has said nothing, and *is* served the pair; letting the
+          // bypass fire would carry text past the one person left before they
+          // could answer it.
+          (r.comparisons > 0 || this.soleMemberIsLeadersAuthor(r)),
       )
       // **The cap mark is read here, in the snapshot, and not at the `adopt`
       // call** (SPEC §4.2, R-051). `fitRaceMembers` is memoised on the
