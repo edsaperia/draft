@@ -407,6 +407,75 @@ window.CARDS = (function () {
     // one thing this surface never lets you do to the charter directly.
     '✏️ propose edit</button>';
 
+  const initials = (n) => String(n).trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+
+  /* ---- avatars ------------------------------------------------------------
+     Lifted out of setup.js (backlog 255): the speaker's disc is now one of
+     this renderer's callers, and `cards.js` loads before `setup.js`, so a
+     helper two files share belongs in the lower of them. `SETUP` re-exports
+     it, byte-identical, and every existing caller is untouched.
+
+     `me` in the glossary reads "initials, not a photograph: there are no
+     accounts behind it yet". There are now — choosing how you appear is one of
+     the cards — so the initials become the *default* rather than the rule.
+
+     **A picture is an emoji, an uploaded image, or none** (Q734, 2026-08-23).
+     The grounds for your initials and the three drawn marks are gone: they
+     were a mockup device from before either of the real answers existed, and
+     with a real uploader in the card a ground is a fourth thing to choose
+     between two that mean something. Nothing is left tolerating them — we are
+     in alpha and there are no real documents (Ed, 2026-08-23) — so `c0`–`c5`
+     and `m0`–`m2` are refused by the server as well as un-offered here, and
+     everything that is not `e`+emoji or `u`+image is simply the empty answer.
+
+     **And an emoji is a glyph, not a disc** (Q732/Q735, Ed 2026-08-23: they
+     render *very small and right aligned*, and should be *sized like the text
+     around them and replace the circle that images use*). So the emoji branch
+     stops emitting an `.av` altogether: `.emojiface` has no box, no ground and
+     no size of its own, and inherits whatever text it stands in. The circle
+     survives exactly where it is doing work — behind an uploaded photograph
+     and behind initials, which need a ground to be legible. */
+  // **Before there is a name there is still a person** (Ed, 2026-08-19: the
+  // picture card offers *initials with a colour picker — or, if they have not
+  // given us their name, an anonymous user symbol with a colour picker, which
+  // becomes initials when the name is filled*). Drawn rather than a glyph, for
+  // the same reason the sealed speaker is: a bare disc reads as a bullet.
+  const PERSON = '<svg class="anonav" viewBox="0 0 44 44" aria-hidden="true">' +
+    '<circle cx="22" cy="16" r="7.5" fill="currentColor"/>' +
+    '<path d="M8.5 37c0-7.2 6-12 13.5-12s13.5 4.8 13.5 12z" fill="currentColor"/></svg>';
+  function avHtml(person, cls) {
+    const pic = person && person.pic;
+    const c = 'av ' + (cls || '');
+    // **An emoji is not a disc** (Q735): no ground, no border, no box — it
+    // takes the size of the text it stands in, which is what makes one rule
+    // right at all nineteen sites at once instead of a specificity race
+    // against every context that tunes a two-letter initials size.
+    if (pic && pic[0] === 'e') {
+      return '<span class="emojiface ' + (cls || '') + '">' + esc(pic.slice(1)) + '</span>';
+    }
+    // An uploaded picture is stored as 'u' + a data URL, downscaled and
+    // re-encoded in the browser before it is ever stored (Q735): the file
+    // itself never leaves the page.
+    if (pic && pic[0] === 'u') {
+      // Only a data-URI image may enter a style attribute (PRODUCTION.md
+      // stage 3, defect 4): the server whitelists this shape at
+      // set-identity, and the page enforces it again at the sink, because
+      // the sink is what survives a data path nobody audited. Anything
+      // else stored here renders as nobody — never as markup.
+      const u = pic.slice(1);
+      if (/^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(u)) {
+        return '<span class="' + c + ' photo" style="background-image:url(' + u + ')"></span>';
+      }
+      return '<span class="' + c + ' anon">' + PERSON + '</span>';
+    }
+    // anything else stored here is the empty answer — a ground index, a mark
+    // index, a string nobody audited — and renders as nobody, never as markup
+    if (pic) return '<span class="' + c + ' anon">' + PERSON + '</span>';
+    // no name yet: the anonymous person, so a disc never reads as a bullet
+    if (!person || !person.n) return '<span class="' + c + ' anon">' + PERSON + '</span>';
+    return '<span class="' + c + '">' + esc(initials(person.n)) + '</span>';
+  }
+
   // Somebody said this, and you are not allowed to know who (SPEC §3.4). The
   // disc is the person; its blankness is the seal. Without it the rationale
   // was a bold line of text that read as a heading the system had written.
@@ -416,14 +485,31 @@ window.CARDS = (function () {
   // `who` (the close, 2026-08-21): at the record the seal lifts where the
   // anonymity ladder says so — the disc stays, and the name stands beside it.
   // Absent, the markup is what it always was, byte for byte.
-  const speakerHtml = (why, title, who) =>
-    '<div class="speaker' + (who ? ' revealed' : '') + '">' +
-    '<span class="disc" aria-hidden="true" title="' + (title || (who ? esc(who) + ' wrote this.' : 'A member wrote this. Who, is sealed until the closing record.')) + '"></span>' +
-    (who ? '<span class="who">' + esc(who) + '</span>' : '') +
-    (why
-      ? '<div class="said">' + esc(why) + '</div>'
-      : '<div class="said none">No reason given.</div>') +
-    '</div>';
+  //
+  // **And the disc is the face the room will see** (SURFACE K30, backlog 255,
+  // Ed 2026-08-29: *if the rationale will be shared with non-anonymous
+  // identity attached, they should show the avatar*). Where `who` is given the
+  // name is already attached — `authorVisible` allowed it — so the blankness
+  // would be a lie: the drawn disc gives way to that person's own picture, at
+  // the disc's size, and the name stays beside it. `who` may be a bare name,
+  // which draws their initials, or a `{ n, pic }` person, which draws whatever
+  // they chose. Absent, nothing about this changes.
+  const personOf = (who) => (who && typeof who === 'object' ? who : who ? { n: who } : null);
+  const speakerHtml = (why, title, who) => {
+    const p = personOf(who);
+    const name = p ? String(p.n || '') : '';
+    const ttl = title || (p ? esc(name) + ' wrote this.'
+      : 'A member wrote this. Who, is sealed until the closing record.');
+    return '<div class="speaker' + (p ? ' revealed' : '') + '">' +
+      (p
+        ? '<span class="spkface" title="' + ttl + '">' + avHtml(p) + '</span>'
+        : '<span class="disc" aria-hidden="true" title="' + ttl + '"></span>') +
+      (p ? '<span class="who">' + esc(name) + '</span>' : '') +
+      (why
+        ? '<div class="said">' + esc(why) + '</div>'
+        : '<div class="said none">No reason given.</div>') +
+      '</div>';
+  };
 
   // The fold triangle — one control on every surface (2026-08-19, lifted
   // from session-view when setup grew its own copy). Fold state lives with
@@ -521,6 +607,14 @@ window.CARDS = (function () {
       //     the state the commit row already draws.
       mayPropose: () => true,
       lockedOf: (s) => !!s.locked,
+      // **The editing card shows the face the room will see** (K30). Two
+      // reads, both permissive-by-absence so a surface that sets neither draws
+      // exactly the sealed disc and the sealed title it draws today:
+      //   authorRung — the 👤 rung as it stands, `null` where the surface has
+      //     no module to ask (the fixture, the setup pages);
+      //   signerPerson — the viewer as the room would see them, `{ n, pic }`.
+      authorRung: () => null,
+      signerPerson: () => null,
     }, env0 || {});
 
     // The pick control. Two labels rather than one rewritten in JS, so the
@@ -693,6 +787,37 @@ window.CARDS = (function () {
       return '';
     }
 
+    /**
+     * The one element at the head of the draft's own speaker, and the whole of
+     * what K30 decides for a rationale being written: **it shows the face the
+     * room will see**, and its tooltip says which of the three cases you are in.
+     *
+     * `public` names you from the moment you propose, so the face is yours and
+     * the title says so. Under an elective rung it follows the sign choice —
+     * yours when the draft is signed, the sealed disc when it is not — which is
+     * why `setDraftSigned` calls this again rather than re-rendering a lane
+     * somebody has a caret in. Under `anonymous`, `anonymousElective` unsigned,
+     * `sealed` and `sealedElective` unsigned the disc stays, and the two titles
+     * differ only in whether the seal ever lifts: the closing record, or never.
+     *
+     * With no `authorRung` — the fixture, the setup pages, any surface that
+     * sets no seam — this is the disc and the sentence it has always drawn.
+     */
+    function draftFaceHtml(d) {
+      const rung = env.authorRung();
+      const elective = rung === 'anonymousElective' || rung === 'sealedElective';
+      const person = rung === 'public' || (elective && !!(d && d.signed))
+        ? env.signerPerson() : null;
+      if (person) {
+        return '<span class="spkface" title="This is how your reason will reach' +
+          ' everybody else: with your name on it.">' + avHtml(person) + '</span>';
+      }
+      const forever = rung === 'anonymous' || rung === 'anonymousElective';
+      return '<span class="disc" aria-hidden="true" title="This is how your reason will reach' +
+        ' everybody else: with your name off it' +
+        (forever ? ', permanently.' : ' until the closing record.') + '"></span>';
+    }
+
     // **The editing surface itself**, extracted so the `editing-card` and the
     // `deadlock-card` share one rather than each growing their own (Ed,
     // 2026-08-17 asked the deadlock card for *a full proposal edit box*, and two
@@ -729,14 +854,16 @@ window.CARDS = (function () {
           : '<div class="editlane' + (env.laneRaw() ? ' md' : '') + '" contenteditable="true" data-lane="' +
             site.keys[0] + '" spellcheck="false">' +
             laneBlocks(site.text, originText(site), headFlags(site), env.laneRaw()) + '</div>') +
+        // …and the face on it is **what everybody else will see**, not what you
+        // know (K30, backlog 255). One place decides it, because `setDraftSigned`
+        // patches the same element in place when the sign choice flips.
         // The rationale is **inside** the same surface (Ed, 2026-08-17): you are
         // expected to fill in both, so they are one editing surface at one
         // height rather than two boxes at different ones — and the speaker's
         // disc comes with it, because it belongs to the words beside it. A
         // hairline separates them without dividing them, which is the card's own
         // band grammar applied one level down.
-        '<div class="speaker">' +
-        '<span class="disc" aria-hidden="true" title="This is how your reason will reach everybody else: with your name off it until the closing record."></span>' +
+        '<div class="speaker">' + draftFaceHtml(d) +
         '<div class="said edit-why" contenteditable="plaintext-only"' +
         (blank ? ' data-deadwhy="' + blank + '"' : ' data-why') + ' spellcheck="false"' +
         // Ed, 2026-08-17. A question invited an answer to a different question —
@@ -949,7 +1076,7 @@ window.CARDS = (function () {
 
     return {
       laneBarHtml, clauseHeadHtml, proposalHtml, commitRowHtml, reviseNote,
-      laneBoxHtml, collapseCard, expandCard, openCardEls, runOnCards,
+      laneBoxHtml, draftFaceHtml, collapseCard, expandCard, openCardEls, runOnCards,
       collapseCards, expandCards, stillRef, restoreStill, keepStill,
     };
   }
@@ -961,6 +1088,7 @@ window.CARDS = (function () {
     headFlags, originText, MD_RX, mdToHtml, htmlToMd, mdStrip,
     MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
     laneSeed, laneProposeHtml, speakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
+    initials, PERSON, avHtml,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
     make,
   };

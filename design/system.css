@@ -1449,8 +1449,25 @@
      there is no text in this cell, so this is the third site that has to
      state one. */
   .speaker { display: grid; grid-template-columns: auto 1fr; gap: var(--s2); margin-top: var(--s2); }
-  .speaker .spkface { display: flex; align-items: flex-start; }
+  .speaker .spkface {
+    display: flex; align-items: flex-start; justify-content: center;
+    width: 22px; flex: none;
+  }
   .speaker .spkface .emojiface { font-size: 22px; }
+  /* **The revealed form is three things in two columns, and it has to say so.**
+     A sealed speaker is two items in a two-column grid and places itself; add
+     the name and there are three, so the reason falls into row 2 of the *first*
+     column — under the face, stretching that column to the width of a
+     paragraph and carrying the name out to the far right edge of the card.
+     It has been that way since the name arrived (2026-08-21) and only the
+     closed record ever drew one; K30 puts a revealed speaker on live cards, so
+     the placement is stated: the face at the left across both rows, the name
+     over the reason it belongs to. Which is `.founderspoke`'s arrangement,
+     arrived at from the other end. */
+  .speaker.revealed { align-items: start; }
+  .speaker.revealed > :first-child { grid-row: 1 / span 2; }
+  .speaker.revealed .who { grid-column: 2; grid-row: 1; }
+  .speaker.revealed .said { grid-column: 2; grid-row: 2; align-self: start; }
   /* The placeholder avatar, drawn rather than left as a plain circle: a bare
      grey disc reads as a bullet, and a bullet says "list item" where this has
      to say "person". Head and shoulders, in the ground colour, is the shape

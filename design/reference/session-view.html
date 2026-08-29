@@ -9183,23 +9183,25 @@
         card: rc ? { a: rc.a.id, b: rc.b.id, inc: rc.a.incumbent ? 'a' : rc.b.incumbent ? 'b' : null } : null,
       };
       // a race holding only my own proposal is mine to withdraw, not to judge
-      // — the `mine` item carries it (the author's preference is derived, never asked)
-      // — **but only where somebody else in the room could judge it** (Q835).
-      // In a document of one every race is only yours, so the blanket skip left
-      // the sole member no card at all: measured `comparisons` stayed 0 for
-      // ever, and a solo document could not change its own text under a form
-      // that had just promised *1 of the 1 members must have judged*. A
-      // self-judgment is legal and always was — §4.2's *the author's preference
-      // is counted but is not the room* is about the **derived** one, and an
-      // explicit judgment is a measurement that supersedes it. The withdraw
-      // affordance stays: at E = 1 you get both.
-      if (r.candidates.every((c) => c.mine) && E() > 1) continue;
+      // — the `mine` item carries it (the author's preference is derived, never
+      // asked). **Unconditional again since backlog 253** (Ed, 2026-08-29): the
+      // engine serves no pair at all for an all-mine race now, at any E, since
+      // an author is never asked about their own text against the incumbent
+      // (SPEC §3.3, R-062) — so there is no card here to draw. Q835's `E() > 1`
+      // condition existed to hand the sole member a self-judgment, and at E = 1
+      // the race adopts on submission instead, before the page could draw it.
+      // The withdrawal line (`v.mine`) is the whole of what an author sees of
+      // an all-mine race.
+      if (r.candidates.every((c) => c.mine)) continue;
       const others = r.candidates.filter((c) => !c.mine);
       const slate = r.deadlocked
         ? { slate: r.candidates.map((x) => ({ text: textOf(x), rationale: x.rationale })) } : {};
       // a name the server attached is one the reveal rule allowed (a signed
-      // proposal, Q770, or one made under `public`): the live card shows it
-      const byOf = (c) => (c.author && c.author.name) || null;
+      // proposal, Q770, or one made under `public`): the live card shows it,
+      // and since backlog 255 their face with it — the picture rides the same
+      // `author` object and is blind at exactly the same gate (K30)
+      const byOf = (c) => (c.author && c.author.name
+        ? { n: c.author.name, pic: c.author.picture || '' } : null);
       if (r.candidates.length === 1 || (rc && (rc.a.incumbent || rc.b.incumbent))) {
         // one challenger against what stands: the quick card
         const c = (rc ? byId(rc.a.incumbent ? rc.b.id : rc.a.id) : null) || r.candidates[0];
@@ -9233,7 +9235,8 @@
           state: 'needs', qLabel: labelFor(keys[0]), urgency: 1, pct: 100,
           cap: 'the membership passed this — it waits on you',
           marked: markedOf(plain(lines, sp), applyIn(lines, sp, c.hunks)),
-          rationale: c.rationale, by: (c.author && c.author.name) || null });
+          rationale: c.rationale, by: (c.author && c.author.name
+            ? { n: c.author.name, pic: c.author.picture || '' } : null) });
       }
     }
     for (const m of v.mine || []) {
@@ -9265,7 +9268,9 @@
     const madeUnder = new Map();
     if (v.record) for (const o of (v.record.adopted || []).concat(v.record.undecided || [])) {
       for (const f of o.field || []) {
-        if (f.author && f.author.name) unsealed.set(f.id || f.candidateId, f.author.name);
+        if (f.author && f.author.name) {
+          unsealed.set(f.id || f.candidateId, { n: f.author.name, pic: f.author.picture || '' });
+        }
         if (f.madeUnder) madeUnder.set(f.id || f.candidateId, f.madeUnder);
       }
     }
@@ -9292,7 +9297,9 @@
       const textOfF = (f) => f.hunks.flatMap((h) => h.lines).map(unhead).join('\n');
       // the seal lifts at the record (§3.5a): `records` stays sealed, the
       // closed `record` carries the names where the anonymity ladder allows
-      const byName = (f) => (f.author && f.author.name) || unsealed.get(f.id || f.candidateId) || null;
+      const byName = (f) => (f.author && f.author.name
+        ? { n: f.author.name, pic: f.author.picture || '' }
+        : unsealed.get(f.id || f.candidateId) || null);
       const best = field.slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1))[0];
       const winner = field.find((f) => f.outcome === 'adopted') || (undecided ? best : null) || field[0] || {};
       const replaced = (o.displaced || []).filter((l) => l.trim()).map(unhead).join('\n') || undefined;
@@ -9367,7 +9374,12 @@
         // charter changed here*, which is what happened. No new mark, and no
         // new `STACK_ORDER` token.
         won: 'b', optionB: applyIn(lines, sp, []), replaced,
-        rationale: a.why || '', by: null, unread: true,
+        // the founder as the room sees them (K30): a ✒️ act is attributed by
+        // construction, so the card names and faces them the way the settings
+        // side already does — `The Founder` where they have given no name
+        rationale: a.why || '',
+        by: { n: (founderInfo().n || '').trim() || 'The Founder', pic: founderInfo().pic || '' },
+        unread: true,
         // the one field of its own: the wire and the card body key on it
         amendment: a.candidate });
     }
@@ -10645,6 +10657,27 @@
         if (typeof n === 'string') return n;
       }
       return viewerRow().n || '';
+    },
+    // **The face the room will see** (K30, backlog 255). The rung *whole*, not
+    // the elective base — `public` attaches a name with no choice offered, so
+    // the sign control is silent there and the speaker is not.
+    authorRung: () => {
+      const auth = csState('authorship');
+      return (auth && auth.value ? auth.value.rung || auth.value : null) || null;
+    },
+    // and the viewer as everybody else would see them, off the same records
+    // `signerName` reads — the module's where there is one, the provisional row
+    // before it. A member with no name signs *as Anonymous* (§9.0c), so the
+    // name falls back the way the sign control's label does.
+    signerPerson: () => {
+      const id = viewerId();
+      if (cs && id) {
+        const m = cs.memberRecords().get(id);
+        const rec = m || (id === FOUNDER ? cs.convenorRecord() : null);
+        if (rec) return { n: (rec.name || '').trim() || 'Anonymous', pic: rec.picture || '' };
+      }
+      const row = viewerRow();
+      return { n: (row.n || '').trim() || 'Anonymous', pic: row.pic || '' };
     },
     extra, hooks: hookProxy,
   });
