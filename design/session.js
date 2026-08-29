@@ -1550,7 +1550,56 @@
   // A sealed judgment opens like any other — same two lanes, same geometry —
   // but as a record rather than a question (Ed, 112): the text that stood is
   // marked, and the numbers it stood on are stated. Nothing here is clickable.
+  /**
+   * The Founder's pen amended this clause, and everybody who had no say is
+   * told beside the clause it changed (SURFACE E35, Q1034; Ed 2026-08-29,
+   * decision D47). **It is news, not a decision**: the document has already
+   * moved and nothing is being asked but that you have seen it, so the card
+   * takes the green ✔ every settled decision wears while it is unread and the
+   * one OK the sealed commit row already draws.
+   *
+   * Everything `sealedCardHtml` below draws about a *contest* is deliberately
+   * absent: no ranking, no scores, no 50% incumbent row, no bar, no judge
+   * count, no verdict line. Nothing was judged — there was no race and no
+   * threshold — so every one of those would be apparatus about a contest that
+   * never ran. What is left is the clause as it now reads, the reason, and
+   * the text it replaced.
+   *
+   * **The office, never the person** — `amendmentBlocks` and the record's own
+   * rule: this says *The Founder*, and reaches into no anonymity ladder.
+   */
+  function amendmentCardHtml(s) {
+    const skey = (s.keys ?? [])[0];
+    return (
+      '<div class="sugg sealed-open" data-card="' + s.id + '"' +
+      (skey ? ' data-site="' + skey + '"' : '') + '>' +
+      '<div class="rechead"><span>The Founder amended this</span>' +
+      '<span class="sub">' + esc((s.decided || {}).when || '') + '</span></div>' +
+      (skey
+        ? clauseHeadHtml(s, {
+            text: currentTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
+            label: null,
+          })
+        : '') +
+      speakerHtml(s.rationale, undefined, 'The Founder') +
+      // in the same `rsub` vocabulary the record uses for *the text that
+      // stood*; silent where the server could not say what stood before
+      (s.replaced
+        ? '<div class="field"><div class="ranked wasthere">' +
+          '<div class="rtag"><span class="rsub">the text it replaced</span></div>' +
+          '<div class="rtext">' + esc(s.replaced) + '</div></div></div>'
+        : '') +
+      (isUnread(s)
+        ? '<div class="race-mid commitrow"><span></span>' +
+          '<button class="btn btn-approve" data-seen="' + s.id + '"' +
+          ' title="It leaves your margin and stays in the record">OK</button></div>'
+        : '') +
+      '</div>'
+    );
+  }
+
   function sealedCardHtml(s) {
+    if (s.amendment) return amendmentCardHtml(s);
     const d = s.decided || {};
     // The Bradley–Terry model that ran the race carries a strength for every
     // candidate, so a sealed race can be ranked outright (Ed, 121) — and the

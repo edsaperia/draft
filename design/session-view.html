@@ -8205,7 +8205,7 @@
       convenor: { id: FOUNDER, email: '', name: d.founder.name, isMember: true },
       view: { settings: d.view.settings, gates: d.view.gates, crowned: d.view.crowned,
         questions: [], resolutions: [], members: [], applicants: [], owedOks: [],
-        owedReleases: [], owedMailGiveUps: [], motions: [],
+        owedReleases: [], owedMailGiveUps: [], owedAmendments: [], motions: [],
         crownTasks: [], identity: { name: null, picture: null },
         frozen: d.frozen, closed: d.closed, mustReturn: null } };
   };
@@ -8525,6 +8525,8 @@
       answer: (t, member, setting, value) => api.cmd('answer', { setting, value }),
       giveOk: (t, member, setting) => api.cmd('give-ok', { setting }),
       ackRelease: (t, member, batch) => api.cmd('ack-release', { batch }),
+      // one card per amendment (SURFACE E35), so the body names the candidate
+      ackAmendment: (t, member, candidate) => api.cmd('ack-amendment', { candidate }),
       ackMailGaveUp: (t, member, batch) => api.cmd('ack-mail-gave-up', { batch }),
       resendInvite: (t, member) => api.cmd('resend-invite', { member }),
       openMotion: (t, by, payload, why) => api.cmd('open-motion', { payload, why }),
@@ -9337,6 +9339,57 @@
         verdict: o.judgedByMe ? 'voted on this' : undefined,
         unread: !undecided, ...slate });
     }
+    // ✒️ on the Text (R-058, SURFACE E35, Q1034; Ed 2026-08-29, decision
+    // D47): the Founder's amendment passed the instant they submitted it, and
+    // everybody who had no say is told **beside the clause it changed** —
+    // which is why it is filed here, this array being the only thing that
+    // files anything beside a clause. One item per amendment and never a
+    // batch: entry 162 groups because one press of 🍾 lays down powers that
+    // belong to no clause, where here the card *is* the clause.
+    //
+    // The module says what is owed and carries the reason and the moment; the
+    // engine says what the words are. Joined by candidate id, exactly as the
+    // 👑 task above joins `awaitingAssent`; an id the engine cannot speak for
+    // is skipped rather than filed as a card with nothing on it.
+    const amended = new Map(((v.amendments || [])
+      .filter((a) => (a.hunks || []).length)).map((a) => [a.candidateId, a]));
+    for (const a of (v.view && v.view.owedAmendments) || []) {
+      const c = amended.get(a.candidate);
+      if (!c) continue;
+      // **The amended span is the one the amendment produced.** `keysOfSpan`
+      // takes a span in the *current* line space, and a decreed patch's hunks
+      // are against the version it replaced — so `spanOf(hunks)` would name
+      // the lines that are gone and anchor the card at the paragraph above or
+      // below the one that changed, which is the whole of what this card is
+      // for. Per hunk the produced start is its own `start` shifted by every
+      // **earlier** hunk's growth and the produced end is that plus its lines,
+      // unioned across the hunks: an amendment made at two draft sites whose
+      // first site grew still names the second site's lines. Later adoptions
+      // moving lines under it are the same drift `awaitingAssent` and the
+      // records loop tolerate, and `keysOfSpan` clamps to the document.
+      const hs = c.hunks.slice().sort((x, y) => x.start - y.start);
+      let shift = 0, lo = Infinity, hi = 0;
+      for (const h of hs) {
+        lo = Math.min(lo, h.start + shift);
+        hi = Math.max(hi, h.start + shift + h.lines.length);
+        shift += h.lines.length - (h.end - h.start);
+      }
+      const sp = { start: lo, end: hi };
+      const keys = keysOfSpan(sp, lines);
+      const replaced = (c.displaced || []).filter((l) => l.trim()).map(unhead).join('\n') || undefined;
+      items.push({ id: 'amd:' + a.candidate, kind: 'quick', keys, state: 'sealed',
+        qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
+        cap: 'the Founder amended this',
+        decided: { when: whenOf(a.at) },
+        // `won: 'b'` with `optionB` is what `fieldOf`'s default lane reads, so
+        // `carried()` is true and `markKindOf` gives the green ✔ — *the
+        // charter changed here*, which is what happened. No new mark, and no
+        // new `STACK_ORDER` token.
+        won: 'b', optionB: applyIn(lines, sp, []), replaced,
+        rationale: a.why || '', by: null, unread: true,
+        // the one field of its own: the wire and the card body key on it
+        amendment: a.candidate });
+    }
     // the draft being typed is the page's own, never the view's — it survives
     // every rebind
     const d = SESSION.SUGGS.find((x) => x.id === DRAFT_ID);
@@ -9348,7 +9401,18 @@
   function wireLive() {
     for (const id of loadSeen()) SESSION.readSeals.add(id);
     LIVE_HOOKS.items = () => itemsFromView(cs.v);
-    LIVE_HOOKS.seen = () => saveSeen();
+    // Filing a sealed record is a page fact and stays one — `readSeals` in
+    // `localStorage`, per document and seat. **An amendment's OK is not**
+    // (SURFACE E35, Q1034): the module owes it and the module is the truth in
+    // both directions, `syncOwedReleases`' stated rule, so the press sends the
+    // acknowledgement and the item simply stops being built once the
+    // command's refresh lands. `readSeals` stays what it already is, the
+    // page's optimism between the press and that refresh.
+    LIVE_HOOKS.seen = (id) => {
+      saveSeen();
+      const s = liveItem(id);
+      if (s && s.amendment) { try { cs.ackAmendment(now(), viewerId(), s.amendment); } catch (e) {} }
+    };
     LIVE_HOOKS.judge = (id, what) => {
       const s = liveItem(id);
       if (!s || !s.card) { console.warn('[live] no card served for', id); return; }
