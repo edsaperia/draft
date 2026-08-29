@@ -79,7 +79,7 @@ window.SETUP = (function () {
   // is that minus the offered faces.
   // Tones are stripped before the test, so ✋🏽 is as reserved as ✋.
   const SURFACE_EMOJI = ('↔ ⏩ ⏰ ⏱ ⏳ ☑ ⚔ ⚖ ✅ ✉ ✋ ✍ ✏ ✒ ✔ ✖ ❄ ❌ ❎ ❓ ' +
-    '🌍 🌡 🌶 🍾 🎩 🏛 🏷 👁 👍 👑 👤 👥 💡 💤 📄 📌 📍 📝 📧 📨 📬 📯 🔄 🔗 ' +
+    '🌍 🌡 🌶 🍾 🎩 🏛 🏷 👁 👋 👍 👑 👤 👥 💡 💤 📌 📍 📝 📧 📨 📬 📯 🔄 🔗 ' +
     '🔥 🖼 🗑 🗝 🛡 🤖 🤝 🥂 🥾 🪜 🪪 🪶 ' +
     '👦 👧 👨 👩 👱 👳 👴 👵 👶 🧑 🧒 🧓 🧔').split(' ');
   const normEmoji = (s) => s.replace(/[\u{FE0F}\u{FE0E}\u{1F3FB}-\u{1F3FF}]/gu, '');
@@ -397,10 +397,10 @@ window.SETUP = (function () {
             (sec.who ? '<div class="pilewho">' + sec.who() + '</div>' : '') +
             (sec.body ? sec.body(H) : sec.cards.map(withTasks).join('')) +
             (sec.block ? sec.block() : '')) + '</div>'; }).join('') +
-          // **the starting text is a task beside the text proper** (Ed,
-          // 2026-08-18): a zero-height anchor at the band's end, its 📄 tab
-          // hanging in the gutter beside the first block of the prose that
-          // follows
+          // **the charter heading at the band's end** (Ed, 2026-08-18; backlog
+          // 204): the hairline and the document's own name — the text's 📝
+          // tab rides beside it in the surface's own sticky `#ridetab`, there
+          // from the save, since the text is a card with two modes and no task
           (g.textAnchor ? g.textAnchor(H) : '') + '</div>';
       }
       const holds = g.cards.some((c) => ctx.open === c.k);

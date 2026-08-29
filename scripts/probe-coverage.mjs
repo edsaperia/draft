@@ -38,7 +38,12 @@ const DESIGN = join(ROOT, 'design');
 const VIEWPORT = { width: 1600, height: 1000 };
 
 /** Cards in ORDER the probe is not expected to open, each with its reason. */
-const EXEMPT = {};
+const EXEMPT = {
+  // 📝 is a card with two modes and never a `data-setupcard` (backlog 204):
+  // the probe drives it — open-text · write-text · save-text · close-text —
+  // but there is no card DOM to record; its power tabs open as cards
+  text: 'the text is a card with two modes, never opened as a setupcard (backlog 204, K31)',
+};
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',

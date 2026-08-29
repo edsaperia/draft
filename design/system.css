@@ -707,6 +707,73 @@
     .achip.nudge { animation: none; box-shadow: var(--shadow-lg); }
   }
 
+  /* ---- the text as a card: the riding tab, the beat, edit mode, the row
+     (backlog 204, Ed 2026-08-28; SURFACE K31) ------------------------------ */
+  /* **The riding tab.** The text's 📝 pile stands in `#ridetab`, a direct
+     child of `.doc` placed right after the band, so its containing block is
+     the whole column and `position: sticky` carries it from the charter
+     heading to the document's foot. It takes no height of its own: the pile
+     is absolute in the gutter and lifted back up by the title's line box plus
+     the heading's margin, so at rest it sits exactly where it did beside the
+     title — the same 30px-on-30px measurement setup.css records — and the
+     sticky `top` is offset by the same amount, so detached it rides at
+     `--nav-h` plus the gutter's own air. z-index above every `.anch` pile it
+     passes (they are unpositioned or z:1–4 in a stack), never displacing one. */
+  .ridetab { position: sticky; top: calc(var(--nav-h) + var(--s2) + 30px + var(--s3)); height: 0; z-index: 8; }
+  .ridetab .chipcol { top: calc(-30px - var(--s3)); }
+  /* **Detached, and in edit mode, it wears the active treatment** (M12: the
+     8px on `padding-left` as well as `width`, so the glyph does not move —
+     Q1087: one treatment, one meaning; in edit mode the text *is* the open
+     card, and a tab that has left its heading is the open card's tab
+     travelling with you). Lifted a step while riding, since it is over the
+     prose rather than beside it. */
+  .ridetab.detached .achip, .ridetab.editing .achip {
+    width: 42px; padding-left: 8px; padding-right: 0;
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
+  }
+  .ridetab.detached .achip { box-shadow: var(--shadow-md); }
+  .ridetab .achip { position: relative; }
+  /* the draft's count while one is pending: a corner figure, --t-micro */
+  .ridetab .ridecount {
+    position: absolute; right: -4px; top: -6px; min-width: 14px; height: 14px; padding: 0 3px;
+    border-radius: 7px; background: var(--primary); color: #fff;
+    font-size: var(--t-micro); font-weight: 700; line-height: 14px; text-align: center;
+  }
+  /* **The beat**: `room-pulse`'s ring, in the tab's own hue. A click in the
+     prose in read mode says nothing and beats this; no copy, ever. */
+  @keyframes tabRing {
+    from { box-shadow: var(--shadow-sm), 0 0 0 0 rgba(var(--chiphue, var(--lc-closed)), 0.55); }
+    to   { box-shadow: var(--shadow-sm), 0 0 0 12px rgba(var(--chiphue, var(--lc-closed)), 0); }
+  }
+  .achip.ring { animation: tabRing 900ms ease-out; }
+  /* **Edit mode lifts the column onto a card** (`--shadow-xl`, the one big
+     step, still a light source and not a halo). Only the shadow and a radius:
+     no padding change, so every `.anch` box and every line keeps its
+     geometry, and the tab you press does not move. */
+  .doc.editing #prose, .doc.editing #charter > .prose { box-shadow: var(--shadow-xl); border-radius: var(--r-md); }
+  /* **The proposal-row sticks to the foot of the window** while the column's
+     foot is out of view — `sticky; bottom: 0` inside the column's own box, so
+     it rests exactly at the section's foot once that is on screen. Lifted
+     while detached (`--shadow-md` on the row's ground) and flat when resting;
+     the resting case is the natural position, told apart by the sentinel
+     under it having no offset — one class, set by nothing: the shadow is on
+     the row's own ground, which the page reads as "detached" by measurement
+     only in the audits. The viewport is the card: tab at its top edge, row at
+     its bottom. */
+  .proposalrow {
+    position: sticky; bottom: 0; z-index: 7;
+    background: var(--bg); margin: 0 auto; max-width: calc(var(--measure) + 2 * var(--measure-gutter));
+    padding: var(--s2) var(--measure-gutter); box-shadow: var(--shadow-md);
+    border-top: 1px solid var(--border);
+  }
+  .proposalrow .rowmid { flex: 1; text-align: center; font-size: var(--t-small); color: var(--muted); }
+  /* the gap block (Q1090): the empty document's `blank` treatment, its own
+     sentence, and a little air above it so it reads as *after* the last clause */
+  .doc p.editable.blank.gap { margin-top: var(--s3); }
+  @media (prefers-reduced-motion: reduce) {
+    .achip.ring { animation: none; }
+  }
+
   /* ===================================================================
      The document. Its wide left padding is the chip-gutter (see .chipcol).
      =================================================================== */

@@ -46,7 +46,7 @@
  * (clerk and member alike) and at *closed · ⏱️ card holds an enabled ✒️*.
  *
  * The doors ✉️ ❌ are **not** here: `journey`'s `doorShuts` has walked both
- * since 2026-08-26 (Q811/Q916), and 📄 is not here either — its pen goes down
+ * since 2026-08-26 (Q811/Q916), and 📝 is not here either — its pen goes down
  * at the start by itself (§9.7 rule 8) and its road on is proposing (K5), so
  * what this asserts about it is only that `confirm-starting-text` is refused.
  */
@@ -374,7 +374,7 @@ const runDocument = async (hat) => {
   }
   await cmd('relinquish', { setting: 'startingText', power: 'unilateral' });
   say('over wire  · ✒️ laid down on the other ' + (AUDIT.length - BY_HAND.length) +
-    ' and on 📄 · ⏰ keeps its pen');
+    ' and on 📝 · ⏰ keeps its pen');
 
   /* ---- pre-start: the release is a promise, and the control is correct -- */
   await page.goto(DOCBASE + '/d/' + SLUG);
@@ -504,9 +504,9 @@ const runDocument = async (hat) => {
       (bad.length ? ' — ' + bad.join(' · ') : ''));
     await clickIn('.setupcard [data-revert]');
   }
-  // 📄's own road is proposing, and the module says so rather than naming a power
+  // 📝's own road is proposing, and the module says so rather than naming a power
   await refuse('confirm-starting-text', { text: 'no' },
-    /the text changes by proposing/, '📄 confirm-starting-text after 🍾');
+    /the text changes by proposing/, '📝 confirm-starting-text after 🍾');
   // …and the control: ⏰ kept its pen, so the founder still sets it
   const ctl = await cmd('set-setting', { setting: 'ending', value: { endsAtMs: ENDS + 60_000 } });
   say('control    · ⏰ kept its pen and still sets · ' + (ctl.status === 200 ? 'PASS' : 'FAIL ' + ctl.status));

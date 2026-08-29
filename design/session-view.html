@@ -108,20 +108,17 @@
     border: 1px dashed var(--border); border-radius: 4px; cursor: pointer; padding: 1px 6px; }
 
   /* **The column invites you before it asks you** (Q513(c), Ed 2026-08-21).
-     📄 is the constitution's last clause, so the text is the last thing the
-     founding asks for — but the column it will be written in exists from the
-     save, and a founder who came here to write should not have to answer
-     eighteen questions before they may. From the save the well says so, in
-     grey, asking nothing; at 📄's own turn it becomes the paste-well below.
-     The save is the moment because it is the first moment there is anywhere
-     to put the words: before it nothing is stored anywhere. */
+     The column the text will be written in exists from the save, and a
+     founder who came here to write should not have to answer eighteen
+     questions before they may. From the save the empty column says so, in
+     grey, asking nothing, until 🍾 — keyed on the column being empty and the
+     founder's (`writeready`), never on a task's turn: since backlog 204 the
+     text is no task at all, 📄's OK is gone and 📝 is the door in. **Q518
+     lands here** (Ed, 2026-08-29: pre-fill as a grey placeholder — not
+     document text, gone at the first keystroke); whoever builds it replaces
+     this sentence with the placeholder text and keeps the key. */
   .prose.empty.writeready::before {
-    content: "Start writing whenever you like.\A\A The document's own words are the last thing the constitution settles, so nothing here is being asked of you yet.";
-    white-space: pre-wrap; color: var(--muted); font-size: var(--t-body); line-height: 1.6;
-  }
-  /* the paste-well: the empty state of the prose column, and nothing more */
-  .prose.empty.pasteready::before {
-    content: "Paste the text this document starts from, or begin typing it.\A\A Markdown headings become its sections, and the contents appear beside you as you go.";
+    content: "Start writing whenever you like — press 📝, or just begin typing.\A\A Markdown headings become its sections, and the contents appear beside you as you go.";
     white-space: pre-wrap; color: var(--muted); font-size: var(--t-body); line-height: 1.6;
   }
 
@@ -203,10 +200,17 @@
              writes in #prose below and this stands empty -->
         <!-- the stranger's door (Q455/456): one sentence at the head of the
              charter column, and the charter as bars at real metrics -->
+        <!-- the riding tab (backlog 204): the text's 📝 tab and its power tabs,
+             sticky in the gutter from the charter heading down, a direct child
+             of .doc so it rides the whole column rather than the band's box -->
+        <div class="ridetab" id="ridetab"></div>
         <p id="holding" hidden></p>
         <div id="charter"></div>
         <div class="redacted" id="redacted" hidden></div>
         <div class="prose empty" id="prose" contenteditable="false" spellcheck="false"></div>
+        <!-- the proposal-row before the start: the founder's ✒️ under #prose,
+             drawn by session.js's own helper so the two eras share one row -->
+        <div id="proserow"></div>
       </div>
     </main>
     <aside class="queue stack"><ul id="rail"></ul></aside>
@@ -339,25 +343,202 @@
       if (sel) { sel.removeAllRanges(); sel.addRange(r); }
     }
   };
-  // **📄's main decision is the column** (C1: a card opens and focuses its
-  // main decision). Every other card carries the thing it decides; 📄 decides
-  // the prose below it, so opening it puts the caret at the end of the
-  // column — which is also the only thing on the surface that says the column
-  // is somewhere you may type. Only where it is actually editable: `#prose`
-  // is `contentEditable` for the founder's own seat alone, and only until the
-  // text is confirmed.
+  // **Entering edit mode puts the caret at the end of the column** (C1: a
+  // card opens and focuses its main decision — the text's is the prose). Only
+  // where it is actually editable: `#prose` is `contentEditable` for the
+  // founder's own seat alone, in edit mode, until 🍾.
   const focusProse = () => {
     if (!prose.isContentEditable) return;
     try { prose.focus({ preventScroll: true }); } catch (e) { prose.focus(); }
+    const sel = window.getSelection();
+    const inside = sel && sel.rangeCount && prose.contains(sel.getRangeAt(0).startContainer);
+    if (inside) return;                  // the reader put the caret somewhere; keep it
     const r = document.createRange();
     r.selectNodeContents(prose); r.collapse(false);
-    const sel = window.getSelection();
     if (sel) { sel.removeAllRanges(); sel.addRange(r); }
   };
   // what an opening focuses — fired on the transition into open and never on
   // a re-render, since the live page polls every four seconds and stealing
   // the caret each time would fight the founder's typing
-  const focusOpened = (el, k) => (k === 'text' ? focusProse() : focusComposer(el));
+  const focusOpened = (el, k) => focusComposer(el);
+
+  // ---- edit mode (backlog 204, Ed 2026-08-28; SURFACE K31) ----------------
+  // **The text is always a card, with two modes**, and the 📝 tab is the door
+  // between them. Read mode: no caret, no row; a click in the prose beats the
+  // tab and says nothing; a keystroke enters edit mode with that character
+  // applied. Edit mode: the column lifts onto a card, the proposal-row sticks
+  // to the foot of the window, and the caret is live. Leaving — 📝 again, or
+  // opening any other card — keeps the draft (leaving is not discarding).
+  //
+  // The state is page-only and provisional (`S.editMode`; nothing in the
+  // log). Before 🍾 the column is `#prose` and the row's ✒️ is the founder's
+  // confirm; after it the column is session.js's charter and the row's commit
+  // follows entry 160 (✒️ under `MAY_PEN`, ✏️ otherwise) — two columns, one
+  // row helper, one tab (Q1088: the pre-🍾 half of session.js's host
+  // predicate was unreachable, so the page draws the tab and the row around
+  // `#prose` instead of mounting the charter early).
+  const canEditText = () => !!cs && !isStranger() && S.viewer !== 'applicant' &&
+    !(cs.closed) && (constituted() ? mayPropose() : amFounder());
+  function setEditMode(on) {
+    on = !!on && canEditText();
+    if (S.editMode === on) return;
+    S.editMode = on;
+    document.getElementById('doc').classList.toggle('editing', on);
+    if (constituted()) {
+      // the charter re-renders read-at-call-time (`PROSE()` reads `editing`),
+      // the band does not change; the tab and the row follow
+      SESSION.renderAll();
+      if (on) {
+        const host = document.querySelector('#charter .prose');
+        if (host) { try { host.focus({ preventScroll: true }); } catch (e) { host.focus(); } }
+      }
+    } else {
+      render();
+      if (on) focusProse();
+    }
+    renderRideTab();
+  }
+  // 📝 pressed: the door. With a card open the card closes into its paragraph
+  // first (one card at a time, and the closing is animated); a reader who may
+  // not write gets the beat and nothing else (SURFACE K31).
+  function toggleEditMode() {
+    if (!canEditText()) { ringTab(); return; }
+    if (S.editMode) { setEditMode(false); return; }
+    if (SESSION.openId != null) SESSION.closeCard();
+    if (S.open) { closeThen(() => { S.open = null; setEditMode(true); }); return; }
+    setEditMode(true);
+  }
+  // **The beat**: `room-pulse`'s ring on the tab, in the tab's own colour — a
+  // DOM poke in `beatEl`'s shape, no copy, ever (Ed: no nudge copy).
+  function ringTab() {
+    const el = tabFor('text');
+    if (!el) return;
+    el.classList.remove('ring');
+    void el.offsetWidth;
+    el.classList.add('ring');
+    const off = () => el.classList.remove('ring');
+    el.addEventListener('animationend', off, { once: true });
+    setTimeout(off, 1000);
+  }
+  // **The riding tab** (SURFACE K31): the text's pile — 📝 in front, the ✒️ 🛡️
+  // power tabs beneath — drawn once, in `#ridetab`, a sticky child of `.doc`
+  // that rests beside the charter heading and travels with the reader. Empty
+  // while a power tab's card is open (the strip has the tabs then), and
+  // before the save (no document, no text). It carries the draft's count
+  // while one is pending, and wears the active treatment in edit mode and
+  // while detached (Q1087: one treatment, one meaning — *this is the open
+  // card's tab*, and in edit mode the text is the open card).
+  function renderRideTab() {
+    const rt = document.getElementById('ridetab');
+    if (!rt) return;
+    if (!cs || /^pw:[ua]:text$/.test(S.open || '')) { rt.innerHTML = ''; return; }
+    const chips = isStranger() ? [card('text')] : ctx.chipsFor(card('text'));
+    rt.innerHTML = pileHtml(chips, ctx);
+    const front = rt.querySelector('.achip[data-tab="text"]');
+    if (front) {
+      front.title = 'Text — ' + (S.editMode ? 'you are writing; press to stop' : canEditText() ? 'press to write' : 'read only');
+      const rs = constituted() ? SESSION.draftRowState() : { count: 0 };
+      if (rs.count) front.insertAdjacentHTML('beforeend', '<span class="ridecount" aria-hidden="true">' + rs.count + '</span>');
+    }
+    rt.classList.toggle('editing', !!S.editMode);
+    syncRideTab();
+  }
+  // detached: the heading the tab rests beside has scrolled out under the
+  // navbar, so the tab is riding rather than resting
+  function syncRideTab() {
+    const rt = document.getElementById('ridetab');
+    const dh = document.getElementById('dochead');
+    if (!rt || !rt.firstChild) return;
+    const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 58;
+    const detached = !!dh && dh.getBoundingClientRect().bottom < navH + 8;
+    rt.classList.toggle('detached', detached);
+  }
+  addEventListener('scroll', syncRideTab, { passive: true });
+  // **the row before the start**: the founder's ✒️ under `#prose`, drawn by
+  // session.js's helper. Live until the column matches what the server holds;
+  // a never-confirmed column is always sendable (an empty text is a real
+  // answer, §9.0b). Refreshed in place on input so it never re-renders the
+  // column under the caret.
+  const proseDirty = () => !!cs && (!cs.textConfirmed || proseText() !== String(cs.text || ''));
+  function renderProseRow() {
+    const pr = document.getElementById('proserow');
+    if (!pr) return;
+    const show = !!cs && !constituted() && S.editMode && amFounder();
+    pr.innerHTML = show ? SESSION.proposalRowHtml({
+      count: 0, pen: true, disabled: !proseDirty(),
+      discardDisabled: !proseDirty(),
+      discardTitle: 'Put the column back to the text as it stands',
+      title: proseDirty() ? 'Save the text — the document begins from whatever stands here'
+        : 'Saved — the document begins from whatever stands here',
+    }) : '';
+  }
+  function syncProseRow() {
+    const pr = document.getElementById('proserow');
+    const b = pr && pr.querySelector('[data-act="row-commit"]');
+    if (!b) return;
+    const dirty = proseDirty();
+    b.disabled = !dirty;
+    b.title = dirty ? 'Save the text — the document begins from whatever stands here'
+      : 'Saved — the document begins from whatever stands here';
+    const bin = pr.querySelector('[data-act="row-discard"]');
+    if (bin) bin.disabled = !dirty;
+  }
+  // **A keystroke in read mode enters edit mode with that character applied**
+  // (Q1085): a read-mode column is not a keydown target — the event fires at
+  // `body` — so the listener is the document's and filters by reading
+  // position: nothing else focused, no card open, and the selection (if any)
+  // standing in the column.
+  document.addEventListener('keydown', (ev) => {
+    if (!cs || S.editMode || S.open || SESSION.openId != null) return;
+    if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.key.length !== 1) return;
+    const ae = document.activeElement;
+    if (ae && ae !== document.body && ae !== document.documentElement &&
+      (ae.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(ae.tagName))) return;
+    const sel = getSelection();
+    const node = sel && sel.rangeCount ? sel.getRangeAt(0).startContainer : null;
+    const el = node ? (node.nodeType === 1 ? node : node.parentElement) : null;
+    const inCol = !!(el && el.closest && el.closest('#prose, #charter .prose'));
+    if (!inCol && ae && ae !== document.body && ae !== document.documentElement) return;
+    if (!canEditText()) return;
+    // post-🍾 the character opens the editing card straight away — the card
+    // is the open card, and opening it is what leaves edit mode — so the
+    // column never needs to enter edit mode first; a caret on the column
+    // itself is refused there, as always-on typing refuses it
+    if (constituted()) { if (SESSION.typeAt(ev.key)) ev.preventDefault(); return; }
+    ev.preventDefault();
+    setEditMode(true);
+    focusProse();
+    try { document.execCommand('insertText', false, ev.key); } catch (e) { /* the caret alone, then */ }
+  });
+  // **A click in read mode beats the tab** — the room-pulse ring, no copy —
+  // when it lands on nothing (the dead-click's structural test) and selects
+  // nothing (a phrase selected is reading, not reaching for a door).
+  document.addEventListener('click', (ev) => {
+    if (!cs || S.editMode) return;
+    if (ev.shiftKey || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (!ev.target.closest('#prose, #charter .prose')) return;
+    if (ev.target.closest('a, button, input, textarea, select, label, [role="button"], [contenteditable="true"], .achip, .insert-anchor, [data-sec-toggle], .sugg')) return;
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed && String(sel).trim()) return;
+    ringTab();
+  });
+  // the pre-🍾 row's two ends: ✒️ confirms the column (the road since Q821,
+  // every press), 🗑️ puts the column back to the text as it stands
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('#proserow [data-act]');
+    if (!b || b.disabled || !cs || constituted()) return;
+    ev.stopPropagation();
+    if (b.dataset.act === 'row-commit') {
+      try { cs.confirmStartingText(now(), proseText()); } catch (e) { console.warn('[text]', e && e.message); }
+      renderProseRow();
+      return;
+    }
+    if (b.dataset.act === 'row-discard') {
+      setProse(cs.textConfirmed ? String(cs.text || '') : '');
+      prose.dispatchEvent(new InputEvent('input', { bubbles: true }));
+      syncProseRow();
+    }
+  });
   // run the close animation, then the state change it was closing for.
   //
   // **The tab you click does not move, even when another card is open** (Ed's
@@ -493,7 +674,7 @@
     if (key !== charterKey) {
       charterKey = key;
       SESSION.setData({
-        DOC: !on ? [] : (FIX ? FIX.DOC : blocksOf(cs.text)).concat(closedBlocks()),
+        DOC: !on ? [] : (FIX ? FIX.DOC : blocksOf(cs.text, !cs.closed)).concat(closedBlocks()),
         SUGGS: !on ? [] : LIVE_HOOKS.items ? LIVE_HOOKS.items() : FIX ? FIX.SUGGS.concat(FIX.CLOSED ? FIX.CLOSED.items : []) : [],
       });
     } else if (on && LIVE_HOOKS.items && !typing) {
@@ -1065,6 +1246,8 @@
     // has been opened and committed.
     seen: new Set(),
     open: null,
+    // edit mode (backlog 204): page-only, provisional, nothing in the log
+    editMode: false,
   };
   // ---- who is looking (Ed, 362: a dev dropdown of the actual users) ----
   // Per-user state lives on the roster rows; S.myAns / S.okd / S.myname…
@@ -1855,7 +2038,7 @@
     // content but on having *decided*: a page nobody has looked at and a page
     // somebody chose to leave blank look identical, and only one of them should
     // let people start proposing.
-    { k: 'text', g: '📄', t: 'Text', kind: 'ordinary', gate: 'propose' },
+    { k: 'text', g: '📝', t: 'Text', kind: 'ordinary', gate: 'propose' },
 
     // — the document's shape --------------------------------------------
     // **When it ends and whether it ends are one card** (Ed, 2026-08-18:
@@ -2755,9 +2938,13 @@
     if (c.isClosing) return signedClose();                     // 🥂: settled by your signature
     if (c.isGate) return S.okd.has(c.k);
     if (c.ansFor) return answered(c);
+    // **The text is never asked** (backlog 204, Q1082): it is a card with two
+    // modes, not a task, so from the save it is settled — nothing below it in
+    // ORDER waits on it, and the live path needs no `S.seen` to rebuild it
+    // (the 🎩 lesson). 🍾 confirms whatever stands (Q1080).
+    if (c.k === 'text') return !!cs;
     if (!S.seen.has(c.k) || !ready(c)) return false; // confirmed, not defaulted
     if (!cs) return true;                            // pre-save: title, email
-    if (c.k === 'text') return cs.textConfirmed;
     const st = csState(c.k);
     if (st) return st.holder === 'members' ? true : st.settledBy !== null;
     return true;                                     // roster, personal cards
@@ -3546,20 +3733,22 @@
       // column to be written in — and the outline has been pointing at
       // `#dochead` from the save for as long as it has existed (`tocLead`),
       // at an anchor that did not exist until 📄's turn at the very end of
-      // the founding. The **pile** keeps 📄's own gate: the tab arrives when
-      // the task does, and because it hangs in the gutter the title does not
-      // move when it comes.
+      // the founding. **The pile is the riding tab now** (backlog 204):
+      // `#ridetab`, a sticky child of `.doc` beside this heading, drawn by
+      // `renderRideTab` — there from the save, since the text is a card with
+      // two modes and no task. This row draws the hairline and the title, or
+      // the power tab's card while one is open (`pw:u:text` / `pw:a:text`
+      // still need a clause to sit under: the settled record, `BODY.text`).
       textAnchor: (h) => (!cs ? ''
         : '<div class="cpara notab docsep"></div>' +
-          (/^(text|pw:[ua]:text)$/.test(S.open || '') ? h.para(card('text'))
-          : '<div class="cpara textanchor">' +
-            h.pile(visible(card('text')) ? ctx.chipsFor(card('text')) : []) +
+          (/^pw:[ua]:text$/.test(S.open || '') ? h.para(card('text'))
+          : '<div class="cpara textanchor notab">' +
             '<h2 class="doctitle dochead" id="dochead">' + esc(S.title || 'Untitled') + '</h2></div>')) },
   ];
 
   const VALUE = {
     text: () => { const n = proseCounts().blocks;
-      return n ? n + ' blocks' : (S.seen.has('text') ? 'Starts empty — the membership writes it' : 'Nothing yet'); },
+      return n ? n + ' blocks' : (cs && cs.textConfirmed ? 'Starts empty — the membership writes it' : 'Nothing yet'); },
     title: () => S.title || 'Not named yet',
     slug: () => docAddr(S.slug || '…'),
     invite: () => PRICE_WORDS.admission[admissionPrice()],
@@ -5274,7 +5463,7 @@
   // a setting's tab, wherever it currently stands — in the band, or beside the
   // big heading while the birth still has no clauses to hang it on
   const tabFor = (k) => document.querySelector(
-    '#band .achip[data-tab="' + k + '"], #titlepara .achip[data-tab="' + k + '"]');
+    '#band .achip[data-tab="' + k + '"], #titlepara .achip[data-tab="' + k + '"], #ridetab .achip[data-tab="' + k + '"]');
   // **A stacked tab that is not in front carries no `data-tab`** (Q752): it is
   // inert, because nothing may click past the tab in front of it — so `tabFor`
   // was blind to it and its rail entry fell all the way through to the title
@@ -5542,9 +5731,10 @@
     // the title is set the clause has it, and the heading is just a heading.
     document.getElementById('titlechip').innerHTML =
       (cs || S.open === 'title' || settled(card('title'))) ? '' : pileHtml([card('title')], ctx);
-    prose.classList.toggle('pasteready', visible(card('text')));
-    // from the save until 📄's own turn, the column says you may write in it
-    prose.classList.toggle('writeready', !!cs && !visible(card('text')));
+    // from the save until 🍾, the empty column says you may write in it
+    // (Q1084: keyed on the column being the founder's and empty, not on a
+    // task's turn — there is no task)
+    prose.classList.toggle('writeready', !!cs && !constituted() && amFounder());
     // **The caret leaves with the founder's hand** (Ed's QA, 2026-08-19: he
     // went looking for how to relinquish direct editing on the text — there
     // is nothing to relinquish, because the text is never held (§9.7): once
@@ -5562,9 +5752,16 @@
     // while unconfirmed, `confirm-starting-text` after, Q821) and 🍾 flushes
     // the column one last time (Q822), so every keystroke has somewhere to go
     // right up to the press.
+    //
+    // **And since backlog 204 the caret is edit mode's**: before the save the
+    // birth column is free (the quill line — no tab, no row); from the save
+    // the founder presses 📝, or types, and the column takes the caret.
     prose.contentEditable = String(!constituted() &&
-      S.viewer !== 'applicant' && amFounder());
+      S.viewer !== 'applicant' && amFounder() && (!cs || S.editMode));
     document.getElementById('doc').classList.toggle('begun', charterOn());
+    document.getElementById('doc').classList.toggle('editing', !!S.editMode);
+    renderProseRow();
+    renderRideTab();
     // **The ✏️ socket stands whether or not you may propose** (Q532). It used
     // to be `display: none` for everybody who could not — a stranger, an
     // applicant, a clerk, a member before 🍾, a member who has not accepted the
@@ -5817,28 +6014,13 @@
           ? '<i>It began empty — the membership wrote it.</i>'
           : textDivs(cs.text)) +
         '</div></div>'
-      // **📄 is the one card whose object is not on it** (Ed's live walk,
-      // 2026-08-23), and it had become an explainer instead of a control:
-      // nothing said the column below was somewhere you may type, nothing
-      // showed what pressing ✒️ would commit, and the first sentence was
-      // false — *members can start proposing* is the pre-Q606 rule, and
-      // `canPropose` has been `&& constituted()` since 2026-08-22, so
-      // proposing opens at 🍾 and not here. The card takes the shape every
-      // other one uses: why → the value → the note → the commit row.
-      //
-      // **…and the task is an acknowledgement, not a set** (Q797, Ed
-      // 2026-08-25: *the action on the main 📄 tab is an acknowledgement, and
-      // it's the ✒️ tab under 📄 that allows the founder to relinquish it*).
-      // The body read as an instruction to write and the ✒️ as fixing a text
-      // the founder was choosing; what it actually says is a fact about the
-      // document — whatever stands in the column is what it begins from, and
-      // from the start it changes by proposal — which holds whoever holds the
-      // pen. Handing the pen over is the separate, optional act on the ✒️ tab
-      // beneath, and it takes effect at the start like every other pre-start
-      // release (R-048).
-      : '<p class="why">The document begins from whatever stands in the column below, and from then it changes by proposal — whoever holds the pen.</p>' +
-      '<div class="propblock"><div class="rtext">' + esc(proseLine()) + '</div></div>' +
-      '<p class="setnote"><b>Write it below, or leave it blank.</b> The column is yours until the document begins; starting from nothing is a perfectly good way to begin.</p>'),
+      // **Before the start the text is not a card body at all** (backlog
+      // 204): 📝 toggles edit mode on the column itself, and the only card
+      // that opens here is a power tab's, whose head is its own sentence
+      // (`powerHeadLine`) and whose clause is the column below. The
+      // acknowledgement this branch used to carry (Q797, an OK) is retired —
+      // 📝 → write → ✒️, and no OK anywhere.
+      : ''),
     hat: () => {
       const started = !!(cs && cs.constitutedAtT !== null);
       // the radio is the session-view's own opt(), over the derived current
@@ -6193,7 +6375,7 @@
       { k: 'appmail', g: '📧', t: 'Your Email', own: 'you', kind: 'personal', done: () => a.emailVerified },
       { k: 'appname', g: '✋', t: 'Your Name', own: 'you', kind: 'personal', done: () => !!a.name.trim() },
       { k: 'apppic', g: '🖼️', t: 'Your Picture', own: 'you', kind: 'personal', done: () => !!a.pic },
-      { k: 'apptext', g: '📝', t: 'Your Application', own: 'you', kind: 'personal', optional: true, done: () => !!a.text.trim() },
+      { k: 'apptext', g: '👋', t: 'Your Application', own: 'you', kind: 'personal', optional: true, done: () => !!a.text.trim() },
     ]);
   };
   // **An application refused at the door** (Q901, SURFACE E33, entry 97): 🤝
@@ -6788,32 +6970,10 @@
         // register, the text) simply has nothing to put back, so the bin
         // there is the close it always was under another name.
         //
-        // …except 📄, which loses it outright (Ed, 2026-08-23). The card names
-        // no `data-set`/`data-txt`/`data-num`/`data-ans` key, so `cardKeys()`
-        // is empty and the bin iterates nothing — a control that does nothing
-        // while its tooltip promises to put the text back, and beside a column
-        // holding the founder's own words it reads as *delete the document*.
-        // Y20's own footing: nothing to put back. Clicking the card's own tab
-        // still closes it, so nothing is stranded open. Scoped to `text` alone
-        // — `pw:u:text` and `pw:a:text` have real radios and keep their bins.
-        //
-        // **…and 📄 commits with OK** (Q798, Ed 2026-08-25). The task is an
-        // acknowledgement of a fact, not a set, so it takes the word every
-        // other card that asks only to have been seen takes (SURFACE §9.1) —
-        // and with it stops being a pen act: `holdWallet` keys the hold on the
-        // ✒️ in the button's own text, so the flight, the spend-preview and
-        // `mayPen()`'s gate all fall away by themselves. `data-confirm` stays,
-        // because the commit is still `confirmStartingText`: the founding walk
-        // types into the column at this step, and a `data-ok` here would be
-        // clicked by the walk's own OK branch before it ever got there.
-        : (c.k === 'text'
-        // …and not on a closed document (entry 62, found by `powers-walk`).
-        // 📄's OK is `confirmStartingText`, which `requireOpen` refuses — so
-        // on the closed page this was a live control for an act that cannot
-        // happen, the one card left drawing one after the locks above.
-        ? '<button class="btn btn-approve"' + (docOpen() ? '' : ' disabled') +
-          ' data-confirm="1" title="' + commitTitle(c) + '">OK</button>'
-        : binBtn() +
+        // (📄's OK stood here until backlog 204 — Q744's no-bin and Q798's OK;
+        // the text is no card body now and its commit is the proposal-row's,
+        // so nothing special-cases it)
+        : (binBtn() +
         // ✒️ is the founder's pen (Ed, 360): a set of a setting binds the
         // document. Q449 (Ed, 2026-08-20): an answer to a shared question
         // and a setting about yourself — your name, picture, email — bind
@@ -7297,7 +7457,12 @@
       // debounce, and it covers the fixture, which keeps no input listener at
       // all. Repeated confirmation is legal right up to the start — the same
       // flush ⏩ settle-the-founding makes for the column it never asked about.
-      if (!constituted() && cs.textConfirmed && amFounder()) {
+      // **…and confirms it whether or not anything ever did** (Q1080): the
+      // guard was `cs.textConfirmed &&` while 📄's OK was the first confirm;
+      // with the OK gone the press is the confirm of last resort, and the
+      // module's `begin` confirms empty for any caller that never reaches
+      // this flush (Q1081).
+      if (!constituted() && amFounder()) {
         try { cs.confirmStartingText(now(), proseText()); } catch (e) {}
       }
       // **One command, one list, one `t`** (entry 158). The table is collected
@@ -7364,6 +7529,11 @@
     }
     const t = ev.target.closest('[data-tab], [data-card]');
     if (t) { const k = t.dataset.tab || t.dataset.card;
+      // **📝 is the door between read and edit mode** (backlog 204), not a
+      // card that opens; its power tabs beneath open as any tab does
+      if (k === 'text') { toggleEditMode(); return; }
+      // …and any other card opening leaves edit mode, the draft kept
+      if (S.editMode) setEditMode(false);
       if (S.open === k) return closeThen(() => { S.open = null; });
       if (SESSION.openId != null) SESSION.closeCard();   // one open card on the surface
       // **Switching cards is a morph, not a teardown** (Ed, 2026-08-19: the
@@ -7472,7 +7642,6 @@
           if (was === 'slug') {
             if (S.slug !== cs.slug) watchSet('slug', cs.setSetting(now(), 'link', { slug: S.slug }));
             return; }
-          if (was === 'text') { cs.confirmStartingText(now(), proseText()); return; }
           // committing is the act, whatever the value — an empty name is
           // Anonymous and an empty picture is your initials, both real answers
           if (was === 'myname') { S.nameSet = true; cs.setIdentity(now(), viewerId(), { name: S.myname || null }); return; }
@@ -8654,7 +8823,8 @@
       if (c.isGate || c.ansFor) return;
       // 🧭 is a birth act like the three beside it: seen, never re-offered
       if (c.k === 'title' || c.k === 'slug' || c.k === 'myemail' || c.k === 'shape') { S.seen.add(c.k); return; }
-      if (c.k === 'text') { if (v.textConfirmed) S.seen.add(c.k); return; }
+      // the text is never a task (backlog 204): `settled()` answers for it
+      if (c.k === 'text') return;
       // ✋ and 🖼️ answer for themselves now, per seat, off `view.identity`'s
       // own flags (Q645) — this line used to declare them settled on every
       // live render, which is why neither task existed on a real document.
@@ -8903,6 +9073,7 @@
       let sent = null;                  // the text the last confirm carried
       prose.addEventListener('input', () => {
         if (constituted() || !amFounder()) return;
+        syncProseRow();                     // the row's ✒️ follows the column, in place
         clearTimeout(deb);
         const confirmed = cs.textConfirmed;   // the delay, not the branch
         deb = setTimeout(() => {
@@ -8945,7 +9116,12 @@
   // line per block (a leading '# ' … '### ' marks a heading), and the engine's
   // document is the same lines — so a clause key is its line index and a
   // proposal on a block is one hunk over that line.
-  const blocksOf = (text) => {
+  // …and `withGap` appends the **trailing gap** (backlog 204): a block keyed
+  // `G<nLines>`, the line an insertion at the end goes before, rendered only
+  // in edit mode. An empty document keeps only `L0` — its one clause is
+  // already the place to write.
+  const blocksOf = (text, withGap) => {
+    const nLines = text === '' || text == null ? 0 : String(text).split('\n').length;
     const blocks = String(text || '').split(/\n/).flatMap((l, i) => {
       if (!l.trim()) return [];                      // a blank line is a line the engine counts, and nothing to read
       const m = l.match(/^(#{1,3})\s+(.*)$/);
@@ -8956,7 +9132,8 @@
     // it as one empty line; without a block keyed to it there is nowhere to
     // put a caret, so nobody could ever propose the first paragraph. The
     // block is line 0, so a proposal on it is the ordinary hunk [0, 1).
-    return blocks.length ? blocks : [{ t: 'p', x: '', key: 'L0' }];
+    if (!blocks.length) return [{ t: 'p', x: '', key: 'L0' }];
+    return withGap ? blocks.concat([{ t: 'p', x: '', key: 'G' + nLines, gap: true }]) : blocks;
   };
   // ---- the closed document is bracketed (Q470) ----------------------------
   // constitution · charter · **the backlog as ranked document text** · the
@@ -9086,9 +9263,11 @@
   // the view, and each hook posts the command. Null means the fixture's own
   // behaviour (session.js's default path).
   const LIVE_HOOKS = { items: null, judge: null, propose: null, pen: null, withdraw: null,
-    seen: null, chill: null, textChanged: null, crownAnswer: null };
+    seen: null, chill: null, textChanged: null, crownAnswer: null,
+    // the riding tab's count follows every charter render (backlog 204)
+    rendered: () => renderRideTab() };
   const hookProxy = Object.fromEntries(['judge', 'propose', 'pen', 'withdraw', 'seen', 'chill',
-    'textChanged', 'crownAnswer']
+    'textChanged', 'crownAnswer', 'rendered']
     .map((n) => [n, (...a) => (LIVE_HOOKS[n] ? LIVE_HOOKS[n](...a) : undefined)]));
   // ---- the live wiring (B2b): the view in, the commands out ---------------
   // Everything session.js renders about the charter is derived here from the
@@ -9430,6 +9609,12 @@
       const nLines = cs.text === '' ? 0 : String(cs.text).split('\n').length;
       return d.sites.map((site) => {
         const ls = site.text.split('\n');
+        // a **gap site** (backlog 204) is a pure insertion: `start === end`
+        // at the line the gap stands before, clamped to the text's end
+        if (/^G\d+$/.test(site.keys[0])) {
+          const n = Math.min(lineIdx(site.keys[0]), nLines);
+          return { start: n, end: n, lines: ls.map((ln, i) => headOf(site.origin[i]) + ln) };
+        }
         const start = Math.min(lineIdx(site.keys[0]), nLines);
         return { start, end: Math.max(start, Math.min(lineIdx(site.keys[site.keys.length - 1]) + 1, nLines)),
           lines: ls.map((ln, i) => headOf(site.origin[i]) + ln) };
@@ -9964,7 +10149,7 @@
     // a ✒️ kept here is the Founder's own amendment passing on submission,
     // which lands one entry later (160). A switch that is inert for one slot
     // is not an interim, and the 🍾 card is where the question is asked.
-    { name: 'The Text', glyph: '📄', down: true, keys: ['text'] },
+    { name: 'The Text', glyph: '📝', down: true, keys: ['text'] },
     { name: 'Membership', glyph: '🪪', keys: ['invite', 'remove', 'admission', 'applications', 'removal', 'lapse'] },
     // `machines` has no card since 🤖 left the surface (R-078), but it is
     // still a catalogue setting the founder holds both powers on, and this
@@ -10613,7 +10798,17 @@
     entries: () => railEntries,
     isOpen: (id) => S.open === id,
     openId: () => S.open,
-    closeOthers: () => { if (S.open) closeThen(() => { S.open = null; }); },
+    closeOthers: () => {
+      // one card at a time (backlog 204): a charter card opening leaves edit
+      // mode — the draft is kept — with no render of its own, since `toggle`
+      // renders the charter itself in the same sequence
+      if (S.editMode) {
+        S.editMode = false;
+        document.getElementById('doc').classList.remove('editing');
+        renderRideTab();
+      }
+      if (S.open) closeThen(() => { S.open = null; });
+    },
     tocLead,
     afterToc: () => { if (!charterOn()) applyProseFolds(); },
   };
@@ -10639,6 +10834,8 @@
     // set** (§9.6a), where the road is `confirmStartingText` and the module
     // would refuse this one anyway.
     mayPen: () => constituted() && mayPenOn('text'),
+    // edit mode (backlog 204): the caret is edit mode's, read at call time
+    editing: () => !!S.editMode,
     // the sign control (Q770): the elective 👤 rung's base, or null — read at
     // call time, so a 👤 motion carrying while a draft is open changes what the
     // next draft offers and nothing about the one being typed

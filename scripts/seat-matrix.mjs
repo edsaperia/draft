@@ -123,7 +123,7 @@ const PEN_HOLD_MS = penRow ? Number(penRow['hold ms']) + 250 : 1250;
 /* ---- table 1: the seats ----------------------------------------------- *
  * Data only. `document` says which founder's run a seat belongs to; where in
  * the epochs a seat arrives is the step table's business (`kind: 'seat'`).  */
-// `face`: ✋ and 🖼️ are tasks in `ORDER` above 📄 and 🍾, so a seat that has
+// `face`: ✋ and 🖼️ are tasks in `ORDER` above 📝 and 🍾, so a seat that has
 // not answered both blocks its own founding order (first run, 2026-08-27:
 // `no begin card to hold … rail ["mypic"]`). One emoji per member per
 // document (`RESERVED_EMOJI`), hence a distinct one per seat.

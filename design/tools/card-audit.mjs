@@ -476,8 +476,8 @@ const ID_NEXT_HEAD = 'Invitees';
 
 /** the glyph alphabet STYLE §1 calls stable, plus the lifecycle family */
 const STABLE_GLYPHS = ['🪶', '📍', '🪪', '🤝', '💤', '🥾', '⏱️', '⏰', '👥', '🌡️', '🪜',
-  '👤', '✍️', '👁️', '🌍', '📄', '🎩', '💡', '⚖️', '👑', '📯', '✒️', '🛡️', '✏️', '🏛️', '🍾',
-  '🥂', '📧', '✋', '🖼️', '📝', '✉️', '❌', '❄️', '🔥', '⚔️', '🌶️', '⏳', '↻', '⏸', '🗑️', '📨',
+  '👤', '✍️', '👁️', '🌍', '📝', '🎩', '💡', '⚖️', '👑', '📯', '✒️', '🛡️', '✏️', '🏛️', '🍾',
+  '🥂', '📧', '✋', '🖼️', '👋', '✉️', '❌', '❄️', '🔥', '⚔️', '🌶️', '⏳', '↻', '⏸', '🗑️', '📨',
   '📬', '⏩', '⏭', '✔', '✖', '✓', '✕', '·', '▸', '∞'];
 // U+2300–U+23FF is not optional: ⏰ ⏱️ ⏳ ⏸ ⏩ ⏭ all live there, six of them
 // are in the table above, and without the range a clock-family glyph is

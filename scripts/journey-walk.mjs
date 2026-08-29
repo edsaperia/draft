@@ -37,6 +37,11 @@ const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 // --empty-text: found the document on a confirmed-empty text (Q649 (a)) and
 // propose its first paragraph into the one empty clause the charter renders.
 const EMPTY_TEXT = process.argv.includes('--empty-text');
+// --new-clause (backlog 204, Q261): instead of rewriting a clause, press
+// Enter at the end of the last one — a **gap site**, `G<nLines>` — and propose
+// a new clause into it; the wire then holds a candidate whose hunk is a pure
+// insertion (`start === end === nLines`).
+const NEW_CLAUSE = process.argv.includes('--new-clause');
 // **The three foundings** (Q774). The base walk answers everything itself,
 // which is one founder in one mood; the two variants below are the other two,
 // and each was written to break something. `--delegate-all` hands every
@@ -274,23 +279,67 @@ if (!saveOk) stuck.push('rail at save');
 // **The column carries the document's name from the save** (backlog 33, Ed:
 // *immediately after the birth, when my named document opens for the first
 // time, the Text area should already have the title and hairline above it*).
-// The hairline and the title are facts about the document, not about 📄's
-// task, so they stand at the head of the column the founder is invited to
-// write in — while the **pile** waits for 📄's own turn at the end of the
-// founding, and the pre-save heading that said the same thing a screen higher
-// is gone by the same act. Checked live because this is the one step the
-// fixture cannot reach: the save is a real POST and a real magic link.
+// The hairline and the title are facts about the document, so they stand at
+// the head of the column the founder is invited to write in — and since
+// backlog 204 the text's 📝 tab stands beside them **from the save**, in the
+// riding `#ridetab`, there being no task whose turn it waits for; the
+// pre-save heading that said the same thing a screen higher is gone by the
+// same act. Checked live because this is the one step the fixture cannot
+// reach: the save is a real POST and a real magic link.
 const proseHead = await page.evaluate(() => ({
   dochead: (document.getElementById('dochead') || {}).textContent || null,
   hairline: !!document.querySelector('.cpara.docsep'),
   chips: document.querySelectorAll('.cpara.textanchor .achip').length,
+  tab: !!document.querySelector('#ridetab .achip[data-tab="text"]'),
+  editable: document.getElementById('prose').getAttribute('contenteditable'),
   presave: !!(document.getElementById('titlepara') || {}).offsetParent,
 }));
 const headOk = proseHead.dochead === TITLE && proseHead.hairline &&
-  proseHead.chips === 0 && !proseHead.presave;
+  proseHead.chips === 0 && proseHead.tab && proseHead.editable === 'false' && !proseHead.presave;
 say('at save    · prose head ' + JSON.stringify(proseHead) +
-  (headOk ? '' : '  FAIL: the column should head with the hairline and the title, and nowhere else'));
+  (headOk ? '' : '  FAIL: the column should head with the hairline, the title and the riding 📝 tab, in read mode'));
 if (!headOk) stuck.push('the prose column head at the save');
+
+/* ---- the text, written from the save (backlog 204) ----------------------
+ * 📄's task is gone: the founder presses 📝, writes, and the row's ✒️ saves
+ * — no OK anywhere, and nothing in the founding waits for it. With
+ * --empty-text the column is left alone and 🍾 confirms it empty (Q1080). */
+if (!EMPTY_TEXT) {
+  const wrote = await page.evaluate(() => {
+    const tab = document.querySelector('#ridetab .achip[data-tab="text"]');
+    if (!tab) return { tab: false };
+    tab.click();
+    const pr = document.getElementById('prose');
+    const out = { tab: true, editable: pr.getAttribute('contenteditable'),
+      editing: document.getElementById('doc').classList.contains('editing'),
+      row: !!document.querySelector('#proserow [data-proposalrow]') };
+    pr.innerHTML = '<div>The clubhouse shall be kept open on Tuesdays.</div>' +
+      '<div>Every member may bring one guest.</div>';
+    pr.classList.remove('empty');
+    pr.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    return out;
+  });
+  await T(300);
+  const saved = await page.evaluate(() => {
+    const b = document.querySelector('#proserow [data-act="row-commit"]');
+    const glyph = b ? b.textContent.trim() : null;
+    if (!b || b.disabled) return { glyph, live: false };
+    b.click();
+    return { glyph, live: true };
+  });
+  await T(600);
+  const confirmed = await page.evaluate(() =>
+    fetch(location.pathname.replace('/d/', '/api/d/') + '/view').then((r) => r.json())
+      .then((v) => ({ textConfirmed: !!v.textConfirmed, text: v.text })));
+  const wroteOk = wrote.tab && wrote.editable === 'true' && wrote.editing && wrote.row &&
+    saved.glyph === '✒️' && saved.live && confirmed.textConfirmed && /Tuesdays/.test(String(confirmed.text || ''));
+  say('text       · ' + (wroteOk ? '📝 enters edit mode, the row wears ✒️, and one press saves the column — no OK'
+    : 'FAIL: ' + JSON.stringify({ wrote, saved, confirmed })));
+  if (!wroteOk) stuck.push('writing the text from the save');
+  // leaving: 📝 again, the column back to read mode
+  await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
+  await T(200);
+}
 
 /* ---- the founding: whatever the rail asks, one task at a time ---- */
 // how many options an open card offers, so the walk can try the next one when
@@ -1132,18 +1181,9 @@ for (let i = 0; i < 60; i++) {
     }
   }
   if (await clickIn('.setupcard [data-ok]')) { say('  ok       · ' + next); continue; }
-  if (next === 'text' && !EMPTY_TEXT) {
-    // 📄's value lives in the document column, never in a field. With
-    // --empty-text the column is left empty and confirmed so (§9.0b allows
-    // it), and the walk proposes the document's first paragraph instead.
-    await page.evaluate(() => {
-      const pr = document.getElementById('prose');
-      pr.innerHTML = '<div>The clubhouse shall be kept open on Tuesdays.</div>' +
-        '<div>Every member may bring one guest.</div>';
-      pr.dispatchEvent(new InputEvent('input', { bubbles: true }));
-    });
-    await T(400);
-  }
+  // (the text is no task since backlog 204 — it was written at the save, above;
+  // a `text` step here would be a finding)
+  if (next === 'text') { say('  FAIL     · the text is served as a task'); stuck.push('📝 served as a task'); }
   // --delegate-all hands over what can be handed over. The founder's own
   // questions (✋ 🖼️ 🎩) and the undelegable settings have no such rung, so
   // `options` falls back to the ordinary ones and the walk answers them.
@@ -1278,17 +1318,43 @@ if (!identityOk) stuck.push('identity tasks (order ' + order.join(' ') + ')');
 // pass whatever it said. A begun document hides the founder's pre-start
 // editor `#prose` and mounts the charter; the charter is the only column
 // that takes a caret, and `#prose` must be neither visible nor editable.
+// **And the caret is edit mode's** (backlog 204): the charter mounts in read
+// mode — no caret, no row — and 📝 is the door: pressed once the host is
+// editable, the column lifted and the row drawn with its commit greyed
+// (nothing has changed); pressed again, read mode.
+const hostEditable = () => page.evaluate(() =>
+  (document.querySelector('#charter .prose') || {}).getAttribute
+    ? document.querySelector('#charter .prose').getAttribute('contenteditable') : '(none)');
 const state = await page.evaluate(() => ({
   begun: !!document.querySelector('.doc.begun'),
   clauses: document.querySelectorAll('#charter .prose p').length,
   editable: (document.querySelector('#charter .prose') || {}).getAttribute
     ? document.querySelector('#charter .prose').getAttribute('contenteditable') : '(none)',
+  row: !!document.querySelector('#charter [data-proposalrow]'),
+  tab: !!document.querySelector('#ridetab .achip[data-tab="text"]'),
   proseShown: getComputedStyle(document.getElementById('prose')).display !== 'none',
   proseEditable: document.getElementById('prose').getAttribute('contenteditable'),
 }));
-const begunOk = state.begun && state.editable === 'true' && !state.proseShown;
-say('begun      · ' + JSON.stringify(state) + (begunOk ? '' : '  FAIL: pre-start editor still live'));
+const begunOk = state.begun && state.editable === 'false' && !state.row && state.tab && !state.proseShown;
+say('begun      · ' + JSON.stringify(state) + (begunOk ? '' : '  FAIL: the charter should mount in read mode with the 📝 tab'));
 if (!begunOk) stuck.push('begun state');
+await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
+await T(300);
+const editState = await page.evaluate(() => {
+  const b = document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]');
+  return { editing: document.getElementById('doc').classList.contains('editing'),
+    row: !!b, greyed: !!(b && b.disabled), glyph: b ? b.textContent.trim() : null,
+    gap: !!document.querySelector('#charter .prose p.editable.blank.gap[data-key^="G"]') };
+});
+const editOk = (await hostEditable()) === 'true' && editState.editing && editState.row && editState.greyed &&
+  (EMPTY_TEXT ? !editState.gap : editState.gap);
+say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column, draw the row greyed and the trailing gap'));
+if (!editOk) stuck.push('edit mode');
+await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
+await T(300);
+const readAgain = (await hostEditable()) === 'false' && !(await page.evaluate(() => !!document.querySelector('#charter [data-proposalrow]')));
+say('read mode  · ' + (readAgain ? '📝 again leaves edit mode: no caret, no row' : 'FAIL: still in edit mode'));
+if (!readAgain) stuck.push('leaving edit mode');
 
 // the other half of backlog 50: what *is* news to a member is a rule changed
 // while they were here, and one press of OK is what dismisses it
@@ -1491,8 +1557,38 @@ const caret = await page.evaluate((empty) => {
 }, EMPTY_TEXT);
 say('caret      · ' + (caret || 'FAIL: no charter paragraph to type in'));
 if (caret) {
-  await page.keyboard.type('X');
-  await T(700);
+  /* In read mode the column has no caret of its own, so the keystroke is
+   * heard by the page (`keydown` on the document, backlog 204) and applied to
+   * the block the selection stands in — the same editing card as before.
+   * With --new-clause the caret goes to the **end of the last clause** and
+   * the key is Enter: a gap site, and the lane starts empty. */
+  if (NEW_CLAUSE && !EMPTY_TEXT) {
+    await page.evaluate(() => {
+      const ps = [...document.querySelectorAll('#charter .prose p.editable[data-key]')].filter((p) => !p.classList.contains('gap'));
+      const p = ps[ps.length - 1];
+      p.scrollIntoView({ block: 'center' });
+      const r = document.createRange(); r.selectNodeContents(p); r.collapse(false);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    });
+    await page.keyboard.press('Enter');
+    await T(700);
+    const g = await page.evaluate(() => {
+      const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+      const head = document.querySelector('.sugg.editcard .clausehead .headlab');
+      return { key: d && d.sites[0] ? d.sites[0].keys[0] : null, text: d && d.sites[0] ? d.sites[0].text : null,
+        insertAfter: d ? d.insertAfterKey : null, label: head ? head.textContent.trim() : null,
+        anchor: !!document.querySelector('.insert-anchor[data-anchor="draft-yours"]') };
+    });
+    const gapOk = /^G\d+$/.test(g.key || '') && g.text === '' && /new clause/i.test(g.label || '');
+    say('new clause · ' + (gapOk ? 'Enter at the end opens a draft on ' + g.key + ' — “' + g.label + '”'
+      : 'FAIL: ' + JSON.stringify(g)));
+    if (!gapOk) stuck.push('the gap site');
+    await page.keyboard.type('A new clause, proposed into the gap.');
+    await T(300);
+  } else {
+    await page.keyboard.type('X');
+    await T(700);
+  }
   const r = await page.evaluate(() => ({
     editCard: !!document.querySelector('.sugg.editcard'),
     proposeBtn: !!document.querySelector('[data-act="draft-propose"]:not([disabled])'),
@@ -1597,6 +1693,23 @@ if (caret) {
       (stillThere ? '' : ' · moved ' + Math.round(movedX) + 'px while held (width ' +
         Math.round(bx.width) + '→' + Math.round(mid.w) + ')')));
   if (!ok) stuck.push('propose hold');
+
+  /* ---- --new-clause: the wire holds a pure insertion at the end ---------- */
+  if (ok && NEW_CLAUSE && !EMPTY_TEXT) {
+    await T(1200);
+    const ins = await page.evaluate(() => {
+      const api = location.pathname.replace('/d/', '/api/d/');
+      return fetch(api + '/view').then((r) => r.json()).then((v) => {
+        const n = v.text === '' ? 0 : String(v.text).split('\n').length;
+        const hunks = (v.clauses || []).flatMap((c) => c.candidates).flatMap((c) => c.hunks || []);
+        return { n, hunks: hunks.map((h) => [h.start, h.end]) };
+      });
+    });
+    const insOk = ins.hunks.some((h) => h[0] === h[1] && h[0] === ins.n);
+    say('insertion  · ' + (insOk ? 'the candidate is a pure insertion at [' + ins.n + ', ' + ins.n + ')'
+      : 'FAIL: ' + JSON.stringify(ins)));
+    if (!insOk) stuck.push('the insertion hunk');
+  }
 
   /* ---- what left (Q770): the standing `mine` item carries the choice, and
    * the wire names the founder on that clause's candidate exactly when it was

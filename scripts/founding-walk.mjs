@@ -175,47 +175,67 @@ const penCount = async () => {
 };
 
 /**
- * **The column stays live until 🍾** (Q824, backlog 56). 📄's press is an
- * acknowledgement — *whatever stands in the column is what the document begins
- * from* — and a statement about what will happen must not take the column away
- * before it does: between the OK and the cork the founder is still writing, and
- * what they write is still what begins. This is the only walk that can see it,
- * being the only one that presses 📄's commit and 🍾 in one pass.
- *
- * Two halves, and both are needed. The **caret**: is the column still on screen
- * and still editable after the OK? The **text**: do words typed after the OK
- * reach the charter at 🍾? A column left editable with nowhere to send its
- * keystrokes is the phantom power the old freeze existed to prevent, so a page
- * that passes the first and fails the second is worse than one that fails both.
+ * **The column stays live until 🍾** (Q824, backlog 56), and since backlog 204
+ * **there is no OK**: 📝 is the door into edit mode, the founder writes, and
+ * the row's ✒️ is the confirm (`confirm-starting-text`, every press — Q1080).
+ * So this runs *after the founder's first ✒️*, keeping the two halves Q824
+ * needed. The **caret**: is the column on screen and editable in edit mode,
+ * and read-only again on leaving? The **text**: do words written after the
+ * first ✒️ reach the charter at 🍾? A column left editable with nowhere to
+ * send its keystrokes is the phantom power the old freeze existed to prevent,
+ * so a page that passes the first and fails the second is worse than one that
+ * fails both.
  */
-const POST_OK_LINE = 'Written after the acknowledgement, before the cork.';
+const POST_OK_LINE = 'Written after the first ✒️, before the cork.';
 let proseWasLive = false;
-const afterTextOk = async () => {
-  const st = await page.evaluate(() => {
+const afterFirstPen = async () => {
+  // 📝: the riding tab, from the save
+  const entered = await page.evaluate(() => {
+    const tab = document.querySelector('#ridetab .achip[data-tab="text"]');
+    if (!tab) return null;
+    tab.click();
     const el = document.getElementById('prose');
-    return el ? { shown: !!el.offsetParent, editable: el.getAttribute('contenteditable') } : null;
+    return { shown: !!el.offsetParent, editable: el.getAttribute('contenteditable'),
+      row: !!document.querySelector('#proserow [data-act="row-commit"]') };
   });
-  if (!st) { errors.push('there is no prose column at all after 📄’s OK'); return; }
-  if (!st.shown) {
-    errors.push('the prose column is hidden after 📄’s OK — it is the founder’s until 🍾');
+  if (!entered) { errors.push('there is no 📝 tab at the save'); return; }
+  if (!entered.shown) errors.push('the prose column is hidden at the save — it is the founder’s until 🍾');
+  if (entered.editable !== 'true') {
+    errors.push('📝 did not make the column editable (contenteditable=' + entered.editable + ')');
   }
-  if (st.editable !== 'true') {
-    errors.push('the prose column is read-only after 📄’s OK (contenteditable=' +
-      st.editable + ') — the acknowledgement is not the freeze');
-  }
-  proseWasLive = st.shown && st.editable === 'true';
-  // a block appended by hand, then the page's own input event: the write
-  // channel hangs off that listener, so typing without it would prove nothing
+  if (!entered.row) errors.push('edit mode drew no proposal-row under the column');
+  // the first ✒️: a line, the page's own input event, the row's commit
   await page.evaluate((line) => {
     const el = document.getElementById('prose');
     const d = document.createElement('div');
-    d.textContent = line;
+    d.textContent = 'The first line, saved by the first ✒️.';
     el.appendChild(d);
     el.classList.remove('empty');
     el.dispatchEvent(new InputEvent('input', { bubbles: true }));
   }, POST_OK_LINE);
   await page.waitForTimeout(200);
-  await record('write after 📄’s OK');
+  const pressed = await clickIn('#proserow [data-act="row-commit"]');
+  if (!pressed) errors.push('the row’s ✒️ would not press with a changed column');
+  await record('first ✒️ on the text');
+  // …and the column is still live afterwards: a second line, written after
+  // the first confirm, riding the write channel (Q821)
+  const st = await page.evaluate((line) => {
+    const el = document.getElementById('prose');
+    const d = document.createElement('div');
+    d.textContent = line;
+    el.appendChild(d);
+    el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    return { shown: !!el.offsetParent, editable: el.getAttribute('contenteditable') };
+  }, POST_OK_LINE);
+  proseWasLive = st.shown && st.editable === 'true';
+  if (!proseWasLive) errors.push('the prose column is not live after the first ✒️ (contenteditable=' + st.editable + ')');
+  await page.waitForTimeout(1800);                 // the write channel's debounce
+  await record('write after the first ✒️');
+  // leaving: 📝 again, and the column is read-only
+  await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
+  await page.waitForTimeout(200);
+  const left = await page.evaluate(() => document.getElementById('prose').getAttribute('contenteditable'));
+  if (left !== 'false') errors.push('📝 again did not leave edit mode (contenteditable=' + left + ')');
 };
 
 const log = [];
@@ -308,6 +328,8 @@ await clickIn('[data-act="clickmail"]');
 await page.waitForTimeout(600);
 const atMagicLink = await record('follow the magic link');
 await titleClauseAfterSave(atMagicLink);
+// the text, written from the save (backlog 204): no task, no OK
+await afterFirstPen();
 
 /* ---- then whatever the rail asks for, one at a time ------------------- */
 const PEN_RELEASE = 'quorum';         // 👥, whose value the walk sets itself
@@ -401,17 +423,17 @@ for (let i = 0; i < 40; i++) {
     (await clickIn('.setupcard [data-ok]')) || (await clickIn('.setupcard [data-hatgo]'));
   await record('commit ' + next.k, committed ? null : 'no commit control');
   if (next.k === PEN_RELEASE) await releasePen(next.k);
-  if (next.k === 'text') await afterTextOk();
+  if (next.k === 'text') errors.push('📝 the text was served as a task; it is a card with two modes, never a task (backlog 204)');
 }
 
-/* ---- and what was written after the OK is what began (Q824) ------------ */
+/* ---- and what was written after the first ✒️ is what began (Q824) ------ */
 if (proseWasLive && log.some((e) => e.step === 'commit begin')) {
   const charter = await page.evaluate(() => {
     const el = document.getElementById('charter');
     return el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
   });
   if (!charter.includes(POST_OK_LINE)) {
-    errors.push('the line written after 📄’s OK is not in the charter after 🍾 — ' +
+    errors.push('the line written after the first ✒️ is not in the charter after 🍾 — ' +
       'the column was live but its keystrokes went nowhere');
   }
 }
@@ -423,12 +445,12 @@ if (penReleased && log.some((e) => e.step === 'commit begin')) {
     errors.push(PEN_RELEASE + ' still speaks of the pen after 🍾: ' + said);
   }
   // two settings leave the pen wallet at the press: 👥, released above, and
-  // 📄 the Text, which 🍾 lays down by itself (§9.7 rule 8)
+  // 📝 the Text, which 🍾 lays down by itself (§9.7 rule 8)
   const now = await penCount();
   if (now !== null && now !== penHeldAtRelease - 2) {
     errors.push('🍾 did not spend the release — the wallet counted ' + penHeldAtRelease +
       ' settings before it and ' + now + ' after, where ' + (penHeldAtRelease - 2) +
-      ' is 👥 released and 📄 laid down');
+      ' is 👥 released and 📝 laid down');
   }
 }
 

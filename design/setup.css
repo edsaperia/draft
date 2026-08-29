@@ -697,21 +697,16 @@ button.cline:hover b { text-decoration: underline; }
    closed tab stood and the active tab still carries under the card edge. */
 .constsec .cpara.open > .setupcard { margin-left: -14px; }
 
-/* the starting-text task anchors the prose itself (Ed, 2026-08-18): a
-   row at the band's end carrying the document's own name, its 📄 tab beside
-   it. **The tab lines up with the title** (Ed, 2026-08-21), and the offset
-   is a measurement rather than a taste: a tab is 30px and the title's line
-   box is 30px, so flush tops centre one on the other. It had been `top:10px`,
-   from when this row was empty and the tab hung beside the first block of
-   prose below it — the title moved in and the constant stayed. Everywhere
-   else the gutter's own -3px does the same job against a 24px line.
-   **The pile is empty from the save until 📄's turn** (backlog 33), and the
-   title must sit at the same x either way — which it does for free, the
-   `.chipcol` being `position: absolute` out in the gutter, so nothing about
-   the title's box depends on whether a tab is standing beside it. */
+/* the charter heading at the band's end (Ed, 2026-08-18): a row carrying
+   the document's own name. Since backlog 204 the text's 📝 tab is not in
+   this row but in the surface's sticky `#ridetab` (system.css), which rests
+   beside this title and rides with the reader; **it lines up with the
+   title** (Ed, 2026-08-21) by the same measurement as before — a tab is 30px
+   and the title's line box is 30px, so flush tops centre one on the other —
+   and the title sits at the same x whether or not a tab stands beside it,
+   the tab being absolute out in the gutter. */
 .cpara.textanchor { min-height: 0; margin: 0; }
 .cpara.textanchor .dochead { margin: 0 0 var(--s3); padding-left: 0; }
-.cpara.textanchor .chipcol { top: 0; }   /* see the note above: 30px tab, 30px title line */
 
 /* the composer's rationale wears your avatar (Ed, 2026-08-18) — the same
    speaker slot the editing card gives a rationale, with you as the speaker */

@@ -345,9 +345,19 @@
     ['open-judgments', () => openTab('judgments')],
     ['choose-judgments', () => click('.setupcard [data-set="judgments"][data-val="after"]')],
     ['confirm-judgments', () => click('.setupcard [data-confirm]')],
-    // 📄 is an acknowledgement, so its one control is the commit
+    // 📝 is the door into edit mode (backlog 204), not a card: it lifts the
+    // column, the founder writes, the row's ✒️ saves, and 📝 again leaves
     ['open-text', () => openTab('text')],
-    ['confirm-text', () => click('.setupcard [data-confirm]')],
+    ['write-text', () => {
+      const el = $('#prose');
+      if (!el) return 'no such target: #prose';
+      el.innerHTML = '<div>The clubhouse shall be kept open.</div>';
+      el.classList.remove('empty');
+      el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+      return null;
+    }],
+    ['save-text', () => click('#proserow [data-act="row-commit"]')],
+    ['close-text', () => openTab('text')],
     // 🍾 commits with its own glyph on its own commit (Q516)
     ['open-begin', () => openTab('begin')],
     ['confirm-begin', () => click('.setupcard [data-confirm]')],
