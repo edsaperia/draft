@@ -4918,8 +4918,8 @@
       sealedElective: 'Whoever proposes a change is named when the document is finished — sooner, if they choose to sign it.',
       public: 'Whoever proposes a change is named from the moment they propose it.' })[
       takenOf('authorship') || (S.authorship === 'roster' ? 'anonymous' : S.authorship)],
-    judgments: () => ({ never: 'What somebody preferred is never made public.',
-      after: 'What somebody preferred is made public when the document is finished, and not before.' })[
+    judgments: () => ({ never: 'Votes are never revealed.',
+      after: 'Votes are revealed when the document is finished, and not before.' })[
       takenOf('judgments') || (S.judgments === 'roster' ? 'never' : S.judgments)],
     // **Foundership carries a read, whatever 🌍 says** (Ed, 2026-08-22).
     // 🌍 settles who may read *besides* the people the document is already
