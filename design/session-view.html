@@ -3616,9 +3616,14 @@
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
     applications: (v) => 'You said ' + ({ invite: 'invitation only', apply: 'anyone may apply' }[v] || v),
     lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days without logging in'),
-    removal: (v) => 'You said ' + ({ everyone: 'all members must approve removing a member, and the person themselves must agree',
-      others: 'all other members must approve removing a member',
-      ordinary: 'members must vote on removing a member' }[v] || v),
+    // keyed by the page's own removal vocabulary — `consent` · `assembly` ·
+    // `proposal`, what `ANSTYPED`/`PAGEVAL` and setup.js's ladder speak. It
+    // was keyed `everyone`/`others`/`ordinary`, a vocabulary nothing on this
+    // page has ever written, so every lookup missed and the readback fell
+    // through to the raw token.
+    removal: (v) => 'You said ' + ({ consent: 'all members must approve removing a member, and the person themselves must agree',
+      assembly: 'all other members must approve removing a member',
+      proposal: 'members must vote on removing a member' }[v] || v),
     rate: (v) => 'You said ' + v,
   };
   const ANSASK = { quorum: 'The lowest you will accept', bar: 'The lowest you will accept',
@@ -4367,9 +4372,14 @@
     authorship: (v) => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed at the end' })[v],
     lapse: (v) => (v === 'never' ? 'Never — however long you are away' : 'After ' + v + ' days without logging in'),
-    removal: (v) => ({ everyone: 'All members must approve removing a member, and the person themselves must agree',
-      others: 'All other members must approve removing a member',
-      ordinary: 'Members must vote on removing a member' })[v],
+    // `standsOf` feeds this `takenOf('removal')`, which is `PAGEVAL.removal`
+    // — the price, `consent` · `assembly` · `proposal`. Keyed
+    // `everyone`/`others`/`ordinary` it returned `undefined` for every value
+    // the page can produce, so `standsOf('removal')` fell to `''` on a 🥾 the
+    // membership decided and the 🏛️ card read *replaces <i></i>*.
+    removal: (v) => ({ consent: 'All members must approve removing a member, and the person themselves must agree',
+      assembly: 'All other members must approve removing a member',
+      proposal: 'Members must vote on removing a member' })[v],
     quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership' : v + '% of the membership'),
     bar: (v) => v + '% sure at the end',
     ending: (v) => (v === 'never' ? 'Never — it runs until too few members are active'
