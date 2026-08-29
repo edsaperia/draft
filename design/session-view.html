@@ -7172,6 +7172,10 @@
           if (own && S.setWhy) delete S.setWhy[d0.k];
           if (sent && sent.then) sent.then((res) => { if (res && res.error) {
             S.draft = own ? null : d0;
+            // …and the reason comes back with it. It was spent on a send that
+            // did not happen, and the lane is where the Founder's words are —
+            // dropping it makes a refusal cost them the sentence they wrote.
+            if (own && S.setWhy && d0.why) S.setWhy[d0.k] = d0.why;
             setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(res.error) + '.');
           } });
         } catch (e) {
@@ -7746,6 +7750,9 @@
       }
       if (sent && sent.then) sent.then((res) => { if (res && res.error) {
         S.draft = seeded ? null : d0; delete S.mAns[d0.k];
+        // the reason was spent on a send that did not happen — it comes back
+        // with the draft, the lane being where the Founder's words are
+        if (seeded && S.setWhy && d0.why) S.setWhy[d0.k] = d0.why;
         setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(res.error) + '.');
       } });
       finish();
