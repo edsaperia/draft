@@ -8143,9 +8143,12 @@
           answers: { has: (id) => id === self.v.me && rec.myAnswer !== null,
             get: (id) => (id === self.v.me ? rec.myAnswer : undefined),
             size: rec.answeredCount } }]))),
+      // `text` is carried (R-056): a text 👑 question parks no motion, so
+      // dropping it left the record with nothing to say what was being
+      // asked about and no way to find its candidate
       crownQuestionRecords: () => index().crowns || (index().crowns = new Map(
         self.v.view.crownTasks.map((q) =>
-          [q.id, { id: q.id, motion: q.motion, status: 'pending' }]))),
+          [q.id, { id: q.id, motion: q.motion, text: q.text || null, status: 'pending' }]))),
       applicantRecords: () => index().applicants || (index().applicants =
         new Map(((self.v.view && self.v.view.applicants) || [])
           .map((a) => [a.id, a]))),
@@ -8731,8 +8734,9 @@
   // the view, and each hook posts the command. Null means the fixture's own
   // behaviour (session.js's default path).
   const LIVE_HOOKS = { items: null, judge: null, propose: null, withdraw: null,
-    seen: null, chill: null, textChanged: null };
-  const hookProxy = Object.fromEntries(['judge', 'propose', 'withdraw', 'seen', 'chill', 'textChanged']
+    seen: null, chill: null, textChanged: null, crownAnswer: null };
+  const hookProxy = Object.fromEntries(['judge', 'propose', 'withdraw', 'seen', 'chill',
+    'textChanged', 'crownAnswer']
     .map((n) => [n, (...a) => (LIVE_HOOKS[n] ? LIVE_HOOKS[n](...a) : undefined)]));
   // ---- the live wiring (B2b): the view in, the commands out ---------------
   // Everything session.js renders about the charter is derived here from the
@@ -8855,6 +8859,29 @@
         items.push({ ...base, kind: 'race',
           race: { a: { id: a.id, text: textOf(a), rationale: a.rationale, by: byOf(a) },
                   b: { id: b.id, text: textOf(b), rationale: b.rationale, by: byOf(b) } }, ...slate });
+      }
+    }
+    // 🛡️ on the Text (R-056): what the room passed sits parked until the
+    // Founder answers, and this is where it is put in front of them. One
+    // item per pending text 👑 question — the Founder's alone, the server
+    // serving `awaitingAssent` to nobody else — filed beside the clause the
+    // parked candidate rewrites, because this array is the only thing that
+    // files anything beside a clause. The setting-side 👑 card is untouched:
+    // it finds its question backwards from a motion, which a text question
+    // does not have.
+    if ((v.awaitingAssent || []).length && cs && cs.crownQuestionRecords && amFounder()) {
+      const parked = new Map((v.awaitingAssent || []).map((c) => [c.candidateId, c]));
+      for (const q of cs.crownQuestionRecords().values()) {
+        if (q.status !== 'pending' || !q.text) continue;
+        const c = parked.get(q.text.candidateId);
+        if (!c || !(c.hunks || []).length) continue;
+        const sp = spanOf(c.hunks);
+        const keys = keysOfSpan(sp, lines);
+        items.push({ id: 'crown:' + q.id, kind: 'crown', question: q.id, keys,
+          state: 'needs', qLabel: labelFor(keys[0]), urgency: 1, pct: 100,
+          cap: 'the room passed this — it waits on you',
+          marked: markedOf(plain(lines, sp), applyIn(lines, sp, c.hunks)),
+          rationale: c.rationale, by: (c.author && c.author.name) || null });
       }
     }
     for (const m of v.mine || []) {
@@ -9001,6 +9028,14 @@
       const s = liveItem(id) || { candidate: proposedAs.get(id) || (String(id).startsWith('mine:') ? id.slice(5) : null) };
       if (!s.candidate) return;
       api.cmd('withdraw-text', { candidate: s.candidate });
+    };
+    // 🛡️ on the Text (R-056): the Founder's answer carries the question's own
+    // id off the card, so nothing has to make the setting-side lookup
+    // (`x.motion === rec.id`) work for a question with no motion.
+    LIVE_HOOKS.crownAnswer = (question, outcome) => {
+      if (!question) return;
+      cs.answerCrownQuestion(now(), question, outcome)
+        .then(() => { SESSION.setData({ SUGGS: itemsFromView(cs.v) }); });
     };
   }
   // ---- the wallet family (Q444–448, 453, 458, 461; 2026-08-21) -----------

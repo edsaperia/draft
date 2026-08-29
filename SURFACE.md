@@ -145,7 +145,7 @@ Relocated here from SPEC.md in spec pass 1 (finding 568), with the spec keeping 
 
 - **How a constitutional motion is put** — a full ten seconds on 🏛️ in which the members' avatars convene in a circle around the control; the assembling circle is the progress meter. Started by a click or held down, by the commit gesture (§7.2); held, release early and nothing is sent (C4).
 - **The head of the document** — the Constitution block carries the founder, the constituted-at time (*Founded by [name] 👑 at [time] on [date]*) and every setting's current value as a clause, governance stated by deviation under the Proposals preamble.
-- **The 👑 question** — a task of its own kind on the founder's surface: news-pinned, Refuse / Accept as its commit row (E12) — *refuse* is the Founder's word, *reject* the membership's.
+- **The 👑 question** — a task of its own kind on the founder's surface: news-pinned, Refuse / Accept as its commit row (E12) — *refuse* is the Founder's word, *reject* the membership's. On the Text it is a decision card in the charter beside the clause it rewrites, since what is being asked about is a wording and not a setting (R-056); the room is told nothing while it waits (Q1015).
 
 ## 6. The marks alphabet and the rail
 
@@ -367,6 +367,7 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 | power cards ✒️ 🛡️ | the power tabs | the power's rule as it stands | why · two proposal blocks, the rule at document size with its consequence · *Choose this / Chosen* | Choose this / Chosen | 🗑️ | ✒️ (founder; not pen-gated, Y7) | ✒️ | the tab stays |
 | settled motion record | the pile behind the rule's own tab — never the rail, and never `offered()`'s front chip | what was proposed, in the page's words | a dateline — the date, absolute and with its year, then *Passed* / *Rejected*; then what changed by route and outcome — *The Founder changed …* for a ✒️ amendment, *The membership changed …* for a raised one, *The membership kept … as it stood* for a rejected one — then the reason, the featureless disc unless it is the founder's own hand | none | 🗑️ | nothing — a record asks nothing, so it has no OK (Y20) | 🗑️; the tab | a grey ✔ / ✖ behind the rule, and it stays |
 | 👑 question | the setting's card, news-pinned | the title | *Passed — awaiting the 👑…* | none | **Refuse** (Y20) | **Accept** | either press | record |
+| 👑 question (the Text) | the founder's rail, beside the clause | **the clause it rewrites** | the parked wording against it, one proposal block, under its speaker | none | **Refuse** (Y20) | **Accept** | either press | the entry leaves |
 | news / owed OK | news entry ✔ | the rule | the read body · the watch half · the change line (was / now, who, why; *Last amended* once acknowledged) | none | 🗑️ | OK | OK | grey; the clause keeps the line |
 | gates 💡 ⚖️ | rail, hidden until 🍾 | the gate's sentence | who gave it · why · the blockers · *✏️ Take them puts n ✏️s in your wallet* (💡) | none | 🗑️ | OK; **💡: ✏️ Take them** (it is the ✏️ grant — Q461a) | OK (persisted) | grey ✔; gone from the rail |
 | grants 🏛️ ✒️ 🛡️ | rail, staged | the sentence | as a gate, closing on *‹the take› puts it in your wallet* | none | 🗑️ | **✒️ Take the pen · 🛡️ Take the shield · 🏛️ Take your voice**, a click | the take → the flight | grey |

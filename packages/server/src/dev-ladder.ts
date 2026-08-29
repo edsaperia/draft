@@ -533,6 +533,28 @@ async function reserveTextShield(host: LadderHost, doc: LoadedDoc, _bridge: Engi
 }
 
 /**
+ * The Founder answers a parked adoption (R-056). With 🛡️ up on the Text a
+ * race clearing the bar **parks** — nothing is applied — and no further text
+ * adoption happens anywhere until the question is answered. So the ladder
+ * answers as it goes, which is what a founder does, and stops answering
+ * before the last of the carrying band: that leaves one 👑 question standing
+ * for the card to show, over a document that still visibly changed.
+ */
+function assentPending(bridge: EngineBridge, doc: LoadedDoc, pen: Pen, ctx: Ctx): number {
+  let n = 0;
+  for (const q of [...doc.cs.crownQuestionRecords().values()]) {
+    if (q.status !== 'pending' || !q.text) continue;
+    try {
+      bridge.answerCrownQuestion(pen.next(), q.id, 'accept');
+      n++;
+    } catch (e) {
+      ctx.skipped.push(`the 👑 on the text: ${(e as Error).message}`);
+    }
+  }
+  return n;
+}
+
+/**
  * Thirty rewrites, ten clauses, judged on a gradient: the first clauses are
  * pushed hard enough to carry, the middle ones are given some evidence and
  * left live, and the last are proposed and never judged — which is what the
@@ -577,6 +599,7 @@ async function proposeAndJudge(host: LadderHost, doc: LoadedDoc, bridge: EngineB
   const lines = [...byLine.keys()].sort((a, b) => a - b);
   let carried = 0;
   let contested = 0;
+  let assented = 0;
   for (let k = 0; k < lines.length; k++) {
     const ids = byLine.get(lines[k]!)!;
     const race = engine.races().find((r) => ids.some((id) => r.members.includes(id)));
@@ -596,11 +619,15 @@ async function proposeAndJudge(host: LadderHost, doc: LoadedDoc, bridge: EngineB
         } catch { /* a sealed pair, a rebased rival — the race moved on */ }
       }
     }
+    // the leader parked rather than adopting, and nothing else adopts until
+    // the Founder answers — so they do, up to the last of the carrying band
+    if (k < 3) assented += assentPending(bridge, doc, pen, ctx);
     await host.commit(doc, pen.now);
     if (k <= 3) carried++; else contested++;
   }
   ctx.built.push(`${carried} clauses pushed to carry, ${contested} left live, ` +
     `${Math.max(0, lines.length - carried - contested)} with no evidence at all`);
+  if (assented > 0) ctx.built.push(`${assented} adoptions accepted by the founder under 🛡️`);
 }
 
 /** A motion of every other kind: ordinary racing, constitutional collecting, carried, withdrawn, and membership. */

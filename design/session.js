@@ -3,8 +3,9 @@
  * implementation. The body below is session-view.html's inline script moved
  * verbatim: nothing renamed, nothing reformatted. What changed is mechanical —
  * the fixture data, the DOM handles and everything that ran at load now arrive
- * through `SESSION.init(env)`, and six hooks (`env.hooks`) let a host hear a
- * judgment, a proposal, a withdrawal, an OK, a ❄️ and a text change; with no
+ * through `SESSION.init(env)`, and seven hooks (`env.hooks`) let a host hear a
+ * judgment, a proposal, a withdrawal, an OK, a ❄️, a text change and the
+ * Founder's answer to a text 👑 question; with no
  * hook given every path does exactly what it did. Proven by
  * design/tools/session-probe.js against design/reference/.
  *
@@ -2617,6 +2618,28 @@
         '</div>'
       );
     }
+    // 🛡️ on the Text (R-056): the room passed a change and it waits on the
+    // Founder. A decision card like every other — the clause it rewrites at
+    // the head, the wording as the single proposal block against it — and
+    // the 👑 question's own commit row, Refuse then Accept, with no 🗑️
+    // (SURFACE Y20: the two answers are the whole act). No lane radios: this
+    // is not a judgment, and nothing about the room's decision is being
+    // re-asked.
+    if (s.kind === 'crown') {
+      const ckey = (s.keys ?? [])[0];
+      return (
+        '<div class="sugg quick-open" data-card="' + s.id + '" data-site="' + (ckey || '') + '">' +
+        clauseHeadHtml(s, { text: currentTextFor(ckey), key: ckey, chips: chipsFor(ckey, s.id) }) +
+        fieldHtml(proposalHtml(s, { html: resultOnly(s.marked), why: s.rationale, by: s.by })) +
+        '<div class="foot">The room passed this. Until you answer, the clause above stands.</div>' +
+        '<div class="race-mid commitrow">' +
+        '<button class="btn" data-act="crown-refuse">Refuse</button>' +
+        '<span class="rightpair">' +
+        '<button class="btn btn-approve" data-act="crown-accept">Accept</button>' +
+        '</span></div>' +
+        '</div>'
+      );
+    }
     if (s.kind === 'race') {
       // The clause, which this card had never shown (Ed, QA 2026-08-16) — a
       // reader was being asked to choose between two rewrites without being
@@ -3636,6 +3659,25 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         const i = SUGGS.findIndex((x) => x.id === id);
         if (i >= 0) SUGGS.splice(i, 1);
         if (hooks.withdraw) hooks.withdraw(id);
+        renderAll();
+        drawWires();
+      };
+      if (openId === id) collapseCards(id, shut); else shut();
+      return;
+    }
+    // 🛡️ on the Text (R-056): the Founder's two answers. Accept adopts what
+    // the room passed, Refuse retires it — either way the question is
+    // answered, so the entry leaves the rail with the card. The outcome
+    // words are the module's (`accept` / `reject`); the *card* says Refuse,
+    // which is the Founder's word for it (SURFACE §9).
+    if (what === 'crown-accept' || what === 'crown-refuse') {
+      const outcome = what === 'crown-accept' ? 'accept' : 'reject';
+      const question = s && s.question;
+      const shut = () => {
+        if (openId === id) openId = null;
+        const i = SUGGS.findIndex((x) => x.id === id);
+        if (i >= 0) SUGGS.splice(i, 1);
+        if (hooks.crownAnswer) hooks.crownAnswer(question, outcome);
         renderAll();
         drawWires();
       };
