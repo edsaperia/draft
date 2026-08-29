@@ -1172,6 +1172,20 @@
       else if (!isRoom(c) && csSettled(c.k)) S.okd.add('set-' + c.k);
     }
   };
+  // **And the same both ways for a release batch** (entry 162, Q846's rule).
+  // `releaseKeys` hides a 👑 card the moment its OK is pressed, which is the
+  // page's optimism about a command that has not answered yet — so if the
+  // command is refused or never lands, the news vanishes for the life of the
+  // page while `view.owedReleases` still owes it. Nothing about a batch is
+  // remembered per device, so the module is the truth in both directions here:
+  // once the press is no longer in flight, a batch the module still owes takes
+  // its card back.
+  const syncOwedReleases = () => {
+    for (const b of releaseBatches()) {
+      const k = 'rel:' + b.id;
+      if (!okInFlight.has(k)) S.okd.delete(k);
+    }
+  };
   const grantSeen = new Map();
   const syncGrantAcks = () => {
     const seat = (viewerId() || S.viewer || '?') + '|';
@@ -6759,6 +6773,7 @@
     resolveCounts();
     syncGrantAcks();
     syncOwedOks();
+    syncOwedReleases();
     // the address is checked because it is the address (see `checkSlug`): a
     // pre-filled 📍 nobody edited would otherwise reach the send unasked.
     // Idempotent — a repeat ask about an address already answered is a
