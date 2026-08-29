@@ -79,7 +79,7 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 - `founding-ceremony` [concept] — the blind collection before any drafting: each member states the lowest they will accept and the document takes the maximum of each. A consent rule rather than a vote, which is what lets it escape the constitutional bootstrap. SPEC §9.0a; the surface's order is SURFACE §8.
 - `sign-out` [concept] — a member declaring they are done, **holding** (staying in the quorum base) or **abstaining** (leaving it). Plain silence is never sign-out. SPEC §9.5.
 - `freeze` [symbol] — what happens when active plus holding falls below quorum: races park, participants are notified, the record is cut. A stall with an alarm, not a death, and the perpetual mode's equivalent of a close. SPEC §9.5.
-- `coherence-auditor` [concept] — machine drafter patrolling document drift on a fixed token budget. **Not a member**: it never judges and counts toward no quorum. Surface card: 🤖 **AI Proposals**, SURFACE §8 `ORDER` row 24. SPEC §10.
+- `coherence-auditor` [concept] — machine drafter patrolling document drift on a fixed token budget. **Not a member**: it never judges and counts toward no quorum. No surface card since 2026-08-29 (backlog 251); the `machines` setting stays in the catalogue for replay. SPEC §10.
 
 **Design system** (session-view's, tokenised — every surface adopts it rather than inventing its own):
 - `cards.js` [file] — **the decision-card grammar, one implementation** (`design/cards.js`, `window.CARDS`): a pure layer and a `make(env)` factory over it. Card kinds and their commit rows: SURFACE §9. Its inventory and its seams: `design/DECISIONS.md`.

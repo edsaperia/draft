@@ -467,7 +467,7 @@ const ID_KEYS = ['myname', 'mypic', 'myemail'];
 const ID_NEXT_HEAD = 'Invitees';
 
 /** the glyph alphabet STYLE §1 calls stable, plus the lifecycle family */
-const STABLE_GLYPHS = ['🪶', '📍', '🪪', '🤝', '💤', '🥾', '⏱️', '🤖', '⏰', '👥', '🌡️', '🪜',
+const STABLE_GLYPHS = ['🪶', '📍', '🪪', '🤝', '💤', '🥾', '⏱️', '⏰', '👥', '🌡️', '🪜',
   '👤', '✍️', '👁️', '🌍', '📄', '🎩', '💡', '⚖️', '👑', '📯', '✒️', '🛡️', '✏️', '🏛️', '🍾',
   '🥂', '📧', '✋', '🖼️', '📝', '✉️', '❌', '❄️', '🔥', '⚔️', '🌶️', '⏳', '↻', '⏸', '🗑️', '📨',
   '📬', '⏩', '⏭', '✔', '✖', '✓', '✕', '·', '▸', '∞'];

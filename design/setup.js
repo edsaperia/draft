@@ -1104,8 +1104,8 @@ window.SETUP = (function () {
 
   // rungs *above* your answer are dimmed rather than hidden — "the most I will
   // accept" only reads as a ladder if you can see what you are refusing.
-  // String() on both sides because the machines question stores booleans, and
-  // 'false' === false is how its rung quietly never lit (found in this move).
+  // String() on both sides so a boolean-valued question compares at all:
+  // 'false' === false is how such a rung quietly never lit (found in this move).
   // `tail` is rows that belong to the same radiogroup but **not to the
   // ladder's own ordering** (entry 165): 🌡️'s *A number of my own* is the
   // ladder's escape rather than a rung of it, so it sits inside the one
@@ -1445,11 +1445,6 @@ window.SETUP = (function () {
         { v: 'consent', t: 'All members must agree, including them', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
         { v: 'assembly', t: 'All other members must agree', e: 'The whole membership, minus the member in question, must agree 🏛️.' },
         { v: 'proposal', t: 'The membership decides', e: 'Voted on at the approval threshold ✏️ like any change, with quorum.' }]) + BLINDNOTE,
-    machines: (A) =>
-      '<p class="why">An AI that patrols the document for drift and proposes fixes — it never votes, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
-      ladder(A, 'machines', [
-        { v: false, t: 'No AI proposals', e: 'People write everything in this document.' },
-        { v: true, t: 'AI proposals are permitted', e: 'They compete on the same terms as anybody’s and can be out-voted like anybody’s.' }]) + BLINDNOTE,
     ending: (A) =>
       '<p class="why">When the document should close. The <b>latest</b> answer anybody gives is taken, and <b>never</b> is the latest of all — so nobody is cut off before they were ready.</p>' +
       '<div class="choice" role="radiogroup">' +

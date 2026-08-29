@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.90
+# Group Drafting Engine — Specification v0.91
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -283,7 +283,7 @@ Out of scope, by ruling: delegating powers to individual members, transferring o
 | rate | ⏱️ | ordinary | yes | no | — | rate | — | least generous rate accepted (most generous wins) | ordinary | any time |
 | lapse | 💤 | constitutional | yes | yes | — | lapse | — | shortest quiet spell accepted; never longest | constitutional | any time |
 | removal | 🥾 | constitutional | yes | no | — | price | consent · assembly · proposal | easiest removal accepted | constitutional | any time |
-| machines | 🤖 | ordinary | yes | no | — | machines | — | most machine proposing accepted | ordinary | any time |
+| machines | 🤖 | ordinary | yes | no | — | machines | — | most machine proposing accepted | ordinary | any time — surface: none, retired 2026-08-29, see R-078 |
 | admission | 🪪 | constitutional | yes | no | — | price | assembly · proposal · pen | cheapest admission accepted | constitutional | any time |
 | applications | 🤝 | constitutional | yes | no | — | applications | — | whether strangers may apply; *no* the protective answer | constitutional | any time |
 | displayName | ✋ | personal | no | no | — | text | — | — | personal | never held |

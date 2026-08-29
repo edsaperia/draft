@@ -287,13 +287,13 @@
     ['confirm-picture', () => click('.setupcard [data-confirm]')],
     /* **The rest of the founding, card by card** (Q915, Ed 2026-08-26).
      * `npm run probe-coverage` reported the scenario opened 12 of the
-     * founding's 25 cards, and the thirteen it never opened were exactly
+     * founding's cards, and the thirteen it never opened were exactly
      * the tail below 🖼️ — because ⏩ was pressed here and the stagehand
      * settled the lot. Those thirteen were only ever seen as already-
      * answered clauses, so **their rendering was never compared against
      * the reference at all**: the 🖼️-at-7px hole (Q732), thirteen times.
      *
-     * `founding-golden` does not cover this. It walks all 25 and asserts
+     * `founding-golden` does not cover this. It walks all 24 and asserts
      * the founder's *experience* — order, rail, the first words of every
      * clause — where the probe asserts live-vs-frozen equality of geometry
      * and markup. A card only the golden walk opens is a card whose
@@ -325,10 +325,6 @@
     ['type-rate-cap', () => typeInto('.setupcard input[data-num="cap"]', '8')],
     ['type-rate-drip', () => typeInto('.setupcard input[data-num="dripMin"]', '45')],
     ['confirm-rate', () => click('.setupcard [data-confirm]')],
-    ['open-machines', () => openTab('machines')],
-    ['choose-machines', () => click('.setupcard [data-set="auditor"][data-val="true"]')],
-    ['type-machines-budget', () => typeInto('.setupcard input[data-num="auditorBudget"]', '20')],
-    ['confirm-machines', () => click('.setupcard [data-confirm]')],
     ['open-ending', () => openTab('ending')],
     ['choose-ending', () => click('.setupcard [data-set="ending"][data-val="perpetual"]')],
     ['confirm-ending', () => click('.setupcard [data-confirm]')],

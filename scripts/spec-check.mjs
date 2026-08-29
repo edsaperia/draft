@@ -524,7 +524,7 @@ function checkOrder(pm) {
   // flag can sit on any line of the literal, so the scan is tempered to stop
   // at the next `{ k: '` rather than at the end of the first line — and it runs
   // over a **comment-stripped** copy, since the comments that explain the flag
-  // stand between card literals and each named 🤝 and 🤖 as exempt.
+  // stand between card literals and named 🤝 as exempt.
   const noComments = page.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
   const noBlock = [...noComments.matchAll(/\{ k: '([a-z-]+)',(?:(?!\{ k: ')[\s\S])*?blocks: false/g)].map((m) => m[1]);
   for (const r of rows) {
@@ -770,7 +770,13 @@ function checkComposer(M, pm) {
   const answer = topKeys(objLit(setup, 'ANSWER'));
   const delegable = M.CATALOGUE.filter((e) => e.delegable).map((e) => e.id);
   const pageKey = (id) => Object.entries(pm.MID).find(([, v]) => v === id)?.[0] || id;
-  for (const id of delegable) if (!answer.includes(pageKey(id))) find('composer', `delegable '${id}' has no ANSWER body`);
+  // **A setting can outlive its card** (R-078, 2026-08-29): `machines` stays
+  // delegable in the catalogue so the golden and the live logs replay, but 🤖
+  // left the surface, so nothing can delegate it and no member is ever asked
+  // it — an ANSWER body for it would be copy nothing renders. Exact ids, never
+  // a pattern, and re-adding the card removes the entry.
+  const SURFACE_RETIRED = ['machines'];
+  for (const id of delegable) if (!SURFACE_RETIRED.includes(id) && !answer.includes(pageKey(id))) find('composer', `delegable '${id}' has no ANSWER body`);
   for (const k of answer) if (!delegable.includes(pm.MID[k] || k)) find('composer', `ANSWER has '${k}', which is not delegable`);
   // rung values: the member's ladder must offer exactly the catalogue's rungs (minus what the surface retired)
   const ans = objLit(setup, 'ANSWER');

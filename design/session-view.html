@@ -799,7 +799,6 @@
     lapse: () => (S.lapse === 'never' ? { afterMs: null } : { afterMs: +S.lapseDays * 86400000 }),
     removal: () => ({ price: S.removal }),
     admission: () => ({ price: S.admission }),
-    machines: () => (S.auditor === true ? { enabled: true, budget: +S.auditorBudget } : { enabled: false, budget: 0 }),
     applications: () => ({ apply: S.joinBy === 'apply' }),
   };
   // 🤝 read through its legacy (entry 94): a value written before the switch
@@ -817,7 +816,6 @@
     applications: (v) => ({ apply: v === 'apply' }),
     removal: (v) => ({ price: v }),
     admission: (v) => ({ price: v }),
-    machines: (v) => (v === true ? { enabled: true, budget: +S.auditorBudget || 4 } : { enabled: false, budget: 0 }),
     lapse: (v) => (v === 'never' ? { afterMs: null } : { afterMs: +v * 86400000 }),
     rate: (v) => ({ grant: +v, cap: Math.max(+v, +S.cap || RATE_START.cap),
       dripMinutes: +S.dripMin || RATE_START.dripMin }),
@@ -827,7 +825,6 @@
     quorum: (v) => v.n, bar: (v) => v.pct, rate: (v) => v.grant,
     ending: (v) => (v.endsAtMs === null ? 'never' : msToLocal(v.endsAtMs)),
     lapse: (v) => (v.afterMs === null ? 'never' : Math.round(v.afterMs / 86400000)),
-    machines: (v) => v.enabled,
     authorship: (v) => v.rung,
     judgments: (v) => v.rung, chamber: (v) => v.rung,
     removal: (v) => v.price,
@@ -874,7 +871,6 @@
   const DKEY = { ending: 'ending', bar: 'barBy', quorum: 'quorumBy',
     authorship: 'authorship', judgments: 'judgments',
     chamber: 'chamber', rate: 'rateBy', lapse: 'lapse', removal: 'removal',
-    machines: 'auditor',
     // v0.52: these three only ever read 'roster' once their options render
     // (title/link after the text confirms, applications after the start)
     title: 'titleBy', slug: 'slugBy', applications: 'policyBy', admission: 'admission' };
@@ -930,7 +926,7 @@
   const REVERTKEYS = () => ['title', 'slug', 'docShape', 'ending', 'endsAt', 'endChip', 'tClose', 'shape', 'tStart',
     'quorumForm', 'quorumPct', 'quorumN', 'joinBy', 'policyBy', 'titleBy', 'slugBy',
     'lapse', 'lapseDays', 'removal', 'removeWho', 'admission', 'authorship', 'judgments',
-    'grant', 'dripMin', 'cap', 'chamber', 'auditor', 'auditorBudget',
+    'grant', 'dripMin', 'cap', 'chamber',
     'barBy', 'quorumBy', 'rateBy', 'myname', 'mypic', 'myemail', 'hatPick',
     // the title's provisional lane rides the snapshot like every other
     // provisional value, so 🪶 needs no bin of its own (2026-08-21)
@@ -1051,7 +1047,7 @@
     removal: '', removeWho: '',
     authorship: '', judgments: '',
     rateBy: '', grant: '', dripMin: '', cap: '',
-    chamber: '', auditor: null, auditorBudget: '',
+    chamber: '',
     // the reason for a change, per setting, until its ✒️ commits it (Q530) —
     // a provisional value like any other, so it survives a close
     setWhy: {},
@@ -1598,7 +1594,7 @@
   // which **pile** a card stands in: taking a setting back moves its tab from
   // the members' pile to the founder's, in front of you.
   const DELEGABLE = ['ending', 'barBy', 'quorumBy', 'authorship',
-    'judgments', 'rateBy', 'chamber', 'auditor', 'lapse', 'removal', 'admission', 'policyBy'];
+    'judgments', 'rateBy', 'chamber', 'lapse', 'removal', 'admission', 'policyBy'];
   const delegated = (key) => DELEGABLE.includes(key) && S[key] === 'roster';
 
   // **The gates are cards** (Ed, 330b) — see the ceremony surface for the
@@ -1982,15 +1978,6 @@
       rule: 'Each member says the shortest gap they would accept, and the document takes the longest — <b>never</b> being longer than any of them — so nobody loses their membership faster than they accepted.',
       takes: 'The document takes the longest', result: 'Never', taken: { afterMs: null },
       dist: [1, 3, 4, 2, 4], distTop: 4, distEnds: ['30 days', 'Never'] },
-    // **Not a member** (Ed, 2026-08-18): it never judges and counts toward
-    // nothing — it only proposes, so it lives with the proposal settings.
-    // **Ordinary since Q352** (Ed, same day): switching it re-rates nothing
-    // already decided, so it defaults to the founder and judging never
-    // waits on it; delegating it is still the founder's option.
-    { k: 'machines', g: '🤖', t: 'AI Proposals', kind: 'ordinary', key: 'auditor', p: 0.86,
-      rule: 'The <b>most restrictive</b> answer wins, so one member who would rather not write alongside an AI keeps it out.',
-      takes: 'The document takes the most restrictive', result: 'No AI proposals',
-      dist: [9, 5], distTop: 0, distEnds: ['No AI proposals', 'AI proposals are permitted'] },
   ];
   const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
     GATES.find((c) => c.k === k) || powerCard(k) || admitCard(k) || recordCard(k) ||
@@ -2269,7 +2256,7 @@
     pace: 'how the approval threshold rises', quorum: 'quorum',
     authorship: 'anonymous proposals', judgments: 'vote reveal',
     chamber: 'visibility', rate: 'the proposal rate', lapse: 'membership lapse',
-    removal: 'member removal', machines: 'AI proposals',
+    removal: 'member removal',
     admission: 'the price of admission', applications: 'applications',
     invite: 'invitations', remove: 'removals',
   };
@@ -2705,7 +2692,6 @@
     // the cap cannot be below the grant: the module quietly raises it, so a
     // cap of 2 beside a grant of 5 would print a rule the document does not have
     rate: () => isNum(S.grant) && isNum(S.cap) && isNum(S.dripMin) && +S.cap >= +S.grant,
-    machines: () => S.auditor === false || (S.auditor === true && isNum(S.auditorBudget)),
     hat: () => !!S.hatPick,
   };
   const chosen = (k) => wantsDelegate(k) || !CHOSEN[k] || CHOSEN[k]();
@@ -2972,7 +2958,7 @@
   const ORDER = ['title', 'slug', 'shape', 'myemail', 'myname', 'mypic',
     'grant-pen', 'grant-shield', 'chamber',
     'admission', 'applications', 'hat', 'lapse', 'removal',
-    'canpropose', 'canjudge', 'grant-voice', 'rate', 'machines',
+    'canpropose', 'canjudge', 'grant-voice', 'rate',
     'ending', 'bar', 'quorum',
     'authorship', 'judgments',
     'text', 'begin'];
@@ -3388,9 +3374,9 @@
       // its news before 🍾 (F9). It is enumerated by `tasksFor`, as Q605
       // built it, and only its *clause* moves here.
       lead: (H) => (cs ? (proposalChips().length ? H.para(card('begin')) : preamblePara()) : ''),
-      body: (H) => ['rate', 'machines'].map(card)
+      body: (H) => ['rate'].map(card)
         .filter((c) => c && visible(c)).map((c) => H.para(c) + H.tasks(c)).join(''),
-      keys: ['begin', 'canpropose', 'canjudge', 'rate', 'machines'],
+      keys: ['begin', 'canpropose', 'canjudge', 'rate'],
       // one 👑 card per act that laid powers down (entry 162) — news, never a
       // task, and enumerated here because the rail reads a section's own keys:
       // a card the section does not enumerate is a card nothing can serve
@@ -3608,9 +3594,6 @@
         ' min · cap ' + (v ? v.cap : S.cap); },
     // (🌍 and 🤝 are stated once, above, module-first like every neighbour:
     // a second entry here used to override them and read S alone)
-    machines: () => { const tv = takenValOf('machines');
-      const on = tv ? tv.enabled : S.auditor === true;
-      return (on ? 'AI proposals are permitted · ' + (tv && tv.enabled ? tv.budget : S.auditorBudget) + ' ✏️s' : 'No AI proposals'); },
     lapse: () => (S.lapse === 'never' ? 'Never — however long you are away'
       : 'After ' + S.lapseDays + ' days without logging in'),
     removal: () => PRICE_WORDS.removal[removalPrice()],
@@ -3632,7 +3615,6 @@
     judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed at the end' }[v] || v),
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
     applications: (v) => 'You said ' + ({ invite: 'invitation only', apply: 'anyone may apply' }[v] || v),
-    machines: (v) => 'You said ' + (v ? 'AI proposals are permitted' : 'no AI proposals'),
     lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days without logging in'),
     removal: (v) => 'You said ' + ({ everyone: 'all members have to agree, including them',
       others: 'all other members', ordinary: 'a proposal ✏️ like any other' }[v] || v),
@@ -3641,7 +3623,7 @@
   const ANSASK = { quorum: 'The lowest you will accept', bar: 'The lowest you will accept',
     ending: 'The latest you will accept', authorship: 'The most you will accept',
     judgments: 'The most you will accept',
-    chamber: 'The most you will accept', machines: 'The most you will accept',
+    chamber: 'The most you will accept',
     applications: 'The most open you will accept',
     lapse: 'The shortest you will accept',
     removal: 'The easiest you will accept',
@@ -3999,7 +3981,6 @@
       'The membership decides': { price: 'proposal' },
       'Any member may invite': { price: 'pen' } },
     applications: { 'Invitation only': { apply: false }, 'Anyone may apply': { apply: true } },
-    machines: { 'No AI proposals': { enabled: false, budget: 0 } },
     // **Public has left the ladder** (Ed, 2026-08-22). It is offered nowhere
     // — not here, not on the founder's card, not in a member's answer — but
     // every map that *reads* a rung back still knows it: the module's
@@ -4064,8 +4045,6 @@
       after: 'revealed at the end' }[v.rung] || v.rung),
     rate: (v) => v.grant + ' ✏️ to start, up to ' + v.cap +
       ', one more every ' + v.dripMinutes + ' minutes',
-    machines: (v) => (v.enabled ? 'on, with a budget of ' + v.budget + ' ✏️'
-      : 'no AI proposals'),
   };
   const wordsFor = (k, v) => { if (v === null || v === undefined) return null;
     try { return WORDS[k] ? String(WORDS[k](v)) : null; } catch (e) { return null; } };
@@ -4285,7 +4264,7 @@
   // never the founder's field — that still says 'roster'. The consent rule,
   // computed live: highest for quorum and the bar, latest for the ending
   // (never latest of all), longest for lapse, most private for the privacy
-  // family, most restrictive for machines, most generous for the rate.
+  // family, most generous for the rate.
   // what the room settled — the ceremony's resolution, a carried motion, a
   // crown-accepted change — translated back into the page's vocabulary.
   // Anything settled away from the convenor's own hand outranks the page's
@@ -4389,7 +4368,6 @@
     removal: (v) => ({ everyone: 'All members have to agree, including them',
       others: 'All other members have to agree',
       ordinary: 'A proposal ✏️ like any other' })[v],
-    machines: (v) => (v ? 'AI proposals are permitted' : 'No AI proposals'),
     quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership' : v + '% of the membership'),
     bar: (v) => v + '% sure at the end',
     ending: (v) => (v === 'never' ? 'Never — it runs until too few members are active'
@@ -4510,10 +4488,6 @@
     chamber: (d) => lanesFor(d, [
       ['Members only', 'Only members can read the document.'],
       ['Anyone with the link', 'Anyone with the link can read it; it is not listed.']], 'chamber'),
-    machines: (d) => lanesFor(d, [['No AI proposals', 'There are no AI proposals — people write everything in this document.']], 'machines') +
-      inputBlock('AI proposals are permitted, with a budget of ' +
-        '<input class="num" type="number" min="1" max="40" data-mnum=" ✏️s for the coherence auditor" value="' +
-        esc(S.auditorBudget) + '"> ✏️s.'),
     applications: (d) => lanesFor(d, POLICY_TEXTS, 'applications') +
       '<p class="setnote">One motion proposes one rule; what you do not touch stands.</p>',
     // ✉️: whom to bring in — the invite half of what was one roster
@@ -4665,8 +4639,8 @@
         rateBy: 'founder', grant: 4, dripMin: 180, cap: 8,
         // **🌍 stays with the founder, and that is the tooling fix** (Ed,
         // 2026-08-22, asking whether ⏩ could be more useful for working on
-        // the power cards). ⏩ already leaves four power cards live — the
-        // title, the link, the rate and the machines, being the settings it
+        // the power cards). ⏩ already leaves three power cards live — the
+        // title, the link and the rate, being the settings it
         // keeps — so the gap was never *no power card*. It was that every
         // **constitutional** setting was delegated, and delegation is the
         // state of holding neither power: so the 🛡️ card on a constitutional
@@ -4680,7 +4654,7 @@
         // rather than a 📯. That is a live state the fixture could not reach
         // at all before, and the 📯 case is one radio away in either
         // direction.
-        chamber: 'closed', auditor: false, auditorBudget: 6 };
+        chamber: 'closed' };
       for (const k of Object.keys(SEED)) {
         if (S[k] === '' || S[k] === null || S[k] === undefined) S[k] = SEED[k];
       }
@@ -4694,7 +4668,7 @@
       const FILL = { ending: S.endsAt || '2026-08-20T18:00',
         quorum: (S.quorumForm === 'count' ? S.quorumN : S.quorumPct),
         bar: S.tClose, authorship: 'anonymous',
-        judgments: 'never', chamber: 'closed', machines: false, applications: 'invite',
+        judgments: 'never', chamber: 'closed', applications: 'invite',
         lapse: 'never', removal: 'consent', admission: 'assembly', rate: S.grant };
       for (const k of Object.keys(FILL)) {
         const st = csState(k);
@@ -4821,7 +4795,6 @@
     chamber: 'who may read the document',
     lapse: 'whether an inactive membership lapses',
     removal: 'how a member is removed',
-    machines: 'whether an AI makes proposals',
     rate: 'how often members may propose',
     applications: 'whether strangers may apply to join',
     slug: 'the document’s address',
@@ -4942,12 +4915,6 @@
       const v = tv !== null ? tv : (S.lapse === 'roster' ? null : S.lapse);
       return (v === 'never' ? 'Nobody stops being a member, however long they are away.'
       : 'Somebody stops being a member after ' + (typeof v === 'number' ? v : S.lapseDays) + ' days without logging in.'); },
-    machines: () => { const tv = takenValOf('machines');
-      const on = tv ? tv.enabled : (S.auditor === 'roster' ? false : S.auditor === true);
-      const budget = tv && tv.enabled ? tv.budget : S.auditorBudget;
-      return (on
-      ? 'An AI makes proposals here, with ' + budget + ' ✏️s of its own. It never votes and counts towards nothing.'
-      : 'There are no AI proposals.'); },
     rate: () => { const v = takenValOf('rate');
       return 'Members start with ' + (v ? v.grant : S.grant) + ' ✏️ each, up to a maximum of ' +
         (v ? v.cap : S.cap) + '. They get an additional ✏️ every ' + (v ? v.dripMinutes : S.dripMin) +
@@ -6182,14 +6149,6 @@
       opt(S, 'removal', 'assembly', 'All other members must agree', 'Somebody can be removed even if they object, but only if every other member agrees 🏛️.') +
       opt(S, 'removal', 'proposal', 'The membership decides', 'A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.') +
       '</div>',
-    machines: () =>
-      '<p class="why">An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.</p>' +
-      '<div class="choice" role="radiogroup">' +
-      theyDecide('machines') +
-      // most-restrictive-first, matching the member ladder's order
-      opt(S, 'auditor', false, 'No AI proposals', 'People write everything in this document.') +
-      opt(S, 'auditor', true, 'AI proposals are permitted', 'An AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.',
-        '<span class="setrow2">' + num(S, 'auditorBudget', 'Its edit budget', 0, 40) + '</span>') + '</div>',
   };
 
 
@@ -7159,7 +7118,6 @@
       S.draft.val = (S.open === 'bar') ? { pct: nv }
         : (S.open === 'quorum') ? { form: S.quorumForm, n: nv }
         : (S.open === 'lapse') ? { afterMs: nv * 86400000 }
-        : (S.open === 'machines') ? { enabled: true, budget: nv }
         : null;
       return render();
     }
@@ -8617,7 +8575,6 @@
         else { S.lapse = 'days'; S.lapseDays = Math.round(x.afterMs / 86400000); } },
       removal: (x) => { S.removal = x.price; },
       admission: (x) => { S.admission = x.price; },
-      machines: (x) => { S.auditor = x.enabled; if (x.enabled) S.auditorBudget = x.budget; },
       applications: (x) => { S.joinBy = mayApply(x) ? 'apply' : 'invite'; },
     };
     for (const mid of Object.keys(MAPV)) {
@@ -8652,7 +8609,7 @@
     const val = (mid) => { const st = cs.settingState(mid); return st && st.value; };
     const del = (mid) => { const st = cs.settingState(mid); return !!st && st.holder === 'members'; };
     for (const mid of ['ending', 'authorship', 'judgments', 'chamber',
-      'removal', 'lapse', 'machines']) {
+      'removal', 'lapse']) {
       if (del(mid) && !val(mid)) S[DKEY[pkeyOf(mid)]] = 'roster';
     }
     // **A holder radio reports an act, never a default** (Ed, 2026-08-21).
@@ -9983,6 +9940,10 @@
     // is not an interim, and the 🍾 card is where the question is asked.
     { name: 'The Text', glyph: '📄', down: true, keys: ['text'] },
     { name: 'Membership', glyph: '🪪', keys: ['invite', 'remove', 'admission', 'applications', 'removal', 'lapse'] },
+    // `machines` has no card since 🤖 left the surface (R-078), but it is
+    // still a catalogue setting the founder holds both powers on, and this
+    // table is authoritative over `HELD` at the start: drop the key and the
+    // start keeps a power with no control anywhere saying so.
     { name: 'Everything else', glyph: '📜', keys: ['title', 'slug', 'ending', 'bar', 'pace', 'quorum', 'authorship', 'judgments', 'chamber', 'rate', 'machines'] },
   ];
   // **A switch reflects the tabs** (Ed's rule (i)): the hand actually on a key

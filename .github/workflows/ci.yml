@@ -180,7 +180,7 @@ jobs:
       # structural, and it swallowed three cards in five days: 🖼️ (Q732, an
       # emoji face at 7px for four days with every check green), 🪪 (Q910,
       # which took thirteen steps down with it) and 🛡️ (Q914). Coverage is
-      # 25 of 25 now, so a card added to ORDER without a probe step reddens
+      # 24 of 24 now, so a card added to ORDER without a probe step reddens
       # the build here rather than surfacing weeks later as a bug.
       - run: npm run probe-coverage
         if: always()

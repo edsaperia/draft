@@ -87,7 +87,6 @@ const AUDIT = [
   { k: 'rate', id: 'rate', g: '⏱️', value: { grant: 5, cap: 9, dripMinutes: 120 } },
   { k: 'lapse', id: 'lapse', g: '💤', value: { afterMs: null } },
   { k: 'removal', id: 'removal', g: '🥾', value: { price: 'assembly' } },
-  { k: 'machines', id: 'machines', g: '🤖', value: { enabled: false, budget: 0 } },
   { k: 'admission', id: 'admission', g: '🪪', value: { price: 'proposal' } },
   { k: 'applications', id: 'applications', g: '🤝', value: { apply: true } },
 ];
@@ -280,7 +279,6 @@ const runDocument = async (hat) => {
     ['judgments', { rung: 'after' }], ['chamber', { rung: 'link' }],
     ['lapse', { afterMs: null }], ['removal', { price: 'proposal' }],
     ['rate', { grant: 4, cap: 8, dripMinutes: 240 }],
-    ['machines', { enabled: false, budget: 0 }],
     ['applications', { apply: false }], ['admission', { price: 'assembly' }],
   ];
   for (const [id, value] of SETTINGS) {
