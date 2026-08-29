@@ -183,12 +183,19 @@ export class MailOutbox {
   }
 
   /**
-   * DEV only, and reached only from the label-dropped `/api/dev/outbox/give-up`
-   * (SURFACE E34): drive a document's mail to one address to the attempt cap
-   * now, through the real `give` and the real door, rather than waiting the
-   * six attempts and ~3 hours a genuine give-up takes. The reserved-address
+   * DEV only, and reached from exactly one caller: the forced give-up route,
+   * which is `DEV:`-labelled and dropped bodily from the production artifact
+   * (SURFACE E34). It drives a document's mail to one address to the attempt
+   * cap now, through the real `give` and the real door, rather than waiting
+   * the six attempts and ~3 hours a genuine give-up takes. The reserved-address
    * seam cannot stand in for it — `pass` retires those deliberately — so
    * without this nothing can reach E34 in a walk at all.
+   *
+   * **Do not name the route's path here.** A method's own doc comment survives
+   * the label drop — esbuild keeps JSDoc attached to a declaration — and
+   * `scripts/build-server.mjs` refuses an artifact containing the dev route
+   * prefix at all. The method itself shipping is harmless: with the route gone
+   * it has no caller, and it is the *path* the guard is looking for.
    *
    * A **delivered** row is fair game and is the ordinary case in dev, where
    * the mailer never refuses: the send takes its link and token hash with it
