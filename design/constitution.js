@@ -2790,6 +2790,7 @@ var CONSTITUTION = (() => {
         const wasInE = inE(this.members.get(target));
         this.emit({ type: "member-removed", t, member: target, viaMotion: rec.id });
         if (wasInE) this.afterRosterChange(t, "departure", target);
+        this.crownSeatVacated(t);
       } else if (rec.payload.kind === "set" && CONSTITUTIONAL.has(rec.payload.setting)) {
         for (const m of this.members.values()) {
           if (m.removed) continue;
@@ -2819,6 +2820,43 @@ var CONSTITUTION = (() => {
      * on arrival; `oweOks` covers everything set or changed after it, and it
      * already skips whoever has not arrived.
      */
+    /**
+     * **A park with no convenor auto-passes, the way a lapse does** (Ed,
+     * 2026-08-29, R-060). A text adoption parked under 🛡️ on the Text blocks
+     * every text adoption in the document until it is answered, and the 👑
+     * question is served only to the convenor — so a seat vacated while a park
+     * stands would serve the question to somebody who has gone, with no clock
+     * left to auto-pass it, and the room's drafting would stop for the life of
+     * the document.
+     *
+     * Three things it does deliberately, each of which a later reader might
+     * try to "fix":
+     *
+     * - **It reuses `crown-question-auto-passed` rather than inventing a
+     *   kind.** The ruling is *the way a lapse does*, and that is the event a
+     *   lapse emits: the fold already sets `auto-passed` and treats it as
+     *   accepted, and the bridge's cursor walk already turns it into
+     *   `engine.assent(t, parked, 'accept')`. A new kind would move the log's
+     *   rolling hash and need a bridge arm to do what an arm already does.
+     * - **It does not emit `crown-lapsed`.** A vacancy is not a lapse:
+     *   `crownLapsedFlag` is about a crown that may wake up again
+     *   (`member-returned` revives it) and a removed member does not return to
+     *   the seat. The shield goes down through `convenorSeatVacant()` instead.
+     * - **Text questions only** — this is a *narrowing* of the lapse loop in
+     *   `tick`, not a copy of it. That loop also auto-passes motion-backed
+     *   questions and settles their carried effects; applying a carried
+     *   removal or invitation without assent because the convenor left is a
+     *   governance consequence nobody has ruled on, and such a question blocks
+     *   nothing while it stands, where a parked text adoption blocks
+     *   everything. Filed as Q1033; the asymmetry is the point.
+     */
+    crownSeatVacated(t) {
+      if (!this.convenorSeatVacant()) return;
+      for (const q of [...this.crownQuestions.values()]) {
+        if (q.status !== "pending" || !q.text) continue;
+        this.emit({ type: "crown-question-auto-passed", t, question: q.id });
+      }
+    }
     /** Follow-ons of a held motion: a refused application is told so (§9.7½). */
     settleHeldEffects(t, rec) {
       if (rec.payload.kind === "admit") {
@@ -3096,13 +3134,42 @@ var CONSTITUTION = (() => {
       return false;
     }
     /**
+     * The seat has been **vacated**: the person who held it was removed from
+     * the membership (Ed, 2026-08-29, R-060). A claim about *state* and never
+     * about which event produced it, so it reads the same after a replay as
+     * after the act, and so the free resignation of §9.6a — which `resign`
+     * refuses today — is covered the moment that door exists, with no second
+     * rule and no second call site.
+     *
+     * **A convenor who is not a member is not a vacant seat**, which is the
+     * line a reader will get wrong: unticking 🎩 *deletes* the record from
+     * `this.members`, and exception X15 says a convenor with no powers and no
+     * membership is still a person the room may restore powers to. The clerk
+     * convenor is the ordinary founding and their shield stands. Vacated
+     * means the record is here and wears `removed`.
+     */
+    convenorSeatVacant() {
+      return this.members.get(this.convenor.id)?.removed === true;
+    }
+    /**
      * Q440: the shield on the Text means an **adoption** waits on the
      * founder's accept -- assent over the drafting mechanism itself. The
      * engine has already adopted; the host asks here whether the document it
      * serves may follow, and a sleeping crown grants (lapse is abstention).
+     *
+     * **A vacated seat holds no shield either** (R-060, this build's reading
+     * beside Ed's ruling). `!this.crownLapsedFlag` already says the shield
+     * reads *down* where nobody is awake to hold it, and R-056 declares
+     * *whether assent is owed* rather than the raw power to the engine
+     * precisely so a sleeping crown falls out of the mechanism instead of
+     * needing a second rule. A vacated seat is that fact in a stronger form —
+     * nobody asleep, nobody at all — so the same clause covers it. Without
+     * this the vacancy auto-pass clears the park that is standing and the
+     * very next race parks against an empty seat, which is the same defect
+     * one adoption later.
      */
     textAdoptionNeedsAssent() {
-      return this.settings.get("startingText").powers.assent && !this.crownLapsedFlag;
+      return this.settings.get("startingText").powers.assent && !this.crownLapsedFlag && !this.convenorSeatVacant();
     }
     /**
      * ✒️ on the Text (Ed, 2026-08-27, backlog entry 160; Q1020, R-058): the

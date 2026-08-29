@@ -170,37 +170,41 @@ describe('🛡️ on the Text: an adoption waits on the founder’s accept (Q440
  * harness that exercises engine-core, the bridge and the crown record
  * together and needs no server.
  */
+/*
+ * The R-056 block's own kit, at file scope so the vacancy block below reuses
+ * it rather than carrying a second copy of it (R-060). Nothing about it moved.
+ */
+const patch = (baseVersion: number, lines: string[]) =>
+  ({ baseVersion, hunks: [{ start: 0, end: 1, lines }] });
+const START = 'The clubhouse shall be kept open.';
+
+/** A shielded document with one text proposal over the bar, parked. */
+function parked(opts: Parameters<typeof buildConstituted>[0] = {}, seed = 'park') {
+  const { s, bo, cy } = buildConstituted(opts);
+  reserveTextShield(s, bo, ['ada', cy], 2);
+  const bridge = new EngineBridge(s, { t: 3, rngSeed: seed });
+  const v0 = bridge.engine.currentVersion();
+  const { id, raceId } = bridge.proposeText(10, bo, patch(v0, ['Open every day.']), 'nights too');
+  const race = bridge.engine.races().find((r) => r.id === raceId)!;
+  bridge.judge(20, cy, id, race.incumbentId, 'a');
+  return { s, bo, cy, bridge, id, raceId };
+}
+const events = (bridge: EngineBridge) => bridge.engine.log.map((e) => e.event);
+/**
+ * One event of a kind, narrowed. `find` only infers a type predicate from a
+ * bare `e.type === '…'`, so a search that also matches on the candidate id
+ * comes back as the whole `Event` union and every field read is a type
+ * error — the filter does the narrowing and the finder does the matching.
+ */
+const pick = <K extends EngineEvent['type']>(bridge: EngineBridge, type: K,
+  where: (e: Extract<EngineEvent, { type: K }>) => boolean = () => true) =>
+  events(bridge)
+    .filter((e): e is Extract<EngineEvent, { type: K }> => e.type === type)
+    .find(where)!;
+const questionFor = (s: ConstitutionSession, id: string) =>
+  [...s.crownQuestionRecords().values()].find((q) => q.text?.candidateId === id)!;
+
 describe('🛡️ on the Text parks the adoption (R-056)', () => {
-  const patch = (baseVersion: number, lines: string[]) =>
-    ({ baseVersion, hunks: [{ start: 0, end: 1, lines }] });
-  const START = 'The clubhouse shall be kept open.';
-
-  /** A shielded document with one text proposal over the bar, parked. */
-  function parked(opts: Parameters<typeof buildConstituted>[0] = {}, seed = 'park') {
-    const { s, bo, cy } = buildConstituted(opts);
-    reserveTextShield(s, bo, ['ada', cy], 2);
-    const bridge = new EngineBridge(s, { t: 3, rngSeed: seed });
-    const v0 = bridge.engine.currentVersion();
-    const { id, raceId } = bridge.proposeText(10, bo, patch(v0, ['Open every day.']), 'nights too');
-    const race = bridge.engine.races().find((r) => r.id === raceId)!;
-    bridge.judge(20, cy, id, race.incumbentId, 'a');
-    return { s, bo, cy, bridge, id, raceId };
-  }
-  const events = (bridge: EngineBridge) => bridge.engine.log.map((e) => e.event);
-  /**
-   * One event of a kind, narrowed. `find` only infers a type predicate from a
-   * bare `e.type === '…'`, so a search that also matches on the candidate id
-   * comes back as the whole `Event` union and every field read is a type
-   * error — the filter does the narrowing and the finder does the matching.
-   */
-  const pick = <K extends EngineEvent['type']>(bridge: EngineBridge, type: K,
-    where: (e: Extract<EngineEvent, { type: K }>) => boolean = () => true) =>
-    events(bridge)
-      .filter((e): e is Extract<EngineEvent, { type: K }> => e.type === type)
-      .find(where)!;
-  const questionFor = (s: ConstitutionSession, id: string) =>
-    [...s.crownQuestionRecords().values()].find((q) => q.text?.candidateId === id)!;
-
   it('parks rather than adopting: the document stands, the race is gone, the 👑 is asked', () => {
     const { s, bridge, id, raceId, bo } = parked();
     // the whole of the defect this closes: nothing was applied
@@ -348,6 +352,100 @@ describe('🛡️ on the Text parks the adoption (R-056)', () => {
     expect(bridge.engine.getCandidate(id).state).toBe('adopted');
     expect(events(bridge).some((e) => e.type === 'candidate-awaiting-assent')).toBe(false);
     expect(view(s, 'ada').crownTasks).toHaveLength(0);
+  });
+});
+
+/**
+ * R-060 (Ed, 2026-08-29): **a park with no convenor auto-passes, the way a
+ * lapse does.** R-056's park is answerable only by the convenor — `crownTasks`
+ * and the server's `awaitingAssent` are both gated on the reader being them —
+ * and the lapse auto-pass fires once, on the transition *into* lapse. So a
+ * seat vacated *after* the park served the question to somebody who had gone,
+ * no clock would ever answer it, and every text adoption in the document was
+ * blocked for the rest of its life.
+ *
+ * Today the one door that vacates the seat is a carried removal motion against
+ * the convenor's own row: `remove` / `resign` / `uninvite` each refuse the
+ * convenor outright, and `settleCarriedEffects`'s `remove` arm has no such
+ * guard. `assembly` is the price used here because it is unanimity *minus the
+ * subject*, so the convenor is not asked to consent to her own removal.
+ */
+describe('a vacated seat auto-passes the park and holds no shield (R-060)', () => {
+  /** The removal that empties the seat: bo moves, cy accepts, ada is not asked. */
+  const vacate = (s: ConstitutionSession, bo: string, cy: string, t: number) => {
+    const m = s.openMotion(t, bo, { kind: 'remove', member: 'ada' });
+    s.answerMotion(t, cy, m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    expect(s.memberRecords().get('ada')!.removed).toBe(true);
+  };
+
+  it('the park adopts on the vacancy, on the confidence the room decided at', () => {
+    const { s, bo, cy, bridge, id } = parked({ removal: { price: 'assembly' } }, 'vacancy');
+    const park = pick(bridge, 'candidate-awaiting-assent');
+    expect(bridge.engine.document()).toBe(START);
+
+    vacate(s, bo, cy, 21);
+    expect(questionFor(s, id).status).toBe('auto-passed');
+    // `answerMotion` runs on the session, so the cursor walk needs a sync
+    bridge.sync(21);
+
+    expect(bridge.engine.document()).toBe('Open every day.');
+    expect(bridge.engine.getCandidate(id).state).toBe('adopted');
+    const adopted = pick(bridge, 'adopted', (e) => e.candidateId === id);
+    expect(adopted).toMatchObject({ p: park.p, threshold: park.threshold });
+    // a vacancy is not a lapse: nothing may wake back up
+    expect(s.crownLapsed).toBe(false);
+  });
+
+  it('the seat stays vacant, so the next race adopts by itself', () => {
+    const { s, bo, cy, bridge } = parked({ removal: { price: 'assembly' } }, 'vacancy-next');
+    vacate(s, bo, cy, 21);
+    bridge.sync(21);
+    expect(s.convenorSeatVacant()).toBe(true);
+    expect(s.textAdoptionNeedsAssent()).toBe(false);
+    expect(bridge.engine.constitution.textAssent).toBe(false);
+
+    // past the cooldown, so this judgment releases a batch of its own (§4.2)
+    const second = bridge.proposeText(400_000, bo,
+      patch(bridge.engine.currentVersion(), ['Open on Sundays too.']), 'Sundays');
+    bridge.judge(400_010, cy, second.id,
+      bridge.engine.races().find((r) => r.id === second.raceId)!.incumbentId, 'a');
+
+    expect(bridge.engine.document()).toBe('Open on Sundays too.');
+    expect(bridge.engine.getCandidate(second.id).state).toBe('adopted');
+    expect(events(bridge).filter((e) => e.type === 'candidate-awaiting-assent')).toHaveLength(1);
+    expect([...s.crownQuestionRecords().values()].filter((q) => q.status === 'pending'))
+      .toHaveLength(0);
+  });
+
+  it('a clerk convenor is not a vacancy — the shield stands (X15)', () => {
+    const { s, bo, cy } = buildConstituted({ clerk: true });
+    reserveTextShield(s, bo, [cy], 2); // ada is not a member and is not asked
+    expect(s.memberRecords().has('ada')).toBe(false); // 🎩 deleted the record
+    expect(s.convenorSeatVacant()).toBe(false);
+    expect(s.textAdoptionNeedsAssent()).toBe(true);
+  });
+
+  it('nothing moves when somebody else is removed: the park still waits', () => {
+    const { s, bo, cy, bridge, id } = parked({ removal: { price: 'assembly' } }, 'vacancy-other');
+    const m = s.openMotion(21, bo, { kind: 'remove', member: cy });
+    s.answerMotion(21, 'ada', m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    bridge.sync(21);
+
+    expect(s.convenorSeatVacant()).toBe(false);
+    expect(questionFor(s, id).status).toBe('pending');
+    expect(s.textAdoptionNeedsAssent()).toBe(true);
+    expect(bridge.engine.document()).toBe(START);
+    expect(bridge.engine.getCandidate(id).state).toBe('awaiting-assent');
+  });
+
+  it('the constitution log gains no new event kind, so a replay is bit-identical', () => {
+    const { s, bo, cy, bridge } = parked({ removal: { price: 'assembly' } }, 'vacancy-replay');
+    vacate(s, bo, cy, 21);
+    bridge.sync(21);
+    const r = ConstitutionSession.replay([...s.logEntries()]);
+    expect(r.rollingHash()).toBe(s.rollingHash());
   });
 });
 
