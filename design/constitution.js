@@ -2194,17 +2194,26 @@ var CONSTITUTION = (() => {
      * not a removal, so ❌'s 🛡️ does not reach it, and under 🥾 at `consent`
      * it is the only way out, which is the point of that rung. The lapse
      * clock was always a silent exit; this is the spoken one.
+     *
+     * **The convenor's membership is ordinary membership** (§9.6a; entry 248,
+     * written under the recommended reading with Ed's ruling asked), so after
+     * the start a member convenor resigns like anybody. Before the start they
+     * untick 🎩 instead: that *deletes* the record and leaves a clerk convenor
+     * whose shield stands (X15), where a pre-start resignation would mark the
+     * record `removed` and manufacture a vacant seat in a document that has
+     * not begun.
      */
     resign(t, member) {
       this.requireOpen("resigning");
       const m = this.members.get(member);
       if (!m || m.removed) throw new Error(`unknown member '${member}'`);
-      if (member === this.convenor.id) {
+      if (member === this.convenor.id && this.constitutedT === null) {
         throw new Error("the convenor unticks their own row instead (§9.6a)");
       }
       const wasInE = inE(m);
       this.emit({ type: "member-removed", t, member, by: "self" });
       if (wasInE) this.afterRosterChange(t, "departure", member);
+      this.crownSeatVacated(t);
     }
     uninvite(t, member) {
       this.requireOpen("uninviting");
@@ -2926,6 +2935,11 @@ var CONSTITUTION = (() => {
      *   governance consequence nobody has ruled on, and such a question blocks
      *   nothing while it stands, where a parked text adoption blocks
      *   everything. Filed as Q1033; the asymmetry is the point.
+     *
+     * Two call sites, both the last word of an act that may have emptied the
+     * seat: the carried `remove` arm of `settleCarriedEffects` and `resign`
+     * (entry 248). It guards itself on `convenorSeatVacant()`, so a caller
+     * never asks whether the member who just left was the convenor.
      */
     crownSeatVacated(t) {
       if (!this.convenorSeatVacant()) return;
@@ -3214,9 +3228,10 @@ var CONSTITUTION = (() => {
      * The seat has been **vacated**: the person who held it was removed from
      * the membership (Ed, 2026-08-29, R-060). A claim about *state* and never
      * about which event produced it, so it reads the same after a replay as
-     * after the act, and so the free resignation of §9.6a — which `resign`
-     * refuses today — is covered the moment that door exists, with no second
-     * rule and no second call site.
+     * after the act. That is why the free resignation of §9.6a needed no
+     * second rule when `resign` opened its door to the convenor (entry 248):
+     * a seat is vacant because the record says so, and a carried removal and
+     * a resignation say it the same way.
      *
      * **A convenor who is not a member is not a vacant seat**, which is the
      * line a reader will get wrong: unticking 🎩 *deletes* the record from
