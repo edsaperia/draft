@@ -1437,8 +1437,20 @@
      The disc is blank because the authorship *is* blank: §3.4 seals it
      until the record. Drawing the speaker and leaving them faceless states
      the discipline instead of hiding it — you can see that somebody
-     argued this, and see that you are not allowed to know who. */
+     argued this, and see that you are not allowed to know who.
+
+     And where the authorship is *not* blank the disc is not either (K30,
+     backlog 255): the same cell holds the author's own picture, at the same
+     22px, so the two forms are one object in two states rather than two
+     layouts. `.spkface` is a flex box only so the avatar inside it cannot
+     donate a text baseline to the row — an `.av` is inline-block, and an
+     inline-block in a grid cell sits on a line box with descender space
+     under it. An `.emojiface` takes the size of the text it stands in and
+     there is no text in this cell, so this is the third site that has to
+     state one. */
   .speaker { display: grid; grid-template-columns: auto 1fr; gap: var(--s2); margin-top: var(--s2); }
+  .speaker .spkface { display: flex; align-items: flex-start; }
+  .speaker .spkface .emojiface { font-size: 22px; }
   /* The placeholder avatar, drawn rather than left as a plain circle: a bare
      grey disc reads as a bullet, and a bullet says "list item" where this has
      to say "person". Head and shoulders, in the ground colour, is the shape

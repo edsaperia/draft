@@ -109,11 +109,21 @@
   // the sign control (Q770): null means no elective 👤 rung — no control
   let SIGNING = () => null;
   let SIGNER = () => '';
+  // **The face the room will see** (K30, backlog 255). `SIGNING` answers only
+  // *is there a choice*, which is the control's question; the speaker's is
+  // *will a name be attached*, and under `public` it is yes with no choice at
+  // all. So the rung itself is read whole, and the viewer as the room would
+  // see them — name and picture — beside it. Both default inert: a surface
+  // that sets neither draws the sealed disc it always drew.
+  let AUTHOR_RUNG = () => null;
+  let SIGNER_PERSON = () => null;
   const {
     laneBarHtml, clauseHeadHtml, proposalHtml, commitRowHtml, reviseNote,
-    laneBoxHtml, collapseCard, expandCard, openCardEls, runOnCards,
+    laneBoxHtml, draftFaceHtml, collapseCard, expandCard, openCardEls, runOnCards,
     collapseCards, expandCards, stillRef, restoreStill, keepStill,
   } = window.CARDS.make({
+    authorRung: () => AUTHOR_RUNG(),
+    signerPerson: () => SIGNER_PERSON(),
     mayPropose: () => MAY_PROPOSE(),
     lockedOf: (s) => !!s.locked || !MAY_JUDGE(),
     pickOf: (s) => pickOf(s),
@@ -1565,8 +1575,14 @@
    * never ran. What is left is the clause as it now reads, the reason, and
    * the text it replaced.
    *
-   * **The office, never the person** — `amendmentBlocks` and the record's own
-   * rule: this says *The Founder*, and reaches into no anonymity ladder.
+   * **The founder speaks in their own name** (Ed, 2026-08-22: *the rationale
+   * should have the founder's name and avatar on it … even if they have no
+   * name or avatar*, which is what `founderSpeaker` already does on the
+   * settings side). A ✒️ act is attributed by construction, so this reaches
+   * into no anonymity ladder either way — the page hands it the founder as the
+   * room sees them, and *The Founder* stands where they have given no name.
+   * The **record** is the other half and is unchanged: `amendmentBlocks` names
+   * the office, because a record outlives whoever held it.
    */
   function amendmentCardHtml(s) {
     const skey = (s.keys ?? [])[0];
@@ -1581,7 +1597,7 @@
             label: null,
           })
         : '') +
-      speakerHtml(s.rationale, undefined, 'The Founder') +
+      speakerHtml(s.rationale, undefined, s.by || 'The Founder') +
       // in the same `rsub` vocabulary the record uses for *the text that
       // stood*; silent where the server could not say what stood before
       (s.replaced
@@ -2247,6 +2263,15 @@
         'Your name goes on it from the moment you propose it, and stays there.') +
       '</div>';
   }
+  // **What the room will see on a proposal of yours that is already out** (K30):
+  // your own person where the name went with it — you signed it, or the rung is
+  // `public` — and nothing where it did not, which draws the blank disc. It is
+  // the same test `draftFaceHtml` makes one step earlier, with the choice now
+  // fixed in the record rather than sitting under a radio.
+  const mineSpeaker = (d) => {
+    const named = AUTHOR_RUNG() === 'public' || !!(d && d.signed);
+    return (named && SIGNER_PERSON()) || undefined;
+  };
   // the press flips the draft's choice and patches the card in place — never
   // a render under a lane being typed in (the caret rule, `setData`'s guard)
   function setDraftSigned(on) {
@@ -2262,6 +2287,17 @@
       });
       const pb = card.querySelector('[data-act="draft-propose"]');
       if (pb) pb.title = pb.title.replace(/( — signed)?( — one edit)/, (d.signed ? ' — signed' : '') + '$2');
+      // **The face follows the choice** (K30): signing is the moment the room
+      // stops being told nothing about you, so the disc gives way to your own
+      // picture as the radio moves. One element is swapped — never the `.said`
+      // beside it, which is the lane holding the caret.
+      const sp = card.querySelector('.lanebox .speaker');
+      const face = sp && sp.firstElementChild;
+      if (face) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = draftFaceHtml(d);
+        if (tmp.firstElementChild) sp.replaceChild(tmp.firstElementChild, face);
+      }
     });
   }
 
@@ -2373,13 +2409,19 @@
       // radio, and the one control is a withdrawal.
       // Your own proposal is a proposal like any other, so it is drawn like
       // any other: the clause it rewrites at the head, your wording under it
-      // stating its own change, your argument behind the same blank disc
-      // everybody else's sits behind. What differs is only what you can do —
-      // nothing is asked of you, and the one act is withdrawal.
+      // stating its own change, your argument behind the same disc everybody
+      // else's sits behind. What differs is only what you can do — nothing is
+      // asked of you, and the one act is withdrawal.
+      // **And the disc is what the room sees, not what you know** (K30): your
+      // own face where the name is attached — you signed it, or the rung is
+      // `public` — and the blank disc where it is sealed, which is the point.
+      // The line is your only reading of your own proposal, so it has to be
+      // the room's reading of it.
       clauseHeadHtml(d, { text: s.origin.map((o) => o.text).join(' '), key: s.keys[0],
                           chips: chipsFor(s.keys[0], d.id) }) +
       fieldHtml('<div class="propblock"><div class="rtext">' +
-        laneBlocks(s.text, originText(s), headFlags(s)) + '</div>' + speakerHtml(d.rationale) + '</div>',
+        laneBlocks(s.text, originText(s), headFlags(s)) + '</div>' +
+        speakerHtml(d.rationale, undefined, mineSpeaker(d)) + '</div>',
         1, 'What you proposed') +
       // **The same row the editing card had, one step further on** (Ed,
       // 2026-08-17). 🗑️ stays exactly where it was — discarding a draft and
@@ -4737,6 +4779,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // what a signature would read as — both at call time, like the two above
     if (env.signing) SIGNING = env.signing;
     if (env.signerName) SIGNER = env.signerName;
+    // and the speaker's two (K30): the rung whole, and the viewer's own face
+    if (env.authorRung) AUTHOR_RUNG = env.authorRung;
+    if (env.signerPerson) SIGNER_PERSON = env.signerPerson;
     SESSION_MINUTES = env.SESSION_MINUTES ?? 8 * 60;
     editsHeld = env.editsHeld ?? 5; editsToNext = env.editsToNext ?? 0.6;
     bindData(env.DOC || [], env.SUGGS || []);

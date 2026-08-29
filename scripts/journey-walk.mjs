@@ -1610,18 +1610,55 @@ if (caret) {
         mine: mine.map((m) => ({ signed: !!m.signed, cap: m.cap })),
         wireMine: (v.mine || []).map((m) => ({ id: m.id, signed: !!m.signed })),
         authors: (v.clauses || []).flatMap((c) => c.candidates).map((c) => (c.author && c.author.name) || null),
+        // **the face travels with the name** (K30): one `authorVisible` gate,
+        // two fields, so an author the wire names is one it also faces
+        faces: (v.clauses || []).flatMap((c) => c.candidates)
+          .filter((c) => c.author && c.author.name).map((c) => c.author.picture || null),
       }));
     });
     const named = wire.authors.filter(Boolean);
+    const faced = wire.faces.every((p) => p === FOUNDER_FACE);
     const okWire = ELECTIVE
       ? wire.mine.length > 0 && wire.mine.every((m) => m.signed && / · signed$/.test(m.cap)) &&
-        wire.wireMine.every((m) => m.signed) && named.length === wire.authors.length && named.length > 0
+        wire.wireMine.every((m) => m.signed) && named.length === wire.authors.length &&
+        named.length > 0 && faced
       : wire.mine.every((m) => !m.signed) && wire.wireMine.every((m) => !m.signed) && named.length === 0;
     say('named      · ' + (okWire
-      ? (ELECTIVE ? 'signed: the mine line says so and the wire names ' + JSON.stringify(named)
+      ? (ELECTIVE ? 'signed: the mine line says so and the wire names ' + JSON.stringify(named) +
+        ', with ' + FOUNDER_FACE.slice(1) + ' on it'
         : 'unsigned under ' + AUTHORSHIP + ': the wire names nobody')
       : 'FAIL: ' + JSON.stringify(wire)));
     if (!okWire) stuck.push('the signed proposal on the wire');
+
+    /* ---- and the face on your own line (K30) ------------------------------
+     * The `minecard` is your only reading of a proposal that has left you, so
+     * it has to be the *room's* reading of it: signed, so the disc gives way
+     * to the founder's own picture. Read by opening the card the page's own
+     * way, as the 👤 block below does — a click needs a gutter tab the reader
+     * may have scrolled past, and what is under test is the card's contents. */
+    if (ELECTIVE) {
+      const seen = await page.evaluate(() => {
+        const d = (window.SESSION.SUGGS || []).find((x) => x.mine && x.unproposed !== true);
+        if (!d) return { found: false };
+        try { window.SESSION.toggle(d.id, false); } catch { /* already open */ }
+        const q = String(d.id).replace(/["\\]/g, '\\$&');
+        const card = document.querySelector('.sugg[data-card="' + q + '"]');
+        if (!card) return { found: false, id: d.id };
+        const sp = card.querySelector('.speaker');
+        return { found: true, id: d.id, revealed: !!(sp && sp.classList.contains('revealed')),
+          face: sp ? (sp.querySelector('.spkface .emojiface, .spkface .av') || {}).textContent : null };
+      });
+      const okFace = seen.found && seen.revealed && seen.face === FOUNDER_FACE.slice(1);
+      say('your face  · ' + (okFace
+        ? 'the signed line wears ' + seen.face + ' where the sealed disc stands unsigned'
+        : 'FAIL: ' + JSON.stringify(seen)));
+      if (!okFace) stuck.push('the face on your own signed line');
+      await page.evaluate(() => {
+        const d = (window.SESSION.SUGGS || []).find((x) => x.mine && x.unproposed !== true);
+        if (d) { try { window.SESSION.toggle(d.id, false); } catch { /* already shut */ } }
+      });
+      await T(600);
+    }
   }
 
   /* ---- 👤 the sealed speaker: somebody else's proposal, read by a member --

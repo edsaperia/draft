@@ -887,11 +887,16 @@ function checkPicture() {
   const said = rows.map((r) => (r['stored as'].match(/`([a-z])`\+/) || [])[1]).filter(Boolean);
   const cmd = read('packages/server/src/commands.ts');
   const setup = js('design/setup.js');
+  // `avHtml` lives in `cards.js` since backlog 255 — the sealed speaker draws a
+  // face, and the two files share the renderer — so the sink is read there and
+  // the retired shapes are looked for in both halves of the page.
+  const cards = js('design/cards.js');
+  const page = setup + '\n' + cards;
   const accepted = [];
   if (/pic\.startsWith\('e'\)/.test(cmd)) accepted.push('e');
   if (/\^udata:image\\\//.test(cmd)) accepted.push('u');
   // avHtml's own branches: what the sink will draw as something other than nobody
-  const drawn = [...new Set([...setup.matchAll(/pic\[0\] === '([a-z])'/g)].map((m) => m[1]))];
+  const drawn = [...new Set([...cards.matchAll(/pic\[0\] === '([a-z])'/g)].map((m) => m[1]))];
   const same = (a, b) => [...a].sort().join('') === [...b].sort().join('');
   if (!same(said, accepted)) {
     find('picture', `SURFACE names ${said.join('/')}; the server accepts ${accepted.join('/') || 'nothing'}`);
@@ -900,7 +905,7 @@ function checkPicture() {
     find('picture', `SURFACE names ${said.join('/')}; avHtml draws ${drawn.join('/') || 'nothing'}`);
   }
   // the retired shapes, named so a re-addition is red rather than quiet
-  for (const [where, src] of [['the server', cmd], ['the page', setup]]) {
+  for (const [where, src] of [['the server', cmd], ['the page', page]]) {
     for (const gone of [/c\[0-5\]/, /m\[0-2\]/, /GROUNDS/, /MARKS\b/]) {
       if (gone.test(src)) find('picture', `${where} still carries the retired ${gone} (Q734)`);
     }

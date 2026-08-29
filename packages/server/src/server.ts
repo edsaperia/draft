@@ -362,15 +362,23 @@ export async function createDraftServer(cfg: ServerConfig,
     // rung says.
     // the members map first: a founder who is a member keeps their identity
     // there (`identity-set`'s fold), and the convenor record only for a clerk
-    const nameOf = (id: string): string | null => {
+    const recordOf = (id: string) => {
       const m = doc.cs.memberRecords().get(id);
-      if (m) return m.name ?? null;
-      if (id === doc.cs.convenorRecord().id) return doc.cs.convenorRecord().name ?? null;
+      if (m) return m;
+      if (id === doc.cs.convenorRecord().id) return doc.cs.convenorRecord();
       return null;
     };
-    const namedAuthor = (c: Candidate): { id: string; name: string | null } | undefined =>
-      authorVisible(c, engine.constitution, { closed: engine.closed })
-        ? { id: c.author, name: nameOf(c.author) } : undefined;
+    // **And the picture goes wherever the name goes** (SURFACE K30, backlog
+    // 255): the speaker's disc is the face the room will see, so a card that
+    // may print a name may print the face beside it. Read off the same record
+    // and behind the same `authorVisible` gate — one gate, two fields — so
+    // §3.5 is untouched: where the name is withheld the whole object is.
+    const namedAuthor = (c: Candidate):
+    { id: string; name: string | null; picture: string | null } | undefined => {
+      if (!authorVisible(c, engine.constitution, { closed: engine.closed })) return undefined;
+      const rec = recordOf(c.author);
+      return { id: c.author, name: rec?.name ?? null, picture: rec?.picture ?? null };
+    };
     const clauses = engine.races().filter((r) => r.settingId === undefined).map((r) => {
       const ids = new Set([...r.members, r.incumbentId]);
       const here = myJ.filter(touches(ids));
@@ -465,7 +473,7 @@ export async function createDraftServer(cfg: ServerConfig,
         /** *Proposal refused by ‹name› 🛡️* — the reason the author reads (R-056). */
         reason?: string;
         cappedFit?: { iterations: number; gradMax: number };
-        author?: { id: string; name: string | null } }> };
+        author?: { id: string; name: string | null; picture: string | null } }> };
     const byRace = new Map<string, Rec>();
     // an author's derived preference is a mover (§3.3, §8.2): counted, never named
     const authorsOf = new Map<string, Set<string>>();

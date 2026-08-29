@@ -28,7 +28,7 @@ const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
 type Hunk = { start: number; end: number; lines: string[] };
 type CandidateOutcome = { candidateId: string; outcome: string; p: number | null;
   threshold: number | null; hunks: Hunk[]; rationale: string; judgedByMe: boolean;
-  author?: { id: string; name: string | null };
+  author?: { id: string; name: string | null; picture: string | null };
   madeUnder?: string; signed?: boolean };
 type RaceRecord = { raceId: string; candidateId: string; outcome: string; when: number;
   p: number | null; threshold: number | null; version: number; footprint: unknown;
@@ -54,7 +54,7 @@ type MemberViewPayload = {
     incumbentId: string; deadlocked: boolean; closeness: number; judges: number; floor: number;
     judged: boolean; shifted: boolean;
     candidates: Array<{ id: string; mine: boolean; rationale: string; hunks: Hunk[];
-      author?: { id: string; name: string | null } }> }>;
+      author?: { id: string; name: string | null; picture: string | null } }> }>;
   mine: Array<{ id: string; state: string; rationale: string; patch: unknown; footprint: unknown;
     signed: boolean }>;
   records: RaceRecord[];
@@ -1125,7 +1125,10 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     const cy = await follow('cy@example.org');
     await cmd(ada, 'set-identity', { name: 'Ada' });
     await cmd(bo, 'set-identity', { name: 'Bo' });
-    await cmd(cy, 'set-identity', { name: 'Cy' });
+    // cy takes a face and bo does not — the speaker's disc is the face the
+    // room will see (K30), so the picture rides beside the name through the
+    // same `authorVisible` gate, and *no picture* has to travel as null
+    await cmd(cy, 'set-identity', { name: 'Cy', picture: 'e🦉' });
     await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
       pace: { shape: 'fixed' }, quorum: { form: 'count', n: 2 },
@@ -1160,7 +1163,7 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
       why: 'say when it ends', signed: true }) as { id: string };
     const boLive = await viewOf(bo);
     const cyCand = boLive.clauses.flatMap((c) => c.candidates).find((c) => c.id === cySigned.id)!;
-    expect(cyCand.author).toEqual(expect.objectContaining({ name: 'Cy' }));
+    expect(cyCand.author).toEqual(expect.objectContaining({ name: 'Cy', picture: 'e🦉' }));
     const boCand = boLive.clauses.flatMap((c) => c.candidates).find((c) => c.id !== cySigned.id)!;
     expect(boCand).not.toHaveProperty('author');                 // never Bo, live
     expect(JSON.stringify((await viewOf(cy)).clauses)).not.toMatch(/"Bo"/);
@@ -1190,8 +1193,8 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     // sealed authorship unseals at the record (§3.5a): the field names its
     // author — both of them, each with the base it was made under and
     // whether it was signed, beside the rung that stands (entry 31)
-    expect(rota.field[0]).toMatchObject({ author: { name: 'Bo' }, madeUnder: 'sealed', signed: false });
-    expect(watch.field[0]).toMatchObject({ author: { name: 'Cy' }, madeUnder: 'sealed', signed: true });
+    expect(rota.field[0]).toMatchObject({ author: { name: 'Bo', picture: null }, madeUnder: 'sealed', signed: false });
+    expect(watch.field[0]).toMatchObject({ author: { name: 'Cy', picture: 'e🦉' }, madeUnder: 'sealed', signed: true });
     expect(rec.rungNow).toBe('sealed');
     expect(rec.carriedButUnassented).toEqual([]);
     expect(rec.signatures).toEqual([]);

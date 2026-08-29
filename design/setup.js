@@ -31,29 +31,14 @@ window.SETUP = (function () {
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const TICK = '<svg class="mkg" viewBox="0 0 12 12"><path d="M2 6.4 L4.7 9.2 L10 2.9"/></svg>';
-  const initials = (n) => String(n).trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-
   /* ---- avatars ------------------------------------------------------------
-     `me` in the glossary reads "initials, not a photograph: there are no
-     accounts behind it yet". There are now — choosing how you appear is one of
-     the cards — so the initials become the *default* rather than the rule.
-
-     **A picture is an emoji, an uploaded image, or none** (Q734, 2026-08-23).
-     The grounds for your initials and the three drawn marks are gone: they
-     were a mockup device from before either of the real answers existed, and
-     with a real uploader in the card a ground is a fourth thing to choose
-     between two that mean something. Nothing is left tolerating them — we are
-     in alpha and there are no real documents (Ed, 2026-08-23) — so `c0`–`c5`
-     and `m0`–`m2` are refused by the server as well as un-offered here, and
-     everything that is not `e`+emoji or `u`+image is simply the empty answer.
-
-     **And an emoji is a glyph, not a disc** (Q732/Q735, Ed 2026-08-23: they
-     render *very small and right aligned*, and should be *sized like the text
-     around them and replace the circle that images use*). So the emoji branch
-     stops emitting an `.av` altogether: `.emojiface` has no box, no ground and
-     no size of its own, and inherits whatever text it stands in. The circle
-     survives exactly where it is doing work — behind an uploaded photograph
-     and behind initials, which need a ground to be legible. */
+     `initials`, `PERSON` and `avHtml` moved down to `cards.js` (backlog 255):
+     the sealed speaker draws a face now, `cards.js` loads first, and a helper
+     two files share belongs in the lower of them rather than being reached for
+     sideways at call time. They are re-exported on `SETUP` below, so every
+     caller — `session-view.html`'s nineteen sites, `pictureBody`, the emoji
+     grid — is unchanged, and the reasoning travelled with the code. */
+  const { initials, avHtml } = window.CARDS;
   /* **`FACE_EMOJI` is the exemption list**, and nothing else since Q732 took
      the curated grid away. It used to be the People row of the picker *and*
      the set subtracted from the surface's vocabulary to make
@@ -136,47 +121,6 @@ window.SETUP = (function () {
       : '<button class="avopt" ' + dataAttr + '="' + 'e' + f2 + '" aria-pressed="' + own + '"' +
         ' title="' + esc(f2) + '">' + avHtml({ n, pic: 'e' + f2 }, 'grid') + '</button>';
   };
-  // **Before there is a name there is still a person** (Ed, 2026-08-19: the
-  // picture card offers *initials with a colour picker — or, if they have not
-  // given us their name, an anonymous user symbol with a colour picker, which
-  // becomes initials when the name is filled*). Drawn rather than a glyph, for
-  // the same reason the sealed speaker is: a bare disc reads as a bullet.
-  const PERSON = '<svg class="anonav" viewBox="0 0 44 44" aria-hidden="true">' +
-    '<circle cx="22" cy="16" r="7.5" fill="currentColor"/>' +
-    '<path d="M8.5 37c0-7.2 6-12 13.5-12s13.5 4.8 13.5 12z" fill="currentColor"/></svg>';
-  function avHtml(person, cls) {
-    const pic = person && person.pic;
-    const c = 'av ' + (cls || '');
-    // **An emoji is not a disc** (Q735): no ground, no border, no box — it
-    // takes the size of the text it stands in, which is what makes one rule
-    // right at all nineteen sites at once instead of a specificity race
-    // against every context that tunes a two-letter initials size.
-    if (pic && pic[0] === 'e') {
-      return '<span class="emojiface ' + (cls || '') + '">' + esc(pic.slice(1)) + '</span>';
-    }
-    // An uploaded picture is stored as 'u' + a data URL, downscaled and
-    // re-encoded in the browser before it is ever stored (Q735): the file
-    // itself never leaves the page.
-    if (pic && pic[0] === 'u') {
-      // Only a data-URI image may enter a style attribute (PRODUCTION.md
-      // stage 3, defect 4): the server whitelists this shape at
-      // set-identity, and the page enforces it again at the sink, because
-      // the sink is what survives a data path nobody audited. Anything
-      // else stored here renders as nobody — never as markup.
-      const u = pic.slice(1);
-      if (/^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(u)) {
-        return '<span class="' + c + ' photo" style="background-image:url(' + u + ')"></span>';
-      }
-      return '<span class="' + c + ' anon">' + PERSON + '</span>';
-    }
-    // anything else stored here is the empty answer — a ground index, a mark
-    // index, a string nobody audited — and renders as nobody, never as markup
-    if (pic) return '<span class="' + c + ' anon">' + PERSON + '</span>';
-    // no name yet: the anonymous person, so a disc never reads as a bullet
-    if (!person || !person.n) return '<span class="' + c + ' anon">' + PERSON + '</span>';
-    return '<span class="' + c + '">' + esc(initials(person.n)) + '</span>';
-  }
-
   /* ---- the lifecycle of a setting -----------------------------------------
      **The session-view's own grammar** (Ed, 2026-08-18: a setup task is a task
      like any on the live surface, so it speaks the same alphabet), with the

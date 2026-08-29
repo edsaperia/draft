@@ -290,7 +290,10 @@ window.FIXTURE_SESSION = (function () {
         },
         b: {
           text: 'The Purse-holder pays the house’s bills and reimburses members’ reasonable claims as trust and good sense direct, keeping accounts in whatever simple way suits, and is glad to talk any member through them who asks.',
-          rationale: 'The old rule buries our volunteer in budget sign-offs and minute-taking. We’re friends who trust each other — spare whoever takes this on the paperwork.'
+          rationale: 'The old rule buries our volunteer in budget sign-offs and minute-taking. We’re friends who trust each other — spare whoever takes this on the paperwork.',
+          // one signed proposal in the fixture (K30), so a card the audit opens
+          // carries the revealed speaker: a name, and the face beside it
+          by: { n: 'Hollis Vane', pic: 'e🧑‍🦳' }
         }
       }
     },
