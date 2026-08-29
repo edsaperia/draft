@@ -455,6 +455,39 @@ export class Session {
         this.fitCache.clear();
         break;
       }
+      case 'text-decreed': {
+        // ✒️ on the Text (R-058). Everything `candidate-submitted` does about
+        // money is deliberately absent — no `spend`, no `credit`, no
+        // `performanceRefund`: nothing was staked, so nothing is refunded, and
+        // `stakePaid: 0` is what keeps a later reader from computing one.
+        // Everything `adopted` does about the *document* is present, because
+        // the document really did change: the version, `lastAdoptionT` (the
+        // cooldown metronome is spent, §4.2) and the fit cache.
+        this.candidates.set(event.id, {
+          id: event.id,
+          author: event.author,
+          rationale: event.rationale,
+          patch: event.patch,
+          footprint: footprint(event.patch.hunks),
+          state: 'adopted',
+          stakePaid: 0,
+          peakW: 0,
+          redrafts: 0,
+          // the base standing now, stamped for good (entry 31), exactly as a
+          // submitted candidate's is — `authorVisible` reads the same field
+          // whichever door the candidate came through
+          disclosure: this.constitutionValue.authorshipVisibility,
+        });
+        this.supporters.set(event.id, new Set([event.author]));
+        this.versions.push(applyPatch(this.currentLines(), event.patch.hunks));
+        this.candidate(event.id).exit = { t: event.t, cause: 'decreed', refund: 0 };
+        this.lastAdoptionT = event.t;
+        this.fitCache.clear();
+        // a clerk holds no seat, and `touchParticipant` is already a no-op
+        // off the roster — the author rule needs no guard of its own here
+        this.touchParticipant(event.author, event.t);
+        break;
+      }
       case 'candidate-rebased': {
         const c = this.candidate(event.id);
         c.patch = event.patch;
@@ -936,6 +969,63 @@ export class Session {
     this.fitCache.clear();
     const race = this.raceOf(id);
     return { id, raceId: race.id };
+  }
+
+  /**
+   * **The second door into the document** (SPEC §9.7 rule 8, R-058): ✒️ on
+   * the Text, where the Founder's amendment passes the instant it is
+   * submitted. Written here beside `submitCandidate` because the diff
+   * between the two is the whole of what the pen is.
+   *
+   * It validates everything `submitCandidate` validates **about a patch** —
+   * the base version, non-empty hunks, the hunks against the current line
+   * count, the rationale cap — and deliberately does not: charge a stake,
+   * check a balance, or require `activeParticipant`. The host is the gate
+   * on *who may do this* (`textPen()` in `@draft/constitution`); the engine
+   * knows only that somebody with the right did.
+   *
+   * `assertOpen()` still applies: a closed document takes no act.
+   */
+  decreeText(
+    t: number,
+    input: { author: string; patch: PatchSet; rationale: string },
+  ): { id: string } {
+    this.assertOpen();
+    if (input.rationale.length > this.constitutionValue.rationaleMaxChars) {
+      throw new Error(`rationale exceeds ${this.constitutionValue.rationaleMaxChars} chars`);
+    }
+    if (input.patch.baseVersion !== this.currentVersion()) {
+      throw new Error(
+        `patch targets version ${input.patch.baseVersion}; current is ${this.currentVersion()}`,
+      );
+    }
+    if (input.patch.hunks.length === 0) throw new Error('empty patch');
+    validateHunks(this.currentLines().length, input.patch.hunks);
+    // **R-056's one-at-a-time rule reaching the second door** (R-058). The
+    // sweep's own comment names this obligation on any later door that adopts
+    // text: a parked candidate is not `live`, so `rebaseOthers` skips it, and
+    // `assent`'s accept re-emits `adopted` with the patch recorded at the park
+    // — against a version the decree would have moved out from under it.
+    // Refusing is honest rather than restrictive: a Founder holding both
+    // powers on the Text already owes the room an answer.
+    if ([...this.candidates.values()].some((c) => c.state === 'awaiting-assent')) {
+      throw new Error(
+        'a text adoption is parked awaiting assent — answer it before amending (§9.7 rule 8)',
+      );
+    }
+    const id = `c${++this.candidateCounter}`;
+    const newVersion = this.currentVersion() + 1;
+    this.emit({
+      type: 'text-decreed',
+      t,
+      id,
+      author: input.author,
+      patch: input.patch,
+      rationale: input.rationale,
+      newVersion,
+    });
+    this.rebaseOthers(t, id, input.patch.hunks, newVersion);
+    return { id };
   }
 
   /**
@@ -1588,10 +1678,33 @@ export class Session {
     const adoptedHunks = winner.patch.hunks;
     const newVersion = this.currentVersion() + 1;
     this.emit({ type: 'adopted', t, candidateId, raceId, newVersion, p, threshold });
-    // Rebase every other live patch onto the new text (SPEC §2.4).
-    // Setting candidates have no text ground and are untouched (Q390).
+    this.rebaseOthers(t, candidateId, adoptedHunks, newVersion);
+  }
+
+  /**
+   * **The ground shift, in one place** (SPEC §2.4, R-058). Every door that
+   * moves the document rebases the field through this loop and no other —
+   * `adopt` above, and `decreeText`'s pen — so *ground-shifted, not orphaned*
+   * cannot drift between them. A live candidate on the same footprint is
+   * rebased, or put into `rebase-pending` where the rebase genuinely
+   * conflicts; **nothing retires anything**.
+   *
+   * Setting candidates have no text ground and are untouched (Q390), and a
+   * candidate parked `awaiting-assent` is not `live`, so it is skipped — which
+   * is exactly why `decreeText` refuses while one stands (R-056's one-at-a-time
+   * rule, extended to the second door rather than rebased around).
+   *
+   * `spec-check`'s `checkPenRebase` asserts in source that the pen reaches
+   * this helper rather than a copy of its own.
+   */
+  private rebaseOthers(
+    t: number,
+    exceptId: string,
+    adoptedHunks: Hunk[],
+    newVersion: number,
+  ): void {
     const others = [...this.candidates.values()].filter(
-      (c) => c.state === 'live' && c.id !== candidateId && c.patch !== undefined,
+      (c) => c.state === 'live' && c.id !== exceptId && c.patch !== undefined,
     );
     for (const c of others) {
       const result = rebaseHunks(c.patch!.hunks, adoptedHunks);

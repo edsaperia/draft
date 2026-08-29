@@ -389,6 +389,36 @@ export type Event =
       /** The adoption threshold the winner cleared. */
       threshold: number;
     }
+  | {
+      /**
+       * ✒️ on the Text (SPEC §9.7 rule 8, R-058): the Founder's amendment
+       * passes the instant it is submitted — submitted and adopted in one
+       * act, no stake, no race, no judgment. It rebases everything in
+       * flight exactly as an ordinary adoption does, through the same
+       * loop, so a race on the same footprint is ground-shifted and not
+       * killed.
+       *
+       * **A new event rather than a flag on `candidate-submitted` or a
+       * reuse of `adopted`**, for three reasons: `candidate-submitted`'s
+       * fold spends the stake unconditionally; `adopted` requires `p` and
+       * `threshold`, and a pen adoption has neither honestly, there being
+       * no room to have been confident about it; and every log already on
+       * disk replays byte for byte because no existing shape moves.
+       *
+       * `author` is a bare string and the ledger is never touched: a
+       * **clerk** is a Founder who is not a member and holds no engine
+       * participant at all, so the act must not require a seat. Every
+       * downstream reader tolerates an author who is not on the roster.
+       */
+      type: 'text-decreed';
+      t: number;
+      id: string;
+      author: string;
+      patch: PatchSet;
+      rationale: string;
+      /** Document version the decree produced. */
+      newVersion: number;
+    }
   | { type: 'candidate-rebased'; t: number; id: string; patch: PatchSet }
   | {
       /** Rebase conflict: returned to author (SPEC §2.4). */
