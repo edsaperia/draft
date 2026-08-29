@@ -119,7 +119,23 @@ describe('resignation — always at ✒️', () => {
     expect(s.E()).toBe(2);
     expect([...s.crownQuestionRecords().values()].filter((q) => q.status === 'pending')).toHaveLength(0);
     expect(() => s.resign(4, cy)).toThrow(/unknown member/);
-    expect(() => s.resign(4, 'ada')).toThrow(/unticks their own row/);
+    // and the convenor's membership is ordinary membership (§9.6a, entry
+    // 248): after the start they leave by the same door as anybody, and
+    // the seat they leave behind is R-060's vacancy
+    s.resign(4, 'ada');
+    expect(s.memberRecords().get('ada')!.removed).toBe(true);
+    expect(s.memberRecords().get('ada')!.removedBy).toBe('self');
+    expect(s.E()).toBe(1);
+    expect(s.convenorSeatVacant()).toBe(true);
+  });
+
+  it('before the start it is still the 🎩 untick, and resign says so', () => {
+    const s = ConstitutionSession.open({
+      title: 'Hollow Oak Club Charter', slug: 'hollow-oak',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+    }, 0);
+    expect(() => s.resign(1, 'ada')).toThrow(/unticks their own row/);
+    expect(s.memberRecords().get('ada')!.removed).toBe(false);
   });
 });
 

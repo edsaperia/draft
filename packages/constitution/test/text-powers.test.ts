@@ -364,11 +364,14 @@ describe('🛡️ on the Text parks the adoption (R-056)', () => {
  * no clock would ever answer it, and every text adoption in the document was
  * blocked for the rest of its life.
  *
- * Today the one door that vacates the seat is a carried removal motion against
- * the convenor's own row: `remove` / `resign` / `uninvite` each refuse the
- * convenor outright, and `settleCarriedEffects`'s `remove` arm has no such
- * guard. `assembly` is the price used here because it is unanimity *minus the
- * subject*, so the convenor is not asked to consent to her own removal.
+ * Two doors vacate the seat, and the predicate is a claim about state rather
+ * than about either of them, so both arrive here. A carried removal motion
+ * against the convenor's own row — `remove` and `uninvite` still refuse the
+ * convenor outright, but `settleCarriedEffects`'s `remove` arm has no such
+ * guard; `assembly` is the price used for it here because it is unanimity
+ * *minus the subject*, so the convenor is not asked to consent to her own
+ * removal. And, since entry 248, the convenor's own resignation after the
+ * start, which is free and at no price at all.
  */
 describe('a vacated seat auto-passes the park and holds no shield (R-060)', () => {
   /** The removal that empties the seat: bo moves, cy accepts, ada is not asked. */
@@ -395,6 +398,26 @@ describe('a vacated seat auto-passes the park and holds no shield (R-060)', () =
     expect(adopted).toMatchObject({ p: park.p, threshold: park.threshold });
     // a vacancy is not a lapse: nothing may wake back up
     expect(s.crownLapsed).toBe(false);
+  });
+
+  it('the park adopts when the convenor resigns, at no price and by the same predicate (entry 248)', () => {
+    const { s, bridge, id } = parked({}, 'vacancy-resign');
+    const park = pick(bridge, 'candidate-awaiting-assent');
+    expect(bridge.engine.document()).toBe(START);
+
+    s.resign(21, 'ada'); // free, immediate, nobody's to refuse (§9.6a)
+    expect(s.convenorSeatVacant()).toBe(true);
+    expect(s.textAdoptionNeedsAssent()).toBe(false);
+    expect(questionFor(s, id).status).toBe('auto-passed');
+    bridge.sync(21);
+
+    expect(bridge.engine.document()).toBe('Open every day.');
+    expect(bridge.engine.getCandidate(id).state).toBe('adopted');
+    expect(pick(bridge, 'adopted', (e) => e.candidateId === id))
+      .toMatchObject({ p: park.p, threshold: park.threshold });
+    expect([...s.crownQuestionRecords().values()].filter((q) => q.status === 'pending'))
+      .toHaveLength(0);
+    expect(s.crownLapsed).toBe(false); // a vacancy is not a lapse
   });
 
   it('the seat stays vacant, so the next race adopts by itself', () => {
