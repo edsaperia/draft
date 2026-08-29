@@ -1810,8 +1810,8 @@
     // inviting are the ✉️ door's, not this setting's.
     { k: 'admission', g: '🪪', t: 'Admissions', kind: 'constitutional', key: 'admission', p: 0.40, changeable: true,
       rule: 'Each member says the <b>cheapest</b> admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.',
-      takes: 'The document takes the dearest', result: 'All members must agree',
-      dist: [3, 1, 0], distTop: 3, distEnds: ['All members must agree', 'Any member may invite'] },
+      takes: 'The document takes the dearest', result: 'All members must approve every new member joining',
+      dist: [3, 1, 0], distTop: 3, distEnds: ['All members must approve every new member joining', 'Any member can invite new people to join'] },
     // **Inviting and removing are their own cards** (Ed, 2026-08-19, 400a:
     // ✉️ and ❌): doors, not decisions — they compose the membership acts
     // and, since entry 94, **hold the Founder's ✒️/🛡️ pair over the act**:
@@ -3616,8 +3616,9 @@
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
     applications: (v) => 'You said ' + ({ invite: 'invitation only', apply: 'anyone may apply' }[v] || v),
     lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days without logging in'),
-    removal: (v) => 'You said ' + ({ everyone: 'all members have to agree, including them',
-      others: 'all other members', ordinary: 'a proposal ✏️ like any other' }[v] || v),
+    removal: (v) => 'You said ' + ({ everyone: 'all members must approve removing a member, and the person themselves must agree',
+      others: 'all other members must approve removing a member',
+      ordinary: 'members must vote on removing a member' }[v] || v),
     rate: (v) => 'You said ' + v,
   };
   const ANSASK = { quorum: 'The lowest you will accept', bar: 'The lowest you will accept',
@@ -3962,9 +3963,10 @@
     pace: { 'The same number throughout': { shape: 'fixed' } },
     ending: { 'Never — it runs until too few members are active': { endsAtMs: null } },
     lapse: { 'Never — however long you are away': { afterMs: null } },
-    // **The keys are the composer's own lane labels, not 🥾's rung words.**
+    // **The keys are the composer's own lane labels**, which since T5's
+    // rung-is-a-sentence rule are 🥾's rung words verbatim, spelled one way.
     // `mvalTyped` is only ever asked about a `data-mval`, which is the string
-    // `PROPOSE.removal` writes — and these three were `PRICE_WORDS`' spelling
+    // `PROPOSE.removal` writes — and these three once spelled it a second way
     // instead, so every 🥾 lane typed `null`, `offersStanding` fell back to the
     // label comparison Q620 retired, and the ten-second 🏛️ hold ended at *That
     // could not be proposed: no typed value on the draft*.
@@ -3974,12 +3976,12 @@
     // `{ apply: boolean }` can express. `spec-check`'s `checkComposer` now
     // asserts the two lists agree in both directions, so a lane with no key
     // here is red at the push.
-    removal: { 'All members have to agree, including them': { price: 'consent' },
-      'All other members have to agree': { price: 'assembly' },
-      'A proposal ✏️ like any other': { price: 'proposal' } },
-    admission: { 'All members must agree': { price: 'assembly' },
-      'The membership decides': { price: 'proposal' },
-      'Any member may invite': { price: 'pen' } },
+    removal: { 'All members must approve removing a member, and the person themselves must agree': { price: 'consent' },
+      'All other members must approve removing a member': { price: 'assembly' },
+      'Members must vote on removing a member': { price: 'proposal' } },
+    admission: { 'All members must approve every new member joining': { price: 'assembly' },
+      'Members must vote on every new member joining': { price: 'proposal' },
+      'Any member can invite new people to join': { price: 'pen' } },
     applications: { 'Invitation only': { apply: false }, 'Anyone may apply': { apply: true } },
     // **Public has left the ladder** (Ed, 2026-08-22). It is offered nowhere
     // — not here, not on the founder's card, not in a member's answer — but
@@ -4365,9 +4367,9 @@
     authorship: (v) => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed at the end' })[v],
     lapse: (v) => (v === 'never' ? 'Never — however long you are away' : 'After ' + v + ' days without logging in'),
-    removal: (v) => ({ everyone: 'All members have to agree, including them',
-      others: 'All other members have to agree',
-      ordinary: 'A proposal ✏️ like any other' })[v],
+    removal: (v) => ({ everyone: 'All members must approve removing a member, and the person themselves must agree',
+      others: 'All other members must approve removing a member',
+      ordinary: 'Members must vote on removing a member' })[v],
     quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership' : v + '% of the membership'),
     bar: (v) => v + '% sure at the end',
     ending: (v) => (v === 'never' ? 'Never — it runs until too few members are active'
@@ -4464,9 +4466,9 @@
         esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct) + '">% of the membership.',
         meanLine('quorum', d.val && d.val.form ? d.val : null))),
     removal: (d) => lanesFor(d, [
-      ['All members have to agree, including them', 'Removing a member needs all members to agree, including them.'],
-      ['All other members have to agree', 'Removing a member needs every other member to agree.'],
-      ['A proposal ✏️ like any other', 'A member is removed by a proposal, voted on like any other.']], 'removal'),
+      ['All members must approve removing a member, and the person themselves must agree', 'Removing a member needs all members to agree, including them.'],
+      ['All other members must approve removing a member', 'Removing a member needs every other member to agree.'],
+      ['Members must vote on removing a member', 'A member is removed by a proposal, voted on like any other.']], 'removal'),
     lapse: (d) => lanesFor(d, [['Never — however long you are away',
         'A membership never lapses, however long somebody is away.']], 'lapse') +
       inputBlock('A membership lapses after ' +
@@ -4847,10 +4849,12 @@
   // in the document's three verbs — the same words on 🪪 and 🥾, so a reader
   // learns them once. 🥾 keeps the rung admission has no analogue for.
   const PRICE_WORDS = {
-    admission: { assembly: 'All members must agree', proposal: 'The membership decides',
-      pen: 'Any member may invite' },
-    removal: { consent: 'All members must agree, including them', assembly: 'All other members must agree',
-      proposal: 'The membership decides' },
+    admission: { assembly: 'All members must approve every new member joining',
+      proposal: 'Members must vote on every new member joining',
+      pen: 'Any member can invite new people to join' },
+    removal: { consent: 'All members must approve removing a member, and the person themselves must agree',
+      assembly: 'All other members must approve removing a member',
+      proposal: 'Members must vote on removing a member' },
   };
   const POLICY_WORDS = { invite: 'Invitation only', apply: 'Anyone may apply' };
   // the 🥾 price as it stands (Q401) — unset reads as today's rule
@@ -5609,7 +5613,7 @@
     // second one. Two elements each claiming the role made two groups out of
     // one decision, which the value group's own label already covers.
     return '<div class="choice delegrung">' +
-      opt(S, dk, 'roster', 'Let the membership decide this',
+      opt(S, dk, 'roster', 'Let the membership decide this rule themselves',
         'Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. ' +
         (c.rule ? String(c.rule).replace(/<[/]?b>/g, '') : '')) +
       '</div>';
@@ -6017,9 +6021,9 @@
       '<p class="why">What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.</p>' +
       '<div class="choice" role="radiogroup" aria-label="The price of admission">' +
       theyDecide('admission') +
-      opt(S, 'admission', 'assembly', 'All members must agree', 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.') +
-      opt(S, 'admission', 'proposal', 'The membership decides', 'A proposed member is voted on at the approval threshold ✏️, like any change.') +
-      opt(S, 'admission', 'pen', 'Any member may invite', 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.') +
+      opt(S, 'admission', 'assembly', 'All members must approve every new member joining', 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.') +
+      opt(S, 'admission', 'proposal', 'Members must vote on every new member joining', 'A proposed member is voted on at the approval threshold ✏️, like any change.') +
+      opt(S, 'admission', 'pen', 'Any member can invite new people to join', 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.') +
       '</div>',
     ending: () =>
       '<p class="why">When drafting stops and the text is final. <b>Never</b> is one of the answers: a document with no end date stops only when too few members are active.</p>' +
@@ -6145,9 +6149,9 @@
       '<p class="why">How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('removal') +
-      opt(S, 'removal', 'consent', 'All members must agree, including them', 'One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.') +
-      opt(S, 'removal', 'assembly', 'All other members must agree', 'Somebody can be removed even if they object, but only if every other member agrees 🏛️.') +
-      opt(S, 'removal', 'proposal', 'The membership decides', 'A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.') +
+      opt(S, 'removal', 'consent', 'All members must approve removing a member, and the person themselves must agree', 'One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.') +
+      opt(S, 'removal', 'assembly', 'All other members must approve removing a member', 'Somebody can be removed even if they object, but only if every other member agrees 🏛️.') +
+      opt(S, 'removal', 'proposal', 'Members must vote on removing a member', 'A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.') +
       '</div>',
   };
 

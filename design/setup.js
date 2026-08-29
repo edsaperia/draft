@@ -1436,15 +1436,15 @@ window.SETUP = (function () {
     admission: (A) =>
       '<p class="why">What it costs to bring somebody into the membership — a member’s invitation or a stranger’s application alike. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'admission', [
-        { v: 'assembly', t: 'All members must agree', e: 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.' },
-        { v: 'proposal', t: 'The membership decides', e: 'A proposed member is voted on at the approval threshold ✏️, like any change.' },
-        { v: 'pen', t: 'Any member may invite', e: 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.' }]) + BLINDNOTE,
+        { v: 'assembly', t: 'All members must approve every new member joining', e: 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.' },
+        { v: 'proposal', t: 'Members must vote on every new member joining', e: 'A proposed member is voted on at the approval threshold ✏️, like any change.' },
+        { v: 'pen', t: 'Any member can invite new people to join', e: 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.' }]) + BLINDNOTE,
     removal: (A) =>
       '<p class="why">What it costs to remove a member. Whichever is chosen, the member always sees a removal proposed against them, and anybody may leave at any time. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'removal', [
-        { v: 'consent', t: 'All members must agree, including them', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
-        { v: 'assembly', t: 'All other members must agree', e: 'The whole membership, minus the member in question, must agree 🏛️.' },
-        { v: 'proposal', t: 'The membership decides', e: 'Voted on at the approval threshold ✏️ like any change, with quorum.' }]) + BLINDNOTE,
+        { v: 'consent', t: 'All members must approve removing a member, and the person themselves must agree', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
+        { v: 'assembly', t: 'All other members must approve removing a member', e: 'The whole membership, minus the member in question, must agree 🏛️.' },
+        { v: 'proposal', t: 'Members must vote on removing a member', e: 'Voted on at the approval threshold ✏️ like any change, with quorum.' }]) + BLINDNOTE,
     ending: (A) =>
       '<p class="why">When the document should close. The <b>latest</b> answer anybody gives is taken, and <b>never</b> is the latest of all — so nobody is cut off before they were ready.</p>' +
       '<div class="choice" role="radiogroup">' +
