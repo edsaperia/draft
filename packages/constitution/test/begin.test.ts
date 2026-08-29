@@ -185,7 +185,7 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
     ]));
     const owed = [...s.memberRecords().get(bo)!.releasesOwed];
     expect(owed).toHaveLength(1);
-    const batch = s.releaseBatchRecords().get(owed[0])!;
+    const batch = s.releaseBatchRecords().get(owed[0]!)!;
     // the Text's own pair rides the same batch — one act, one card, one OK
     expect(batch.releases).toHaveLength(14);
     expect(batch.t).toBe(2);
