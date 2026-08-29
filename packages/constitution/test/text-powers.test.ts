@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import { EngineBridge } from '../src/engine-bridge.js';
 import { ParticipantApi } from '../../engine-core/src/participant-api.js';
+import type { Event as EngineEvent } from '../../engine-core/src/types.js';
 import { view } from '../src/view.js';
 import { buildConstituted, reserveTextShield } from './helpers.js';
 
@@ -152,6 +153,17 @@ describe('🛡️ on the Text parks the adoption (R-056)', () => {
     return { s, bo, cy, bridge, id, raceId };
   }
   const events = (bridge: EngineBridge) => bridge.engine.log.map((e) => e.event);
+  /**
+   * One event of a kind, narrowed. `find` only infers a type predicate from a
+   * bare `e.type === '…'`, so a search that also matches on the candidate id
+   * comes back as the whole `Event` union and every field read is a type
+   * error — the filter does the narrowing and the finder does the matching.
+   */
+  const pick = <K extends EngineEvent['type']>(bridge: EngineBridge, type: K,
+    where: (e: Extract<EngineEvent, { type: K }>) => boolean = () => true) =>
+    events(bridge)
+      .filter((e): e is Extract<EngineEvent, { type: K }> => e.type === type)
+      .find(where)!;
   const questionFor = (s: ConstitutionSession, id: string) =>
     [...s.crownQuestionRecords().values()].find((q) => q.text?.candidateId === id)!;
 
@@ -177,11 +189,11 @@ describe('🛡️ on the Text parks the adoption (R-056)', () => {
 
   it('accept adopts, on the confidence the room decided at', () => {
     const { s, bridge, id, bo } = parked({}, 'assent-accept');
-    const park = events(bridge).find((e) => e.type === 'candidate-awaiting-assent')!;
+    const park = pick(bridge, 'candidate-awaiting-assent');
     bridge.answerCrownQuestion(21, questionFor(s, id).id, 'accept');
     expect(bridge.engine.document()).toBe('Open every day.');
     expect(bridge.engine.getCandidate(id).state).toBe('adopted');
-    const adopted = events(bridge).find((e) => e.type === 'adopted' && e.candidateId === id)!;
+    const adopted = pick(bridge, 'adopted', (e) => e.candidateId === id);
     expect(adopted).toMatchObject({ p: park.p, threshold: park.threshold });
     // the performance refund was paid: bo is better off than the bare stake
     expect(bridge.engine.balance(bo, 22)).toBeGreaterThan(3);
@@ -193,8 +205,7 @@ describe('🛡️ on the Text parks the adoption (R-056)', () => {
     bridge.answerCrownQuestion(21, questionFor(s, id).id, 'reject');
     expect(bridge.engine.document()).toBe(START);
     expect(bridge.engine.getCandidate(id).state).toBe('retired');
-    const retired = events(bridge)
-      .find((e) => e.type === 'candidate-retired' && e.id === id)!;
+    const retired = pick(bridge, 'candidate-retired', (e) => e.id === id);
     expect(retired.refund).toBe(0);
     expect(retired.reason).toMatch(/^Proposal refused by .+ 🛡️$/);
     // a stake that came back would price a refusal as a withdrawal
@@ -219,8 +230,7 @@ describe('🛡️ on the Text parks the adoption (R-056)', () => {
   it('pending at the close: undecided in the engine, carried-but-unassented on the record', () => {
     const { s, bridge, id } = parked({}, 'assent-close');
     bridge.close(1_000_000);
-    const und = events(bridge)
-      .find((e) => e.type === 'candidate-undecided' && e.id === id)!;
+    const und = pick(bridge, 'candidate-undecided', (e) => e.id === id);
     expect(und.refund).toBe(0);
     expect(bridge.engine.getCandidate(id).state).toBe('undecided');
     expect(bridge.engine.document()).toBe(START);
