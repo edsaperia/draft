@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 287,
+  "cards": 278,
   "walks": [
    "answers",
    "charter",
@@ -693,58 +693,6 @@
      "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.",
      "Nobody ever drops out of the count, however long they are away.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted."
-    ]
-   },
-   "machines": {
-    "eyebrow": "",
-    "head": "AI Proposals",
-    "lock": "",
-    "body": "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.No AI proposalsPeople write everything in this document.AI proposals are permittedAn AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out.",
-    "options": [
-     {
-      "set": "auditor",
-      "val": "false",
-      "label": "No AI proposals"
-     },
-     {
-      "set": "auditor",
-      "val": "true",
-      "label": "AI proposals are permitted"
-     },
-     {
-      "set": "auditor",
-      "val": "roster",
-      "label": "Let the membership decide this"
-     }
-    ],
-    "inputs": [
-     {
-      "type": "number",
-      "ph": null
-     }
-    ],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Not answered yet"
-     }
-    ],
-    "hints": [
-     "AI Proposals — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands",
-     "Not answered yet"
-    ],
-    "helpers": [
-     "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.",
-     "People write everything in this document.",
-     "An AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.",
-     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out."
     ]
    },
    "myemail": {
@@ -3642,59 +3590,6 @@
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted."
     ]
    },
-   "machines": {
-    "eyebrow": "",
-    "head": "AI Proposals",
-    "lock": "",
-    "body": "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.No AI proposalsPeople write everything in this document.AI proposals are permittedAn AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out.",
-    "options": [
-     {
-      "set": "auditor",
-      "val": "false",
-      "label": "No AI proposals"
-     },
-     {
-      "set": "auditor",
-      "val": "true",
-      "label": "AI proposals are permitted"
-     },
-     {
-      "set": "auditor",
-      "val": "roster",
-      "label": "Let the membership decide this"
-     }
-    ],
-    "inputs": [
-     {
-      "type": "number",
-      "ph": null
-     }
-    ],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Set it"
-     }
-    ],
-    "hints": [
-     "AI Proposals — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands",
-     "Set it"
-    ],
-    "helpers": [
-     "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.",
-     "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
-     "People write everything in this document.",
-     "An AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.",
-     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out."
-    ]
-   },
    "myemail": {
     "eyebrow": "",
     "head": "Your Email",
@@ -4687,58 +4582,6 @@
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted."
     ]
    },
-   "machines": {
-    "eyebrow": "",
-    "head": "AI Proposals",
-    "lock": "",
-    "body": "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.No AI proposalsPeople write everything in this document.AI proposals are permittedAn AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out.",
-    "options": [
-     {
-      "set": "auditor",
-      "val": "false",
-      "label": "No AI proposals"
-     },
-     {
-      "set": "auditor",
-      "val": "true",
-      "label": "AI proposals are permitted"
-     },
-     {
-      "set": "auditor",
-      "val": "roster",
-      "label": "Let the membership decide this"
-     }
-    ],
-    "inputs": [
-     {
-      "type": "number",
-      "ph": null
-     }
-    ],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Not answered yet"
-     }
-    ],
-    "hints": [
-     "AI Proposals — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands",
-     "Not answered yet"
-    ],
-    "helpers": [
-     "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.",
-     "People write everything in this document.",
-     "An AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.",
-     "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. The most restrictive answer wins, so one member who would rather not write alongside an AI keeps it out."
-    ]
-   },
    "myemail": {
     "eyebrow": "",
     "head": "Your Email",
@@ -5661,41 +5504,6 @@
      "What everyone asked for, without names."
     ]
    },
-   "machines": {
-    "eyebrow": "",
-    "head": "There are no AI proposals. The Founder may amend this at will, and refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "AI proposals are permitted, with a budget of ✏️s.If it passes it goes to the Founder, who may assent or refuse.",
-    "options": [],
-    "inputs": [
-     {
-      "type": "number",
-      "ph": null
-     }
-    ],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Discard this motion"
-     },
-     {
-      "label": "✏️ Propose",
-      "title": null
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "AI Proposals — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "This is how your reason will reach everybody else: with your name off it.",
-     "Discard this motion"
-    ],
-    "helpers": [
-     "We should change this because…",
-     "If it passes it goes to the Founder, who may assent or refuse."
-    ]
-   },
    "myemail": {
     "eyebrow": "",
     "head": "Your Email",
@@ -6058,30 +5866,6 @@
     "helpers": [
      "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up. The road back is a constitutional motion, the members’ to move."
-    ]
-   },
-   "pw:a:machines": {
-    "eyebrow": "",
-    "head": "The Founder may refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "AI Proposals — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
-     "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
    "pw:a:quorum": {
@@ -6469,30 +6253,6 @@
     "helpers": [
      "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up. The road back is a constitutional motion, the members’ to move."
-    ]
-   },
-   "pw:u:machines": {
-    "eyebrow": "",
-    "head": "The Founder may amend this at will.",
-    "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
-    "hints": [
-     "AI Proposals — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
-    ],
-    "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
-     "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
    "pw:u:quorum": {
@@ -7768,59 +7528,6 @@
      "What everyone asked for, without names."
     ]
    },
-   "machines": {
-    "eyebrow": "",
-    "head": "There are no AI proposals. The Founder may amend this at will, and refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.No AI proposalsPeople write everything in this document.AI proposals are permittedAn AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.Why are you changing this?ABAsh Bellamy 👑",
-    "options": [
-     {
-      "set": "auditor",
-      "val": "false",
-      "label": "No AI proposals"
-     },
-     {
-      "set": "auditor",
-      "val": "true",
-      "label": "AI proposals are permitted"
-     }
-    ],
-    "inputs": [
-     {
-      "type": "number",
-      "ph": null
-     }
-    ],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Set it"
-     },
-     {
-      "label": "✏️ Propose",
-      "title": null
-     }
-    ],
-    "hints": [
-     "I am changing this because…",
-     "AI Proposals — close it",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "The founder’s own hand — a ✒️ act, not a proposal",
-     "Put it back as it stands",
-     "Set it"
-    ],
-    "helpers": [
-     "An AI that proposes and nothing else — it never votes, and counts toward no quorum. Its proposals compete on the same terms as anybody’s.",
-     "People write everything in this document.",
-     "An AI patrols the document for drift — a definition changed in one place and not another — and proposes fixes.",
-     "I am changing this because…"
-    ]
-   },
    "myemail": {
     "eyebrow": "",
     "head": "Your Email",
@@ -8239,47 +7946,6 @@
     "helpers": [
      "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up — one way. The road back is the members’ reserve motion."
-    ]
-   },
-   "pw:a:machines": {
-    "eyebrow": "",
-    "head": "The Founder may refuse proposals that the membership pass.",
-    "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about AI proposals.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about AI proposals.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
-    "options": [
-     {
-      "set": "pw:a:machines",
-      "val": "held",
-      "label": "Chosen"
-     },
-     {
-      "set": "pw:a:machines",
-      "val": "given",
-      "label": "Choose this"
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Set it"
-     }
-    ],
-    "hints": [
-     "AI Proposals — settled",
-     "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands",
-     "Set it"
-    ],
-    "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
-     "Each one comes as a 👑 question — assent or refuse.",
-     "Nothing waits on the Founder. One way — the road back is the members’ to give."
     ]
    },
    "pw:a:quorum": {
@@ -8769,47 +8435,6 @@
     "helpers": [
      "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up — one way. The road back is the members’ reserve motion."
-    ]
-   },
-   "pw:u:machines": {
-    "eyebrow": "",
-    "head": "The Founder may amend this at will.",
-    "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
-    "options": [
-     {
-      "set": "pw:u:machines",
-      "val": "held",
-      "label": "Chosen"
-     },
-     {
-      "set": "pw:u:machines",
-      "val": "given",
-      "label": "Choose this"
-     }
-    ],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "✒️",
-      "title": "Set it"
-     }
-    ],
-    "hints": [
-     "AI Proposals — settled",
-     "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands",
-     "Set it"
-    ],
-    "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
-     "No proposal needed for the Founder’s own hand.",
-     "The Founder proposes like a member. One way — the road back is the members’ to give."
     ]
    },
    "pw:u:quorum": {
