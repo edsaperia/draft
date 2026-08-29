@@ -2011,3 +2011,15 @@ Ed’s QA of batch S, on plan 92: *“the 🤚 tab moves when you click it.”* 
 **Why the guard is a pass of its own.** `walkSettled` closes each card by its own mark before opening the next, so no walk had ever put the surface in the state that breaks the promise; P2 and P6 were green throughout and stayed green. The new P7 appends a switch pass at the end of the walk — open A, click B, compare B’s glyph box — and pushes nothing into `cards`, so every `closed` baseline the per-card loop measures from is untouched and `--baseline` keeps its meaning. Two things it does differently: it reads the glyph in **viewport** coordinates, because the promise is kept by moving the page and a document reading would call the correction the defect; and it scrolls the tab to the top of the window first, because the correction scrolls *up* by what the closing card took out, and a tab pressed at scroll 0 cannot be held still by any amount of correcting. Tolerance is one pixel rather than P2’s hundredth: `restoreStill` deliberately ignores a drift of half a pixel or less rather than jittering the page, so a correct surface lands within a pixel and never on zero.
 
 **Left alone.** The fifth rung of the tab branch — `SESSION.closeCard()`, for a card open in the **charter** rather than the band — takes no anchor, and does not need one: `#band` precedes `#charter` in `#doc`, so every charter card stands below every band tab and closing one removes height from underneath the tab you pressed. Verified by `compareDocumentPosition` in the session fixture.
+
+## The north star retires (2026-08-29, Q1035)
+
+`CLAUDE.md`'s **V1 product decisions** carried one item stating the product's guiding intent, and the CLAUDE.md pruning audit (`design/spec-pass/claude-md-audit.md`, item 22, 343 B; its open question C1) could not tell whether it was still true. Its two readings: *(a)* it is intent rather than a rule, the surface it describes is built, and SURFACE §6/§9 own what is drawn, so it moves here; *(b)* a north star shapes the *next* decision, no checker will ever catch its absence, and the escalation framing is what a session reaches for when asked to add a new surface, so it stays. The audit recommended (b) if it was still true and (a) if it was not.
+
+**Ed, 2026-08-29:** *It is no longer the guiding intent — move it to DECISIONS.md as history.*
+
+The item, verbatim as it stood at `d43e2b6`:
+
+> - UI north star: **suggestion-mode with escalation** — the default surface reads like Google-Docs-style inline suggestions with approval; the race view is the escalation state that appears only where suggestions collide or stakes demand ceremony. Most of a session should feel like approving typo fixes; the machinery earns its visibility.
+
+What replaced it is not another slogan but the surface itself: **every surface is the session-view** (`CLAUDE.md`'s *Documents*), the card grammar of SURFACE §9, and the marks and rail of §6. A session asked to add a new surface reaches for those, not for this. Nothing in the tree cited the item; no pointer moves with it.

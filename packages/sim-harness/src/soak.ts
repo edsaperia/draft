@@ -360,7 +360,14 @@ async function main(): Promise<void> {
     expected += 1;
     const p = finals[i]!;
     // a judgment of mine shows as a clause I have judged, or as a record it
-    // resolved into — either way it must not have vanished
+    // resolved into — either way it must not have vanished.
+    //
+    // Assertion 3 is a **smoke check, not a per-seat guarantee** (Ed,
+    // 2026-08-29, Q1037). The second disjunct is global: one adoption
+    // anywhere in the document satisfies it for every seat, so a seat whose
+    // own judgment vanished can still be counted here. It stays because the
+    // strict form goes red falsely — a judgment can resolve its own clause
+    // away — and nothing here reaches a member. Do not treat it as a gate.
     if (p.clauses.some((c) => c.judged) || p.textVersion > begun.textVersion) seen += 1;
   }
   eq(seen, expected, 'every seat that judged can see that it judged');

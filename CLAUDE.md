@@ -28,7 +28,6 @@ Design reasoning — why a thing is the way it is, what it replaced, what was tr
 - Documents are Markdown, rendered as rich text; usually a few pages, long-document behavior stays in scope for sim experiments.
 - TypeScript end-to-end; engine-core is a pure, dependency-free library shared by sim-harness and product server.
 - Sim personas are LLM-powered on a cheap model (Haiku-class) and speak the same participant API as human clients — no sim backdoor; mixed human/bot sessions are a goal.
-- UI north star: **suggestion-mode with escalation** — the default surface reads like Google-Docs-style inline suggestions with approval; the race view is the escalation state that appears only where suggestions collide or stakes demand ceremony. Most of a session should feel like approving typo fixes; the machinery earns its visibility.
 
 ## The two kinds of decision
 
