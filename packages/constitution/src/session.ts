@@ -472,6 +472,37 @@ export class ConstitutionSession {
         this.textConfirmedFlag = true;
         break;
       }
+      case 'text-amended': {
+        this.touch(this.convenor.id, event.t); // a convenor act moves their clock
+        // **The same record shape the pen fold above builds** (R-004, R-058):
+        // a unilateral change by the Founder is still just a kind of
+        // amendment, so it joins the motions rather than getting a list of
+        // its own, and every existing reader already says *The Founder* for
+        // `route === 'pen'` without knowing this kind exists. It opens and
+        // settles in one act — nobody had to agree.
+        const id = ('pen:text:' + event.candidateId) as MotionId;
+        this.motions.set(id, {
+          id,
+          by: this.convenor.id,
+          payload: { kind: 'text', candidateId: event.candidateId, summary: event.summary },
+          route: 'pen',
+          stake: 0,
+          openedAtT: event.t,
+          why: event.why ?? null,
+          status: 'carried',
+          answers: new Map(),
+          settledAtT: event.t,
+        });
+        // **Where a member acknowledges a text amendment: 📄's own key**
+        // (Q1021, the recommendation this build takes). `ok-owed` carries
+        // setting ids, and the Text's is `startingText` — so a run of
+        // amendments collapses into one owed OK reading *the Founder changed
+        // the text*, which is cheap and true. The richer answer, a news card
+        // on the amended clause itself, is a new owed-kind and a surface of
+        // its own; it stays unbuilt behind that number.
+        this.oweOks(event.t, 'startingText');
+        break;
+      }
       case 'quorum-form-set': {
         this.quorumFormValue = event.form;
         break;
@@ -962,7 +993,9 @@ export class ConstitutionSession {
     }
     // a reserve motion's target is the members' by construction — it lands
     // without assent, the crown's release being delegation (§9.7 v0.52)
-    if (rec.payload.kind === 'reserve') return false;
+    // a text amendment (R-058) waits on nothing either: it is the pen's own
+    // act and it has already landed — nobody assents to their own decree
+    if (rec.payload.kind === 'reserve' || rec.payload.kind === 'text') return false;
     // an act at a door waits on that door's 🛡️ (entry 94): admissions of
     // every kind on ✉️'s, removals on ❌'s
     return this.doorPowers(rec.payload.kind === 'remove' ? 'door:remove' : 'door:invite').assent;
@@ -2454,6 +2487,39 @@ export class ConstitutionSession {
    */
   textAdoptionNeedsAssent(): boolean {
     return this.settings.get('startingText')!.powers.assent && !this.crownLapsedFlag;
+  }
+
+  /**
+   * ✒️ on the Text (Ed, 2026-08-27, backlog entry 160; Q1020, R-058): the
+   * Founder's amendment passes the instant they submit it. `doorPen`'s shape,
+   * for `doorPen`'s reason — the pen is what acts alone, and **a sleeping
+   * crown does not act**: lapse grants assent (the shield's road) and performs
+   * nothing (this one).
+   */
+  textPen(): boolean {
+    return this.settings.get('startingText')!.powers.unilateral && !this.crownLapsedFlag;
+  }
+
+  /**
+   * Record an amendment the Founder's pen made to the document's text. The
+   * words are the engine's — this is the constitution's half: the motion
+   * record every other amendment gets, and the acknowledgement it owes.
+   *
+   * Guarded on the same three things the act itself needs: the document is
+   * open, judging has begun (before the start nothing is amended, only set —
+   * §9.6a, and `confirmStartingText` is that road), and the pen is held.
+   */
+  recordTextAmendment(t: number,
+    text: { candidateId: string; summary: string; why?: string }): void {
+    this.requireOpen('amending the text');
+    if (this.constitutedT === null) {
+      throw new Error('before the start the text is confirmed, not amended (§9.6a)');
+    }
+    if (!this.textPen()) {
+      throw new Error('the Text carries no pen — propose the change instead (§9.7 rule 8)');
+    }
+    this.emit({ type: 'text-amended', t, candidateId: text.candidateId,
+      summary: text.summary, ...(text.why !== undefined ? { why: text.why } : {}) });
   }
 
   /** Open the 👑 question for one adopted candidate; the host reads its

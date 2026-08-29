@@ -299,6 +299,37 @@ export class EngineBridge {
     return out;
   }
 
+  /**
+   * ✒️ on the Text (SPEC §9.7 rule 8, R-058): the Founder's amendment passes
+   * the instant it is submitted. Read against `proposeText` immediately above
+   * — the diff between them is the point.
+   *
+   * **No balance check**, which is the whole difference: nothing is staked, so
+   * there is no wallet to be empty, and a clerk Founder holds no engine seat
+   * to have one. The engine's own door refuses everything else (the patch's
+   * base version, the hunks, and a candidate parked awaiting assent).
+   *
+   * **It cannot reach `reportAdoptions`, by construction**: a decree emits no
+   * `adopted` event, so there is nothing there for the 👑 to be asked about —
+   * which is right, since asking the Founder to assent to their own act is
+   * asking them twice (R-058).
+   */
+  penText(t: number, by: MemberId, patch: PatchSet, why: string): { id: string } {
+    this.sync(t);
+    if (by !== this.cs.convenorRecord().id) {
+      throw new Error('the pen on the Text is the Founder’s (§9.7 rule 8)');
+    }
+    if (!this.cs.textPen()) {
+      throw new Error('the Text carries no pen — propose the change instead (§9.7 rule 8)');
+    }
+    const out = this.engine.decreeText(t, { author: by, patch, rationale: why });
+    this.cs.recordTextAmendment(t, {
+      candidateId: out.id, summary: this.textSummary(out.id), why,
+    });
+    this.sync(t);
+    return out;
+  }
+
   /** Withdrawing a text proposal: the author's alone, refunded whole (§3.3a). */
   withdrawText(t: number, by: MemberId, candidateId: string): void {
     const c = this.engine.getCandidate(candidateId);

@@ -353,6 +353,16 @@ const HANDLERS: Record<string, Handler> = {
     }
     return bridge.proposeText(t, a.memberId, patchOf(args), why, signed);
   },
+  /* -- ✒️ on the Text (R-058, entry 160): the Founder's amendment passes the
+     instant it is submitted. **No `signed` argument** — the office signs, not
+     a person, and 👤's elective ladder is about members' proposals; the record
+     names *The Founder* off the pen route. The module re-validates everything;
+     this table only shapes the call. ------------------------------------- */
+  'pen-text': (cs, a, t, args, bridge) => {
+    if (bridge === null) throw new Error('the document has not begun');
+    const why = typeof args.why === 'string' ? cap(args.why, LIMITS.why, 'the reason') : '';
+    return bridge.penText(t, a.memberId, patchOf(args), why);
+  },
   'withdraw-text': (cs, a, t, args, bridge) => {
     if (bridge === null) throw new Error('the document has not begun');
     bridge.withdrawText(t, a.memberId, str(args, 'candidate'));

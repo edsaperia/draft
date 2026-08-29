@@ -1286,6 +1286,24 @@ var CONSTITUTION = (() => {
           this.textConfirmedFlag = true;
           break;
         }
+        case "text-amended": {
+          this.touch(this.convenor.id, event.t);
+          const id = "pen:text:" + event.candidateId;
+          this.motions.set(id, {
+            id,
+            by: this.convenor.id,
+            payload: { kind: "text", candidateId: event.candidateId, summary: event.summary },
+            route: "pen",
+            stake: 0,
+            openedAtT: event.t,
+            why: event.why ?? null,
+            status: "carried",
+            answers: /* @__PURE__ */ new Map(),
+            settledAtT: event.t
+          });
+          this.oweOks(event.t, "startingText");
+          break;
+        }
         case "quorum-form-set": {
           this.quorumFormValue = event.form;
           break;
@@ -1724,7 +1742,7 @@ var CONSTITUTION = (() => {
       if (rec.payload.kind === "set") {
         return this.settings.get(rec.payload.setting).powers.assent;
       }
-      if (rec.payload.kind === "reserve") return false;
+      if (rec.payload.kind === "reserve" || rec.payload.kind === "text") return false;
       return this.doorPowers(rec.payload.kind === "remove" ? "door:remove" : "door:invite").assent;
     }
     /** §9.7 v0.54: holder derives from powers — the convenor's iff any is held. */
@@ -2991,6 +3009,41 @@ var CONSTITUTION = (() => {
      */
     textAdoptionNeedsAssent() {
       return this.settings.get("startingText").powers.assent && !this.crownLapsedFlag;
+    }
+    /**
+     * ✒️ on the Text (Ed, 2026-08-27, backlog entry 160; Q1020, R-058): the
+     * Founder's amendment passes the instant they submit it. `doorPen`'s shape,
+     * for `doorPen`'s reason — the pen is what acts alone, and **a sleeping
+     * crown does not act**: lapse grants assent (the shield's road) and performs
+     * nothing (this one).
+     */
+    textPen() {
+      return this.settings.get("startingText").powers.unilateral && !this.crownLapsedFlag;
+    }
+    /**
+     * Record an amendment the Founder's pen made to the document's text. The
+     * words are the engine's — this is the constitution's half: the motion
+     * record every other amendment gets, and the acknowledgement it owes.
+     *
+     * Guarded on the same three things the act itself needs: the document is
+     * open, judging has begun (before the start nothing is amended, only set —
+     * §9.6a, and `confirmStartingText` is that road), and the pen is held.
+     */
+    recordTextAmendment(t, text) {
+      this.requireOpen("amending the text");
+      if (this.constitutedT === null) {
+        throw new Error("before the start the text is confirmed, not amended (§9.6a)");
+      }
+      if (!this.textPen()) {
+        throw new Error("the Text carries no pen — propose the change instead (§9.7 rule 8)");
+      }
+      this.emit({
+        type: "text-amended",
+        t,
+        candidateId: text.candidateId,
+        summary: text.summary,
+        ...text.why !== void 0 ? { why: text.why } : {}
+      });
     }
     /** Open the 👑 question for one adopted candidate; the host reads its
      *  record (`crownQuestionRecords`) to learn accept / reject / auto-pass. */

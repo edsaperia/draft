@@ -293,6 +293,108 @@ describe('🛡️ on the Text parks the adoption (R-056)', () => {
   });
 });
 
+/**
+ * R-058 (Ed, 2026-08-27, backlog entry 160): where the Founder keeps ✒️ on the
+ * Text, their amendment **passes the instant it is submitted** — direct, no
+ * stake, no race. It is recorded as an amendment by the pen route (R-004) and
+ * owed an acknowledgement by everybody who had no say, on 📄's own key
+ * (Q1021). Driven through the bridge, which is the only harness that exercises
+ * engine-core, the record and the acknowledgement together.
+ */
+describe('✒️ on the Text: the Founder amends at will (R-058)', () => {
+  const patch = (baseVersion: number, lines: string[]) =>
+    ({ baseVersion, hunks: [{ start: 0, end: 1, lines }] });
+  const START = 'The clubhouse shall be kept open.';
+
+  it('textPen() is true only while the pen is held and the crown awake', () => {
+    // told to keep neither: the start laid the pen down like the shield
+    expect(buildConstituted().s.textPen()).toBe(false);
+    // told to keep 🛡️ alone: the shield is not the pen
+    expect(buildConstituted({ keepText: { assent: true } }).s.textPen()).toBe(false);
+    const { s } = buildConstituted({ keepText: { unilateral: true } });
+    expect(s.textPen()).toBe(true);
+    // a sleeping crown grants assent and performs no act (`doorPen`'s rule)
+    const lapsing = buildConstituted({ keepText: { unilateral: true },
+      lapse: { afterMs: 100 } }).s;
+    expect(lapsing.textPen()).toBe(true);
+    lapsing.tick(2 + 1000);
+    expect(lapsing.crownLapsed).toBe(true);
+    expect(lapsing.textPen()).toBe(false);
+    lapsing.memberReturn(2 + 1001, 'ada');
+    expect(lapsing.textPen()).toBe(true);
+  });
+
+  it('the amendment lands at once, recorded as a carried pen-route motion', () => {
+    const { s, bo, cy } = buildConstituted({ keepText: { unilateral: true } });
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'pen' });
+    expect(bridge.engine.document()).toBe(START);
+    const before = bridge.engine.balance(bo, 10);
+    const { id } = bridge.penText(10, 'ada',
+      patch(bridge.engine.currentVersion(), ['Open every day.']), 'the room asked');
+    // the document moved, with no race and no adoption event
+    expect(bridge.engine.document()).toBe('Open every day.');
+    expect(bridge.engine.getCandidate(id).state).toBe('adopted');
+    expect(bridge.engine.getCandidate(id).stakePaid).toBe(0);
+    expect(bridge.engine.log.map((e) => e.event).some((e) => e.type === 'adopted')).toBe(false);
+    // nobody's wallet moved
+    expect(bridge.engine.balance(bo, 11)).toBe(before);
+    // and the amendment joins the motions, where every other one lives
+    const rec = [...s.motionRecords().values()].find((m) => m.payload.kind === 'text')!;
+    expect(rec.route).toBe('pen');
+    expect(rec.status).toBe('carried');
+    expect(rec.stake).toBe(0);
+    expect(rec.by).toBe('ada');
+    expect(rec.why).toBe('the room asked');
+    expect(rec.openedAtT).toBe(10);
+    expect(rec.settledAtT).toBe(10);
+    expect(rec.payload).toEqual({ kind: 'text', candidateId: id, summary: 'Open every day.' });
+    // no 👑 question: asking the Founder to assent to their own act asks twice
+    expect(view(s, 'ada').crownTasks).toHaveLength(0);
+    // every arrived member but the Founder is owed 📄's OK
+    expect(view(s, bo).owedOks).toContain('startingText');
+    expect(view(s, cy).owedOks).toContain('startingText');
+    expect(view(s, 'ada').owedOks).not.toContain('startingText');
+  });
+
+  it('a run of amendments collapses into one owed OK, and the OK closes it', () => {
+    const { s, bo } = buildConstituted({ keepText: { unilateral: true } });
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'pen-run' });
+    bridge.penText(10, 'ada', patch(bridge.engine.currentVersion(), ['Open every day.']), 'one');
+    bridge.penText(11, 'ada', patch(bridge.engine.currentVersion(), ['Open at dawn.']), 'two');
+    expect(view(s, bo).owedOks.filter((k) => k === 'startingText')).toHaveLength(1);
+    expect([...s.motionRecords().values()].filter((m) => m.payload.kind === 'text'))
+      .toHaveLength(2);
+    s.giveOk(12, bo, 'startingText');
+    expect(view(s, bo).owedOks).not.toContain('startingText');
+  });
+
+  it('refuses without the pen, before the start, and to anybody but the Founder', () => {
+    const { s, bo } = buildConstituted(); // pen laid down at 🍾
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'pen-refuse' });
+    const p = () => patch(bridge.engine.currentVersion(), ['Open every day.']);
+    expect(() => bridge.penText(10, 'ada', p(), '')).toThrow(/no pen/);
+    expect(bridge.engine.document()).toBe(START);
+    const held = buildConstituted({ keepText: { unilateral: true } });
+    const b2 = new EngineBridge(held.s, { t: 3, rngSeed: 'pen-refuse2' });
+    expect(() => b2.penText(10, bo, patch(b2.engine.currentVersion(), ['x']), ''))
+      .toThrow(/the Founder/);
+    // and the module's own door refuses before the start
+    const pre = openDoc();
+    pre.confirmStartingText(1, START);
+    expect(() => pre.recordTextAmendment(2, { candidateId: 'c1', summary: 'x' }))
+      .toThrow(/before the start/);
+  });
+
+  it('replays bit-identically, both logs', () => {
+    const { s } = buildConstituted({ keepText: { unilateral: true } });
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'pen-replay' });
+    bridge.penText(10, 'ada', patch(bridge.engine.currentVersion(), ['Open every day.']), 'why');
+    const r = ConstitutionSession.replay([...s.logEntries()]);
+    expect(r.rollingHash()).toBe(s.rollingHash());
+    expect([...r.motionRecords().keys()]).toEqual([...s.motionRecords().keys()]);
+  });
+});
+
 describe('🤝 keeps its crown pair on the setting (Q506)', () => {
   it('a legacy value’s holder folds onto the powers and leaves the value', () => {
     const { s } = buildConstituted({

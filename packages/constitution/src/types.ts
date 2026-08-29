@@ -62,7 +62,18 @@ export type MotionPayload =
   | { kind: 'admit'; applicant: ApplicantId }
   // returning powers to the convenor's reserve (§9.7 v0.52; v0.54 names
   // which — omitted means both, the pre-v0.54 behaviour; Q394)
-  | { kind: 'reserve'; setting: SettingId; power?: Power | 'both' };
+  | { kind: 'reserve'; setting: SettingId; power?: Power | 'both' }
+  /**
+   * ✒️ on the Text (R-058, Q1020): the Founder's amendment to the document's
+   * own words, which passed the instant it was submitted. It carries no
+   * `setting` — the document's text is not a managed value — so the readers
+   * that file a motion behind a rule (`settledMotionsFor`, `lastAmendment`,
+   * `stoodBefore`) skip it by construction, and the ones that describe an
+   * amendment (`amendmentBlocks`) learn the kind. **Additive**: every existing
+   * site narrows with `payload.kind === '<kind>'` rather than switching
+   * exhaustively, so nothing breaks by omission.
+   */
+  | { kind: 'text'; candidateId: string; summary: string };
 
 export interface ConvenorInput {
   id: MemberId;
@@ -100,6 +111,21 @@ export type ConstitutionEvent =
   /** One crown power given up — free, separate, one-way (§9.7 v0.54). On a door, over the act. */
   | { type: 'power-relinquished'; t: number; setting: PowerKey; power: Power }
   | { type: 'starting-text-confirmed'; t: number; text: string }
+  /**
+   * ✒️ on the Text after the start (Ed, 2026-08-27, backlog entry 160;
+   * Q1020, R-058): the Founder's amendment passed the instant they submitted
+   * it, and this is the constitution's record of it. The words themselves are
+   * the engine's — `candidateId` is the decreed candidate and `summary` a
+   * short blind line for the record; the document is its own record of what
+   * it says, so no before-and-after wording rides here.
+   *
+   * `why` is the reason they gave, **optional and blank-is-real**, exactly as
+   * `setting-set`'s is: `stableStringify` drops undefined keys, so nothing
+   * about any older log moves. The fold turns it into a `route: 'pen'` motion
+   * record — an amendment joins the motions where every other amendment lives
+   * (R-004) — and owes 📄's OK to every arrived member but the Founder.
+   */
+  | { type: 'text-amended'; t: number; candidateId: string; summary: string; why?: string }
   /** The form is the convenor's even when the number is the room's (§9.0a). */
   | { type: 'quorum-form-set'; t: number; form: 'count' | 'share' }
   | { type: 'identity-set'; t: number; member: MemberId;
