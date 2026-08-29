@@ -1557,12 +1557,24 @@ const caret = await page.evaluate((empty) => {
 }, EMPTY_TEXT);
 say('caret      · ' + (caret || 'FAIL: no charter paragraph to type in'));
 if (caret) {
-  /* In read mode the column has no caret of its own, so the keystroke is
-   * heard by the page (`keydown` on the document, backlog 204) and applied to
-   * the block the selection stands in — the same editing card as before.
-   * With --new-clause the caret goes to the **end of the last clause** and
-   * the key is Enter: a gap site, and the lane starts empty. */
+  /* The ordinary `'X'` is the **read-mode keystroke** (SURFACE K13/K31): the
+   * column has no caret of its own, so a printable character is heard by the
+   * page (`keydown` on the document, backlog 204), applied by `typeAt` to the
+   * block the selection stands in, and opens the editing card.
+   * `--new-clause` is the **edit-mode gap site** (K31, Q261): Enter is not a
+   * character and no read-mode door takes it — the gap branch hangs off
+   * `beforeinput`'s `insertParagraph`, which only fires on an editable host —
+   * so this step presses 📝 first, then puts the caret at the **end of the
+   * last clause** and presses Enter. The lane starts empty. */
   if (NEW_CLAUSE && !EMPTY_TEXT) {
+    await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
+    await T(300);
+    const editAgain = { editable: await hostEditable(),
+      editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')) };
+    const editAgainOk = editAgain.editable === 'true' && editAgain.editing;
+    say('edit again · ' + (editAgainOk ? 'editable=true editing=true'
+      : 'FAIL: 📝 did not re-enter edit mode · ' + JSON.stringify(editAgain)));
+    if (!editAgainOk) stuck.push('edit mode again');
     await page.evaluate(() => {
       const ps = [...document.querySelectorAll('#charter .prose p.editable[data-key]')].filter((p) => !p.classList.contains('gap'));
       const p = ps[ps.length - 1];
