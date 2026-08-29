@@ -3561,11 +3561,7 @@
     authorship: (v) => 'You said ' + ({ anonymous: 'no names, ever', anonymousElective: 'no names unless somebody chooses', sealed: 'names at the close', sealedElective: 'names at the close, or earlier by choice', public: 'names from the start' }[v] || v),
     judgments: (v) => 'You said ' + ({ never: 'never revealed', after: 'revealed at the end' }[v] || v),
     chamber: (v) => 'You said ' + ({ closed: 'members only', link: 'anyone with the link', public: 'public' }[v] || v),
-    // DEAD RUNGS (entry 94, Q904): `proposed` and `open` were retired with
-    // 🤝's four-rung joinPolicy, and the module folds every legacy value to
-    // `{apply}` on load, so neither branch can fire. Left labelled rather than
-    // deleted so the removal is one deliberate sweep — see `STANDS` below.
-    applications: (v) => 'You said ' + ({ invite: 'invitation only', proposed: 'applications must be proposed by members', apply: 'anyone may apply', open: 'open' }[v] || v),
+    applications: (v) => 'You said ' + ({ invite: 'invitation only', apply: 'anyone may apply' }[v] || v),
     machines: (v) => 'You said ' + (v ? 'AI proposals are permitted' : 'no AI proposals'),
     lapse: (v) => (v === 'never' ? 'You said never' : 'You said after ' + v + ' days without logging in'),
     removal: (v) => 'You said ' + ({ everyone: 'all members have to agree, including them',
@@ -3920,6 +3916,12 @@
     // instead, so every 🥾 lane typed `null`, `offersStanding` fell back to the
     // label comparison Q620 retired, and the ten-second 🏛️ hold ended at *That
     // could not be proposed: no typed value on the draft*.
+    //
+    // It happened a second time on `applications`: entry 94 made 🤝 a switch
+    // and `POLICY_TEXTS` went on drawing four lanes against the two values
+    // `{ apply: boolean }` can express. `spec-check`'s `checkComposer` now
+    // asserts the two lists agree in both directions, so a lane with no key
+    // here is red at the push.
     removal: { 'All members have to agree, including them': { price: 'consent' },
       'All other members have to agree': { price: 'assembly' },
       'A proposal ✏️ like any other': { price: 'proposal' } },
@@ -4303,11 +4305,7 @@
   // stands filters itself out
   const STANDS = {
     chamber: (v) => ({ closed: 'Members only', link: 'Anyone with the link', public: 'Public' })[v],
-    // DEAD RUNGS (entry 94, Q904): `proposed` and `open` are unreachable here
-    // for the same reason as in the answer readback above — the two live rungs
-    // are `POLICY_WORDS`', and these two labels are the only place the retired
-    // four still speak. To be removed with them.
-    applications: (v) => ({ invite: 'Invitation only', proposed: 'Applications must be proposed by members', apply: 'Anyone may apply', open: 'Open' })[v],
+    applications: (v) => ({ invite: 'Invitation only', apply: 'Anyone may apply' })[v],
     authorship: (v) => ({'anonymous':'Nobody’s name, ever','anonymousElective':'Nobody’s name unless they choose','sealed':'Names at the close','sealedElective':'Names at the close, or earlier by choice','public':'Names from the start'})[v],
     judgments: (v) => ({ never: 'Never revealed', after: 'Revealed at the end' })[v],
     lapse: (v) => (v === 'never' ? 'Never — however long you are away' : 'After ' + v + ' days without logging in'),
@@ -4354,9 +4352,7 @@
 
   const POLICY_TEXTS = [
     ['Invitation only', 'Membership is by invitation only.'],
-    ['Applications must be proposed by members', 'Anyone may apply, but an application must be proposed ✏️ by a member.'],
     ['Anyone may apply', 'Anyone may apply to join.'],
-    ['Open', 'Anyone with the link joins on arrival.'],
   ];
   // every composable setting has its control (Ed's QA, 2026-08-18) — a text
   // box asks somebody to guess a format the surface already knows

@@ -291,6 +291,40 @@ const objLit = (src, name) => {
   return src.slice(i, j + 1);
 };
 const topKeys = (body) => [...body.matchAll(/^\s{2,4}'?([A-Za-z][A-Za-z0-9-]*)'?:/gm)].map((x) => x[1]);
+// the same slice `topKeys` names, but keeping each key's body: one entry per
+// top-level key, running to the next one
+const keyBodies = (body) => {
+  const at = [...body.matchAll(/^\s{2,4}'?([A-Za-z][A-Za-z0-9-]*)'?:/gm)];
+  return at.map((m, i) => [m[1], body.slice(m.index, i + 1 < at.length ? at[i + 1].index : body.length)]);
+};
+// a module-level array literal, raw — `arrLit` returns its bare identifiers,
+// and a lane list is pairs of sentences rather than identifiers
+const arrRaw = (src, name) => {
+  const i = src.indexOf(`const ${name} = [`);
+  if (i < 0) return null;
+  let depth = 0; let j = src.indexOf('[', i);
+  for (; j < src.length; j++) { if (src[j] === '[') depth++; else if (src[j] === ']' && --depth === 0) break; }
+  return src.slice(i, j + 1);
+};
+// comments are stripped before any of these is matched: both MVAL and PROPOSE
+// carry long prose comments full of quoted strings (checkBannedWords' idiom,
+// which leaves `://` alone)
+const uncomment = (s) => s.replace(/^\s*\/\/.*$/gm, '').replace(/([^:])\/\/ .*$/gm, '$1');
+// the arguments of a call whose `(` is at `at`, split at depth 0 and quote-aware
+const argsAt = (src, at) => {
+  const args = []; let depth = 0; let cur = ''; let q = null;
+  for (let i = at + 1; i < src.length; i++) {
+    const c = src[i];
+    if (q) { cur += c; if (c === '\\') cur += src[++i]; else if (c === q) q = null; continue; }
+    if (c === "'" || c === '"' || c === '`') { q = c; cur += c; continue; }
+    if (c === '(' || c === '[' || c === '{') { depth++; cur += c; continue; }
+    if (c === ')' && depth === 0) { args.push(cur); return args; }
+    if (c === ')' || c === ']' || c === '}') { depth--; cur += c; continue; }
+    if (c === ',' && depth === 0) { args.push(cur); cur = ''; continue; }
+    cur += c;
+  }
+  return args;
+};
 
 function checkMarks() {
   note('Marks — SURFACE.md §6 against cards.js and session.js');
@@ -682,7 +716,7 @@ function checkBeginZones(M, pm) {
 }
 
 function checkComposer(M, pm) {
-  note('The composer maps — PROPOSE · ANSWER · the rung values · PW_*');
+  note('The composer maps — PROPOSE · ANSWER · MVAL · the rung values · PW_*');
   const page = js('design/session-view.html'); const setup = js('design/setup.js');
   const cards = [...page.matchAll(/\{ k: '([a-z-]+)', g: [^,]+, t: '[^']*',[^\n]*?kind: '([a-z]+)'/g)].map((m) => ({ k: m[1], kind: m[2] }));
   // 🧭 is a decision at the birth, not a setting (entry 166): no motion about
@@ -724,7 +758,41 @@ function checkComposer(M, pm) {
     const got = pw(n).sort().join(' ');
     if (got !== base) find('composer', `${n} keys (${got}) differ from PW_PHRASE's (${base})`);
   }
-  note(`  ${propose.length} composable; ${answer.length} answer bodies; ${ladders} ladders compared`);
+  // **A lane the composer draws must have a typed value behind it.** `mvalTyped`
+  // looks a lane's label up in `MVAL`; a lane with no key there types nothing,
+  // `draftPayload` throws *no typed value on the draft*, and the 🏛️ hold ends at
+  // *That could not be proposed*. It has happened twice — 🥾's three rungs
+  // spelled `PRICE_WORDS`' way, and 🤝's four lanes against two typable values
+  // after entry 94 made the setting a switch — and neither was visible to any
+  // check: `copy-check` saw both and froze them as ordinary copy.
+  const mvalKeys = (b) => [...b.matchAll(/'((?:\\.|[^'\\])*)'\s*:\s*\{/g)].map((m) => m[1]);
+  const mval = new Map(keyBodies(uncomment(objLit(page, 'MVAL'))).map(([k, b]) => [k, mvalKeys(b)]));
+  const lanes = new Map(); let laneLabels = 0;
+  for (const [k, raw] of keyBodies(uncomment(objLit(page, 'PROPOSE')))) {
+    const body = raw; const found = [];
+    for (const m of body.matchAll(/lanesFor\(/g)) {
+      const arg = (argsAt(body, m.index + m[0].length - 1)[1] || '').trim();
+      let lit = null;
+      if (arg.startsWith('[')) lit = arg;
+      else if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(arg)) lit = arrRaw(uncomment(page), arg);
+      // a lanesFor argument that cannot be resolved is a finding, never a
+      // silent skip — a checker that quietly compares nothing is the failure
+      // ANSWER's ladder check already had once
+      if (!lit) { find('composer', `PROPOSE.${k} calls lanesFor with '${arg}', which this check cannot resolve to a lane list`); continue; }
+      for (const p of lit.matchAll(/\[\s*'((?:\\.|[^'\\])*)'\s*,/g)) found.push(p[1]);
+    }
+    if (found.length) { lanes.set(k, found); laneLabels += found.length; }
+  }
+  for (const [k, labels] of lanes) {
+    const keys = mval.get(k) || [];
+    for (const l of labels) if (!keys.includes(l)) find('composer', `PROPOSE.${k} draws the lane '${l}', which MVAL.${k} does not key — picking it types no value, so the 🏛️ hold ends at *That could not be proposed*`);
+    // the other side of a half-done rename, which is how the 🥾 instance arose.
+    // Scoped to settings that draw lanes: MVAL.admission legitimately has no
+    // PROPOSE entry at all, and flagging it would be noise.
+    for (const key of keys) if (!labels.includes(key)) find('composer', `MVAL.${k} keys '${key}', which no lane of PROPOSE.${k} offers — nothing can ever type it`);
+  }
+  note(`  ${propose.length} composable; ${answer.length} answer bodies; ${ladders} ladders compared; ` +
+    `${lanes.size} lane lists, ${laneLabels} labels against MVAL`);
 }
 
 /* What a picture may be — SURFACE.md §9 against the page's sink and the
