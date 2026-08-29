@@ -79,6 +79,15 @@ export interface Constitution {
    * measurement or better (SPEC §8.1).
    */
   reopenedBoost: number;
+  /**
+   * 🛡️ held on the Text (SPEC §9.7 rule 8): a text race clearing bar and
+   * floor **parks awaiting assent** instead of adopting — the document is
+   * never rewritten until the convenor accepts. Declared by the host
+   * through `ConstitutionAmendment`; the engine has never heard of a
+   * power, only of this switch. Absent means down, which is every log
+   * written before the field existed.
+   */
+  textAssent?: boolean;
 }
 
 /**
@@ -96,6 +105,14 @@ export interface ConstitutionAmendment {
   tokenCap?: number;
   authorshipVisibility?: Constitution['authorshipVisibility'];
   quorum?: Constitution['quorum'];
+  /**
+   * 🛡️ on the Text moving is a real amendment binding races in flight
+   * (§4.3, R-056): reserving the shield changes what clearing the bar
+   * means. The host reports *whether assent is owed*, never the raw
+   * power — a lapsed crown grants by itself (§9.7), so the engine must
+   * see the shield down while the crown sleeps.
+   */
+  textAssent?: boolean;
 }
 
 export interface Participant {
@@ -118,6 +135,14 @@ export type CandidateState =
   /** Displaced incumbent or rebase-failure limbo: not live, kept for the model. */
   | 'displaced'
   | 'rebase-pending'
+  /**
+   * Cleared bar and floor under 🛡️ on the Text (SPEC §9.7 rule 8, R-056):
+   * the room has decided and nothing has been applied. Out of every feed
+   * and every race, unjudgeable, unwithdrawable, and not the author's to
+   * pull back — the room has decided. It leaves this state only by the
+   * convenor's answer, or *undecided* at the close.
+   */
+  | 'awaiting-assent'
   /** Unresolved at the close (SPEC §4.6): the incumbent stood, but this is not *kept*. */
   | 'undecided';
 
@@ -160,6 +185,13 @@ export interface Candidate {
   disclosure?: Constitution['authorshipVisibility'];
   /** Set when the candidate left play; records the cause of death. */
   exit?: { t: number; cause: string; refund: number };
+  /**
+   * What the room decided, held over a park (R-056): the race it cleared
+   * in and the numbers it cleared on. `assent`'s accept adopts on these —
+   * the room's confidence at the moment it decided, not the convenor's
+   * convenience — and the close records the park's own race.
+   */
+  awaiting?: { raceId: string; p: number; threshold: number };
 }
 
 /**
@@ -289,7 +321,37 @@ export type Event =
       participantId: string;
     }
   | { type: 'candidate-withdrawn'; t: number; id: string; refund: number }
-  | { type: 'candidate-retired'; t: number; id: string; refund: number; raceId?: string }
+  | {
+      type: 'candidate-retired';
+      t: number;
+      id: string;
+      refund: number;
+      raceId?: string;
+      /**
+       * Why it was retired, where somebody said (R-056): the convenor's
+       * refusal under 🛡️ on the Text is what its author reads on their
+       * sealed record. Absent on an ordinary retirement, which has no
+       * reason beyond the incumbent holding.
+       */
+      reason?: string;
+    }
+  | {
+      /**
+       * The room passed a text change under 🛡️ on the Text (SPEC §9.7
+       * rule 8, R-056): **nothing is applied**. No version bump, no
+       * rebase, no refund, no exit — and `lastAdoptionT` does not move,
+       * because the document did not change, so the cooldown metronome
+       * is unspent and the ramp keeps running. `p` and `threshold` are
+       * the room's numbers at this moment, kept for the adoption the
+       * convenor's accept produces.
+       */
+      type: 'candidate-awaiting-assent';
+      t: number;
+      id: string;
+      raceId: string;
+      p: number;
+      threshold: number;
+    }
   | {
       /**
        * The third outcome (SPEC §4.6): live at the close, neither adopted nor

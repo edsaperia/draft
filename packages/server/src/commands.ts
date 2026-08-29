@@ -243,10 +243,16 @@ const HANDLERS: Record<string, Handler> = {
   'resign': (cs, a, t) => {
     cs.resign(t, a.memberId);
   },
-  'answer-crown-question': (cs, a, t, args) => {
+  'answer-crown-question': (cs, a, t, args, bridge) => {
     founderOnly(a);
-    cs.answerCrownQuestion(t, str(args, 'question'),
-      str(args, 'outcome') as 'accept' | 'reject');
+    const question = str(args, 'question');
+    const outcome = str(args, 'outcome') as 'accept' | 'reject';
+    // A text question's answer has an engine half (R-056): accept adopts the
+    // parked candidate, refuse retires it. The bridge does both; without one
+    // — a document with no engine yet — the constitution alone, which is all
+    // there is to record.
+    if (bridge) bridge.answerCrownQuestion(t, question, outcome);
+    else cs.answerCrownQuestion(t, question, outcome);
   },
   /* -- any authenticated seat (self-scoped by construction) ------------- */
   'set-identity': (cs, a, t, args) => {

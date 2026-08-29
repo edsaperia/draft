@@ -289,11 +289,11 @@ export async function createDraftServer(cfg: ServerConfig,
   const raceView = (doc: LoadedDoc, memberId: string, nowMs: number): {
     text: string; textVersion: number; clauses: unknown[]; mine: unknown[];
     records: unknown[]; raceCards: unknown[]; wallet: number | null;
-    walletInfo: unknown; floor: number;
+    walletInfo: unknown; floor: number; awaitingAssent?: unknown[];
   } => {
     const ed = asEngineDoc(doc);
     const idle = { clauses: [], mine: [], records: [], raceCards: [], wallet: null, record: null,
-      walletInfo: null, floor: 0 };
+      walletInfo: null, floor: 0, awaitingAssent: [] };
     if (ed.bridge === null) return { text: doc.cs.text ?? '', textVersion: 0, ...idle };
     const engine = ed.bridge.engine;
     const api = new ParticipantApi(engine, memberId);
@@ -352,6 +352,18 @@ export async function createDraftServer(cfg: ServerConfig,
       return [{ id: m.id, state: m.state, rationale: m.rationale,
         patch: c.patch, footprint: c.footprint, signed: !!c.signed }];
     });
+    // 🛡️ on the Text (R-056): what the room passed and nobody has applied.
+    // **The founder's alone** — it is the only seat with a question to
+    // answer, and the wording is a change no document has taken. The 👑
+    // task in `view()` carries only an id and a summary, so the card's own
+    // wording comes from here, matched by candidate id.
+    const awaitingAssent = memberId === doc.cs.convenorRecord().id
+      ? engine.allCandidates().filter((c) => c.state === 'awaiting-assent').map((c) => {
+          const author = namedAuthor(c);
+          return { candidateId: c.id, hunks: c.patch?.hunks ?? [], rationale: c.rationale,
+            footprint: c.footprint, ...(author ? { author } : {}) };
+        })
+      : [];
     // the record, one entry per race (Q503c): the whole field, the text it
     // displaced as it stood at resolution, and the race's judge count
     type Rec = { raceId: string; candidateId: string; outcome: string; when: number;
@@ -360,6 +372,8 @@ export async function createDraftServer(cfg: ServerConfig,
       field: Array<{ candidateId: string; outcome: string; p: number | null;
         threshold: number | null; hunks: Array<{ start: number; end: number; lines: string[] }>;
         rationale: string; judgedByMe: boolean;
+        /** *Proposal refused by ‹name› 🛡️* — the reason the author reads (R-056). */
+        reason?: string;
         author?: { id: string; name: string | null } }> };
     const byRace = new Map<string, Rec>();
     // an author's derived preference is a mover (§3.3, §8.2): counted, never named
@@ -371,7 +385,8 @@ export async function createDraftServer(cfg: ServerConfig,
       const author = namedAuthor(c);
       const entry = { candidateId: o.candidateId, outcome: o.outcome, p: o.p ?? null,
         threshold: o.threshold ?? null, hunks: c.patch.hunks, rationale: c.rationale,
-        judgedByMe: mineJ, ...(author ? { author } : {}) };
+        judgedByMe: mineJ, ...(o.reason ? { reason: o.reason } : {}),
+        ...(author ? { author } : {}) };
       let rec = byRace.get(o.raceId);
       if (!rec) {
         rec = { raceId: o.raceId, candidateId: o.candidateId, outcome: o.outcome, when: o.t,
@@ -431,7 +446,7 @@ export async function createDraftServer(cfg: ServerConfig,
       };
     })();
     const base = { text: engine.document(), textVersion: engine.currentVersion(),
-      clauses, mine, records, floor, record };
+      clauses, mine, records, floor, record, awaitingAssent };
     if (engine.closed) return { ...base, raceCards: [], wallet: null, walletInfo: null };
     try {
       const t = tOf(doc.cs, nowMs);

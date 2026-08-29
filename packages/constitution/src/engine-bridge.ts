@@ -203,26 +203,71 @@ export class EngineBridge {
 
   /**
    * Every setting race among the adoptions reports 'carried' through the
-   * seam; a text race adopting under the Text's shield (Q440) opens a 👑
-   * question instead of standing — assent over the drafting mechanism
-   * itself (SPEC §9.7). A text race without the shield just stands: the
-   * engine has applied it and the served text is the engine's document.
+   * seam; a text race that **parked** under the Text's shield (Q440,
+   * R-056) opens the 👑 question — assent over the drafting mechanism
+   * itself (SPEC §9.7 rule 8). A text race that adopted needs nothing said
+   * about it: the engine has applied it and the served text is the
+   * engine's document.
    */
   private reportAdoptions(t: number, events: EngineEvent[]): void {
     for (const e of events) {
-      if (e.type !== 'adopted') continue;
-      const motion = this.motionOfCandidate.get(e.candidateId);
-      if (motion === undefined) {
-        // a text race adopting
-        if (this.cs.textAdoptionNeedsAssent() && !this.cs.closed) {
+      if (e.type === 'candidate-awaiting-assent') {
+        // **The park is the question**, and the park is where it is asked.
+        // Asking `textAdoptionNeedsAssent()` again here would re-open the
+        // lapse race the park already closed — the engine only parks
+        // because the shield was declared to it, and a crown that fell
+        // asleep in between has an answer, not a second question. Where
+        // the shield really has gone down since (laid down, or a lapse the
+        // engine has not been told about yet) there is nobody to ask, so
+        // the adoption stands by itself — which is what §9.7 rule 8 says
+        // of an unshielded Text.
+        if (this.cs.closed) continue;
+        if (this.cs.textAdoptionNeedsAssent()) {
           this.cs.openTextCrownQuestion(t, {
-            candidateId: e.candidateId,
-            summary: this.textSummary(e.candidateId),
+            candidateId: e.id, summary: this.textSummary(e.id),
           });
+        } else if (this.engine.getCandidate(e.id).state === 'awaiting-assent') {
+          this.engine.assent(t, e.id, 'accept');
         }
         continue;
       }
+      if (e.type !== 'adopted') continue;
+      const motion = this.motionOfCandidate.get(e.candidateId);
+      if (motion === undefined) continue; // a text race adopting
       this.cs.adjudicateOrdinaryMotion(t, motion, 'carried');
+    }
+  }
+
+  /**
+   * The 👑's answer, both halves: the constitution records it, and `sync`'s
+   * own cursor walk carries it into the engine. The server's
+   * `answer-crown-question` comes here wherever a document has an engine.
+   */
+  answerCrownQuestion(t: number, question: string, outcome: 'accept' | 'reject'): void {
+    this.cs.answerCrownQuestion(t, question, outcome);
+    this.sync(t);
+  }
+
+  /**
+   * *Proposal refused by ‹name› 🛡️* — the reason the refused author reads
+   * on their sealed record. Composed here because the engine has never
+   * heard of a name, and **refuse** because that is the Founder's word:
+   * *reject* is the membership's (SURFACE §9).
+   */
+  private refusalReason(): string {
+    const name = this.cs.convenorRecord().name;
+    return `Proposal refused by ${name ?? 'the Founder'} 🛡️`;
+  }
+
+  /** The parked candidate a text 👑 question is about, or null. */
+  private parkedOf(question: string): string | null {
+    const q = this.cs.crownQuestionRecords().get(question);
+    if (!q || !q.text) return null;
+    const id = q.text.candidateId;
+    try {
+      return this.engine.getCandidate(id).state === 'awaiting-assent' ? id : null;
+    } catch {
+      return null; // a bridge resumed beside a log that never held it
     }
   }
 
@@ -467,6 +512,26 @@ export class EngineBridge {
         case 'member-returned':
           if (this.known.has(e.member)) this.engine.resumeParticipant(t, e.member);
           break;
+        case 'crown-question-answered':
+        case 'crown-question-auto-passed': {
+          // 🛡️ on the Text answered (R-056). It lives in the cursor walk
+          // rather than in a wrapper for two reasons: the **auto-pass at
+          // lapse** is emitted by `cs.tick`, which the bridge never calls,
+          // and `bridge.tick` already syncs either side of `engine.tick`,
+          // so it lands with no extra wiring; and a replay of the
+          // constitution log reaches the same engine state.
+          const parked = this.parkedOf(e.question);
+          if (parked === null) break; // a motion's question, or already resolved
+          const accepted = e.type === 'crown-question-auto-passed' || e.outcome === 'accept';
+          if (accepted) this.engine.assent(t, parked, 'accept');
+          else this.engine.assent(t, parked, 'refuse', this.refusalReason());
+          break;
+        }
+        case 'crown-failed-closed':
+          // Nothing to say to the engine: its own close already recorded the
+          // parked candidate *undecided* (§4.6), and `closeRecord` reads the
+          // failed question as carried-but-unassented.
+          break;
         default:
           break;
       }
@@ -487,6 +552,14 @@ export class EngineBridge {
       this.engine.setStanding(t, entry.id, st.value);
       Object.assign(changes, engineFieldsFor(entry.id, st.value, t));
     }
+    // 🛡️ on the Text is not a standing value — the Text carries none — so it
+    // rides the same amendment as a fact about the mechanism (R-056). It is
+    // `textAdoptionNeedsAssent()` and not the raw power, because a lapsed
+    // crown grants by itself (§9.7 v0.49): the engine must see the shield
+    // *down* while the crown sleeps, which is what makes lapse auto-passing
+    // fall out of the mechanism rather than needing a second rule.
+    const owed = this.cs.textAdoptionNeedsAssent();
+    if (owed !== (this.engine.constitution.textAssent ?? false)) changes.textAssent = owed;
     if (Object.keys(changes).length > 0) this.engine.amend(t, changes);
   }
 }

@@ -5,6 +5,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
+import { EngineBridge } from '../src/engine-bridge.js';
+import { ParticipantApi } from '../../engine-core/src/participant-api.js';
 import { view } from '../src/view.js';
 import { buildConstituted, reserveTextShield } from './helpers.js';
 
@@ -123,6 +125,127 @@ describe('🛡️ on the Text: an adoption waits on the founder’s accept (Q440
     const r = ConstitutionSession.replay([...s.logEntries()]);
     expect(r.rollingHash()).toBe(s.rollingHash());
     expect(r.crownQuestionRecords().get(q)).toEqual(s.crownQuestionRecords().get(q));
+  });
+});
+
+/**
+ * R-056 (Ed, 2026-08-27): a shielded Text **parks** an adoption, it does not
+ * revert one. The engine never applies it; the 👑 question is the answer to
+ * whether it ever will be. Driven through the bridge, which is the only
+ * harness that exercises engine-core, the bridge and the crown record
+ * together and needs no server.
+ */
+describe('🛡️ on the Text parks the adoption (R-056)', () => {
+  const patch = (baseVersion: number, lines: string[]) =>
+    ({ baseVersion, hunks: [{ start: 0, end: 1, lines }] });
+  const START = 'The clubhouse shall be kept open.';
+
+  /** A shielded document with one text proposal over the bar, parked. */
+  function parked(opts: Parameters<typeof buildConstituted>[0] = {}, seed = 'park') {
+    const { s, bo, cy } = buildConstituted(opts);
+    reserveTextShield(s, bo, ['ada', cy], 2);
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: seed });
+    const v0 = bridge.engine.currentVersion();
+    const { id, raceId } = bridge.proposeText(10, bo, patch(v0, ['Open every day.']), 'nights too');
+    const race = bridge.engine.races().find((r) => r.id === raceId)!;
+    bridge.judge(20, cy, id, race.incumbentId, 'a');
+    return { s, bo, cy, bridge, id, raceId };
+  }
+  const events = (bridge: EngineBridge) => bridge.engine.log.map((e) => e.event);
+  const questionFor = (s: ConstitutionSession, id: string) =>
+    [...s.crownQuestionRecords().values()].find((q) => q.text?.candidateId === id)!;
+
+  it('parks rather than adopting: the document stands, the race is gone, the 👑 is asked', () => {
+    const { s, bridge, id, raceId, bo } = parked();
+    // the whole of the defect this closes: nothing was applied
+    expect(bridge.engine.document()).toBe(START);
+    expect(bridge.engine.getCandidate(id).state).toBe('awaiting-assent');
+    const evs = events(bridge);
+    expect(evs.some((e) => e.type === 'candidate-awaiting-assent' && e.id === id)).toBe(true);
+    expect(evs.some((e) => e.type === 'adopted' && e.candidateId === id)).toBe(false);
+    // the candidate left every feed for free: it is in no race
+    expect(bridge.engine.races().some((r) => r.members.includes(id))).toBe(false);
+    expect(bridge.engine.races().some((r) => r.id === raceId)).toBe(false);
+    // and it is not the author's to pull back — the room has decided
+    expect(() => bridge.withdrawText(21, bo, id)).toThrow(/not in play/);
+    // the founder is asked, on a question that parks no motion
+    const tasks = view(s, 'ada').crownTasks;
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]!.motion).toBeNull();
+    expect(tasks[0]!.text!.candidateId).toBe(id);
+  });
+
+  it('accept adopts, on the confidence the room decided at', () => {
+    const { s, bridge, id, bo } = parked({}, 'assent-accept');
+    const park = events(bridge).find((e) => e.type === 'candidate-awaiting-assent')!;
+    bridge.answerCrownQuestion(21, questionFor(s, id).id, 'accept');
+    expect(bridge.engine.document()).toBe('Open every day.');
+    expect(bridge.engine.getCandidate(id).state).toBe('adopted');
+    const adopted = events(bridge).find((e) => e.type === 'adopted' && e.candidateId === id)!;
+    expect(adopted).toMatchObject({ p: park.p, threshold: park.threshold });
+    // the performance refund was paid: bo is better off than the bare stake
+    expect(bridge.engine.balance(bo, 22)).toBeGreaterThan(3);
+  });
+
+  it('refuse retires it as a failed proposal at refund 0, with the reason on the record', () => {
+    const { s, bridge, id, bo } = parked({}, 'assent-refuse');
+    const before = bridge.engine.balance(bo, 21);
+    bridge.answerCrownQuestion(21, questionFor(s, id).id, 'reject');
+    expect(bridge.engine.document()).toBe(START);
+    expect(bridge.engine.getCandidate(id).state).toBe('retired');
+    const retired = events(bridge)
+      .find((e) => e.type === 'candidate-retired' && e.id === id)!;
+    expect(retired.refund).toBe(0);
+    expect(retired.reason).toMatch(/^Proposal refused by .+ 🛡️$/);
+    // a stake that came back would price a refusal as a withdrawal
+    expect(bridge.engine.balance(bo, 22)).toBe(before);
+    // and it is what the author reads on their sealed record
+    const out = new ParticipantApi(bridge.engine, bo).outcomes()
+      .find((o) => o.candidateId === id)!;
+    expect(out.outcome).toBe('retired');
+    expect(out.reason).toMatch(/🛡️/);
+  });
+
+  it('a sleeping crown grants, and the engine follows', () => {
+    const { s, bridge, id } = parked({ lapse: { afterMs: 100 } }, 'assent-lapse');
+    expect(bridge.engine.document()).toBe(START);
+    s.tick(20 + 1000);          // the crown lapses; the question auto-passes
+    expect(s.crownQuestionRecords().get(questionFor(s, id).id)!.status).toBe('auto-passed');
+    bridge.tick(20 + 1000);     // and the engine hears it in the cursor walk
+    expect(bridge.engine.document()).toBe('Open every day.');
+    expect(bridge.engine.getCandidate(id).state).toBe('adopted');
+  });
+
+  it('pending at the close: undecided in the engine, carried-but-unassented on the record', () => {
+    const { s, bridge, id } = parked({}, 'assent-close');
+    bridge.close(1_000_000);
+    const und = events(bridge)
+      .find((e) => e.type === 'candidate-undecided' && e.id === id)!;
+    expect(und.refund).toBe(0);
+    expect(bridge.engine.getCandidate(id).state).toBe('undecided');
+    expect(bridge.engine.document()).toBe(START);
+    expect(s.crownQuestionRecords().get(questionFor(s, id).id)!.status).toBe('failed-closed');
+    expect(bridge.closeRecord().carriedButUnassented.some((c) => c.candidateId === id)).toBe(true);
+  });
+
+  it('the constitution log gains no new event kind, so a replay is bit-identical', () => {
+    const { s, bridge, id } = parked({}, 'assent-replay');
+    bridge.answerCrownQuestion(21, questionFor(s, id).id, 'accept');
+    const r = ConstitutionSession.replay([...s.logEntries()]);
+    expect(r.rollingHash()).toBe(s.rollingHash());
+  });
+
+  it('no shield, no change: the ordinary path is what it was', () => {
+    const { s, bo, cy } = buildConstituted();
+    expect(s.textAdoptionNeedsAssent()).toBe(false);
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'assent-none' });
+    const { id, raceId } = bridge.proposeText(10, bo,
+      patch(bridge.engine.currentVersion(), ['Open every day.']), '');
+    bridge.judge(20, cy, id, bridge.engine.races().find((r) => r.id === raceId)!.incumbentId, 'a');
+    expect(bridge.engine.document()).toBe('Open every day.');
+    expect(bridge.engine.getCandidate(id).state).toBe('adopted');
+    expect(events(bridge).some((e) => e.type === 'candidate-awaiting-assent')).toBe(false);
+    expect(view(s, 'ada').crownTasks).toHaveLength(0);
   });
 });
 

@@ -115,6 +115,12 @@ export interface OutcomeEntry {
   raceId: string;
   /** The document version the candidate's patch was measured against at resolution. */
   version: number;
+  /**
+   * Why, where the resolution had a reason somebody gave (R-056): the
+   * convenor's refusal under 🛡️ on the Text. This is what its author
+   * reads on their sealed record.
+   */
+  reason?: string;
 }
 
 export class ParticipantApi {
@@ -262,7 +268,8 @@ export class ParticipantApi {
       } else if (ev.type === 'candidate-retired') {
         const c = this.session.getCandidate(ev.id);
         out.push({ t: ev.t, candidateId: ev.id, outcome: 'retired',
-          raceId: ev.raceId ?? `r:${ev.id}`, version: c.patch?.baseVersion ?? this.session.currentVersion() });
+          raceId: ev.raceId ?? `r:${ev.id}`, version: c.patch?.baseVersion ?? this.session.currentVersion(),
+          ...(ev.reason ? { reason: ev.reason } : {}) });
       } else if (ev.type === 'candidate-undecided') {
         const c = this.session.getCandidate(ev.id);
         out.push({ t: ev.t, candidateId: ev.id, outcome: 'undecided',

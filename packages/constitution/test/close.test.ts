@@ -141,12 +141,12 @@ describe('the bridge relays the close, engine first then constitution (SPEC §4.
     // cy prefers it; with bo's own that clears the floor, but the ramp holds
     // it back until the close (start bar high in this fixture? force via close)
     bridge.judge(20, cy, id, bridge.engine.races().find((r) => r.members.includes(id))!.incumbentId, 'a');
-    // if it adopted already, a crown question is pending; otherwise the close
-    // adopts it and then fails the crown closed. Either way, at the close:
+    // if it parked already, a crown question is pending; otherwise the close's
+    // final batch parks it and then fails the crown closed. Either way:
     bridge.close(1_000_000);
     const rec = bridge.closeRecord();
-    // the engine applied the text to its own document, but the constitution
-    // holds it unassented — it never became the room's decision
+    // nothing was ever applied (R-056) — the room passed it and nobody
+    // assented, which is exactly what carried-but-unassented means
     const failed = [...s.crownQuestionRecords().values()].filter((q) => q.status === 'failed-closed');
     expect(failed.some((q) => q.text?.candidateId === id)).toBe(true);
     expect(rec.carriedButUnassented.some((c) => c.candidateId === id)).toBe(true);

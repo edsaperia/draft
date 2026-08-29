@@ -407,7 +407,19 @@ export class Session {
         break;
       }
       case 'candidate-retired': {
-        this.exitCandidate(event.id, 'retired', event.t, 'retired', event.refund);
+        this.exitCandidate(event.id, 'retired', event.t, event.reason ?? 'retired', event.refund);
+        break;
+      }
+      case 'candidate-awaiting-assent': {
+        // The park (§9.7 rule 8, R-056). Everything the adoption fold does
+        // is deliberately **not** done here: no version, no rebase, no
+        // refund, no exit, and `lastAdoptionT` untouched — the document did
+        // not change. The fit cache is cleared because the candidate has
+        // left `races()`, which is what takes it out of every feed.
+        const c = this.candidate(event.id);
+        c.state = 'awaiting-assent';
+        c.awaiting = { raceId: event.raceId, p: event.p, threshold: event.threshold };
+        this.fitCache.clear();
         break;
       }
       case 'co-signed': {
@@ -618,6 +630,20 @@ export class Session {
         if (this.candidate(id).state !== 'live') continue;
         this.emit({ type: 'candidate-undecided', t, id, raceId: r.id, refund: 0 });
       }
+    }
+    // A candidate parked awaiting the convenor's assent (§9.7 rule 8) is
+    // unresolved at the close in exactly §4.6's sense, and it is not in any
+    // race any more, so the loop above cannot see it. This covers a park
+    // from an earlier batch **and** one the final batch just made: a text
+    // leader that clears the bar at T=0 under the shield is neither adopted
+    // nor left waiting for an answer nobody has time to give — it is
+    // undecided, like every other question the clock caught. The host's
+    // 👑 question fails closed beside it, so the record says both: the room
+    // passed it, and nobody assented.
+    for (const c of [...this.candidates.values()]) {
+      if (c.state !== 'awaiting-assent') continue;
+      this.emit({ type: 'candidate-undecided', t, id: c.id,
+        raceId: c.awaiting?.raceId ?? `r:${c.id}`, refund: 0 });
     }
     this.emit({ type: 'closed', t });
   }
@@ -980,6 +1006,39 @@ export class Session {
       raceId: this.raceIdOf(candidateId),
       refund: performanceRefund(c.stakePaid, c.peakW),
     });
+  }
+
+  /**
+   * The convenor's answer to a parked text adoption (SPEC §9.7 rule 8,
+   * R-056) — the other door beside `retire`, and the only way out of
+   * `awaiting-assent` short of the close.
+   *
+   * **accept** adopts through the ordinary path, on the `p` and the
+   * threshold recorded at the park: the room's confidence at the moment it
+   * decided, not at the convenor's convenience. Everything downstream of
+   * `adopted` — the version bump, the rebase of the field, the performance
+   * refund, `lastAdoptionT`, the fit cache — runs unchanged.
+   *
+   * **refuse** retires it as a failed proposal at **refund 0**: a stake
+   * that came back would price a refusal as a withdrawal. The reason is
+   * the host's — the engine has never heard of a name.
+   */
+  assent(t: number, candidateId: string, outcome: 'accept' | 'refuse',
+    reason?: string): Event[] {
+    this.assertOpen();
+    const c = this.candidate(candidateId);
+    if (c.state !== 'awaiting-assent') {
+      throw new Error(`candidate ${candidateId} is not awaiting assent (${c.state})`);
+    }
+    const parked = c.awaiting!;
+    const before = this.log.length;
+    if (outcome === 'accept') {
+      this.adopt(t, candidateId, parked.p, parked.threshold, parked.raceId);
+    } else {
+      this.emit({ type: 'candidate-retired', t, id: candidateId,
+        raceId: parked.raceId, refund: 0, ...(reason ? { reason } : {}) });
+    }
+    return this.log.slice(before).map((e) => e.event);
   }
 
   coSign(
@@ -1457,8 +1516,35 @@ export class Session {
           r.comparisons > 0,
       )
       .map((r) => ({ leaderId: r.leaderId as string, p: r.leaderP as number }));
+    // **NO TEXT ADOPTION OF ANY KIND WHILE A CANDIDATE IS PARKED** (R-056).
+    // This is the invariant the whole park rests on, and it is stated here
+    // because it is the only thing standing between a parked patch and a
+    // document that moved out from under it. `assent`'s accept re-emits
+    // `adopted` with nothing but the numbers recorded at the park, so the
+    // parked patch must still be against the current version when the
+    // answer comes; `adopt`'s rebase loop takes only `live` candidates, so
+    // a parked one is never rebased and cannot be made safe after the fact.
+    // Any other door that adopts text — one added later, bypassing this
+    // sweep — has to honour the same rule, or it silently applies hunks
+    // against a version they were never written for.
+    //
+    // Its consequence, plainly: drafting stands still while the convenor
+    // owes an answer. That is what 🛡️ on the Text *means*, and a convenor
+    // who never answers is covered by lapse (§9.5a, which auto-passes).
+    let blocked = [...this.candidates.values()].some((c) => c.state === 'awaiting-assent');
     for (const { leaderId, p } of ready) {
-      if (this.candidate(leaderId).state !== 'live') continue;
+      const c = this.candidate(leaderId);
+      if (c.state !== 'live') continue;
+      // a setting race is untouched by any of this (Q390): it carries no
+      // patch, changes no text, and adopts in the same batch as before
+      if (c.patch === undefined) { this.adopt(t, leaderId, p, threshold); continue; }
+      if (blocked) continue;
+      if (this.constitutionValue.textAssent) {
+        this.emit({ type: 'candidate-awaiting-assent', t, id: leaderId,
+          raceId: this.raceIdOf(leaderId), p, threshold });
+        blocked = true; // one park per batch, and none beside a standing one
+        continue;
+      }
       this.adopt(t, leaderId, p, threshold);
     }
   }
@@ -1475,9 +1561,15 @@ export class Session {
     return this.log.slice(before).map((e) => e.event);
   }
 
-  private adopt(t: number, candidateId: string, p: number, threshold: number): void {
+  /**
+   * `raceId` is passed only by `assent` (R-056): a parked candidate is in
+   * no live race, so `raceIdOf` would name it `r:<id>` and the record would
+   * file the adoption apart from the race it was decided in.
+   */
+  private adopt(t: number, candidateId: string, p: number, threshold: number,
+    raceIdIn?: string): void {
     const winner = this.candidate(candidateId);
-    const raceId = this.raceIdOf(candidateId);
+    const raceId = raceIdIn ?? this.raceIdOf(candidateId);
     if (!winner.patch) {
       // A setting race carried (Q390): the verdict is recorded and the
       // stake refunded; the value lands via setStanding, host-called,
