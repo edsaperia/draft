@@ -8946,7 +8946,7 @@
       const replaced = (o.displaced || []).filter((l) => l.trim()).map(unhead).join('\n') || undefined;
       const slate = field.length > 1
         ? { slate: field.map((f) => ({ text: textOfF(f), rationale: f.rationale, by: byName(f),
-            underNote: underNoteOf(f),
+            underNote: underNoteOf(f), refusal: f.reason || null,
             p: f.p == null ? undefined : f.p, won: f === winner && (adopted || undecided) })) } : {};
       items.push({ id: 'rec:' + (o.raceId || o.candidateId), kind: 'quick', keys, state: 'sealed',
         qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
@@ -8957,6 +8957,9 @@
         won: adopted || undecided ? 'b' : undefined,
         optionB: textOfF(winner), replaced,
         rationale: winner.rationale, by: byName(winner), underNote: underNoteOf(winner),
+        // *Proposal refused by ‹name› 🛡️* (R-056): where the resolution had a
+        // reason, the record is where its author reads it
+        refusal: winner.reason || null,
         verdict: o.judgedByMe ? 'voted on this' : undefined,
         unread: !undecided, ...slate });
     }

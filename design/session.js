@@ -1664,13 +1664,19 @@
     // the privacy it was made under). Silent where the rungs agree, which is
     // every ordinary record; the words arrive finished from the page.
     const under = (c) => (c.underNote ? '<span class="rsub">' + esc(c.underNote) + '</span>' : '');
+    // and where a resolution had a reason somebody gave, it says so: the
+    // Founder's refusal under 🛡️ on the Text (R-056), which is the one place
+    // an author is told *why* rather than only that the text stood. The words
+    // arrive finished from the host — the office is not enough here, since the
+    // act is the Founder's own hand.
+    const refused = (c) => (c.refusal ? '<span class="rsub">' + esc(c.refusal) + '</span>' : '');
     // the note sits **under a speaker** (SURFACE §9's sealed-record row), so a
     // proposal that carries one draws the speaker even where it has neither a
     // rationale nor a name — an unsigned anonymous-era proposal with an empty
     // reason, whose note would otherwise float under the wording with nothing
     // above it to be *under*.
-    const spk = (c) => (c.why || c.by || c.underNote
-      ? speakerHtml(c.why, undefined, c.by) + under(c) : '');
+    const spk = (c) => (c.why || c.by || c.underNote || c.refusal
+      ? speakerHtml(c.why, undefined, c.by) + under(c) + refused(c) : '');
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
