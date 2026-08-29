@@ -192,6 +192,12 @@
   /* a row of fields *inside* a card — distinct from `.setrow`, which is the
      band row a pile stands in */
   .setrow2 { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
+  /* 🍾's power table (entry 158): one zone per block, its two switches on one
+     `.setrow2`. The gap is the only thing the block adds — the switches are
+     `.pick`/`.lanepick` like every other choice on the surface, so the table
+     inherits the radio grammar rather than inventing a control. */
+  .beginzone + .beginzone { margin-top: var(--s3); }
+  .beginzone > .setrow2 { margin-top: var(--s1); }
   .fld { display: flex; flex-direction: column; gap: var(--s1); }
   .fld > label { font-size: var(--t-cap); color: var(--muted); }
   .sugg input, .sugg textarea { font: inherit; font-size: var(--t-ui); color: var(--fg); background: var(--bg);

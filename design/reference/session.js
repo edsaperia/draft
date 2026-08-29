@@ -3,8 +3,9 @@
  * implementation. The body below is session-view.html's inline script moved
  * verbatim: nothing renamed, nothing reformatted. What changed is mechanical —
  * the fixture data, the DOM handles and everything that ran at load now arrive
- * through `SESSION.init(env)`, and six hooks (`env.hooks`) let a host hear a
- * judgment, a proposal, a withdrawal, an OK, a ❄️ and a text change; with no
+ * through `SESSION.init(env)`, and seven hooks (`env.hooks`) let a host hear a
+ * judgment, a proposal, a withdrawal, an OK, a ❄️, a text change and the
+ * Founder's answer to a text 👑 question; with no
  * hook given every path does exactly what it did. Proven by
  * design/tools/session-probe.js against design/reference/.
  *
@@ -101,6 +102,10 @@
   let holdInFlight = false;
   let MAY_PROPOSE = () => true;
   let MAY_JUDGE = () => true;
+  // ✒️ on the Text (R-058, entry 160): does this reader's own hand amend the
+  // document? **Defaults false**, so any surface that never sets it behaves
+  // exactly as it does today; the page sets it to `mayPenOn('text')`.
+  let MAY_PEN = () => false;
   // the sign control (Q770): null means no elective 👤 rung — no control
   let SIGNING = () => null;
   let SIGNER = () => '';
@@ -1545,7 +1550,56 @@
   // A sealed judgment opens like any other — same two lanes, same geometry —
   // but as a record rather than a question (Ed, 112): the text that stood is
   // marked, and the numbers it stood on are stated. Nothing here is clickable.
+  /**
+   * The Founder's pen amended this clause, and everybody who had no say is
+   * told beside the clause it changed (SURFACE E35, Q1034; Ed 2026-08-29,
+   * decision D47). **It is news, not a decision**: the document has already
+   * moved and nothing is being asked but that you have seen it, so the card
+   * takes the green ✔ every settled decision wears while it is unread and the
+   * one OK the sealed commit row already draws.
+   *
+   * Everything `sealedCardHtml` below draws about a *contest* is deliberately
+   * absent: no ranking, no scores, no 50% incumbent row, no bar, no judge
+   * count, no verdict line. Nothing was judged — there was no race and no
+   * threshold — so every one of those would be apparatus about a contest that
+   * never ran. What is left is the clause as it now reads, the reason, and
+   * the text it replaced.
+   *
+   * **The office, never the person** — `amendmentBlocks` and the record's own
+   * rule: this says *The Founder*, and reaches into no anonymity ladder.
+   */
+  function amendmentCardHtml(s) {
+    const skey = (s.keys ?? [])[0];
+    return (
+      '<div class="sugg sealed-open" data-card="' + s.id + '"' +
+      (skey ? ' data-site="' + skey + '"' : '') + '>' +
+      '<div class="rechead"><span>The Founder amended this</span>' +
+      '<span class="sub">' + esc((s.decided || {}).when || '') + '</span></div>' +
+      (skey
+        ? clauseHeadHtml(s, {
+            text: currentTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
+            label: null,
+          })
+        : '') +
+      speakerHtml(s.rationale, undefined, 'The Founder') +
+      // in the same `rsub` vocabulary the record uses for *the text that
+      // stood*; silent where the server could not say what stood before
+      (s.replaced
+        ? '<div class="field"><div class="ranked wasthere">' +
+          '<div class="rtag"><span class="rsub">the text it replaced</span></div>' +
+          '<div class="rtext">' + esc(s.replaced) + '</div></div></div>'
+        : '') +
+      (isUnread(s)
+        ? '<div class="race-mid commitrow"><span></span>' +
+          '<button class="btn btn-approve" data-seen="' + s.id + '"' +
+          ' title="It leaves your margin and stays in the record">OK</button></div>'
+        : '') +
+      '</div>'
+    );
+  }
+
   function sealedCardHtml(s) {
+    if (s.amendment) return amendmentCardHtml(s);
     const d = s.decided || {};
     // The Bradley–Terry model that ran the race carries a strength for every
     // candidate, so a sealed race can be ranked outright (Ed, 121) — and the
@@ -1663,13 +1717,19 @@
     // the privacy it was made under). Silent where the rungs agree, which is
     // every ordinary record; the words arrive finished from the page.
     const under = (c) => (c.underNote ? '<span class="rsub">' + esc(c.underNote) + '</span>' : '');
+    // and where a resolution had a reason somebody gave, it says so: the
+    // Founder's refusal under 🛡️ on the Text (R-056), which is the one place
+    // an author is told *why* rather than only that the text stood. The words
+    // arrive finished from the host — the office is not enough here, since the
+    // act is the Founder's own hand.
+    const refused = (c) => (c.refusal ? '<span class="rsub">' + esc(c.refusal) + '</span>' : '');
     // the note sits **under a speaker** (SURFACE §9's sealed-record row), so a
     // proposal that carries one draws the speaker even where it has neither a
     // rationale nor a name — an unsigned anonymous-era proposal with an empty
     // reason, whose note would otherwise float under the wording with nothing
     // above it to be *under*.
-    const spk = (c) => (c.why || c.by || c.underNote
-      ? speakerHtml(c.why, undefined, c.by) + under(c) : '');
+    const spk = (c) => (c.why || c.by || c.underNote || c.refusal
+      ? speakerHtml(c.why, undefined, c.by) + under(c) + refused(c) : '');
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
@@ -1696,6 +1756,19 @@
       (und && !(d.bar > 0) ? '' : ' · ' + pct(best) + JUDG +
         (best >= (d.bar ?? 0) ? ' &gt; ' : ' &lt; ') + pct(d.bar) + BAR) + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
+      // **The cap line** (SPEC §4.2, R-051; Q945, Ed 2026-08-27). Where the
+      // ranking fit this decision was taken on ran out of its iteration cap,
+      // the record says so — one line, in the same `rsub` vocabulary as *the
+      // text that stood* and *made under ‹rung›, before the rule changed*,
+      // under the eyebrow and above the head. Ed's own sentence from the
+      // ruling, verbatim: nothing here may say *fit*, *gradient*,
+      // *converged* or *iteration*, and neither number appears (STYLE §1,
+      // §2). The decision stands — that is the whole of the ruling, and
+      // refusing the batch was the option it rejected.
+      (d.capped
+        ? '<span class="rsub">the ranking maths stopped short on this one; '
+          + 'the decision stands</span>'
+        : '') +
       (top
         ? clauseHeadHtml(s, {
             text: currentTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
@@ -2139,6 +2212,25 @@
   // settings choice takes, so `card-audit`'s rules read it.
   // A nameless member signs *as Anonymous* (§9.0c: it is a name, not a gap) —
   // the label says what the signature will read, and they may go and set one.
+  /**
+   * The commit at the right of the composer's row, and **✒️ where the Founder
+   * holds the pen on the Text** (R-058, entry 160). One button, one place in
+   * the row, one gesture: what changes under the pen is the glyph, the price
+   * (none — nothing is staked, so an empty ✏️ wallet cannot stop it) and the
+   * duration. 161 gives every composer the ✒️/✏️ *pair*; here the one commit
+   * simply *becomes* ✒️ where the pen is held.
+   *
+   * `data-pen` is how the hold below knows which act it is landing, and it is
+   * on the button rather than in a closure because the hold survives a render
+   * and re-finds its control by selector.
+   */
+  function commitBtnHtml(o) {
+    const pen = MAY_PEN();
+    const dis = pen ? !!o.penDisabled : !!o.disabled;
+    return '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
+      (pen ? ' data-pen="1"' : '') + (dis ? ' disabled' : '') +
+      ' title="' + esc(pen ? o.penTitle : o.title) + '">' + (pen ? '✒️' : '✏️') + '</button>';
+  }
   function signControlHtml(d) {
     const base = SIGNING();
     if (!base) return '';
@@ -2227,12 +2319,16 @@
       // spent at Propose, which is where the price is said in words* — and
       // makes the price itself the confirmation step, rather than bolting a
       // "sure?" onto it. Pressing anything else disarms it.
-      '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
-      (broke ? ' disabled title="No ✏️ left — another arrives as the drip accrues"' : '') +
-      ' title="Hold to propose this' + (n > 1 ? ' in all ' + n + ' places' : '') +
-      // the hold's tooltip says what leaves: a signed one leaves with your name
-      (d.signed ? ' — signed' : '') +
-      ' — one edit leaves your wallet to pay for it">✏️</button>' +
+      commitBtnHtml({
+        disabled: broke,
+        title: broke ? 'No ✏️ left — another arrives as the drip accrues'
+          : 'Hold to propose this' + (n > 1 ? ' in all ' + n + ' places' : '') +
+            // the hold's tooltip says what leaves: a signed one leaves with your name
+            (d.signed ? ' — signed' : '') +
+            ' — one edit leaves your wallet to pay for it',
+        penTitle: 'Amend the document' + (n > 1 ? ' in all ' + n + ' places' : '') +
+          ' — it passes at once and costs nothing',
+      }) +
       '</div>' +
       // Only the two facts that change what pressing ✏️ *does* (Ed, 2026-08-17).
       // What it costs is now shown rather than said — the pencil crosses the
@@ -2553,9 +2649,12 @@
           '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
           ' title="' + (site ? 'Discard this draft — nothing has been spent on it yet'
                              : 'Close — there is nothing here to put back') + '">🗑️</button>' +
-          '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
-          (site && !broke ? '' : ' disabled') +
-          ' title="Hold to propose this — one edit leaves your wallet to pay for it">✏️</button>' +
+          commitBtnHtml({
+            disabled: !(site && !broke),
+            title: 'Hold to propose this — one edit leaves your wallet to pay for it',
+            penDisabled: !site,
+            penTitle: 'Amend the document — it passes at once and costs nothing',
+          }) +
           '</div>'
         : '') +
       '</div>'
@@ -2598,7 +2697,7 @@
         '<div class="sugg diag-open" data-card="' + s.id + '" data-site="' +
         (siteKey || s.pair[0].key) + '">' +
         clauseHeadHtml(s, { label: 'This card asks',
-                            html: 'Which of these deserves more of the room’s attention?' }) +
+                            html: 'Which of these deserves more of the membership’s attention?' }) +
         fieldHtml(q(s.pair[0], 'first') + q(s.pair[1], 'second'), 2, 'The two questions') +
         // **The commit row is the card's bottom band, on every card**
         // (housekeeping pass, 2026-08-17). Three card types printed their
@@ -2614,6 +2713,28 @@
         reviseNote(s) +
         '<div class="foot">This ranks the questions, never the answers — neither text changes either way.</div>' +
         commitRowHtml(s) +
+        '</div>'
+      );
+    }
+    // 🛡️ on the Text (R-056): the room passed a change and it waits on the
+    // Founder. A decision card like every other — the clause it rewrites at
+    // the head, the wording as the single proposal block against it — and
+    // the 👑 question's own commit row, Refuse then Accept, with no 🗑️
+    // (SURFACE Y20: the two answers are the whole act). No lane radios: this
+    // is not a judgment, and nothing about the room's decision is being
+    // re-asked.
+    if (s.kind === 'crown') {
+      const ckey = (s.keys ?? [])[0];
+      return (
+        '<div class="sugg quick-open" data-card="' + s.id + '" data-site="' + (ckey || '') + '">' +
+        clauseHeadHtml(s, { text: currentTextFor(ckey), key: ckey, chips: chipsFor(ckey, s.id) }) +
+        fieldHtml(proposalHtml(s, { html: resultOnly(s.marked), why: s.rationale, by: s.by })) +
+        '<div class="foot">The membership passed this. Until you answer, the clause above stands.</div>' +
+        '<div class="race-mid commitrow">' +
+        '<button class="btn" data-act="crown-refuse">Refuse</button>' +
+        '<span class="rightpair">' +
+        '<button class="btn btn-approve" data-act="crown-accept">Accept</button>' +
+        '</span></div>' +
         '</div>'
       );
     }
@@ -2719,15 +2840,28 @@
   //
   // Under reduced motion the pencil does not travel: it fades at the wallet
   // and arrives at the button. Same gesture, same duration, no flight.
-  const HOLD_MS = 3000;
+  //
+  // **The length of every hold on the surface, and there is only one**
+  // (Ed, 2026-08-29, backlog 206: *all "hold" times should now be only 1
+  // second long*, QA on the commit-gesture switch). It used to be a ladder —
+  // a second for the pen and the quill, three for the pencil, ten for the
+  // assembly — on the idea that the length of a hold said the gravity of the
+  // act. It is one number now, declared here because this file loads first,
+  // exported as `SESSION.holdMs` and read by `session-view.html` for its
+  // wallet commits and its assembly rather than copied. What still says an
+  // act's gravity is what flies (SURFACE §7.2, R-059).
+  const HOLD_MS = 1000;
   let holding = null;
   const flyStop = (fired) => {
     if (!holding) return;
-    const { el, pencil, timer, anim } = holding;
+    const { el, pencil, timer, anim, pen } = holding;
     holding = null; holdInFlight = false;
     clearTimeout(timer);
     el.classList.remove('holding');
     el.removeAttribute('aria-disabled');
+    // ✒️ spends nothing, so there is no wallet to un-ghost and nothing to fly
+    // home — the control simply comes back, whether it landed or was let go
+    if (pen) return;
     // Fired: the edit is spent, and act() renders the wallet one lighter — so
     // the reserved gap is released without a render of its own, or the wallet
     // would show the old count for a frame before the spend lands.
@@ -2736,18 +2870,23 @@
     // Let go early and it comes home **along its own arc** — the flight run
     // backwards rather than a second, straighter journey, because the way it
     // came is the way it goes back. Faster than it left: rewinding at the
-    // speed it flew would punish a late change of mind with a three-second
-    // wait, and the return is not a gesture anybody is performing.
+    // speed it flew would punish a late change of mind with a wait as long
+    // as the hold, and the return is not a gesture anybody is performing.
     //
     // Since Q531 the return is `nudgeHome`, shared with the pen and the
     // quill, which adds the quarter floor: a press too short to be a hold
     // still carries the pencil a quarter of the way before it comes back.
-    // **864ms, not 750** — this flight's easing is slow off the mark, and
-    // the floor is a quarter of the *distance* (see `nudgeHome`). The old
+    // **288ms, not 250** — this flight's easing is slow off the mark, and
+    // the floor is a quarter of the *distance*, not of the time (see
+    // `nudgeHome`). The fraction is a property of the curve rather than of
+    // the length: `cubic-bezier(.45, .05, .3, 1)` has covered a quarter of
+    // the way at **0.288** of its duration whatever that duration is, so 864
+    // of 3000 and 288 of 1000 are the same point on the same arc. The linear
+    // flights' 250 is the same solve for `linear` at the same length. The old
     // `HOLD_MS / 4 + 60` safety timeout is gone with it: the fallback now
     // derives from the actual journey, which a literal cannot do once there
     // is a push phase in front of the rewind.
-    nudgeHome({ anim, el: pencil }, { floorAt: 864,
+    nudgeHome({ anim, el: pencil }, { floorAt: 288,
       onDone: () => {
         walletGhost = false;
         // the pencil is home, so the preview may resume — but only if the
@@ -2759,6 +2898,26 @@
   const flyStart = (el) => {
     flyStop(false);
     if (el.disabled) return;
+    // **✒️ has no flight, and that is the honest reading** (R-058, entry 160).
+    // A pencil crossing the screen means *an edit is being spent*, and no edit
+    // is spent by a decree; the ✒️ token that could fly instead lives in
+    // `session-view.html`'s own wallet state (`penGhost`, `setWalletGhost`),
+    // which this file does not own and this plan does not reach into. So the
+    // gesture is the whole of it: the same three listeners, the same landing
+    // by id, at the one hold length every commit on the surface takes.
+    const pen = el.dataset.pen === '1';
+    if (pen) {
+      el.classList.add('holding');
+      el.setAttribute('aria-disabled', 'true');   // inert, never `disabled` (184)
+      holdInFlight = true;
+      const penId = el.closest('.sugg').dataset.card;
+      const penD0 = draftOf();
+      holding = { el, pencil: null, anim: null, pen: true, timer: setTimeout(() => {
+        flyStop(true);
+        if (draftOf() === penD0) act(penId, 'draft-pen');
+      }, HOLD_MS) };
+      return;
+    }
     // the token is about to leave for real, so it stops straining at the leash
     stopLean();
     // The slot the pencil leaves and the pencil that leaves are the same
@@ -2797,7 +2956,7 @@
     const id = el.closest('.sugg').dataset.card;
     // **The draft that is proposed is the one the pencil left for.** `act`
     // resolves by id, and the id is `DRAFT_ID` for every draft in turn — so
-    // under `click`, where the member is free for the whole three seconds,
+    // under `click`, where the member is free for the whole flight,
     // 🗑️ and a fresh composition would put a *different* draft in and spend
     // an edit nobody asked to spend. The object identity is the test, and it
     // survives a data swap, which is what the id-by-node fix was about
@@ -3380,6 +3539,44 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // of this) left most of a tall decision card below the fold. A narrow accept
   // band, so a clause already up there doesn't get nudged for nothing.
   const READ_LINE = 150;
+
+  // **Two target lines, because two different things are being brought into
+  // view** (backlog 214). `READ_LINE` above is for arriving at a *card*: the
+  // card unrolls downward out of its clause, so the clause wants to be high
+  // with the screen below it free. A contents-rail click is reading rather than
+  // acting — the reader wants the heading and as much of the section under it
+  // as the window holds — so its line is the first readable one, immediately
+  // under the sticky bar. The rule is *what is being brought into view*, never
+  // which rail was clicked.
+  //
+  // Read at click time rather than cached at load: `--nav-h` is a CSS custom
+  // property, and a cached copy would be a second source of truth for the
+  // height of the bar.
+  const navBarH = () => {
+    const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'));
+    return Number.isFinite(v) ? v : 58;          // the token's own value, if it ever goes missing
+  };
+  // 14, because 58 + 14 is the 72 that this file has carried since the charter's
+  // rail was written: the existing arrivals must not move by a pixel, or every
+  // geometry baseline under design/tools acquires a delta about nothing.
+  const HEAD_GAP = 14;
+  const headLine = () => navBarH() + HEAD_GAP;
+
+  // One path for every heading the contents rail points at, whoever supplied
+  // the entry. It animates through `smoothScrollBy` and never `scrollIntoView`
+  // or `behavior:'smooth'`, because `SESSION.smoothScrollBy` is the seam the
+  // probes and the card-audit swap for an instant jump — a second way to move
+  // the page would be a scroll none of them could hold still.
+  function scrollToHeading(el, done) {
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    // a target with no layout box — a section hidden on this fixture — reports
+    // a rect of all zeros, which would scroll the page to the top: a worse
+    // answer than none
+    if (!r.width && !r.height) return;
+    smoothScrollBy(r.top - headLine(), done || (() => {}));
+  }
+
   const topTarget = (targets) => targets.reduce((a, c) =>
     (c.getBoundingClientRect().top < a.getBoundingClientRect().top ? c : a));
   // The clause a move is aimed at — a patch's topmost site, everyone else's only
@@ -3599,6 +3796,27 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // stated in words. The draft stops being a draft and becomes a candidate
     // like any other, so it takes a real id and frees the composer for the next
     // one; from your side it keeps the green, because you can still withdraw it.
+    // **✒️ passes at once** (SPEC §9.7 rule 8, R-058, entry 160): the Founder's
+    // amendment *is* the document the moment they submit it, so there is no
+    // proposal, no stake and nothing left in the rail — the draft simply
+    // leaves, and what replaces it is the document the host re-renders from.
+    // A refusal comes back through `hooks.pen`, which puts the draft back
+    // unproposed with the refusal on the card, exactly as `propose` does.
+    if (what === 'draft-pen') {
+      const d = draftOf();
+      if (!d) return;
+      const shut = () => {
+        if (openId === d.id) openId = null;
+        const i = SUGGS.indexOf(d);
+        if (i >= 0) SUGGS.splice(i, 1);
+        if (hooks.pen) hooks.pen(d);
+        renderAll();
+        drawWires();
+      };
+      if (openId === d.id) collapseCards(d.id, shut); else shut();
+      return;
+    }
+
     if (what === 'draft-propose') {
       const d = draftOf();
       if (!d || editsHeld < EDIT_RULES.stake) return;
@@ -3636,6 +3854,25 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         const i = SUGGS.findIndex((x) => x.id === id);
         if (i >= 0) SUGGS.splice(i, 1);
         if (hooks.withdraw) hooks.withdraw(id);
+        renderAll();
+        drawWires();
+      };
+      if (openId === id) collapseCards(id, shut); else shut();
+      return;
+    }
+    // 🛡️ on the Text (R-056): the Founder's two answers. Accept adopts what
+    // the room passed, Refuse retires it — either way the question is
+    // answered, so the entry leaves the rail with the card. The outcome
+    // words are the module's (`accept` / `reject`); the *card* says Refuse,
+    // which is the Founder's word for it (SURFACE §9).
+    if (what === 'crown-accept' || what === 'crown-refuse') {
+      const outcome = what === 'crown-accept' ? 'accept' : 'reject';
+      const question = s && s.question;
+      const shut = () => {
+        if (openId === id) openId = null;
+        const i = SUGGS.findIndex((x) => x.id === id);
+        if (i >= 0) SUGGS.splice(i, 1);
+        if (hooks.crownAnswer) hooks.crownAnswer(question, outcome);
         renderAll();
         drawWires();
       };
@@ -3888,9 +4125,32 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         // stays what it was: navigation.
         const only = entriesForSection(n);
         if (only.length === 1 && openId !== only[0].id) return toggle(only[0].id, true);
-        const el = document.getElementById('sec-' + n);
         // same owned animation as the queue-wire, and clear of the sticky navbar
-        if (el) smoothScrollBy(el.getBoundingClientRect().top - 72, () => markCurrentSection());
+        scrollToHeading(document.getElementById('sec-' + n), () => markCurrentSection());
+      })
+    );
+    // Everything the host contributed above the charter's own headings — the
+    // Constitution pile head, one entry per live constitution section, the
+    // title, and the founder's prose headings — is a bare in-page anchor with
+    // no `data-toc`, so nothing bound it, the browser handled it, and the
+    // heading arrived instantly at y = 0: underneath the sticky bar, which is
+    // to say the one word the reader had just clicked was the one thing they
+    // could not see (Ed, QA of batch S).
+    //
+    // Bound here by selector rather than by a marker attribute the lead would
+    // have to emit: `setup-probe.js` hashes `#toc`'s outerHTML, so a cosmetic
+    // `data-` hook would turn a behaviour-only change into a reference
+    // re-freeze. And it is bound in this file rather than in the page's
+    // `afterToc` because the rail's navigation is the rail's, whoever supplied
+    // the entry — one handler is what stops the two halves drifting apart
+    // again.
+    tocEl.querySelectorAll('a[href^="#"]:not([data-toc])').forEach((a) =>
+      a.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        // the id off the anchor's own href, never a guessed prefix: the lead
+        // emits four kinds (#cs-constitution, #cs-<key>, #dochead, #h<i>)
+        const id = (a.getAttribute('href') || '').slice(1);
+        scrollToHeading(id && document.getElementById(id), () => markCurrentSection());
       })
     );
     if (extra && extra.afterToc) extra.afterToc();
@@ -4039,7 +4299,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // what the eye reads — there is no track on the surface, so nobody can
   // perceive a fraction of a duration at all — so each caller passes the
   // *time at which its own easing reaches a quarter of the way*: 250ms of 1000
-  // for the pen, 864ms of 3000 for the pencil (the solve for that bezier).
+  // for the pen, 288ms of 1000 for the pencil (the solve for that bezier —
+  // 0.288 of the duration, whatever the duration is, which is why the floor
+  // moved with the hold when every hold became one second, backlog 206).
   //
   // **It is a floor, not a jump.** `t >= floorAt` rewinds from where it got to,
   // so letting go at nine-tenths never snaps backwards to a quarter — which
@@ -4047,8 +4309,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   //
   // **The push runs at a speed the hold cannot produce.** A fixed ~160ms flick
   // means the token is *thrown* rather than slid: from a standing start on the
-  // pencil that is 5.4x the hold's own pace. This is the whole reason the
-  // exaggeration is honest. Position on an arc is only a progress reading if
+  // pencil, whose floor is 288 of 1000, that is `minRate` exactly — 1.8x the
+  // hold's own pace, the slowest a throw is allowed to be. (It was 5.4x while
+  // the pencil ran for three seconds; the floor came down with the hold and
+  // the rate floor is what holds the gesture up now.) This is the whole reason
+  // the exaggeration is honest. Position on an arc is only a progress reading if
   // there is a scale to read it against, and there deliberately is none — so
   // what a viewer can perceive is departure, distance and return, not "this is
   // 25%". A floor on time in the air instead would be unimpeachable and
@@ -4069,8 +4334,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // last 150ms of that over a fixed 160ms push came out at **0.94x** — the
     // token drifting forward *slower* than the hold moves it, which is the
     // exact opposite of the point. A floor on the rate means the flick is
-    // always a speed the hold itself cannot produce, on a short pen press and a
-    // long pencil one alike, and the duration falls out of it.
+    // always a speed the hold itself cannot produce, on a pen press and a
+    // pencil one alike, and the duration falls out of it.
     const rewind = o.rewind || 4, push = o.push || 160, hang = o.hang || 90, minRate = o.minRate || 1.8;
     const dur = Number((anim.effect && anim.effect.getTiming().duration) || 0) || 0;
     const floorAt = dur ? Math.min(o.floorAt || 0, dur) : (o.floorAt || 0);
@@ -4316,7 +4581,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   const resumeLean = (btn) => { if (hoverSpend && hoverSpend.btn === btn) startLean(btn, hoverSpend.pick); };
   addSpendProbe((t) => {
     const b = t && t.closest && t.closest('[data-act="draft-propose"]');
-    if (!b || b.disabled || !walletEl) return null;
+    // ✒️ spends nothing, so no pencil leans toward it (R-058)
+    if (!b || b.disabled || b.dataset.pen === '1' || !walletEl) return null;
     return { btn: b, pick: () => [...walletEl.querySelectorAll('.pencils i')].pop() };
   });
 
@@ -4466,6 +4732,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     EDIT_RULES = env.EDIT_RULES || { grant: 4, cap: 8, stake: 1 };
     if (env.mayPropose) MAY_PROPOSE = env.mayPropose;
     if (env.mayJudge) MAY_JUDGE = env.mayJudge;
+    if (env.mayPen) MAY_PEN = env.mayPen;
     // the sign control's two reads (Q770): the elective base, if any, and
     // what a signature would read as — both at call time, like the two above
     if (env.signing) SIGNING = env.signing;
@@ -4696,6 +4963,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // the commit gesture, resolved once at load — the page and setup.js read
     // this rather than keeping a second copy of the constant (backlog 184)
     get gesture() { return GESTURE; },
+    // and the length of every hold on the surface, for the same reason and in
+    // the same place (backlog 206): one number, owned by the file that loads
+    // first, read by the page's wallet commits and its assembly rather than
+    // copied into either
+    get holdMs() { return HOLD_MS; },
     get readSeals() { return readSeals; },
     get verdicts() { return verdicts; },
     get editsHeld() { return editsHeld; },

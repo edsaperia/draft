@@ -893,6 +893,10 @@ var CONSTITUTION = (() => {
     {
       name: "meeting",
       title: "A meeting",
+      // **The one *room* Ed left standing** (entry 215): a physical room, a few
+      // hours, everybody actually present — the sense his ruling exempts. It is
+      // the single entry in `spec-check`'s `BANNED_OK`, verbatim, so a reword
+      // here goes red until that string moves with it.
       say: "A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.",
       unit: "hours",
       sets: {
@@ -922,7 +926,7 @@ var CONSTITUTION = (() => {
     {
       name: "conference",
       title: "A conference",
-      say: "A few days with people coming and going: a third of the room is enough to move, one proposal an hour each.",
+      say: "A few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.",
       unit: "days",
       sets: {
         bar: { pct: 80 },
@@ -943,7 +947,7 @@ var CONSTITUTION = (() => {
     {
       name: "ongoing",
       title: "Ongoing",
-      say: "No end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.",
+      say: "No end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.",
       unit: null,
       sets: {
         // Ed: *never* is what *ongoing* already said — folded first, because
@@ -1029,6 +1033,22 @@ var CONSTITUTION = (() => {
       __publicField(this, "motions", /* @__PURE__ */ new Map());
       __publicField(this, "crownQuestions", /* @__PURE__ */ new Map());
       __publicField(this, "applicants", /* @__PURE__ */ new Map());
+      /**
+       * The release batches, by id (entry 162, Q1013), and the two fields that
+       * decide whether a further release **joins** one or opens a new one. All
+       * three are recomputed **in the fold** and never only in the command: a
+       * batch id minted in the command would replay differently from the session
+       * that wrote it.
+       */
+      __publicField(this, "releaseBatches", /* @__PURE__ */ new Map());
+      __publicField(this, "lastReleaseT", null);
+      __publicField(this, "lastReleaseBatch", null);
+      __publicField(this, "nextReleaseN", 1);
+      /** The mail-give-up batches, by id (SURFACE E34). One pass, one batch, so
+       *  there is no open-batch pair here — the counter alone, moved in the fold
+       *  for `nextReleaseN`'s reason. */
+      __publicField(this, "mailGiveUpBatches", /* @__PURE__ */ new Map());
+      __publicField(this, "nextMailGiveUpN", 1);
       __publicField(this, "nextMemberN", 1);
       __publicField(this, "nextMotionN", 1);
       __publicField(this, "nextCrownN", 1);
@@ -1185,6 +1205,13 @@ var CONSTITUTION = (() => {
             if (prev) {
               rec.okOwed = prev.okOwed;
               rec.okGiven = prev.okGiven;
+              rec.releasesOwed = prev.releasesOwed;
+              rec.releasesGiven = prev.releasesGiven;
+              rec.amendmentsOwed = prev.amendmentsOwed;
+              rec.amendmentsGiven = prev.amendmentsGiven;
+              rec.mailGaveUpOwed = prev.mailGaveUpOwed;
+              rec.mailGaveUpGiven = prev.mailGaveUpGiven;
+              rec.mailGaveUp = prev.mailGaveUp;
               rec.lastActivityT = prev.lastActivityT;
             } else {
               rec.lastActivityT = Math.max(rec.lastActivityT, this.convenor.lastActivityT);
@@ -1273,6 +1300,23 @@ var CONSTITUTION = (() => {
           this.textConfirmedFlag = true;
           break;
         }
+        case "text-amended": {
+          this.touch(this.convenor.id, event.t);
+          const id = "pen:text:" + event.candidateId;
+          this.motions.set(id, {
+            id,
+            by: this.convenor.id,
+            payload: { kind: "text", candidateId: event.candidateId, summary: event.summary },
+            route: "pen",
+            stake: 0,
+            openedAtT: event.t,
+            why: event.why ?? null,
+            status: "carried",
+            answers: /* @__PURE__ */ new Map(),
+            settledAtT: event.t
+          });
+          break;
+        }
         case "quorum-form-set": {
           this.quorumFormValue = event.form;
           break;
@@ -1355,13 +1399,30 @@ var CONSTITUTION = (() => {
         case "constituted": {
           this.constitutedT = event.t;
           this.anchors = this.computeAnchors(event.t);
-          this.setPowers(this.settings.get("startingText"), { unilateral: false, assent: false });
           for (const st of this.settings.values()) {
             if (!st.pendingRelease.unilateral && !st.pendingRelease.assent) continue;
             this.setPowers(st, {
               unilateral: st.powers.unilateral && !st.pendingRelease.unilateral,
               assent: st.powers.assent && !st.pendingRelease.assent
             });
+          }
+          if (event.laidDown === void 0) {
+            this.setPowers(this.settings.get("startingText"), { unilateral: false, assent: false });
+          } else {
+            const down = /* @__PURE__ */ new Map();
+            for (const r of event.laidDown) {
+              const cur = down.get(r.setting) ?? { unilateral: false, assent: false };
+              cur[r.power] = true;
+              down.set(r.setting, cur);
+            }
+            for (const [k, d] of down) {
+              const st = this.settings.get(k);
+              if (!st) continue;
+              this.setPowers(st, {
+                unilateral: st.powers.unilateral && !d.unilateral,
+                assent: st.powers.assent && !d.assent
+              });
+            }
           }
           break;
         }
@@ -1375,6 +1436,75 @@ var CONSTITUTION = (() => {
           m.okOwed.delete(event.setting);
           m.okGiven.add(event.setting);
           this.touch(event.member, event.t);
+          break;
+        }
+        case "release-owed": {
+          const m = this.members.get(event.member);
+          m.releasesOwed.add(event.batch);
+          const rec = this.releaseBatches.get(event.batch);
+          if (rec) {
+            for (const r of event.releases) {
+              if (!rec.releases.some((x) => x.setting === r.setting && x.power === r.power)) {
+                rec.releases.push({ ...r });
+              }
+            }
+          } else {
+            this.releaseBatches.set(
+              event.batch,
+              { id: event.batch, t: event.t, releases: event.releases.map((r) => ({ ...r })) }
+            );
+            this.nextReleaseN += 1;
+          }
+          this.lastReleaseT = event.t;
+          this.lastReleaseBatch = event.batch;
+          break;
+        }
+        case "release-ok": {
+          const m = this.members.get(event.member);
+          m.releasesOwed.delete(event.batch);
+          m.releasesGiven.add(event.batch);
+          this.touch(event.member, event.t);
+          break;
+        }
+        case "amendment-owed": {
+          this.members.get(event.member).amendmentsOwed.add(event.candidate);
+          break;
+        }
+        case "amendment-ok": {
+          const m = this.members.get(event.member);
+          m.amendmentsOwed.delete(event.candidate);
+          m.amendmentsGiven.add(event.candidate);
+          this.touch(event.member, event.t);
+          break;
+        }
+        case "mail-gave-up": {
+          if (!this.mailGiveUpBatches.has(event.batch)) {
+            this.mailGiveUpBatches.set(
+              event.batch,
+              { id: event.batch, t: event.t, addresses: [...event.addresses] }
+            );
+            this.nextMailGiveUpN += 1;
+          }
+          for (const rec of this.members.values()) {
+            if (event.addresses.some((a) => a.toLowerCase() === rec.email.toLowerCase())) {
+              rec.mailGaveUp = true;
+            }
+          }
+          if (event.member !== null) {
+            this.members.get(event.member).mailGaveUpOwed.add(event.batch);
+          }
+          break;
+        }
+        case "mail-gave-up-ok": {
+          const m = this.members.get(event.member);
+          m.mailGaveUpOwed.delete(event.batch);
+          m.mailGaveUpGiven.add(event.batch);
+          this.touch(event.member, event.t);
+          break;
+        }
+        case "mail-resent": {
+          this.members.get(event.member).mailGaveUp = false;
+          this.touch(event.by, event.t);
           break;
         }
         case "floor-recomputed":
@@ -1666,7 +1796,7 @@ var CONSTITUTION = (() => {
       if (rec.payload.kind === "set") {
         return this.settings.get(rec.payload.setting).powers.assent;
       }
-      if (rec.payload.kind === "reserve") return false;
+      if (rec.payload.kind === "reserve" || rec.payload.kind === "text") return false;
       return this.doorPowers(rec.payload.kind === "remove" ? "door:remove" : "door:invite").assent;
     }
     /** §9.7 v0.54: holder derives from powers — the convenor's iff any is held. */
@@ -1706,6 +1836,13 @@ var CONSTITUTION = (() => {
         lastActivityT: arrivedAtT ?? invitedAtT,
         okOwed: /* @__PURE__ */ new Set(),
         okGiven: /* @__PURE__ */ new Set(),
+        releasesOwed: /* @__PURE__ */ new Set(),
+        releasesGiven: /* @__PURE__ */ new Set(),
+        amendmentsOwed: /* @__PURE__ */ new Set(),
+        amendmentsGiven: /* @__PURE__ */ new Set(),
+        mailGaveUpOwed: /* @__PURE__ */ new Set(),
+        mailGaveUpGiven: /* @__PURE__ */ new Set(),
+        mailGaveUp: false,
         invitationExpired: false,
         closingAck: null
       };
@@ -1967,6 +2104,7 @@ var CONSTITUTION = (() => {
         }
       }
       this.emit({ type: "power-relinquished", t, setting, power });
+      if (this.constitutedT !== null) this.oweReleases(t, [{ setting, power }]);
     }
     reclaim(t, setting) {
       this.requireOpen("reclaiming");
@@ -2169,15 +2307,44 @@ var CONSTITUTION = (() => {
      * `constituted` fold: the Text's ✒️/🛡️ laid down, the ramp anchored,
      * judging open. Readiness informs and never blocks (Q443c): a member who
      * has not answered a question the room has already resolved holds nothing up.
+     *
+     * **…and what the founder carries across the line is 🍾's own question**
+     * (Ed, 2026-08-27, entry 158; Q1018, R-057). `laidDown` is what the card's
+     * power switches collected — one list of `{ setting, power }`, validated
+     * here because this is the one place a page bug could release the wrong
+     * power. Omitted, the fold is the one it always was. A **list** rather than
+     * a pair, and one command rather than N, because the batch is the act: N
+     * `relinquish` calls at N stamps would be N news cards (entry 162), and
+     * before the start they would *delegate* on a delegable setting's second
+     * power (R-045) instead of handing over.
      */
-    begin(t) {
+    begin(t, laidDown) {
       this.requireOpen("beginning");
       if (this.constitutedT !== null) throw new Error("the document has already begun");
       const waiting = this.waitingOn();
       if (waiting.length > 0) {
         throw new Error(`the document cannot begin while '${waiting.join("', '")}' ${waiting.length === 1 ? "is" : "are"} still being decided (§9.0b)`);
       }
-      this.emit({ type: "constituted", t });
+      const list = laidDown === void 0 ? void 0 : laidDown.map((r) => {
+        if (!HELD.includes(r.setting)) {
+          throw new Error(`'${r.setting}' carries no power to lay down at the start (§9.7)`);
+        }
+        if (r.power !== "unilateral" && r.power !== "assent") {
+          throw new Error(`'${String(r.power)}' is not a power on '${r.setting}' (§9.7)`);
+        }
+        return { setting: r.setting, power: r.power };
+      });
+      const before = new Map(HELD.map((k) => [k, { ...this.settings.get(k).powers }]));
+      this.emit(list === void 0 ? { type: "constituted", t } : { type: "constituted", t, laidDown: list });
+      const laid = [];
+      for (const k of HELD) {
+        const was = before.get(k);
+        const now = this.settings.get(k).powers;
+        for (const p of ["unilateral", "assent"]) {
+          if (was[p] && !now[p]) laid.push({ setting: k, power: p });
+        }
+      }
+      this.oweReleases(t, laid);
     }
     /** What 🍾 waits on (§9.0b, §9.7.1): a delegated question on **any** setting
      *  blocks the start while it collects, and every judge-gate must be settled
@@ -2306,6 +2473,169 @@ var CONSTITUTION = (() => {
         if (m.okOwed.has(setting)) continue;
         this.emit({ type: "ok-owed", t, member: m.id, settings: [setting] });
       }
+    }
+    /**
+     * **Everything one act lays down is one news entry and one OK** (Ed,
+     * 2026-08-27, entry 162; Q1013, extending R-044). SPEC §9.7 rule 3 has said
+     * since R-044 that laying a power down is news; what entry 162 adds is the
+     * batching, because 158 gives 🍾 a table of zone switches and one press can
+     * lay down about thirty-four powers — thirty-four separate acknowledgements
+     * landing in every rail at the moment the document opens is the flood that
+     * makes members stop reading acknowledgements at all.
+     *
+     * **The audience rule is `oweOks`'s**, one method up: every member, skipping
+     * the un-arrived, the removed and the convenor. The convenor is skipped for
+     * `oweOks`'s stated reason and for a stronger one here — the founder is the
+     * *actor*, and E9's other half, *the actor*, is already served by the power
+     * card's own confirmation. That is Q918's reading (b) on the cell and (c) on
+     * the audience; **this does not settle Q918**, and it is one predicate to
+     * reverse if Ed rules otherwise. The one skip of `oweOks` with no analogue
+     * here is `okOwed.has(setting)`: every batch carries a fresh id, so there is
+     * nothing to be already owed — the omission is deliberate, not an oversight.
+     *
+     * **A release joins an open batch rather than always opening one**: Ed's
+     * rule is that releases sharing one event, or one `t` and one actor, are one
+     * group, and `relinquish` admits only the convenor as actor, so the actor
+     * half needs no field. On a **solo document** the loop emits nothing — the
+     * founder is the only member and is the actor — and then nothing is
+     * recomputed either, `lastReleaseT` included, since all three fields move in
+     * the fold. A later release therefore opens a fresh batch, which is right: a
+     * call that told nobody anything has no group for anything to join
+     * (the shape of Q835 — the page assumed a room bigger than one).
+     */
+    oweReleases(t, releases) {
+      if (releases.length === 0) return;
+      const batch = this.lastReleaseT === t && this.lastReleaseBatch !== null ? this.lastReleaseBatch : `rel-${this.nextReleaseN}`;
+      for (const m of this.members.values()) {
+        if (m.arrivedAtT === null || m.removed) continue;
+        if (m.id === this.convenor.id) continue;
+        this.emit({ type: "release-owed", t, batch, member: m.id, releases });
+      }
+    }
+    /**
+     * The OK on a release batch (entry 162) — `giveOk`'s posture exactly: it
+     * refuses nothing it can simply ignore, so a batch that is not owed to this
+     * member returns silently rather than throwing at a page that was a poll
+     * behind.
+     */
+    ackRelease(t, member, batch) {
+      this.requireOpen("acknowledging");
+      const m = this.members.get(member);
+      if (!m) throw new Error(`unknown member '${member}'`);
+      if (!m.releasesOwed.has(batch)) return;
+      this.emit({ type: "release-ok", t, batch, member });
+    }
+    /**
+     * **A text amendment is news beside the clause it changed** (Ed, 2026-08-29,
+     * decision D47, answering Q1021; SURFACE E35, R-058). `oweReleases`' other
+     * sibling, and **the audience rule is `oweOks`'s** exactly: every member,
+     * skipping the un-arrived, the removed and the convenor, who is the actor.
+     *
+     * **Two differences from `oweReleases`, and both are the ruling.** There is
+     * **no batching and no join of an open group**: entry 162 groups because one
+     * press of 🍾 lays down thirty-four powers that belong to no clause, where
+     * here the card *is* the clause — so two amendments at two places are two
+     * cards, and collapsing them is precisely what the ruling reverses. And
+     * there is **no skip for something already owed**: every amendment carries
+     * its own candidate id, so there is nothing to be already owed — the same
+     * deliberate omission `oweReleases` records for its batch ids.
+     *
+     * **Why it is called from `recordTextAmendment` and not from the fold.**
+     * `replay` calls `apply` directly and `emit` pushes to `this.log`, so an
+     * owing performed in a fold appends events to every session that replays
+     * that log — the log growing every time it is read. That is entry 162's rule
+     * and this is it kept; the reading it replaces (📄's own key through
+     * `oweOks`) had the call in the `text-amended` fold and so had the bug.
+     */
+    oweAmendment(t, candidate) {
+      for (const m of this.members.values()) {
+        if (m.arrivedAtT === null || m.removed) continue;
+        if (m.id === this.convenor.id) continue;
+        this.emit({ type: "amendment-owed", t, candidate, member: m.id });
+      }
+    }
+    /**
+     * The OK on one text amendment (SURFACE E35) — `ackRelease`'s posture
+     * exactly: an amendment this member is not owed returns silently rather than
+     * throwing at a page that was a poll behind.
+     */
+    ackAmendment(t, member, candidate) {
+      this.requireOpen("acknowledging");
+      const m = this.members.get(member);
+      if (!m) throw new Error(`unknown member '${member}'`);
+      if (!m.amendmentsOwed.has(candidate)) return;
+      this.emit({ type: "amendment-ok", t, candidate, member });
+    }
+    /**
+     * **A mail that gave up is told** (SURFACE E34, Q947 (c), backlog 173).
+     * `oweReleases`' sibling: the outbox hands over the whole of one sender
+     * pass's give-ups at once, and one pass is the act — entry 162's rule is
+     * that the boundary of the group is the act, so a pass that killed three
+     * mails is one batch, one card and one OK.
+     *
+     * **Two differences from `oweReleases`, both deliberate.** The convenor is
+     * *not* skipped: there they are the actor, and here nobody in the room is —
+     * E34's audience is *the founder; every member*. And where the audience is
+     * empty the event is still emitted once with `member: null`, because the
+     * addresses are a fact about the register that the founder's ✉️ row reads
+     * whether or not there was anybody to tell.
+     *
+     * The unarrived skip stays exactly as it is, and it is the whole of E34's
+     * **never the invitee**: an invitee has `arrivedAtT === null` by definition,
+     * and they are precisely the person the mail could not reach.
+     *
+     * **A give-up after the close owes nobody.** The closing notices are mailed
+     * from the close itself, so this is the one owing in the file that can be
+     * raised on a shut document — and every acknowledgement in the file
+     * (`giveOk`, `ackRelease`, `ackMailGaveUp`) refuses one, so a card owed here
+     * would sit in the rail for ever behind an OK that throws. The batch is
+     * still recorded: it falls through to the told-nobody arm, which is exactly
+     * the shape for *the addresses are a fact, and there is nobody to tell*.
+     *
+     * The addresses are de-duplicated: one pass may kill two mails to the same
+     * person (two invitations, or an invitation and a lapse warning), and the
+     * card lists what it is given.
+     */
+    mailGaveUp(t, addresses) {
+      if (addresses.length === 0) return;
+      const batch = `mgu-${this.nextMailGiveUpN}`;
+      const seen = /* @__PURE__ */ new Set();
+      const list = addresses.filter((a) => {
+        const key = a.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      let told = false;
+      for (const m of this.closedFlag ? [] : [...this.members.values()]) {
+        if (m.arrivedAtT === null || m.removed) continue;
+        told = true;
+        this.emit({ type: "mail-gave-up", t, batch, member: m.id, addresses: list });
+      }
+      if (!told) this.emit({ type: "mail-gave-up", t, batch, member: null, addresses: list });
+    }
+    /** The OK on one pass's dead mail — `ackRelease`'s posture exactly: a batch
+     *  this member is not owed returns silently rather than throwing at a page
+     *  that was a poll behind. */
+    ackMailGaveUp(t, member, batch) {
+      this.requireOpen("acknowledging");
+      const m = this.members.get(member);
+      if (!m) throw new Error(`unknown member '${member}'`);
+      if (!m.mailGaveUpOwed.has(batch)) return;
+      this.emit({ type: "mail-gave-up-ok", t, batch, member });
+    }
+    /**
+     * 📨 — put the invitation back in the queue (SURFACE E34). Only an invitee
+     * can be re-sent to: somebody who has arrived has the document, and somebody
+     * who is gone is not being invited to anything. The re-send is an ordinary
+     * queued mail from there on, and if it gives up too a fresh batch is raised.
+     */
+    resendInvite(t, member, by) {
+      this.requireOpen("re-sending an invitation");
+      const m = this.members.get(member);
+      if (!m || m.removed) throw new Error(`unknown member '${member}'`);
+      if (m.arrivedAtT !== null) throw new Error("they are already here — there is nothing to re-send");
+      this.emit({ type: "mail-resent", t, member, by });
     }
     afterRosterChange(t, cause, member) {
       const shifted = MANAGED.filter((id) => {
@@ -2537,6 +2867,7 @@ var CONSTITUTION = (() => {
         const wasInE = inE(this.members.get(target));
         this.emit({ type: "member-removed", t, member: target, viaMotion: rec.id });
         if (wasInE) this.afterRosterChange(t, "departure", target);
+        this.crownSeatVacated(t);
       } else if (rec.payload.kind === "set" && CONSTITUTIONAL.has(rec.payload.setting)) {
         for (const m of this.members.values()) {
           if (m.removed) continue;
@@ -2566,6 +2897,43 @@ var CONSTITUTION = (() => {
      * on arrival; `oweOks` covers everything set or changed after it, and it
      * already skips whoever has not arrived.
      */
+    /**
+     * **A park with no convenor auto-passes, the way a lapse does** (Ed,
+     * 2026-08-29, R-060). A text adoption parked under 🛡️ on the Text blocks
+     * every text adoption in the document until it is answered, and the 👑
+     * question is served only to the convenor — so a seat vacated while a park
+     * stands would serve the question to somebody who has gone, with no clock
+     * left to auto-pass it, and the room's drafting would stop for the life of
+     * the document.
+     *
+     * Three things it does deliberately, each of which a later reader might
+     * try to "fix":
+     *
+     * - **It reuses `crown-question-auto-passed` rather than inventing a
+     *   kind.** The ruling is *the way a lapse does*, and that is the event a
+     *   lapse emits: the fold already sets `auto-passed` and treats it as
+     *   accepted, and the bridge's cursor walk already turns it into
+     *   `engine.assent(t, parked, 'accept')`. A new kind would move the log's
+     *   rolling hash and need a bridge arm to do what an arm already does.
+     * - **It does not emit `crown-lapsed`.** A vacancy is not a lapse:
+     *   `crownLapsedFlag` is about a crown that may wake up again
+     *   (`member-returned` revives it) and a removed member does not return to
+     *   the seat. The shield goes down through `convenorSeatVacant()` instead.
+     * - **Text questions only** — this is a *narrowing* of the lapse loop in
+     *   `tick`, not a copy of it. That loop also auto-passes motion-backed
+     *   questions and settles their carried effects; applying a carried
+     *   removal or invitation without assent because the convenor left is a
+     *   governance consequence nobody has ruled on, and such a question blocks
+     *   nothing while it stands, where a parked text adoption blocks
+     *   everything. Filed as Q1033; the asymmetry is the point.
+     */
+    crownSeatVacated(t) {
+      if (!this.convenorSeatVacant()) return;
+      for (const q of [...this.crownQuestions.values()]) {
+        if (q.status !== "pending" || !q.text) continue;
+        this.emit({ type: "crown-question-auto-passed", t, question: q.id });
+      }
+    }
     /** Follow-ons of a held motion: a refused application is told so (§9.7½). */
     settleHeldEffects(t, rec) {
       if (rec.payload.kind === "admit") {
@@ -2843,13 +3211,78 @@ var CONSTITUTION = (() => {
       return false;
     }
     /**
+     * The seat has been **vacated**: the person who held it was removed from
+     * the membership (Ed, 2026-08-29, R-060). A claim about *state* and never
+     * about which event produced it, so it reads the same after a replay as
+     * after the act, and so the free resignation of §9.6a — which `resign`
+     * refuses today — is covered the moment that door exists, with no second
+     * rule and no second call site.
+     *
+     * **A convenor who is not a member is not a vacant seat**, which is the
+     * line a reader will get wrong: unticking 🎩 *deletes* the record from
+     * `this.members`, and exception X15 says a convenor with no powers and no
+     * membership is still a person the room may restore powers to. The clerk
+     * convenor is the ordinary founding and their shield stands. Vacated
+     * means the record is here and wears `removed`.
+     */
+    convenorSeatVacant() {
+      return this.members.get(this.convenor.id)?.removed === true;
+    }
+    /**
      * Q440: the shield on the Text means an **adoption** waits on the
      * founder's accept -- assent over the drafting mechanism itself. The
      * engine has already adopted; the host asks here whether the document it
      * serves may follow, and a sleeping crown grants (lapse is abstention).
+     *
+     * **A vacated seat holds no shield either** (R-060, this build's reading
+     * beside Ed's ruling). `!this.crownLapsedFlag` already says the shield
+     * reads *down* where nobody is awake to hold it, and R-056 declares
+     * *whether assent is owed* rather than the raw power to the engine
+     * precisely so a sleeping crown falls out of the mechanism instead of
+     * needing a second rule. A vacated seat is that fact in a stronger form —
+     * nobody asleep, nobody at all — so the same clause covers it. Without
+     * this the vacancy auto-pass clears the park that is standing and the
+     * very next race parks against an empty seat, which is the same defect
+     * one adoption later.
      */
     textAdoptionNeedsAssent() {
-      return this.settings.get("startingText").powers.assent && !this.crownLapsedFlag;
+      return this.settings.get("startingText").powers.assent && !this.crownLapsedFlag && !this.convenorSeatVacant();
+    }
+    /**
+     * ✒️ on the Text (Ed, 2026-08-27, backlog entry 160; Q1020, R-058): the
+     * Founder's amendment passes the instant they submit it. `doorPen`'s shape,
+     * for `doorPen`'s reason — the pen is what acts alone, and **a sleeping
+     * crown does not act**: lapse grants assent (the shield's road) and performs
+     * nothing (this one).
+     */
+    textPen() {
+      return this.settings.get("startingText").powers.unilateral && !this.crownLapsedFlag;
+    }
+    /**
+     * Record an amendment the Founder's pen made to the document's text. The
+     * words are the engine's — this is the constitution's half: the motion
+     * record every other amendment gets, and the acknowledgement it owes.
+     *
+     * Guarded on the same three things the act itself needs: the document is
+     * open, judging has begun (before the start nothing is amended, only set —
+     * §9.6a, and `confirmStartingText` is that road), and the pen is held.
+     */
+    recordTextAmendment(t, text) {
+      this.requireOpen("amending the text");
+      if (this.constitutedT === null) {
+        throw new Error("before the start the text is confirmed, not amended (§9.6a)");
+      }
+      if (!this.textPen()) {
+        throw new Error("the Text carries no pen — propose the change instead (§9.7 rule 8)");
+      }
+      this.emit({
+        type: "text-amended",
+        t,
+        candidateId: text.candidateId,
+        summary: text.summary,
+        ...text.why !== void 0 ? { why: text.why } : {}
+      });
+      this.oweAmendment(t, text.candidateId);
     }
     /** Open the 👑 question for one adopted candidate; the host reads its
      *  record (`crownQuestionRecords`) to learn accept / reject / auto-pass. */
@@ -3006,6 +3439,13 @@ var CONSTITUTION = (() => {
     motionRecords() {
       return this.motions;
     }
+    /** Every act that laid a power down, by batch id (entry 162, Q1013). */
+    releaseBatchRecords() {
+      return this.releaseBatches;
+    }
+    mailGiveUpBatchRecords() {
+      return this.mailGiveUpBatches;
+    }
     crownQuestionRecords() {
       return this.crownQuestions;
     }
@@ -3103,11 +3543,11 @@ var CONSTITUTION = (() => {
     const w = winsClause(room.e, pct);
     if (w === void 0) return null;
     if (w === null) {
-      return fit("In a room of " + roomOf(room.e) + ", nothing can pass at " + Math.floor(pct) + "% until more members arrive.");
+      return fit("In a membership of " + roomOf(room.e) + ", nothing can pass at " + Math.floor(pct) + "% until more members arrive.");
     }
-    if (w.n === 1) return fit("In a room of one, the one vote must be for it.");
-    if (w.k === w.n) return fit("In a room of " + w.n + ", all " + w.n + " must vote for it by the end.");
-    return fit("In a room of " + w.n + ", " + w.k + " of " + w.n + " must vote for it by the end.");
+    if (w.n === 1) return fit("In a membership of one, the one vote must be for it.");
+    if (w.k === w.n) return fit("In a membership of " + w.n + ", all " + w.n + " must vote for it by the end.");
+    return fit("In a membership of " + w.n + ", " + w.k + " of " + w.n + " must vote for it by the end.");
   }
   function spanPhrase(ms) {
     const mins = Math.round(ms / 6e4);
@@ -3141,7 +3581,7 @@ var CONSTITUTION = (() => {
     const q = quorumCount(v, n);
     if (!Number.isFinite(q)) return null;
     const body = quorumBody(q, n);
-    return fit(v.form === "share" ? Math.round(v.n) + "% of a room of " + roomOf(n) + " is " + q + ": " + body : "In a room of " + roomOf(n) + ", " + body);
+    return fit(v.form === "share" ? Math.round(v.n) + "% of a membership of " + roomOf(n) + " is " + q + ": " + body : "In a membership of " + roomOf(n) + ", " + body);
   }
   function rateMeaning(v, room) {
     const { grant, cap, dripMinutes } = v;
@@ -3334,7 +3774,8 @@ var CONSTITUTION = (() => {
         lapsed: rec.lapsed,
         isConvenor: rec.id === convenorId,
         arrival: { ...rec.arrival },
-        removalPending: removalPending.get(rec.id) ?? null
+        removalPending: removalPending.get(rec.id) ?? null,
+        mailGaveUp: rec.mailGaveUp
       });
     }
     const departures = s.departures().map((d) => {
@@ -3362,6 +3803,24 @@ var CONSTITUTION = (() => {
       doors,
       applicants,
       owedOks: me ? [...me.okOwed] : [],
+      // newest last, so the rail meets the acts in the order they happened; a
+      // seat with no member record gets [], exactly as `owedOks` does
+      owedReleases: me ? [...s.releaseBatchRecords().values()].filter((b) => me.releasesOwed.has(b.id)).sort((a, b) => a.t - b.t).map((b) => ({ id: b.id, at: b.t, releases: b.releases.map((r) => ({ ...r })) })) : [],
+      owedMailGiveUps: me ? [...s.mailGiveUpBatchRecords().values()].filter((b) => me.mailGaveUpOwed.has(b.id)).sort((a, b) => a.t - b.t).map((b) => ({ id: b.id, at: b.t, addresses: [...b.addresses] })) : [],
+      // the amendment's own record is the motion the pen carried (R-058), so
+      // nothing about it is stored twice; an id whose record cannot be found is
+      // **skipped** rather than served half-empty, the card having nothing to
+      // say without it
+      owedAmendments: me ? [...me.amendmentsOwed].flatMap((candidate) => {
+        const rec = s.motionRecords().get(`pen:text:${candidate}`);
+        if (!rec || rec.payload.kind !== "text") return [];
+        return [{
+          candidate,
+          at: rec.settledAtT ?? rec.openedAtT,
+          summary: rec.payload.summary,
+          why: rec.why ?? null
+        }];
+      }).sort((a, b) => a.at - b.at) : [],
       motions,
       myHeldMotion,
       crownTasks: isConvenor ? [...s.crownQuestionRecords().values()].filter((q) => q.status === "pending").map((q) => ({ id: q.id, motion: q.motion, ...q.text ? { text: q.text } : {} })) : [],

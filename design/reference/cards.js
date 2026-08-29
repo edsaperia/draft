@@ -449,18 +449,20 @@ window.CARDS = (function () {
   // either (Ed, 197) — a field of five reads 1..5, and a lone proposal is
   // named by what it is.
   function fieldOf(s) {
-    // `by` rides only where a record has unsealed an author (the close), and
+    // `by` rides only where a record has unsealed an author (the close),
     // `underNote` beside it where that record was made under more than one
-    // disclosure rung (entry 31) — both arrive as finished words, the rung's
-    // own label having been resolved by the page that owns the vocabulary
-    if (s.slate) return s.slate.map((c) => ({ label: '', text: c.text, why: c.rationale, p: c.p, won: !!c.won, by: c.by || null, underNote: c.underNote || null }));
+    // disclosure rung (entry 31), and `refusal` where somebody said why it
+    // ended — the Founder's 🛡️ on the Text (R-056). All three arrive as
+    // finished words, the vocabulary having been resolved by the page or the
+    // host that owns it.
+    if (s.slate) return s.slate.map((c) => ({ label: '', text: c.text, why: c.rationale, p: c.p, won: !!c.won, by: c.by || null, underNote: c.underNote || null, refusal: c.refusal || null }));
     if (s.kind === 'race') return [
       { label: '', text: s.race.a.text, why: s.race.a.rationale, p: s.race.a.p, won: s.won === 'a', by: s.race.a.by || null },
       { label: '', text: s.race.b.text, why: s.race.b.rationale, p: s.race.b.p, won: s.won === 'b', by: s.race.b.by || null },
     ];
     // no label: the band above already says "what was proposed", and printing
     // it again on the only thing in the band said it twice
-    return [{ label: '', text: s.optionB, why: s.rationale, p: (s.decided || {}).p, won: s.won === 'b', by: s.by || null, underNote: s.underNote || null }];
+    return [{ label: '', text: s.optionB, why: s.rationale, p: (s.decided || {}).p, won: s.won === 'b', by: s.by || null, underNote: s.underNote || null, refusal: s.refusal || null }];
   }
 
   const groundNote = (s) => (!s.shifted || !s.wasGround ? ''
