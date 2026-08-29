@@ -83,7 +83,7 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Who may read the document besides the members — readers only, never counted. The most private answer wins: one member who wants the room closed closes it.Members onlyNobody outside the membership sees anything at all.Anyone with the linkThe chamber view only, to whoever the link reaches.Nobody sees your answer, and you will see nobody else’s until every one of them is in.",
+    "body": "Who may read the document besides the members — readers only, never counted. The most private answer wins: one member who wants the document closed closes it.Members onlyNobody outside the membership sees anything at all.Anyone with the linkThe chamber view only, to whoever the link reaches.Nobody sees your answer, and you will see nobody else’s until every one of them is in.",
     "options": [
      {
       "set": "chamber",
@@ -116,7 +116,7 @@
      "Not answered yet"
     ],
     "helpers": [
-     "Who may read the document besides the members — readers only, never counted. The most private answer wins: one member who wants the room closed closes it.",
+     "Who may read the document besides the members — readers only, never counted. The most private answer wins: one member who wants the document closed closes it.",
      "Nobody outside the membership sees anything at all.",
      "The chamber view only, to whoever the link reaches."
     ]
@@ -236,9 +236,9 @@
    },
    "bar": {
     "eyebrow": "",
-    "head": "How Sure Must the Room Be?",
+    "head": "Proposal pass threshold?",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone90%In a room of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a room of one, nothing can pass at 80% until more members arrive.A bare majority60%In a room of one, the one vote must be for it.A number of my ownA room of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone90%In a membership of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a membership of one, nothing can pass at 80% until more members arrive.A bare majority60%In a membership of one, the one vote must be for it.A number of my ownA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
     "options": [
      {
       "set": "tClose",
@@ -283,7 +283,7 @@
      }
     ],
     "hints": [
-     "How Sure Must the Room Be? — close it",
+     "Proposal pass threshold? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -291,9 +291,9 @@
     ],
     "helpers": [
      "How sure the members have to be that a change is better than the words it replaces, at the end.",
-     "In a room of one, nothing can pass at 90% until more members arrive.",
-     "In a room of one, nothing can pass at 80% until more members arrive.",
-     "In a room of one, the one vote must be for it.",
+     "In a membership of one, nothing can pass at 90% until more members arrive.",
+     "In a membership of one, nothing can pass at 80% until more members arrive.",
+     "In a membership of one, the one vote must be for it.",
      "",
      "%",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted."
@@ -781,7 +781,7 @@
     "eyebrow": "",
     "head": "Your Name",
     "lock": "",
-    "body": "Your nameThis is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat.",
+    "body": "Your nameThis is how you appear to the membership. Leave it blank and you appear as Anonymous. You can set it later from any seat.",
     "options": [],
     "inputs": [
      {
@@ -808,7 +808,7 @@
      "Save"
     ],
     "helpers": [
-     "This is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat."
+     "This is how you appear to the membership. Leave it blank and you appear as Anonymous. You can set it later from any seat."
     ]
    },
    "mypic": {
@@ -1012,7 +1012,7 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.A conferenceA few days with people coming and going: a third of the room is enough to move, one proposal an hour each.OngoingNo end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.CustomDecide everything yourself — every rule is a card.",
+    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.A conferenceA few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.OngoingNo end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.CustomDecide everything yourself — every rule is a card.",
     "options": [
      {
       "set": "docShape",
@@ -1054,8 +1054,8 @@
     "helpers": [
      "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.",
      "A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.",
-     "A few days with people coming and going: a third of the room is enough to move, one proposal an hour each.",
-     "No end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.",
+     "A few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.",
+     "No end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.",
      "Decide everything yourself — every rule is a card."
     ]
    },
@@ -3427,9 +3427,9 @@
    },
    "bar": {
     "eyebrow": "",
-    "head": "How Sure Must the Room Be?",
+    "head": "Proposal pass threshold?",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nearly everyone90%In a room of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a room of one, nothing can pass at 80% until more members arrive.A bare majority60%In a room of one, the one vote must be for it.A number of my ownA room of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nearly everyone90%In a membership of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a membership of one, nothing can pass at 80% until more members arrive.A bare majority60%In a membership of one, the one vote must be for it.A number of my ownA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
     "options": [
      {
       "set": "tClose",
@@ -3474,7 +3474,7 @@
      }
     ],
     "hints": [
-     "How Sure Must the Room Be? — close it",
+     "Proposal pass threshold? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -3483,9 +3483,9 @@
     "helpers": [
      "How sure the members have to be that a change is better than the words it replaces, at the end.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
-     "In a room of one, nothing can pass at 90% until more members arrive.",
-     "In a room of one, nothing can pass at 80% until more members arrive.",
-     "In a room of one, the one vote must be for it.",
+     "In a membership of one, nothing can pass at 90% until more members arrive.",
+     "In a membership of one, nothing can pass at 80% until more members arrive.",
+     "In a membership of one, the one vote must be for it.",
      "",
      "%",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted."
@@ -3896,7 +3896,7 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.A conferenceA few days with people coming and going: a third of the room is enough to move, one proposal an hour each.OngoingNo end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.CustomDecide everything yourself — every rule is a card.",
+    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.A conferenceA few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.OngoingNo end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.CustomDecide everything yourself — every rule is a card.",
     "options": [
      {
       "set": "docShape",
@@ -3938,8 +3938,8 @@
     "helpers": [
      "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.",
      "A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.",
-     "A few days with people coming and going: a third of the room is enough to move, one proposal an hour each.",
-     "No end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.",
+     "A few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.",
+     "No end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.",
      "Decide everything yourself — every rule is a card."
     ]
    },
@@ -4171,9 +4171,9 @@
    },
    "bar": {
     "eyebrow": "",
-    "head": "How Sure Must the Room Be?",
+    "head": "Proposal pass threshold?",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone90%In a room of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a room of one, nothing can pass at 80% until more members arrive.A bare majority60%In a room of one, the one vote must be for it.A number of my ownA room of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
+    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone90%In a membership of one, nothing can pass at 90% until more members arrive.Broad agreement80%In a membership of one, nothing can pass at 80% until more members arrive.A bare majority60%In a membership of one, the one vote must be for it.A number of my ownA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide thisNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.",
     "options": [
      {
       "set": "tClose",
@@ -4218,7 +4218,7 @@
      }
     ],
     "hints": [
-     "How Sure Must the Room Be? — close it",
+     "Proposal pass threshold? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Put it back as it stands",
@@ -4226,9 +4226,9 @@
     ],
     "helpers": [
      "How sure the members have to be that a change is better than the words it replaces, at the end.",
-     "In a room of one, nothing can pass at 90% until more members arrive.",
-     "In a room of one, nothing can pass at 80% until more members arrive.",
-     "In a room of one, the one vote must be for it.",
+     "In a membership of one, nothing can pass at 90% until more members arrive.",
+     "In a membership of one, nothing can pass at 80% until more members arrive.",
+     "In a membership of one, the one vote must be for it.",
      "",
      "%",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted."
@@ -4773,7 +4773,7 @@
     "eyebrow": "",
     "head": "Your Name",
     "lock": "",
-    "body": "Your nameThis is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat.",
+    "body": "Your nameThis is how you appear to the membership. Leave it blank and you appear as Anonymous. You can set it later from any seat.",
     "options": [],
     "inputs": [
      {
@@ -4800,7 +4800,7 @@
      "Save"
     ],
     "helpers": [
-     "This is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat."
+     "This is how you appear to the membership. Leave it blank and you appear as Anonymous. You can set it later from any seat."
     ]
    },
    "mypic": {
@@ -5004,7 +5004,7 @@
     "eyebrow": "",
     "head": "What Type of Document Is This?",
     "lock": "",
-    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.A conferenceA few days with people coming and going: a third of the room is enough to move, one proposal an hour each.OngoingNo end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.CustomDecide everything yourself — every rule is a card.",
+    "body": "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.A meetingA few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.A conferenceA few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.OngoingNo end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.CustomDecide everything yourself — every rule is a card.",
     "options": [
      {
       "set": "docShape",
@@ -5046,8 +5046,8 @@
     "helpers": [
      "A shape sets the rules the way a document of that kind usually runs. You can change any of them afterwards.",
      "A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.",
-     "A few days with people coming and going: a third of the room is enough to move, one proposal an hour each.",
-     "No end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.",
+     "A few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.",
+     "No end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.",
      "Decide everything yourself — every rule is a card."
     ]
    },
@@ -5139,7 +5139,7 @@
     "eyebrow": "",
     "head": "Members may propose to invite people to join the membership, and all members must agree 🏛️.",
     "lock": "The members decide.",
-    "body": "What the room saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All members must agreeAny member may inviteWhat everyone asked for, without names.Answered3 of 3The document takes the dearestAll members must agree",
+    "body": "What the membership saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All members must agreeAny member may inviteWhat everyone asked for, without names.Answered3 of 3The document takes the dearestAll members must agree",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5177,7 +5177,7 @@
     "eyebrow": "",
     "head": "Membership is by invitation only.",
     "lock": "The members decide.",
-    "body": "Anyone may apply to join.Prefer thisOne motion proposes one rule; what you do not touch stands.What the room saidThe members decide.Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Answered3 of 3The document takes—",
+    "body": "Anyone may apply to join.Prefer thisOne motion proposes one rule; what you do not touch stands.What the membership saidThe members decide.Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Answered3 of 3The document takes—",
     "options": [
      {
       "set": null,
@@ -5217,7 +5217,7 @@
     "eyebrow": "",
     "head": "Nobody who proposes a change is ever named, even after the document is finished.",
     "lock": "The members decide.",
-    "body": "A proposer is never named unless they sign the proposal themselves.Prefer thisProposers are named in the closing record, never before.Prefer thisProposers are named in the closing record, and sooner if they sign.Prefer thisEvery proposal carries its proposer’s name from the moment it is made.Prefer thisWhat the room saidThe members decide.This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.No names, everNames from the startWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNobody’s name, ever",
+    "body": "A proposer is never named unless they sign the proposal themselves.Prefer thisProposers are named in the closing record, never before.Prefer thisProposers are named in the closing record, and sooner if they sign.Prefer thisEvery proposal carries its proposer’s name from the moment it is made.Prefer thisWhat the membership saidThe members decide.This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.No names, everNames from the startWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNobody’s name, ever",
     "options": [
      {
       "set": null,
@@ -5275,7 +5275,7 @@
     "eyebrow": "",
     "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when voting opens.",
     "lock": "The members decide.",
-    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.90%Nearly everyone80%Broad agreement78%60%A bare majorityWhat everyone asked for, without names.Answered3 of 3The document takes the highest78%In a room of 3, all 3 must vote for it by the end.",
+    "body": "A proposal passes when the members are % sure at the end.A membership of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the membership saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.90%Nearly everyone80%Broad agreement78%60%A bare majorityWhat everyone asked for, without names.Answered3 of 3The document takes the highest78%In a membership of 3, all 3 must vote for it by the end.",
     "options": [],
     "inputs": [
      {
@@ -5295,7 +5295,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "How Sure Must the Room Be? — close it",
+     "Proposal pass threshold? — close it",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
@@ -5442,7 +5442,7 @@
     "eyebrow": "",
     "head": "The drafting process will end on Weekday at HH:MM.",
     "lock": "The members decide.",
-    "body": "The drafting process will end on .The drafting process has no set end — it runs until too few members are active.Prefer thisWhat the room saidThe members decide.Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.TueNeverWhat everyone asked for, without names.Answered3 of 3The document takes the latestSaturday HH:MM",
+    "body": "The drafting process will end on .The drafting process has no set end — it runs until too few members are active.Prefer thisWhat the membership saidThe members decide.Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.TueNeverWhat everyone asked for, without names.Answered3 of 3The document takes the latestSaturday HH:MM",
     "options": [
      {
       "set": null,
@@ -5543,7 +5543,7 @@
     "eyebrow": "",
     "head": "Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
     "lock": "",
-    "body": "InviteAn invitation is constitutional, because who is in the room is what quorum is a fraction of: all members must agree, and one who says no keeps them out.If it passes it goes to the Founder, who may assent or refuse.",
+    "body": "InviteAn invitation is constitutional, because the membership is what quorum is a fraction of: all members must agree, and one who says no keeps them out.If it passes it goes to the Founder, who may assent or refuse.",
     "options": [],
     "inputs": [
      {
@@ -5572,7 +5572,7 @@
      "A full one-second assembly"
     ],
     "helpers": [
-     "An invitation is constitutional, because who is in the room is what quorum is a fraction of: all members must agree, and one who says no keeps them out.",
+     "An invitation is constitutional, because the membership is what quorum is a fraction of: all members must agree, and one who says no keeps them out.",
      "We should change this because…",
      "If it passes it goes to the Founder, who may assent or refuse."
     ]
@@ -5581,7 +5581,7 @@
     "eyebrow": "",
     "head": "What somebody preferred is never made public.",
     "lock": "The members decide.",
-    "body": "Votes are published with the closing record, never before.Prefer thisWhat the room saidThe members decide.Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.NeverAt the endWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNever revealed",
+    "body": "Votes are published with the closing record, never before.Prefer thisWhat the membership saidThe members decide.Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.NeverAt the endWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNever revealed",
     "options": [
      {
       "set": null,
@@ -5623,7 +5623,7 @@
     "eyebrow": "",
     "head": "Nobody stops being a member, however long they are away.",
     "lock": "The members decide.",
-    "body": "A membership lapses after days without logging in.What the room saidThe members decide.Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.30 daysNeverWhat everyone asked for, without names.Answered3 of 3The document takes the longestNeverNobody ever drops out of the count, however long they are away.",
+    "body": "A membership lapses after days without logging in.What the membership saidThe members decide.Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.30 daysNeverWhat everyone asked for, without names.Answered3 of 3The document takes the longestNeverNobody ever drops out of the count, however long they are away.",
     "options": [],
     "inputs": [
      {
@@ -5734,7 +5734,7 @@
     "eyebrow": "",
     "head": "Your Name",
     "lock": "",
-    "body": "🦉Your nameThis is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat.",
+    "body": "🦉Your nameThis is how you appear to the membership. Leave it blank and you appear as Anonymous. You can set it later from any seat.",
     "options": [],
     "inputs": [
      {
@@ -5761,7 +5761,7 @@
      "Save"
     ],
     "helpers": [
-     "This is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat."
+     "This is how you appear to the membership. Leave it blank and you appear as Anonymous. You can set it later from any seat."
     ]
    },
    "mypic": {
@@ -5827,7 +5827,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "How Sure Must the Room Be? — settled",
+     "Proposal pass threshold? — settled",
      "Rising Approval Threshold? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
@@ -5928,7 +5928,7 @@
      }
     ],
     "hints": [
-     "How Sure Must the Room Be? — settled",
+     "Proposal pass threshold? — settled",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
@@ -6339,7 +6339,7 @@
      }
     ],
     "hints": [
-     "How Sure Must the Room Be? — settled",
+     "Proposal pass threshold? — settled",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
@@ -6668,7 +6668,7 @@
     "eyebrow": "",
     "head": "33% of the members must have voted on a question before it can change the document.",
     "lock": "The members decide.",
-    "body": "Quorum is % of the membership.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest.1 of 14all of themWhat everyone asked for, without names.Answered3 of 3The document takes the highest10 of 1433% of a room of 3 is 1: one vote meets quorum, so a change never waits for more people to arrive.",
+    "body": "Quorum is % of the membership.What the membership saidThe members decide.Each member says the lowest they will accept, and the document takes the highest.1 of 14all of themWhat everyone asked for, without names.Answered3 of 3The document takes the highest10 of 1433% of a membership of 3 is 1: one vote meets quorum, so a change never waits for more people to arrive.",
     "options": [],
     "inputs": [
      {
@@ -6754,7 +6754,7 @@
     "eyebrow": "",
     "head": "82% sure at the end",
     "lock": "",
-    "body": "D Month YYYY · PassedThe membership changed how sure the room must be at the close to 82%.The charter should not change on a bare majority of the evidence.",
+    "body": "D Month YYYY · PassedThe membership changed how sure members must be at the close to 82%.The charter should not change on a bare majority of the evidence.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6764,7 +6764,7 @@
      }
     ],
     "hints": [
-     "How Sure Must the Room Be? — settled",
+     "Proposal pass threshold? — settled",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
@@ -6830,7 +6830,7 @@
     "eyebrow": "",
     "head": "Removing a member needs every member to agree, including them 🏛️.",
     "lock": "The members decide.",
-    "body": "Removing a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
+    "body": "Removing a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the membership saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
     "options": [
      {
       "set": null,
@@ -6942,7 +6942,7 @@
     "eyebrow": "",
     "head": "Text",
     "lock": "Set by the founder when the document was made.",
-    "body": "Set by the founder when the document was made.Set toStarts empty — the room writes it",
+    "body": "Set by the founder when the document was made.Set toStarts empty — the membership writes it",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7169,7 +7169,7 @@
     "eyebrow": "",
     "head": "Members may propose to invite people to join the membership, and all members must agree 🏛️.",
     "lock": "The members decide.",
-    "body": "What the room saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All members must agreeAny member may inviteWhat everyone asked for, without names.Answered3 of 3The document takes the dearestAll members must agree",
+    "body": "What the membership saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All members must agreeAny member may inviteWhat everyone asked for, without names.Answered3 of 3The document takes the dearestAll members must agree",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7207,7 +7207,7 @@
     "eyebrow": "",
     "head": "Membership is by invitation only.",
     "lock": "The members decide.",
-    "body": "Anyone may apply to join.Prefer thisOne motion proposes one rule; what you do not touch stands.What the room saidThe members decide.Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Answered3 of 3The document takes—",
+    "body": "Anyone may apply to join.Prefer thisOne motion proposes one rule; what you do not touch stands.What the membership saidThe members decide.Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Answered3 of 3The document takes—",
     "options": [
      {
       "set": null,
@@ -7247,7 +7247,7 @@
     "eyebrow": "",
     "head": "Nobody who proposes a change is ever named, even after the document is finished.",
     "lock": "The members decide.",
-    "body": "A proposer is never named unless they sign the proposal themselves.Prefer thisProposers are named in the closing record, never before.Prefer thisProposers are named in the closing record, and sooner if they sign.Prefer thisEvery proposal carries its proposer’s name from the moment it is made.Prefer thisWhat the room saidThe members decide.This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.No names, everNames from the startWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNobody’s name, ever",
+    "body": "A proposer is never named unless they sign the proposal themselves.Prefer thisProposers are named in the closing record, never before.Prefer thisProposers are named in the closing record, and sooner if they sign.Prefer thisEvery proposal carries its proposer’s name from the moment it is made.Prefer thisWhat the membership saidThe members decide.This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.No names, everNames from the startWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNobody’s name, ever",
     "options": [
      {
       "set": null,
@@ -7305,7 +7305,7 @@
     "eyebrow": "",
     "head": "The members must be 82% sure a proposal is better for it to pass by the end, starting at 55% when voting opens.",
     "lock": "The members decide.",
-    "body": "A proposal passes when the members are % sure at the end.A room of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.90%Nearly everyone80%Broad agreement78%60%A bare majorityWhat everyone asked for, without names.Answered3 of 3The document takes the highest78%In a room of 3, all 3 must vote for it by the end.",
+    "body": "A proposal passes when the members are % sure at the end.A membership of 3 that agrees without exception can be 93% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Uses the Bradley–Terry method to allow for a decision with few votes — read more.What the membership saidThe members decide.Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.90%Nearly everyone80%Broad agreement78%60%A bare majorityWhat everyone asked for, without names.Answered3 of 3The document takes the highest78%In a membership of 3, all 3 must vote for it by the end.",
     "options": [],
     "inputs": [
      {
@@ -7325,7 +7325,7 @@
     ],
     "hints": [
      "We should change this because…",
-     "How Sure Must the Room Be? — close it",
+     "Proposal pass threshold? — close it",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
@@ -7478,7 +7478,7 @@
     "eyebrow": "",
     "head": "The drafting process will end on Weekday at HH:MM.",
     "lock": "The members decide.",
-    "body": "The drafting process will end on .The drafting process has no set end — it runs until too few members are active.Prefer thisWhat the room saidThe members decide.Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.TueNeverWhat everyone asked for, without names.Answered3 of 3The document takes the latestSaturday HH:MM",
+    "body": "The drafting process will end on .The drafting process has no set end — it runs until too few members are active.Prefer thisWhat the membership saidThe members decide.Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.TueNeverWhat everyone asked for, without names.Answered3 of 3The document takes the latestSaturday HH:MM",
     "options": [
      {
       "set": null,
@@ -7688,7 +7688,7 @@
     "eyebrow": "",
     "head": "What somebody preferred is never made public.",
     "lock": "The members decide.",
-    "body": "Votes are published with the closing record, never before.Prefer thisWhat the room saidThe members decide.Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.NeverAt the endWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNever revealed",
+    "body": "Votes are published with the closing record, never before.Prefer thisWhat the membership saidThe members decide.Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.NeverAt the endWhat everyone asked for, without names.Answered3 of 3The document takes the most privateNever revealed",
     "options": [
      {
       "set": null,
@@ -7730,7 +7730,7 @@
     "eyebrow": "",
     "head": "Nobody stops being a member, however long they are away.",
     "lock": "The members decide.",
-    "body": "A membership lapses after days without logging in.What the room saidThe members decide.Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.30 daysNeverWhat everyone asked for, without names.Answered3 of 3The document takes the longestNeverNobody ever drops out of the count, however long they are away.",
+    "body": "A membership lapses after days without logging in.What the membership saidThe members decide.Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.30 daysNeverWhat everyone asked for, without names.Answered3 of 3The document takes the longestNeverNobody ever drops out of the count, however long they are away.",
     "options": [],
     "inputs": [
      {
@@ -7859,7 +7859,7 @@
     "eyebrow": "",
     "head": "Your Name",
     "lock": "",
-    "body": "ABYour nameThis is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat.",
+    "body": "ABYour nameThis is how you appear to the membership. Leave it blank and you appear as Anonymous. You can set it later from any seat.",
     "options": [],
     "inputs": [
      {
@@ -7886,7 +7886,7 @@
      "Save"
     ],
     "helpers": [
-     "This is how you appear in the room. Leave it blank and you appear as Anonymous. You can set it later from any seat."
+     "This is how you appear to the membership. Leave it blank and you appear as Anonymous. You can set it later from any seat."
     ]
    },
    "mypic": {
@@ -7971,7 +7971,7 @@
     ],
     "hints": [
      "I am changing this because…",
-     "How Sure Must the Room Be? — settled",
+     "Proposal pass threshold? — settled",
      "Rising Approval Threshold? — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
@@ -8075,7 +8075,7 @@
      }
     ],
     "hints": [
-     "How Sure Must the Room Be? — settled",
+     "Proposal pass threshold? — settled",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
@@ -8605,7 +8605,7 @@
      }
     ],
     "hints": [
-     "How Sure Must the Room Be? — settled",
+     "Proposal pass threshold? — settled",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
@@ -9053,7 +9053,7 @@
     "eyebrow": "",
     "head": "33% of the members must have voted on a question before it can change the document.",
     "lock": "The members decide.",
-    "body": "Quorum is % of the membership.What the room saidThe members decide.Each member says the lowest they will accept, and the document takes the highest.1 of 14all of themWhat everyone asked for, without names.Answered3 of 3The document takes the highest10 of 1433% of a room of 3 is 1: one vote meets quorum, so a change never waits for more people to arrive.",
+    "body": "Quorum is % of the membership.What the membership saidThe members decide.Each member says the lowest they will accept, and the document takes the highest.1 of 14all of themWhat everyone asked for, without names.Answered3 of 3The document takes the highest10 of 1433% of a membership of 3 is 1: one vote meets quorum, so a change never waits for more people to arrive.",
     "options": [],
     "inputs": [
      {
@@ -9150,7 +9150,7 @@
     "eyebrow": "",
     "head": "82% sure at the end",
     "lock": "",
-    "body": "D Month YYYY · PassedThe membership changed how sure the room must be at the close to 82%.The charter should not change on a bare majority of the evidence.",
+    "body": "D Month YYYY · PassedThe membership changed how sure members must be at the close to 82%.The charter should not change on a bare majority of the evidence.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -9160,7 +9160,7 @@
      }
     ],
     "hints": [
-     "How Sure Must the Room Be? — settled",
+     "Proposal pass threshold? — settled",
      "Rising Approval Threshold? — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
@@ -9197,7 +9197,7 @@
     "eyebrow": "",
     "head": "Removing a member needs every member to agree, including them 🏛️.",
     "lock": "The members decide.",
-    "body": "Removing a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the room saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
+    "body": "Removing a member needs every other member to agree.Prefer thisA member is removed by a proposal, voted on like any other.Prefer thisWhat the membership saidThe members decide.Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Answered3 of 3The document takes—",
     "options": [
      {
       "set": null,
@@ -9312,7 +9312,7 @@
     "eyebrow": "",
     "head": "Text",
     "lock": "",
-    "body": "The text the document started from. Drafting changes the document in place, so the page may have moved on — this is what stood when it began.It began empty — the room wrote it.",
+    "body": "The text the document started from. Drafting changes the document in place, so the page may have moved on — this is what stood when it began.It began empty — the membership wrote it.",
     "options": [],
     "inputs": [],
     "foot": [
