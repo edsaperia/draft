@@ -190,7 +190,12 @@ const IN_PAGE = () => {
         && a === ga.lastElementChild && b === gb.firstElementChild;
     };
     let prevRow = null;
-    return Array.from(card.querySelectorAll('.lanepick, [role="radio"], .pick > button')).map((b) => {
+    // `[role="switch"]` joins them (Ed, 254) so 🍾's power table stays measured
+    // now that it is drawn with `.switch` rather than `.pick > .lanepick`. It
+    // costs P1 nothing — that pass filters on `dot`, and a switch has none, so
+    // a control with no radio mark never enters the left-edge comparison.
+    return Array.from(card.querySelectorAll(
+      '.lanepick, [role="radio"], [role="switch"], .pick > button')).map((b) => {
       const dot = b.querySelector('.dot');
       const row = b.closest('.pick') || b;
       const rr = rect(row);
@@ -198,7 +203,9 @@ const IN_PAGE = () => {
       const gap = (pr && rr && flush(prevRow, row)) ? R2(rr[1] - (pr[1] + pr[3])) : null;
       prevRow = row;
       return { label: txt(b), x: (rect(dot) || rect(b))[0], dot: !!dot,
-               on: b.getAttribute('aria-pressed') === 'true' || b.classList.contains('on'),
+               on: b.getAttribute('aria-pressed') === 'true'
+                   || b.getAttribute('aria-checked') === 'true'
+                   || b.classList.contains('on'),
                y: rr ? rr[1] : null, h: rr ? R2(row.getBoundingClientRect().height) : null,
                gap };
     });
@@ -300,7 +307,8 @@ const IN_PAGE = () => {
       // Hollow Oak charter's "Ordinary spending on the running of the house"
       // as engine vocabulary. What the surface says is `.headrule`/`.headtitle`.
       card.querySelectorAll('.headlab, .headrule, .headtitle, .lockline, ' +
-        '.setnote, .rsub, .qwhy, .exp, .why, .lanepick, .commitrow button, .race-mid button').forEach(add);
+        '.setnote, .rsub, .qwhy, .exp, .why, .lanepick, .switch, ' +
+        '.commitrow button, .race-mid button').forEach(add);
       card.querySelectorAll('input[placeholder],[data-placeholder],[data-ph]').forEach((el) => {
         if (el.closest('.emojibox, .avpick')) return;
         const t = el.getAttribute('placeholder') || el.getAttribute('data-placeholder') || el.getAttribute('data-ph');

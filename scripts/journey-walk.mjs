@@ -897,11 +897,16 @@ const shapeAtBegin = async () => {
  * needs it, where ✉️'s pen is `doorShuts`' subject and 🌍's is the amendment's.
  * Membership's **🛡️** is the switch that moves, for the same reason: its ✒️
  * has to survive to the door checks after the start. */
-const BZ_SEL = (z, pw) => '.setupcard button[data-bzone="' + z + '"][data-bpower="' + pw + '"]';
+// Selected as switches rather than as buttons (Ed, 254): the table's controls
+// are the design system's `.switch`, not `.lanepick`'s radio, and `role` is the
+// half of that a walk can hold — a regression to a radio is then a dead
+// selector here rather than a green walk over the wrong control.
+const BZ_SEL = (z, pw) =>
+  '.setupcard [role="switch"][data-bzone="' + z + '"][data-bpower="' + pw + '"]';
 const bzCells = () => page.evaluate(() =>
   [...document.querySelectorAll('.setupcard .beginzone')].map((z) => ({
     name: (z.querySelector('.fieldlab') || {}).textContent.trim(),
-    cells: [...z.querySelectorAll('button[data-bzone]')].map((b) => ({
+    cells: [...z.querySelectorAll('[role="switch"][data-bzone]')].map((b) => ({
       pw: b.dataset.bpower, says: b.textContent.trim() })),
   })));
 // the ✒️/🛡️ tab's own head sentence for one key — the surface's word on who

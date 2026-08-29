@@ -91,6 +91,7 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
 - `type scale` [concept] — `--t-lead / --t-body / --t-ui / --t-small / --t-cap / --t-micro`, and **every piece of text on the surface is on it**; a glyph size is the one allowed literal. `.eyebrow` is the upper-case label treatment at `--t-micro`. Why it names its users in its own selector: `design/DECISIONS.md`.
 - `spacing scale` [concept] — `--s1`–`--s5` on a 4px grid; radii `--r-sm / --r-md / --r-lg`; elevation `--shadow-sm/md/lg/xl`, neutral and never tinted; layout constants `--rail-left / --rail-right / --nav-h`. **Open is said by depth, not by outline** — Gotchas below.
 - `lanepick` [symbol] — the session-view's own radio, and what a settings choice is drawn with: one of these, or none of them yet. **No box round each option** — Gotchas below.
+- `switch` [symbol] — the on/off control, for the thing that is **not** a choice among peers: `role="switch"`, `aria-checked`, `--primary` on and grey off, no box, thumb on `--switch-ms`. 🍾's power table is its one user; everything else stays `lanepick`.
 
 **Product (UI and founding):**
 - `session-view.html` [file] — **the one surface** (`design/session-view.html`, stage 8, Q418 (a)): one page from blank arrival to a live, drafted document; `setup.html` and the other two are redirects. The founding order, the band and the birth’s own layout are **SURFACE §8**; the card kinds and the composer **§9**; the marks and the rail **§6**; the wallets **§7**.

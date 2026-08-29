@@ -10048,14 +10048,23 @@
   // Drawn only before the press and only for the Founder — after it there is
   // nothing left to choose, and the batch list above says what was chosen.
   const BEGIN_PW_LABEL = { keep: 'Kept', mixed: 'Mixed', down: 'Laid down' };
+  // **…and a switch is what draws them** (Ed, 254). They had been `.lanepick`s,
+  // which is the design system's *radio* — *one of these, or none of them yet*
+  // — and these are nothing of the kind: each power is an independent on/off
+  // and the handler flips one without touching its neighbour, so the drawing
+  // contradicted the behaviour. `.switch` (system.css) is the control for that,
+  // on = keep and off = lay down. **Mixed draws off**, its label saying why:
+  // keeping in a mixed zone lays nothing further down, so the position *is*
+  // off, and the sentence under the table explains the word.
   const beginSwitch = (z, pw) => {
     const st = beginZoneState(z, pw);
     const on = st === 'keep';
-    return '<div class="pick' + (on ? ' on' : '') + '">' +
-      '<button class="lanepick" type="button" aria-pressed="' + on + '"' +
+    return '<button class="switch' + (st === 'mixed' ? ' mixed' : '') + '"' +
+      ' type="button" role="switch" aria-checked="' + on + '"' +
       ' data-bzone="' + esc(z.name) + '" data-bpower="' + pw + '">' +
-      '<span class="dot"></span><span>' + (pw === 'u' ? '✒️' : '🛡️') + ' ' +
-      BEGIN_PW_LABEL[st] + '</span></button></div>';
+      '<span class="track"><span class="thumb"></span></span>' +
+      '<span class="lab">' + (pw === 'u' ? '✒️' : '🛡️') + ' ' +
+      BEGIN_PW_LABEL[st] + '</span></button>';
   };
   const beginZonesHtml = () => {
     if (constituted() || !amFounder()) return '';

@@ -105,7 +105,7 @@ const norm = (s) => String(s == null ? '' : s)
  * One card, reduced to its copy. `all` is dropped — a concatenation of every
  * other field, which would print every change twice — and so is `copy`, for the
  * same reason at one remove: it is `.headlab, .headrule, .headtitle, .lockline,
- * .setnote, .rsub, .qwhy, .exp, .why, .lanepick, .commitrow button` plus the
+ * .setnote, .rsub, .qwhy, .exp, .why, .lanepick, .switch, .commitrow button` plus the
  * placeholders and titles, which is exactly `eyebrow` + `head` + `lock` +
  * `options` + `foot` + `hints` + the helper sentences kept below. `on`,
  * `value` and `disabled` go too: a radio's state, what the walk typed and a
