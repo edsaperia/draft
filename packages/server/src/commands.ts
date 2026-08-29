@@ -9,7 +9,7 @@
 import type { ConstitutionSession } from '../../constitution/src/index.js';
 import type { EngineBridge } from '../../constitution/src/engine-bridge.js';
 import type {
-  MotionAnswer, MotionPayload, Power, SettingId, SettingValue,
+  MotionAnswer, MotionPayload, Power, PowerKey, SettingId, SettingValue,
 } from '../../constitution/src/index.js';
 import type { PatchSet } from '../../engine-core/src/text/types.js';
 import { emojiFaceOf } from './faces.js';
@@ -173,6 +173,29 @@ function patchOf(args: Args): PatchSet {
   return { baseVersion, hunks };
 }
 
+/**
+ * 🍾's power switches as the card collected them (entry 158): a list of
+ * `{ setting, power }`, or nothing at all where the press carried none —
+ * and the two are different answers, an empty list keeping every power where
+ * an absent one lays the Text's pair down. Shape only; the module validates
+ * the keys against `HELD` and is the backstop, not this door.
+ */
+function laidDownOf(args: Args): Array<{ setting: PowerKey; power: Power }> | undefined {
+  const raw = args.laidDown;
+  if (raw === undefined || raw === null) return undefined;
+  if (!Array.isArray(raw)) throw new Error("'laidDown' must be a list");
+  if (raw.length > 64) throw new Error("'laidDown' names too many powers");
+  return raw.map((r: unknown) => {
+    if (r === null || typeof r !== 'object') throw new Error('a laid-down power is an object');
+    const { setting, power } = r as Record<string, unknown>;
+    if (typeof setting !== 'string' || setting === '') throw new Error('a laid-down power names a setting');
+    if (power !== 'unilateral' && power !== 'assent') {
+      throw new Error("a power is 'unilateral' or 'assent'");
+    }
+    return { setting: setting as PowerKey, power };
+  });
+}
+
 function founderOnly(actor: Actor): void {
   if (!actor.isFounder) throw new Error('only the founder may do that');
 }
@@ -213,9 +236,11 @@ const HANDLERS: Record<string, Handler> = {
   // module refuses while a judge-gate setting is still being decided, and
   // names it; the readiness readout in the founder's view says who is
   // holding it up. Informs, never blocks: nobody else's answer is waited on.
-  'begin': (cs, a, t) => {
+  // …and it carries what the card's power switches collected (entry 158):
+  // one act, one list, one `t`, so the whole batch is one news card.
+  'begin': (cs, a, t, args) => {
     founderOnly(a);
-    cs.begin(t);
+    cs.begin(t, laidDownOf(args));
   },
   'set-convenor-membership': (cs, a, t, args) => {
     founderOnly(a);

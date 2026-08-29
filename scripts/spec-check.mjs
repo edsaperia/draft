@@ -79,10 +79,22 @@ function pageMaps() {
   };
   const grant = arr('GRANT_KEYS');
   const mid = {};
-  for (const [, k, v] of s.match(/const MID = \{([^}]*)\}/)[1].matchAll(/([a-z]+): '([A-Za-z]+)'/g)) mid[k] = v;
+  // the doors are `door:invite` / `door:remove` in the module (entry 94), so
+  // the value half takes a colon — without it MID silently loses the two keys
+  // that have no SURFACE §4 row to fall back on
+  for (const [, k, v] of s.match(/const MID = \{([^}]*)\}/)[1].matchAll(/([a-z]+): '([A-Za-z:]+)'/g)) mid[k] = v;
   const cards = [...new Set([...s.matchAll(/\{ k: '([a-z-]+)'/g)].map((x) => x[1]))];
+  // 🍾's zone table (entry 158): one `{ name, glyph?, down?, keys }` per zone.
+  // Pulled out row by row so a reshape that keeps the literal's shape needs no
+  // edit here, and a reshape that does not goes red with a sentence rather
+  // than an empty list quietly passing.
+  const zoneSrc = s.match(/const BEGIN_ZONES = \[([\s\S]*?)\n  \];/);
+  if (!zoneSrc) throw new Error('BEGIN_ZONES not found in session-view.html');
+  const BEGIN_ZONES = [...zoneSrc[1].matchAll(/name: '([^']+)'[\s\S]*?keys: \[([^\]]*)\]/g)]
+    .map((m) => ({ name: m[1], keys: [...m[2].matchAll(/'([a-z-]+)'/g)].map((x) => x[1]) }));
+  if (!BEGIN_ZONES.length) throw new Error('BEGIN_ZONES holds no zone the checker can read');
   return { ORDER: arr('ORDER'), ACK_KEYS: grant.concat(arr('ACK_KEYS')), CHOSEN: objKeys('CHOSEN'),
-    PROPOSE: objKeys('PROPOSE'), MID: mid, cards };
+    PROPOSE: objKeys('PROPOSE'), MID: mid, cards, BEGIN_ZONES };
 }
 
 // ---- table parsing ----------------------------------------------------------
@@ -554,6 +566,46 @@ function checkApplicantJudged() {
   else note('  the readout counts on the motion’s own key');
 }
 
+/**
+ * 🍾's power table covers every power-holder exactly once (entry 158).
+ *
+ * `BEGIN_ZONES` is the one place the page knows what a zone contains, and the
+ * list it collects is handed to `begin` as **authoritative and complete over
+ * `HELD`** — the fold applies it and does nothing else. So a key missing from
+ * the table is a power silently kept past the start with no control anywhere
+ * that says so, and a key in two zones is one the two switches disagree
+ * about. Neither is visible on the surface: the card would draw three
+ * perfectly ordinary rows.
+ *
+ * `HELD` is not exported from the bundle, so it is rebuilt from what is —
+ * every `CATALOGUE` entry that is not personal, plus `DOORS` — and the page's
+ * keys are page keys, so they are translated through SURFACE §4's own map,
+ * which `checkKeys` has already asserted against the catalogue.
+ */
+function checkBeginZones(M, pm) {
+  note('🍾’s power table — BEGIN_ZONES against the catalogue’s power-holders');
+  const toId = new Map(tableAfter('SURFACE.md', 'keys').map((r) => [r['page key'], r.setting]));
+  // the doors ride the page's own MID, having no catalogue row to map
+  const idOf = (k) => pm.MID[k] || toId.get(k) || k;
+  const want = new Set([
+    ...M.CATALOGUE.filter((e) => e.kind !== 'personal').map((e) => e.id),
+    ...M.DOORS,
+  ]);
+  const seen = new Map();
+  for (const z of pm.BEGIN_ZONES) {
+    for (const k of z.keys) {
+      const id = idOf(k);
+      if (!want.has(id)) find('begin', `BEGIN_ZONES puts '${k}' in ${JSON.stringify(z.name)}, which is not a power-holder`);
+      else if (seen.has(id)) find('begin', `BEGIN_ZONES names '${k}' twice — ${JSON.stringify(seen.get(id))} and ${JSON.stringify(z.name)}`);
+      else seen.set(id, z.name);
+    }
+  }
+  for (const id of want) {
+    if (!seen.has(id)) find('begin', `'${id}' carries a crown pair and is in no 🍾 zone — the start would keep it with nothing on the card saying so`);
+  }
+  note(`  ${pm.BEGIN_ZONES.length} zones, ${seen.size} of ${want.size} power-holders covered once each`);
+}
+
 function checkComposer(M, pm) {
   note('The composer maps — PROPOSE · ANSWER · the rung values · PW_*');
   const page = js('design/session-view.html'); const setup = js('design/setup.js');
@@ -903,6 +955,7 @@ checkWallets(pm);
 checkOrder(pm);
 checkSoloJudgment();
 checkApplicantJudged();
+checkBeginZones(M, pm);
 checkComposer(M, pm);
 checkPicture();
 checkBannedWords();

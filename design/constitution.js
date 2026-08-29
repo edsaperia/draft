@@ -1368,13 +1368,30 @@ var CONSTITUTION = (() => {
         case "constituted": {
           this.constitutedT = event.t;
           this.anchors = this.computeAnchors(event.t);
-          this.setPowers(this.settings.get("startingText"), { unilateral: false, assent: false });
           for (const st of this.settings.values()) {
             if (!st.pendingRelease.unilateral && !st.pendingRelease.assent) continue;
             this.setPowers(st, {
               unilateral: st.powers.unilateral && !st.pendingRelease.unilateral,
               assent: st.powers.assent && !st.pendingRelease.assent
             });
+          }
+          if (event.laidDown === void 0) {
+            this.setPowers(this.settings.get("startingText"), { unilateral: false, assent: false });
+          } else {
+            const down = /* @__PURE__ */ new Map();
+            for (const r of event.laidDown) {
+              const cur = down.get(r.setting) ?? { unilateral: false, assent: false };
+              cur[r.power] = true;
+              down.set(r.setting, cur);
+            }
+            for (const [k, d] of down) {
+              const st = this.settings.get(k);
+              if (!st) continue;
+              this.setPowers(st, {
+                unilateral: st.powers.unilateral && !d.unilateral,
+                assent: st.powers.assent && !d.assent
+              });
+            }
           }
           break;
         }
@@ -2213,16 +2230,35 @@ var CONSTITUTION = (() => {
      * `constituted` fold: the Text's ✒️/🛡️ laid down, the ramp anchored,
      * judging open. Readiness informs and never blocks (Q443c): a member who
      * has not answered a question the room has already resolved holds nothing up.
+     *
+     * **…and what the founder carries across the line is 🍾's own question**
+     * (Ed, 2026-08-27, entry 158; Q1018, R-057). `laidDown` is what the card's
+     * power switches collected — one list of `{ setting, power }`, validated
+     * here because this is the one place a page bug could release the wrong
+     * power. Omitted, the fold is the one it always was. A **list** rather than
+     * a pair, and one command rather than N, because the batch is the act: N
+     * `relinquish` calls at N stamps would be N news cards (entry 162), and
+     * before the start they would *delegate* on a delegable setting's second
+     * power (R-045) instead of handing over.
      */
-    begin(t) {
+    begin(t, laidDown) {
       this.requireOpen("beginning");
       if (this.constitutedT !== null) throw new Error("the document has already begun");
       const waiting = this.waitingOn();
       if (waiting.length > 0) {
         throw new Error(`the document cannot begin while '${waiting.join("', '")}' ${waiting.length === 1 ? "is" : "are"} still being decided (§9.0b)`);
       }
+      const list = laidDown === void 0 ? void 0 : laidDown.map((r) => {
+        if (!HELD.includes(r.setting)) {
+          throw new Error(`'${r.setting}' carries no power to lay down at the start (§9.7)`);
+        }
+        if (r.power !== "unilateral" && r.power !== "assent") {
+          throw new Error(`'${String(r.power)}' is not a power on '${r.setting}' (§9.7)`);
+        }
+        return { setting: r.setting, power: r.power };
+      });
       const before = new Map(HELD.map((k) => [k, { ...this.settings.get(k).powers }]));
-      this.emit({ type: "constituted", t });
+      this.emit(list === void 0 ? { type: "constituted", t } : { type: "constituted", t, laidDown: list });
       const laid = [];
       for (const k of HELD) {
         const was = before.get(k);

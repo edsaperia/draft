@@ -87,6 +87,111 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
     expect(s.readiness().waiting).toEqual(['chamber']);     // bo alone holds it
   });
 
+  /* ---- 🍾's power switches (entry 158, Q1018, R-057) --------------------
+   * The card carries a switch per zone × power and hands `begin` one list of
+   * what to lay down. Absent, the fold is the one it always was — which is
+   * what keeps `golden-log.test.ts` green without a re-freeze. */
+  const readyDoc = (slug: string) => {
+    const s = ConstitutionSession.open({ title: 'T', slug,
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 0);
+    const bo = s.invite(1, 'bo@example.org');
+    s.arrive(1, bo);
+    s.confirmStartingText(1, 'x');
+    for (const [k, v] of Object.entries({
+      ending: { endsAtMs: 1_000_000 }, bar: { pct: 66 }, chamber: { rung: 'link' },
+      rate: { grant: 4, cap: 8, dripMinutes: 240 }, ...FOUNDER_SET,
+    })) { s.reclaim(1, k as never); s.setSetting(1, k as never, v as never); }
+    return { s, bo };
+  };
+
+  it('no list means no field, and the fold it always had', () => {
+    const { s } = readyDoc('z1');
+    s.begin(2);
+    const ev = s.logEntries().map((e) => e.event).find((e) => e.type === 'constituted')!;
+    // **absent, not empty**: a log written today replays byte for byte in a
+    // module that knows nothing about the field
+    expect(Object.keys(ev)).toEqual(['type', 't']);
+    expect(s.settingState('startingText').powers).toEqual({ unilateral: false, assent: false });
+    expect(s.settingState('rate').powers).toEqual({ unilateral: true, assent: true });
+  });
+
+  it('the list is the whole answer: it lays down what it names and nothing else', () => {
+    const { s } = readyDoc('z2');
+    s.begin(2, [
+      { setting: 'rate', power: 'unilateral' },
+      { setting: 'door:invite', power: 'assent' },
+      { setting: 'startingText', power: 'unilateral' },
+    ]);
+    expect(s.settingState('rate').powers).toEqual({ unilateral: false, assent: true });
+    expect(s.settingState('door:invite').powers).toEqual({ unilateral: true, assent: false });
+    // the Text keeps the shield it was not told to lay down — the whole of
+    // what the overturn of Q387 buys
+    expect(s.settingState('startingText').powers).toEqual({ unilateral: false, assent: true });
+    expect(s.settingState('quorum').powers).toEqual({ unilateral: true, assent: true });
+    const r = ConstitutionSession.replay(s.logEntries().slice());
+    expect(r.rollingHash()).toBe(s.rollingHash());
+    expect(r.settingState('startingText').powers).toEqual({ unilateral: false, assent: true });
+  });
+
+  it('an empty list keeps everything, the Text included', () => {
+    const { s } = readyDoc('z3');
+    s.begin(2, []);
+    expect(s.settingState('startingText').powers).toEqual({ unilateral: true, assent: true });
+  });
+
+  it('a pending release is spent whatever the list says', () => {
+    const { s } = readyDoc('z4');
+    // recorded acts, made on the settings' own tabs while the founding ran
+    s.relinquish(1, 'rate', 'assent');
+    s.relinquish(1, 'quorum', 'unilateral');
+    // …and a list that says nothing about either of them
+    s.begin(2, [{ setting: 'startingText', power: 'assent' }]);
+    expect(s.settingState('rate').powers).toEqual({ unilateral: true, assent: false });
+    expect(s.settingState('quorum').powers).toEqual({ unilateral: false, assent: true });
+    expect(s.settingState('startingText').powers).toEqual({ unilateral: true, assent: false });
+  });
+
+  it('the list only ever lowers: a power already given is a no-op, not an error', () => {
+    const { s } = readyDoc('z5');
+    s.relinquish(1, 'rate', 'assent');
+    s.begin(2, [
+      { setting: 'rate', power: 'assent' },      // already promised away
+      { setting: 'rate', power: 'unilateral' },
+    ]);
+    expect(s.settingState('rate').powers).toEqual({ unilateral: false, assent: false });
+    expect(s.settingState('rate').holder).toBe('members');
+  });
+
+  it('a key that carries no power is refused before anything is emitted', () => {
+    const { s } = readyDoc('z6');
+    expect(() => s.begin(2, [{ setting: 'displayName' as never, power: 'assent' }]))
+      .toThrow(/'displayName' carries no power to lay down/);
+    expect(s.constitutedAtT).toBeNull();
+    expect(s.logEntries().some((e) => e.event.type === 'constituted')).toBe(false);
+    // …and the document still begins afterwards
+    s.begin(3, []);
+    expect(s.constitutedAtT).toBe(3);
+  });
+
+  it('a whole zone laid down is one release batch per member, never one per pair (entry 162)', () => {
+    const { s, bo } = readyDoc('z7');
+    // the Membership zone, as `BEGIN_ZONES` has it: both doors and the four
+    // rules — twelve pairs in one press
+    const zone = ['door:invite', 'door:remove', 'admission', 'applications',
+      'removal', 'lapse'] as const;
+    s.begin(2, [...zone, 'startingText' as const].flatMap((k) => [
+      { setting: k, power: 'unilateral' as const },
+      { setting: k, power: 'assent' as const },
+    ]));
+    const owed = [...s.memberRecords().get(bo)!.releasesOwed];
+    expect(owed).toHaveLength(1);
+    const batch = s.releaseBatchRecords().get(owed[0])!;
+    // the Text's own pair rides the same batch — one act, one card, one OK
+    expect(batch.releases).toHaveLength(14);
+    expect(batch.t).toBe(2);
+    for (const k of zone) expect(s.settingState(k).holder).toBe('members');
+  });
+
   it('spends every pending release in the same act (R-048)', () => {
     const s = ConstitutionSession.open({ title: 'T', slug: 't2',
       convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 0);

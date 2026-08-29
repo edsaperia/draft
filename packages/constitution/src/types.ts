@@ -124,7 +124,20 @@ export type ConstitutionEvent =
   /** Founding questions only — motions have no electorate shift (v0.48). */
   | { type: 'ceremony-ground-shifted'; t: number; settings: SettingId[];
       cause: 'arrival' | 'departure'; member: MemberId }
-  | { type: 'constituted'; t: number }
+  /**
+   * 🍾. **The start lays down whatever it was not told to keep** (Ed,
+   * 2026-08-27, entry 158; Q1018, R-057, overturning Q387 / R-043's first
+   * clause). The Begin card carries a switch per zone × power, and what it
+   * collected rides the event: one act, one `t`, so entry 162 reports the
+   * whole of it as one news card. **Optional is load-bearing.** Absent means
+   * the old fold — the Text's pair down and nothing else — so every log
+   * already on disk replays byte for byte; present, the list is authoritative
+   * and complete over `HELD`, and an empty list therefore keeps everything,
+   * the Text included. Derived at the fold rather than emitted per release,
+   * like the Text's own lay-down and Q506's applications pair.
+   */
+  | { type: 'constituted'; t: number;
+      laidDown?: Array<{ setting: PowerKey; power: Power }> }
   /* -- owed decisions (§9.6a: inheritance as unacknowledged decisions) ---- */
   | { type: 'ok-owed'; t: number; member: MemberId; settings: SettingId[] }
   | { type: 'ok-given'; t: number; member: MemberId; setting: SettingId }

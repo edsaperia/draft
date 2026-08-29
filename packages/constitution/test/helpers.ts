@@ -26,6 +26,12 @@ export function buildConstituted(opts: {
    */
   doors?: { invite?: { unilateral: boolean; assent: boolean };
     remove?: { unilateral: boolean; assent: boolean } };
+  /**
+   * What 🍾 was told to keep on the Text (entry 158, R-057): default neither,
+   * which is the press carrying no list at all and the fold every document
+   * before this had. Anything here sends `begin` the list instead.
+   */
+  keepText?: { unilateral?: boolean; assent?: boolean };
 } = {}) {
   const s = ConstitutionSession.open({
     title: 'Hollow Oak Club Charter',
@@ -81,7 +87,15 @@ export function buildConstituted(opts: {
     if (!keep.unilateral) s.relinquish(2, door, 'unilateral');
     if (!keep.assent) s.relinquish(2, door, 'assent');
   }
-  s.begin(2); // 🍾 — the founder's explicit start (Q443)
+  // 🍾 — the founder's explicit start (Q443), and what it was told to keep
+  // (entry 158): no list at all where nothing is kept, so the common case
+  // stays the fold every log on disk replays into
+  if (opts.keepText) {
+    const keep = opts.keepText;
+    s.begin(2, ([['unilateral', keep.unilateral], ['assent', keep.assent]] as const)
+      .filter(([, k]) => !k)
+      .map(([power]) => ({ setting: 'startingText' as const, power })));
+  } else s.begin(2);
   expect(s.constitutedAtT).toBe(2);
   return { s, bo, cy };
 }

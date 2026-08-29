@@ -75,6 +75,40 @@ describe('the Text carries a crown pair (Q440)', () => {
   });
 });
 
+/* **The start lays down whatever 🍾 was not told to keep** (Ed, 2026-08-27,
+ * entry 158; Q1018, R-057, overturning Q387 / R-043's first clause). Until
+ * now the only road to a held Text was a post-start `reserve` motion, because
+ * the fold cleared both powers unconditionally. The Begin card's 📄 row is the
+ * first place either power on the Text can be kept, and the module's half of
+ * it is one optional field. */
+describe('🍾 keeps on the Text what it was told to keep (entry 158)', () => {
+  it('a 🍾 told to keep ✒️ leaves it held after the start', () => {
+    const { s } = buildConstituted({ keepText: { unilateral: true } });
+    expect(s.settingState('startingText').powers).toEqual({ unilateral: true, assent: false });
+    expect(s.settingState('startingText').holder).toBe('convenor');
+    expect(s.crowned()).toBe(true);
+    // the shield it was not told to keep went, so an adoption still stands by
+    // itself — the two halves of the pair are answered separately
+    expect(s.textAdoptionNeedsAssent()).toBe(false);
+  });
+
+  it('a 🍾 told to keep 🛡️ needs no reserve motion to shield an adoption', () => {
+    const { s } = buildConstituted({ keepText: { assent: true } });
+    expect(s.settingState('startingText').powers).toEqual({ unilateral: false, assent: true });
+    expect(s.textAdoptionNeedsAssent()).toBe(true);
+    expect([...s.motionRecords().values()]).toHaveLength(0);
+    const q = s.openTextCrownQuestion(3, { candidateId: 'c1', summary: 'x' });
+    expect(s.crownQuestionRecords().get(q)!.status).toBe('pending');
+  });
+
+  it('told to keep neither, the start is the one it always was', () => {
+    const { s, bo } = buildConstituted();
+    expect(s.settingState('startingText').powers).toEqual({ unilateral: false, assent: false });
+    expect(view(s, bo).settings.find((x) => x.setting === 'startingText')!.powers)
+      .toEqual({ unilateral: false, assent: false });
+  });
+});
+
 describe('🛡️ on the Text: an adoption waits on the founder’s accept (Q440)', () => {
   it('opens a 👑 question the host reads; accept and reject are recorded', () => {
     const { s, bo, cy } = buildConstituted();

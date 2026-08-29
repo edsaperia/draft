@@ -555,26 +555,51 @@ export class ConstitutionSession {
       case 'constituted': {
         this.constitutedT = event.t;
         this.anchors = this.computeAnchors(event.t);
-        // **The start lays the founder's hand off the Text** (CLAUDE.md `🍾
-        // Begin`: the batch is *the founder lays down ✒️ and 🛡️ on the Text,
-        // members gain ✏️ on it, judging opens*). Derived at the fold rather
-        // than emitted, like Q506's applications pair, so every document
-        // constituted before 2026-08-21 replays the same way — a shield kept
-        // on the Text would make every adoption wait on founder assent, which
-        // is no drafting engine's default. The road to a held Text is a
-        // post-start reserve motion; 🍾, when it is an explicit act, takes
-        // this over.
-        this.setPowers(this.settings.get('startingText')!, { unilateral: false, assent: false });
-        // and the same act spends every **pending** release (R-048): a power
-        // laid down while the founding ran was recorded then and takes effect
-        // now. Derived at the fold like the Text's own lay-down, so no event
-        // shape changed and the frozen log replays byte for byte.
+        // **A recorded act beats the card's reading of it, so it is spent
+        // first** (entry 158). 🍾 spends every **pending** release (R-048): a
+        // power laid down while the founding ran was recorded then and takes
+        // effect now. Where that and `laidDown` disagree, the recorded
+        // `power-relinquished` wins — and since `setPowers` clears
+        // `pendingRelease`, winning is a matter of running first. Derived at
+        // the fold, so no event shape changed and the frozen log replays byte
+        // for byte.
         for (const st of this.settings.values()) {
           if (!st.pendingRelease.unilateral && !st.pendingRelease.assent) continue;
           this.setPowers(st, {
             unilateral: st.powers.unilateral && !st.pendingRelease.unilateral,
             assent: st.powers.assent && !st.pendingRelease.assent,
           });
+        }
+        if (event.laidDown === undefined) {
+          // **The start lays the founder's hand off the Text** — the fold as
+          // it stood before entry 158, and what every log written before it
+          // replays into. A shield kept on the Text would have made every
+          // adoption wait on founder assent, which is no drafting engine's
+          // default; the road to a held Text was a post-start reserve motion.
+          this.setPowers(this.settings.get('startingText')!, { unilateral: false, assent: false });
+        } else {
+          // **…and where 🍾 was asked, the start lays down whatever it was
+          // not told to keep** (Ed, 2026-08-27; SPEC §9.7 rule 8 as amended,
+          // R-057). The list is authoritative and complete over `HELD` — the
+          // Text included, which is why keeping ✒️ or 🛡️ on it is expressible
+          // at all for the first time. **Lowering only**: a power the list
+          // names goes, a power it does not is left exactly as it stands, so
+          // nothing here can ever re-grant. One `setPowers` per key rather
+          // than per pair, since the pair is one hand.
+          const down = new Map<PowerKey, { unilateral: boolean; assent: boolean }>();
+          for (const r of event.laidDown) {
+            const cur = down.get(r.setting) ?? { unilateral: false, assent: false };
+            cur[r.power] = true;
+            down.set(r.setting, cur);
+          }
+          for (const [k, d] of down) {
+            const st = this.settings.get(k);
+            if (!st) continue;  // a key the catalogue no longer has
+            this.setPowers(st, {
+              unilateral: st.powers.unilateral && !d.unilateral,
+              assent: st.powers.assent && !d.assent,
+            });
+          }
         }
         break;
       }
@@ -1538,14 +1563,34 @@ export class ConstitutionSession {
    * `constituted` fold: the Text's ✒️/🛡️ laid down, the ramp anchored,
    * judging open. Readiness informs and never blocks (Q443c): a member who
    * has not answered a question the room has already resolved holds nothing up.
+   *
+   * **…and what the founder carries across the line is 🍾's own question**
+   * (Ed, 2026-08-27, entry 158; Q1018, R-057). `laidDown` is what the card's
+   * power switches collected — one list of `{ setting, power }`, validated
+   * here because this is the one place a page bug could release the wrong
+   * power. Omitted, the fold is the one it always was. A **list** rather than
+   * a pair, and one command rather than N, because the batch is the act: N
+   * `relinquish` calls at N stamps would be N news cards (entry 162), and
+   * before the start they would *delegate* on a delegable setting's second
+   * power (R-045) instead of handing over.
    */
-  begin(t: number): void {
+  begin(t: number, laidDown?: ReadonlyArray<{ setting: PowerKey; power: Power }>): void {
     this.requireOpen('beginning');
     if (this.constitutedT !== null) throw new Error('the document has already begun');
     const waiting = this.waitingOn();
     if (waiting.length > 0) {
       throw new Error(`the document cannot begin while '${waiting.join("', '")}' ${waiting.length === 1 ? 'is' : 'are'} still being decided (§9.0b)`);
     }
+    // validated before the emit, never after: an event in the log is a fact
+    const list = laidDown === undefined ? undefined : laidDown.map((r) => {
+      if (!HELD.includes(r.setting)) {
+        throw new Error(`'${r.setting}' carries no power to lay down at the start (§9.7)`);
+      }
+      if (r.power !== 'unilateral' && r.power !== 'assent') {
+        throw new Error(`'${String(r.power)}' is not a power on '${r.setting}' (§9.7)`);
+      }
+      return { setting: r.setting, power: r.power };
+    });
     // **What 🍾 lays down is read off what it spent, not off a list of
     // causes** (entry 162). The `constituted` fold lays the Text's pair down
     // and spends every pending release, and 158 is about to change what else
@@ -1553,7 +1598,8 @@ export class ConstitutionSession {
     // either side of the emit, and 🍾 reports the new answer with no edit
     // here. One act, so one batch and one OK, whatever it moved.
     const before = new Map(HELD.map((k) => [k, { ...this.settings.get(k)!.powers }]));
-    this.emit({ type: 'constituted', t });
+    this.emit(list === undefined ? { type: 'constituted', t }
+      : { type: 'constituted', t, laidDown: list });
     const laid: Array<{ setting: PowerKey; power: Power }> = [];
     for (const k of HELD) {
       const was = before.get(k)!;

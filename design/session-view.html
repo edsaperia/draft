@@ -1028,6 +1028,11 @@
     // a provisional value like any other, so it survives a close
     setWhy: {},
     hatPick: null,
+    // 🍾's power switches, unsent until the press (entry 158): one position
+    // per zone × power, keyed `<zone name>:u|a`, absent meaning the zone
+    // table's own start. A provisional value like a radio position and
+    // nothing more — the act it composes is `begin`'s list.
+    beginZones: {},
     roster: [{ n: '', e: '', role: 'member', founder: true, in: true, ans: {}, okd: new Set(), mid: 'founder' }],
     // **Confirmed, not merely defaulted** (Ed, 2026-08-17). A default nobody
     // read is not a decision, and these are the decisions that cannot be changed
@@ -7057,7 +7062,12 @@
       if (!constituted() && cs.textConfirmed && amFounder()) {
         try { cs.confirmStartingText(now(), proseText()); } catch (e) {}
       }
-      try { cs.begin(now()); } catch (e) { console.warn('[begin]', e && e.message); }
+      // **One command, one list, one `t`** (entry 158). The table is collected
+      // at the moment of the press, after the flush above, and handed over
+      // whole — never N `relinquish` calls, which post-start would be N news
+      // cards (entry 162) and pre-start would delegate (R-045).
+      const laidDown = beginLayDown();
+      try { cs.begin(now(), laidDown); } catch (e) { console.warn('[begin]', e && e.message); }
     });
     // 🥂 — OK signs the document; the comment is the signing rationale,
     // blank as welcome as a paragraph; the wallets fly into the card as it goes
@@ -7286,6 +7296,20 @@
         : (v === 'date') ? (S.myAns[an.dataset.ans] === 'never' ? null : S.myAns[an.dataset.ans])
         : v;
       return render(); }
+    // 🍾's zone switches (entry 158). **The write is one direction only**:
+    // *lay down* sends every power in the zone that is still the Founder's,
+    // and *keep* means lay nothing further down here — it never reclaims a
+    // power promised away on a tab, which is `reclaim`'s and stays on the
+    // setting's own card. Unsent until the press, like any radio position.
+    const bz = ev.target.closest('[data-bzone]');
+    if (bz) {
+      const z = BEGIN_ZONES.find((x) => x.name === bz.dataset.bzone);
+      if (z) {
+        S.beginZones[z.name + ':' + bz.dataset.bpower] =
+          beginPos(z, bz.dataset.bpower) === 'down' ? 'keep' : 'down';
+      }
+      return render();
+    }
     const o = ev.target.closest('[data-set]');
     if (o) { const nv = setVal(o.dataset.val);
       fillRung(o.dataset.set, nv);
@@ -8081,7 +8105,8 @@
       get record() { return self.v.record || null; },
       readiness: () => self.v.readiness || null,
       closingSignatures: () => (self.v.view.closed && self.v.view.closed.signatures) || [],
-      begin: () => api.cmd('begin', {}),
+      // the list 🍾's power table collected rides the one command (entry 158)
+      begin: (t, laidDown) => api.cmd('begin', { laidDown }),
       acknowledgeClose: (t, member, comment) => api.cmd('acknowledge-close', { comment }),
       get titleOf() { return self.v.title; },
       get slug() { return self.v.slug; },
@@ -9478,8 +9503,92 @@
         '<ul class="batch">' + rows.filter((r) => r.sec === t2)
           .map((r) => '<li>' + r.line + '</li>').join('') + '</ul>').join('');
   };
+  // **The zones 🍾 asks about, and the one place that knows what is in them**
+  // (entry 158, Ed 2026-08-27). Three zones × two powers is the whole table,
+  // and it is a source literal on purpose: QA reshapes the zones by editing
+  // *this* and nothing else, so nothing anywhere else in the page may
+  // reconstruct what a zone contains. `keys` are page keys and cover `PW_KEYS`
+  // exactly once each (`checkBeginZones` in `scripts/spec-check.mjs`); `down`
+  // is where the switch starts, and only 📄 carries it — SPEC §9.7 rule 8 as
+  // amended reads *the start lays down whatever 🍾 was not told to keep*, so
+  // not told is laid down and a Founder who never opens the table gets exactly
+  // the document they got before this existed.
+  const BEGIN_ZONES = [
+    { name: 'The Text', glyph: '📄', down: true, keys: ['text'] },
+    { name: 'Membership', glyph: '🪪', keys: ['invite', 'remove', 'admission', 'applications', 'removal', 'lapse'] },
+    { name: 'Everything else', glyph: '📜', keys: ['title', 'slug', 'ending', 'bar', 'pace', 'quorum', 'authorship', 'judgments', 'chamber', 'rate', 'machines'] },
+  ];
+  // **A switch reflects the tabs** (Ed's rule (i)): the hand actually on a key
+  // less what its own ✒️/🛡️ tab has already promised away — the same two
+  // functions the tabs read, so the two controls cannot disagree about one
+  // power. It is the module's own `stillHeld`, on the page's side.
+  const beginStillHeld = (k, pw) => {
+    const p = pwPair(k), pend = pwPend(k);
+    return pw === 'u' ? (p.u && !pend.u) : (p.a && !pend.a);
+  };
+  // where a zone's switch stands: the founder's unsent position if they have
+  // touched it, else the table's own start
+  const beginPos = (z, pw) => {
+    const v = S.beginZones[z.name + ':' + pw];
+    return v === undefined ? (z.down ? 'down' : 'keep') : v;
+  };
+  // …and what it reads as, three-valued over the zone's keys. **Mixed is shown
+  // as mixed and never as kept**: a power promised away on one setting is not
+  // a zone the Founder is keeping.
+  const beginZoneState = (z, pw) => {
+    if (beginPos(z, pw) === 'down') return 'down';
+    const held = z.keys.filter((k) => beginStillHeld(k, pw)).length;
+    return held === z.keys.length ? 'keep' : held === 0 ? 'down' : 'mixed';
+  };
+  // **The collector, pure and the press's only source** (entry 158): the zone
+  // table and the switch positions in, one deduplicated list of
+  // `{ setting, power }` in **module** ids out, with what is no longer the
+  // Founder's already dropped. Written as a function of the table so the walk
+  // and the module tests can exercise it without a press — and so the
+  // post-start zone switch, when it is built, reuses it and reaches a door
+  // that takes the whole list at one `t`. It must never be N `relinquish`
+  // calls: post-start that is N news cards (entry 162), pre-start it delegates.
+  const beginLayDown = () => {
+    const out = [], seen = new Set();
+    for (const z of BEGIN_ZONES) {
+      for (const pw of ['u', 'a']) {
+        if (beginPos(z, pw) !== 'down') continue;
+        for (const k of z.keys) {
+          if (!beginStillHeld(k, pw)) continue;
+          const setting = midOf(k), power = pw === 'u' ? 'unilateral' : 'assent';
+          if (seen.has(setting + ':' + power)) continue;
+          seen.add(setting + ':' + power);
+          out.push({ setting, power });
+        }
+      }
+    }
+    return out;
+  };
+  // what the Founder will hold on the Text once the start has run — live,
+  // simply what they hold; before the press, what the collector is about to
+  // take off them. Derived from the collector itself so the sentence and the
+  // act cannot disagree.
+  const textAfterBegin = () => {
+    if (constituted()) return pwPair('text');
+    const goes = beginLayDown().filter((r) => r.setting === 'startingText').map((r) => r.power);
+    return { u: beginStillHeld('text', 'u') && !goes.includes('unilateral'),
+      a: beginStillHeld('text', 'a') && !goes.includes('assent') };
+  };
+  // **The first line states the choice made, not a fixed fact** (entry 158,
+  // overturning Q387 / R-043's first clause). It has to read both before the
+  // press (*what beginning does*) and after it (*what beginning did*), so it
+  // is derived rather than written; the four sentences use 📄's own tab
+  // grammar (`pwPhrase`), and the one where nothing is kept is the sentence
+  // this line has always been.
+  const beginTextLine = () => {
+    const t2 = textAfterBegin();
+    if (!t2.u && !t2.a) return 'The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.';
+    if (t2.u && t2.a) return 'The Founder keeps ✒️ and 🛡️ on the Text — they may amend the text at will, and refuse changes to the text that the membership pass.';
+    return 'The Founder keeps ' + (t2.u ? '✒️' : '🛡️') + ' on the Text and lays down ' +
+      (t2.u ? '🛡️' : '✒️') + ' — they may ' + pwPhrase('text', t2.u ? 'u' : 'a') + '.';
+  };
   const BEGIN_BATCH = [
-    'The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.',
+    beginTextLine,
     'Members gain ✏️s on it, at the proposal rate.',
     'Voting opens, and the approval threshold begins its course.',
     'The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.',
@@ -9493,10 +9602,37 @@
     const noun = SHAPE_NOUN[cs.shape];
     return '<p class="setnote shapeline">The rules are as for ' + noun +
       (changed.length ? ', except ' + listOf(changed.map(settingNamed)) + ', which the Founder changed.' : '.') + '</p>'; };
+  // **The table itself** (entry 158): one row per zone, two switches per row.
+  // Drawn only before the press and only for the Founder — after it there is
+  // nothing left to choose, and the batch list above says what was chosen.
+  const BEGIN_PW_LABEL = { keep: 'Kept', mixed: 'Mixed', down: 'Laid down' };
+  const beginSwitch = (z, pw) => {
+    const st = beginZoneState(z, pw);
+    const on = st === 'keep';
+    return '<div class="pick' + (on ? ' on' : '') + '">' +
+      '<button class="lanepick" type="button" aria-pressed="' + on + '"' +
+      ' data-bzone="' + esc(z.name) + '" data-bpower="' + pw + '">' +
+      '<span class="dot"></span><span>' + (pw === 'u' ? '✒️' : '🛡️') + ' ' +
+      BEGIN_PW_LABEL[st] + '</span></button></div>';
+  };
+  const beginZonesHtml = () => {
+    if (constituted() || !amFounder()) return '';
+    const anyMixed = BEGIN_ZONES.some((z) => ['u', 'a'].some((pw) => beginZoneState(z, pw) === 'mixed'));
+    return '<div class="unlocks"><b>What the Founder keeps.</b></div>' +
+      '<p class="why">Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.</p>' +
+      BEGIN_ZONES.map((z) => '<div class="beginzone">' +
+        '<div class="fieldlab">' + (z.glyph ? z.glyph + ' ' : '') + esc(z.name) + '</div>' +
+        '<div class="setrow2">' + beginSwitch(z, 'u') + beginSwitch(z, 'a') + '</div></div>').join('') +
+      (anyMixed ? '<p class="setnote">Mixed means some of these have already been given up on their own cards. ' +
+        'Keeping here lays nothing further down — a power already given comes back only on the card it went from.</p>' : '');
+  };
   const beginBody = (c, rd) => {
     const batch = shapeLine() +
       '<div class="unlocks"><b>' + (constituted() ? 'What beginning did.' : 'What beginning does, all at once.') + '</b></div>' +
-      '<ul class="batch">' + BEGIN_BATCH.map((l) => '<li>' + l + '</li>').join('') + '</ul>';
+      // the first item is a function of the power table and the rest are
+      // constants — one list, four items, whichever way an item is written
+      '<ul class="batch">' + BEGIN_BATCH.map((l) => '<li>' +
+        (typeof l === 'function' ? l() : l) + '</li>').join('') + '</ul>';
     if (constituted()) return batch;   // the head already says when
     if (!rd) return batch + '<p class="setnote">Only the Founder can begin the document.</p>';
     // informs, never blocks — except the questions judging cannot do without
@@ -9537,7 +9673,7 @@
       esc(m.name || 'Anonymous') + '<span class="rsub"> · ' +
       (!m.arrived ? 'invited, not yet arrived' : m.owed === 0 ? 'nothing owed'
         : m.answered >= m.owed ? 'answered everything' : m.answered + ' of ' + m.owed + ' answered') + '</span></span>').join('');
-    return batch + hold + why + deps +
+    return batch + hold + why + deps + beginZonesHtml() +
       '<div class="readiness"><div class="fieldlab">The questions</div><div class="gatelist">' + qs + '</div>' +
       '<div class="fieldlab">The people</div><div class="gatelist">' + ms + '</div></div>' +
       '<p class="setnote">' + (rd.ready
