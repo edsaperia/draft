@@ -295,7 +295,7 @@ The refund flight and every grant's inbound flight take 640 ms.
 | 17 | rate | ⏱️ | ordinary, delegable | rate | yes | removal | Proposal Rate |
 | 18 | machines | 🤖 | ordinary, delegable | rate, last | yes | rate | AI Proposals |
 | 19 | ending | ⏰ | constitutional, route inside it | deciding, first | yes | machines | When Does It End? |
-| 20 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | How Sure Must the Room Be? |
+| 20 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | Proposal pass threshold? |
 | 21 | quorum | 👥 | constitutional · judge-gate | deciding, last | yes | bar | Quorum |
 | 22 | authorship | 👤 | constitutional · judge-gate | privacy | yes | quorum | Anonymous Proposals |
 | 23 | judgments | 👁️ | constitutional · judge-gate | privacy | yes | authorship | When Are Votes Revealed? |

@@ -3,11 +3,12 @@
  * *we need to help them with 3 preset buttons, and they can edit the precise %
  * if they really want to*).
  *
- * A percent is not a thing anybody has an opinion about. *In a room of 5, 4 of
- * 5 must vote for it by the end* is. So each rung a card offers carries a
+ * A percent is not a thing anybody has an opinion about. *In a membership of 5,
+ * 4 of 5 must vote for it by the end* is. So each rung a card offers carries a
  * sentence saying what taking it would mean for the room **as it stands**, read
  * live on every render the way `barCeilingPct` already is — which is why the
- * sentence names its own dependence (*in a room of 5*, never a bare *4 of 5*):
+ * sentence names its own dependence (*in a membership of 5*, never a bare *4 of
+ * 5*):
  * when a sixth member arrives, the reader can see what moved and why.
  *
  * Two things live here rather than page-side:
@@ -119,7 +120,8 @@ export interface Room {
 /**
  * *one* reads better than *1* at the head of a sentence; the rest are digits.
  * Exported because the page builds the same phrase for `ceilingNote`, and two
- * copies of *a room of one* are two copies to keep in step (T5).
+ * copies of *a membership of one* are two copies to keep in step (T5). The
+ * name stays `roomPhrase`: it is an identifier, not copy (entry 215).
  */
 export function roomPhrase(e: number): string {
   return e <= 1 ? 'one' : String(Math.floor(e));
@@ -155,12 +157,12 @@ function barMeaning(pct: number, room: Room): string | null {
     // out of reach of the same room, and *nothing can pass at this one* said
     // twice under two different numbers is the same sentence twice (T36) as
     // well as the less useful half of what there is to say.
-    return fit('In a room of ' + roomOf(room.e) +
+    return fit('In a membership of ' + roomOf(room.e) +
       ', nothing can pass at ' + Math.floor(pct) + '% until more members arrive.');
   }
-  if (w.n === 1) return fit('In a room of one, the one vote must be for it.');
-  if (w.k === w.n) return fit('In a room of ' + w.n + ', all ' + w.n + ' must vote for it by the end.');
-  return fit('In a room of ' + w.n + ', ' + w.k + ' of ' + w.n + ' must vote for it by the end.');
+  if (w.n === 1) return fit('In a membership of one, the one vote must be for it.');
+  if (w.k === w.n) return fit('In a membership of ' + w.n + ', all ' + w.n + ' must vote for it by the end.');
+  return fit('In a membership of ' + w.n + ', ' + w.k + ' of ' + w.n + ' must vote for it by the end.');
 }
 
 /* ---- the spans, worded --------------------------------------------------
@@ -230,8 +232,8 @@ function quorumMeaning(v: QuorumValue, room: Room): string | null {
   if (!Number.isFinite(q)) return null;
   const body = quorumBody(q, n);
   return fit(v.form === 'share'
-    ? Math.round(v.n) + '% of a room of ' + roomOf(n) + ' is ' + q + ': ' + body
-    : 'In a room of ' + roomOf(n) + ', ' + body);
+    ? Math.round(v.n) + '% of a membership of ' + roomOf(n) + ' is ' + q + ': ' + body
+    : 'In a membership of ' + roomOf(n) + ', ' + body);
 }
 
 /* ---- ⏱️ -----------------------------------------------------------------

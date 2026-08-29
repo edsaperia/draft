@@ -2697,7 +2697,7 @@
         '<div class="sugg diag-open" data-card="' + s.id + '" data-site="' +
         (siteKey || s.pair[0].key) + '">' +
         clauseHeadHtml(s, { label: 'This card asks',
-                            html: 'Which of these deserves more of the room’s attention?' }) +
+                            html: 'Which of these deserves more of the membership’s attention?' }) +
         fieldHtml(q(s.pair[0], 'first') + q(s.pair[1], 'second'), 2, 'The two questions') +
         // **The commit row is the card's bottom band, on every card**
         // (housekeeping pass, 2026-08-17). Three card types printed their
@@ -2729,7 +2729,7 @@
         '<div class="sugg quick-open" data-card="' + s.id + '" data-site="' + (ckey || '') + '">' +
         clauseHeadHtml(s, { text: currentTextFor(ckey), key: ckey, chips: chipsFor(ckey, s.id) }) +
         fieldHtml(proposalHtml(s, { html: resultOnly(s.marked), why: s.rationale, by: s.by })) +
-        '<div class="foot">The room passed this. Until you answer, the clause above stands.</div>' +
+        '<div class="foot">The membership passed this. Until you answer, the clause above stands.</div>' +
         '<div class="race-mid commitrow">' +
         '<button class="btn" data-act="crown-refuse">Refuse</button>' +
         '<span class="rightpair">' +

@@ -672,7 +672,7 @@ window.SETUP = (function () {
     // No heading of its own: this half is always appended under a card that has
     // already said what it is about, and a second <h2> repeating the card's own
     // title was the surest sign the two halves were not reading as one card.
-    let h = '<div class="eyebrow fieldlab">' + esc(done ? 'What the room said' : 'What the room is saying') + '</div>' +
+    let h = '<div class="eyebrow fieldlab">' + esc(done ? 'What the membership said' : 'What the membership is saying') + '</div>' +
       '<div class="lockline">' + (done ? TICK : '') +
       '<span>The members decide' + (done ? '' : ' — asked of everyone before drafting began, blind') + '.</span></div>' +
       '<p class="why">' + (c.rule || '') + '</p>';
@@ -784,7 +784,7 @@ window.SETUP = (function () {
     // *Convenor* appears in no string a reader can see.
     ((opts && opts.optional)
       ? '<p class="setnote">You are not a member, so your name appears only on the <i>Founded by</i> line. Leave it blank and that line shows <b>no name</b>.</p>'
-      : '<p class="setnote">This is how you appear in the room. Leave it blank and you appear as <b>Anonymous</b>. You can set it later from any seat.</p>');
+      : '<p class="setnote">This is how you appear to the membership. Leave it blank and you appear as <b>Anonymous</b>. You can set it later from any seat.</p>');
 
   /* **It is an uploader** (Ed, 2026-08-18). The card had offered a ground for
      your initials or a drawn mark, on the reasoning that a mockup has no
@@ -1328,7 +1328,7 @@ window.SETUP = (function () {
   const ceilingNote = (E, max) => {
     const pct = window.CONSTITUTION.barCeilingPct(E);
     if (pct >= max) return '';
-    return '<p class="ceilingnote">A room of ' + roomOf(E) + ' that agrees without exception can be ' +
+    return '<p class="ceilingnote">A membership of ' + roomOf(E) + ' that agrees without exception can be ' +
       pct + '% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.</p>';
   };
 
@@ -1383,14 +1383,14 @@ window.SETUP = (function () {
       // the reader could not tell what their answer would actually cost.
       const mean = (v) => window.CONSTITUTION.meaningOf('quorum',
         { form: share ? 'share' : 'count', n: +v }, room || { e: E }) || '';
-      return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in before a question can change the document — short of that it waits; silence is never a vote. Asked as a <b>' + (share ? 'share of the membership' : 'count') + '</b>: the wording is the founder’s, the number is the room’s.</p>' +
+      return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in before a question can change the document — short of that it waits; silence is never a vote. Asked as a <b>' + (share ? 'share of the membership' : 'count') + '</b>: the wording is the founder’s, the number is the membership’s.</p>' +
       (share
         ? slider(A, 'quorum', 5, 100, (v) => v + '% — ' + asN(v) + ' of ' + E, mean, 5)
         : slider(A, 'quorum', 1, E, (v) => v + ' of ' + E, mean)) +
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given, so it is never lower than yours.</p>';
     },
     bar: (A, E, _form, room) =>
-      '<p class="why">How sure the room must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the founder’s pacing.</p>' +
+      '<p class="why">How sure the membership must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the founder’s pacing.</p>' +
       // **Three rungs and a number** (entry 165, Ed 2026-08-27: *we need to
       // help them with 3 preset buttons, and they can edit the precise % if
       // they really want to*). The slider that stood here asked for a percent
@@ -1414,7 +1414,7 @@ window.SETUP = (function () {
         { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' }]) +
       '<p class="blindnote">Nothing is preselected — anonymity holds unless everyone is content with more.</p>',
     judgments: (A) =>
-      '<p class="why">Never revealed while a question is live, whichever is chosen — a room that can see its own votes votes differently. This settles only whether they are published with the closing record.</p>' +
+      '<p class="why">Never revealed while a question is live, whichever is chosen — members who can see each other’s votes vote differently. This settles only whether they are published with the closing record.</p>' +
       ladder(A, 'judgments', [
         { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
         { v: 'after', t: 'Revealed at the end', e: 'Published with the document at the end, never before.' }]) + BLINDNOTE,
@@ -1424,7 +1424,7 @@ window.SETUP = (function () {
         { v: 'invite', t: 'Invitation only', e: 'Nobody joins unless a member brings them in.' },
         { v: 'apply', t: 'Anyone may apply', e: 'An application is a stranger proposing their own invitation — decided the way Admissions says, at no cost to the applicant.' }]) + BLINDNOTE,
     chamber: (A) =>
-      '<p class="why">Who may read the document besides the members — readers only, never counted. The <b>most private</b> answer wins: one member who wants the room closed closes it.</p>' +
+      '<p class="why">Who may read the document besides the members — readers only, never counted. The <b>most private</b> answer wins: one member who wants the document closed closes it.</p>' +
       ladder(A, 'chamber', [
         { v: 'closed', t: 'Members only', e: 'Nobody outside the membership sees anything at all.' },
         // Public left every ladder on 2026-08-22 (Q603): offered nowhere,
@@ -1443,7 +1443,7 @@ window.SETUP = (function () {
       '<p class="why">What it costs to remove a member. Whichever is chosen, the member always sees a removal proposed against them, and anybody may leave at any time. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'removal', [
         { v: 'consent', t: 'All members must agree, including them', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
-        { v: 'assembly', t: 'All other members must agree', e: 'The whole room, minus the member in question, must agree 🏛️.' },
+        { v: 'assembly', t: 'All other members must agree', e: 'The whole membership, minus the member in question, must agree 🏛️.' },
         { v: 'proposal', t: 'The membership decides', e: 'Voted on at the approval threshold ✏️ like any change, with quorum.' }]) + BLINDNOTE,
     machines: (A) =>
       '<p class="why">An AI that patrols the document for drift and proposes fixes — it never votes, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
@@ -1471,7 +1471,7 @@ window.SETUP = (function () {
     // sentence is the family's now, and the field below carries a `.meaning`
     // that repaints as the number is typed.
     lapse: (A, E, _form, room, typed) =>
-      '<p class="why">Whether a membership <b>lapses</b> after a period of inactivity — and how long. A lapsed member leaves the quorum base like an abstainer: the room can finish without them, their votes keep counting, and coming back is just logging in. They are warned by email first, and sent the document and record when it happens.</p>' +
+      '<p class="why">Whether a membership <b>lapses</b> after a period of inactivity — and how long. A lapsed member leaves the quorum base like an abstainer: the membership can finish without them, their votes keep counting, and coming back is just logging in. They are warned by email first, and sent the document and record when it happens.</p>' +
       '<div class="choice" role="radiogroup">' +
       ansRow(A.lapse === 'never', 'lapse', 'never', 'Never',
         esc(window.CONSTITUTION.meaningOf('lapse', { afterMs: null }, room || { e: E }) || '')) +

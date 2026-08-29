@@ -59,6 +59,10 @@ export const SHAPES: readonly Shape[] = [
   {
     name: 'meeting',
     title: 'A meeting',
+    // **The one *room* Ed left standing** (entry 215): a physical room, a few
+    // hours, everybody actually present — the sense his ruling exempts. It is
+    // the single entry in `spec-check`'s `BANNED_OK`, verbatim, so a reword
+    // here goes red until that string moves with it.
     say: 'A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.',
     unit: 'hours',
     sets: {
@@ -88,7 +92,7 @@ export const SHAPES: readonly Shape[] = [
   {
     name: 'conference',
     title: 'A conference',
-    say: 'A few days with people coming and going: a third of the room is enough to move, one proposal an hour each.',
+    say: 'A few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.',
     unit: 'days',
     sets: {
       bar: { pct: 80 },
@@ -109,7 +113,7 @@ export const SHAPES: readonly Shape[] = [
   {
     name: 'ongoing',
     title: 'Ongoing',
-    say: 'No end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.',
+    say: 'No end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.',
     unit: null,
     sets: {
       // Ed: *never* is what *ongoing* already said — folded first, because

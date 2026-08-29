@@ -77,23 +77,23 @@ describe('meaningOf', () => {
   const fixed = (closeAt: number) => meaningOf('pace', { shape: 'fixed' }, { e: 5, barPct: closeAt });
 
   it('names its own dependence, so an arriving member is visibly what moved', () => {
-    expect(bar(80, 5)).toBe('In a room of 5, 4 of 5 must vote for it by the end.');
-    expect(bar(80, 6)).toBe('In a room of 6, 5 of 6 must vote for it by the end.');
-    expect(bar(60, 5)).toBe('In a room of 5, 3 of 5 must vote for it by the end.');
-    expect(bar(90, 6)).toBe('In a room of 6, 5 of 6 must vote for it by the end.');
+    expect(bar(80, 5)).toBe('In a membership of 5, 4 of 5 must vote for it by the end.');
+    expect(bar(80, 6)).toBe('In a membership of 6, 5 of 6 must vote for it by the end.');
+    expect(bar(60, 5)).toBe('In a membership of 5, 3 of 5 must vote for it by the end.');
+    expect(bar(90, 6)).toBe('In a membership of 6, 5 of 6 must vote for it by the end.');
   });
 
-  it('all of them, and the room of one, each read as themselves', () => {
-    expect(bar(90, 3)).toBe('In a room of 3, all 3 must vote for it by the end.');
-    expect(bar(60, 1)).toBe('In a room of one, the one vote must be for it.');
+  it('all of them, and the membership of one, each read as themselves', () => {
+    expect(bar(90, 3)).toBe('In a membership of 3, all 3 must vote for it by the end.');
+    expect(bar(60, 1)).toBe('In a membership of one, the one vote must be for it.');
   });
 
   it('an unreachable bar says so, and names which bar', () => {
-    expect(bar(90, 1)).toBe('In a room of one, nothing can pass at 90% until more members arrive.');
-    expect(bar(90, 2)).toBe('In a room of 2, nothing can pass at 90% until more members arrive.');
+    expect(bar(90, 1)).toBe('In a membership of one, nothing can pass at 90% until more members arrive.');
+    expect(bar(90, 2)).toBe('In a membership of 2, nothing can pass at 90% until more members arrive.');
     // …and the two out-of-reach rungs of one room do not read as one sentence
     // said twice (card-audit T36)
-    expect(bar(80, 1)).toBe('In a room of one, nothing can pass at 80% until more members arrive.');
+    expect(bar(80, 1)).toBe('In a membership of one, nothing can pass at 80% until more members arrive.');
     expect(bar(80, 1)).not.toBe(bar(90, 1));
   });
 
@@ -219,11 +219,11 @@ describe('the meaning family', () => {
     for (let e = 1; e <= 12; e++) {
       const room: Room = { e, endsAtMs: NOW + DAYS3, nowMs: NOW, barPct: 80 };
       for (const v of QUORUMS(e)) {
-        expect(meaningOf('quorum', v, room), `quorum ${JSON.stringify(v)} e=${e}`).toMatch(/room of/);
+        expect(meaningOf('quorum', v, room), `quorum ${JSON.stringify(v)} e=${e}`).toMatch(/membership of/);
       }
       for (const r of BAR_RUNGS) {
         const s = meaningOf('bar', { pct: r.pct }, room);
-        if (s !== null) expect(s, `bar ${r.pct} e=${e}`).toMatch(/room of/);
+        if (s !== null) expect(s, `bar ${r.pct} e=${e}`).toMatch(/membership of/);
       }
       // ⏱️ names the window it is measured over…
       for (const v of RATES) {
@@ -231,9 +231,9 @@ describe('the meaning family', () => {
         expect(meaningOf('rate', v, { ...room, endsAtMs: null }), `rate ∞ e=${e}`)
           .toMatch(/^With no end date, /);
       }
-      // …and 💤 names no room, because a lapse does not depend on one
+      // …and 💤 names no membership, because a lapse does not depend on one
       for (const v of LAPSES) {
-        expect(meaningOf('lapse', v, room), `lapse ${JSON.stringify(v)}`).not.toMatch(/room of/);
+        expect(meaningOf('lapse', v, room), `lapse ${JSON.stringify(v)}`).not.toMatch(/membership of/);
       }
     }
   });
@@ -243,11 +243,11 @@ describe('the meaning family', () => {
     const share: QuorumValue = { form: 'share', n: 34 };
     expect(quorumCount(share, 9)).toBe(4);
     expect(meaningOf('quorum', share, room))
-      .toBe('34% of a room of 9 is 4: at least 4 of you must have voted on a change before it can pass; with fewer than 4 still here the document freezes.');
+      .toBe('34% of a membership of 9 is 4: at least 4 of you must have voted on a change before it can pass; with fewer than 4 still here the document freezes.');
     const count: QuorumValue = { form: 'count', n: 9 };
     expect(quorumCount(count, 9)).toBe(9);
     expect(meaningOf('quorum', count, room))
-      .toBe('In a room of 9, all 9 of you must have voted on a change before it can pass — one member away and the document freezes.');
+      .toBe('In a membership of 9, all 9 of you must have voted on a change before it can pass — one member away and the document freezes.');
     // a quorum of one never freezes a room with anybody in it, so the
     // consequence that cannot happen is not stated (T37)
     expect(meaningOf('quorum', { form: 'count', n: 1 }, room)).not.toMatch(/freezes/);
@@ -339,7 +339,7 @@ describe('BAR_RUNGS', () => {
     expect(BAR_RUNGS.some((r) => r.label === OWN_RUNG_LABEL)).toBe(false);
   });
 
-  it('and *one* is a word, wherever the room is named', () => {
+  it('and *one* is a word, wherever the membership is named', () => {
     // `ceilingNote` on the page builds the same phrase, and takes it from
     // here rather than keeping a second copy (T5)
     expect(roomPhrase(0)).toBe('one');

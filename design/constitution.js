@@ -893,6 +893,10 @@ var CONSTITUTION = (() => {
     {
       name: "meeting",
       title: "A meeting",
+      // **The one *room* Ed left standing** (entry 215): a physical room, a few
+      // hours, everybody actually present — the sense his ruling exempts. It is
+      // the single entry in `spec-check`'s `BANNED_OK`, verbatim, so a reword
+      // here goes red until that string moves with it.
       say: "A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.",
       unit: "hours",
       sets: {
@@ -922,7 +926,7 @@ var CONSTITUTION = (() => {
     {
       name: "conference",
       title: "A conference",
-      say: "A few days with people coming and going: a third of the room is enough to move, one proposal an hour each.",
+      say: "A few days with people coming and going: a third of the membership is enough to move, one proposal an hour each.",
       unit: "days",
       sets: {
         bar: { pct: 80 },
@@ -943,7 +947,7 @@ var CONSTITUTION = (() => {
     {
       name: "ongoing",
       title: "Ongoing",
-      say: "No end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.",
+      say: "No end date, members only: a quarter of the membership can move, one proposal a day each, and a member away a month lapses.",
       unit: null,
       sets: {
         // Ed: *never* is what *ongoing* already said — folded first, because
@@ -3521,11 +3525,11 @@ var CONSTITUTION = (() => {
     const w = winsClause(room.e, pct);
     if (w === void 0) return null;
     if (w === null) {
-      return fit("In a room of " + roomOf(room.e) + ", nothing can pass at " + Math.floor(pct) + "% until more members arrive.");
+      return fit("In a membership of " + roomOf(room.e) + ", nothing can pass at " + Math.floor(pct) + "% until more members arrive.");
     }
-    if (w.n === 1) return fit("In a room of one, the one vote must be for it.");
-    if (w.k === w.n) return fit("In a room of " + w.n + ", all " + w.n + " must vote for it by the end.");
-    return fit("In a room of " + w.n + ", " + w.k + " of " + w.n + " must vote for it by the end.");
+    if (w.n === 1) return fit("In a membership of one, the one vote must be for it.");
+    if (w.k === w.n) return fit("In a membership of " + w.n + ", all " + w.n + " must vote for it by the end.");
+    return fit("In a membership of " + w.n + ", " + w.k + " of " + w.n + " must vote for it by the end.");
   }
   function spanPhrase(ms) {
     const mins = Math.round(ms / 6e4);
@@ -3559,7 +3563,7 @@ var CONSTITUTION = (() => {
     const q = quorumCount(v, n);
     if (!Number.isFinite(q)) return null;
     const body = quorumBody(q, n);
-    return fit(v.form === "share" ? Math.round(v.n) + "% of a room of " + roomOf(n) + " is " + q + ": " + body : "In a room of " + roomOf(n) + ", " + body);
+    return fit(v.form === "share" ? Math.round(v.n) + "% of a membership of " + roomOf(n) + " is " + q + ": " + body : "In a membership of " + roomOf(n) + ", " + body);
   }
   function rateMeaning(v, room) {
     const { grant, cap, dripMinutes } = v;

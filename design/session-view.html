@@ -163,7 +163,7 @@
     <div class="stats">
       <!-- room-pulse: one content-free beat per action by anybody (session-view's) -->
       <span class="pulse" id="pulse" aria-hidden="true"
-            title="The room is working — this blinks when anybody votes or proposes anything. It never says who, what, or which way."></span>
+            title="The membership is working — this blinks when anybody votes or proposes anything. It never says who, what, or which way."></span>
       <!-- `session-clock` (Q466/Q471): the topbar reads the document · the
            room · you. The middle is one plain line — pulse, clock, quorum —
            cold at every distance; the clock is the door to ⏰.
@@ -1893,7 +1893,7 @@
     // the module on any document that has one. Every other card on this page
     // still draws the Hollow Oak histogram wherever it is opened, which is a
     // defect of its own and not this entry's to fix.
-    { k: 'bar', g: '🌡️', t: 'How Sure Must the Room Be?', kind: 'constitutional', gate: 'judge', key: 'barBy', p: 0.64,
+    { k: 'bar', g: '🌡️', t: 'Proposal pass threshold?', kind: 'constitutional', gate: 'judge', key: 'barBy', p: 0.64,
       rule: 'Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.',
       takes: 'The document takes the highest', result: 'Broad agreement — 80%', strip: 'rungs',
       taken: { pct: 80 },
@@ -2257,8 +2257,8 @@
   // proposals are about, so there is one grammar and no exceptions.
   //
   // The nouns are written here rather than taken from the cards' titles,
-  // because most of those titles are **questions** — *How Sure Must the
-  // Room Be?*, *Do Memberships Lapse?* — and a question cannot follow
+  // because most of those titles are **questions** — *Proposal pass
+  // threshold?*, *Do Memberships Lapse?* — and a question cannot follow
   // "about". The fallback is *this*, so a setting added to the catalogue
   // without a noun states something true rather than "undefined".
   const PW_NOUN = {
@@ -3568,7 +3568,7 @@
 
   const VALUE = {
     text: () => { const n = proseCounts().blocks;
-      return n ? n + ' blocks' : (S.seen.has('text') ? 'Starts empty — the room writes it' : 'Nothing yet'); },
+      return n ? n + ' blocks' : (S.seen.has('text') ? 'Starts empty — the membership writes it' : 'Nothing yet'); },
     title: () => S.title || 'Not named yet',
     slug: () => docAddr(S.slug || '…'),
     invite: () => PRICE_WORDS.admission[admissionPrice()],
@@ -4516,7 +4516,7 @@
     invite: (d) =>
       '<div class="roster"><div class="addrow"><input placeholder="Somebody to invite" data-mjoin="1">' +
       '<button class="btn" data-mjoinbtn="1">Invite</button></div></div>' +
-      '<p class="setnote">An invitation is constitutional, because who is in the room is what quorum is a fraction of: all members must agree, and one who says no keeps them out.</p>',
+      '<p class="setnote">An invitation is constitutional, because the membership is what quorum is a fraction of: all members must agree, and one who says no keeps them out.</p>',
     // ❌: the membership, in front of you, with an ✕ beside each — which
     // is what “propose a removal” means
     // **One control names the subject** (entry 96): the same dropdown the pen
@@ -4807,7 +4807,7 @@
     admission: 'how new members are admitted',
     ending: 'when the drafting process will end',
     quorum: 'how many members must weigh in before a question can pass',
-    bar: 'how sure the room must be at the close',
+    bar: 'how sure the membership must be at the close',
     pace: 'how the approval threshold climbs to the close',
     authorship: 'whether anonymous proposers are revealed',
     judgments: 'whether votes are revealed with the record',
@@ -5500,9 +5500,12 @@
         (others.length > shown.length
           ? '<span class="more">+' + (others.length - shown.length) + '</span>' : '');
     }
-    // and the head count stays reachable, in the words it used to be printed in
+    // and the head count stays reachable. It used to be printed as *n in the
+    // room*; entry 215 took that word off the surface, and *n members here* is
+    // the same claim — presence, and nothing else (C16) — so it is a phrase
+    // rather than a noun swap, and it counts one member in the singular.
     const here = members().filter((p) => p.in).length;
-    const t = others.length ? here + ' in the room' : '';
+    const t = others.length ? here + (here === 1 ? ' member here' : ' members here') : '';
     if (faces.title !== t) faces.title = t;
   }
   // the ladder sharpens on its own: the coarsest step is ten minutes, so a
@@ -5823,7 +5826,7 @@
       ? '<div class="unlocks"><b>The text the document started from.</b> Drafting changes the document in place, so the page may have moved on — this is what stood when it began.</div>' +
         '<div class="propblock"><div class="rtext">' +
         (String(cs.text || '').trim() === ''
-          ? '<i>It began empty — the room wrote it.</i>'
+          ? '<i>It began empty — the membership wrote it.</i>'
           : textDivs(cs.text)) +
         '</div></div>'
       // **📄 is the one card whose object is not on it** (Ed's live walk,
@@ -6246,7 +6249,7 @@
     apply: () => {
       const a = S.app;
       const ready2 = a.started && a.emailVerified && a.name.trim() && a.pic;
-      return '<p class="why">Your application goes before the members as a proposal (✏️) — it passes if the room is sure enough.</p>' +
+      return '<p class="why">Your application goes before the members as a proposal (✏️) — it passes if the membership is sure enough.</p>' +
         (a.submitted
           ? '<div class="lockline">' + TICK + '<span>Submitted. ' + APPLICANT.judged + ' of ' + E() + ' have voted on it — you will get an email either way.</span></div>'
           : a.started
@@ -6512,7 +6515,7 @@
       // it now sits with the founder — Accept applies it, Reject files it.
       if (m && m.status === 'awaiting-crown') {
         return cardHtml(c, ctx,
-          '<div class="unlocks"><b>Passed — awaiting the 👑.</b> The room passed <i>' + esc(m.to) + '</i>' +
+          '<div class="unlocks"><b>Passed — awaiting the 👑.</b> The membership passed <i>' + esc(m.to) + '</i>' +
           (m.why ? ' — <i>' + esc(m.why) + '</i>' : '') +
           '. The setting is reserved, so the change goes to the founder as a <b>👑 question</b>, theirs to assent to or refuse. Until then, what stands stands.</div>',
           (amFounder()
@@ -9250,7 +9253,7 @@
         const keys = keysOfSpan(sp, lines);
         items.push({ id: 'crown:' + q.id, kind: 'crown', question: q.id, keys,
           state: 'needs', qLabel: labelFor(keys[0]), urgency: 1, pct: 100,
-          cap: 'the room passed this — it waits on you',
+          cap: 'the membership passed this — it waits on you',
           marked: markedOf(plain(lines, sp), applyIn(lines, sp, c.hunks)),
           rationale: c.rationale, by: (c.author && c.author.name) || null });
       }

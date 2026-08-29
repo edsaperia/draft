@@ -45,8 +45,26 @@ const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
 // (entry 163) names the method, and it is the sole place it may stand.
 // Shared by `checkBannedWords` (the four page files) and `checkShapes`, whose
 // strings live in the bundle (entry 166).
+// *room* for the people who decide (entry 215, Ed 2026-08-28, QA on
+// `/pairwise`: *rather than using "room" in this way, use "the current
+// membership" or "the membership at that time" or "the membership as it
+// changes"*). §1's row: **the membership**, and *Room* survives only as a
+// place — which is what BANNED_OK below is for.
 const BANNED = [/SPEC §/, /\(§\d/, /\broster\b/, /\bparticipant\b/, /\bthe Founder[’']s OK\b/, /\bcarried change/,
-  /\bjudg(?:e|es|ed|ing|ment|ments)\b/i, /\bcomparisons?\b/i, /\bconfidence\b/i];
+  /\bjudg(?:e|es|ed|ing|ment|ments)\b/i, /\bcomparisons?\b/i, /\bconfidence\b/i, /\broom\b/i];
+
+/**
+ * **The one allowance, shared by both readers** — exact strings, never a
+ * pattern, so it cannot grow by accident and cannot silently readmit *room*
+ * for the people who decide. Every entry is the physical sense, which Ed's
+ * ruling leaves standing (entry 215); each says which surface it is on.
+ */
+const BANNED_OK = [
+  // 🧭's `meeting` row (entry 166) — the one string in the bundle that needs
+  // it, and Ed named it explicitly: a few hours, everybody actually present.
+  'A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.',
+];
+const bannedOk = (lit) => BANNED_OK.includes(lit);
 
 function loadCatalogue() {
   const ctx = {};
@@ -204,7 +222,7 @@ function checkShapes(M) {
     if (r.unit !== null && ending !== undefined) find('shapes', `${r.name} has a unit and sets ⏰ — the shape is ⏰'s unit, never its answer`);
     if (r.unit === null && ending === undefined) find('shapes', `${r.name} has no unit and leaves ⏰ unset`);
     if (r.say.length > 200) find('shapes', `${r.name}.say is ${r.say.length} characters (H4: 200)`);
-    for (const b of BANNED) if (b.test(r.say)) find('shapes', `${r.name}.say — ${b}`);
+    if (!bannedOk(r.say)) for (const b of BANNED) if (b.test(r.say)) find('shapes', `${r.name}.say — ${b}`);
     if (r.say.length < 12) find('shapes', `${r.name}.say says nothing`);
   }
   const nm = readFileSync(join(ROOT, 'design/session-view.html')).toString('utf8')
@@ -849,7 +867,7 @@ function checkBannedWords() {
     // only string literals count: single- or double-quoted, on one line, and long enough to be a sentence
     for (const m of src.matchAll(/(['"])((?:\\.|(?!\1)[^\\\n])*)\1/g)) {
       const lit = m[2].replace(/class="[^"]*"/g, '').replace(/\bclass=\\"[^"]*\\"/g, '');
-      if (lit.length < 12) continue;
+      if (lit.length < 12 || bannedOk(lit)) continue;
       for (const b of banned) if (b.test(lit)) { find('copy', `${f}: "${lit.slice(0, 70)}" — ${b}`); break; }
     }
   }
