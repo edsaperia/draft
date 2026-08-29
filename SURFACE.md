@@ -409,7 +409,7 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 | ✓ (drawn), closing | a door whose act is in the body — the direct ✉️ — and the applicant's cards | — | solid green | closes and **keeps** what is typed; the act is on the field, so the row has nothing left to commit |
 | ✏️ (hold) | a draft, or an ordinary motion | the flight | accent-subtle — *blue, not green* | the price is said in words exactly once, here |
 | ✏️ / 🏛️, second | the Founder's own card on a setting they hold ✒️ on — after the pen, never in front of it; on a door, in the body beside the door's own act | the route's own — the ✏️ flight or the assembly | accent-subtle | one glyph per route (K7), read off the value (K6); K29 |
-| 🏛️ Ask all members | a constitutional motion | 10 s | accent-subtle | one 🏛️ out per member |
+| 🏛️ Ask all members | a constitutional motion | the assembly, one second (§7.2) | accent-subtle | one 🏛️ out per member |
 | ✏️ Submitted | a proposed draft | — | pressed | the act become the fact; the row does not move |
 | OK | anything that asks only to have been seen — ⚖️, news, 🥂, and 📄 Text (Q798) | — | solid accent | a word, not a glyph |
 | ✒️ 🛡️ 🏛️ ✏️ Take … | a grant | — (a click) | accent-subtle | the glyph of the power it hands over, then the verb; OK is for what only wants to have been seen — a grant is taken |
