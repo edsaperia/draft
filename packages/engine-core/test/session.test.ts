@@ -486,6 +486,57 @@ describe('session lifecycle', () => {
     expect(s.getCandidate(c1).state).toBe('live');
   });
 
+  /**
+   * **An author is never served their own text against the incumbent** (Ed,
+   * 2026-08-29, backlog 253; SPEC §3.3, R-062): the preference is derived
+   * and already held, so the card asks a question the engine answered
+   * itself. Both doors are walked — the edge scan and exploration, which
+   * also serves against the incumbent — over several `t`, because the
+   * exploration roll is per slot.
+   *
+   * The other half is the rule's limit: **a rival pair is still asked**. By
+   * proposing you say only that your text beats the status quo, so which of
+   * two challengers wins is a real question and stays one.
+   */
+  it('never serves an author their own text against the incumbent, and still serves their rivals', () => {
+    const s = openWide(); // twelve, so the floor is 4 and nothing adopts here
+    const { id: c1 } = s.submitCandidate(1000, {
+      author: 'p1', patch: rewrite(0, 1, 'A.'), rationale: 'r',
+    });
+    const { id: c2 } = s.submitCandidate(2000, {
+      author: 'p2', patch: rewrite(0, 1, 'B.'), rationale: 'r',
+    });
+    s.submitCandidate(3000, { author: 'p3', patch: rewrite(0, 3, 'C.'), rationale: 'r' });
+    const incumbents = new Set(s.races().map((r) => r.incumbentId));
+    const ownIncumbentPair = (card: { aId: string; bId: string }) =>
+      (card.aId === c1 && incumbents.has(card.bId)) ||
+      (card.bId === c1 && incumbents.has(card.aId));
+
+    for (const t of [3000, 4000, 5000, 6000]) {
+      for (const card of s.feed('p1', 8, t)) {
+        expect(ownIncumbentPair(card), `${card.kind} ${card.aId} vs ${card.bId}`).toBe(false);
+      }
+      // p2's own text against the incumbent is a question p1 can answer, and
+      // the same pair is the one p2 is never served
+      for (const card of s.feed('p2', 8, t)) {
+        expect(
+          (card.aId === c2 && incumbents.has(card.bId)) ||
+            (card.bId === c2 && incumbents.has(card.aId)),
+          `${card.kind} ${card.aId} vs ${card.bId}`,
+        ).toBe(false);
+      }
+    }
+
+    // the incumbent pairs p1 *is* served are other people's; once that one is
+    // spent, their own race's rival pair arrives — a real question, still asked
+    const inc = s.raceOf(c1).incumbentId;
+    expect(s.feed('p1', 8, 3000).some((c) =>
+      (c.aId === c2 && c.bId === inc) || (c.bId === c2 && c.aId === inc))).toBe(true);
+    s.judge(3500, 'p1', c2, inc, 'b');
+    expect(s.feed('p1', 8, 4000).some((c) =>
+      (c.aId === c1 && c.bId === c2) || (c.bId === c1 && c.aId === c2))).toBe(true);
+  });
+
   it('closes: no moves after, final render applies theta-clearing leaders', () => {
     const s = openHeld();
     const { id: c1 } = s.submitCandidate(1000, {
@@ -1082,28 +1133,34 @@ describe('a refused event never reaches the log (Q679)', () => {
 });
 
 /**
- * A document of one (Q837, backlog 60). Ed: *"If I'm the only member in a
- * document and the quorum is 1 and the threshold is 50%, it did not pass."*
+ * A document of one (Q837, backlog 60; **overturned in part 2026-08-29,
+ * backlog 253**). Ed: *"If I'm the only member in a document and the quorum
+ * is 1 and the threshold is 50%, it did not pass."*
  *
- * The engine was never the reason: at E=1, Q=1, θ=½ the floor is 1, the
- * author's derived preference meets it, `feed` serves the sole member the
- * edge card, and their explicit judgment is a measured comparison that
- * clears `comparisons > 0` in the same call. What was missing was the
- * **card** — the page skipped every all-mine race, and at E=1 that is every
- * race (Q835). This pins the engine half, so a future author exclusion in
- * `judge` or `feed` cannot quietly take the sole member's document away
- * again; and it pins the meter at the minimum bar (Q836).
+ * The engine was never the reason: at E=1, Q=1, θ=½ the floor is 1 and the
+ * author's derived preference meets it. What was missing was the **card** —
+ * and the answer of 2026-08-25 was to serve the sole member their own text
+ * against the incumbent so their explicit judgment could clear the room
+ * gate. Ed overturned that: *an author is never asked about their own text
+ * against the incumbent*, because the engine already holds the answer. So
+ * at E = 1 the derived preference is both the floor and the room, and the
+ * proposal adopts on submission — which is what this block now pins, in
+ * both directions: the adoption, and the card that is never served.
+ *
+ * The two Q836 meter cases below are about the **bar**, not the room, and
+ * take a second member so the race they measure still exists to be read.
  */
-describe('a document of one (Q837)', () => {
-  const solo = () =>
+describe('a document of one (Q837, backlog 253)', () => {
+  const atBar = (bar: number, size: number) =>
     openSession(
       {
-        adoptionThresholdStart: 0.5,
-        adoptionThresholdEnd: 0.5,
+        adoptionThresholdStart: bar,
+        adoptionThresholdEnd: bar,
         quorum: { form: 'count', n: 1 },
       },
-      1,
+      size,
     );
+  const solo = () => atBar(0.5, 1);
   const propose = (s: Session) =>
     s.submitCandidate(1000, {
       author: 'p1',
@@ -1111,49 +1168,50 @@ describe('a document of one (Q837)', () => {
       rationale: 'Vouching keeps the roster accountable.',
     });
 
-  it('the sole member is served their own race, and their judgment adopts it', () => {
+  it('the sole member’s proposal adopts on submission, and no card is ever served for it', () => {
     const s = solo();
     expect(s.adoptionFloor()).toBe(1);
     expect(s.adoptionThreshold(1000)).toBeCloseTo(0.5, 10);
 
-    const { id: c1 } = propose(s);
-    const race = s.raceOf(c1);
-    // the author's derived preference is a mover and meets the floor, but it
-    // is not a measurement — so nothing has been judged yet
-    expect(race.distinctMovers).toBe(1);
-    expect(race.comparisons).toBe(0);
-    expect(s.getCandidate(c1).state).toBe('live');
-
-    // …and an hour of the host's clock changes nothing: the room has not spoken
     const before = s.log.length;
-    for (let t = 2000; t <= HOUR; t += 60_000) expect(s.tick(t)).toHaveLength(0);
-    expect(s.log).toHaveLength(before);
-    expect(s.getCandidate(c1).state).toBe('live');
-
-    // the router does serve it — there is no author exclusion anywhere
-    const cards = s.feed('p1', 3, 2000);
-    expect(cards.some((c) => c.kind === 'edge')).toBe(true);
-
-    // and the judgment is a measurement, so it carries in the same call
-    const kinds = s.judge(HOUR + 1000, 'p1', c1, race.incumbentId, 'a').map((e) => e.type);
-    expect(kinds).toContain('comparison');
+    const { id: c1 } = propose(s);
+    // the submit sweeps: the derived preference is the floor *and* the room
+    const kinds = s.log.slice(before).map((e) => e.event.type);
+    expect(kinds).toContain('candidate-submitted');
     expect(kinds).toContain('adopted');
     expect(s.getCandidate(c1).state).toBe('adopted');
     expect(s.document()).toContain('two existing members to vouch');
+
+    // and nobody was asked anything on the way: there is no question here
+    expect(s.feed('p1', 3, 2000)).toHaveLength(0);
+  });
+
+  it('above the ceiling it stays live, and the author is still never served it', () => {
+    // a room of one tops out at 0.798 (Q840), so a bar of 0.9 is one the
+    // sole member's own voice cannot carry — the candidate simply waits
+    const s = atBar(0.9, 1);
+    const { id } = propose(s);
+    expect(s.getCandidate(id).state).toBe('live');
+    const inc = s.raceOf(id).incumbentId;
+    // no edge pair, no exploration card, nothing: the only pair in the
+    // document is the author's own text against the incumbent
+    for (const t of [2000, 3000, 4000]) expect(s.feed('p1', 3, t)).toHaveLength(0);
+    // an explicit judgment is still legal and still counts (R-062) — it just
+    // cannot clear a bar the room's own unanimous fit does not reach
+    const judged = s.judge(HOUR, 'p1', id, inc, 'a').map((e) => e.type);
+    expect(judged).toContain('comparison');
+    expect(judged).not.toContain('adopted');
   });
 
   it('the meter reads a real fraction at a bar of exactly 50% (Q836)', () => {
-    const s = solo();
+    const s = atBar(0.5, 2);
     const { id } = propose(s);
     // before the floor was put on the span this was identically 0, whatever
     // the posterior — the whole document read as an empty bar for ever
     expect(s.raceOf(id).closeness).toBeGreaterThan(0);
     // and it reads as the lowest bar the surface can express above the coin
     // flip does, rather than as its own singular point
-    const nudged = openSession(
-      { adoptionThresholdStart: 0.51, adoptionThresholdEnd: 0.51, quorum: { form: 'count', n: 1 } },
-      1,
-    );
+    const nudged = atBar(0.51, 2);
     propose(nudged);
     expect(s.raceOf(id).closeness).toBeCloseTo(nudged.races()[0]!.closeness, 10);
   });

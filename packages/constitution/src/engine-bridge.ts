@@ -163,6 +163,7 @@ export class EngineBridge {
     // the stake and the seat come back whole (§3.3a), and the log tells
     // the truth about what happened rather than hiding it.
     let id: string;
+    const mark = this.engine.log.length;
     try {
       ({ id } = this.engine.submitCandidate(t, {
         author: by,
@@ -175,6 +176,7 @@ export class EngineBridge {
     }
     this.candidateOfMotion.set(motion, id);
     this.motionOfCandidate.set(id, motion);
+    this.reportAdoptions(t, this.engineEventsSince(mark));
     return { motion, route: 'ordinary', candidate: id };
   }
 
@@ -227,6 +229,22 @@ export class EngineBridge {
    * about it: the engine has applied it and the served text is the
    * engine's document.
    */
+  /**
+   * **A submission can adopt now** (Ed, 2026-08-29, backlog 253): since the
+   * author is never served their own text against the incumbent, at E = 1
+   * the derived preference is the room and `submitCandidate` sweeps at its
+   * tail. So the three doors that submit must report their batch exactly as
+   * `judge` and `tick` report theirs — a setting race that carried in that
+   * batch is otherwise adopted in the engine and still open in the
+   * constitution. `submitCandidate` returns ids rather than events, so the
+   * batch is read off the log the submission wrote into, and always **after**
+   * the motion↔candidate mapping is registered, which is what
+   * `reportAdoptions` reads to name the motion.
+   */
+  private engineEventsSince(mark: number): EngineEvent[] {
+    return this.engine.log.slice(mark).map((e) => e.event);
+  }
+
   private reportAdoptions(t: number, events: EngineEvent[]): void {
     for (const e of events) {
       if (e.type === 'candidate-awaiting-assent') {
@@ -312,7 +330,9 @@ export class EngineBridge {
     if (this.engine.balance(by, t) < this.engine.constitution.stake) {
       throw new Error('insufficient ✏️ for the stake (§7)');
     }
+    const mark = this.engine.log.length;
     const out = this.engine.submitCandidate(t, { author: by, patch, rationale: why, signed });
+    this.reportAdoptions(t, this.engineEventsSince(mark));
     this.sync(t);
     return out;
   }
@@ -466,6 +486,7 @@ export class EngineBridge {
     if (this.engine.standing(settingId) === undefined) {
       this.engine.setStanding(t, settingId, standing);
     }
+    const mark = this.engine.log.length;
     const { id } = this.engine.submitCandidate(t, {
       author,
       setting: { settingId, value: proposed },
@@ -473,6 +494,7 @@ export class EngineBridge {
     });
     this.candidateOfMotion.set(motion, id);
     this.motionOfCandidate.set(id, motion);
+    this.reportAdoptions(t, this.engineEventsSince(mark));
   }
 
   /**

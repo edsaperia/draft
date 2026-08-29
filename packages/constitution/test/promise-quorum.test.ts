@@ -157,22 +157,26 @@ describe('promise 1 — nothing carries until Q of us have weighed in (§4.2, §
     expect(bridge.engine.adoptionFloor()).toBe(2); // share 60 of 3
   });
 
-  it('at E = 1 the sole member carries their own proposal — the floor is 1 and their own judgment is the room (entry 60, Q835)', () => {
+  it('at E = 1 the sole member’s proposal carries at the submit — nobody is asked about their own text (backlog 253)', () => {
+    // **Q835's exception overturned** (Ed, 2026-08-29). It used to be that
+    // `comparisons > 0` held the adoption until a real judgment was cast,
+    // which at E = 1 could only be the sole member's on their own race. An
+    // author is now never served their own text against the incumbent, so
+    // that judgment can never arrive — and there is nobody else to measure
+    // anything. The derived preference is the floor *and* the room, and the
+    // proposal adopts on submission.
     const s = buildSolo({ form: 'count', n: 1 });
     expect(s.E()).toBe(1);
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'solo-count' });
     expect(bridge.engine.adoptionFloor()).toBe(1);
     const v0 = bridge.engine.currentVersion();
     const { id, raceId } = bridge.proposeText(10, 'ada', patch(v0, ['Open always.']), '');
-    const race = () => bridge.engine.races().find((r) => r.id === raceId)!;
-    // the derived preference alone clears the floor, but `comparisons > 0`
-    // holds the adoption until a real judgment is cast — which at E = 1 can
-    // only be the sole member's on their own race
-    expect(race().distinctMovers).toBe(1);
-    expect(race().comparisons).toBe(0);
-    bridge.tick(11);
-    expect(bridge.engine.document()).toBe('The clubhouse shall be kept open.');
-    bridge.judge(20, 'ada', id, race().incumbentId, 'a');
+    expect(bridge.engine.document()).toBe('Open always.');
+    expect(bridge.engine.getCandidate(id).state).toBe('adopted');
+    // the race is decided, so there is nothing left of it to serve or judge
+    expect(bridge.engine.races().find((r) => r.id === raceId)).toBeUndefined();
+    expect(bridge.engine.feed('ada', 3, 11)).toHaveLength(0);
+    bridge.tick(11); // and the clock has nothing to add
     expect(bridge.engine.document()).toBe('Open always.');
   });
 
@@ -182,9 +186,7 @@ describe('promise 1 — nothing carries until Q of us have weighed in (§4.2, §
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'solo-share' });
     expect(bridge.engine.adoptionFloor()).toBe(1);
     const v0 = bridge.engine.currentVersion();
-    const { id, raceId } = bridge.proposeText(10, 'ada', patch(v0, ['Open always.']), '');
-    const race = bridge.engine.races().find((r) => r.id === raceId)!;
-    bridge.judge(20, 'ada', id, race.incumbentId, 'a');
+    bridge.proposeText(10, 'ada', patch(v0, ['Open always.']), '');
     expect(bridge.engine.document()).toBe('Open always.');
   });
 

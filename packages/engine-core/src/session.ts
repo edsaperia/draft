@@ -970,7 +970,18 @@ export class Session {
       disclosure: this.constitutionValue.authorshipVisibility,
     });
     this.fitCache.clear();
+    // **The race is read before the sweep, and that ordering is the whole of
+    // why this is two statements.** At E = 1 the sweep below can adopt the
+    // candidate this call just made, and an adopted candidate is in no live
+    // race — `raceOf` would throw on the id it is about to return.
     const race = this.raceOf(id);
+    // A submission is the last moment a document of one can be waiting for
+    // (backlog 253): the derived preference is the room there, so the batch
+    // is due now rather than at the next `tick`. Field-wide and cooldown-
+    // gated exactly as `judge`'s sweep is, and here in the command rather
+    // than in the fold, because adoption emits events and must never run
+    // during replay.
+    this.sweepAdoptions(t);
     return { id, raceId: race.id };
   }
 
@@ -1610,7 +1621,17 @@ export class Session {
           // only from a judgment in the race). Same doctrine as the refund:
           // the author's own preference is counted but is not the room.
           // `comparisons` is the view's own measured (non-derived) count.
-          r.comparisons > 0,
+          //
+          // **Except at E = 1** (Ed, 2026-08-29, backlog 253; R-063). The
+          // gate asks *has anybody but the author spoken*, and in a document
+          // of one there is nobody else to ask — the author is the room, and
+          // since the engine no longer serves them their own text against the
+          // incumbent (R-062) the measurement it waits for can never arrive.
+          // So the derived preference is both the floor and the room, and a
+          // sole member's proposal adopts on submission. The bar still
+          // applies: at θ = ½ the derived edge clears it, higher up it may
+          // not, and the ceiling `ceilingNote` names is unchanged.
+          (r.comparisons > 0 || this.eCount() === 1),
       )
       // **The cap mark is read here, in the snapshot, and not at the `adopt`
       // call** (SPEC §4.2, R-051). `fitRaceMembers` is memoised on the
@@ -2046,6 +2067,31 @@ export class Session {
   }
 
   /**
+   * **An author is never asked about their own text against the incumbent**
+   * (Ed, 2026-08-29, backlog 253; SPEC §3.3, R-062). The answer is already
+   * held — while a candidate is live its author prefers it to the current
+   * text, derived and never stale — so serving the pair asks a question
+   * whose answer the engine wrote itself. A **rival** pair of theirs is
+   * untouched: by proposing you only say you beat the status quo, so which
+   * of two challengers wins is a real question and stays one.
+   *
+   * The exclusion lives here rather than in `judge`, which still takes an
+   * explicit own-vs-incumbent judgment and lets it supersede the derived
+   * preference (R-062's *an explicit judgment always wins*); what changes
+   * is only what is **served**.
+   */
+  private ownIncumbentPair(
+    a: string,
+    b: string,
+    incumbentId: string,
+    participantId: string,
+  ): boolean {
+    const other = a === incumbentId ? b : b === incumbentId ? a : null;
+    if (other === null) return false;
+    return this.candidates.get(other)?.author === participantId;
+  }
+
+  /**
    * Best unjudged pair in a race for a participant (SPEC §8.1, §8.3).
    * While the rival gate is closed, incumbent-involving pairs dominate:
    * rival pairs are served only to a participant whose incumbent pairs
@@ -2068,6 +2114,8 @@ export class Session {
           const a = ids[i]!;
           const b = ids[j]!;
           if (!include(a, b)) continue;
+          // in the scan itself, so both passes see it (R-062, backlog 253)
+          if (this.ownIncumbentPair(a, b, incumbentId, participantId)) continue;
           if (this.servedOut(participantId, contextKey(a, b, incumbentId))) continue;
           const v = pairValue(fit, a, b);
           if (best === null || v > best.value) best = { aId: a, bId: b, value: v };
@@ -2300,11 +2348,14 @@ export class Session {
   }
 
   private explorationCard(races: RaceView[], participantId: string): Card | null {
-    // Least-measured live candidate, served against its incumbent.
+    // Least-measured live candidate, served against its incumbent — never
+    // one of the participant's own, which would be their own text against
+    // the incumbent by another door (R-062, backlog 253).
     let target: { race: RaceView; id: string; count: number } | null = null;
     for (const r of races) {
       const usable = this.usableComparisons(r.members, r.incumbentId);
       for (const m of r.members) {
+        if (this.candidates.get(m)?.author === participantId) continue;
         const count = usable.filter((c) => c.aId === m || c.bId === m).length;
         if (target === null || count < target.count) target = { race: r, id: m, count };
       }

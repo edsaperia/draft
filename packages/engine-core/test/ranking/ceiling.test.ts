@@ -144,11 +144,15 @@ describe('the ceiling a room can reach (Q840)', () => {
   });
 
   it('a room of one adopts at its ceiling and cannot adopt one point above it', () => {
+    // **The adoption moved from the judgment to the submit** (Ed, 2026-08-29,
+    // backlog 253): at E = 1 the author is never served their own text
+    // against the incumbent, so the derived preference is the room and the
+    // sweep runs at the submission. The number under test is untouched — it
+    // is still 0.798 carrying 79 and refusing 80.
     const at = soloAt(ceilingPct(1)); // 79
+    const before = at.log.length;
     const { id } = propose(at);
-    const race = at.raceOf(id);
-    const kinds = at.judge(HOUR, 'p1', id, race.incumbentId, 'a').map((e) => e.type);
-    expect(kinds).toContain('adopted');
+    expect(at.log.slice(before).map((e) => e.event.type)).toContain('adopted');
     expect(at.getCandidate(id).state).toBe('adopted');
 
     const above = soloAt(ceilingPct(1) + 1); // 80
