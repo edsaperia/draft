@@ -1023,7 +1023,7 @@ window.SETUP = (function () {
       ? '<button class="btn btn-approve emojibtn holdmotion"' +
         (!dto || heldOut ? ' disabled' : '') +
         ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first'
-          : clickGesture ? 'A full ten-second assembly' : 'A full ten-second hold') + '"' +
+          : clickGesture ? 'A full one-second assembly' : 'A full one-second hold') + '"' +
         ' data-holdmotion="' + c.k + '">🏛️ ' +
         (clickGesture ? 'Ask all members' : 'Hold to ask everyone') + '</button>'
       // ✏️ on the ordinary commit, to match the 🏛️ on the other route (Ed,

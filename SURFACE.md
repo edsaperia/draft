@@ -9,7 +9,7 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 - **C1 Whatever the document wants from you goes in the rail, and everything that wants something is a card.** A card opens only on the user's click — nothing on the surface opens itself, arrival included — and it replaces the clause it is about, taking its tab with it; the tab you click does not move.
 - **C2 A card closes when its answer becomes the document's** — set, saved, answered, acknowledged, judged, discarded — **and stays open while it is still the place the thing lives.** Discarding closes it too: the discard is a finished act and the close is its receipt.
 - **C3 Closing is not discarding.** Every provisional value — a radio, a number, a draft, the title lane, the invitation boxes — lives in `S` until 🗑️ takes it; 🗑️ puts back only what the open card can write, and never touches a value already set.
-- **C4 One commit row.** 🗑️ at the left, always live, on every card but the five Y20 lists. At the right: ✒️ where the act is a set of your own (the power tabs included), ✓ where it is an answer, a judgment, or anything about yourself (*Save*) — or, on the direct ✉️ and the applicant's cards, simply *done here*, the act having been performed in the body — **✏️ Propose** / **🏛️ Ask all members** where it is a motion, **OK** where the card asks only to have been seen. Every control on the row shares one height and one disabled look. 🏛️'s label follows the commit gesture (§7.2) — it is the one control whose words name the gesture that works it, and it reads *Hold to ask everyone* in the hold position. The hold ladder: 🪶 and ✒️ one second, ✏️ the length of its flight, 🏛️ ten seconds (the `assembly-press`: the members' avatars convene in a circle around the control, so the assembly is the progress meter; release early and it disperses, nothing sent).
+- **C4 One commit row.** 🗑️ at the left, always live, on every card but the five Y20 lists. At the right: ✒️ where the act is a set of your own (the power tabs included), ✓ where it is an answer, a judgment, or anything about yourself (*Save*) — or, on the direct ✉️ and the applicant's cards, simply *done here*, the act having been performed in the body — **✏️ Propose** / **🏛️ Ask all members** where it is a motion, **OK** where the card asks only to have been seen. Every control on the row shares one height and one disabled look. 🏛️'s label follows the commit gesture (§7.2) — it is the one control whose words name the gesture that works it, and it reads *Hold to ask everyone* in the hold position. The hold ladder: one second, 🪶 ✒️ ✏️ 🏛️ alike (§7.2) — and 🏛️ is still the `assembly-press`, the members' avatars convening in a circle around the control, so the assembly is the progress meter; release early and it disperses, nothing sent.
 - **C5 Opening focuses the main decision** — the first interactive control in the card's own order (the chosen option within a group), never the commit row; focus is never a press; `preventScroll`. A card asking for words puts the caret after any text already there.
 - **C6 Four kinds of entry pin for what they are** — 🔥, an unacknowledged decision, a proposal of your own, a prioritisation — what is about *you* — **and the open entry pins for being open.** Everything else stands beside its clause and scrolls with it. What does not fit is not shown and not counted; admission is ranked by urgency and never thresholded; 🔥, the open entry and anything of your own are exempt from the cap (§6).
 - **C7 Hot for actions, cold for information.** Yellow and pink want something from you; blue and grey tell you where things stand; grey means nothing is asked of you. `--ok`'s green never leaves a card interior.
@@ -144,7 +144,7 @@ Keys that are not settings: `hat` `myemail` `begin` (SPEC §9.7.1, decisions tha
 
 Relocated here from SPEC.md in spec pass 1 (finding 568), with the spec keeping a pointer:
 
-- **How a constitutional motion is put** — a full ten seconds on 🏛️ in which the members' avatars convene in a circle around the control; the assembling circle is the progress meter. Started by a click or held down, by the commit gesture (§7.2); held, release early and nothing is sent (C4).
+- **How a constitutional motion is put** — a full second on 🏛️ in which the members' avatars convene in a circle around the control; the assembling circle is the progress meter. Started by a click or held down, by the commit gesture (§7.2); held, release early and nothing is sent (C4).
 - **The head of the document** — the Constitution block carries the founder, the constituted-at time (*Founded by [name] 👑 at [time] on [date]*) and every setting's current value as a clause, governance stated by deviation under the Proposals preamble.
 - **The 👑 question** — a task of its own kind on the founder's surface: news-pinned, Refuse / Accept as its commit row (E12) — *refuse* is the Founder's word, *reject* the membership's. On the Text it is a decision card in the charter beside the clause it rewrites, since what is being asked about is a wording and not a setting (R-056); the room is told nothing while it waits (Q1015).
 
@@ -211,8 +211,8 @@ Every power is an object you hold, kept where you can see it, spent by flying it
 | 🪶 quill | founding | nobody — nothing exists yet | quill | 4 feathers; 3 spent on the birth (title, link, the send), the 4th permanent and is the logo | 1000 | — | by navigating to docs.vote; no task | feather → button; home on release |
 | ✒️ pen | drafting | nobody — you hold the power | penwallet | one, perpetual, never spent; ∞ in the count slot | 1000 | grant-pen | the save · *You founded this document, and the pen came with it* / *The membership returned the pen to you* | pen → button; the take → socket; farewell → 🥂 |
 | 🛡️ shield | the pen's other half | nobody — a refusal power | shieldwallet | one, perpetual; ∞ | — | grant-shield | the save · *…the shield came with it* / *…returned the shield* | the take → socket; farewell → 🥂 (Q621) |
-| ✏️ propose | proposing | enough of the room, at the threshold | wallet | many; 1 per Propose, refunded whole on withdraw, dripped on real minutes, capped; past four, three glyphs and +n | 3000 | canpropose | 🍾, per member at their OK · *The Founder began the document, granting every member the right to propose changes to it* | arc → button; the storm from the take; farewell storm → 🥂 |
-| 🏛️ voice | consensus | all members | voicewallet | one at a time, returned whole | 10000 | grant-voice | with the first blind question you are asked (Q605) · four sentences by arrival | the take → socket; farewell → 🥂; the motion hold flies nothing — the assembly is the meter |
+| ✏️ propose | proposing | enough of the room, at the threshold | wallet | many; 1 per Propose, refunded whole on withdraw, dripped on real minutes, capped; past four, three glyphs and +n | 1000 | canpropose | 🍾, per member at their OK · *The Founder began the document, granting every member the right to propose changes to it* | arc → button; the storm from the take; farewell storm → 🥂 |
+| 🏛️ voice | consensus | all members | voicewallet | one at a time, returned whole | 1000 | grant-voice | with the first blind question you are asked (Q605) · four sentences by arrival | the take → socket; farewell → 🥂; the motion hold flies nothing — the assembly is the meter |
 | 🍾 begin | a moment, not a capacity | the founder alone | — | — | 1000 | — | 🍾 is its own task | the cork → the document title |
 | ⚖️ judge | a right, not an object | — | — | — | — | canjudge | 🍾 · *…granting every member the right to vote on what is proposed* | nothing flies |
 
@@ -231,7 +231,7 @@ Every power is an object you hold, kept where you can see it, spent by flying it
 
 ### 7.2 The hold ladder
 
-An act that spends something out of a wallet is held, and its gravity is the length of the hold. A hold has to say so before it is held: the paying token leans toward the control on hover (`spend-preview`), and a short press always carries it at least a quarter of the way — a distance floor, not a jump — then home at a minimum rate (`short-press-nudge`).
+An act that spends something out of a wallet is held, and **every hold on the surface is one second** — one number, `HOLD_MS` in `design/session.js`, exported as `SESSION.holdMs` and read by everything else. What says an act's gravity is therefore **what flies**: a feather, a pen, the cork, the pencil the width of the screen, the room itself convening into a ring. → why: R-059. A hold has to say so before it is held: the paying token leans toward the control on hover (`spend-preview`), and a short press always carries it at least a quarter of the way — a distance floor, not a jump — then home at a minimum rate (`short-press-nudge`).
 
 <!-- spec-check: holds -->
 | control | hold ms | quarter-way ms | what flies | early release |
@@ -239,9 +239,9 @@ An act that spends something out of a wallet is held, and its gravity is the len
 | 🪶 commit (title, link, the send) | 1000 | 250 | the last feather | carried to the floor, hangs, rewinds at ×4 |
 | ✒️ commit | 1000 | 250 | the pen | same |
 | 🍾 Begin | 1000 | 250 | the cork, button → title | same |
-| ✏️ Propose (a draft in the charter) | 3000 | 864 | the last drawn ✏️ | same |
-| ✏️ Propose (a motion) | 3000 | 864 | the last drawn ✏️ (Q614) | same |
-| 🏛️ Ask all members | 10000 | — | nothing — the members' avatars convene | disperses; nothing sent |
+| ✏️ Propose (a draft in the charter) | 1000 | 288 | the last drawn ✏️ | same |
+| ✏️ Propose (a motion) | 1000 | 288 | the last drawn ✏️ (Q614) | same |
+| 🏛️ Ask all members | 1000 | — | nothing — the members' avatars convene | disperses; nothing sent |
 | the take (✒️ 🛡️ 🏛️ ✏️ Take …) | a click | — | the grant's object, the take → socket | — |
 
 The refund flight and every grant's inbound flight take 640 ms.
@@ -408,7 +408,7 @@ Two implementations of one shell (`suggCardHtml` in session.js for the charter; 
 | ✓ (drawn) | an answer, a judgment, anything about yourself (*Save*) | — | **the one solid green on a card** | ✓ where the act binds nobody but you |
 | ✓ (drawn), closing | a door whose act is in the body — the direct ✉️ — and the applicant's cards | — | solid green | closes and **keeps** what is typed; the act is on the field, so the row has nothing left to commit |
 | ✏️ (hold) | a draft, or an ordinary motion | the flight | accent-subtle — *blue, not green* | the price is said in words exactly once, here |
-| ✏️ / 🏛️, second | the Founder's own card on a setting they hold ✒️ on — after the pen, never in front of it; on a door, in the body beside the door's own act | the route's own — the ✏️ flight or the ten-second assembly | accent-subtle | one glyph per route (K7), read off the value (K6); K29 |
+| ✏️ / 🏛️, second | the Founder's own card on a setting they hold ✒️ on — after the pen, never in front of it; on a door, in the body beside the door's own act | the route's own — the ✏️ flight or the assembly | accent-subtle | one glyph per route (K7), read off the value (K6); K29 |
 | 🏛️ Ask all members | a constitutional motion | 10 s | accent-subtle | one 🏛️ out per member |
 | ✏️ Submitted | a proposed draft | — | pressed | the act become the fact; the row does not move |
 | OK | anything that asks only to have been seen — ⚖️, news, 🥂, and 📄 Text (Q798) | — | solid accent | a word, not a glyph |

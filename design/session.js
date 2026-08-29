@@ -2778,12 +2778,17 @@
   //
   // Under reduced motion the pencil does not travel: it fades at the wallet
   // and arrives at the button. Same gesture, same duration, no flight.
-  const HOLD_MS = 3000;
-  // ✒️ runs for the pen's own duration, not the pencil's three seconds — the
-  // same number `session-view.html` calls `PEN_HOLD_MS`, stated here because
-  // this file loads first and owns this button's gesture. Three seconds is
-  // the length of a pencil's flight across the screen, and nothing flies here.
-  const PEN_MS = 1000;
+  //
+  // **The length of every hold on the surface, and there is only one**
+  // (Ed, 2026-08-29, backlog 206: *all "hold" times should now be only 1
+  // second long*, QA on the commit-gesture switch). It used to be a ladder —
+  // a second for the pen and the quill, three for the pencil, ten for the
+  // assembly — on the idea that the length of a hold said the gravity of the
+  // act. It is one number now, declared here because this file loads first,
+  // exported as `SESSION.holdMs` and read by `session-view.html` for its
+  // wallet commits and its assembly rather than copied. What still says an
+  // act's gravity is what flies (SURFACE §7.2, R-059).
+  const HOLD_MS = 1000;
   let holding = null;
   const flyStop = (fired) => {
     if (!holding) return;
@@ -2803,18 +2808,23 @@
     // Let go early and it comes home **along its own arc** — the flight run
     // backwards rather than a second, straighter journey, because the way it
     // came is the way it goes back. Faster than it left: rewinding at the
-    // speed it flew would punish a late change of mind with a three-second
-    // wait, and the return is not a gesture anybody is performing.
+    // speed it flew would punish a late change of mind with a wait as long
+    // as the hold, and the return is not a gesture anybody is performing.
     //
     // Since Q531 the return is `nudgeHome`, shared with the pen and the
     // quill, which adds the quarter floor: a press too short to be a hold
     // still carries the pencil a quarter of the way before it comes back.
-    // **864ms, not 750** — this flight's easing is slow off the mark, and
-    // the floor is a quarter of the *distance* (see `nudgeHome`). The old
+    // **288ms, not 250** — this flight's easing is slow off the mark, and
+    // the floor is a quarter of the *distance*, not of the time (see
+    // `nudgeHome`). The fraction is a property of the curve rather than of
+    // the length: `cubic-bezier(.45, .05, .3, 1)` has covered a quarter of
+    // the way at **0.288** of its duration whatever that duration is, so 864
+    // of 3000 and 288 of 1000 are the same point on the same arc. The linear
+    // flights' 250 is the same solve for `linear` at the same length. The old
     // `HOLD_MS / 4 + 60` safety timeout is gone with it: the fallback now
     // derives from the actual journey, which a literal cannot do once there
     // is a push phase in front of the rewind.
-    nudgeHome({ anim, el: pencil }, { floorAt: 864,
+    nudgeHome({ anim, el: pencil }, { floorAt: 288,
       onDone: () => {
         walletGhost = false;
         // the pencil is home, so the preview may resume — but only if the
@@ -2832,7 +2842,7 @@
     // `session-view.html`'s own wallet state (`penGhost`, `setWalletGhost`),
     // which this file does not own and this plan does not reach into. So the
     // gesture is the whole of it: the same three listeners, the same landing
-    // by id, at the pen's own duration.
+    // by id, at the one hold length every commit on the surface takes.
     const pen = el.dataset.pen === '1';
     if (pen) {
       el.classList.add('holding');
@@ -2843,7 +2853,7 @@
       holding = { el, pencil: null, anim: null, pen: true, timer: setTimeout(() => {
         flyStop(true);
         if (draftOf() === penD0) act(penId, 'draft-pen');
-      }, PEN_MS) };
+      }, HOLD_MS) };
       return;
     }
     // the token is about to leave for real, so it stops straining at the leash
@@ -2884,7 +2894,7 @@
     const id = el.closest('.sugg').dataset.card;
     // **The draft that is proposed is the one the pencil left for.** `act`
     // resolves by id, and the id is `DRAFT_ID` for every draft in turn — so
-    // under `click`, where the member is free for the whole three seconds,
+    // under `click`, where the member is free for the whole flight,
     // 🗑️ and a fresh composition would put a *different* draft in and spend
     // an edit nobody asked to spend. The object identity is the test, and it
     // survives a data swap, which is what the id-by-node fix was about
@@ -4166,7 +4176,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // what the eye reads — there is no track on the surface, so nobody can
   // perceive a fraction of a duration at all — so each caller passes the
   // *time at which its own easing reaches a quarter of the way*: 250ms of 1000
-  // for the pen, 864ms of 3000 for the pencil (the solve for that bezier).
+  // for the pen, 288ms of 1000 for the pencil (the solve for that bezier —
+  // 0.288 of the duration, whatever the duration is, which is why the floor
+  // moved with the hold when every hold became one second, backlog 206).
   //
   // **It is a floor, not a jump.** `t >= floorAt` rewinds from where it got to,
   // so letting go at nine-tenths never snaps backwards to a quarter — which
@@ -4174,8 +4186,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   //
   // **The push runs at a speed the hold cannot produce.** A fixed ~160ms flick
   // means the token is *thrown* rather than slid: from a standing start on the
-  // pencil that is 5.4x the hold's own pace. This is the whole reason the
-  // exaggeration is honest. Position on an arc is only a progress reading if
+  // pencil, whose floor is 288 of 1000, that is `minRate` exactly — 1.8x the
+  // hold's own pace, the slowest a throw is allowed to be. (It was 5.4x while
+  // the pencil ran for three seconds; the floor came down with the hold and
+  // the rate floor is what holds the gesture up now.) This is the whole reason
+  // the exaggeration is honest. Position on an arc is only a progress reading if
   // there is a scale to read it against, and there deliberately is none — so
   // what a viewer can perceive is departure, distance and return, not "this is
   // 25%". A floor on time in the air instead would be unimpeachable and
@@ -4196,8 +4211,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // last 150ms of that over a fixed 160ms push came out at **0.94x** — the
     // token drifting forward *slower* than the hold moves it, which is the
     // exact opposite of the point. A floor on the rate means the flick is
-    // always a speed the hold itself cannot produce, on a short pen press and a
-    // long pencil one alike, and the duration falls out of it.
+    // always a speed the hold itself cannot produce, on a pen press and a
+    // pencil one alike, and the duration falls out of it.
     const rewind = o.rewind || 4, push = o.push || 160, hang = o.hang || 90, minRate = o.minRate || 1.8;
     const dur = Number((anim.effect && anim.effect.getTiming().duration) || 0) || 0;
     const floorAt = dur ? Math.min(o.floorAt || 0, dur) : (o.floorAt || 0);
@@ -4825,6 +4840,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // the commit gesture, resolved once at load — the page and setup.js read
     // this rather than keeping a second copy of the constant (backlog 184)
     get gesture() { return GESTURE; },
+    // and the length of every hold on the surface, for the same reason and in
+    // the same place (backlog 206): one number, owned by the file that loads
+    // first, read by the page's wallet commits and its assembly rather than
+    // copied into either
+    get holdMs() { return HOLD_MS; },
     get readSeals() { return readSeals; },
     get verdicts() { return verdicts; },
     get editsHeld() { return editsHeld; },

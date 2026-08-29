@@ -344,15 +344,47 @@ function checkWallets(pm) {
   for (const r of rows) {
     if (r.socket !== '—' && !new RegExp(`id="${r.socket}"`).test(page)) find('wallets', `socket #${r.socket} is not in the topbar markup`);
   }
-  const pen = numLit(page, 'PEN_HOLD_MS'); const assembly = numLit(page, 'HOLD_MS'); const propose = numLit(sess, 'HOLD_MS');
+  // **Every hold on the surface is one second, and there is one number**
+  // (Ed, 2026-08-29, backlog 206; R-059). This used to read three literals —
+  // `PEN_HOLD_MS` and the assembly's `HOLD_MS` out of the page, the charter's
+  // `HOLD_MS` out of session.js — and check each against its own rows. There
+  // is one now: `session.js` owns it, the page reads `SESSION.holdMs`, and
+  // **every numeric *hold ms* cell in both tables must equal it**, which is a
+  // stronger assertion than the three it replaces — a row that drifts off the
+  // one number is red wherever it is.
+  const hold = numLit(sess, 'HOLD_MS');
   const holds = tableAfter('SURFACE.md', 'holds');
+  // a cell that is not a number is a row with no hold to state (🛡️ and ⚖️ in
+  // the wallets table read `—`, *the take* reads `a click`) — exempt by being
+  // non-numeric rather than by a list of glyphs, so a new such row is exempt
+  // by construction and a row that states a number is never skipped
+  const cells = [...rows, ...holds].map((r) => ({ what: r.control || r.wallet, ms: r['hold ms'] }))
+    .filter((c) => /^\d+$/.test(c.ms));
+  for (const c of cells) if (+c.ms !== hold) find('holds', `HOLD_MS is ${hold}; the tables say ${c.what} ${c.ms}`);
+  if (cells.length < 8) find('holds', `only ${cells.length} hold-ms cells parsed across the two tables — the columns have moved`);
   const want = (ctl) => +((holds.find((h) => h.control.startsWith(ctl)) || {})['hold ms'] || NaN);
-  if (want('🪶') !== pen || want('✒️') !== pen || want('🍾') !== pen) find('holds', `PEN_HOLD_MS is ${pen}; the ladder says 🪶 ${want('🪶')} ✒️ ${want('✒️')} 🍾 ${want('🍾')}`);
-  if (want('✏️ Propose (a draft') !== propose) find('holds', `the charter's HOLD_MS is ${propose}; the ladder says ${want('✏️ Propose (a draft')}`);
-  if (want('🏛️') !== assembly) find('holds', `the assembly HOLD_MS is ${assembly}; the ladder says ${want('🏛️')}`);
+  for (const ctl of ['🪶', '✒️', '🍾', '✏️ Propose (a draft', '✏️ Propose (a motion', '🏛️'])
+    if (!Number.isFinite(want(ctl))) find('holds', `the ladder has no hold ms for ${ctl}`);
   if (holds.some((h) => h.control.startsWith('✏️ Propose (a motion')) && !/data-putmotion/.test(page.slice(page.indexOf('const holdWallet')))) find('holds', 'the motion ✏️ Propose is not a hold in holdWallet (Q614)');
-  if (!/floorAt(?::| \|\|) 250/.test(page)) find('holds', 'the pen release floor (250) not found');
-  if (!/floorAt: 864/.test(sess)) find('holds', 'the pencil release floor (864) not found');
+  // **and the page keeps no copy of the length.** The ban is on a *duration*,
+  // never on a floor: `floorAt: 288` and `floorAt || 250` are quarter-way
+  // points of two easings and stay literals, asserted just below. What may
+  // not come back is a hold timer's own number — a `HOLD_MS`-shaped constant
+  // holding a numeral, or a `holdWallet` branch carrying `ms:`.
+  if (!/const HOLD_MS = SESSION\.holdMs;/.test(page)) find('holds', 'the page does not read SESSION.holdMs — "one constant" is only true while it does');
+  if (/const \w*HOLD_MS\w* = \d/.test(page)) find('holds', 'the page declares a numeric hold duration of its own — it must read SESSION.holdMs');
+  const hw = page.slice(page.indexOf('const holdWallet'), page.indexOf('let penHold ='));
+  if (/\bms: *\d/.test(hw)) find('holds', 'a holdWallet branch carries its own length — since backlog 206 only the floor differs per branch');
+  if (!/get holdMs\(\) \{ return HOLD_MS; \}/.test(sess)) find('holds', 'session.js does not export holdMs beside gesture');
+  // the two floors: each is the point at which its own easing has covered a
+  // quarter of the **distance** at the hold's length — 250 of 1000 for the
+  // pen and the quill's `linear`, 288 of 1000 for the pencil's
+  // `cubic-bezier(.45, .05, .3, 1)`, whose 0.288 is a property of the curve
+  // and not of the length (which is why it was 864 of 3000)
+  const floor = (frac) => Math.round(hold * frac);
+  if (!new RegExp(`floorAt(?::| \\|\\|) ${floor(0.25)}\\b`).test(page)) find('holds', `the pen release floor (${floor(0.25)}, a quarter of ${hold} on \`linear\`) not found in the page`);
+  if (!new RegExp(`floorAt: ${floor(0.288)}\\b`).test(sess)) find('holds', `the pencil release floor (${floor(0.288)}, the 0.288 solve for that bezier at ${hold}) not found in session.js`);
+  if (!new RegExp(`floorAt: ${floor(0.288)}\\b`).test(page)) find('holds', `the motion ✏️ flies the pencil's easing, so its floor is ${floor(0.288)} too`);
   if (numLit(sess, 'REFUND_MS') !== 640) find('holds', 'REFUND_MS is not 640');
   // **A hold is released by letting go, never by the surface moving** (2026-08-22).
   // Both holds on this product release on pointerup and pointercancel and on
@@ -383,7 +415,7 @@ function checkWallets(pm) {
   // and the hold path is still reachable: the release listeners asserted above
   // are guarded by the switch rather than deleted
   if (!holdBind.includes('GESTURE')) find('holds', 'the propose hold\'s release is not guarded by GESTURE — the switch is not read here');
-  note(`  ${rows.length} wallets; holds 🪶✒️🍾 ${pen} · ✏️ ${propose} · 🏛️ ${assembly}; gesture ${gesture}`);
+  note(`  ${rows.length} wallets; every hold ${hold}ms across ${cells.length} cells (floors ${floor(0.25)} linear · ${floor(0.288)} bezier); gesture ${gesture}`);
 }
 
 function checkOrder(pm) {

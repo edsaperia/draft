@@ -1936,3 +1936,59 @@ saved document, and in `--delegate-all` an early invitation clears the very dead
 run exists to reach. `founding-walk` skips a **door** when picking the next task, so the
 fixture founder is not asked to delegate one; the golden records it in the rail column
 either way, which is the whole of what it is for here.
+
+## Every hold on the surface is one second (2026-08-29, entry 206)
+
+Ed's QA of the commit-gesture switch (entry 184, plan 98): *the click gesture is good but
+all "hold" times should now be only 1 second long*. The ruling itself is R-059 in
+`design/SPEC-REASONING.md` — the number, what it replaced, and the cost that gravity is no
+longer said by length. What is recorded here is the build's own three judgments.
+
+**1. One constant, not five agreeing literals.** Ed asked for one *if the code allows it
+without contortion*, and it does, because the shape already existed: `SESSION.gesture`
+was exported for exactly this reason a day earlier — `design/session.js` loads first and
+owns the number, and everything else reads it rather than keeping a copy. `HOLD_MS` is
+declared there and exported as `get holdMs()` immediately beside `get gesture()`. `PEN_MS`
+is deleted outright: it was *the pen's own duration, not the pencil's three seconds*, and
+with the two equal a second name for one number is precisely the drift this closes. In
+`design/session-view.html` the page's own two literals — `PEN_HOLD_MS` and the assembly's
+`HOLD_MS` — become one `const HOLD_MS = SESSION.holdMs;`, declared in the assembly block
+rather than beside the hold ladder for the dull reason that it is the first of the two uses
+in file order and no reader should have to reason about a temporal dead zone to be sure the
+page works. `holdWallet`'s `[data-putmotion]` branch loses `ms:` entirely and falls through
+to the shared default like every other branch; what stays per branch is the **easing**, and
+therefore the floor.
+
+**2. The pencil's floor moved because the fraction did not.** `nudgeHome`'s contract is
+that a caller passes *the time at which its own easing reaches a quarter of the way* — a
+quarter of the distance, not of the duration, because there is no track on the surface and
+nobody can perceive a fraction of a duration. So the question at 1000 ms was whether the
+pencil's 864 becomes 250 like the others or 288. It is 288: `cubic-bezier(.45, .05, .3, 1)`
+is normalised in both axes, so it has covered a quarter of the way at **0.288 of its
+duration whatever the duration is**, and 864 of 3000 and 288 of 1000 are the same point on
+the same arc. 250 would have been a quarter of the *time*, which is the reading the comment
+above `nudgeHome` exists to refuse. One thing does change for free and is worth knowing: the
+throw from a standing start used to run at 5.4× (864 over a 160 ms push) and now runs at
+exactly `minRate`, 1.8× — the rate floor Ed named explicitly is what holds the gesture up
+now, where the distance used to.
+
+**3. The assembly's stagger compresses rather than being dropped.** `80 + i * (HOLD_MS -
+800) / seats.length` was a formula written against ten seconds; substituting 1000 into it
+lands the last seat around 600 ms and leaves the ring sitting complete for the remaining
+400. *The assembly is the progress meter*, so a meter that fills before the act is not the
+meter — the whole reason the ring exists is that it finishes at the moment the motion goes
+in. The spread is derived from the hold instead: the last seat must **begin** its own
+transition late enough to land as the hold ends, so it is `HOLD_MS - 80 - 320` over the
+seat count, the 80 being the lead-in and the 320 the seat's own `transform` transition in
+`design/setup.css` — named as such in a comment, since the two have to move together. At
+any length larger than one second it degrades to what the old formula did.
+
+**What the build did beyond the plan, and why.** Three sentences in `SURFACE.md` outside
+the two tables still asserted the old ladder — C4's *🪶 and ✒️ one second, ✏️ the length of
+its flight, 🏛️ ten seconds*, §6's *a full ten seconds on 🏛️*, and §9.1's *the ten-second
+assembly* — as did CLAUDE.md's quarter-way gotcha, which stated the floor as *864 of 3000*.
+Left alone they would have made the source of truth contradict its own table on the one
+number this entry changes. The three paragraphs in **this** file that describe the
+ten-second assembly (the `wallets` note of 2026-08-20, the `assembly-press` note of
+2026-08-18 and the glossary lift of 2026-08-23) are deliberately untouched: they are the
+record of what was decided on those days and are correct about them.
