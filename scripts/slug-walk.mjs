@@ -17,7 +17,9 @@
  *     correct, never something the page quietly moves. Commit dark, note
  *     naming the nearest free address, nothing sent at the wire.
  *
- *   npm run server                                  # in another shell
+ *   npm run server                # in another shell, with a dev outbox
+ *                                 # (no RESEND_API_KEY): the last check reads
+ *                                 # the creation mail back from it
  *   npm run slug-walk -- [<base-url>] [<slug>]      # slug must be reserved
  *
  * Neither argument is positional: the base is the first `http(s)://`
@@ -201,8 +203,11 @@ check(openCard === null, 'after the send no card is open — 📍 does not re-op
 // The filter is the **address**, not the title: CI reserves `test-charter`
 // with a document of the same title, whose own creation mail would answer for
 // this one. The creation mail states `/d/<slug>` in its prose (MAILS.create).
-const ob = await (await fetch(BASE + '/api/dev/outbox')).json();
-const held = ob.mails || ob;
+// A server with a RESEND_API_KEY has no `/api/dev/outbox` at all: it answers
+// 404 with `{error}`, and calling `.filter` on that is a stack trace where a
+// named failure belongs.
+const ob = await (await fetch(BASE + '/api/dev/outbox')).json().catch(() => null);
+const held = Array.isArray(ob && ob.mails) ? ob.mails : Array.isArray(ob) ? ob : [];
 const mine = held.filter((m) => JSON.stringify(m).includes('/d/' + FREE));
 check(mine.length > 0, 'the send wrote a creation mail for /d/' + FREE +
   ' (the outbox held ' + held.length + ' mail(s), ' + mine.length + ' for this address' +

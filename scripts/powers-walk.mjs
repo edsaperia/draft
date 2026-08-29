@@ -195,6 +195,18 @@ const runDocument = async (hat) => {
     await press(1250);
     await openCard('slug');
     await press(1250);
+    // **🧭 sits between 📍 and 📧** (entry 166), and a card in ORDER that is
+    // not settled blocks everything under it — so a birth that skips it never
+    // reaches a live 📧 commit. `custom` is the rung that folds nothing, which
+    // is what this walk's power assertions were written against.
+    await openCard('shape');
+    if (!(await clickIn('[data-set="docShape"][data-val="custom"]'))) {
+      fail('🧭 offers no rung named custom');
+      await page.close();
+      return;
+    }
+    await T(420);
+    await press(1250);
     await openCard('myemail');
     await typeIn('.setupcard input[type="email"]', 'ada@example.org');
     await press(1250);

@@ -117,6 +117,16 @@ const birth = async () => {
   await clickIn('.setupcard [data-confirm]');
   await openCard('slug');
   await clickIn('.setupcard [data-confirm]');
+  // **🧭 sits between 📍 and 📧** (entry 166), and a card in ORDER that is not
+  // settled blocks everything under it — so a birth that skips it never
+  // reaches 📧 at all, and this walk's two delegations were never served.
+  // `custom` is the rung that folds nothing, which is what the two number
+  // questions below are asked against.
+  await openCard('shape');
+  if (!(await clickIn('.setupcard [data-set="docShape"][data-val="custom"]'))) {
+    check('🧭 offers a rung named custom', false);
+  }
+  await clickIn('.setupcard [data-confirm]');
   await openCard('myemail');
   await typeIn('.setupcard input[type="email"]', 'ada@example.org');
   await clickIn('.setupcard [data-confirm]');
