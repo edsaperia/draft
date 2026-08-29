@@ -7702,11 +7702,18 @@
       1200 + Math.random() * 2600);
   }
   // ---- assembly-press (Ed, 2026-08-18) -----------------------------------
-  // A constitutional change goes in by a **full ten-second hold**, and the
-  // progress meter is the room itself: the members convene onto a circle
-  // around the button, and the motion is put at the moment the assembly is
-  // complete. Release early and it disperses — nothing sent.
-  const HOLD_MS = 10000;
+  // A constitutional change goes in by a **full hold**, and the progress
+  // meter is the room itself: the members convene onto a circle around the
+  // button, and the motion is put at the moment the assembly is complete.
+  // Release early and it disperses — nothing sent.
+  //
+  // **One length for every hold on this page** (Ed, 2026-08-29, backlog 206:
+  // *all "hold" times should now be only 1 second long*). `session.js` owns
+  // the number and loads first, so the page reads it and keeps no copy — this
+  // was ten seconds where the pen was one and the pencil three. Declared here
+  // rather than beside the hold ladder below because this is the first of the
+  // two uses in file order; `holdWallet` takes the same constant.
+  const HOLD_MS = SESSION.holdMs;
   let assembly = null;
   function conveneAssembly(btn, k) {
     disperseAssembly();
@@ -7714,9 +7721,9 @@
     // (entry 161). This is the one place both the pointerdown listener and
     // the capture-phase click listener funnel through, so the two gestures
     // cannot drift — and seeding at the *start* is what puts the Founder
-    // under the `S.draft !== d0` guard below: their radios are as free during
-    // the ten seconds as a member's composer is, and what goes in must be
-    // what the room convened over.
+    // under the `S.draft !== d0` guard below: their radios are as free for
+    // the length of the hold as a member's composer is, and what goes in must
+    // be what the room convened over.
     const seeded = !(S.draft && S.draft.k === k) && founderPair(card(k));
     if (seeded) {
       const p = founderProposal(card(k));
@@ -7751,8 +7758,23 @@
     btn.classList.add('penholding');
     btn.setAttribute('aria-disabled', 'true');
     const seats = [...el.children];
+    // **The ring completes on the beat, so the spread is derived from the
+    // hold** (backlog 206). The old `HOLD_MS - 800` was written against ten
+    // seconds; at one it would have landed the last seat around 600ms with
+    // the ring sitting finished for the remaining 400, and a meter that fills
+    // before the act is not the meter. What the last seat needs is to
+    // *begin* late enough that it lands as the hold ends: after the 80ms
+    // lead-in, the spread is everything but the seat's own transition.
+    // `SEAT_MS` is `#assembly .seat`'s `transform 320ms` in `design/setup.css`
+    // and the two have to move together. The step stays the spread over the
+    // seat count, as it always was, so the last seat starts one step short of
+    // the end of the spread and lands a step before the beat rather than on
+    // it — a ring of five completes at 880ms of 1000. At any length above a
+    // second this degrades to exactly what the old formula did.
+    const LEAD_MS = 80, SEAT_MS = 320;
+    const spread = Math.max(0, HOLD_MS - LEAD_MS - SEAT_MS);
     const timers = seats.map((s2, i) =>
-      setTimeout(() => s2.classList.add('in'), 80 + i * (HOLD_MS - 800) / seats.length));
+      setTimeout(() => s2.classList.add('in'), LEAD_MS + i * spread / seats.length));
     const finish = () => {
       assembly = null;
       btn.classList.remove('penholding'); btn.removeAttribute('aria-disabled');
@@ -7761,13 +7783,13 @@
     assembly = { el, btn, timers, done: setTimeout(() => {
       el.classList.add('done');
       // **The motion that is put is the one the room convened over.** Under
-      // `hold` the pointer is down for the whole ten seconds and `S.draft`
+      // `hold` the pointer is down for the whole assembly and `S.draft`
       // cannot move; under `click` the member is free — 🗑️ clears the draft
       // and a second composition replaces it — so an unguarded send would put
       // a motion that had been discarded, or one the mover never asked for.
       if (S.draft !== d0) return finish();
-      // the 🏛️ half of the same silence (Q811/Q816): ten seconds of the
-      // room convening, and then a refusal nobody was told about
+      // the 🏛️ half of the same silence (Q811/Q816): the whole room
+      // convening, and then a refusal nobody was told about
       let sent = null;
       try { sent = cs.openMotion(now(), viewerId(), draftPayload(d0), d0.why || undefined);
         // the module auto-answered accept for the mover (§9.6 v0.49) —
@@ -10146,25 +10168,30 @@
   // gesture — and the birth is where a founder first learns that an act
   // costs something, so it is the last place the lesson should be optional.
   // A click with no pointer behind it (a key, a script) still acts at once.
-  const PEN_HOLD_MS = 1000;
+  // The length is `HOLD_MS`, declared with the assembly above and read from
+  // `SESSION.holdMs` — this page holds no hold duration of its own.
+  //
   // which wallet a commit spends from — the quill before the save, the pen
   // after it. Nothing else on the surface commits out of a wallet.
-  // A branch may carry its own length and floor (Q614, 2026-08-22): the ✏️
-  // hold is the charter's three seconds with the quarter-way floor at 864ms,
-  // where the pen and the quill take `PEN_HOLD_MS` and 250. `ms` and `floorAt`
-  // default to the pen's where a branch says nothing.
+  // A branch may carry its own length and floor (Q614, 2026-08-22), but since
+  // backlog 206 no branch carries a length: **every hold is the one length**,
+  // and what still differs from branch to branch is the *easing* and therefore
+  // the quarter-way floor — 288ms for the pencil's bezier, 250 for the pen's
+  // and the quill's `linear`, each of them the point at which its own curve
+  // has covered a quarter of the way. `ms` and `floorAt` default to the pen's
+  // where a branch says nothing.
   const holdWallet = (b) => {
     if (!b || b.disabled) return null;
     // **A motion's ✏️ Propose is a hold with the pencil flight** (Q614, Ed
     // 2026-08-22: the same act as the charter's Propose — it spends a ✏️ —
     // so it takes the same gesture: the last ✏️ flies from `#wallet` to the
-    // button over three seconds and the motion goes in when it lands). The
+    // button over the hold and the motion goes in when it lands). The
     // ghost is session.js's own wallet state (`setWalletGhost`), so the drip
     // cannot put the traveller straight back, and `mayPropose()` is asked
     // rather than the DOM (W13). The applicant row's *✏️ Propose them* is a
     // different command (`propose-applicant`) and is left as a click.
     if (b.matches('[data-putmotion]')) return cs && mayPropose() && document.querySelector('#wallet i')
-      ? { g: '✏️', sel: '#wallet i', ms: 3000, floorAt: 864, ghost: 'wallet',
+      ? { g: '✏️', sel: '#wallet i', floorAt: 288, ghost: 'wallet',
         live: '.setupcard [data-putmotion]', r0: -24, r1: 0, easing: 'cubic-bezier(.45, .05, .3, 1)' }
       : null;
     if (!b.matches('[data-confirm]')) return null;
@@ -10271,7 +10298,7 @@
     if (w.g === '🪶') quillGhost = true; else if (w.g === '✒️') penGhost = true;
     else if (w.ghost === 'wallet') SESSION.setWalletGhost(true);
     renderPowerWallets();
-    const ms = w.ms || PEN_HOLD_MS;
+    const ms = w.ms || HOLD_MS;
     const flight = SESSION.flyGlyph(w.g, from, to, ms,
       { r0: w.r0 ?? -30, r1: w.r1 ?? 0, easing: w.easing || 'linear' });
     penHold = { b, w, flight, timer: setTimeout(() => {

@@ -24,7 +24,7 @@
  * advance — so no flight is asserted here. The **holds themselves** are a
  * different matter and were wrongly lumped in with them until 2026-08-22: a
  * hold needs a pointer held down, not a running animation, and the propose
- * hold is now driven for its full three seconds with a render forced into the
+ * hold is now driven for its full length with a render forced into the
  * middle of it — the case that used to cancel it in silence.
  * Every commit below is driven by a real pointer press for the same reason a
  * synthetic .click() is not enough, and each control is scrolled into view
