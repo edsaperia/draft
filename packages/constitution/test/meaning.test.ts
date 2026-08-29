@@ -35,7 +35,10 @@ describe('winsNeededPct is engine-core’s own fit', () => {
         expect(winsNeededPct(e, pct), `e=${e} pct=${pct}`).toBe(winsNeeded(e, pct));
       }
     }
-  });
+    // 1,200 cells, each a Bradley–Terry fit: ~1.7 s alone and past vitest's
+    // 5 s default once the whole suite's workers are competing for the core.
+    // Its own timeout, because the cost is the table's and not the lane's.
+  }, 30000);
 
   it('and at the three rungs out to the table’s last room', () => {
     for (const e of [1, 2, 3, 5, 8, 14, 30, 60, 99, 100]) {

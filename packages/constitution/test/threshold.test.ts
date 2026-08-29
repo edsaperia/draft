@@ -135,7 +135,10 @@ describe('threshold anchors (§4.3, v0.48)', () => {
         expect(k === 0, `${n} votes at ${pct}%`).toBe(unanimousCeiling(n) <= pct / 100);
       }
     }
-  });
+    // 5,000 cells, each a Bradley–Terry fit: ~2.9 s alone and past vitest's
+    // 5 s default once the whole suite's workers are competing for the core.
+    // Its own timeout, because the cost is the table's and not the lane's.
+  }, 30000);
 
   it('votesNeeded floors and clamps like barCeilingPct', () => {
     expect(votesNeeded(0, 60)).toBe(votesNeeded(1, 60));   // below one vote reads as one
