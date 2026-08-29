@@ -541,6 +541,49 @@ function checkSoloJudgment() {
 }
 
 /**
+ * *Ground-shifted, not orphaned*, in one loop (R-058, backlog entry 160).
+ *
+ * The pen adoption and the ordinary one must rebase the field identically —
+ * that is the whole of what makes a decree a ground shift rather than a
+ * silent orphaning of everything in flight. The guarantee is structural: one
+ * private `rebaseOthers`, called by both doors. A later edit that copies the
+ * loop into `decreeText` would keep every test green on the day and drift
+ * apart afterwards, one adoption rule at a time, which is exactly the failure
+ * a behavioural test cannot see.
+ *
+ * `spec-check` reads source text and cannot run the engine, so only the shape
+ * lives here; the behaviour is `packages/engine-core/test/pen-adoption.test.ts`.
+ */
+function checkPenRebase() {
+  note('One rebase loop for both doors — R-058 against engine-core');
+  const src = readFileSync(join(ROOT, 'packages/engine-core/src/session.ts'), 'utf8');
+  const helper = 'private rebaseOthers(';
+  if (!src.includes(helper)) {
+    find('events', 'engine-core has no `rebaseOthers` helper — the pen adoption and the ordinary one must rebase the field through one loop (R-058)');
+    return;
+  }
+  const at = src.indexOf('decreeText(');
+  const body = at < 0 ? '' : src.slice(at, src.indexOf('\n  }', at));
+  if (at < 0) {
+    find('events', 'engine-core has no `decreeText` — ✒️ on the Text is SPEC §9.7 rule 8 (R-058)');
+  } else if (!/this\.rebaseOthers\(/.test(body)) {
+    find('events', '`decreeText` no longer calls `rebaseOthers` — a pen adoption that does not rebase the field orphans every proposal in flight (R-058)');
+  } else if (/rebaseHunks\(/.test(body)) {
+    find('events', '`decreeText` rebases with a loop of its own — there is one loop, so a pen adoption cannot drift from an ordinary one (R-058)');
+  } else {
+    note('  `decreeText` and `adopt` both reach the one loop');
+  }
+  const adoptAt = src.indexOf('private adopt(');
+  const adopt = adoptAt < 0 ? '' : src.slice(adoptAt, src.indexOf('\n  }', adoptAt));
+  if (adoptAt >= 0 && !/this\.rebaseOthers\(/.test(adopt)) {
+    find('events', '`adopt` no longer calls `rebaseOthers` — the shared loop is only a guarantee while both callers use it (R-058)');
+  }
+  if (!/awaiting-assent/.test(body)) {
+    find('events', "`decreeText` no longer refuses while a candidate is parked awaiting assent — a parked patch is not rebased, so a decree moves the document out from under it (R-056's one-at-a-time rule, R-058)");
+  }
+}
+
+/**
  * Entry 138. The applicant's own 🪪 card says *Submitted. N of E have judged
  * it*, and N counted the roster rows whose `mAnsOk` held `'admission'` — the
  * **setting** key of the price card. Entry 96 moved every admit motion off
@@ -954,6 +997,7 @@ checkMarks();
 checkWallets(pm);
 checkOrder(pm);
 checkSoloJudgment();
+checkPenRebase();
 checkApplicantJudged();
 checkBeginZones(M, pm);
 checkComposer(M, pm);
