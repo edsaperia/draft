@@ -129,6 +129,49 @@ describe('the bridge relays the close, engine first then constitution (SPEC §4.
     expect(s.settingState('ending').value).toEqual({ endsAtMs: 1_000_000 });
   });
 
+  /**
+   * The path the clock actually takes. `close()` is called by hand; a live
+   * document reaches its ending through `tick`, and a minute tick is late by
+   * construction — the engine stamps its final batch at the *ending*. So a
+   * motion carrying in that batch used to write `crown-question-opened` at
+   * the tick's own `t`, ahead of `finishClose`'s `cs.close(closedAt)`:
+   * *timestamps must be non-decreasing*, thrown once a minute for ever, with
+   * the engine closed and the constitution open for ever.
+   */
+  it('a tick arriving after the ending closes both ends, batch and all', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'close-tick' });
+    // a text adoption first, which spends the cooldown metronome (§4.2) …
+    const first = bridge.proposeText(10, bo,
+      { baseVersion: bridge.engine.currentVersion(),
+        hunks: [{ start: 0, end: 1, lines: ['Open every day.'] }] }, 'nights too');
+    bridge.judge(20, cy, first.id,
+      bridge.engine.races().find((r) => r.id === first.raceId)!.incumbentId, 'a');
+    expect(bridge.engine.document()).toBe('Open every day.');
+    // … so this motion's own judgment releases no batch: it clears the bar,
+    // waits out the cooldown, and carries in the engine's final batch
+    const { motion, candidate } = bridge.openSetMotion(30, bo, 'rate',
+      { grant: 5, cap: 8, dripMinutes: 240 });
+    bridge.judge(40, cy, candidate!,
+      bridge.engine.races().find((r) => r.settingId === 'rate')!.incumbentId, 'a');
+    expect(s.motionRecords().get(motion)!.status).toBe('running');
+
+    bridge.tick(1_000_060); // the host's minute, a minute past the ending
+
+    expect(bridge.engine.closedAt).toBe(1_000_000);
+    expect(s.closed).toBe(true);
+    expect(s.closedAt).toBe(1_000_000); // both ends at one T=0
+    // ⏱️ is the founder's, so carrying it asks the 👑 — `crown-question-opened`
+    // is the write that used to land ahead of the close — and the close fails
+    // the question shut in the same breath, so what stood stands
+    expect([...s.crownQuestionRecords().values()]
+      .some((q) => q.motion === motion && q.status === 'failed-closed')).toBe(true);
+    expect(s.motionRecords().get(motion)!.status).toBe('held');
+    expect(s.settingState('rate').value).toEqual({ grant: 4, cap: 8, dripMinutes: 240 });
+    expect(s.verifyChain()).toBe(true);
+    expect(ConstitutionSession.replay([...s.logEntries()]).rollingHash()).toBe(s.rollingHash());
+  });
+
   it('a text adoption at T=0 under the Text’s shield fails closed — carried-but-unassented', () => {
     const { s, bo, cy } = buildConstituted();
     // the start laid the shield down; the room hands it back by reserve motion

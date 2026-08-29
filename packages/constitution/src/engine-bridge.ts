@@ -182,8 +182,16 @@ export class EngineBridge {
    * Judge a pair (SPEC §3.1). A setting race that adopts reports its
    * verdict through the adjudication seam; what then actually stands —
    * applied, or parked behind a 👑 — flows back via sync().
+   *
+   * It syncs **first**, like `tick`, `openSetMotion` and `proposeText`: a
+   * judgment can trigger the adoption sweep, and the sweep must run under
+   * the ground as it stands, not as the engine was last told of it. Without
+   * it a shield reserved since the last sync (R-056) would let that one
+   * judgment adopt text unparked. The server's `commit` syncs after every
+   * command and hides this; the bridge's own API does not promise it.
    */
   judge(t: number, who: MemberId, aId: string, bId: string, outcome: Outcome): void {
+    this.sync(t);
     this.reportAdoptions(t, this.engine.judge(t, who, aId, bId, outcome));
     this.sync(t);
   }
@@ -196,8 +204,18 @@ export class EngineBridge {
    */
   tick(t: number): void {
     this.sync(t); // the sweep runs under the current ground
-    this.reportAdoptions(t, this.engine.tick(t)); // may run the engine's own close
-    this.sync(t); // relay what carried (the ground shift)
+    const batch = this.engine.tick(t); // may run the engine's own close
+    // **The batch is stamped where the engine stamped it**, which on a close
+    // is the *ending* and not this tick: a minute tick is late by
+    // construction. Report at `t` and a park (or a carried setting motion) in
+    // the close batch writes into the constitution ahead of `finishClose`'s
+    // own `cs.close(closedAt)` — *timestamps must be non-decreasing*, thrown
+    // once a minute for ever, with the document never closing. `close()`
+    // reads the same stamp for the same reason; this is the path the clock
+    // actually takes.
+    const at = this.engine.closedAt ?? t;
+    this.reportAdoptions(at, batch);
+    this.sync(at); // relay what carried (the ground shift)
     if (this.engine.closed && !this.cs.closed) this.finishClose();
   }
 

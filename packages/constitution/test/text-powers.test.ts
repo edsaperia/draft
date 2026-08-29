@@ -272,6 +272,64 @@ describe('🛡️ on the Text parks the adoption (R-056)', () => {
     expect(bridge.closeRecord().carriedButUnassented.some((c) => c.candidateId === id)).toBe(true);
   });
 
+  /**
+   * `judge` runs the sweep, so it must first tell the engine what the ground
+   * is — the shield included. The server's `commit` syncs after every command
+   * and hides this; the bridge's own API does not promise it, and a shield
+   * reserved since the last sync would otherwise let one judgment adopt text
+   * unparked, past a 👑 that was already standing.
+   */
+  it('a shield reserved since the last sync still parks the judgment that follows', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'shield-mid-flight' });
+    const { id, raceId } = bridge.proposeText(10, bo,
+      patch(bridge.engine.currentVersion(), ['Open every day.']), 'nights too');
+    // the room hands the shield back with the proposal already in flight —
+    // on the constitution alone, which is all a reserve motion touches
+    reserveTextShield(s, bo, ['ada', cy], 11);
+    bridge.judge(20, cy, id,
+      bridge.engine.races().find((r) => r.id === raceId)!.incumbentId, 'a');
+    expect(bridge.engine.document()).toBe(START);
+    expect(bridge.engine.getCandidate(id).state).toBe('awaiting-assent');
+    expect(view(s, 'ada').crownTasks[0]!.text!.candidateId).toBe(id);
+  });
+
+  /**
+   * The same close, reached the way a live document reaches it — the host's
+   * minute tick, which is late by construction, against an engine that
+   * stamps its final batch at the ending. The 👑 the batch's park opens must
+   * be stamped there too, or `finishClose`'s `cs.close(closedAt)` goes
+   * backwards and the document can never close at all.
+   */
+  it('a park made by the final batch does not stop the close', () => {
+    const { s, bo, cy } = buildConstituted();
+    reserveTextShield(s, bo, ['ada', cy], 2);
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'park-at-close' });
+    // one park, answered — which is what spends the cooldown metronome (§4.2)
+    const first = bridge.proposeText(10, bo,
+      patch(bridge.engine.currentVersion(), ['Open every day.']), 'nights too');
+    bridge.judge(20, cy, first.id,
+      bridge.engine.races().find((r) => r.id === first.raceId)!.incumbentId, 'a');
+    bridge.answerCrownQuestion(21, questionFor(s, first.id).id, 'accept');
+    expect(bridge.engine.document()).toBe('Open every day.');
+    // so this one's judgment releases no batch: it is the close that parks it
+    const late = bridge.proposeText(30, bo,
+      patch(bridge.engine.currentVersion(), ['Open on Sundays too.']), 'Sundays');
+    bridge.judge(40, cy, late.id,
+      bridge.engine.races().find((r) => r.id === late.raceId)!.incumbentId, 'a');
+    expect(bridge.engine.getCandidate(late.id).state).toBe('live');
+
+    bridge.tick(1_000_060); // the host's minute, a minute past the ending
+
+    expect(bridge.engine.closedAt).toBe(1_000_000);
+    expect(s.closed).toBe(true);
+    expect(s.closedAt).toBe(1_000_000); // both ends at one T=0
+    expect(questionFor(s, late.id).status).toBe('failed-closed');
+    expect(bridge.closeRecord().carriedButUnassented
+      .some((c) => c.candidateId === late.id)).toBe(true);
+    expect(s.verifyChain()).toBe(true);
+  });
+
   it('the constitution log gains no new event kind, so a replay is bit-identical', () => {
     const { s, bridge, id } = parked({}, 'assent-replay');
     bridge.answerCrownQuestion(21, questionFor(s, id).id, 'accept');
