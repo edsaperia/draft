@@ -358,11 +358,37 @@
   // a re-render, since the live page polls every four seconds and stealing
   // the caret each time would fight the founder's typing
   const focusOpened = (el, k) => (k === 'text' ? focusProse() : focusComposer(el));
-  // run the close animation, then the state change it was closing for
-  const closeThen = (fn) => {
+  // run the close animation, then the state change it was closing for.
+  //
+  // **The tab you click does not move, even when another card is open** (Ed's
+  // QA of batch S). The old card collapsing takes several hundred pixels out
+  // of the band above the tab that was pressed, and everything below it rises
+  // by exactly that much — measured at −570.56px on ✋ with 🥾 open. The
+  // charter has always corrected for this (`session.js`'s `thenMove`, through
+  // `keepStill`) and the band never adopted the answer.
+  //
+  // `stillSel` names the object the switch is *about*, and the correction is
+  // applied twice over: on every frame while the collapse runs, so the tab
+  // does not slide up and snap back, and once more in the same synchronous
+  // run as the `render()`, so the resting drift is never painted. The reader
+  // scrolling inside those few frames fights the correction, which is the
+  // cost of keeping the collapse animated rather than taking the charter's
+  // other rule (the old card leaves during the move).
+  const closeThen = (fn, stillSel) => {
     const el = document.querySelector('.setupcard');
-    if (!el) { fn(); return render(); }
-    CC.collapseCard(el, () => { fn(); render(); });
+    // Held by *selector*, not by element: the band is re-rendered wholesale,
+    // so the node measured beforehand does not exist afterwards. Narrowed to
+    // that one selector because `stillRef`'s `[data-key]` fallback would
+    // otherwise hold some *other* thing still — and holding the wrong thing
+    // still is quiet, which is what `restoreStill`'s own comment warns about.
+    const ref = stillSel ? CC.stillRef(stillSel).filter((m) => m.sel === stillSel) : null;
+    const anchored = !!(ref && ref.length);
+    const hold = () => { if (anchored) CC.restoreStill(ref); };
+    if (!el) { fn(); render(); hold(); return; }
+    let holding = anchored;
+    const frame = () => { if (!holding) return; hold(); requestAnimationFrame(frame); };
+    if (holding) requestAnimationFrame(frame);
+    CC.collapseCard(el, () => { holding = false; fn(); render(); hold(); });
   };
   // **Clicking a rail entry travels to its card** (Ed, 2026-08-21). The
   // charter's rail has done this for as long as it has existed — session.js's
@@ -7277,7 +7303,16 @@
       const fromRail = !!t.closest('#rail');
       const cur = document.querySelector('.setupcard');
       if (cur && t.closest('.setupcard') === cur) return morphTo(k, cur);
-      if (cur) return closeThen(() => { S.open = k; if (fromRail) scrollToCard(k); });
+      // **Anchor the tab you pressed across the switch**, and only from the
+      // band: on the rail path `scrollToCard` is a deliberate travel and its
+      // comment above says why a tab press is different. Scoped to `#band` so
+      // a future duplicate of this key in the rail or the charter cannot
+      // silently hold the wrong thing still. The key goes into a quoted
+      // attribute value, so quotes and backslashes are the whole of what it
+      // has to be protected from — `CSS.escape` is for identifiers.
+      const still = !fromRail && t.dataset.tab && t.closest('#band')
+        ? '#band [data-tab="' + k.replace(/["\\]/g, '\\$&') + '"]' : null;
+      if (cur) return closeThen(() => { S.open = k; if (fromRail) scrollToCard(k); }, still);
       S.open = k; render(); if (fromRail) scrollToCard(k); return; }
     // ✒️ on 📧, before it is verified, IS the send (Ed, 2026-08-19) — and it
     // leaves the card standing, because the inbox opens over it and what you

@@ -367,6 +367,25 @@ const IN_PAGE = () => {
   };
 
   /**
+   * **The tab you click, where the eye has it.** `closedGeo`'s boxes are in
+   * document coordinates, which is right for a walk that never scrolls: the
+   * whole per-card loop runs at scroll 0 and a document reading and a viewport
+   * reading are the same number there. The switch pass is the one place they
+   * come apart, because the promise is kept by moving the *page* — the band
+   * above the tab loses the closing card's height and the scroll gives back
+   * exactly that much in the same frame — so a document-coordinate reading
+   * would report the correction as the defect. This is what a member's eye is
+   * doing, and nothing else in the payload is in these units.
+   */
+  const bandTabSeen = (key) => {
+    // a quoted attribute value, so quotes and backslashes are the whole of
+    // what the key has to be protected from — `CSS.escape` is for identifiers
+    const q = String(key).replace(/["\\]/g, '\\$&');
+    const g = glyphBox(document.querySelector('#band [data-tab="' + q + '"]'));
+    return g ? [R2(g[0] - window.scrollX), R2(g[1] - window.scrollY), g[2], g[3]] : null;
+  };
+
+  /**
    * **What the card stands above.** A travel of `[0, 0]` says the *tab* did not
    * move; it does not say the *card* landed where the tab is, because a card
    * rendered somewhere else grows a tab strip of its own and the promise is
@@ -398,6 +417,7 @@ const IN_PAGE = () => {
       return [...keys];
     },
     closedGeo,
+    bandTabSeen,
     /** the open card, measured. `sel` picks the surface's card element. */
     measure: (sel, key, before) => {
       const card = document.querySelector(sel);
@@ -687,6 +707,42 @@ const excerpt = (s, needle) => {
   return i < 0 ? null : s.slice(Math.max(0, i - 50), i + 60);
 };
 
+/**
+ * **P7 — the tab you click does not move, with another card open** (Ed's QA of
+ * batch S: *the 🤚 tab moves when you click it*). P2 and P6 are green and stay
+ * green, and they are both about a tab opened from rest: `walkSettled` closes
+ * each card by its own mark before opening the next, so no walk had ever put
+ * the surface in the state that breaks the promise — a card standing open in
+ * one paragraph, and then a tab clicked in another, where the collapse takes
+ * several hundred pixels out of the band above the tab that was pressed.
+ *
+ * It is not a fact about one card, so it does not belong in `rulesFor`; it is
+ * a fact about a *pair*, and it files with the cross-card findings for the
+ * same reason they do.
+ *
+ * **Tolerance is a pixel, not P2's hundredth.** The promise is kept by a
+ * scroll correction, and `restoreStill` deliberately ignores a drift of half a
+ * pixel or less rather than jittering the page — so a correct surface lands
+ * within a pixel and never on zero, and a hundredth would be red on a page
+ * doing exactly the right thing. The defect this is for is in the hundreds.
+ */
+const SWITCH_TOL = 1;
+function switchRules(switches) {
+  const out = [];
+  for (const s of switches) {
+    if (!s.travel) continue;                       // the pass files its own error
+    const [dx, dy] = s.travel;
+    if (Math.abs(dx) <= SWITCH_TOL && Math.abs(dy) <= SWITCH_TOL) continue;
+    out.push({ rule: 'P7', lens: 'positioning',
+      said: 'the tab you click does not move, with another card open elsewhere in the band — ' +
+        'within ' + SWITCH_TOL + 'px of 0 in both axes',
+      saw: 'with ' + s.open + ' open, clicking ' + s.click + ' moves its glyph ' +
+        dx + 'px across and ' + dy + 'px down',
+      note: s.walk + ' · ' + s.room + 'px of page stood above the tab when it was pressed' });
+  }
+  return out;
+}
+
 /* ============================================================================
    The cross-card lenses. These are the findings the per-pass audits
    structurally cannot see, and they only exist once every card is in one
@@ -810,6 +866,70 @@ async function openAndMeasure(page, key, cardSel, walk, cards, errors) {
   return m;
 }
 
+/**
+ * **The switch pass** — a card open in one paragraph, a tab clicked in
+ * another. Appended at the end of `walkSettled` and additive by construction:
+ * it pushes nothing into `cards`, so every geometry number the instrument
+ * already has, and every `closed` baseline the per-card loop measures from,
+ * is exactly what it was.
+ *
+ * Two pairs, because one would read as a special case for the identity cards.
+ * 🥾 above the members list and then ✋ is the pair Ed met the defect on;
+ * 🌍 and then 💤 is an ordinary clause pair, so the rule reads as the general
+ * promise it is.
+ */
+const SWITCH_PAIRS = [['removal', 'myname'], ['chamber', 'lapse']];
+const r2 = (v) => Math.round(v * 100) / 100;
+
+async function switchPass(page, walk, switches, errors) {
+  const closeOpen = () => page.evaluate(() => {
+    const mark = document.querySelector('.setupcard .chipcol .achip.wmark') ||
+      document.querySelector('.setupcard .chipcol .achip');
+    if (mark) mark.click();
+  });
+  const clickTab = (key) => page.evaluate((k) => {
+    const el = document.querySelector('#band [data-tab="' + String(k).replace(/["\\]/g, '\\$&') + '"]');
+    if (!el) return false;
+    el.click();
+    return true;
+  }, key);
+
+  for (const [open, click] of SWITCH_PAIRS) {
+    await closeOpen();
+    await wait(page, 250);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await wait(page, 150);
+    if (!await clickTab(open)) { errors.push(walk + ': switch pass — no band tab for ' + open); continue; }
+    await wait(page, 320);
+    /**
+     * **The tab has to be on screen, and the page has to have somewhere to go.**
+     * The promise is kept by scrolling up by what the closing card took out
+     * from above, so a tab pressed at scroll 0 cannot be held still by any
+     * amount of correcting — the measurement would be about the scroll floor
+     * rather than about the switch. `block: 'start'` puts the most page above
+     * it that the surface has to give; `room` is recorded so a red finding
+     * says whether it had the room.
+     */
+    const room = await page.evaluate((k) => {
+      const el = document.querySelector('#band [data-tab="' + String(k).replace(/["\\]/g, '\\$&') + '"]');
+      if (!el) return null;
+      el.scrollIntoView({ block: 'start' });
+      return Math.round(window.scrollY * 100) / 100;
+    }, click);
+    if (room === null) { errors.push(walk + ': switch pass — no band tab for ' + click); continue; }
+    await wait(page, 200);
+    const before = await page.evaluate((k) => window.__CA.bandTabSeen(k), click);
+    await clickTab(click);
+    await wait(page, 420);
+    const after = await page.evaluate((k) => window.__CA.bandTabSeen(k), click);
+    if (!before || !after) errors.push(walk + ': switch pass — ' + click + ' had no glyph to measure');
+    switches.push({ walk, open, click, room, before, after,
+      travel: before && after ? [r2(after[0] - before[0]), r2(after[1] - before[1])] : null });
+  }
+  await closeOpen();
+  await wait(page, 200);
+}
+
 /** the birth, verbatim from founding-walk.mjs — three cards and a magic link */
 async function birth(page) {
   const clickIn = async (sel) => page.evaluate((s) => {
@@ -931,7 +1051,7 @@ const walkDelegated = (page, base, cards, errors) =>
  * is over, which is where a settled card's head, its composer and the ✒️/🛡️
  * power tabs live. ⏩ is the stagehand that gets there in one press.
  */
-async function walkSettled(page, base, cards, errors, seat) {
+async function walkSettled(page, base, cards, errors, seat, switches) {
   await page.goto(base + '/session-view.html');
   await page.waitForSelector('#rail .qitem', { timeout: 20_000 });
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -1022,6 +1142,10 @@ async function walkSettled(page, base, cards, errors, seat) {
     });
     await wait(page, 200);
   }
+  // last, and only on the seatless walk: the seats are three audits sharing a
+  // name and the promise is not a fact about who is looking, so measuring it
+  // four times would only quadruple one number
+  if (switches && !seat) await switchPass(page, walk, switches, errors);
 }
 
 /**
@@ -1104,6 +1228,7 @@ async function main() {
   page.on('pageerror', (e) => errors.push('page error: ' + String(e)));
 
   const cards = [];
+  const switches = [];
   const t0 = Date.now();
   const run = async (name, fn) => {
     if (!WALKS.includes(name)) return;
@@ -1119,7 +1244,7 @@ async function main() {
   await run('founding', () => walkFounding(page, base, cards, errors));
   await run('answers', () => walkAnswers(page, base, cards, errors));
   await run('delegated', () => walkDelegated(page, base, cards, errors));
-  await run('settled', () => walkSettled(page, base, cards, errors));
+  await run('settled', () => walkSettled(page, base, cards, errors, null, switches));
   await run('outsiders', async () => {
     // one seat at a time, each with its own net: the three seats are three
     // separate audits sharing a name, and a seat that throws must not take
@@ -1139,7 +1264,7 @@ async function main() {
   server.close();
 
   for (const c of cards) c.findings = rulesFor(c, tok);
-  const cross = crossCard(cards);
+  const cross = [...crossCard(cards), ...switchRules(switches)];
   /**
    * **The rollup is the finding; the card is where it shows.** A stylesheet
    * fact — `.headclause` padded 6px, an OK label at --t-cap — is one defect
@@ -1179,7 +1304,7 @@ async function main() {
   }
   const payload = {
     meta: { viewport: VIEWPORT, walks: WALKS, cards: cards.length, seconds: Math.round((Date.now() - t0) / 100) / 10 },
-    tokens: tok, cards, rollup, cross, errors,
+    tokens: tok, cards, switches, rollup, cross, errors,
   };
 
   if (AS_JSON) { console.log(JSON.stringify(payload, null, 1)); return; }
