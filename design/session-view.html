@@ -651,8 +651,10 @@
     : amFounder() && pwPair('remove').u);
   // **Members and invitees alike** (entry 96): withdrawing an invitation is a
   // kind of removal, priced as one, so the two stand in one list. Neither the
-  // founder's own row nor your own is offered — the founder unticks 🎩 and
-  // anybody else presses *Leave*, which is free and nobody's to refuse.
+  // founder's own row nor your own is offered: leaving is your own act and
+  // nobody's to refuse, and the founder's is the 🎩 untick before the start
+  // and *Leave* after it (entry 248) — `remove` refuses the convenor either
+  // way, so a picker offering them would be offering a refusal.
   const removableRows = () => S.roster.filter((p) =>
     p.mid && !p.founder && p !== viewerRow());
   const removeSubjectPicker = () => {
@@ -3223,8 +3225,11 @@
         const here = others.filter((p) => p.in && !p.lapsed && !pendingOut.has(p.mid));
         const invited = others.filter((p) => !p.in);
         // **Leaving is free** (entry 94): a member's own row carries the one
-        // act nobody may refuse; the founder unticks their row instead
-        const leaveBtn = constituted() && viewerIsMember() && !amFounder() && !isStranger()
+        // act nobody may refuse — and the founder's membership is ordinary
+        // membership (§9.6a, entry 248), so their row carries it too. Before
+        // the start it is the 🎩 untick instead, which `constituted()` already
+        // excludes; a clerk has no row here at all (`viewerIsMember`).
+        const leaveBtn = constituted() && viewerIsMember() && !isStranger()
           ? ' <button class="btn small" data-act="resign" title="Leave the membership now — nobody has to agree">Leave</button>' : '';
         // *(nobody else here yet)* counts the arrived rows alone (Q870), and
         // now that every other status has a heading of its own it is a
