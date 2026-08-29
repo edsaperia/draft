@@ -185,6 +185,25 @@ function checkGovernance() {
   return M;
 }
 
+/**
+ * Every `→ why: R-nnn` in SPEC.md lands in design/SPEC-REASONING.md. Spec pass
+ * 3 (v0.90) roughly doubled the pointers and nothing checked that any of them
+ * resolved. Anchored on `R-\d+` so §9's opening, which spells the *form* as
+ * `→ why: R-nnn`, is not read as a broken id. The converse — an entry nothing
+ * points at — is history, not a finding.
+ */
+function checkReasoning() {
+  note('Spec reasoning — SPEC.md’s `→ why:` pointers against SPEC-REASONING.md');
+  const named = new Set();
+  for (const m of read('SPEC.md').matchAll(/→ why: ((?:R-\d+)(?:, *R-\d+)*)/g))
+    for (const id of m[1].split(',')) named.add(id.trim());
+  const why = read('design/SPEC-REASONING.md');
+  const entries = new Set([...why.matchAll(/^\*\*(R-\d+) /gm)].map((m) => m[1]));
+  for (const id of [...named].sort())
+    if (!entries.has(id)) find('reasoning', `SPEC.md points at ${id}; SPEC-REASONING.md has no entry for it`);
+  note(`  ${named.size} ids pointed at, of ${entries.size} entries`);
+}
+
 // ---- the shapes (entry 166) -------------------------------------------------
 
 /**
@@ -278,6 +297,7 @@ function checkCommunication(pm, settingKeys) {
 }
 
 const M = checkGovernance();
+checkReasoning();
 checkShapes(M);
 const pm = pageMaps();
 const settingKeys = checkKeys(M, pm);

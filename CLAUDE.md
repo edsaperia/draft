@@ -303,7 +303,7 @@ The post-mortems: what broke, why it broke, and the shape of the mistake so it i
 
 ## The spec pass
 
-How SPEC.md and SURFACE.md are kept tabular, checkable and free of history (Ed, 2026-08-22 — he considered a skill and declined; the procedure lives here, the guarantee is `npm run spec-check`). Re-runnable; pass 1 was 2026-08-22 (Q540–Q582), and passes 2+ mostly live in steps 4–7.
+How SPEC.md and SURFACE.md are kept tabular, checkable and free of history (Ed, 2026-08-22 — he considered a skill and declined; the procedure lives here, the guarantee is `npm run spec-check`). Re-runnable; pass 1 was 2026-08-22 (Q540–Q582), and passes 2+ mostly live in steps 4–7. Pass 3 (2026-08-29, v0.90, backlog 192) ran step 6 alone over **SPEC §3, §4 and §8** — no artifact and no questions — and `spec-check` now asserts every `→ why: R-nnn` resolves.
 
 1. **Claim a question block first** — re-read the tail of QUESTIONS.md, write the reservation into its Spent-numbers section, commit that alone. Numbers are claimed in the file, never in chat or a commit message.
 2. **Extract** — walk one rule family (governance: who may change what, by which route, when; communication: what a member is told, what a control does); pull every normative sentence into a candidate row or rule. Leave derivations, history and commentary behind.
