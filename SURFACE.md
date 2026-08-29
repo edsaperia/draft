@@ -37,7 +37,7 @@ Vocabulary: **audience** — nobody / the actor / one member / every member owed
 | E6 | An ordinary setting first set | nobody | clause | nothing | — | clause | — |
 | E7 | An ordinary setting changed | as E5 | as E5; no mail | OK | OK | as E5 | — |
 | E8 | A power arrives | the holder | news entry, wallet flight (the ✏️ storm from 💡's OK, per member); 🏛️ arrives with the first blind question you are asked (Q605) | OK | OK | per seat; re-asked on each not-held → held | grant-pen grant-shield grant-voice canpropose |
-| E9 | A power is laid down | the actor; every member | the power card; **one news entry owed an OK, stating its whole batch** (Q571, Q1013 — C8a); clause deviation vanishes | OK | on commit / on OK | clause; record | — |
+| E9 | A power is laid down | every member but the actor (Q918, Ed 2026-08-29) | the power card; **one news entry owed an OK, stating its whole batch** (Q571, Q1013 — C8a); clause deviation vanishes | OK | on commit / on OK | clause; record | — |
 | E10 | A constitutional motion is put — an invitation or removal too, where 🪪 / 🥾 stands at *assembly* (entry 94) | every active member | the setting's own card, live again; rail ask | accept / keep / abstain | ✓ — answered entry leaves; tab keeps its glyph | carried → E5 | invite remove |
 | E11 | An ordinary motion is put — an invitation or removal too, where 🪪 / 🥾 stands at *proposal* (entry 94) | every active member — not anyone whose membership has gone quiet (Q930, Ed 2026-08-29) | race card | a judgment | ✓ — closes and files ⏳ (Q576) | → E5 / E14 | invite remove |
 | E12 | A 👑 question | the founder | news-pinned task, Refuse / Accept | Refuse / Accept | on commit | record | — |
@@ -171,7 +171,7 @@ One glyph per entry, the same alphabet in all three columns (contents rail · gu
 | state | rail mark | tab mark | wants | hue | in the rail? | pins? | opens |
 |---|---|---|---|---|---|---|---|
 | ask | the subject glyph | the subject glyph | an answer or a set | open, by urgency | yes | yes | the setting's card |
-| wait | ⏳ **only where the wait is about you** (📧, a gate, 🍾); a constitutional card waiting on the room keeps its glyph and leaves the rail — the tab says the rule, the queue says nothing | ⏳, or the glyph | nothing; fill = how far the room has got | closed | only where the wait is about you | no | the watching card |
+| wait | ⏳ **only where the wait is about you** (📧, a gate, 🍾); a **delegated** card waiting on the room keeps its glyph and leaves the rail, ordinary or constitutional alike (Q517, Ed 2026-08-29) — the tab says the rule, the queue says nothing | ⏳, or the glyph | nothing; fill = how far the room has got | closed | only where the wait is about you | no | the watching card |
 | news | drawn ✔; **a grant wears the glyph of the power it grants** (✒️ 🛡️ 🏛️, and ✏️ on 💡 — entry 180) | drawn ✔; **a grant wears the glyph of the power it grants** | OK, or the take | changed | yes | yes | the news card |
 | yours | ✏️ | ✏️ | nothing — withdraw | yours | yes | yes, force-kept | the application |
 | done | drawn grey ✔, and it leaves | **the subject glyph** on grey | nothing | closed | no | — | the settled card (= the composer) |

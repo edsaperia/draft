@@ -241,7 +241,9 @@ service container, or the migration is tested only on this machine.
   restart, verify; `unset` is the rollback. (4) After the drill passes on
   the live database: retire the disk (498b). (5) Resend: verify
   `mail.docs.vote`, clear `DRAFT_MAIL_FROM`, one real send (stage 9).
-  (6) Q500's eight legal decisions. **Owed by a later session**: the mail
+  (6) Q500's eight legal decisions — **parked by Ed, 2026-08-29, until
+  go-live is actually scheduled**; all eight, not a subset, so nothing on
+  stage 12 is owed until there is a date. **Owed by a later session**: the mail
   outbox + sender loop (finding 15); projection tables if a consumer
   appears; `person_id`/`people` (436, an event-shape change); review #2's
   second pass on the surface; the sim-harness sweep baseline
