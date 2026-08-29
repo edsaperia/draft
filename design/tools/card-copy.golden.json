@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 286,
+  "cards": 287,
   "walks": [
    "answers",
    "charter",
@@ -303,7 +303,7 @@
     "eyebrow": "",
     "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.The questions🌍 Visibility · n of m have answeredThe peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
+    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.📄 The Text✒️ Laid down🛡️ Laid down🪪 Membership✒️ Kept🛡️ Kept📜 Everything else✒️ Mixed🛡️ MixedMixed means some of these have already been given up on their own cards. Keeping here lays nothing further down — a power already given comes back only on the card it went from.The questions🌍 Visibility · n of m have answeredThe peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -325,6 +325,8 @@
     "helpers": [
      "The document cannot begin while 🌍 Visibility is still being decided.",
      "🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.",
+     "Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.",
+     "Mixed means some of these have already been given up on their own cards. Keeping here lays nothing further down — a power already given comes back only on the card it went from.",
      "· n of m have answered",
      "· answered everything",
      "It comes back to you the moment somebody else can answer."
@@ -4236,7 +4238,7 @@
     "eyebrow": "",
     "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin.",
+    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens, and the approval threshold begins its course.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.📄 The Text✒️ Laid down🛡️ Laid down🪪 Membership✒️ Kept🛡️ Kept📜 Everything else✒️ Kept🛡️ KeptThe questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4256,6 +4258,7 @@
      "Hold to begin the document"
     ],
     "helpers": [
+     "Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.",
      "· nothing owed",
      "Nobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said. Hold ✒️ to begin."
     ]
@@ -5146,7 +5149,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -5160,7 +5163,7 @@
      "1",
      "0",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "The value you are proposing",
@@ -5174,21 +5177,11 @@
     "eyebrow": "",
     "head": "Membership is by invitation only.",
     "lock": "The members decide.",
-    "body": "Anyone may apply, but an application must be proposed ✏️ by a member.Prefer thisAnyone may apply to join.Prefer thisAnyone with the link joins on arrival.Prefer thisOne motion proposes one rule; what you do not touch stands.What the room saidThe members decide.Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Answered3 of 3The document takes—",
+    "body": "Anyone may apply to join.Prefer thisOne motion proposes one rule; what you do not touch stands.What the room saidThe members decide.Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Answered3 of 3The document takes—",
     "options": [
      {
       "set": null,
-      "val": "Applications must be proposed by members",
-      "label": "Prefer this"
-     },
-     {
-      "set": null,
       "val": "Anyone may apply",
-      "label": "Prefer this"
-     },
-     {
-      "set": null,
-      "val": "Open",
       "label": "Prefer this"
      }
     ],
@@ -5200,7 +5193,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -5211,7 +5204,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "One motion proposes one rule; what you do not touch stands.",
@@ -5255,7 +5248,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -5269,7 +5262,7 @@
      "2",
      "1",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -5297,7 +5290,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -5311,7 +5304,7 @@
      "0",
      "3",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -5334,6 +5327,7 @@
      }
     ],
     "hints": [
+     "What the Founder Has Laid Down — decided; it waits for your OK",
      "Begin — close it",
      "Proposing — settled",
      "Voting — settled",
@@ -5360,6 +5354,7 @@
      }
     ],
     "hints": [
+     "What the Founder Has Laid Down — decided; it waits for your OK",
      "Begin — settled",
      "Proposing — settled",
      "Voting — close it",
@@ -5391,6 +5386,7 @@
      }
     ],
     "hints": [
+     "What the Founder Has Laid Down — decided; it waits for your OK",
      "Begin — settled",
      "Proposing — close it",
      "Voting — settled",
@@ -5424,7 +5420,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -5435,7 +5431,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -5508,6 +5504,7 @@
      }
     ],
     "hints": [
+     "What the Founder Has Laid Down — decided; it waits for your OK",
      "Begin — settled",
      "Proposing — settled",
      "Voting — settled",
@@ -5561,7 +5558,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -5572,7 +5569,7 @@
      "Does the Founder Have a Veto over Invitations? — settled",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "An invitation is constitutional, because who is in the room is what quorum is a fraction of: all members must agree, and one who says no keeps them out.",
@@ -5600,7 +5597,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -5613,7 +5610,7 @@
      "11",
      "3",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -5641,7 +5638,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -5655,7 +5652,7 @@
      "4",
      "2",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -6686,7 +6683,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -6700,7 +6697,7 @@
      "2",
      "3",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -6800,6 +6797,35 @@
     ],
     "helpers": []
    },
+   "rel:rel-1": {
+    "eyebrow": "",
+    "head": "What the Founder Has Laid Down",
+    "lock": "",
+    "body": "The Founder has laid these down. Where ✒️ stands they can no longer amend at will; where 🛡️ stands they can no longer refuse what the membership passes. Only the membership can hand either back.The Document✒️ 📄 Text🛡️ 📄 Text",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Put it back as it stands"
+     },
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "What the Founder Has Laid Down — close it",
+     "Begin — settled",
+     "Proposing — settled",
+     "Voting — settled",
+     "Your Voice — settled",
+     "Put it back as it stands"
+    ],
+    "helpers": [
+     "The Founder has laid these down. Where ✒️ stands they can no longer amend at will; where 🛡️ stands they can no longer refuse what the membership passes. Only the membership can hand either back."
+    ]
+   },
    "removal": {
     "eyebrow": "",
     "head": "Removing a member needs every member to agree, including them 🏛️.",
@@ -6825,7 +6851,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -6836,7 +6862,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -6858,7 +6884,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -6868,7 +6894,7 @@
      "Does the Founder Have a Veto over Removals? — settled",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "Whoever it is will see the proposal — nobody is removed in secret.",
@@ -7153,7 +7179,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -7167,7 +7193,7 @@
      "1",
      "0",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "The value you are proposing",
@@ -7181,21 +7207,11 @@
     "eyebrow": "",
     "head": "Membership is by invitation only.",
     "lock": "The members decide.",
-    "body": "Anyone may apply, but an application must be proposed ✏️ by a member.Prefer thisAnyone may apply to join.Prefer thisAnyone with the link joins on arrival.Prefer thisOne motion proposes one rule; what you do not touch stands.What the room saidThe members decide.Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Answered3 of 3The document takes—",
+    "body": "Anyone may apply to join.Prefer thisOne motion proposes one rule; what you do not touch stands.What the room saidThe members decide.Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Answered3 of 3The document takes—",
     "options": [
      {
       "set": null,
-      "val": "Applications must be proposed by members",
-      "label": "Prefer this"
-     },
-     {
-      "set": null,
       "val": "Anyone may apply",
-      "label": "Prefer this"
-     },
-     {
-      "set": null,
-      "val": "Open",
       "label": "Prefer this"
      }
     ],
@@ -7207,7 +7223,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -7218,7 +7234,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "One motion proposes one rule; what you do not touch stands.",
@@ -7262,7 +7278,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -7276,7 +7292,7 @@
      "2",
      "1",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -7304,7 +7320,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -7318,7 +7334,7 @@
      "0",
      "3",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -7437,6 +7453,10 @@
      {
       "label": "✒️",
       "title": "Set it"
+     },
+     {
+      "label": "🏛️ Ask all members",
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -7446,7 +7466,8 @@
      "Does the Founder Have a Veto? — settled",
      "The founder’s own hand — a ✒️ act, not a proposal",
      "Put it back as it stands",
-     "Set it"
+     "Set it",
+     "A full one-second assembly"
     ],
     "helpers": [
      "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.",
@@ -7625,7 +7646,7 @@
     "eyebrow": "",
     "head": "Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out. The Founder may invite people at will, and refuse invitations and applications that the membership pass.",
     "lock": "",
-    "body": "An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as invited until then.✒️Several at once✒️n of m have opened it so far. Nobody has to be here for the document to exist, and anybody who arrives later starts with the same ✏️s as everybody else.",
+    "body": "An invitation is just the link, sent by email: somebody becomes a member when they open it, and is listed as invited until then.✒️🏛️ Ask all membersSeveral at once✒️n of m have opened it so far. Nobody has to be here for the document to exist, and anybody who arrives later starts with the same ✏️s as everybody else.",
     "options": [],
     "inputs": [
      {
@@ -7653,6 +7674,7 @@
      "Can the Founder Invite at Will? — settled",
      "Does the Founder Have a Veto over Invitations? — settled",
      "Send the invitation",
+     "A full one-second assembly",
      "Send them all",
      "Put it back as it stands",
      "Done"
@@ -7682,7 +7704,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -7695,7 +7717,7 @@
      "11",
      "3",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -7723,7 +7745,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -7737,7 +7759,7 @@
      "4",
      "2",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -7777,6 +7799,10 @@
      {
       "label": "✒️",
       "title": "Set it"
+     },
+     {
+      "label": "✏️ Propose",
+      "title": null
      }
     ],
     "hints": [
@@ -7937,6 +7963,10 @@
      {
       "label": "✒️",
       "title": "Set it"
+     },
+     {
+      "label": "✏️ Propose",
+      "title": null
      }
     ],
     "hints": [
@@ -9038,7 +9068,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -9052,7 +9082,7 @@
      "2",
      "3",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -9095,6 +9125,10 @@
      {
       "label": "✒️",
       "title": "Set it"
+     },
+     {
+      "label": "✏️ Propose",
+      "title": null
      }
     ],
     "hints": [
@@ -9184,7 +9218,7 @@
      },
      {
       "label": "🏛️ Ask all members",
-      "title": "A full ten-second assembly"
+      "title": "A full one-second assembly"
      }
     ],
     "hints": [
@@ -9195,7 +9229,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "A full ten-second assembly"
+     "A full one-second assembly"
     ],
     "helpers": [
      "We should change this because…",
@@ -9207,7 +9241,7 @@
     "eyebrow": "",
     "head": "A member may be proposed for removal, and every member has to agree — including them. The Founder may remove members at will, and refuse removals that the membership pass.",
     "lock": "",
-    "body": "Removing a member is yours to do at will ✒️: they leave the moment you press, their standing answers go with them, and nobody else is asked.Choose somebody…Ivy FenMoss Whitlow❌ Remove",
+    "body": "Removing a member is yours to do at will ✒️: they leave the moment you press, their standing answers go with them, and nobody else is asked.Choose somebody…Ivy FenMoss Whitlow❌ Remove🏛️ Ask all members",
     "options": [],
     "inputs": [],
     "foot": [
@@ -9224,6 +9258,7 @@
      "Remove a Member — close it",
      "Can the Founder Remove at Will? — settled",
      "Does the Founder Have a Veto over Removals? — settled",
+     "A full one-second assembly",
      "Put it back as it stands",
      "Set it"
     ],
@@ -9251,6 +9286,10 @@
      {
       "label": "✒️",
       "title": "Set it"
+     },
+     {
+      "label": "✏️ Propose",
+      "title": null
      }
     ],
     "hints": [
@@ -9305,6 +9344,10 @@
      {
       "label": "✒️",
       "title": "Give it a name first"
+     },
+     {
+      "label": "✏️ Propose",
+      "title": null
      }
     ],
     "hints": [
