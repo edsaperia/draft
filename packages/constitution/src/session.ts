@@ -1751,6 +1751,21 @@ export class ConstitutionSession {
   }
 
   /**
+   * **A question on a setting that has left the surface is nobody's to
+   * answer** (entry 259, Ed 2026-08-29; → why: R-080). The catalogue carries
+   * the fact — `retiredAnswer`, the value 🍾 resolves such a question at — so
+   * the module never has to read the page. Four sites share the predicate:
+   * `waitingWith` (it holds nothing up), `readiness` (it is in neither list,
+   * collecting or settled — the 🍾 card prints those rows and would print a
+   * bare id, having no card to take a title from), `canPropose` (it gates
+   * nothing, there being no card to answer it on) and `begin` (it writes the
+   * line). `machines` is the only entry that carries it.
+   */
+  private retiredQuestion(id: SettingId): boolean {
+    return entryOf(id).retiredAnswer !== undefined;
+  }
+
+  /**
    * **…and *why* it waits** (Q826, Ed 2026-08-25: *I did all my open tasks and
    * then got served Begin while being unable to action it*). The list of ids
    * says which questions are outstanding and nothing about what would end the
@@ -1779,20 +1794,6 @@ export class ConstitutionSession {
    * and not `one-voice` — a second member could not answer it either, so
    * *invite somebody* is the wrong remedy to have been served.
    */
-  /**
-   * **A question on a setting that has left the surface is nobody's to
-   * answer** (entry 259, Ed 2026-08-29; → why: R-080). The catalogue carries
-   * the fact — `retiredAnswer`, the value 🍾 resolves such a question at — so
-   * the module never has to read the page. Three sites share the predicate:
-   * `waitingWith` (it holds nothing up), `readiness` (it is in neither list,
-   * collecting or settled — the 🍾 card prints those rows and would print a
-   * bare id, having no card to take a title from) and `begin` (it writes the
-   * line). `machines` is the only entry that carries it.
-   */
-  private retiredQuestion(id: SettingId): boolean {
-    return entryOf(id).retiredAnswer !== undefined;
-  }
-
   private waitingWith(): WaitingHold[] {
     const invitationOut = [...this.members.values()]
       .some((m) => m.arrivedAtT === null && !m.removed);
@@ -3004,6 +3005,12 @@ export class ConstitutionSession {
     const m = this.members.get(member);
     if (!m || !inE(m)) return false;
     for (const id of MANAGED) {
+      // a retired question holds nothing up here either (entry 259, R-080):
+      // nobody has a card to answer it with, so gating proposing on it gates
+      // it on an act no member can perform — and a document constituted
+      // before 🍾 existed (the old auto-constitute watched the judge-gates
+      // alone, and 🤖 is not one) never reaches the `begin` that resolves it
+      if (this.retiredQuestion(id)) continue;
       const st = this.settings.get(id)!;
       if (st.collecting && this.answerable(id) && !st.answers.has(member)) return false;
     }

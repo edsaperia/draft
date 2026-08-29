@@ -776,6 +776,20 @@ function checkComposer(M, pm) {
   // it — an ANSWER body for it would be copy nothing renders. Exact ids, never
   // a pattern, and re-adding the card removes the entry.
   const SURFACE_RETIRED = ['machines'];
+  // …and the catalogue's own record of the same fact must be the same set
+  // (entry 259, R-080). `retiredAnswer` is what 🍾 resolves a question nobody
+  // can be asked at, and the module reads it as *this setting has no card*:
+  // carried by a setting that still has one, it would hide a live collecting
+  // question from `readiness` and let 🍾 answer it over the room's heads;
+  // missing from one that has lost its card, a delegated question wedges the
+  // start for ever, which is the defect R-080 exists to close.
+  const withAnswer = M.CATALOGUE.filter((e) => e.retiredAnswer !== undefined).map((e) => e.id);
+  for (const id of SURFACE_RETIRED) {
+    if (!withAnswer.includes(id)) find('composer', `'${id}' has left the surface but carries no catalogue retiredAnswer — a delegated question on it would wedge 🍾 (R-080)`);
+  }
+  for (const id of withAnswer) {
+    if (!SURFACE_RETIRED.includes(id)) find('composer', `'${id}' carries a retiredAnswer but is not surface-retired — 🍾 would answer a live question over the room (R-080)`);
+  }
   for (const id of delegable) if (!SURFACE_RETIRED.includes(id) && !answer.includes(pageKey(id))) find('composer', `delegable '${id}' has no ANSWER body`);
   for (const k of answer) if (!delegable.includes(pm.MID[k] || k)) find('composer', `ANSWER has '${k}', which is not delegable`);
   // rung values: the member's ladder must offer exactly the catalogue's rungs (minus what the surface retired)

@@ -257,7 +257,14 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       collecting: st.collecting,
       shaped: s.shaped(entry.id),
     });
-    if (st.collecting) {
+    // **A question on a setting that has left the surface is nobody's to
+    // answer** (entry 259, R-080): the module leaves it out of `readiness`
+    // either side of 🍾, so the member's own view must not serve it either —
+    // a question row no card can render, `answerable: true` on an act no
+    // member can perform, and after 🍾 a resolution whose empty distribution
+    // is the record that nobody was asked, not a strip to draw.
+    const retired = entry.retiredAnswer !== undefined;
+    if (st.collecting && !retired) {
       const answerable = entry.deps.every((d) => s.settingState(d).settledBy !== null);
       // While it runs it can say only how many have answered (§9.0a):
       // any value or running maximum would let the room read itself.
@@ -273,7 +280,8 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
         myAnswer: me ? (st.answers.get(member) ?? null) : null,
       });
     }
-    if (st.settledBy === 'ceremony' && st.distribution && st.settledAtT !== null) {
+    if (st.settledBy === 'ceremony' && st.distribution && st.settledAtT !== null
+      && !retired) {
       resolutions.push({
         setting: entry.id,
         value: st.value!,

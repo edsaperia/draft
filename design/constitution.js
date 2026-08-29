@@ -2380,6 +2380,20 @@ var CONSTITUTION = (() => {
       return this.waitingWith().map((w) => w.setting);
     }
     /**
+     * **A question on a setting that has left the surface is nobody's to
+     * answer** (entry 259, Ed 2026-08-29; → why: R-080). The catalogue carries
+     * the fact — `retiredAnswer`, the value 🍾 resolves such a question at — so
+     * the module never has to read the page. Four sites share the predicate:
+     * `waitingWith` (it holds nothing up), `readiness` (it is in neither list,
+     * collecting or settled — the 🍾 card prints those rows and would print a
+     * bare id, having no card to take a title from), `canPropose` (it gates
+     * nothing, there being no card to answer it on) and `begin` (it writes the
+     * line). `machines` is the only entry that carries it.
+     */
+    retiredQuestion(id) {
+      return entryOf(id).retiredAnswer !== void 0;
+    }
+    /**
      * **…and *why* it waits** (Q826, Ed 2026-08-25: *I did all my open tasks and
      * then got served Begin while being unable to action it*). The list of ids
      * says which questions are outstanding and nothing about what would end the
@@ -2408,19 +2422,6 @@ var CONSTITUTION = (() => {
      * and not `one-voice` — a second member could not answer it either, so
      * *invite somebody* is the wrong remedy to have been served.
      */
-    /**
-     * **A question on a setting that has left the surface is nobody's to
-     * answer** (entry 259, Ed 2026-08-29; → why: R-080). The catalogue carries
-     * the fact — `retiredAnswer`, the value 🍾 resolves such a question at — so
-     * the module never has to read the page. Three sites share the predicate:
-     * `waitingWith` (it holds nothing up), `readiness` (it is in neither list,
-     * collecting or settled — the 🍾 card prints those rows and would print a
-     * bare id, having no card to take a title from) and `begin` (it writes the
-     * line). `machines` is the only entry that carries it.
-     */
-    retiredQuestion(id) {
-      return entryOf(id).retiredAnswer !== void 0;
-    }
     waitingWith() {
       const invitationOut = [...this.members.values()].some((m) => m.arrivedAtT === null && !m.removed);
       const soleVoice = motionElectorateOf(this.members.values()).length < 2;
@@ -3523,6 +3524,7 @@ var CONSTITUTION = (() => {
       const m = this.members.get(member);
       if (!m || !inE(m)) return false;
       for (const id of MANAGED) {
+        if (this.retiredQuestion(id)) continue;
         const st = this.settings.get(id);
         if (st.collecting && this.answerable(id) && !st.answers.has(member)) return false;
       }
@@ -3732,7 +3734,8 @@ var CONSTITUTION = (() => {
         collecting: st.collecting,
         shaped: s.shaped(entry.id)
       });
-      if (st.collecting) {
+      const retired = entry.retiredAnswer !== void 0;
+      if (st.collecting && !retired) {
         const answerable = entry.deps.every((d) => s.settingState(d).settledBy !== null);
         const eIds = new Set(s.motionElectorate());
         let answered = 0;
@@ -3746,7 +3749,7 @@ var CONSTITUTION = (() => {
           myAnswer: me ? st.answers.get(member) ?? null : null
         });
       }
-      if (st.settledBy === "ceremony" && st.distribution && st.settledAtT !== null) {
+      if (st.settledBy === "ceremony" && st.distribution && st.settledAtT !== null && !retired) {
         resolutions.push({
           setting: entry.id,
           value: st.value,
