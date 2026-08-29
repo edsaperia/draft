@@ -62,9 +62,10 @@ instead. Do not extend this paragraph.
   <batch>*. A per-freeze `refs-*` tag is no longer part of the ritual: the
   commit is the record, `git log -- design/reference` finds every freeze, and
   `pq ship`'s `batch/<letter>-<date>` tag already names what shipped.
-- `http://localhost:8137/reference/session-view.html` renders the frozen
-  surface standalone (relative hrefs resolve to the frozen copies beside
-  it); `?fixture=session` renders the frozen Hollow Oak session.
+- `/reference/session-view.html`, on whatever port `npm run design` prints,
+  renders the frozen surface standalone (relative hrefs resolve to the
+  frozen copies beside it); `?fixture=session` renders the frozen Hollow
+  Oak session.
 - `session-baseline.json` is the session-probe's recorded baseline at the
   cards.js extraction (2026-08-18), kept as history.
 
@@ -76,7 +77,8 @@ rotted copy, must be the baseline whenever the copies are not re-frozen.
 
 ## Running the probes
 
-Serve `design/` on `localhost:8137` (a tiny node http server). Both sides at
+`scripts/probe.mjs` serves `design/` itself, from a server of its own whose
+address it reads back, so there is nothing to start by hand. Both sides at
 **one window size**, both pages **from scroll 0**; the automation tab runs
 backgrounded (rAF never fires, timers clamp — the probes stub what they
 need). Each probe is injected as a MAIN-world `<script src="/tools/…">`; it
