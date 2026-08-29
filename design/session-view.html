@@ -9183,17 +9183,16 @@
         card: rc ? { a: rc.a.id, b: rc.b.id, inc: rc.a.incumbent ? 'a' : rc.b.incumbent ? 'b' : null } : null,
       };
       // a race holding only my own proposal is mine to withdraw, not to judge
-      // — the `mine` item carries it (the author's preference is derived, never asked)
-      // — **but only where somebody else in the room could judge it** (Q835).
-      // In a document of one every race is only yours, so the blanket skip left
-      // the sole member no card at all: measured `comparisons` stayed 0 for
-      // ever, and a solo document could not change its own text under a form
-      // that had just promised *1 of the 1 members must have judged*. A
-      // self-judgment is legal and always was — §4.2's *the author's preference
-      // is counted but is not the room* is about the **derived** one, and an
-      // explicit judgment is a measurement that supersedes it. The withdraw
-      // affordance stays: at E = 1 you get both.
-      if (r.candidates.every((c) => c.mine) && E() > 1) continue;
+      // — the `mine` item carries it (the author's preference is derived, never
+      // asked). **Unconditional again since backlog 253** (Ed, 2026-08-29): the
+      // engine serves no pair at all for an all-mine race now, at any E, since
+      // an author is never asked about their own text against the incumbent
+      // (SPEC §3.3, R-062) — so there is no card here to draw. Q835's `E() > 1`
+      // condition existed to hand the sole member a self-judgment, and at E = 1
+      // the race adopts on submission instead, before the page could draw it.
+      // The withdrawal line (`v.mine`) is the whole of what an author sees of
+      // an all-mine race.
+      if (r.candidates.every((c) => c.mine)) continue;
       const others = r.candidates.filter((c) => !c.mine);
       const slate = r.deadlocked
         ? { slate: r.candidates.map((x) => ({ text: textOf(x), rationale: x.rationale })) } : {};

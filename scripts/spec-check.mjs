@@ -628,24 +628,42 @@ function checkOrder(pm) {
 }
 
 /**
- * E19's condition (Q838). *A proposal of your own* is yours to withdraw and
- * not to judge — but that is a claim about a room bigger than one, and the
- * page enforced it unconditionally: in a document of one every race is only
- * yours, so the sole member was served no judgment card at all, the engine's
- * measured `comparisons` stayed 0 for ever and the document could not change
- * its own text. There is no walk at E = 1 anywhere (the ladder's cast is 20
- * and asserts `members > 1`), so this one-line predicate is the only thing
- * standing between that bug and its return, and the failure is silent by
- * construction — a rail with nothing in it looks like a document at rest.
+ * **An author is never asked about their own text against the incumbent**
+ * (Ed, 2026-08-29, backlog 253; SPEC §3.3 / R-062, SURFACE E19) — one rule
+ * spanning the engine and the page, so it is asserted at both ends.
+ *
+ * The engine half is source-pinned rather than behavioural, `spec-check`
+ * having no way to run a session: what matters is *where* the exclusion sits
+ * — inside the scan `bestPairFor` shares between its two passes, so the rival
+ * pass sees it too, and inside `explorationCard`, which serves against the
+ * incumbent by a second door and would otherwise re-open the one the first
+ * closed. The behaviour is `packages/engine-core/test/session.test.ts`.
+ *
+ * The page half is the other end of the same rule. Q838 pinned the `E() > 1`
+ * condition here, because at E = 1 the sole member was served their own text
+ * and needed the card; that exception is overturned — at E = 1 the proposal
+ * adopts on submission — so the skip is unconditional again and a condition
+ * creeping back would draw a card the engine will never fill.
  */
-function checkSoloJudgment() {
-  note('The sole member’s own judgment — SURFACE.md E19 against the page');
+function checkAuthorNeverAsked() {
+  note('An author is never asked about their own text — SPEC §3.3 against engine and page');
+  const src = readFileSync(join(ROOT, 'packages/engine-core/src/session.ts'), 'utf8');
+  const at = src.indexOf('private bestPairFor(');
+  const scan = at < 0 ? '' : src.slice(at, at + 1600);
+  if (!/this\.ownIncumbentPair\(a, b, incumbentId, participantId\)/.test(scan))
+    find('events', "`bestPairFor`'s pair scan no longer excludes the judge's own candidate against the incumbent — the preference is derived and the answer already held (SPEC §3.3, R-062, backlog 253)");
+  else note('  the pair scan excludes the judge’s own incumbent pair');
+  const ex = src.indexOf('private explorationCard(');
+  const body = ex < 0 ? '' : src.slice(ex, ex + 900);
+  if (!/this\.candidates\.get\(m\)\?\.author === participantId/.test(body))
+    find('events', '`explorationCard` serves against the incumbent too, and no longer skips the participant’s own candidates (SPEC §3.3, backlog 253)');
+  else note('  exploration skips the participant’s own candidates');
   const page = js('design/session-view.html');
-  const at = page.indexOf('function itemsFromView(');
-  const items = at < 0 ? '' : page.slice(at, at + 4000);
-  if (!/r\.candidates\.every\(\(c\) => c\.mine\) && E\(\) > 1/.test(items))
-    find('events', "the all-mine race is skipped unconditionally again — E19 exempts it only where somebody else in the room could judge it, and at E = 1 that skip is every race (Q835)");
-  else note('  the `mine` exemption carries its E > 1 condition');
+  const pat = page.indexOf('function itemsFromView(');
+  const items = pat < 0 ? '' : page.slice(pat, pat + 4000);
+  if (!/r\.candidates\.every\(\(c\) => c\.mine\)\) continue;/.test(items))
+    find('events', 'the all-mine skip in `itemsFromView` carries a condition again — the engine serves no pair for an all-mine race at any E, so E19 exempts nothing (backlog 253 overturns Q835)');
+  else note('  the `mine` skip is unconditional');
 }
 
 /**
@@ -1158,7 +1176,7 @@ function checkMergeable() {
 checkMarks();
 checkWallets(pm);
 checkOrder(pm);
-checkSoloJudgment();
+checkAuthorNeverAsked();
 checkPenRebase();
 checkApplicantJudged();
 checkBeginZones(M, pm);

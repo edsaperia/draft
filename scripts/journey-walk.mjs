@@ -1647,10 +1647,12 @@ if (caret) {
    * prints the rung standing, so a reader can see which promise it was under. */
   if (guestPage && ok) {
     // **Its own clause, deliberately.** The founder proposed on line 0 above,
-    // and a rival on the same lines joins that race — where the reader's
-    // served card is their own candidate against the incumbent, so the guest's
-    // block is never drawn. On the second line the guest's proposal is a race
-    // of its own, and the founder's card for it holds exactly one block: theirs.
+    // and a rival on the same lines joins that race — where the founder's
+    // served card is the **rival pair**, their own text against the incumbent
+    // being the one pair an author is never asked (backlog 253), so that card
+    // draws the guest's block beside theirs. On the second line the guest's
+    // proposal is a race of its own, and the founder's card for it holds
+    // exactly one block: the guest's, which is what this step needs.
     const line = EMPTY_TEXT ? 0 : 1;
     const sent = await guestPage.evaluate((n) => {
       const api = location.pathname.replace('/d/', '/api/d/');

@@ -985,6 +985,20 @@ judgment at all, which is worse than not adopting. Also rejected: a special sole
 anywhere. Nothing in the engine needed one, and a second code path for E = 1 is a second thing to
 keep true.
 
+**The rejected reading became the rule (Ed, 2026-08-29, backlog 253, SPEC v0.94).** Ed, as a
+founder-member on a live document: *I seem to be able to vote on my own text amendment proposals. I
+think that I should automatically be counted as preferring proposals that I have made vs the status
+quo.* So the author **is** excluded from `feed` — never served their own candidate against the
+incumbent, at any E — and at E = 1 the floor does carry the adoption: the proposal adopts on
+submission. The fear above was *adopt on nobody's judgment*; the ruling is that at E = 1 nobody's
+judgment is the only judgment there is, and that the alternative is asking somebody a question the
+engine has already answered. What survives of the section unchanged is its finding — the engine was
+never the reason — and its second half, the 50% meter. What is superseded is the fix: the `mine`
+filter's premise is no longer restored as a condition, because there is no longer a card behind it
+at any E, and the skip is unconditional again. Two things are deliberately narrow: a rival pair of
+the author's is still served (proposing says only that your text beats the status quo), and `judge`
+still accepts an explicit own-vs-incumbent judgment, the ruling being about what is *served*.
+
 **The 50% bar was a division by zero wearing a guard.** `closeness` is `|2p − 1| / (2θ − 1)` —
 distance from the coin flip, scaled so the carry boundary reads 1. At θ = ½ the carry boundary *is*
 the coin flip, the denominator is 0, and the guard returned 0 rather than dividing. So every race

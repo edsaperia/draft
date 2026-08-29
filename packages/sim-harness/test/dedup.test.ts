@@ -109,7 +109,14 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // made under* is read from — so the chain hashes differently from the first
   // candidate on. Both variants still agree, which is the invariant this test
   // defends (was 2bfc2e2a50bb690e34bdcddb936d53002c3419481678b32263c5d3a053638150).
-  const PINNED = '3ec36c64ff9501c0f24c7d661323fc818b6598032d9bfd30c533448f77fd66bc';
+  // Re-pinned 2026-08-29 (backlog 253, SPEC §3.3 v0.94): an author is never
+  // served their own candidate against the incumbent, so every persona's feed
+  // legitimately holds different pairs from the first submission on — and with
+  // them different comparisons, different adoption timings and a different
+  // chain. Both variants still agree with each other, which is the invariant
+  // this test defends
+  // (was 3ec36c64ff9501c0f24c7d661323fc818b6598032d9bfd30c533448f77fd66bc).
+  const PINNED = '0f18a6b0eb3e0a74fb6e95ab84eec53c2e5f5f7365561617fd4252f26812e46d';
 
   const run = (withGate: boolean) =>
     runSession({
