@@ -10209,8 +10209,11 @@
     mayJudge: () => mayJudge(),
     // ✒️ on the Text (R-058, entry 160): whether this reader's own hand
     // amends the document. `mayPenOn('text')` is already the true question —
-    // the pen held on 📄, the document open, the grant acknowledged
-    mayPen: () => mayPenOn('text'),
+    // the pen held on 📄, the document open, the grant acknowledged — and
+    // `constituted()` is the era: **before the start nothing is amended, only
+    // set** (§9.6a), where the road is `confirmStartingText` and the module
+    // would refuse this one anyway.
+    mayPen: () => constituted() && mayPenOn('text'),
     // the sign control (Q770): the elective 👤 rung's base, or null — read at
     // call time, so a 👤 motion carrying while a draft is open changes what the
     // next draft offers and nothing about the one being typed
