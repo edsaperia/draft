@@ -25,7 +25,14 @@ import { existsSync, statSync } from 'node:fs';
 import { join, extname, normalize } from 'node:path';
 
 const ROOT = 'design';
-const PORT = Number(process.argv[2] || process.env.DESIGN_PORT || 8137);
+// two builds run at once, each in its own worktree, so the port is the
+// environment's to choose; the source is kept because *DESIGN_PORT is busy*
+// and *8137 is busy* want different things done about them
+const [PORT, PORT_FROM] = process.argv[2]
+  ? [Number(process.argv[2]), 'the argument']
+  : process.env.DESIGN_PORT
+    ? [Number(process.env.DESIGN_PORT), 'DESIGN_PORT']
+    : [8137, 'the built-in default'];
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8',
@@ -33,7 +40,7 @@ const TYPES = {
   '.woff2': 'font/woff2', '.md': 'text/plain; charset=utf-8',
 };
 
-createServer(async (req, res) => {
+const server = createServer(async (req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
   if (p.endsWith('/')) p += 'session-view.html';
   // no escaping the design directory
@@ -48,8 +55,24 @@ createServer(async (req, res) => {
     'cache-control': 'no-store',
   });
   res.end(await readFile(file));
-}).listen(PORT, () => {
-  console.log('design surface  http://localhost:' + PORT + '/');
+});
+
+// a held port is the ordinary case when two builds are up, and the stack it
+// used to print sent one session after the holder with kill -9 — which is
+// another live build's server
+server.on('error', (err) => {
+  if (err.code !== 'EADDRINUSE') throw err;
+  console.error('design surface  port ' + PORT + ' is already held (it came from ' + PORT_FROM + ').');
+  console.error('  The holder is very likely another build\'s design server, running in');
+  console.error('  another worktree of this repository. Do not kill it — it belongs to');
+  console.error('  a build that is still going.');
+  console.error('  Serve on a port of your own instead: set DESIGN_PORT, or pass one —');
+  console.error('    npm run design -- 8139');
+  process.exit(1);
+});
+
+server.listen(PORT, () => {
+  console.log('design surface  http://localhost:' + PORT + '/            port from ' + PORT_FROM);
   console.log('  the founding  http://localhost:' + PORT + '/            ⏩ and the seat dropdown are here');
   console.log('  a live room   http://localhost:' + PORT + '/?fixture=session');
   console.log('  the close     http://localhost:' + PORT + '/?fixture=session&closed=1');
