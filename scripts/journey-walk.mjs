@@ -1567,11 +1567,21 @@ if (caret) {
    * so this step presses 📝 first, then puts the caret at the **end of the
    * last clause** and presses Enter. The lane starts empty. */
   if (NEW_CLAUSE && !EMPTY_TEXT) {
-    await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
+    // the tab is re-found rather than assumed: `renderRideTab` empties
+    // `#ridetab` while a power tab's card is the open one, and by this point
+    // in the walk the doors have opened and reverted several cards. A bare
+    // `.click()` on the miss would throw inside the page and take the whole
+    // walk down with it, hiding the very FAIL line below
+    const pressed = await page.evaluate(() => {
+      const t = document.querySelector('#ridetab .achip[data-tab="text"]');
+      if (!t) return false;
+      t.click();
+      return true;
+    });
     await T(300);
-    const editAgain = { editable: await hostEditable(),
+    const editAgain = { tab: pressed, editable: await hostEditable(),
       editing: await page.evaluate(() => document.getElementById('doc').classList.contains('editing')) };
-    const editAgainOk = editAgain.editable === 'true' && editAgain.editing;
+    const editAgainOk = pressed && editAgain.editable === 'true' && editAgain.editing;
     say('edit again · ' + (editAgainOk ? 'editable=true editing=true'
       : 'FAIL: 📝 did not re-enter edit mode · ' + JSON.stringify(editAgain)));
     if (!editAgainOk) stuck.push('edit mode again');
