@@ -181,6 +181,21 @@ export type ConstitutionEvent =
   | { type: 'release-owed'; t: number; batch: string; member: MemberId;
       releases: Array<{ setting: PowerKey; power: Power }> }
   | { type: 'release-ok'; t: number; batch: string; member: MemberId }
+  /* -- a text amendment the Founder's pen made (SURFACE E35, Q1034) -------- */
+  /**
+   * **A text amendment is news beside the clause it changed** (Ed, 2026-08-29,
+   * decision D47, answering Q1021; R-058). `release-owed`'s shape — one event
+   * per member, the audience rule of `ok-owed` — and deliberately **not** its
+   * batching: 🍾 lays down thirty-four powers that belong to no clause and they
+   * are one card, where one ✒️ commit is one amendment at one place and the
+   * card's whole job is to name that place. Two amendments are two cards.
+   *
+   * The candidate id is the whole of what is remembered: the motion record
+   * `pen:text:<candidate>` already holds the summary, the reason and the
+   * moment, and the engine holds the wording.
+   */
+  | { type: 'amendment-owed'; t: number; candidate: string; member: MemberId }
+  | { type: 'amendment-ok'; t: number; candidate: string; member: MemberId }
   /* -- mail that gave up (SURFACE E34, Q947 (c), backlog 173) -------------- */
   /**
    * **One sender pass's worth of dead mail is one piece of news** (entry 162's
@@ -367,6 +382,18 @@ export interface MemberRecord {
    */
   releasesOwed: Set<string>;
   releasesGiven: Set<string>;
+  /**
+   * Text amendments the Founder's pen made that this member is owed the news
+   * of, minus the ones they have acknowledged (SURFACE E35, Q1034), by
+   * candidate id. **Separate from `okOwed` for `releasesOwed`'s own reason**:
+   * this is news about a clause, not about a setting's value, and landing it
+   * in `okOwed` would fire 📄's own value-news card with the wrong copy — which
+   * is exactly the reading Ed's ruling of 2026-08-29 replaced. Nothing of the
+   * amendment is copied here: the motion record `pen:text:<candidate>` holds
+   * its summary and its reason, and the engine holds the wording.
+   */
+  amendmentsOwed: Set<string>;
+  amendmentsGiven: Set<string>;
   /**
    * Mail-give-up batches this member is owed the news of, minus the ones they
    * have acknowledged (SURFACE E34). **Separate from `okOwed` for

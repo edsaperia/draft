@@ -453,8 +453,18 @@ describe('a vacated seat auto-passes the park and holds no shield (R-060)', () =
  * R-058 (Ed, 2026-08-27, backlog entry 160): where the Founder keeps ✒️ on the
  * Text, their amendment **passes the instant it is submitted** — direct, no
  * stake, no race. It is recorded as an amendment by the pen route (R-004) and
- * owed an acknowledgement by everybody who had no say, on 📄's own key
- * (Q1021). Driven through the bridge, which is the only harness that exercises
+ * owed an acknowledgement by everybody who had no say.
+ *
+ * **Where that acknowledgement is served was Q1021, and Ed answered it on
+ * 2026-08-29 (decision D47): a news card beside the amended clause.** The
+ * R-058 build took the cheap reading first — 📄's own key `startingText`
+ * through `oweOks`, one owed OK however many amendments it stood for — and
+ * this section is the reversal of it: an owed kind of its own, one card and
+ * one OK **per amendment**, and `startingText` never in `owedOks` again. The
+ * collapse the two tests below used to assert is now the thing they assert
+ * does *not* happen.
+ *
+ * Driven through the bridge, which is the only harness that exercises
  * engine-core, the record and the acknowledgement together.
  */
 describe('✒️ on the Text: the Founder amends at will (R-058)', () => {
@@ -506,22 +516,76 @@ describe('✒️ on the Text: the Founder amends at will (R-058)', () => {
     expect(rec.payload).toEqual({ kind: 'text', candidateId: id, summary: 'Open every day.' });
     // no 👑 question: asking the Founder to assent to their own act asks twice
     expect(view(s, 'ada').crownTasks).toHaveLength(0);
-    // every arrived member but the Founder is owed 📄's OK
-    expect(view(s, bo).owedOks).toContain('startingText');
-    expect(view(s, cy).owedOks).toContain('startingText');
-    expect(view(s, 'ada').owedOks).not.toContain('startingText');
+    // every arrived member but the Founder is owed the news, **beside the
+    // clause** (D47) — never on 📄's own key, which is what this replaced
+    expect(view(s, bo).owedAmendments.map((a) => a.candidate)).toEqual([id]);
+    expect(view(s, cy).owedAmendments.map((a) => a.candidate)).toEqual([id]);
+    expect(view(s, 'ada').owedAmendments).toHaveLength(0);
+    for (const seat of [bo, cy, 'ada']) {
+      expect(view(s, seat).owedOks).not.toContain('startingText');
+    }
   });
 
-  it('a run of amendments collapses into one owed OK, and the OK closes it', () => {
+  it('one amendment owes one acknowledgement, and only to those who had a say to lose', () => {
+    // both doors on the pen, so the audience can be shaped after the start
+    const { s, bo, cy } = buildConstituted({ keepText: { unilateral: true },
+      doors: { invite: { unilateral: true, assent: false },
+        remove: { unilateral: true, assent: false } } });
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'pen-audience' });
+    // an invitee who has never arrived, and a member who is gone: neither is
+    // owed anything (`oweOks`'s audience rule, which this borrows whole)
+    const di = s.invite(9, 'di@example.org');
+    s.remove(9, cy);
+    const { id } = bridge.penText(10, 'ada',
+      patch(bridge.engine.currentVersion(), ['Open every day.']), 'the room asked');
+    expect(view(s, bo).owedAmendments.map((a) => a.candidate)).toEqual([id]);
+    expect(view(s, di).owedAmendments).toHaveLength(0);    // never arrived
+    expect(view(s, cy).owedAmendments).toHaveLength(0);    // gone
+    expect(view(s, 'ada').owedAmendments).toHaveLength(0); // the actor
+    // and a seat with no member record at all is served [], as `owedOks` is
+    expect(view(s, 'nobody').owedAmendments).toEqual([]);
+  });
+
+  it('two amendments owe two, each naming its own candidate (D47 reverses the collapse)', () => {
     const { s, bo } = buildConstituted({ keepText: { unilateral: true } });
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'pen-run' });
-    bridge.penText(10, 'ada', patch(bridge.engine.currentVersion(), ['Open every day.']), 'one');
-    bridge.penText(11, 'ada', patch(bridge.engine.currentVersion(), ['Open at dawn.']), 'two');
-    expect(view(s, bo).owedOks.filter((k) => k === 'startingText')).toHaveLength(1);
+    const one = bridge.penText(10, 'ada',
+      patch(bridge.engine.currentVersion(), ['Open every day.']), 'one');
+    const two = bridge.penText(11, 'ada',
+      patch(bridge.engine.currentVersion(), ['Open at dawn.']), 'two');
     expect([...s.motionRecords().values()].filter((m) => m.payload.kind === 'text'))
       .toHaveLength(2);
-    s.giveOk(12, bo, 'startingText');
+    // **two cards, not a bigger one** — the whole of the ruling
+    const owed = view(s, bo).owedAmendments;
+    expect(owed.map((a) => a.candidate)).toEqual([one.id, two.id]); // oldest first
+    // the summary and the reason ride off the motion record
+    expect(owed.map((a) => a.summary)).toEqual(['Open every day.', 'Open at dawn.']);
+    expect(owed.map((a) => a.why)).toEqual(['one', 'two']);
+    expect(owed.map((a) => a.at)).toEqual([10, 11]);
+    // and 📄's key is untouched throughout
     expect(view(s, bo).owedOks).not.toContain('startingText');
+  });
+
+  it('the OK clears one amendment for one member, and is silent on one not owed', () => {
+    const { s, bo, cy } = buildConstituted({ keepText: { unilateral: true } });
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'pen-ack' });
+    const one = bridge.penText(10, 'ada',
+      patch(bridge.engine.currentVersion(), ['Open every day.']), 'one');
+    const two = bridge.penText(11, 'ada',
+      patch(bridge.engine.currentVersion(), ['Open at dawn.']), 'two');
+    s.ackAmendment(12, bo, one.id);
+    expect(view(s, bo).owedAmendments.map((a) => a.candidate)).toEqual([two.id]);
+    expect(view(s, cy).owedAmendments.map((a) => a.candidate)).toEqual([one.id, two.id]);
+    // `ackRelease`'s posture: not owed returns silently rather than throwing
+    // at a page that was a poll behind
+    const n = s.logEntries().length;
+    expect(() => s.ackAmendment(13, bo, one.id)).not.toThrow();
+    expect(() => s.ackAmendment(13, bo, 'c-never-was')).not.toThrow();
+    expect(s.logEntries().length).toBe(n);
+    expect(() => s.ackAmendment(13, 'nobody', one.id)).toThrow(/unknown member/);
+    // `okOwed` is untouched by the whole run
+    expect(view(s, bo).owedOks).not.toContain('startingText');
+    expect(view(s, cy).owedOks).not.toContain('startingText');
   });
 
   it('refuses without the pen, before the start, and to anybody but the Founder', () => {
@@ -541,13 +605,22 @@ describe('✒️ on the Text: the Founder amends at will (R-058)', () => {
       .toThrow(/before the start/);
   });
 
-  it('replays bit-identically, both logs', () => {
-    const { s } = buildConstituted({ keepText: { unilateral: true } });
+  it('replays bit-identically and appends nothing — the owing is on the command path', () => {
+    const { s, bo } = buildConstituted({ keepText: { unilateral: true } });
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'pen-replay' });
     bridge.penText(10, 'ada', patch(bridge.engine.currentVersion(), ['Open every day.']), 'why');
     const r = ConstitutionSession.replay([...s.logEntries()]);
     expect(r.rollingHash()).toBe(s.rollingHash());
     expect([...r.motionRecords().keys()]).toEqual([...s.motionRecords().keys()]);
+    // **The length as well as the hash.** `rollingHash()` returns the last
+    // *pushed original* entry's own hash, so a fold that emits leaves it
+    // unchanged while the log grows every time it is read — which is exactly
+    // what the reading this replaced did, `oweOks` being called from the
+    // `text-amended` fold. This is the assertion that keeps the owing in
+    // `recordTextAmendment` (Q1034).
+    expect(r.logEntries().length).toBe(s.logEntries().length);
+    expect([...r.memberRecords().get(bo)!.amendmentsOwed])
+      .toEqual([...s.memberRecords().get(bo)!.amendmentsOwed]);
   });
 });
 

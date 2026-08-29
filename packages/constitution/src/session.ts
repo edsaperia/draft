@@ -368,6 +368,10 @@ export class ConstitutionSession {
             // what is owed belongs to the person, not to the seat (entry 162)
             rec.releasesOwed = prev.releasesOwed;
             rec.releasesGiven = prev.releasesGiven;
+            // and the amendment news with them, for the same reason
+            // (SURFACE E35)
+            rec.amendmentsOwed = prev.amendmentsOwed;
+            rec.amendmentsGiven = prev.amendmentsGiven;
             // and the mail news with them, for the same reason (SURFACE E34)
             rec.mailGaveUpOwed = prev.mailGaveUpOwed;
             rec.mailGaveUpGiven = prev.mailGaveUpGiven;
@@ -502,14 +506,11 @@ export class ConstitutionSession {
           answers: new Map(),
           settledAtT: event.t,
         });
-        // **Where a member acknowledges a text amendment: 📄's own key**
-        // (Q1021, the recommendation this build takes). `ok-owed` carries
-        // setting ids, and the Text's is `startingText` — so a run of
-        // amendments collapses into one owed OK reading *the Founder changed
-        // the text*, which is cheap and true. The richer answer, a news card
-        // on the amended clause itself, is a new owed-kind and a surface of
-        // its own; it stays unbuilt behind that number.
-        this.oweOks(event.t, 'startingText');
+        // **The owing is not done here** (Q1034, and see `oweAmendment`).
+        // `replay` calls `apply` directly while `emit` pushes to the log, so
+        // an owing performed in a fold appends events to every session that
+        // replays that log. It rides `recordTextAmendment`, on the command
+        // path, where every other owing in this file rides.
         break;
       }
       case 'quorum-form-set': {
@@ -683,6 +684,23 @@ export class ConstitutionSession {
         const m = this.members.get(event.member)!;
         m.releasesOwed.delete(event.batch);
         m.releasesGiven.add(event.batch);
+        this.touch(event.member, event.t);
+        break;
+      }
+      case 'amendment-owed': {
+        // **Nothing is minted here** — the release fold above mints a batch id
+        // and grows the batch by union, because one act can lay down
+        // thirty-four powers. An amendment carries the candidate id it is
+        // about, so there is nothing to mint and nothing to join: the whole of
+        // what is remembered is which candidate, and where it changed the text
+        // is a question for the engine (SURFACE E35, Q1034).
+        this.members.get(event.member)!.amendmentsOwed.add(event.candidate);
+        break;
+      }
+      case 'amendment-ok': {
+        const m = this.members.get(event.member)!;
+        m.amendmentsOwed.delete(event.candidate);
+        m.amendmentsGiven.add(event.candidate);
         this.touch(event.member, event.t);
         break;
       }
@@ -1081,6 +1099,7 @@ export class ConstitutionSession {
       lastActivityT: arrivedAtT ?? invitedAtT,
       okOwed: new Set(), okGiven: new Set(),
       releasesOwed: new Set(), releasesGiven: new Set(),
+      amendmentsOwed: new Set(), amendmentsGiven: new Set(),
       mailGaveUpOwed: new Set(), mailGaveUpGiven: new Set(), mailGaveUp: false,
       invitationExpired: false, closingAck: null,
     };
@@ -1927,6 +1946,49 @@ export class ConstitutionSession {
   }
 
   /**
+   * **A text amendment is news beside the clause it changed** (Ed, 2026-08-29,
+   * decision D47, answering Q1021; SURFACE E35, R-058). `oweReleases`' other
+   * sibling, and **the audience rule is `oweOks`'s** exactly: every member,
+   * skipping the un-arrived, the removed and the convenor, who is the actor.
+   *
+   * **Two differences from `oweReleases`, and both are the ruling.** There is
+   * **no batching and no join of an open group**: entry 162 groups because one
+   * press of 🍾 lays down thirty-four powers that belong to no clause, where
+   * here the card *is* the clause — so two amendments at two places are two
+   * cards, and collapsing them is precisely what the ruling reverses. And
+   * there is **no skip for something already owed**: every amendment carries
+   * its own candidate id, so there is nothing to be already owed — the same
+   * deliberate omission `oweReleases` records for its batch ids.
+   *
+   * **Why it is called from `recordTextAmendment` and not from the fold.**
+   * `replay` calls `apply` directly and `emit` pushes to `this.log`, so an
+   * owing performed in a fold appends events to every session that replays
+   * that log — the log growing every time it is read. That is entry 162's rule
+   * and this is it kept; the reading it replaces (📄's own key through
+   * `oweOks`) had the call in the `text-amended` fold and so had the bug.
+   */
+  private oweAmendment(t: number, candidate: string): void {
+    for (const m of this.members.values()) {
+      if (m.arrivedAtT === null || m.removed) continue;
+      if (m.id === this.convenor.id) continue; // the Founder is the actor
+      this.emit({ type: 'amendment-owed', t, candidate, member: m.id });
+    }
+  }
+
+  /**
+   * The OK on one text amendment (SURFACE E35) — `ackRelease`'s posture
+   * exactly: an amendment this member is not owed returns silently rather than
+   * throwing at a page that was a poll behind.
+   */
+  ackAmendment(t: number, member: MemberId, candidate: string): void {
+    this.requireOpen('acknowledging');
+    const m = this.members.get(member);
+    if (!m) throw new Error(`unknown member '${member}'`);
+    if (!m.amendmentsOwed.has(candidate)) return;
+    this.emit({ type: 'amendment-ok', t, candidate, member });
+  }
+
+  /**
    * **A mail that gave up is told** (SURFACE E34, Q947 (c), backlog 173).
    * `oweReleases`' sibling: the outbox hands over the whole of one sender
    * pass's give-ups at once, and one pass is the act — entry 162's rule is
@@ -2696,6 +2758,9 @@ export class ConstitutionSession {
     }
     this.emit({ type: 'text-amended', t, candidateId: text.candidateId,
       summary: text.summary, ...(text.why !== undefined ? { why: text.why } : {}) });
+    // and it is news beside the clause it changed, to everybody who had no
+    // say (Q1034, D47) — on the command path, never in the fold
+    this.oweAmendment(t, text.candidateId);
   }
 
   /** Open the 👑 question for one adopted candidate; the host reads its

@@ -1203,6 +1203,8 @@ var CONSTITUTION = (() => {
               rec.okGiven = prev.okGiven;
               rec.releasesOwed = prev.releasesOwed;
               rec.releasesGiven = prev.releasesGiven;
+              rec.amendmentsOwed = prev.amendmentsOwed;
+              rec.amendmentsGiven = prev.amendmentsGiven;
               rec.mailGaveUpOwed = prev.mailGaveUpOwed;
               rec.mailGaveUpGiven = prev.mailGaveUpGiven;
               rec.mailGaveUp = prev.mailGaveUp;
@@ -1309,7 +1311,6 @@ var CONSTITUTION = (() => {
             answers: /* @__PURE__ */ new Map(),
             settledAtT: event.t
           });
-          this.oweOks(event.t, "startingText");
           break;
         }
         case "quorum-form-set": {
@@ -1458,6 +1459,17 @@ var CONSTITUTION = (() => {
           const m = this.members.get(event.member);
           m.releasesOwed.delete(event.batch);
           m.releasesGiven.add(event.batch);
+          this.touch(event.member, event.t);
+          break;
+        }
+        case "amendment-owed": {
+          this.members.get(event.member).amendmentsOwed.add(event.candidate);
+          break;
+        }
+        case "amendment-ok": {
+          const m = this.members.get(event.member);
+          m.amendmentsOwed.delete(event.candidate);
+          m.amendmentsGiven.add(event.candidate);
           this.touch(event.member, event.t);
           break;
         }
@@ -1822,6 +1834,8 @@ var CONSTITUTION = (() => {
         okGiven: /* @__PURE__ */ new Set(),
         releasesOwed: /* @__PURE__ */ new Set(),
         releasesGiven: /* @__PURE__ */ new Set(),
+        amendmentsOwed: /* @__PURE__ */ new Set(),
+        amendmentsGiven: /* @__PURE__ */ new Set(),
         mailGaveUpOwed: /* @__PURE__ */ new Set(),
         mailGaveUpGiven: /* @__PURE__ */ new Set(),
         mailGaveUp: false,
@@ -2506,6 +2520,47 @@ var CONSTITUTION = (() => {
       if (!m) throw new Error(`unknown member '${member}'`);
       if (!m.releasesOwed.has(batch)) return;
       this.emit({ type: "release-ok", t, batch, member });
+    }
+    /**
+     * **A text amendment is news beside the clause it changed** (Ed, 2026-08-29,
+     * decision D47, answering Q1021; SURFACE E35, R-058). `oweReleases`' other
+     * sibling, and **the audience rule is `oweOks`'s** exactly: every member,
+     * skipping the un-arrived, the removed and the convenor, who is the actor.
+     *
+     * **Two differences from `oweReleases`, and both are the ruling.** There is
+     * **no batching and no join of an open group**: entry 162 groups because one
+     * press of 🍾 lays down thirty-four powers that belong to no clause, where
+     * here the card *is* the clause — so two amendments at two places are two
+     * cards, and collapsing them is precisely what the ruling reverses. And
+     * there is **no skip for something already owed**: every amendment carries
+     * its own candidate id, so there is nothing to be already owed — the same
+     * deliberate omission `oweReleases` records for its batch ids.
+     *
+     * **Why it is called from `recordTextAmendment` and not from the fold.**
+     * `replay` calls `apply` directly and `emit` pushes to `this.log`, so an
+     * owing performed in a fold appends events to every session that replays
+     * that log — the log growing every time it is read. That is entry 162's rule
+     * and this is it kept; the reading it replaces (📄's own key through
+     * `oweOks`) had the call in the `text-amended` fold and so had the bug.
+     */
+    oweAmendment(t, candidate) {
+      for (const m of this.members.values()) {
+        if (m.arrivedAtT === null || m.removed) continue;
+        if (m.id === this.convenor.id) continue;
+        this.emit({ type: "amendment-owed", t, candidate, member: m.id });
+      }
+    }
+    /**
+     * The OK on one text amendment (SURFACE E35) — `ackRelease`'s posture
+     * exactly: an amendment this member is not owed returns silently rather than
+     * throwing at a page that was a poll behind.
+     */
+    ackAmendment(t, member, candidate) {
+      this.requireOpen("acknowledging");
+      const m = this.members.get(member);
+      if (!m) throw new Error(`unknown member '${member}'`);
+      if (!m.amendmentsOwed.has(candidate)) return;
+      this.emit({ type: "amendment-ok", t, candidate, member });
     }
     /**
      * **A mail that gave up is told** (SURFACE E34, Q947 (c), backlog 173).
@@ -3205,6 +3260,7 @@ var CONSTITUTION = (() => {
         summary: text.summary,
         ...text.why !== void 0 ? { why: text.why } : {}
       });
+      this.oweAmendment(t, text.candidateId);
     }
     /** Open the 👑 question for one adopted candidate; the host reads its
      *  record (`crownQuestionRecords`) to learn accept / reject / auto-pass. */
@@ -3729,6 +3785,20 @@ var CONSTITUTION = (() => {
       // seat with no member record gets [], exactly as `owedOks` does
       owedReleases: me ? [...s.releaseBatchRecords().values()].filter((b) => me.releasesOwed.has(b.id)).sort((a, b) => a.t - b.t).map((b) => ({ id: b.id, at: b.t, releases: b.releases.map((r) => ({ ...r })) })) : [],
       owedMailGiveUps: me ? [...s.mailGiveUpBatchRecords().values()].filter((b) => me.mailGaveUpOwed.has(b.id)).sort((a, b) => a.t - b.t).map((b) => ({ id: b.id, at: b.t, addresses: [...b.addresses] })) : [],
+      // the amendment's own record is the motion the pen carried (R-058), so
+      // nothing about it is stored twice; an id whose record cannot be found is
+      // **skipped** rather than served half-empty, the card having nothing to
+      // say without it
+      owedAmendments: me ? [...me.amendmentsOwed].flatMap((candidate) => {
+        const rec = s.motionRecords().get(`pen:text:${candidate}`);
+        if (!rec || rec.payload.kind !== "text") return [];
+        return [{
+          candidate,
+          at: rec.settledAtT ?? rec.openedAtT,
+          summary: rec.payload.summary,
+          why: rec.why ?? null
+        }];
+      }).sort((a, b) => a.at - b.at) : [],
       motions,
       myHeldMotion,
       crownTasks: isConvenor ? [...s.crownQuestionRecords().values()].filter((q) => q.status === "pending").map((q) => ({ id: q.id, motion: q.motion, ...q.text ? { text: q.text } : {} })) : [],

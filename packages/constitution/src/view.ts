@@ -182,6 +182,16 @@ export interface MemberView {
    * not be reached. Shaped exactly like `owedReleases`, and for its reasons.
    */
   owedMailGiveUps: Array<{ id: string; at: number; addresses: string[] }>;
+  /**
+   * The text amendments the Founder's pen made that you are still owed the
+   * news of (SURFACE E35), oldest first: one entry per amendment, never
+   * batched, because the card is the clause it changed. The summary and the
+   * reason ride the view off the motion record `pen:text:<candidate>`, so the
+   * module stays the truth about what a member is told; the **wording** is the
+   * engine's and reaches the page beside this, joined by candidate id.
+   */
+  owedAmendments: Array<{ candidate: string; at: number; summary: string;
+    why: string | null }>;
   motions: MotionView[];
   myHeldMotion: string | null;
   /** The founder's 👑 questions: a parked motion, or (Q440) a text adoption with `text`. */
@@ -378,6 +388,20 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
           .filter((b) => me.mailGaveUpOwed.has(b.id))
           .sort((a, b) => a.t - b.t)
           .map((b) => ({ id: b.id, at: b.t, addresses: [...b.addresses] }))
+      : [],
+    // the amendment's own record is the motion the pen carried (R-058), so
+    // nothing about it is stored twice; an id whose record cannot be found is
+    // **skipped** rather than served half-empty, the card having nothing to
+    // say without it
+    owedAmendments: me
+      ? [...me.amendmentsOwed]
+          .flatMap((candidate) => {
+            const rec = s.motionRecords().get(`pen:text:${candidate}`);
+            if (!rec || rec.payload.kind !== 'text') return [];
+            return [{ candidate, at: rec.settledAtT ?? rec.openedAtT,
+              summary: rec.payload.summary, why: rec.why ?? null }];
+          })
+          .sort((a, b) => a.at - b.at)
       : [],
     motions,
     myHeldMotion,

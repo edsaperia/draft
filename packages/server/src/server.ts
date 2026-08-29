@@ -339,10 +339,11 @@ export async function createDraftServer(cfg: ServerConfig,
     text: string; textVersion: number; clauses: unknown[]; mine: unknown[];
     records: unknown[]; raceCards: unknown[]; wallet: number | null;
     walletInfo: unknown; floor: number; awaitingAssent?: unknown[];
+    amendments?: unknown[];
   } => {
     const ed = asEngineDoc(doc);
     const idle = { clauses: [], mine: [], records: [], raceCards: [], wallet: null, record: null,
-      walletInfo: null, floor: 0, awaitingAssent: [] };
+      walletInfo: null, floor: 0, awaitingAssent: [], amendments: [] };
     if (ed.bridge === null) return { text: doc.cs.text ?? '', textVersion: 0, ...idle };
     const engine = ed.bridge.engine;
     const api = new ParticipantApi(engine, memberId);
@@ -412,6 +413,36 @@ export async function createDraftServer(cfg: ServerConfig,
           return { candidateId: c.id, hunks: c.patch?.hunks ?? [], rationale: c.rationale,
             footprint: c.footprint, ...(author ? { author } : {}) };
         })
+      : [];
+    // ✒️ on the Text (R-058, SURFACE E35): the wording of an amendment this
+    // viewer is still owed the news of. **The owed set is the module's**, read
+    // here rather than walked over every candidate the document has ever
+    // decreed, so the projection is bounded by what is unread and not by the
+    // document's age. The module's `owedAmendments` carries the summary, the
+    // reason and the moment; this carries the words, joined by candidate id —
+    // the `awaitingAssent` / 👑 join one screen up. Nothing here is a
+    // disclosure question: the amendment is already the document.
+    const owedAmendmentIds = new Set(
+      (doc.cs.memberRecords().get(memberId)?.amendmentsOwed) ?? []);
+    const amendments = owedAmendmentIds.size
+      ? engine.allCandidates()
+          .filter((c) => c.exit?.cause === 'decreed' && owedAmendmentIds.has(c.id))
+          .map((c) => {
+            const hunks = c.patch?.hunks ?? [];
+            // the lines this patch replaced, off the version it was made
+            // against — a decree always targets the version that stood, so
+            // `baseVersion` is exactly *before*. A version the engine can no
+            // longer produce says nothing rather than something untrue.
+            let displaced: string[] = [];
+            if (c.patch && hunks.length) {
+              try {
+                const prev = engine.documentAt(c.patch.baseVersion).split('\n');
+                displaced = prev.slice(Math.min(...hunks.map((h) => h.start)),
+                  Math.max(...hunks.map((h) => h.end)));
+              } catch { displaced = []; }
+            }
+            return { candidateId: c.id, hunks, displaced };
+          })
       : [];
     // the record, one entry per race (Q503c): the whole field, the text it
     // displaced as it stood at resolution, and the race's judge count
@@ -510,7 +541,7 @@ export async function createDraftServer(cfg: ServerConfig,
       };
     })();
     const base = { text: engine.document(), textVersion: engine.currentVersion(),
-      clauses, mine, records, floor, record, awaitingAssent };
+      clauses, mine, records, floor, record, awaitingAssent, amendments };
     if (engine.closed) return { ...base, raceCards: [], wallet: null, walletInfo: null };
     try {
       const t = tOf(doc.cs, nowMs);

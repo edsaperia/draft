@@ -304,6 +304,12 @@ const HANDLERS: Record<string, Handler> = {
   'ack-release': (cs, a, t, args) => {
     cs.ackRelease(t, a.memberId, str(args, 'batch'));
   },
+  // the OK on one text amendment the Founder's pen made (SURFACE E35): one
+  // card per amendment, so the body names the candidate — the whitelist
+  // injects the actor, and nothing else rides
+  'ack-amendment': (cs, a, t, args) => {
+    cs.ackAmendment(t, a.memberId, str(args, 'candidate'));
+  },
   // the OK on one sender pass's dead mail (SURFACE E34), the same shape: the
   // whitelist injects the actor, so the body names the batch and nothing else
   'ack-mail-gave-up': (cs, a, t, args) => {
