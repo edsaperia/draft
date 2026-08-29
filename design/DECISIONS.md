@@ -2023,3 +2023,19 @@ The item, verbatim as it stood at `d43e2b6`:
 > - UI north star: **suggestion-mode with escalation** — the default surface reads like Google-Docs-style inline suggestions with approval; the race view is the escalation state that appears only where suggestions collide or stakes demand ceremony. Most of a session should feel like approving typo fixes; the machinery earns its visibility.
 
 What replaced it is not another slogan but the surface itself: **every surface is the session-view** (`CLAUDE.md`'s *Documents*), the card grammar of SURFACE §9, and the marks and rail of §6. A session asked to add a new surface reaches for those, not for this. Nothing in the tree cited the item; no pointer moves with it.
+
+## SURFACE.md, pruned (2026-08-29, entry 191)
+
+`SURFACE.md` stood 25% over its 70,000-byte watch and only ever grew: every landing that touched it appended. Backlog entry 191 ordered the refactor and entry 220 supplied its second question — beside *is this still true*, **who wrote it**, on the evidence that an LLM-written knowledge file measures at −3% task success and +20% cost against having none, while a curated one helps. The pass applied `design/spec-pass/surface-md-extraction.md`, whose 45 items were written and never approved, and Ed answered its open item 47 on 2026-08-29: **the sentences of his own quoted beside the F-rules move — pointers to `DECISIONS.md`; the rule stands on its own.**
+
+Two reasons left `SURFACE.md` with no home already here. Both are verbatim.
+
+**Why the two page-key pairs stopped being asymmetric** (SURFACE §4, Q903, Ed 2026-08-26):
+
+> 🪪’s id was `membership` and its page key `roster`, both naming the register it stopped being at entry 94; 🤝’s page key was `policy`, naming a four-rung ladder that is now one switch.
+
+**Why the founding never runs out of tasks** (SURFACE F18, Q773–Q777):
+
+> Ed, 2026-08-25, founding a document task by task — *before begin, there shouldn’t be a situation where I don’t see any queue-cards*. A delegated 🌡️ left 🪜 owed by a hand nothing could ask for, `ansDue()` was false for ever, and not one of the questions he had handed over came back to him (Q773–Q777).
+
+Everything else the pass removed was either pure history — *Born 2026-08-22 in spec pass 1*, *Lifted from CLAUDE.md in spec pass 2*, *the remedy stood on 🪪 until entry 94* — which git and this file’s own pass sections already hold; a second full statement of a rule stated in full elsewhere, reduced to a citation of the first; or a reason whose section here already carried it, reduced to a `→ why:` pointer at it. Those pointers are **unguarded**: nothing in the tree resolves a `→ why: DECISIONS.md, *title*` against a heading that exists, where the SPEC-side `→ why: R-nnn` family gained an assertion in the same batch.
