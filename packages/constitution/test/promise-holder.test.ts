@@ -333,14 +333,39 @@ describe('delegated: the blind question opens and the room\'s answer binds', () 
     expect(s.settingState('chamber').settledBy).toBe('convenor');
   });
 
-  it('a collecting question blocks 🍾 whether or not it is a judge-gate (§9.0b)', () => {
+  // **…except on a setting that has left the surface, which 🍾 answers on the
+  // way through** (Ed, 2026-08-29, entry 259; §9.0b as amended, → why: R-080).
+  // 🤖's card went with backlog 251 and the setting stayed in the catalogue for
+  // replay, so a founder who had delegated it held a question no member could
+  // be served and no card could reclaim: the start refused for ever. The
+  // catalogue's `retiredAnswer` is what 🍾 resolves it at, once, its empty
+  // electorate the record that nobody answered. What this file used to lock
+  // here — that a collecting non-gate blocks the start — is still true of every
+  // setting that has a card, and `begin.test.ts`'s Q626 trio locks it.
+  it('a question on a retired setting is answered by 🍾, not waited on (§9.0b, entry 259)', () => {
     const { s } = preStart();
     s.confirmStartingText(2, 'The clubhouse shall be kept open.');
     penEverything(s, 2, ['machines']);
     expect(s.readiness().ready).toBe(true);
-    s.delegate(2, 'machines'); // ordinary, not a gate
-    expect(s.readiness().holds).toEqual([{ setting: 'machines', why: 'collecting' }]);
-    expect(thrown(() => s.begin(2))).toMatch(/cannot begin while 'machines' is still being decided/);
+    s.delegate(2, 'machines'); // ordinary, not a gate — and no card since 251
+    expect(s.settingState('machines').collecting).toBe(true);
+    const r = s.readiness();
+    expect(r.holds).toEqual([]);
+    expect(r.ready).toBe(true);
+    expect(r.questions.map((q) => q.setting)).not.toContain('machines');
+    s.begin(2);
+    const st = s.settingState('machines');
+    expect(st.collecting).toBe(false);
+    expect(st.value).toEqual({ enabled: false, budget: 0 });
+    expect(st.settledBy).toBe('ceremony');
+    // the line, immediately before the start that wrote it — what follows
+    // `constituted` is the release news 🍾's own batch owes (entry 162)
+    const log = s.logEntries().map((e) => e.event);
+    const at = log.findIndex((e) => e.type === 'constituted');
+    expect(log[at - 1]).toEqual({ type: 'question-resolved', t: 2, setting: 'machines',
+      value: { enabled: false, budget: 0 }, distribution: [], electorate: [] });
+    // and settled it is still no row on the 🍾 card: it has no card to name
+    expect(s.readiness().questions.map((q) => q.setting)).not.toContain('machines');
   });
 
   it('post-start the same verb is a hand-over: the value stands, only the holder moves', () => {

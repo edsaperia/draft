@@ -73,6 +73,15 @@ export interface CatalogueEntry {
   deps: readonly SettingId[];
   /** Judging waits on this setting being settled (§9.0b; the mock's 8). */
   judgeGate: boolean;
+  /**
+   * **The answer a question nobody can be asked reads as** (entry 259, R-080).
+   * Set only on a setting that has left the surface (SPEC §9.7.1 *surface:
+   * none*) while staying in the catalogue for replay: a question delegated on
+   * it before its card went can be answered by nobody, so 🍾 resolves it at
+   * this value, once, and the readiness readout never lists it — collecting or
+   * settled. A setting without the field behaves exactly as it always has.
+   */
+  retiredAnswer?: SettingValue;
 }
 
 const ladderOrder = (rungs: readonly string[]) =>
@@ -260,8 +269,15 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   // nothing and counts toward no quorum, so switching it re-rates nothing
   // already decided. A member could put the document through an AI
   // themselves; the tool is a convenience for the membership.
+  //
+  // The card left the surface on 2026-08-29 (R-078) and the setting stayed,
+  // so a founder who delegated 🤖 before then holds a question no member can
+  // be served and no card can take back — a permanent pre-start wedge (entry
+  // 259). `retiredAnswer` is what 🍾 resolves it at: the value every shape in
+  // `shapes.ts` folds it to anyway. → why: R-080.
   { id: 'machines', glyph: '🤖', kind: 'ordinary',
     delegable: true, valueType: 'machines',
+    retiredAnswer: { enabled: false, budget: 0 },
     consent: {
       ask: 'the most machine proposing you will accept',
       order: (a, b) => {

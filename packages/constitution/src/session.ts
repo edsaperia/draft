@@ -1704,6 +1704,25 @@ export class ConstitutionSession {
       }
       return { setting: r.setting, power: r.power };
     });
+    // **A question nobody could answer reads as answered at its default,
+    // once, with a line in the log** (Ed, 2026-08-29, entry 259; → why:
+    // R-080). 🤖's card left the surface while the setting stayed for replay,
+    // so a founder who had delegated it held a question no member could be
+    // served and no card could reclaim — the start refused for ever. The
+    // moment is 🍾 rather than first sight because a fold cannot emit and a
+    // sweep somewhere else would be a second mechanism; and it is *here*,
+    // past both refusals and past `laidDown`'s validation, so a refused Begin
+    // writes nothing. The existing `question-resolved` carries it — a new
+    // event type would be a log-format break for no gain — with
+    // `distribution` and `electorate` empty, which is the record that nobody
+    // answered. Not routed through `maybeResolve`, whose gates are the whole
+    // point of that method. After it the question is no longer collecting, so
+    // nothing can write the line twice.
+    for (const id of MANAGED) {
+      if (!this.retiredQuestion(id) || !this.settings.get(id)!.collecting) continue;
+      this.emit({ type: 'question-resolved', t, setting: id,
+        value: entryOf(id).retiredAnswer!, distribution: [], electorate: [] });
+    }
     // **What 🍾 lays down is read off what it spent, not off a list of
     // causes** (entry 162). The `constituted` fold lays the Text's pair down
     // and spends every pending release, and 158 is about to change what else
@@ -1760,6 +1779,20 @@ export class ConstitutionSession {
    * and not `one-voice` — a second member could not answer it either, so
    * *invite somebody* is the wrong remedy to have been served.
    */
+  /**
+   * **A question on a setting that has left the surface is nobody's to
+   * answer** (entry 259, Ed 2026-08-29; → why: R-080). The catalogue carries
+   * the fact — `retiredAnswer`, the value 🍾 resolves such a question at — so
+   * the module never has to read the page. Three sites share the predicate:
+   * `waitingWith` (it holds nothing up), `readiness` (it is in neither list,
+   * collecting or settled — the 🍾 card prints those rows and would print a
+   * bare id, having no card to take a title from) and `begin` (it writes the
+   * line). `machines` is the only entry that carries it.
+   */
+  private retiredQuestion(id: SettingId): boolean {
+    return entryOf(id).retiredAnswer !== undefined;
+  }
+
   private waitingWith(): WaitingHold[] {
     const invitationOut = [...this.members.values()]
       .some((m) => m.arrivedAtT === null && !m.removed);
@@ -1774,6 +1807,11 @@ export class ConstitutionSession {
         // confirmStartingText refuses post-start, so the document would be
         // wedged with no text and no way to propose one (2026-08-22).
         if (e.id === 'startingText') return !this.textConfirmedFlag;
+        // a retired question holds nothing up: 🍾 answers it on the way
+        // through (entry 259). Written ahead of the gate clause as well as
+        // the collecting one so a retired judge-gate could not slip past —
+        // none exists, and the field is not the place to find that out.
+        if (this.retiredQuestion(e.id)) return false;
         return st.collecting || (e.judgeGate && st.settledBy === null);
       })
       .map((e) => {
@@ -1828,9 +1866,15 @@ export class ConstitutionSession {
   } {
     const E = motionElectorateOf(this.members.values());
     const eIds = new Set(E.map((m) => m.id));
-    const open = MANAGED.filter((id) => this.settings.get(id)!.collecting);
+    // a retired question is in neither list, before 🍾 or after it (entry
+    // 259): nobody owes it an answer, and a settled row for it would be the
+    // same bare id the founder could do nothing with
+    const open = MANAGED.filter((id) => !this.retiredQuestion(id)
+      && this.settings.get(id)!.collecting);
     const questions = MANAGED
-      .filter((id) => { const st = this.settings.get(id)!; return st.collecting || st.distribution !== null; })
+      .filter((id) => {
+        if (this.retiredQuestion(id)) return false;
+        const st = this.settings.get(id)!; return st.collecting || st.distribution !== null; })
       .map((id) => {
         const st = this.settings.get(id)!;
         let answered = 0;

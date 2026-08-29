@@ -281,6 +281,30 @@ describe('🍾 begin — the founder starts the document (Q443)', () => {
     expect(s.constitutedAtT).toBe(3);
   });
 
+  // Entry 259 (Ed, 2026-08-29; R-080): a delegated question on a setting that
+  // has left the surface — 🤖 since backlog 251 — is resolved by 🍾 rather
+  // than waited on. The line is written only when the start actually goes
+  // through: a Begin refused on a question that *does* have a card must leave
+  // the log exactly as it found it, or a founder pressing 🍾 too early would
+  // spend the one resolution the retired question ever gets.
+  it('a refused Begin writes no line for the retired question (entry 259)', () => {
+    const s = ConstitutionSession.open({ title: 'T', slug: 't8',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 0);
+    s.confirmStartingText(1, 'x');
+    setAllBut(s, ['rate', 'machines']);
+    s.delegate(1, 'rate');
+    s.delegate(1, 'machines');
+    const r = s.readiness();
+    expect(r.waiting).toEqual(['rate']); // 🤖 is not a hold, and not a question
+    expect(r.questions.map((q) => q.setting)).toEqual(['rate']);
+    const before = s.logEntries().length;
+    expect(() => s.begin(2)).toThrow(/'rate' is still being decided/);
+    expect(s.constitutedAtT).toBeNull();
+    expect(s.logEntries().length).toBe(before);
+    expect(s.logEntries().some((e) => e.event.type === 'question-resolved')).toBe(false);
+    expect(s.settingState('machines').collecting).toBe(true);
+  });
+
   it('an invitation outstanding at 🍾 is an offer awaiting the person (Q441/457)', () => {
     const s = ConstitutionSession.open({ title: 'T', slug: 't2',
       convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 0);
