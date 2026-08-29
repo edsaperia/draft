@@ -516,6 +516,12 @@
     const el = node ? (node.nodeType === 1 ? node : node.parentElement) : null;
     const inCol = !!(el && el.closest && el.closest('#prose, #charter .prose'));
     if (!inCol && ae && ae !== document.body && ae !== document.documentElement) return;
+    // **Space with no caret in the column is the reader's page-down**, not a
+    // keystroke: with no caret the character lands at the end of the last
+    // clause, so swallowing Space would take scrolling away from every reader
+    // and open a draft they never asked for. A caret in the column means they
+    // are writing, and there Space is a space like any other.
+    if (ev.key === ' ' && !inCol) return;
     if (!canEditText()) return;
     // post-🍾 the character opens the editing card straight away — the card
     // is the open card, and opening it is what leaves edit mode — so the

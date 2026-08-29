@@ -1948,7 +1948,10 @@
     // a gap never merges with a neighbour: an insertion at a boundary is its
     // own hunk (`start === end`), and joining it to the clause beside it would
     // turn a pure insert into that clause's rewrite
-    for (const s of isGapKey(key) || s0IsGap(d) ? [] : d.sites) {
+    // The gap is taken out of the candidate list rather than the list being
+    // emptied: a draft that already holds one still merges two adjacent
+    // *clauses* into one run, which is what a run is for.
+    for (const s of isGapKey(key) ? [] : d.sites.filter((x) => !x.keys.some(isGapKey))) {
       const first = docIndexOfKey(s.keys[0]);
       const last = docIndexOfKey(s.keys[s.keys.length - 1]);
       // adjacency is literal: a heading in between means DOC[last+1] is the
@@ -1970,10 +1973,6 @@
     d.sites.sort((a, b) => docIndexOfKey(a.keys[0]) - docIndexOfKey(b.keys[0]));
     return { site: s, offset: 0 };
   }
-  // `for … of` above cannot test each site, so: does the draft already hold a
-  // gap site? A gap site stays alone whichever side the next keystroke lands.
-  const s0IsGap = (d) => d.sites.some((s) => s.keys.some(isGapKey));
-
   // What a site records about each block it replaces. The block *type* travels
   // with it (Ed, 2026-08-17) so a heading still reads as a heading in the lane
   // and in the proposal — otherwise editing a section title alongside its
@@ -5082,8 +5081,14 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     DOC.forEach((l, i) => { if ((l.t === 'p' || l.t === 'h') && !l.key) l.key = (l.t === 'h' ? 'h' : 'c') + i; });
     // **the trailing gap** (backlog 204): the host's `blocksOf` appends one keyed
     // by engine line; a fixture hands in none, so it takes one keyed by index —
-    // rendered only in edit mode, and never on a closed document
-    if (DOC.length && !DOC.some((l) => l.gap) && !closedMode && !DOC.some((l) => /^[US]:/.test(l.key || ''))) {
+    // rendered only in edit mode, and never on a closed document.
+    // **A host that keys by engine line has already decided** (`L<n>`): it
+    // appends the gap itself, and deliberately omits it for the empty
+    // document, whose one empty clause *is* the place to write (Q649 (a)) —
+    // so a second gap here would draw two blank paragraphs on every empty
+    // document and fail `journey --empty-text`'s *no trailing gap*.
+    const hostKeyed = DOC.some((l) => /^L\d+$/.test(l.key || ''));
+    if (DOC.length && !hostKeyed && !DOC.some((l) => l.gap) && !closedMode && !DOC.some((l) => /^[US]:/.test(l.key || ''))) {
       DOC.push({ t: 'p', x: '', key: 'G' + DOC.length, gap: true });
     }
     HEADS = DOC.filter((l) => l.t === 'h').map((l) => l.level ?? 1);
