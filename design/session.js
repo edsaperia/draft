@@ -517,7 +517,10 @@
   // a proposed new section stands in the gap it would fill.
   function docIndexOf(g, siteKey) {
     if (g.insertAfterKey) return DOC.findIndex((l) => l.key === g.insertAfterKey) + 0.5;
-    return DOC.findIndex((l) => l.key === (siteKey ?? (g.keys ?? [])[0]));
+    // `docIndexOfKey` reads a gap's own place — half a step after the block
+    // before it — so a draft on the gap at the very start sorts above the
+    // first clause rather than at findIndex's -1 (backlog 204)
+    return docIndexOfKey(siteKey ?? (g.keys ?? [])[0]);
   }
 
   // What the rail quotes from a suggestion. A race carries one per proposal —
@@ -878,7 +881,9 @@
     const g = SUGGS.find((x) => x.id === id);
     if (!g && extraMeta.has(id)) return extraMeta.get(id).anchor() || null;
     if (!g) return null;
-    if (g.insertAfterKey) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"]');
+    // a gap draft hangs on its own held-open anchor, including the one at the
+    // very start of the column, whose `insertAfterKey` is null (backlog 204)
+    if (g.insertAfterKey || g.gapKey) return doc.querySelector('.insert-anchor[data-anchor="' + id + '"]');
     const k = siteKey || (g.keys ?? [])[0] || (g.pair && g.pair[0].key);
     // The entry has to stand where its wire lands (Ed, 264): while the composer
     // is open the clause is a card, and a rail entry levelled against the
@@ -2352,8 +2357,13 @@
   const draftRowState = () => {
     const d = draftOf();
     const sites = d && d.unproposed ? d.sites : [];
-    const changed = sites.some((s) => s.text !== s.origin.map((x) => x.text).join('\n'));
-    return { count: sites.length, changed };
+    // **The middle counts places that have *changed*** (SURFACE K31, Q1089),
+    // which is not the same as places the draft has touched: type a character
+    // into a clause and take it out again and the site survives with its
+    // origin's own wording, so `sites.length` would say *1 place changed*
+    // beside a greyed commit.
+    const dirty = sites.filter((s) => s.text !== s.origin.map((x) => x.text).join('\n'));
+    return { count: sites.length, changedCount: dirty.length, changed: dirty.length > 0 };
   };
   function signControlHtml(d) {
     const base = SIGNING();
@@ -3256,6 +3266,24 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         '" contenteditable="false">' + chips + '</span>';
     };
 
+    // **A gap at the very start has no block before it** (backlog 204, Q261:
+    // *at the very start on the gap before it*). `G0`'s `insertAfterKey` is
+    // null, so the anchor the gap card hangs on cannot be emitted after a
+    // neighbour — it is emitted here, above the first block, or the draft
+    // would render nowhere at all and the keystroke that opened it would look
+    // as though it had done nothing.
+    const headIns = SUGGS.find((g) => g.gapKey && g.insertAfterKey == null);
+    if (headIns) {
+      html += '<div class="insert-anchor" data-anchor="' + headIns.id + '" title="' +
+        esc(plainLabel(headIns.qLabel)) + ' — a section proposed for this gap"' +
+        anchWash(headIns, openId === headIns.id) + '>' +
+        '<span class="chipcol"><span class="achip"' + chipStyle(headIns) + ' data-anchor="' + headIns.id + '">' +
+        markOf(headIns) + '</span></span></div>';
+      if (openId === headIns.id && !cardDone) {
+        cardDone = true; html += '</div>' + suggCardHtml(headIns) + PROSE();
+      }
+    }
+
     for (const line of DOC) {
       if (line.t === 'title') { html += '<div class="doctitle">' + esc(line.x) + '</div>'; continue; }
       let secN = -1;
@@ -3399,7 +3427,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       const rs = draftRowState();
       const pen = MAY_PEN();
       html += proposalRowHtml({
-        count: rs.count, changed: rs.changed, pen, disabled: !rs.changed,
+        count: rs.changedCount, changed: rs.changed, pen, disabled: !rs.changed,
         discardDisabled: !rs.count,
         title: !rs.changed ? 'Nothing has changed yet — type in the document to start a draft'
           : pen ? 'Review and amend the document' : 'Review and propose this',
