@@ -109,6 +109,13 @@ export interface MemberRowView {
   /** The removal motion running against them, if one is (entry 94): the ❌ door's pending list. */
   removalPending: string | null;
   /**
+   * Whether the last mail to this address gave up (SURFACE E34): the founder's
+   * ✉️ row under *Invitees* says *that did not send* off this, and 📨 clears
+   * it. Public like the rest of the register — the address is already here,
+   * and naming a dead one to the room discloses nothing new.
+   */
+  mailGaveUp: boolean;
+  /**
    * How this member got in, and whose act it was (Q524). Public like the rest
    * of the register — a constitution that lists its members can say how each
    * of them came to be one, and it is what lets a member's own 🏛️ grant name
@@ -169,6 +176,12 @@ export interface MemberView {
    */
   owedReleases: Array<{ id: string; at: number;
     releases: Array<{ setting: PowerKey; power: Power }> }>;
+  /**
+   * The sender passes whose mail gave up and are still owed your OK (SURFACE
+   * E34), oldest first: one entry per pass, carrying the addresses that could
+   * not be reached. Shaped exactly like `owedReleases`, and for its reasons.
+   */
+  owedMailGiveUps: Array<{ id: string; at: number; addresses: string[] }>;
   motions: MotionView[];
   myHeldMotion: string | null;
   /** The founder's 👑 questions: a parked motion, or (Q440) a text adoption with `text`. */
@@ -328,6 +341,7 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       isConvenor: rec.id === convenorId,
       arrival: { ...rec.arrival },
       removalPending: removalPending.get(rec.id) ?? null,
+      mailGaveUp: rec.mailGaveUp,
     });
   }
   const departures = s.departures().map((d) => {
@@ -358,6 +372,12 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
           .filter((b) => me.releasesOwed.has(b.id))
           .sort((a, b) => a.t - b.t)
           .map((b) => ({ id: b.id, at: b.t, releases: b.releases.map((r) => ({ ...r })) }))
+      : [],
+    owedMailGiveUps: me
+      ? [...s.mailGiveUpBatchRecords().values()]
+          .filter((b) => me.mailGaveUpOwed.has(b.id))
+          .sort((a, b) => a.t - b.t)
+          .map((b) => ({ id: b.id, at: b.t, addresses: [...b.addresses] }))
       : [],
     motions,
     myHeldMotion,

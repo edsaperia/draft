@@ -181,6 +181,26 @@ export type ConstitutionEvent =
   | { type: 'release-owed'; t: number; batch: string; member: MemberId;
       releases: Array<{ setting: PowerKey; power: Power }> }
   | { type: 'release-ok'; t: number; batch: string; member: MemberId }
+  /* -- mail that gave up (SURFACE E34, Q947 (c), backlog 173) -------------- */
+  /**
+   * **One sender pass's worth of dead mail is one piece of news** (entry 162's
+   * rule applied to mail). The outbox gives up on a row at its attempt cap and
+   * revokes the token it carried; until this event the fact lived nowhere a
+   * member could read it. The batch is the act — one pass — so a pass that
+   * killed three mails is one card and one OK, exactly as a release batch is.
+   *
+   * `member` is who is *told*, and it is **null when nobody was**: the
+   * addresses still have to be recorded, because the founder's ✉️ row reads
+   * the subject's own flag rather than anybody's owed set, and a document
+   * whose founder is a clerk has no member to tell. `addresses` rides every
+   * copy of the event, so the fold marks the subjects whichever one it meets
+   * first and the batch's contents never need a second event.
+   */
+  | { type: 'mail-gave-up'; t: number; batch: string; member: MemberId | null;
+      addresses: string[] }
+  | { type: 'mail-gave-up-ok'; t: number; batch: string; member: MemberId }
+  /** 📨: the founder puts the invitation back in the queue (SURFACE E34). */
+  | { type: 'mail-resent'; t: number; member: MemberId; by: MemberId }
   /* -- motions (§9.6, v0.48) ---------------------------------------------- */
   | { type: 'motion-opened'; t: number; motion: MotionId; by: MemberId | null;
       payload: MotionPayload; route: MotionRoute; stake: number; why?: string }
@@ -347,6 +367,23 @@ export interface MemberRecord {
    */
   releasesOwed: Set<string>;
   releasesGiven: Set<string>;
+  /**
+   * Mail-give-up batches this member is owed the news of, minus the ones they
+   * have acknowledged (SURFACE E34). **Separate from `okOwed` for
+   * `releasesOwed`'s own reason**: this is news about a mail, not about a
+   * value, and landing it in `okOwed` would fire a setting's value-news card
+   * with the wrong copy. The addresses live once on the session
+   * (`mailGiveUpBatchRecords`), never copied per member.
+   */
+  mailGaveUpOwed: Set<string>;
+  mailGaveUpGiven: Set<string>;
+  /**
+   * **The subject's own flag**, not the audience's: true when a mail to *this*
+   * address reached the outbox's attempt cap, cleared by a re-send. It is what
+   * the founder's ✉️ row under *Invitees* reads to say *that did not send*,
+   * and it is live state where the batches above are history.
+   */
+  mailGaveUp: boolean;
   /** An invitation that expired unopened at the close (SPEC §4.6). */
   invitationExpired: boolean;
   /** The member's closing acknowledgment — signature and comment (SPEC §4.6). */
@@ -363,6 +400,17 @@ export interface ReleaseBatchRecord {
   id: string;
   t: number;
   releases: Array<{ setting: PowerKey; power: Power }>;
+}
+
+/**
+ * One sender pass's worth of mail that gave up (SURFACE E34), folded from the
+ * `mail-gave-up` events themselves like `ReleaseBatchRecord`. The addresses are
+ * kept here, once; the members hold only the id.
+ */
+export interface MailGiveUpBatchRecord {
+  id: string;
+  t: number;
+  addresses: string[];
 }
 
 export type SettledBy = 'convenor' | 'ceremony' | 'motion' | 'crown';

@@ -1040,6 +1040,11 @@ var CONSTITUTION = (() => {
       __publicField(this, "lastReleaseT", null);
       __publicField(this, "lastReleaseBatch", null);
       __publicField(this, "nextReleaseN", 1);
+      /** The mail-give-up batches, by id (SURFACE E34). One pass, one batch, so
+       *  there is no open-batch pair here — the counter alone, moved in the fold
+       *  for `nextReleaseN`'s reason. */
+      __publicField(this, "mailGiveUpBatches", /* @__PURE__ */ new Map());
+      __publicField(this, "nextMailGiveUpN", 1);
       __publicField(this, "nextMemberN", 1);
       __publicField(this, "nextMotionN", 1);
       __publicField(this, "nextCrownN", 1);
@@ -1198,6 +1203,9 @@ var CONSTITUTION = (() => {
               rec.okGiven = prev.okGiven;
               rec.releasesOwed = prev.releasesOwed;
               rec.releasesGiven = prev.releasesGiven;
+              rec.mailGaveUpOwed = prev.mailGaveUpOwed;
+              rec.mailGaveUpGiven = prev.mailGaveUpGiven;
+              rec.mailGaveUp = prev.mailGaveUp;
               rec.lastActivityT = prev.lastActivityT;
             } else {
               rec.lastActivityT = Math.max(rec.lastActivityT, this.convenor.lastActivityT);
@@ -1451,6 +1459,36 @@ var CONSTITUTION = (() => {
           m.releasesOwed.delete(event.batch);
           m.releasesGiven.add(event.batch);
           this.touch(event.member, event.t);
+          break;
+        }
+        case "mail-gave-up": {
+          if (!this.mailGiveUpBatches.has(event.batch)) {
+            this.mailGiveUpBatches.set(
+              event.batch,
+              { id: event.batch, t: event.t, addresses: [...event.addresses] }
+            );
+            this.nextMailGiveUpN += 1;
+          }
+          for (const rec of this.members.values()) {
+            if (event.addresses.some((a) => a.toLowerCase() === rec.email.toLowerCase())) {
+              rec.mailGaveUp = true;
+            }
+          }
+          if (event.member !== null) {
+            this.members.get(event.member).mailGaveUpOwed.add(event.batch);
+          }
+          break;
+        }
+        case "mail-gave-up-ok": {
+          const m = this.members.get(event.member);
+          m.mailGaveUpOwed.delete(event.batch);
+          m.mailGaveUpGiven.add(event.batch);
+          this.touch(event.member, event.t);
+          break;
+        }
+        case "mail-resent": {
+          this.members.get(event.member).mailGaveUp = false;
+          this.touch(event.by, event.t);
           break;
         }
         case "floor-recomputed":
@@ -1784,6 +1822,9 @@ var CONSTITUTION = (() => {
         okGiven: /* @__PURE__ */ new Set(),
         releasesOwed: /* @__PURE__ */ new Set(),
         releasesGiven: /* @__PURE__ */ new Set(),
+        mailGaveUpOwed: /* @__PURE__ */ new Set(),
+        mailGaveUpGiven: /* @__PURE__ */ new Set(),
+        mailGaveUp: false,
         invitationExpired: false,
         closingAck: null
       };
@@ -2465,6 +2506,59 @@ var CONSTITUTION = (() => {
       if (!m) throw new Error(`unknown member '${member}'`);
       if (!m.releasesOwed.has(batch)) return;
       this.emit({ type: "release-ok", t, batch, member });
+    }
+    /**
+     * **A mail that gave up is told** (SURFACE E34, Q947 (c), backlog 173).
+     * `oweReleases`' sibling: the outbox hands over the whole of one sender
+     * pass's give-ups at once, and one pass is the act — entry 162's rule is
+     * that the boundary of the group is the act, so a pass that killed three
+     * mails is one batch, one card and one OK.
+     *
+     * **Two differences from `oweReleases`, both deliberate.** The convenor is
+     * *not* skipped: there they are the actor, and here nobody in the room is —
+     * E34's audience is *the founder; every member*. And where the audience is
+     * empty the event is still emitted once with `member: null`, because the
+     * addresses are a fact about the register that the founder's ✉️ row reads
+     * whether or not there was anybody to tell.
+     *
+     * The unarrived skip stays exactly as it is, and it is the whole of E34's
+     * **never the invitee**: an invitee has `arrivedAtT === null` by definition,
+     * and they are precisely the person the mail could not reach.
+     */
+    mailGaveUp(t, addresses) {
+      if (addresses.length === 0) return;
+      const batch = `mgu-${this.nextMailGiveUpN}`;
+      const list = [...addresses];
+      let told = false;
+      for (const m of this.members.values()) {
+        if (m.arrivedAtT === null || m.removed) continue;
+        told = true;
+        this.emit({ type: "mail-gave-up", t, batch, member: m.id, addresses: list });
+      }
+      if (!told) this.emit({ type: "mail-gave-up", t, batch, member: null, addresses: list });
+    }
+    /** The OK on one pass's dead mail — `ackRelease`'s posture exactly: a batch
+     *  this member is not owed returns silently rather than throwing at a page
+     *  that was a poll behind. */
+    ackMailGaveUp(t, member, batch) {
+      this.requireOpen("acknowledging");
+      const m = this.members.get(member);
+      if (!m) throw new Error(`unknown member '${member}'`);
+      if (!m.mailGaveUpOwed.has(batch)) return;
+      this.emit({ type: "mail-gave-up-ok", t, batch, member });
+    }
+    /**
+     * 📨 — put the invitation back in the queue (SURFACE E34). Only an invitee
+     * can be re-sent to: somebody who has arrived has the document, and somebody
+     * who is gone is not being invited to anything. The re-send is an ordinary
+     * queued mail from there on, and if it gives up too a fresh batch is raised.
+     */
+    resendInvite(t, member, by) {
+      this.requireOpen("re-sending an invitation");
+      const m = this.members.get(member);
+      if (!m || m.removed) throw new Error(`unknown member '${member}'`);
+      if (m.arrivedAtT !== null) throw new Error("they are already here — there is nothing to re-send");
+      this.emit({ type: "mail-resent", t, member, by });
     }
     afterRosterChange(t, cause, member) {
       const shifted = MANAGED.filter((id) => {
@@ -3204,6 +3298,9 @@ var CONSTITUTION = (() => {
     releaseBatchRecords() {
       return this.releaseBatches;
     }
+    mailGiveUpBatchRecords() {
+      return this.mailGiveUpBatches;
+    }
     crownQuestionRecords() {
       return this.crownQuestions;
     }
@@ -3532,7 +3629,8 @@ var CONSTITUTION = (() => {
         lapsed: rec.lapsed,
         isConvenor: rec.id === convenorId,
         arrival: { ...rec.arrival },
-        removalPending: removalPending.get(rec.id) ?? null
+        removalPending: removalPending.get(rec.id) ?? null,
+        mailGaveUp: rec.mailGaveUp
       });
     }
     const departures = s.departures().map((d) => {
@@ -3563,6 +3661,7 @@ var CONSTITUTION = (() => {
       // newest last, so the rail meets the acts in the order they happened; a
       // seat with no member record gets [], exactly as `owedOks` does
       owedReleases: me ? [...s.releaseBatchRecords().values()].filter((b) => me.releasesOwed.has(b.id)).sort((a, b) => a.t - b.t).map((b) => ({ id: b.id, at: b.t, releases: b.releases.map((r) => ({ ...r })) })) : [],
+      owedMailGiveUps: me ? [...s.mailGiveUpBatchRecords().values()].filter((b) => me.mailGaveUpOwed.has(b.id)).sort((a, b) => a.t - b.t).map((b) => ({ id: b.id, at: b.t, addresses: [...b.addresses] })) : [],
       motions,
       myHeldMotion,
       crownTasks: isConvenor ? [...s.crownQuestionRecords().values()].filter((q) => q.status === "pending").map((q) => ({ id: q.id, motion: q.motion, ...q.text ? { text: q.text } : {} })) : [],
