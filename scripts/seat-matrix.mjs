@@ -150,6 +150,13 @@ const AUDIENCE = {
     (s, step, ctx, ev) => isMember(s) && s.name !== ctx.actorOf(ev) &&
       ctx.stoodAt[s.name] !== undefined && ctx.stoodAt[s.name] < ev.at,
   'the membership': (s) => isMember(s),
+  // E34, a mail that gave up. **Never the invitee** needs no clause here: an
+  // invitee has not arrived, the module skips the unarrived, and no seat in
+  // this table is one at the step that raises it. The `mailfail` step is
+  // `ifHat: 'member'` — a clerk founder holds no member record, so the module
+  // has no owed set to put the news in, and the card cannot reach them.
+  'the founder; every member — **never the invitee**, who is exactly the person the mail could not reach':
+    (s) => s.role === 'founder' || isMember(s),
   // no invitee seat stands in this table: every invited seat follows its link
   'every member and invitee': (s) => isMember(s),
   // E25's audience is the people who are *not* in the room. The applicant
@@ -217,6 +224,13 @@ const STEPS = [
   // first live step and would be red here for the right reason.
   { id: 'seat-stranger', epoch: 'before', kind: 'seat', seat: 'stranger',
     events: [E8('grant-pen'), { id: 'E25', key: 'strlogin', at: 'seat-stranger' }] },
+  // **E34, a mail that gave up** (Q947 (c), backlog 173). Placed here rather
+  // than beside `invite-early`, so that three seats are already stood and the
+  // audience is asserted on both sides of the line at once: the founder and
+  // the two members carry `mail:`, the stranger does not. The rail key carries
+  // a batch id, hence the prefix match.
+  { id: 'mailfail', epoch: 'before', kind: 'mailfail', seat: 'founder', ifHat: 'member',
+    events: [{ id: 'E34', key: 'mail:', at: 'mailfail' }] },
   { id: 'ok-pen', epoch: 'before', kind: 'ok', seat: 'founder', key: 'grant-pen', events: [E8('grant-pen'), E8('grant-shield')] },
   { id: 'ok-shield', epoch: 'before', kind: 'ok', seat: 'founder', key: 'grant-shield', events: [E8('grant-pen'), E8('grant-shield')] },
   // 💤 is the one setting the page cannot rebuild from the module: `hydrateS`
@@ -691,6 +705,35 @@ const RUN = {
     }
     return `${step.cmd} as ${step.seat}` + (step.reload ? ' · page reloaded, so the wire-set settings are seen' : '');
   },
+  /**
+   * **A mail that gave up** (SURFACE E34). Invite an address no seat will ever
+   * follow, then drive the outbox to its attempt cap for it through the
+   * dev-only forced give-up — six attempts and ~3 hours otherwise, and the
+   * reserved-TLD seam is deliberately a *retire* rather than a give-up. The
+   * address is the step's own and not a seat's: the give-up runs the outbox's
+   * real `give`, and a seat that had not yet followed its link would be
+   * standing one up afterwards.
+   */
+  mailfail: async (step, D) => {
+    if (step.ifHat && step.ifHat !== D.hat) return `skipped: the founder is a ${D.hat}`;
+    const to = `dead${D.stamp}@example.org`;
+    const inv = await cmdAs(D, step.seat, 'invite', { email: to });
+    if (inv.status !== 200) throw new Error(`invite ${to} → ${inv.status} ${JSON.stringify(inv.body)}`);
+    // let the sender pass deliver it first: a forced give-up is about a mail
+    // that has been offered, and the walk should meet the real sequence
+    await sleep(1200);
+    // from the seat's own page, so the Origin the dev route checks is the
+    // document's own — `page.evaluate` fetches relative to it
+    const r = await D.seats[step.seat].page.evaluate(async ([slug, addr]) => {
+      const res = await fetch('/api/dev/outbox/give-up', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ slug, to: addr }),
+      });
+      return { status: res.status, body: await res.json().catch(() => null) };
+    }, [D.slug, to]);
+    if (r.status !== 200) throw new Error(`forced give-up → ${r.status} ${JSON.stringify(r.body)}`);
+    return `invited ${to} and drove its mail to the attempt cap · ${JSON.stringify(r.body)}`;
+  },
   invite: async (step, D) => {
     for (const who of step.who) {
       const r = await cmdAs(D, 'founder', 'invite', { email: D.seats[who].email });
@@ -993,8 +1036,8 @@ say(`tables     · SURFACE §2 events ${EVENTS.length} rows · seats ${SEATS.len
 // a row means there are events this table does not cover, which is the same
 // condition as an unread audience cell — so it goes to the same exit code
 // rather than printing a ✗ into a run that then reports itself green.
-const shape = EVENTS.length === 33 ? []
-  : [`SURFACE §2 has ${EVENTS.length} event rows, not the 33 this table was written against`];
+const shape = EVENTS.length === 35 ? []
+  : [`SURFACE §2 has ${EVENTS.length} event rows, not the 35 this table was written against`];
 for (const s of shape) say('  ? ' + s);
 
 const browser = await chromium.launch();

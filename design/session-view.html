@@ -1163,6 +1163,26 @@
     return out.sort((a, b) => a.at - b.at);
   };
   const releaseBatch = (id) => releaseBatches().find((b) => b.id === id) || null;
+  // **And the same for a mail that gave up** (SURFACE E34). One sender pass is
+  // one batch, one card and one OK; the module is the truth in both directions
+  // here too, so nothing about a batch is kept per device and `ackPersists`
+  // never hears of it. Oldest first.
+  const mailGiveUpBatches = () => {
+    if (!cs) return [];
+    if (cs.isRemote) return (cs.v && cs.v.view && cs.v.view.owedMailGiveUps) || [];
+    const id = viewerId(); if (!id) return [];
+    let rec = null;
+    try { rec = cs.memberRecords().get(id) || null; } catch (e) { return []; }
+    if (!rec || !rec.mailGaveUpOwed) return [];
+    const out = [];
+    try {
+      cs.mailGiveUpBatchRecords().forEach((b) => {
+        if (rec.mailGaveUpOwed.has(b.id)) out.push({ id: b.id, at: b.t, addresses: b.addresses });
+      });
+    } catch (e) { return []; }
+    return out.sort((a, b) => a.at - b.at);
+  };
+  const mailGiveUpBatch = (id) => mailGiveUpBatches().find((b) => b.id === id) || null;
   // **One press dismisses the task** (Q846, Ed: *I click a queue-card, click
   // OK, then click the queue-card again, then click OK, then the queue card
   // goes*). The press adds the key and sends `give-ok` in the same act, and
@@ -1214,6 +1234,13 @@
   const syncOwedReleases = () => {
     for (const b of releaseBatches()) {
       const k = 'rel:' + b.id;
+      if (!okInFlight.has(k)) S.okd.delete(k);
+    }
+  };
+  /** The same rule for a give-up batch (SURFACE E34). */
+  const syncOwedMailGiveUps = () => {
+    for (const b of mailGiveUpBatches()) {
+      const k = 'mail:' + b.id;
       if (!okInFlight.has(k)) S.okd.delete(k);
     }
   };
@@ -1965,7 +1992,7 @@
   ];
   const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
     GATES.find((c) => c.k === k) || powerCard(k) || admitCard(k) || recordCard(k) ||
-    releaseCard(k);
+    releaseCard(k) || mailGiveUpCard(k);
   // **The governance tab group** (403/405, Ed 2026-08-19): every held-able
   // setting is three questions — the value, ✒️ who-has-the-pen, 🛡️ do-carried-changes-need-the-Founder’s-OK — drawn as a
   // pile: the value’s tab in front, the two power tabs beneath. The tabs
@@ -2052,6 +2079,24 @@
   // page's optimism until the command's own refresh lands)
   const releaseKeys = () => releaseBatches()
     .filter((b) => !S.okd.has('rel:' + b.id)).map((b) => 'rel:' + b.id);
+  // **A mail that gave up is news to the membership** (SURFACE E34, Q947 (c)).
+  // `releaseCard`'s shape exactly, and for its reasons: a synthetic card with a
+  // dynamic key the module rather than the page is the truth about. The title
+  // states what happened and names neither the batch nor an address — a title
+  // carrying the address would put a fresh string in the copy golden for every
+  // give-up, which is `releaseCard`'s own rule.
+  const MAILCACHE = {};
+  const mailGiveUpCard = (k) => {
+    const mm = /^mail:(.+)$/.exec(k);
+    if (!mm) return undefined;
+    const id = mm[1];
+    if (!MAILCACHE[k]) MAILCACHE[k] = { k, mailgiveup: id, g: '📭', kind: 'constitutional',
+      early: () => true, hide: () => !mailGiveUpBatch(id) };
+    MAILCACHE[k].t = 'An Invitation Did Not Send';
+    return MAILCACHE[k];
+  };
+  const mailGiveUpKeys = () => mailGiveUpBatches()
+    .filter((b) => !S.okd.has('mail:' + b.id)).map((b) => 'mail:' + b.id);
   // **A settled motion files behind the rule it was about** (Q942, entry 72,
   // Ed 2026-08-25: *when a proposal for a change in a setting passes or is
   // rejected, it should leave a tab, the same as with a text amendment*). The
@@ -2715,6 +2760,8 @@
       ? S.okd.has(c.k) : (motionOn(c) ? answeredMotion(c) : true);
     // a laid-down power is news, settled by your OK — the ✒️ admit's own rule
     if (c.release) return S.okd.has(c.k);
+    // and a mail that gave up, which asks only to have been read (E34)
+    if (c.mailgiveup) return S.okd.has(c.k);
     if (c.door) return true;                                   // doors, not decisions
     if (c.isBegin) return constituted();                       // 🍾: settled by the press
     if (c.isClosing) return signedClose();                     // 🥂: settled by your signature
@@ -3057,7 +3104,11 @@
       text: '',
       keys: ['admission', 'invite', 'remove', 'hat', 'applications', 'lapse', 'removal', 'myemail', 'myname', 'mypic'],
       // one admit card per applicant — a task at 🏛️/✏️, news at ✒️ (entry 96)
-      extraKeys: () => admitKeys(),
+      // — and one 📭 per sender pass whose mail gave up (SURFACE E34), news
+      // to the whole membership. Both are enumerated here because the rail
+      // reads a section's own keys: a card no section enumerates is a card
+      // nothing can serve.
+      extraKeys: () => admitKeys().concat(mailGiveUpKeys()),
       // **Members and Applications are subsections** (Ed, 2026-08-18):
       // Members IS the list — 🪪, the tab for invitations, stands beside
       // it, and the bottom row is your own membership wearing the ✋ and
@@ -3133,11 +3184,23 @@
         // under *Proposed for removal* — the motion being the more urgent fact
         // — and wears a **lapsed** pill there, so the subsection they are not
         // in is not the only place that fact could have been read.
+        // **And an invitation that gave up says so, to the founder** (SURFACE
+        // E34): the mail reached the outbox's attempt cap and its link was
+        // revoked, so the person is not sitting on an unopened invitation —
+        // there is nothing in their inbox at all. The line and the 📨 beside
+        // it are the founder's, E34 naming *the founder's ✉️ row*; everybody
+        // else is told once, by the 📭 card, and can do nothing about it.
+        const gaveUpRow = (p) => !p.in && !!p.mailGaveUp && amFounder();
         const memRow = (p) => '<div class="memrow">' + avHtml(p) +
           '<span class="mn">' + esc(p.n || (!p.in && p.e) || 'Anonymous') +
           (p.founder ? ' ' + founderMark() : '') +
           (p.lapsed && p.in ? ' <span class="chip pending">lapsed</span>' : '') +
-          '</span></div>';
+          (gaveUpRow(p) ? ' <span class="chip pending">that did not send</span>' : '') +
+          '</span>' +
+          // outside `.mn`: the name is text and this is a control
+          (gaveUpRow(p) ? '<button class="btn small" data-act="resend-invite" data-member="' +
+            esc(p.mid || '') + '" title="Send the invitation again">📨</button>' : '') +
+          '</div>';
         // **One subsection per status** (entry 95, Ed 2026-08-26: *these are
         // sections of the constitution, one per status, and the document's own
         // text — not a card's*). Q868–Q870 had already found that a flat list
@@ -3276,7 +3339,9 @@
                 ['hat'], false, !!openId) +
               memSub('Invitees', invited.length ? invited.map(memRow).join('')
                 : '<div class="memrow nobody">(no outstanding invitations)</div>',
-                ['invite', 'pw:u:invite', 'pw:a:invite']) +
+                // 📭 stands on the *Invitees* heading (E34): the give-up is
+                // about somebody listed here, and this is where a reader looks
+                ['invite', 'pw:u:invite', 'pw:a:invite'].concat(mailGiveUpKeys())) +
               (policyNow() === 'apply'
                 ? memSub('Applicants', memApplicantRows() ||
                   '<div class="memrow nobody">(no applicants at the moment)</div>', admitKeys()) : '') +
@@ -3382,7 +3447,7 @@
   // put it in front of the founder, and `otherTasksLeft` counting it held every
   // delegated question shut for ever. Whatever makes a task owed must make it
   // served; where it cannot, the task must not block.
-  const railable = (c) => !!c && (!!c.ansFor || !!c.admit || !!c.release ||
+  const railable = (c) => !!c && (!!c.ansFor || !!c.admit || !!c.release || !!c.mailgiveup ||
     SEC.some((s2) => s2.keys.includes(c.k)) ||
     c.k === 'grant-pen' || c.k === 'grant-shield' || c.k === 'grant-voice');
   // **The rail's own set, in one place** (Q773). The rail is what tells a
@@ -4276,6 +4341,10 @@
           // subsection of the register, so the fact has to be on the row the
           // list is built from, not only on the member record behind it
           lapsed: !!rec.lapsed,
+          // and its own dead mail (SURFACE E34), for entry 95's reason: the
+          // *Invitees* row is built from this list, so the fact has to be on
+          // the row and not only on the member record behind it
+          mailGaveUp: !!rec.mailGaveUp,
           role: 'member', in: rec.arrivedAtT !== null, mid: mid2, ans: {}, okd: new Set() });
       } else if (row && rec.removed && !row.founder) {
         const at = S.roster.indexOf(row);
@@ -4287,6 +4356,9 @@
         // straight assignment rather than a one-way latch: a member the room
         // has just put back leaves *Lapsed* on the next render
         row.lapsed = !!rec.lapsed;
+        // straight assignment for lapse's reason: 📨 clears it in the module
+        // and the row must follow on the next render (E34)
+        row.mailGaveUp = !!rec.mailGaveUp;
         syncIdentity(row, rec);
       }
     }
@@ -4690,7 +4762,8 @@
   const signedClose = () => !!(cs && cs.closed && (!viewerIsMember() || mySignature() !== null));
   const closeSignatures = () => (!cs || !cs.closed ? []
     : cs.isRemote ? ((cs.v.view.closed && cs.v.view.closed.signatures) || []) : cs.closingSignatures());
-  const news = (c) => (c.release ? !S.okd.has(c.k)   // owed is the whole of it
+  const news = (c) => (c.mailgiveup ? !S.okd.has(c.k) // E34: owed is the whole of it
+    : c.release ? !S.okd.has(c.k)   // owed is the whole of it
     : c.admit ? admissionPrice() === 'pen' && !S.okd.has(c.k)
     : motionOn(c) ? false
     : c.isBegin ? false
@@ -5154,7 +5227,11 @@
     // at 🌡️'s own clause — which is also where its rail entry anchors,
     // since anchorOf falls back to the tab's paragraph.
     chipsFor: (c) => {
-      if (c.power || c.ansFor || c.record) return [c];
+      // 📭 stands in the *Invitees* pile, not the Proposals one (E34): the
+      // give-up is about somebody in the register, so its tab is beside the
+      // subsection they are listed under — which is `admitCard`'s arrangement
+      // and deliberately not `releaseCard`'s, a release belonging to no clause
+      if (c.power || c.ansFor || c.record || c.mailgiveup) return [c];
       // the Proposals opening is one clause carrying four tabs (Q748): the
       // group is the same whichever of the four you come in by, and `para`
       // opens the card at 🍾's paragraph for any of them
@@ -6370,6 +6447,18 @@
           binBtn() + '<button class="btn btn-approve" data-ok="' + esc(c.k) + '">OK</button>',
           g.cards);
       }
+      // **A mail that gave up, in one card** (SURFACE E34): the addresses the
+      // pass could not reach, stated once, taking one OK. The commit row is
+      // the release card's — 🗑️ and an OK — a give-up having happened rather
+      // than been decided.
+      if (c.mailgiveup) {
+        const b = mailGiveUpBatch(c.mailgiveup);
+        if (!b) return cardHtml(c, ctx, '<p class="why">This is no longer outstanding.</p>',
+          binBtn(), g.cards);
+        return cardHtml(c, ctx, mailGiveUpBody(b),
+          binBtn() + '<button class="btn btn-approve" data-ok="' + esc(c.k) + '">OK</button>',
+          g.cards);
+      }
       if (c.isClosing) {
         const signed = signedClose();
         return cardHtml(c, ctx, closingBody(c),
@@ -6925,6 +7014,7 @@
     syncGrantAcks();
     syncOwedOks();
     syncOwedReleases();
+    syncOwedMailGiveUps();
     // the address is checked because it is the address (see `checkSlug`): a
     // pre-filled 📍 nobody edited would otherwise reach the send unasked.
     // Idempotent — a repeat ask about an address already answered is a
@@ -7266,6 +7356,10 @@
       // is out of date until the command's own refresh lands
       if (cs && kk.startsWith('rel:') && viewerId()) {
         try { holdOkInFlight(kk, cs.ackRelease(now(), viewerId(), kk.slice(4))); } catch (e) {}
+      }
+      // and the OK on one sender pass's dead mail (SURFACE E34), the same way
+      if (cs && kk.startsWith('mail:') && viewerId()) {
+        try { holdOkInFlight(kk, cs.ackMailGaveUp(now(), viewerId(), kk.slice(5))); } catch (e) {}
       } });
     const toggleFold = (k2) => {
       if (S.folded.has(k2)) S.folded.delete(k2); else S.folded.add(k2); };
@@ -7536,6 +7630,16 @@
         if (r && typeof r.then === 'function') r.then((res) => { if (res && res.error) setDoorErr('remove', plainRefusal(res.error)); });
         S.removeWho = '';
       } catch (e) { setDoorErr('remove', plainRefusal(e.message)); }
+      return render(); }
+    // 📨 — put a dead invitation back in the queue (SURFACE E34). The one
+    // control in a `.memrow`, and the founder's alone; the module refuses
+    // anybody who is already here, and the refusal reads on the ✉️ door.
+    const resend = ev.target.closest('[data-act="resend-invite"]');
+    if (resend) {
+      try {
+        const r = cs.resendInvite(now(), resend.dataset.member, viewerId());
+        if (r && typeof r.then === 'function') r.then((res) => { if (res && res.error) setDoorErr('invite', plainRefusal(res.error)); });
+      } catch (e) { setDoorErr('invite', plainRefusal(e.message)); }
       return render(); }
     if (ev.target.closest('[data-act="resign"]')) {
       try {
@@ -8101,7 +8205,7 @@
       convenor: { id: FOUNDER, email: '', name: d.founder.name, isMember: true },
       view: { settings: d.view.settings, gates: d.view.gates, crowned: d.view.crowned,
         questions: [], resolutions: [], members: [], applicants: [], owedOks: [],
-        owedReleases: [], motions: [],
+        owedReleases: [], owedMailGiveUps: [], motions: [],
         crownTasks: [], identity: { name: null, picture: null },
         frozen: d.frozen, closed: d.closed, mustReturn: null } };
   };
@@ -8381,7 +8485,12 @@
           // the batch ids alone; the contents ride `view.owedReleases`, which
           // `releaseBatches` reads directly on the remote path (entry 162)
           releasesOwed: new Set(r.id === self.v.me
-            ? (self.v.view.owedReleases || []).map((b) => b.id) : []) }]))),
+            ? (self.v.view.owedReleases || []).map((b) => b.id) : []),
+          // the same two shapes for a mail that gave up (SURFACE E34): the
+          // subject's own flag on every row, the owed batch ids on yours
+          mailGaveUp: !!r.mailGaveUp,
+          mailGaveUpOwed: new Set(r.id === self.v.me
+            ? (self.v.view.owedMailGiveUps || []).map((b) => b.id) : []) }]))),
       convenorRecord: () => self.v.convenor,
       motionRecords: () => index().motions || (index().motions = new Map(
         self.v.view.motions.map((rec) => [rec.id, { id: rec.id,
@@ -8416,6 +8525,8 @@
       answer: (t, member, setting, value) => api.cmd('answer', { setting, value }),
       giveOk: (t, member, setting) => api.cmd('give-ok', { setting }),
       ackRelease: (t, member, batch) => api.cmd('ack-release', { batch }),
+      ackMailGaveUp: (t, member, batch) => api.cmd('ack-mail-gave-up', { batch }),
+      resendInvite: (t, member) => api.cmd('resend-invite', { member }),
       openMotion: (t, by, payload, why) => api.cmd('open-motion', { payload, why }),
       answerMotion: (t, member, motion, answer) => api.cmd('answer-motion', { motion, answer }),
       withdrawMotion: (t, member, motion) => api.cmd('withdraw-motion', { motion }),
@@ -9768,6 +9879,17 @@
         '<ul class="batch">' + rows.filter((r) => r.sec === t2)
           .map((r) => '<li>' + r.line + '</li>').join('') + '</ul>').join('');
   };
+  // **What could not be reached, and what follows from it** (SURFACE E34).
+  // The membership is told the address and nothing else: the invitation is the
+  // register's own fact, and what a member can do about it is nothing — the
+  // 📨 re-send is the founder's, on their ✉️ row.
+  const mailGiveUpBody = (b) => '<p class="why">' +
+    (b.addresses.length > 1
+      ? 'These addresses could not be reached, so nobody there has heard about this document. '
+      : 'This address could not be reached, so nobody there has heard about this document. ') +
+    'The link the message carried has been withdrawn. The Founder can send it again.</p>' +
+    '<ul class="batch">' +
+    b.addresses.map((a) => '<li>' + esc(a) + '</li>').join('') + '</ul>';
   // **The zones 🍾 asks about, and the one place that knows what is in them**
   // (entry 158, Ed 2026-08-27). Three zones × two powers is the whole table,
   // and it is a source literal on purpose: QA reshapes the zones by editing
