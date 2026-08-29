@@ -6730,8 +6730,11 @@
         ' data-confirm="1" title="' +
         (penOkFor(commitGlyph) ? commitTitle(c) : penWaitTitle) + '">' + commitGlyph + '</button>' +
         // the route's own commit, after the pen (entry 161) — see the title
-        // branch above for why it stands second
-        founderCommit(c));
+        // branch above for why it stands second. **Never a door here**: ❌
+        // reaches this branch (its row keeps an inert ✒️), and a door's second
+        // act belongs beside the door's own, in the body (Q1024, §9.1) — which
+        // `BODY.remove` draws. Without this it was drawn twice.
+        (c.door ? '' : founderCommit(c)));
       // the refusal line, under the body and beside the commit row that tried
       // (entry 62). The two doors draw it inside their own bodies already, so
       // they are excluded here rather than carrying it twice.
