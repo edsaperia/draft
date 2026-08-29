@@ -368,12 +368,23 @@ export async function createDraftServer(cfg: ServerConfig,
     // displaced as it stood at resolution, and the race's judge count
     type Rec = { raceId: string; candidateId: string; outcome: string; when: number;
       p: number | null; threshold: number | null; version: number;
+      /**
+       * The cap mark (SPEC §4.2, R-051): the ranking fit this race's
+       * adoption was decided on reached its iteration cap. **A fact about
+       * one adoption**, so it is stamped in the `adopted` branch beside
+       * `rec.p` — a race that never adopted carries none, and on `field`
+       * only the adopted candidate's own entry can carry one, `outcomes()`
+       * putting it on no other outcome. The two numbers are the auditor's;
+       * the page reduces them to a boolean.
+       */
+      cappedFit?: { iterations: number; gradMax: number };
       footprint: unknown; displaced: string[]; judges: number; judgedByMe: boolean;
       field: Array<{ candidateId: string; outcome: string; p: number | null;
         threshold: number | null; hunks: Array<{ start: number; end: number; lines: string[] }>;
         rationale: string; judgedByMe: boolean;
         /** *Proposal refused by ‹name› 🛡️* — the reason the author reads (R-056). */
         reason?: string;
+        cappedFit?: { iterations: number; gradMax: number };
         author?: { id: string; name: string | null } }> };
     const byRace = new Map<string, Rec>();
     // an author's derived preference is a mover (§3.3, §8.2): counted, never named
@@ -386,6 +397,7 @@ export async function createDraftServer(cfg: ServerConfig,
       const entry = { candidateId: o.candidateId, outcome: o.outcome, p: o.p ?? null,
         threshold: o.threshold ?? null, hunks: c.patch.hunks, rationale: c.rationale,
         judgedByMe: mineJ, ...(o.reason ? { reason: o.reason } : {}),
+        ...(o.cappedFit ? { cappedFit: o.cappedFit } : {}),
         ...(author ? { author } : {}) };
       let rec = byRace.get(o.raceId);
       if (!rec) {
@@ -402,6 +414,9 @@ export async function createDraftServer(cfg: ServerConfig,
         rec.candidateId = o.candidateId; rec.outcome = 'adopted'; rec.when = o.t;
         rec.p = o.p ?? null; rec.threshold = o.threshold ?? null; rec.version = o.version;
         rec.footprint = c.footprint;
+        // absent means converged, so the key is deleted rather than set to
+        // `undefined` (R-051) — this is the record's one honest silence
+        if (o.cappedFit) rec.cappedFit = o.cappedFit; else delete rec.cappedFit;
       }
     }
     for (const rec of byRace.values()) {

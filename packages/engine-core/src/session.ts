@@ -418,7 +418,10 @@ export class Session {
         // left `races()`, which is what takes it out of every feed.
         const c = this.candidate(event.id);
         c.state = 'awaiting-assent';
-        c.awaiting = { raceId: event.raceId, p: event.p, threshold: event.threshold };
+        c.awaiting = { raceId: event.raceId, p: event.p, threshold: event.threshold,
+          // the cap mark rides the park with the numbers (R-051); absent
+          // stays absent, so a log written before it existed folds the same
+          ...(event.cappedFit ? { cappedFit: event.cappedFit } : {}) };
         this.fitCache.clear();
         break;
       }
@@ -1105,7 +1108,10 @@ export class Session {
    *
    * **accept** adopts through the ordinary path, on the `p` and the
    * threshold recorded at the park: the room's confidence at the moment it
-   * decided, not at the convenor's convenience. Everything downstream of
+   * decided, not at the convenor's convenience. The cap mark (R-051) replays
+   * with them, being a fact about that same moment and that same fit — the
+   * shielded adoption is the likeliest of all to be read afterwards, and is
+   * not the one receipt allowed to lie by omission. Everything downstream of
    * `adopted` — the version bump, the rebase of the field, the performance
    * refund, `lastAdoptionT`, the fit cache — runs unchanged.
    *
@@ -1123,7 +1129,8 @@ export class Session {
     const parked = c.awaiting!;
     const before = this.log.length;
     if (outcome === 'accept') {
-      this.adopt(t, candidateId, parked.p, parked.threshold, parked.raceId);
+      this.adopt(t, candidateId, parked.p, parked.threshold, parked.raceId,
+        parked.cappedFit);
     } else {
       this.emit({ type: 'candidate-retired', t, id: candidateId,
         raceId: parked.raceId, refund: 0, ...(reason ? { reason } : {}) });
@@ -1605,7 +1612,32 @@ export class Session {
           // `comparisons` is the view's own measured (non-derived) count.
           r.comparisons > 0,
       )
-      .map((r) => ({ leaderId: r.leaderId as string, p: r.leaderP as number }));
+      // **The cap mark is read here, in the snapshot, and not at the `adopt`
+      // call** (SPEC §4.2, R-051). `fitRaceMembers` is memoised on the
+      // members, the incumbent and the last usable comparison's `seq`, so
+      // this is a cache hit returning the very fit `buildRaceView` took
+      // `leaderP` off — but the `adopted` fold clears `fitCache`, so by the
+      // time the *second* ready race of a batch adopts, a refit would be a
+      // different fit from the one the batch was decided on. That is the same
+      // reason the ready set is snapshotted at all: one decision per race per
+      // batch, on the evidence as it stood. Moving this lookup down into
+      // `adopt`, where it is tidier, is wrong.
+      //
+      // `converged` is false in exactly one circumstance — the iteration cap
+      // running out with the gradient still above tolerance — which is why
+      // the record's word is *cap* and not *gradient*.
+      .map((r): { leaderId: string; p: number;
+        cappedFit?: { iterations: number; gradMax: number } } => {
+        const fit = this.fitRaceMembers(r.members, r.incumbentId);
+        return {
+          leaderId: r.leaderId as string,
+          p: r.leaderP as number,
+          // absent means converged, all the way out to the log (R-051)
+          ...(fit.converged
+            ? {}
+            : { cappedFit: { iterations: fit.iterations, gradMax: fit.gradMax } }),
+        };
+      });
     // **NO TEXT ADOPTION OF ANY KIND WHILE A CANDIDATE IS PARKED** (R-056).
     // This is the invariant the whole park rests on, and it is stated here
     // because it is the only thing standing between a parked patch and a
@@ -1622,20 +1654,24 @@ export class Session {
     // owes an answer. That is what 🛡️ on the Text *means*, and a convenor
     // who never answers is covered by lapse (§9.5a, which auto-passes).
     let blocked = [...this.candidates.values()].some((c) => c.state === 'awaiting-assent');
-    for (const { leaderId, p } of ready) {
+    for (const { leaderId, p, cappedFit } of ready) {
       const c = this.candidate(leaderId);
       if (c.state !== 'live') continue;
       // a setting race is untouched by any of this (Q390): it carries no
-      // patch, changes no text, and adopts in the same batch as before
-      if (c.patch === undefined) { this.adopt(t, leaderId, p, threshold); continue; }
+      // patch, changes no text, and adopts in the same batch as before —
+      // but it was decided by the same fit and takes the same mark (R-051)
+      if (c.patch === undefined) {
+        this.adopt(t, leaderId, p, threshold, undefined, cappedFit); continue;
+      }
       if (blocked) continue;
       if (this.constitutionValue.textAssent) {
         this.emit({ type: 'candidate-awaiting-assent', t, id: leaderId,
-          raceId: this.raceIdOf(leaderId), p, threshold });
+          raceId: this.raceIdOf(leaderId), p, threshold,
+          ...(cappedFit ? { cappedFit } : {}) });
         blocked = true; // one park per batch, and none beside a standing one
         continue;
       }
-      this.adopt(t, leaderId, p, threshold);
+      this.adopt(t, leaderId, p, threshold, undefined, cappedFit);
     }
   }
 
@@ -1655,11 +1691,18 @@ export class Session {
    * `raceId` is passed only by `assent` (R-056): a parked candidate is in
    * no live race, so `raceIdOf` would name it `r:<id>` and the record would
    * file the adoption apart from the race it was decided in.
+   *
+   * `cappedFit` is the cap mark (R-051), read by the caller off the fit the
+   * batch was decided on — never looked up here, where `fitCache` may
+   * already have been cleared by an earlier adoption in the same batch.
+   * Both emit branches carry it: a setting race is decided by the same fit
+   * and deserves the same honesty.
    */
   private adopt(t: number, candidateId: string, p: number, threshold: number,
-    raceIdIn?: string): void {
+    raceIdIn?: string, cappedFit?: { iterations: number; gradMax: number }): void {
     const winner = this.candidate(candidateId);
     const raceId = raceIdIn ?? this.raceIdOf(candidateId);
+    const mark = cappedFit ? { cappedFit } : {};
     if (!winner.patch) {
       // A setting race carried (Q390): the verdict is recorded and the
       // stake refunded; the value lands via setStanding, host-called,
@@ -1672,12 +1715,13 @@ export class Session {
         newVersion: this.currentVersion(),
         p,
         threshold,
+        ...mark,
       });
       return;
     }
     const adoptedHunks = winner.patch.hunks;
     const newVersion = this.currentVersion() + 1;
-    this.emit({ type: 'adopted', t, candidateId, raceId, newVersion, p, threshold });
+    this.emit({ type: 'adopted', t, candidateId, raceId, newVersion, p, threshold, ...mark });
     this.rebaseOthers(t, candidateId, adoptedHunks, newVersion);
   }
 

@@ -9214,7 +9214,12 @@
         qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
         cap: adopted ? 'decided — adopted' : undecided ? 'undecided at the close — the text stood' : 'decided — the current text stood',
         decided: { outcome: adopted ? 'adopted' : undecided ? 'undecided' : 'retired — the current text stood',
-          when: whenOf(o.when), p: o.p == null && best ? best.p : o.p, bar: o.threshold, judges: o.judges },
+          when: whenOf(o.when), p: o.p == null && best ? best.p : o.p, bar: o.threshold, judges: o.judges,
+          // the cap mark (R-051), reduced to a boolean on the way in: the
+          // card says one sentence and none of the arithmetic (STYLE §2 —
+          // raw values are not copy), and the two numbers stay in the event
+          // and the payload for an auditor
+          ...(o.cappedFit ? { capped: true } : {}) },
         undecided,
         won: adopted || undecided ? 'b' : undefined,
         optionB: textOfF(winner), replaced,

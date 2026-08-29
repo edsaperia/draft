@@ -121,6 +121,15 @@ export interface OutcomeEntry {
    * reads on their sealed record.
    */
   reason?: string;
+  /**
+   * **The cap mark** (SPEC §4.2, R-051): the ranking fit this adoption was
+   * decided on reached its iteration cap with the gradient still moving.
+   * Present only on an `adopted` entry, and only where the fit did not
+   * converge — absent means converged, here as in the event. The two
+   * numbers are for an auditor; the surface prints one sentence and none
+   * of the arithmetic (STYLE §1, §2).
+   */
+  cappedFit?: { iterations: number; gradMax: number };
 }
 
 export class ParticipantApi {
@@ -264,7 +273,10 @@ export class ParticipantApi {
         const c = this.session.getCandidate(ev.candidateId);
         out.push({ t: ev.t, candidateId: ev.candidateId, outcome: 'adopted',
           p: ev.p, threshold: ev.threshold, raceId: ev.raceId ?? `r:${ev.candidateId}`,
-          version: c.patch ? Math.max(0, ev.newVersion - 1) : ev.newVersion });
+          version: c.patch ? Math.max(0, ev.newVersion - 1) : ev.newVersion,
+          // spread conditionally, as `reason` is: the key is absent, never
+          // `undefined`, because absent is what means converged (R-051)
+          ...(ev.cappedFit ? { cappedFit: ev.cappedFit } : {}) });
       } else if (ev.type === 'candidate-retired') {
         const c = this.session.getCandidate(ev.id);
         out.push({ t: ev.t, candidateId: ev.id, outcome: 'retired',

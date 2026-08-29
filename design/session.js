@@ -1707,6 +1707,19 @@
       (und && !(d.bar > 0) ? '' : ' · ' + pct(best) + JUDG +
         (best >= (d.bar ?? 0) ? ' &gt; ' : ' &lt; ') + pct(d.bar) + BAR) + '</span>' +
       '<span class="sub">' + esc(d.when || '') + '</span></div>' +
+      // **The cap line** (SPEC §4.2, R-051; Q945, Ed 2026-08-27). Where the
+      // ranking fit this decision was taken on ran out of its iteration cap,
+      // the record says so — one line, in the same `rsub` vocabulary as *the
+      // text that stood* and *made under ‹rung›, before the rule changed*,
+      // under the eyebrow and above the head. Ed's own sentence from the
+      // ruling, verbatim: nothing here may say *fit*, *gradient*,
+      // *converged* or *iteration*, and neither number appears (STYLE §1,
+      // §2). The decision stands — that is the whole of the ruling, and
+      // refusing the batch was the option it rejected.
+      (d.capped
+        ? '<span class="rsub">the ranking maths stopped short on this one; '
+          + 'the decision stands</span>'
+        : '') +
       (top
         ? clauseHeadHtml(s, {
             text: currentTextFor(skey), key: skey, chips: chipsFor(skey, s.id),

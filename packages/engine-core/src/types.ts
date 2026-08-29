@@ -189,9 +189,12 @@ export interface Candidate {
    * What the room decided, held over a park (R-056): the race it cleared
    * in and the numbers it cleared on. `assent`'s accept adopts on these —
    * the room's confidence at the moment it decided, not the convenor's
-   * convenience — and the close records the park's own race.
+   * convenience — and the close records the park's own race. The cap mark
+   * (R-051) rides here for the same reason: it is a fact about the same
+   * moment and the same fit, and absent still means converged.
    */
-  awaiting?: { raceId: string; p: number; threshold: number };
+  awaiting?: { raceId: string; p: number; threshold: number;
+    cappedFit?: { iterations: number; gradMax: number } };
 }
 
 /**
@@ -351,6 +354,14 @@ export type Event =
       raceId: string;
       p: number;
       threshold: number;
+      /**
+       * The cap mark, recorded at the park exactly as `p` and `threshold`
+       * are (R-051): `assent`'s accept replays it onto the `adopted` event,
+       * so the shielded adoption — the one that took a human decision and
+       * is therefore the likeliest to be read afterwards — is not the one
+       * receipt that lies by omission. Absent means the fit converged.
+       */
+      cappedFit?: { iterations: number; gradMax: number };
     }
   | {
       /**
@@ -388,6 +399,28 @@ export type Event =
       p: number;
       /** The adoption threshold the winner cleared. */
       threshold: number;
+      /**
+       * **The cap mark** (SPEC §4.2, R-051; Q945 answered 2026-08-27). The
+       * ranking fit this adoption was decided on ran out of its 200-iteration
+       * cap with the gradient still above tolerance. A fit that reached its
+       * cap still adopts, on the probability it produced — Ed took (a) over
+       * refusing the batch, which would turn a numerical event into a
+       * governance one — and the receipt says so.
+       *
+       * **The shape is the presence of the object, not a `converged:
+       * boolean`**, and that is the compatibility argument: absent means
+       * converged, so every log already on disk replays byte for byte,
+       * `founding.jsonl` needs no re-freeze and `golden-log.test.ts` passes
+       * unedited. Nothing may ever write this key as `undefined`.
+       *
+       * `stop` itself is not carried: `converged` is false in exactly one
+       * circumstance (`stop === 'max-iterations'` with `gradMax` above
+       * tolerance — `no-ascent` *is* convergence here), so a `stop` string on
+       * the event would be a constant. `iterations` and `gradMax` are what an
+       * auditor asks next, and cost nothing on a shape that is absent in the
+       * ordinary case.
+       */
+      cappedFit?: { iterations: number; gradMax: number };
     }
   | {
       /**

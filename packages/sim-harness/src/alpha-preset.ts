@@ -30,6 +30,7 @@ import type { Constitution } from '../../engine-core/src/index.js';
 import { SHAPES } from '../../constitution/src/index.js';
 import type { EndingValue, PaceValue, PercentValue, SettingValue } from '../../constitution/src/index.js';
 import { engineFieldsFor } from '../../constitution/src/adapter.js';
+import { ALPHA_PRESET_OVERRIDES } from './alpha-preset-values.js';
 import { ScriptedPersona } from './persona.js';
 import { clubhouseScenario } from './clubhouse.js';
 import { runSession } from './runner.js';
@@ -78,10 +79,10 @@ const CANDIDATES: Candidate[] = [
   {
     name: 'ALPHA PRESET',
     note: 'and a rate that fires inside the session: 6 ✏️ to start, capped at 8, one more every 5 real minutes',
-    overrides: {
-      adoptionThresholdStart: 0.85, adoptionThresholdEnd: 0.85, cooldownMs: 1 * MIN,
-      tokenGrant: 6, tokenCap: 8, tokenDripMinutes: 5,
-    },
+    // the numbers themselves live in `alpha-preset-values.ts`, which has no
+    // `main()` to run, so the cap calibration test can found the same room
+    // rather than copy it (R-051's third answer)
+    overrides: ALPHA_PRESET_OVERRIDES,
   },
 ];
 
