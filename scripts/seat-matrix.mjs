@@ -599,12 +599,32 @@ const RUN = {
     await press(page, 1250);
     await openCard(page, 'slug');
     await press(page, 1250);
+    // **🧭 sits between 📍 and 📧** (entry 166), and a card in ORDER that is
+    // not settled blocks everything under it — so a birth that skips it never
+    // reaches a live 📧 commit. Found by entry 203's audit: this harness had
+    // the same gap as `applicants-walk`, and only escaped CI's notice by not
+    // being in CI. `custom` is the rung that folds nothing, which is what the
+    // seats below were written against.
+    await openCard(page, 'shape');
+    const shaped = await page.evaluate(() => {
+      const b = document.querySelector('.setupcard [data-set="docShape"][data-val="custom"]');
+      if (!b) return false; b.click(); return true;
+    });
+    if (!shaped) throw new Error('🧭 offers no rung named custom');
+    await page.waitForTimeout(300);
+    await press(page, 1250);
     await openCard(page, 'myemail');
     await typeIn(page, '.setupcard input[type="email"]', s.email);
     await press(page, 1250);
     await page.waitForTimeout(1600);
-    const mails = (await outbox()).filter((m) => JSON.stringify(m).includes(D.title));
-    if (!mails.length) throw new Error('no creation mail for ' + D.title + ' — is this server using a dev outbox?');
+    const held = await outbox();
+    const mails = held.filter((m) => JSON.stringify(m).includes(D.title));
+    if (!mails.length) throw new Error('no creation mail for ' + D.title + ' — the outbox held ' +
+      held.length + ' mail(s), none for this title; the open card was ' +
+      JSON.stringify(await page.evaluate(() => {
+        const c = document.querySelector('.setupcard');
+        return c ? (c.dataset.k || (c.querySelector('[data-tab]') || { dataset: {} }).dataset.tab || 'some card') : null;
+      })));
     await landOn(page, linkIn(mails[mails.length - 1]));
     D.slug = (page.url().match(/\/d\/([^/?#]+)/) || [])[1];
     if (!D.slug) throw new Error('the magic link did not land on a document: ' + page.url());

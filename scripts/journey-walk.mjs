@@ -218,23 +218,39 @@ say('gesture    · ' + (await pageGesture()) + (GESTURE ? ' (--gesture=' + GESTU
 await open('title');
 await typeIn('.setupcard [data-titlelane]', TITLE);
 await press(1250);
+// **The birth says which card it has just pressed** (entry 203): the birth is
+// four cards in a fixed order and any one of them can stop it, so a walk that
+// prints only its end cannot say where it stopped. The lines are this walk's
+// too, though it was never the one that stalled — the next card added to the
+// order will stall whichever walk was not taught it.
+say('birth      · 📝 title pressed');
 await open('slug');
 await press(1250);
+say('birth      · 📍 slug pressed');
 await open('shape');
 if (!(await clickIn('.setupcard [data-set="docShape"][data-val="' + SHAPE + '"]'))) {
   say('FAIL: 🧭 offers no rung named ' + SHAPE);
   stuck.push('the 🧭 rung ' + SHAPE);
 }
 await press(1250);
+say('birth      · 🧭 shape pressed (' + SHAPE + ')');
 await open('myemail');
 await typeIn('.setupcard input[type="email"]', 'ada@example.org');
 await press(1250);
+say('birth      · 📧 sent');
 await T(1600);
 
 const outbox = await (await fetch(BASE + '/api/dev/outbox')).json();
-const mails = (outbox.mails || outbox).filter((m) => JSON.stringify(m).includes(TITLE));
+const held = outbox.mails || outbox;
+const mails = held.filter((m) => JSON.stringify(m).includes(TITLE));
 if (!mails.length) {
-  say('FAIL: no creation mail for', TITLE, '- is this server using a dev outbox?');
+  const openCard = await page.evaluate(() => {
+    const c = document.querySelector('.setupcard');
+    return c ? (c.dataset.k || (c.querySelector('[data-tab]') || { dataset: {} }).dataset.tab || 'some card') : null;
+  });
+  say('FAIL: no creation mail for ' + TITLE + ' — the outbox held ' + held.length +
+    ' mail(s), none for this title; the open card was ' + JSON.stringify(openCard) +
+    ' (null means the birth is done and the mail is genuinely missing)');
   await browser.close();
   process.exit(1);
 }

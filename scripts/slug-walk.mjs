@@ -78,6 +78,19 @@ const typeIn = (sel, v) => page.evaluate((a) => {
   else { el.value = a[1]; el.dispatchEvent(new Event('input', { bubbles: true })); }
   return true;
 }, [sel, v]);
+// journey's, lifted: a rung is chosen with a click, and a selector that names
+// no rung is reported rather than passed over in silence
+const clickIn = async (sel) => {
+  const ok = await page.evaluate((s) => {
+    const el = document.querySelector(s);
+    if (!el || el.disabled) return false;
+    el.scrollIntoView({ block: 'center' });
+    el.click();
+    return true;
+  }, sel);
+  await T(420);
+  return ok;
+};
 // **What a press is depends on the gesture** (backlog 184): under `hold` it is
 // down · wait · up, as it always was; under `click` the click starts the
 // flight and `holdMs` is the flight's own length, with nothing to let go of.
@@ -121,6 +134,7 @@ await T(800);
 await open('title');
 await typeIn('.setupcard [data-titlelane]', TITLE);
 await press(1250);
+say('birth     · 📝 title pressed');
 await open('slug');
 await T(1400);                    // the check is asked on arrival, not on a keystroke
 let s = await slugState();
@@ -159,15 +173,40 @@ check(s.disabled === false, 'the commit lights once the address is free');
 check(!/is taken/.test(s.note), 'the taken note is gone');
 
 await press(1250);
+say('birth     · 📍 slug pressed (' + FREE + ')');
+// **🧭 sits between 📍 and 📧 in the birth order** (entry 166): a card in
+// ORDER that is not settled blocks everything under it, so this walk could not
+// reach a live 📧 commit either — and passed anyway, because it never asked
+// whether the birth it is named for had happened. The check below is what
+// makes this step necessary rather than merely correct (entry 203).
+await open('shape');
+if (!(await clickIn('.setupcard [data-set="docShape"][data-val="custom"]'))) {
+  check(false, '🧭 offers a rung named custom');
+}
+await press(1250);
+say('birth     · 🧭 shape pressed (custom)');
 await open('myemail');
 await typeIn('.setupcard input[type="email"]', 'ada@example.org');
 await press(1250);
+say('birth     · 📧 sent');
 await T(1800);
 const openCard = await page.evaluate(() => {
   const c = document.querySelector('.setupcard');
   return c ? (c.dataset.k || (c.querySelector('[data-tab]') || { dataset: {} }).dataset.tab || 'some card') : null;
 });
 check(openCard === null, 'after the send no card is open — 📍 does not re-open (was: ' + openCard + ')');
+// **This walk is named *the birth goes through* and never checked that it
+// did** (entry 203): with no card open and no mail sent it read as green,
+// which is how the 🧭 blocker hid here while it was reddening its neighbour.
+// The filter is the **address**, not the title: CI reserves `test-charter`
+// with a document of the same title, whose own creation mail would answer for
+// this one. The creation mail states `/d/<slug>` in its prose (MAILS.create).
+const ob = await (await fetch(BASE + '/api/dev/outbox')).json();
+const held = ob.mails || ob;
+const mine = held.filter((m) => JSON.stringify(m).includes('/d/' + FREE));
+check(mine.length > 0, 'the send wrote a creation mail for /d/' + FREE +
+  ' (the outbox held ' + held.length + ' mail(s), ' + mine.length + ' for this address' +
+  (openCard ? '; the open card was ' + openCard : '') + ')');
 check(refused.length === 0, 'nothing refused at the wire: ' + JSON.stringify(refused));
 check(errors.length === 0, 'no page errors: ' + JSON.stringify(errors.slice(0, 2)));
 

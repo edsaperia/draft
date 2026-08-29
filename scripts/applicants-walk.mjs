@@ -103,6 +103,26 @@ const typeIn = async (sel, text) => {
   await page.keyboard.type(text, { delay: 8 });
   return true;
 };
+// journey's, lifted: a rung is chosen with a click, and a selector that names
+// no rung must be a *reported* failure rather than a silent no-op
+const clickIn = async (sel) => {
+  const ok = await page.evaluate((s) => {
+    const el = document.querySelector(s);
+    if (!el || el.disabled) return false;
+    el.scrollIntoView({ block: 'center' });
+    el.click();
+    return true;
+  }, sel);
+  await T(420);
+  return ok;
+};
+// which card the surface has open, for the birth's own failure line: a birth
+// that did not go through has stopped *somewhere*, and naming where is the
+// difference between a red step and an afternoon
+const openCardKey = () => page.evaluate(() => {
+  const c = document.querySelector('.setupcard');
+  return c ? (c.dataset.k || (c.querySelector('[data-tab]') || { dataset: {} }).dataset.tab || 'some card') : null;
+});
 
 /* ---- the birth, through the surface ---------------------------------- */
 const TITLE = 'Applicants ' + Date.now();
@@ -111,18 +131,41 @@ await T(800);
 await open('title');
 await typeIn('.setupcard [data-titlelane]', TITLE);
 await press(1250);
+say('birth      · 📝 title pressed');
 await open('slug');
 await press(1250);
+say('birth      · 📍 slug pressed');
+// **🧭 sits between 📍 and 📧 in the birth order** (entry 166), and a card in
+// ORDER that is not settled blocks everything under it — so a walk that skips
+// it never reaches a live 📧 commit and never births at all. That is entry
+// 203: this walk skipped it from the card's first day, and CI's `walks` job
+// has been red on all three prices ever since. `custom` because this walk is
+// about applicants and not about shapes — the rung that folds nothing.
+await open('shape');
+if (!(await clickIn('.setupcard [data-set="docShape"][data-val="custom"]'))) {
+  say('FAIL: 🧭 offers no rung named custom');
+  stuck.push('the 🧭 rung custom');
+}
+await press(1250);
+say('birth      · 🧭 shape pressed (custom)');
 await open('myemail');
 await typeIn('.setupcard input[type="email"]', 'ada@example.org');
 await press(1250);
+say('birth      · 📧 sent');
 await T(1600);
 
 const outbox = async () => (await (await fetch(BASE + '/api/dev/outbox')).json());
 const ob = await outbox();
-const mails = (ob.mails || ob).filter((m) => JSON.stringify(m).includes(TITLE));
+const held = (ob.mails || ob);
+const mails = held.filter((m) => JSON.stringify(m).includes(TITLE));
 if (!mails.length) {
-  say('FAIL: no creation mail for', TITLE, '— is this server using a dev outbox?');
+  // **A failure line that asks a question is a failure line nobody can act
+  // on** (entry 203). This one said only *is this server using a dev outbox?*
+  // for three CI runs, while the outbox was fine and the birth was stuck on
+  // 🧭 — so it now says what it counted and where the surface had stopped.
+  say('FAIL: no creation mail for ' + TITLE + ' — the outbox held ' + held.length +
+    ' mail(s), none for this title; the open card was ' + JSON.stringify(await openCardKey()) +
+    ' (null means the birth is done and the mail is genuinely missing)');
   await browser.close();
   process.exit(1);
 }

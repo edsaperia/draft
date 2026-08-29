@@ -185,6 +185,18 @@ jobs:
       - run: npm run probe-coverage
         if: always()
 
+  # **Last green on `main`: never, as of 2026-08-29.** Red from its birth on
+  # 2026-08-27 until the 🧭 shape card (entry 166) was answered by every walk
+  # that births through the surface — `applicants-walk` was never taught it,
+  # so all three of its steps died at *no creation mail* before reaching a
+  # single applicant assertion, and every *CI's walks cover it* claimed in a
+  # review since 08-27 was false (entry 203).
+  #
+  # **This line is kept by hand**, and it is the whole point of it: when a run
+  # of this job is green on `main`, replace *never, as of …* with that run's
+  # date. Nothing else here distinguishes a job that guards something from a
+  # job that has never once passed, and a red X nobody reads is not coverage.
+  #
   # The four walks that need a running product server (entry 142, Q917 (a),
   # Ed 2026-08-27): `journey`, `applicants-walk`, `slug-walk` and `ladder`
   # were run by hand and nowhere else. That gap is how Q916 happened —
