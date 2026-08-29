@@ -24,7 +24,7 @@ import type { ServerConfig } from './config.js';
 import { DocStore, slugify, uniqueSlug } from './store.js';
 import type { LoadedDoc } from './store.js';
 import { FilePersistence, WriteChain } from './persistence.js';
-import type { Persistence } from './persistence.js';
+import type { OutboxRow, Persistence } from './persistence.js';
 import { PgPersistence } from './pg-persistence.js';
 import { Stash } from './stash.js';
 import { MAILS, makeMailer } from './mailer.js';
@@ -146,6 +146,11 @@ export async function createDraftServer(cfg: ServerConfig,
     persistence, mailer,
     mailOff: () => cfg.mailOff,
     revoke: (hash) => auth.revoke(hash),
+    // **the give-up door** (SURFACE E34): one pass's dead mail, grouped by the
+    // document it was about and handed to that document's own log, so an
+    // invitation that never arrived stops looking like one nobody has opened.
+    // Defined below `commit`, which it needs, and installed here.
+    gaveUp: (rows) => tellGaveUp(rows),
   });
   const stash = new Stash(persistence);
   const commits = new WriteChain();
@@ -211,6 +216,16 @@ export async function createDraftServer(cfg: ServerConfig,
       if (event.type === 'member-invited') {
         const l = loginLink(event.member, event.email);
         push(event.email, MAILS.invite(title, l.link), l.tokenHash);
+      } else if (event.type === 'mail-resent') {
+        // 📨 (SURFACE E34): the arm above, again. A fresh link, because the
+        // one the dead mail carried was revoked when the outbox gave up on
+        // it; an ordinary queued mail from here on, so a re-send that dies
+        // too raises its own give-up batch.
+        const m = cs.memberRecords().get(event.member);
+        if (m !== undefined && m.email.length > 0) {
+          const l = loginLink(event.member, m.email);
+          push(m.email, MAILS.invite(title, l.link), l.tokenHash);
+        }
       } else if (event.type === 'member-admitted') {
         // without this, an admitted applicant is stranded: their applicant
         // cookie can only submit, and nothing tells them they are in
@@ -277,6 +292,40 @@ export async function createDraftServer(cfg: ServerConfig,
       if (fresh.length > 0) await relay(doc, fresh, nowMs);
       return doc.cs.logEntries().length;
     });
+
+  /**
+   * **A mail that gave up is told** (SURFACE E34): one sender pass's dead
+   * rows, grouped by the document they were about, written into that
+   * document's own log. The same direct-call shape as the `memberReturn`
+   * beside `runCommand` — the module is the truth about what a member is told,
+   * and a fact hung beside `view:` instead would never reach a page that is
+   * merely polling, since a give-up that is not an event moves neither seq.
+   *
+   * **The null `documentId` is dropped**: the operator notification and the
+   * creation mail belong to no document, and there is nowhere for their news
+   * to go.
+   *
+   * **This commits from inside a sender pass**, which is safe and not by
+   * accident: `commits` and the outbox's `passes` are different chains, and
+   * the only thing `relay` does back to the outbox is `enqueue` (which takes
+   * no chain) and `kick` (fire-and-forget). Await the kick and this would
+   * deadlock.
+   */
+  const tellGaveUp = async (rows: readonly OutboxRow[]): Promise<void> => {
+    const byDoc = new Map<string, string[]>();
+    for (const row of rows) {
+      if (row.documentId === null) continue;
+      const at = byDoc.get(row.documentId);
+      if (at) at.push(row.to); else byDoc.set(row.documentId, [row.to]);
+    }
+    const nowMs = Date.now();
+    for (const [docId, addresses] of byDoc) {
+      const doc = store.byId(docId);
+      if (!doc) continue;
+      doc.cs.mailGaveUp(tOf(doc.cs, nowMs), addresses);
+      await commit(doc, nowMs);
+    }
+  };
 
   /**
    * The member's side of the engine (Q391, stage 8): the document as it
@@ -692,6 +741,27 @@ export async function createDraftServer(cfg: ServerConfig,
             .filter((m) => m !== null).reverse()
         : [];
       json(res, 200, { mails });
+      return;
+    }
+
+    /* **The forced give-up** (SURFACE E34). A real give-up is six attempts
+       over roughly three hours, and the reserved-address seam is deliberately
+       a *retire* rather than a give-up (`outbox.ts` argues it at length), so
+       without this nothing can reach E34 in a walk. It drives the outbox's
+       own `give` — the failed mark, the revoked token, the give-up door —
+       rather than mocking any of it, and wears all three of this block's
+       guards. */
+    DEV: if (req.method === 'POST' && path === '/api/dev/outbox/give-up') {
+      if (!mailer.dev) { json(res, 404, { error: 'not found' }); return; }
+      if (devCrossSite(req, res, new URL(cfg.baseUrl).origin)) return;
+      const body = await readJson(req) as { slug?: unknown; to?: unknown };
+      const doc = docOr404(typeof body.slug === 'string' ? store.bySlug(body.slug) : null);
+      if (!doc) return;
+      const to = typeof body.to === 'string' ? body.to : '';
+      if (to === '') { json(res, 400, { error: 'an address to give up on' }); return; }
+      const gone = await outbox.giveUpNow(doc.id, to);
+      if (gone === 0) { json(res, 404, { error: 'no mail to that address on this document' }); return; }
+      json(res, 200, { ok: true, gaveUp: gone });
       return;
     }
 

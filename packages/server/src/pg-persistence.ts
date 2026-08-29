@@ -443,6 +443,16 @@ export class PgPersistence implements Persistence {
     return rows.map(outboxOf);
   }
 
+  async listOutboxFor(documentId: string, to: string): Promise<OutboxRow[]> {
+    const { rows } = await this.pool.query<OutboxDbRow>(
+      `SELECT id, document_id, addressee, subject, body, link, token_hash, created_ms,
+              attempts, last_attempt_ms, last_error, sent_ms
+         FROM outbox
+        WHERE document_id = $1 AND lower(addressee) = lower($2)
+        ORDER BY created_ms, id`, [documentId, to]);
+    return rows.map(outboxOf);
+  }
+
   async markOutboxSent(id: string, sentMs: number): Promise<void> {
     // the link and its token hash leave with the send: a delivered row is a
     // receipt, not a credential store

@@ -304,6 +304,18 @@ const HANDLERS: Record<string, Handler> = {
   'ack-release': (cs, a, t, args) => {
     cs.ackRelease(t, a.memberId, str(args, 'batch'));
   },
+  // the OK on one sender pass's dead mail (SURFACE E34), the same shape: the
+  // whitelist injects the actor, so the body names the batch and nothing else
+  'ack-mail-gave-up': (cs, a, t, args) => {
+    cs.ackMailGaveUp(t, a.memberId, str(args, 'batch'));
+  },
+  // 📨 — E34 says the gave-up row is *the founder's ✉️ row*, so the re-send is
+  // theirs. Entry 94 lets any member invite while 🪪 stands at ✒️, and
+  // widening this to match is a surface ruling nobody has made (Q1031).
+  'resend-invite': (cs, a, t, args) => {
+    founderOnly(a);
+    cs.resendInvite(t, str(args, 'member'), a.memberId);
+  },
   'open-motion': (cs, a, t, args, bridge) => {
     const why = typeof args.why === 'string'
       ? cap(args.why, LIMITS.why, 'the rationale') : undefined;

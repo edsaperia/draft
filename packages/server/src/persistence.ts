@@ -156,6 +156,13 @@ export interface Persistence {
    *  and still be served; a row never attempted is always due. */
   listPendingOutbox(nowMs: number, limit: number): Promise<OutboxRow[]>;
   /**
+   * One document's rows to one address, oldest first — the join a dead mail
+   * makes back to a register row, which is by address because `OutboxRow`
+   * carries no member id (SURFACE E34). Sent rows included: the forced
+   * give-up is about mail that has been offered, not only mail that is due.
+   */
+  listOutboxFor(documentId: string, to: string): Promise<OutboxRow[]>;
+  /**
    * A row is done. **The link goes with it**: the queue is not an archive,
    * and a delivered row that keeps its magic link turns the outbox into a
    * permanent plaintext store of every credential the server has ever
@@ -327,6 +334,13 @@ export class FilePersistence implements Persistence {
       .filter((r) => outboxDue(r, nowMs))
       .sort((a, b) => a.createdMs - b.createdMs || (a.id < b.id ? -1 : 1))
       .slice(0, limit);
+  }
+
+  async listOutboxFor(documentId: string, to: string): Promise<OutboxRow[]> {
+    const at = to.toLowerCase();
+    return [...this.outbox.values()]
+      .filter((r) => r.documentId === documentId && r.to.toLowerCase() === at)
+      .sort((a, b) => a.createdMs - b.createdMs || (a.id < b.id ? -1 : 1));
   }
 
   async markOutboxSent(id: string, sentMs: number): Promise<void> {

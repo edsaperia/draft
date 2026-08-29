@@ -71,6 +71,14 @@ export interface OutboxDeps {
   mailOff: () => boolean;
   /** Drop a token whose mail was never delivered. */
   revoke: (tokenHash: string) => Promise<void>;
+  /**
+   * **The give-up door** (SURFACE E34): `revoke`'s sibling, and the way a
+   * document learns that its mail died. Called **once per pass**, with every
+   * row that pass gave up on — one pass is one act, so a pass that killed
+   * three mails is one piece of news rather than three. Optional, so a test
+   * that only cares about sending constructs an outbox without it.
+   */
+  gaveUp?: (rows: readonly OutboxRow[]) => Promise<void>;
   /** Injectable for tests; the sender stamps its own attempt times. */
   now?: () => number;
 }
@@ -119,7 +127,7 @@ export class MailOutbox {
       .catch((e: unknown) => { console.error('pruning the outbox failed:', e); return 0; });
     const rows = await this.deps.persistence.listPendingOutbox(nowMs, BATCH);
     let sent = 0;
-    let failed = 0;
+    const gone: OutboxRow[] = [];
     for (const row of rows) {
       // **The RFC 2606 refusal stays at the mailer** (Q680) — this is the
       // queue's half of it: an address that provably cannot receive is not
@@ -151,7 +159,7 @@ export class MailOutbox {
         const attempts = row.attempts + 1;
         if (attempts >= OUTBOX_MAX_ATTEMPTS) {
           await this.give(row, attempts, why);
-          failed += 1;
+          gone.push(row);
         } else {
           await this.deps.persistence.markOutboxFailed(row.id, attempts, this.now, why);
           console.error(`mail to ${row.to} failed (attempt ${attempts}/${OUTBOX_MAX_ATTEMPTS}), ` +
@@ -159,7 +167,49 @@ export class MailOutbox {
         }
       }
     }
-    return { sent, failed, held: false };
+    await this.tell(gone);
+    return { sent, failed: gone.length, held: false };
+  }
+
+  /** The give-up door, once per pass. Wrapped the way `dropToken` wraps
+   *  `revoke`: whatever a document does with the news, a failure there is a
+   *  line in the log and never a failed pass — the mail is already dead and
+   *  re-running the pass would not un-kill it. */
+  private async tell(rows: readonly OutboxRow[]): Promise<void> {
+    if (rows.length === 0 || this.deps.gaveUp === undefined) return;
+    await this.deps.gaveUp(rows).catch((e: unknown) => {
+      console.error('telling the document about a mail that gave up failed:', e);
+    });
+  }
+
+  /**
+   * DEV only, and reached only from the label-dropped `/api/dev/outbox/give-up`
+   * (SURFACE E34): drive a document's mail to one address to the attempt cap
+   * now, through the real `give` and the real door, rather than waiting the
+   * six attempts and ~3 hours a genuine give-up takes. The reserved-address
+   * seam cannot stand in for it — `pass` retires those deliberately — so
+   * without this nothing can reach E34 in a walk at all.
+   *
+   * A **delivered** row is fair game and is the ordinary case in dev, where
+   * the mailer never refuses: the send takes its link and token hash with it
+   * (`markOutboxSent`), so forcing a give-up on one revokes nothing, which is
+   * what lets a walk kill a seat's invitation without killing the seat.
+   */
+  giveUpNow(documentId: string, to: string): Promise<number> {
+    return this.passes.run('outbox', async () => {
+      const all = await this.deps.persistence.listOutboxFor(documentId, to);
+      // a row that has already given up is not given up on twice
+      const live = all.filter((r) => r.sentMs !== null || r.attempts < OUTBOX_MAX_ATTEMPTS);
+      if (live.length === 0) return 0;
+      const pending = live.filter((r) => r.sentMs === null);
+      const rows = pending.length > 0 ? pending
+        : [live.reduce((a, b) => (a.createdMs >= b.createdMs ? a : b))];
+      for (const row of rows) {
+        await this.give(row, OUTBOX_MAX_ATTEMPTS, 'forced give-up (DEV)');
+      }
+      await this.tell(rows);
+      return rows.length;
+    });
   }
 
   /** Give up on a row: loud, because nobody is watching the queue, and
