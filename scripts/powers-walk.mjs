@@ -35,6 +35,13 @@
  * about the *power* and not about the epoch. It is also how the walk closes the
  * document at the end — the one setting still in the founder's hand.
  *
+ * …and for the same reason it is where **entry 161's pair** is asserted: a card
+ * the founder still has a hand on is the only place a second commit could go.
+ * After 🍾 the walk opens ⏰ and reads the row under both hats — the pen and
+ * the route's own commit for a member founder, its glyph following the value
+ * (a date is ✏️, *never* is 🏛️); the pen alone and a sentence saying why for a
+ * clerk — then presses the second commit and asserts the motion it opens.
+ *
  * It fails on the pre-fix page at *title after 🍾 · a lane and an enabled ✒️*
  * (clerk and member alike) and at *closed · ⏱️ card holds an enabled ✒️*.
  *
@@ -138,15 +145,22 @@ const runDocument = async (hat) => {
   // the flight and `ms` is the flight's own length, with nothing to let go of.
   // Asked of the page, so `--gesture=` and the page's own constant agree.
   const pageGesture = () => page.evaluate(() => (window.SESSION && window.SESSION.gesture) || 'hold');
-  const press = async (ms) => {
-    const box = await page.evaluate(() => {
-      const b = [...document.querySelectorAll('.setupcard .commitrow button')]
-        .find((x) => !x.disabled && !/🗑/.test(x.textContent));
+  // `sel` names one control instead of *the first live thing on the row*,
+  // which stopped being unambiguous when the Founder's card grew a second
+  // commit (entry 161): on ⏰ the row is 🗑️ · ✒️ · the route's own, and a
+  // bare `press()` would always find the pen. A door's second commit is in
+  // the body rather than the row, so the selector reaches both.
+  const press = async (ms, sel) => {
+    const box = await page.evaluate((s) => {
+      const b = s
+        ? document.querySelector('.setupcard ' + s + ':not([disabled])')
+        : [...document.querySelectorAll('.setupcard .commitrow button')]
+          .find((x) => !x.disabled && !/🗑/.test(x.textContent));
       if (!b) return null;
       b.scrollIntoView({ block: 'center' });
       const r = b.getBoundingClientRect();
       return { x: r.x + r.width / 2, y: r.y + r.height / 2, label: b.textContent.trim() };
-    });
+    }, sel || null);
     if (!box) return null;
     await page.mouse.move(box.x, box.y);
     if (await pageGesture() === 'click') {
@@ -433,6 +447,10 @@ const runDocument = async (hat) => {
       pen: !!c.querySelector('.commitrow [data-confirm]:not([disabled])'),
       composer: !!c.querySelector('[data-putmotion], [data-holdmotion]'),
       live,
+      // the card's own notes, whole: the clerk's *no ✏️ to spend* sentence is
+      // asserted rather than merely inferred from an absent button (entry 161)
+      note: [...c.querySelectorAll('.setnote')]
+        .map((n) => n.textContent).join(' ').replace(/\s+/g, ' ').trim(),
       says: (c.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120),
     };
   });
@@ -455,6 +473,12 @@ const runDocument = async (hat) => {
     await T(400);
   }
   say('order      · ✋ 🖼️ answered, which is what puts the constitution in the band · ' + order.join(' · '));
+  // 💡 for the same reason the two grants are pressed before 🍾: `mayPropose()`
+  // is `acked('canpropose')` as well as held, and entry 161's second commit
+  // hangs off it. A walk that never opens the gate would find the Founder's
+  // pair missing for the right reason and prove nothing.
+  if (await openCard('canpropose')) await clickIn('[data-ok]');
+  await T(700);
 
   // ⏱️'s pen, by hand, on a live document — the second of the two tab routes
   await layByHand('rate');
@@ -489,6 +513,89 @@ const runDocument = async (hat) => {
   const ctl = await cmd('set-setting', { setting: 'ending', value: { endsAtMs: ENDS + 60_000 } });
   say('control    · ⏰ kept its pen and still sets · ' + (ctl.status === 200 ? 'PASS' : 'FAIL ' + ctl.status));
   if (ctl.status !== 200) stuck.push(hat + ': the ⏰ control case');
+
+  /* ---- ⏰ · the Founder's pair (entry 161, Q1023) ------------------------
+   * ⏰ is the one card in this walk where the Founder still has a hand, which
+   * is exactly where entry 161 puts a second commit: the pen, and the route's
+   * own commit beside it, so a Founder who holds ✒️ can still choose to put
+   * the change to the room. Both hats, because the asymmetry is the ruling —
+   * a **clerk** has no ✏️ to spend and `openMotion` refuses a mover who is
+   * not a member, so their card keeps the pen alone and says why.
+   * It fails on the pre-change page at *⏰ · one commit where there should be
+   * two* (member) and at *⏰ · no sentence saying why* (clerk). */
+  await page.goto(DOCBASE + '/d/' + SLUG);
+  await T(2400);
+  if (!(await openCard('ending'))) fail('no ⏰ tab after 🍾 — the pair has nowhere to stand');
+  else if (hat === 'clerk') {
+    const p = await probe();
+    const bad = [];
+    if (!p) bad.push('no card');
+    else {
+      if (!p.pen) bad.push('no live ✒️ on the one setting whose pen is held');
+      if (p.composer) bad.push('a second commit on a clerk’s card (' + JSON.stringify(p.live) + ')');
+      if (!/not a member/i.test(p.note)) bad.push('no sentence saying why — notes read ' + JSON.stringify(p.note.slice(0, 160)));
+    }
+    if (bad.length) fail('⏰ pair · ' + bad.join(' · '));
+    say('  ⏰ pair      · ' + (bad.length ? 'FAIL' : 'the pen alone, and the sentence — PASS'));
+  } else {
+    // the route is read off the value at compose time (K6), so the second
+    // commit's own words are the assertion: a date is ordinary, *never* is
+    // constitutional, on one card without leaving it
+    const when = new Date(Date.now() + 7_200_000);
+    const pad = (n) => String(n).padStart(2, '0');
+    const local = when.getFullYear() + '-' + pad(when.getMonth() + 1) + '-' + pad(when.getDate()) +
+      'T' + pad(when.getHours()) + ':' + pad(when.getMinutes());
+    await page.evaluate((v) => {
+      const el = document.querySelector('.setupcard [data-txt="endsAt"]');
+      if (el) { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }
+    }, local);
+    await T(500);
+    const pOrd = await probe();
+    const bad = [];
+    if (!pOrd) bad.push('no card');
+    else {
+      if (!pOrd.pen) bad.push('no live ✒️ beside it');
+      if (!pOrd.composer) bad.push('one commit where there should be two');
+      if (!pOrd.live.some((l) => /Propose/.test(l))) {
+        bad.push('an ordinary value offers no ✏️ Propose (' + JSON.stringify(pOrd.live) + ')');
+      }
+    }
+    await clickIn('[data-set="ending"][data-val="perpetual"]');
+    await T(600);
+    const pCon = await probe();
+    if (!pCon || !pCon.live.some((l) => /all members|ask everyone/i.test(l))) {
+      bad.push('*never* offers no 🏛️ (' + JSON.stringify((pCon || {}).live) + ')');
+    }
+    // back to the date, and put *that* to the room: an ordinary motion is the
+    // half with a stake to pay, so it is the one worth pressing
+    await clickIn('[data-set="ending"][data-val="ends"]');
+    await T(600);
+    const label = await press(3600, '[data-putmotion]');
+    if (!label) bad.push('the second commit would not press');
+    await T(1200);
+    const running = await page.evaluate(async (slug) => {
+      const b = await (await fetch(`/api/d/${slug}/view`)).json().catch(() => null);
+      const ms = (b && b.view && b.view.motions) || [];
+      return ms.filter((m) => m.status === 'running' && m.payload &&
+        m.payload.kind === 'set' && m.payload.setting === 'ending')
+        .map((m) => ({ id: m.id, route: m.route, mine: m.mine }));
+    }, SLUG);
+    if (!running.length) bad.push('nothing is running on ⏰ after the press (pressed ' + JSON.stringify(label) + ')');
+    else if (running[0].route !== 'ordinary') bad.push('the motion opened as ' + running[0].route);
+    // **the pen is still live beside it**: proposing spends a ✏️, never the
+    // ✒️, so the Founder can still set ⏰ directly with the motion running
+    const still = await cmd('set-setting', { setting: 'ending', value: { endsAtMs: ENDS + 120_000 } });
+    if (still.status !== 200) bad.push('the pen went with the proposal → ' + still.status);
+    if (bad.length) fail('⏰ pair · ' + bad.join(' · '));
+    say('  ⏰ pair      · ' + (bad.length ? 'FAIL — ' + bad.join(' · ')
+      : 'the pen and ' + JSON.stringify(label) + ', the glyph following the value — PASS'));
+    // put the document back the way the rest of this walk expects it: a
+    // motion left running would still be running at the close, and the closed
+    // page's *nothing commits* sweep is about cards, not about a live race
+    for (const m of running) await cmd('withdraw-motion', { motion: m.id });
+    await T(600);
+  }
+  await clickIn('.setupcard [data-revert]');
 
   /* ---- closed ----------------------------------------------------------- */
   const soon = Date.now() + 2_000;

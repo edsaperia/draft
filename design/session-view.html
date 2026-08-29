@@ -4052,6 +4052,94 @@
   const composerOn = (c) => motionsLive() && docOpen() && viewerIsMember() && !c.isGate && !c.ansFor &&
     c.kind !== 'personal' && c.k !== 'text' && settled(c) && !motionOn(c) &&
     !doorDirect(c) && !(amFounder() && !membersHold(c) && founderDirect(c));
+  /* **The Founder's pair is the composer they are excluded from** (Ed,
+     2026-08-27, backlog entry 161: *the founder should be able to decide
+     whether something they have ✒️ on happens unilaterally or goes to the
+     membership as a proposal*). `composerOn` ends by subtracting exactly one
+     seat — the Founder, on a setting whose pen they still hold — and this is
+     that subtraction put back, as a second commit rather than as a composer:
+     they already have the setting's own controls, so what is missing is only
+     the other way to spend what they have chosen.
+
+     The two predicates are halves of one question — *may this seat put this
+     change to the room* — so they live on one screen and a later change to
+     either is met by the other. Four terms earn a sentence:
+
+     - **`mayPropose()` is the clerk's exclusion**, and it is not only the
+       wallet: `viewerIsMember()` is inside it and `openMotion` refuses a
+       mover who is not an arrived member outright, so a clerk's second
+       commit could never work. `founderPairNote` says so on the card.
+     - **`c.k !== 'text'`** — the Text's pair is entry 160's, on the
+       `editing-card` (SURFACE K29). 📄 gets no second commit here.
+     - **`motionsLive()`** — before 🍾 there is no membership to propose to
+       (`openMotion`: *before the start nothing is amended — only set*), so
+       the Founder's card keeps ✒️ alone, unchanged.
+     - **`!membersHold(c)`** — a delegated setting is not theirs to decree or
+       to propose from this card; they fall through to the composer as today.
+
+     The scope is `founderHandOff`'s, and for its reason: the gates, the
+     personal cards, the power tabs, 🎩, 🍾 and 📄 are none of them a
+     `powers.unilateral` question, and `founderDirect` reads `true` for every
+     key the module holds no state for. A **door** is in scope but only in its
+     direct form, because that is where a door's own act lives (§9.1) — and
+     never ✉️ at 🪪 `pen`, where the module refuses a motion outright
+     (*admission is at ✒️ — invite directly, nothing to propose*) and nobody
+     else's card draws a proposal control either. */
+  const founderPairOn = (c) => amFounder() && motionsLive() && docOpen() &&
+    (MANAGED_KEYS.includes(c.k) || !!c.door) &&
+    !c.isGate && !c.ansFor && !c.power && !c.record &&
+    c.kind !== 'personal' && c.k !== 'text' &&
+    (!c.door || (doorDirect(c) && (c.k !== 'invite' || admissionPrice() !== 'pen'))) &&
+    !membersHold(c) && founderDirect(c) && settled(c) && !motionOn(c);
+  const founderPair = (c) => founderPairOn(c) && mayPropose();
+  /* **What the second commit would put**, in the shape a member's composer
+     puts in `S.draft` — `{ k, to, val, why }` — so nothing downstream has to
+     learn about the Founder: `draftPayload`, `routeFor` and `openMotion` all
+     read it as they read anybody's. It is built from the card's own controls
+     rather than from a lane, because on a Founder-held card there is no lane.
+
+     **Null is the enable test.** `motionCommitHtml` disables on a falsy `to`,
+     so returning null covers every case where there is nothing to put: a
+     value not yet chosen, the delegate rung picked (which is not a value),
+     an empty address, nobody selected — and a value equal to what already
+     stands, which `openMotion` refuses in those words and a commit certain to
+     be refused should be dark rather than pressed. The standing comparison is
+     `standsTyped`'s, by value and never by label (Q620). */
+  const founderProposal = (c) => {
+    if (!c) return null;
+    const why = (S.setWhy || {})[c.k] || '';
+    if (c.door) {
+      if (c.k === 'invite') {
+        const at = (S.inviteOne || '').trim();
+        return at ? { k: c.k, to: at + ' joins the membership', why } : null;
+      }
+      const row = removableRows().find((p) => p.mid === S.removeWho);
+      return row ? { k: c.k, to: (row.n || row.e || 'Anonymous') + ' leaves the membership', why } : null;
+    }
+    if (wantsDelegate(c.k)) return null;      // handing it over is not a value
+    if (CHOSEN[c.k] && !CHOSEN[c.k]()) return null;
+    let val = null;
+    try { val = TYPED[c.k] ? TYPED[c.k]() : null; } catch (e) { return null; }
+    if (!val) return null;
+    const stands = standsTyped(c.k);
+    if (stands && JSON.stringify(stands) === JSON.stringify(val)) return null;
+    const to = wordsFor(c.k, val);
+    return to ? { k: c.k, to, val, why } : null;
+  };
+  // the row's second control: whatever the route asks for at this value —
+  // ✏️ Propose on an ordinary one, 🏛️ on a constitutional one (K6, K7) — and
+  // the one-🏛️-out disable and the ✏️ flight come with it
+  const founderCommit = (c) => (founderPair(c)
+    ? motionCommitHtml(c, (founderProposal(c) || {}).to || '', !!myHeldOut()) : '');
+  // **A clerk is told why, rather than left to notice** (T13, T37): they are
+  // not a member, so there is no ✏️ to spend and `openMotion` would refuse
+  // them anyway. Drawn exactly where the pair would otherwise stand.
+  const founderPairNote = (c) => (founderPairOn(c) && !viewerIsMember()
+    ? '<p class="setnote">You are not a member, so there is no ✏️ for you to spend — ' +
+      'this one is yours to set.</p>' : '');
+  // what a press finds when the value it was drawn for has gone (F17: a click
+  // that lands on nothing is answered). One sentence, both gestures.
+  const NOTHING_TO_PUT = 'That could not be proposed: nothing is chosen on this card.';
   // **The founder's editing body follows the setting's own pen** (entry 62).
   // True exactly where the founder is being shown the card and no longer has
   // the hand it is drawn for: the value radios, the title lane, the delegate
@@ -5788,7 +5876,13 @@
       // *Several at once* eyebrow already names the second box.
       '<div class="roster"><div class="addrow"><input type="email" placeholder="name@example.com" data-add="1" value="' + esc(S.inviteOne) + '">' +
       '<button class="btn btn-approve glyphbtn emojibtn" data-act="add"' +
-      ' title="Send the invitation">✒️</button></div></div>' +
+      ' title="Send the invitation">✒️</button>' +
+      // **A door's second act sits beside the door's own** (entry 161, Q1024).
+      // ✉️'s act is the field and its ✒️, and §9.1 already rules that a door
+      // whose act is in the body has nothing left to commit on the row — so
+      // the route's commit joins the act here rather than contradicting a row
+      // that is a bare ✓ exactly because the act is elsewhere.
+      founderCommit(card('invite')) + '</div></div>' +
       doorErrHtml('invite') +
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Several at once</div>' +
             // the boxes keep what is in them across a close, like every other
@@ -5813,7 +5907,10 @@
           : 'Until the document begins, taking somebody off the list is yours alone — an invitation withdrawn is nobody else’s business yet.') +
         '</p>' + removeSubjectPicker() +
         '<div style="margin-top:var(--s2)"><button class="btn" data-exile="1"' +
-        (S.removeWho ? '' : ' disabled') + '>❌ Remove</button></div>' +
+        (S.removeWho ? '' : ' disabled') + '>❌ Remove</button>' +
+        // beside the door's own act, as on ✉️ (entry 161, Q1024) — the row's
+        // ✒️ here is inert for a door and is not what this joins
+        founderCommit(card('remove')) + '</div>' +
         doorErrHtml('remove')
       : '<p class="why">' + ({
           consent: 'Removing a member is a proposal every member answers, including them — nobody leaves against their will.',
@@ -6441,6 +6538,10 @@
         // — where they still can (entry 62). A rationale field on a setting
         // whose pen is down, or on a closed document, is asking for the reason
         // for a change that cannot be made.
+        // **One lane, both routes** (entry 161): the same sentence rides the
+        // pen as `setWhy` (T25, attributed by construction) and the proposal
+        // as `openMotion`'s `why` (K12, C11) — a reason is owed for the
+        // change, not for the road it takes. `founderProposal` reads it here.
         if (amFounder() && cs && founderDirect(cc) && isChange(k) && !motionOn(cc) && !membersHold(cc)) {
           const v = (S.setWhy && S.setWhy[k]) || '';
           return '<div class="body whyset"><p class="eyebrow fieldlab">Why are you changing this?</p>' +
@@ -6549,7 +6650,12 @@
           // explanation when the wallet is what is missing.
           (commitReady(c) && (!cs || mayPenOn('title')) ? '' : ' disabled') +
           ' data-confirm="1" title="' + (!cs || mayPen() ? commitTitle(c) : penWaitTitle) + '">' +
-          (cs ? '✒️' : '🪶') + '</button>'
+          (cs ? '✒️' : '🪶') + '</button>' +
+          // …and the room's route beside it, where the pen is still held
+          // (entry 161): the Founder's own act stays where their eye already
+          // goes and putting it to the membership is the deliberate second
+          // reach, so this is **after** the pen and never in front of it.
+          founderCommit(c)
         // 📧 in flight: the act is resending, and it spends nothing, so it is
         // a click rather than a hold (the ladder is for what comes out of a
         // wallet). The first send is still the 🪶 commit below.
@@ -6622,12 +6728,16 @@
         // the card decides the ✒️, the wallet decides the sentence (entry 62)
         (ready(c) && penOkFor(commitGlyph, c) ? '' : ' disabled') +
         ' data-confirm="1" title="' +
-        (penOkFor(commitGlyph) ? commitTitle(c) : penWaitTitle) + '">' + commitGlyph + '</button>');
+        (penOkFor(commitGlyph) ? commitTitle(c) : penWaitTitle) + '">' + commitGlyph + '</button>' +
+        // the route's own commit, after the pen (entry 161) — see the title
+        // branch above for why it stands second
+        founderCommit(c));
       // the refusal line, under the body and beside the commit row that tried
       // (entry 62). The two doors draw it inside their own bodies already, so
       // they are excluded here rather than carrying it twice.
       return cardHtml(c, ctx,
-        body + changeHalf(c) + kindLine + (c.door ? '' : doorErrHtml(c.k)), foot, g.cards);
+        body + changeHalf(c) + founderPairNote(c) + kindLine +
+        (c.door ? '' : doorErrHtml(c.k)), foot, g.cards);
     };
     // the title card opens in the title's own paragraph, whatever else
     // the band is doing — the clause, opened, with its tab in its strip
@@ -6760,6 +6870,17 @@
     const c = S.open ? card(S.open) : null;
     const b = document.querySelector('[data-confirm]');
     if (b && c) { b.disabled = !commitReady(c); b.title = commitTitle(c); }
+    // …and the Founder's second commit beside it (entry 161), **swapped in
+    // place** for the reason the composer's own commit is (329a): a keystroke
+    // into ⏰'s date field or ⏱️'s numbers moves the route as well as the
+    // value, and a full render would rebuild the field under the caret. The
+    // pen above is a `disabled` flip because its words never change; this one
+    // is a swap because its glyph, its words and its hold all can.
+    if (c && founderPairOn(c)) {
+      const slot = document.querySelector(
+        '.setupcard [data-putmotion], .setupcard [data-holdmotion]');
+      if (slot) slot.outerHTML = founderCommit(c);
+    }
     // …and nothing else on the row has a live state to correct: since the
     // bin is always pressable there is no dirty predicate left to keep in
     // step, which is four fewer copies of "what this card stands as".
@@ -7018,20 +7139,36 @@
       // trailing click of a completed hold is swallowed, under `click` the
       // click itself starts the flight (backlog 184)
       if (penClickGuard(pm) !== 'act') return;
-      if (S.draft && S.draft.to) {
+      // **The Founder's card has no composer to have filled** (entry 161):
+      // where they hold the pen the value is in the card's own controls, so
+      // the draft is read off them at the press — which is exactly when a
+      // member's lane is read too. `S.open` is the open card's key and the
+      // commit is on the open card, so the attribute carries nothing new.
+      const own = !(S.draft && S.draft.k === S.open) && founderPair(card(S.open));
+      const d0 = own ? founderProposal(card(S.open)) : S.draft;
+      // the value went between the render and the press — the commit was live
+      // when it was drawn, so the press is answered rather than dropped
+      if (own && !d0) return setDoorErr(S.open, NOTHING_TO_PUT);
+      if (d0 && d0.to) {
         // **A refused motion is not a sent one** (Q811). The draft was
         // cleared whatever came back, and live `openMotion` is a command
         // that resolves rather than throws — so a refusal (the commonest
         // being the one 🏛️ out per member) emptied the composer and read as
         // a motion that had gone. What is refused comes back with its
         // reason on it, the way a refused text proposal does.
-        const d0 = S.draft;
+        // **The Founder's words are not in a draft to be kept**: they are in
+        // the radios and the picker, which the refusal leaves exactly as they
+        // were — so `own` drops the draft instead of restoring it, and the
+        // refusal line is the whole of what is carried over.
         try {
           const sent = cs.openMotion(now(), viewerId(), draftPayload(d0), d0.why || undefined);
           S.draft = null;
           S.doorErr = null;
+          // the reason rode in as the motion's `why` (K12); it is spent, the
+          // way `commitSetting` spends it on the pen's own commit
+          if (own && S.setWhy) delete S.setWhy[d0.k];
           if (sent && sent.then) sent.then((res) => { if (res && res.error) {
-            S.draft = d0;
+            S.draft = own ? null : d0;
             setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(res.error) + '.');
           } });
         } catch (e) {
@@ -7531,6 +7668,21 @@
   let assembly = null;
   function conveneAssembly(btn, k) {
     disperseAssembly();
+    // **The Founder's draft is seeded here, at the start of the gesture**
+    // (entry 161). This is the one place both the pointerdown listener and
+    // the capture-phase click listener funnel through, so the two gestures
+    // cannot drift — and seeding at the *start* is what puts the Founder
+    // under the `S.draft !== d0` guard below: their radios are as free during
+    // the ten seconds as a member's composer is, and what goes in must be
+    // what the room convened over.
+    const seeded = !(S.draft && S.draft.k === k) && founderPair(card(k));
+    if (seeded) {
+      const p = founderProposal(card(k));
+      // the value went between the render and the press: answered, never a
+      // silent return, which reads as a dead press
+      if (!p) return setDoorErr(k, NOTHING_TO_PUT);
+      S.draft = p;
+    }
     const d0 = S.draft;
     if (!d0 || d0.k !== k) return;
     const r = btn.getBoundingClientRect();
@@ -7580,12 +7732,17 @@
         // the provisional layer agrees, so their own radio reads pressed
         S.mAns[d0.k] = 'yes';
         S.doorErr = null;
-        S.draft = null; }
+        S.draft = null;
+        // the reason is spent with the act (K12), as `commitSetting` spends it
+        if (seeded && S.setWhy) delete S.setWhy[d0.k]; }
       catch (e) {
+        // a seeded draft is dropped rather than kept: the Founder's words are
+        // in the radios and the picker, which the refusal has not touched
+        if (seeded) S.draft = null;
         setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(e && e.message) + '.');
       }
       if (sent && sent.then) sent.then((res) => { if (res && res.error) {
-        S.draft = d0; delete S.mAns[d0.k];
+        S.draft = seeded ? null : d0; delete S.mAns[d0.k];
         setDoorErr(d0.k, 'That could not be proposed: ' + plainRefusal(res.error) + '.');
       } });
       finish();
@@ -7757,7 +7914,10 @@
       const line = (t.closest('.setupcard') || document).querySelector('.why.refusal');
       if (line) line.remove();
     }
-    if (t.matches && t.matches('[data-add]')) { S.inviteOne = t.value; return; }
+    // the address is the value of ✉️'s second commit too (entry 161), so the
+    // route's button wakes on the typing — in place, never a render, because
+    // this is the field under the caret
+    if (t.matches && t.matches('[data-add]')) { S.inviteOne = t.value; refreshCommit(); return; }
     if (t.matches && t.matches('[data-emails]')) { S.inviteMany = t.value; return; }
     if (t.dataset.txt === 'myname') { S.myname = t.value; renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (t.dataset.txt === 'myemail') { S.myemail = t.value.trim();
