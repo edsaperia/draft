@@ -3490,6 +3490,44 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // of this) left most of a tall decision card below the fold. A narrow accept
   // band, so a clause already up there doesn't get nudged for nothing.
   const READ_LINE = 150;
+
+  // **Two target lines, because two different things are being brought into
+  // view** (backlog 214). `READ_LINE` above is for arriving at a *card*: the
+  // card unrolls downward out of its clause, so the clause wants to be high
+  // with the screen below it free. A contents-rail click is reading rather than
+  // acting — the reader wants the heading and as much of the section under it
+  // as the window holds — so its line is the first readable one, immediately
+  // under the sticky bar. The rule is *what is being brought into view*, never
+  // which rail was clicked.
+  //
+  // Read at click time rather than cached at load: `--nav-h` is a CSS custom
+  // property, and a cached copy would be a second source of truth for the
+  // height of the bar.
+  const navBarH = () => {
+    const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'));
+    return Number.isFinite(v) ? v : 58;          // the token's own value, if it ever goes missing
+  };
+  // 14, because 58 + 14 is the 72 that this file has carried since the charter's
+  // rail was written: the existing arrivals must not move by a pixel, or every
+  // geometry baseline under design/tools acquires a delta about nothing.
+  const HEAD_GAP = 14;
+  const headLine = () => navBarH() + HEAD_GAP;
+
+  // One path for every heading the contents rail points at, whoever supplied
+  // the entry. It animates through `smoothScrollBy` and never `scrollIntoView`
+  // or `behavior:'smooth'`, because `SESSION.smoothScrollBy` is the seam the
+  // probes and the card-audit swap for an instant jump — a second way to move
+  // the page would be a scroll none of them could hold still.
+  function scrollToHeading(el, done) {
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    // a target with no layout box — a section hidden on this fixture — reports
+    // a rect of all zeros, which would scroll the page to the top: a worse
+    // answer than none
+    if (!r.width && !r.height) return;
+    smoothScrollBy(r.top - headLine(), done || (() => {}));
+  }
+
   const topTarget = (targets) => targets.reduce((a, c) =>
     (c.getBoundingClientRect().top < a.getBoundingClientRect().top ? c : a));
   // The clause a move is aimed at — a patch's topmost site, everyone else's only
@@ -4038,9 +4076,32 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         // stays what it was: navigation.
         const only = entriesForSection(n);
         if (only.length === 1 && openId !== only[0].id) return toggle(only[0].id, true);
-        const el = document.getElementById('sec-' + n);
         // same owned animation as the queue-wire, and clear of the sticky navbar
-        if (el) smoothScrollBy(el.getBoundingClientRect().top - 72, () => markCurrentSection());
+        scrollToHeading(document.getElementById('sec-' + n), () => markCurrentSection());
+      })
+    );
+    // Everything the host contributed above the charter's own headings — the
+    // Constitution pile head, one entry per live constitution section, the
+    // title, and the founder's prose headings — is a bare in-page anchor with
+    // no `data-toc`, so nothing bound it, the browser handled it, and the
+    // heading arrived instantly at y = 0: underneath the sticky bar, which is
+    // to say the one word the reader had just clicked was the one thing they
+    // could not see (Ed, QA of batch S).
+    //
+    // Bound here by selector rather than by a marker attribute the lead would
+    // have to emit: `setup-probe.js` hashes `#toc`'s outerHTML, so a cosmetic
+    // `data-` hook would turn a behaviour-only change into a reference
+    // re-freeze. And it is bound in this file rather than in the page's
+    // `afterToc` because the rail's navigation is the rail's, whoever supplied
+    // the entry — one handler is what stops the two halves drifting apart
+    // again.
+    tocEl.querySelectorAll('a[href^="#"]:not([data-toc])').forEach((a) =>
+      a.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        // the id off the anchor's own href, never a guessed prefix: the lead
+        // emits four kinds (#cs-constitution, #cs-<key>, #dochead, #h<i>)
+        const id = (a.getAttribute('href') || '').slice(1);
+        scrollToHeading(id && document.getElementById(id), () => markCurrentSection());
       })
     );
     if (extra && extra.afterToc) extra.afterToc();
