@@ -195,8 +195,12 @@ function checkGovernance() {
 function checkReasoning() {
   note('Spec reasoning — SPEC.md’s `→ why:` pointers against SPEC-REASONING.md');
   const named = new Set();
-  for (const m of read('SPEC.md').matchAll(/→ why: ((?:R-\d+)(?:, *R-\d+)*)/g))
-    for (const id of m[1].split(',')) named.add(id.trim());
+  // A pointer's list may mix `R-nnn` with `entry n` and `Qn` in either order
+  // (`→ why: R-024, entry 94`), so the list is matched as a whole and the
+  // R-ids picked out of it — anchoring on a leading `R-\d+` alone skipped
+  // every id that happened to sit behind a non-R item.
+  for (const m of read('SPEC.md').matchAll(/→ why: ((?:R-\d+|entry \d+|Q\d+)(?:, *(?:R-\d+|entry \d+|Q\d+))*)/g))
+    for (const id of m[1].split(',')) { const t = id.trim(); if (/^R-\d+$/.test(t)) named.add(t); }
   const why = read('design/SPEC-REASONING.md');
   const entries = new Set([...why.matchAll(/^\*\*(R-\d+) /gm)].map((m) => m[1]));
   for (const id of [...named].sort())
