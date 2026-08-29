@@ -1110,6 +1110,28 @@
     try { rec = cs.memberRecords().get(id) || null; } catch (e) { return null; }
     return rec ? new Set(rec.okOwed) : null;
   };
+  // **What one act laid down, owed to you as one thing** (entry 162, Q1013;
+  // SPEC §9.7 rule 3, SURFACE C8a/E9). The module is the truth here in both
+  // directions, exactly as it is for `owedSettings` one line up — the key list
+  // below is *derived* from what is owed rather than remembered, so nothing
+  // about a release batch is kept per device and `ackPersists` never hears of
+  // it. Oldest first, so the rail meets the acts in the order they happened.
+  const releaseBatches = () => {
+    if (!cs) return [];
+    if (cs.isRemote) return (cs.v && cs.v.view && cs.v.view.owedReleases) || [];
+    const id = viewerId(); if (!id) return [];
+    let rec = null;
+    try { rec = cs.memberRecords().get(id) || null; } catch (e) { return []; }
+    if (!rec || !rec.releasesOwed) return [];
+    const out = [];
+    try {
+      cs.releaseBatchRecords().forEach((b) => {
+        if (rec.releasesOwed.has(b.id)) out.push({ id: b.id, at: b.t, releases: b.releases });
+      });
+    } catch (e) { return []; }
+    return out.sort((a, b) => a.at - b.at);
+  };
+  const releaseBatch = (id) => releaseBatches().find((b) => b.id === id) || null;
   // **One press dismisses the task** (Q846, Ed: *I click a queue-card, click
   // OK, then click the queue-card again, then click OK, then the queue card
   // goes*). The press adds the key and sends `give-ok` in the same act, and
@@ -1897,7 +1919,8 @@
       dist: [9, 5], distTop: 0, distEnds: ['No AI proposals', 'AI proposals are permitted'] },
   ];
   const card = (k) => CARDS.find((c) => c.k === k) || ANS.find((c) => c.k === k) ||
-    GATES.find((c) => c.k === k) || powerCard(k) || admitCard(k) || recordCard(k);
+    GATES.find((c) => c.k === k) || powerCard(k) || admitCard(k) || recordCard(k) ||
+    releaseCard(k);
   // **The governance tab group** (403/405, Ed 2026-08-19): every held-able
   // setting is three questions — the value, ✒️ who-has-the-pen, 🛡️ do-carried-changes-need-the-Founder’s-OK — drawn as a
   // pile: the value’s tab in front, the two power tabs beneath. The tabs
@@ -1964,6 +1987,26 @@
     ADMCACHE[k].t = admissionPrice() === 'pen' ? nm + ' Has Joined' : 'Admit ' + nm + '?';
     return ADMCACHE[k];
   };
+  // **Everything one act laid down is one card** (entry 162, Q1013). Built on
+  // `admitCard`'s pattern, which exists for exactly this shape: a synthetic
+  // card with a dynamic key that the module, not the page, is the truth about.
+  // It asks only to have been read, so its title is a plain statement of what
+  // happened (STYLE T1–T2) and does not name the batch — a title that listed
+  // its contents would put a fresh string in the copy golden per act.
+  const RELCACHE = {};
+  const releaseCard = (k) => {
+    const mm = /^rel:(.+)$/.exec(k);
+    if (!mm) return undefined;
+    const id = mm[1];
+    if (!RELCACHE[k]) RELCACHE[k] = { k, release: id, g: '👑', kind: 'constitutional',
+      early: () => true, hide: () => !releaseBatch(id) };
+    RELCACHE[k].t = 'What the Founder Has Laid Down';
+    return RELCACHE[k];
+  };
+  // the batches still owed, minus the one press in flight (`S.okd` is the
+  // page's optimism until the command's own refresh lands)
+  const releaseKeys = () => releaseBatches()
+    .filter((b) => !S.okd.has('rel:' + b.id)).map((b) => 'rel:' + b.id);
   // **A settled motion files behind the rule it was about** (Q942, entry 72,
   // Ed 2026-08-25: *when a proposal for a change in a setting passes or is
   // rejected, it should leave a tab, the same as with a text amendment*). The
@@ -2414,7 +2457,14 @@
   // The open card is kept in its own group even if it has just gone invisible
   // under the pointer: the strip a card opened into must not lose the tab you
   // are looking at.
-  const proposalChips = () => PROPOSAL_CHIPS.map(card)
+  // **A release batch belongs to no clause, so it stands where 🍾 does**
+  // (entry 162). What one act laid down spans the constitution's sections —
+  // 🍾 itself lays down the Text's pair and every pending release at once —
+  // and the Proposals preamble is the page's own precedent for a card that is
+  // a *moment* rather than a rule. So the 👑 tab joins the four already in
+  // that stack and opens at the same paragraph, which is also what gives the
+  // card a home to render in: it draws no clause of its own.
+  const proposalChips = () => PROPOSAL_CHIPS.concat(releaseKeys()).map(card)
     .filter((c) => c && (visible(c) || S.open === c.k));
   const proposalsClause = () => {
     // sentence 1 — who may take part: 💡's own two branches joined to ⚖️'s.
@@ -2618,6 +2668,8 @@
     // judgment 🪪's price asks for, settled when you have given it
     if (c.admit) return admissionPrice() === 'pen'
       ? S.okd.has(c.k) : (motionOn(c) ? answeredMotion(c) : true);
+    // a laid-down power is news, settled by your OK — the ✒️ admit's own rule
+    if (c.release) return S.okd.has(c.k);
     if (c.door) return true;                                   // doors, not decisions
     if (c.isBegin) return constituted();                       // 🍾: settled by the press
     if (c.isClosing) return signedClose();                     // 🥂: settled by your signature
@@ -3223,7 +3275,11 @@
       lead: (H) => (cs ? (proposalChips().length ? H.para(card('begin')) : preamblePara()) : ''),
       body: (H) => ['rate', 'machines'].map(card)
         .filter((c) => c && visible(c)).map((c) => H.para(c) + H.tasks(c)).join(''),
-      keys: ['begin', 'canpropose', 'canjudge', 'rate', 'machines'] },
+      keys: ['begin', 'canpropose', 'canjudge', 'rate', 'machines'],
+      // one 👑 card per act that laid powers down (entry 162) — news, never a
+      // task, and enumerated here because the rail reads a section's own keys:
+      // a card the section does not enumerate is a card nothing can serve
+      extraKeys: () => releaseKeys() },
     { key: 'deciding', title: 'Decisions',
       text: '',
       // ⏰ when it ends, 🌡️ how sure the room must be at that point, 🪜 how
@@ -3281,7 +3337,7 @@
   // put it in front of the founder, and `otherTasksLeft` counting it held every
   // delegated question shut for ever. Whatever makes a task owed must make it
   // served; where it cannot, the task must not block.
-  const railable = (c) => !!c && (!!c.ansFor || !!c.admit ||
+  const railable = (c) => !!c && (!!c.ansFor || !!c.admit || !!c.release ||
     SEC.some((s2) => s2.keys.includes(c.k)) ||
     c.k === 'grant-pen' || c.k === 'grant-shield' || c.k === 'grant-voice');
   // **The rail's own set, in one place** (Q773). The rail is what tells a
@@ -4505,7 +4561,8 @@
   const signedClose = () => !!(cs && cs.closed && (!viewerIsMember() || mySignature() !== null));
   const closeSignatures = () => (!cs || !cs.closed ? []
     : cs.isRemote ? ((cs.v.view.closed && cs.v.view.closed.signatures) || []) : cs.closingSignatures());
-  const news = (c) => (c.admit ? admissionPrice() === 'pen' && !S.okd.has(c.k)
+  const news = (c) => (c.release ? !S.okd.has(c.k)   // owed is the whole of it
+    : c.admit ? admissionPrice() === 'pen' && !S.okd.has(c.k)
     : motionOn(c) ? false
     : c.isBegin ? false
     // the close is news to every member until they have signed (§4.6: the
@@ -4972,7 +5029,7 @@
       // the Proposals opening is one clause carrying four tabs (Q748): the
       // group is the same whichever of the four you come in by, and `para`
       // opens the card at 🍾's paragraph for any of them
-      if (PROPOSAL_CHIPS.includes(c.k)) return proposalChips();
+      if (PROPOSAL_CHIPS.includes(c.k) || c.release) return proposalChips();
       const k = c.k === 'pace' ? 'bar' : c.k;
       const base = (k === 'bar' && card('pace') && visible(card('pace')))
         ? [card('bar'), card('pace')] : [card(k)];
@@ -6163,6 +6220,18 @@
           esc(c.admit) + '"' + (rc && pick ? '' : ' disabled') + '>' + TICK + '</button>',
           g.cards);
       }
+      // **What one act laid down, in one card** (entry 162, Q1013): the whole
+      // batch stated, grouped by the constitution's own sections, taking one
+      // OK. The commit row is the ✒️-price admit card's — 🗑️ and an OK — a
+      // release having happened rather than been decided.
+      if (c.release) {
+        const b = releaseBatch(c.release);
+        if (!b) return cardHtml(c, ctx, '<p class="why">This is no longer outstanding.</p>',
+          binBtn(), g.cards);
+        return cardHtml(c, ctx, releaseBody(b),
+          binBtn() + '<button class="btn btn-approve" data-ok="' + esc(c.k) + '">OK</button>',
+          g.cards);
+      }
       if (c.isClosing) {
         const signed = signedClose();
         return cardHtml(c, ctx, closingBody(c),
@@ -7000,6 +7069,12 @@
         // held in flight until the command's own refresh lands, so the view
         // this press was made against cannot put the task straight back
         try { holdOkInFlight(kk.slice(4), cs.giveOk(now(), viewerId(), midOf(kk.slice(4)))); } catch (e) {}
+      }
+      // the OK on one act's worth of laid-down powers (entry 162), held in
+      // flight for Q846's reason: the module's answer about a key just pressed
+      // is out of date until the command's own refresh lands
+      if (cs && kk.startsWith('rel:') && viewerId()) {
+        try { holdOkInFlight(kk, cs.ackRelease(now(), viewerId(), kk.slice(4))); } catch (e) {}
       } });
     const toggleFold = (k2) => {
       if (S.folded.has(k2)) S.folded.delete(k2); else S.folded.add(k2); };
@@ -7763,7 +7838,8 @@
       quorumForm: quorum && quorum.form ? quorum.form : 'count',
       convenor: { id: FOUNDER, email: '', name: d.founder.name, isMember: true },
       view: { settings: d.view.settings, gates: d.view.gates, crowned: d.view.crowned,
-        questions: [], resolutions: [], members: [], applicants: [], owedOks: [], motions: [],
+        questions: [], resolutions: [], members: [], applicants: [], owedOks: [],
+        owedReleases: [], motions: [],
         crownTasks: [], identity: { name: null, picture: null },
         frozen: d.frozen, closed: d.closed, mustReturn: null } };
   };
@@ -8038,7 +8114,11 @@
           name: r.name, picture: r.picture, arrivedAtT: r.arrived ? 1 : null,
           arrival: r.arrival,
           lapsed: r.lapsed, removed: false,
-          okOwed: r.id === self.v.me ? self.v.view.owedOks : [] }]))),
+          okOwed: r.id === self.v.me ? self.v.view.owedOks : [],
+          // the batch ids alone; the contents ride `view.owedReleases`, which
+          // `releaseBatches` reads directly on the remote path (entry 162)
+          releasesOwed: new Set(r.id === self.v.me
+            ? (self.v.view.owedReleases || []).map((b) => b.id) : []) }]))),
       convenorRecord: () => self.v.convenor,
       motionRecords: () => index().motions || (index().motions = new Map(
         self.v.view.motions.map((rec) => [rec.id, { id: rec.id,
@@ -8069,6 +8149,7 @@
       setIdentity: (t, member, identity) => api.cmd('set-identity', identity),
       answer: (t, member, setting, value) => api.cmd('answer', { setting, value }),
       giveOk: (t, member, setting) => api.cmd('give-ok', { setting }),
+      ackRelease: (t, member, batch) => api.cmd('ack-release', { batch }),
       openMotion: (t, by, payload, why) => api.cmd('open-motion', { payload, why }),
       answerMotion: (t, member, motion, answer) => api.cmd('answer-motion', { motion, answer }),
       withdrawMotion: (t, member, motion) => api.cmd('withdraw-motion', { motion }),
@@ -9319,6 +9400,31 @@
   // a setting named as the founder meets it — its glyph and its own title
   const settingNamed = (mid) => glyphOfSetting(mid) +
     esc(card(pkeyOf(mid)) ? card(pkeyOf(mid)).t : mid);
+  // **The 👑 news card's body** (entry 162, Q1013): what one act laid down,
+  // grouped by the constitution's own sections. `SEC` is the page's existing
+  // idea of a zone, and 158's editable zone table does not exist yet — when
+  // it lands its table becomes the grouping, so nothing here invents a second
+  // zone list for it to collide with. 🪜 is in no section's keys (Q512), so a
+  // release on it lands in an unheaded tail rather than being filed under a
+  // section it does not stand in.
+  const secTitleOfKey = (pk) => {
+    const s2 = SEC.find((x) => x.keys.includes(pk));
+    return s2 ? s2.title : null;
+  };
+  const releaseBody = (b) => {
+    const rows = b.releases.map((r) => ({
+      sec: secTitleOfKey(pkeyOf(r.setting)),
+      // ✒️ amends at will, 🛡️ refuses — the pair the surface already names
+      line: (r.power === 'unilateral' ? '✒️ ' : '🛡️ ') + settingNamed(r.setting) }));
+    const groups2 = SEC.map((x) => x.title).filter((t2) => rows.some((r) => r.sec === t2))
+      .concat(rows.some((r) => r.sec === null) ? [null] : []);
+    return '<p class="why">The Founder has laid these down. Where ✒️ stands they can ' +
+      'no longer amend at will; where 🛡️ stands they can no longer refuse what the ' +
+      'membership passes. Only the membership can hand either back.</p>' +
+      groups2.map((t2) => (t2 ? '<div class="unlocks"><b>' + esc(t2) + '</b></div>' : '') +
+        '<ul class="batch">' + rows.filter((r) => r.sec === t2)
+          .map((r) => '<li>' + r.line + '</li>').join('') + '</ul>').join('');
+  };
   const BEGIN_BATCH = [
     'The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.',
     'Members gain ✏️s on it, at the proposal rate.',
