@@ -544,12 +544,19 @@ var CONSTITUTION = (() => {
     // nothing and counts toward no quorum, so switching it re-rates nothing
     // already decided. A member could put the document through an AI
     // themselves; the tool is a convenience for the membership.
+    //
+    // The card left the surface on 2026-08-29 (R-078) and the setting stayed,
+    // so a founder who delegated 🤖 before then holds a question no member can
+    // be served and no card can take back — a permanent pre-start wedge (entry
+    // 259). `retiredAnswer` is what 🍾 resolves it at: the value every shape in
+    // `shapes.ts` folds it to anyway. → why: R-080.
     {
       id: "machines",
       glyph: "🤖",
       kind: "ordinary",
       delegable: true,
       valueType: "machines",
+      retiredAnswer: { enabled: false, budget: 0 },
       consent: {
         ask: "the most machine proposing you will accept",
         order: (a, b) => {
@@ -2194,17 +2201,26 @@ var CONSTITUTION = (() => {
      * not a removal, so ❌'s 🛡️ does not reach it, and under 🥾 at `consent`
      * it is the only way out, which is the point of that rung. The lapse
      * clock was always a silent exit; this is the spoken one.
+     *
+     * **The convenor's membership is ordinary membership** (§9.6a; entry 248,
+     * written under the recommended reading with Ed's ruling asked), so after
+     * the start a member convenor resigns like anybody. Before the start they
+     * untick 🎩 instead: that *deletes* the record and leaves a clerk convenor
+     * whose shield stands (X15), where a pre-start resignation would mark the
+     * record `removed` and manufacture a vacant seat in a document that has
+     * not begun.
      */
     resign(t, member) {
       this.requireOpen("resigning");
       const m = this.members.get(member);
       if (!m || m.removed) throw new Error(`unknown member '${member}'`);
-      if (member === this.convenor.id) {
+      if (member === this.convenor.id && this.constitutedT === null) {
         throw new Error("the convenor unticks their own row instead (§9.6a)");
       }
       const wasInE = inE(m);
       this.emit({ type: "member-removed", t, member, by: "self" });
       if (wasInE) this.afterRosterChange(t, "departure", member);
+      this.crownSeatVacated(t);
     }
     uninvite(t, member) {
       this.requireOpen("uninviting");
@@ -2334,6 +2350,17 @@ var CONSTITUTION = (() => {
         }
         return { setting: r.setting, power: r.power };
       });
+      for (const id of MANAGED) {
+        if (!this.retiredQuestion(id) || !this.settings.get(id).collecting) continue;
+        this.emit({
+          type: "question-resolved",
+          t,
+          setting: id,
+          value: entryOf(id).retiredAnswer,
+          distribution: [],
+          electorate: []
+        });
+      }
       const before = new Map(HELD.map((k) => [k, { ...this.settings.get(k).powers }]));
       this.emit(list === void 0 ? { type: "constituted", t } : { type: "constituted", t, laidDown: list });
       const laid = [];
@@ -2351,6 +2378,20 @@ var CONSTITUTION = (() => {
      *  however it is held. → why: R-045 */
     waitingOn() {
       return this.waitingWith().map((w) => w.setting);
+    }
+    /**
+     * **A question on a setting that has left the surface is nobody's to
+     * answer** (entry 259, Ed 2026-08-29; → why: R-080). The catalogue carries
+     * the fact — `retiredAnswer`, the value 🍾 resolves such a question at — so
+     * the module never has to read the page. Four sites share the predicate:
+     * `waitingWith` (it holds nothing up), `readiness` (it is in neither list,
+     * collecting or settled — the 🍾 card prints those rows and would print a
+     * bare id, having no card to take a title from), `canPropose` (it gates
+     * nothing, there being no card to answer it on) and `begin` (it writes the
+     * line). `machines` is the only entry that carries it.
+     */
+    retiredQuestion(id) {
+      return entryOf(id).retiredAnswer !== void 0;
     }
     /**
      * **…and *why* it waits** (Q826, Ed 2026-08-25: *I did all my open tasks and
@@ -2388,6 +2429,7 @@ var CONSTITUTION = (() => {
         const st = this.settings.get(e.id);
         if (!st) return false;
         if (e.id === "startingText") return !this.textConfirmedFlag;
+        if (this.retiredQuestion(e.id)) return false;
         return st.collecting || e.judgeGate && st.settledBy === null;
       }).map((e) => {
         const st = this.settings.get(e.id);
@@ -2419,8 +2461,9 @@ var CONSTITUTION = (() => {
     readiness() {
       const E = motionElectorateOf(this.members.values());
       const eIds = new Set(E.map((m) => m.id));
-      const open = MANAGED.filter((id) => this.settings.get(id).collecting);
+      const open = MANAGED.filter((id) => !this.retiredQuestion(id) && this.settings.get(id).collecting);
       const questions = MANAGED.filter((id) => {
+        if (this.retiredQuestion(id)) return false;
         const st = this.settings.get(id);
         return st.collecting || st.distribution !== null;
       }).map((id) => {
@@ -2926,6 +2969,11 @@ var CONSTITUTION = (() => {
      *   governance consequence nobody has ruled on, and such a question blocks
      *   nothing while it stands, where a parked text adoption blocks
      *   everything. Filed as Q1033; the asymmetry is the point.
+     *
+     * Two call sites, both the last word of an act that may have emptied the
+     * seat: the carried `remove` arm of `settleCarriedEffects` and `resign`
+     * (entry 248). It guards itself on `convenorSeatVacant()`, so a caller
+     * never asks whether the member who just left was the convenor.
      */
     crownSeatVacated(t) {
       if (!this.convenorSeatVacant()) return;
@@ -3214,9 +3262,10 @@ var CONSTITUTION = (() => {
      * The seat has been **vacated**: the person who held it was removed from
      * the membership (Ed, 2026-08-29, R-060). A claim about *state* and never
      * about which event produced it, so it reads the same after a replay as
-     * after the act, and so the free resignation of §9.6a — which `resign`
-     * refuses today — is covered the moment that door exists, with no second
-     * rule and no second call site.
+     * after the act. That is why the free resignation of §9.6a needed no
+     * second rule when `resign` opened its door to the convenor (entry 248):
+     * a seat is vacant because the record says so, and a carried removal and
+     * a resignation say it the same way.
      *
      * **A convenor who is not a member is not a vacant seat**, which is the
      * line a reader will get wrong: unticking 🎩 *deletes* the record from
@@ -3475,6 +3524,7 @@ var CONSTITUTION = (() => {
       const m = this.members.get(member);
       if (!m || !inE(m)) return false;
       for (const id of MANAGED) {
+        if (this.retiredQuestion(id)) continue;
         const st = this.settings.get(id);
         if (st.collecting && this.answerable(id) && !st.answers.has(member)) return false;
       }
@@ -3684,7 +3734,8 @@ var CONSTITUTION = (() => {
         collecting: st.collecting,
         shaped: s.shaped(entry.id)
       });
-      if (st.collecting) {
+      const retired = entry.retiredAnswer !== void 0;
+      if (st.collecting && !retired) {
         const answerable = entry.deps.every((d) => s.settingState(d).settledBy !== null);
         const eIds = new Set(s.motionElectorate());
         let answered = 0;
@@ -3698,7 +3749,7 @@ var CONSTITUTION = (() => {
           myAnswer: me ? st.answers.get(member) ?? null : null
         });
       }
-      if (st.settledBy === "ceremony" && st.distribution && st.settledAtT !== null) {
+      if (st.settledBy === "ceremony" && st.distribution && st.settledAtT !== null && !retired) {
         resolutions.push({
           setting: entry.id,
           value: st.value,

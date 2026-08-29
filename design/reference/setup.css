@@ -194,8 +194,11 @@
   .setrow2 { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
   /* 🍾's power table (entry 158): one zone per block, its two switches on one
      `.setrow2`. The gap is the only thing the block adds — the switches are
-     `.pick`/`.lanepick` like every other choice on the surface, so the table
-     inherits the radio grammar rather than inventing a control. */
+     the design system's own `.switch` (system.css), because each power here is
+     an independent on/off rather than a choice among peers, which is the one
+     thing `.pick`/`.lanepick` cannot say. This is the surface's single control
+     that is not a choice, so the table takes the other grammar rather than
+     inventing a third (Ed, 254). */
   .beginzone + .beginzone { margin-top: var(--s3); }
   .beginzone > .setrow2 { margin-top: var(--s1); }
   .fld { display: flex; flex-direction: column; gap: var(--s1); }
