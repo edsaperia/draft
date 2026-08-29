@@ -762,13 +762,13 @@ const topbarFaces = async () => {
   // the founder sees the one member who arrived, and not their own face: that
   // is `me`, two sockets along the same bar
   const founderOk = mine.seats.length === 1 && mine.seats[0] !== 'founder' &&
-    mine.seats[0] !== '?' && mine.title === '2 in the room';
+    mine.seats[0] !== '?' && mine.title === '2 members here';
   say('faces ×1   · the founder sees ' + JSON.stringify(mine.seats) + ' · ' + JSON.stringify(mine.title) +
-    (founderOk ? '' : '  FAIL: expected one seat that is not their own, titled “2 in the room”'));
+    (founderOk ? '' : '  FAIL: expected one seat that is not their own, titled “2 members here”'));
   if (!founderOk) stuck.push("the founder's face row");
   // and the member sees the founder, whose row is the one with the minted id
   const guestOk = theirs.seats.length === 1 && theirs.seats[0] === 'founder' &&
-    theirs.title === '2 in the room';
+    theirs.title === '2 members here';
   say('their view · the member sees ' + JSON.stringify(theirs.seats) + ' · ' + JSON.stringify(theirs.title) +
     (guestOk ? '' : '  FAIL: expected the founder’s face and nobody else’s'));
   if (!guestOk) stuck.push("the member's face row");
