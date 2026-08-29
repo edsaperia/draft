@@ -102,6 +102,10 @@
   let holdInFlight = false;
   let MAY_PROPOSE = () => true;
   let MAY_JUDGE = () => true;
+  // ✒️ on the Text (R-058, entry 160): does this reader's own hand amend the
+  // document? **Defaults false**, so any surface that never sets it behaves
+  // exactly as it does today; the page sets it to `mayPenOn('text')`.
+  let MAY_PEN = () => false;
   // the sign control (Q770): null means no elective 👤 rung — no control
   let SIGNING = () => null;
   let SIGNER = () => '';
@@ -2146,6 +2150,25 @@
   // settings choice takes, so `card-audit`'s rules read it.
   // A nameless member signs *as Anonymous* (§9.0c: it is a name, not a gap) —
   // the label says what the signature will read, and they may go and set one.
+  /**
+   * The commit at the right of the composer's row, and **✒️ where the Founder
+   * holds the pen on the Text** (R-058, entry 160). One button, one place in
+   * the row, one gesture: what changes under the pen is the glyph, the price
+   * (none — nothing is staked, so an empty ✏️ wallet cannot stop it) and the
+   * duration. 161 gives every composer the ✒️/✏️ *pair*; here the one commit
+   * simply *becomes* ✒️ where the pen is held.
+   *
+   * `data-pen` is how the hold below knows which act it is landing, and it is
+   * on the button rather than in a closure because the hold survives a render
+   * and re-finds its control by selector.
+   */
+  function commitBtnHtml(o) {
+    const pen = MAY_PEN();
+    const dis = pen ? !!o.penDisabled : !!o.disabled;
+    return '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
+      (pen ? ' data-pen="1"' : '') + (dis ? ' disabled' : '') +
+      ' title="' + esc(pen ? o.penTitle : o.title) + '">' + (pen ? '✒️' : '✏️') + '</button>';
+  }
   function signControlHtml(d) {
     const base = SIGNING();
     if (!base) return '';
@@ -2234,12 +2257,16 @@
       // spent at Propose, which is where the price is said in words* — and
       // makes the price itself the confirmation step, rather than bolting a
       // "sure?" onto it. Pressing anything else disarms it.
-      '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
-      (broke ? ' disabled title="No ✏️ left — another arrives as the drip accrues"' : '') +
-      ' title="Hold to propose this' + (n > 1 ? ' in all ' + n + ' places' : '') +
-      // the hold's tooltip says what leaves: a signed one leaves with your name
-      (d.signed ? ' — signed' : '') +
-      ' — one edit leaves your wallet to pay for it">✏️</button>' +
+      commitBtnHtml({
+        disabled: broke,
+        title: broke ? 'No ✏️ left — another arrives as the drip accrues'
+          : 'Hold to propose this' + (n > 1 ? ' in all ' + n + ' places' : '') +
+            // the hold's tooltip says what leaves: a signed one leaves with your name
+            (d.signed ? ' — signed' : '') +
+            ' — one edit leaves your wallet to pay for it',
+        penTitle: 'Amend the document' + (n > 1 ? ' in all ' + n + ' places' : '') +
+          ' — it passes at once and costs nothing',
+      }) +
       '</div>' +
       // Only the two facts that change what pressing ✏️ *does* (Ed, 2026-08-17).
       // What it costs is now shown rather than said — the pencil crosses the
@@ -2560,9 +2587,12 @@
           '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
           ' title="' + (site ? 'Discard this draft — nothing has been spent on it yet'
                              : 'Close — there is nothing here to put back') + '">🗑️</button>' +
-          '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
-          (site && !broke ? '' : ' disabled') +
-          ' title="Hold to propose this — one edit leaves your wallet to pay for it">✏️</button>' +
+          commitBtnHtml({
+            disabled: !(site && !broke),
+            title: 'Hold to propose this — one edit leaves your wallet to pay for it',
+            penDisabled: !site,
+            penTitle: 'Amend the document — it passes at once and costs nothing',
+          }) +
           '</div>'
         : '') +
       '</div>'
@@ -2749,14 +2779,22 @@
   // Under reduced motion the pencil does not travel: it fades at the wallet
   // and arrives at the button. Same gesture, same duration, no flight.
   const HOLD_MS = 3000;
+  // ✒️ runs for the pen's own duration, not the pencil's three seconds — the
+  // same number `session-view.html` calls `PEN_HOLD_MS`, stated here because
+  // this file loads first and owns this button's gesture. Three seconds is
+  // the length of a pencil's flight across the screen, and nothing flies here.
+  const PEN_MS = 1000;
   let holding = null;
   const flyStop = (fired) => {
     if (!holding) return;
-    const { el, pencil, timer, anim } = holding;
+    const { el, pencil, timer, anim, pen } = holding;
     holding = null; holdInFlight = false;
     clearTimeout(timer);
     el.classList.remove('holding');
     el.removeAttribute('aria-disabled');
+    // ✒️ spends nothing, so there is no wallet to un-ghost and nothing to fly
+    // home — the control simply comes back, whether it landed or was let go
+    if (pen) return;
     // Fired: the edit is spent, and act() renders the wallet one lighter — so
     // the reserved gap is released without a render of its own, or the wallet
     // would show the old count for a frame before the spend lands.
@@ -2788,6 +2826,26 @@
   const flyStart = (el) => {
     flyStop(false);
     if (el.disabled) return;
+    // **✒️ has no flight, and that is the honest reading** (R-058, entry 160).
+    // A pencil crossing the screen means *an edit is being spent*, and no edit
+    // is spent by a decree; the ✒️ token that could fly instead lives in
+    // `session-view.html`'s own wallet state (`penGhost`, `setWalletGhost`),
+    // which this file does not own and this plan does not reach into. So the
+    // gesture is the whole of it: the same three listeners, the same landing
+    // by id, at the pen's own duration.
+    const pen = el.dataset.pen === '1';
+    if (pen) {
+      el.classList.add('holding');
+      el.setAttribute('aria-disabled', 'true');   // inert, never `disabled` (184)
+      holdInFlight = true;
+      const penId = el.closest('.sugg').dataset.card;
+      const penD0 = draftOf();
+      holding = { el, pencil: null, anim: null, pen: true, timer: setTimeout(() => {
+        flyStop(true);
+        if (draftOf() === penD0) act(penId, 'draft-pen');
+      }, PEN_MS) };
+      return;
+    }
     // the token is about to leave for real, so it stops straining at the leash
     stopLean();
     // The slot the pencil leaves and the pencil that leaves are the same
@@ -3628,6 +3686,27 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // stated in words. The draft stops being a draft and becomes a candidate
     // like any other, so it takes a real id and frees the composer for the next
     // one; from your side it keeps the green, because you can still withdraw it.
+    // **✒️ passes at once** (SPEC §9.7 rule 8, R-058, entry 160): the Founder's
+    // amendment *is* the document the moment they submit it, so there is no
+    // proposal, no stake and nothing left in the rail — the draft simply
+    // leaves, and what replaces it is the document the host re-renders from.
+    // A refusal comes back through `hooks.pen`, which puts the draft back
+    // unproposed with the refusal on the card, exactly as `propose` does.
+    if (what === 'draft-pen') {
+      const d = draftOf();
+      if (!d) return;
+      const shut = () => {
+        if (openId === d.id) openId = null;
+        const i = SUGGS.indexOf(d);
+        if (i >= 0) SUGGS.splice(i, 1);
+        if (hooks.pen) hooks.pen(d);
+        renderAll();
+        drawWires();
+      };
+      if (openId === d.id) collapseCards(d.id, shut); else shut();
+      return;
+    }
+
     if (what === 'draft-propose') {
       const d = draftOf();
       if (!d || editsHeld < EDIT_RULES.stake) return;
@@ -4364,7 +4443,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   const resumeLean = (btn) => { if (hoverSpend && hoverSpend.btn === btn) startLean(btn, hoverSpend.pick); };
   addSpendProbe((t) => {
     const b = t && t.closest && t.closest('[data-act="draft-propose"]');
-    if (!b || b.disabled || !walletEl) return null;
+    // ✒️ spends nothing, so no pencil leans toward it (R-058)
+    if (!b || b.disabled || b.dataset.pen === '1' || !walletEl) return null;
     return { btn: b, pick: () => [...walletEl.querySelectorAll('.pencils i')].pop() };
   });
 
@@ -4514,6 +4594,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     EDIT_RULES = env.EDIT_RULES || { grant: 4, cap: 8, stake: 1 };
     if (env.mayPropose) MAY_PROPOSE = env.mayPropose;
     if (env.mayJudge) MAY_JUDGE = env.mayJudge;
+    if (env.mayPen) MAY_PEN = env.mayPen;
     // the sign control's two reads (Q770): the elective base, if any, and
     // what a signature would read as — both at call time, like the two above
     if (env.signing) SIGNING = env.signing;

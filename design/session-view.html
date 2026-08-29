@@ -8669,9 +8669,18 @@
     try {
       for (const m of cs.motionRecords().values()) {
         if (m.status !== 'carried') continue;
-        if (!m.payload || m.payload.kind !== 'set') continue;
-        const k = PKEYOF[m.payload.setting] || m.payload.setting;
+        if (!m.payload) continue;
         const at = m.at !== undefined && m.at !== null ? m.at : (m.settledAtT || 0);
+        // ✒️ on the Text (R-058, entry 160): the Founder amended the words
+        // themselves. It says **that** the text was amended and never the
+        // before-and-after wording — a document's text is pages long, and the
+        // document is its own record of what it says.
+        if (m.payload.kind === 'text') {
+          rows.push({ at, why: m.why || null, route: m.route, text: true });
+          continue;
+        }
+        if (m.payload.kind !== 'set') continue;
+        const k = PKEYOF[m.payload.setting] || m.payload.setting;
         const from = m.from !== undefined && m.from !== null ? m.from
           : (cs.amendedFrom ? cs.amendedFrom(m.id) : null);
         rows.push({ k, at, from, to: m.payload.value, why: m.why || null, route: m.route });
@@ -8681,9 +8690,10 @@
     rows.sort((x, y) => x.at - y.at);
     const out = [{ t: 'h', level: 1, x: 'Amendments', key: 'A:head' }];
     rows.forEach((r, i) => {
-      const what = WHAT[r.k] || (r.k === 'title' ? 'the document’s title' : r.k);
-      const was = wordsFor(r.k, r.from);
-      const now2 = wordsFor(r.k, r.to);
+      const what = r.text ? 'the document’s own words'
+        : WHAT[r.k] || (r.k === 'title' ? 'the document’s title' : r.k);
+      const was = r.text ? '' : wordsFor(r.k, r.from);
+      const now2 = r.text ? '' : wordsFor(r.k, r.to);
       const who = r.route === 'pen' ? 'The Founder' : 'The membership';
       // an absolute date, not `whenOf`'s relative one: the record is read
       // long after the day it describes, and *today, 11:28* is false by
@@ -8758,9 +8768,9 @@
   // **B2b's seam**: the live wiring lands here — items() derives SUGGS from
   // the view, and each hook posts the command. Null means the fixture's own
   // behaviour (session.js's default path).
-  const LIVE_HOOKS = { items: null, judge: null, propose: null, withdraw: null,
+  const LIVE_HOOKS = { items: null, judge: null, propose: null, pen: null, withdraw: null,
     seen: null, chill: null, textChanged: null, crownAnswer: null };
-  const hookProxy = Object.fromEntries(['judge', 'propose', 'withdraw', 'seen', 'chill',
+  const hookProxy = Object.fromEntries(['judge', 'propose', 'pen', 'withdraw', 'seen', 'chill',
     'textChanged', 'crownAnswer']
     .map((n) => [n, (...a) => (LIVE_HOOKS[n] ? LIVE_HOOKS[n](...a) : undefined)]));
   // ---- the live wiring (B2b): the view in, the commands out ---------------
@@ -9011,19 +9021,46 @@
         : what === 'a' ? 'a' : what === 'b' ? 'b' : 'tie';
       api.cmd('judge-race', { a: c.a, b: c.b, outcome });
     };
-    LIVE_HOOKS.propose = (d) => {
-      // A hunk replaces the document's lines [start, end); the engine holds an
-      // empty document as **zero** lines, so the empty clause an empty
-      // document renders (Q649 (a)) proposes an insert at [0, 0), never a
-      // replacement of a line that does not exist. Clamped to the text the
-      // engine actually holds, which is the rule for every hunk.
+    // A hunk replaces the document's lines [start, end); the engine holds an
+    // empty document as **zero** lines, so the empty clause an empty
+    // document renders (Q649 (a)) proposes an insert at [0, 0), never a
+    // replacement of a line that does not exist. Clamped to the text the
+    // engine actually holds, which is the rule for every hunk.
+    //
+    // **One helper, two doors** (R-058): ✏️ proposes and ✒️ decrees over
+    // exactly the same hunks. The empty-document rule and the clamp are
+    // subtle enough that a second copy would drift.
+    const hunksOf = (d) => {
       const nLines = cs.text === '' ? 0 : String(cs.text).split('\n').length;
-      const hunks = d.sites.map((site) => {
+      return d.sites.map((site) => {
         const ls = site.text.split('\n');
         const start = Math.min(lineIdx(site.keys[0]), nLines);
         return { start, end: Math.max(start, Math.min(lineIdx(site.keys[site.keys.length - 1]) + 1, nLines)),
           lines: ls.map((ln, i) => headOf(site.origin[i]) + ln) };
       });
+    };
+    // ✒️ on the Text (R-058, entry 160): the Founder's amendment passes the
+    // instant it is submitted, so there is nothing to keep a local id for and
+    // no wallet to re-read — the command's own refresh brings back a document
+    // that already says the new thing. A refusal takes `propose`'s path: the
+    // draft comes back unproposed with the refusal on its own card.
+    LIVE_HOOKS.pen = (d) => {
+      const back = d;
+      api.cmd('pen-text', { baseVersion: cs.v.textVersion, hunks: hunksOf(d), why: d.rationale || '' })
+        .then((res) => {
+          if (res && res.ok) { SESSION.setData({ SUGGS: itemsFromView(cs.v) }); return; }
+          const stale = /targets version/.test((res && res.error) || '');
+          back.id = DRAFT_ID; back.unproposed = true;
+          back.refusal = stale
+            ? 'The text moved while you were writing — your draft is kept; read the new wording and amend again.'
+            : 'That could not be amended: ' + ((res && res.error) || 'the server did not answer') + '.';
+          if (!SESSION.SUGGS.includes(back)) SESSION.SUGGS.push(back);
+          SESSION.setData({ SUGGS: itemsFromView(cs.v) });
+          SESSION.toggle(DRAFT_ID, false);
+        });
+    };
+    LIVE_HOOKS.propose = (d) => {
+      const hunks = hunksOf(d);
       const local = d.id;
       // `signed` is the draft's own choice (Q770); the server is the gate that
       // refuses it under a rung that offers no choice
@@ -10170,6 +10207,10 @@
     // with no remount (**a power is not held until it is acknowledged**)
     mayPropose: () => mayPropose(),
     mayJudge: () => mayJudge(),
+    // ✒️ on the Text (R-058, entry 160): whether this reader's own hand
+    // amends the document. `mayPenOn('text')` is already the true question —
+    // the pen held on 📄, the document open, the grant acknowledged
+    mayPen: () => mayPenOn('text'),
     // the sign control (Q770): the elective 👤 rung's base, or null — read at
     // call time, so a 👤 motion carrying while a draft is open changes what the
     // next draft offers and nothing about the one being typed
