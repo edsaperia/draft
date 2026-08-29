@@ -1029,6 +1029,17 @@ var CONSTITUTION = (() => {
       __publicField(this, "motions", /* @__PURE__ */ new Map());
       __publicField(this, "crownQuestions", /* @__PURE__ */ new Map());
       __publicField(this, "applicants", /* @__PURE__ */ new Map());
+      /**
+       * The release batches, by id (entry 162, Q1013), and the two fields that
+       * decide whether a further release **joins** one or opens a new one. All
+       * three are recomputed **in the fold** and never only in the command: a
+       * batch id minted in the command would replay differently from the session
+       * that wrote it.
+       */
+      __publicField(this, "releaseBatches", /* @__PURE__ */ new Map());
+      __publicField(this, "lastReleaseT", null);
+      __publicField(this, "lastReleaseBatch", null);
+      __publicField(this, "nextReleaseN", 1);
       __publicField(this, "nextMemberN", 1);
       __publicField(this, "nextMotionN", 1);
       __publicField(this, "nextCrownN", 1);
@@ -1185,6 +1196,8 @@ var CONSTITUTION = (() => {
             if (prev) {
               rec.okOwed = prev.okOwed;
               rec.okGiven = prev.okGiven;
+              rec.releasesOwed = prev.releasesOwed;
+              rec.releasesGiven = prev.releasesGiven;
               rec.lastActivityT = prev.lastActivityT;
             } else {
               rec.lastActivityT = Math.max(rec.lastActivityT, this.convenor.lastActivityT);
@@ -1374,6 +1387,34 @@ var CONSTITUTION = (() => {
           const m = this.members.get(event.member);
           m.okOwed.delete(event.setting);
           m.okGiven.add(event.setting);
+          this.touch(event.member, event.t);
+          break;
+        }
+        case "release-owed": {
+          const m = this.members.get(event.member);
+          m.releasesOwed.add(event.batch);
+          const rec = this.releaseBatches.get(event.batch);
+          if (rec) {
+            for (const r of event.releases) {
+              if (!rec.releases.some((x) => x.setting === r.setting && x.power === r.power)) {
+                rec.releases.push({ ...r });
+              }
+            }
+          } else {
+            this.releaseBatches.set(
+              event.batch,
+              { id: event.batch, t: event.t, releases: event.releases.map((r) => ({ ...r })) }
+            );
+            this.nextReleaseN += 1;
+          }
+          this.lastReleaseT = event.t;
+          this.lastReleaseBatch = event.batch;
+          break;
+        }
+        case "release-ok": {
+          const m = this.members.get(event.member);
+          m.releasesOwed.delete(event.batch);
+          m.releasesGiven.add(event.batch);
           this.touch(event.member, event.t);
           break;
         }
@@ -1706,6 +1747,8 @@ var CONSTITUTION = (() => {
         lastActivityT: arrivedAtT ?? invitedAtT,
         okOwed: /* @__PURE__ */ new Set(),
         okGiven: /* @__PURE__ */ new Set(),
+        releasesOwed: /* @__PURE__ */ new Set(),
+        releasesGiven: /* @__PURE__ */ new Set(),
         invitationExpired: false,
         closingAck: null
       };
@@ -1967,6 +2010,7 @@ var CONSTITUTION = (() => {
         }
       }
       this.emit({ type: "power-relinquished", t, setting, power });
+      if (this.constitutedT !== null) this.oweReleases(t, [{ setting, power }]);
     }
     reclaim(t, setting) {
       this.requireOpen("reclaiming");
@@ -2177,7 +2221,17 @@ var CONSTITUTION = (() => {
       if (waiting.length > 0) {
         throw new Error(`the document cannot begin while '${waiting.join("', '")}' ${waiting.length === 1 ? "is" : "are"} still being decided (§9.0b)`);
       }
+      const before = new Map(HELD.map((k) => [k, { ...this.settings.get(k).powers }]));
       this.emit({ type: "constituted", t });
+      const laid = [];
+      for (const k of HELD) {
+        const was = before.get(k);
+        const now = this.settings.get(k).powers;
+        for (const p of ["unilateral", "assent"]) {
+          if (was[p] && !now[p]) laid.push({ setting: k, power: p });
+        }
+      }
+      this.oweReleases(t, laid);
     }
     /** What 🍾 waits on (§9.0b, §9.7.1): a delegated question on **any** setting
      *  blocks the start while it collects, and every judge-gate must be settled
@@ -2306,6 +2360,57 @@ var CONSTITUTION = (() => {
         if (m.okOwed.has(setting)) continue;
         this.emit({ type: "ok-owed", t, member: m.id, settings: [setting] });
       }
+    }
+    /**
+     * **Everything one act lays down is one news entry and one OK** (Ed,
+     * 2026-08-27, entry 162; Q1013, extending R-044). SPEC §9.7 rule 3 has said
+     * since R-044 that laying a power down is news; what entry 162 adds is the
+     * batching, because 158 gives 🍾 a table of zone switches and one press can
+     * lay down about thirty-four powers — thirty-four separate acknowledgements
+     * landing in every rail at the moment the document opens is the flood that
+     * makes members stop reading acknowledgements at all.
+     *
+     * **The audience rule is `oweOks`'s**, one method up: every member, skipping
+     * the un-arrived, the removed and the convenor. The convenor is skipped for
+     * `oweOks`'s stated reason and for a stronger one here — the founder is the
+     * *actor*, and E9's other half, *the actor*, is already served by the power
+     * card's own confirmation. That is Q918's reading (b) on the cell and (c) on
+     * the audience; **this does not settle Q918**, and it is one predicate to
+     * reverse if Ed rules otherwise. The one skip of `oweOks` with no analogue
+     * here is `okOwed.has(setting)`: every batch carries a fresh id, so there is
+     * nothing to be already owed — the omission is deliberate, not an oversight.
+     *
+     * **A release joins an open batch rather than always opening one**: Ed's
+     * rule is that releases sharing one event, or one `t` and one actor, are one
+     * group, and `relinquish` admits only the convenor as actor, so the actor
+     * half needs no field. On a **solo document** the loop emits nothing — the
+     * founder is the only member and is the actor — and then nothing is
+     * recomputed either, `lastReleaseT` included, since all three fields move in
+     * the fold. A later release therefore opens a fresh batch, which is right: a
+     * call that told nobody anything has no group for anything to join
+     * (the shape of Q835 — the page assumed a room bigger than one).
+     */
+    oweReleases(t, releases) {
+      if (releases.length === 0) return;
+      const batch = this.lastReleaseT === t && this.lastReleaseBatch !== null ? this.lastReleaseBatch : `rel-${this.nextReleaseN}`;
+      for (const m of this.members.values()) {
+        if (m.arrivedAtT === null || m.removed) continue;
+        if (m.id === this.convenor.id) continue;
+        this.emit({ type: "release-owed", t, batch, member: m.id, releases });
+      }
+    }
+    /**
+     * The OK on a release batch (entry 162) — `giveOk`'s posture exactly: it
+     * refuses nothing it can simply ignore, so a batch that is not owed to this
+     * member returns silently rather than throwing at a page that was a poll
+     * behind.
+     */
+    ackRelease(t, member, batch) {
+      this.requireOpen("acknowledging");
+      const m = this.members.get(member);
+      if (!m) throw new Error(`unknown member '${member}'`);
+      if (!m.releasesOwed.has(batch)) return;
+      this.emit({ type: "release-ok", t, batch, member });
     }
     afterRosterChange(t, cause, member) {
       const shifted = MANAGED.filter((id) => {
@@ -3006,6 +3111,10 @@ var CONSTITUTION = (() => {
     motionRecords() {
       return this.motions;
     }
+    /** Every act that laid a power down, by batch id (entry 162, Q1013). */
+    releaseBatchRecords() {
+      return this.releaseBatches;
+    }
     crownQuestionRecords() {
       return this.crownQuestions;
     }
@@ -3362,6 +3471,9 @@ var CONSTITUTION = (() => {
       doors,
       applicants,
       owedOks: me ? [...me.okOwed] : [],
+      // newest last, so the rail meets the acts in the order they happened; a
+      // seat with no member record gets [], exactly as `owedOks` does
+      owedReleases: me ? [...s.releaseBatchRecords().values()].filter((b) => me.releasesOwed.has(b.id)).sort((a, b) => a.t - b.t).map((b) => ({ id: b.id, at: b.t, releases: b.releases.map((r) => ({ ...r })) })) : [],
       motions,
       myHeldMotion,
       crownTasks: isConvenor ? [...s.crownQuestionRecords().values()].filter((q) => q.status === "pending").map((q) => ({ id: q.id, motion: q.motion, ...q.text ? { text: q.text } : {} })) : [],

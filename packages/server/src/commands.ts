@@ -268,6 +268,11 @@ const HANDLERS: Record<string, Handler> = {
   'give-ok': (cs, a, t, args) => {
     cs.giveOk(t, a.memberId, str(args, 'setting') as SettingId);
   },
+  // the OK on one act's worth of laid-down powers (entry 162): the whitelist
+  // injects the actor, so the body names the batch and nothing else
+  'ack-release': (cs, a, t, args) => {
+    cs.ackRelease(t, a.memberId, str(args, 'batch'));
+  },
   'open-motion': (cs, a, t, args, bridge) => {
     const why = typeof args.why === 'string'
       ? cap(args.why, LIMITS.why, 'the rationale') : undefined;

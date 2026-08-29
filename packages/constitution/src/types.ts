@@ -128,6 +128,20 @@ export type ConstitutionEvent =
   /* -- owed decisions (§9.6a: inheritance as unacknowledged decisions) ---- */
   | { type: 'ok-owed'; t: number; member: MemberId; settings: SettingId[] }
   | { type: 'ok-given'; t: number; member: MemberId; setting: SettingId }
+  /* -- powers laid down (§9.7 rule 3, SURFACE C8a) ------------------------ */
+  /**
+   * **What one act lays down is one news entry** (Ed, 2026-08-27, entry 162;
+   * Q1013, extending R-044). Laying a power down is news owed to every member,
+   * and 🍾 can lay down thirty-four of them in one press — so the owed object
+   * is the **batch**, not the power: one event per member, exactly as `ok-owed`
+   * is emitted, carrying every release the act made. `setting` is a `PowerKey`
+   * rather than a `SettingId`, which is what makes the two doors and the Text
+   * expressible. A batch grows by re-emitting under the same `batch` id, so
+   * nothing already in the log is ever rewritten.
+   */
+  | { type: 'release-owed'; t: number; batch: string; member: MemberId;
+      releases: Array<{ setting: PowerKey; power: Power }> }
+  | { type: 'release-ok'; t: number; batch: string; member: MemberId }
   /* -- motions (§9.6, v0.48) ---------------------------------------------- */
   | { type: 'motion-opened'; t: number; motion: MotionId; by: MemberId | null;
       payload: MotionPayload; route: MotionRoute; stake: number; why?: string }
@@ -284,10 +298,32 @@ export interface MemberRecord {
   /** Settings this member has been told they are owed an OK on, minus OKs given. */
   okOwed: Set<SettingId>;
   okGiven: Set<SettingId>;
+  /**
+   * Release batches this member is owed an OK on, minus the ones they have
+   * given (entry 162, Q1013). **Separate from `okOwed` on purpose**: a release
+   * is news about a *power*, not about a value, so landing it in `okOwed`
+   * would fire the setting's own value-news card with the wrong copy — and
+   * `syncOwedOks` would then resurrect it. The batch's contents live once on
+   * the session (`releaseBatchRecords`), never copied per member.
+   */
+  releasesOwed: Set<string>;
+  releasesGiven: Set<string>;
   /** An invitation that expired unopened at the close (SPEC §4.6). */
   invitationExpired: boolean;
   /** The member's closing acknowledgment — signature and comment (SPEC §4.6). */
   closingAck: { t: number; comment: string } | null;
+}
+
+/**
+ * One act's worth of laid-down powers (entry 162, Q1013). The contents are
+ * kept here, once, rather than copied into every member's record: the members
+ * hold only the id. Folded from the `release-owed` events themselves, so a
+ * replay rebuilds it without anything new being written down.
+ */
+export interface ReleaseBatchRecord {
+  id: string;
+  t: number;
+  releases: Array<{ setting: PowerKey; power: Power }>;
 }
 
 export type SettledBy = 'convenor' | 'ceremony' | 'motion' | 'crown';

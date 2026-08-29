@@ -12,7 +12,7 @@ import type {
   ApplicantRecord, ConstitutionEvent, ConvenorInput, CrownQuestionId, CrownQuestionRecord,
   LogEntry, MemberId, MemberRecord, MotionAnswer, MotionId, MotionPayload,
   MotionRecord, Power, Powers, SettingState, Arrival, PowerSource, DoorId, PowerKey,
-  DepartureBy,
+  DepartureBy, ReleaseBatchRecord,
 } from './types.js';
 import { DOORS, holderOf, isDoor, SCHEMA_VERSION } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
@@ -168,6 +168,17 @@ export class ConstitutionSession {
   private motions = new Map<MotionId, MotionRecord>();
   private crownQuestions = new Map<string, CrownQuestionRecord>();
   private applicants = new Map<string, ApplicantRecord>();
+  /**
+   * The release batches, by id (entry 162, Q1013), and the two fields that
+   * decide whether a further release **joins** one or opens a new one. All
+   * three are recomputed **in the fold** and never only in the command: a
+   * batch id minted in the command would replay differently from the session
+   * that wrote it.
+   */
+  private releaseBatches = new Map<string, ReleaseBatchRecord>();
+  private lastReleaseT: number | null = null;
+  private lastReleaseBatch: string | null = null;
+  private nextReleaseN = 1;
   private nextMemberN = 1;
   private nextMotionN = 1;
   private nextCrownN = 1;
@@ -348,6 +359,10 @@ export class ConstitutionSession {
           if (prev) {
             rec.okOwed = prev.okOwed;
             rec.okGiven = prev.okGiven;
+            // the release batches travel with the OKs, for the same reason:
+            // what is owed belongs to the person, not to the seat (entry 162)
+            rec.releasesOwed = prev.releasesOwed;
+            rec.releasesGiven = prev.releasesGiven;
             rec.lastActivityT = prev.lastActivityT;
           } else {
             rec.lastActivityT = Math.max(rec.lastActivityT, this.convenor.lastActivityT);
@@ -572,6 +587,37 @@ export class ConstitutionSession {
         const m = this.members.get(event.member)!;
         m.okOwed.delete(event.setting);
         m.okGiven.add(event.setting);
+        this.touch(event.member, event.t);
+        break;
+      }
+      case 'release-owed': {
+        const m = this.members.get(event.member)!;
+        m.releasesOwed.add(event.batch);
+        // **The batch grows by union, and the id counter moves here** (entry
+        // 162). A second `relinquish` at the same `t` re-emits under the id
+        // that is already open, so the batch gains releases without a byte of
+        // the log being rewritten; a first sighting of an id is what mints it,
+        // which is why `nextReleaseN` is advanced in the fold and nowhere else.
+        const rec = this.releaseBatches.get(event.batch);
+        if (rec) {
+          for (const r of event.releases) {
+            if (!rec.releases.some((x) => x.setting === r.setting && x.power === r.power)) {
+              rec.releases.push({ ...r });
+            }
+          }
+        } else {
+          this.releaseBatches.set(event.batch,
+            { id: event.batch, t: event.t, releases: event.releases.map((r) => ({ ...r })) });
+          this.nextReleaseN += 1;
+        }
+        this.lastReleaseT = event.t;
+        this.lastReleaseBatch = event.batch;
+        break;
+      }
+      case 'release-ok': {
+        const m = this.members.get(event.member)!;
+        m.releasesOwed.delete(event.batch);
+        m.releasesGiven.add(event.batch);
         this.touch(event.member, event.t);
         break;
       }
@@ -930,6 +976,7 @@ export class ConstitutionSession {
       name: null, picture: null, nameSet: false, pictureSet: false,
       lastActivityT: arrivedAtT ?? invitedAtT,
       okOwed: new Set(), okGiven: new Set(),
+      releasesOwed: new Set(), releasesGiven: new Set(),
       invitationExpired: false, closingAck: null,
     };
   }
@@ -1235,6 +1282,13 @@ export class ConstitutionSession {
       }
     }
     this.emit({ type: 'power-relinquished', t, setting, power });
+    // **News when the power comes down, not when the act was recorded** (entry
+    // 162). Pre-start the power has not moved — R-048 keeps the release
+    // pending until 🍾 — so there is nothing to tell the room yet, and 🍾
+    // reports what it actually spent. A command path, never a fold: `replay`
+    // calls `apply` directly, so an emitter reached from the fold would append
+    // events to every document it loaded.
+    if (this.constitutedT !== null) this.oweReleases(t, [{ setting, power }]);
   }
 
   reclaim(t: number, setting: PowerKey): void {
@@ -1492,7 +1546,23 @@ export class ConstitutionSession {
     if (waiting.length > 0) {
       throw new Error(`the document cannot begin while '${waiting.join("', '")}' ${waiting.length === 1 ? 'is' : 'are'} still being decided (§9.0b)`);
     }
+    // **What 🍾 lays down is read off what it spent, not off a list of
+    // causes** (entry 162). The `constituted` fold lays the Text's pair down
+    // and spends every pending release, and 158 is about to change what else
+    // it lays down — so the batch is a *diff* of every `HELD` key's held pair
+    // either side of the emit, and 🍾 reports the new answer with no edit
+    // here. One act, so one batch and one OK, whatever it moved.
+    const before = new Map(HELD.map((k) => [k, { ...this.settings.get(k)!.powers }]));
     this.emit({ type: 'constituted', t });
+    const laid: Array<{ setting: PowerKey; power: Power }> = [];
+    for (const k of HELD) {
+      const was = before.get(k)!;
+      const now = this.settings.get(k)!.powers;
+      for (const p of ['unilateral', 'assent'] as const) {
+        if (was[p] && !now[p]) laid.push({ setting: k, power: p });
+      }
+    }
+    this.oweReleases(t, laid);
   }
 
   /** What 🍾 waits on (§9.0b, §9.7.1): a delegated question on **any** setting
@@ -1674,6 +1744,60 @@ export class ConstitutionSession {
       if (m.okOwed.has(setting)) continue;
       this.emit({ type: 'ok-owed', t, member: m.id, settings: [setting] });
     }
+  }
+
+  /**
+   * **Everything one act lays down is one news entry and one OK** (Ed,
+   * 2026-08-27, entry 162; Q1013, extending R-044). SPEC §9.7 rule 3 has said
+   * since R-044 that laying a power down is news; what entry 162 adds is the
+   * batching, because 158 gives 🍾 a table of zone switches and one press can
+   * lay down about thirty-four powers — thirty-four separate acknowledgements
+   * landing in every rail at the moment the document opens is the flood that
+   * makes members stop reading acknowledgements at all.
+   *
+   * **The audience rule is `oweOks`'s**, one method up: every member, skipping
+   * the un-arrived, the removed and the convenor. The convenor is skipped for
+   * `oweOks`'s stated reason and for a stronger one here — the founder is the
+   * *actor*, and E9's other half, *the actor*, is already served by the power
+   * card's own confirmation. That is Q918's reading (b) on the cell and (c) on
+   * the audience; **this does not settle Q918**, and it is one predicate to
+   * reverse if Ed rules otherwise. The one skip of `oweOks` with no analogue
+   * here is `okOwed.has(setting)`: every batch carries a fresh id, so there is
+   * nothing to be already owed — the omission is deliberate, not an oversight.
+   *
+   * **A release joins an open batch rather than always opening one**: Ed's
+   * rule is that releases sharing one event, or one `t` and one actor, are one
+   * group, and `relinquish` admits only the convenor as actor, so the actor
+   * half needs no field. On a **solo document** the loop emits nothing — the
+   * founder is the only member and is the actor — and then nothing is
+   * recomputed either, `lastReleaseT` included, since all three fields move in
+   * the fold. A later release therefore opens a fresh batch, which is right: a
+   * call that told nobody anything has no group for anything to join
+   * (the shape of Q835 — the page assumed a room bigger than one).
+   */
+  private oweReleases(t: number, releases: Array<{ setting: PowerKey; power: Power }>): void {
+    if (releases.length === 0) return;
+    const batch = this.lastReleaseT === t && this.lastReleaseBatch !== null
+      ? this.lastReleaseBatch : `rel-${this.nextReleaseN}`;
+    for (const m of this.members.values()) {
+      if (m.arrivedAtT === null || m.removed) continue;
+      if (m.id === this.convenor.id) continue; // the founder is the actor
+      this.emit({ type: 'release-owed', t, batch, member: m.id, releases });
+    }
+  }
+
+  /**
+   * The OK on a release batch (entry 162) — `giveOk`'s posture exactly: it
+   * refuses nothing it can simply ignore, so a batch that is not owed to this
+   * member returns silently rather than throwing at a page that was a poll
+   * behind.
+   */
+  ackRelease(t: number, member: MemberId, batch: string): void {
+    this.requireOpen('acknowledging');
+    const m = this.members.get(member);
+    if (!m) throw new Error(`unknown member '${member}'`);
+    if (!m.releasesOwed.has(batch)) return;
+    this.emit({ type: 'release-ok', t, batch, member });
   }
 
   private afterRosterChange(t: number, cause: 'arrival' | 'departure',
@@ -2417,6 +2541,8 @@ export class ConstitutionSession {
     return st;
   }
   motionRecords(): ReadonlyMap<MotionId, MotionRecord> { return this.motions; }
+  /** Every act that laid a power down, by batch id (entry 162, Q1013). */
+  releaseBatchRecords(): ReadonlyMap<string, ReleaseBatchRecord> { return this.releaseBatches; }
   crownQuestionRecords(): ReadonlyMap<string, CrownQuestionRecord> { return this.crownQuestions; }
   applicantRecords(): ReadonlyMap<string, ApplicantRecord> { return this.applicants; }
 

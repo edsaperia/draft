@@ -8,7 +8,8 @@
  */
 
 import type { ConstitutionSession } from './session.js';
-import type { Arrival, DepartureBy, MemberId, MotionPayload, PowerSource } from './types.js';
+import type { Arrival, DepartureBy, MemberId, MotionPayload, Power, PowerKey,
+  PowerSource } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf } from './catalogue.js';
 import type { SettingValue } from './values.js';
@@ -160,6 +161,14 @@ export interface MemberView {
   doors: { invite: DoorView; remove: DoorView };
   applicants: ApplicantRowView[];
   owedOks: SettingId[];
+  /**
+   * The acts that laid powers down and are still owed your OK (entry 162,
+   * Q1013), oldest first: one entry per act, carrying the whole of what that
+   * act moved. The batch's contents ride the view rather than the page keeping
+   * a second copy, so the module stays the truth about what a member is told.
+   */
+  owedReleases: Array<{ id: string; at: number;
+    releases: Array<{ setting: PowerKey; power: Power }> }>;
   motions: MotionView[];
   myHeldMotion: string | null;
   /** The founder's 👑 questions: a parked motion, or (Q440) a text adoption with `text`. */
@@ -342,6 +351,14 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     doors,
     applicants,
     owedOks: me ? [...me.okOwed] : [],
+    // newest last, so the rail meets the acts in the order they happened; a
+    // seat with no member record gets [], exactly as `owedOks` does
+    owedReleases: me
+      ? [...s.releaseBatchRecords().values()]
+          .filter((b) => me.releasesOwed.has(b.id))
+          .sort((a, b) => a.t - b.t)
+          .map((b) => ({ id: b.id, at: b.t, releases: b.releases.map((r) => ({ ...r })) }))
+      : [],
     motions,
     myHeldMotion,
     crownTasks: isConvenor

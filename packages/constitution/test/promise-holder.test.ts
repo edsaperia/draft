@@ -33,15 +33,22 @@
  *
  * ## The five findings
  *
- * 1. **A holder change is not news.** SPEC §9.7 rule 3: *Laying a power down
- *    is news: every member is owed an acknowledgement of it, as of a changed
- *    rule.* `relinquish` emits `power-relinquished` and calls `oweOks` never —
- *    **already filed as Q918** by the seat matrix (E9, `seat-matrix.mjs`'s
- *    header: *`relinquish` owes no OK and the page files no news*). The
- *    unfiled half is the **hand-over**: post-start `delegate` moves a
- *    constitutional setting from the founder's hand to the room's and emits
- *    `setting-handed-over` alone, so nobody is told the rule changed hands
- *    either. Locked below.
+ * 1. **A holder change is not news** — ***half built, entry 162***. SPEC §9.7
+ *    rule 3: *Laying a power down is news: every member is owed an
+ *    acknowledgement of it, as of a changed rule.* `relinquish` emitted
+ *    `power-relinquished` and called `oweOks` never — filed as Q918 by the
+ *    seat matrix (E9, `seat-matrix.mjs`'s header: *`relinquish` owes no OK and
+ *    the page files no news*). **Built 2026-08-29** (Ed's entry 162 ruling,
+ *    Q1013): a release is owed as a *batch* — everything one act laid down is
+ *    one news entry and one OK — through `oweReleases` / `ackRelease` and the
+ *    member's own `releasesOwed`, not through `okOwed`, which is about a
+ *    value. The `it` below states the built rule rather than the gap.
+ *    Q918 itself stands: it asks how E9's *audience* cell should be written,
+ *    and the build takes the reading that costs one predicate to reverse.
+ *    The unfiled half is still the **hand-over**: post-start `delegate` moves
+ *    a constitutional setting from the founder's hand to the room's and emits
+ *    `setting-handed-over` alone, so nobody is told the rule changed hands.
+ *    Locked below.
  *
  * 2. **Held-and-unset survives the start, and the founder's hand can then come
  *    off it for ever.** Two halves that only bite together. `waitingWith`
@@ -171,6 +178,31 @@ function penEverything(s: ConstitutionSession, t: number, skip: SettingId[] = []
     if (skip.includes(id as SettingId)) continue;
     s.setSetting(t, id as SettingId, v as never);
   }
+}
+
+/**
+ * A begun document holding every audience case the release news has to sort:
+ * ada the convenor and a member, bo and cy arrived, dee invited and never
+ * here, ez arrived for 🍾 and removed afterwards. The founder keeps both
+ * doors, so ❌'s pen is there to remove with.
+ */
+function liveRoom() {
+  const s = ConstitutionSession.open({
+    title: 'Hollow Oak Club Charter', slug: 'hollow-oak',
+    convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+  }, 0);
+  const bo = s.invite(1, 'bo@example.org');
+  const cy = s.invite(1, 'cy@example.org');
+  const dee = s.invite(1, 'dee@example.org');
+  const ez = s.invite(1, 'ez@example.org');
+  s.arrive(1, bo);
+  s.arrive(1, cy);
+  s.arrive(1, ez);
+  s.confirmStartingText(2, 'The clubhouse shall be kept open.');
+  penEverything(s, 2);
+  s.begin(3);            // 🍾 lays the Text's pair down: one batch to all three
+  s.remove(3, ez);
+  return { s, bo, cy, dee, ez };
 }
 
 /* ========================================================================= *
@@ -585,16 +617,149 @@ describe('what the room is told when the holder moves', () => {
     expect(s.memberRecords().get('ada')!.okOwed.has('lapse')).toBe(false);
   });
 
-  // ---- finding 1 -------------------------------------------------------
-  it('FINDING: laying a power down owes nobody an acknowledgement (§9.7 rule 3; Q918)', () => {
-    const { s, bo } = buildConstituted();
+  // ---- finding 1, built (entry 162, Q1013) ------------------------------
+  // This `it` read *FINDING: laying a power down owes nobody an
+  // acknowledgement (§9.7 rule 3; Q918)* until entry 162 built the rule it
+  // was locking, and the reversal is what the comment history is for: R-044
+  // (Ed, 2026-08-22, Q571) said laying a power down is news and nothing
+  // implemented it, so the lock asserted `okOwed` unchanged across two
+  // `relinquish` calls. What is owed is **not** an `okOwed`, though, and that
+  // half of the old assertion still holds: a release is news about a power,
+  // not about a value, so it has its own owed object and the setting's own
+  // value-news card is left alone.
+  it('laying a power down is news, owed as a batch (§9.7 rule 3; entry 162)', () => {
+    const { s, bo, cy } = buildConstituted();
     const before = new Set(s.memberRecords().get(bo)!.okOwed);
+    const had = new Set(s.memberRecords().get(bo)!.releasesOwed); // 🍾's own batch
     s.relinquish(3, 'lapse', 'unilateral'); // 💤 is constitutional
+    const fresh = [...s.memberRecords().get(bo)!.releasesOwed].filter((b) => !had.has(b));
+    expect(fresh).toHaveLength(1);
+    expect(s.releaseBatchRecords().get(fresh[0]!)!.releases)
+      .toEqual([{ setting: 'lapse', power: 'unilateral' }]);
+    // owed to every arrived member but the convenor, who is the actor
+    expect(s.memberRecords().get(cy)!.releasesOwed.has(fresh[0]!)).toBe(true);
+    expect(s.memberRecords().get('ada')!.releasesOwed.size).toBe(0);
+    // and the value-news the setting itself carries is untouched
     expect([...s.memberRecords().get(bo)!.okOwed]).toEqual([...before]);
-    // and the same for the other half of the pair — the hand-over
+    // the other half of the pair — the hand-over — at the same `t`, so it
+    // joins the batch already open rather than opening a second one
     s.relinquish(3, 'lapse', 'assent');
     expect(s.settingState('lapse').holder).toBe('members');
+    expect([...s.memberRecords().get(bo)!.releasesOwed].filter((b) => !had.has(b)))
+      .toEqual(fresh);
+    expect(s.releaseBatchRecords().get(fresh[0]!)!.releases).toEqual([
+      { setting: 'lapse', power: 'unilateral' },
+      { setting: 'lapse', power: 'assent' },
+    ]);
     expect([...s.memberRecords().get(bo)!.okOwed]).toEqual([...before]);
+  });
+
+  it('one `t` is one batch; a later `t` is a new one (entry 162 — the act is the boundary)', () => {
+    const { s, bo } = buildConstituted();
+    const had = new Set(s.memberRecords().get(bo)!.releasesOwed);
+    s.relinquish(3, 'lapse', 'unilateral');
+    s.relinquish(4, 'machines', 'unilateral');
+    const fresh = [...s.memberRecords().get(bo)!.releasesOwed].filter((b) => !had.has(b));
+    expect(fresh).toHaveLength(2);
+    expect(s.releaseBatchRecords().get(fresh[0]!)!.releases)
+      .toEqual([{ setting: 'lapse', power: 'unilateral' }]);
+    expect(s.releaseBatchRecords().get(fresh[1]!)!.releases)
+      .toEqual([{ setting: 'machines', power: 'unilateral' }]);
+    expect(s.releaseBatchRecords().get(fresh[1]!)!.t).toBe(4);
+  });
+
+  it('the un-arrived, the removed and the convenor are owed nothing', () => {
+    const { s, bo, dee, ez } = liveRoom();
+    s.relinquish(4, 'lapse', 'unilateral');
+    expect(s.memberRecords().get(bo)!.releasesOwed.size).toBe(2); // 🍾 and this
+    expect(s.memberRecords().get(dee)!.releasesOwed.size).toBe(0); // never here
+    expect(s.memberRecords().get(ez)!.releasesOwed.size).toBe(1);  // gone at 🍾's
+    expect(s.memberRecords().get('ada')!.releasesOwed.size).toBe(0);
+  });
+
+  it('a pre-start release is news at 🍾, in the same batch as the Text\'s own pair', () => {
+    const { s, bo, cy } = preStart();
+    s.confirmStartingText(2, 'The clubhouse shall be kept open.');
+    penEverything(s, 2);
+    s.relinquish(2, 'rate', 'unilateral'); // pending until 🍾 (R-048)
+    // nothing is news yet: the power has not moved
+    expect(s.memberRecords().get(bo)!.releasesOwed.size).toBe(0);
+    s.begin(3);
+    const batches = [...s.memberRecords().get(bo)!.releasesOwed];
+    expect(batches).toHaveLength(1);
+    expect(s.memberRecords().get(cy)!.releasesOwed.has(batches[0]!)).toBe(true);
+    // the diff 🍾 actually spent: ⏱️'s pen, and the Text's own pair
+    expect(s.releaseBatchRecords().get(batches[0]!)!.releases).toEqual([
+      { setting: 'rate', power: 'unilateral' },
+      { setting: 'startingText', power: 'unilateral' },
+      { setting: 'startingText', power: 'assent' },
+    ]);
+  });
+
+  it('a solo document tells nobody, and the batch that told nobody groups nothing', () => {
+    // E = 1, so `oweReleases` emits nothing at all — and then nothing is
+    // recomputed either, because all three batch fields move in the fold. The
+    // next release therefore opens a fresh `rel-1` rather than joining a
+    // group that exists nowhere (the shape of Q835).
+    const s = ConstitutionSession.open({
+      title: 'Alone', slug: 'alone',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true },
+    }, 0);
+    s.confirmStartingText(2, 'One voice.');
+    penEverything(s, 2);
+    s.begin(2);
+    expect(s.releaseBatchRecords().size).toBe(0);
+    s.relinquish(2, 'lapse', 'unilateral');
+    expect(s.releaseBatchRecords().size).toBe(0);
+    const bo = s.invite(2, 'bo@example.org');
+    s.arrive(2, bo);
+    s.relinquish(2, 'machines', 'unilateral');
+    expect([...s.releaseBatchRecords().keys()]).toEqual(['rel-1']);
+    expect(s.releaseBatchRecords().get('rel-1')!.releases)
+      .toEqual([{ setting: 'machines', power: 'unilateral' }]);
+  });
+
+  it('the OK clears the batch for one member, is silent on one not owed, and leaves `okOwed` alone', () => {
+    const { s, bo, cy } = buildConstituted();
+    s.setSetting(3, 'lapse', { afterMs: 60_000 });   // a value-news OK to guard
+    s.relinquish(3, 'removal', 'assent');
+    const batch = [...s.memberRecords().get(bo)!.releasesOwed].at(-1)!;
+    const owedBefore = new Set(s.memberRecords().get(bo)!.okOwed);
+    s.ackRelease(3, bo, batch);
+    expect(s.memberRecords().get(bo)!.releasesOwed.has(batch)).toBe(false);
+    expect(s.memberRecords().get(bo)!.releasesGiven.has(batch)).toBe(true);
+    expect(s.memberRecords().get(cy)!.releasesOwed.has(batch)).toBe(true);
+    expect([...s.memberRecords().get(bo)!.okOwed]).toEqual([...owedBefore]);
+    // silent, never a throw: a page one poll behind must not be an error
+    const seq = s.logEntries().length;
+    s.ackRelease(3, bo, batch);
+    s.ackRelease(3, bo, 'rel-nothing');
+    expect(s.logEntries().length).toBe(seq);
+    expect(thrown(() => s.ackRelease(3, 'nobody', batch))).toBe("unknown member 'nobody'");
+    // and the batch is still the view's, for whoever has not pressed
+    expect(view(s, cy).owedReleases.map((b) => b.id)).toContain(batch);
+    expect(view(s, bo).owedReleases.map((b) => b.id)).not.toContain(batch);
+  });
+
+  it('replay rebuilds the batches and appends nothing (folds do not emit)', () => {
+    const { s, bo } = buildConstituted();
+    s.relinquish(3, 'lapse', 'unilateral');
+    s.relinquish(3, 'lapse', 'assent');
+    s.relinquish(4, 'machines', 'assent');
+    s.ackRelease(4, bo, [...s.memberRecords().get(bo)!.releasesOwed][0]!);
+    const again = ConstitutionSession.replay([...s.logEntries()]);
+    expect(again.logEntries().length).toBe(s.logEntries().length);
+    expect([...again.memberRecords().get(bo)!.releasesOwed])
+      .toEqual([...s.memberRecords().get(bo)!.releasesOwed]);
+    expect([...again.memberRecords().get(bo)!.releasesGiven])
+      .toEqual([...s.memberRecords().get(bo)!.releasesGiven]);
+    expect([...again.releaseBatchRecords().entries()])
+      .toEqual([...s.releaseBatchRecords().entries()]);
+    // the ids are minted in the fold, so the replay mints the same ones
+    again.relinquish(5, 'removal', 'assent');
+    s.relinquish(5, 'removal', 'assent');
+    expect([...again.releaseBatchRecords().keys()])
+      .toEqual([...s.releaseBatchRecords().keys()]);
   });
 
   it('FINDING: a post-start hand-over moves a constitutional rule and tells nobody', () => {
