@@ -878,6 +878,106 @@ const shapeAtBegin = async () => {
   if (!lineOk) stuck.push('🍾 does not state the diff');
 };
 
+/* ---- 🍾's power switches (entry 158, Q1018, R-057) ---------------------
+ * The Begin card carries a switch per zone × power, and what it collects is
+ * handed to one `begin` at one `t`. Two rules are walked here because neither
+ * can be seen anywhere else on the surface.
+ *
+ * **(i) A switch reflects the tabs.** A power promised away on one setting's
+ * own ✒️ tab must show its zone as **mixed**, never as *kept* — the two
+ * controls read one truth (`pwPair`/`pwPend`) and a disagreement between them
+ * is a founder told they are keeping something they have already given.
+ *
+ * **(ii) The press is one act.** The table's *lay down* positions travel as
+ * one list, so the holders afterwards are asserted through the ✒️/🛡️ tabs'
+ * own head sentences rather than through a readout: a stagehand and a page
+ * that disagree are both wrong.
+ *
+ * ⏱️ is the setting whose pen goes on its own tab — nothing later in this walk
+ * needs it, where ✉️'s pen is `doorShuts`' subject and 🌍's is the amendment's.
+ * Membership's **🛡️** is the switch that moves, for the same reason: its ✒️
+ * has to survive to the door checks after the start. */
+const BZ_SEL = (z, pw) => '.setupcard button[data-bzone="' + z + '"][data-bpower="' + pw + '"]';
+const bzCells = () => page.evaluate(() =>
+  [...document.querySelectorAll('.setupcard .beginzone')].map((z) => ({
+    name: (z.querySelector('.fieldlab') || {}).textContent.trim(),
+    cells: [...z.querySelectorAll('button[data-bzone]')].map((b) => ({
+      pw: b.dataset.bpower, says: b.textContent.trim() })),
+  })));
+// the ✒️/🛡️ tab's own head sentence for one key — the surface's word on who
+// holds what, written by `powerHeadLine` off `pwPair`. The tabs are inert
+// peeks on a closed pile, so the base card is opened first, exactly as
+// `doorShuts` reaches them.
+const pwSays = async (base, pw) => {
+  if (!(await open(base))) return null;
+  if (!(await open('pw:' + pw + ':' + base))) return null;
+  return page.evaluate(() =>
+    ((document.querySelector('.setupcard') || {}).textContent || '').replace(/\s+/g, ' ').trim());
+};
+let zonesWalked = false;
+const beginZonesBeforeStart = async () => {
+  zonesWalked = true;
+  // one power promised away on its own tab, which is what makes a zone mixed
+  let laid = null;
+  if (await open('rate') && await open('pw:u:rate')) {
+    const chose = await clickIn('[data-set="pw:u:rate"][data-val="given"]');
+    laid = chose ? await press(1250) : null;
+  }
+  say('zone tab   · ' + (laid ? '⏱️’s ✒️ promised away on its own tab (' + laid + ')'
+    : 'FAIL: ⏱️’s ✒️ tab would not commit'));
+  if (!laid) { stuck.push('laying ⏱️’s pen down before 🍾'); return; }
+  if (!(await open('begin'))) {
+    say('zones      · FAIL: no 🍾 card to read the power table off');
+    stuck.push('the 🍾 card before its power table'); return;
+  }
+  const zones = await bzCells();
+  say('zones      · ' + JSON.stringify(zones.map((z) => z.name + ' ' +
+    z.cells.map((c) => c.pw + '=' + c.says).join(' '))));
+  const mixed = zones.filter((z) => z.cells.some((c) => c.pw === 'u' && /Mixed/.test(c.says)));
+  const keptPen = zones.filter((z) => z.cells.some((c) => c.pw === 'u' && /Kept/.test(c.says)));
+  const ok = zones.length === 3 && mixed.length === 1 &&
+    !mixed.some((z) => keptPen.includes(z));
+  say('mixed      · ' + (ok ? 'the zone holding ⏱️ reads ✒️ Mixed, and never Kept'
+    : 'FAIL: ' + zones.length + ' zones · mixed ' + JSON.stringify(mixed.map((z) => z.name)) +
+      ' · kept ' + JSON.stringify(keptPen.map((z) => z.name))));
+  if (!ok) stuck.push('the 🍾 zone holding a promised-away pen did not read mixed');
+  // …and one zone's 🛡️ set to lay down, which is what the press must carry
+  const set = await clickIn(BZ_SEL('Membership', 'a'));
+  const after = await bzCells();
+  const memb = after.find((z) => /Membership/.test(z.name));
+  const down = !!memb && memb.cells.some((c) => c.pw === 'a' && /Laid down/.test(c.says));
+  say('switch     · ' + (set && down ? 'Membership’s 🛡️ set to lay down at Begin'
+    : 'FAIL: set ' + set + ' · reads ' + JSON.stringify(memb && memb.cells)));
+  if (!(set && down)) stuck.push('the Membership 🛡️ switch');
+};
+/* …and what the press actually did, read back off the same tabs. Four claims:
+ * the zone switched down went, the same zone's other power stayed, a zone left
+ * alone kept its powers even though it read *mixed* (keeping lays nothing
+ * further down), and the tab's own pre-start release was spent all the same. */
+const beginZonesAfterStart = async () => {
+  if (!zonesWalked) return;
+  const want = [
+    ['invite', 'a', false, 'refuse invitations', 'Membership’s 🛡️ went with the switch'],
+    ['invite', 'u', true, 'invite people at will', '…and Membership’s ✒️ was kept'],
+    ['title', 'u', true, 'amend this at will', 'a zone left alone kept its ✒️, mixed or not'],
+    ['rate', 'u', false, 'amend this at will', '⏱️’s own tab release was spent all the same'],
+  ];
+  for (const [base, pw, held, phrase, what] of want) {
+    const line = await pwSays(base, pw);
+    if (line === null) {
+      say('after 🍾   · FAIL: no ' + (pw === 'u' ? '✒️' : '🛡️') + ' tab on ' + base);
+      stuck.push('the ' + pw + ' tab on ' + base + ' after 🍾'); continue;
+    }
+    const neg = new RegExp('Founder may not ' + phrase);
+    const pos = new RegExp('Founder may ' + phrase);
+    const ok = held ? (pos.test(line) && !neg.test(line)) : neg.test(line);
+    say('after 🍾   · ' + (ok ? what
+      : 'FAIL: ' + base + ' ' + pw + ' · ' + JSON.stringify(line.slice(0, 220))));
+    if (!ok) stuck.push('the holder on ' + base + '’s ' + pw + ' after 🍾');
+  }
+  await closeCard();
+};
+
 const seen = new Set();
 const order = [];
 // Ed's list from entry 181 — the Membership section's rules, whose standing is
@@ -1003,6 +1103,11 @@ for (let i = 0; i < 60; i++) {
     }
     await open('begin');
   }
+  // 🍾's own power table, at the last moment before the press (entry 158).
+  // It leaves 🍾 open behind it — re-opening the card that is already open
+  // clicks its own tab and closes it, and the press below would find no
+  // commit row at all.
+  if (next === 'begin' && !DELEGATE_ALL && !zonesWalked) await beginZonesBeforeStart();
   if (next === 'begin') {
     // 🍾 is served either because it can be pressed or because it is the last
     // thing standing (Q773) — or, since Q830, because the document is waiting on
@@ -1092,6 +1197,8 @@ for (let i = 0; i < 60; i++) {
   } else say('  committed· ' + next + ' (' + label + ')' + (chose ? ' — ' + chose : ''));
 }
 say('founding   · rail ' + JSON.stringify(await rail()) + (stuck.length ? ' STUCK: ' + stuck.join(', ') : ''));
+// what the press actually laid down, read back off the ✒️/🛡️ tabs
+await beginZonesAfterStart();
 if (SHAPED_RUN && order.includes('begin')) {
   // after the press nothing is the shape's: the marks are gone from every clause
   const cl = await clauses();
