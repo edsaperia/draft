@@ -101,6 +101,9 @@
   let holdInFlight = false;
   let MAY_PROPOSE = () => true;
   let MAY_JUDGE = () => true;
+  // the sign control (Q770): null means no elective 👤 rung — no control
+  let SIGNING = () => null;
+  let SIGNER = () => '';
   const {
     laneBarHtml, clauseHeadHtml, proposalHtml, commitRowHtml, reviseNote,
     laneBoxHtml, collapseCard, expandCard, openCardEls, runOnCards,
@@ -472,7 +475,7 @@
     // Quoting two of eight arguments there is picking a side by accident and
     // saying nothing about the state the entry is actually in.
     if (stuck(g)) return ['Deadlocked — ' + (g.judges ?? 0) + ' people can’t agree on a proposal even ' +
-      'after ' + (g.comparisons ?? 0) + ' judgments. Can you propose something everyone will agree on?'];
+      'after ' + (g.comparisons ?? 0) + ' votes. Can you propose something everyone will agree on?'];
     if (g.kind === 'race') return [g.race && g.race.a && g.race.a.rationale, g.race && g.race.b && g.race.b.rationale].filter(Boolean);
     // A diagonal quotes nothing (Ed, 2026-08-17). A teaser is a *rationale* —
     // somebody's argument for their wording — and a diagonal has none, because
@@ -1654,8 +1657,19 @@
     const und = !!s.undecided;
     const tag = (c) => (c.incumbent && held ? '<span class="rsub">the text that stood</span>'
       : c.incumbent && und ? '<span class="rsub">the text that stands</span>' : '');
-    // the record names an author where the anonymity ladder allows it
-    const spk = (c) => (c.why || c.by ? speakerHtml(c.why, undefined, c.by) : '');
+    // the record names an author where the anonymity ladder allows it — and
+    // says which rung *this* proposal was made under where the room moved the
+    // ladder while the document was open (entry 31, R-050: a proposal keeps
+    // the privacy it was made under). Silent where the rungs agree, which is
+    // every ordinary record; the words arrive finished from the page.
+    const under = (c) => (c.underNote ? '<span class="rsub">' + esc(c.underNote) + '</span>' : '');
+    // the note sits **under a speaker** (SURFACE §9's sealed-record row), so a
+    // proposal that carries one draws the speaker even where it has neither a
+    // rationale nor a name — an unsigned anonymous-era proposal with an empty
+    // reason, whose note would otherwise float under the wording with nothing
+    // above it to be *under*.
+    const spk = (c) => (c.why || c.by || c.underNote
+      ? speakerHtml(c.why, undefined, c.by) + under(c) : '');
     return (
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
@@ -1675,7 +1689,7 @@
       // are still there for anybody who wants them and cost no ink.
       '<div class="rechead" title="' +
       esc((d.judges ?? 0) + ' of ' + ROSTER + ' weighed in · quorum was ' + FLOOR +
-        ' · ' + (yours ? 'you ' + yours : 'you never judged this')) + '">' +
+        ' · ' + (yours ? 'you ' + yours : 'you never voted on this')) + '">' +
       '<span>' + (und ? 'Undecided at the close' : 'Decided') + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE +
       // an undecided race with no reading prints no numbers: 0% > 0% is a
       // sentence about nothing
@@ -1770,6 +1784,8 @@
         id: DRAFT_ID, kind: 'draft', mine: true, unproposed: true, state: 'needs',
         keys: [], sites: [], rationale: '', qLabel: 'Your draft',
         urgency: 0, pct: 0, cap: '',
+        // the sign choice (Q770): the base is the default, signing the opt-in
+        signed: false,
       };
       SUGGS.push(d);
     }
@@ -2111,6 +2127,52 @@
   let laneMode = 'rich';
   const laneRaw = () => laneMode === 'md';
 
+  // **The sign control** (Q770, Ed 2026-08-25: *a new control that's part of
+  // the rationale composer area that switches between signed and anonymous,
+  // that shows when anonymity is allowed*). Drawn only under an elective 👤
+  // rung — `SIGNING()` returns that rung's base, or null for every fixed rung,
+  // the fixture and a page with no module — because a fixed rung offers no
+  // choice. The base comes first as the default; signing is the opt-in, per
+  // proposal, and fixed at Propose: once submitted the choice is part of the
+  // record (`mine` says *signed* and offers no switch). The radio is the
+  // session-view's own (`.lanepick`), in the `.choice`/`.pick` shape every
+  // settings choice takes, so `card-audit`'s rules read it.
+  // A nameless member signs *as Anonymous* (§9.0c: it is a name, not a gap) —
+  // the label says what the signature will read, and they may go and set one.
+  function signControlHtml(d) {
+    const base = SIGNING();
+    if (!base) return '';
+    const name = (SIGNER() || '').trim() || 'Anonymous';
+    const pick = (on, val, ttl, exp) =>
+      '<div class="pick' + (on ? ' on' : '') + '">' +
+      '<button class="lanepick" type="button" aria-pressed="' + on + '" data-act="draft-sign" data-signed="' + val + '">' +
+      '<span class="dot"></span><span>' + ttl + '</span></button>' +
+      '<span class="exp">' + exp + '</span></div>';
+    return '<div class="choice signctl" role="radiogroup" data-signbase="' + base + '">' +
+      pick(!d.signed, '0', 'Anonymous', 'Nobody is told who proposed this' +
+        (base === 'anonymous' ? ' — ever.' : ' until the document is finished.')) +
+      pick(!!d.signed, '1', 'Signed — as ' + esc(name),
+        'Your name goes on it from the moment you propose it, and stays there.') +
+      '</div>';
+  }
+  // the press flips the draft's choice and patches the card in place — never
+  // a render under a lane being typed in (the caret rule, `setData`'s guard)
+  function setDraftSigned(on) {
+    const d = draftOf();
+    if (!d || !SIGNING()) return;
+    d.signed = !!on;
+    doc.querySelectorAll('.sugg[data-card="' + DRAFT_ID + '"]').forEach((card) => {
+      card.querySelectorAll('.signctl .pick').forEach((p) => {
+        const b = p.querySelector('[data-signed]');
+        const here = b && b.dataset.signed === (d.signed ? '1' : '0');
+        p.classList.toggle('on', !!here);
+        if (b) b.setAttribute('aria-pressed', String(!!here));
+      });
+      const pb = card.querySelector('[data-act="draft-propose"]');
+      if (pb) pb.title = pb.title.replace(/( — signed)?( — one edit)/, (d.signed ? ' — signed' : '') + '$2');
+    });
+  }
+
   function editCardHtml(d, site) {
     const n = d.sites.length;
     const i = d.sites.indexOf(site);
@@ -2141,7 +2203,10 @@
       // then the argument for it behind the same blank disc everybody else's
       // sits behind — which is what the rest of the roster will see (§3.4).
       '<div class="field"><div class="fieldlab">What you are proposing</div>' +
-      '<div class="propblock">' + laneBoxHtml(d, site) + '</div></div>' +
+      '<div class="propblock">' + laneBoxHtml(d, site) + '</div>' +
+      // …and, under an elective 👤 rung, whether your name goes on it (Q770):
+      // part of the rationale composer area, above the row that commits it
+      signControlHtml(d) + '</div>' +
       // **The proposal's lifecycle is one row** (Ed, 2026-08-17). Discard on the
       // very left, commit on the very right, and the row does not move when the
       // draft becomes a proposal — only the right-hand control changes from the
@@ -2165,6 +2230,8 @@
       '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
       (broke ? ' disabled title="No ✏️ left — another arrives as the drip accrues"' : '') +
       ' title="Hold to propose this' + (n > 1 ? ' in all ' + n + ' places' : '') +
+      // the hold's tooltip says what leaves: a signed one leaves with your name
+      (d.signed ? ' — signed' : '') +
       ' — one edit leaves your wallet to pay for it">✏️</button>' +
       '</div>' +
       // Only the two facts that change what pressing ✏️ *does* (Ed, 2026-08-17).
@@ -2564,8 +2631,8 @@
         // two replies to the same post; each states its own change against the
         // clause above, and carries its own argument and controls
         fieldHtml(
-          proposalHtml(s, { v: 'a', html: wordingHtml(cur, s.race.a.text), why: s.race.a.rationale }) +
-          proposalHtml(s, { v: 'b', html: wordingHtml(cur, s.race.b.text), why: s.race.b.rationale }), 2) +
+          proposalHtml(s, { v: 'a', html: wordingHtml(cur, s.race.a.text), why: s.race.a.rationale, by: s.race.a.by }) +
+          proposalHtml(s, { v: 'b', html: wordingHtml(cur, s.race.b.text), why: s.race.b.rationale, by: s.race.b.by }), 2) +
         reviseNote(s) + crownNote(s) +
         // The one thing a race card cannot say any other way: neither of its
         // two candidates has an incumbent radio, so nothing on the card votes
@@ -2602,9 +2669,9 @@
         // recomputing one.
         clauseHeadHtml(s, { text: currentTextFor(site.key), key: site.key, v: 'keep',
                             chips: chipsFor(site.key, s.id) }) +
-        fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, key: site.key })) +
+        fieldHtml(proposalHtml(s, { v: 'approve', html: resultOnly(site.marked), why: s.rationale, by: s.by, key: site.key })) +
         reviseNote(s) +
-        '<div class="foot">One judgment for all ' + n +
+        '<div class="foot">One vote for all ' + n +
         ' places — choosing here chooses everywhere.</div>' +
         commitRowHtml(s) +
         '</div>'
@@ -2629,7 +2696,7 @@
                           label: s.isInsert ? 'The gap as it stands' : undefined,
                           chips: chipsFor(key, s.id) }) +
       groundNote(s) +
-      fieldHtml(proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, edit: noEdit })) +
+      fieldHtml(proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, by: s.by, edit: noEdit })) +
       reviseNote(s) + crownNote(s) +
       commitRowHtml(s) +
       '</div>'
@@ -2660,6 +2727,7 @@
     holding = null; holdInFlight = false;
     clearTimeout(timer);
     el.classList.remove('holding');
+    el.removeAttribute('aria-disabled');
     // Fired: the edit is spent, and act() renders the wallet one lighter — so
     // the reserved gap is released without a render of its own, or the wallet
     // would show the old count for a frame before the spend lands.
@@ -2717,9 +2785,28 @@
             { duration: HOLD_MS, easing: 'cubic-bezier(.45, .05, .3, 1)', fill: 'both' });
     }
     el.classList.add('holding');
+    // **Inert, never `disabled`** (backlog 184). Under the click gesture the
+    // control is out of play for the length of the flight, and `.holding` is
+    // already what says so; this is the same fact for a screen reader. A real
+    // `disabled` would be the 2026-08-22 bug shape again — a render mid-flight
+    // rebuilds the button anyway, and `holdWallet`'s sibling below refuses a
+    // disabled control, so the timer's click on one is a silent no-op.
+    // `holding` being non-null is the real guard.
+    el.setAttribute('aria-disabled', 'true');
     holdInFlight = true;
     const id = el.closest('.sugg').dataset.card;
-    holding = { el, pencil, anim, timer: setTimeout(() => { flyStop(true); act(id, 'draft-propose'); }, HOLD_MS) };
+    // **The draft that is proposed is the one the pencil left for.** `act`
+    // resolves by id, and the id is `DRAFT_ID` for every draft in turn — so
+    // under `click`, where the member is free for the whole three seconds,
+    // 🗑️ and a fresh composition would put a *different* draft in and spend
+    // an edit nobody asked to spend. The object identity is the test, and it
+    // survives a data swap, which is what the id-by-node fix was about
+    // (`setData` carries the same unproposed draft across).
+    const d0 = draftOf();
+    holding = { el, pencil, anim, timer: setTimeout(() => {
+      flyStop(true);
+      if (draftOf() === d0) act(id, 'draft-propose');
+    }, HOLD_MS) };
   };
 // **The press outlives the button, here too** (Ed, 2026-08-22: *I cannot
 // submit it even if I hold it — the pencil flies back*). This hold used to
@@ -2741,14 +2828,23 @@
 // already was that it commits through `act(id, …)`, which resolves the
 // draft by id rather than by node: verified by holding through a render and
 // watching the proposal land from a button that no longer existed.
+//
+// **Under the click gesture nothing here starts the flight** (backlog 184).
+// `flyStart`/`flyStop` are the flight and the landing in both positions and
+// are untouched; only who calls them moves. Under `click` the press does
+// nothing at all and the click that follows is the gesture (see the
+// `draft-propose` branch of the `.sugg [data-act]` binding), and no release
+// ends a flight but its own timer — so W16 governs the hold position, where
+// these three listeners are byte-for-byte what they always were.
 document.addEventListener('pointerdown', (ev) => {
+  if (GESTURE !== 'hold') return;
   const b = ev.target.closest && ev.target.closest('[data-act="draft-propose"]');
   if (!b || ev.button !== 0) return;
   ev.preventDefault(); ev.stopPropagation();
   flyStart(b);
 });
-document.addEventListener('pointerup', () => flyStop(false));
-document.addEventListener('pointercancel', () => flyStop(false));
+document.addEventListener('pointerup', () => { if (GESTURE === 'hold') flyStop(false); });
+document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flyStop(false); });
 
   function renderDoc() {
     let html = PROSE();
@@ -3191,7 +3287,7 @@ document.addEventListener('pointercancel', () => flyStop(false));
           const cast = isJudged(s) && now !== null && now === committedOf(s);
           submit.setAttribute('aria-pressed', String(cast));
           submit.title = cast ? 'Recorded — choose again to change it'
-            : now ? 'Submit this judgment' : 'Choose one of the three first';
+            : now ? 'Submit this vote' : 'Choose one of the three first';
         }
       });
     };
@@ -3218,7 +3314,20 @@ document.addEventListener('pointercancel', () => flyStop(false));
     doc.querySelectorAll('.sugg [data-act]').forEach((b) =>
       b.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        if (b.dataset.act === 'draft-propose') return;   // held, not clicked
+        if (b.dataset.act === 'draft-propose') {
+          if (GESTURE === 'hold') return;                // held, not clicked
+          // and under `click` the click IS the gesture: it starts the same
+          // flight, and a second one while the pencil is in the air — the
+          // other half of a double click, or an impatient press — is
+          // swallowed. The timer's `flyStop(true); act(id, 'draft-propose')`
+          // is unchanged, so the send still happens exactly when the pencil
+          // lands and still resolves the draft by id rather than by node.
+          if (holding) return;
+          flyStart(b);
+          return;
+        }
+        // the sign choice patches the open card rather than re-rendering it
+        if (b.dataset.act === 'draft-sign') { setDraftSigned(b.dataset.signed === '1'); return; }
         const id = b.closest('.sugg').dataset.card;
         const what = b.dataset.act === 'submit'
           ? pickOf(SUGGS.find((x) => x.id === id) || {}) : b.dataset.act;
@@ -3326,6 +3435,36 @@ document.addEventListener('pointercancel', () => flyStop(false));
   // scroll, so doing both in one frame makes the page lurch. Collapse the old
   // card, *then* move, *then* expand the new one — three steps, never overlapping.
   const REDUCED = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // **The commit gesture is a switch** (backlog 184, Ed, 2026-08-28: *I'd like
+  // to try this*). Every consequential commit on this product has been a hold:
+  // the token flies for the length of the press and the act lands when it
+  // arrives, and letting go early flies it home with nothing spent. The trial
+  // keeps the whole of that — the same flight, the same length, the same
+  // landing — and moves only what starts it: **a single click starts the
+  // flight, the control is inert while it is in the air, and the act lands
+  // when the flight lands**. Nothing is sent early, letting go no longer
+  // cancels, and a second click during the flight does nothing.
+  //
+  // One constant, because *easy to revert* is the whole point: this word is
+  // the only line to change. It lives here rather than in the page because
+  // both files need it and this one loads first, and the page reads it as
+  // `SESSION.gesture`. `?gesture=hold` is the by-eye comparison; the
+  // `window.COMMIT_GESTURE_OVERRIDE` seam is the walks', a query being the one
+  // thing a `page.addInitScript` cannot carry across a `goto`.
+  //
+  // Two frozen instruments are frozen against `click`: `card-copy.golden.json`
+  // (the 🏛️ label follows the switch) and SURFACE §7.2's bold word, which
+  // `spec-check` reads against this constant. So flipping the trial is this
+  // word, that word, and a `npm run copy-freeze` — not one word.
+  const COMMIT_GESTURE = 'click';
+  const GESTURE = (() => {
+    const ok = (v) => (v === 'hold' || v === 'click' ? v : null);
+    try {
+      const q = ok(new URLSearchParams(location.search).get('gesture'));
+      if (q) return q;
+    } catch (e) { /* no location, no query */ }
+    return ok(window.COMMIT_GESTURE_OVERRIDE) || COMMIT_GESTURE;
+  })();
   // A click during a transition supersedes it rather than being swallowed: each
   // sequence carries a token, and every step drops out if a newer one has begun.
   // `after` runs the moment the new card exists and the margin has been laid
@@ -3470,7 +3609,7 @@ document.addEventListener('pointercancel', () => flyStop(false));
       d.unproposed = false;
       d.qLabel = d.sites[0].label;
       d.pct = 6;
-      d.cap = 'yours · just in, evidence starting';
+      d.cap = 'yours · just in, evidence starting' + (d.signed ? ' · signed' : '');
       if (hooks.propose) { const r = hooks.propose(d); if (typeof r === 'string') d.id = r; }
       if (wasOpen) openId = d.id;
       keepStill(() => renderAll(), '[data-key="' + key + '"]');
@@ -4327,6 +4466,10 @@ document.addEventListener('pointercancel', () => flyStop(false));
     EDIT_RULES = env.EDIT_RULES || { grant: 4, cap: 8, stake: 1 };
     if (env.mayPropose) MAY_PROPOSE = env.mayPropose;
     if (env.mayJudge) MAY_JUDGE = env.mayJudge;
+    // the sign control's two reads (Q770): the elective base, if any, and
+    // what a signature would read as — both at call time, like the two above
+    if (env.signing) SIGNING = env.signing;
+    if (env.signerName) SIGNER = env.signerName;
     SESSION_MINUTES = env.SESSION_MINUTES ?? 8 * 60;
     editsHeld = env.editsHeld ?? 5; editsToNext = env.editsToNext ?? 0.6;
     bindData(env.DOC || [], env.SUGGS || []);
@@ -4550,6 +4693,9 @@ document.addEventListener('pointercancel', () => flyStop(false));
     get openId() { return openId; },
     /** true while a propose hold is in the air — the host must not re-render */
     get holding() { return holdInFlight; },
+    // the commit gesture, resolved once at load — the page and setup.js read
+    // this rather than keeping a second copy of the constant (backlog 184)
+    get gesture() { return GESTURE; },
     get readSeals() { return readSeals; },
     get verdicts() { return verdicts; },
     get editsHeld() { return editsHeld; },

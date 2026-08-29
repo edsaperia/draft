@@ -78,7 +78,7 @@ window.SETUP = (function () {
   const faceToneRow = () =>
     '<div class="avpick">' + FACE_TONES.map((tn) =>
       '<button class="avopt" data-tone="' + tn + '" aria-pressed="' + (FACE_TONE === tn) + '"' +
-      ' title="Skin tone"><span class="emojiface big">\u270B' + tn + '</span></button>').join('') + '</div>';
+      ' title="Skin tone"><span class="emojiface grid">\u270B' + tn + '</span></button>').join('') + '</div>';
   // Any emoji may be a face EXCEPT the surface's own vocabulary (Ed,
   // 2026-08-19): a member whose face is ✏️ would turn every wallet and
   // compose button into a possible mention of them. SURFACE_EMOJI is a scan
@@ -108,58 +108,33 @@ window.SETUP = (function () {
   let FACE_TAKEN = () => null;
   const setFaceTaken = (fn) => { FACE_TAKEN = fn; };
   const faceTakenBy = (e2) => FACE_TAKEN(e2);
-  // one grapheme, pictographic, not furniture — or 'reserved', or null
-  const emojiFaceOf = (raw) => {
-    const s = raw.trim();
-    if (!s) return null;
-    const segs = typeof Intl !== 'undefined' && Intl.Segmenter
-      ? [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(s)].map((x) => x.segment)
-      : [s];
-    if (segs.length !== 1) return null;
-    const g = segs[0];
-    if (!/\p{Extended_Pictographic}/u.test(g)) return null;
-    if (RESERVED_EMOJI.has(normEmoji(g))) return 'reserved';
-    return g;
-  };
-  const anyEmojiRow = (attr) =>
-    '<div class="eyebrow fieldlab">Or any emoji</div>' +
-    '<div class="freemoji"><input class="emojin" ' + attr + '="1" maxlength="20"' +
-    ' placeholder="🦉 🌵 🫖…">' +
-    '<span class="emojinote"></span></div>';
+  /* The page had its own `emojiFaceOf` beside the server's, as the free
+     input's validator: *Or any emoji* existed for a glyph the shortlist did
+     not carry, and it had to be told what a face may be. Entry 186 removes
+     the input — the grid is the whole of Unicode, so there is no such glyph —
+     and the validator goes with it. `packages/server/src/faces.ts` keeps its
+     own, which is the one that guards what is stored. */
   // **Reserved and taken are both greyed, in the picker itself** (Ed,
   // 2026-08-19: *a normal emoji picker, but with reserved and used emoji
   // greyed out*). The two refusals had lived only in the type-any-emoji box,
   // which meant the grid could offer you something it would then refuse.
+  /* The grid's glyphs are `.emojiface.grid` — the size an emoji face takes on
+     a member row (entry 186, Ed: *at the size they currently appear as
+     avatars*), not the 38px `.emojiface.big` the shortlist wore. `.big` stays
+     for the *Currently* line. */
   const faceBtn = (f2, ownPic, dataAttr, n) => {
     const own = (ownPic || '') === 'e' + f2;
     const hol = own ? null : FACE_TAKEN('e' + f2);
     const reserved = !own && RESERVED_EMOJI.has(normEmoji(f2));
     if (reserved) {
       return '<button class="avopt taken" disabled title="Reserved — docs.vote uses this one">' +
-        avHtml({ n, pic: 'e' + f2 }, 'big') + '</button>';
+        avHtml({ n, pic: 'e' + f2 }, 'grid') + '</button>';
     }
     return hol
       ? '<button class="avopt taken" disabled title="Taken — ' + esc(hol) + ' got there first">' +
-        avHtml({ n, pic: 'e' + f2 }, 'big') + '</button>'
+        avHtml({ n, pic: 'e' + f2 }, 'grid') + '</button>'
       : '<button class="avopt" ' + dataAttr + '="' + 'e' + f2 + '" aria-pressed="' + own + '"' +
-        ' title="' + esc(f2) + '">' + avHtml({ n, pic: 'e' + f2 }, 'big') + '</button>';
-  };
-  // Mirrors wirePicDrop: the machinery lives here, where the picked value
-  // lands stays the caller's.
-  const wireFreeEmoji = (attr, onPick) => {
-    document.addEventListener('input', (ev) => {
-      if (!ev.target.matches || !ev.target.matches('[' + attr + ']')) return;
-      const box = ev.target.closest('.freemoji');
-      const note = box && box.querySelector('.emojinote');
-      const g = emojiFaceOf(ev.target.value);
-      const holder = g && g !== 'reserved' ? FACE_TAKEN('e' + g) : null;
-      const msg = g === 'reserved'
-        ? 'That one is part of the furniture — the marks docs.vote itself uses are reserved.'
-        : holder ? 'Taken — ' + holder + ' got there first.' : '';
-      if (note) note.textContent = msg;
-      if (box) box.classList.toggle('bad', msg !== '');
-      if (g && g !== 'reserved' && !holder) onPick(g);
-    });
+        ' title="' + esc(f2) + '">' + avHtml({ n, pic: 'e' + f2 }, 'grid') + '</button>';
   };
   // **Before there is a name there is still a person** (Ed, 2026-08-19: the
   // picture card offers *initials with a colour picker — or, if they have not
@@ -269,6 +244,14 @@ window.SETUP = (function () {
     // where the wait is about **you**: 📧 waiting on your own verification,
     // a gate waiting on its conditions, 🍾 waiting on the founder.
     if (st === 'wait' && c.kind === 'constitutional') return c.g;
+    // **A grant wears the glyph of the power it grants** (entry 180, Ed: *users
+    // don't realise that anything will change when they click OK, it just looks
+    // like information*). Every other news card is decided-and-owed-a-reading;
+    // a grant's press hands you an object, so the tab and the rail entry alike
+    // say *take this* rather than wearing the ✔ that means seen. `ask` still
+    // wears the subject glyph (💡 while blocked shows 💡) and `done` is
+    // untouched, so an acknowledged grant settles exactly as before.
+    if (st === 'news' && c.grants) return c.grants;
     return st === 'ask' ? c.g : st === 'wait' ? '⏳' : st === 'yours' ? '✏️' : TICK;
   };
 
@@ -296,7 +279,12 @@ window.SETUP = (function () {
      than in the design: **a settled setting stays in the closed pile**. In the
      document a filed decision leaves, because it is history at that clause; a
      settled setting is not history, it is *the rule*. So it goes grey and stays,
-     which is what leaves the head of the document holding the constitution. */
+     which is what leaves the head of the document holding the constitution —
+     and since entry 72 (Q942, 2026-08-27) the pile also holds, behind the rule,
+     one grey record chip per motion that passed or was rejected at that clause:
+     the rule stays because it is the rule, and the motion files because it is
+     history. Both halves of the 2026-08-18 sentence survive; what changed is
+     that a pile may now hold more than the rule and its power tabs. */
   const chipHtml = (c, ctx, o) => {
     const st = stateOf(c, ctx);
     // `data-chip` names the card on every chip, clickable or not; `data-tab`
@@ -309,8 +297,8 @@ window.SETUP = (function () {
     ' style="--chiphue: var(--lc-' + HUE[st] + ')' + (o.z ? '; z-index:' + o.z : '') + '"' +
     (o.inert ? '' : ' title="' + esc(c.t + (o.active ? ' — close it'
       : st === 'ask' ? ' — waiting on you' : st === 'wait' ? ' — waiting on others'
-      : st === 'news' ? ' — decided; it waits for your OK'
-      : st === 'yours' ? ' — yours, being judged' : ' — settled')) + '"') +
+      : st === 'news' ? (c.grants ? ' — yours to take' : ' — decided; it waits for your OK')
+      : st === 'yours' ? ' — yours, being voted on' : ' — settled')) + '"') +
     '><span aria-hidden="true">' + markOf(c, ctx, true) + '</span>' +
     (o.inert ? '' : '<span class="sr">' + esc(c.t) + '</span>') + '</span>';
   };
@@ -672,7 +660,14 @@ window.SETUP = (function () {
      `distribution-strip` — the shape of what people asked for, without names.
      A consent rule is worth seeing the shape of: the number the document took
      is one person's, and the strip is what says how far it sat from the rest. */
-  function watchBody(c, ctx) {
+  /* `withMethod` is the caller saying *nothing above me has named the method*
+     (entry 163). The watch half is appended under three different upper
+     halves, and two of them — the founder's own card and the pen's set card —
+     carry 🌡️'s method note already; only the read-only body does not, and a
+     card that said the same sentence twice is exactly what T36 is about. The
+     knowledge is the caller's because only the caller knows what it put above
+     the strip (T20). */
+  function watchBody(c, ctx, withMethod) {
     const inN = c.in || 0, done = inN >= ctx.E;
     // No heading of its own: this half is always appended under a card that has
     // already said what it is about, and a second <h2> repeating the card's own
@@ -688,10 +683,21 @@ window.SETUP = (function () {
         '<p class="setnote">Nobody sees anybody’s answer until every one is in — you included. Only the count can show without anchoring the rest.</p>';
       return h;
     }
-    h += distHtml(c) +
+    h += (c.strip === 'rungs' && c.distribution && c.distribution.length
+      ? rungStripHtml(c.distribution) : distHtml(c)) +
       '<div class="statline"><span class="k">Answered</span><span class="v">' + ctx.E + ' of ' + ctx.E + '</span></div>' +
       '<div class="statline"><span class="k">' + esc(c.takes || 'The document takes') + '</span>' +
-      '<span class="v">' + esc(c.result || '—') + '</span></div>';
+      '<span class="v">' + esc(c.result || '—') + '</span></div>' +
+      // **…and what that would mean for the room as it stands now** (entry
+      // 167), not for the room at the resolution: a settled 👥 card read next
+      // month says *in a room of 7* where it was 5 at the founding, which is
+      // the whole point of a sentence that names its own dependence.
+      meaningLine(c.k, c.taken, ctx.room) +
+      // 🌡️'s settled card is where a member first meets the number as a fact
+      // about the document rather than as a question, so the explainer is
+      // linked here too (entry 163). Not on the still-collecting branch, which
+      // has its blind note and its count and asks nothing more.
+      (withMethod && c.k === 'bar' ? methodNote() : '');
     return h;
   }
 
@@ -712,6 +718,44 @@ window.SETUP = (function () {
       '<p class="setnote">What everyone asked for, without names.</p>';
   }
 
+  /* The same strip, drawn over **rungs** rather than over a fixture's buckets
+     (entry 165). Two differences from `distHtml`, and both follow from the
+     ladder above it:
+
+     - The columns are the ladder's own, so a rung nobody chose still stands —
+       at zero, visibly — and the shape of the room's answer is read against
+       the choices it had rather than against an anonymous run of bars. Any
+       number somebody named that is not a rung takes a column of its own,
+       in its place by value.
+     - It reads the **room's real answers** (`csState('bar').distribution`),
+       not a literal on the card record. That is why it is a second function
+       and not a flag on the first: every other card's strip is still the
+       Hollow Oak histogram on every document, which is a defect of its own
+       and a plan of its own.
+
+     Ordered most-protective-first to match the ladder, so a member's eye
+     travels the same way twice. The taken value is `distribution[0]` by
+     construction — `resolveConsent` sorts and takes the head — so the accent
+     column is not a second claim about who won. */
+  function rungStripHtml(dist) {
+    const rungs = window.CONSTITUTION.BAR_RUNGS;
+    const counts = new Map();
+    rungs.forEach((r) => counts.set(r.pct, 0));
+    dist.forEach((v) => { const p = +v.pct;
+      counts.set(p, (counts.get(p) || 0) + 1); });
+    const cols = [...counts.keys()].sort((a, b) => b - a);
+    const max = Math.max(...counts.values(), 1);
+    const taken = dist.length ? +dist[0].pct : null;
+    const labelOf = (p) => { const r = rungs.find((x) => x.pct === p); return r ? r.label : ''; };
+    return '<div class="dist">' + cols.map((p) =>
+      '<span' + (p === taken ? ' class="top"' : '') + ' style="height:' +
+      Math.max(2, Math.round(counts.get(p) / max * 54)) + 'px" title="' +
+      counts.get(p) + '"></span>').join('') + '</div>' +
+      '<div class="distl">' + cols.map((p) =>
+        '<span>' + p + '%' + (labelOf(p) ? '<br>' + esc(labelOf(p)) : '') + '</span>').join('') + '</div>' +
+      '<p class="setnote">What everyone asked for, without names.</p>';
+  }
+
   /* **A name and a picture are two cards** (Ed, 2026-08-18: *picture and name
      separate!*). They were one, on the reasoning that they are answered in one
      sitting — which is a fact about when you happen to do them and not about
@@ -729,11 +773,18 @@ window.SETUP = (function () {
     '<div class="idrow">' + avHtml(me, 'big') +
     '<span class="fld"><label for="myname">Your name</label>' +
     '<input id="myname" data-txt="myname" value="' + esc(me.n || '') + '" placeholder="Your name"></span></div>' +
+    // a blank name is a real answer (§9.0c), and since the card can be
+    // saved empty it has to say what saving it empty does. **Both branches
+    // have to be true on their own** (Q980): since ✋ is served at the save it
+    // is served before 🎩 is answered, so almost every founder reads the
+    // member branch first and a clerk meets theirs only by reopening the card.
+    // The old clerk note said *optional* as though the other branch were not —
+    // both are optional, and the branches differ only in where the blank
+    // lands. *Founded by* is the words on the page (the Founded line, F16);
+    // *Convenor* appears in no string a reader can see.
     ((opts && opts.optional)
-      ? '<p class="setnote">You are not a member, so this is <b>optional</b> — leave it blank and the constitution simply shows no name.</p>'
-      // a blank name is a real answer (§9.0c), and since the card can be
-      // saved empty it has to say what saving it empty does
-      : '<p class="setnote">Leave it blank and you appear as <b>Anonymous</b>. You can set it later from any seat.</p>');
+      ? '<p class="setnote">You are not a member, so your name appears only on the <i>Founded by</i> line. Leave it blank and that line shows <b>no name</b>.</p>'
+      : '<p class="setnote">This is how you appear in the room. Leave it blank and you appear as <b>Anonymous</b>. You can set it later from any seat.</p>');
 
   /* **It is an uploader** (Ed, 2026-08-18). The card had offered a ground for
      your initials or a drawn mark, on the reasoning that a mockup has no
@@ -759,115 +810,53 @@ window.SETUP = (function () {
      `design/emoji-data.js` by `scripts/emoji-data.mjs` and committed beside
      its input, on the same discipline as the `design/constitution.js` bundle.
 
-     **Only the open category is rendered.** 1906 buttons is not a thing to
-     build on every keystroke, and this body is rebuilt by every `render()` —
-     the live page polls every four seconds — so the grid is one group at a
-     time, a few hundred at most.
+     **And then the picker is only the grid** (entry 186, Ed's QA of batch Q:
+     the picture card is too large). *Remove the search, the section tabs, the
+     "or any emoji" input, just have all the available emoji in the picker
+     box, at the size they currently appear as avatars.* So the search field,
+     the nine category tabs, the sub-group headings and the free-emoji input
+     are gone, and what is left is one scroll box holding the whole list.
+
+     That **supersedes the other half of Q732**, which ruled that *only the
+     open category may be drawn*, because 1906 buttons is not a thing to build
+     on a keystroke and this body is rebuilt by every `render()` — the live
+     page polling every four seconds. Ed's later instruction wins, and the
+     keystroke half of the reason goes with the search box, since nothing is
+     typed here any more. The poll half is real, and was measured rather than
+     assumed: 1912 options, ~1.2 ms to build the HTML and **~136 ms for the
+     whole render** with the card open, so the cost is putting the buttons in
+     the document, not making them. Against a 4 s poll that is 3% of the
+     interval. A finding for the backlog if it ever bites, not a reason to
+     draw less than was asked for.
 
      Reserved and taken glyphs are greyed **in place** with their reason,
      which `faceBtn` already did and needed no change: the whole of Unicode is
      offered now, so the surface's own marks are in the grid and have to
      refuse themselves where a member meets them. */
   const EMOJI_DATA = () => (typeof window !== 'undefined' && window.EMOJI_DATA) || [];
-  const TONED_GROUP = 'People & Body';
-  const HITS_MAX = 240;
-  /* Which category is open and what is typed are **picker state, like
-     `FACE_TONE`**: they live here, are never stored, and survive the body
-     being rebuilt under them. One picker is open at a time — there is one
-     open card — so one set of them is enough, and `PICKER` remembers the
-     arguments the open one was drawn with so the grid can be refreshed in
-     place without a page render. */
-  let EMOJI_CAT = 0;
-  let EMOJI_Q = '';
-  let PICKER = null;
 
-  /* **Both sides of the comparison are folded.** CLDR names are not lowercase
-     — 388 of them carry a capital, which is every one of the 258 flags
-     (`flag: Ascension Island`), `OK hand`, `person gesturing NO`, the Japanese
-     buttons — and the query was lowercased while the name was not, so typing
-     the country you wanted answered *Nothing here is called that*. The names
-     are search-only (a button's title is its glyph), so folding them here
-     rather than in the generated file keeps `emoji-data.js` faithful to
-     Unicode's own spelling. */
-  const emojiHits = (q) => {
-    const n = q.trim().toLowerCase();
-    const out = [];
-    for (const [, subs] of EMOJI_DATA()) {
-      for (const [, items] of subs) {
-        for (const it of items) if (it[1].toLowerCase().indexOf(n) >= 0) out.push(it);
-      }
-    }
-    return out;
-  };
-
-  const emojiGridHtml = () => {
-    if (!PICKER) return '';
-    const { ownPic, name, dataAttr } = PICKER;
+  /* Flat and complete: every group and every sub-group, in the file's own
+     order so like glyphs stay beside each other, with no boundary drawn
+     between them. The tone row is the first row inside the box, and the
+     chosen tone goes on every glyph whose data row says it takes one — the
+     third element of the item, which is per-glyph, so there is no category to
+     test any more. */
+  const emojiGridHtml = (ownPic, name, dataAttr) => {
     const groups = EMOJI_DATA();
     if (!groups.length) return '<p class="setnote">The emoji list is still loading.</p>';
-    if (EMOJI_Q.trim()) {
-      const hits = emojiHits(EMOJI_Q);
-      if (!hits.length) return '<p class="setnote">Nothing here is called that.</p>';
-      const shown = hits.slice(0, HITS_MAX);
-      return '<div class="avpick">' + shown.map(([g]) =>
-        faceBtn(g, ownPic, dataAttr, name)).join('') + '</div>' +
-        (hits.length > shown.length
-          ? '<p class="setnote">' + (hits.length - shown.length) + ' more — keep typing.</p>'
-          : '');
+    const opts = [];
+    for (const [, subs] of groups) {
+      for (const [, items] of subs) {
+        for (const [g, , tonable] of items) {
+          opts.push(faceBtn(tonable ? faceToned(g) : g, ownPic, dataAttr, name));
+        }
+      }
     }
-    const [label, subs] = groups[Math.min(EMOJI_CAT, groups.length - 1)];
-    // the tone selector belongs to the people, and only to the glyphs in it
-    // that a tone can be put on — the same group holds 🦴 and 👣
-    const toned = label === TONED_GROUP;
-    return (toned ? faceToneRow() : '') + subs.map(([sublabel, items]) =>
-      '<div class="eyebrow fieldlab emojilab">' + esc(sublabel.replace(/-/g, ' ')) + '</div>' +
-      '<div class="avpick">' + items.map(([g, , tonable]) =>
-        faceBtn(toned && tonable ? faceToned(g) : g, ownPic, dataAttr, name)).join('') +
-      '</div>').join('');
+    return faceToneRow() + '<div class="avpick">' + opts.join('') + '</div>';
   };
 
-  const emojiPicker = (ownPic, name, dataAttr, freeAttr) => {
-    PICKER = { ownPic, name, dataAttr };
-    const searching = !!EMOJI_Q.trim();
-    return '<div class="emojisearch"><input type="search" data-emojisearch="1"' +
-      ' value="' + esc(EMOJI_Q) + '" placeholder="Search" autocomplete="off"' +
-      ' spellcheck="false"></div>' +
-      '<div class="emojitabs">' + EMOJI_DATA().map(([label], i) =>
-        '<button type="button" class="emojitab" data-emojicat="' + i + '"' +
-        ' aria-pressed="' + (!searching && i === EMOJI_CAT) + '">' +
-        esc(label) + '</button>').join('') + '</div>' +
-      '<div class="emojibox" data-emojigrid="1">' + emojiGridHtml() + '</div>' +
-      anyEmojiRow(freeAttr);
-  };
-
-  /* The grid refreshes **in place**, never through the page's own render: a
-     render rebuilds the search input, and rebuilding an input under a caret
-     is how you lose what somebody is halfway through typing. Bound once, on
-     the document, like every other delegated control here. */
-  const wireEmojiPicker = () => {
-    const refresh = () => {
-      const box = document.querySelector('[data-emojigrid]');
-      if (box) box.innerHTML = emojiGridHtml();
-      const searching = !!EMOJI_Q.trim();
-      document.querySelectorAll('[data-emojicat]').forEach((b) => {
-        b.setAttribute('aria-pressed', String(!searching && +b.dataset.emojicat === EMOJI_CAT));
-      });
-    };
-    document.addEventListener('input', (ev) => {
-      if (!ev.target.matches || !ev.target.matches('[data-emojisearch]')) return;
-      EMOJI_Q = ev.target.value;
-      refresh();
-    });
-    document.addEventListener('click', (ev) => {
-      const t = ev.target.closest && ev.target.closest('[data-emojicat]');
-      if (!t) return;
-      EMOJI_CAT = +t.dataset.emojicat;
-      EMOJI_Q = '';
-      const box = document.querySelector('[data-emojisearch]');
-      if (box) box.value = '';
-      refresh();
-    });
-  };
+  const emojiPicker = (ownPic, name, dataAttr) =>
+    '<div class="emojibox">' + emojiGridHtml(ownPic, name, dataAttr) + '</div>';
 
   /* One body, two seats (Q733): the applicant's 🖼️ used to hand-roll its own
      copy of the grounds and the picker and carried no uploader at all, which
@@ -876,12 +865,11 @@ window.SETUP = (function () {
   const pictureBody = (me, o) => {
     const opt = o || {};
     const at = opt.picAttr || 'data-pic';
-    const free = opt.freeAttr || 'data-picfree';
     const into = opt.into || 'me';
     const pic = me.pic || '';
     const uploaded = pic[0] === 'u';
     return '<div class="eyebrow fieldlab">Pick an emoji</div>' +
-      emojiPicker(pic, me.n, at, free) +
+      emojiPicker(pic, me.n, at) +
       '<div class="eyebrow fieldlab" style="margin-top:var(--s5)">Or upload an image</div>' +
       '<div class="picdrop" data-picinto="' + into + '"><div class="picact">' +
       '<label class="btn">' + (uploaded ? 'Choose another' : 'Choose a picture') +
@@ -985,7 +973,7 @@ window.SETUP = (function () {
         ? ' It is <b>reserved</b>: carrying does not change it by itself — it goes to the founder as a <b>👑 question</b>, theirs to assent to or refuse.'
         : '') + '</div>' +
       CB.proposalHtml(m, { tag: 'As proposed', html: esc(m.to), why: m.why, v: 'proposed', edit: false }) +
-      '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have judged it.</p>';
+      '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have voted on it.</p>';
   }
 
   /* A **constitutional motion**, which is not a judgment and has no card of its
@@ -996,7 +984,7 @@ window.SETUP = (function () {
   const motionReopen = (c, ctx, m) =>
     '<div class="unlocks"><b>Re-opened.</b> A member has proposed an amendment' +
     (m.why ? ' — <i>' + esc(m.why) + '</i>' : '') + '. ' +
-    'It is constitutional, so it takes everyone: nothing is judged and nothing is ranked — ' +
+    'It is constitutional, so all members must agree: there is no vote and nothing is ranked — ' +
     'you accept the amendment or keep what stands, and one refusal keeps what stands. ' +
     'Until every one of the ' + ctx.E + ' has answered, what stands stands.</div>' +
     '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have answered. ' +
@@ -1021,13 +1009,23 @@ window.SETUP = (function () {
   // throw the caret out of the lane. (Moved from founding-ceremony.html,
   // 2026-08-18 — it was the only motion commit-foot on either surface and
   // document-creation will need it; the surface passes what it knows.)
+  // **The label follows the gesture** (backlog 184, entry 187's hand-off).
+  // This is the one control whose words name the gesture that works it, so
+  // under `click` the leading *Hold to* goes and the verb is capitalised. The
+  // noun is entry 187's — *all members*, the phrase that describes the 🏛️
+  // route everywhere else on the surface (STYLE §1) — which 187 deliberately
+  // left standing here for this entry to close. Derived from the same constant
+  // the gesture is, in one place, so the two cannot disagree.
   const motionCommitHtml = (c, dto, heldOut) => {
     const constitutional = routeFor(c, dto) === 'constitutional';
+    const clickGesture = !!(window.SESSION && window.SESSION.gesture === 'click');
     return constitutional
       ? '<button class="btn btn-approve emojibtn holdmotion"' +
         (!dto || heldOut ? ' disabled' : '') +
-        ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first' : 'A full ten-second hold') + '"' +
-        ' data-holdmotion="' + c.k + '">🏛️ Hold to ask everyone</button>'
+        ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first'
+          : clickGesture ? 'A full ten-second assembly' : 'A full ten-second hold') + '"' +
+        ' data-holdmotion="' + c.k + '">🏛️ ' +
+        (clickGesture ? 'Ask all members' : 'Hold to ask everyone') + '</button>'
       // ✏️ on the ordinary commit, to match the 🏛️ on the other route (Ed,
       // 2026-08-19): the two commits are the two routes, and a bare word
       // beside a glyphed hold said only one of them out loud
@@ -1108,24 +1106,44 @@ window.SETUP = (function () {
   // accept" only reads as a ladder if you can see what you are refusing.
   // String() on both sides because the machines question stores booleans, and
   // 'false' === false is how its rung quietly never lit (found in this move).
-  const ladder = (A, key, rungs) => '<div class="choice" role="radiogroup">' + rungs.map((r, i) => {
+  // `tail` is rows that belong to the same radiogroup but **not to the
+  // ladder's own ordering** (entry 165): 🌡️'s *A number of my own* is the
+  // ladder's escape rather than a rung of it, so it sits inside the one
+  // `.choice` — a second `.choice` would read as a second question — and takes
+  // no part in the above/below dimming, which is a statement about refusing
+  // more than you have to and says nothing about naming a number.
+  const ladder = (A, key, rungs, tail) => '<div class="choice" role="radiogroup">' + rungs.map((r, i) => {
     const at = rungs.findIndex((x) => String(x.v) === String(A[key]));
-    return ansRow(String(A[key]) === String(r.v), key, r.v, r.t, r.e, (at >= 0 && i > at) ? ' above' : '');
-  }).join('') + '</div>';
+    return ansRow(String(A[key]) === String(r.v), key, r.v, r.t, r.e, (at >= 0 && i > at) ? ' above' : '',
+      r.inner);
+  }).join('') + (tail || '') + '</div>';
 
   // A gate card says one thing: what it is waiting for, and whether that has
   // happened. What it is waiting *on* is drawn as the cards themselves, so a
   // member reads it as “these, and then you can write” rather than as a rule.
   // (One copy since 2026-08-18 — it had been byte-identical in both surfaces.)
-  const gateBody = (c) =>
-    '<p class="why">' + c.why + '</p>' +
-    '<div class="lockline">' + (c.open() ? TICK : '') + '<span>' +
-    (c.open() ? c.done : c.waiting) + '</span></div>' +
-    (c.open() ? '' : '<div class="gatelist">' + c.blockers().map((b) =>
-      '<span class="gaterow"><span class="gg">' + b.g + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
-    '<p class="setnote">' + (c.open()
-      ? 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.'
-      : 'It comes back to you the moment it opens.') + '</p>';
+  //
+  // **A grant says what its press does, in the button's own words** (entry
+  // 180): *Nothing is being asked here* is true of ⚖️ and false of a grant,
+  // whose press hands you an object. So an open card carrying `grants` closes
+  // on the take sentence instead — except 💡, whose consequence is already
+  // said by `grantNote` beneath (the pencil count is the whole point of it),
+  // and which would otherwise say it twice (T36).
+  const gateNote = (c) => {
+    if (!c.open()) return 'It comes back to you the moment it opens.';
+    if (!c.grants) return 'Nothing is being asked here — <b>OK</b> files it and it leaves your queue.';
+    return c.k === 'canpropose' ? '' : '<b>' + c.grants + ' ' + c.take + '</b> puts it in your wallet.';
+  };
+  const gateBody = (c) => {
+    const open = c.open();
+    const note = gateNote(c);
+    return '<p class="why">' + c.why + '</p>' +
+      '<div class="lockline">' + (open ? TICK : '') + '<span>' +
+      (open ? c.done : c.waiting) + '</span></div>' +
+      (open ? '' : '<div class="gatelist">' + c.blockers().map((b) =>
+        '<span class="gaterow"><span class="gg">' + b.g + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
+      (note ? '<p class="setnote">' + note + '</p>' : '');
+  };
 
   /* The uploader, one copy for both surfaces: the file is read locally and
      never sent anywhere; where the data lands stays the caller's, named by
@@ -1217,28 +1235,174 @@ window.SETUP = (function () {
 
   const BLINDNOTE = '<p class="blindnote">Nobody sees your answer, and you will see nobody else’s until every one of them is in.</p>';
 
+  /* **One joiner for every sentence that names several things** (Q630, Ed
+     2026-08-26). The shape of a list of three is a copy decision and it is
+     STYLE.md §1's — *A, B and C*, no serial comma — so it is made once here
+     rather than at each site. Takes whatever the caller already has (escaped
+     text, a glyph and a title, a count phrase) and adds no markup of its own:
+     it is punctuation between strings, never an escaper. An empty list is the
+     empty string, every caller having guarded that case before it calls. */
+  const listOf = (items) => {
+    const xs = (items || []).filter((x) => x !== null && x !== undefined && x !== '');
+    if (!xs.length) return '';
+    if (xs.length === 1) return xs[0];
+    return xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1];
+  };
+
+  /* **The threshold card names the ceiling its own room can reach** (Q840, Ed
+     2026-08-26 (a)). The bar is a confidence, and a confidence is bounded by
+     the evidence the room can produce: an ordinary race holds one comparison
+     per member on the incumbent pair, so a room of one that agrees with
+     itself gets to 79% and no further, and a bar of 80 can never be cleared
+     however long the document runs. The mechanism is untouched — the room may
+     still answer 85%; it is told what 85% will mean for a room this size
+     before it answers.
+
+     The number is `barCeilingPct` from the module bundle, which is
+     engine-core's own fit copied out (the page carries no engine-core). It is
+     read **live, on every render, from the room as it stands** — no snapshot
+     at the founding — so the sentence is present-tense about the room now and
+     says the ceiling rises as members arrive, which is what keeps it true a
+     minute later.
+
+     `max` is what the control the note sits under can express: 95 for the
+     founding slider, 99 for the founder's own number field. A room that can
+     already reach everything its control offers is told nothing, which is most
+     rooms. And it is its own line rather than a third sentence in `.why`,
+     because `.why` is capped at 200 characters (card-audit H4) and 🌡️'s body
+     was cut to fit under Q764. */
+  /* **The one place the method is named** (entry 163). 🌡️ asks for a number
+     nobody can answer with conviction, because the number is not what it looks
+     like: it is a confidence rather than a share of the votes, and what one
+     confidence means in people depends on how many votes a change has
+     collected. Ed's ruling was to leave the question and the input alone and
+     explain it once, properly, on a page of its own — so this sentence names
+     the method, says in plain words what it buys, and links out.
+
+     Its own element, never inside `.why`: `.why` is capped at 200 characters
+     (card-audit H4) and 🌡️'s body was cut to fit under Q764, which is exactly
+     why `ceilingNote` sits outside it too.
+
+     **A new tab**, because the founder card is met during the birth, when the
+     page holds unsaved state a same-tab navigation would lose (`birth-pass`,
+     the stash) — the charter's `linkify` anchors open the same way. Inert
+     markup with no handler and no state, so the 4s poll re-rendering the card
+     wholesale costs it nothing, and an anchor is a real control to the
+     dead-click nudge, which is structural. */
+  const methodNote = () =>
+    '<p class="methodnote">Uses the Bradley–Terry method to allow for a decision with few votes — ' +
+    '<a href="/pairwise" target="_blank" rel="noopener">read more</a>.</p>';
+
+  /* **What choosing this would do, in this room** (entry 167). One line, one
+     class, one home for the sentence: the module writes it and every surface
+     that offers a value prints it — the founder's card, the member's answer
+     card, the composer's lane and the settled strip — so none of them writes
+     one of its own.
+
+     `.meaning`, deliberately **not** `.why`: `.why` is the card's body, which
+     `card-audit`'s H4 measures at 200 characters, and this is a note under a
+     control. Under a *rung* the sentence is the rung's own `.exp` instead,
+     which is the slot a rung explanation has always used; `.meaning` is for
+     the bare number fields, which have no rung to hang off. Its own budget is
+     the module's `fit()` and `meaning.test.ts`.
+
+     Empty until there is a value: a sentence about a number nobody has typed
+     is a suggested answer, and painting one is what these cards exist not to
+     do. The `data-meaning` hook is how the `input` handlers repaint it in
+     place — **nothing rebuilds under a press**. */
+  /* A member's answer is stated in the page's vocabulary — a number of days,
+     a count, a grant — and what the module wants is the typed value. That
+     mapping is the caller's (`ANSTYPED` in session-view.html, the one place
+     it is spelled either way), so it is handed in rather than copied here: a
+     ⏱️ answer states the grant alone and the cap and drip come from
+     elsewhere, which is exactly the kind of thing setup.js must not learn.
+     An unanswered question is `null` and gets no sentence. */
+  const ansValue = (typed, key, v) =>
+    ((typeof v === 'number' && typed && typed[key]) ? typed[key](v) : null);
+
+  const meaningLine = (key, value, room) =>
+    '<p class="meaning" data-meaning="' + esc(key) + '">' +
+    esc((value && window.CONSTITUTION.meaningOf(key, value, room || { e: 1 })) || '') + '</p>';
+
+  const roomOf = (E) => window.CONSTITUTION.roomPhrase(E);
+  const ceilingNote = (E, max) => {
+    const pct = window.CONSTITUTION.barCeilingPct(E);
+    if (pct >= max) return '';
+    return '<p class="ceilingnote">A room of ' + roomOf(E) + ' that agrees without exception can be ' +
+      pct + '% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.</p>';
+  };
+
+  /* 🌡️'s blind answer, as a ladder (entry 165).
+
+     **`'own'` is a rung, not an answer.** Choosing *A number of my own* is
+     choosing where to answer, and the page's `filled()` refuses it exactly as
+     it refuses an untouched control: the ✓ stays dark until a number is in the
+     box. It is the same two-act rule the whole ceremony keeps (K26) — touching
+     a control is not answering with it.
+
+     The meaning under each rung is read live from the room as it stands, like
+     `ceilingNote` above and for the same reason: a sentence about a room of
+     five stops being true when a sixth arrives, and naming the room in the
+     sentence is what lets the reader see that it moved. */
+  const rungPct = (v) => window.CONSTITUTION.BAR_RUNGS.some((r) => r.pct === +v);
+  const ownBar = (v) => v === 'own' || (typeof v === 'number' && !rungPct(v));
+  const barMeaning = (pct, room) =>
+    window.CONSTITUTION.meaningOf('bar', { pct: +pct }, room) || '';
+  const pctLabel = (label, pct) => esc(label) + '<span class="pct">' + pct + '%</span>';
+  const barLadder = (A, room) => ladder(A, 'bar',
+    window.CONSTITUTION.BAR_RUNGS.map((r) => ({
+      v: r.pct, t: pctLabel(r.label, r.pct), e: barMeaning(r.pct, room),
+    })),
+    // **The box is rendered only inside the rung that is chosen**, rather than
+    // rendered always and hidden by `.pick > .inner` the way `opt`'s fields
+    // are. A blind answer is the one place that distinction is load-bearing: a
+    // number field standing in the DOM under an unchosen rung is a value the
+    // page is holding for a question the member has not said they will answer
+    // that way, and every harness that reads the card would find it.
+    ansRow(ownBar(A.bar), 'bar', 'own', esc(window.CONSTITUTION.OWN_RUNG_LABEL), '', '',
+      !ownBar(A.bar) ? '' :
+        '<span class="fld"><span class="numrow">' +
+        '<input class="num" type="number" data-ansnum="bar" min="50" max="99"' +
+        (typeof A.bar === 'number' ? ' value="' + A.bar + '"' : '') + '>' +
+        '<span class="setnote" style="margin:0">%</span></span></span>' +
+        '<span class="exp" data-meaning="bar">' +
+        (typeof A.bar === 'number' ? esc(barMeaning(A.bar, room)) : '') + '</span>'));
+
   /* One body per delegable question — the copy a member answers against,
-     identical on both surfaces because it is the same question. */
+     identical on both surfaces because it is the same question.
+     `room` is the fourth argument since entry 167: what a value would mean is
+     the module's to say, and it needs the room to say it. */
   const ANSWER = {
-    quorum: (A, E, form) => {
+    quorum: (A, E, form, room) => {
       const share = form === 'share';
       const asN = (v) => (share ? Math.max(1, Math.ceil(v / 100 * E)) : v);
-      const mean = (v) => (asN(v) >= E
-        ? 'Nothing moves unless every member has weighed in. A document that cannot change without all of them is a perfectly reasonable thing to want.'
-        : asN(v) <= Math.ceil(E / 4) ? 'A small part of the room can carry a change while the rest are elsewhere.'
-        : 'Rather more than half the room has to have looked at a question before it can move.');
+      // **The three band sentences are retired** (entry 167). *A small part of
+      // the room can carry a change while the rest are elsewhere.* was true of
+      // any small quorum in any room, which is the one thing a meaning must
+      // not be: it named no room, so a member arriving never changed it, and
+      // the reader could not tell what their answer would actually cost.
+      const mean = (v) => window.CONSTITUTION.meaningOf('quorum',
+        { form: share ? 'share' : 'count', n: +v }, room || { e: E }) || '';
       return '<p class="why">How many ' + (E >= 2 ? 'of the ' + E : 'of the membership') + ' must weigh in before a question can change the document — short of that it waits; silence is never a vote. Asked as a <b>' + (share ? 'share of the membership' : 'count') + '</b>: the wording is the founder’s, the number is the room’s.</p>' +
       (share
         ? slider(A, 'quorum', 5, 100, (v) => v + '% — ' + asN(v) + ' of ' + E, mean, 5)
         : slider(A, 'quorum', 1, E, (v) => v + ' of ' + E, mean)) +
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given, so it is never lower than yours.</p>';
     },
-    bar: (A) =>
-      '<p class="why">How sure the room must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. A confidence, not a vote share. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the founder’s pacing.</p>' +
-      slider(A, 'bar', 50, 95, (v) => v + '%', (v) =>
-        v >= 85 ? 'Only near-agreement changes anything. Expect the document to move slowly and keep most of what it started with.'
-        : v <= 60 ? 'A modest preference is enough. The document will move quickly, and reverse itself more often.'
-        : 'A clear preference is needed, but not agreement.', 5) +
+    bar: (A, E, _form, room) =>
+      '<p class="why">How sure the room must be that a new wording beats the one it replaces, <b>at the close, where an adoption is permanent</b>. Everything earlier can still be challenged, so this one number covers the whole way; how it climbs is the founder’s pacing.</p>' +
+      // **Three rungs and a number** (entry 165, Ed 2026-08-27: *we need to
+      // help them with 3 preset buttons, and they can edit the precise % if
+      // they really want to*). The slider that stood here asked for a percent
+      // and offered a sentence about what living at it feels like; a rung asks
+      // for a judgment and says what it would cost this room in votes, which
+      // is a thing a member can actually hold an opinion about. Same rungs,
+      // same order and same labels as the founder's card, from the one list
+      // (T5, Q620) — and the same `.above` dimming as 👁️, so *the most I will
+      // accept* still reads as a ladder of what you are refusing.
+      barLadder(A, room || { e: E }) +
+      ceilingNote(E, 99) +
+      methodNote() +
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>highest</b> given.</p>',
     authorship: (A) =>
       '<p class="why">Rationales are always visible; what varies is whether a name is attached. The <b>most private</b> answer wins: one person who wants no names keeps the document unnamed.</p>' +
@@ -1250,10 +1414,10 @@ window.SETUP = (function () {
         { v: 'public', t: 'Names from the start', e: 'Everyone can see who proposed what, as it happens.' }]) +
       '<p class="blindnote">Nothing is preselected — anonymity holds unless everyone is content with more.</p>',
     judgments: (A) =>
-      '<p class="why">Never revealed while a question is live, whichever is chosen — a room that can read itself judges itself. This settles only whether they are published with the closing record.</p>' +
+      '<p class="why">Never revealed while a question is live, whichever is chosen — a room that can see its own votes votes differently. This settles only whether they are published with the closing record.</p>' +
       ladder(A, 'judgments', [
         { v: 'never', t: 'Never revealed', e: 'What you preferred stays yours, permanently.' },
-        { v: 'after', t: 'Revealed after the decision', e: 'Published with the record, never before it.' }]) + BLINDNOTE,
+        { v: 'after', t: 'Revealed at the end', e: 'Published with the document at the end, never before.' }]) + BLINDNOTE,
     applications: (A) =>
       '<p class="why">How somebody who is not a member can become one. The <b>least open</b> answer wins: one member who wants invitation only keeps it so.</p>' +
       ladder(A, 'applications', [
@@ -1272,20 +1436,20 @@ window.SETUP = (function () {
     admission: (A) =>
       '<p class="why">What it costs to bring somebody into the membership — a member’s invitation or a stranger’s application alike. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'admission', [
-        { v: 'assembly', t: 'Everyone must agree', e: 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.' },
-        { v: 'proposal', t: 'The membership decides', e: 'A proposed member is judged at the approval threshold ✏️, like any change.' },
+        { v: 'assembly', t: 'All members must agree', e: 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.' },
+        { v: 'proposal', t: 'The membership decides', e: 'A proposed member is voted on at the approval threshold ✏️, like any change.' },
         { v: 'pen', t: 'Any member may invite', e: 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.' }]) + BLINDNOTE,
     removal: (A) =>
       '<p class="why">What it costs to remove a member. Whichever is chosen, the member always sees a removal proposed against them, and anybody may leave at any time. The <b>most protective</b> answer wins: one member who wants everyone asked keeps everyone asked.</p>' +
       ladder(A, 'removal', [
-        { v: 'consent', t: 'Everyone must agree, including them', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
-        { v: 'assembly', t: 'Everyone else must agree', e: 'The whole room, minus the member in question, must agree 🏛️.' },
-        { v: 'proposal', t: 'The membership decides', e: 'Judged at the approval threshold ✏️ like any change, with quorum.' }]) + BLINDNOTE,
+        { v: 'consent', t: 'All members must agree, including them', e: 'One refusal keeps them in, their own counted: effectively, nobody is removed against their will.' },
+        { v: 'assembly', t: 'All other members must agree', e: 'The whole room, minus the member in question, must agree 🏛️.' },
+        { v: 'proposal', t: 'The membership decides', e: 'Voted on at the approval threshold ✏️ like any change, with quorum.' }]) + BLINDNOTE,
     machines: (A) =>
-      '<p class="why">An AI that patrols the document for drift and proposes fixes — it never judges, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
+      '<p class="why">An AI that patrols the document for drift and proposes fixes — it never votes, and counts toward no quorum; its proposals compete on the same terms as anybody’s. The <b>most restrictive</b> answer wins: if you would rather not have AI proposals, they stay out.</p>' +
       ladder(A, 'machines', [
         { v: false, t: 'No AI proposals', e: 'People write everything in this document.' },
-        { v: true, t: 'AI proposals are permitted', e: 'They compete on the same terms as anybody’s and can be out-judged like anybody’s.' }]) + BLINDNOTE,
+        { v: true, t: 'AI proposals are permitted', e: 'They compete on the same terms as anybody’s and can be out-voted like anybody’s.' }]) + BLINDNOTE,
     ending: (A) =>
       '<p class="why">When the document should close. The <b>latest</b> answer anybody gives is taken, and <b>never</b> is the latest of all — so nobody is cut off before they were ready.</p>' +
       '<div class="choice" role="radiogroup">' +
@@ -1301,18 +1465,34 @@ window.SETUP = (function () {
         (A.ending && A.ending !== 'never' ? ' value="' + esc(A.ending) + '"' : '') + '></span>') +
       ansRow(A.ending === 'never', 'ending', 'never', 'Never', 'It runs until it is frozen.') +
       '</div>' + BLINDNOTE,
-    lapse: (A) =>
-      '<p class="why">Whether a membership <b>lapses</b> after a period of inactivity — and how long. A lapsed member leaves the quorum base like an abstainer: the room can finish without them, their judgments keep counting, and coming back is just logging in. They are warned by email first, and sent the document and record when it happens.</p>' +
+    // **Never first** (entry 167, rule 4): the document takes the *longest*
+    // asked for and *never* is the longest of all, so it heads the ladder as
+    // the most-protective answer does everywhere else — the rung's own
+    // sentence is the family's now, and the field below carries a `.meaning`
+    // that repaints as the number is typed.
+    lapse: (A, E, _form, room, typed) =>
+      '<p class="why">Whether a membership <b>lapses</b> after a period of inactivity — and how long. A lapsed member leaves the quorum base like an abstainer: the room can finish without them, their votes keep counting, and coming back is just logging in. They are warned by email first, and sent the document and record when it happens.</p>' +
+      '<div class="choice" role="radiogroup">' +
+      ansRow(A.lapse === 'never', 'lapse', 'never', 'Never',
+        esc(window.CONSTITUTION.meaningOf('lapse', { afterMs: null }, room || { e: E }) || '')) +
+      '</div>' +
       '<span class="fld"><label>The shortest period of inactivity you will accept</label>' +
       '<span class="setrow2"><input class="num" type="number" min="7" max="365"' +
       ' data-ansnum="lapse"' + (typeof A.lapse === 'number' ? ' value="' + A.lapse + '"' : '') + '>' +
       '<span class="setnote" style="margin:0">days</span></span></span>' +
-      ansRow(A.lapse === 'never', 'lapse', 'never', 'Never', 'Memberships do not lapse, however long inactive.') +
+      meaningLine('lapse', ansValue(typed, 'lapse', A.lapse), room) +
       '<p class="blindnote">Nobody sees your answer. The document takes the <b>longest</b> asked for, <b>never</b> the longest of all.</p>',
-    rate: (A) =>
+    rate: (A, E, _form, room, typed) =>
       '<p class="why">The most sparing proposal rate you would accept. The document takes the <b>most generous</b> answer given.</p>' +
       '<span class="fld"><label>The fewest ✏️ to start with</label><input class="num" type="number" min="0" max="40"' +
-      ' data-ansnum="rate"' + (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '></span>' + BLINDNOTE,
+      ' data-ansnum="rate"' + (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '></span>' +
+      // ⏱️ is the one answer card that carried no meaning at all: a number
+      // field and a body. What the number comes to over the session is the
+      // consequence the answer turns on (entry 167). The answer states the
+      // grant alone, so the whole typed value comes from the caller's own
+      // `ANSTYPED` — setup.js writes the control and never the vocabulary.
+      meaningLine('rate', ansValue(typed, 'rate', A.rate), room) +
+      BLINDNOTE,
   };
 
   /* ---- the mails -----------------------------------------------------------
@@ -1416,6 +1596,17 @@ window.SETUP = (function () {
         found.push({ key: 'p:' + el.dataset.para, el, grow: false }));
       band.querySelectorAll('.csec > h2[id]').forEach((h) =>
         found.push({ key: 's:' + h.id, el: h.parentElement, grow: false }));
+      // **A subsection is its own birth** (entry 185). A section heading's
+      // element is its whole `.csec`, which is right for a section: the thing
+      // arriving is the section. A lvl3 subsection heading had no container of
+      // its own, so it was charged to its section too — and the section that
+      // owns *Applicants* is the one the open 🤝 card stands in, so the first
+      // pick of *Anyone may apply* faded the card the founder was pressing.
+      // `memSub` gives each subsection a `.csub` block (session-view.html), and
+      // its birth is that block: the heading and its rows arrive, the section
+      // around them is not touched.
+      band.querySelectorAll('.csub > h2[id]').forEach((h) =>
+        found.push({ key: 's:' + h.id, el: h.parentElement, grow: false }));
     }
     // first render, or a stagehand act (seat switch, ⏩): absorb, don't act
     if (!bornPrimed || mute) {
@@ -1486,8 +1677,7 @@ window.SETUP = (function () {
     bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody, watchBody, distHtml,
     nameBody, pictureBody, opt, num, faces, someIn, FACE_EMOJI,
     FACE_TONES, faceToneRow, faceToned, setFaceTone,
-    anyEmojiRow, wireFreeEmoji, emojiFaceOf, setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
-    wireEmojiPicker,
+    setFaceTaken, faceTakenBy, faceBtn, emojiPicker,
     motionBody, motionReopen, routeFor, motionCommitHtml,
-    slider, syncSlider, ladder, ANSWER, BLINDNOTE, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
+    slider, syncSlider, ladder, ANSWER, BLINDNOTE, ceilingNote, methodNote, meaningLine, listOf, gateBody, wirePicDrop, MAILS, renderMailModal, birthPass };
 })();

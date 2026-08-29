@@ -24,16 +24,28 @@ var CONSTITUTION = (() => {
   // src/browser.ts
   var browser_exports = {};
   __export(browser_exports, {
+    BAR_CEILING_PCT: () => BAR_CEILING_PCT,
+    BAR_RUNGS: () => BAR_RUNGS,
     CATALOGUE: () => CATALOGUE,
     CATALOGUE_BY_ID: () => CATALOGUE_BY_ID,
     ConstitutionSession: () => ConstitutionSession,
     DOORS: () => DOORS,
     JUDGE_GATES: () => JUDGE_GATES,
+    MEANING_MAX: () => MEANING_MAX,
+    OWN_RUNG_LABEL: () => OWN_RUNG_LABEL,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
+    SHAPED: () => SHAPED,
+    SHAPES: () => SHAPES,
+    UNSHAPED: () => UNSHAPED,
+    VOTES_NEEDED: () => VOTES_NEEDED,
+    VOTES_NEEDED_HI_PCT: () => VOTES_NEEDED_HI_PCT,
+    VOTES_NEEDED_LO_PCT: () => VOTES_NEEDED_LO_PCT,
+    VOTES_NEEDED_MAX_N: () => VOTES_NEEDED_MAX_N,
     WARN_FRACTION: () => WARN_FRACTION,
     adoptionFloor: () => adoptionFloor,
     adoptionFloorTerm: () => adoptionFloorTerm,
     barAt: () => barAt,
+    barCeilingPct: () => barCeilingPct,
     chainHash: () => chainHash,
     constitutionBlock: () => constitutionBlock,
     eOf: () => eOf,
@@ -42,24 +54,30 @@ var CONSTITUTION = (() => {
     holderOf: () => holderOf,
     inE: () => inE,
     isDoor: () => isDoor,
+    isShapeName: () => isShapeName,
     lapseDue: () => lapseDue,
     mayApply: () => mayApply,
+    meaningOf: () => meaningOf,
     motionElectorateOf: () => motionElectorateOf,
     motionRouteOf: () => motionRouteOf,
     quorumBaseOf: () => quorumBaseOf,
     quorumCount: () => quorumCount,
     reAnchor: () => reAnchor,
     resolveConsent: () => resolveConsent,
+    roomPhrase: () => roomPhrase,
     roomSettings: () => roomSettings,
     seedAnchors: () => seedAnchors,
     sha256Hex: () => sha256Hex,
+    shapeOf: () => shapeOf,
     slugify: () => slugify,
     smoothstep: () => smoothstep,
     stableStringify: () => stableStringify,
     validateFor: () => validateFor,
     validateValue: () => validateValue,
     versionOf: () => versionOf,
-    view: () => view
+    view: () => view,
+    votesNeeded: () => votesNeeded,
+    winsNeededPct: () => winsNeededPct
   });
 
   // src/sha256.ts
@@ -417,8 +435,9 @@ var CONSTITUTION = (() => {
     // ladder, and nobody is handed an exposure they did not accept.
     //
     // The two elective rungs are the ones the per-proposal sign control belongs
-    // to (Q770, not built): until it exists they behave as their base rung,
-    // which is what `adapter.ts` maps them to.
+    // to (Q770, built): by default they behave as their base rung, which is what
+    // `adapter.ts` maps them to, and a signed proposal is named from the moment
+    // it is made (`authorVisible` in engine-core; the gate is `propose-text`).
     {
       id: "authorship",
       glyph: "👤",
@@ -710,6 +729,122 @@ var CONSTITUTION = (() => {
     const x = span <= 0 ? 1 : (t - a.anchorT) / span;
     return a.anchorPct + (a.endPct - a.anchorPct) * smoothstep(x);
   }
+  var BAR_CEILING_PCT = [79, 89, 93, 95, 96, 97, 98, 98, 98, 99];
+  function barCeilingPct(e) {
+    if (!Number.isFinite(e) || e < 1) return BAR_CEILING_PCT[0];
+    const i = Math.floor(e) - 1;
+    return i < BAR_CEILING_PCT.length ? BAR_CEILING_PCT[i] : 99;
+  }
+  var VOTES_NEEDED = [
+    /* 50% */
+    [1, 1, 2, 2, 3, 3, 4, 4, 5, 6, 6, 6, 7, 8, 8, 9, 9, 9, 10, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 16, 17, 17, 18, 18, 19, 19, 20, 20, 20, 21, 22, 22, 23, 23, 24, 24, 25, 25, 25, 26, 27, 27, 28, 28, 29, 29, 29, 30, 31, 31, 31, 32, 33, 33, 34, 34, 34, 35, 36, 36, 37, 37, 37, 38, 39, 39, 40, 40, 41, 41, 42, 42, 42, 43, 44, 44, 45, 45, 45, 46, 47, 47, 48, 48, 49, 49, 50, 50, 50],
+    /* 51% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51],
+    /* 52% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51],
+    /* 53% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51],
+    /* 54% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51],
+    /* 55% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51],
+    /* 56% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51],
+    /* 57% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51],
+    /* 58% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 52],
+    /* 59% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52],
+    /* 60% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52],
+    /* 61% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52],
+    /* 62% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 52, 52],
+    /* 63% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52],
+    /* 64% */
+    [1, 2, 2, 3, 3, 4, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52],
+    /* 65% */
+    [1, 2, 2, 3, 3, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52],
+    /* 66% */
+    [1, 2, 2, 3, 3, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 51, 51, 52, 52, 53],
+    /* 67% */
+    [1, 2, 2, 3, 3, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53],
+    /* 68% */
+    [1, 2, 2, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53],
+    /* 69% */
+    [1, 2, 2, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53],
+    /* 70% */
+    [1, 2, 2, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 50, 50, 51, 51, 52, 52, 53, 53],
+    /* 71% */
+    [1, 2, 2, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53],
+    /* 72% */
+    [1, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53],
+    /* 73% */
+    [1, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 53, 53, 54],
+    /* 74% */
+    [1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54],
+    /* 75% */
+    [1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54],
+    /* 76% */
+    [1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54],
+    /* 77% */
+    [1, 2, 3, 3, 4, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 51, 51, 52, 52, 53, 53, 54, 54],
+    /* 78% */
+    [1, 2, 3, 3, 4, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 54],
+    /* 79% */
+    [1, 2, 3, 3, 4, 4, 5, 6, 6, 7, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 54],
+    /* 80% */
+    [0, 2, 3, 3, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55],
+    /* 81% */
+    [0, 2, 3, 3, 4, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55],
+    /* 82% */
+    [0, 2, 3, 3, 4, 5, 5, 6, 6, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 55, 55],
+    /* 83% */
+    [0, 2, 3, 3, 4, 5, 5, 6, 6, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55, 55],
+    /* 84% */
+    [0, 2, 3, 4, 4, 5, 5, 6, 6, 7, 8, 8, 9, 9, 10, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55, 55],
+    /* 85% */
+    [0, 2, 3, 4, 4, 5, 5, 6, 7, 7, 8, 8, 9, 9, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 54, 54, 55, 55, 56],
+    /* 86% */
+    [0, 2, 3, 4, 4, 5, 5, 6, 7, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55, 55, 56],
+    /* 87% */
+    [0, 2, 3, 4, 4, 5, 6, 6, 7, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 55, 55, 56, 56],
+    /* 88% */
+    [0, 2, 3, 4, 4, 5, 6, 6, 7, 7, 8, 9, 9, 10, 10, 11, 11, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55, 55, 56, 56],
+    /* 89% */
+    [0, 2, 3, 4, 4, 5, 6, 6, 7, 7, 8, 9, 9, 10, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55, 56, 56, 57],
+    /* 90% */
+    [0, 0, 3, 4, 5, 5, 6, 6, 7, 8, 8, 9, 9, 10, 10, 11, 12, 12, 13, 13, 14, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 52, 52, 53, 53, 54, 54, 55, 55, 56, 56, 57],
+    /* 91% */
+    [0, 0, 3, 4, 5, 5, 6, 6, 7, 8, 8, 9, 9, 10, 11, 11, 12, 12, 13, 13, 14, 15, 15, 16, 16, 17, 17, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55, 56, 56, 57, 57],
+    /* 92% */
+    [0, 0, 3, 4, 5, 5, 6, 7, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12, 13, 14, 14, 15, 15, 16, 16, 17, 18, 18, 19, 19, 20, 20, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 42, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55, 55, 56, 56, 57, 57],
+    /* 93% */
+    [0, 0, 3, 4, 5, 5, 6, 7, 7, 8, 8, 9, 10, 10, 11, 11, 12, 13, 13, 14, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 54, 54, 55, 55, 56, 56, 57, 57, 58],
+    /* 94% */
+    [0, 0, 0, 4, 5, 6, 6, 7, 7, 8, 9, 9, 10, 10, 11, 12, 12, 13, 13, 14, 15, 15, 16, 16, 17, 17, 18, 19, 19, 20, 20, 21, 21, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 38, 38, 39, 39, 40, 40, 41, 41, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55, 56, 56, 57, 57, 58, 58],
+    /* 95% */
+    [0, 0, 0, 4, 5, 6, 6, 7, 8, 8, 9, 9, 10, 11, 11, 12, 12, 13, 14, 14, 15, 15, 16, 17, 17, 18, 18, 19, 19, 20, 21, 21, 22, 22, 23, 23, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 30, 30, 31, 31, 32, 32, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 40, 40, 41, 41, 42, 42, 43, 43, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55, 55, 56, 57, 57, 58, 58, 59],
+    /* 96% */
+    [0, 0, 0, 0, 5, 6, 7, 7, 8, 8, 9, 10, 10, 11, 11, 12, 13, 13, 14, 14, 15, 16, 16, 17, 17, 18, 19, 19, 20, 20, 21, 21, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 28, 29, 29, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 52, 52, 53, 53, 54, 54, 55, 55, 56, 56, 57, 58, 58, 59, 59],
+    /* 97% */
+    [0, 0, 0, 0, 0, 6, 7, 7, 8, 9, 9, 10, 11, 11, 12, 12, 13, 14, 14, 15, 15, 16, 17, 17, 18, 18, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25, 25, 26, 26, 27, 28, 28, 29, 29, 30, 30, 31, 32, 32, 33, 33, 34, 34, 35, 36, 36, 37, 37, 38, 38, 39, 39, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55, 55, 56, 57, 57, 58, 58, 59, 59, 60],
+    /* 98% */
+    [0, 0, 0, 0, 0, 0, 7, 8, 8, 9, 10, 10, 11, 12, 12, 13, 13, 14, 15, 15, 16, 16, 17, 18, 18, 19, 19, 20, 21, 21, 22, 22, 23, 24, 24, 25, 25, 26, 26, 27, 28, 28, 29, 29, 30, 30, 31, 32, 32, 33, 33, 34, 34, 35, 36, 36, 37, 37, 38, 38, 39, 40, 40, 41, 41, 42, 42, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 54, 54, 55, 55, 56, 56, 57, 57, 58, 59, 59, 60, 60, 61],
+    /* 99% */
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 11, 12, 12, 13, 13, 14, 15, 15, 16, 17, 17, 18, 18, 19, 20, 20, 21, 21, 22, 23, 23, 24, 24, 25, 26, 26, 27, 27, 28, 29, 29, 30, 30, 31, 31, 32, 33, 33, 34, 34, 35, 36, 36, 37, 37, 38, 38, 39, 40, 40, 41, 41, 42, 42, 43, 44, 44, 45, 45, 46, 46, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 53, 53, 54, 54, 55, 55, 56, 57, 57, 58, 58, 59, 59, 60, 60, 61, 62, 62]
+  ];
+  var VOTES_NEEDED_LO_PCT = 50;
+  var VOTES_NEEDED_HI_PCT = 99;
+  var VOTES_NEEDED_MAX_N = 100;
+  function votesNeeded(n, pct) {
+    const p = !Number.isFinite(pct) ? VOTES_NEEDED_LO_PCT : Math.min(VOTES_NEEDED_HI_PCT, Math.max(VOTES_NEEDED_LO_PCT, Math.floor(pct)));
+    const v = !Number.isFinite(n) ? 1 : Math.min(VOTES_NEEDED_MAX_N, Math.max(1, Math.floor(n)));
+    return VOTES_NEEDED[p - VOTES_NEEDED_LO_PCT][v - 1];
+  }
   function reAnchor(a, tNow, newEndT) {
     const current = barAt(a, tNow);
     return {
@@ -729,6 +864,117 @@ var CONSTITUTION = (() => {
       warnAtT: lastActivityT + afterMs * WARN_FRACTION,
       lapseAtT: lastActivityT + afterMs
     };
+  }
+
+  // src/shapes.ts
+  var SHAPED = [
+    "bar",
+    "pace",
+    "quorum",
+    "authorship",
+    "judgments",
+    "chamber",
+    "rate",
+    "lapse",
+    "machines",
+    "removal"
+  ];
+  var UNSHAPED = [
+    "title",
+    "link",
+    "startingText",
+    "admission",
+    "applications",
+    "displayName",
+    "picture"
+  ];
+  var DAY_MS = 24 * 3600 * 1e3;
+  var SHAPES = [
+    {
+      name: "meeting",
+      title: "A meeting",
+      say: "A few hours in one room: everyone is here, changes pass easily early on, and nobody is removed or lapses.",
+      unit: "hours",
+      sets: {
+        // Ed: ramp 60→80; 80 is 🌡️'s *Broad agreement* rung. Mind Q840: a room
+        // of one tops out at 79, and 🌡️'s ceiling note already says so.
+        bar: { pct: 80 },
+        pace: { shape: "ramp", startPct: 60 },
+        // as a share (Ed); everyone is in the room at a meeting
+        quorum: { form: "share", n: 50 },
+        // names at the end, or earlier by choice — the rung the sign control belongs to
+        authorship: { rung: "sealedElective" },
+        // the most protective rung; votes stay private unless a room decides otherwise
+        judgments: { rung: "never" },
+        // a meeting's document is passed round by its address
+        chamber: { rung: "link" },
+        // **is** alpha-preset's measured *ALPHA PRESET*: the one cell with evidence
+        rate: { grant: 6, cap: 8, dripMinutes: 5 },
+        // Ed: hidden for a meeting — a decision nobody has
+        lapse: { afterMs: null },
+        // Ed: off
+        machines: { enabled: false, budget: 0 },
+        // nobody is put out of a meeting — leave only
+        removal: { price: "consent" }
+      },
+      hides: ["lapse"]
+    },
+    {
+      name: "conference",
+      title: "A conference",
+      say: "A few days with people coming and going: a third of the room is enough to move, one proposal an hour each.",
+      unit: "days",
+      sets: {
+        bar: { pct: 80 },
+        pace: { shape: "ramp", startPct: 60 },
+        quorum: { form: "share", n: 33 },
+        authorship: { rung: "sealedElective" },
+        // placeholder — QA may prefer *after* for a conference
+        judgments: { rung: "never" },
+        chamber: { rung: "link" },
+        // drip in hours
+        rate: { grant: 4, cap: 8, dripMinutes: 60 },
+        lapse: { afterMs: null },
+        machines: { enabled: false, budget: 0 },
+        removal: { price: "consent" }
+      },
+      hides: ["lapse"]
+    },
+    {
+      name: "ongoing",
+      title: "Ongoing",
+      say: "No end date, members only: a quarter of the room can move, one proposal a day each, and a member away a month lapses.",
+      unit: null,
+      sets: {
+        // Ed: *never* is what *ongoing* already said — folded first, because
+        // the module refuses a ramp under a perpetual ending
+        ending: { endsAtMs: null },
+        // fixed 80 for ongoing (perpetual forces fixed)
+        bar: { pct: 80 },
+        pace: { shape: "fixed" },
+        quorum: { form: "share", n: 25 },
+        authorship: { rung: "sealedElective" },
+        judgments: { rung: "never" },
+        // an ongoing document is the members'
+        chamber: { rung: "closed" },
+        // drip in days
+        rate: { grant: 4, cap: 6, dripMinutes: 1440 },
+        // Ed: about 30 days for ongoing
+        lapse: { afterMs: 30 * DAY_MS },
+        machines: { enabled: false, budget: 0 },
+        // an ongoing room needs the door
+        removal: { price: "assembly" }
+      },
+      hides: []
+    }
+  ];
+  function shapeOf(name) {
+    const row = SHAPES.find((s) => s.name === name);
+    if (!row) throw new Error(`'${name}' is not a shape`);
+    return row;
+  }
+  function isShapeName(v) {
+    return typeof v === "string" && SHAPES.some((s) => s.name === v);
   }
 
   // src/session.ts
@@ -765,11 +1011,16 @@ var CONSTITUTION = (() => {
       __publicField(this, "convenor");
       __publicField(this, "crownLapsedFlag", false);
       __publicField(this, "members", /* @__PURE__ */ new Map());
+      /** The departures, folded (Q901): see `departures()`. */
+      __publicField(this, "departed", []);
       __publicField(this, "settings", /* @__PURE__ */ new Map());
       __publicField(this, "quorumFormValue", "share");
       __publicField(this, "startingText", null);
       __publicField(this, "textConfirmedFlag", false);
       __publicField(this, "slugHistory", []);
+      /** The birth's own `t` and its 🧭 shape (entry 166), read off `created` so `replay` rebuilds both. */
+      __publicField(this, "createdT", null);
+      __publicField(this, "shapeName", null);
       __publicField(this, "constitutedT", null);
       __publicField(this, "closedFlag", false);
       __publicField(this, "closedT", null);
@@ -810,13 +1061,23 @@ var CONSTITUTION = (() => {
       if (!input.title.trim()) throw new Error("a document begins with its title (§9.7a)");
       const slugErr = validateFor(entryOf("link"), { slug: input.slug });
       if (slugErr) throw new Error(slugErr);
+      const shape = input.shape === void 0 ? null : shapeOf(input.shape);
       s.emit({
         type: "created",
         t,
         title: input.title,
         slug: input.slug,
-        convenor: input.convenor
+        convenor: input.convenor,
+        ...shape === null ? {} : { shape: shape.name }
       });
+      if (shape !== null) {
+        const ids = Object.keys(shape.sets);
+        const ordered = [
+          ...ids.filter((id) => id === "ending"),
+          ...CATALOGUE.map((e) => e.id).filter((id) => id !== "ending" && ids.includes(id))
+        ];
+        for (const id of ordered) s.setSetting(t, id, shape.sets[id]);
+      }
       return s;
     }
     /** Rebuild a session by replaying a log (verifies the hash chain). */
@@ -851,6 +1112,8 @@ var CONSTITUTION = (() => {
       switch (event.type) {
         case "created": {
           const c = event.convenor;
+          this.createdT = event.t;
+          this.shapeName = event.shape ?? null;
           this.convenor = {
             ...c,
             name: c.name ?? null,
@@ -1062,6 +1325,9 @@ var CONSTITUTION = (() => {
           const m = this.members.get(event.member);
           m.removed = true;
           m.removedBy = event.by ?? "members";
+          if (m.arrivedAtT !== null) {
+            this.departed.push({ member: event.member, t: event.t, by: m.removedBy });
+          }
           break;
         }
         case "answer-given": {
@@ -1874,7 +2140,7 @@ var CONSTITUTION = (() => {
         if (depSt && depSt.settledBy === null) return;
       }
       if ([...this.members.values()].some((m) => m.arrivedAtT === null && !m.removed)) return;
-      const electorate = eOf(this.members.values());
+      const electorate = motionElectorateOf(this.members.values());
       if (electorate.length < 2) return;
       if (!electorate.every((m) => st.answers.has(m.id))) return;
       const answers = electorate.map((m) => st.answers.get(m.id));
@@ -1934,11 +2200,23 @@ var CONSTITUTION = (() => {
      * actually holding the resolution: an invitation in flight stops it before
      * the electorate is even counted, so a room of one with an unopened
      * invitation reads `invitation-open` and not `one-voice` — which is right,
-     * since the invitation is already the remedy.
+     * since the invitation is already the remedy. And it is the same *set*, not
+     * just the same order: `soleVoice` counts the electorate (E minus
+     * abstainers, R-049), so a readout that says `collecting` while the resolver
+     * is refusing on one voice — the Q826 defect over again — cannot arise.
+     *
+     * The deps loop is `maybeResolve`'s **first** gate, before the invitation
+     * check and before the electorate is counted, so `deps-unsettled` is the
+     * first reason after the judge-gate (entry 69). It is a wait the founding
+     * leaves by itself: what ends it is the dependency's own hold, or the
+     * founder's own task where the dependency is theirs and undecided. A room of
+     * one with 🌡️ handed over and ⏰ undecided therefore reads `deps-unsettled`
+     * and not `one-voice` — a second member could not answer it either, so
+     * *invite somebody* is the wrong remedy to have been served.
      */
     waitingWith() {
       const invitationOut = [...this.members.values()].some((m) => m.arrivedAtT === null && !m.removed);
-      const soleVoice = eOf(this.members.values()).length < 2;
+      const soleVoice = motionElectorateOf(this.members.values()).length < 2;
       return CATALOGUE.filter((e) => {
         const st = this.settings.get(e.id);
         if (!st) return false;
@@ -1946,8 +2224,13 @@ var CONSTITUTION = (() => {
         return st.collecting || e.judgeGate && st.settledBy === null;
       }).map((e) => {
         const st = this.settings.get(e.id);
-        const why = e.id === "startingText" ? "text-unconfirmed" : !st.collecting ? "judge-gate" : invitationOut ? "invitation-open" : soleVoice ? "one-voice" : "collecting";
-        return { setting: e.id, why };
+        const why = e.id === "startingText" ? "text-unconfirmed" : !st.collecting ? "judge-gate" : !this.answerable(e.id) ? "deps-unsettled" : invitationOut ? "invitation-open" : soleVoice ? "one-voice" : "collecting";
+        if (why !== "deps-unsettled") return { setting: e.id, why };
+        const on = entryOf(e.id).deps.filter((dep) => {
+          const d = this.settings.get(dep);
+          return !!d && d.settledBy === null;
+        });
+        return { setting: e.id, why, on: [...on] };
       }).sort((a, b) => (a.setting === "startingText" ? 1 : 0) - (b.setting === "startingText" ? 1 : 0));
     }
     /**
@@ -1956,30 +2239,45 @@ var CONSTITUTION = (() => {
      * Per question: whether it stands, and how many have answered. Per person:
      * how many of the questions they owe they have answered. **Participation
      * itemised by name, never preference** — no value, no running maximum.
+     *
+     * **Counted over the electorate, not over E** (R-049, Q648): `electorate`
+     * is E minus abstainers and `answered` counts only that set's answers, the
+     * way `view()` has counted a collecting question's `answeredCount` all
+     * along — the two readouts of one question now read one electorate. An
+     * abstainer is still **listed** among the members (they are arrived and not
+     * removed) and simply owes nothing: `owed` and `answered` are both 0, since
+     * the itemisation is of participation in a question they are no longer part
+     * of. They may still call `answer()`; it is recorded and not counted.
      */
     readiness() {
-      const E = eOf(this.members.values());
+      const E = motionElectorateOf(this.members.values());
+      const eIds = new Set(E.map((m) => m.id));
       const open = MANAGED.filter((id) => this.settings.get(id).collecting);
       const questions = MANAGED.filter((id) => {
         const st = this.settings.get(id);
         return st.collecting || st.distribution !== null;
       }).map((id) => {
         const st = this.settings.get(id);
+        let answered = 0;
+        for (const member of st.answers.keys()) if (eIds.has(member)) answered += 1;
         return {
           setting: id,
           settled: st.settledBy !== null,
           collecting: st.collecting,
-          answered: st.answers.size,
+          answered,
           electorate: E.length
         };
       });
-      const members = [...this.members.values()].filter((m) => !m.removed && !m.invitationExpired).map((m) => ({
-        id: m.id,
-        name: m.name,
-        arrived: m.arrivedAtT !== null,
-        owed: m.arrivedAtT === null ? 0 : open.length,
-        answered: m.arrivedAtT === null ? 0 : open.filter((id) => this.settings.get(id).answers.has(m.id)).length
-      }));
+      const members = [...this.members.values()].filter((m) => !m.removed && !m.invitationExpired).map((m) => {
+        const out = !eIds.has(m.id);
+        return {
+          id: m.id,
+          name: m.name,
+          arrived: m.arrivedAtT !== null,
+          owed: out ? 0 : open.length,
+          answered: out ? 0 : open.filter((id) => this.settings.get(id).answers.has(m.id)).length
+        };
+      });
       const holds = this.waitingWith();
       const waiting = holds.map((w) => w.setting);
       return { ready: this.constitutedT === null && waiting.length === 0, waiting, holds, questions, members };
@@ -2282,6 +2580,7 @@ var CONSTITUTION = (() => {
       if (!m || !inE(m)) throw new Error(`'${member}' is not an arrived member`);
       this.emit({ type: "signed-out", t, member, mode });
       this.maybeSettleMotions(t);
+      this.maybeResolveAll(t);
       this.maybeFreezeOrThaw(t);
     }
     /**
@@ -2593,6 +2892,27 @@ var CONSTITUTION = (() => {
     get constitutedAtT() {
       return this.constitutedT;
     }
+    /** When the document was born — the `t` a shape's sets share (entry 166). */
+    get createdAtT() {
+      return this.createdT ?? 0;
+    }
+    /** The 🧭 shape chosen at the birth, or null for custom (entry 166). */
+    get shape() {
+      return this.shapeName;
+    }
+    /**
+     * **Given by the shape and untouched, before the start** (entry 166): the
+     * row named this setting, the convenor's set is the birth's own, nothing
+     * has re-set it since (`previousValue` still null), and the document has
+     * not begun. The band's provenance sentence and 🍾's diff both read this;
+     * nothing is stored for it.
+     */
+    shaped(id) {
+      if (this.shapeName === null) return false;
+      if (!(id in shapeOf(this.shapeName).sets)) return false;
+      const st = this.settings.get(id);
+      return !!st && st.settledBy === "convenor" && st.previousValue === null && st.settledAtT === this.createdT && this.constitutedT === null;
+    }
     get frozen() {
       return this.frozenFlag;
     }
@@ -2669,6 +2989,15 @@ var CONSTITUTION = (() => {
     memberRecords() {
       return this.members;
     }
+    /**
+     * Every member who left the membership after arriving, in log order, with
+     * the time and whose act it was (Q901, SURFACE E31–E32). Folded from
+     * `member-removed`, so reading it costs nothing per view; uninvited
+     * invitees are not in it, and neither is the convenor's own 🎩 change.
+     */
+    departures() {
+      return this.departed;
+    }
     settingState(id) {
       const st = this.settings.get(id);
       if (!st) throw new Error(`'${id}' has no setting state`);
@@ -2744,6 +3073,131 @@ var CONSTITUTION = (() => {
     }
   };
 
+  // src/meaning.ts
+  var BAR_RUNGS = [
+    { pct: 90, label: "Nearly everyone" },
+    { pct: 80, label: "Broad agreement" },
+    { pct: 60, label: "A bare majority" }
+  ];
+  var OWN_RUNG_LABEL = "A number of my own";
+  function winsNeededPct(e, pct) {
+    if (!Number.isFinite(e) || !Number.isFinite(pct)) return void 0;
+    if (pct < VOTES_NEEDED_LO_PCT || pct > VOTES_NEEDED_HI_PCT) return void 0;
+    const n = Math.max(1, Math.floor(e));
+    if (n > VOTES_NEEDED_MAX_N) return void 0;
+    const k = votesNeeded(n, Math.floor(pct));
+    return k === 0 ? null : k;
+  }
+  function roomPhrase(e) {
+    return e <= 1 ? "one" : String(Math.floor(e));
+  }
+  var roomOf = roomPhrase;
+  var MEANING_MAX = 200;
+  var fit = (s) => s.length <= MEANING_MAX ? s : null;
+  function winsClause(e, pct) {
+    const k = winsNeededPct(e, pct);
+    if (k === void 0 || k === null) return k;
+    return { k, n: Math.max(1, Math.floor(e)) };
+  }
+  function barMeaning(pct, room) {
+    const w = winsClause(room.e, pct);
+    if (w === void 0) return null;
+    if (w === null) {
+      return fit("In a room of " + roomOf(room.e) + ", nothing can pass at " + Math.floor(pct) + "% until more members arrive.");
+    }
+    if (w.n === 1) return fit("In a room of one, the one vote must be for it.");
+    if (w.k === w.n) return fit("In a room of " + w.n + ", all " + w.n + " must vote for it by the end.");
+    return fit("In a room of " + w.n + ", " + w.k + " of " + w.n + " must vote for it by the end.");
+  }
+  function spanPhrase(ms) {
+    const mins = Math.round(ms / 6e4);
+    if (mins < 120) return mins === 1 ? "1 minute" : mins + " minutes";
+    const hours = Math.round(ms / 36e5);
+    if (hours < 48) return hours + " hours";
+    return Math.round(ms / 864e5) + " days";
+  }
+  var dripPhrase = (dripMinutes) => dripMinutes < 5 ? "few minutes" : spanPhrase(dripMinutes * 6e4);
+  function spellPhrase(afterMs) {
+    const days = Math.round(afterMs / 864e5);
+    if (days === 7) return "a week";
+    if (days === 14) return "two weeks";
+    if (days >= 28 && days <= 31) return "a month";
+    return spanPhrase(afterMs);
+  }
+  function quorumBody(q, n) {
+    if (q > n) {
+      return q + " of you must have voted before a change can pass, so nothing can pass until more members arrive.";
+    }
+    if (n === 1) return "your own vote is the whole quorum, and nothing waits on anybody else.";
+    if (q >= n) {
+      return "all " + n + " of you must have voted on a change before it can pass — one member away and the document freezes.";
+    }
+    if (q <= 1) return "one vote meets quorum, so a change never waits for more people to arrive.";
+    return "at least " + q + " of you must have voted on a change before it can pass; with fewer than " + q + " still here the document freezes.";
+  }
+  function quorumMeaning(v, room) {
+    if (typeof v.n !== "number" || !Number.isFinite(v.n)) return null;
+    const n = Math.max(1, Math.floor(room.e));
+    const q = quorumCount(v, n);
+    if (!Number.isFinite(q)) return null;
+    const body = quorumBody(q, n);
+    return fit(v.form === "share" ? Math.round(v.n) + "% of a room of " + roomOf(n) + " is " + q + ": " + body : "In a room of " + roomOf(n) + ", " + body);
+  }
+  function rateMeaning(v, room) {
+    const { grant, cap, dripMinutes } = v;
+    if (![grant, cap, dripMinutes].every((x) => typeof x === "number" && Number.isFinite(x))) return null;
+    if (dripMinutes <= 0) return null;
+    const drip = dripPhrase(dripMinutes);
+    const end = room.endsAtMs;
+    const now = room.nowMs;
+    if (end === void 0) return null;
+    if (end === null) {
+      return fit("With no end date, " + grant + " proposals to start with and one more every " + drip + " for as long as it runs, never more than " + cap + " in hand.");
+    }
+    if (typeof now !== "number" || !(end > now)) return null;
+    const windowMs = end - now;
+    const total = grant + Math.floor(windowMs / 6e4 / dripMinutes);
+    const whole = "Over a session of " + spanPhrase(windowMs) + ", about " + total + " proposals each — " + grant + " to start with and one more every " + drip + ", never more than " + cap + " in hand.";
+    return fit(whole) ?? fit("Over a session of " + spanPhrase(windowMs) + ", about " + total + " proposals each.");
+  }
+  function lapseMeaning(v) {
+    if (v.afterMs === null) return fit("Nobody ever drops out of the count, however long they are away.");
+    if (typeof v.afterMs !== "number" || !Number.isFinite(v.afterMs) || v.afterMs <= 0) return null;
+    return fit("A member who says nothing for " + spellPhrase(v.afterMs) + " drops out of the count — the document can go on without them, and they are back the moment they log in.");
+  }
+  var rungName = (pct) => {
+    const r = BAR_RUNGS.find((x) => x.pct === Math.floor(pct));
+    return r ? r.label.charAt(0).toLowerCase() + r.label.slice(1) + " (" + Math.floor(pct) + "%)" : Math.floor(pct) + "%";
+  };
+  function paceMeaning(v, room) {
+    const close = room.barPct;
+    if (typeof close !== "number" || !Number.isFinite(close)) return null;
+    if (v.shape === "fixed") {
+      return fit("Stays at " + rungName(close) + " from the moment voting opens to the end.");
+    }
+    if (typeof v.startPct !== "number" || !Number.isFinite(v.startPct)) return null;
+    return fit("Starts at " + rungName(v.startPct) + " when voting opens and climbs to " + rungName(close) + " by the end — early changes pass more easily.");
+  }
+  function meaningOf(setting, value, room = { e: 1 }) {
+    if (!value) return null;
+    switch (setting) {
+      case "bar": {
+        const pct = value.pct;
+        return typeof pct === "number" ? barMeaning(pct, room) : null;
+      }
+      case "pace":
+        return paceMeaning(value, room);
+      case "quorum":
+        return quorumMeaning(value, room);
+      case "rate":
+        return rateMeaning(value, room);
+      case "lapse":
+        return lapseMeaning(value);
+      default:
+        return null;
+    }
+  }
+
   // src/view.ts
   var MANAGED2 = CATALOGUE.filter((e) => e.kind !== "personal" && e.id !== "startingText");
   function view(s, member) {
@@ -2768,7 +3222,8 @@ var CONSTITUTION = (() => {
         setWhy: null,
         settledBy: null,
         settledAtT: null,
-        collecting: false
+        collecting: false,
+        shaped: false
       });
     }
     for (const entry of MANAGED2) {
@@ -2786,7 +3241,8 @@ var CONSTITUTION = (() => {
         setWhy: st.setWhy,
         settledBy: st.settledBy,
         settledAtT: st.settledAtT,
-        collecting: st.collecting
+        collecting: st.collecting,
+        shaped: s.shaped(entry.id)
       });
       if (st.collecting) {
         const answerable = entry.deps.every((d) => s.settingState(d).settledBy !== null);
@@ -2881,6 +3337,16 @@ var CONSTITUTION = (() => {
         removalPending: removalPending.get(rec.id) ?? null
       });
     }
+    const departures = s.departures().map((d) => {
+      const rec = s.memberRecords().get(d.member);
+      return {
+        id: d.member,
+        name: rec?.name ?? null,
+        picture: rec?.picture ?? null,
+        t: d.t,
+        by: d.by
+      };
+    });
     return {
       gates: {
         reading: true,
@@ -2891,6 +3357,7 @@ var CONSTITUTION = (() => {
       resolutions,
       settings,
       members,
+      departures,
       register,
       doors,
       applicants,
@@ -2910,6 +3377,7 @@ var CONSTITUTION = (() => {
         pictureSet: s.convenorRecord().pictureSet
       } : { name: null, picture: null, nameSet: false, pictureSet: false },
       lapseWarned: me ? me.lapseWarned : isConvenor ? s.convenorRecord().lapseWarned : false,
+      shape: s.shape,
       frozen: s.frozen,
       mustReturn: s.mustReturn(),
       closed: s.closed ? {

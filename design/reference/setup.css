@@ -159,8 +159,26 @@
   .choice + .eyebrow.fieldlab { margin-top: var(--s4); }
   .pick .exp { display: block; color: var(--muted); font-size: var(--t-small);
     margin-top: var(--s1); padding-left: 2px; max-width: 58ch; }
-  .pick .inner { display: none; margin-top: var(--s3); padding-left: 2px; }
-  .pick.on .inner { display: block; }
+  /* a rung whose sentence is written by the keystroke (`data-meaning`) keeps
+     its slot in the DOM while it has nothing to say, and collapses to nothing
+     rather than reserving a line — `.meaning:empty`'s rule, same reason */
+  .pick .exp:empty { display: none; }
+  /* **Direct children, since 🪜's rungs put a ladder inside a rung** (entry
+     165). `.inner` has always been the option's own child and nothing else,
+     but as a descendant rule `.pick.on .inner` reached *through* an open
+     option into the picks nested in it — so *Rising* being chosen would have
+     shown the number field of the own-number rung underneath it whether or not
+     that rung was the one chosen. */
+  .pick > .inner { display: none; margin-top: var(--s3); padding-left: 2px; }
+  .pick.on > .inner { display: block; }
+  /* **Every radio on a card lines up down its left edge** (SURFACE §9.1, and
+     card-audit's P1 is the guard). `.inner`'s 2px is an optical nudge for a
+     field; a ladder nested inside its own rung — 🪜's starting percents inside
+     *Rising* — is radios, and takes the edge back. */
+  .pick > .inner > .choice { margin-left: -2px; }
+  /* the rung's own percent, after its name: small and quiet, because the name
+     is what is being chosen and the number is what it comes to (entry 165) */
+  .pick .pct { font-size: var(--t-small); color: var(--muted); margin-left: 0.5em; }
   .pick.above { opacity: 0.5; }
   .pick.off { opacity: 0.42; }
   .pick.off .lanepick { pointer-events: none; }
@@ -260,6 +278,31 @@
 
   .blindnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
 
+  /* the ceiling the room can reach (Q840) — the same size and colour as the
+     blindnote beneath it, and deliberately no hot colour and no glyph: grey
+     means nothing is being asked of you, and this asks nothing */
+  .ceilingnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
+
+  /* what choosing this value would do, in this room (entry 167) — a note
+     under a number field, so it takes the `.exp` treatment a rung's own
+     explanation has rather than the ceiling note's smaller cap size: it sits
+     beside controls, not under the whole card. Grey and asking nothing (T19),
+     and empty until there is a value, which is why it collapses to nothing
+     rather than reserving a line. */
+  .meaning { font-size: var(--t-small); color: var(--muted); margin-top: var(--s2); }
+  .meaning:empty { display: none; }
+
+  /* the one place the method is named, and the link out to /pairwise (entry
+     163) — the ceiling note's own size and colour, for the same reason: grey
+     means nothing is being asked of you. The anchor takes the .doclink
+     treatment rather than the accent, so the only hot thing on the card stays
+     the control */
+  .methodnote { font-size: var(--t-cap); color: var(--muted); margin-top: var(--s3); }
+  .methodnote a { color: inherit; text-decoration: underline;
+    text-decoration-thickness: 1px; text-underline-offset: 2.5px;
+    text-decoration-color: var(--border); }
+  .methodnote a:hover { text-decoration-color: currentColor; text-decoration-thickness: 1.5px; }
+
 /* ---------------------------------------------------------------------------
    THE ROSTER, and the distribution it produces.
 
@@ -293,11 +336,17 @@
   .emojiface { display: inline-block; font-size: 1em; line-height: 1;
     vertical-align: middle; }
   .emojiface.big { font-size: 38px; }
+  /* the picker's own options (entry 186): *the size they currently appear as
+     avatars*, which is what an `.emojiface` takes on a `.memrow` — the
+     roster's rows are set in `--t-small`. The grid alone; the *Currently*
+     line beneath it keeps `.big`. */
+  .emojiface.grid { font-size: var(--t-small); }
+  /* 👑/📯 beside the founder's name (entry 197): the same four declarations,
+     so the mark takes the size of the text it stands in — but its own class,
+     since an `.emojiface` inside a member row is read as that member's face. */
+  .founderMark { display: inline-block; font-size: 1em; line-height: 1;
+    vertical-align: middle; }
   .avopt.taken { opacity: 0.3; cursor: not-allowed; }
-  .freemoji { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s2); }
-  .emojin { width: 120px; padding: 3px 8px; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 20px; line-height: 1.3; }
-  .emojinote { display: none; font-size: var(--t-small); }
-  .freemoji.bad .emojinote { display: inline; }
   /* invited, but they have not opened it yet */
   .av.pending { opacity: 0.45; border-style: dashed; }
   .av svg { width: 100%; height: 100%; display: block; }
@@ -306,6 +355,10 @@
   .dist span { flex: 1; background: rgba(var(--lc-yours), 0.30); border-radius: 2px 2px 0 0; min-height: 2px; }
   .dist span.top { background: var(--primary); }
   .distx { display: flex; justify-content: space-between; font-size: var(--t-cap); color: var(--muted); }
+  /* the rung strip's label row: one cell per column, so a percent sits under
+     its own bar rather than at the ends of the track (entry 165) */
+  .distl { display: flex; gap: 3px; font-size: var(--t-cap); color: var(--muted); line-height: 1.25; }
+  .distl span { flex: 1; text-align: center; }
   .statline { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4);
     padding: var(--s2) 0; border-top: 1px solid var(--border); }
   .statline:first-child { border-top: 0; }
@@ -323,8 +376,6 @@
   .rperson .em { font-size: var(--t-cap); color: var(--muted); }
   .chip { font-size: var(--t-cap); border: 1px solid var(--border); border-radius: 999px;
     padding: 2px var(--s2); color: var(--muted); background: var(--bg); cursor: pointer; font-family: inherit; }
-  .chip.founder { border-color: var(--primary); color: var(--primary-emphasis);
-    background: var(--primary-subtle); cursor: default; }
   .chip.pending { border-style: dashed; }
   /* the person a motion would remove */
   .rperson.picked { background: color-mix(in srgb, rgb(var(--lc-open)) 22%, var(--bg));
@@ -560,8 +611,40 @@ button.cline:hover b { text-decoration: underline; }
    It is the **you-row** that needs clearing, so the padding hangs on lists
    that have one: a clerk founder has no row here (Q758) and a stranger reads
    a list with no identity tabs at all, and neither has a second tab column
-   to clear — unscoped, both opened with 42px of nothing. */
-.constsec .cpara .memlist:has(.memrow.meRow) { padding-top: 42px; }
+   to clear — unscoped, both opened with 42px of nothing.
+   **The placeholder stands *inside* that clearance** (entry 183, Ed's QA of
+   batch Q). It was not dropped 42px on purpose: it is the list's first row and
+   the padding pushed it down with everything else, so the one paragraph of the
+   document whose text does not sit level with its own tab was this one. It is
+   lifted out of flow instead — the 42px is already empty and already there —
+   so the list's flow is your row and the arrived rows exactly as before, the
+   42 stays the single clearance number with the single reason above, and the
+   row lands level with the 🎩 pile at the paragraph's head. Only where there
+   *is* a you-row: everywhere else the padding is absent and the row is already
+   the list's first child at y = 0, needing no lifting.
+   **The two rules move together**, both keyed `:has(.memrow.meRow)`: anything
+   that stops the you-row being a `.memrow.meRow` inside this list unmatches
+   the clearance and the lift at once.
+   **And the open identity card is the you-row** (entry 188): ✋ 🖼️ 📧 replace
+   your row with their card, so for as long as one is open there is no
+   `.memrow.meRow` in the list — and both rules would unmatch together, dropping
+   the placeholder and everything under it 42px up on open and back down on
+   close. The `.cpara.open` that stands in your row's place is named beside it
+   in the same `:has()` list, on both rules, so the clearance is a fact about
+   *your place in the list* rather than about which of the two things is
+   currently standing in it. */
+.constsec .cpara .memlist:has(.memrow.meRow, > .cpara.open) { padding-top: 42px; position: relative; }
+.constsec .cpara .memlist:has(.memrow.meRow, > .cpara.open) > .memrow.nobody {
+  position: absolute; top: 0; left: 0; right: 0; }
+/* **Your card stands exactly where your row stood** (entry 188). The list is a
+   wrapping flex row of faces and the card is a paragraph, not a face, so it
+   takes the same full-width break `.memrow.meRow` takes — and nothing else:
+   the strip's own y is `fitBand`'s, measured against a closed sibling's tab
+   rather than written as a constant here, and it already lands where the pile
+   on your row stood (`card-audit`'s P6 measures the pair at `[0, 0]`). A
+   `top` or a `margin-top` written here would fight that measurement, and did:
+   a −3px lift for `.memrow .chipcol`'s own offset moved the glyph 3px. */
+.constsec .cpara .memlist > .cpara.open { flex-basis: 100%; }
 .memlist { display: flex; flex-wrap: wrap; gap: 5px 18px; }
 /* **The list's own subheadings** (Q868, Q869): Invitees, then Applicants —
    groups of people who are not members yet, under a Members heading that is
@@ -583,8 +666,18 @@ button.cline:hover b { text-decoration: underline; }
    stand — list furniture, not a clause, so it speaks quietly. It stands
    **above** your row (Q753), where it is a statement about the list rather
    than a caption on you; the clearance job it used to do as well is the
-   list's own padding now. */
+   list's own padding now. Since entry 183 the three subsections that stand
+   when empty carry one each too (F21). */
 .memrow.nobody { flex-basis: 100%; color: var(--muted); min-height: 22px; }
+/* **A placeholder beside a tab is the tab's own height** (entry 183): the head
+   pile sits at `top: 0` of the `.cpara` and a gutter tab is 30px, so a row that
+   starts at y = 0 and is 30px tall centres its text on the tab's centre line —
+   `.memrow` being `align-items: center`. The same number and the same reason as
+   `.memrow.meRow`'s 30px, which is the front tab of the pile beside *it*.
+   Scoped to paragraphs that have a pile: a `.notab` paragraph is the stranger's
+   list and the closed page's, which draw no tab for the row to meet, and there
+   22px is still the right height for a line of muted text. */
+.constsec .cpara:not(.notab) .memrow.nobody { min-height: 30px; }
 .memrow .chip { font-size: var(--t-micro); }
 
 /* **The card overhangs the text axis** (Ed's QA, 2026-08-18: the tabs were
@@ -701,29 +794,13 @@ button.cline:hover b { text-decoration: underline; }
 
 /* the emoji picker (Ed, 2026-08-19): a normal picker rather than a row of
    faces, so it scrolls inside itself instead of pushing the card's own
-   controls off the screen. Reserved and taken options are the .taken state
-   the face row already had. */
+   controls off the screen. Since entry 186 the box is the whole picker —
+   every glyph the list offers, in one flat grid — so the scroll is what keeps
+   ~1900 options from pushing the uploader off the screen. Reserved and taken
+   options are the .taken state the face row already had. */
 .emojibox { max-height: 15rem; overflow-y: auto; padding-right: var(--s2);
   border: 1px solid var(--border); border-radius: var(--r-md);
   padding: var(--s2) var(--s3) var(--s3); }
-.emojibox .emojilab { margin-top: var(--s3); }
-.emojibox .emojilab:first-child { margin-top: 0; }
-/* the search field and the category tabs (Q732). The tabs are chips rather
-   than a second radio: nothing is being *chosen* by opening a category, so
-   the `lanepick` would say the wrong thing about them. */
-.emojisearch { margin-top: var(--s2); }
-.emojisearch input { width: 100%; padding: var(--s2) var(--s3);
-  border: 1px solid var(--border); border-radius: var(--r-sm);
-  font: inherit; font-size: var(--t-ui); }
-.emojisearch input:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
-.emojitabs { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s2);
-  margin: var(--s2) 0; }
-.emojitab { font: inherit; font-size: var(--t-cap); padding: 2px var(--s2);
-  border: 1px solid var(--border); border-radius: 999px; background: var(--bg);
-  color: var(--muted); cursor: pointer; }
-.emojitab:hover { border-color: var(--primary); color: var(--primary-emphasis); }
-.emojitab[aria-pressed="true"] { border-color: var(--primary);
-  background: var(--primary-subtle); color: var(--primary-emphasis); }
 /* the anonymous person: a disc with somebody in it, before there is a name
    to make initials of */
 .av .anonav { width: 62%; height: 62%; color: #fff; opacity: 0.9; }

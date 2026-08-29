@@ -449,20 +449,23 @@ window.CARDS = (function () {
   // either (Ed, 197) — a field of five reads 1..5, and a lone proposal is
   // named by what it is.
   function fieldOf(s) {
-    // `by` rides only where a record has unsealed an author (the close)
-    if (s.slate) return s.slate.map((c) => ({ label: '', text: c.text, why: c.rationale, p: c.p, won: !!c.won, by: c.by || null }));
+    // `by` rides only where a record has unsealed an author (the close), and
+    // `underNote` beside it where that record was made under more than one
+    // disclosure rung (entry 31) — both arrive as finished words, the rung's
+    // own label having been resolved by the page that owns the vocabulary
+    if (s.slate) return s.slate.map((c) => ({ label: '', text: c.text, why: c.rationale, p: c.p, won: !!c.won, by: c.by || null, underNote: c.underNote || null }));
     if (s.kind === 'race') return [
       { label: '', text: s.race.a.text, why: s.race.a.rationale, p: s.race.a.p, won: s.won === 'a', by: s.race.a.by || null },
       { label: '', text: s.race.b.text, why: s.race.b.rationale, p: s.race.b.p, won: s.won === 'b', by: s.race.b.by || null },
     ];
     // no label: the band above already says "what was proposed", and printing
     // it again on the only thing in the band said it twice
-    return [{ label: '', text: s.optionB, why: s.rationale, p: (s.decided || {}).p, won: s.won === 'b', by: s.by || null }];
+    return [{ label: '', text: s.optionB, why: s.rationale, p: (s.decided || {}).p, won: s.won === 'b', by: s.by || null, underNote: s.underNote || null }];
   }
 
   const groundNote = (s) => (!s.shifted || !s.wasGround ? ''
-    : '<div class="replaced"><div class="rtag">The text you judged against' +
-      '<span class="rsub">the clause changed after you judged it</span></div>' +
+    : '<div class="replaced"><div class="rtag">The text you voted on' +
+      '<span class="rsub">the clause changed after you voted</span></div>' +
       '<div class="rtext">' + esc(s.wasGround) + '</div></div>');
 
   // ---- geometry, the pure half --------------------------------------------
@@ -598,11 +601,14 @@ window.CARDS = (function () {
 
     // One candidate: what it would make the clause say, who argued for it, and
     // what you can do about it. A reply, in the shape a reply has everywhere.
+    // `by` is a name the reveal rule has already allowed (a signed proposal,
+    // or one made under `public` — Q770): the speaker is revealed, and the
+    // sealed title does not apply to it.
     const proposalHtml = (s, o) =>
       '<div class="propblock">' +
       (o.tag ? '<div class="rtag">' + o.tag + '</div>' : '') +
       '<div class="rtext">' + o.html + '</div>' +
-      speakerHtml(o.why, env.speakerTitle) +
+      speakerHtml(o.why, o.by ? undefined : env.speakerTitle, o.by || undefined) +
       (o.v ? laneBarHtml(s, o.v, { lane: o.lane || o.v, key: o.key, edit: o.edit }) : '') +
       '</div>';
 
@@ -655,21 +661,21 @@ window.CARDS = (function () {
           (pick ? '' : ' disabled') +
           ' data-act="submit" aria-pressed="' + env.isCast(s) + '" title="' +
           (env.isCast(s) ? 'Recorded — choose again to change it'
-            : pick ? 'Submit this judgment' : 'Choose one of the three first') + '">' + TICK + '</button>') +
+            : pick ? 'Submit this vote' : 'Choose one of the three first') + '">' + TICK + '</button>') +
         '</span>' +
         '</div>';
     }
 
     function reviseNote(s) {
       if (!env.isJudged(s)) return '';
-      const said = '<span class="rl">You ' + (env.verdictOf(s) || s.verdict || 'judged') + '</span>';
+      const said = '<span class="rl">You ' + (env.verdictOf(s) || s.verdict || 'voted') + '</span>';
       if (s.shifted) {
         return '<div class="srationale locked">' + said + esc(s.shifted) +
-          ' You cannot change it, because it was not a judgment about this text.</div>';
+          ' You cannot change it, because it was not a vote about this text.</div>';
       }
       if (s.locked) {
         return '<div class="srationale locked">' + said +
-          'This one is settled, so your judgment is on the record as it stands.</div>';
+          'This one is settled, so your vote is on the record as it stands.</div>';
       }
       // **The unlocked case says nothing at all** (Ed, 2026-08-17). It had been
       // trimmed once already, to what you said plus the fact it can change, and

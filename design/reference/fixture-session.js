@@ -282,7 +282,7 @@ window.FIXTURE_SESSION = (function () {
       id: 'race-purse', kind: 'race', keys: ['purse'], state: 'needs',
       qLabel: '§ The Purse-holder',
       urgency: 0.92,
-      pct: 72, cap: 'close — a few good judgments from decided',
+      pct: 72, cap: 'close — a few good votes from decided',
       race: {
         a: {
           text: 'The Purse-holder pays only bills approved under the budget or by a house decision, reimburses claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting.',
@@ -298,7 +298,7 @@ window.FIXTURE_SESSION = (function () {
       id: 'patch-rename', kind: 'patch', keys: ['purse', 'purseOffice', 'accounts'], state: 'needs',
       qLabel: 'Whole charter',
       urgency: 0.4,
-      pct: 35, cap: 'gathering — needs roughly 6 more judgments',
+      pct: 35, cap: 'gathering — needs roughly 6 more votes',
       rationale: '"Purse-holder" is twee and confuses newcomers. One rename, all three places it appears, plus a handover line so the tin doesn’t wander between office-holders.',
       sites: [
         { key: 'purse', label: '§ The Purse-holder', marked: 'The <del>Purse-holder</del> <ins>Treasurer</ins> pays the bills and reimburses what seems fair, <del>and</del> keeps the receipts in the tin<ins>, and hands the tin and books to their successor</ins>.' },
@@ -333,7 +333,7 @@ window.FIXTURE_SESSION = (function () {
       id: 'race-quorum', kind: 'race', keys: ['quorum'], state: 'needs',
       qLabel: '§ Quorum',
       urgency: 0.58,
-      pct: 44, cap: 'gathering — needs roughly 5 more judgments',
+      pct: 44, cap: 'gathering — needs roughly 5 more votes',
       race: {
         a: {
           text: 'A meeting needs eight members present to decide anything, and ten to decide anything reserved, counted at the moment the question is put.',
@@ -370,14 +370,14 @@ window.FIXTURE_SESSION = (function () {
     {
       id: 'quick-books', kind: 'quick', keys: ['books'], state: 'needs',
       qLabel: '§ The Library Corner', urgency: 0.31,
-      pct: 34, cap: 'gathering — needs roughly 4 more judgments',
+      pct: 34, cap: 'gathering — needs roughly 4 more votes',
       marked: 'Books belonging to a member and left in the Corner become the house’s after <del>a year</del> <ins>two years</ins>, unless the member says otherwise in the book on the shelf.',
       rationale: 'A year is one long absence. Two years still clears the shelves of anything genuinely abandoned, without swallowing the library of somebody who spent a winter abroad.'
     },
     {
       id: 'quick-powertools', kind: 'quick', keys: ['powertools'], state: 'needs',
       qLabel: '§ The Workshop', urgency: 0.47,
-      pct: 52, cap: 'gathering — needs roughly 3 more judgments',
+      pct: 52, cap: 'gathering — needs roughly 3 more votes',
       marked: 'Power tools are not used when the member is alone in the house<ins>, unless another member knows they are there and when they expect to finish</ins>, and not after the beginning of quiet hours.',
       rationale: 'The flat ban means the only person who can use the lathe on a weekday is somebody who does not work. Telling one person where you are gets the same safety at a fraction of the cost.'
     },
@@ -389,7 +389,7 @@ window.FIXTURE_SESSION = (function () {
     {
       id: 'quick-shedhead', kind: 'quick', keys: ['shedhead'], state: 'needs',
       qLabel: '§ The Shed, the Cellar and the Space Under the Stairs', urgency: 0.24,
-      pct: 26, cap: 'gathering — needs roughly 4 more judgments',
+      pct: 26, cap: 'gathering — needs roughly 4 more votes',
       marked: 'The <del>Shed, the Cellar and the Space Under the Stairs</del> <ins>Outdoor Stores</ins>',
       rationale: 'The contents rail is a column of headings, and this one wraps to three lines in it. Naming the section for what it is leaves the joke where it belongs, in the clause underneath.'
     },
@@ -403,14 +403,14 @@ window.FIXTURE_SESSION = (function () {
     {
       id: 'quick-attendance', kind: 'quick', keys: ['attendance'], state: 'needs',
       qLabel: '§ The Duties of a Member Towards the House and Towards Each Other', urgency: 0.61,
-      pct: 58, cap: 'gathering — needs roughly 3 more judgments',
+      pct: 58, cap: 'gathering — needs roughly 3 more votes',
       marked: 'Every member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member<ins>, and the asking is done by the Steward in private</ins>.',
       rationale: 'As written, "asked kindly" could happen at a meeting, in front of everyone. That is the opposite of kind. Name who asks and where.'
     },
     {
       id: 'quick-subs', kind: 'quick', keys: ['subs'], state: 'needs',
       qLabel: '§ Subscriptions', urgency: 0.29,
-      pct: 30, cap: 'gathering — needs roughly 4 more judgments',
+      pct: 30, cap: 'gathering — needs roughly 4 more votes',
       marked: 'The subscription is set once a year at the spring meeting, and may not be raised by more than <del>a quarter</del> <ins>a tenth</ins> in any year without a reserved decision.',
       rationale: 'A quarter is a lot to be voted onto somebody by a simple majority. A tenth still covers ordinary inflation and makes a real rise something the house has to agree properly.'
     },
@@ -424,7 +424,7 @@ window.FIXTURE_SESSION = (function () {
     {
       id: 'quick-guests-hours', kind: 'quick', keys: ['guests'], state: 'needs',
       qLabel: '§ Guests', urgency: 0.34,
-      pct: 30, cap: 'gathering — needs roughly 4 more judgments',
+      pct: 30, cap: 'gathering — needs roughly 4 more votes',
       marked: 'Friends of the house are welcome whenever a member is in<ins>, and until the quiet hours begin</ins>.',
       rationale: 'Welcome and “welcome at three in the morning” are different offers, and only one of them is fair on whoever is asleep upstairs.'
     },
@@ -444,7 +444,7 @@ window.FIXTURE_SESSION = (function () {
       id: 'race-guests-notice', kind: 'quick', keys: ['guests'], state: 'needs',
       deadlocked: true, bounty: 0.55, judges: 9, comparisons: 21,
       qLabel: '§ Guests — notice', urgency: 0.42,
-      pct: 48, cap: 'gathering — needs roughly 4 more judgments',
+      pct: 48, cap: 'gathering — needs roughly 4 more votes',
       marked: 'Friends of the house are welcome whenever a member is in<del>. </del><ins>, and a member expecting more than one says so in the Members’ Book. </ins>',
       rationale: 'The house splits cleanly on this and has not moved in a week: half want it written down, half think a rule about friends is the beginning of the end. Somebody needs to find the version both halves can live with.'
     },
@@ -461,7 +461,7 @@ window.FIXTURE_SESSION = (function () {
       id: 'quick-guests-pets', kind: 'quick', keys: ['guests'], state: 'sealed',
       verdict: 'kept the current text', pick: 'keep',
       qLabel: '§ Guests — dogs', urgency: 0,
-      pct: 100, cap: 'sealed — the current text stood · judgment locked',
+      pct: 100, cap: 'sealed — the current text stood · vote locked',
       // the oldest decision at this clause, and it is declared first because the
       // filed pile reads declaration order as time
       decided: { outcome: 'retired — the current text stood', when: 'Monday, 17:40', p: 0.38, bar: 0.69, judges: 6 },
@@ -553,7 +553,7 @@ window.FIXTURE_SESSION = (function () {
     {
       id: 'quick-nohead', kind: 'quick', keys: ['nohead'], state: 'needs',
       qLabel: '§ The Steward', urgency: 0.37,
-      pct: 40, cap: 'gathering — needs roughly 4 more judgments',
+      pct: 40, cap: 'gathering — needs roughly 4 more votes',
       marked: 'The Steward is not the Club’s head. The Club has no head<del>, and has managed for nine years without noticing the lack</del>.',
       rationale: 'The second half is a boast about our own history, and it will read strangely in ten years. The first sentence is the rule and it is enough.'
     },
@@ -567,7 +567,7 @@ window.FIXTURE_SESSION = (function () {
     {
       id: 'quick-lostkey', kind: 'quick', keys: ['lostkey'], state: 'needs',
       qLabel: '§ Front-door Keys — loss', urgency: 0.53,
-      pct: 47, cap: 'gathering — needs roughly 3 more judgments',
+      pct: 47, cap: 'gathering — needs roughly 3 more votes',
       marked: 'A member who loses a key tells the Steward <del>the same day</del><ins> as soon as they know</ins>, and the house decides at the next meeting whether the locks are worth changing.',
       rationale: 'You often do not know the day you lost it. "As soon as they know" is the honest version and does not make a rule nobody can keep.'
     },
@@ -575,7 +575,7 @@ window.FIXTURE_SESSION = (function () {
       id: 'quick-arrears', kind: 'quick', keys: ['arrears'], state: 'needs',
       qLabel: '§ Arrears',
       urgency: 0.97,
-      pct: 88, cap: 'one judgment from decided',
+      pct: 88, cap: 'one vote from decided',
       marked: 'A member more than two quarters in arrears, who has not asked for hardship, is reminded once by the Purse-holder and once by the Steward, in that order <del>and not more</del><ins>. No further reminder is given by anyone</ins>.',
       rationale: '"In that order and not more" reads as though the Steward is limited to one reminder. The point is that the house stops after two, from anybody. Same rule, said properly.'
     },
@@ -590,7 +590,7 @@ window.FIXTURE_SESSION = (function () {
       id: 'mine-spending', kind: 'draft', mine: true, keys: ['spending'], state: 'needs',
       qLabel: '§ Spending',
       urgency: 0,
-      pct: 26, cap: 'yours · in the race, gathering judgments',
+      pct: 26, cap: 'yours · in the race, gathering votes',
       rationale: 'Nobody wants to ask permission to buy a mop. But "anything above a quarter’s subscriptions" is most of a year of somebody’s hardship, and the house only finds out at the spring meeting. A note in the book is not a sign-off.',
       sites: [{
         keys: ['spending'],
@@ -608,7 +608,7 @@ window.FIXTURE_SESSION = (function () {
       // rail ranks it on `bounty` instead — resolvable disagreement × salience,
       // the score that outlived the board it was named for (Ed, 223)
       urgency: 0.05, bounty: 0.86,
-      pct: 100, cap: 'gathering — needs roughly 3 more judgments',
+      pct: 100, cap: 'gathering — needs roughly 3 more votes',
       judges: 11, comparisons: 34,
       // **Eight wordings** (Ed, 2026-08-17: *maybe I need to see a race with 8
       // proposals to really understand what's happening here*). This is what a
@@ -660,7 +660,7 @@ window.FIXTURE_SESSION = (function () {
       verdict: 'preferred “Hardship is asked for and given…”', pick: 'b',
       qLabel: '§ Hardship',
       urgency: 0.5,
-      pct: 66, cap: 'still deciding — your judgment moved it',
+      pct: 66, cap: 'still deciding — your vote moved it',
       race: {
         a: {
           text: 'A member in difficulty may ask the Purse-holder to reduce or suspend their subscription for up to two quarters, and the Purse-holder tells no one, including the Steward and the meeting.',
@@ -697,7 +697,7 @@ window.FIXTURE_SESSION = (function () {
       qLabel: '§ The Garden',
       urgency: 0.5,
       pct: 90, cap: 'still deciding — close to resolution',
-      shifted: 'The Garden Steward was adopted here after you judged, so your judgment was about a wording that no longer exists.',
+      shifted: 'The Garden Steward was adopted here after you voted, so your vote was about a wording that no longer exists.',
       wasGround: 'The Garden is kept up by a rota posted in the shed.',
       marked: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and <del>call heroic weekends when it gets ahead of us</del><ins>set two working weekends a year, in spring and in autumn</ins>.',
       rationale: 'Heroic weekends are called by whoever minds most, which means the same four people. Two dates in the calendar are something everyone can plan around.'
@@ -707,10 +707,10 @@ window.FIXTURE_SESSION = (function () {
     // than two — the record has to show the whole field, not a sample of it.
     {
       id: 'race-claims', kind: 'race', keys: ['claims'], state: 'sealed', unread: true,
-      verdict: 'judged three pairs — twice for the wording that stood', pick: null,
+      verdict: 'voted on three pairs — twice for the wording that stood', pick: null,
       qLabel: '§ The Guest Bedroom — claims',
       urgency: 0,
-      pct: 100, cap: 'sealed — adopted · judgment locked',
+      pct: 100, cap: 'sealed — adopted · vote locked',
       decided: { outcome: 'adopted', when: 'yesterday, 20:15', p: 0.86, bar: 0.72, judges: 7 },
       // the text the winner displaced — the document no longer holds it
       replaced: 'A claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, on notice and with apologies.',
@@ -751,7 +751,7 @@ window.FIXTURE_SESSION = (function () {
       verdict: 'approved the seven-in-the-morning test', pick: 'approve',
       qLabel: '§ The Kitchen',
       urgency: 0,
-      pct: 100, cap: 'sealed — adopted · judgment locked',
+      pct: 100, cap: 'sealed — adopted · vote locked',
       optionA: 'The Kitchen is common to all members and is to be kept clean and tidy at all times.',
       optionB: 'The Kitchen is common to all members and is governed by one rule: you leave it as you would wish to find it at seven in the morning.',
       won: 'b',
@@ -778,7 +778,7 @@ window.FIXTURE_SESSION = (function () {
       verdict: null, pick: null,
       qLabel: '§ The Kitchen — knives',
       urgency: 0,
-      pct: 100, cap: 'sealed — adopted · judgment locked',
+      pct: 100, cap: 'sealed — adopted · vote locked',
       optionA: 'The good knives are sharpened by the Steward and are not to be used on bone or frozen food.',
       optionB: 'The good knives are sharpened by the Steward and are not to be used on bone, frozen food, or the garden.',
       won: 'b',
@@ -794,7 +794,7 @@ window.FIXTURE_SESSION = (function () {
       verdict: null, pick: null,
       qLabel: '§ Calling a Meeting',
       urgency: 0,
-      pct: 100, cap: 'sealed — adopted · judgment locked',
+      pct: 100, cap: 'sealed — adopted · vote locked',
       optionA: 'House matters are settled by whoever is in the room when they come up.',
       optionB: 'House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.',
       won: 'b',
@@ -806,7 +806,7 @@ window.FIXTURE_SESSION = (function () {
       verdict: 'preferred this wording', pick: 'approve',
       qLabel: '§ Locking Up',
       urgency: 0,
-      pct: 100, cap: 'sealed — adopted · judgment locked',
+      pct: 100, cap: 'sealed — adopted · vote locked',
       optionA: 'The last member out locks the front door and puts out the lamp in the Common Room.',
       optionB: 'The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.',
       won: 'b',
@@ -818,7 +818,7 @@ window.FIXTURE_SESSION = (function () {
       verdict: 'approved the plainer wording', pick: 'approve',
       qLabel: '§ Notice',
       urgency: 0,
-      pct: 100, cap: 'sealed — adopted · judgment locked',
+      pct: 100, cap: 'sealed — adopted · vote locked',
       optionA: 'Notice of a meeting shall be effected by entry in the Members’ Book and by such further communication to each member as the Steward shall deem sufficient in the circumstances.',
       optionB: 'Notice of a meeting is given by writing it in the Members’ Book and telling every member by whatever means reaches them.',
       won: 'b',
