@@ -349,12 +349,15 @@
   // founder's own seat alone, in edit mode, until 🍾.
   const focusProse = () => {
     if (!prose.isContentEditable) return;
-    try { prose.focus({ preventScroll: true }); } catch (e) { prose.focus(); }
+    // read *before* focusing: `focus()` itself parks a caret at the start
     const sel = window.getSelection();
     const inside = sel && sel.rangeCount && prose.contains(sel.getRangeAt(0).startContainer);
+    try { prose.focus({ preventScroll: true }); } catch (e) { prose.focus(); }
     if (inside) return;                  // the reader put the caret somewhere; keep it
     const r = document.createRange();
-    r.selectNodeContents(prose); r.collapse(false);
+    // inside the last block, not after it: a caret between blocks types a
+    // bare text node the block model does not read
+    r.selectNodeContents(prose.lastElementChild || prose); r.collapse(false);
     if (sel) { sel.removeAllRanges(); sel.addRange(r); }
   };
   // what an opening focuses — fired on the transition into open and never on
@@ -441,6 +444,20 @@
       if (rs.count) front.insertAdjacentHTML('beforeend', '<span class="ridecount" aria-hidden="true">' + rs.count + '</span>');
     }
     rt.classList.toggle('editing', !!S.editMode);
+    // **the rest position is a measurement, not a constant** (the band's
+    // gotcha about `fitBand`): the pile is lifted from the sticky box's
+    // natural top — the band's bottom edge — back up to the title's top, so
+    // the tab rests flush with the title's line box whatever margins stand
+    // between them; the sticky `top` carries the same distance
+    const dh = document.getElementById('dochead');
+    if (dh) {
+      // the sticky box's *natural* top: measured with the stickiness off for
+      // one reflow, since a stuck box reports where it is, not where it lives
+      rt.style.position = 'static';
+      const up = Math.max(0, rt.getBoundingClientRect().top - dh.getBoundingClientRect().top);
+      rt.style.position = '';
+      rt.style.setProperty('--ride-up', up + 'px');
+    }
     syncRideTab();
   }
   // detached: the heading the tab rests beside has scrolled out under the
@@ -508,7 +525,22 @@
     ev.preventDefault();
     setEditMode(true);
     focusProse();
-    try { document.execCommand('insertText', false, ev.key); } catch (e) { /* the caret alone, then */ }
+    // the character, applied at the caret by hand — `execCommand` is
+    // unreliable without window focus — and announced as the input it is,
+    // so the write channel and the row hear it
+    const sel2 = getSelection();
+    let r = sel2 && sel2.rangeCount ? sel2.getRangeAt(0) : null;
+    if (!r || !prose.contains(r.startContainer)) {
+      let last = prose.lastElementChild;
+      if (!last) { last = document.createElement('div'); prose.appendChild(last); }
+      r = document.createRange(); r.selectNodeContents(last); r.collapse(false);
+    }
+    r.deleteContents();
+    const tn = document.createTextNode(ev.key);
+    r.insertNode(tn); r.setStartAfter(tn); r.collapse(true);
+    if (sel2) { sel2.removeAllRanges(); sel2.addRange(r); }
+    prose.classList.remove('empty');
+    prose.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: ev.key }));
   });
   // **A click in read mode beats the tab** — the room-pulse ring, no copy —
   // when it lands on nothing (the dead-click's structural test) and selects

@@ -205,14 +205,14 @@ const afterFirstPen = async () => {
   }
   if (!entered.row) errors.push('edit mode drew no proposal-row under the column');
   // the first ✒️: a line, the page's own input event, the row's commit
-  await page.evaluate((line) => {
+  await page.evaluate(() => {
     const el = document.getElementById('prose');
     const d = document.createElement('div');
     d.textContent = 'The first line, saved by the first ✒️.';
     el.appendChild(d);
     el.classList.remove('empty');
     el.dispatchEvent(new InputEvent('input', { bubbles: true }));
-  }, POST_OK_LINE);
+  });
   await page.waitForTimeout(200);
   const pressed = await clickIn('#proserow [data-act="row-commit"]');
   if (!pressed) errors.push('the row’s ✒️ would not press with a changed column');

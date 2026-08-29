@@ -719,8 +719,8 @@
      sticky `top` is offset by the same amount, so detached it rides at
      `--nav-h` plus the gutter's own air. z-index above every `.anch` pile it
      passes (they are unpositioned or z:1–4 in a stack), never displacing one. */
-  .ridetab { position: sticky; top: calc(var(--nav-h) + var(--s2) + 30px + var(--s3)); height: 0; z-index: 8; }
-  .ridetab .chipcol { top: calc(-30px - var(--s3)); }
+  .ridetab { --ride-up: calc(30px + var(--s3)); position: sticky; top: calc(var(--nav-h) + var(--s2) + var(--ride-up)); height: 0; z-index: 8; }
+  .ridetab .chipcol { top: calc(-1 * var(--ride-up)); }
   /* **Detached, and in edit mode, it wears the active treatment** (M12: the
      8px on `padding-left` as well as `width`, so the glyph does not move —
      Q1087: one treatment, one meaning; in edit mode the text *is* the open
