@@ -544,12 +544,19 @@ var CONSTITUTION = (() => {
     // nothing and counts toward no quorum, so switching it re-rates nothing
     // already decided. A member could put the document through an AI
     // themselves; the tool is a convenience for the membership.
+    //
+    // The card left the surface on 2026-08-29 (R-078) and the setting stayed,
+    // so a founder who delegated 🤖 before then holds a question no member can
+    // be served and no card can take back — a permanent pre-start wedge (entry
+    // 259). `retiredAnswer` is what 🍾 resolves it at: the value every shape in
+    // `shapes.ts` folds it to anyway. → why: R-080.
     {
       id: "machines",
       glyph: "🤖",
       kind: "ordinary",
       delegable: true,
       valueType: "machines",
+      retiredAnswer: { enabled: false, budget: 0 },
       consent: {
         ask: "the most machine proposing you will accept",
         order: (a, b) => {
@@ -2343,6 +2350,17 @@ var CONSTITUTION = (() => {
         }
         return { setting: r.setting, power: r.power };
       });
+      for (const id of MANAGED) {
+        if (!this.retiredQuestion(id) || !this.settings.get(id).collecting) continue;
+        this.emit({
+          type: "question-resolved",
+          t,
+          setting: id,
+          value: entryOf(id).retiredAnswer,
+          distribution: [],
+          electorate: []
+        });
+      }
       const before = new Map(HELD.map((k) => [k, { ...this.settings.get(k).powers }]));
       this.emit(list === void 0 ? { type: "constituted", t } : { type: "constituted", t, laidDown: list });
       const laid = [];
@@ -2390,6 +2408,19 @@ var CONSTITUTION = (() => {
      * and not `one-voice` — a second member could not answer it either, so
      * *invite somebody* is the wrong remedy to have been served.
      */
+    /**
+     * **A question on a setting that has left the surface is nobody's to
+     * answer** (entry 259, Ed 2026-08-29; → why: R-080). The catalogue carries
+     * the fact — `retiredAnswer`, the value 🍾 resolves such a question at — so
+     * the module never has to read the page. Three sites share the predicate:
+     * `waitingWith` (it holds nothing up), `readiness` (it is in neither list,
+     * collecting or settled — the 🍾 card prints those rows and would print a
+     * bare id, having no card to take a title from) and `begin` (it writes the
+     * line). `machines` is the only entry that carries it.
+     */
+    retiredQuestion(id) {
+      return entryOf(id).retiredAnswer !== void 0;
+    }
     waitingWith() {
       const invitationOut = [...this.members.values()].some((m) => m.arrivedAtT === null && !m.removed);
       const soleVoice = motionElectorateOf(this.members.values()).length < 2;
@@ -2397,6 +2428,7 @@ var CONSTITUTION = (() => {
         const st = this.settings.get(e.id);
         if (!st) return false;
         if (e.id === "startingText") return !this.textConfirmedFlag;
+        if (this.retiredQuestion(e.id)) return false;
         return st.collecting || e.judgeGate && st.settledBy === null;
       }).map((e) => {
         const st = this.settings.get(e.id);
@@ -2428,8 +2460,9 @@ var CONSTITUTION = (() => {
     readiness() {
       const E = motionElectorateOf(this.members.values());
       const eIds = new Set(E.map((m) => m.id));
-      const open = MANAGED.filter((id) => this.settings.get(id).collecting);
+      const open = MANAGED.filter((id) => !this.retiredQuestion(id) && this.settings.get(id).collecting);
       const questions = MANAGED.filter((id) => {
+        if (this.retiredQuestion(id)) return false;
         const st = this.settings.get(id);
         return st.collecting || st.distribution !== null;
       }).map((id) => {
