@@ -2583,13 +2583,31 @@ var CONSTITUTION = (() => {
      * The unarrived skip stays exactly as it is, and it is the whole of E34's
      * **never the invitee**: an invitee has `arrivedAtT === null` by definition,
      * and they are precisely the person the mail could not reach.
+     *
+     * **A give-up after the close owes nobody.** The closing notices are mailed
+     * from the close itself, so this is the one owing in the file that can be
+     * raised on a shut document — and every acknowledgement in the file
+     * (`giveOk`, `ackRelease`, `ackMailGaveUp`) refuses one, so a card owed here
+     * would sit in the rail for ever behind an OK that throws. The batch is
+     * still recorded: it falls through to the told-nobody arm, which is exactly
+     * the shape for *the addresses are a fact, and there is nobody to tell*.
+     *
+     * The addresses are de-duplicated: one pass may kill two mails to the same
+     * person (two invitations, or an invitation and a lapse warning), and the
+     * card lists what it is given.
      */
     mailGaveUp(t, addresses) {
       if (addresses.length === 0) return;
       const batch = `mgu-${this.nextMailGiveUpN}`;
-      const list = [...addresses];
+      const seen = /* @__PURE__ */ new Set();
+      const list = addresses.filter((a) => {
+        const key = a.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
       let told = false;
-      for (const m of this.members.values()) {
+      for (const m of this.closedFlag ? [] : [...this.members.values()]) {
         if (m.arrivedAtT === null || m.removed) continue;
         told = true;
         this.emit({ type: "mail-gave-up", t, batch, member: m.id, addresses: list });
