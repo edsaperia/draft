@@ -4871,7 +4871,9 @@
         if (r.mid) { try { cs.arrive(now(), r.mid);
           cs.setIdentity(now(), r.mid, { name: r.n, picture: r.pic || null });
           r.nSet = true; r.picSet = true; } catch (e) {} } } });
-      if (!cs.textConfirmed) { try { cs.confirmStartingText(now(), proseText()); } catch (e) {} }
+      // ⏩ confirms whatever stands, as 🍾 does (R-081): since ✒️ is the only
+      // save (Ed, 2026-08-30) the column may hold words no press has sent
+      try { cs.confirmStartingText(now(), proseText()); } catch (e) {}
       CARDS.forEach((c) => S.seen.add(c.k));
       // **The stagehand fills the founder's hand.** Since the surface itself
       // starts with nothing chosen (Ed, 2026-08-21), ⏩ has to make the
@@ -5796,9 +5798,10 @@
     // and the cork the founder was locked out of a column nothing else could
     // yet change. The phantom-power argument is exactly why the freeze moves
     // rather than simply lifting: the write channel moves with it (the stash
-    // while unconfirmed, `confirm-starting-text` after, Q821) and 🍾 flushes
-    // the column one last time (Q822), so every keystroke has somewhere to go
-    // right up to the press.
+    // while unconfirmed; after the first confirm the row's ✒️, the only save
+    // since Ed's ruling of 2026-08-30 — Q821's debounced re-confirm is gone)
+    // and 🍾 flushes the column one last time (Q822), so every keystroke has
+    // somewhere to go right up to the press.
     //
     // **And since backlog 204 the caret is edit mode's**: before the save the
     // birth column is free (the quill line — no tab, no row); from the save
@@ -9107,32 +9110,26 @@
         if (pressInFlight()) return;
         api.refresh();
       }, 4000);
-      // **The column keeps a write channel for as long as it keeps a caret**
-      // (Q821). Before 📄's OK the founder's draft rides the stash (§9.7a
-      // v0.55); after it the stash route is shut — the confirm supersedes the
-      // provisional draft and a later stash is a 400 — so the keystrokes go
-      // where the text now lives, by re-confirming it. Repeated confirmation
-      // is legal pre-start (the module refuses only after 🍾) and a reload
-      // finds the column because boot prefers `data.text`. Each confirm is an
-      // event in the log, so it debounces longer and never sends what the
-      // server already holds.
+      // **✒️ is the only save** (Ed, 2026-08-30, QA on the text card). Until
+      // the first confirm the founder's draft rides the stash (§9.7a v0.55),
+      // so a reload before anything was ever saved still finds the column.
+      // After it the stash route is shut — the confirm supersedes the
+      // provisional draft — and Q821's write channel used to re-confirm the
+      // column on a debounce, which saved the text before the founder's hand
+      // reached the row and left ✒️ greyed as *Saved* almost always: a
+      // control whose job something else did first reads as a dead one. So
+      // nothing past the first confirm is sent until ✒️ (every press) or 🍾,
+      // which confirms whatever stands (R-081). The row's ✒️ follows the
+      // column in place, lighting on the first change.
       let deb = null;
-      let sent = null;                  // the text the last confirm carried
       prose.addEventListener('input', () => {
         if (constituted() || !amFounder()) return;
-        syncProseRow();                     // the row's ✒️ follows the column, in place
+        syncProseRow();
         clearTimeout(deb);
-        const confirmed = cs.textConfirmed;   // the delay, not the branch
+        if (cs.textConfirmed) return;
         deb = setTimeout(() => {
-          const text = proseText();
-          if (!cs.textConfirmed) {
-            api.post('/api/d/' + LIVESLUG + '/stash', { text }).catch(() => {});
-            return;
-          }
-          if (text === sent || text === cs.text) return;
-          sent = text;
-          api.cmd('confirm-starting-text', { text });
-        }, confirmed ? 1500 : 800);
+          api.post('/api/d/' + LIVESLUG + '/stash', { text: proseText() }).catch(() => {});
+        }, 800);
       });
     }).catch((e) => console.warn('[live] boot', e && e.message));
   }

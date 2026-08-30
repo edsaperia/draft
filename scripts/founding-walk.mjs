@@ -218,7 +218,8 @@ const afterFirstPen = async () => {
   if (!pressed) errors.push('the row’s ✒️ would not press with a changed column');
   await record('first ✒️ on the text');
   // …and the column is still live afterwards: a second line, written after
-  // the first confirm, riding the write channel (Q821)
+  // the first confirm — unsent until ✒️ or 🍾, which is the only save since
+  // Ed's ruling of 2026-08-30 (Q821's debounced re-confirm is gone)
   const st = await page.evaluate((line) => {
     const el = document.getElementById('prose');
     const d = document.createElement('div');
@@ -229,7 +230,7 @@ const afterFirstPen = async () => {
   }, POST_OK_LINE);
   proseWasLive = st.shown && st.editable === 'true';
   if (!proseWasLive) errors.push('the prose column is not live after the first ✒️ (contenteditable=' + st.editable + ')');
-  await page.waitForTimeout(1800);                 // the write channel's debounce
+  await page.waitForTimeout(200);
   await record('write after the first ✒️');
   // leaving: 📝 again, and the column is read-only
   await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
