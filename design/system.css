@@ -775,9 +775,22 @@
      blank screen-high card above the real column (Ed's QA, 2026-08-30) —
      so the lift is keyed on `.begun`, and only the column in use takes it. */
   .doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose {
-    box-shadow: var(--shadow-xl); border-radius: var(--r-md);
+    position: relative; z-index: 0;
     padding-top: var(--measure-gutter); margin-top: calc(-1 * var(--measure-gutter));
-    padding-bottom: 100vh;
+    padding-bottom: 95vh;
+  }
+  /* **The card is the decision card's width** (Ed's QA, 2026-08-30): a
+     `.setupcard` spans the measure column from 14px left of it to its right
+     edge, where the prose box is the measure plus a gutter each side. So the
+     outline is a pseudo-element inset to that box — left by gutter − 14,
+     right by the gutter — carrying the shadow and radius; the column's own
+     box and its text do not move. Behind the text by z-index within the
+     column's own stacking context. */
+  .doc.editing:not(.begun) #prose::before, .doc.editing.begun #charter > .prose::before {
+    content: ''; position: absolute; z-index: -1; pointer-events: none;
+    top: 0; bottom: 0; left: calc(var(--measure-gutter) - 14px); right: var(--measure-gutter);
+    box-shadow: var(--shadow-xl); background: var(--bg);
+    border-radius: var(--r-md) var(--r-md) 0 0;   /* square at the foot: the card runs off the page, it does not end */
   }
   /* **The proposal-row sticks to the foot of the window** while the column's
      foot is out of view — `sticky; bottom: 0` inside the column's own box, so
@@ -792,8 +805,16 @@
     margin: 0 auto; max-width: calc(var(--measure) + 2 * var(--measure-gutter));
     padding: var(--s2) var(--measure-gutter);
   }
-  /* `.race-mid.commitrow`'s hairline and top margin are a card's, not this row's */
-  .race-mid.commitrow.proposalrow { border-top: 0; margin-top: 0; }
+  /* `.race-mid.commitrow`'s hairline and paddings are a card's, not this
+     row's — and **the row stands over the column's foot, not after it**: a
+     negative top margin of its own height, so the card (which carries the
+     runway) ends where `.doc` ends and the row floats over it (Ed's QA,
+     2026-08-30: *I can still see the bottom of the box*). 40px controls
+     (§9.1) inside `--s2` each side: 56px. */
+  .race-mid.commitrow.proposalrow {
+    border-top: 0; padding-top: var(--s2); padding-bottom: var(--s2);
+    box-sizing: border-box; height: 56px; margin-top: -56px;
+  }
   .proposalrow .btn { pointer-events: auto; }
   .proposalrow .rowmid { flex: 1; text-align: center; font-size: var(--t-small); color: var(--muted); }
   /* the gap block (Q1090): the empty document's `blank` treatment, its own
@@ -834,9 +855,24 @@
        line, so opening anything down there would not move the page. Keeping it
        inside .doc also keeps the middle column running to the bottom, and
        keeps .layout tall enough for the rails to stay pinned. */
-    padding: 36px 44px 95vh 132px;
+    padding: 36px 44px 0 132px;
   }
-  @media (max-width: 900px) { .doc { padding: var(--s5) 20px 95vh; } }
+  @media (max-width: 900px) { .doc { padding: var(--s5) 20px 0; } }
+  /* **The runway is content, not padding** (Ed's QA, 2026-08-30): a sticky
+     element travels only inside its containing block's content box, so with
+     the runway as padding the riding 📝 tab stopped where the text ended and
+     sat still through the last screen. As a block at the column's foot it
+     is inside the content box and the tab rides to the page's end. In edit
+     mode the card carries the runway itself (below), so the block is zero
+     and the card's foot is the page's foot — its bottom edge is never met
+     and `.doc`'s own bottom border and corners step aside for it. */
+  .doc::after { content: ''; display: block; height: 95vh; }
+  .doc.editing::after { height: 0; }
+  .doc.editing { border-bottom-color: transparent; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  /* the pre-🍾 row's mount is not a box: a sticky row inside a wrapper
+     exactly its own height has nowhere to stick, so the wrapper is `contents`
+     and the row's containing block is `.doc`, as `#charter` is post-🍾 */
+  #proserow { display: contents; }
   .doc .prose {
     max-width: calc(var(--measure) + 2 * var(--measure-gutter));
     padding: 0 var(--measure-gutter);

@@ -454,28 +454,41 @@
     rt.classList.toggle('editing', !!S.editMode);
     // **the rest position is a measurement, not a constant** (the band's
     // gotcha about `fitBand`): the pile is lifted from the sticky box's
-    // natural top — the band's bottom edge — back up to the title's top, so
-    // the tab rests flush with the title's line box whatever margins stand
-    // between them; the sticky `top` carries the same distance
-    const dh = document.getElementById('dochead');
-    if (dh) {
+    // natural top — the band's bottom edge — back up to the **first line of
+    // the document** (Ed's QA, 2026-08-30: beside the text, not the title),
+    // so the tab rests level with the column's first line box whatever
+    // margins stand between them; the sticky `top` carries the same distance
+    const line = rideLine();
+    if (line) {
       // the sticky box's *natural* top: measured with the stickiness off for
       // one reflow, since a stuck box reports where it is, not where it lives
       rt.style.position = 'static';
-      const up = Math.max(0, rt.getBoundingClientRect().top - dh.getBoundingClientRect().top);
+      const up = Math.max(0, rt.getBoundingClientRect().top - line.top);
       rt.style.position = '';
       rt.style.setProperty('--ride-up', up + 'px');
     }
     syncRideTab();
   }
-  // detached: the heading the tab rests beside has scrolled out under the
+  // **the line the tab rests beside**: the first block of whichever column
+  // is in use — the charter's post-🍾, `#prose` before — or, in an empty
+  // column, its content top (edit mode's padding-top is paid for by a
+  // negative margin, so the line is where it was and the tab does not move)
+  function rideLine() {
+    const col = constituted() ? document.querySelector('#charter > .prose') : document.getElementById('prose');
+    if (!col) return null;
+    const first = col.firstElementChild;
+    if (first) return first.getBoundingClientRect();
+    const r = col.getBoundingClientRect(), pt = parseFloat(getComputedStyle(col).paddingTop) || 0;
+    return { top: r.top + pt, bottom: r.top + pt + 24 };
+  }
+  // detached: the line the tab rests beside has scrolled out under the
   // navbar, so the tab is riding rather than resting
   function syncRideTab() {
     const rt = document.getElementById('ridetab');
-    const dh = document.getElementById('dochead');
     if (!rt || !rt.firstChild) return;
+    const line = rideLine();
     const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 58;
-    const detached = !!dh && dh.getBoundingClientRect().bottom < navH + 8;
+    const detached = !!line && line.bottom < navH + 8;
     rt.classList.toggle('detached', detached);
   }
   addEventListener('scroll', syncRideTab, { passive: true });

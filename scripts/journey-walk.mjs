@@ -321,8 +321,25 @@ if (!EMPTY_TEXT) {
       '<div>Every member may bring one guest.</div>';
     pr.classList.remove('empty');
     pr.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    // **the card's geometry before 🍾** (Ed's QA, 2026-08-30): the tab rests
+    // level with the first line; at the page's end the card's foot is
+    // `.doc`'s own and the row floats over it at the window's foot
     return out;
   });
+  await T(300);
+  Object.assign(wrote, await page.evaluate(() => {
+    const pr = document.getElementById('prose');
+    const tab = document.querySelector('#ridetab .achip[data-tab="text"]');
+    const row = document.querySelector('#proserow [data-proposalrow]');
+    const o = { lineDelta: tab && pr.firstElementChild ? Math.round(tab.getBoundingClientRect().top - pr.firstElementChild.getBoundingClientRect().top) : null };
+    window.scrollTo(0, document.body.scrollHeight);
+    const doc = document.querySelector('.doc').getBoundingClientRect();
+    o.footDelta = Math.round(doc.bottom - pr.getBoundingClientRect().bottom);
+    o.rowAtFoot = row ? Math.round(doc.bottom - row.getBoundingClientRect().bottom) : null;
+    o.tabRode = tab ? tab.getBoundingClientRect().top < innerHeight / 2 : null;
+    window.scrollTo(0, 0);
+    return o;
+  }));
   await T(300);
   const saved = await page.evaluate(() => {
     const b = document.querySelector('#proserow [data-act="row-commit"]');
@@ -336,6 +353,7 @@ if (!EMPTY_TEXT) {
     fetch(location.pathname.replace('/d/', '/api/d/') + '/view').then((r) => r.json())
       .then((v) => ({ textConfirmed: !!v.textConfirmed, text: v.text })));
   const wroteOk = wrote.tab && wrote.editable === 'true' && wrote.editing && wrote.row && wrote.ghostH === 0 &&
+    Math.abs(wrote.lineDelta) <= 1 && Math.abs(wrote.footDelta) <= 1 && Math.abs(wrote.rowAtFoot) <= 2 && wrote.tabRode &&
     saved.glyph === '✒️' && saved.live && confirmed.textConfirmed && /Tuesdays/.test(String(confirmed.text || ''));
   say('text       · ' + (wroteOk ? '📝 enters edit mode, the row wears ✒️, the charter column stays invisible, and one press saves the column — no OK'
     : 'FAIL: ' + JSON.stringify({ wrote, saved, confirmed })));
@@ -1366,6 +1384,10 @@ const editState = await page.evaluate(() => {
     consRight: consTab ? Math.round(consTab.getBoundingClientRect().right) : null,
     // the outline rose above the first line by the gutter, and the text did not move
     padTop: col ? Math.round(first.getBoundingClientRect().top - col.getBoundingClientRect().top) : null,
+    // the tab rests level with the document's first line, not the title (Ed's QA, 2026-08-30)
+    lineDelta: ride && first ? Math.round(ride.getBoundingClientRect().top - first.getBoundingClientRect().top) : null,
+    // the runway is the card's: no .doc padding under it, and the card's foot is .doc's
+    runway: Math.round(parseFloat(getComputedStyle(document.getElementById('doc')).paddingBottom)),
     gap: !!document.querySelector('#charter .prose p.editable.blank.gap[data-key^="G"]') };
 });
 const rowBare = editState.rowGround && /rgba\(0, 0, 0, 0\)|transparent/.test(editState.rowGround.bg) &&
@@ -1377,6 +1399,7 @@ const pairOk = editState.commits[editState.commits.length - 1] === '✏️' &&
 const editOk = (await hostEditable()) === 'true' && editState.editing && editState.row && editState.greyed &&
   pairOk && rowBare && editState.rideTabs === 3 &&
   editState.rideRight === editState.consRight && editState.padTop === 24 &&
+  Math.abs(editState.lineDelta) <= 1 && editState.runway === 0 &&
   (EMPTY_TEXT ? !editState.gap : editState.gap);
 say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to three tabs on the constitution\'s gutter, draw the bare row greyed with ✏️ (✒️ only beside it), and the trailing gap'));
 if (!editOk) stuck.push('edit mode');
