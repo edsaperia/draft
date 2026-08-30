@@ -292,7 +292,7 @@ The refund flight and every grant's inbound flight take 640 ms.
 | 16 | grant-voice | 🏛️ | grant | rate — in the preamble's stack (Y23) | no | its clause is pinned; the **news** still arrives with the first blind question you are asked — else, **before the start, under 🪪**, and under ⚖️ after it (Q605, narrowed by Q750, widened by Q829) | Your Voice |
 | 17 | rate | ⏱️ | ordinary, delegable | rate | yes | removal | Proposal Rate |
 | 18 | ending | ⏰ | constitutional, route inside it | deciding, first | yes | rate | When Does It End? |
-| 19 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | Proposal pass threshold? |
+| 19 | bar | 🌡️ | constitutional · judge-gate; its commit sets 🪜 | deciding | yes | ending | Proposal Pass Threshold |
 | 20 | quorum | 👥 | constitutional · judge-gate | deciding, last | yes | bar | Quorum |
 | 21 | authorship | 👤 | constitutional · judge-gate | privacy | yes | quorum | Anonymous Proposals |
 | 22 | judgments | 👁️ | constitutional · judge-gate | privacy | yes | authorship | When Are Votes Revealed? |
