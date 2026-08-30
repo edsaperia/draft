@@ -310,9 +310,13 @@ if (!EMPTY_TEXT) {
     if (!tab) return { tab: false };
     tab.click();
     const pr = document.getElementById('prose');
+    const ghost = document.querySelector('#charter > .prose');
     const out = { tab: true, editable: pr.getAttribute('contenteditable'),
       editing: document.getElementById('doc').classList.contains('editing'),
-      row: !!document.querySelector('#proserow [data-proposalrow]') };
+      row: !!document.querySelector('#proserow [data-proposalrow]'),
+      // the charter's empty pre-🍾 column must stay invisible: no height,
+      // no card (Ed's QA, 2026-08-30 — the edit-mode lift once gave it 100vh)
+      ghostH: ghost ? Math.round(ghost.getBoundingClientRect().height) : 0 };
     pr.innerHTML = '<div>The clubhouse shall be kept open on Tuesdays.</div>' +
       '<div>Every member may bring one guest.</div>';
     pr.classList.remove('empty');
@@ -331,9 +335,9 @@ if (!EMPTY_TEXT) {
   const confirmed = await page.evaluate(() =>
     fetch(location.pathname.replace('/d/', '/api/d/') + '/view').then((r) => r.json())
       .then((v) => ({ textConfirmed: !!v.textConfirmed, text: v.text })));
-  const wroteOk = wrote.tab && wrote.editable === 'true' && wrote.editing && wrote.row &&
+  const wroteOk = wrote.tab && wrote.editable === 'true' && wrote.editing && wrote.row && wrote.ghostH === 0 &&
     saved.glyph === '✒️' && saved.live && confirmed.textConfirmed && /Tuesdays/.test(String(confirmed.text || ''));
-  say('text       · ' + (wroteOk ? '📝 enters edit mode, the row wears ✒️, and one press saves the column — no OK'
+  say('text       · ' + (wroteOk ? '📝 enters edit mode, the row wears ✒️, the charter column stays invisible, and one press saves the column — no OK'
     : 'FAIL: ' + JSON.stringify({ wrote, saved, confirmed })));
   if (!wroteOk) stuck.push('writing the text from the save');
   // leaving: 📝 again, the column back to read mode

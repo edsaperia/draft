@@ -770,7 +770,11 @@
      below the last clause, so the card's bottom edge is never met and the
      proposal-row below it stays stuck to the window's foot (Ed's QA,
      2026-08-30). */
-  .doc.editing #prose, .doc.editing #charter > .prose {
+  /* **One column per era**: before 🍾 `#charter` holds an empty `.prose`
+     (session.js renders an empty DOC), which the padding would turn into a
+     blank screen-high card above the real column (Ed's QA, 2026-08-30) —
+     so the lift is keyed on `.begun`, and only the column in use takes it. */
+  .doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose {
     box-shadow: var(--shadow-xl); border-radius: var(--r-md);
     padding-top: var(--measure-gutter); margin-top: calc(-1 * var(--measure-gutter));
     padding-bottom: 100vh;
