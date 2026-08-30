@@ -1723,6 +1723,13 @@
     margin: 0; padding: var(--s3) 14px var(--s3) 12px;
     border-top: 1px solid var(--border);
   }
+  /* **The rationale gets a step more air** (Ed's QA, 2026-08-30: *always too
+     close to the elements above and below*). On the editing card the row
+     under the hairline takes `--s5` top and bottom; on the composer, whose
+     rationale is its own box, the same `--s5` as margin — which collapses
+     with the neighbours' `--s3`, so both sites measure 24px each side. */
+  .lanebox .editlane + .speaker { padding-top: var(--s5); padding-bottom: var(--s5); }
+  .lanebox.whylane { margin: var(--s5) 0; }
   .lanebox .edit-why {
     border: 0; box-shadow: none; padding: 0; min-height: 1.4rem;
     position: relative;
