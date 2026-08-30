@@ -2310,12 +2310,15 @@
   // A nameless member signs *as Anonymous* (§9.0c: it is a name, not a gap) —
   // the label says what the signature will read, and they may go and set one.
   /**
-   * The commit at the right of the composer's row, and **✒️ where the Founder
-   * holds the pen on the Text** (R-058, entry 160). One button, one place in
-   * the row, one gesture: what changes under the pen is the glyph, the price
-   * (none — nothing is staked, so an empty ✏️ wallet cannot stop it) and the
-   * duration. 161 gives every composer the ✒️/✏️ *pair*; here the one commit
-   * simply *becomes* ✒️ where the pen is held.
+   * The commit at the right of the composer's row, and **✒️ beside ✏️ where
+   * the Founder holds the pen on the Text** (R-058, entry 160; the pair is
+   * entry 161, applied to the text at Ed's QA of 2026-08-30 — a founder who
+   * is a member has both routes and is offered both). The pen first, the
+   * room's route after it, as every band card orders them: the Founder's own
+   * act where the eye already goes, putting it to the membership the
+   * deliberate second reach. Under the pen nothing is staked (an empty ✏️
+   * wallet cannot stop it) and the glyph, the price and the duration differ;
+   * the gesture is the same hold.
    *
    * `data-pen` is how the hold below knows which act it is landing, and it is
    * on the button rather than in a closure because the hold survives a render
@@ -2323,10 +2326,11 @@
    */
   function commitBtnHtml(o) {
     const pen = MAY_PEN();
-    const dis = pen ? !!o.penDisabled : !!o.disabled;
-    return '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
-      (pen ? ' data-pen="1"' : '') + (dis ? ' disabled' : '') +
-      ' title="' + esc(pen ? o.penTitle : o.title) + '">' + (pen ? '✒️' : '✏️') + '</button>';
+    const propose = '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
+      (o.disabled ? ' disabled' : '') + ' title="' + esc(o.title) + '">✏️</button>';
+    if (!pen) return propose;
+    return '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose" data-pen="1"' +
+      (o.penDisabled ? ' disabled' : '') + ' title="' + esc(o.penTitle) + '">✒️</button>' + propose;
   }
   /**
    * **The proposal-row** (backlog 204, SURFACE §9.1, K31): the commit row of
@@ -2338,18 +2342,25 @@
    * it under the charter post-🍾, and the page draws it under `#prose` before
    * the start with the founder's ✒️ (which is `confirm-starting-text`, not
    * the pen — the era gate is the page's, R-058).
+   *
+   * **The pair** (`o.pair`, entry 161 at Ed's QA of 2026-08-30): post-🍾 a
+   * Founder who holds the pen and is a member is offered ✒️ *and* ✏️, the pen
+   * first; either press opens the editing card, where the two holds live.
+   * Pre-🍾 there is no membership to propose to, so the page never asks for
+   * the pair and the confirm stays one ✒️.
    */
   function proposalRowHtml(o) {
     o = o || {};
     const n = o.count || 0;
     const mid = n === 0 ? '' : n === 1 ? '1 place changed' : n + ' places changed';
+    const btn = (pen, title) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="row-commit"' +
+      (pen ? ' data-pen="1"' : '') + (o.disabled ? ' disabled' : '') +
+      ' title="' + esc(title || '') + '">' + (pen ? '✒️' : '✏️') + '</button>';
     return '<div class="race-mid commitrow proposalrow" data-proposalrow="1">' +
       '<button class="btn btn-withdraw glyphbtn" data-act="row-discard"' + (o.discardDisabled ? ' disabled' : '') +
       ' title="' + esc(o.discardTitle || 'Discard the whole draft — nothing has been spent on it') + '">🗑️</button>' +
       '<span class="rowmid">' + esc(mid) + '</span>' +
-      '<button class="btn btn-propose glyphbtn emojibtn" data-act="row-commit"' +
-      (o.pen ? ' data-pen="1"' : '') + (o.disabled ? ' disabled' : '') +
-      ' title="' + esc(o.title || '') + '">' + (o.pen ? '✒️' : '✏️') + '</button>' +
+      (o.pen ? btn(true, o.title) + (o.pair ? btn(false, o.proposeTitle) : '') : btn(false, o.title)) +
       '</div>';
   }
   // what the row says about the draft as it stands
@@ -2402,7 +2413,8 @@
         p.classList.toggle('on', !!here);
         if (b) b.setAttribute('aria-pressed', String(!!here));
       });
-      const pb = card.querySelector('[data-act="draft-propose"]');
+      // the ✏️, never the ✒️ beside it — a decree leaves with no signature to name
+      const pb = card.querySelector('[data-act="draft-propose"]:not([data-pen])');
       if (pb) pb.title = pb.title.replace(/( — signed)?( — one edit)/, (d.signed ? ' — signed' : '') + '$2');
       // **The face follows the choice** (K30): signing is the moment the room
       // stops being told nothing about you, so the disc gives way to your own
@@ -3422,14 +3434,17 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // the Founder holds the pen on the Text, ✏️ otherwise. Pressing it opens
     // the editing card, where the rationale, the sign choice and the hold live
     // unchanged. Only where this reader may propose: read mode has no row.
+    // Where the pen is held the row offers ✏️ beside it (entry 161): this
+    // reader may propose, being inside `MAY_PROPOSE()`, and holds the pen too.
     if (EDITING() && MAY_PROPOSE() && !closedMode) {
       const rs = draftRowState();
       const pen = MAY_PEN();
+      const idle = 'Nothing has changed yet — type in the document to start a draft';
       html += proposalRowHtml({
-        count: rs.changedCount, changed: rs.changed, pen, disabled: !rs.changed,
+        count: rs.changedCount, changed: rs.changed, pen, pair: pen, disabled: !rs.changed,
         discardDisabled: !rs.count,
-        title: !rs.changed ? 'Nothing has changed yet — type in the document to start a draft'
-          : pen ? 'Review and amend the document' : 'Review and propose this',
+        title: !rs.changed ? idle : pen ? 'Review and amend the document' : 'Review and propose this',
+        proposeTitle: !rs.changed ? idle : 'Review and propose this',
       });
     }
     doc.innerHTML = html;

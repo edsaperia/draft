@@ -229,7 +229,7 @@
 (function () {
   const { esc, TICK, avHtml, bandHtml, fitBand, railEntry, cardHtml, watchBody,
     nameBody, pictureBody, opt, num, someIn, ANSWER, stateOf,
-    MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, readBody,
+    MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
     motionBody, motionReopen, routeFor, motionCommitHtml, BLINDNOTE, ceilingNote, methodNote, listOf, syncSlider } = window.SETUP;
   // **A setup card opens and closes like a decision card** (Ed, 2026-08-18:
   // *the whole point of building off session-view is that we would have all
@@ -436,7 +436,15 @@
     if (!rt) return;
     if (!cs || /^pw:[ua]:text$/.test(S.open || '')) { rt.innerHTML = ''; return; }
     const chips = isStranger() ? [card('text')] : ctx.chipsFor(card('text'));
-    rt.innerHTML = pileHtml(chips, ctx);
+    // **In edit mode the pile is the strip** (Ed's QA, 2026-08-30): the text
+    // is the open card, and an open card's tabs are lined up down its side
+    // with every one of them pressable — the ✒️ 🛡️ beneath 📝 are where the
+    // pen on the Text is laid down, and a pile keeps them inert. `.ridein` is
+    // the positioned box the pile measures from (system.css: its gutter is
+    // the constitution's).
+    const fanned = S.editMode && !isStranger();
+    rt.innerHTML = '<div class="ridein">' +
+      (fanned ? stripHtml(chips, Object.assign({}, ctx, { open: 'text' })) : pileHtml(chips, ctx)) + '</div>';
     const front = rt.querySelector('.achip[data-tab="text"]');
     if (front) {
       front.title = 'Text — ' + (S.editMode ? 'you are writing; press to stop' : canEditText() ? 'press to write' : 'read only');
@@ -4380,8 +4388,9 @@
        wallet: `viewerIsMember()` is inside it and `openMotion` refuses a
        mover who is not an arrived member outright, so a clerk's second
        commit could never work. `founderPairNote` says so on the card.
-     - **`c.k !== 'text'`** — the Text's pair is entry 160's, on the
-       `editing-card` (SURFACE K29). 📄 gets no second commit here.
+     - **`c.k !== 'text'`** — the Text's pair is drawn by session.js, on the
+       proposal-row and the `editing-card` (`commitBtnHtml`, entry 161 at
+       Ed's QA of 2026-08-30; SURFACE K29, K31). No second commit here.
      - **`motionsLive()`** — before 🍾 there is no membership to propose to
        (`openMotion`: *before the start nothing is amended — only set*), so
        the Founder's card keeps ✒️ alone, unchanged.

@@ -720,6 +720,18 @@
      `--nav-h` plus the gutter's own air. z-index above every `.anch` pile it
      passes (they are unpositioned or z:1–4 in a stack), never displacing one. */
   .ridetab { --ride-up: calc(30px + var(--s3)); position: sticky; top: calc(var(--nav-h) + var(--s2) + var(--ride-up)); height: 0; z-index: 8; }
+  /* **Its gutter is the constitution's gutter** (Ed's QA, 2026-08-30): the
+     tab was resolving `right: 100%` against `.doc`'s whole content box while
+     every clause-tab resolves against a `.cpara` inside `.setrow`'s centred
+     measure column — so it sat off to the left of the tabs it is supposed to
+     line up with. The box is `.setrow`'s (setup.css) to the pixel, and
+     `.ridein` is the positioned content box the pile hangs off, since an
+     absolutely placed child measures from the padding edge otherwise. */
+  .ridetab {
+    box-sizing: border-box; max-width: calc(var(--measure) + 2 * var(--measure-gutter));
+    margin: 0 auto; padding: 0 var(--measure-gutter);
+  }
+  .ridetab .ridein { position: relative; }
   .ridetab .chipcol { top: calc(-1 * var(--ride-up)); }
   /* **Detached, and in edit mode, it wears the active treatment** (M12: the
      8px on `padding-left` as well as `width`, so the glyph does not move —
@@ -727,10 +739,13 @@
      card, and a tab that has left its heading is the open card's tab
      travelling with you). Lifted a step while riding, since it is over the
      prose rather than beside it. */
-  .ridetab.detached .achip, .ridetab.editing .achip {
+  .ridetab.detached .achip[data-tab="text"], .ridetab.editing .achip[data-tab="text"] {
     width: 42px; padding-left: 8px; padding-right: 0;
     background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
   }
+  /* In edit mode the pile is drawn as the strip — the pile expanded, the ✒️ 🛡️
+     tabs beneath 📝 reachable (Ed's QA, 2026-08-30) — and only the front tab
+     wears the active treatment; the power tabs stay 34px, as in any strip. */
   .ridetab.detached .achip { box-shadow: var(--shadow-md); }
   .ridetab .achip { position: relative; }
   /* the draft's count while one is pending: a corner figure, --t-micro */
@@ -747,25 +762,35 @@
   }
   .achip.ring { animation: tabRing 900ms ease-out; }
   /* **Edit mode lifts the column onto a card** (`--shadow-xl`, the one big
-     step, still a light source and not a halo). Only the shadow and a radius:
-     no padding change, so every `.anch` box and every line keeps its
-     geometry, and the tab you press does not move. */
-  .doc.editing #prose, .doc.editing #charter > .prose { box-shadow: var(--shadow-xl); border-radius: var(--r-md); }
+     step, still a light source and not a halo). The text does not move: the
+     top padding is the same `--measure-gutter` the sides already carry and a
+     negative margin of the same size pays for it, so the outline rises 24px
+     above the first line while every `.anch` box and every line keeps its
+     geometry and the tab you press does not move. The foot runs a viewport
+     below the last clause, so the card's bottom edge is never met and the
+     proposal-row below it stays stuck to the window's foot (Ed's QA,
+     2026-08-30). */
+  .doc.editing #prose, .doc.editing #charter > .prose {
+    box-shadow: var(--shadow-xl); border-radius: var(--r-md);
+    padding-top: var(--measure-gutter); margin-top: calc(-1 * var(--measure-gutter));
+    padding-bottom: 100vh;
+  }
   /* **The proposal-row sticks to the foot of the window** while the column's
      foot is out of view — `sticky; bottom: 0` inside the column's own box, so
-     it rests exactly at the section's foot once that is on screen. Lifted
-     while detached (`--shadow-md` on the row's ground) and flat when resting;
-     the resting case is the natural position, told apart by the sentinel
-     under it having no offset — one class, set by nothing: the shadow is on
-     the row's own ground, which the page reads as "detached" by measurement
-     only in the audits. The viewport is the card: tab at its top edge, row at
-     its bottom. */
+     it rests at the section's foot once that is on screen (which, the card
+     running a viewport past its last clause, is never while editing). **It
+     has no ground of its own** (Ed's QA, 2026-08-30): the controls float over
+     the card directly, and the row is click-transparent everywhere but its
+     buttons, so its empty middle never takes a click meant for the text. The
+     viewport is the card: tab at its top edge, row at its bottom. */
   .proposalrow {
-    position: sticky; bottom: 0; z-index: 7;
-    background: var(--bg); margin: 0 auto; max-width: calc(var(--measure) + 2 * var(--measure-gutter));
-    padding: var(--s2) var(--measure-gutter); box-shadow: var(--shadow-md);
-    border-top: 1px solid var(--border);
+    position: sticky; bottom: 0; z-index: 7; pointer-events: none;
+    margin: 0 auto; max-width: calc(var(--measure) + 2 * var(--measure-gutter));
+    padding: var(--s2) var(--measure-gutter);
   }
+  /* `.race-mid.commitrow`'s hairline and top margin are a card's, not this row's */
+  .race-mid.commitrow.proposalrow { border-top: 0; margin-top: 0; }
+  .proposalrow .btn { pointer-events: auto; }
   .proposalrow .rowmid { flex: 1; text-align: center; font-size: var(--t-small); color: var(--muted); }
   /* the gap block (Q1090): the empty document's `blank` treatment, its own
      sentence, and a little air above it so it reads as *after* the last clause */

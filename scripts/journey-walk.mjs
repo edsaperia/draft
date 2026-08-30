@@ -1342,13 +1342,39 @@ await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text
 await T(300);
 const editState = await page.evaluate(() => {
   const b = document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]');
+  const row = document.querySelector('#charter [data-proposalrow]');
+  const rs = row && getComputedStyle(row);
+  const ride = document.querySelector('#ridetab .achip[data-tab="text"]');
+  const consTab = document.querySelector('#band .constsec .chipcol .achip');
+  const col = document.querySelector('#charter .prose');
+  const first = col && col.querySelector('p');
   return { editing: document.getElementById('doc').classList.contains('editing'),
     row: !!b, greyed: !!(b && b.disabled), glyph: b ? b.textContent.trim() : null,
+    // Ed's QA of 2026-08-30: the pen-holding founder-member is offered ✒️ *and* ✏️ (entry 161)
+    commits: [...document.querySelectorAll('#charter [data-proposalrow] [data-act="row-commit"]')].map((x) => x.textContent.trim()),
+    // the row has no ground of its own
+    rowGround: rs ? { bg: rs.backgroundColor, shadow: rs.boxShadow, border: rs.borderTopStyle } : null,
+    // the pile is the strip in edit mode: every tab pressable
+    rideTabs: document.querySelectorAll('#ridetab .achip[data-tab]').length,
+    // the riding tab's gutter is the constitution's — right edges, since the
+    // active 📝 grows 8px out to the left (M12) and a resting tab does not
+    rideRight: ride ? Math.round(ride.getBoundingClientRect().right) : null,
+    consRight: consTab ? Math.round(consTab.getBoundingClientRect().right) : null,
+    // the outline rose above the first line by the gutter, and the text did not move
+    padTop: col ? Math.round(first.getBoundingClientRect().top - col.getBoundingClientRect().top) : null,
     gap: !!document.querySelector('#charter .prose p.editable.blank.gap[data-key^="G"]') };
 });
+const rowBare = editState.rowGround && /rgba\(0, 0, 0, 0\)|transparent/.test(editState.rowGround.bg) &&
+  editState.rowGround.shadow === 'none' && editState.rowGround.border === 'none';
+// ✏️ always; ✒️ only ever *beside* it, never instead (the founder has not
+// taken the pen at this step, so one ✏️ is the expected shape here)
+const pairOk = editState.commits[editState.commits.length - 1] === '✏️' &&
+  (editState.commits.length === 1 || editState.commits.join('') === '✒️✏️');
 const editOk = (await hostEditable()) === 'true' && editState.editing && editState.row && editState.greyed &&
+  pairOk && rowBare && editState.rideTabs === 3 &&
+  editState.rideRight === editState.consRight && editState.padTop === 24 &&
   (EMPTY_TEXT ? !editState.gap : editState.gap);
-say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column, draw the row greyed and the trailing gap'));
+say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to three tabs on the constitution\'s gutter, draw the bare row greyed with ✏️ (✒️ only beside it), and the trailing gap'));
 if (!editOk) stuck.push('edit mode');
 await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
 await T(300);
