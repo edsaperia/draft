@@ -310,7 +310,9 @@ const readRungs = () => page.evaluate(() => {
     check('most protective first', rungs.map((p) => p.val).join(',') === '90,80,60',
       rungs.map((p) => p.val).join(','));
     check('each rung says what it would mean for this room',
-      rungs.every((p) => /^In a room of one, /.test(p.exp)),
+      // "membership", not "room", since entry 215's rename — the walk's regex
+      // outlived the copy it read (found 2026-08-31; slider-walk is not in CI)
+      rungs.every((p) => /^In a membership of one, /.test(p.exp)),
       rungs.map((p) => p.exp).join(' | '));
     check('born untouched', !born.picks.some((p) => p.val && p.on),
       born.picks.filter((p) => p.on).map((p) => p.val).join(','));
@@ -331,7 +333,7 @@ const readRungs = () => page.evaluate(() => {
     const ownRow = typed.picks.find((p) => p.val === 'own');
     check('a typed number wakes the ✓', !typed.commitOff);
     check('and says what it would mean, rather than repeating itself',
-      !!ownRow && /^In a room of one, /.test(ownRow.exp) && !/72/.test(ownRow.exp), ownRow && ownRow.exp);
+      !!ownRow && /^In a membership of one, /.test(ownRow.exp) && !/72/.test(ownRow.exp), ownRow && ownRow.exp);
 
     await clickIn('.setupcard [data-ans="bar"][data-ansval="80"]');
     const rung = await readRungs();
@@ -392,7 +394,7 @@ for (const key of ['quorum']) {
   // every step of the drag, which is the *nothing rebuilds under a press*
   // path, so it is asserted after a drag rather than after a render.
   for (const [where, s] of [['at min', low], ['at max', high], ['in between', mid]]) {
-    check('the meaning names the room ' + where, /room of/.test(s.mean || ''), s.mean);
+    check('the meaning names the room ' + where, /membership of/.test(s.mean || ''), s.mean);
   }
   check('the touched control is no longer unset', !mid.unset && mid.pct !== '0', '--pct=' + mid.pct);
   check('the ✓ wakes', !mid.commitOff);

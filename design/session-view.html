@@ -2556,9 +2556,9 @@
   // how a motion's alternatives are drawn. So a power option becomes a
   // `.propblock` — the rule as it would stand in `.rtext` at document size,
   // its consequence as a note beneath, and a `.lanebar` radio under that
-  // reading **Choose this / Chosen** (the lane bar's own on/off pair, in
-  // the register of a setting rather than a judgment: you *prefer* one of
-  // two proposals, you *choose* one of two rules).
+  // reading **Prefer this / Preferred** (CP2, Q1097): one radio label on
+  // every card. The 2026-08-27 register split — *choose* a rule, *prefer* a
+  // proposal — fell to the pattern's uniformity ruling of 2026-08-31.
   //
   // Two things fall out of it beyond the fit. The hairline `.propblock +
   // .propblock` draws is the same separator the field of a decision card
@@ -2574,7 +2574,7 @@
     ' aria-pressed="' + (on ? 'true' : 'false') + '"' +
     (off ? ' disabled' : ' data-set="' + key + '" data-val="' + val + '"') + '>' +
     '<i class="dot" aria-hidden="true"></i>' +
-    '<span class="off">Choose this</span><span class="on">Chosen</span>' +
+    '<span class="off">Prefer this</span><span class="on">Preferred</span>' +
     '</button></div></div>';
   // the assent pair's *labels* are generated (one shape, the setting named);
   // its sub-labels stay per setting, because what actually happens to an
@@ -4782,10 +4782,13 @@
   // helper — invite, removal and the generic body differ only in copy.
   const consentPicks = (key, opts) => '<div class="choice" role="radiogroup">' +
     opts.map(([v, label, exp]) =>
-      '<div class="pick' + (S.mAns[key] === v ? ' on' : '') + '"><button class="lanepick"' +
-      ' aria-pressed="' + (S.mAns[key] === v) + '" data-motion="' + v + '"><span class="dot"></span>' +
-      '<span>' + label + '</span></button>' +
-      '<span class="exp">' + exp + '</span></div>').join('') + '</div>';
+      '<div class="pick' + (S.mAns[key] === v ? ' on' : '') + '">' +
+      '<span class="opttext">' + label + '</span>' +
+      '<span class="exp">' + exp + '</span>' +
+      '<button class="lanepick" aria-pressed="' + (S.mAns[key] === v) +
+      '" data-motion="' + v + '"><span class="dot"></span>' +
+      '<span class="off">Prefer this</span><span class="on">Preferred</span></button>' +
+      '</div>').join('') + '</div>';
   const inviteBody = (m) =>
     '<p class="why">Whether <b>' + esc(m.invite) + '</b> joins the membership. Adding a member changes what quorum is a fraction of, so it is constitutional: the most restrictive answer wins, and one member who says no keeps them out.</p>' +
     consentPicks('invite', [
@@ -5960,10 +5963,12 @@
   const pctRung = (o) => {
     const on = !!o.on;
     return '<div class="pick' + (on ? ' on' : '') + (o.off ? ' off' : '') + '">' +
+      '<span class="opttext">' + esc(o.label) +
+      (o.pct ? '<span class="pct">' + o.pct + '%</span>' : '') + '</span>' +
       '<button class="lanepick" aria-pressed="' + on + '"' + (o.off ? ' disabled' : '') +
       (o.off ? '' : ' data-set="' + o.set + '" data-val="' + o.val + '"') + '>' +
-      '<span class="dot"></span><span>' + esc(o.label) +
-      (o.pct ? '<span class="pct">' + o.pct + '%</span>' : '') + '</span></button>' +
+      '<span class="dot"></span><span class="off">Prefer this</span>' +
+      '<span class="on">Preferred</span></button>' +
       // `mean` is the rung whose sentence is about a number being typed rather
       // than about a fixed preset, so it carries the `data-meaning` hook
       // `syncMeaning` writes into — without it the sentence under the caret
@@ -6018,7 +6023,9 @@
   // `data-num` and the probe's two steps are exactly where they were.
   const barRungs = () =>
     M.BAR_RUNGS.map((r) => pctRung({
-      set: 'tClose', val: r.pct, label: r.label, pct: r.pct,
+      // the block text is the rule as it would stand (Q1104 (b)); the short
+      // label stays the strip's and 🪜's
+      set: 'tClose', val: r.pct, label: r.sentence, pct: r.pct,
       on: S.barBy === 'founder' && +S.tClose === r.pct,
       exp: meaning('bar', { pct: r.pct }),
     })).join('') +
@@ -6649,15 +6656,21 @@
         // the membership as it stands
         const rc = admitCardOf(c.admit);
         const pick = S['adm:' + c.admit] || null;
-        const lane = (v, label) => '<button class="lanepick" aria-pressed="' +
-          (pick === v) + '" data-admitpick="' + esc(c.admit) + '" data-v="' + v + '">' +
-          '<span class="dot"></span><span>' + label + '</span></button>';
+        // option blocks (CP1); Indifferent is a textless block whose radio
+        // names the act instead of *Prefer this* (CP4, Q1099)
+        const lane = (v, label) => '<div class="pick' + (pick === v ? ' on' : '') + '">' +
+          (label ? '<span class="opttext">' + label + '</span>' : '') +
+          '<button class="lanepick" aria-pressed="' + (pick === v) +
+          '" data-admitpick="' + esc(c.admit) + '" data-v="' + v + '">' +
+          '<span class="dot"></span>' + (v === 'either' ? '<span>Indifferent</span>'
+            : '<span class="off">Prefer this</span><span class="on">Preferred</span>') +
+          '</button></div>';
         return cardHtml(c, ctx, said +
           '<p class="why">The membership decides this at the approval threshold.</p>' +
           (rc ? '<div class="choice" role="radiogroup" aria-label="Admit them?">' +
             lane('admit', 'Admit them') +
             lane('stands', 'Keep the membership as it is') +
-            lane('either', 'Indifferent') + '</div>'
+            lane('either', '') + '</div>'
             : '<p class="setnote">Before the members — you have voted on it.</p>'),
           binBtn() + '<button class="btn btn-approve glyphbtn" data-admitgo="' +
           esc(c.admit) + '"' + (rc && pick ? '' : ' disabled') + '>' + TICK + '</button>',
@@ -6757,8 +6770,6 @@
           (m.by === viewerId()
             ? '<button class="btn" data-withdrawmotion="' + c.k + '" title="Withdrawing returns the ✏️ in full">🗑️ Withdraw</button>'
             : binBtn()) +
-          '<button class="lanepick" aria-pressed="' + (S.mAns[c.k] === 'either') + '"' +
-          ' data-motion="either"><span class="dot"></span><span>Indifferent</span></button>' +
           '<button class="btn btn-approve glyphbtn"' + (motionPicked(c) ? '' : ' disabled') +
           ' data-confirm="1">' + TICK + '</button>',
           g.cards, { v: 'stands', s: { ...m, pick: S.mAns[c.k] } });
@@ -7174,8 +7185,10 @@
       : 'The document begins empty')
     // 🧭 reads *Choose it* while dark, in the birth cards' own manner
     : c.k === 'shape' && !ready(c) ? 'Choose it'
-    : ready(c) ? (c.ansFor ? 'Answer' : c.kind === 'personal' ? 'Save' : 'Set it')
-    : 'Not answered yet');
+    // CP8 (Q1107): the label states the act even while the commit is dark —
+    // *Answer*, *Save*, *Set it* greyed — and the state (*Not answered yet*)
+    // lives in the title, which commitTitle already carries.
+    : (c.ansFor ? 'Answer' : c.kind === 'personal' ? 'Save' : 'Set it'));
   // **The whole commit row follows the typing** (Ed, 2026-08-21: *the 🗑️
   // button on "Your Email" doesn't work — check the other cards also*).
   // Typing deliberately does not re-render, because a render would take the
@@ -7787,10 +7800,9 @@
     const bz = ev.target.closest('[data-bzone]');
     if (bz) {
       const z = BEGIN_ZONES.find((x) => x.name === bz.dataset.bzone);
-      if (z) {
-        S.beginZones[z.name + ':' + bz.dataset.bpower] =
-          beginPos(z, bz.dataset.bpower) === 'down' ? 'keep' : 'down';
-      }
+      // a radio position, not a toggle (Q1103 (b)): the block pressed names
+      // its own value
+      if (z) S.beginZones[z.name + ':' + bz.dataset.bpower] = bz.dataset.bval;
       return render();
     }
     const o = ev.target.closest('[data-set]');
@@ -10301,25 +10313,26 @@
   // **The table itself** (entry 158): one row per zone, two switches per row.
   // Drawn only before the press and only for the Founder — after it there is
   // nothing left to choose, and the batch list above says what was chosen.
-  const BEGIN_PW_LABEL = { keep: 'Kept', mixed: 'Mixed', down: 'Laid down' };
-  // **…and a switch is what draws them** (Ed, 254). They had been `.lanepick`s,
-  // which is the design system's *radio* — *one of these, or none of them yet*
-  // — and these are nothing of the kind: each power is an independent on/off
-  // and the handler flips one without touching its neighbour, so the drawing
-  // contradicted the behaviour. `.switch` (system.css) is the control for that,
-  // on = keep and off = lay down. **Mixed draws off**, its label saying why:
-  // keeping in a mixed zone lays nothing further down, so the position *is*
-  // off, and the sentence under the table explains the word.
-  const beginSwitch = (z, pw) => {
+  // **…and option blocks are what draw them** (CP1, Q1103 (b), 2026-08-31 —
+  // reversing entry 254's switch ruling two days on): the pattern admits no
+  // second control, so each zone × power is a pair of blocks — *Kept* and
+  // *Laid down* — under the same *Prefer this* radio as every other choice.
+  // The card is unique in drawing them in **two columns**, a ✒️ column and a
+  // 🛡️ column (Ed's own shape for it). **Mixed presses neither radio**, and
+  // the sentence under the table explains what that means.
+  const beginPick = (z, pw, val, word) => {
     const st = beginZoneState(z, pw);
-    const on = st === 'keep';
-    return '<button class="switch' + (st === 'mixed' ? ' mixed' : '') + '"' +
-      ' type="button" role="switch" aria-checked="' + on + '"' +
-      ' data-bzone="' + esc(z.name) + '" data-bpower="' + pw + '">' +
-      '<span class="track"><span class="thumb"></span></span>' +
-      '<span class="lab">' + (pw === 'u' ? '✒️' : '🛡️') + ' ' +
-      BEGIN_PW_LABEL[st] + '</span></button>';
+    const on = st === val;
+    return '<div class="pick' + (on ? ' on' : '') + '">' +
+      '<span class="opttext">' + word + '</span>' +
+      '<button class="lanepick" aria-pressed="' + on + '"' +
+      ' data-bzone="' + esc(z.name) + '" data-bpower="' + pw + '" data-bval="' + val + '">' +
+      '<span class="dot"></span><span class="off">Prefer this</span>' +
+      '<span class="on">Preferred</span></button></div>';
   };
+  const beginCol = (z, pw) =>
+    '<div class="bzcol"><div class="eyebrow">' + (pw === 'u' ? '✒️ drafting' : '🛡️ assent') + '</div>' +
+    beginPick(z, pw, 'keep', 'Kept') + beginPick(z, pw, 'down', 'Laid down') + '</div>';
   const beginZonesHtml = () => {
     if (constituted() || !amFounder()) return '';
     const anyMixed = BEGIN_ZONES.some((z) => ['u', 'a'].some((pw) => beginZoneState(z, pw) === 'mixed'));
@@ -10327,8 +10340,8 @@
       '<p class="why">Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.</p>' +
       BEGIN_ZONES.map((z) => '<div class="beginzone">' +
         '<div class="fieldlab">' + (z.glyph ? z.glyph + ' ' : '') + esc(z.name) + '</div>' +
-        '<div class="setrow2">' + beginSwitch(z, 'u') + beginSwitch(z, 'a') + '</div></div>').join('') +
-      (anyMixed ? '<p class="setnote">Mixed means some of these have already been given up on their own cards. ' +
+        '<div class="bzcols">' + beginCol(z, 'u') + beginCol(z, 'a') + '</div></div>').join('') +
+      (anyMixed ? '<p class="setnote">Where neither is marked, some of these have already been given up on their own cards. ' +
         'Keeping here lays nothing further down — a power already given comes back only on the card it went from.</p>' : '');
   };
   const beginBody = (c, rd) => {

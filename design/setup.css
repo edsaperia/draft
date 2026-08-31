@@ -143,7 +143,11 @@
    *above* your answer are dimmed rather than hidden, since *the most I will
    accept* only reads as a ladder if you can see what you are refusing.
    --------------------------------------------------------------------------- */
-  .choice { display: flex; flex-direction: column; gap: var(--s3); }
+  /* rhythm lives on the blocks, not the wrapper (CP1): option blocks appear
+     both inside a `.choice` and as bare sequences, and the audit's P5 reads
+     one gap for all of them — so the wrapper contributes nothing and
+     `.pick + .pick` says the whole of it */
+  .choice { display: flex; flex-direction: column; gap: 0; }
   /* **A second radio group stacked under the first is set apart** (Q761).
      `.choice` spaces its own rungs, and nothing spaced the *containers* — so
      the delegate rung sat flush against the values above it, 0px, and the two
@@ -163,6 +167,18 @@
      its slot in the DOM while it has nothing to say, and collapses to nothing
      rather than reserving a line — `.meaning:empty`'s rule, same reason */
   .pick .exp:empty { display: none; }
+  /* **The option block** (CP1, Q1096, 2026-08-31): the option's text stands
+     above its radio as text to be read, and the radio beneath is the same
+     *Prefer this / Preferred* pill on every card — what you read is the
+     option's own sentence, what you press never changes its words. */
+  .pick .opttext { display: block; font-size: var(--t-ui); font-weight: 600;
+    color: var(--fg); max-width: 58ch; }
+  .pick > .lanepick { margin-top: var(--s2); }
+  /* a hairline separates adjacent blocks without boxing them — the same
+     separator the power cards' `.propblock + .propblock` draws; the margin is
+     the rows' one vertical rhythm (P5), wherever the blocks stand */
+  .pick + .pick { border-top: 1px solid var(--border); padding-top: var(--s3);
+    margin-top: var(--s3); }
   /* **Direct children, since 🪜's rungs put a ladder inside a rung** (entry
      165). `.inner` has always been the option's own child and nothing else,
      but as a descendant rule `.pick.on .inner` reached *through* an open
@@ -192,15 +208,15 @@
   /* a row of fields *inside* a card — distinct from `.setrow`, which is the
      band row a pile stands in */
   .setrow2 { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
-  /* 🍾's power table (entry 158): one zone per block, its two switches on one
-     `.setrow2`. The gap is the only thing the block adds — the switches are
-     the design system's own `.switch` (system.css), because each power here is
-     an independent on/off rather than a choice among peers, which is the one
-     thing `.pick`/`.lanepick` cannot say. This is the surface's single control
-     that is not a choice, so the table takes the other grammar rather than
-     inventing a third (Ed, 254). */
-  .beginzone + .beginzone { margin-top: var(--s3); }
-  .beginzone > .setrow2 { margin-top: var(--s1); }
+  /* 🍾's power table (entry 158; redrawn 2026-08-31, Q1103 (b)): one zone per
+     block, and under it the surface's one **two-column** layout — a ✒️ column
+     and a 🛡️ column, each a Kept / Laid-down pair of option blocks with the
+     same *Prefer this* radio as every other choice. The switch of entry 254
+     lasted two days; the pattern admits no second control. */
+  .beginzone + .beginzone { margin-top: var(--s4); }
+  .bzcols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--s5);
+    margin-top: var(--s2); }
+  .bzcol > .eyebrow { margin-bottom: var(--s2); }
   .fld { display: flex; flex-direction: column; gap: var(--s1); }
   .fld > label { font-size: var(--t-cap); color: var(--muted); }
   .sugg input, .sugg textarea { font: inherit; font-size: var(--t-ui); color: var(--fg); background: var(--bg);

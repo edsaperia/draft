@@ -379,7 +379,14 @@ const options = (wantDelegate) => page.evaluate((del) => {
   // page's own name for the rung and survives every rewording of it.
   const isDel = (x) => !!x.closest('.delegrung');
   const wanted = del ? all.filter(isDel) : all.filter((x) => !isDel(x));
-  return (wanted.length ? wanted : all).map((x) => x.textContent.trim().slice(0, 48));
+  // **The label is the block's text, not the button's** (CP1, 2026-08-31):
+  // every radio reads *Prefer this* now, so the words that name an option
+  // live on its `.opttext`; the button is the fallback for a textless block
+  // (Indifferent), whose radio names the act itself.
+  const labelOf = (x) => { const p = x.closest('.pick');
+    const t = p && p.querySelector('.opttext');
+    return ((t && t.textContent) || x.textContent).trim().slice(0, 48); };
+  return (wanted.length ? wanted : all).map(labelOf);
 }, wantDelegate);
 // the same question the other way round: which of the labels on the open card
 // belong to the delegate rung, so *what was chosen* can be told apart from its
@@ -387,11 +394,16 @@ const options = (wantDelegate) => page.evaluate((del) => {
 const delegLabels = () => page.evaluate(() =>
   [...document.querySelectorAll('.setupcard .delegrung [data-set],.setupcard .delegrung [data-ans]')]
     .filter((x) => (x.dataset.val || x.dataset.ansval))
-    .map((x) => x.textContent.trim().slice(0, 48)));
+    .map((x) => { const p = x.closest('.pick');
+      const t = p && p.querySelector('.opttext');
+      return ((t && t.textContent) || x.textContent).trim().slice(0, 48); }));
 const pickOption = (label) => page.evaluate((l) => {
+  const labelOf = (x) => { const p = x.closest('.pick');
+    const t = p && p.querySelector('.opttext');
+    return ((t && t.textContent) || x.textContent).trim().slice(0, 48); };
   const o = [...document.querySelectorAll('.setupcard [data-set],.setupcard [data-ans]')]
     .filter((x) => (x.dataset.val || x.dataset.ansval) && x.offsetParent !== null)
-    .find((x) => x.textContent.trim().slice(0, 48) === l);
+    .find((x) => labelOf(x) === l);
   if (!o) return null;
   o.scrollIntoView({ block: 'center' });
   const r = o.getBoundingClientRect();
@@ -954,7 +966,7 @@ const shapeAtBegin = async () => {
  * handed to one `begin` at one `t`. Two rules are walked here because neither
  * can be seen anywhere else on the surface.
  *
- * **(i) A switch reflects the tabs.** A power promised away on one setting's
+ * **(i) The table reflects the tabs.** A power promised away on one setting's
  * own ✒️ tab must show its zone as **mixed**, never as *kept* — the two
  * controls read one truth (`pwPair`/`pwPend`) and a disagreement between them
  * is a founder told they are keeping something they have already given.
@@ -966,19 +978,25 @@ const shapeAtBegin = async () => {
  *
  * ⏱️ is the setting whose pen goes on its own tab — nothing later in this walk
  * needs it, where ✉️'s pen is `doorShuts`' subject and 🌍's is the amendment's.
- * Membership's **🛡️** is the switch that moves, for the same reason: its ✒️
+ * Membership's **🛡️** is the block that moves, for the same reason: its ✒️
  * has to survive to the door checks after the start. */
-// Selected as switches rather than as buttons (Ed, 254): the table's controls
-// are the design system's `.switch`, not `.lanepick`'s radio, and `role` is the
-// half of that a walk can hold — a regression to a radio is then a dead
-// selector here rather than a green walk over the wrong control.
-const BZ_SEL = (z, pw) =>
-  '.setupcard [role="switch"][data-bzone="' + z + '"][data-bpower="' + pw + '"]';
+// The table's controls are option blocks since Q1103 (b) (2026-08-31): each
+// zone × power a Kept / Laid-down pair of `.lanepick` radios carrying
+// `data-bval`, pressed state on `aria-pressed`. `says` reports the position
+// the pair spells — Kept, Laid down, or Mixed where neither radio is pressed —
+// so every assertion below keeps reading the words it always read.
+const BZ_SEL = (z, pw, val) =>
+  '.setupcard .lanepick[data-bzone="' + z + '"][data-bpower="' + pw + '"]' +
+  '[data-bval="' + (val || 'down') + '"]';
 const bzCells = () => page.evaluate(() =>
   [...document.querySelectorAll('.setupcard .beginzone')].map((z) => ({
     name: (z.querySelector('.fieldlab') || {}).textContent.trim(),
-    cells: [...z.querySelectorAll('[role="switch"][data-bzone]')].map((b) => ({
-      pw: b.dataset.bpower, says: b.textContent.trim() })),
+    cells: ['u', 'a'].map((pw) => {
+      const on = (v) => { const b = z.querySelector(
+        '.lanepick[data-bpower="' + pw + '"][data-bval="' + v + '"]');
+        return !!b && b.getAttribute('aria-pressed') === 'true'; };
+      return { pw, says: on('keep') ? 'Kept' : on('down') ? 'Laid down' : 'Mixed' };
+    }),
   })));
 // the ✒️/🛡️ tab's own head sentence for one key — the surface's word on who
 // holds what, written by `powerHeadLine` off `pwPair`. The tabs are inert
@@ -1018,7 +1036,7 @@ const beginZonesBeforeStart = async () => {
       ' · kept ' + JSON.stringify(keptPen.map((z) => z.name))));
   if (!ok) stuck.push('the 🍾 zone holding a promised-away pen did not read mixed');
   // …and one zone's 🛡️ set to lay down, which is what the press must carry
-  const set = await clickIn(BZ_SEL('Membership', 'a'));
+  const set = await clickIn(BZ_SEL('Membership', 'a', 'down'));
   const after = await bzCells();
   const memb = after.find((z) => /Membership/.test(z.name));
   const down = !!memb && memb.cells.some((c) => c.pw === 'a' && /Laid down/.test(c.says));

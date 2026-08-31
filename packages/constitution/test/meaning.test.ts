@@ -48,6 +48,16 @@ describe('winsNeededPct is engine-core’s own fit', () => {
     }
   });
 
+  it('each rung carries its sentence — the option block’s text (Q1104 (b))', () => {
+    const seen = new Set<string>();
+    for (const r of BAR_RUNGS) {
+      expect(r.sentence.length, r.label).toBeGreaterThan(0);
+      expect(r.sentence.length, r.label).toBeLessThanOrEqual(MEANING_MAX);
+      expect(seen.has(r.sentence), r.label).toBe(false);
+      seen.add(r.sentence);
+    }
+  });
+
   it('null is exactly the bars above the room’s ceiling', () => {
     for (let e = 1; e <= 24; e++) {
       for (let pct = 50; pct <= 99; pct++) {

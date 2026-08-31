@@ -54,10 +54,18 @@ import { quorumCount } from './populations.js';
  * same rung in most small rooms and 70 and 80 collide nearly as often, while
  * 60 · 80 · 90 separate at every roster from four members up.
  */
-export const BAR_RUNGS: readonly { pct: number; label: string }[] = [
-  { pct: 90, label: 'Nearly everyone' },
-  { pct: 80, label: 'Broad agreement' },
-  { pct: 60, label: 'A bare majority' },
+export const BAR_RUNGS: readonly { pct: number; label: string; sentence: string }[] = [
+  // `sentence` is the rung as an option block reads it (CP1/Q1104 (b), Ed
+  // 2026-08-31: the option's text is the rule as it would stand, the percent
+  // stated beside it); `label` survives as the rung's short name — the
+  // distribution strip's word, and 🪜's starting rungs, where a sentence
+  // about *passing* would misstate a bar that only opens the vote.
+  { pct: 90, label: 'Nearly everyone',
+    sentence: 'Nearly everyone must vote for a change for it to pass' },
+  { pct: 80, label: 'Broad agreement',
+    sentence: 'Most of the membership must vote for a change for it to pass' },
+  { pct: 60, label: 'A bare majority',
+    sentence: 'A bare majority voting for a change is enough for it to pass' },
 ];
 
 /** The fourth rung: the precise number, for whoever really wants it. */

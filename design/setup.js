@@ -917,6 +917,12 @@ window.SETUP = (function () {
         ? ' It is <b>reserved</b>: carrying does not change it by itself — it goes to the founder as a <b>👑 question</b>, theirs to assent to or refuse.'
         : '') + '</div>' +
       CB.proposalHtml(m, { tag: 'As proposed', html: esc(m.to), why: m.why, v: 'proposed', edit: false }) +
+      // Indifferent is a full option block — textless, its radio naming the
+      // act instead of *Prefer this* (CP4, Q1099); it left the commit row on
+      // 2026-08-31
+      '<div class="pick' + (m.pick === 'either' ? ' on' : '') + '">' +
+      '<button class="lanepick" aria-pressed="' + (m.pick === 'either') + '" data-motion="either">' +
+      '<span class="dot"></span><span>Indifferent</span></button></div>' +
       '<p class="setnote">' + (m.judged || 0) + ' of ' + ctx.E + ' have voted on it.</p>';
   }
 
@@ -1040,10 +1046,14 @@ window.SETUP = (function () {
   };
 
   const ansRow = (on, key, val, ttl, exp, extra, inner) =>
+    // the answer ladder's rung, in the option-block shape (CP1) — the rung's
+    // text above, the fixed *Prefer this* radio beneath it
     '<div class="pick' + (on ? ' on' : '') + (extra || '') + '">' +
-    '<button class="lanepick" aria-pressed="' + !!on + '" data-ans="' + key + '" data-ansval="' + esc(String(val)) + '">' +
-    '<span class="dot"></span><span>' + ttl + '</span></button>' +
+    '<span class="opttext">' + ttl + '</span>' +
     (exp ? '<span class="exp">' + exp + '</span>' : '') +
+    '<button class="lanepick" aria-pressed="' + !!on + '" data-ans="' + key + '" data-ansval="' + esc(String(val)) + '">' +
+    '<span class="dot"></span><span class="off">Prefer this</span>' +
+    '<span class="on">Preferred</span></button>' +
     (inner ? '<span class="inner">' + inner + '</span>' : '') + '</div>';
 
   // rungs *above* your answer are dimmed rather than hidden — "the most I will
@@ -1295,7 +1305,8 @@ window.SETUP = (function () {
   const pctLabel = (label, pct) => esc(label) + '<span class="pct">' + pct + '%</span>';
   const barLadder = (A, room) => ladder(A, 'bar',
     window.CONSTITUTION.BAR_RUNGS.map((r) => ({
-      v: r.pct, t: pctLabel(r.label, r.pct), e: barMeaning(r.pct, room),
+      // the rung's block text is the rule as it would stand (Q1104 (b))
+      v: r.pct, t: pctLabel(r.sentence, r.pct), e: barMeaning(r.pct, room),
     })),
     // **The box is rendered only inside the rung that is chosen**, rather than
     // rendered always and hidden by `.pick > .inner` the way `opt`'s fields
@@ -1481,11 +1492,19 @@ window.SETUP = (function () {
      settings the option carries appear only while it is chosen. */
   const opt = (S, key, val, ttl, exp, inner, off, extra) => {
     const on = S[key] === val;
+    // **The option block** (CP1, Q1096): the option's text is document text,
+    // its explanation beneath, and the radio under both — a fixed
+    // *Prefer this / Preferred* pair, so the words on the control are the same
+    // on every card and the option's own sentence is what you read, not what
+    // you press. The data attributes stay on the button: every handler and
+    // every walk finds the act exactly where it always was.
     return '<div class="pick' + (on ? ' on' : '') + (off ? ' off' : '') + (extra || '') + '">' +
+      '<span class="opttext">' + ttl + '</span>' +
+      (exp ? '<span class="exp">' + exp + '</span>' : '') +
       '<button class="lanepick" aria-pressed="' + on + '"' + (off ? ' disabled' : '') +
       (off ? '' : ' data-set="' + key + '" data-val="' + val + '"') + '>' +
-      '<span class="dot"></span><span>' + ttl + '</span></button>' +
-      (exp ? '<span class="exp">' + exp + '</span>' : '') +
+      '<span class="dot"></span><span class="off">Prefer this</span>' +
+      '<span class="on">Preferred</span></button>' +
       (inner ? '<span class="inner">' + inner + '</span>' : '') + '</div>';
   };
 

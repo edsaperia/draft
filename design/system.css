@@ -178,7 +178,6 @@
        the same easing — a wash is tuned for a colour changing somewhere in the
        margin, where a control is under the pointer and has to answer the press
        — so it is a quarter of one rather than a number of its own. */
-    --switch-ms: calc(var(--wash-ms) / 4);
 
     --rail-left: 210px;
     --rail-right: 290px;
@@ -1282,52 +1281,9 @@
   }
   @media (prefers-reduced-motion: reduce) { .lanepick, .lanepick .dot { transition: none; } }
 
-  /* **The switch, for a setting that is not a choice among peers** (Ed, 254).
-     `.lanepick` above is the radio, and it says *one of these, or none of them
-     yet* — which is the whole of what a settings choice is, and exactly what
-     🍾's power table is not: each power there is an independent on/off, flipped
-     without touching its neighbour. Drawn as a radio it contradicted its own
-     behaviour, so the design system grows the other control rather than the
-     table borrowing the wrong one.
-
-     The same two rules govern it as govern the radio: no box — *open is said by
-     depth, not by outline*, and a rule round a switch would be competing with
-     the track for the job of saying which position it is in — and the one
-     accent, `--primary`, for *on*, against grey for *nothing is being asked of
-     you*. The track is the mark, the way the dot is the radio's, so the accent
-     lives there and the label stays ink. */
-  .switch {
-    appearance: none; font: inherit; font-size: var(--t-ui); font-weight: 600;
-    display: inline-flex; align-items: center; gap: var(--s2);
-    padding: 0; border: 0; background: none; color: var(--fg); cursor: pointer;
-  }
-  /* 32×16 with a 12px thumb, every number off the spacing scale by way of the
-     step it is built from: the travel is exactly --s4, which is what keeps the
-     thumb's inset equal at both ends without a literal anywhere. */
-  .switch .track {
-    flex: none; position: relative; display: block;
-    width: calc(var(--s5) + var(--s2)); height: var(--s4); border-radius: 999px;
-    background: var(--border);
-    transition: background var(--switch-ms) ease, box-shadow 120ms ease;
-  }
-  .switch .thumb {
-    position: absolute; top: 2px; left: 2px;
-    width: calc(var(--s4) - var(--s1)); height: calc(var(--s4) - var(--s1));
-    border-radius: 50%; background: var(--bg); box-shadow: var(--shadow-sm);
-    transition: transform var(--switch-ms) ease;
-  }
-  .switch .lab { color: var(--muted); transition: color 120ms ease; }
-  .switch[aria-checked="true"] .track { background: var(--primary); }
-  .switch[aria-checked="true"] .thumb { transform: translateX(var(--s4)); }
-  .switch[aria-checked="true"] .lab { color: var(--fg); }
-  /* hover moves toward the accent, as `.lanepick`'s does — on the label, and on
-     the track as a ring inside its own edge, which is the dot's border-colour
-     tell in the shape a track can wear it */
-  .switch:hover .lab { color: var(--primary); }
-  .switch:hover .track { box-shadow: inset 0 0 0 1.5px var(--primary); }
-  .switch[aria-checked="true"]:hover .track { box-shadow: none; }
-  .switch[disabled] { opacity: 0.55; cursor: default; }
-  .switch[disabled]:hover .lab { color: var(--muted); }
+  /* The switch (entry 254) lived here for two days — 🍾's power table was its
+     one user, and Q1103 (b) redrew that as option blocks (CP1): the pattern
+     admits no second control. Removed 2026-08-31 with its user. */
   .switch[disabled]:hover .track { box-shadow: none; }
   /* **Mixed draws the off position, and the label says why** (entry 254). A
      zone is mixed when one of its powers has already been given away on its own

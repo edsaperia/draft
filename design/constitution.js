@@ -3566,9 +3566,26 @@ var CONSTITUTION = (() => {
 
   // src/meaning.ts
   var BAR_RUNGS = [
-    { pct: 90, label: "Nearly everyone" },
-    { pct: 80, label: "Broad agreement" },
-    { pct: 60, label: "A bare majority" }
+    // `sentence` is the rung as an option block reads it (CP1/Q1104 (b), Ed
+    // 2026-08-31: the option's text is the rule as it would stand, the percent
+    // stated beside it); `label` survives as the rung's short name — the
+    // distribution strip's word, and 🪜's starting rungs, where a sentence
+    // about *passing* would misstate a bar that only opens the vote.
+    {
+      pct: 90,
+      label: "Nearly everyone",
+      sentence: "Nearly everyone must vote for a change for it to pass"
+    },
+    {
+      pct: 80,
+      label: "Broad agreement",
+      sentence: "Most of the membership must vote for a change for it to pass"
+    },
+    {
+      pct: 60,
+      label: "A bare majority",
+      sentence: "A bare majority voting for a change is enough for it to pass"
+    }
   ];
   var OWN_RUNG_LABEL = "A number of my own";
   function winsNeededPct(e, pct) {
