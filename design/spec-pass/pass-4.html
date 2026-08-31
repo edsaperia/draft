@@ -1,0 +1,251 @@
+<title>The Card Pattern Census</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&family=Public+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --paper: #fbfaf7; --card: #ffffff; --ink: #20242c; --muted: #5d6470;
+    --line: #e3e0d8; --accent: #2b5bd7; --accent-soft: #eef2fc;
+    --find: #9a5b1c; --find-soft: #faf3e9; --ok: #2e7d4f; --ok-soft: #ecf5ef;
+    --mono-bg: #f2f0ea;
+  }
+  :root:not([data-theme="light"]) { }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #15171c; --card: #1c1f26; --ink: #e8e6e0; --muted: #9aa0ab;
+      --line: #2e323b; --accent: #7d9bf0; --accent-soft: #232a3d;
+      --find: #d9a05b; --find-soft: #2b241a; --ok: #6fbb8f; --ok-soft: #1c2a22;
+      --mono-bg: #23262e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #15171c; --card: #1c1f26; --ink: #e8e6e0; --muted: #9aa0ab;
+    --line: #2e323b; --accent: #7d9bf0; --accent-soft: #232a3d;
+    --find: #d9a05b; --find-soft: #2b241a; --ok: #6fbb8f; --ok-soft: #1c2a22;
+    --mono-bg: #23262e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font: 16px/1.6 "Public Sans", system-ui, sans-serif;
+    margin: 0; padding: 48px 20px 96px;
+  }
+  main { max-width: 76ch; margin: 0 auto; }
+  h1, h2, h3 { font-family: "Newsreader", Georgia, serif; text-wrap: balance; line-height: 1.2; }
+  h1 { font-size: 2.4rem; font-weight: 700; margin: 0 0 4px; }
+  h2 { font-size: 1.5rem; font-weight: 700; margin: 48px 0 12px; padding-top: 24px; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.12rem; font-weight: 700; margin: 28px 0 8px; }
+  .kicker { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 12px; }
+  .meta { color: var(--muted); margin: 0 0 8px; }
+  p { margin: 10px 0; }
+  code, .k {
+    font-family: "IBM Plex Mono", Consolas, monospace; font-size: .84em;
+    background: var(--mono-bg); padding: 1px 5px; border-radius: 4px;
+  }
+  blockquote {
+    margin: 12px 0; padding: 10px 16px; border-left: 3px solid var(--accent);
+    background: var(--accent-soft); border-radius: 0 8px 8px 0; color: var(--ink);
+  }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; margin: 16px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .86rem; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--card); position: sticky; top: 0; }
+  tr:last-child td { border-bottom: 0; }
+  td.state { white-space: nowrap; font-family: "IBM Plex Mono", monospace; font-size: .78rem; }
+  .yes { color: var(--ok); font-weight: 600; }
+  .no  { color: var(--find); font-weight: 600; }
+  .item {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px 24px; margin: 20px 0;
+  }
+  .item .id { font-family: "IBM Plex Mono", monospace; font-weight: 600; color: var(--accent); }
+  .find .id { color: var(--find); }
+  .evidence {
+    font-family: "IBM Plex Mono", monospace; font-size: .8rem; line-height: 1.5;
+    background: var(--mono-bg); border-radius: 8px; padding: 10px 14px; margin: 10px 0;
+    overflow-x: auto; white-space: pre;
+  }
+  .opts { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 6px; }
+  .opt {
+    display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px;
+    border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+  }
+  .opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+  .opt input { margin-top: 4px; accent-color: var(--accent); }
+  .opt .rec { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ok); font-weight: 700; margin-left: 6px; }
+  .veto { display: flex; gap: 10px; align-items: center; margin-top: 12px; font-weight: 600; cursor: pointer; }
+  .veto input { accent-color: var(--find); width: 16px; height: 16px; }
+  .veto:has(input:checked) { color: var(--find); }
+  textarea {
+    width: 100%; min-height: 40px; margin-top: 10px; padding: 8px 12px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink);
+    font: .9rem/1.5 "Public Sans", sans-serif; resize: vertical;
+  }
+  textarea:focus, .opt input:focus-visible, .veto input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.copyall {
+    font: 600 1rem "Public Sans", sans-serif; color: #fff; background: var(--accent);
+    border: 0; border-radius: 10px; padding: 12px 22px; cursor: pointer; margin: 18px 0 8px;
+  }
+  #out {
+    display: none; font-family: "IBM Plex Mono", monospace; font-size: .8rem;
+    background: var(--mono-bg); border-radius: 8px; padding: 12px 16px; white-space: pre-wrap;
+  }
+  ul { padding-left: 22px; } li { margin: 6px 0; }
+  .quiet { color: var(--muted); font-size: .9rem; }
+  @media (prefers-reduced-motion: no-preference) { .opt { transition: border-color .15s, background .15s; } }
+</style>
+<main>
+  <div class="kicker">draft · spec pass 4 · 2026-08-31</div>
+  <h1>The Card Pattern Census</h1>
+  <p class="meta">Every decision card, measured against CP1–CP7 (SURFACE §9.3, your rulings Q1096–Q1102). Instrument: <code>card-audit</code> at 1600×1000 — 270 card openings, 107 distinct keys, seven walks. Findings are drift against rules already made: <strong>fixed unless vetoed</strong>. Questions Q1103–Q1108 are genuine choices, recommendation first. Answers save in this page; <em>Copy all answers</em> at the foot gives the paste-back block.</p>
+
+  <h2>How to read one row — a worked fragment</h2>
+  <p>Each census line is one card in one state: its option blocks, its radio labels, its commit row left to right, whether a rationale <em>input</em> exists. The judgment card <code>quick-arrears</code> (the 🔥 card), as measured on the charter walk:</p>
+  <div class="evidence">quick-arrears | charter | radios: Prefer this / Indifferent
+foot: [Indifferent] [❄️] [Choose one of the three first ·disabled]   ← no 🗑️ anywhere</div>
+  <p>Read against the pattern: the <em>Prefer this</em> radios conform (CP1); Indifferent sits in the commit row where CP4 now puts it in a textless option block; and the card has no 🗑️, which CP7 grants only to Y20's five — so this one row carries two build items and one conformity. The whole surface reads the same way below.</p>
+
+  <h2>The census, by family</h2>
+  <div class="tablewrap"><table>
+    <tr><th>family</th><th>states measured</th><th>as built</th><th>vs the pattern</th></tr>
+    <tr><td>founder setting cards<br><span class="k">admission applications authorship bar chamber ending judgments lapse quorum rate removal hat shape</span></td><td class="state">founding · answers · delegated</td><td>options are lanepick sentences (the sentence is the radio), no hairlines; 🗑️ + ✒️ (🪶 for shape), dark until answered; no rationale on first set</td><td><span class="no">CP1 unbuilt</span> · <span class="yes">CP3 ✓</span> · <span class="yes">CP7 ✓</span></td></tr>
+    <tr><td>blind answer cards <span class="k">ans-*</span></td><td class="state">answers</td><td>rungs as lanepick; commit disabled, labelled “Not answered yet”</td><td><span class="no">CP1 unbuilt</span> · label — Q1107</td></tr>
+    <tr><td>composers (settled settings, founder and member seats)</td><td class="state">settled · seat:1</td><td>alternatives carry <em>Prefer this</em>; rationale lane; 🗑️; commits ✒️/✏️/🏛️ by value, paired per K29 (<span class="k">title chamber rate pace slug</span>)</td><td><span class="yes">conforms CP1 CP2 CP3 CP5</span> — the pattern's exemplar. Numeric settings compose as a value in the sentence — Q1104</td></tr>
+    <tr><td>power cards <span class="k">pw:a:* pw:u:*</span> ×16</td><td class="state">settled · seat:1</td><td>two blocks, radios <em>Choose this / Chosen</em>, 🗑️ + ✒️</td><td><span class="no">CP2 unbuilt</span> (relabel)</td></tr>
+    <tr><td>judgment cards <span class="k">quick-* insert-* race-* patch-*</span> ~30</td><td class="state">charter · closed</td><td><em>Prefer this / Indifferent</em> radios; <strong>no 🗑️</strong>; Indifferent in the commit row; ❄️ on 🔥 only; judged: “Recorded — choose again to change it”</td><td><span class="no">CP4 + CP7 unbuilt</span> · <span class="yes">CP3 ✓</span> (no rationale input — display only)</td></tr>
+    <tr><td>deadlock ⚔️ <span class="k">race-sanctions</span></td><td class="state">charter</td><td>🗑️ + ✏️ hold; a real <span class="k">edit-why</span> rationale input</td><td><span class="yes">conforms</span></td></tr>
+    <tr><td>sealed records <span class="k">quick-calling -knives -lockup race-claims race-nomination</span></td><td class="state">charter · closed</td><td>OK only, no 🗑️</td><td><span class="yes">conforms (Y20)</span></td></tr>
+    <tr><td>mine <span class="k">mine-*</span></td><td class="state">charter · closed</td><td>🗑️ + ✏️ Submitted (pressed)</td><td><span class="yes">conforms</span></td></tr>
+    <tr><td>settled motion records <span class="k">rec:*</span></td><td class="state">settled · seat:1 · closed</td><td>🗑️ only, no OK</td><td><span class="yes">conforms (Y20)</span></td></tr>
+    <tr><td>grants and gates <span class="k">grant-* canpropose canjudge rel:*</span></td><td class="state">founding · settled · seat:1</td><td>🗑️ + Take-verb / OK</td><td><span class="yes">conforms CP5</span> · OK at 11.52px — finding F-E</td></tr>
+    <tr><td>🍾 Begin</td><td class="state">founding · answers · settled</td><td>power table as switches (Kept · Laid down · Mixed); 🗑️ + 🍾 Begin</td><td><span class="yes">conforms CP5</span> · switches — Q1103</td></tr>
+    <tr><td>doors <span class="k">invite remove</span></td><td class="state">founding · answers · settled · seat:1</td><td>direct: field in body, commit “Done”; composed: 🏛️/✒️ by route + rationale</td><td>routes <span class="yes">conform K29</span> · “Done” — Q1105 · <span class="no">CP6 unbuilt</span> (heads are price + sentence, not the people)</td></tr>
+    <tr><td>identity <span class="k">myname mypic myemail</span></td><td class="state">all four</td><td>🗑️ + Save / 🪶 pre-save / ✓ verified</td><td><span class="yes">conforms</span></td></tr>
+    <tr><td>locked <span class="k">hat</span> post-🍾 · <span class="k">title</span> settled</td><td class="state">settled · seat:1</td><td>🗑️ + permanently dark ✒️</td><td>Q1106</td></tr>
+    <tr><td>the stranger's cards <span class="k">slug title strlogin</span></td><td class="state">seat:stranger</td><td>🗑️ only, act in the body</td><td><span class="yes">conforms (Y20)</span></td></tr>
+    <tr><td>patch site sub-blocks <span class="k">quick-guests-*</span> ×11</td><td class="state">charter · closed</td><td><strong>no commit row at all</strong>, no radios</td><td>Q1108</td></tr>
+  </table></div>
+
+  <h2>Findings — fixed unless vetoed</h2>
+  <p class="quiet">Each is drift against a rule already ruled (CP1–CP7, or a standing audit rule). Tick <em>veto</em> only where the fix should not happen.</p>
+
+  <div class="item find" data-id="F-A"><span class="id">F-A</span> <strong>CP1 build — the band takes the block grammar.</strong>
+    <p>Every founder setting card and blind answer card redraws each alternative as an option block: the option's text, a hairline between blocks, a <em>Prefer this</em> radio beneath, commit separate. <code>lanepick</code> retires as a distinct control. Measured today on all thirteen founder cards and every <code>ans-*</code>: the sentence is the radio, no hairlines, no per-option control.</p>
+    <label class="veto"><input type="checkbox"> Veto — leave as built</label><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item find" data-id="F-B"><span class="id">F-B</span> <strong>CP2 build — power cards relabel.</strong>
+    <p>All 16 <code>pw:</code> cards read <em>Choose this / Chosen</em>; they become <em>Prefer this / Preferred</em>. K4's other-half rule (the standing value stays visible, marked) survives relabelled.</p>
+    <div class="evidence">pw:a:chamber | settled | radios: Chosen / Choose this | foot: 🗑️ ✒️</div>
+    <label class="veto"><input type="checkbox"> Veto — leave as built</label><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item find" data-id="F-C"><span class="id">F-C</span> <strong>CP4 + CP7 build — judgment cards.</strong>
+    <p>~30 charter judgment cards gain 🗑️ at the row's left (clears the selection, closes) and Indifferent moves from the commit row into a textless option block whose radio reads <em>Indifferent</em>. The census confirmed §9's table matched the page — judgment cards genuinely have no 🗑️ today, so the C4 contradiction was real drift, and your Q1102 ruling (C4 wins) is a build item on the commonest card in the product.</p>
+    <label class="veto"><input type="checkbox"> Veto — leave as built</label><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item find" data-id="F-D"><span class="id">F-D</span> <strong>CP6 build — the doors head with their people.</strong>
+    <p>✉️ and ❌ head with the pile's avatar-and-name list (the status quo as the card's standing text), price and Founder's sentence beneath; <code>adm:</code> keeps its one-applicant head. Measured today: both doors head with price + sentence.</p>
+    <label class="veto"><input type="checkbox"> Veto — leave as built</label><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item find" data-id="F-E"><span class="id">F-E</span> <strong>One control, one size — OK at two sizes.</strong>
+    <p>The gates' and release cards' OK is set at 11.52px where the charter's OK is 14px (<code>card-audit</code> B6, 14 cards: <span class="k">canjudge, rel:rel-1</span> vs <span class="k">race-claims, quick-knives…</span>). Fix to the type scale's <code>--t-ui</code>.</p>
+    <label class="veto"><input type="checkbox"> Veto — leave as built</label><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item find" data-id="F-F"><span class="id">F-F</span> <strong>📧 heads two different cards.</strong>
+    <p>A subject glyph names one thing (STYLE §1), and 📧 heads both your own email card (<span class="k">myemail</span>) and the stranger's login card (<span class="k">strlogin</span>). The stranger's card takes its own glyph, or the pair gets a recorded exemption.</p>
+    <label class="veto"><input type="checkbox"> Veto — leave as built</label><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item find" data-id="F-G"><span class="id">F-G</span> <strong>Two spacing nits off the 4px grid.</strong>
+    <p><code>.rsub</code> margin-top 2px (answers·begin) and <code>.choice</code> margin-left −2px (settled·pace).</p>
+    <label class="veto"><input type="checkbox"> Veto — leave as built</label><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <p class="quiet">Recorded but not a finding: the 2px switch-pass glyph move (audit P7) is the tuck-under you accepted on 2026-08-31 — uniform, not new.</p>
+
+  <h2>Questions — Q1103 to Q1108</h2>
+
+  <div class="item" data-id="Q1103"><span class="id">Q1103</span> <strong>Do switches stand outside CP1/CP2?</strong>
+    <p>🍾's power table is drawn as on/off switches (<em>✒️ Kept / Laid down / Mixed</em>) — the one control on the surface that is not a choice among peers, and the backlog already wants it drawn as proper switches. CP1's block grammar and CP2's <em>Prefer this</em> label describe choices among alternatives; a switch has no alternative block to prefer.</p>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="Q1103" value="a"><span><strong>(a)</strong> Yes — switches are exempt from CP1/CP2; §9.3 says so in one line.<span class="rec">recommended</span></span></label>
+      <label class="opt"><input type="radio" name="Q1103" value="b"><span><strong>(b)</strong> No — redraw the power table as option blocks with Prefer-this radios (two blocks per zone × power).</span></label>
+    </div><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item" data-id="Q1104"><span class="id">Q1104</span> <strong>Do value-in-the-sentence composers stand outside CP1?</strong>
+    <p>The numeric settings (🌡️ bar, 👥 quorum, 💤 lapse, ⏱️ rate, the address, the title) compose a motion by typing the value into the standing sentence — no enumerable alternatives, so no blocks. Measured: <span class="k">bar|settled</span> offers no options, one number field, rationale lane, 🏛️ commit.</p>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="Q1104" value="a"><span><strong>(a)</strong> Yes — CP1 governs enumerable choices; a sentence-value lane is its own stated shape.<span class="rec">recommended</span></span></label>
+      <label class="opt"><input type="radio" name="Q1104" value="b"><span><strong>(b)</strong> No — offer the named rungs as blocks too (Nearly everyone 90% · Broad agreement 80% · …) with the number as the last block.</span></label>
+    </div><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item" data-id="Q1105"><span class="id">Q1105</span> <strong>The direct ✉️ send's row: “Done”, or the drawn closing ✓?</strong>
+    <p>Where the viewer's own word sends, the act is on the field in the body and the row has nothing left to commit. C4 says the row is “simply <em>done here</em>”; §9.1's own table row says the drawn ✓, closing. Measured: a button labelled <strong>Done</strong>.</p>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="Q1105" value="a"><span><strong>(a)</strong> The drawn ✓ — §9.1's family wins; C4's sentence is reworded.<span class="rec">recommended</span></span></label>
+      <label class="opt"><input type="radio" name="Q1105" value="b"><span><strong>(b)</strong> Keep “Done” — the word, and C4 as written; §9.1's row gains the exception.</span></label>
+    </div><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item" data-id="Q1106"><span class="id">Q1106</span> <strong>Locked cards: a permanently dark commit, or none?</strong>
+    <p>🎩 after 🍾 is locked for ever, and shows 🗑️ + a dark ✒️ that can never light; a closed document's cards do the same. A dark commit elsewhere means <em>not yet</em> (Y19 even names where the pen is waiting); here it promises a thaw that never comes.</p>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="Q1106" value="a"><span><strong>(a)</strong> No commit at all on a card that can never commit — locked is read-only, 🗑️ closes.<span class="rec">recommended</span></span></label>
+      <label class="opt"><input type="radio" name="Q1106" value="b"><span><strong>(b)</strong> Keep the dark commit — the row keeps its shape everywhere, and dark says “not for you, not now” uniformly.</span></label>
+    </div><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item" data-id="Q1107"><span class="id">Q1107</span> <strong>After-state and disabled labels: state the act, or the state?</strong>
+    <p>Two places label the row with the state instead of the act: a judged card's <em>“Recorded — choose again to change it”</em>, and the blind answer's disabled commit <em>“Not answered yet”</em> (§9's row for that card says <em>✓ Answer</em>). The 202 ruling put it as: the row shows what finishing looks like; the title says why it is dark.</p>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="Q1107" value="a"><span><strong>(a)</strong> The act as the label (<em>✓ Answer</em>, greyed; the judged state keeps its ticked radio saying what you chose), the state moves to the title.<span class="rec">recommended</span></span></label>
+      <label class="opt"><input type="radio" name="Q1107" value="b"><span><strong>(b)</strong> Keep the state labels as built.</span></label>
+    </div><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <div class="item" data-id="Q1108"><span class="id">Q1108</span> <strong>Patch site sub-blocks: cards, or parts of one card?</strong>
+    <p>A patch opens a card at every site; the eleven <span class="k">quick-guests-*</span> sub-blocks measured with no commit row and no radios at all — the head (<span class="k">patch-rename</span>) carries the one row, and one judgment commits all sites (§9's patch row). Under CP7 (“🗑️ on every card”), either they are not cards, or they are missing their rows.</p>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="Q1108" value="a"><span><strong>(a)</strong> Not cards — the patch is one card whose row lives on the head; §9.3 says so and the glossary follows.<span class="rec">recommended</span></span></label>
+      <label class="opt"><input type="radio" name="Q1108" value="b"><span><strong>(b)</strong> Each site takes the full row — heavier, but uniform.</span></label>
+    </div><textarea placeholder="Notes (optional)"></textarea></div>
+
+  <h2>What the instrument could not see</h2>
+  <p>Never measured on any walk, so <strong>not certified by this census</strong> — each needs a walk extension or a hand-verification before the pass closes: the salience diagonal 🌶️ (unserved in the fixture, by Q291's own rule); the editing card (needs a keystroke); the <code>adm:</code> admission cards and the applicant's five (the applicant seat offered no cards — an instrument defect); the 👑 question, both kinds; the 🥂 closing card; a constitutional motion mid-flight (the consent picks); the news family (set-changed news, amendment-news, release-batch, 📭); the closed backlog (no ⏸ records in the fixture); 📝 in both modes; a gap-site card. This list is the stage-2b work already scheduled.</p>
+
+  <h2>Send it back</h2>
+  <button class="copyall" type="button">Copy all answers</button>
+  <div id="out"></div>
+</main>
+<script>
+  const LS = 'draft-pass4';
+  let store = {};
+  try { store = JSON.parse(localStorage.getItem(LS) || '{}'); } catch (e) {}
+  const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); } catch (e) {} };
+  document.querySelectorAll('.item').forEach((item) => {
+    const id = item.dataset.id;
+    const st = store[id] || {};
+    const veto = item.querySelector('.veto input');
+    const note = item.querySelector('textarea');
+    if (veto && st.veto) veto.checked = true;
+    if (note && st.note) note.value = st.note;
+    item.querySelectorAll('input[type=radio]').forEach((r) => { if (st.pick === r.value) r.checked = true; });
+    item.addEventListener('change', () => {
+      const picked = item.querySelector('input[type=radio]:checked');
+      store[id] = { pick: picked ? picked.value : undefined,
+                    veto: veto ? veto.checked : undefined,
+                    note: note && note.value.trim() ? note.value.trim() : undefined };
+      save();
+    });
+    if (note) note.addEventListener('input', () => {
+      store[id] = Object.assign(store[id] || {}, { note: note.value.trim() || undefined }); save();
+    });
+  });
+  document.querySelector('.copyall').addEventListener('click', () => {
+    const lines = ['pass 4 answers — ' + new Date().toISOString().slice(0, 10)];
+    document.querySelectorAll('.item').forEach((item) => {
+      const id = item.dataset.id; const st = store[id] || {};
+      if (item.classList.contains('find')) {
+        lines.push(id + ': ' + (st.veto ? 'VETO' : 'stands') + (st.note ? ' — ' + st.note : ''));
+      } else {
+        lines.push(id + ': ' + (st.pick ? '(' + st.pick + ')' : 'unanswered') + (st.note ? ' — ' + st.note : ''));
+      }
+    });
+    const text = lines.join('\n');
+    const out = document.getElementById('out');
+    out.textContent = text; out.style.display = 'block';
+    try { navigator.clipboard.writeText(text); } catch (e) {}
+  });
+</script>
