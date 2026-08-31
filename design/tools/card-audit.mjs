@@ -585,12 +585,14 @@ function rulesFor(card, tok) {
         'the row opens with “' + ((first.label || first.cls) + '').slice(0, 40) + '”');
     }
   }
-  // CP2 — one radio vocabulary. A dotted radio says Prefer this / Preferred /
-  // Indifferent and nothing else; the option's own words live on its block.
+  // CP2 — the radio names the register (re-ruled 2026-08-31): a dotted radio
+  // says Prefer this / Preferred (a choice put to more than one person),
+  // Choose this / Chosen (the chooser alone decides), or Indifferent, and
+  // nothing else; the option's own words live on its block.
   for (const r of card.radios) {
     if (!r.dot || !r.label) continue;
-    if (!['Prefer this', 'Preferred', 'Indifferent'].includes(r.label.trim())) {
-      at('CP2', 'pattern', 'one radio vocabulary — Prefer this / Preferred / Indifferent (§9.3)',
+    if (!['Prefer this', 'Preferred', 'Choose this', 'Chosen', 'Indifferent'].includes(r.label.trim())) {
+      at('CP2', 'pattern', 'radio vocabulary — Prefer this / Preferred · Choose this / Chosen · Indifferent (§9.3)',
         '“' + r.label.trim().slice(0, 40) + '”');
     }
   }

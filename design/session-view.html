@@ -1924,7 +1924,6 @@
       early: () => firstAsked() !== null,
       why: 'All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.',
       waiting: 'Waiting on your arrival.',
-      done: 'You hold a voice in every constitutional question.',
       blockers: () => [] },
     // **A grant is the holder's** (SURFACE E8's audience column, enforced here
     // since Q639). ✒️ and 🛡️ arrive in the founder's hands alone, and `open`
@@ -1936,13 +1935,12 @@
     // would have left two unexplained tabs on the Founded line. What the
     // founder holds is stated where it bites — on each setting's own clause,
     // by `holderLine` — which is the whole of Ed's argument for retiring them.
-    { k: 'grant-pen', g: '✒️', t: 'Your Pen', own: 'you', isGate: true, isGrant: true,
+    { k: 'grant-pen', g: '✒️', t: 'The Pen', own: 'you', isGate: true, isGrant: true,
       grants: '✒️', take: 'Take the pen',
       hide: () => !amFounder(),
       open: () => !!cs && amFounder() && holdsPenAnywhere(),
       why: 'While you hold the pen, you can change this document’s rules yourself, without asking anybody. You can hand it over later.',
       waiting: 'Waiting on the save.',
-      done: 'You hold the pen.',
       blockers: () => [] },
     // **The shield is acknowledged separately from the pen** (Q532(3), Ed
     // 2026-08-22: *a founder should have to acknowledge both separately — it's
@@ -1960,13 +1958,12 @@
     // rather than the pen's exception, and stands alongside 🌍 the way a grant
     // always has. That also leaves the rail at the save holding the pen alone,
     // which is a thing the journey walk asserts.
-    { k: 'grant-shield', g: '🛡️', t: 'Your Shield', own: 'you', isGate: true, isGrant: true,
+    { k: 'grant-shield', g: '🛡️', t: 'The Shield', own: 'you', isGate: true, isGrant: true,
       grants: '🛡️', take: 'Take the shield',
       hide: () => !amFounder(),   // the holder's, like the pen above
       open: () => !!cs && amFounder() && holdsShieldAnywhere(),
       why: 'While you hold the shield, a change other people agree on waits until you accept it. You can hand it over later.',
       waiting: 'Waiting on the save.',
-      done: 'You hold the shield.',
       blockers: () => [] },
     // **🍾 Begin — the founder's explicit act of starting the document**
     // (Q443, built 2026-08-21). Not a gate — nobody's permission opens; the
@@ -2568,9 +2565,11 @@
   // how a motion's alternatives are drawn. So a power option becomes a
   // `.propblock` — the rule as it would stand in `.rtext` at document size,
   // its consequence as a note beneath, and a `.lanebar` radio under that
-  // reading **Prefer this / Preferred** (CP2, Q1097): one radio label on
-  // every card. The 2026-08-27 register split — *choose* a rule, *prefer* a
-  // proposal — fell to the pattern's uniformity ruling of 2026-08-31.
+  // reading **Choose this / Chosen** (CP2 as re-ruled). The 2026-08-27
+  // register split — *choose* a rule, *prefer* a proposal — fell to Q1097's
+  // uniformity ruling on the morning of 2026-08-31 and was reinstated by Ed
+  // that evening: a power card is the founder's alone to decide, so its
+  // radio takes the sole-decider register.
   //
   // Two things fall out of it beyond the fit. The hairline `.propblock +
   // .propblock` draws is the same separator the field of a decision card
@@ -2586,7 +2585,7 @@
     ' aria-pressed="' + (on ? 'true' : 'false') + '"' +
     (off ? ' disabled' : ' data-set="' + key + '" data-val="' + val + '"') + '>' +
     '<i class="dot" aria-hidden="true"></i>' +
-    '<span class="off">Prefer this</span><span class="on">Preferred</span>' +
+    '<span class="off">Choose this</span><span class="on">Chosen</span>' +
     '</button></div></div>';
   // the assent pair's *labels* are generated (one shape, the setting named);
   // its sub-labels stay per setting, because what actually happens to an
@@ -3994,7 +3993,7 @@
   // wallet and there is nothing to explain where the setting's own pen is
   // down — that card has already stopped being the founder's to edit (step 3).
   const penOkFor = (glyph, c) => glyph !== '✒️' || (c ? mayPenOn(c.k) : mayPen());
-  const penWaitTitle = 'Your pen is waiting in your tasks — accept it and this turns.';
+  const penWaitTitle = 'The pen is waiting in your tasks — accept it and this turns.';
 
   // ---- motions (stage D of the merge, Ed 361) ---------------------------
   // A motion is the act of changing a **settled** document's rules (§9.6a):
@@ -6011,8 +6010,8 @@
       (o.pct ? '<span class="pct">' + o.pct + '%</span>' : '') + '</span>' +
       '<button class="lanepick" aria-pressed="' + on + '"' + (o.off ? ' disabled' : '') +
       (o.off ? '' : ' data-set="' + o.set + '" data-val="' + o.val + '"') + '>' +
-      '<span class="dot"></span><span class="off">Prefer this</span>' +
-      '<span class="on">Preferred</span></button>' +
+      '<span class="dot"></span><span class="off">Choose this</span>' +
+      '<span class="on">Chosen</span></button>' +
       // `mean` is the rung whose sentence is about a number being typed rather
       // than about a fixed preset, so it carries the `data-meaning` hook
       // `syncMeaning` writes into — without it the sentence under the caret
@@ -10370,7 +10369,7 @@
   // **…and option blocks are what draw them** (CP1, Q1103 (b), 2026-08-31 —
   // reversing entry 254's switch ruling two days on): the pattern admits no
   // second control, so each zone × power is a pair of blocks — *Kept* and
-  // *Laid down* — under the same *Prefer this* radio as every other choice.
+  // *Laid down* — under the same *Choose this* radio as every founder choice.
   // The card is unique in drawing them in **two columns**, a ✒️ column and a
   // 🛡️ column (Ed's own shape for it). **Mixed presses neither radio**, and
   // the sentence under the table explains what that means.
@@ -10381,8 +10380,8 @@
       '<span class="opttext">' + word + '</span>' +
       '<button class="lanepick" aria-pressed="' + on + '"' +
       ' data-bzone="' + esc(z.name) + '" data-bpower="' + pw + '" data-bval="' + val + '">' +
-      '<span class="dot"></span><span class="off">Prefer this</span>' +
-      '<span class="on">Preferred</span></button></div>';
+      '<span class="dot"></span><span class="off">Choose this</span>' +
+      '<span class="on">Chosen</span></button></div>';
   };
   const beginCol = (z, pw) =>
     '<div class="bzcol"><div class="eyebrow">' + (pw === 'u' ? '✒️ drafting' : '🛡️ assent') + '</div>' +

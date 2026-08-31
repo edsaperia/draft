@@ -1092,8 +1092,13 @@ window.SETUP = (function () {
     const open = c.open();
     const note = gateNote(c);
     return '<p class="why">' + c.why + '</p>' +
-      '<div class="lockline">' + (open ? TICK : '') + '<span>' +
-      (open ? c.done : c.waiting) + '</span></div>' +
+      // an open grant states no lockline (Ed, 2026-08-31): the take sentence
+      // below is the whole ask, and *You hold the pen* restated a state the
+      // wallet says the moment it is taken. Gates keep theirs — a gate's
+      // lockline is what the card is waiting for, or that it opened.
+      (open && c.isGrant ? '' :
+        '<div class="lockline">' + (open ? TICK : '') + '<span>' +
+        (open ? c.done : c.waiting) + '</span></div>') +
       (open ? '' : '<div class="gatelist">' + c.blockers().map((b) =>
         '<span class="gaterow"><span class="gg">' + b.g + '</span>' + esc(b.t) + '</span>').join('') + '</div>') +
       (note ? '<p class="setnote">' + note + '</p>' : '');
@@ -1493,18 +1498,20 @@ window.SETUP = (function () {
   const opt = (S, key, val, ttl, exp, inner, off, extra) => {
     const on = S[key] === val;
     // **The option block** (CP1, Q1096): the option's text is document text,
-    // its explanation beneath, and the radio under both — a fixed
-    // *Prefer this / Preferred* pair, so the words on the control are the same
-    // on every card and the option's own sentence is what you read, not what
-    // you press. The data attributes stay on the button: every handler and
-    // every walk finds the act exactly where it always was.
+    // its explanation beneath, and the radio under both. The radio names the
+    // register (Ed, 2026-08-31 evening, re-ruling Q1097): *Choose this /
+    // Chosen* here, because every card drawn with `opt` is the chooser's
+    // alone to decide — a founder-held setting, the delegate rung; *Prefer
+    // this / Preferred* is for a choice put to more than one person. The
+    // data attributes stay on the button: every handler and every walk finds
+    // the act exactly where it always was.
     return '<div class="pick' + (on ? ' on' : '') + (off ? ' off' : '') + (extra || '') + '">' +
       '<span class="opttext">' + ttl + '</span>' +
       (exp ? '<span class="exp">' + exp + '</span>' : '') +
       '<button class="lanepick" aria-pressed="' + on + '"' + (off ? ' disabled' : '') +
       (off ? '' : ' data-set="' + key + '" data-val="' + val + '"') + '>' +
-      '<span class="dot"></span><span class="off">Prefer this</span>' +
-      '<span class="on">Preferred</span></button>' +
+      '<span class="dot"></span><span class="off">Choose this</span>' +
+      '<span class="on">Chosen</span></button>' +
       (inner ? '<span class="inner">' + inner + '</span>' : '') + '</div>';
   };
 
