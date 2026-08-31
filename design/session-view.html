@@ -5168,8 +5168,39 @@
   const endFmt = () => new Date((endingVal() !== 'never' && endingVal()) || S.endsAt)
     .toLocaleString(undefined,
       { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).replace(' ', ' at ');
+  // **One home for a value's rule sentence** (Q1109, Ed 2026-08-31: the
+  // founder card's options are the constitution's own sentences): the clause
+  // map and the option blocks print the same string, so what the founder
+  // reads on a choice is exactly the sentence the document would carry, and
+  // the two cannot drift. The T41 gradient labels (PRICE_WORDS) survive in
+  // their other homes — the member's ladder, the composer, the settled
+  // strip — whose reconciliation is Q1112.
+  const ADM_RULE = {
+    assembly: 'Members may propose to invite people to join the membership, and all members must agree 🏛️.',
+    proposal: 'Members may propose to invite people to join the membership, and the membership decides ✏️.',
+    pen: 'Members may invite people to join the membership ✒️.' };
+  const REMOVAL_RULE = {
+    consent: 'Removing a member needs every member to agree, including them 🏛️.',
+    assembly: 'Removing a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.',
+    proposal: 'Members may propose to remove a member, and the membership decides ✏️.' };
+  const AUTH_RULE = { anonymous: 'Nobody who proposes a change is ever named, even after the document is finished.',
+    anonymousElective: 'Nobody who proposes a change is named unless they choose to sign it themselves.',
+    sealed: 'Whoever proposes a change is named when the document is finished, and not before.',
+    sealedElective: 'Whoever proposes a change is named when the document is finished — sooner, if they choose to sign it.',
+    public: 'Whoever proposes a change is named from the moment they propose it.' };
+  const JUDG_RULE = { never: 'Votes are never revealed.',
+    after: 'Votes are revealed when the document is finished, and not before.' };
+  const CHAMBER_RULE = {
+    closed: () => 'Only members can see the document.' + (iDraft() ? '' : ' The Founder can always read it.'),
+    link: () => 'Anyone with the link can read the document.',
+    public: () => 'The document is public — listed and readable by anyone.' };
+  const APPL_RULE = (v) => (v === 'apply'
+    ? (admissionPrice() === 'pen' ? 'Anyone with the link joins on arrival.'
+      : 'Anyone may apply to join — an application is voted on like an invitation.')
+    : 'Membership is by invitation only.');
+  const ENDING_NEVER = 'The drafting process has no set end — it runs until too few members are active.';
   const DECIDED = {
-    ending: () => (perpetual() ? 'The drafting process has no set end — it runs until too few members are active.'
+    ending: () => (perpetual() ? ENDING_NEVER
       : 'The drafting process will end on ' + endFmt() + '.'),
     quorum: () => (S.quorumForm === 'count'
       ? Math.min(takenOf('quorum') || S.quorumN, E()) + ' of the ' + E() + ' members'
@@ -5194,14 +5225,9 @@
       return (perpetual() || shape2 !== 'ramp'
         ? 'The approval threshold stays the same all the way through.'
         : 'The approval threshold starts at ' + start2 + '% and rises to ' + (takenOf('bar') || S.tClose) + '% by the end.'); },
-    authorship: () => ({ anonymous: 'Nobody who proposes a change is ever named, even after the document is finished.',
-      anonymousElective: 'Nobody who proposes a change is named unless they choose to sign it themselves.',
-      sealed: 'Whoever proposes a change is named when the document is finished, and not before.',
-      sealedElective: 'Whoever proposes a change is named when the document is finished — sooner, if they choose to sign it.',
-      public: 'Whoever proposes a change is named from the moment they propose it.' })[
+    authorship: () => AUTH_RULE[
       takenOf('authorship') || (S.authorship === 'roster' ? 'anonymous' : S.authorship)],
-    judgments: () => ({ never: 'Votes are never revealed.',
-      after: 'Votes are revealed when the document is finished, and not before.' })[
+    judgments: () => JUDG_RULE[
       takenOf('judgments') || (S.judgments === 'roster' ? 'never' : S.judgments)],
     // **Foundership carries a read, whatever 🌍 says** (Ed, 2026-08-22).
     // 🌍 settles who may read *besides* the people the document is already
@@ -5210,11 +5236,8 @@
     // they convened, which the product has never actually done. It is said
     // only where it is a deviation: a founder who is a member is covered by
     // the sentence already, and under link or public everybody reads anyway.
-    chamber: () => ({ closed: 'Only members can see the document.' +
-        (iDraft() ? '' : ' The Founder can always read it.'),
-      link: 'Anyone with the link can read the document.',
-      public: 'The document is public — listed and readable by anyone.' })[
-      takenOf('chamber') || (S.chamber === 'roster' ? 'closed' : S.chamber)],
+    chamber: () => CHAMBER_RULE[
+      takenOf('chamber') || (S.chamber === 'roster' ? 'closed' : S.chamber)](),
     lapse: () => { const tv = takenOf('lapse');
       const v = tv !== null ? tv : (S.lapse === 'roster' ? null : S.lapse);
       return (v === 'never' ? 'Nobody stops being a member, however long they are away.'
@@ -5224,24 +5247,13 @@
         (v ? v.cap : S.cap) + '. They get an additional ✏️ every ' + (v ? v.dripMinutes : S.dripMin) +
         ' minutes. A proposal that passes gives its ✏️ back.'; },
     // 🤝 is one switch; what an application costs is 🪪's sentence (entry 94)
-    applications: () => (policyNow() === 'apply'
-      ? (admissionPrice() === 'pen' ? 'Anyone with the link joins on arrival.'
-        : 'Anyone may apply to join — an application is voted on like an invitation.')
-      : 'Membership is by invitation only.'),
+    applications: () => APPL_RULE(policyNow()),
     slug: () => 'The document lives at ' + docAddr(S.slug) + '.',
     // **The admissions clause** (Ed, 2026-08-26): what it costs to bring
     // somebody in, in the room's words; the Founder's own sentence follows
     // from the powers held on the ✉️ door, in the power clause
-    admission: () => ({
-      assembly: 'Members may propose to invite people to join the membership, and all members must agree 🏛️.',
-      proposal: 'Members may propose to invite people to join the membership, and the membership decides ✏️.',
-      pen: 'Members may invite people to join the membership ✒️.',
-    })[admissionPrice()],
-    removal: () => ({
-      consent: 'Removing a member needs every member to agree, including them 🏛️.',
-      assembly: 'Removing a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.',
-      proposal: 'Members may propose to remove a member, and the membership decides ✏️.',
-    })[removalPrice()],
+    admission: () => ADM_RULE[admissionPrice()],
+    removal: () => REMOVAL_RULE[removalPrice()],
     // the doors state the price their setting decides
     invite: () => ({
       assembly: 'Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out.',
@@ -6140,12 +6152,12 @@
       // (the pw() pattern): the generic data-set handler lands S.hatPick
       // nothing is preselected until it has been answered once
       const o = { hatPick: S.hatPick || (S.seen.has('hat') ? (iDraft() ? 'member' : 'clerk') : null) };
-      return '<p class="why">Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.</p>' +
-        '<div class="choice" role="radiogroup">' +
-        opt(o, 'hatPick', 'member', 'Member — drafting too',
-          'You get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.', '', started) +
-        opt(o, 'hatPick', 'clerk', 'Clerk — not drafting',
-          'No ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.', '', started) +
+      // 🎩 has no clause in the constitution, so its two sentences live here
+      // alone, in the clause voice (Q1109; STYLE §3 — third person, about
+      // the document)
+      return '<div class="choice" role="radiogroup">' +
+        opt(o, 'hatPick', 'member', 'The Founder is a member — drafting, voting, counting towards quorum and answering the founding questions like anybody.', '', '', started) +
+        opt(o, 'hatPick', 'clerk', 'The Founder only runs the document — no ✏️s, no votes, counting towards nothing, with nothing to answer. A clerk can stay unnamed.', '', '', started) +
         '</div>' +
         (started ? '<p class="setnote"><b>Settled.</b> Now that people are voting, the Founder joins the same way as anybody else.</p>' : '');
     },
@@ -6307,7 +6319,6 @@
     // the constitutional act; each application that arrives through it is
     // its ordinary consequence.
     applications: () =>
-      '<p class="why">Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.</p>' +
       // **Who may join** (Ed, 2026-08-18, with the Applicants subsection):
       // the gate the Apply card hangs off. An application becomes an
       // ordinary proposal to grant membership, judged like any other.
@@ -6316,22 +6327,22 @@
       // leads the list the way it does on ⏰ or 🌍.
       '<div class="choice" role="radiogroup" aria-label="Who may join">' +
       theyDecide('applications') +
-      opt(S, 'joinBy', 'invite', 'Invitation only', 'Nobody joins unless a member brings them in.') +
-      opt(S, 'joinBy', 'apply', 'Anyone may apply', 'An application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.') +
+      opt(S, 'joinBy', 'invite', APPL_RULE('invite')) +
+      opt(S, 'joinBy', 'apply', APPL_RULE('apply')) +
       '</div>',
     // **Admissions** (Ed, 2026-08-26, entry 94): one price for every route
     // in — a member's invitation, a stranger's application — on the same
     // three-verb scale as 🥾. The Founder's own hand is the ✉️ door's.
     admission: () =>
-      '<p class="why">What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.</p>' +
+      // the options are the clause sentences themselves (Q1109) — the why
+      // paragraph and per-option explainers went with the same ruling
       '<div class="choice" role="radiogroup" aria-label="The price of admission">' +
       theyDecide('admission') +
-      opt(S, 'admission', 'assembly', 'All members must approve every new member joining', 'A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.') +
-      opt(S, 'admission', 'proposal', 'Members must vote on every new member joining', 'A proposed member is voted on at the approval threshold ✏️, like any change.') +
-      opt(S, 'admission', 'pen', 'Any member can invite new people to join', 'An invitation is sent on a member’s word ✒️ — nobody else has to agree.') +
+      opt(S, 'admission', 'assembly', ADM_RULE.assembly) +
+      opt(S, 'admission', 'proposal', ADM_RULE.proposal) +
+      opt(S, 'admission', 'pen', ADM_RULE.pen) +
       '</div>',
     ending: () =>
-      '<p class="why">When drafting stops and the text is final. <b>Never</b> is one of the answers: a document with no end date stops only when too few members are active.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('ending') +
       // under a shaped document that did not set ⏰ (a meeting, a conference)
@@ -6340,7 +6351,7 @@
       opt(S, 'ending', 'ends', 'At a set time', '',
         endChipsHtml() +
         '<span class="fld"><label>Ends</label><input type="datetime-local" data-txt="endsAt" value="' + S.endsAt + '"></span>') +
-      opt(S, 'ending', 'perpetual', 'Never', 'It runs until too few members are still active.') +
+      opt(S, 'ending', 'perpetual', ENDING_NEVER) +
       '</div>',
     bar: () =>
       '<p class="why">How sure the members have to be that a change is better than the words it replaces, <b>at the end</b>.</p>' +
@@ -6371,14 +6382,13 @@
         '<div class="choice">' + startRungs() + '</div>', perpetual()) +
       '</div>' + (perpetual() ? '<p class="setnote">With no end date there is nothing to climb towards, so the number stays fixed.</p>' : ''),
     quorum: () =>
-      '<p class="why">How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.</p>' +
       // **The form is the wording, the number is the decision** (§9.0a): count
       // or share is how the question tracks a changing membership, and it is
       // the founder's even when the number is the room's.
       '<div class="eyebrow fieldlab">Asked as</div>' +
       '<div class="choice" role="radiogroup" aria-label="Form">' +
-      opt(S, 'quorumForm', 'share', 'A share of the membership', 'The number goes up and down as members join and leave.') +
-      opt(S, 'quorumForm', 'count', 'A fixed number', 'The number stays the same however the membership changes.') +
+      opt(S, 'quorumForm', 'share', 'The quorum is a share of the membership — the number moves as members join and leave.') +
+      opt(S, 'quorumForm', 'count', 'The quorum is a fixed number of members, however the membership changes.') +
       '</div>' +
       '<div class="eyebrow fieldlab">The number</div>' +
       '<div class="choice" role="radiogroup" aria-label="Number">' +
@@ -6393,23 +6403,19 @@
         meanLine('quorum', CHOSEN.quorum() ? TYPED.quorum() : null)) +
       '</div>',
     authorship: () =>
-      '<p class="why">Whoever proposes a change writes a reason for it, and everybody can read that. This is only about whether their name is on it.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('authorship') +
-      // one vocabulary with the member ladder (copy pass, 2026-08-19: the
-      // same rungs wore different wordings across the two seats)
-      opt(S, 'authorship', 'anonymous', 'Nobody’s name, ever', 'No proposal ever carries a name, even after the document is finished.') +
-      opt(S, 'authorship', 'anonymousElective', 'Nobody’s name unless they choose', 'Nobody is named unless they sign a proposal themselves — which means an unsigned one stands out.') +
-      opt(S, 'authorship', 'sealed', 'Names at the close', 'Hidden while the document is being written, and published with it at the end.') +
-      opt(S, 'authorship', 'sealedElective', 'Names at the close, or earlier by choice', 'Published with the document at the end, and sooner for anybody who signs.') +
-      opt(S, 'authorship', 'public', 'Names from the start', 'Every proposal carries its writer’s name from the moment it is made.') +
+      opt(S, 'authorship', 'anonymous', AUTH_RULE.anonymous) +
+      opt(S, 'authorship', 'anonymousElective', AUTH_RULE.anonymousElective) +
+      opt(S, 'authorship', 'sealed', AUTH_RULE.sealed) +
+      opt(S, 'authorship', 'sealedElective', AUTH_RULE.sealedElective) +
+      opt(S, 'authorship', 'public', AUTH_RULE.public) +
       '</div><p class="setnote">If you choose this yourself, members can end up named without having agreed to it.</p>',
     judgments: () =>
-      '<p class="why">Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('judgments') +
-      opt(S, 'judgments', 'never', 'Never revealed', 'What you preferred stays yours, permanently.') +
-      opt(S, 'judgments', 'after', 'Revealed at the end', 'Published with the document at the end, never before.') +
+      opt(S, 'judgments', 'never', JUDG_RULE.never) +
+      opt(S, 'judgments', 'after', JUDG_RULE.after) +
       '</div>',
     rate: () =>
       '<p class="why">How often a member can propose something. Each proposal costs one ✏️.</p>' +
@@ -6430,14 +6436,12 @@
       (isNum(S.grant) && isNum(S.cap) && +S.cap < +S.grant
         ? '<p class="setnote">The maximum cannot be lower than the number they start with.</p>' : ''),
     chamber: () =>
-      '<p class="why">Who else can read the document. Readers are <b>not members</b> — they cannot propose or vote, and nothing about them is known.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('chamber') +
       // most-private-first, the order every ladder on the surface reads in
-      opt(S, 'chamber', 'closed', 'Members only') +
-      opt(S, 'chamber', 'link', 'Anyone with the link') + '</div>',
+      opt(S, 'chamber', 'closed', CHAMBER_RULE.closed()) +
+      opt(S, 'chamber', 'link', CHAMBER_RULE.link()) + '</div>',
     lapse: () =>
-      '<p class="why">Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('lapse') +
       // **Most-protective-first** (entry 167, rule 4): *never* is what the
@@ -6445,18 +6449,17 @@
       // 👁️ and 🪪 already read, and *They lapse* follows it. Its old `exp`
       // (*After a gap you choose.*) said only that the field below is a
       // field; what it means is now the `.meaning` under that field.
-      opt(S, 'lapse', 'never', 'Never', meaning('lapse', { afterMs: null })) +
+      opt(S, 'lapse', 'never', meaning('lapse', { afterMs: null })) +
       opt(S, 'lapse', 'days', 'They lapse', '',
         '<span class="setrow2">' + num(S, 'lapseDays', 'Days without logging in', 7, 365) + '</span>' +
         meanLine('lapse', isNum(S.lapseDays) ? { afterMs: +S.lapseDays * 86400000 } : null)) +
       '</div>',
     removal: () =>
-      '<p class="why">How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('removal') +
-      opt(S, 'removal', 'consent', 'All members must approve removing a member, and the person themselves must agree', 'One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.') +
-      opt(S, 'removal', 'assembly', 'All other members must approve removing a member', 'Somebody can be removed even if they object, but only if every other member agrees 🏛️.') +
-      opt(S, 'removal', 'proposal', 'Members must vote on removing a member', 'A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.') +
+      opt(S, 'removal', 'consent', REMOVAL_RULE.consent) +
+      opt(S, 'removal', 'assembly', REMOVAL_RULE.assembly) +
+      opt(S, 'removal', 'proposal', REMOVAL_RULE.proposal) +
       '</div>',
   };
 

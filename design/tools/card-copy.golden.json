@@ -29,22 +29,22 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.All members must approve every new member joiningA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.Choose thisMembers must vote on every new member joiningA proposed member is voted on at the approval threshold ✏️, like any change.Choose thisAny member can invite new people to joinAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Choose this",
+    "body": "Members may propose to invite people to join the membership, and all members must agree 🏛️.Choose thisMembers may propose to invite people to join the membership, and the membership decides ✏️.Choose thisMembers may invite people to join the membership ✒️.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Choose this",
     "options": [
      {
       "set": "admission",
       "val": "assembly",
-      "label": "All members must approve every new member joining"
+      "label": "Members may propose to invite people to join the membership, and all members must agree 🏛️."
      },
      {
       "set": "admission",
       "val": "proposal",
-      "label": "Members must vote on every new member joining"
+      "label": "Members may propose to invite people to join the membership, and the membership decides ✏️."
      },
      {
       "set": "admission",
       "val": "pen",
-      "label": "Any member can invite new people to join"
+      "label": "Members may invite people to join the membership ✒️."
      },
      {
       "set": "admission",
@@ -71,10 +71,6 @@
      "Set it"
     ],
     "helpers": [
-     "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
-     "A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.",
-     "A proposed member is voted on at the approval threshold ✏️, like any change.",
-     "An invitation is sent on a member’s word ✒️ — nobody else has to agree.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked."
     ]
    },
@@ -124,17 +120,17 @@
     "eyebrow": "",
     "head": "Applications",
     "lock": "",
-    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Invitation onlyNobody joins unless a member brings them in.Choose thisAnyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Choose this",
+    "body": "Membership is by invitation only.Choose thisAnyone may apply to join — an application is voted on like an invitation.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Choose this",
     "options": [
      {
       "set": "joinBy",
       "val": "invite",
-      "label": "Invitation only"
+      "label": "Membership is by invitation only."
      },
      {
       "set": "joinBy",
       "val": "apply",
-      "label": "Anyone may apply"
+      "label": "Anyone may apply to join — an application is voted on like an invitation."
      },
      {
       "set": "policyBy",
@@ -161,9 +157,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.",
-     "Nobody joins unless a member brings them in.",
-     "An application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so."
     ]
    },
@@ -171,32 +164,32 @@
     "eyebrow": "",
     "head": "Anonymous Proposals",
     "lock": "",
-    "body": "Whoever proposes a change writes a reason for it, and everybody can read that. This is only about whether their name is on it.Nobody’s name, everNo proposal ever carries a name, even after the document is finished.Choose thisNobody’s name unless they chooseNobody is named unless they sign a proposal themselves — which means an unsigned one stands out.Choose thisNames at the closeHidden while the document is being written, and published with it at the end.Choose thisNames at the close, or earlier by choicePublished with the document at the end, and sooner for anybody who signs.Choose thisNames from the startEvery proposal carries its writer’s name from the moment it is made.Choose thisIf you choose this yourself, members can end up named without having agreed to it.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.Choose this",
+    "body": "Nobody who proposes a change is ever named, even after the document is finished.Choose thisNobody who proposes a change is named unless they choose to sign it themselves.Choose thisWhoever proposes a change is named when the document is finished, and not before.Choose thisWhoever proposes a change is named when the document is finished — sooner, if they choose to sign it.Choose thisWhoever proposes a change is named from the moment they propose it.Choose thisIf you choose this yourself, members can end up named without having agreed to it.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.Choose this",
     "options": [
      {
       "set": "authorship",
       "val": "anonymous",
-      "label": "Nobody’s name, ever"
+      "label": "Nobody who proposes a change is ever named, even after the document is finished."
      },
      {
       "set": "authorship",
       "val": "anonymousElective",
-      "label": "Nobody’s name unless they choose"
+      "label": "Nobody who proposes a change is named unless they choose to sign it themselves."
      },
      {
       "set": "authorship",
       "val": "sealed",
-      "label": "Names at the close"
+      "label": "Whoever proposes a change is named when the document is finished, and not before."
      },
      {
       "set": "authorship",
       "val": "sealedElective",
-      "label": "Names at the close, or earlier by choice"
+      "label": "Whoever proposes a change is named when the document is finished — sooner, if they choose to sign it."
      },
      {
       "set": "authorship",
       "val": "public",
-      "label": "Names from the start"
+      "label": "Whoever proposes a change is named from the moment they propose it."
      },
      {
       "set": "authorship",
@@ -223,12 +216,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whoever proposes a change writes a reason for it, and everybody can read that. This is only about whether their name is on it.",
-     "No proposal ever carries a name, even after the document is finished.",
-     "Nobody is named unless they sign a proposal themselves — which means an unsigned one stands out.",
-     "Hidden while the document is being written, and published with it at the end.",
-     "Published with the document at the end, and sooner for anybody who signs.",
-     "Every proposal carries its writer’s name from the moment it is made.",
      "If you choose this yourself, members can end up named without having agreed to it.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed."
     ]
@@ -335,17 +322,17 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Members onlyChoose thisAnyone with the linkChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Choose this",
+    "body": "Only members can see the document.Choose thisAnyone with the link can read the document.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Choose this",
     "options": [
      {
       "set": "chamber",
       "val": "closed",
-      "label": "Members only"
+      "label": "Only members can see the document."
      },
      {
       "set": "chamber",
       "val": "link",
-      "label": "Anyone with the link"
+      "label": "Anyone with the link can read the document."
      },
      {
       "set": "chamber",
@@ -372,7 +359,6 @@
      "Set it"
     ],
     "helpers": [
-     "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed."
     ]
    },
@@ -380,7 +366,7 @@
     "eyebrow": "",
     "head": "When Does It End?",
     "lock": "",
-    "body": "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.At a set timeChoose thisNeverIt runs until too few members are still active.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.Choose thisMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
+    "body": "At a set timeChoose thisThe drafting process has no set end — it runs until too few members are active.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.Choose thisMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
     "options": [
      {
       "set": "ending",
@@ -390,7 +376,7 @@
      {
       "set": "ending",
       "val": "perpetual",
-      "label": "Never"
+      "label": "The drafting process has no set end — it runs until too few members are active."
      },
      {
       "set": "ending",
@@ -422,8 +408,6 @@
      "Set it"
     ],
     "helpers": [
-     "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.",
-     "It runs until too few members are still active.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.",
      "Moving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did."
     ]
@@ -516,17 +500,17 @@
     "eyebrow": "",
     "head": "Is the Founder a Member?",
     "lock": "",
-    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.Choose thisClerk — not draftingNo ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.Choose this",
+    "body": "The Founder is a member — drafting, voting, counting towards quorum and answering the founding questions like anybody.Choose thisThe Founder only runs the document — no ✏️s, no votes, counting towards nothing, with nothing to answer. A clerk can stay unnamed.Choose this",
     "options": [
      {
       "set": "hatPick",
       "val": "member",
-      "label": "Member — drafting too"
+      "label": "The Founder is a member — drafting, voting, counting towards quorum and answering the founding questions like anybody."
      },
      {
       "set": "hatPick",
       "val": "clerk",
-      "label": "Clerk — not drafting"
+      "label": "The Founder only runs the document — no ✏️s, no votes, counting towards nothing, with nothing to answer. A clerk can stay unnamed."
      }
     ],
     "inputs": [],
@@ -545,11 +529,7 @@
      "Put it back as it stands",
      "Set it"
     ],
-    "helpers": [
-     "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.",
-     "You get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.",
-     "No ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed."
-    ]
+    "helpers": []
    },
    "invite": {
     "eyebrow": "",
@@ -597,17 +577,17 @@
     "eyebrow": "",
     "head": "When Are Votes Revealed?",
     "lock": "",
-    "body": "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.Never revealedWhat you preferred stays yours, permanently.Choose thisRevealed at the endPublished with the document at the end, never before.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.Choose this",
+    "body": "Votes are never revealed.Choose thisVotes are revealed when the document is finished, and not before.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.Choose this",
     "options": [
      {
       "set": "judgments",
       "val": "never",
-      "label": "Never revealed"
+      "label": "Votes are never revealed."
      },
      {
       "set": "judgments",
       "val": "after",
-      "label": "Revealed at the end"
+      "label": "Votes are revealed when the document is finished, and not before."
      },
      {
       "set": "judgments",
@@ -634,9 +614,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.",
-     "What you preferred stays yours, permanently.",
-     "Published with the document at the end, never before.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private."
     ]
    },
@@ -644,12 +621,12 @@
     "eyebrow": "",
     "head": "Do Memberships Lapse?",
     "lock": "",
-    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.NeverNobody ever drops out of the count, however long they are away.Choose thisThey lapseChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Choose this",
+    "body": "Nobody ever drops out of the count, however long they are away.Choose thisThey lapseChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Choose this",
     "options": [
      {
       "set": "lapse",
       "val": "never",
-      "label": "Never"
+      "label": "Nobody ever drops out of the count, however long they are away."
      },
      {
       "set": "lapse",
@@ -686,8 +663,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.",
-     "Nobody ever drops out of the count, however long they are away.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted."
     ]
    },
@@ -792,17 +767,17 @@
     "eyebrow": "",
     "head": "Quorum",
     "lock": "",
-    "body": "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.Choose thisA fixed numberThe number stays the same however the membership changes.Choose thisThe numberI set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Choose this",
+    "body": "Asked asThe quorum is a share of the membership — the number moves as members join and leave.Choose thisThe quorum is a fixed number of members, however the membership changes.Choose thisThe numberI set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Choose this",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "A share of the membership"
+      "label": "The quorum is a share of the membership — the number moves as members join and leave."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "A fixed number"
+      "label": "The quorum is a fixed number of members, however the membership changes."
      },
      {
       "set": "quorumBy",
@@ -839,9 +814,6 @@
      "Set it"
     ],
     "helpers": [
-     "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.",
-     "The number goes up and down as members join and leave.",
-     "The number stays the same however the membership changes.",
      "of 1",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest."
     ]
@@ -903,22 +875,22 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.All members must approve removing a member, and the person themselves must agreeOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Choose thisAll other members must approve removing a memberSomebody can be removed even if they object, but only if every other member agrees 🏛️.Choose thisMembers must vote on removing a memberA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Choose this",
+    "body": "Removing a member needs every member to agree, including them 🏛️.Choose thisRemoving a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.Choose thisMembers may propose to remove a member, and the membership decides ✏️.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Choose this",
     "options": [
      {
       "set": "removal",
       "val": "consent",
-      "label": "All members must approve removing a member, and the person themselves must agree"
+      "label": "Removing a member needs every member to agree, including them 🏛️."
      },
      {
       "set": "removal",
       "val": "assembly",
-      "label": "All other members must approve removing a member"
+      "label": "Removing a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them."
      },
      {
       "set": "removal",
       "val": "proposal",
-      "label": "Members must vote on removing a member"
+      "label": "Members may propose to remove a member, and the membership decides ✏️."
      },
      {
       "set": "removal",
@@ -945,10 +917,6 @@
      "Set it"
     ],
     "helpers": [
-     "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.",
-     "One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.",
-     "Somebody can be removed even if they object, but only if every other member agrees 🏛️.",
-     "A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked."
     ]
    },
@@ -3294,22 +3262,22 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.All members must approve every new member joiningA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.Choose thisMembers must vote on every new member joiningA proposed member is voted on at the approval threshold ✏️, like any change.Choose thisAny member can invite new people to joinAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Chosen",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Members may propose to invite people to join the membership, and all members must agree 🏛️.Choose thisMembers may propose to invite people to join the membership, and the membership decides ✏️.Choose thisMembers may invite people to join the membership ✒️.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Chosen",
     "options": [
      {
       "set": "admission",
       "val": "assembly",
-      "label": "All members must approve every new member joining"
+      "label": "Members may propose to invite people to join the membership, and all members must agree 🏛️."
      },
      {
       "set": "admission",
       "val": "proposal",
-      "label": "Members must vote on every new member joining"
+      "label": "Members may propose to invite people to join the membership, and the membership decides ✏️."
      },
      {
       "set": "admission",
       "val": "pen",
-      "label": "Any member can invite new people to join"
+      "label": "Members may invite people to join the membership ✒️."
      },
      {
       "set": "admission",
@@ -3336,11 +3304,7 @@
      "Set it"
     ],
     "helpers": [
-     "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
-     "A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.",
-     "A proposed member is voted on at the approval threshold ✏️, like any change.",
-     "An invitation is sent on a member’s word ✒️ — nobody else has to agree.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked."
     ]
    },
@@ -3348,17 +3312,17 @@
     "eyebrow": "",
     "head": "Applications",
     "lock": "",
-    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Invitation onlyNobody joins unless a member brings them in.Choose thisAnyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Chosen",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Membership is by invitation only.Choose thisAnyone may apply to join — an application is voted on like an invitation.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Chosen",
     "options": [
      {
       "set": "joinBy",
       "val": "invite",
-      "label": "Invitation only"
+      "label": "Membership is by invitation only."
      },
      {
       "set": "joinBy",
       "val": "apply",
-      "label": "Anyone may apply"
+      "label": "Anyone may apply to join — an application is voted on like an invitation."
      },
      {
       "set": "policyBy",
@@ -3385,10 +3349,7 @@
      "Set it"
     ],
     "helpers": [
-     "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
-     "Nobody joins unless a member brings them in.",
-     "An application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so."
     ]
    },
@@ -3462,17 +3423,17 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Members onlyChoose thisAnyone with the linkChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Chosen",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Only members can see the document.Choose thisAnyone with the link can read the document.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Chosen",
     "options": [
      {
       "set": "chamber",
       "val": "closed",
-      "label": "Members only"
+      "label": "Only members can see the document."
      },
      {
       "set": "chamber",
       "val": "link",
-      "label": "Anyone with the link"
+      "label": "Anyone with the link can read the document."
      },
      {
       "set": "chamber",
@@ -3499,7 +3460,6 @@
      "Set it"
     ],
     "helpers": [
-     "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed."
     ]
@@ -3508,7 +3468,7 @@
     "eyebrow": "",
     "head": "When Does It End?",
     "lock": "",
-    "body": "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.At a set timeChoose thisNeverIt runs until too few members are still active.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.ChosenMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.At a set timeChoose thisThe drafting process has no set end — it runs until too few members are active.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.ChosenMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
     "options": [
      {
       "set": "ending",
@@ -3518,7 +3478,7 @@
      {
       "set": "ending",
       "val": "perpetual",
-      "label": "Never"
+      "label": "The drafting process has no set end — it runs until too few members are active."
      },
      {
       "set": "ending",
@@ -3550,9 +3510,7 @@
      "Set it"
     ],
     "helpers": [
-     "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
-     "It runs until too few members are still active.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.",
      "Moving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did."
     ]
@@ -3561,12 +3519,12 @@
     "eyebrow": "",
     "head": "Do Memberships Lapse?",
     "lock": "",
-    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.NeverNobody ever drops out of the count, however long they are away.Choose thisThey lapseChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Chosen",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nobody ever drops out of the count, however long they are away.Choose thisThey lapseChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Chosen",
     "options": [
      {
       "set": "lapse",
       "val": "never",
-      "label": "Never"
+      "label": "Nobody ever drops out of the count, however long they are away."
      },
      {
       "set": "lapse",
@@ -3603,9 +3561,7 @@
      "Set it"
     ],
     "helpers": [
-     "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
-     "Nobody ever drops out of the count, however long they are away.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted."
     ]
    },
@@ -3643,17 +3599,17 @@
     "eyebrow": "",
     "head": "Quorum",
     "lock": "",
-    "body": "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.Choose thisA fixed numberThe number stays the same however the membership changes.Choose thisThe numberAsked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.I set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Chosen",
+    "body": "Asked asThe quorum is a share of the membership — the number moves as members join and leave.Choose thisThe quorum is a fixed number of members, however the membership changes.Choose thisThe numberAsked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.I set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Chosen",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "A share of the membership"
+      "label": "The quorum is a share of the membership — the number moves as members join and leave."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "A fixed number"
+      "label": "The quorum is a fixed number of members, however the membership changes."
      },
      {
       "set": "quorumBy",
@@ -3690,9 +3646,6 @@
      "Set it"
     ],
     "helpers": [
-     "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.",
-     "The number goes up and down as members join and leave.",
-     "The number stays the same however the membership changes.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
      "of 1",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest."
@@ -3756,22 +3709,22 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.All members must approve removing a member, and the person themselves must agreeOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Choose thisAll other members must approve removing a memberSomebody can be removed even if they object, but only if every other member agrees 🏛️.Choose thisMembers must vote on removing a memberA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Chosen",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Removing a member needs every member to agree, including them 🏛️.Choose thisRemoving a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.Choose thisMembers may propose to remove a member, and the membership decides ✏️.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Chosen",
     "options": [
      {
       "set": "removal",
       "val": "consent",
-      "label": "All members must approve removing a member, and the person themselves must agree"
+      "label": "Removing a member needs every member to agree, including them 🏛️."
      },
      {
       "set": "removal",
       "val": "assembly",
-      "label": "All other members must approve removing a member"
+      "label": "Removing a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them."
      },
      {
       "set": "removal",
       "val": "proposal",
-      "label": "Members must vote on removing a member"
+      "label": "Members may propose to remove a member, and the membership decides ✏️."
      },
      {
       "set": "removal",
@@ -3798,11 +3751,7 @@
      "Set it"
     ],
     "helpers": [
-     "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
-     "One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.",
-     "Somebody can be removed even if they object, but only if every other member agrees 🏛️.",
-     "A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked."
     ]
    },
@@ -3921,22 +3870,22 @@
     "eyebrow": "",
     "head": "Admissions",
     "lock": "",
-    "body": "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.All members must approve every new member joiningA proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.Choose thisMembers must vote on every new member joiningA proposed member is voted on at the approval threshold ✏️, like any change.Choose thisAny member can invite new people to joinAn invitation is sent on a member’s word ✒️ — nobody else has to agree.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Choose this",
+    "body": "Members may propose to invite people to join the membership, and all members must agree 🏛️.Choose thisMembers may propose to invite people to join the membership, and the membership decides ✏️.Choose thisMembers may invite people to join the membership ✒️.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.Choose this",
     "options": [
      {
       "set": "admission",
       "val": "assembly",
-      "label": "All members must approve every new member joining"
+      "label": "Members may propose to invite people to join the membership, and all members must agree 🏛️."
      },
      {
       "set": "admission",
       "val": "proposal",
-      "label": "Members must vote on every new member joining"
+      "label": "Members may propose to invite people to join the membership, and the membership decides ✏️."
      },
      {
       "set": "admission",
       "val": "pen",
-      "label": "Any member can invite new people to join"
+      "label": "Members may invite people to join the membership ✒️."
      },
      {
       "set": "admission",
@@ -3963,10 +3912,6 @@
      "Set it"
     ],
     "helpers": [
-     "What it costs to bring somebody into the membership. Whichever is chosen, the Founder’s own powers over invitations are the ✉️ door’s.",
-     "A proposed member joins only when every member has agreed 🏛️ — one refusal keeps them out.",
-     "A proposed member is voted on at the approval threshold ✏️, like any change.",
-     "An invitation is sent on a member’s word ✒️ — nobody else has to agree.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked."
     ]
    },
@@ -3974,17 +3919,17 @@
     "eyebrow": "",
     "head": "Applications",
     "lock": "",
-    "body": "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.Invitation onlyNobody joins unless a member brings them in.Choose thisAnyone may applyAn application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Choose this",
+    "body": "Membership is by invitation only.Choose thisAnyone may apply to join — an application is voted on like an invitation.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so.Choose this",
     "options": [
      {
       "set": "joinBy",
       "val": "invite",
-      "label": "Invitation only"
+      "label": "Membership is by invitation only."
      },
      {
       "set": "joinBy",
       "val": "apply",
-      "label": "Anyone may apply"
+      "label": "Anyone may apply to join — an application is voted on like an invitation."
      },
      {
       "set": "policyBy",
@@ -4011,9 +3956,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether somebody who is not a member may ask to become one. An application is a stranger proposing their own invitation, decided as Admissions says.",
-     "Nobody joins unless a member brings them in.",
-     "An application is a stranger proposing their own invitation: it is decided the way Admissions says, and costs the applicant nothing.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most open door they would accept, and the document takes the least open of them — one member who wants invitation only keeps it so."
     ]
    },
@@ -4021,32 +3963,32 @@
     "eyebrow": "",
     "head": "Anonymous Proposals",
     "lock": "",
-    "body": "Whoever proposes a change writes a reason for it, and everybody can read that. This is only about whether their name is on it.Nobody’s name, everNo proposal ever carries a name, even after the document is finished.Choose thisNobody’s name unless they chooseNobody is named unless they sign a proposal themselves — which means an unsigned one stands out.Choose thisNames at the closeHidden while the document is being written, and published with it at the end.Choose thisNames at the close, or earlier by choicePublished with the document at the end, and sooner for anybody who signs.Choose thisNames from the startEvery proposal carries its writer’s name from the moment it is made.Choose thisIf you choose this yourself, members can end up named without having agreed to it.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.Choose this",
+    "body": "Nobody who proposes a change is ever named, even after the document is finished.Choose thisNobody who proposes a change is named unless they choose to sign it themselves.Choose thisWhoever proposes a change is named when the document is finished, and not before.Choose thisWhoever proposes a change is named when the document is finished — sooner, if they choose to sign it.Choose thisWhoever proposes a change is named from the moment they propose it.Choose thisIf you choose this yourself, members can end up named without having agreed to it.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed.Choose this",
     "options": [
      {
       "set": "authorship",
       "val": "anonymous",
-      "label": "Nobody’s name, ever"
+      "label": "Nobody who proposes a change is ever named, even after the document is finished."
      },
      {
       "set": "authorship",
       "val": "anonymousElective",
-      "label": "Nobody’s name unless they choose"
+      "label": "Nobody who proposes a change is named unless they choose to sign it themselves."
      },
      {
       "set": "authorship",
       "val": "sealed",
-      "label": "Names at the close"
+      "label": "Whoever proposes a change is named when the document is finished, and not before."
      },
      {
       "set": "authorship",
       "val": "sealedElective",
-      "label": "Names at the close, or earlier by choice"
+      "label": "Whoever proposes a change is named when the document is finished — sooner, if they choose to sign it."
      },
      {
       "set": "authorship",
       "val": "public",
-      "label": "Names from the start"
+      "label": "Whoever proposes a change is named from the moment they propose it."
      },
      {
       "set": "authorship",
@@ -4073,12 +4015,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whoever proposes a change writes a reason for it, and everybody can read that. This is only about whether their name is on it.",
-     "No proposal ever carries a name, even after the document is finished.",
-     "Nobody is named unless they sign a proposal themselves — which means an unsigned one stands out.",
-     "Hidden while the document is being written, and published with it at the end.",
-     "Published with the document at the end, and sooner for anybody who signs.",
-     "Every proposal carries its writer’s name from the moment it is made.",
      "If you choose this yourself, members can end up named without having agreed to it.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so it runs the other way: the document takes the most private answer, and one member who wants to stay unnamed keeps everybody unnamed."
     ]
@@ -4243,17 +4179,17 @@
     "eyebrow": "",
     "head": "Visibility",
     "lock": "",
-    "body": "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.Members onlyChoose thisAnyone with the linkChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Choose this",
+    "body": "Only members can see the document.Choose thisAnyone with the link can read the document.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed.Choose this",
     "options": [
      {
       "set": "chamber",
       "val": "closed",
-      "label": "Members only"
+      "label": "Only members can see the document."
      },
      {
       "set": "chamber",
       "val": "link",
-      "label": "Anyone with the link"
+      "label": "Anyone with the link can read the document."
      },
      {
       "set": "chamber",
@@ -4280,7 +4216,6 @@
      "Set it"
     ],
     "helpers": [
-     "Who else can read the document. Readers are not members — they cannot propose or vote, and nothing about them is known.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. This one is about privacy, so the most private answer wins: one member who wants it kept closed keeps it closed."
     ]
    },
@@ -4288,7 +4223,7 @@
     "eyebrow": "",
     "head": "When Does It End?",
     "lock": "",
-    "body": "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.At a set timeChoose thisNeverIt runs until too few members are still active.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.Choose thisMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
+    "body": "At a set timeChoose thisThe drafting process has no set end — it runs until too few members are active.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.Choose thisMoving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did.",
     "options": [
      {
       "set": "ending",
@@ -4298,7 +4233,7 @@
      {
       "set": "ending",
       "val": "perpetual",
-      "label": "Never"
+      "label": "The drafting process has no set end — it runs until too few members are active."
      },
      {
       "set": "ending",
@@ -4330,8 +4265,6 @@
      "Set it"
     ],
     "helpers": [
-     "When drafting stops and the text is final. Never is one of the answers: a document with no end date stops only when too few members are active.",
-     "It runs until too few members are still active.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says when they want it to end, and the document takes the latest answer — never being later than any date — so nobody is cut off before they were ready.",
      "Moving the date is a proposal ✏️ like any other. Taking the end date away altogether needs every member to agree, because with no end date the approval threshold cannot rise, and every change made so far was made under one that did."
     ]
@@ -4424,17 +4357,17 @@
     "eyebrow": "",
     "head": "Is the Founder a Member?",
     "lock": "",
-    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.Choose thisClerk — not draftingNo ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.Choose this",
+    "body": "The Founder is a member — drafting, voting, counting towards quorum and answering the founding questions like anybody.Choose thisThe Founder only runs the document — no ✏️s, no votes, counting towards nothing, with nothing to answer. A clerk can stay unnamed.Choose this",
     "options": [
      {
       "set": "hatPick",
       "val": "member",
-      "label": "Member — drafting too"
+      "label": "The Founder is a member — drafting, voting, counting towards quorum and answering the founding questions like anybody."
      },
      {
       "set": "hatPick",
       "val": "clerk",
-      "label": "Clerk — not drafting"
+      "label": "The Founder only runs the document — no ✏️s, no votes, counting towards nothing, with nothing to answer. A clerk can stay unnamed."
      }
     ],
     "inputs": [],
@@ -4453,11 +4386,7 @@
      "Put it back as it stands",
      "Set it"
     ],
-    "helpers": [
-     "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.",
-     "You get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.",
-     "No ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed."
-    ]
+    "helpers": []
    },
    "invite": {
     "eyebrow": "",
@@ -4504,17 +4433,17 @@
     "eyebrow": "",
     "head": "When Are Votes Revealed?",
     "lock": "",
-    "body": "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.Never revealedWhat you preferred stays yours, permanently.Choose thisRevealed at the endPublished with the document at the end, never before.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.Choose this",
+    "body": "Votes are never revealed.Choose thisVotes are revealed when the document is finished, and not before.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private.Choose this",
     "options": [
      {
       "set": "judgments",
       "val": "never",
-      "label": "Never revealed"
+      "label": "Votes are never revealed."
      },
      {
       "set": "judgments",
       "val": "after",
-      "label": "Revealed at the end"
+      "label": "Votes are revealed when the document is finished, and not before."
      },
      {
       "set": "judgments",
@@ -4541,9 +4470,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether what somebody preferred is ever attached to their name. Nobody can see it while a question is open, whichever you choose.",
-     "What you preferred stays yours, permanently.",
-     "Published with the document at the end, never before.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Also about privacy, so the most private answer wins: one member who wants them kept private keeps them private."
     ]
    },
@@ -4551,12 +4477,12 @@
     "eyebrow": "",
     "head": "Do Memberships Lapse?",
     "lock": "",
-    "body": "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.NeverNobody ever drops out of the count, however long they are away.Choose thisThey lapseChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Choose this",
+    "body": "Nobody ever drops out of the count, however long they are away.Choose thisThey lapseChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted.Choose this",
     "options": [
      {
       "set": "lapse",
       "val": "never",
-      "label": "Never"
+      "label": "Nobody ever drops out of the count, however long they are away."
      },
      {
       "set": "lapse",
@@ -4593,8 +4519,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether somebody stops being a member after a long time without logging in. They are warned first, and coming back is just logging in again.",
-     "Nobody ever drops out of the count, however long they are away.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the shortest gap they would accept, and the document takes the longest — never being longer than any of them — so nobody loses their membership faster than they accepted."
     ]
    },
@@ -4699,17 +4623,17 @@
     "eyebrow": "",
     "head": "Quorum",
     "lock": "",
-    "body": "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.Asked asA share of the membershipThe number goes up and down as members join and leave.Choose thisA fixed numberThe number stays the same however the membership changes.Choose thisThe numberI set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Choose this",
+    "body": "Asked asThe quorum is a share of the membership — the number moves as members join and leave.Choose thisThe quorum is a fixed number of members, however the membership changes.Choose thisThe numberI set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest.Choose this",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "A share of the membership"
+      "label": "The quorum is a share of the membership — the number moves as members join and leave."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "A fixed number"
+      "label": "The quorum is a fixed number of members, however the membership changes."
      },
      {
       "set": "quorumBy",
@@ -4746,9 +4670,6 @@
      "Set it"
     ],
     "helpers": [
-     "How many members have to have voted on something before it can change the document. Until that many have, it waits — nobody’s silence counts either way.",
-     "The number goes up and down as members join and leave.",
-     "The number stays the same however the membership changes.",
      "of 1",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest."
     ]
@@ -4810,22 +4731,22 @@
     "eyebrow": "",
     "head": "How Is a Member Removed?",
     "lock": "",
-    "body": "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.All members must approve removing a member, and the person themselves must agreeOne member saying no keeps them in, and their own answer counts — so nobody is removed against their will.Choose thisAll other members must approve removing a memberSomebody can be removed even if they object, but only if every other member agrees 🏛️.Choose thisMembers must vote on removing a memberA removal is proposed and voted on at the approval threshold ✏️, like a change to the text.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Choose this",
+    "body": "Removing a member needs every member to agree, including them 🏛️.Choose thisRemoving a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them.Choose thisMembers may propose to remove a member, and the membership decides ✏️.Choose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked.Choose this",
     "options": [
      {
       "set": "removal",
       "val": "consent",
-      "label": "All members must approve removing a member, and the person themselves must agree"
+      "label": "Removing a member needs every member to agree, including them 🏛️."
      },
      {
       "set": "removal",
       "val": "assembly",
-      "label": "All other members must approve removing a member"
+      "label": "Removing a member needs every other member to agree 🏛️ — they see the proposal, and it is decided without them."
      },
      {
       "set": "removal",
       "val": "proposal",
-      "label": "Members must vote on removing a member"
+      "label": "Members may propose to remove a member, and the membership decides ✏️."
      },
      {
       "set": "removal",
@@ -4852,10 +4773,6 @@
      "Set it"
     ],
     "helpers": [
-     "How a member can be removed. Whichever you choose, they see it proposed — nobody is removed in secret.",
-     "One member saying no keeps them in, and their own answer counts — so nobody is removed against their will.",
-     "Somebody can be removed even if they object, but only if every other member agrees 🏛️.",
-     "A removal is proposed and voted on at the approval threshold ✏️, like a change to the text.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the easiest they would accept, and the document takes the hardest — one member who wants everybody asked keeps everybody asked."
     ]
    },
@@ -7286,7 +7203,7 @@
     "eyebrow": "",
     "head": "Is the Founder a Member?",
     "lock": "",
-    "body": "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.Member — drafting tooYou get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.ChosenClerk — not draftingNo ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.Choose thisSettled. Now that people are voting, the Founder joins the same way as anybody else.",
+    "body": "The Founder is a member — drafting, voting, counting towards quorum and answering the founding questions like anybody.ChosenThe Founder only runs the document — no ✏️s, no votes, counting towards nothing, with nothing to answer. A clerk can stay unnamed.Choose thisSettled. Now that people are voting, the Founder joins the same way as anybody else.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7300,9 +7217,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder is also on the membership — inviting themselves like anybody else — or only runs the document.",
-     "You get ✏️s, you vote, you count towards quorum, and you answer the founding questions like anybody.",
-     "No ✏️s, no voting, you count towards nothing, and there is nothing for you to answer. A clerk can stay unnamed.",
      "Settled. Now that people are voting, the Founder joins the same way as anybody else."
     ]
    },
