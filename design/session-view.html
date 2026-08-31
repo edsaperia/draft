@@ -144,6 +144,13 @@
      --t-ui like the charter's, so OK on a gate and OK on a sealed record
      are one size. The row's 40px height is §9.1's and set elsewhere. */
   .setupcard .commitrow .btn { font-size: var(--t-ui); }
+  /* the door's head-people (CP6, Q1101): the pile's list as the card's
+     standing text, quiet rows above the rule sentence */
+  .headrule .headpeople { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4);
+    margin-bottom: var(--s2); font-size: var(--t-ui); }
+  .headpeople .hp { display: inline-flex; align-items: center; gap: 6px; }
+  .headpeople .hpnone { color: var(--muted); font-size: var(--t-small); }
+  .headrule .doorrule { margin-top: var(--s1); }
   .pf.waiting { color: var(--muted); }
 
   /* ---- what is unlocked, and what is waiting ----------------------------- */
@@ -4013,6 +4020,21 @@
       ? rec.payload.setting : 'admission');
   // the members a removal is running against (entry 94): the ❌ door's
   // pending list, read off the motions like everything else on the page
+  // **A member-pile card heads with its people** (CP6, Q1101, 2026-08-31):
+  // the pile's avatar-and-name list is the card's standing text — the status
+  // quo the act is about — so opening ❌ never hides the people it acts on.
+  // ✉️ heads with the invitees, ❌ with the proposed-for-removal; the price
+  // sentence stands beneath the list, in the same head.
+  const doorPeople = (c) => {
+    const rows = c.k === 'invite'
+      ? S.roster.filter((p) => !p.in)
+      : (cs ? S.roster.filter((p) => removalPendingIds().has(p.mid || 'founder')) : []);
+    const empty = c.k === 'invite' ? 'Nobody has been invited yet.' : 'Nobody is proposed for removal.';
+    return '<div class="headpeople">' + (rows.length
+      ? rows.map((p) => '<span class="hp">' + avHtml(p) + ' ' +
+          esc(p.n || p.e || 'Anonymous') + '</span>').join('')
+      : '<span class="hpnone">' + empty + '</span>') + '</div>';
+  };
   const removalPendingIds = () => {
     const ids = new Set();
     if (!cs || !motionsLive()) return ids;
@@ -5400,6 +5422,13 @@
       // the ranking is a sealed text record's head (SURFACE §9). The outcome
       // and its date are the field's first line, not the clause.
       if (c.record) { const rec = recOf(c); return rec ? esc(motionDisplay(rec)) : esc(c.t); }
+      // **a door heads with its people** (CP6, Q1101): the pile's list first,
+      // then the rule as it stands beneath it, both inside the one head
+      if (c.door) {
+        const rule = settled(c) ? breakLines(linkify(esc(decisionLine(c))))
+          : composerOn(c) ? esc(standsOf(c.k)) : '';
+        return doorPeople(c) + (rule ? '<div class="doorrule">' + rule + '</div>' : '');
+      }
       // post-save the title card opens at its own clause, so its head is
       // the clause sentence (the headdoct span stays: refreshCommit types
       // into it live); at the birth it is still the big heading itself
@@ -6761,9 +6790,16 @@
           '<div class="unlocks"><b>Passed — awaiting the 👑.</b> The membership passed <i>' + esc(m.to) + '</i>' +
           (m.why ? ' — <i>' + esc(m.why) + '</i>' : '') +
           '. The setting is reserved, so the change goes to the founder as a <b>👑 question</b>, theirs to assent to or refuse. Until then, what stands stands.</div>',
+          // **The 👑 takes the pattern whole** (CP5, Q1100, Ed's refinement):
+          // 🗑️ closes the card with the question kept pending, and the two
+          // reserved powers are the two answers — the pen passes it, the
+          // shield holds it. The word-buttons retired 2026-08-31.
           (amFounder()
-            ? '<button class="btn" data-crownq="reject">Refuse</button>' +
-              '<button class="btn btn-approve" data-crownq="accept">Accept</button>'
+            ? binBtn() +
+              '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
+              ' title="Refuse — the shield holds it, and what stands stands">🛡️</button>' +
+              '<button class="btn btn-approve glyphbtn emojibtn" data-crownq="accept"' +
+              ' title="Accept — the pen passes it now">✒️</button>'
             : binBtn()), g.cards);
       }
       // a live motion takes the route its own value asks for (329a)
@@ -7028,16 +7064,19 @@
           (EMAIL_OK.test(S.myemail) ? '' : ' disabled') +
           ' title="' + resendTitle() + '">📨</button>'
         : c.k === 'hat'
-        ? (() => { const cur = S.seen.has('hat') ? (iDraft() ? 'member' : 'clerk') : null;
-            const dirty = !!S.hatPick && S.hatPick !== cur &&
-              !(cs && cs.constitutedAtT !== null);
+        ? (() => {
+            // **CP9 (Q1106): locked at 🍾 for ever, so no commit at all** —
+            // a permanently dark ✒️ promised a thaw that never comes; dark
+            // means *not yet* (Y19), and 🎩 after the start is *never*.
+            // 🗑️ stays as the close.
+            if (cs && cs.constitutedAtT !== null) return binBtn();
+            const cur = S.seen.has('hat') ? (iDraft() ? 'member' : 'clerk') : null;
+            const dirty = !!S.hatPick && S.hatPick !== cur;
             return binBtn() +
               '<button class="btn btn-approve glyphbtn emojibtn"' +
               // 🎩 has no power pair, so it keeps the wallet question — plus
               // `docOpen()`, since `set-convenor-membership` is refused after
-              // the close like everything else (entry 62, Ed B25 (a)). Its
-              // own `dirty` term already dies at 🍾, so this is belt to that
-              // brace and the one term a later change could not lose quietly.
+              // the close like everything else (entry 62, Ed B25 (a)).
               (dirty && mayPen() && docOpen() ? '' : ' disabled') +
               ' data-confirm="1" title="' + (mayPen() ? 'Set it' : penWaitTitle) + '">✒️</button>'; })()
         : stateOf(c, ctx) === 'news'

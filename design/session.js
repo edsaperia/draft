@@ -2891,10 +2891,11 @@
     // 🛡️ on the Text (R-056): the room passed a change and it waits on the
     // Founder. A decision card like every other — the clause it rewrites at
     // the head, the wording as the single proposal block against it — and
-    // the 👑 question's own commit row, Refuse then Accept, with no 🗑️
-    // (SURFACE Y20: the two answers are the whole act). No lane radios: this
-    // is not a judgment, and nothing about the room's decision is being
-    // re-asked.
+    // **the 👑 question takes the pattern whole** (CP5, Q1100, 2026-08-31,
+    // striking Y20's clause): 🗑️ closes it pending, and the two reserved
+    // powers are the two answers — ✒️ passes it, 🛡️ holds it. No lane
+    // radios: this is not a judgment, and nothing about the room's decision
+    // is being re-asked.
     if (s.kind === 'crown') {
       const ckey = (s.keys ?? [])[0];
       return (
@@ -2903,9 +2904,12 @@
         fieldHtml(proposalHtml(s, { html: resultOnly(s.marked), why: s.rationale, by: s.by })) +
         '<div class="foot">The membership passed this. Until you answer, the clause above stands.</div>' +
         '<div class="race-mid commitrow">' +
-        '<button class="btn" data-act="crown-refuse">Refuse</button>' +
+        '<button class="btn glyphbtn" data-act="clear-close" title="Close — the question stays pending">🗑️</button>' +
         '<span class="rightpair">' +
-        '<button class="btn btn-approve" data-act="crown-accept">Accept</button>' +
+        '<button class="btn glyphbtn" data-act="crown-refuse"' +
+        ' title="Refuse — the shield holds it, and the clause above stands">🛡️</button>' +
+        '<button class="btn btn-approve glyphbtn" data-act="crown-accept"' +
+        ' title="Accept — the pen passes it now">✒️</button>' +
         '</span></div>' +
         '</div>'
       );

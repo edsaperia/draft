@@ -327,7 +327,13 @@ if (admEntry) {
     const c = document.querySelector('.setupcard');
     if (!c) return null;
     return {
-      lanes: [...c.querySelectorAll('.lanepick span:last-child')].map((s) => s.textContent.trim()),
+      // the lane's name is the block's text since CP1 (2026-08-31) — every
+      // radio reads *Prefer this*; a textless block's button names the act
+      lanes: [...c.querySelectorAll('.lanepick')].map((b) => {
+        const p = b.closest('.pick');
+        const t = p && p.querySelector('.opttext');
+        return ((t && t.textContent) || b.textContent).trim();
+      }),
       ok: !!c.querySelector('[data-ok]'),
       tick: !!c.querySelector('[data-admitgo], [data-confirm]'),
       // which commit the card offers is the whole difference between the two
