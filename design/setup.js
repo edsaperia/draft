@@ -1047,7 +1047,9 @@ window.SETUP = (function () {
 
   const ansRow = (on, key, val, ttl, exp, extra, inner) =>
     // the answer ladder's rung, in the option-block shape (CP1) — the rung's
-    // text above, the fixed *Prefer this* radio beneath it
+    // text above, the fixed *Prefer this* radio beneath it. *Prefer*, not
+    // *Choose* (Q1110, Ed 2026-09-01): your answer is yours alone, but it
+    // feeds the rule the room takes together — the collective register.
     '<div class="pick' + (on ? ' on' : '') + (extra || '') + '">' +
     '<span class="opttext">' + ttl + '</span>' +
     (exp ? '<span class="exp">' + exp + '</span>' : '') +
