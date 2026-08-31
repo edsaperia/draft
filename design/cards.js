@@ -711,15 +711,13 @@ window.CARDS = (function () {
     function commitRowHtml(s, extra) {
       const pick = env.pickOf(s);
       const insists = env.isTopUrgent(s) && env.stateOf(s) === 'needs';
-      // Indifference is the last radio in the trio (Ed, 2026-08-16), not a glyph
-      // of its own. 209/213 had the shrug and the tick sharing one slot and both
-      // drawn as emoji; that was built when nothing else on the card was a
-      // control. Now that every candidate carries a radio, indifference is
-      // plainly one more thing you can say about the same question — *neither of
-      // these*, alongside *this one* and *that one* — and it belongs in the same
-      // alphabet. It stays out of the lanes, because it is a judgment about the
-      // *pair* rather than about any text (SPEC §3.2), so it sits at the foot
-      // where the acts about the whole card live.
+      // **Indifference is a full option block** (CP4, Q1099, 2026-08-31 —
+      // revising Ed 2026-08-16's row placement): a textless block under the
+      // same hairline as the lanes, its radio naming the act instead of
+      // *Prefer this*, because *neither of these* is one more answer to the
+      // same question and the blocks are where the answers live. It stays out
+      // of the lanes proper — a judgment about the *pair*, not any text
+      // (SPEC §3.2) — so it is the block after them.
       //
       // Submit is always rendered and greyed until something is chosen (Ed,
       // 2026-08-16, revising 202/204). The old argument was that a disabled
@@ -728,18 +726,22 @@ window.CARDS = (function () {
       // A greyed tick in the corner says *this is where this ends* from the
       // moment the card opens.
       // **Every radio on a card lines up down its left edge** (Ed, 2026-08-17),
-      // locked or not. A locked card used to keep the centred row on the argument
-      // that a lone disabled radio pushed left leaves the other end of the card
-      // empty — which is true and does not matter, because the alignment is what
-      // says the three radios are answers to one question. One of them wandering
-      // to the middle breaks the column, and a card the reader cannot judge is
-      // exactly the card that most needs to look like the ones they can.
-      return '<div class="race-mid commitrow">' +
+      // locked or not — the block keeps the vin radio in the same column as
+      // the lanes' own.
+      //
+      // **🗑️ joins the row** (CP7, Q1102 — C4 wins over the old table rows):
+      // far left, always live; it clears an uncommitted choice and closes,
+      // and a cast vote stays, the bin putting back un-actioned input only.
+      return '<div class="pick vinblock">' +
         '<button class="lanepick vin" type="button" ' + env.valAttr + '="indifferent"' +
         ' aria-pressed="' + (pick === 'indifferent') + '"' + (env.lockedOf(s) ? ' disabled' : '') +
         ' title="' + (s.kind === 'diagonal' ? 'They matter equally' : 'I can’t split them') + '">' +
         '<i class="dot" aria-hidden="true"></i>' +
-        '<span class="off">Indifferent</span><span class="on">Indifferent</span></button>' +
+        '<span class="off">Indifferent</span><span class="on">Indifferent</span></button></div>' +
+        '<div class="race-mid commitrow">' +
+        '<button class="btn glyphbtn" data-act="clear-close" title="' +
+        (env.lockedOf(s) ? 'Close — your vote stays on the record'
+          : 'Clears your choice and closes — there is nothing here to put back') + '">🗑️</button>' +
         (extra || '') +
         // The two acts on this card share the right-hand corner, in the order you
         // would reach for them: ❄️ first because it is the one that says *not now*,

@@ -4124,6 +4124,16 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       : what === 'b' ? 'preferred ' + quote(s.race && s.race.b.text)
       : what === 'indifferent' ? (s.kind === 'diagonal' ? 'said they matter equally' : 'indifferent')
       : 'skipped (recirculates with decay)';
+    // **🗑️ on a judgment clears the choice and closes** (CP7, Q1102): the bin
+    // puts back un-actioned input only (C4), so an uncommitted pick clears and
+    // a cast vote stays on the record exactly as it stood.
+    if (what === 'clear-close') {
+      const s0 = SUGGS.find((x) => x.id === id);
+      if (s0 && !resolved.has(id)) s0.pick = null;
+      const shut = () => { if (openId === id) openId = null; renderAll(); drawWires(); };
+      if (openId === id) collapseCards(id, shut); else shut();
+      return;
+    }
     // **❄️ cools the flame and closes the card** (Ed, 2026-08-17). It is not a
     // judgment, so nothing about the race changes and no evidence is touched —
     // the entry simply stops being eligible for 🔥 and the next most urgent

@@ -1204,7 +1204,7 @@
      its own weight and case. On the scale at --t-cap, which is the step for a
      caption. */
   .rsub {
-    display: block; margin-top: 2px;
+    display: block; margin-top: var(--s1); /* on the grid — census F-G */
     font-size: var(--t-cap); font-weight: 500; text-transform: none; letter-spacing: 0;
     color: var(--muted);
   }
@@ -1443,6 +1443,11 @@
   .field { border-top: 1px solid var(--border); padding-top: var(--s3); }
   .fieldlab { margin-bottom: var(--s2); }
   .propblock + .propblock {
+    border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
+  }
+  /* Indifferent is a textless option block (CP4, Q1099, 2026-08-31): the same
+     hairline as the propblocks above it, its radio naming the act. */
+  .vinblock {
     border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
   }
   /* The deadlock card's one raised voice: on every other card a line like this

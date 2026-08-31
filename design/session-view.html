@@ -139,6 +139,11 @@
     cursor: pointer; border-width: 1px; border-style: solid; border-radius: var(--r-sm); }
   .setupcard .btn:not(.glyphbtn):not(.btn-approve) { background: var(--bg); border-color: var(--border); }
   .setupcard .btn:not(.btn-approve):hover { border-color: var(--primary); color: var(--primary-emphasis); }
+  /* **One commit-label size** (census F-E, 2026-08-31): the --t-cap shrink
+     above serves a card body's utility buttons; a commit-row word takes
+     --t-ui like the charter's, so OK on a gate and OK on a sealed record
+     are one size. The row's 40px height is §9.1's and set elsewhere. */
+  .setupcard .commitrow .btn { font-size: var(--t-ui); }
   .pf.waiting { color: var(--muted); }
 
   /* ---- what is unlocked, and what is waiting ----------------------------- */
