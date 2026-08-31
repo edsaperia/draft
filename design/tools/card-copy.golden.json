@@ -4980,8 +4980,19 @@
     "eyebrow": "",
     "head": "Members may propose to invite people to join the membership, and all members must agree 🏛️.",
     "lock": "The members decide.",
-    "body": "What the membership saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All members must approve every new member joiningAny member can invite new people to joinWhat everyone asked for, without names.Answered3 of 3The document takes the dearestAll members must approve every new member joining",
-    "options": [],
+    "body": "Bringing somebody in is a proposal the membership decides at the approval threshold.Prefer thisAny member may invite on their own word.Prefer thisWhat the membership saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All members must approve every new member joiningAny member can invite new people to joinWhat everyone asked for, without names.Answered3 of 3The document takes the dearestAll members must approve every new member joining",
+    "options": [
+     {
+      "set": null,
+      "val": "Members must vote on every new member joining",
+      "label": "Prefer this"
+     },
+     {
+      "set": null,
+      "val": "Any member can invite new people to join",
+      "label": "Prefer this"
+     }
+    ],
     "inputs": [],
     "foot": [
      {
@@ -4994,11 +5005,11 @@
      }
     ],
     "hints": [
-     "The value you are proposing",
      "We should change this because…",
      "Admissions — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "3",
      "1",
@@ -5007,7 +5018,6 @@
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "The value you are proposing",
      "We should change this because…",
      "The members decide.",
      "Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
@@ -6854,8 +6864,19 @@
     "eyebrow": "",
     "head": "Members may propose to invite people to join the membership, and all members must agree 🏛️.",
     "lock": "The members decide.",
-    "body": "What the membership saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All members must approve every new member joiningAny member can invite new people to joinWhat everyone asked for, without names.Answered3 of 3The document takes the dearestAll members must approve every new member joining",
-    "options": [],
+    "body": "Bringing somebody in is a proposal the membership decides at the approval threshold.Prefer thisAny member may invite on their own word.Prefer thisWhat the membership saidThe members decide.Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.All members must approve every new member joiningAny member can invite new people to joinWhat everyone asked for, without names.Answered3 of 3The document takes the dearestAll members must approve every new member joining",
+    "options": [
+     {
+      "set": null,
+      "val": "Members must vote on every new member joining",
+      "label": "Prefer this"
+     },
+     {
+      "set": null,
+      "val": "Any member can invite new people to join",
+      "label": "Prefer this"
+     }
+    ],
     "inputs": [],
     "foot": [
      {
@@ -6868,11 +6889,11 @@
      }
     ],
     "hints": [
-     "The value you are proposing",
      "We should change this because…",
      "Admissions — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
+     "Say you prefer this proposal — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "3",
      "1",
@@ -6881,7 +6902,6 @@
      "One 🏛️ each — withdraw yours first"
     ],
     "helpers": [
-     "The value you are proposing",
      "We should change this because…",
      "The members decide.",
      "Each member says the cheapest admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",

@@ -4751,6 +4751,16 @@
       : inputBlock('Quorum is <input class="num" type="number" min="1" max="100" data-mnum="% of the membership" value="' +
         esc((d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct) + '">% of the membership.',
         meanLine('quorum', d.val && d.val.form ? d.val : null))),
+    // 🪪: the price of admission, its three rungs as lanes, labels MVAL's
+    // verbatim. The register-era 🪪 had no value to compose and spec-check
+    // exempted it from the composable set; entry 94 re-typed it into this
+    // price — MVAL and TYPED arrived, this entry did not — so the settled
+    // card fell through to the free-text lane this map exists to prevent.
+    // The lane sentences are ✉️'s own per-price sentences, spelled once.
+    admission: (d) => lanesFor(d, [
+      ['All members must approve every new member joining', 'Bringing somebody in is a proposal all members must agree to — one refusal keeps them out.'],
+      ['Members must vote on every new member joining', 'Bringing somebody in is a proposal the membership decides at the approval threshold.'],
+      ['Any member can invite new people to join', 'Any member may invite on their own word.']], 'admission'),
     removal: (d) => lanesFor(d, [
       ['All members must approve removing a member, and the person themselves must agree', 'Removing a member needs all members to agree, including them.'],
       ['All other members must approve removing a member', 'Removing a member needs every other member to agree.'],

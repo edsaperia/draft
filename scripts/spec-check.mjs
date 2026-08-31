@@ -780,8 +780,10 @@ function checkComposer(M, pm) {
   const page = js('design/session-view.html'); const setup = js('design/setup.js');
   const cards = [...page.matchAll(/\{ k: '([a-z-]+)', g: [^,]+, t: '[^']*',[^\n]*?kind: '([a-z]+)'/g)].map((m) => ({ k: m[1], kind: m[2] }));
   // 🧭 is a decision at the birth, not a setting (entry 166): no motion about
-  // meeting-ness, nothing to compose
-  const composable = cards.filter((c) => c.kind !== 'personal' && c.k !== 'text' && c.k !== 'admission' && c.k !== 'shape').map((c) => c.k);
+  // meeting-ness, nothing to compose. 🪪 was exempt here from the register
+  // era, when it had no value — entry 94 made it a price and the exemption
+  // hid its missing PROPOSE entry, so the settled card composed as free text.
+  const composable = cards.filter((c) => c.kind !== 'personal' && c.k !== 'text' && c.k !== 'shape').map((c) => c.k);
   const propose = topKeys(objLit(page, 'PROPOSE'));
   for (const k of composable) if (!propose.includes(k)) find('composer', `'${k}' is composable but has no PROPOSE entry`);
   for (const k of propose) if (!composable.includes(k)) find('composer', `PROPOSE has '${k}', which is not a composable card`);
