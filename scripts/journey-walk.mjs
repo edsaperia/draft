@@ -1379,7 +1379,11 @@ const editState = await page.evaluate(() => {
     // the pile is the strip in edit mode: every tab pressable
     rideTabs: document.querySelectorAll('#ridetab .achip[data-tab]').length,
     // the riding tab's gutter is the constitution's — right edges, since the
-    // active 📝 grows 8px out to the left (M12) and a resting tab does not
+    // active 📝 grows 8px out to the left (M12) and a resting tab does not.
+    // In edit mode the strip tucks 2px under the card it is attached to, as
+    // every clausehead strip does (Ed, 2026-08-17: every tab's right edge
+    // lands on the card's left edge; Ed, 2026-08-31: tabs should always
+    // tuck) — so the ride tab's right edge is the resting column's plus 2
     rideRight: ride ? Math.round(ride.getBoundingClientRect().right) : null,
     consRight: consTab ? Math.round(consTab.getBoundingClientRect().right) : null,
     // the outline rose above the first line by the gutter, and the text did not move
@@ -1398,7 +1402,7 @@ const pairOk = editState.commits[editState.commits.length - 1] === '✏️' &&
   (editState.commits.length === 1 || editState.commits.join('') === '✒️✏️');
 const editOk = (await hostEditable()) === 'true' && editState.editing && editState.row && editState.greyed &&
   pairOk && rowBare && editState.rideTabs === 3 &&
-  editState.rideRight === editState.consRight && editState.padTop === 24 &&
+  editState.rideRight === editState.consRight + 2 && editState.padTop === 24 &&
   Math.abs(editState.lineDelta) <= 1 && editState.runway === 0 &&
   (EMPTY_TEXT ? !editState.gap : editState.gap);
 say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to three tabs on the constitution\'s gutter, draw the bare row greyed with ✏️ (✒️ only beside it), and the trailing gap'));

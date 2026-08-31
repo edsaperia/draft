@@ -746,12 +746,13 @@
     width: 42px; padding-left: 8px; padding-right: 0;
     background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
   }
-  /* In edit mode the text is the open card, so its tab takes the strip's own
-     tuck-under (`.clausehead .achip`'s -2px): the right edge lands exactly on
-     the card's left edge (Ed, 2026-08-17: every tab's right edge lands on the
-     card's edge). Detached over the prose there is no card edge, and the tab
-     rests on the closed piles' own column instead. */
-  .ridetab.editing .achip[data-tab="text"] { margin-right: -2px; }
+  /* In edit mode the text is the open card, so the pile is a strip and takes
+     the strip's own tuck-under (`.clausehead .achip`'s -2px) — on every tab,
+     ✒️ 🛡️ included, exactly as a clausehead gives it to resting tabs too
+     (Ed, 2026-08-17: every tab's right edge lands on the card's left edge;
+     Ed, 2026-08-31: tabs should always tuck). Detached over the prose there
+     is no card edge, and the pile rests on the closed piles' own column. */
+  .ridetab.editing .achip { margin-right: -2px; }
   /* In edit mode the pile is drawn as the strip — the pile expanded, the ✒️ 🛡️
      tabs beneath 📝 reachable (Ed's QA, 2026-08-30) — and only the front tab
      wears the active treatment; the power tabs stay 34px, as in any strip. */
