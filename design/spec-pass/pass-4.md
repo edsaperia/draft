@@ -43,6 +43,10 @@ The extraction of record for pass 4. Target: SURFACE §9.3 (CP1–CP7, Ed's ruli
 - **Q1107** after-state labels: judged cards' *Recorded — choose again to change it* and the blind answer's disabled *Not answered yet* — keep, or restate as the act (*✓ Answer*, greyed) with the state in the title? (recommend the act as label, state as title — the 202 ruling's logic.)
 - **Q1108** patch site sub-blocks: not cards (head carries the one row — recommend), or each takes the row?
 
+## Answers (Ed, 2026-08-31, paste-back)
+
+F-A–F-G all stand; F-F as a recorded exemption (📧 used twice, deliberately — the G2 rule takes an EXEMPT entry, no new glyph). Q1103 **(b)**: 🍾's table becomes two columns (✒️ · 🛡️) of option blocks; `switch` retires; supersedes the backlog's switches ask. Q1104 **(b)**: numeric rungs as blocks whose text is `meaningOf`'s sentence with the number stated; *A number of my own* last, with the field. Q1105–Q1108 **(a)** as recommended → CP5 (drawn ✓ on the direct door), CP9 (no commit on a locked card), CP8 (act as label, state as title), CP7 (site sub-blocks are not cards). Folded into SURFACE §9.3 the same day; 1109–1115 released. This file stays until the family builds land and the census re-runs green.
+
 ## Instrument blind spots (stage-2b work, queued — a state not measured must not read as clean)
 
 Never measured on any walk: the salience diagonal 🌶️ (unserved in the fixture, Q291's rule); the editing card (needs a keystroke); the `adm:` admission cards and the applicant's five (**seat:applicant offered no cards** — instrument error, needs an application seeded); the 👑 question, both kinds (needs a carried motion parked at the crown); the 🥂 closing card; a constitutional motion mid-flight (the consent picks card — walkSettled's seed answers instantly); the news family (E5 set-changed news, amendment-news, release-batch 👑, mail-give-up 📭); the closed backlog (**no U: records in the fixture**); 📝 text card in both modes; a gap-site card. Each needs either a walk extension or a hand-verification, and the pass is not closed until every row is measured or exempted with a reason.
