@@ -836,7 +836,9 @@ function checkComposer(M, pm) {
   const noun = [...objLit(page, 'PW_NOUN').matchAll(/\b([a-z]+): '/g)].map((m) => m[1]);
   for (const k of propose.concat(['text'])) if (!['invite', 'remove'].includes(k) && !noun.includes(k)) find('composer', `PW_NOUN lacks '${k}'`);
   const base = pw('PW_PHRASE').sort().join(' ');
-  for (const n of ['PWWHY', 'PW_OPTS']) {
+  // PWWHY left this list with the table itself (T43, Ed 2026-09-01: a power
+  // card carries no why — the head and the two blocks state the rule)
+  for (const n of ['PW_OPTS']) {
     const got = pw(n).sort().join(' ');
     if (got !== base) find('composer', `${n} keys (${got}) differ from PW_PHRASE's (${base})`);
   }

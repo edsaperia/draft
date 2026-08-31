@@ -224,7 +224,7 @@
     "eyebrow": "",
     "head": "Proposal Pass Threshold",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone must vote for a change for it to pass90%Choose thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Choose thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Choose thisIn a membership of one, the one vote must be for it.A number of my ownChoose thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Choose this",
+    "body": "Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone must vote for a change for it to pass90%Choose thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Choose thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Choose thisIn a membership of one, the one vote must be for it.A number of my ownChoose thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Choose this",
     "options": [
      {
       "set": "tClose",
@@ -276,7 +276,6 @@
      "Set it"
     ],
     "helpers": [
-     "How sure the members have to be that a change is better than the words it replaces, at the end.",
      "In a membership of one, nothing can pass at 90% until more members arrive.",
      "In a membership of one, nothing can pass at 80% until more members arrive.",
      "In a membership of one, the one vote must be for it.",
@@ -304,7 +303,7 @@
     ],
     "hints": [
      "Begin — close it",
-     "Your Voice — settled",
+     "Your Consent — settled",
      "Put it back as it stands",
      "The document cannot begin yet"
     ],
@@ -473,7 +472,7 @@
     "eyebrow": "",
     "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "You founded this document, and every member holds a voice in it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.🏛️ Take your voice puts it in your wallet.",
+    "body": "You founded this document, and your consent in every constitutional question came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.🏛️ Take your consent puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -482,18 +481,18 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "🏛️ Take your voice",
+      "label": "🏛️ Take your consent",
       "title": null
      }
     ],
     "hints": [
-     "Your Voice — close it",
+     "Your Consent — close it",
      "Put it back as it stands"
     ],
     "helpers": [
-     "You founded this document, and every member holds a voice in it.",
-     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
-     "🏛️ Take your voice puts it in your wallet."
+     "You founded this document, and your consent in every constitutional question came with it.",
+     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
+     "🏛️ Take your consent puts it in your wallet."
     ]
    },
    "hat": {
@@ -822,7 +821,7 @@
     "eyebrow": "",
     "head": "Proposal Rate",
     "lock": "",
-    "body": "How often a member can propose something. Each proposal costs one ✏️.I set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Choose this",
+    "body": "I set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Choose this",
     "options": [
      {
       "set": "rateBy",
@@ -867,7 +866,6 @@
      "Set it"
     ],
     "helpers": [
-     "How often a member can propose something. Each proposal costs one ✏️.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it."
     ]
    },
@@ -3357,7 +3355,7 @@
     "eyebrow": "",
     "head": "Proposal Pass Threshold",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nearly everyone must vote for a change for it to pass90%Choose thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Choose thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Choose thisIn a membership of one, the one vote must be for it.A number of my ownChoose thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Chosen",
+    "body": "Uses the Bradley–Terry method to allow for a decision with few votes — read more.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.Nearly everyone must vote for a change for it to pass90%Choose thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Choose thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Choose thisIn a membership of one, the one vote must be for it.A number of my ownChoose thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Chosen",
     "options": [
      {
       "set": "tClose",
@@ -3409,7 +3407,6 @@
      "Set it"
     ],
     "helpers": [
-     "How sure the members have to be that a change is better than the words it replaces, at the end.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Picking a value here takes it back.",
      "In a membership of one, nothing can pass at 90% until more members arrive.",
      "In a membership of one, nothing can pass at 80% until more members arrive.",
@@ -3655,7 +3652,7 @@
     "eyebrow": "",
     "head": "Proposal Rate",
     "lock": "",
-    "body": "How often a member can propose something. Each proposal costs one ✏️.Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Until it is settled everybody gets the standard rate. Picking a value here takes it back.I set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Chosen",
+    "body": "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Until it is settled everybody gets the standard rate. Picking a value here takes it back.I set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Chosen",
     "options": [
      {
       "set": "rateBy",
@@ -3700,7 +3697,6 @@
      "Set it"
     ],
     "helpers": [
-     "How often a member can propose something. Each proposal costs one ✏️.",
      "Asked of everyone before drafting begins, blind — you among them, if you are on the membership. Until it is settled everybody gets the standard rate. Picking a value here takes it back.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it."
     ]
@@ -4023,7 +4019,7 @@
     "eyebrow": "",
     "head": "Proposal Pass Threshold",
     "lock": "",
-    "body": "How sure the members have to be that a change is better than the words it replaces, at the end.Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone must vote for a change for it to pass90%Choose thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Choose thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Choose thisIn a membership of one, the one vote must be for it.A number of my ownChoose thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Choose this",
+    "body": "Uses the Bradley–Terry method to allow for a decision with few votes — read more.Nearly everyone must vote for a change for it to pass90%Choose thisIn a membership of one, nothing can pass at 90% until more members arrive.Most of the membership must vote for a change for it to pass80%Choose thisIn a membership of one, nothing can pass at 80% until more members arrive.A bare majority voting for a change is enough for it to pass60%Choose thisIn a membership of one, the one vote must be for it.A number of my ownChoose thisA membership of one that agrees without exception can be 79% sure of a proposal, and no surer — a higher bar cannot be cleared until more members arrive.Let the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the lowest they will accept, and the document takes the highest — so it is never easier to change than any one of them wanted.Choose this",
     "options": [
      {
       "set": "tClose",
@@ -4075,7 +4071,6 @@
      "Set it"
     ],
     "helpers": [
-     "How sure the members have to be that a change is better than the words it replaces, at the end.",
      "In a membership of one, nothing can pass at 90% until more members arrive.",
      "In a membership of one, nothing can pass at 80% until more members arrive.",
      "In a membership of one, the one vote must be for it.",
@@ -4103,7 +4098,7 @@
     ],
     "hints": [
      "Begin — close it",
-     "Your Voice — settled",
+     "Your Consent — settled",
      "Put it back as it stands",
      "Hold to begin the document"
     ],
@@ -4134,7 +4129,7 @@
      "Voting — close it",
      "Begin — settled",
      "Proposing — settled",
-     "Your Voice — settled",
+     "Your Consent — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -4165,7 +4160,7 @@
      "Proposing — close it",
      "Voting — decided; it waits for your OK",
      "Begin — settled",
-     "Your Voice — settled",
+     "Your Consent — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -4330,7 +4325,7 @@
     "eyebrow": "",
     "head": "When the document begins, members may propose changes to rules and vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "You founded this document, and every member holds a voice in it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.🏛️ Take your voice puts it in your wallet.",
+    "body": "You founded this document, and your consent in every constitutional question came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.🏛️ Take your consent puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4339,18 +4334,18 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "🏛️ Take your voice",
+      "label": "🏛️ Take your consent",
       "title": null
      }
     ],
     "hints": [
-     "Your Voice — close it",
+     "Your Consent — close it",
      "Put it back as it stands"
     ],
     "helpers": [
-     "You founded this document, and every member holds a voice in it.",
-     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
-     "🏛️ Take your voice puts it in your wallet."
+     "You founded this document, and your consent in every constitutional question came with it.",
+     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
+     "🏛️ Take your consent puts it in your wallet."
     ]
    },
    "hat": {
@@ -4678,7 +4673,7 @@
     "eyebrow": "",
     "head": "Proposal Rate",
     "lock": "",
-    "body": "How often a member can propose something. Each proposal costs one ✏️.I set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Choose this",
+    "body": "I set itChoose thisLet the membership decide this rule themselvesNot now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it.Choose this",
     "options": [
      {
       "set": "rateBy",
@@ -4723,7 +4718,6 @@
      "Set it"
     ],
     "helpers": [
-     "How often a member can propose something. Each proposal costs one ✏️.",
      "Not now — every member states what they will accept, blind, before drafting begins, and the document takes the answer that satisfies all of them. Each member says the most generous they would accept, and the document takes it."
     ]
    },
@@ -5082,7 +5076,7 @@
      "Begin — close it",
      "Proposing — settled",
      "Voting — settled",
-     "Your Voice — settled",
+     "Your Consent — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -5109,7 +5103,7 @@
      "Begin — settled",
      "Proposing — settled",
      "Voting — close it",
-     "Your Voice — settled",
+     "Your Consent — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -5141,7 +5135,7 @@
      "Begin — settled",
      "Proposing — close it",
      "Voting — settled",
-     "Your Voice — settled",
+     "Your Consent — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -5225,7 +5219,7 @@
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "The Founder invited you into the membership, and a voice in every constitutional question came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.🏛️ Take your voice puts it in your wallet.",
+    "body": "The Founder invited you into the membership, and your consent in every constitutional question came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.🏛️ Take your consent puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5234,7 +5228,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "🏛️ Take your voice",
+      "label": "🏛️ Take your consent",
       "title": null
      }
     ],
@@ -5243,13 +5237,13 @@
      "Begin — settled",
      "Proposing — settled",
      "Voting — settled",
-     "Your Voice — close it",
+     "Your Consent — close it",
      "Put it back as it stands"
     ],
     "helpers": [
-     "The Founder invited you into the membership, and a voice in every constitutional question came with it.",
-     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
-     "🏛️ Take your voice puts it in your wallet."
+     "The Founder invited you into the membership, and your consent in every constitutional question came with it.",
+     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
+     "🏛️ Take your consent puts it in your wallet."
     ]
    },
    "hat": {
@@ -5545,7 +5539,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5561,7 +5555,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -5569,7 +5562,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5585,7 +5578,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -5593,7 +5585,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5609,7 +5601,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -5617,7 +5608,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5635,7 +5626,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -5643,7 +5633,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
+    "body": "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5660,7 +5650,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
@@ -5668,7 +5657,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5684,7 +5673,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -5692,7 +5680,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse invitations and applications that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over invitations, and applications, that the membership pass. This is only about what happens once one passes.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
+    "body": "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5708,7 +5696,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over invitations, and applications, that the membership pass. This is only about what happens once one passes.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
@@ -5716,7 +5703,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5732,7 +5719,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -5740,7 +5726,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5756,7 +5742,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -5764,7 +5749,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5780,7 +5765,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -5788,7 +5772,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
+    "body": "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5805,7 +5789,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
@@ -5813,7 +5796,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5829,7 +5812,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -5837,7 +5819,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse removals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over removals that the membership pass. This is only about what happens once one passes.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
+    "body": "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5853,7 +5835,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over removals that the membership pass. This is only about what happens once one passes.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
@@ -5861,7 +5842,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
+    "body": "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5877,7 +5858,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
@@ -5885,7 +5865,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
+    "body": "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5901,7 +5881,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
@@ -5909,7 +5888,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5925,7 +5904,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -5933,7 +5911,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5949,7 +5927,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -5957,7 +5934,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5973,7 +5950,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -5981,7 +5957,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5999,7 +5975,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -6007,7 +5982,7 @@
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
+    "body": "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6024,7 +5999,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
@@ -6032,7 +6006,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6048,7 +6022,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -6056,7 +6029,7 @@
     "eyebrow": "",
     "head": "The Founder may invite people at will.",
     "lock": "",
-    "body": "Whether the Founder may invite people at will, with nobody’s agreement. Anyone may always propose bringing somebody in, at the price Admissions sets — this is only about the Founder’s own hand.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
+    "body": "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6072,7 +6045,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may invite people at will, with nobody’s agreement. Anyone may always propose bringing somebody in, at the price Admissions sets — this is only about the Founder’s own hand.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
@@ -6080,7 +6052,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6096,7 +6068,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -6104,7 +6075,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6120,7 +6091,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -6128,7 +6098,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6144,7 +6114,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -6152,7 +6121,7 @@
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
+    "body": "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6169,7 +6138,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
@@ -6177,7 +6145,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up. The road back is a constitutional motion, the members’ to move.",
+    "body": "Given up. The road back is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6193,7 +6161,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up. The road back is a constitutional motion, the members’ to move."
     ]
    },
@@ -6201,7 +6168,7 @@
     "eyebrow": "",
     "head": "The Founder may remove members at will.",
     "lock": "",
-    "body": "Whether the Founder may remove a member at will, with nobody’s agreement — at once, their standing answers leaving with them. Anyone may always propose a removal, at the price Removal sets.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
+    "body": "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6217,7 +6184,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may remove a member at will, with nobody’s agreement — at once, their standing answers leaving with them. Anyone may always propose a removal, at the price Removal sets.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
@@ -6225,7 +6191,7 @@
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
+    "body": "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6241,7 +6207,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
@@ -6249,7 +6214,7 @@
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
+    "body": "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6265,7 +6230,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "The Founder holds this. Giving it up is the Founder’s, one way; taking a held power from them is a constitutional motion, the members’ to move."
     ]
    },
@@ -6313,7 +6277,7 @@
    },
    "rate": {
     "eyebrow": "",
-    "head": "Members start with 4 ✏️ each, up to a maximum of 8. They get an additional ✏️ every 180 minutes. A proposal that passes gives its ✏️ back. The Founder may amend this at will, and refuse proposals that the membership pass.",
+    "head": "Members start with 4 ✏️ each, up to a maximum of 8. They get an additional ✏️ every 180 minutes. A proposal costs one ✏️, and one that passes gives it back. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
     "body": "Members start with ✏️ each, up to a maximum of . They get an additional ✏️ every minutes.If it passes it goes to the Founder, who may assent or refuse.",
     "options": [],
@@ -6447,7 +6411,7 @@
      "Begin — settled",
      "Proposing — settled",
      "Voting — settled",
-     "Your Voice — settled",
+     "Your Consent — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -6964,7 +6928,7 @@
      "Begin — close it",
      "Proposing — settled",
      "Voting — settled",
-     "Your Voice — settled",
+     "Your Consent — settled",
      "Put it back as it stands"
     ],
     "helpers": []
@@ -6990,7 +6954,7 @@
      "Begin — settled",
      "Proposing — settled",
      "Voting — close it",
-     "Your Voice — settled",
+     "Your Consent — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -7021,7 +6985,7 @@
      "Begin — settled",
      "Proposing — close it",
      "Voting — settled",
-     "Your Voice — settled",
+     "Your Consent — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -7173,7 +7137,7 @@
     "eyebrow": "",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals. A proposal ✏️ passes when it meets the approval threshold; all members must agree for a constitutional proposal 🏛️ to pass. Nobody amends a rule at will, and no passed change waits on anyone’s assent, unless a rule says so.",
     "lock": "",
-    "body": "You founded this document, and every member holds a voice in it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.🏛️ Take your voice puts it in your wallet.",
+    "body": "You founded this document, and your consent in every constitutional question came with it.All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.🏛️ Take your consent puts it in your wallet.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7182,7 +7146,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "🏛️ Take your voice",
+      "label": "🏛️ Take your consent",
       "title": null
      }
     ],
@@ -7190,13 +7154,13 @@
      "Begin — settled",
      "Proposing — settled",
      "Voting — settled",
-     "Your Voice — close it",
+     "Your Consent — close it",
      "Put it back as it stands"
     ],
     "helpers": [
-     "You founded this document, and every member holds a voice in it.",
-     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
-     "🏛️ Take your voice puts it in your wallet."
+     "You founded this document, and your consent in every constitutional question came with it.",
+     "All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.",
+     "🏛️ Take your consent puts it in your wallet."
     ]
    },
    "hat": {
@@ -7451,7 +7415,7 @@
     "eyebrow": "",
     "head": "The approval threshold starts at 55% and rises to 82% by the end. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.FixedStays at 78% from the moment voting opens to the end.Choose thisRisingChosenNearly everyone90%Choose thisBroad agreement80%Choose thisA bare majority60%Choose thisStarts at a bare majority (60%) when voting opens and climbs to 78% by the end — early changes pass more easily.A number of my ownChosenStarts at 55% when voting opens and climbs to 78% by the end — early changes pass more easily.When voting opens%Why are you changing this?ABAsh Bellamy 👑",
+    "body": "FixedStays at 78% from the moment voting opens to the end.Choose thisRisingChosenNearly everyone90%Choose thisBroad agreement80%Choose thisA bare majority60%Choose thisStarts at a bare majority (60%) when voting opens and climbs to 78% by the end — early changes pass more easily.A number of my ownChosenStarts at 55% when voting opens and climbs to 78% by the end — early changes pass more easily.When voting opens%Why are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
       "set": "shape",
@@ -7506,7 +7470,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.",
      "Stays at 78% from the moment voting opens to the end.",
      "Starts at a bare majority (60%) when voting opens and climbs to 78% by the end — early changes pass more easily.",
      "Starts at 55% when voting opens and climbs to 78% by the end — early changes pass more easily.",
@@ -7518,7 +7481,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7534,7 +7497,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -7542,7 +7504,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7558,7 +7520,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -7566,7 +7527,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7582,7 +7543,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -7590,7 +7550,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7608,7 +7568,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -7616,7 +7575,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about visibility.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about visibility.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder has a veto over proposals passed by the membership about visibility.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about visibility.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:a:chamber",
@@ -7649,7 +7608,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Each one comes as a 👑 question — assent or refuse.",
      "Nothing waits on the Founder. One way — the road back is the members’ to give."
     ]
@@ -7658,7 +7616,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7674,7 +7632,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -7682,7 +7639,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse invitations and applications that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over invitations, and applications, that the membership pass. This is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about invitations.Each invitation, and each application, comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about invitations.An invitation the membership passes needs nobody’s assent. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder has a veto over proposals passed by the membership about invitations.Each invitation, and each application, comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about invitations.An invitation the membership passes needs nobody’s assent. One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:a:invite",
@@ -7714,7 +7671,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether the Founder has a veto over invitations, and applications, that the membership pass. This is only about what happens once one passes.",
      "Each invitation, and each application, comes as a 👑 question — assent or refuse.",
      "An invitation the membership passes needs nobody’s assent. One way — the road back is the members’ to give."
     ]
@@ -7723,7 +7679,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7739,7 +7695,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -7747,7 +7702,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7763,7 +7718,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -7771,7 +7725,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7787,7 +7741,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -7795,7 +7748,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about the proposal rate.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about the proposal rate.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder has a veto over proposals passed by the membership about the proposal rate.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about the proposal rate.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:a:rate",
@@ -7828,7 +7781,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Each one comes as a 👑 question — assent or refuse.",
      "Nothing waits on the Founder. One way — the road back is the members’ to give."
     ]
@@ -7837,7 +7789,7 @@
     "eyebrow": "",
     "head": "The Founder may not refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -7853,7 +7805,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -7861,7 +7812,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse removals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over removals that the membership pass. This is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about removals.Each removal comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about removals.A removal the membership passes needs nobody’s assent. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder has a veto over proposals passed by the membership about removals.Each removal comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about removals.A removal the membership passes needs nobody’s assent. One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:a:remove",
@@ -7893,7 +7844,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether the Founder has a veto over removals that the membership pass. This is only about what happens once one passes.",
      "Each removal comes as a 👑 question — assent or refuse.",
      "A removal the membership passes needs nobody’s assent. One way — the road back is the members’ to give."
     ]
@@ -7902,7 +7852,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about the link.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about the link.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder has a veto over proposals passed by the membership about the link.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about the link.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:a:slug",
@@ -7934,7 +7884,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Each one comes as a 👑 question — assent or refuse.",
      "Nothing waits on the Founder. One way — the road back is the members’ to give."
     ]
@@ -7943,7 +7892,7 @@
     "eyebrow": "",
     "head": "The Founder may refuse proposals that the membership pass.",
     "lock": "",
-    "body": "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.The Founder has a veto over proposals passed by the membership about the title.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about the title.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder has a veto over proposals passed by the membership about the title.Each one comes as a 👑 question — assent or refuse.ChosenThe Founder does not have a veto over proposals passed by the membership about the title.Nothing waits on the Founder. One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:a:title",
@@ -7975,7 +7924,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.",
      "Each one comes as a 👑 question — assent or refuse.",
      "Nothing waits on the Founder. One way — the road back is the members’ to give."
     ]
@@ -7984,7 +7932,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -8000,7 +7948,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -8008,7 +7955,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -8024,7 +7971,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -8032,7 +7978,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -8048,7 +7994,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -8056,7 +8001,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -8074,7 +8019,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -8082,7 +8026,7 @@
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:u:chamber",
@@ -8115,7 +8059,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "No proposal needed for the Founder’s own hand.",
      "The Founder proposes like a member. One way — the road back is the members’ to give."
     ]
@@ -8124,7 +8067,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -8140,7 +8083,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -8148,7 +8090,7 @@
     "eyebrow": "",
     "head": "The Founder may invite people at will.",
     "lock": "",
-    "body": "Whether the Founder may invite people at will, with nobody’s agreement. Anyone may always propose bringing somebody in, at the price Admissions sets — this is only about the Founder’s own hand.The Founder invites at will.Nobody else has to agree when the Founder brings somebody in.ChosenOnly as Admissions says, like anybody.The Founder proposes a member like anybody, at the price the document sets. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder invites at will.Nobody else has to agree when the Founder brings somebody in.ChosenOnly as Admissions says, like anybody.The Founder proposes a member like anybody, at the price the document sets. One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:u:invite",
@@ -8180,7 +8122,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether the Founder may invite people at will, with nobody’s agreement. Anyone may always propose bringing somebody in, at the price Admissions sets — this is only about the Founder’s own hand.",
      "Nobody else has to agree when the Founder brings somebody in.",
      "The Founder proposes a member like anybody, at the price the document sets. One way — the road back is the members’ to give."
     ]
@@ -8189,7 +8130,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -8205,7 +8146,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -8213,7 +8153,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -8229,7 +8169,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -8237,7 +8176,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -8253,7 +8192,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -8261,7 +8199,7 @@
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:u:rate",
@@ -8294,7 +8232,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "No proposal needed for the Founder’s own hand.",
      "The Founder proposes like a member. One way — the road back is the members’ to give."
     ]
@@ -8303,7 +8240,7 @@
     "eyebrow": "",
     "head": "The Founder may not amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.Given up — one way. The road back is the members’ reserve motion.",
+    "body": "Given up — one way. The road back is the members’ reserve motion.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -8319,7 +8256,6 @@
      "Put it back as it stands"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "Given up — one way. The road back is the members’ reserve motion."
     ]
    },
@@ -8327,7 +8263,7 @@
     "eyebrow": "",
     "head": "The Founder may remove members at will.",
     "lock": "",
-    "body": "Whether the Founder may remove a member at will, with nobody’s agreement — at once, their standing answers leaving with them. Anyone may always propose a removal, at the price Removal sets.The Founder removes at will.A member the Founder removes is gone at once — nobody else has to agree.ChosenOnly as Removal says, like anybody.The Founder proposes a removal like anybody, at the price the document sets. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder removes at will.A member the Founder removes is gone at once — nobody else has to agree.ChosenOnly as Removal says, like anybody.The Founder proposes a removal like anybody, at the price the document sets. One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:u:remove",
@@ -8359,7 +8295,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether the Founder may remove a member at will, with nobody’s agreement — at once, their standing answers leaving with them. Anyone may always propose a removal, at the price Removal sets.",
      "A member the Founder removes is gone at once — nobody else has to agree.",
      "The Founder proposes a removal like anybody, at the price the document sets. One way — the road back is the members’ to give."
     ]
@@ -8368,7 +8303,7 @@
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:u:slug",
@@ -8400,7 +8335,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "No proposal needed for the Founder’s own hand.",
      "The Founder proposes like a member. One way — the road back is the members’ to give."
     ]
@@ -8409,7 +8343,7 @@
     "eyebrow": "",
     "head": "The Founder may amend this at will.",
     "lock": "",
-    "body": "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
+    "body": "The Founder changes it at will.No proposal needed for the Founder’s own hand.ChosenOnly by proposal, like anybody.The Founder proposes like a member. One way — the road back is the members’ to give.Choose this",
     "options": [
      {
       "set": "pw:u:title",
@@ -8441,7 +8375,6 @@
      "Set it"
     ],
     "helpers": [
-     "Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder’s own hand.",
      "No proposal needed for the Founder’s own hand.",
      "The Founder proposes like a member. One way — the road back is the members’ to give."
     ]
@@ -8490,9 +8423,9 @@
    },
    "rate": {
     "eyebrow": "",
-    "head": "Members start with 4 ✏️ each, up to a maximum of 8. They get an additional ✏️ every 180 minutes. A proposal that passes gives its ✏️ back. The Founder may amend this at will, and refuse proposals that the membership pass.",
+    "head": "Members start with 4 ✏️ each, up to a maximum of 8. They get an additional ✏️ every 180 minutes. A proposal costs one ✏️, and one that passes gives it back. The Founder may amend this at will, and refuse proposals that the membership pass.",
     "lock": "",
-    "body": "How often a member can propose something. Each proposal costs one ✏️.I set itChosen✏️ to start withup to a maximum ofan additional ✏️ every N minutesWhy are you changing this?ABAsh Bellamy 👑",
+    "body": "I set itChosen✏️ to start withup to a maximum ofan additional ✏️ every N minutesWhy are you changing this?ABAsh Bellamy 👑",
     "options": [
      {
       "set": "rateBy",
@@ -8539,7 +8472,6 @@
      "Set it"
     ],
     "helpers": [
-     "How often a member can propose something. Each proposal costs one ✏️.",
      "I am changing this because…"
     ]
    },

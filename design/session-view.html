@@ -1918,11 +1918,11 @@
     // above it in the order, and it hangs off that first question's
     // paragraph (`voiceHost`) rather than ⚖️'s, because the voice is what
     // the question is answered with. It still blocks nothing (a gate).
-    { k: 'grant-voice', g: '🏛️', t: 'Your Voice', own: 'you', isGate: true, isGrant: true,
-      grants: '🏛️', take: 'Take your voice',
+    { k: 'grant-voice', g: '🏛️', t: 'Your Consent', own: 'you', isGate: true, isGrant: true,
+      grants: '🏛️', take: 'Take your consent',
       open: () => !!cs && viewerIsMember() && !!viewerRow().in,
       early: () => firstAsked() !== null,
-      why: 'All members must agree for a constitutional proposal 🏛️ to pass, and this is your voice in that. One at a time, and it comes back whole when the question settles or you withdraw it.',
+      why: 'All members must agree for a constitutional proposal 🏛️ to pass, and this is your consent in that. One at a time, and it comes back whole when the question settles or you withdraw it.',
       waiting: 'Waiting on your arrival.',
       blockers: () => [] },
     // **A grant is the holder's** (SURFACE E8's audience column, enforced here
@@ -2457,32 +2457,10 @@
     return pwLine(c.base, c.power, c.power === 'u' ? p.u : p.a,
       c.power === 'u' ? pend.u : pend.a);
   };
-  const PWWHY = {
-    '*': {
-      u: '<p class="why">Whether the Founder may re-set this at will, with no proposal. Anyone may always propose a change — this is only about the Founder' + Q + 's own hand.</p>',
-      // **The why follows the options into veto vocabulary** (Ed,
-      // 2026-08-22, choosing *the why only*). Once the option became
-      // document text at document size, the explanatory paragraph directly
-      // above it was stating the same rule in the older words, inches away
-      // and in the same card. The **head** deliberately keeps *may refuse*:
-      // it is the clause's own sentence, and the clause joins ✒️ and 🛡️ as
-      // verb phrases that "has a veto over" cannot be joined into.
-      a: '<p class="why">Whether the Founder has a veto over proposals passed by the membership. Anyone may always propose — this is only about what happens once one passes.</p>',
-    },
-    invite: {
-      u: '<p class="why">Whether the Founder may invite people at will, with nobody' + Q + 's agreement. Anyone may always propose bringing somebody in, at the price Admissions sets — this is only about the Founder' + Q + 's own hand.</p>',
-      a: '<p class="why">Whether the Founder has a veto over invitations, and applications, that the membership pass. This is only about what happens once one passes.</p>',
-    },
-    remove: {
-      u: '<p class="why">Whether the Founder may remove a member at will, with nobody' + Q + 's agreement — at once, their standing answers leaving with them. Anyone may always propose a removal, at the price Removal sets.</p>',
-      a: '<p class="why">Whether the Founder has a veto over removals that the membership pass. This is only about what happens once one passes.</p>',
-    },
-    text: {
-      u: '<p class="why">Whether the Founder may edit the text at will, with no proposal. Anyone may always propose a change to the text — this is only about the Founder' + Q + 's own hand.</p>',
-      a: '<p class="why">Whether the Founder has a veto over proposals passed by the membership about the text, before they land. Anyone may always propose; this is only about what happens once one passes.</p>',
-    },
-  };
-  const pwWhy = (k, power) => (PWWHY[k] || PWWHY['*'])[power];
+  // **A power card carries no why** (T43, Ed 2026-09-01: item 6 — *the
+  // constitution speaks for itself*). The head states the rule as it stands
+  // and the two blocks state both outcomes at document size; the PWWHY
+  // paragraphs restated them inches away in older words, and went.
   // **The 🛡️ radios say veto, and name what they are about** (Ed,
   // 2026-08-22, replacing *The Founder may refuse proposals that the
   // membership pass* and *Changes the membership passes apply by
@@ -2603,7 +2581,6 @@
     const pend = c.power === 'u' ? pwPend(k).u : pwPend(k).a;
     const held = (c.power === 'u' ? p.u : p.a) && !pend;
     const key = 'pw:' + c.power + ':' + k;
-    const why = pwWhy(k, c.power);
     const L = pwOpts(k, c.power);
     // **On a closed document this is the read-only sentence too** (entry 62).
     // The radios below post `relinquish`/`reclaim`, which `requireOpen`
@@ -2614,14 +2591,14 @@
       // a release made before the start is recorded now and lands at 🍾
       // (R-048), so it is not *given up* yet — and the clause beside this
       // card says so in the same breath
-      return why + '<p class="setnote">' + (held
+      return '<p class="setnote">' + (held
         ? 'The Founder holds this. Giving it up is the Founder' + Q + 's, one way; taking a held power from them is a constitutional motion, the members' + Q + ' to move.'
         : pend && !live
           ? '<b>Given up from the start.</b> The Founder holds it until the document begins.'
           : '<b>Given up.</b> The road back is a constitutional motion, the members' + Q + ' to move.') + '</p>';
     }
     if (live && !held) {
-      return why + '<p class="setnote"><b>Given up — one way.</b> The road back is the members' + Q + ' reserve motion.</p>';
+      return '<p class="setnote"><b>Given up — one way.</b> The road back is the members' + Q + ' reserve motion.</p>';
     }
     // 🛡️-held is unreachable pre-start while ✒️ is given (the
     // assent-only state is inert before the start, §9.7 v0.54)
@@ -2641,7 +2618,7 @@
     const otherHeldNow = c.power === 'u' ? (p.a && !pwPend(k).a) : (p.u && !pwPend(k).u);
     const givingDelegates = !live && held && !otherHeldNow && isDelegable(k);
     const cur = S[key] || (held ? 'held' : 'given');
-    return why + '<div class="choice" role="radiogroup">' +
+    return '<div class="choice" role="radiogroup">' +
       powerLane(key, 'held', L.held[0], L.held[1], cur === 'held', blockAHeld) +
       powerLane(key, 'given', L.given[0],
         L.given[1] + (live ? ' One way — the road back is the members' + Q + ' to give.'
@@ -3857,7 +3834,7 @@
       : 'After ' + S.lapseDays + ' days without logging in'),
     removal: () => PRICE_WORDS.removal[removalPrice()],
     canpropose: () => (canPropose() ? 'Open' : 'Waiting on the start'),
-    'grant-voice': () => 'You hold a voice in every constitutional question',
+    'grant-voice': () => 'Your consent counts in every constitutional question',
     begin: () => (constituted() ? 'Begun' + foundedAt() : 'Not yet begun'),
     closing: () => (cs && cs.closed ? 'Closed' + closedAtWords() : ''),
     'grant-pen': () => 'You hold the pen',
@@ -5245,7 +5222,10 @@
     rate: () => { const v = takenValOf('rate');
       return 'Members start with ' + (v ? v.grant : S.grant) + ' ✏️ each, up to a maximum of ' +
         (v ? v.cap : S.cap) + '. They get an additional ✏️ every ' + (v ? v.dripMinutes : S.dripMin) +
-        ' minutes. A proposal that passes gives its ✏️ back.'; },
+        // the cost rode the why paragraph until T43 dropped it (Ed,
+        // 2026-09-01: *this may mean we need to add to the clause sentences
+        // themselves*) — so the clause states it
+        ' minutes. A proposal costs one ✏️, and one that passes gives it back.'; },
     // 🤝 is one switch; what an application costs is 🪪's sentence (entry 94)
     applications: () => APPL_RULE(policyNow()),
     slug: () => 'The document lives at ' + docAddr(S.slug) + '.',
@@ -5352,7 +5332,7 @@
     // 🏛️'s own sentence survives only where there is no preamble to join
     // (Q750) — otherwise the preamble's own sentence 2 states the route
     if (c.k === 'grant-voice') return voiceInStack() ? proposalsClause()
-      : 'Each member holds one voice in every constitutional question.';
+      : 'Nothing constitutional passes without every member’s consent.';
     // ✒️ and 🛡️ write no sentence (Q639 (a), Ed 2026-08-22). They used to
     // state a count — *The Founder holds the pen on 16 settings.* — which
     // `holderLine` already says on every setting the power turns, and which
@@ -5406,12 +5386,18 @@
         // rather than only who is deciding — a stranger reading the door is
         // reading this rule, and the by-deviation grammar would otherwise leave
         // them reading a rule the members cannot see
+        // **Ed's sentence for the delegated state** (2026-09-01, T43's item
+        // 7): the delegation is stated as a rule of the document, the count
+        // its parenthetical. The verb is *answered*, matching every other
+        // count on the surface (his draft said *voted* — flagged in chat).
         : (c.k === 'chamber'
-          ? 'Until the members decide, only members can see the document — '
-          : 'The Founder has delegated to members to decide ' + (WHAT[c.k] || 'this') + ' — ') +
-          (isStranger() ? 'the members are answering.'
-            : roomExists() ? Math.min(c.in || 0, E()) + ' of ' + E() + ' have answered.'
-            : 'waiting for members.');
+          // the interim visibility rule stays stated (Q618 (a)) — a
+          // stranger reading the door is reading this rule
+          ? 'Until the members decide, only members can see the document'
+          : 'The Founder is letting the membership decide this rule themselves') +
+          (isStranger() ? ' — the members are answering.'
+            : roomExists() ? ' (' + Math.min(c.in || 0, E()) + ' of ' + E() + ' have answered so far).'
+            : ' — waiting for members.');
     }
     // the provenance rides between the rule and the powers (entry 166), and
     // since entry 198 the powers stand on their own line: *… As for a
@@ -6354,7 +6340,6 @@
       opt(S, 'ending', 'perpetual', ENDING_NEVER) +
       '</div>',
     bar: () =>
-      '<p class="why">How sure the members have to be that a change is better than the words it replaces, <b>at the end</b>.</p>' +
       // read before choosing whether to set it or hand it over (entry 163)
       methodNote() +
       '<div class="choice" role="radiogroup">' +
@@ -6362,7 +6347,6 @@
       barRungs() +
       '</div>' + ceilingNote(E(), 99),
     pace: () =>
-      '<p class="why">Whether the approval threshold holds the whole way through, or starts lower and climbs to it. Starting lower lets early changes through more easily.</p>' +
       '<div class="choice" role="radiogroup">' +
       // **Fixed first** (entry 167, rule 4): it is the more demanding shape —
       // a change made an hour in faces the same number as one made at the
@@ -6418,7 +6402,6 @@
       opt(S, 'judgments', 'after', JUDG_RULE.after) +
       '</div>',
     rate: () =>
-      '<p class="why">How often a member can propose something. Each proposal costs one ✏️.</p>' +
       '<div class="choice" role="radiogroup">' +
       theyDecide('rate') +
       opt(S, 'rateBy', 'founder', 'I set it', '',
@@ -10590,14 +10573,14 @@
       const a = myArrival();
       const via = a ? a.via : (amFounder() ? 'founding' : 'invitation');
       if (via === 'founding') {
-        return 'You founded this document, and every member holds a voice in it.';
+        return 'You founded this document, and your consent in every constitutional question came with it.';
       }
       if (via === 'application') {
-        return 'The membership admitted you on your application, and a voice in every constitutional question came with it.';
+        return 'The membership admitted you on your application, and your consent in every constitutional question came with it.';
       }
       return (a && a.by === 'members')
-        ? 'The membership agreed to invite you, and a voice in every constitutional question came with it.'
-        : 'The Founder invited you into the membership, and a voice in every constitutional question came with it.';
+        ? 'The membership agreed to invite you, and your consent in every constitutional question came with it.'
+        : 'The Founder invited you into the membership, and your consent in every constitutional question came with it.';
     }
     // 💡 and ⚖️ both open at 🍾, which is always the founder's own press
     if (c.k === 'canpropose') return 'The Founder began the document, granting every member the right to propose changes to it.';
