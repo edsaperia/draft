@@ -283,7 +283,12 @@ const IN_PAGE = () => {
       set: el.dataset.set || el.dataset.ans || null,
       val: el.dataset.val || el.dataset.ansval || el.dataset.mval || el.dataset.motion || null,
       on: el.classList.contains('on') || el.getAttribute('aria-checked') === 'true' || el.getAttribute('aria-pressed') === 'true',
-      label: txt(el),
+      // the option's name is its block's text since CP1 (2026-08-31): every
+      // radio reads *Prefer this / Preferred*, so reading the button made T5
+      // compare pressed states, not rung labels
+      label: (() => { const p = el.closest('.pick');
+        const t = p && p.querySelector('.opttext');
+        return t ? txt(t) : txt(el); })(),
     })),
     inputs: Array.from(card.querySelectorAll('input,textarea')).map((i) => ({
       type: i.type || 'text', value: i.value, ph: i.placeholder || null,
@@ -529,7 +534,9 @@ function rulesFor(card, tok) {
 
   /* --- positioning ------------------------------------------------------ */
   const xs = [...new Set(card.radios.filter((r) => r.dot).map((r) => r.x))];
-  if (xs.length > 1 && Math.max(...xs) - Math.min(...xs) > 0.51) {
+  // 🍾 is the surface's one two-column card (Q1103 (b)), so its radios stand
+  // in two columns by ruling — EXEMPT from the one-edge promise, pass 4.
+  if (card.key !== 'begin' && xs.length > 1 && Math.max(...xs) - Math.min(...xs) > 0.51) {
     at('P1', 'positioning', 'every radio lines up down the card\'s left edge',
       xs.length + ' left edges: ' + xs.map((x) => x + 'px').join(', '));
   }
@@ -565,6 +572,35 @@ function rulesFor(card, tok) {
         '“' + (r.label || '?') + '” is ' + r.gap + 'px below the rung above it');
     }
   }
+  /* --- the card pattern (SURFACE §9.3, pass 4, 2026-08-31) --------------- */
+  // CP7 — 🗑️ leads every row that commits anything besides OK. Y20's five
+  // stay out by shape rather than by name: an OK-only row asks only to have
+  // been seen, and ❄️ is a toggle on the flame, not a commit.
+  {
+    const bl = card.buttons.filter((b) => b.r);
+    const substantive = bl.filter((b) => !/^OK$/.test((b.label || '').trim()) && !/chill/.test(b.cls));
+    const first = bl[0];
+    if (substantive.length && first && !/🗑/.test(first.label || '')) {
+      at('CP7', 'pattern', '🗑️ leads every commit row (C4; Y20 by shape)',
+        'the row opens with “' + ((first.label || first.cls) + '').slice(0, 40) + '”');
+    }
+  }
+  // CP2 — one radio vocabulary. A dotted radio says Prefer this / Preferred /
+  // Indifferent and nothing else; the option's own words live on its block.
+  for (const r of card.radios) {
+    if (!r.dot || !r.label) continue;
+    if (!['Prefer this', 'Preferred', 'Indifferent'].includes(r.label.trim())) {
+      at('CP2', 'pattern', 'one radio vocabulary — Prefer this / Preferred / Indifferent (§9.3)',
+        '“' + r.label.trim().slice(0, 40) + '”');
+    }
+  }
+  // CP8 — a commit label states the act; the state lives in the title.
+  for (const b of card.buttons) {
+    if (b.label && /^(Not answered yet|Recorded\b)/.test(b.label.trim())) {
+      at('CP8', 'pattern', 'the label states the act; the state lives in the title (§9.3)',
+        '“' + b.label.trim().slice(0, 50) + '”');
+    }
+  }
   if (card.tab.front && card.tab.rightEdge !== null && !near(card.tab.rightEdge, 0, 0.01)) {
     at('P4', 'positioning', 'every tab\'s right edge lands exactly on the card\'s left edge',
       'the open tab overshoots by ' + card.tab.rightEdge + 'px');
@@ -593,7 +629,12 @@ function rulesFor(card, tok) {
   /* --- spacing ---------------------------------------------------------- */
   for (const box of card.boxes) {
     const bad = [];
-    box.m.forEach((v, i) => { if (!onGrid(v)) bad.push('margin-' + 'trbl'[i] + ' ' + v + 'px'); });
+    box.m.forEach((v, i) => {
+      // `.pick > .inner > .choice`'s −2px is the P1 takeback that keeps nested
+      // radios on the card's edge — EXEMPT by pass 4 (F-G, 2026-08-31)
+      if (box.sel.startsWith('.choice') && i === 3 && v === -2) return;
+      if (!onGrid(v)) bad.push('margin-' + 'trbl'[i] + ' ' + v + 'px');
+    });
     box.p.forEach((v, i) => { if (!onGrid(v)) bad.push('padding-' + 'trbl'[i] + ' ' + v + 'px'); });
     if (box.gap !== null && !onGrid(box.gap)) bad.push('gap ' + box.gap + 'px');
     if (bad.length) at('S1', 'spacing', 'the --s1–--s5 grid: 4, 8, 12, 16, 24', box.sel + ' — ' + bad.join(' · '));
@@ -793,6 +834,9 @@ function crossCard(cards) {
     // lifecycle mark says where a decision stands, so it is *supposed* to
     // head every card in that state; only a subject glyph names one thing.
     if (!g || /^pw:[ua]:/.test(c.key) || LIFECYCLE.includes(g.replace(/️/g, ''))) continue;
+    // 📧 may be used twice — your own email card and the stranger's login
+    // (Ed, pass 4 F-F, 2026-08-31: the exemption, not a new glyph)
+    if (g === '📧') continue;
     const key = c.key.replace(/^(ans|str)[-:]?/, '');
     if (!glyphOf.has(g)) glyphOf.set(g, new Set());
     glyphOf.get(g).add(key);
@@ -824,6 +868,10 @@ function crossCard(cards) {
     for (const b of c.buttons) {
       if (!b.label || !b.fontSize) continue;
       const l = b.label.replace(/\s+/g, ' ').trim();
+      // a glyph tunes a silhouette to its box, not text to a scale — B5's own
+      // exemption, applied to the cross-card compare too (pass 4: the charter
+      // 🗑️ at 19.2px against the band's 14px is two boxes, not two sizes)
+      if (GLYPH_ONLY.test(l)) continue;
       if (!sizeOf.has(l)) sizeOf.set(l, new Map());
       if (!sizeOf.get(l).has(b.fontSize)) sizeOf.get(l).set(b.fontSize, []);
       sizeOf.get(l).get(b.fontSize).push(c.walk + '·' + c.key);
@@ -1103,14 +1151,47 @@ async function walkSettled(page, base, cards, errors, seat, switches) {
           value: { grant: rate.grant + 2, cap: rate.cap, dripMinutes: rate.dripMinutes } },
         'Two more to start would let people write before they have to choose.');
       cs.adjudicateOrdinaryMotion(tick(), m2, 'held');
+      // **Pass 4's census reaches three more states** (2026-08-31): a
+      // constitutional motion **parked at the 👑** (👁️ is founder-held
+      // post-⏩, so carrying goes to assent and the crown card is measurable
+      // on the founder's walk), one **mid-flight** (👤, nobody answers, so
+      // the consent picks are measurable on every seat), and a founder's
+      // post-start **set** (🌍), so the set-news card reaches seat:1. A
+      // state the instrument never opens reads as clean — the probe-coverage
+      // lesson — so these are seeded, not sampled.
+      // Both the set-news and the crown park ride 🌍 — the one setting ⏩
+      // leaves in the founder's hand (a carried motion on a delegated
+      // setting lands in the document; only a reserved one parks). The set
+      // fires E5's news first; the motion then parks at the 👑.
+      const cv = (cs.settingState('chamber').value || {}).rung;
+      cs.setSetting(tick(), 'chamber', { rung: cv === 'link' ? 'closed' : 'link' },
+        'Readers who are not members should see what we are building.');
+      const cv2 = (cs.settingState('chamber').value || {}).rung;
+      const m3 = cs.openMotion(tick(), mover,
+        { kind: 'set', setting: 'chamber', value: { rung: cv2 === 'link' ? 'closed' : 'link' } },
+        'Who reads the document should be the membership’s call.');
+      for (const id of voters) if (id !== mover) cs.answerMotion(tick(), id, m3, 'accept');
+      const av = (cs.settingState('authorship').value || {}).rung;
+      // a second mover, because m3 is still live and a member has one 🏛️
+      // out at a time (§9.6)
+      const mover2 = voters.find((id) => id !== mover) || mover;
+      const m4 = cs.openMotion(tick(), mover2,
+        { kind: 'set', setting: 'authorship', value: { rung: av === 'anonymous' ? 'sealed' : 'anonymous' } },
+        'Names put pressure on people; the writing should stand alone.');
       return { carried: [m1, cs.motionRecords().get(m1).status],
-        held: [m2, cs.motionRecords().get(m2).status] };
+        held: [m2, cs.motionRecords().get(m2).status],
+        crowned: [m3, cs.motionRecords().get(m3).status],
+        running: [m4, cs.motionRecords().get(m4).status] };
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
   if (seeded.error) errors.push(walk + ': the motion seed failed — ' + seeded.error);
   else {
     if (seeded.carried[1] !== 'carried') errors.push(walk + ': the seeded ' + seeded.carried[0] + ' is ' + seeded.carried[1] + ', not carried');
     if (seeded.held[1] !== 'held') errors.push(walk + ': the seeded ' + seeded.held[0] + ' is ' + seeded.held[1] + ', not held');
+    if (seeded.crowned && seeded.crowned[1] !== 'awaiting-crown')
+      errors.push(walk + ': the seeded ' + seeded.crowned[0] + ' is ' + seeded.crowned[1] + ', not awaiting-crown');
+    if (seeded.running && seeded.running[1] !== 'running')
+      errors.push(walk + ': the seeded ' + seeded.running[0] + ' is ' + seeded.running[1] + ', not running');
   }
   // a render, so the seeded records reach the piles before anything is
   // measured: the seat switch is one, and the seatless walk asks for one
@@ -1257,7 +1338,11 @@ async function main() {
     // one seat at a time, each with its own net: the three seats are three
     // separate audits sharing a name, and a seat that throws must not take
     // the seats after it with it
-    for (const seat of ['1', 'applicant', 'stranger']) {
+    // the applicant seat is EXEMPT here, not fixed (pass 4): `allApplicants`
+    // reads `cs.isRemote`'s view, so the file page can never seat one —
+    // the applicant's five and the adm: cards are walked end to end, on the
+    // live path, by `npm run applicants-walk` at all three prices.
+    for (const seat of ['1', 'stranger']) {
       const n = cards.length;
       try { await walkSettled(page, base, cards, errors, seat); }
       catch (e) { errors.push('seat:' + seat + ' threw: ' + (e && e.message)); }

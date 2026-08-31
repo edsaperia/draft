@@ -47,6 +47,22 @@ The extraction of record for pass 4. Target: SURFACE §9.3 (CP1–CP7, Ed's ruli
 
 F-A–F-G all stand; F-F as a recorded exemption (📧 used twice, deliberately — the G2 rule takes an EXEMPT entry, no new glyph). Q1103 **(b)**: 🍾's table becomes two columns (✒️ · 🛡️) of option blocks; `switch` retires; supersedes the backlog's switches ask. Q1104 **(b)**: numeric rungs as blocks whose text is `meaningOf`'s sentence with the number stated; *A number of my own* last, with the field. Q1105–Q1108 **(a)** as recommended → CP5 (drawn ✓ on the direct door), CP9 (no commit on a locked card), CP8 (act as label, state as title), CP7 (site sub-blocks are not cards). Folded into SURFACE §9.3 the same day; 1109–1115 released. This file stays until the family builds land and the census re-runs green.
 
-## Instrument blind spots (stage-2b work, queued — a state not measured must not read as clean)
+## The build, and the close (2026-08-31, plans A–D in-session)
 
-Never measured on any walk: the salience diagonal 🌶️ (unserved in the fixture, Q291's rule); the editing card (needs a keystroke); the `adm:` admission cards and the applicant's five (**seat:applicant offered no cards** — instrument error, needs an application seeded); the 👑 question, both kinds (needs a carried motion parked at the crown); the 🥂 closing card; a constitutional motion mid-flight (the consent picks card — walkSettled's seed answers instantly); the news family (E5 set-changed news, amendment-news, release-batch 👑, mail-give-up 📭); the closed backlog (**no U: records in the fixture**); 📝 text card in both modes; a gap-site card. Each needs either a walk extension or a hand-verification, and the pass is not closed until every row is measured or exempted with a reason.
+All four plans landed the same day, by hand: **A** the band's block grammar (commits dbb7551 →), **B** the judgment cards' 🗑️ and Indifferent block, **C** the doors' people-heads, 🎩's CP9 lock and the 👑 rework, **D** the instrument. The closing census runs all seven walks with **three standing guards** in `rulesFor` — CP7 (🗑️ leads every substantive row), CP2 (one radio vocabulary), CP8 (labels state the act) — **all silent**, the rollup holding only the six standing pre-pass traits (S1 paddings, P2/P3 tuck-and-grow, H2/H4, P7's accepted 2px). Three census readings dissolved during the build (the ✓'s title read as a label twice, the −2px takeback) — DECISIONS has them.
+
+### Newly measured (walk extensions, this pass)
+
+The 👑 question (a chamber motion parked at the crown: 🗑️ · 🛡️ · ✒️ measured on the founder, the pending state on a member); a constitutional motion **mid-flight** (authorship, second mover — the consent picks and the mover's 🗑️ Withdraw); a founder's post-start **set** on 🌍 (E5's news reaches seat:1); the release news and the settled-motion records were already walked.
+
+### EXEMPT, each with its reason on record
+
+- **the applicant seat, `adm:` and the applicant's five** — `allApplicants` reads the remote view, so the file page can never seat one; walked end to end on the live path by `npm run applicants-walk` at all three prices (green, reading lane names off `.opttext`).
+- **📧 heading two cards** — Ed's F-F ruling (*📧 can be used twice*); G2 skips the glyph.
+- **P1 on `founding·begin`** — the surface's one two-column card (Q1103 (b)).
+- **`.pick > .inner > .choice`'s −2px** — the P1 takeback (F-G's second nit); S1 skips it.
+- **glyph-only labels in B6** — a glyph tunes a silhouette to its box (B5's own rule).
+
+### Still unmeasured by this instrument, deliberately
+
+The salience diagonal 🌶️ (unserved in the fixture by Q291's own rule); the editing card, a gap-site card and 📝's two modes (journey walks all three live — its edit-mode step asserts the row, the strip and the geometry); the 🥂 closing card and the closed backlog `U:` records (the closed fixture carries neither — a fixture addition, filed); amendment-news and 📭 mail-give-up (dev-seam states; 📭's forced give-up needs the live outbox). Each is a walk-or-fixture line item, none is silent: the audit's own errors name the backlog gap on every run.
